@@ -1,0 +1,8 @@
+package import_alpha
+
+type not_exported int
+
+type (
+	T3 int
+	T4 int
+)

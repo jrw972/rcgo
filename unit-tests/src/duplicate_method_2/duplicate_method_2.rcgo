@@ -1,0 +1,8 @@
+package duplicate_method_2
+
+import P "type_decl"
+
+type LockedFile interface {
+	P.Locker
+	Lock()      // illegal: Lock not unique
+}

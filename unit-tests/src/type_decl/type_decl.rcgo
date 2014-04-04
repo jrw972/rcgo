@@ -1,0 +1,116 @@
+package type_decl
+
+import P "import_alpha"
+
+type (
+	A1 = string
+	A2 = A1
+)
+
+type (
+	B1 string
+	B2 B1
+	B3 []B1
+	B4 B3
+)
+
+type C1 P.T3
+
+const N = 3
+
+// Array types
+type (
+	myarray1 [32]byte
+	myarray2 [2*N] struct { x, y int32 }
+	myarray3 [1000]*float64
+	myarray4 [3][5]int
+	myarray5 [2][2][2]float64  // same as [2]([2]([2]float64))
+	myarray6 [2]([2]([2]float64))
+)
+
+// Slice types
+type myslice []int
+
+// Struct types
+type (
+	T1 int
+	T2 int
+
+	mystruct1 struct {}
+	mystruct2 struct {
+		x, y int
+		u float32
+		_ float32  // padding
+		A *[]int
+		F func()
+	}
+	mystruct3 struct {
+		T1        // field name is T1
+		*T2       // field name is T2
+		P.T3      // field name is T3
+		*P.T4     // field name is T4
+		x, y int  // field names are x and y
+	}
+	mystruct4 struct {
+		x, y float64 ""  // an empty tag string is like an absent tag
+		name string  "any string is permitted as a tag"
+		_    [4]byte "ceci n'est pas un champ de structure"
+	}
+	mystruct5 struct {
+		microsec  uint64 `protobuf:"1"`
+		serverIP6 uint64 `protobuf:"2"`
+	}
+)
+
+// Pointer types
+type (
+	Point struct {
+		x, y float32
+	}
+	mypointer1 *Point
+	mypointer2 *[4]int
+)
+
+// Function types
+type (
+	T int
+	myfunc1 func()
+	myfunc2 func(x int) int
+	myfunc3 func(a, _ int, z float32) bool
+	myfunc4 func(a, b int, z float32) (bool)
+	myfunc5 func(prefix string, values ...int)
+	myfunc6 func(a, b int, z float64, opt ...interface{}) (success bool)
+	myfunc7 func(int, int, float64) (float64, *[]int)
+	myfunc8 func(n int) func(p *T)
+)
+
+// Interface types
+type (
+	Buffer []byte
+	myinterface1 interface {
+		Read(b Buffer) bool
+		Write(b Buffer) bool
+		Close()
+	}
+	myinterface2 interface {}
+	ReadWriter interface {
+		Read(b Buffer) bool
+		Write(b Buffer) bool
+	}
+	Locker interface {
+		Lock()
+		Unlock()
+	}
+	File interface {
+		ReadWriter  // same as adding the methods of ReadWriter
+		Locker      // same as adding the methods of Locker
+		Close()
+	}
+)
+
+// Map types
+type (
+	mymap1 map[string]int
+	mymap2 map[*T]struct{ x, y float64 }
+	mymap3 map[string]interface{}
+)

@@ -1,0 +1,5 @@
+package import_beta
+
+import ("import_alpha"
+	pkg1 "import_alpha"
+	. "import_alpha")

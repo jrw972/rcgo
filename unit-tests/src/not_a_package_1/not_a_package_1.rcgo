@@ -1,0 +1,5 @@
+package not_a_package_1
+
+type P int
+
+type X P.T

@@ -1,0 +1,6 @@
+package recursive_interface_1
+
+// illegal: Bad cannot embed itself
+type Bad interface {
+	Bad
+}

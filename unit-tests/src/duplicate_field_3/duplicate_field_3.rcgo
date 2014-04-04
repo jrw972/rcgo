@@ -1,0 +1,10 @@
+package duplicate_field_3
+
+import P "import_alpha"
+
+type (
+	mystruct struct {
+		P.T3
+		*P.T3
+	}
+)

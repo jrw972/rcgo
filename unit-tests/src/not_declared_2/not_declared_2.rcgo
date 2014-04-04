@@ -1,0 +1,5 @@
+package not_declared_2
+
+import P "import_alpha"
+
+type X P.NotDeclared

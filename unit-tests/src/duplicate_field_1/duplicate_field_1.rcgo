@@ -1,0 +1,10 @@
+package duplicate_field_1
+
+type T int
+
+type (
+	mystruct struct {
+		T
+		*T
+	}
+)

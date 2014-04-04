@@ -1,0 +1,3 @@
+package recursive_import_alpha
+
+import "recursive_import_beta"

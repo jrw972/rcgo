@@ -1,0 +1,5 @@
+package duplicate_const
+
+// Duplicate
+const pix = 3.14
+const pix = 3.14

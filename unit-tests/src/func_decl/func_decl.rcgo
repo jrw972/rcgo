@@ -1,0 +1,10 @@
+package func_decl
+
+func min(x int, y int) int {
+	if x < y {
+		return x
+	}
+	return y
+}
+
+func flushICache(begin, end uintptr)  // implemented externally
