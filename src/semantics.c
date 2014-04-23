@@ -118,6 +118,10 @@ check (node_t * node, symtab_t * symtab)
       check_unary (node, symtab, semval_logic_not, "could not do logic not");
       break;
 
+    case LogicOr:
+      check_binary (node, symtab, semval_logic_or, "could not do logic or");
+      break;
+
     case ToTypedValue:
       check_unary (node, symtab, semval_to_typed_value,
 		   "could not convert to value");

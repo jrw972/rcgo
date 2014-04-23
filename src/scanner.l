@@ -16,6 +16,7 @@
 "!"                    { return *yytext; }
 
 "&&"                   { return LOGIC_AND; }
+"||"                   { return LOGIC_OR; }
 
 [ \t\n]+               /* Discard whitespace */
 

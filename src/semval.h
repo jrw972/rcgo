@@ -116,4 +116,7 @@ semval_t semval_logic_not (semval_t s);
 semval_t semval_logic_and (semval_t x,
                            semval_t y);
 
+semval_t semval_logic_or (semval_t x,
+                          semval_t y);
+
 #endif /* semval_h */

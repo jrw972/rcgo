@@ -1,4 +1,4 @@
-check_PROGRAMS = sample1 sample2 sample3 sample4 sample5 sample6 sample7 sample8
+check_PROGRAMS = sample1 sample2 sample3 sample4 sample5 sample6 sample7 sample8 sample9 sample10 sample11 sample12
 
 LINK = gcc -o $@
 
@@ -10,6 +10,10 @@ sample5_SOURCES = sample5.fbu
 sample6_SOURCES = sample6.fbu
 sample7_SOURCES = sample7.fbu
 sample8_SOURCES = sample8.fbu
+sample9_SOURCES = sample9.fbu
+sample10_SOURCES = sample10.fbu
+sample11_SOURCES = sample11.fbu
+sample12_SOURCES = sample12.fbu
 
 .fbu.o:
 	$(top_builddir)/src/fbu -c $< -o $@
@@ -25,6 +29,10 @@ sample4.sh \
 sample5.sh \
 sample6.sh \
 sample7.sh \
-sample8.sh
+sample8.sh \
+sample9.sh \
+sample10.sh \
+sample11.sh \
+sample12.sh
 
 EXTRA_DIST = $(TESTS)

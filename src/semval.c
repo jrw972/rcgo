@@ -102,6 +102,18 @@ untyped_value_logic_and (untyped_value_t x,
   }
 }
 
+untyped_value_t
+untyped_value_logic_or (untyped_value_t x,
+                         untyped_value_t y)
+{
+  if (x.kind == UntypedBool && y.kind == UntypedBool) {
+    return untyped_value_make_bool (x.bool_value || y.bool_value);
+  }
+  else {
+    return untyped_value_make_undefined ();
+  }
+}
+
 abstract_value_t
 abstract_value_make_undefined (void)
 {
@@ -276,6 +288,30 @@ abstract_value_logic_and (abstract_value_t x,
   return retval;
 }
 
+abstract_value_t
+abstract_value_logic_or (abstract_value_t x,
+                          abstract_value_t y)
+{
+  abstract_value_homogenize (&x, &y);
+
+  abstract_value_t retval;
+  switch (x.kind)
+    {
+    case UndefinedValue:
+      retval = abstract_value_make_undefined ();
+      break;
+    case UntypedValue:
+      retval = abstract_value_make_untyped_value (untyped_value_logic_or (x.untyped_value, y.untyped_value));
+      break;
+    case TypedValue:
+      unimplemented;
+    case Typed:
+      unimplemented;
+    }
+
+  return retval;
+}
+
 static reference_t
 reference_make (abstract_value_t value)
 {
@@ -407,4 +443,10 @@ semval_t semval_logic_and (semval_t x,
                            semval_t y)
 {
   return semval_binary (x, y, abstract_value_logic_and);
+}
+
+semval_t semval_logic_or (semval_t x,
+                           semval_t y)
+{
+  return semval_binary (x, y, abstract_value_logic_or);
 }

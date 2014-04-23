@@ -62,6 +62,17 @@ make1 (NodeType type, node_t * child)
   return n;
 }
 
+static node_t *
+make2 (NodeType type, node_t * child1, node_t* child2)
+{
+  node_t *n = make ();
+  n->type = type;
+  add_child (n, child1);
+  add_child (n, child2);
+  return n;
+}
+
+
 node_t *
 node_make_identifier (char *id)
 {
@@ -99,11 +110,13 @@ node_make_logic_not (node_t * child)
 node_t *node_make_logic_and (node_t * left,
                              node_t * right)
 {
-  node_t *n = make ();
-  n->type = LogicAnd;
-  add_child (n, left);
-  add_child (n, right);
-  return n;
+  return make2 (LogicAnd, left, right);
+}
+
+node_t *node_make_logic_or (node_t * left,
+                            node_t * right)
+{
+  return make2 (LogicOr, left, right);
 }
 
 void
@@ -119,6 +132,7 @@ node_free (node_t * node)
 	case Dereference:
         case LogicAnd:
 	case LogicNot:
+	case LogicOr:
 	case Identifier:
 	case ToTypedValue:
 	  break;

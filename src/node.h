@@ -12,6 +12,7 @@ typedef enum
   Identifier,
   LogicAnd,
   LogicNot,
+  LogicOr,
   ToTypedValue,
 } NodeType;
 
@@ -27,6 +28,9 @@ node_t *node_make_logic_not (node_t * child);
 
 node_t *node_make_logic_and (node_t * left,
                              node_t * right);
+
+node_t *node_make_logic_or (node_t * left,
+                            node_t * right);
 
 void node_free (node_t * node);
 

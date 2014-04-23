@@ -15,6 +15,8 @@ gen (node_t * node, FILE * file)
       unimplemented;
     case LogicNot:
       unimplemented;
+    case LogicOr:
+      unimplemented;
     case ToTypedValue:
       {
 	semval_t semval = node_get_semval (node);
