@@ -15,6 +15,8 @@
 
 "!"                    { return *yytext; }
 
+"&&"                   { return LOGIC_AND; }
+
 [ \t\n]+               /* Discard whitespace */
 
 .                      { printf ("Unrecognized character: %s\n", yytext); }

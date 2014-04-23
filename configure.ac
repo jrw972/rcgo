@@ -21,4 +21,5 @@ AC_PROG_YACC()
 # Checks for library functions.
 
 AC_OUTPUT([Makefile
-           src/Makefile])
+           src/Makefile
+           samples/Makefile])

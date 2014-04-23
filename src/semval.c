@@ -19,6 +19,12 @@ typed_value_t retval = { type: type, bool_value:v };
   return retval;
 }
 
+type_t*
+typed_value_get_type (typed_value_t t)
+{
+  return t.type;
+}
+
 untyped_value_t
 untyped_value_make_undefined (void)
 {
@@ -40,7 +46,7 @@ untyped_value_t retval = { kind: UntypedBool, bool_value:b };
 }
 
 typed_value_t
-untyped_value_to_typed (untyped_value_t u)
+untyped_value_to_builtin_typed_value (untyped_value_t u)
 {
   typed_value_t retval;
 
@@ -64,6 +70,13 @@ untyped_value_to_typed (untyped_value_t u)
   return retval;
 }
 
+typed_value_t
+untyped_value_to_typed_value (untyped_value_t u,
+                              type_t* t)
+{
+  unimplemented;
+}
+
 untyped_value_t
 untyped_value_logic_not (untyped_value_t u)
 {
@@ -75,6 +88,18 @@ untyped_value_logic_not (untyped_value_t u)
     {
       return untyped_value_make_undefined ();
     }
+}
+
+untyped_value_t
+untyped_value_logic_and (untyped_value_t x,
+                         untyped_value_t y)
+{
+  if (x.kind == UntypedBool && y.kind == UntypedBool) {
+    return untyped_value_make_bool (x.bool_value && y.bool_value);
+  }
+  else {
+    return untyped_value_make_undefined ();
+  }
 }
 
 abstract_value_t
@@ -96,6 +121,13 @@ abstract_value_make_untyped_value (untyped_value_t u)
     abstract_value_t retval = { kind: UntypedValue, untyped_value:u };
       return retval;
     }
+}
+
+untyped_value_t
+abstract_value_get_untyped_value (abstract_value_t a)
+{
+  assert (a.kind == UntypedValue);
+  return a.untyped_value;
 }
 
 abstract_value_t
@@ -126,12 +158,26 @@ abstract_value_is_typed_value (abstract_value_t a)
 }
 
 abstract_value_t
+abstract_value_make_typed (type_t* type)
+{
+  abstract_value_t retval = { kind: Typed, typed:type };
+  return retval;
+}
+
+type_t*
+abstract_value_get_typed (abstract_value_t a)
+{
+  assert (a.kind == Typed);
+  return a.typed;
+}
+
+abstract_value_t
 abstract_value_to_typed (abstract_value_t v)
 {
   if (v.kind == UntypedValue)
     {
       v =
-	abstract_value_make_typed_value (untyped_value_to_typed
+	abstract_value_make_typed_value (untyped_value_to_builtin_typed_value
 					 (v.untyped_value));
     }
   return v;
@@ -156,6 +202,78 @@ abstract_value_logic_not (abstract_value_t v)
       unimplemented;
     }
   return v;
+}
+
+/* Modify x and y to have the same type. */
+void
+abstract_value_homogenize (abstract_value_t* x,
+                           abstract_value_t* y)
+{
+  if (x->kind == y->kind) {
+    /* Done. */
+    return;
+  }
+  else if (x->kind < y->kind) {
+    /* Change x->kind. */
+    switch (x->kind) {
+    case UntypedValue:
+      switch (y->kind) {
+      case UntypedValue:
+        bug;
+        break;
+      case TypedValue:
+        *x = abstract_value_make_typed_value (untyped_value_to_typed_value (abstract_value_get_untyped_value (*x),
+                                                                            typed_value_get_type (abstract_value_get_typed_value (*y))));
+        break;
+      case Typed:
+        *x = abstract_value_make_typed_value (untyped_value_to_typed_value (abstract_value_get_untyped_value (*x),
+                                                                            abstract_value_get_typed (*y)));
+        break;
+      case UndefinedValue:
+        *x = abstract_value_make_undefined ();
+        break;
+      }
+      break;
+    case TypedValue:
+      *x = abstract_value_make_typed (typed_value_get_type (abstract_value_get_typed_value (*x)));
+      break;
+    case Typed:
+      *x = abstract_value_make_undefined ();
+      break;
+    case UndefinedValue:
+      bug;
+      break;
+    }
+    abstract_value_homogenize (x, y);
+  }
+  else {
+    /* Swap. */
+    abstract_value_homogenize (y, x);
+  }
+}
+
+abstract_value_t
+abstract_value_logic_and (abstract_value_t x,
+                          abstract_value_t y)
+{
+  abstract_value_homogenize (&x, &y);
+
+  abstract_value_t retval;
+  switch (x.kind)
+    {
+    case UndefinedValue:
+      retval = abstract_value_make_undefined ();
+      break;
+    case UntypedValue:
+      retval = abstract_value_make_untyped_value (untyped_value_logic_and (x.untyped_value, y.untyped_value));
+      break;
+    case TypedValue:
+      unimplemented;
+    case Typed:
+      unimplemented;
+    }
+
+  return retval;
 }
 
 static reference_t
@@ -258,6 +376,21 @@ semval_unary (semval_t s, abstract_value_t (*func) (abstract_value_t))
     }
 }
 
+static semval_t
+semval_binary (semval_t x,
+               semval_t y,
+               abstract_value_t (*func) (abstract_value_t, abstract_value_t))
+{
+  if (x.kind == Value && y.kind == Value)
+    {
+      return semval_make_value (func (x.value, y.value));
+    }
+  else
+    {
+      return semval_undefined ();
+    }
+}
+
 semval_t
 semval_to_typed_value (semval_t s)
 {
@@ -268,4 +401,10 @@ semval_t
 semval_logic_not (semval_t s)
 {
   return semval_unary (s, abstract_value_logic_not);
+}
+
+semval_t semval_logic_and (semval_t x,
+                           semval_t y)
+{
+  return semval_binary (x, y, abstract_value_logic_and);
 }

@@ -11,6 +11,8 @@ gen (node_t * node, FILE * file)
       unimplemented;
     case Identifier:
       unimplemented;
+    case LogicAnd:
+      unimplemented;
     case LogicNot:
       unimplemented;
     case ToTypedValue:

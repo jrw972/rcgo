@@ -50,8 +50,9 @@ untyped_value_t untyped_value_make_bool (bool b);
 typedef struct abstract_value_t abstract_value_t;
 struct abstract_value_t
 {
+  /* The kind values are important for conversion.  See abstract_value_homogenize. */
   enum
-  { UndefinedValue, UntypedValue, TypedValue, Typed } kind;
+    { UntypedValue = 0, TypedValue = 1, Typed = 2, UndefinedValue = 3 } kind;
   union
   {
     untyped_value_t untyped_value;
@@ -111,5 +112,8 @@ semval_t semval_dereference (semval_t s);
 semval_t semval_to_typed_value (semval_t s);
 
 semval_t semval_logic_not (semval_t s);
+
+semval_t semval_logic_and (semval_t x,
+                           semval_t y);
 
 #endif /* semval_h */

@@ -96,6 +96,16 @@ node_make_logic_not (node_t * child)
   return make1 (LogicNot, child);
 }
 
+node_t *node_make_logic_and (node_t * left,
+                             node_t * right)
+{
+  node_t *n = make ();
+  n->type = LogicAnd;
+  add_child (n, left);
+  add_child (n, right);
+  return n;
+}
+
 void
 node_free (node_t * node)
 {
@@ -107,6 +117,7 @@ node_free (node_t * node)
       switch (node->type)
 	{
 	case Dereference:
+        case LogicAnd:
 	case LogicNot:
 	case Identifier:
 	case ToTypedValue:
@@ -125,6 +136,12 @@ node_t *
 node_child (node_t * node)
 {
   return node->child;
+}
+
+node_t *
+node_sibling (node_t * node)
+{
+  return node->sibling;
 }
 
 void

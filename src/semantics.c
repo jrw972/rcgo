@@ -33,6 +33,36 @@ check_unary (node_t * node,
 }
 
 static void
+check_binary (node_t * node,
+              symtab_t * symtab,
+              semval_t (*func) (semval_t, semval_t), const char *message)
+{
+  /* Process the children. */
+  node_t *left = node_child (node);
+  node_t *right = node_sibling (left);
+  check (left, symtab);
+  check (right, symtab);
+  semval_t left_sv = node_get_semval (left);
+  semval_t right_sv = node_get_semval (right);
+
+  semval_t this_sv;
+  if (semval_is_undefined (left_sv) || semval_is_undefined (right_sv))
+    {
+      this_sv = semval_undefined ();
+    }
+  else
+    {
+      this_sv = func (left_sv, right_sv);
+      if (semval_is_undefined (this_sv))
+	{
+	  /* TODO:  Error reporting. */
+	  printf ("%s\n", message);
+	}
+    }
+  node_set_semval (node, this_sv);
+}
+
+static void
 check (node_t * node, symtab_t * symtab)
 {
   switch (node_type (node))
@@ -78,6 +108,10 @@ check (node_t * node, symtab_t * symtab)
 	    node_set_semval (node, semval_undefined ());
 	  }
       }
+      break;
+
+    case LogicAnd:
+      check_binary (node, symtab, semval_logic_and, "could not do logic and");
       break;
 
     case LogicNot:
