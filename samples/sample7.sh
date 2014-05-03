@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "`sample7`" = "result of expression is 0" ]
+if [ "`sample7`" = "0" ]
 then
     exit 0
 else

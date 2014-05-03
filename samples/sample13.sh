@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "`sample3`" = "0" ]
+if [ "`sample13`" = "1" ]
 then
     exit 0
 else

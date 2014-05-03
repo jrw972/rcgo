@@ -1,1 +1,1 @@
-true || true
+print true || true;

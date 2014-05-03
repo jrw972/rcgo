@@ -107,12 +107,6 @@ main (int argc, char **argv)
     }
   assert (root != NULL);
 
-  /* Add a node that forces the result to a typed value. */
-  /* This will be removed as this translator develops. */
-
-  node_t *n = node_make_to_typed_value (root);
-  root = n;
-
   if (check_semantics (root) != 0)
     {
       // TODO:  Error reporting.

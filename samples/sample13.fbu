@@ -1,0 +1,6 @@
+var x bool;
+var y,z bool;
+x = true;
+y = false;
+z = x && !y;
+print z;
