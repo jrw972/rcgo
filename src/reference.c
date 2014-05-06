@@ -16,8 +16,7 @@ reference_t retval = { value:value };
 }
 
 bool
-reference_assignable (reference_t target,
-                      abstract_value_t source)
+reference_assignable (reference_t target, abstract_value_t source)
 {
   return abstract_value_assignable (target.value, source);
 }

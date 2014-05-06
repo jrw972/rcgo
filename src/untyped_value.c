@@ -55,25 +55,27 @@ untyped_value_logic_not (untyped_value_t u)
 }
 
 untyped_value_t
-untyped_value_logic_and (untyped_value_t x,
-                         untyped_value_t y)
+untyped_value_logic_and (untyped_value_t x, untyped_value_t y)
 {
-  if (x.kind == UntypedBool && y.kind == UntypedBool) {
-    return untyped_value_make_bool (x.bool_value && y.bool_value);
-  }
-  else {
-    return untyped_value_make_undefined ();
-  }
+  if (x.kind == UntypedBool && y.kind == UntypedBool)
+    {
+      return untyped_value_make_bool (x.bool_value && y.bool_value);
+    }
+  else
+    {
+      return untyped_value_make_undefined ();
+    }
 }
 
 untyped_value_t
-untyped_value_logic_or (untyped_value_t x,
-                         untyped_value_t y)
+untyped_value_logic_or (untyped_value_t x, untyped_value_t y)
 {
-  if (x.kind == UntypedBool && y.kind == UntypedBool) {
-    return untyped_value_make_bool (x.bool_value || y.bool_value);
-  }
-  else {
-    return untyped_value_make_undefined ();
-  }
+  if (x.kind == UntypedBool && y.kind == UntypedBool)
+    {
+      return untyped_value_make_bool (x.bool_value || y.bool_value);
+    }
+  else
+    {
+      return untyped_value_make_undefined ();
+    }
 }

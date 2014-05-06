@@ -32,7 +32,7 @@
 
 top: stmt_list { root = $1; }
 
-stmt_list: stmt { $$ = node_add_child (node_make_list (), $1); }
+stmt_list: stmt { $$ = node_add_child (node_make_list_stmt (), $1); }
 | stmt_list stmt { $$ = node_add_child ($1, $2); }
 
 stmt: expr_stmt { $$ = $1; }
@@ -52,10 +52,12 @@ var_stmt: VAR identifier_list type_spec ';' { $$ = node_make_var_stmt ($2, $3); 
 
 assignment_stmt: lvalue '=' rvalue ';' { $$ = node_make_assignment_stmt ($1, $3); }
 
-identifier_list: identifier { $$ = node_add_child (node_make_list (), $1); }
+identifier_list: identifier { $$ = node_add_child (node_make_identifier_list (), $1); }
 | identifier_list ',' identifier { $$ = node_add_child ($1, $3); }
 
-type_spec: identifier { $$ = $1; }
+identifier: IDENTIFIER { $$ = node_make_identifier ($1); }
+
+type_spec: IDENTIFIER { $$ = node_make_identifier_type_spec ($1); }
 
 rvalue: or_expr { $$ = $1; }
 
@@ -68,10 +70,8 @@ and_expr: unary_expr { $$ = $1; }
 unary_expr: primary_expr { $$ = $1; }
 | '!' unary_expr { $$ = node_make_logic_not ($2); }
 
-primary_expr: lvalue { $$ = node_make_dereference ($1); }
+primary_expr: lvalue { $$ = node_make_implicit_dereference ($1); }
 
-lvalue: identifier { $$ = $1; }
-
-identifier: IDENTIFIER { $$ = node_make_identifier ($1); }
+lvalue: IDENTIFIER { $$ = node_make_identifier_expr ($1); }
 
 %%

@@ -2,11 +2,19 @@
 #include <stdlib.h>
 #include "strtab.h"
 #include <string.h>
+#include "debug.h"
 
 struct symbol_t
 {
   string_t identifier;
-  semval_t semval;
+  enum {
+    Semval,
+    Type,
+  } stype;
+  union {
+    semval_t semval;
+    const type_t* type;
+  };
   symbol_t *next;
 };
 
@@ -61,11 +69,12 @@ symtab_find (const symtab_t * symtab, string_t identifier)
 }
 
 symbol_t *
-symbol_make (string_t identifier, semval_t semval)
+symbol_make_semval (string_t identifier, semval_t semval)
 {
   symbol_t *s = malloc (sizeof (symbol_t));
   memset (s, 0, sizeof (symbol_t));
   s->identifier = identifier;
+  s->stype = Semval;
   s->semval = semval;
   return s;
 }
@@ -74,4 +83,25 @@ semval_t
 symbol_get_semval (symbol_t * symbol)
 {
   return symbol->semval;
+}
+
+symbol_t *symbol_make_type (string_t identifier, const type_t* type)
+{
+  symbol_t *s = malloc (sizeof (symbol_t));
+  memset (s, 0, sizeof (symbol_t));
+  s->identifier = identifier;
+  s->stype = Type;
+  s->type = type;
+  return s;
+}
+
+const type_t* symbol_get_type (symbol_t * symbol)
+{
+  assert (symbol_is_type (symbol));
+  return symbol->type;
+}
+
+bool symbol_is_type (symbol_t* symbol)
+{
+  return symbol->stype == Type;
 }

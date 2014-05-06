@@ -8,7 +8,8 @@
 */
 typedef struct untyped_value_t untyped_value_t;
 
-typedef enum {
+typedef enum
+{
   UntypedUndefined, UntypedBool
 } UntypedValueKind;
 
@@ -21,29 +22,21 @@ struct untyped_value_t
   };
 };
 
-UntypedValueKind
-untyped_value_kind (untyped_value_t u);
+UntypedValueKind untyped_value_kind (untyped_value_t u);
 
-bool
-untyped_value_is_undefined (untyped_value_t u);
+bool untyped_value_is_undefined (untyped_value_t u);
 
 untyped_value_t untyped_value_make_bool (bool b);
 
-bool
-untyped_value_bool_value (untyped_value_t u);
+bool untyped_value_bool_value (untyped_value_t u);
 
-bool
-untyped_value_is_bool (untyped_value_t u);
+bool untyped_value_is_bool (untyped_value_t u);
 
-untyped_value_t
-untyped_value_logic_not (untyped_value_t u);
+untyped_value_t untyped_value_logic_not (untyped_value_t u);
 
 untyped_value_t
-untyped_value_logic_and (untyped_value_t x,
-                         untyped_value_t y);
+untyped_value_logic_and (untyped_value_t x, untyped_value_t y);
 
-untyped_value_t
-untyped_value_logic_or (untyped_value_t x,
-                        untyped_value_t y);
+untyped_value_t untyped_value_logic_or (untyped_value_t x, untyped_value_t y);
 
 #endif /* untyped_value_h */

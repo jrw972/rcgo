@@ -9,20 +9,18 @@
 void
 semval_print (semval_t s)
 {
-  switch (s.kind) {
-  case Undefined:
-    printf ("Undefined");
-    break;
-  case Reference:
-    reference_print (s.reference);
-    break;
-  case Value:
-    abstract_value_print (s.value);
-    break;
-  case Type:
-    printf ("Type");
-    break;
-  }
+  switch (s.kind)
+    {
+    case Undefined:
+      printf ("Undefined");
+      break;
+    case Reference:
+      reference_print (s.reference);
+      break;
+    case Value:
+      abstract_value_print (s.value);
+      break;
+    }
 }
 
 semval_t
@@ -73,26 +71,6 @@ semval_get_value (semval_t s)
 }
 
 semval_t
-semval_make_type (type_t * type)
-{
-semval_t retval = { kind: Type, type:type };
-  return retval;
-}
-
-bool
-semval_is_type (semval_t s)
-{
-  return s.kind == Type;
-}
-
-type_t *
-semval_get_type (semval_t s)
-{
-  assert (s.kind == Type);
-  return s.type;
-}
-
-semval_t
 semval_dereference (semval_t s)
 {
   if (s.kind == Reference)
@@ -120,8 +98,8 @@ semval_unary (semval_t s, abstract_value_t (*func) (abstract_value_t))
 
 static semval_t
 semval_binary (semval_t x,
-               semval_t y,
-               abstract_value_t (*func) (abstract_value_t, abstract_value_t))
+	       semval_t y,
+	       abstract_value_t (*func) (abstract_value_t, abstract_value_t))
 {
   if (x.kind == Value && y.kind == Value)
     {
@@ -139,28 +117,30 @@ semval_logic_not (semval_t s)
   return semval_unary (s, abstract_value_logic_not);
 }
 
-semval_t semval_logic_and (semval_t x,
-                           semval_t y)
+semval_t
+semval_logic_and (semval_t x, semval_t y)
 {
   return semval_binary (x, y, abstract_value_logic_and);
 }
 
-semval_t semval_logic_or (semval_t x,
-                          semval_t y)
+semval_t
+semval_logic_or (semval_t x, semval_t y)
 {
   return semval_binary (x, y, abstract_value_logic_or);
 }
 
-bool semval_assignable (semval_t left,
-                        semval_t right)
+bool
+semval_assignable (semval_t left, semval_t right)
 {
-  if (!semval_is_reference (left)) {
-    return false;
-  }
+  if (!semval_is_reference (left))
+    {
+      return false;
+    }
 
-  if (!semval_is_value (right)) {
-    return false;
-  }
+  if (!semval_is_value (right))
+    {
+      return false;
+    }
 
   return reference_assignable (left.reference, right.value);
 }

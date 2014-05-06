@@ -12,7 +12,8 @@
 typedef struct abstract_value_t abstract_value_t;
 
 /* The kind values are important for conversion.  See abstract_value_homogenize. */
-typedef enum {
+typedef enum
+{
   UntypedValue = 0, TypedValue = 1, Typed = 2, UndefinedValue = 3
 } AbstractValueKind;
 
@@ -27,11 +28,9 @@ struct abstract_value_t
   };
 };
 
-void
-abstract_value_print (abstract_value_t a);
+void abstract_value_print (abstract_value_t a);
 
-AbstractValueKind
-abstract_value_kind (abstract_value_t a);
+AbstractValueKind abstract_value_kind (abstract_value_t a);
 
 abstract_value_t abstract_value_make_untyped_value (untyped_value_t u);
 
@@ -41,24 +40,21 @@ typed_value_t abstract_value_get_typed_value (abstract_value_t a);
 
 bool abstract_value_is_typed_value (abstract_value_t a);
 
-abstract_value_t abstract_value_make_typed (const type_t* type);
+abstract_value_t abstract_value_make_typed (const type_t * type);
 
-const type_t* abstract_value_get_typed (abstract_value_t a);
+const type_t *abstract_value_get_typed (abstract_value_t a);
 
 bool abstract_value_is_typed (abstract_value_t a);
 
-abstract_value_t
-abstract_value_logic_not (abstract_value_t v);
+abstract_value_t abstract_value_logic_not (abstract_value_t v);
 
 abstract_value_t
-abstract_value_logic_and (abstract_value_t x,
-                          abstract_value_t y);
+abstract_value_logic_and (abstract_value_t x, abstract_value_t y);
 
 abstract_value_t
-abstract_value_logic_or (abstract_value_t x,
-                         abstract_value_t y);
+abstract_value_logic_or (abstract_value_t x, abstract_value_t y);
 
 bool abstract_value_assignable (abstract_value_t target,
-                                abstract_value_t source);
+				abstract_value_t source);
 
 #endif /* abstract_value_h */
