@@ -1,1 +1,12 @@
-print true;
+type C component {
+  done bool;
+};
+
+action (this $C) (!this->done) {
+  trigger {
+    print true;
+    this->done = true;
+  }
+}
+
+instance i C;

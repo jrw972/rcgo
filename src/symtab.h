@@ -16,24 +16,40 @@ struct symtab_t
   symbol_t *head;
 };
 
-void symtab_set_top (symtab_t * symtab);
-
-symtab_t *symtab_get_top (void);
-
 void symtab_init (symtab_t * symtab, const symtab_t * parent);
+
+void symtab_fini (symtab_t * symtab);
 
 void symtab_enter (symtab_t * symtab, symbol_t * symbol);
 
 symbol_t *symtab_find (const symtab_t * symtab, string_t identifier);
 
-symbol_t *symbol_make_semval (string_t identifier, semval_t semval);
+symbol_t *symtab_find_current (const symtab_t * symtab, string_t identifier);
 
-semval_t symbol_get_semval (symbol_t * symbol);
+symbol_t *symtab_get_this (const symtab_t * symtab);
 
-symbol_t *symbol_make_type (string_t identifier, const type_t* type);
+string_t symbol_identifier (const symbol_t* symbol);
 
-const type_t* symbol_get_type (symbol_t * symbol);
+symbol_t *symbol_make_variable (string_t identifier, const type_t* type);
 
-bool symbol_is_type (symbol_t* symbol);
+bool symbol_is_variable (const symbol_t* symbol);
+
+const type_t* symbol_variable_type (const symbol_t* symbol);
+
+symbol_t *symbol_make_type (const type_t* type);
+
+bool symbol_is_type (const symbol_t* symbol);
+
+const type_t* symbol_type_type (const symbol_t* symbol);
+
+symbol_t * symbol_make_constant (string_t identifier, abstract_value_t value);
+
+bool symbol_is_constant (const symbol_t* symbol);
+
+abstract_value_t symbol_constant_value (const symbol_t* symbol);
+
+symbol_t * symbol_make_instance (string_t identifier, const type_t* type);
+
+void symbol_set_as_this (symbol_t* symbol);
 
 #endif /* symtab_h */

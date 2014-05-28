@@ -4,6 +4,6 @@
 #include "node.h"
 #include <stdio.h>
 
-int generate_code (node_t * root, FILE * file);
+int generate_code (FILE * file, node_t * root);
 
 #endif /* codegen_h */

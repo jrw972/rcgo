@@ -14,7 +14,13 @@ struct node_t
     struct {
       DeclNodeType type;
       string_t identifier;
+      ReceiverType receiver_type;
+      const type_t* the_type;
     } decl;
+    struct {
+      DefNodeType type;
+      size_t action_number;
+    } def;
     struct {
       ExprNodeType type;
       string_t identifier;
@@ -27,6 +33,7 @@ struct node_t
       TypeSpecNodeType type;
       string_t identifier;
       const type_t* the_type;
+      FieldListType field_list_type;
     } type_spec;
   };
 };
@@ -83,9 +90,50 @@ make2 (NodeType type, node_t * child1, node_t * child2)
 }
 
 static void
+decl_print (const node_t* node)
+{
+  switch (node->decl.type) {
+  case Field:
+    printf ("Field");
+    break;
+  case Identifier:
+    printf ("Identifier: %s", get (node_identifier (node)));
+    break;
+  case IdentifierList:
+    printf ("IdentifierList");
+    break;
+  case Receiver:
+    printf ("Receiver");
+    break;
+  }
+}
+
+static void
+def_print (const node_t* node)
+{
+  switch (node_def_type (node)) {
+  case ActionDef:
+    printf ("ActionDef");
+    break;
+  case InstanceDef:
+    printf ("InstanceDef");
+    break;
+  case ListDef:
+    printf ("ListDef");
+    break;
+  case TypeDef:
+    printf ("TypeDef");
+    break;
+  }
+}
+
+static void
 expr_print (const node_t* node)
 {
   switch (node_expr_type (node)) {
+  case ExplicitDereferenceExpr:
+    printf ("ExplicitDereferenceExpr");
+    break;
   case IdentifierExpr:
     printf ("IdentifierExpr");
     break;
@@ -100,6 +148,9 @@ expr_print (const node_t* node)
     break;
   case LogicOrExpr:
     printf ("LogicOrExpr");
+    break;
+  case SelectExpr:
+    printf ("SelectExpr");
     break;
   }
 }
@@ -120,8 +171,24 @@ stmt_print (const node_t* node)
   case PrintStmt:
     printf ("PrintStmt");
     break;
+  case TriggerStmt:
+    printf ("TriggerStmt");
+    break;
   case VarStmt:
     printf ("VarStmt");
+    break;
+  }
+}
+
+static void
+type_spec_print (const node_t* node)
+{
+  switch (node_type_spec_type (node)) {
+  case FieldListTypeSpec:
+    printf ("FieldListTypeSpec");
+    break;
+  case IdentifierTypeSpec:
+    printf ("IdentifierTypeSpec");
     break;
   }
 }
@@ -138,7 +205,10 @@ node_print (const node_t * node, size_t indent)
   switch (node->type)
     {
     case Decl:
-      unimplemented;
+      decl_print (node);
+      break;
+    case Def:
+      def_print (node);
       break;
     case Expr:
       expr_print (node);
@@ -147,7 +217,7 @@ node_print (const node_t * node, size_t indent)
       stmt_print (node);
       break;
     case TypeSpec:
-      unimplemented;
+      type_spec_print (node);
       break;
     }
 
@@ -168,6 +238,21 @@ make_decl0 (DeclNodeType type)
   return retval;
 }
 
+static node_t *
+make_decl1 (DeclNodeType type,
+            node_t * child1)
+{
+  return node_add_child (make_decl0 (type), child1);
+}
+
+static node_t *
+make_decl2 (DeclNodeType type,
+            node_t * child1,
+            node_t* child2)
+{
+  return node_add_child (make_decl1 (type, child1), child2);
+}
+
 node_t *
 node_make_identifier (char *id)
 {
@@ -182,6 +267,17 @@ node_identifier (const node_t * node)
   assert (node->type == Decl);
   assert (node->decl.type == Identifier);
   return node->decl.identifier;
+}
+
+node_t *
+node_make_identifier_list (void)
+{
+  return make_decl0 (IdentifierList);
+}
+
+node_t * node_make_field (node_t * identifier_list, node_t * type_spec)
+{
+  return make_decl2 (Field, identifier_list, type_spec);
 }
 
 static node_t *
@@ -244,12 +340,6 @@ node_t *
 node_make_logic_or (node_t * left, node_t * right)
 {
   return make_expr2 (LogicOrExpr, left, right);
-}
-
-node_t *
-node_make_identifier_list (void)
-{
-  return make_decl0 (IdentifierList);
 }
 
 static node_t *
@@ -330,6 +420,69 @@ string_t node_identifier_type_spec_identifier (const node_t* node)
   return node->type_spec.identifier;
 }
 
+node_t * node_make_field_list (void)
+{
+  return make_type_spec0 (FieldListTypeSpec);
+}
+
+node_t * node_set_field_list_type (node_t* field_list, FieldListType type)
+{
+  assert (field_list->type == TypeSpec);
+  assert (field_list->type_spec.type == FieldListTypeSpec);
+  field_list->type_spec.field_list_type = type;
+  return field_list;
+}
+
+FieldListType node_get_field_list_type (node_t* field_list)
+{
+  assert (field_list->type == TypeSpec);
+  assert (field_list->type_spec.type == FieldListTypeSpec);
+  return field_list->type_spec.field_list_type;
+}
+
+static node_t *
+make_def0 (DefNodeType type)
+{
+  node_t* retval = make (Def);
+  retval->def.type = type;
+  return retval;
+}
+
+static node_t *
+make_def1 (DefNodeType type,
+            node_t * child1)
+{
+  return node_add_child (make_def0 (type), child1);
+}
+
+static node_t *
+make_def2 (DefNodeType type,
+            node_t * child1,
+            node_t* child2)
+{
+  return node_add_child (make_def1 (type, child1), child2);
+}
+
+static node_t *
+make_def3 (DefNodeType type,
+           node_t * child1,
+           node_t* child2,
+           node_t* child3)
+{
+  return node_add_child (make_def2 (type, child1, child2), child3);
+}
+
+node_t *
+node_make_list_def (void)
+{
+  return make_def0 (ListDef);
+}
+
+node_t * node_make_type_def (node_t * identifier, node_t * type_spec)
+{
+  return make_def2 (TypeDef, identifier, type_spec);
+}
+
 void
 node_free (node_t * node)
 {
@@ -395,4 +548,94 @@ const type_t* node_get_type (node_t* node)
 {
   assert (node->type == TypeSpec);
   return node->type_spec.the_type;
+}
+
+DefNodeType node_def_type (const node_t* node)
+{
+  assert (node->type == Def);
+  return node->def.type;
+}
+
+node_t* node_make_receiver (ReceiverType type,
+                            node_t* this_identifier,
+                            node_t* type_identifier)
+{
+  node_t * retval = make_decl2 (Receiver, this_identifier, type_identifier);
+  retval->decl.receiver_type = type;
+  return retval;
+}
+
+void node_receiver_set_type (node_t* node,
+                             const type_t* type)
+{
+  assert (node->type == Decl);
+  assert (node->decl.type == Receiver);
+  node->decl.the_type = type;
+}
+
+const type_t* node_receiver_get_type (const node_t* node)
+{
+  assert (node->type == Decl);
+  assert (node->decl.type == Receiver);
+  return node->decl.the_type;
+}
+
+ReceiverType node_receiver_type (node_t* node)
+{
+  assert (node->type == Decl);
+  assert (node->decl.type == Receiver);
+  return node->decl.receiver_type;
+}
+
+node_t* node_make_action_def (node_t* receiver,
+                              node_t* precondition,
+                              node_t* body)
+{
+  return make_def3 (ActionDef, receiver, precondition, body);
+}
+
+void node_set_action_number (node_t* node,
+                             size_t x)
+{
+  assert (node->type == Def);
+  assert (node->def.type == ActionDef);
+  node->def.action_number = x;
+}
+
+size_t node_get_action_number (const node_t* node)
+{
+  assert (node->type == Def);
+  assert (node->def.type == ActionDef);
+  return node->def.action_number;
+}
+
+node_t * node_make_instance_def (node_t* instance_id,
+                                 node_t* type_id)
+{
+  return make_def2 (InstanceDef, instance_id, type_id);
+}
+
+node_t* node_make_trigger_stmt (node_t* stmt)
+{
+  return make_stmt1 (TriggerStmt, stmt);
+}
+
+node_t* node_make_select (node_t* expr,
+                          string_t identifier)
+{
+  node_t* retval = make_expr1 (SelectExpr, expr);
+  retval->expr.identifier = identifier;
+  return retval;
+}
+
+string_t node_get_select_identifier (node_t* node)
+{
+  assert (node->type == Expr);
+  assert (node->expr.type == SelectExpr);
+  return node->expr.identifier;
+}
+
+node_t* node_make_explicit_dereference (node_t* expr)
+{
+  return make_expr1 (ExplicitDereferenceExpr, expr);
 }

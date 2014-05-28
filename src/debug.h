@@ -9,4 +9,7 @@
 
 #define bug(x) do { fprintf (stderr, "%s:%d: BUG %s\n", __FILE__, __LINE__, x); abort (); } while (0);
 
+/* Flag indicating we are debugging. */
+extern int debug;
+
 #endif /* debug_h */

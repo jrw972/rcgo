@@ -7,7 +7,7 @@ fbu_SOURCES = main.c scanner.l parser.y \
 abstract_value.h abstract_value.c \
 codegen.h codegen.c \
 compile.h compile.c \
-debug.h \
+debug.h debug.c \
 node.h node.c \
 reference.h reference.c \
 semantics.h semantics.c \

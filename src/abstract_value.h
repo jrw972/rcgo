@@ -57,4 +57,17 @@ abstract_value_logic_or (abstract_value_t x, abstract_value_t y);
 bool abstract_value_assignable (abstract_value_t target,
 				abstract_value_t source);
 
+abstract_value_t
+abstract_value_dereference (abstract_value_t x);
+
+bool
+abstract_value_is_pointer_to_mutable (abstract_value_t x);
+
+abstract_value_t
+abstract_value_select (abstract_value_t v,
+                       string_t identifier);
+
+bool
+abstract_value_is_boolean (abstract_value_t v);
+
 #endif /* abstract_value_h */

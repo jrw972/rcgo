@@ -13,6 +13,7 @@
 #include "semantics.h"
 #include "codegen.h"
 #include "compile.h"
+#include "debug.h"
 
 static void
 print_version (void)
@@ -36,30 +37,40 @@ try_help (void)
 int
 main (int argc, char **argv)
 {
+  const char *include = "/usr/include";
   const char *infile = NULL;
   const char *outfile = NULL;
 
   while (true)
     {
       static struct option long_options[] = {
-	{"version", no_argument, 0, 'v'},
-	{"help", no_argument, 0, 'h'},
+        {"debug",   no_argument, &debug, 1},
+	{"help",    no_argument, NULL,   'h'},
+	{"version", no_argument, NULL,   'v'},
 	{0, 0, 0, 0}
       };
 
-      int c = getopt_long (argc, argv, "c:o:h", long_options, NULL);
+      int c = getopt_long (argc, argv, "I:c:o:dhv", long_options, NULL);
 
       if (c == -1)
 	break;
 
       switch (c)
 	{
+        case 0:
+          break;
+        case 'I':
+          include = optarg;
+          break;
 	case 'c':
 	  infile = optarg;
 	  break;
 	case 'o':
 	  outfile = optarg;
 	  break;
+        case 'd':
+          debug = 1;
+          break;
 	case 'v':
 	  print_version ();
 	  exit (EXIT_SUCCESS);
@@ -68,8 +79,10 @@ main (int argc, char **argv)
 	  printf ("Usage: %s OPTION... -c FILE -o FILE\n",
 		  program_invocation_short_name);
 	  puts ("Compile " PACKAGE_NAME " source code.\n" "\n"
+                "  -I PATH     specifies the path to the FBU headers\n"
 		"  -c FILE     specifies the input file\n"
 		"  -o FILE     specifies the output file\n"
+                "  -d, --debug turn on debugging output\n"
 		"  --help      display this help and exit\n"
 		"  --version   display version information and exit\n" "\n"
 		"Report bugs to: " PACKAGE_BUGREPORT);
@@ -123,17 +136,23 @@ main (int argc, char **argv)
   FILE *file = fdopen (fd, "w");
   if (file == NULL)
     {
-      error (EXIT_FAILURE, errno, "could open temporary file");
+      error (EXIT_FAILURE, errno, "could not open temporary file");
     }
 
-  if (generate_code (root, file) != 0)
+  if (generate_code (file, root) != 0)
     {
       // TODO:  Error reporting.
       error (EXIT_FAILURE, 0, "generate_code failed");
     }
 
-  compile (filename, outfile);
-  unlink (filename);
+  compile (include, filename, outfile);
+
+  if (debug) {
+    printf ("Intermediate code in %s\n", filename);
+  }
+  else {
+    unlink (filename);
+  }
 
   return 0;
 }

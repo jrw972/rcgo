@@ -1,0 +1,12 @@
+type Clock component {
+  bit bool;
+};
+
+action (this $Clock) (true) {
+  trigger {
+    print this->bit;
+    this->bit = !this->bit;
+  }
+}
+
+instance i Clock;

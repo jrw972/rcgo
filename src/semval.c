@@ -37,10 +37,9 @@ semval_is_undefined (semval_t s)
 }
 
 semval_t
-semval_make_reference (semval_t s)
+semval_make_reference (reference_t reference)
 {
-  assert (s.kind == Value);
-semval_t retval = { kind: Reference, reference:reference_make (s.value) };
+  semval_t retval = { kind: Reference, reference:reference };
   return retval;
 }
 
@@ -71,11 +70,26 @@ semval_get_value (semval_t s)
 }
 
 semval_t
-semval_dereference (semval_t s)
+semval_explicit_dereference (semval_t s)
+{
+  if (s.kind == Value)
+    {
+      abstract_value_t av = abstract_value_dereference (s.value);
+      bool mutable = abstract_value_is_pointer_to_mutable (s.value);
+      return semval_make_reference (reference_make (av, mutable));
+    }
+  else
+    {
+      return semval_undefined ();
+    }
+}
+
+semval_t
+semval_implicit_dereference (semval_t s)
 {
   if (s.kind == Reference)
     {
-      return semval_make_value (s.reference.value);
+      return semval_make_value (reference_value (s.reference));
     }
   else
     {
@@ -132,6 +146,7 @@ semval_logic_or (semval_t x, semval_t y)
 bool
 semval_assignable (semval_t left, semval_t right)
 {
+  /* TODO:  Check the mutable flag. */
   if (!semval_is_reference (left))
     {
       return false;
@@ -143,4 +158,22 @@ semval_assignable (semval_t left, semval_t right)
     }
 
   return reference_assignable (left.reference, right.value);
+}
+
+semval_t semval_select (semval_t s, string_t identifier)
+{
+  if (!semval_is_reference (s)) {
+    return semval_undefined ();
+  }
+
+  return semval_make_reference (reference_select (s.reference, identifier));
+}
+
+bool semval_is_boolean (semval_t s)
+{
+  if (!semval_is_value (s)) {
+    return false;
+  }
+
+  return abstract_value_is_boolean (s.value);
 }

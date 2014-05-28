@@ -257,3 +257,66 @@ abstract_value_assignable (abstract_value_t target, abstract_value_t source)
 
   bug ("unhandled case");
 }
+
+abstract_value_t
+abstract_value_dereference (abstract_value_t x)
+{
+  switch (x.kind) {
+  case UntypedValue:
+    unimplemented;
+  case TypedValue:
+    unimplemented;
+  case Typed:
+    return abstract_value_make_typed (type_dereference (x.typed));
+  case UndefinedValue:
+    unimplemented;
+  }
+
+  bug ("unhandled case");
+}
+
+bool
+abstract_value_is_pointer_to_mutable (abstract_value_t x)
+{
+  if (x.kind == Typed) {
+    return type_is_pointer_to_mutable (x.typed);
+  }
+  else {
+    return false;
+  }
+}
+
+abstract_value_t
+abstract_value_select (abstract_value_t v,
+                       string_t identifier)
+{
+  switch (v.kind) {
+  case UntypedValue:
+    unimplemented;
+  case TypedValue:
+    unimplemented;
+  case Typed:
+    return abstract_value_make_typed (type_select (v.typed, identifier));
+  case UndefinedValue:
+    unimplemented;
+  }
+
+  bug ("unhandled case");
+}
+
+bool
+abstract_value_is_boolean (abstract_value_t v)
+{
+  switch (v.kind) {
+  case UntypedValue:
+    return untyped_value_is_bool (v.untyped_value);
+  case TypedValue:
+    unimplemented;
+  case Typed:
+    return type_is_boolean (v.typed);
+  case UndefinedValue:
+    unimplemented;
+  }
+
+  bug ("unhandled case");
+}
