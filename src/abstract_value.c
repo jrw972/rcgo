@@ -1,24 +1,21 @@
 #include "abstract_value.h"
 #include "debug.h"
 
-void
-abstract_value_print (abstract_value_t a)
+const char* abstract_value_to_string (abstract_value_t a)
 {
   switch (a.kind)
     {
     case UntypedValue:
-      printf ("UntypedValue");
-      break;
+      return untyped_value_to_string (a.untyped_value);
     case TypedValue:
-      printf ("TypedValue");
-      break;
+      unimplemented;
     case Typed:
-      printf ("Typed");
-      break;
+      return type_to_string (a.typed);
     case UndefinedValue:
-      printf ("UndefinedValue");
-      break;
+      return "undefined";
     }
+
+  bug ("unhandled case");
 }
 
 AbstractValueKind
@@ -27,11 +24,16 @@ abstract_value_kind (abstract_value_t a)
   return a.kind;
 }
 
-abstract_value_t
+static abstract_value_t
 abstract_value_make_undefined (void)
 {
 abstract_value_t retval = { kind:UndefinedValue };
   return retval;
+}
+
+bool abstract_value_is_undefined (abstract_value_t a)
+{
+  return a.kind == UndefinedValue;
 }
 
 abstract_value_t
@@ -83,10 +85,16 @@ abstract_value_is_typed_value (abstract_value_t a)
 }
 
 abstract_value_t
-abstract_value_make_typed (const type_t * type)
+abstract_value_make_typed (const type_t * type,
+                           select_result_t selected_field)
 {
-abstract_value_t retval = { kind: Typed, typed:type };
-  return retval;
+  if (type_is_undefined (type)) {
+    return abstract_value_make_undefined ();
+  }
+  else {
+    abstract_value_t retval = { kind: Typed, typed:type, selected_field: selected_field };
+    return retval;
+  }
 }
 
 const type_t *
@@ -118,7 +126,7 @@ abstract_value_logic_not (abstract_value_t v)
     case TypedValue:
       unimplemented;
     case Typed:
-      v = abstract_value_make_typed (type_logic_not (v.typed));
+      v = abstract_value_make_typed (type_logic_not (v.typed), select_result_make_undefined ());
       break;
     }
   return v;
@@ -169,7 +177,7 @@ abstract_value_homogenize (abstract_value_t * x, abstract_value_t * y)
 	case TypedValue:
 	  *x =
 	    abstract_value_make_typed (typed_value_get_type
-				       (abstract_value_get_typed_value (*x)));
+				       (abstract_value_get_typed_value (*x)), select_result_make_undefined ());
 	  break;
 	case Typed:
 	  *x = abstract_value_make_undefined ();
@@ -189,8 +197,10 @@ abstract_value_homogenize (abstract_value_t * x, abstract_value_t * y)
 
 static abstract_value_t
 abstract_value_binary (abstract_value_t x, abstract_value_t y,
-                       untyped_value_t (*untyped_func) (untyped_value_t, untyped_value_t),
-                       const type_t* (*typed_func) (const type_t*, const type_t*))
+		       untyped_value_t (*untyped_func) (untyped_value_t,
+							untyped_value_t),
+		       const type_t * (*typed_func) (const type_t *,
+						     const type_t *))
 {
   abstract_value_homogenize (&x, &y);
 
@@ -209,7 +219,7 @@ abstract_value_binary (abstract_value_t x, abstract_value_t y,
     case TypedValue:
       unimplemented;
     case Typed:
-      retval = abstract_value_make_typed (typed_func (x.typed, y.typed));
+      retval = abstract_value_make_typed (typed_func (x.typed, y.typed), select_result_make_undefined ());
       break;
     }
 
@@ -219,7 +229,8 @@ abstract_value_binary (abstract_value_t x, abstract_value_t y,
 abstract_value_t
 abstract_value_logic_and (abstract_value_t x, abstract_value_t y)
 {
-  return abstract_value_binary (x, y, untyped_value_logic_and, type_logic_and);
+  return abstract_value_binary (x, y, untyped_value_logic_and,
+				type_logic_and);
 }
 
 abstract_value_t
@@ -261,45 +272,47 @@ abstract_value_assignable (abstract_value_t target, abstract_value_t source)
 abstract_value_t
 abstract_value_dereference (abstract_value_t x)
 {
-  switch (x.kind) {
-  case UntypedValue:
-    unimplemented;
-  case TypedValue:
-    unimplemented;
-  case Typed:
-    return abstract_value_make_typed (type_dereference (x.typed));
-  case UndefinedValue:
-    unimplemented;
-  }
+  switch (x.kind)
+    {
+    case UntypedValue:
+      unimplemented;
+    case TypedValue:
+      unimplemented;
+    case Typed:
+      return abstract_value_make_typed (type_dereference (x.typed), select_result_make_undefined ());
+    case UndefinedValue:
+      unimplemented;
+    }
 
   bug ("unhandled case");
 }
 
-bool
-abstract_value_is_pointer_to_mutable (abstract_value_t x)
-{
-  if (x.kind == Typed) {
-    return type_is_pointer_to_mutable (x.typed);
-  }
-  else {
-    return false;
-  }
-}
-
 abstract_value_t
-abstract_value_select (abstract_value_t v,
-                       string_t identifier)
+abstract_value_select (abstract_value_t v, string_t identifier)
 {
-  switch (v.kind) {
-  case UntypedValue:
-    unimplemented;
-  case TypedValue:
-    unimplemented;
-  case Typed:
-    return abstract_value_make_typed (type_select (v.typed, identifier));
-  case UndefinedValue:
-    unimplemented;
-  }
+  switch (v.kind)
+    {
+    case UntypedValue:
+      unimplemented;
+    case TypedValue:
+      unimplemented;
+    case Typed:
+      {
+        select_result_t result = type_select (v.typed, identifier);
+        switch (result.kind)
+          {
+          case SelectResultField:
+            return abstract_value_make_typed (field_type (result.field), result);
+          case SelectResultReaction:
+            return abstract_value_make_typed (reaction_type (result.reaction), result);
+          case SelectResultUndefined:
+            return abstract_value_make_undefined ();
+          }
+      }
+      break;
+    case UndefinedValue:
+      unimplemented;
+    }
 
   bug ("unhandled case");
 }
@@ -307,16 +320,82 @@ abstract_value_select (abstract_value_t v,
 bool
 abstract_value_is_boolean (abstract_value_t v)
 {
-  switch (v.kind) {
-  case UntypedValue:
-    return untyped_value_is_bool (v.untyped_value);
-  case TypedValue:
-    unimplemented;
-  case Typed:
-    return type_is_boolean (v.typed);
-  case UndefinedValue:
-    unimplemented;
+  switch (v.kind)
+    {
+    case UntypedValue:
+      return untyped_value_is_bool (v.untyped_value);
+    case TypedValue:
+      unimplemented;
+    case Typed:
+      return type_is_boolean (v.typed);
+    case UndefinedValue:
+      unimplemented;
+    }
+
+  bug ("unhandled case");
+}
+
+bool abstract_value_is_bindable (abstract_value_t output,
+                                 abstract_value_t input)
+{
+  return abstract_value_is_typed (output) && abstract_value_is_typed (input) && type_is_bindable (output.typed, input.typed);
+}
+
+action_t* abstract_value_get_reaction (abstract_value_t v)
+{
+  if (abstract_value_is_typed (v)) {
+    return type_reaction_get_reaction (v.typed);
   }
+  else {
+    return NULL;
+  }
+}
+
+bool abstract_value_check_arg (abstract_value_t v, size_t idx, abstract_value_t arg)
+{
+  if (v.kind != Typed)
+    {
+      return false;
+    }
+
+  switch (arg.kind)
+    {
+    case UntypedValue:
+      unimplemented;
+    case TypedValue:
+      unimplemented;
+    case Typed:
+      return type_check_arg (v.typed, idx, arg.typed);
+    case UndefinedValue:
+      return false;
+    }
+
+  bug ("unhandled case");
+}
+
+abstract_value_t abstract_value_return_value (abstract_value_t v)
+{
+  if (v.kind != Typed)
+    {
+      return abstract_value_make_undefined ();
+    }
+
+  return abstract_value_make_typed (type_return_value (v.typed), select_result_make_undefined ());
+}
+
+select_result_t abstract_value_selected_field (abstract_value_t v)
+{
+  switch (v.kind)
+    {
+    case UntypedValue:
+      unimplemented;
+    case TypedValue:
+      unimplemented;
+    case Typed:
+      return v.selected_field;
+    case UndefinedValue:
+      unimplemented;
+    }
 
   bug ("unhandled case");
 }

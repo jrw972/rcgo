@@ -6,10 +6,11 @@
 #include <errno.h>
 
 void
-compile (const char* include, const char *infile, const char *outfile)
+compile (const char *include, const char *infile, const char *outfile)
 {
   char *command = NULL;
-  int s = asprintf (&command, "gcc -I%s -g -c %s -o %s", include, infile, outfile);
+  int s =
+    asprintf (&command, "gcc -I%s -g -c %s -o %s", include, infile, outfile);
   if (s == -1)
     {
       error (EXIT_FAILURE, errno, "could not allocate buffer");

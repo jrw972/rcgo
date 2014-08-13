@@ -4,7 +4,8 @@
 #include <string.h>
 #include "debug.h"
 
-typedef enum {
+typedef enum
+{
   Constant,
   Instance,
   Variable,
@@ -15,18 +16,23 @@ struct symbol_t
 {
   string_t identifier;
   SymbolKind kind;
-  union {
-    struct {
+  union
+  {
+    struct
+    {
       abstract_value_t value;
     } constant;
-    struct {
-      const type_t* type;
+    struct
+    {
+      const type_t *type;
     } instance;
-    struct {
-      const type_t* type;
+    struct
+    {
+      const type_t *type;
     } variable;
-    struct {
-      const type_t* type;
+    struct
+    {
+      const type_t *type;
     } type;
   };
   bool is_this;
@@ -43,11 +49,12 @@ symtab_init (symtab_t * symtab, const symtab_t * parent)
 void
 symtab_fini (symtab_t * symtab)
 {
-  while (symtab->head != NULL) {
-    symbol_t* sym = symtab->head;
-    symtab->head = sym->next;
-    free (sym);
-  }
+  while (symtab->head != NULL)
+    {
+      symbol_t *sym = symtab->head;
+      symtab->head = sym->next;
+      free (sym);
+    }
 }
 
 void
@@ -79,7 +86,8 @@ symtab_find (const symtab_t * symtab, string_t identifier)
   return symtab_find (symtab->parent, identifier);
 }
 
-symbol_t *symtab_find_current (const symtab_t * symtab, string_t identifier)
+symbol_t *
+symtab_find_current (const symtab_t * symtab, string_t identifier)
 {
   symbol_t *s;
   for (s = symtab->head; s != NULL; s = s->next)
@@ -93,30 +101,34 @@ symbol_t *symtab_find_current (const symtab_t * symtab, string_t identifier)
   return NULL;
 }
 
-symbol_t *symtab_get_this (const symtab_t * symtab)
+symbol_t *
+symtab_get_this (const symtab_t * symtab)
 {
-  if (symtab == NULL) {
-    return NULL;
-  }
-
-  symbol_t* s;
-  for (s = symtab->head; s != NULL; s = s->next) {
-    if (s->is_this) {
-      return s;
+  if (symtab == NULL)
+    {
+      return NULL;
     }
-  }
+
+  symbol_t *s;
+  for (s = symtab->head; s != NULL; s = s->next)
+    {
+      if (s->is_this)
+	{
+	  return s;
+	}
+    }
 
   return symtab_get_this (symtab->parent);
 }
 
-string_t symbol_identifier (const symbol_t* symbol)
+string_t
+symbol_identifier (const symbol_t * symbol)
 {
   return symbol->identifier;
 }
 
-static symbol_t*
-make (string_t identifier,
-      SymbolKind kind)
+static symbol_t *
+make (string_t identifier, SymbolKind kind)
 {
   symbol_t *s = malloc (sizeof (symbol_t));
   memset (s, 0, sizeof (symbol_t));
@@ -125,38 +137,43 @@ make (string_t identifier,
   return s;
 }
 
-symbol_t* symbol_make_variable (string_t identifier,
-                                const type_t* type)
+symbol_t *
+symbol_make_variable (string_t identifier, const type_t * type)
 {
   symbol_t *s = make (identifier, Variable);
   s->variable.type = type;
   return s;
 }
 
-bool symbol_is_variable (const symbol_t* symbol)
+bool
+symbol_is_variable (const symbol_t * symbol)
 {
   return symbol->kind == Variable;
 }
 
-const type_t* symbol_variable_type (const symbol_t* symbol)
+const type_t *
+symbol_variable_type (const symbol_t * symbol)
 {
   assert (symbol_is_variable (symbol));
   return symbol->variable.type;
 }
 
-symbol_t *symbol_make_type (const type_t* type)
+symbol_t *
+symbol_make_type (const type_t * type)
 {
   symbol_t *s = make (type_get_name (type), Type);
   s->type.type = type;
   return s;
 }
 
-bool symbol_is_type (const symbol_t* symbol)
+bool
+symbol_is_type (const symbol_t * symbol)
 {
   return symbol->kind == Type;
 }
 
-const type_t* symbol_type_type (const symbol_t* symbol)
+const type_t *
+symbol_type_type (const symbol_t * symbol)
 {
   assert (symbol_is_type (symbol));
   return symbol->type.type;
@@ -170,25 +187,29 @@ symbol_make_constant (string_t identifier, abstract_value_t value)
   return s;
 }
 
-bool symbol_is_constant (const symbol_t* symbol)
+bool
+symbol_is_constant (const symbol_t * symbol)
 {
   return symbol->kind == Constant;
 }
 
-abstract_value_t symbol_constant_value (const symbol_t* symbol)
+abstract_value_t
+symbol_constant_value (const symbol_t * symbol)
 {
   assert (symbol_is_constant (symbol));
   return symbol->constant.value;
 }
 
-symbol_t * symbol_make_instance (string_t identifier, const type_t* type)
+symbol_t *
+symbol_make_instance (string_t identifier, const type_t * type)
 {
   symbol_t *s = make (identifier, Instance);
   s->instance.type = type;
   return s;
 }
 
-void symbol_set_as_this (symbol_t* symbol)
+void
+symbol_set_as_this (symbol_t * symbol)
 {
   symbol->is_this = true;
 }

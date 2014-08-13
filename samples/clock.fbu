@@ -1,12 +1,53 @@
 type Clock component {
-  bit bool;
+  bit, flag bool;
+  response port (bit bool);
 };
 
-action (this $Clock) (true) {
+action (this #Clock) (true) {
   trigger {
-    print this->bit;
-    this->bit = !this->bit;
+    this#.bit = this#.bit!;
   }
 }
 
-instance i Clock;
+reaction (this #Clock) request () {
+  trigger {
+    this#.flag = true;
+  }
+}
+
+action (this #Clock) (this#.flag) {
+  trigger this#.response (this#.bit) {
+    this#.flag = false;
+  }
+}
+
+type Sampler component {
+  flag bool;
+  request port ();
+};
+
+action (this #Sampler) (this#.flag!) {
+  trigger this#.request () {
+    this#.flag = true;
+    print true;
+  }
+}
+
+reaction (this #Sampler) response (bit bool) {
+  trigger {
+    print bit;
+    this#.flag = false;
+  }
+}
+
+type System component {
+  sampler Sampler;
+  clock Clock;
+};
+
+bind (this #System) {
+  this#.sampler.request -> this#.clock.request;
+  this#.clock.response -> this#.sampler.response;
+}
+
+instance s System;

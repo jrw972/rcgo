@@ -20,7 +20,7 @@ struct semval_t
   };
 };
 
-void semval_print (semval_t s);
+const char* semval_to_string (semval_t s);
 
 semval_t semval_undefined (void);
 
@@ -51,5 +51,22 @@ bool semval_assignable (semval_t left, semval_t right);
 semval_t semval_select (semval_t s, string_t identifier);
 
 bool semval_is_boolean (semval_t s);
+
+bool semval_bindable (semval_t output, semval_t input);
+
+action_t* semval_get_reaction (semval_t s);
+
+typedef struct semval_list_t semval_list_t;
+
+semval_list_t* semval_list_make (void);
+
+void semval_list_append (semval_list_t* list,
+                         semval_t semval);
+
+bool semval_list_contains_undefined (const semval_list_t* list);
+
+semval_t semval_call (semval_t expr, const semval_list_t* args);
+
+select_result_t semval_selected_field (semval_t semval);
 
 #endif /* semval_h */

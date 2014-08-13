@@ -4,7 +4,6 @@
 #include <error.h>
 #include <stdbool.h>
 #include <getopt.h>
-#include <stdio.h>
 #include <errno.h>
 
 #include "config.h"
@@ -38,15 +37,14 @@ int
 main (int argc, char **argv)
 {
   const char *include = "/usr/include";
-  const char *infile = NULL;
   const char *outfile = NULL;
 
   while (true)
     {
       static struct option long_options[] = {
-        {"debug",   no_argument, &debug, 1},
-	{"help",    no_argument, NULL,   'h'},
-	{"version", no_argument, NULL,   'v'},
+	{"debug", no_argument, &debug, 1},
+	{"help", no_argument, NULL, 'h'},
+	{"version", no_argument, NULL, 'v'},
 	{0, 0, 0, 0}
       };
 
@@ -57,20 +55,20 @@ main (int argc, char **argv)
 
       switch (c)
 	{
-        case 0:
-          break;
-        case 'I':
-          include = optarg;
-          break;
+	case 0:
+	  break;
+	case 'I':
+	  include = optarg;
+	  break;
 	case 'c':
-	  infile = optarg;
+	  in_file = optarg;
 	  break;
 	case 'o':
 	  outfile = optarg;
 	  break;
-        case 'd':
-          debug = 1;
-          break;
+	case 'd':
+	  debug = 1;
+	  break;
 	case 'v':
 	  print_version ();
 	  exit (EXIT_SUCCESS);
@@ -79,10 +77,10 @@ main (int argc, char **argv)
 	  printf ("Usage: %s OPTION... -c FILE -o FILE\n",
 		  program_invocation_short_name);
 	  puts ("Compile " PACKAGE_NAME " source code.\n" "\n"
-                "  -I PATH     specifies the path to the FBU headers\n"
+		"  -I PATH     specifies the path to the FBU headers\n"
 		"  -c FILE     specifies the input file\n"
 		"  -o FILE     specifies the output file\n"
-                "  -d, --debug turn on debugging output\n"
+		"  -d, --debug turn on debugging output\n"
 		"  --help      display this help and exit\n"
 		"  --version   display version information and exit\n" "\n"
 		"Report bugs to: " PACKAGE_BUGREPORT);
@@ -94,7 +92,7 @@ main (int argc, char **argv)
 	}
     }
 
-  if (infile == NULL)
+  if (in_file == NULL)
     {
       fprintf (stderr, "No input file\n");
       try_help ();
@@ -107,10 +105,10 @@ main (int argc, char **argv)
     }
 
   // Open the input file.
-  yyin = fopen (infile, "r");
+  yyin = fopen (in_file, "r");
   if (yyin == NULL)
     {
-      error (EXIT_FAILURE, errno, "Could not open '%s'", infile);
+      error (EXIT_FAILURE, errno, "Could not open '%s'", in_file);
     }
 
   if (yyparse () != 0)
@@ -147,12 +145,14 @@ main (int argc, char **argv)
 
   compile (include, filename, outfile);
 
-  if (debug) {
-    printf ("Intermediate code in %s\n", filename);
-  }
-  else {
-    unlink (filename);
-  }
+  if (debug)
+    {
+      printf ("Intermediate code in %s\n", filename);
+    }
+  else
+    {
+      unlink (filename);
+    }
 
   return 0;
 }

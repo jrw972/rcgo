@@ -2,7 +2,7 @@
 #define codegen_h
 
 #include "node.h"
-#include <stdio.h>
+#include "debug.h"
 
 int generate_code (FILE * file, node_t * root);
 

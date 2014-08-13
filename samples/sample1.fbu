@@ -2,10 +2,10 @@ type C component {
   done bool;
 };
 
-action (this $C) (!this->done) {
+action (this #C) (this#.done!) {
   trigger {
     print true;
-    this->done = true;
+    this#.done = true;
   }
 }
 

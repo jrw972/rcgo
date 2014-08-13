@@ -2,6 +2,23 @@
 #include "debug.h"
 #include "symtab.h"
 
+const char* untyped_value_to_string (untyped_value_t u)
+{
+  switch (u.kind) {
+  case UntypedUndefined:
+    return "undefined";
+  case UntypedBool:
+    if (u.bool_value) {
+      return "true";
+    }
+    else {
+      return "false";
+    }
+  }
+
+  bug ("unhandled case");
+}
+
 static untyped_value_t
 untyped_value_make_undefined (void)
 {

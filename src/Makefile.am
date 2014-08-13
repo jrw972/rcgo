@@ -1,13 +1,14 @@
 EXTRA_DIST = scanner.h
 BUILT_SOURCES = scanner.h parser.h
 AM_LFLAGS = --header=$(addsuffix .h,$(basename $@))
-AM_YFLAGS = -d
+AM_YFLAGS = -v -d
 bin_PROGRAMS = fbu
 fbu_SOURCES = main.c scanner.l parser.y \
 abstract_value.h abstract_value.c \
 codegen.h codegen.c \
 compile.h compile.c \
 debug.h debug.c \
+instance_set.h instance_set.c \
 node.h node.c \
 reference.h reference.c \
 semantics.h semantics.c \
@@ -16,6 +17,6 @@ strtab.h strtab.c \
 symtab.h symtab.c \
 type.h type.c \
 typed_value.h typed_value.c \
+util.h util.c \
 untyped_value.h untyped_value.c \
 yyparse.h yyparse.c
-
