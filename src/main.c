@@ -37,9 +37,6 @@ try_help (void)
 int
 main (int argc, char **argv)
 {
-  const char *include = "/usr/include";
-  const char *outfile = NULL;
-
   while (true)
     {
       static struct option long_options[] = {
@@ -49,7 +46,7 @@ main (int argc, char **argv)
 	{0, 0, 0, 0}
       };
 
-      int c = getopt_long (argc, argv, "I:c:o:dhv", long_options, NULL);
+      int c = getopt_long (argc, argv, "c:dhv", long_options, NULL);
 
       if (c == -1)
 	break;
@@ -58,14 +55,8 @@ main (int argc, char **argv)
 	{
 	case 0:
 	  break;
-	case 'I':
-	  include = optarg;
-	  break;
 	case 'c':
 	  in_file = optarg;
-	  break;
-	case 'o':
-	  outfile = optarg;
 	  break;
 	case 'd':
 	  debug = 1;
@@ -99,12 +90,6 @@ main (int argc, char **argv)
       try_help ();
     }
 
-  if (outfile == NULL)
-    {
-      fprintf (stderr, "No output file\n");
-      try_help ();
-    }
-
   // Open the input file.
   yyin = fopen (in_file, "r");
   if (yyin == NULL)
@@ -125,36 +110,6 @@ main (int argc, char **argv)
   process_declarations (root);
   process_definitions (root);
   check_composition (root);
-
-  /* char filename[] = "XXXXXX.s"; */
-  /* int fd = mkstemps (filename, 2); */
-  /* if (fd == -1) */
-  /*   { */
-  /*     error (EXIT_FAILURE, errno, "could not create temporary file"); */
-  /*   } */
-
-  /* FILE *file = fdopen (fd, "w"); */
-  /* if (file == NULL) */
-  /*   { */
-  /*     error (EXIT_FAILURE, errno, "could not open temporary file"); */
-  /*   } */
-
-  /* if (generate_code (file, root) != 0) */
-  /*   { */
-  /*     // TODO:  Error reporting. */
-  /*     error (EXIT_FAILURE, 0, "generate_code failed"); */
-  /*   } */
-
-  /* compile (include, filename, outfile); */
-
-  /* if (debug) */
-  /*   { */
-  /*     printf ("Intermediate code in %s\n", filename); */
-  /*   } */
-  /* else */
-  /*   { */
-  /*     unlink (filename); */
-  /*   } */
 
   return 0;
 }

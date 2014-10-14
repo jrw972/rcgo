@@ -38,6 +38,7 @@
 
 #define VECTOR_BEGIN(array) (array)
 #define VECTOR_END(array) (array + array##_size)
+#define VECTOR_NEXT(pos) (pos + 1)
 #define VECTOR_SIZE(array) array##_size
 #define VECTOR_AT(array, idx) array[idx]
 #define VECTOR_SET(array, idx, x) array[idx] = x

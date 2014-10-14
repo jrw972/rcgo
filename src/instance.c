@@ -185,6 +185,22 @@ transitive_closure (const instance_table_t* table,
 void
 instance_table_analyze_composition (const instance_table_t* table)
 {
+  {
+    // Check that no reaction is bound more than once.
+    VECTOR_FOREACH (pos1, limit, table->bindings, concrete_binding_t)
+      {
+        concrete_binding_t* pos2;
+        for (pos2 = VECTOR_NEXT (pos1); pos2 != limit; pos2 = VECTOR_NEXT (pos2))
+          {
+            if (pos1->input_instance == pos2->input_instance &&
+                pos1->input_reaction == pos2->input_reaction)
+              {
+                error (-1, 0, "reaction bound more than once");
+              }
+          }
+      }
+  }
+
   instance_set_t* set = instance_set_make ();
 
   // For each instance.
