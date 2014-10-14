@@ -2,6 +2,7 @@
 #define untyped_value_h
 
 #include <stdbool.h>
+#include <stddef.h>
 
 /*
   An untyped value represents an actual value not described by the type system.
@@ -40,5 +41,7 @@ untyped_value_t
 untyped_value_logic_and (untyped_value_t x, untyped_value_t y);
 
 untyped_value_t untyped_value_logic_or (untyped_value_t x, untyped_value_t y);
+
+size_t untyped_value_size (untyped_value_t x);
 
 #endif /* untyped_value_h */

@@ -3,66 +3,43 @@
 #include "strtab.h"
 #include <string.h>
 #include "debug.h"
+#include "util.h"
+#include "type.h"
+#include "symbol.h"
 
-typedef enum
+struct symtab_t
 {
-  Constant,
-  Instance,
-  Variable,
-  Type
-} SymbolKind;
-
-struct symbol_t
-{
-  string_t identifier;
-  SymbolKind kind;
-  union
-  {
-    struct
-    {
-      abstract_value_t value;
-    } constant;
-    struct
-    {
-      const type_t *type;
-    } instance;
-    struct
-    {
-      const type_t *type;
-    } variable;
-    struct
-    {
-      const type_t *type;
-    } type;
-  };
-  bool is_this;
-  symbol_t *next;
+  symtab_t *parent;
+  VECTOR_DECL (symbols, symbol_t*);
+  bool in_trigger_statement;
+  action_t* current_action;
+  type_t* current_receiver_type;
 };
 
-void
-symtab_init (symtab_t * symtab, const symtab_t * parent)
+symtab_t* symtab_make (symtab_t * parent)
 {
-  symtab->parent = parent;
-  symtab->head = NULL;
+  symtab_t* s = xmalloc (sizeof (symtab_t));
+  s->parent = parent;
+  VECTOR_INIT (s->symbols, symbol_t*, 0, NULL);
+  return s;
 }
 
-void
-symtab_fini (symtab_t * symtab)
+const symtab_t* symtab_parent (symtab_t* symtab)
 {
-  while (symtab->head != NULL)
-    {
-      symbol_t *sym = symtab->head;
-      symtab->head = sym->next;
-      free (sym);
-    }
+  return symtab->parent;
+}
+
+symtab_t* symtab_get_root (symtab_t* symtab)
+{
+  for (; symtab->parent != NULL; symtab = symtab->parent)
+    ;;
+  return symtab;
 }
 
 void
 symtab_enter (symtab_t * symtab, symbol_t * symbol)
 {
-  /* TODO:  Check that the symbol is not already defined. */
-  symbol->next = symtab->head;
-  symtab->head = symbol;
+  VECTOR_PUSH (symtab->symbols, symbol_t*, symbol);
 }
 
 symbol_t *
@@ -73,10 +50,10 @@ symtab_find (const symtab_t * symtab, string_t identifier)
       return NULL;
     }
 
-  symbol_t *s;
-  for (s = symtab->head; s != NULL; s = s->next)
+  VECTOR_FOREACH (pos, limit, symtab->symbols, symbol_t*)
     {
-      if (streq (identifier, s->identifier))
+      symbol_t* s = *pos;
+      if (streq (identifier, symbol_identifier (s)))
 	{
 	  return s;
 	}
@@ -89,10 +66,10 @@ symtab_find (const symtab_t * symtab, string_t identifier)
 symbol_t *
 symtab_find_current (const symtab_t * symtab, string_t identifier)
 {
-  symbol_t *s;
-  for (s = symtab->head; s != NULL; s = s->next)
+  VECTOR_FOREACH (pos, limit, symtab->symbols, symbol_t*)
     {
-      if (streq (identifier, s->identifier))
+      symbol_t* s = *pos;
+      if (streq (identifier, symbol_identifier (s)))
 	{
 	  return s;
 	}
@@ -109,10 +86,10 @@ symtab_get_this (const symtab_t * symtab)
       return NULL;
     }
 
-  symbol_t *s;
-  for (s = symtab->head; s != NULL; s = s->next)
+  VECTOR_FOREACH (pos, limit, symtab->symbols, symbol_t*)
     {
-      if (s->is_this)
+      symbol_t* s = *pos;
+      if (symbol_kind (s) == SymbolParameter && symbol_parameter_kind (s) == ParameterThis)
 	{
 	  return s;
 	}
@@ -121,95 +98,68 @@ symtab_get_this (const symtab_t * symtab)
   return symtab_get_this (symtab->parent);
 }
 
-string_t
-symbol_identifier (const symbol_t * symbol)
+const type_t* symtab_get_this_type (const symtab_t* symtab)
 {
-  return symbol->identifier;
+  return symbol_parameter_type (symtab_get_this (symtab));
 }
 
-static symbol_t *
-make (string_t identifier, SymbolKind kind)
+bool symtab_in_trigger_statement (const symtab_t* symtab)
 {
-  symbol_t *s = malloc (sizeof (symbol_t));
-  memset (s, 0, sizeof (symbol_t));
-  s->identifier = identifier;
-  s->kind = kind;
-  return s;
+  if (symtab == NULL)
+    {
+      return false;
+    }
+
+  if (symtab->in_trigger_statement == true)
+    {
+      return true;
+    }
+
+  return symtab_in_trigger_statement (symtab->parent);
 }
 
-symbol_t *
-symbol_make_variable (string_t identifier, const type_t * type)
+void symtab_set_in_trigger_statement (symtab_t* symtab)
 {
-  symbol_t *s = make (identifier, Variable);
-  s->variable.type = type;
-  return s;
+  symtab->in_trigger_statement = true;
 }
 
-bool
-symbol_is_variable (const symbol_t * symbol)
+void symtab_set_current_action (symtab_t* symtab,
+                                action_t* action)
 {
-  return symbol->kind == Variable;
+  symtab->current_action = action;
 }
 
-const type_t *
-symbol_variable_type (const symbol_t * symbol)
+action_t* symtab_get_current_action (const symtab_t* symtab)
 {
-  assert (symbol_is_variable (symbol));
-  return symbol->variable.type;
+  if (symtab == NULL)
+    {
+      return NULL;
+    }
+
+  if (symtab->current_action != NULL)
+    {
+      return symtab->current_action;
+    }
+
+  return symtab_get_current_action (symtab->parent);
 }
 
-symbol_t *
-symbol_make_type (const type_t * type)
+void symtab_set_current_receiver_type (symtab_t* symtab, type_t* type)
 {
-  symbol_t *s = make (type_get_name (type), Type);
-  s->type.type = type;
-  return s;
+  symtab->current_receiver_type = type;
 }
 
-bool
-symbol_is_type (const symbol_t * symbol)
+type_t* symtab_get_current_receiver_type (const symtab_t* symtab)
 {
-  return symbol->kind == Type;
-}
+  if (symtab == NULL)
+    {
+      return NULL;
+    }
 
-const type_t *
-symbol_type_type (const symbol_t * symbol)
-{
-  assert (symbol_is_type (symbol));
-  return symbol->type.type;
-}
+  if (symtab->current_receiver_type != NULL)
+    {
+      return symtab->current_receiver_type;
+    }
 
-symbol_t *
-symbol_make_constant (string_t identifier, abstract_value_t value)
-{
-  symbol_t *s = make (identifier, Constant);
-  s->constant.value = value;
-  return s;
-}
-
-bool
-symbol_is_constant (const symbol_t * symbol)
-{
-  return symbol->kind == Constant;
-}
-
-abstract_value_t
-symbol_constant_value (const symbol_t * symbol)
-{
-  assert (symbol_is_constant (symbol));
-  return symbol->constant.value;
-}
-
-symbol_t *
-symbol_make_instance (string_t identifier, const type_t * type)
-{
-  symbol_t *s = make (identifier, Instance);
-  s->instance.type = type;
-  return s;
-}
-
-void
-symbol_set_as_this (symbol_t * symbol)
-{
-  symbol->is_this = true;
+  return symtab_get_current_receiver_type (symtab->parent);
 }

@@ -9,6 +9,7 @@
 #include "config.h"
 #include "scanner.h"
 #include "yyparse.h"
+#include "semantic.h"
 #include "semantics.h"
 #include "codegen.h"
 #include "compile.h"
@@ -118,41 +119,42 @@ main (int argc, char **argv)
     }
   assert (root != NULL);
 
-  if (check_semantics (root) != 0)
-    {
-      // TODO:  Error reporting.
-      error (EXIT_FAILURE, 0, "check_semantics failed");
-    }
 
-  char filename[] = "XXXXXX.c";
-  int fd = mkstemps (filename, 2);
-  if (fd == -1)
-    {
-      error (EXIT_FAILURE, errno, "could not create temporary file");
-    }
+  construct_symbol_table (root, NULL);
+  enter_symbols (root);
+  process_declarations (root);
+  process_definitions (root);
+  check_composition (root);
 
-  FILE *file = fdopen (fd, "w");
-  if (file == NULL)
-    {
-      error (EXIT_FAILURE, errno, "could not open temporary file");
-    }
+  /* char filename[] = "XXXXXX.s"; */
+  /* int fd = mkstemps (filename, 2); */
+  /* if (fd == -1) */
+  /*   { */
+  /*     error (EXIT_FAILURE, errno, "could not create temporary file"); */
+  /*   } */
 
-  if (generate_code (file, root) != 0)
-    {
-      // TODO:  Error reporting.
-      error (EXIT_FAILURE, 0, "generate_code failed");
-    }
+  /* FILE *file = fdopen (fd, "w"); */
+  /* if (file == NULL) */
+  /*   { */
+  /*     error (EXIT_FAILURE, errno, "could not open temporary file"); */
+  /*   } */
 
-  compile (include, filename, outfile);
+  /* if (generate_code (file, root) != 0) */
+  /*   { */
+  /*     // TODO:  Error reporting. */
+  /*     error (EXIT_FAILURE, 0, "generate_code failed"); */
+  /*   } */
 
-  if (debug)
-    {
-      printf ("Intermediate code in %s\n", filename);
-    }
-  else
-    {
-      unlink (filename);
-    }
+  /* compile (include, filename, outfile); */
+
+  /* if (debug) */
+  /*   { */
+  /*     printf ("Intermediate code in %s\n", filename); */
+  /*   } */
+  /* else */
+  /*   { */
+  /*     unlink (filename); */
+  /*   } */
 
   return 0;
 }

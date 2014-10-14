@@ -2,7 +2,7 @@
 #include <error.h>
 #include "debug.h"
 
-node_t *root = NULL;
+ast_t *root = NULL;
 
 void
 yyerror (char const *message)

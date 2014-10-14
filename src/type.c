@@ -4,71 +4,9 @@
 #include <string.h>
 #include "debug.h"
 #include "util.h"
-
-struct field_t
-{
-  string_t name;
-  const type_t *type;
-  size_t number;
-  /* TODO:  Remove the next pointer and convert to vector. */
-  field_t *next;
-};
-
-typedef struct parameter_t parameter_t;
-struct parameter_t
-{
-  string_t name;
-  const type_t *type;
-};
-
-struct trigger_group_t
-{
-  const field_t** fields;
-  size_t fields_size;
-  size_t fields_capacity;
-};
-
-struct action_t
-{
-  bool is_reaction;
-  size_t number;
-  const type_t *component_type; /* Back-pointer to component type. */
-  trigger_group_t* trigger_groups;
-  size_t trigger_groups_size;
-  size_t trigger_groups_capacity;
-  action_t* next;
-  /* Reactions only. */
-  string_t name;
-  const type_t *reaction_type;
-};
-
-struct binding_t
-{
-  select_result_t* outputs;
-  size_t outputs_size;
-  size_t outputs_capacity;
-  select_result_t* inputs;
-  size_t inputs_size;
-  size_t inputs_capacity;
-  binding_t* next;
-};
-
-static field_t *
-make_field (string_t name, const type_t * type, size_t number)
-{
-  field_t *retval = malloc (sizeof (field_t));
-  memset (retval, 0, sizeof (field_t));
-  retval->name = name;
-  retval->type = type;
-  retval->number = number;
-  return retval;
-}
-
-struct signature_t {
-  parameter_t* parameters;
-  size_t parameters_size;
-  size_t parameters_capacity;
-};
+#include "action.h"
+#include "parameter.h"
+#include "field.h"
 
 struct type_t
 {
@@ -79,59 +17,60 @@ struct type_t
   {
     struct
     {
-      field_t *field_list;
-      size_t action_reaction_count;
-      size_t bind_count;
-      action_t* actions;
-      size_t field_count;
-      binding_t* bindings;
+      type_t* field_list;
+      VECTOR_DECL (actions, action_t*);
+      VECTOR_DECL (reactions, action_t*);
+      VECTOR_DECL (bindings, binding_t*);
     } component;
     struct
     {
-      const type_t *base_type;
+      VECTOR_DECL (fields, field_t*);
+      ptrdiff_t offset;
+      size_t field_count;
+      size_t alignment;
+    } field_list;
+    struct
+    {
+      type_t *base_type;
+      PointerKind kind;
     } pointer;
     struct
     {
-      signature_t* signature;
+      const type_t* signature;
     } port;
     struct
     {
-      signature_t* signature;
-      action_t* reaction;
+      type_t* signature;
     } reaction;
+    struct
+    {
+      VECTOR_DECL (parameters, parameter_t*);
+    } signature;
   };
 };
 
-static const char*
-parameter_array_to_string (const parameter_t* begin,
-                           const parameter_t* end,
-                           bool first)
-{
-  if (begin == end) {
-    return "";
-  }
+/* static const char* */
+/* parameter_array_to_string (const parameter_t* begin, */
+/*                            const parameter_t* end, */
+/*                            bool first) */
+/* { */
+/*   if (begin == end) { */
+/*     return ""; */
+/*   } */
 
-  const char* format;
-  if (first) {
-    format = "%s %s%s";
-  }
-  else {
-    format = ", %s %s%s";
-  }
+/*   const char* format; */
+/*   if (first) { */
+/*     format = "%s %s%s"; */
+/*   } */
+/*   else { */
+/*     format = ", %s %s%s"; */
+/*   } */
 
-  char* str;
-  asprintf (&str, format, get (begin->name), type_to_string (begin->type), parameter_array_to_string (begin + 1, end, false));
+/*   char* str; */
+/*   asprintf (&str, format, get (begin->name), type_to_string (begin->type), parameter_array_to_string (begin + 1, end, false)); */
 
-  return str;
-}
-
-static const char*
-signature_to_string (const signature_t* signature)
-{
-  char* str;
-  asprintf (&str, "(%s)", parameter_array_to_string (signature->parameters, signature->parameters + signature->parameters_size, true));
-  return str;
-}
+/*   return str; */
+/* } */
 
 const char* type_to_string (const type_t* type)
 {
@@ -158,26 +97,93 @@ const char* type_to_string (const type_t* type)
       case TypePort:
         {
           char* str;
-          asprintf (&str, "port %s", signature_to_string (type->port.signature));
+          asprintf (&str, "port %s", type_to_string (type->port.signature));
           return str;
         }
       case TypeReaction:
         {
           char* str;
-          asprintf (&str, "reaction %s", signature_to_string (type->reaction.signature));
+          asprintf (&str, "reaction %s", type_to_string (type->reaction.signature));
           return str;
         }
+      case TypeFieldList:
+        unimplemented;
+      case TypeSignature:
+        unimplemented;
       }
   }
 
   bug ("unhandled case");
 }
 
+void type_move (type_t* to, type_t* from)
+{
+  assert (to->kind == TypeUndefined);
+  assert (from->kind != TypeUndefined);
+
+  to->kind = from->kind;
+  /* Do not copy has_name and name. */
+
+  switch (from->kind)
+    {
+    case TypeUndefined:
+      unimplemented;
+    case TypeVoid:
+      unimplemented;
+    case TypeBool:
+      unimplemented;
+    case TypeComponent:
+      to->component.field_list = from->component.field_list;
+      VECTOR_MOVE (to->component.actions, from->component.actions);
+      VECTOR_MOVE (to->component.reactions, from->component.reactions);
+      VECTOR_MOVE (to->component.bindings, from->component.bindings);
+      break;
+    case TypePointer:
+      unimplemented;
+    case TypePort:
+      unimplemented;
+    case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      unimplemented;
+    case TypeSignature:
+      unimplemented;
+    }
+
+  free (from);
+}
+
+size_t type_size (const type_t* type)
+{
+  switch (type->kind)
+    {
+    case TypeUndefined:
+      unimplemented;
+    case TypeVoid:
+      unimplemented;
+    case TypeBool:
+      return 1;
+    case TypeComponent:
+      return type_size (type->component.field_list);
+    case TypePointer:
+      return 8;
+    case TypePort:
+      return 8;
+    case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      return type->field_list.offset;
+    case TypeSignature:
+      unimplemented;
+    }
+
+  not_reached;
+}
+
 static type_t *
 make (TypeKind kind)
 {
-  type_t *retval = malloc (sizeof (type_t));
-  memset (retval, 0, sizeof (type_t));
+  type_t *retval = xmalloc (sizeof (type_t));
   retval->kind = kind;
   return retval;
 }
@@ -201,6 +207,10 @@ duplicate (const type_t * type)
     case TypePort:
       unimplemented;
     case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      unimplemented;
+    case TypeSignature:
       unimplemented;
     }
   return retval;
@@ -240,15 +250,10 @@ type_is_named (const type_t * type)
   return type->has_name;
 }
 
-const type_t *
+type_t *
 type_make_undefined (void)
 {
-  static type_t *retval = NULL;
-  if (retval == NULL)
-    {
-      retval = make (TypeUndefined);
-    }
-  return retval;
+  return make (TypeUndefined);
 }
 
 bool type_is_undefined (const type_t* type)
@@ -256,33 +261,50 @@ bool type_is_undefined (const type_t* type)
   return type->kind == TypeUndefined;
 }
 
-const type_t *
+type_t *
 type_make_bool (void)
 {
   return make (TypeBool);
 }
 
-const type_t *
+type_t *
 type_pointer_base_type (const type_t * type)
 {
   assert (type->kind == TypePointer);
   return type->pointer.base_type;
 }
 
-type_t *
-type_make_component (void)
+static type_t* make_void ()
 {
-  return make (TypeComponent);
-}
-
-type_t * type_make_pointer (const type_t* base_type)
-{
-  type_t* t = make (TypePointer);
-  t->pointer.base_type = base_type;
+  static type_t* t = NULL;
+  if (t == NULL)
+    {
+      t = make (TypeVoid);
+    }
   return t;
 }
 
-type_t *type_make_port (signature_t* signature)
+type_t *
+type_make_component (type_t* field_list)
+{
+  type_t* c = make (TypeComponent);
+  c->component.field_list = field_list;
+  VECTOR_INIT (c->component.actions, action_t*, 0, NULL);
+  VECTOR_INIT (c->component.reactions, action_t*, 0, NULL);
+  VECTOR_INIT (c->component.bindings, binding_t*, 0, NULL);
+  return c;
+}
+
+type_t * type_make_pointer (PointerKind kind,
+                            type_t* base_type)
+{
+  type_t* t = make (TypePointer);
+  t->pointer.base_type = base_type;
+  t->pointer.kind = kind;
+  return t;
+}
+
+type_t *type_make_port (const type_t* signature)
 {
   type_t* retval = make (TypePort);
   retval->port.signature = signature;
@@ -300,122 +322,47 @@ type_is_component (const type_t * type)
   return type->kind == TypeComponent;
 }
 
-static action_t*
-make_action (const type_t* type,
-             bool is_reaction)
+action_t*
+type_component_add_action (type_t * type)
 {
   assert (type_is_component (type));
-  action_t* action = malloc (sizeof (action_t));
-  memset (action, 0, sizeof (action_t));
-  action->number = ((type_t *) type)->component.action_reaction_count++;
-  action->is_reaction = is_reaction;
-  action->component_type = type;
-  action->trigger_groups = malloc (sizeof (trigger_group_t));
-  action->trigger_groups_size = 0;
-  action->trigger_groups_capacity = 1;
-  action->next = type->component.actions;
-  ((type_t *) type)->component.actions = action;
+  action_t* action = action_make (type);
+  VECTOR_PUSH (type->component.actions, action_t*, action);
   return action;
 }
 
-action_t*
-type_add_action (const type_t * type)
+action_t* type_component_add_reaction (type_t * component_type, string_t identifier, type_t* signature)
 {
-  return make_action (type, false);
+  assert (type_is_component (component_type));
+  action_t* r = reaction_make (component_type, VECTOR_SIZE (component_type->component.actions), identifier, signature);
+  VECTOR_PUSH (component_type->component.reactions, action_t*, r);
+  return r;
 }
 
-bool action_is_action (const action_t* action)
+static size_t type_alignment (const type_t* type)
 {
-  return !action->is_reaction;
-}
-
-bool action_is_reaction (const action_t* action)
-{
-  return action->is_reaction;
-}
-
-size_t action_number (const action_t* action)
-{
-  return action->number;
-}
-
-size_t
-type_action_count (const type_t * type)
-{
-  assert (type_is_component (type));
-  size_t count = 0;
-  action_t* action;
-  for (action = type->component.actions; action != NULL; action = action->next)
+  switch (type->kind)
     {
-      if (action_is_action (action))
-        {
-          ++count;
-        }
+    case TypeUndefined:
+      unimplemented;
+    case TypeVoid:
+      unimplemented;
+    case TypeBool:
+      return 1;
+    case TypeComponent:
+      return type_alignment (type->component.field_list);
+    case TypePointer:
+      return 8;
+    case TypePort:
+      return 8;
+    case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      return type->field_list.alignment;
+    case TypeSignature:
+      unimplemented;
     }
-  return count;
-}
-
-size_t type_add_bind (const type_t* type)
-{
-  assert (type_is_component (type));
-  return ((type_t*)type)->component.bind_count++;
-}
-
-size_t
-type_bind_count (const type_t * type)
-{
-  assert (type_is_component (type));
-  return type->component.bind_count;
-}
-
-bool
-type_append_field (type_t * type, string_t field_name,
-		   const type_t * field_type)
-{
-  assert (type->kind == TypeComponent);
-
-  field_t **ptr;
-  for (ptr = &(type->component.field_list); *ptr != NULL; ptr = &(*ptr)->next)
-    {
-      if (streq (field_name, (*ptr)->name))
-	{
-	  /* Duplicate field name. */
-	  return false;
-	}
-    }
-
-  *ptr = make_field (field_name, field_type, type->component.field_count++);
-  return true;
-}
-
-const field_t *
-type_field_list (const type_t * type)
-{
-  assert (type->kind == TypeComponent);
-  return type->component.field_list;
-}
-
-string_t
-field_name (const field_t * field)
-{
-  return field->name;
-}
-
-const type_t *
-field_type (const field_t * field)
-{
-  return field->type;
-}
-
-size_t field_number (const field_t * field)
-{
-  return field->number;
-}
-
-const field_t *
-field_next (const field_t * field)
-{
-  return field->next;
+  not_reached;
 }
 
 TypeKind
@@ -443,6 +390,10 @@ type_can_represent (const type_t * type, untyped_value_t u)
       unimplemented;
     case TypeReaction:
       unimplemented;
+    case TypeFieldList:
+      unimplemented;
+    case TypeSignature:
+      unimplemented;
     }
   bug ("unhandled case");
 }
@@ -465,6 +416,10 @@ type_assignable (const type_t * target, const type_t * source)
     case TypePort:
       unimplemented;
     case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      unimplemented;
+    case TypeSignature:
       unimplemented;
     }
   bug ("unhandled case");
@@ -509,216 +464,47 @@ type_logic_or (const type_t * x, const type_t * y)
     }
 }
 
-const type_t *
-type_dereference (const type_t * type)
-{
-  switch (type->kind)
-    {
-    case TypeUndefined:
-      unimplemented;
-    case TypeVoid:
-      unimplemented;
-    case TypeBool:
-      unimplemented;
-    case TypeComponent:
-      unimplemented;
-    case TypePointer:
-      return type->pointer.base_type;
-    case TypePort:
-      unimplemented;
-    case TypeReaction:
-      unimplemented;
-    }
-
-  bug ("unhandled case");
-}
-
-static select_result_t
-find_field_or_reaction_or_undefined (const field_t * field,
-                                     const action_t * reaction,
-                                     string_t identifier)
-{
-  select_result_t retval;
-
-  /* Search through the fields. */
-  for (; field != NULL; field = field->next)
-    {
-      if (streq (identifier, field->name))
-	{
-          retval.kind = SelectResultField;
-          retval.field = field;
-	  return retval;
-	}
-    }
-
-  /* Search through the reactions. */
-  for (; reaction != NULL; reaction = reaction->next)
-    {
-      if (action_is_reaction (reaction) && streq (identifier, reaction->name))
-	{
-          retval.kind = SelectResultReaction;
-          retval.reaction = reaction;
-          return retval;
-	}
-    }
-
-  retval.kind = SelectResultUndefined;
-  return retval;
-}
-
-select_result_t
-type_select (const type_t * type, string_t identifier)
-{
-  switch (type->kind)
-    {
-    case TypeUndefined:
-      unimplemented;
-    case TypeVoid:
-      unimplemented;
-    case TypeBool:
-      unimplemented;
-    case TypeComponent:
-      return find_field_or_reaction_or_undefined (type->component.field_list,
-                                                  type->component.actions,
-                                                  identifier);
-    case TypePointer:
-      unimplemented;
-    case TypePort:
-      unimplemented;
-    case TypeReaction:
-      unimplemented;
-    }
-
-  bug ("unhandled case");
-}
-
-select_result_t select_result_make_undefined ()
-{
-  select_result_t retval;
-  retval.kind = SelectResultUndefined;
-  return retval;
-}
-
 bool
 type_is_boolean (const type_t * type)
 {
   return type->kind == TypeBool;
 }
 
-action_t* type_get_reaction (const type_t * component_type, string_t identifier)
+action_t* type_component_get_reaction (const type_t * component_type, string_t identifier)
 {
   assert (component_type->kind == TypeComponent);
 
-  action_t* r;
-  for (r = component_type->component.actions; r != NULL; r = r->next) {
-    if (action_is_reaction (r) && streq (r->name, identifier)) {
-      return r;
+  VECTOR_FOREACH (pos, limit, component_type->component.reactions, action_t*)
+    {
+      action_t* a = *pos;
+      if (streq (reaction_name (a), identifier))
+        {
+          return a;
+        }
     }
-  }
 
   return NULL;
 }
 
-static type_t*
-make_reaction_type (signature_t* signature,
-                    action_t* reaction)
-{
-  assert (action_is_reaction (reaction));
-  type_t* t = make (TypeReaction);
-  t->reaction.signature = signature;
-  t->reaction.reaction = reaction;
-  return t;
-}
+/* static bool */
+/* compatible_signatures (const signature_t* output, const signature_t* input) */
+/* { */
+/*   if (output->parameters_size != input->parameters_size) */
+/*     { */
+/*       return false; */
+/*     } */
 
-action_t* type_add_reaction (const type_t * component_type, string_t identifier, signature_t* signature)
-{
-  action_t* r = make_action (component_type, true);
-  r->name = identifier;
-  r->reaction_type = make_reaction_type (signature, r);
-  return r;
-}
+/*   size_t idx, limit; */
+/*   for (idx = 0, limit = output->parameters_size; idx != limit; ++idx) */
+/*     { */
+/*       if (output->parameters[idx].type != input->parameters[idx].type) */
+/*         { */
+/*           return false; */
+/*         } */
+/*     } */
 
-const type_t* reaction_type (const action_t* reaction)
-{
-  return reaction->reaction_type;
-}
-
-string_t reaction_name (const action_t* reaction)
-{
-  return reaction->name;
-}
-
-const type_t* reaction_component_type (const action_t* reaction)
-{
-  return reaction->component_type;
-}
-
-signature_t* signature_make (void)
-{
-  signature_t* s = xmalloc (sizeof (signature_t));
-  VECTOR_INIT (s->parameters, parameter_t);
-  return s;
-}
-
-static parameter_t make_parameter (string_t name, const type_t* type)
-{
-  parameter_t retval = { name:name, type:type };
-  return retval;
-}
-
-bool signature_add_parameter (signature_t* signature,
-                              string_t name,
-                              const type_t* type)
-{
-  size_t idx;
-  for (idx = 0; idx != signature->parameters_size; ++idx)
-    {
-      if (streq (name, signature->parameters[idx].name))
-	{
-	  /* Duplicate parameter name. */
-	  return false;
-	}
-    }
-
-  VECTOR_PUSH (signature->parameters, parameter_t, make_parameter (name, type));
-
-  return true;
-}
-
-size_t signature_size (const signature_t* signature)
-{
-  return signature->parameters_size;
-}
-
-const type_t* signature_type (const signature_t* signature, size_t idx)
-{
-  return signature->parameters[idx].type;
-}
-
-string_t signature_name (const signature_t* signature, size_t idx)
-{
-  return signature->parameters[idx].name;
-}
-
-static bool
-compatible_signatures (const signature_t* output, const signature_t* input)
-{
-  if (output->parameters_size != input->parameters_size)
-    {
-      return false;
-    }
-
-  size_t idx, limit;
-  for (idx = 0, limit = output->parameters_size; idx != limit; ++idx)
-    {
-      if (output->parameters[idx].type != input->parameters[idx].type)
-        {
-          return false;
-        }
-    }
-
-  return true;
-}
+/*   return true; */
+/* } */
 
 bool type_is_bindable (const type_t* output, const type_t* input)
 {
@@ -730,91 +516,49 @@ bool type_is_bindable (const type_t* output, const type_t* input)
     return false;
   }
 
-  return compatible_signatures (output->port.signature, input->reaction.signature);
-}
-
-action_t* type_reaction_get_reaction (const type_t* type)
-{
-  if (type->kind == TypeReaction) {
-    return type->reaction.reaction;
-  }
-  else {
-    return NULL;
-  }
+  unimplemented;
+  //return compatible_signatures (output->port.signature, input->reaction.signature);
 }
 
 action_t* type_actions_begin (const type_t* type)
 {
-  assert (type_is_component (type));
-  return type->component.actions;
+  unimplemented;
+  /* assert (type_is_component (type)); */
+  /* return type->component.actions; */
 }
 
 action_t* type_actions_end (const type_t* type)
 {
-  assert (type_is_component (type));
-  return NULL;
+  unimplemented;
+  /* assert (type_is_component (type)); */
+  /* return NULL; */
 }
 
 action_t* action_next (action_t* action)
 {
-  return action->next;
-}
-
-static trigger_group_t* trigger_group_init (trigger_group_t* group)
-{
-  VECTOR_INIT (group->fields, field_t*);
-  return group;
-}
-
-trigger_group_t* action_add_trigger_group (action_t* action)
-{
-  VECTOR_ENSURE_ONE (action->trigger_groups, trigger_group_t);
-  return trigger_group_init (action->trigger_groups + action->trigger_groups_size++);
-}
-
-void trigger_group_add_field (trigger_group_t* group, const field_t* field)
-{
-  VECTOR_PUSH (group->fields, const field_t*, field);
-}
-
-static bool
-signature_check_arg (const signature_t* signature, size_t idx, const type_t* arg)
-{
-  if (idx >= signature->parameters_size)
-    {
-      return false;
-    }
-
-  return signature->parameters[idx].type == arg;
+  unimplemented;
+  /* return action->next; */
 }
 
 bool type_check_arg (const type_t* type, size_t idx, const type_t* arg)
 {
-  // type must be callable.
-  switch (type->kind)
-    {
-    case TypePort:
-      return signature_check_arg (type->port.signature, idx, arg);
-    case TypeUndefined:
-    case TypeVoid:
-    case TypeBool:
-    case TypeComponent:
-    case TypePointer:
-    case TypeReaction:
-      return false;
-    }
+  unimplemented;
+  /* // type must be callable. */
+  /* switch (type->kind) */
+  /*   { */
+  /*   case TypePort: */
+  /*     return signature_check_arg (type->port.signature, idx, arg); */
+  /*   case TypeUndefined: */
+  /*   case TypeVoid: */
+  /*   case TypeBool: */
+  /*   case TypeComponent: */
+  /*   case TypePointer: */
+  /*   case TypeReaction: */
+  /*   case TypeFieldList: */
+  /*     return false; */
+  /*   } */
 
   bug ("unhandled case");
-}
-
-static const type_t* make_void ()
-{
-  static type_t* t = NULL;
-  if (t == NULL)
-    {
-      t = make (TypeVoid);
-    }
-  return t;
 }
 
 const type_t* type_return_value (const type_t* type)
@@ -829,115 +573,521 @@ const type_t* type_return_value (const type_t* type)
     case TypeComponent:
     case TypePointer:
     case TypeReaction:
+    case TypeFieldList:
+    case TypeSignature:
       return false;
     }
 
   bug ("unhandled case");
 }
 
-binding_t* binding_make (void)
+/* binding_t* binding_make (void) */
+/* { */
+/*   binding_t* b = xmalloc (sizeof (binding_t)); */
+/*   select_result_t s; */
+/*   VECTOR_INIT (b->outputs, select_result_t, 0, s); */
+/*   VECTOR_INIT (b->inputs, select_result_t, 0, s); */
+/*   return b; */
+/* } */
+
+/* void binding_add (binding_t* binding, select_result_t result, bool input) */
+/* { */
+/*   if (!input) */
+/*     { */
+/*       VECTOR_PUSH (binding->outputs, select_result_t, result); */
+/*     } */
+/*   else */
+/*     { */
+/*       VECTOR_PUSH (binding->inputs, select_result_t, result); */
+/*     } */
+/* } */
+
+/* binding_t* type_bindings_end (const type_t* type) */
+/* { */
+/*   assert (type_is_component (type)); */
+/*   return NULL; */
+/* } */
+
+/* binding_t* type_bindings_next (binding_t* binding) */
+/* { */
+/*   return binding->next; */
+/* } */
+
+/* select_result_t* binding_output_begin (binding_t* binding) */
+/* { */
+/*   return VECTOR_BEGIN (binding->outputs); */
+/* } */
+
+/* select_result_t* binding_output_end (binding_t* binding) */
+/* { */
+/*   return VECTOR_END (binding->outputs); */
+/* } */
+
+/* select_result_t* binding_output_next (select_result_t* result) */
+/* { */
+/*   return result + 1; */
+/* } */
+
+/* select_result_t* binding_input_begin (binding_t* binding) */
+/* { */
+/*   return VECTOR_BEGIN (binding->inputs); */
+/* } */
+
+/* select_result_t* binding_input_end (binding_t* binding) */
+/* { */
+/*   return VECTOR_END (binding->inputs); */
+/* } */
+
+/* select_result_t* binding_input_next (select_result_t* result) */
+/* { */
+/*   return result + 1; */
+/* } */
+
+type_t* type_make_field_list (void)
 {
-  binding_t* b = xmalloc (sizeof (binding_t));
-  VECTOR_INIT (b->outputs, select_result_t);
-  VECTOR_INIT (b->inputs, select_result_t);
-  return b;
+  type_t* t = make (TypeFieldList);
+  VECTOR_INIT (t->field_list.fields, field_t*, 0, NULL);
+  return t;
 }
 
-void binding_add (binding_t* binding, select_result_t result, bool input)
+void type_field_list_append (type_t* field_list,
+                             string_t field_name,
+                             type_t* field_type)
 {
-  if (!input)
+  assert (field_list->kind == TypeFieldList);
+  size_t alignment = type_alignment (field_type);
+  field_list->field_list.offset = align_up (field_list->field_list.offset, alignment);
+
+  field_t* field = field_make (field_name, field_type, field_list->field_list.offset, field_list->field_list.field_count);
+  VECTOR_PUSH (field_list->field_list.fields, field_t*, field);
+
+  field_list->field_list.offset += type_size (field_type);
+  if (alignment > field_list->field_list.alignment)
     {
-      VECTOR_PUSH (binding->outputs, select_result_t, result);
+      field_list->field_list.alignment = alignment;
     }
-  else
+}
+
+field_t* type_field_list_find (const type_t* type,
+                               string_t name)
+{
+  VECTOR_FOREACH (field, limit, type->field_list.fields, field_t*)
     {
-      VECTOR_PUSH (binding->inputs, select_result_t, result);
+      if (streq (name, field_name (*field)))
+        {
+          return (*field);
+        }
     }
+  return NULL;
 }
 
-void type_add_binding (const type_t* t,
-                       binding_t* binding)
+
+/* bool */
+/* type_append_field (type_t * type, string_t field_name, */
+/* 		   const type_t * field_type) */
+/* { */
+/*   assert (type->kind == TypeComponent); */
+
+/*   field_t **ptr; */
+/*   for (ptr = &(type->component.field_list); *ptr != NULL; ptr = &(*ptr)->next) */
+/*     { */
+/*       if (streq (field_name, (*ptr)->name)) */
+/* 	{ */
+/* 	  /\* Duplicate field name. *\/ */
+/* 	  return false; */
+/* 	} */
+/*     } */
+
+/*   size_t alignment = type_alignment (field_type); */
+/*   type->component.offset = align_up (type->component.offset, alignment); */
+
+/*   *ptr = make_field (field_name, field_type, type->component.offset, type->component.field_count++); */
+/*   type->component.offset += type_size (field_type); */
+/*   if (alignment > type->component.alignment) */
+/*     { */
+/*       type->component.alignment = alignment; */
+/*     } */
+
+/*   return true; */
+/* } */
+
+
+
+/* static select_result_t */
+/* find_field_or_reaction_or_undefined (const field_t * field, */
+/*                                      const action_t * reaction, */
+/*                                      string_t identifier) */
+/* { */
+/*   select_result_t retval; */
+
+/*   /\* Search through the fields. *\/ */
+/*   for (; field != NULL; field = field->next) */
+/*     { */
+/*       if (streq (identifier, field->name)) */
+/* 	{ */
+/*           retval.kind = SelectResultField; */
+/*           retval.field = field; */
+/* 	  return retval; */
+/* 	} */
+/*     } */
+
+/*   /\* Search through the reactions. *\/ */
+/*   for (; reaction != NULL; reaction = reaction->next) */
+/*     { */
+/*       if (action_is_reaction (reaction) && streq (identifier, reaction->name)) */
+/* 	{ */
+/*           retval.kind = SelectResultReaction; */
+/*           retval.reaction = reaction; */
+/*           return retval; */
+/* 	} */
+/*     } */
+
+/*   retval.kind = SelectResultUndefined; */
+/*   return retval; */
+/* } */
+
+type_t*
+type_select (const type_t * type, string_t identifier)
 {
-  type_t* type = (type_t*)t;
-  assert (type_is_component (type));
+  switch (type->kind)
+    {
+    case TypeUndefined:
+      unimplemented;
+    case TypeVoid:
+      unimplemented;
+    case TypeBool:
+      unimplemented;
+    case TypeComponent:
+      {
+        type_t* t = type_select (type->component.field_list, identifier);
+        if (t != NULL)
+          {
+            return t;
+          }
 
-  binding->next = type->component.bindings;
-  type->component.bindings = binding;
+        VECTOR_FOREACH (ptr, limit, type->component.reactions, action_t*)
+          {
+            if (streq (identifier, reaction_name (*ptr)))
+              {
+                return reaction_type (*ptr);
+              }
+          }
+
+        return NULL;
+      }
+    case TypePointer:
+      unimplemented;
+    case TypePort:
+      unimplemented;
+    case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      {
+        field_t* field = type_field_list_find (type, identifier);
+        if (field != NULL)
+          {
+            return field_type (field);
+          }
+        else
+          {
+            return NULL;
+          }
+      }
+    case TypeSignature:
+      unimplemented;
+    }
+
+  bug ("unhandled case");
 }
 
-trigger_group_t* action_trigger_begin (const action_t* action)
+bool type_is_pointer (const type_t* type)
 {
-  return VECTOR_BEGIN (action->trigger_groups);
+  return type->kind == TypePointer;
 }
 
-trigger_group_t* action_trigger_end (const action_t* action)
+PointerKind type_pointer_kind (const type_t* type)
 {
-  return VECTOR_END (action->trigger_groups);
+  assert (type->kind == TypePointer);
+  return type->pointer.kind;
 }
 
-trigger_group_t* trigger_next (trigger_group_t* trigger)
+bool type_equivalent (const type_t* left, const type_t* right)
 {
-  return trigger + 1;
+  if (left->has_name || right->has_name)
+    {
+      return left == right;
+    }
+
+  unimplemented;
 }
 
-const field_t** trigger_field_begin (const trigger_group_t* trigger)
+type_t* type_make_signature (void)
 {
-  return VECTOR_BEGIN (trigger->fields);
+  type_t* t = make (TypeSignature);
+  VECTOR_INIT (t->signature.parameters, parameter_t*, 0, NULL);
+  return t;
 }
 
-const field_t** trigger_field_end (const trigger_group_t* trigger)
+parameter_t* type_signature_find (const type_t* signature, string_t name)
 {
-  return VECTOR_END (trigger->fields);
+  VECTOR_FOREACH (ptr, limit, signature->signature.parameters, parameter_t*)
+    {
+      if (streq (parameter_name ((*ptr)), name))
+        {
+          return *ptr;
+        }
+    }
+  return NULL;
 }
 
-const field_t** trigger_field_next (const field_t** field)
+void type_signature_append (type_t* signature, string_t parameter_name, type_t* parameter_type)
+{
+  parameter_t* p = parameter_make (parameter_name, parameter_type);
+  VECTOR_PUSH (signature->signature.parameters, parameter_t*, p);
+}
+
+parameter_t** type_signature_begin (const type_t* signature)
+{
+  return VECTOR_BEGIN (signature->signature.parameters);
+}
+
+parameter_t** type_signature_end (const type_t* signature)
+{
+  return VECTOR_END (signature->signature.parameters);
+}
+
+parameter_t** type_signature_next (parameter_t** pos)
+{
+  return pos + 1;
+}
+
+bool type_callable (const type_t* type)
+{
+  switch (type->kind)
+    {
+    case TypeUndefined:
+      unimplemented;
+    case TypeVoid:
+      unimplemented;
+    case TypeBool:
+      unimplemented;
+    case TypeComponent:
+      unimplemented;
+    case TypePointer:
+      unimplemented;
+    case TypePort:
+      return true;
+    case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      unimplemented;
+    case TypeSignature:
+      unimplemented;
+    }
+  not_reached;
+}
+
+size_t type_parameter_count (const type_t* type)
+{
+  switch (type->kind)
+    {
+    case TypeUndefined:
+      unimplemented;
+    case TypeVoid:
+      unimplemented;
+    case TypeBool:
+      unimplemented;
+    case TypeComponent:
+      unimplemented;
+    case TypePointer:
+      unimplemented;
+    case TypePort:
+      return type_parameter_count (type->port.signature);
+    case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      unimplemented;
+    case TypeSignature:
+      return VECTOR_SIZE (type->signature.parameters);
+    }
+  not_reached;
+}
+
+type_t* type_parameter_type (const type_t* type,
+                             size_t idx)
+{
+  switch (type->kind)
+    {
+    case TypeUndefined:
+      unimplemented;
+    case TypeVoid:
+      unimplemented;
+    case TypeBool:
+      unimplemented;
+    case TypeComponent:
+      unimplemented;
+    case TypePointer:
+      unimplemented;
+    case TypePort:
+      return type_parameter_type (type->port.signature, idx);
+    case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      unimplemented;
+    case TypeSignature:
+      return parameter_type (VECTOR_AT (type->signature.parameters, idx));
+    }
+  not_reached;
+}
+
+type_t* type_return_type (const type_t* type)
+{
+  switch (type->kind)
+    {
+    case TypeUndefined:
+      unimplemented;
+    case TypeVoid:
+      unimplemented;
+    case TypeBool:
+      unimplemented;
+    case TypeComponent:
+      unimplemented;
+    case TypePointer:
+      unimplemented;
+    case TypePort:
+      return make_void ();
+    case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      unimplemented;
+    case TypeSignature:
+      unimplemented;
+    }
+  not_reached;
+}
+
+bool type_is_reaction (const type_t* type)
+{
+  return type->kind == TypeReaction;
+}
+
+bool type_is_signature (const type_t* type)
+{
+  return type->kind == TypeSignature;
+}
+
+type_t* type_make_reaction (type_t* signature)
+{
+  type_t* r = make (TypeReaction);
+  r->reaction.signature = signature;
+  return r;
+}
+
+type_t* type_reaction_signature (const type_t* reaction)
+{
+  assert (reaction->kind == TypeReaction);
+  return reaction->reaction.signature;
+}
+
+bool type_compatible_port_reaction (const type_t* port,
+                                    const type_t* reaction)
+{
+  assert (port->kind == TypePort);
+  assert (reaction->kind == TypeReaction);
+
+  const type_t* port_signature = port->port.signature;
+  const type_t* reaction_signature = reaction->reaction.signature;
+
+  size_t port_arity = type_signature_arity (port_signature);
+  size_t reaction_arity = type_signature_arity (reaction_signature);
+  if (port_arity != reaction_arity)
+    {
+      return false;
+    }
+
+  size_t idx;
+  for (idx = 0; idx != port_arity; ++idx)
+    {
+      parameter_t* port_parameter = VECTOR_AT (port_signature->signature.parameters, idx);
+      type_t* port_parameter_type = parameter_type (port_parameter);
+      parameter_t* reaction_parameter = VECTOR_AT (reaction_signature->signature.parameters, idx);
+      type_t* reaction_parameter_type = parameter_type (reaction_parameter);
+
+      if (!type_equivalent (port_parameter_type, reaction_parameter_type))
+        {
+          return false;
+        }
+    }
+
+  return true;
+}
+
+
+size_t type_signature_arity (const type_t* signature)
+{
+  assert (signature->kind == TypeSignature);
+  return VECTOR_SIZE (signature->signature.parameters);
+}
+
+field_t** type_field_list_begin (const type_t* field_list)
+{
+  assert (field_list->kind == TypeFieldList);
+  return VECTOR_BEGIN (field_list->field_list.fields);
+}
+
+field_t** type_field_list_end (const type_t* field_list)
+{
+  assert (field_list->kind == TypeFieldList);
+  return VECTOR_END (field_list->field_list.fields);
+}
+
+field_t** type_field_list_next (field_t** field)
 {
   return field + 1;
 }
 
-binding_t* type_bindings_begin (const type_t* type)
+const type_t* type_component_field_list (const type_t* component)
 {
-  assert (type_is_component (type));
-  return type->component.bindings;
+  assert (component->kind == TypeComponent);
+  return component->component.field_list;
 }
 
-binding_t* type_bindings_end (const type_t* type)
+void type_component_add_binding (type_t* component, binding_t* binding)
 {
-  assert (type_is_component (type));
-  return NULL;
+  assert (component->kind == TypeComponent);
+  VECTOR_PUSH (component->component.bindings, binding_t*, binding);
 }
 
-binding_t* type_bindings_next (binding_t* binding)
+binding_t** type_component_bindings_begin (const type_t* component)
 {
-  return binding->next;
+  assert (component->kind == TypeComponent);
+  return VECTOR_BEGIN (component->component.bindings);
 }
 
-select_result_t* binding_output_begin (binding_t* binding)
+binding_t** type_component_bindings_end (const type_t* component)
 {
-  return VECTOR_BEGIN (binding->outputs);
+  assert (component->kind == TypeComponent);
+  return VECTOR_END (component->component.bindings);
 }
 
-select_result_t* binding_output_end (binding_t* binding)
+binding_t** type_component_bindings_next (binding_t** pos)
 {
-  return VECTOR_END (binding->outputs);
+  return pos + 1;
 }
 
-select_result_t* binding_output_next (select_result_t* result)
+action_t** type_component_actions_begin (const type_t* component)
 {
-  return result + 1;
+  assert (component->kind == TypeComponent);
+  return VECTOR_BEGIN (component->component.actions);
 }
 
-select_result_t* binding_input_begin (binding_t* binding)
+action_t** type_component_actions_end (const type_t* component)
 {
-  return VECTOR_BEGIN (binding->inputs);
+  assert (component->kind == TypeComponent);
+  return VECTOR_END (component->component.actions);
 }
 
-select_result_t* binding_input_end (binding_t* binding)
+action_t** type_component_actions_next (action_t** pos)
 {
-  return VECTOR_END (binding->inputs);
-}
-
-select_result_t* binding_input_next (select_result_t* result)
-{
-  return result + 1;
+  return pos + 1;
 }

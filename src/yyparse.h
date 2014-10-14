@@ -1,9 +1,9 @@
 #ifndef yyparse_h
 #define yyparse_h
 
-#include "node.h"
+#include "ast.h"
 
-extern node_t *root;
+extern ast_t *root;
 
 int yyparse (void);
 void yyerror (char const *);

@@ -96,3 +96,16 @@ untyped_value_logic_or (untyped_value_t x, untyped_value_t y)
       return untyped_value_make_undefined ();
     }
 }
+
+size_t untyped_value_size (untyped_value_t x)
+{
+  switch (x.kind)
+    {
+    case UntypedUndefined:
+      not_reached;
+    case UntypedBool:
+      return 1;
+    }
+
+  not_reached;
+}

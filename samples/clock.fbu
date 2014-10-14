@@ -16,7 +16,7 @@ reaction (this #Clock) request () {
 }
 
 action (this #Clock) (this#.flag) {
-  trigger this#.response (this#.bit) {
+  trigger response (this#.bit) {
     this#.flag = false;
   }
 }
@@ -27,15 +27,13 @@ type Sampler component {
 };
 
 action (this #Sampler) (this#.flag!) {
-  trigger this#.request () {
+  trigger request () {
     this#.flag = true;
-    print true;
   }
 }
 
 reaction (this #Sampler) response (bit bool) {
   trigger {
-    print bit;
     this#.flag = false;
   }
 }

@@ -16,7 +16,6 @@
 "component"            { return COMPONENT; }
 "instance"             { return INSTANCE; }
 "port"                 { return PORT; }
-"print"                { return PRINT; }
 "reaction"             { return REACTION; }
 "trigger"              { return TRIGGER; }
 "type"                 { return TYPE; }

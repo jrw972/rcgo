@@ -4,21 +4,13 @@
 /* Symbol table. */
 
 #include "strtab.h"
-#include "semval.h"
+#include "typed_value.h"
 
-typedef struct symbol_t symbol_t;
+symtab_t* symtab_make (symtab_t * parent);
 
-/* A symtab_t is designed to be allocated on the stack. */
-typedef struct symtab_t symtab_t;
-struct symtab_t
-{
-  const symtab_t *parent;
-  symbol_t *head;
-};
+const symtab_t* symtab_parent (symtab_t* symtab);
 
-void symtab_init (symtab_t * symtab, const symtab_t * parent);
-
-void symtab_fini (symtab_t * symtab);
+symtab_t* symtab_get_root (symtab_t* symtab);
 
 void symtab_enter (symtab_t * symtab, symbol_t * symbol);
 
@@ -28,28 +20,19 @@ symbol_t *symtab_find_current (const symtab_t * symtab, string_t identifier);
 
 symbol_t *symtab_get_this (const symtab_t * symtab);
 
-string_t symbol_identifier (const symbol_t * symbol);
+const type_t* symtab_get_this_type (const symtab_t* symtab);
 
-symbol_t *symbol_make_variable (string_t identifier, const type_t * type);
+bool symtab_in_trigger_statement (const symtab_t* symtab);
 
-bool symbol_is_variable (const symbol_t * symbol);
+void symtab_set_in_trigger_statement (symtab_t* symtab);
 
-const type_t *symbol_variable_type (const symbol_t * symbol);
+void symtab_set_current_action (symtab_t* symtab,
+                                action_t* action);
 
-symbol_t *symbol_make_type (const type_t * type);
+action_t* symtab_get_current_action (const symtab_t* symtab);
 
-bool symbol_is_type (const symbol_t * symbol);
+void symtab_set_current_receiver_type (symtab_t* symtab, type_t* type);
 
-const type_t *symbol_type_type (const symbol_t * symbol);
-
-symbol_t *symbol_make_constant (string_t identifier, abstract_value_t value);
-
-bool symbol_is_constant (const symbol_t * symbol);
-
-abstract_value_t symbol_constant_value (const symbol_t * symbol);
-
-symbol_t *symbol_make_instance (string_t identifier, const type_t * type);
-
-void symbol_set_as_this (symbol_t * symbol);
+type_t* symtab_get_current_receiver_type (const symtab_t* symtab);
 
 #endif /* symtab_h */

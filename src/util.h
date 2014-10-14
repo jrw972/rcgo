@@ -2,12 +2,21 @@
 #define util_h
 
 #include <stddef.h>
+#include <stdlib.h>
 
-#define VECTOR_INIT(array, type) do { \
-  array = malloc (sizeof (type));                     \
-  array##_size = 0;                                           \
-  array##_capacity = 1;                                       \
-} while (0);
+#define VECTOR_DECL(array, type) type* array;   \
+  size_t array##_size;                          \
+  size_t array##_capacity
+
+#define VECTOR_INIT(array, type, size, x) do {                         \
+    array = malloc (((size == 0) ? 1 : size) * sizeof (type)); \
+    array##_size = size;                                                  \
+    array##_capacity = ((size == 0) ? 1 : size);             \
+    size_t idx;                                              \
+    for (idx = 0; idx != size; ++idx) { \
+      array[idx] = x;                               \
+    }                                               \
+  } while (0);
 
 #define VECTOR_ENSURE_ONE(array, type) do { \
   if (array##_size == array##_capacity) \
@@ -23,13 +32,22 @@
   } while (0);
 
 #define VECTOR_FOREACH(ptr, limit, array, type)                         \
-  type *ptr, *limit;                                                    \
+  type *ptr; \
+  type *limit; \
   for (ptr = array, limit = array + array##_size; ptr != limit; ++ptr)
 
 #define VECTOR_BEGIN(array) (array)
 #define VECTOR_END(array) (array + array##_size)
+#define VECTOR_SIZE(array) array##_size
+#define VECTOR_AT(array, idx) array[idx]
+#define VECTOR_SET(array, idx, x) array[idx] = x
+#define VECTOR_MOVE(array_to, array_from) do { array_to = array_from; array_to##_size = array_from##_size; array_to##_capacity = array_from##_capacity; } while (0);
 
 void*
 xmalloc (size_t size);
+
+ptrdiff_t
+align_up (ptrdiff_t value,
+          size_t alignment);
 
 #endif /* util_h */

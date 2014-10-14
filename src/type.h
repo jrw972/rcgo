@@ -2,7 +2,9 @@
 #define type_h
 
 #include "untyped_value.h"
+#include "typed_value.h"
 #include "strtab.h"
+#include "types.h"
 
 typedef enum
 { TypeUndefined,
@@ -11,33 +13,22 @@ typedef enum
   TypeComponent,
   TypePointer,
   TypePort,
-  TypeReaction
+  TypeReaction,
+  TypeFieldList,
+  TypeSignature,
 } TypeKind;
 
-typedef struct type_t type_t;
-typedef struct field_t field_t;
-typedef struct signature_t signature_t;
-typedef struct action_t action_t;
-typedef struct trigger_group_t trigger_group_t;
-typedef struct binding_t binding_t;
-
 typedef enum
-  {
-    SelectResultField,
-    SelectResultReaction,
-    SelectResultUndefined,
-  } SelectResultKind;
-
-typedef struct select_result_t select_result_t;
-struct select_result_t {
-  SelectResultKind kind;
-  union {
-    const field_t* field;
-    const action_t* reaction;
-  };
-};
+{ PointerToMutable,
+  PointerToImmutable,
+} PointerKind;
 
 const char* type_to_string (const type_t* type);
+
+/* Copy the guts of from to to and delete from. */
+void type_move (type_t* to, type_t* from);
+
+size_t type_size (const type_t* type);
 
 const type_t *type_set_name (const type_t * type, string_t name);
 
@@ -45,50 +36,27 @@ string_t type_get_name (const type_t * type);
 
 bool type_is_named (const type_t * type);
 
-const type_t *type_make_undefined (void);
+type_t *type_make_undefined (void);
 
 bool type_is_undefined (const type_t* type);
 
-const type_t *type_make_bool (void);
+type_t *type_make_bool (void);
 
-const type_t *type_pointer_base_type (const type_t * type);
+type_t *type_pointer_base_type (const type_t * type);
 
-type_t *type_make_component (void);
+type_t *type_make_component (type_t* type);
 
-type_t * type_make_pointer (const type_t* base_type);
+type_t * type_make_pointer (PointerKind kind, type_t* base_type);
 
-type_t *type_make_port (signature_t* signature);
+type_t *type_make_port (const type_t* signature);
 
 bool type_is_port (const type_t* type);
 
 bool type_is_component (const type_t * type);
 
-action_t* type_add_action (const type_t * type);
+action_t* type_component_add_action (type_t * type);
 
-bool action_is_action (const action_t* action);
-
-bool action_is_reaction (const action_t* action);
-
-size_t action_number (const action_t* action);
-
-size_t type_action_count (const type_t * type);
-
-size_t type_add_bind (const type_t* type);
-
-size_t type_bind_count (const type_t * type);
-
-bool type_append_field (type_t * type, string_t field_name,
-			const type_t * field_type);
-
-const field_t *type_field_list (const type_t * type);
-
-string_t field_name (const field_t * field);
-
-const type_t *field_type (const field_t * field);
-
-size_t field_number (const field_t * field);
-
-const field_t *field_next (const field_t * field);
+action_t* type_component_add_reaction (type_t * component_type, string_t identifier, type_t* signature);
 
 TypeKind type_kind (const type_t * type);
 
@@ -102,39 +70,13 @@ const type_t *type_logic_and (const type_t * x, const type_t * y);
 
 const type_t *type_logic_or (const type_t * x, const type_t * y);
 
-const type_t *type_dereference (const type_t * type);
-
-select_result_t type_select (const type_t * type, string_t identifier);
-
-select_result_t select_result_make_undefined ();
+type_t* type_select (const type_t * type, string_t identifier);
 
 bool type_is_boolean (const type_t * type);
 
-action_t* type_get_reaction (const type_t * component_type, string_t identifier);
-
-action_t* type_add_reaction (const type_t * component_type, string_t identifier, signature_t* signature);
-
-const type_t* reaction_type (const action_t* reaction);
-
-string_t reaction_name (const action_t* reaction);
-
-const type_t* reaction_component_type (const action_t* reaction);
-
-signature_t* signature_make (void);
-
-bool signature_add_parameter (signature_t* signature,
-                              string_t name,
-                              const type_t* type);
-
-size_t signature_size (const signature_t* signature);
-
-const type_t* signature_type (const signature_t* signature, size_t idx);
-
-string_t signature_name (const signature_t* signature, size_t idx);
+action_t* type_component_get_reaction (const type_t * component_type, string_t identifier);
 
 bool type_is_bindable (const type_t* output, const type_t* input);
-
-action_t* type_reaction_get_reaction (const type_t* type);
 
 action_t* type_actions_begin (const type_t* type);
 
@@ -142,49 +84,79 @@ action_t* type_actions_end (const type_t* type);
 
 action_t* action_next (action_t* action);
 
-trigger_group_t* action_add_trigger_group (action_t* action);
-
-void trigger_group_add_field (trigger_group_t* group, const field_t* field);
-
 bool type_check_arg (const type_t* type, size_t idx, const type_t* arg);
 
 const type_t* type_return_value (const type_t* type);
 
-binding_t* binding_make (void);
+type_t* type_make_field_list (void);
 
-void binding_add (binding_t* binding, select_result_t result, bool input);
+field_t* type_field_list_find (const type_t* field_list,
+                               string_t field_name);
 
-void type_add_binding (const type_t* type,
-                       binding_t* binding);
+void type_field_list_append (type_t* field_list,
+                             string_t field_name,
+                             type_t* field_type);
 
-trigger_group_t* action_trigger_begin (const action_t* action);
+bool type_is_pointer (const type_t* type);
 
-trigger_group_t* action_trigger_end (const action_t* action);
+PointerKind type_pointer_kind (const type_t* type);
 
-trigger_group_t* trigger_next (trigger_group_t* trigger);
+bool type_equivalent (const type_t* left, const type_t* right);
 
-const field_t** trigger_field_begin (const trigger_group_t* trigger);
+type_t* type_make_signature (void);
 
-const field_t** trigger_field_end (const trigger_group_t* trigger);
+parameter_t* type_signature_find (const type_t* signature, string_t parameter_name);
 
-const field_t** trigger_field_next (const field_t** field);
+void type_signature_append (type_t* signature, string_t parameter_name, type_t* parameter_type);
 
-binding_t* type_bindings_begin (const type_t* type);
+parameter_t** type_signature_begin (const type_t* signature);
 
-binding_t* type_bindings_end (const type_t* type);
+parameter_t** type_signature_end (const type_t* signature);
 
-binding_t* type_bindings_next (binding_t* binding);
+parameter_t** type_signature_next (parameter_t**);
 
-select_result_t* binding_output_begin (binding_t* binding);
+bool type_callable (const type_t* type);
 
-select_result_t* binding_output_end (binding_t* binding);
+size_t type_parameter_count (const type_t* type);
 
-select_result_t* binding_output_next (select_result_t* result);
+type_t* type_parameter_type (const type_t* type,
+                             size_t size);
 
-select_result_t* binding_input_begin (binding_t* binding);
+type_t* type_return_type (const type_t* type);
 
-select_result_t* binding_input_end (binding_t* binding);
+bool type_is_reaction (const type_t* type);
 
-select_result_t* binding_input_next (select_result_t* result);
+bool type_is_signature (const type_t* type);
+
+type_t* type_make_reaction (type_t* signature);
+
+type_t* type_reaction_signature (const type_t* reaction);
+
+bool type_compatible_port_reaction (const type_t* port,
+                                    const type_t* reaction);
+
+size_t type_signature_arity (const type_t* signature);
+
+field_t** type_field_list_begin (const type_t* field_list);
+
+field_t** type_field_list_end (const type_t* field_list);
+
+field_t** type_field_list_next (field_t** field);
+
+const type_t* type_component_field_list (const type_t* component);
+
+void type_component_add_binding (type_t* component, binding_t* binding);
+
+binding_t** type_component_bindings_begin (const type_t* component);
+
+binding_t** type_component_bindings_end (const type_t* component);
+
+binding_t** type_component_bindings_next (binding_t** pos);
+
+action_t** type_component_actions_begin (const type_t* component);
+
+action_t** type_component_actions_end (const type_t* component);
+
+action_t** type_component_actions_next (action_t** pos);
 
 #endif /* type_h */
