@@ -27,12 +27,12 @@ string_t reaction_name (const action_t* reaction);
 
 const type_t* reaction_component_type (const action_t* reaction);
 
-void action_add_trigger_group (action_t* action, trigger_group_t* trigger_group);
+void action_add_trigger (action_t* action, trigger_t* trigger);
 
-trigger_group_t** action_trigger_group_begin (const action_t* action);
+trigger_t** action_trigger_begin (const action_t* action);
 
-trigger_group_t** action_trigger_group_end (const action_t* action);
+trigger_t** action_trigger_end (const action_t* action);
 
-trigger_group_t** action_trigger_group_next (trigger_group_t** pos);
+trigger_t** action_trigger_next (trigger_t** pos);
 
 #endif /* action_h */

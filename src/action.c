@@ -8,7 +8,7 @@ struct action_t
 {
   bool is_reaction;
   type_t *component_type; /* Back-pointer to component type. */
-  VECTOR_DECL (trigger_groups, trigger_group_t*);
+  VECTOR_DECL (triggers, trigger_t*);
   /* Reactions only. */
   string_t name;
   type_t *reaction_type;
@@ -21,7 +21,7 @@ action_make (type_t* type)
   action_t* action = xmalloc (sizeof (action_t));
   action->is_reaction = false;
   action->component_type = type;
-  VECTOR_INIT (action->trigger_groups, trigger_group_t*, 0, NULL);
+  VECTOR_INIT (action->triggers, trigger_t*, 0, NULL);
   return action;
 }
 
@@ -51,7 +51,7 @@ reaction_make (type_t* type,
   action_t* action = xmalloc (sizeof (action_t));
   action->is_reaction = true;
   action->component_type = type;
-  VECTOR_INIT (action->trigger_groups, trigger_group_t*, 0, NULL);
+  VECTOR_INIT (action->triggers, trigger_t*, 0, NULL);
   action->name = name;
   action->reaction_type = type_make_reaction (signature);
   return action;
@@ -81,22 +81,22 @@ const type_t* reaction_component_type (const action_t* reaction)
   return reaction->component_type;
 }
 
-void action_add_trigger_group (action_t* action, trigger_group_t* trigger_group)
+void action_add_trigger (action_t* action, trigger_t* trigger)
 {
-  VECTOR_PUSH (action->trigger_groups, trigger_group_t*, trigger_group);
+  VECTOR_PUSH (action->triggers, trigger_t*, trigger);
 }
 
-trigger_group_t** action_trigger_group_begin (const action_t* action)
+trigger_t** action_trigger_begin (const action_t* action)
 {
-  return VECTOR_BEGIN (action->trigger_groups);
+  return VECTOR_BEGIN (action->triggers);
 }
 
-trigger_group_t** action_trigger_group_end (const action_t* action)
+trigger_t** action_trigger_end (const action_t* action)
 {
-  return VECTOR_END (action->trigger_groups);
+  return VECTOR_END (action->triggers);
 }
 
-trigger_group_t** action_trigger_group_next (trigger_group_t** pos)
+trigger_t** action_trigger_next (trigger_t** pos)
 {
   return pos + 1;
 }

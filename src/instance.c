@@ -6,7 +6,7 @@
 #include "instance_set.h"
 #include <error.h>
 #include "action.h"
-#include "trigger_group.h"
+#include "trigger.h"
 
 struct instance_t {
   const type_t* type;
@@ -148,13 +148,13 @@ transitive_closure (const instance_table_t* table,
                     instance_t* instance,
                     const action_t* action)
 {
-  trigger_group_t** trigger_pos;
-  trigger_group_t** trigger_limit;
-  for (trigger_pos = action_trigger_group_begin (action), trigger_limit = action_trigger_group_end (action);
+  trigger_t** trigger_pos;
+  trigger_t** trigger_limit;
+  for (trigger_pos = action_trigger_begin (action), trigger_limit = action_trigger_end (action);
        trigger_pos != trigger_limit;
-       trigger_pos = action_trigger_group_next (trigger_pos))
+       trigger_pos = action_trigger_next (trigger_pos))
     {
-      trigger_group_t* tg = *trigger_pos;
+      trigger_t* tg = *trigger_pos;
 
       if (instance_set_contains (set, instance, tg))
         {
@@ -164,9 +164,9 @@ transitive_closure (const instance_table_t* table,
 
       field_t **field_pos;
       field_t **field_limit;
-      for (field_pos = trigger_group_begin (tg), field_limit = trigger_group_end (tg);
+      for (field_pos = trigger_begin (tg), field_limit = trigger_end (tg);
            field_pos != field_limit;
-           field_pos = trigger_group_next (field_pos))
+           field_pos = trigger_next (field_pos))
         {
           const field_t* field = *field_pos;
           VECTOR_FOREACH (binding_pos, binding_limit, table->bindings, concrete_binding_t)

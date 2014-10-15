@@ -14,7 +14,7 @@ typedef struct instance_table_t instance_table_t;
 typedef struct parameter_t parameter_t;
 typedef struct symbol_t symbol_t;
 typedef struct symtab_t symtab_t;
-typedef struct trigger_group_t trigger_group_t;
+typedef struct trigger_t trigger_t;
 typedef struct type_t type_t;
 
 #endif /* types_h */

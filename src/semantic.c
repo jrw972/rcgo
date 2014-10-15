@@ -7,7 +7,7 @@
 #include "type.h"
 #include "parameter.h"
 #include "instance.h"
-#include "trigger_group.h"
+#include "trigger.h"
 #include "field.h"
 #include "binding.h"
 #include "symbol.h"
@@ -785,14 +785,14 @@ check_statement (ast_t* node)
         /* Check the triggers. */
         check_rvalue_list (expression_list_node);
 
-        trigger_group_t* trigger_group = trigger_group_make ();
-        action_add_trigger_group (action, trigger_group);
+        trigger_t* trigger = trigger_make ();
+        action_add_trigger (action, trigger);
         AST_FOREACH (child, expression_list_node)
           {
             field_t* field = extract_port_field (child);
             assert (field != NULL);
             assert (type_is_port (field_type (field)));
-            trigger_group_add_field (trigger_group, field);
+            trigger_add_field (trigger, field);
           }
 
         /* Re-insert this as a pointer to mutable. */

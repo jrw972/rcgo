@@ -20,7 +20,7 @@ semantics.h semantics.c \
 strtab.h strtab.c \
 symbol.h symbol.c \
 symtab.h symtab.c \
-trigger_group.h trigger_group.c \
+trigger.h trigger.c \
 type.h type.c \
 typed_value.h typed_value.c \
 types.h \
