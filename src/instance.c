@@ -148,12 +148,6 @@ transitive_closure (const instance_table_t* table,
                     instance_t* instance,
                     const action_t* action)
 {
-  if (instance_set_contains (set, instance))
-    {
-      error (-1, 0, "system is non-deterministic");
-    }
-  instance_set_insert (set, instance);
-
   trigger_group_t** trigger_pos;
   trigger_group_t** trigger_limit;
   for (trigger_pos = action_trigger_group_begin (action), trigger_limit = action_trigger_group_end (action);
@@ -161,6 +155,13 @@ transitive_closure (const instance_table_t* table,
        trigger_pos = action_trigger_group_next (trigger_pos))
     {
       trigger_group_t* tg = *trigger_pos;
+
+      if (instance_set_contains (set, instance, tg))
+        {
+          error (-1, 0, "system is non-deterministic");
+        }
+      instance_set_push (set, instance, tg);
+
       field_t **field_pos;
       field_t **field_limit;
       for (field_pos = trigger_group_begin (tg), field_limit = trigger_group_end (tg);
@@ -179,6 +180,8 @@ transitive_closure (const instance_table_t* table,
                 }
             }
         }
+
+      instance_set_pop (set);
     }
 }
 
@@ -215,7 +218,7 @@ instance_table_analyze_composition (const instance_table_t* table)
            action_pos != action_end;
            action_pos = type_component_actions_next (action_pos))
         {
-          instance_set_clear (set);
+          assert (instance_set_empty (set));
           transitive_closure (table, set, instance, *action_pos);
         }
     }

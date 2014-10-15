@@ -31,6 +31,13 @@
     array[array##_size++] = value;                                    \
   } while (0);
 
+#define VECTOR_POP(array) do {                  \
+  if (array##_size != 0)                        \
+    {                                           \
+  --array##_size;                               \
+    }                                           \
+  }    while (0);
+
 #define VECTOR_FOREACH(ptr, limit, array, type)                         \
   type *ptr; \
   type *limit; \
@@ -40,6 +47,7 @@
 #define VECTOR_END(array) (array + array##_size)
 #define VECTOR_NEXT(pos) (pos + 1)
 #define VECTOR_SIZE(array) array##_size
+#define VECTOR_EMPTY(array) (array##_size == 0)
 #define VECTOR_AT(array, idx) array[idx]
 #define VECTOR_SET(array, idx, x) array[idx] = x
 #define VECTOR_MOVE(array_to, array_from) do { array_to = array_from; array_to##_size = array_from##_size; array_to##_capacity = array_from##_capacity; } while (0);
