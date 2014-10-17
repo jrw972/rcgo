@@ -11,8 +11,6 @@
 #include "yyparse.h"
 #include "semantic.h"
 #include "semantics.h"
-#include "codegen.h"
-#include "compile.h"
 #include "debug.h"
 
 static void

@@ -1,0 +1,127 @@
+There are three alternatives for a call stack based on allocation:
+static, automatic, and heap.
+
+A static call stack may be an interesting option.  Since we know the
+structure of the calls is may be possible to to allocate a complete
+stack (statically or dynamically).  However, the storage requirement
+is linear in the number of instance/action pairs.  Heap allocation is
+certainly possible, however, it is expensive since the memory
+allocator must be involved in every call.  Automatic allocation using
+a linear stack is more or less standard and will scale well since only
+N stacks are needed where N is the number of processors.
+
+The execution of an action or reaction consists of three phases.  The
+first phase is called the immutable phase because the state of the
+components is immutable.  Values can be calculated and stored on the
+stack or in the heap but the state of a component cannot change.  The
+second phase is called the triggering phase.  In the triggering phase,
+ports are triggered which causes reactions bound to those ports to
+enter the immutable phase.  The state of components is immutable in
+the triggering phase as well.  Once all components have finished their
+triggering phase, then the components enter the third phase called the
+mutable phase.  As implied by the name, components are allowed to
+change state in this phase.  Components are allowed to access the
+state of other components in the immutable and triggering phase but
+cannot in the mutable phase as this leads to non-determinism.
+
+A component may have multiple trigger statements but at most one will
+be executed in an action.  The transitive closure of these trigger
+statements form a tree.  The immutable and triggering phase of
+execution perform a depth-first traversal of this tree that creates
+activation frames for all of the actions and reactions.  The mutable
+phase then visits each of the frames (in any order).
+
+The description above is a "single-threaded" view of action execution.
+In a multi-threaded view, each port that is trigger would spawn a new
+thread to produce a new stack that could continue executing in
+parallel.  The threads would use barrier synchronization to coordinate
+the transition from immutable/trigger to the mutable phase.
+
+I think I will try to implement both strategies.  I'll start with the
+single-threaded implementation.
+
+A simple example will help to bring some of the requirements to the
+surface.  Suppose an action A triggers two ports P1 and P2.  P1 drives
+reactions B and C while P2 drives reaction D.  First, A must enter the
+immutable phase.
+
+| A I |
+
+Supppose P1 is triggered first and B is activated first.
+
+| A T | B I/T |
+
+Then C will be activated.
+
+| A T | B T | C I/T |
+
+Then P2 will be triggered and D will be activated.
+
+| A T | B T | C T | D I/T |
+
+The actions can the proceed to the mutable phase.  Presumably, we can
+start with the last frame and process in LIFO order.
+
+| A M | B M | C M | D M |
+
+| A M | B M | C M |
+
+| A M | B M|
+
+| A M |
+
+Observations:
+
+1.  The size of an activation frame cannot change while it is in the
+triggering phase.  Once a frame enters the triggering phase, it must
+assume that a subsequent frame exists and that expanding would corrupt
+it.  A similar statement can be applied to the mutable phase.
+
+2.  The end of the last activation frame may be used like a
+conventional call frame.  A frame in the immutable phase may safely
+assume that it is the last activation frame.  A frame in the
+triggering phase can use the end of the last activation frame so long
+as it cleans it before transferring control to another frame.
+
+3.  Arguments to reactions can be passed either by copy or by
+reference.  Assume that reaction B takes parameters.  In pass by copy,
+A will compute these values and then copy them to the beginning of B's
+frame.  B may manipulate the values since they are copies.  This
+scenario looks like this:
+
+| A ... parameters ... | parameters B |
+
+In pass by reference, B would receive a pointer to the parameters:
+
+| A ... parameters ... | pointer to immutable parameters B |
+
+B cannot modify the parameters since C must see them as A generated
+them.  Experimentation is needed to determine which is more efficient
+in terms of time and space.
+
+4.  The activator calls the activatee in the triggering phase but the
+activatee jumps back to the activator.  A will place an instruction
+pointer at the beginning of the frame for B and then transfer control
+to B (call).  Once B has finished its triggering phase, it must jump
+back to A so that A can continue with its triggering phase.  In a
+traditional return, the stack would be popped which must be avoided.
+
+5.  The instruction pointers can be used to set up the mutable phase.
+At the end of every frame except the last is an instruction pointer
+that the subsequent frame can use to return to the previous frame.
+Thus, at the end of the triggerring phase, the action will overwrite
+the instruction pointer with the entry point of its mutable phase.
+One the first frame finishes its mutable phase it can push a phony
+frame which calls return to switch to the last frame.  The subsequent
+frames can return popping the stack all the way up.
+
+6.  Base pointers must be saved explicitly to set up the mutable
+phase.  In cdecl, the callee pushes the current base pointer and sets
+the new base pointer to the current stack pointer.  For the triggering
+phase, the current base pointer should be saved and restored and the
+current stack pointer becomes the new base pointer as in cdecl.
+However, at the end of the triggering phase, the base pointer needs to
+point to the previous frame and not the caller's frame.  To accomplish
+this, assume there is a variable with the base pointer of the last
+frame.  When a new frame is created, it saves this pointer and updates
+it with its own base pointer.

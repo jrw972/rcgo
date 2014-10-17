@@ -5,11 +5,8 @@ AM_YFLAGS = -v -d
 bin_PROGRAMS = fbu
 fbu_SOURCES = main.c scanner.l parser.y \
 action.h action.c \
-asm.h asm.c \
 ast.h ast.c \
 binding.h binding.c \
-codegen.h codegen.c \
-compile.h compile.c \
 debug.h debug.c \
 field.h field.c \
 instance.h instance.c \
