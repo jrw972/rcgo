@@ -52,11 +52,8 @@
 #define VECTOR_SET(array, idx, x) array[idx] = x
 #define VECTOR_MOVE(array_to, array_from) do { array_to = array_from; array_to##_size = array_from##_size; array_to##_capacity = array_from##_capacity; } while (0);
 
-void*
-xmalloc (size_t size);
+void *xmalloc (size_t size);
 
-ptrdiff_t
-align_up (ptrdiff_t value,
-          size_t alignment);
+ptrdiff_t align_up (ptrdiff_t value, size_t alignment);
 
 #endif /* util_h */

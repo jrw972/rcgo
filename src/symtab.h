@@ -6,11 +6,11 @@
 #include "strtab.h"
 #include "typed_value.h"
 
-symtab_t* symtab_make (symtab_t * parent);
+symtab_t *symtab_make (symtab_t * parent);
 
-const symtab_t* symtab_parent (symtab_t* symtab);
+const symtab_t *symtab_parent (symtab_t * symtab);
 
-symtab_t* symtab_get_root (symtab_t* symtab);
+symtab_t *symtab_get_root (symtab_t * symtab);
 
 void symtab_enter (symtab_t * symtab, symbol_t * symbol);
 
@@ -20,19 +20,18 @@ symbol_t *symtab_find_current (const symtab_t * symtab, string_t identifier);
 
 symbol_t *symtab_get_this (const symtab_t * symtab);
 
-const type_t* symtab_get_this_type (const symtab_t* symtab);
+const type_t *symtab_get_this_type (const symtab_t * symtab);
 
-bool symtab_in_trigger_statement (const symtab_t* symtab);
+void symtab_set_current_action (symtab_t * symtab, action_t * action);
 
-void symtab_set_in_trigger_statement (symtab_t* symtab);
+action_t *symtab_get_current_action (const symtab_t * symtab);
 
-void symtab_set_current_action (symtab_t* symtab,
-                                action_t* action);
+void symtab_set_current_trigger (symtab_t * symtab, trigger_t * trigger);
 
-action_t* symtab_get_current_action (const symtab_t* symtab);
+trigger_t *symtab_get_current_trigger (const symtab_t * symtab);
 
-void symtab_set_current_receiver_type (symtab_t* symtab, type_t* type);
+void symtab_set_current_receiver_type (symtab_t * symtab, type_t * type);
 
-type_t* symtab_get_current_receiver_type (const symtab_t* symtab);
+type_t *symtab_get_current_receiver_type (const symtab_t * symtab);
 
 #endif /* symtab_h */

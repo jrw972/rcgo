@@ -7,28 +7,33 @@
 #include "instance_set.h"
 
 #ifdef blah
-static const type_t *
-check_type_spec (node_t * node, symtab_t * symtab);
+static const type_t *check_type_spec (node_t * node, symtab_t * symtab);
 
-static signature_t*
+static signature_t *
 check_signature (node_t * node, symtab_t * symtab)
 {
-  signature_t* signature = signature_make ();
+  signature_t *signature = signature_make ();
 
-  NODE_FOREACH (parameter, node) {
-    node_t* identifier_list = node_child (parameter, PARAMETER_IDENTIFIER_LIST);
-    node_t* type_spec = node_child (parameter, PARAMETER_TYPE_SPEC);
-    const type_t* type = check_type_spec (type_spec, symtab);
-    NODE_FOREACH (name, identifier_list) {
+  NODE_FOREACH (parameter, node)
+  {
+    node_t *identifier_list =
+      node_child (parameter, PARAMETER_IDENTIFIER_LIST);
+    node_t *type_spec = node_child (parameter, PARAMETER_TYPE_SPEC);
+    const type_t *type = check_type_spec (type_spec, symtab);
+    NODE_FOREACH (name, identifier_list)
+    {
       string_t identifier = node_identifier (name);
-      if (signature_add_parameter (signature, identifier, type)) {
-        // Add to scope.
-        symbol_t* symbol = symbol_make_variable (identifier, type);
-        symtab_enter (symtab, symbol);
-      }
-      else {
-        error_at_line (-1, 0, node_file (name), node_line (name), "%s is a duplicate parameter", get (identifier));
-      }
+      if (signature_add_parameter (signature, identifier, type))
+	{
+	  // Add to scope.
+	  symbol_t *symbol = symbol_make_variable (identifier, type);
+	  symtab_enter (symtab, symbol);
+	}
+      else
+	{
+	  error_at_line (-1, 0, node_file (name), node_line (name),
+			 "%s is a duplicate parameter", get (identifier));
+	}
     }
   }
 
@@ -54,21 +59,21 @@ check_type_spec (node_t * node, symtab_t * symtab)
 	  }
 
 	NODE_FOREACH (field, node)
-	  {
-	    node_t *identifier_list = node_child (field, FIELD_IDENTIFIER_LIST);
-	    node_t *type_spec = node_child (field, FIELD_TYPE_SPEC);
-	    const type_t *field_type = check_type_spec (type_spec, symtab);
+	{
+	  node_t *identifier_list = node_child (field, FIELD_IDENTIFIER_LIST);
+	  node_t *type_spec = node_child (field, FIELD_TYPE_SPEC);
+	  const type_t *field_type = check_type_spec (type_spec, symtab);
 
-            NODE_FOREACH (identifier, identifier_list)
+	  NODE_FOREACH (identifier, identifier_list)
+	  {
+	    string_t id = node_identifier (identifier);
+	    if (!type_append_field (type, id, field_type))
 	      {
-		string_t id = node_identifier (identifier);
-		if (!type_append_field (type, id, field_type))
-		  {
-		    /* TODO:  Error reporting. */
-		    printf ("duplicate field name %s\n", id);
-		  }
+		/* TODO:  Error reporting. */
+		printf ("duplicate field name %s\n", id);
 	      }
 	  }
+	}
 
 	node_set_type (node, type);
       }
@@ -81,7 +86,9 @@ check_type_spec (node_t * node, symtab_t * symtab)
 	symbol_t *symbol = symtab_find (symtab, identifier);
 	if (symbol == NULL)
 	  {
-            error_at_line (-1, 0, node_file (node), node_line (node), "%s is not defined in this scope", get (identifier));
+	    error_at_line (-1, 0, node_file (node), node_line (node),
+			   "%s is not defined in this scope",
+			   get (identifier));
 	    break;
 	  }
 
@@ -100,9 +107,9 @@ check_type_spec (node_t * node, symtab_t * symtab)
 
     case PortTypeSpec:
       {
-        node_t * signature = node_child (node, PORT_TYPE_SPEC_SIGNATURE);
-        signature_t * sig = check_signature (signature, symtab);
-        node_set_type (node, type_make_port (sig));
+	node_t *signature = node_child (node, PORT_TYPE_SPEC_SIGNATURE);
+	signature_t *sig = check_signature (signature, symtab);
+	node_set_type (node, type_make_port (sig));
       }
       break;
     }
@@ -168,8 +175,7 @@ check_binary (node_t * node,
   return node_set_semval (node, this_sv);
 }
 
-static semval_list_t*
-check_expr_list (node_t* node, symtab_t* symtab);
+static semval_list_t *check_expr_list (node_t * node, symtab_t * symtab);
 
 static semval_t
 check_expr (node_t * node, symtab_t * symtab)
@@ -178,27 +184,28 @@ check_expr (node_t * node, symtab_t * symtab)
     {
     case CallExpr:
       {
-        node_t* expr = node_child (node, CALL_EXPR);
-        node_t* args = node_child (node, CALL_ARGS);
+	node_t *expr = node_child (node, CALL_EXPR);
+	node_t *args = node_child (node, CALL_ARGS);
 
-        semval_t expr_semval = check_expr (expr, symtab);
-        semval_list_t* args_list = check_expr_list (args, symtab);
+	semval_t expr_semval = check_expr (expr, symtab);
+	semval_list_t *args_list = check_expr_list (args, symtab);
 
-        semval_t this_sv;
-        if (semval_is_undefined (expr_semval)
-            || semval_list_contains_undefined (args_list))
-          {
-            this_sv = semval_undefined ();
-          }
-        else
-          {
-            this_sv = semval_call (expr_semval, args_list);
-            if (semval_is_undefined (this_sv))
-              {
-                error_at_line (-1, 0, node_file (node), node_line (node), "result of call is not defined");
-              }
-          }
-        node_set_semval (node, this_sv);
+	semval_t this_sv;
+	if (semval_is_undefined (expr_semval)
+	    || semval_list_contains_undefined (args_list))
+	  {
+	    this_sv = semval_undefined ();
+	  }
+	else
+	  {
+	    this_sv = semval_call (expr_semval, args_list);
+	    if (semval_is_undefined (this_sv))
+	      {
+		error_at_line (-1, 0, node_file (node), node_line (node),
+			       "result of call is not defined");
+	      }
+	  }
+	node_set_semval (node, this_sv);
       }
       break;
 
@@ -233,11 +240,13 @@ check_expr (node_t * node, symtab_t * symtab)
 	symbol_t *symbol = symtab_find (symtab, identifier);
 	if (symbol == NULL)
 	  {
-            error_at_line (-1, 0, node_file (node), node_line (node), "%s is not defined in this scope", get (identifier));
+	    error_at_line (-1, 0, node_file (node), node_line (node),
+			   "%s is not defined in this scope",
+			   get (identifier));
 	    break;
 	  }
 
-        node_set_symbol (node, symbol);
+	node_set_symbol (node, symbol);
 
 	if (symbol_is_variable (symbol))
 	  {
@@ -245,7 +254,9 @@ check_expr (node_t * node, symtab_t * symtab)
 			     semval_make_reference (reference_make
 						    (abstract_value_make_typed
 						     (symbol_variable_type
-						      (symbol), select_result_make_undefined ()))));
+						      (symbol),
+						      select_result_make_undefined
+						      ()))));
 	  }
 	else if (symbol_is_constant (symbol))
 	  {
@@ -315,7 +326,9 @@ check_expr (node_t * node, symtab_t * symtab)
 	semval_t semval = semval_select (expr_semval, identifier);
 	if (semval_is_undefined (semval))
 	  {
-            error_at_line (-1, 0, node_file (node), node_line (node), "could not select %s from expression of type %s", get (identifier), semval_to_string (expr_semval));
+	    error_at_line (-1, 0, node_file (node), node_line (node),
+			   "could not select %s from expression of type %s",
+			   get (identifier), semval_to_string (expr_semval));
 	  }
 	node_set_semval (node, semval);
       }
@@ -325,16 +338,16 @@ check_expr (node_t * node, symtab_t * symtab)
   return node_get_semval (node);
 }
 
-static semval_list_t*
-check_expr_list (node_t* node, symtab_t* symtab)
+static semval_list_t *
+check_expr_list (node_t * node, symtab_t * symtab)
 {
   assert (node_def_type (node) == ListDef);
-  semval_list_t* list = semval_list_make ();
+  semval_list_t *list = semval_list_make ();
 
   NODE_FOREACH (child, node)
-    {
-      semval_list_append (list, check_expr (child, symtab));
-    }
+  {
+    semval_list_append (list, check_expr (child, symtab));
+  }
 
   return list;
 }
@@ -353,7 +366,7 @@ check_stmt (node_t * node, symtab_t * symtab)
 
 	if (!semval_assignable (left_sv, right_sv))
 	  {
-            unimplemented;
+	    unimplemented;
 	    /* /\* TODO:  Error reporting. *\/ */
 	    /* printf ("could not assign\n"); */
 	    /* semval_print (left_sv); */
@@ -380,14 +393,14 @@ check_stmt (node_t * node, symtab_t * symtab)
     case ListStmt:
       {
 	/* Create a new scope. */
-	symtab_t* scope = symtab_make (symtab);
-        node_set_symtab (node, scope);
+	symtab_t *scope = symtab_make (symtab);
+	node_set_symtab (node, scope);
 
 	/* Check each statment in the list. */
 	NODE_FOREACH (child, node)
-	  {
-	    check_stmt (child, scope);
-	  }
+	{
+	  check_stmt (child, scope);
+	}
       }
       break;
 
@@ -401,21 +414,23 @@ check_stmt (node_t * node, symtab_t * symtab)
 
     case TriggerStmt:
       {
-        node_t *expr_list = node_child (node, TRIGGER_EXPR_LIST);
+	node_t *expr_list = node_child (node, TRIGGER_EXPR_LIST);
 	node_t *body = node_child (node, TRIGGER_BODY);
 
-        check_expr_list (expr_list, symtab);
+	check_expr_list (expr_list, symtab);
 
 	/* Create a new scope and enter this as a pointer to mutable. */
-	symtab_t* scope = symtab_make (symtab);
-        node_set_symtab (node, scope);
+	symtab_t *scope = symtab_make (symtab);
+	node_set_symtab (node, scope);
 
 	symbol_t *this_symbol = symtab_get_this (scope);
 	const type_t *type = type_make_pointer (type_pointer_base_type
-                                                (symbol_variable_type (this_symbol)));
-        symbol_t *new_this = symbol_make_variable (symbol_identifier (this_symbol),
-                                                   type);
-        symbol_set_as_this (new_this);
+						(symbol_variable_type
+						 (this_symbol)));
+	symbol_t *new_this =
+	  symbol_make_variable (symbol_identifier (this_symbol),
+				type);
+	symbol_set_as_this (new_this);
 	symtab_enter (scope, new_this);
 
 	check_stmt (body, scope);
@@ -433,37 +448,39 @@ check_stmt (node_t * node, symtab_t * symtab)
 
 	/* Enter the identifiers into the symbol table. */
 	NODE_FOREACH (id, identifier_list)
-	  {
-	    string_t id_str = node_identifier (id);
-	    if (symtab_find_current (symtab, id_str) == NULL)
-	      {
-		symtab_enter (symtab, symbol_make_variable (id_str, type));
-	      }
-	    else
-	      {
-		/* TODO:  Error reporting. */
-		printf ("%s is already defined in this scope\n",
-			get (id_str));
-	      }
-	  }
+	{
+	  string_t id_str = node_identifier (id);
+	  if (symtab_find_current (symtab, id_str) == NULL)
+	    {
+	      symtab_enter (symtab, symbol_make_variable (id_str, type));
+	    }
+	  else
+	    {
+	      /* TODO:  Error reporting. */
+	      printf ("%s is already defined in this scope\n", get (id_str));
+	    }
+	}
       }
       break;
     }
 }
 
-static const type_t*
-check_pointer_receiver (node_t* node, symtab_t* symtab)
+static const type_t *
+check_pointer_receiver (node_t * node, symtab_t * symtab)
 {
-  node_t *this_identifier = node_child (node, POINTER_RECEIVER_THIS_IDENTIFIER);
+  node_t *this_identifier =
+    node_child (node, POINTER_RECEIVER_THIS_IDENTIFIER);
   string_t this_str = node_identifier (this_identifier);
-  node_t *type_identifier = node_child (node, POINTER_RECEIVER_TYPE_IDENTIFIER);
+  node_t *type_identifier =
+    node_child (node, POINTER_RECEIVER_TYPE_IDENTIFIER);
   string_t type_str = node_identifier (type_identifier);
 
   /* Look up the type. */
   symbol_t *symbol = symtab_find (symtab, type_str);
   if (symbol == NULL)
     {
-      error_at_line (-1, 0, node_file (node), node_line (node), "%s is not defined in this scope", get (type_str));
+      error_at_line (-1, 0, node_file (node), node_line (node),
+		     "%s is not defined in this scope", get (type_str));
       return NULL;
     }
 
@@ -499,51 +516,56 @@ check_pointer_receiver (node_t* node, symtab_t* symtab)
 static const type_t *
 check_receiver (node_t * node, symtab_t * symtab)
 {
-  switch (node_decl_type (node)) {
-  case Field:
-  case Identifier:
-  case IdentifierList:
-  case Parameter:
-    bug ("Expected a receiver");
-  case PointerReceiver:
-    return check_pointer_receiver (node, symtab);
-  }
+  switch (node_decl_type (node))
+    {
+    case Field:
+    case Identifier:
+    case IdentifierList:
+    case Parameter:
+      bug ("Expected a receiver");
+    case PointerReceiver:
+      return check_pointer_receiver (node, symtab);
+    }
 
   bug ("unhandled case");
 }
 
 static void
-check_bind_stmt (node_t* node,
-                 symtab_t* scope)
+check_bind_stmt (node_t * node, symtab_t * scope)
 {
-  switch (node_stmt_type (node)) {
-  case BindStmt:
+  switch (node_stmt_type (node))
     {
-      node_t* output = node_child (node, BINARY_LEFT_CHILD);
-      node_t* input = node_child (node, BINARY_RIGHT_CHILD);
+    case BindStmt:
+      {
+	node_t *output = node_child (node, BINARY_LEFT_CHILD);
+	node_t *input = node_child (node, BINARY_RIGHT_CHILD);
 
-      semval_t output_semval = check_expr (output, scope);
-      semval_t input_semval = check_expr (input, scope);
+	semval_t output_semval = check_expr (output, scope);
+	semval_t input_semval = check_expr (input, scope);
 
-      if (!semval_bindable (output_semval, input_semval)) {
-        error_at_line (-1, 0, node_file (node), node_line (node), "cannot bind port of type %s to reaction of type %s", semval_to_string (output_semval), semval_to_string (input_semval));
+	if (!semval_bindable (output_semval, input_semval))
+	  {
+	    error_at_line (-1, 0, node_file (node), node_line (node),
+			   "cannot bind port of type %s to reaction of type %s",
+			   semval_to_string (output_semval),
+			   semval_to_string (input_semval));
+	  }
       }
+      break;
+    case AssignmentStmt:
+    case BindListStmt:
+    case ExprStmt:
+    case ListStmt:
+    case PrintStmt:
+    case ReturnStmt:
+    case TriggerStmt:
+    case VarStmt:
+      bug ("unhandled case");
     }
-    break;
-  case AssignmentStmt:
-  case BindListStmt:
-  case ExprStmt:
-  case ListStmt:
-  case PrintStmt:
-  case ReturnStmt:
-  case TriggerStmt:
-  case VarStmt:
-    bug ("unhandled case");
-  }
 }
 
 static void
-check_boolean_return (node_t* node, symtab_t* symtab)
+check_boolean_return (node_t * node, symtab_t * symtab)
 {
   check_stmt (node, symtab);
 
@@ -555,7 +577,8 @@ check_boolean_return (node_t* node, symtab_t* symtab)
 
   if (!semval_is_boolean (semval))
     {
-      error_at_line (-1, 0, node_file (node), node_line (node), "expected boolean in return");
+      error_at_line (-1, 0, node_file (node), node_line (node),
+		     "expected boolean in return");
     }
 }
 
@@ -571,17 +594,17 @@ check_def (node_t * node, symtab_t * symtab)
 	node_t *body = node_child (node, ACTION_BODY);
 
 	/* Create a new scope in which to enter the receiver. */
-	symtab_t* scope = symtab_make (symtab);
-        node_set_symtab (node, scope);
+	symtab_t *scope = symtab_make (symtab);
+	node_set_symtab (node, scope);
 
 	/* Process the receiver. */
 	const type_t *type = check_receiver (receiver, scope);
 
-        assert (type != NULL);
-        node_set_action (node, type_add_action (type));
+	assert (type != NULL);
+	node_set_action (node, type_add_action (type));
 
 	/* Check the precondition. */
-        check_boolean_return (precondition, scope);
+	check_boolean_return (precondition, scope);
 
 	/* Check the body. */
 	check_stmt (body, scope);
@@ -590,23 +613,24 @@ check_def (node_t * node, symtab_t * symtab)
 
     case BindDef:
       {
-        node_t* receiver = node_child (node, BIND_RECEIVER);
-        node_t* list = node_child (node, BIND_BODY);
+	node_t *receiver = node_child (node, BIND_RECEIVER);
+	node_t *list = node_child (node, BIND_BODY);
 
 	/* Create a new scope in which to enter the receiver. */
-	symtab_t* scope = symtab_make (symtab);
-        node_set_symtab (node, scope);
+	symtab_t *scope = symtab_make (symtab);
+	node_set_symtab (node, scope);
 
 	/* Process the receiver. */
 	const type_t *type = check_receiver (receiver, scope);
 
-        assert (type != NULL);
-        node_set_bind_number (node, type_add_bind (type));
+	assert (type != NULL);
+	node_set_bind_number (node, type_add_bind (type));
 
 	/* Check the body. */
-        NODE_FOREACH (stmt, list) {
-          check_bind_stmt (stmt, scope);
-        }
+	NODE_FOREACH (stmt, list)
+	{
+	  check_bind_stmt (stmt, scope);
+	}
       }
       break;
 
@@ -621,7 +645,8 @@ check_def (node_t * node, symtab_t * symtab)
 	symbol_t *type_symbol = symtab_find (symtab, type_str);
 	if (type_symbol == NULL)
 	  {
-            error_at_line (-1, 0, node_file (node), node_line (node), "%s is not defined in this scope", get (type_str));
+	    error_at_line (-1, 0, node_file (node), node_line (node),
+			   "%s is not defined in this scope", get (type_str));
 	    return;
 	  }
 
@@ -638,7 +663,7 @@ check_def (node_t * node, symtab_t * symtab)
 	    return;
 	  }
 
-        node_instance_set_type (node, type);
+	node_instance_set_type (node, type);
 
 	/* Look up the instance. */
 	symbol_t *instance_symbol = symtab_find (symtab, instance_str);
@@ -657,48 +682,51 @@ check_def (node_t * node, symtab_t * symtab)
 
     case ListDef:
       {
-        NODE_FOREACH (child, node)
-	  {
-	    check_def (child, symtab);
-	  }
+	NODE_FOREACH (child, node)
+	{
+	  check_def (child, symtab);
+	}
       }
       break;
 
     case ReactionDef:
       {
 	node_t *receiver = node_child (node, REACTION_RECEIVER);
-        node_t *identifier = node_child (node, REACTION_IDENTIFIER);
-        string_t name = node_identifier (identifier);
-        node_t *signature = node_child (node, REACTION_SIGNATURE);
+	node_t *identifier = node_child (node, REACTION_IDENTIFIER);
+	string_t name = node_identifier (identifier);
+	node_t *signature = node_child (node, REACTION_SIGNATURE);
 	node_t *body = node_child (node, REACTION_BODY);
 
 	/* Create a new scope in which to enter the receiver. */
-	symtab_t* scope = symtab_make (symtab);
-        node_set_symtab (node, scope);
+	symtab_t *scope = symtab_make (symtab);
+	node_set_symtab (node, scope);
 
 	/* Process the receiver. */
 	const type_t *type = check_receiver (receiver, scope);
 
-        if (type == NULL) {
-          return;
-        }
+	if (type == NULL)
+	  {
+	    return;
+	  }
 
-        /* Process the signature. */
-        signature_t* sig = check_signature (signature, scope);
+	/* Process the signature. */
+	signature_t *sig = check_signature (signature, scope);
 
 	/* Check the body. */
 	check_stmt (body, scope);
 
-        /* Add the reaction to the type. */
-        action_t* r = type_get_reaction (type, name);
+	/* Add the reaction to the type. */
+	action_t *r = type_get_reaction (type, name);
 
-        if (r == NULL) {
-          r = type_add_reaction (type, name, sig);
-          node_set_action (node, r);
-        }
-        else {
-          unimplemented;
-        }
+	if (r == NULL)
+	  {
+	    r = type_add_reaction (type, name, sig);
+	    node_set_action (node, r);
+	  }
+	else
+	  {
+	    unimplemented;
+	  }
       }
       break;
 

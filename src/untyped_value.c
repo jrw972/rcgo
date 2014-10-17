@@ -2,19 +2,23 @@
 #include "debug.h"
 #include "symtab.h"
 
-const char* untyped_value_to_string (untyped_value_t u)
+const char *
+untyped_value_to_string (untyped_value_t u)
 {
-  switch (u.kind) {
-  case UntypedUndefined:
-    return "undefined";
-  case UntypedBool:
-    if (u.bool_value) {
-      return "true";
+  switch (u.kind)
+    {
+    case UntypedUndefined:
+      return "undefined";
+    case UntypedBool:
+      if (u.bool_value)
+	{
+	  return "true";
+	}
+      else
+	{
+	  return "false";
+	}
     }
-    else {
-      return "false";
-    }
-  }
 
   bug ("unhandled case");
 }
@@ -97,7 +101,8 @@ untyped_value_logic_or (untyped_value_t x, untyped_value_t y)
     }
 }
 
-size_t untyped_value_size (untyped_value_t x)
+size_t
+untyped_value_size (untyped_value_t x)
 {
   switch (x.kind)
     {

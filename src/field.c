@@ -32,12 +32,14 @@ field_type (const field_t * field)
   return field->type;
 }
 
-ptrdiff_t field_offset (const field_t * field)
+ptrdiff_t
+field_offset (const field_t * field)
 {
   return field->offset;
 }
 
-size_t field_number (const field_t * field)
+size_t
+field_number (const field_t * field)
 {
   return field->number;
 }

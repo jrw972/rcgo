@@ -8,21 +8,23 @@ struct parameter_t
   type_t *type;
 };
 
-parameter_t* parameter_make (string_t name,
-                             type_t* type)
+parameter_t *
+parameter_make (string_t name, type_t * type)
 {
-  parameter_t* p = xmalloc (sizeof (parameter_t));
+  parameter_t *p = xmalloc (sizeof (parameter_t));
   p->name = name;
   p->type = type;
   return p;
 }
 
-string_t parameter_name (const parameter_t* parameter)
+string_t
+parameter_name (const parameter_t * parameter)
 {
   return parameter->name;
 }
 
-type_t* parameter_type (const parameter_t* parameter)
+type_t *
+parameter_type (const parameter_t * parameter)
 {
   return parameter->type;
 }

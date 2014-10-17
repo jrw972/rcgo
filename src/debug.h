@@ -15,7 +15,7 @@
 /* Flag indicating we are debugging. */
 extern int debug;
 
-extern const char* in_file;
+extern const char *in_file;
 extern unsigned int in_line;
 
 #endif /* debug_h */

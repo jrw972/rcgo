@@ -23,7 +23,7 @@ struct untyped_value_t
   };
 };
 
-const char* untyped_value_to_string (untyped_value_t u);
+const char *untyped_value_to_string (untyped_value_t u);
 
 UntypedValueKind untyped_value_kind (untyped_value_t u);
 

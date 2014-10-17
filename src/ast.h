@@ -21,7 +21,8 @@ typedef enum
   AstTypeSpecification,
 } AstKind;
 
-typedef enum {
+typedef enum
+{
   AstComponent,
   AstFieldList,
   AstIdentifierListTypeSpec,
@@ -30,7 +31,8 @@ typedef enum {
   AstSignature,
 } AstTypeSpecificationKind;
 
-typedef enum {
+typedef enum
+{
   AstCallExpr,
   AstDereferenceExpr,
   AstExprList,
@@ -44,7 +46,8 @@ typedef enum {
   AstUntypedLiteral,
 } AstExpressionKind;
 
-typedef enum {
+typedef enum
+{
   AstAssignmentStmt,
   AstExpressionStmt,
   AstStmtList,
@@ -53,7 +56,8 @@ typedef enum {
   AstVarStmt,
 } AstStatementKind;
 
-typedef enum {
+typedef enum
+{
   AstBindStmtList,
   AstBindStmt,
 } AstBindStatementKind;
@@ -62,32 +66,31 @@ typedef enum {
 
 void ast_print (const ast_t * ast, size_t indent);
 
-AstKind ast_kind (const ast_t* ast);
+AstKind ast_kind (const ast_t * ast);
 
 ast_t *ast_add_child (ast_t * parent, ast_t * child);
 
 ast_t *ast_get_child (const ast_t * ast, size_t idx);
 
-ast_t ** ast_get_child_ptr (const ast_t * ast, size_t idx);
+ast_t **ast_get_child_ptr (const ast_t * ast, size_t idx);
 
-void ast_set_child (ast_t * parent, size_t idx, ast_t* child);
+void ast_set_child (ast_t * parent, size_t idx, ast_t * child);
 
-size_t ast_children_count (const ast_t* ast);
+size_t ast_children_count (const ast_t * ast);
 
-ast_t** ast_children_begin (const ast_t* ast);
+ast_t **ast_children_begin (const ast_t * ast);
 
-ast_t** ast_children_end (const ast_t* ast);
+ast_t **ast_children_end (const ast_t * ast);
 
-ast_t** ast_next_child (ast_t** child);
+ast_t **ast_next_child (ast_t ** child);
 
-const char* ast_file (const ast_t* ast);
+const char *ast_file (const ast_t * ast);
 
-unsigned int ast_line (const ast_t* ast);
+unsigned int ast_line (const ast_t * ast);
 
-void ast_set_symtab (ast_t* ast,
-                     symtab_t* symtab);
+void ast_set_symtab (ast_t * ast, symtab_t * symtab);
 
-symtab_t* ast_get_symtab (const ast_t* ast);
+symtab_t *ast_get_symtab (const ast_t * ast);
 
 /* Decl */
 
@@ -100,13 +103,14 @@ ast_t *ast_make_identifier_list (void);
 #define IDENTIFIER_LIST 0
 #define TYPE_SPEC 1
 
-ast_t *ast_make_identifier_list_type_spec (ast_t * identifier_list, ast_t * type_spec);
+ast_t *ast_make_identifier_list_type_spec (ast_t * identifier_list,
+					   ast_t * type_spec);
 
 #define RECEIVER_THIS_IDENTIFIER 0
 #define RECEIVER_TYPE_IDENTIFIER 1
 
 ast_t *ast_make_pointer_receiver (ast_t * this_identifier,
-                                    ast_t * type_identifier);
+				  ast_t * type_identifier);
 
 /* Def */
 
@@ -115,22 +119,21 @@ ast_t *ast_make_pointer_receiver (ast_t * this_identifier,
 #define ACTION_BODY 2
 
 ast_t *ast_make_action_def (ast_t * receiver,
-			      ast_t * precondition, ast_t * body);
+			    ast_t * precondition, ast_t * body);
 
 #define BIND_RECEIVER 0
 #define BIND_BODY 1
 
-ast_t* ast_make_bind_def (ast_t* receiver,
-                            ast_t* list);
+ast_t *ast_make_bind_def (ast_t * receiver, ast_t * list);
 
 #define INSTANCE_IDENTIFIER 0
 #define INSTANCE_TYPE_IDENTIFIER 1
 
 ast_t *ast_make_instance_def (ast_t * instance_id, ast_t * type_id);
 
-void ast_instance_set_type (ast_t* ast, type_t* type);
+void ast_instance_set_type (ast_t * ast, type_t * type);
 
-type_t* ast_instance_get_type (ast_t* ast);
+type_t *ast_instance_get_type (ast_t * ast);
 
 ast_t *ast_make_top_level_list (void);
 
@@ -139,7 +142,8 @@ ast_t *ast_make_top_level_list (void);
 #define REACTION_SIGNATURE 2
 #define REACTION_BODY 3
 
-ast_t *ast_make_reaction_def (ast_t * receiver, ast_t * identifier, ast_t * signature, ast_t * body);
+ast_t *ast_make_reaction_def (ast_t * receiver, ast_t * identifier,
+			      ast_t * signature, ast_t * body);
 
 #define TYPE_IDENTIFIER 0
 #define TYPE_TYPE_SPEC 1
@@ -148,22 +152,21 @@ ast_t *ast_make_type_def (ast_t * identifier, ast_t * type_spec);
 
 /* Expr */
 
-void ast_set_symbol (ast_t* ast, symbol_t* symbol);
+void ast_set_symbol (ast_t * ast, symbol_t * symbol);
 
-symbol_t* ast_get_symbol (ast_t* ast);
+symbol_t *ast_get_symbol (ast_t * ast);
 
 #define CALL_EXPR 0
 #define CALL_ARGS 1
 
-ast_t *ast_make_call_expr (ast_t* expr,
-                             ast_t* args);
+ast_t *ast_make_call_expr (ast_t * expr, ast_t * args);
 #define UNARY_CHILD 0
 #define BINARY_LEFT_CHILD 0
 #define BINARY_RIGHT_CHILD 1
 
 ast_t *ast_make_dereference (ast_t * expr);
 
-ast_t *ast_make_identifier_expr (ast_t* identifier);
+ast_t *ast_make_identifier_expr (ast_t * identifier);
 
 ast_t *ast_make_logic_not (ast_t * child);
 
@@ -187,17 +190,16 @@ ast_t *ast_make_assignment_stmt (ast_t * lvalue, ast_t * rvalue);
 
 ast_t *ast_make_stmt_list (void);
 
-ast_t *ast_make_return_stmt (ast_t* expr);
+ast_t *ast_make_return_stmt (ast_t * expr);
 
 #define TRIGGER_EXPRESSION_LIST 0
 #define TRIGGER_BODY 1
 
-ast_t *ast_make_trigger_stmt (ast_t* expr_list, ast_t * stmt);
+ast_t *ast_make_trigger_stmt (ast_t * expr_list, ast_t * stmt);
 
 ast_t *ast_make_bind_list_stmt (void);
 
-ast_t *ast_make_bind_stmt (ast_t* output,
-                             ast_t* input);
+ast_t *ast_make_bind_stmt (ast_t * output, ast_t * input);
 
 /* TypeSpec */
 
@@ -205,7 +207,7 @@ ast_t *ast_make_field_list (void);
 
 #define IDENTIFIER_TYPE_SPEC_CHILD 0
 
-ast_t *ast_make_identifier_type_spec (ast_t* identifier);
+ast_t *ast_make_identifier_type_spec (ast_t * identifier);
 
 #define PORT_SIGNATURE 0
 
@@ -213,46 +215,48 @@ ast_t *ast_make_port (ast_t * signature);
 
 #define COMPONENT_FIELD_LIST 0
 
-ast_t* ast_make_component_type_spec (ast_t* field_list);
+ast_t *ast_make_component_type_spec (ast_t * field_list);
 
-AstTypeSpecificationKind ast_type_specification_kind (const ast_t* node);
+AstTypeSpecificationKind ast_type_specification_kind (const ast_t * node);
 
-ast_t* ast_make_expression_list (void);
+ast_t *ast_make_expression_list (void);
 
-AstStatementKind ast_statement_kind (const ast_t* node);
+AstStatementKind ast_statement_kind (const ast_t * node);
 
-AstBindStatementKind ast_bind_statement_kind (const ast_t* node);
+AstBindStatementKind ast_bind_statement_kind (const ast_t * node);
 
-AstExpressionKind ast_expression_kind (const ast_t* node);
+AstExpressionKind ast_expression_kind (const ast_t * node);
 
-ast_t* ast_make_untyped_literal (untyped_value_t value);
+ast_t *ast_make_untyped_literal (untyped_value_t value);
 
-untyped_value_t ast_get_untyped_value (const ast_t* node);
+untyped_value_t ast_get_untyped_value (const ast_t * node);
 
-ast_t* ast_make_typed_literal (typed_value_t value);
+ast_t *ast_make_typed_literal (typed_value_t value);
 
-bool ast_is_typed_literal (const ast_t* node);
+bool ast_is_typed_literal (const ast_t * node);
 
-bool ast_is_untyped_literal (const ast_t* node);
+bool ast_is_untyped_literal (const ast_t * node);
 
-bool ast_is_literal (const ast_t* node);
+bool ast_is_literal (const ast_t * node);
 
-bool ast_is_boolean (const ast_t* node);
+bool ast_is_boolean (const ast_t * node);
 
-void ast_set_type (ast_t* node, type_t* type, bool immutable);
+void ast_set_type (ast_t * node, type_t * type, bool immutable,
+		   bool derived_from_receiver);
 
-type_t* ast_get_type (const ast_t* node);
+type_t *ast_get_type (const ast_t * node);
 
-bool ast_get_immutable (const ast_t* node);
+bool ast_get_immutable (const ast_t * node);
 
-ast_t* ast_make_signature (void);
+bool ast_get_derived_from_receiver (const ast_t * node);
 
-ast_t* ast_make_port_call (ast_t* identifier,
-                           ast_t* args);
+ast_t *ast_make_signature (void);
 
-action_t* ast_get_current_action (const ast_t* node);
+ast_t *ast_make_port_call (ast_t * identifier, ast_t * args);
 
-type_t* ast_get_current_receiver_type (const ast_t* node);
+action_t *ast_get_current_action (const ast_t * node);
+
+type_t *ast_get_current_receiver_type (const ast_t * node);
 
 #define AST_FOREACH(child, parent) size_t idx; size_t limit; ast_t* child; \
   for (idx = 0, limit = ast_children_count (parent), child = ((idx < ast_children_count (parent)) ? ast_get_child (parent, idx) : NULL); idx != limit; ++idx, child = (idx < (ast_children_count (parent)) ? ast_get_child (parent, idx) : NULL))

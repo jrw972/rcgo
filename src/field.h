@@ -4,8 +4,8 @@
 #include "types.h"
 #include "strtab.h"
 
-field_t *
-field_make (string_t name, type_t * type, ptrdiff_t offset, size_t number);
+field_t *field_make (string_t name, type_t * type, ptrdiff_t offset,
+		     size_t number);
 
 string_t field_name (const field_t * field);
 
