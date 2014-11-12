@@ -27,6 +27,7 @@ struct symbol_t
     {
       type_t *type;
       ParameterKind kind;
+      symbol_t* original;
     } parameter;
     struct
     {
@@ -37,7 +38,29 @@ struct symbol_t
       type_t *type;
     } type;
   };
+  ptrdiff_t offset;
 };
+
+const char* symbol_kind_string (SymbolKind kind)
+{
+  switch (kind)
+    {
+    case SymbolInstance:
+      return "Instance";
+    case SymbolParameter:
+      return "Parameter";
+    case SymbolType:
+      return "Type";
+    case SymbolTypedConstant:
+      return "TypedConstant";
+    case SymbolUntypedConstant:
+      return "UntypedConstant";
+    case SymbolVariable:
+      return "Variable";
+    }
+
+  return "<Unknown Symbol Kind>";
+}
 
 string_t
 symbol_identifier (const symbol_t * symbol)
@@ -212,20 +235,36 @@ symbol_get_instance_type (const symbol_t * symbol)
   return symbol->instance.type;
 }
 
-size_t
-symbol_size (symbol_t * symbol)
-{
-  assert (symbol_kind (symbol) == SymbolVariable);
-  return type_size (symbol->variable.type);
-}
-
 symbol_t *
 symbol_make_parameter (string_t identifier, type_t * type,
-		       ast_t * defining_node, ParameterKind kind)
+		       ast_t * defining_node)
 {
   symbol_t *s = make (identifier, SymbolParameter, defining_node);
   s->parameter.type = type;
-  s->parameter.kind = kind;
+  s->parameter.kind = ParameterOrdinary;
+  return s;
+}
+
+symbol_t *
+symbol_make_receiver (string_t identifier, type_t * type,
+                      ast_t * defining_node)
+{
+  symbol_t *s = make (identifier, SymbolParameter, defining_node);
+  s->parameter.type = type;
+  s->parameter.kind = ParameterReceiver;
+  return s;
+}
+
+symbol_t *
+symbol_make_receiver_duplicate (symbol_t* receiver)
+{
+  symbol_t *s = make (symbol_identifier (receiver), SymbolParameter, symbol_defining_node (receiver));
+  s->parameter.type = type_make_pointer (PointerToMutable,
+                                         type_pointer_base_type
+                                         (symbol_parameter_type
+                                          (receiver)));
+  s->parameter.kind = ParameterReceiverDuplicate;
+  s->parameter.original = receiver;
   return s;
 }
 
@@ -241,4 +280,19 @@ symbol_parameter_type (const symbol_t * symbol)
 {
   assert (symbol_kind (symbol) == SymbolParameter);
   return symbol->parameter.type;
+}
+
+void symbol_set_offset (symbol_t* symbol,
+                        ptrdiff_t offset)
+{
+  symbol->offset = offset;
+}
+
+ptrdiff_t symbol_get_offset (const symbol_t* symbol)
+{
+  if (symbol->kind == SymbolParameter && symbol->parameter.kind == ParameterReceiverDuplicate)
+    {
+      return symbol->parameter.original->offset;
+    }
+  return symbol->offset;
 }

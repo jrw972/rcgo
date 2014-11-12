@@ -16,6 +16,36 @@ struct symtab_t
   type_t *current_receiver_type;
 };
 
+void symtab_print (const symtab_t* symtab)
+{
+  VECTOR_FOREACH (ptr, limit, symtab->symbols, symbol_t*)
+    {
+      const symbol_t* symbol = *ptr;
+      const char* name = get (symbol_identifier (symbol));
+      const char* kind = symbol_kind_string (symbol_kind (symbol));
+      const char* type;
+      size_t offset = symbol_get_offset (symbol);
+      switch (symbol_kind (symbol))
+        {
+        case SymbolInstance:
+          unimplemented;
+        case SymbolParameter:
+          type = type_to_string (symbol_parameter_type (symbol));
+          break;
+        case SymbolType:
+          unimplemented;
+        case SymbolTypedConstant:
+          unimplemented;
+        case SymbolUntypedConstant:
+          unimplemented;
+        case SymbolVariable:
+          unimplemented;
+        }
+
+      printf ("%s\t%s\t%s\t%zd\n", name, kind, type, offset);
+    }
+}
+
 symtab_t *
 symtab_make (symtab_t * parent)
 {
@@ -172,4 +202,19 @@ symtab_get_current_receiver_type (const symtab_t * symtab)
     }
 
   return symtab_get_current_receiver_type (symtab->parent);
+}
+
+symbol_t** symtab_begin (const symtab_t* symtab)
+{
+  return VECTOR_BEGIN (symtab->symbols);
+}
+
+symbol_t** symtab_end (const symtab_t* symtab)
+{
+  return VECTOR_END (symtab->symbols);
+}
+
+symbol_t** symtab_next (symbol_t** pos)
+{
+  return VECTOR_NEXT (pos);
 }

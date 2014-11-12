@@ -6,6 +6,8 @@
 #include "strtab.h"
 #include "typed_value.h"
 
+void symtab_print (const symtab_t* symtab);
+
 symtab_t *symtab_make (symtab_t * parent);
 
 const symtab_t *symtab_parent (symtab_t * symtab);
@@ -33,5 +35,11 @@ trigger_t *symtab_get_current_trigger (const symtab_t * symtab);
 void symtab_set_current_receiver_type (symtab_t * symtab, type_t * type);
 
 type_t *symtab_get_current_receiver_type (const symtab_t * symtab);
+
+symbol_t** symtab_begin (const symtab_t* symtab);
+
+symbol_t** symtab_end (const symtab_t* symtab);
+
+symbol_t** symtab_next (symbol_t** pos);
 
 #endif /* symtab_h */

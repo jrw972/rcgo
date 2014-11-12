@@ -11,9 +11,11 @@ debug.h debug.c \
 field.h field.c \
 instance.h instance.c \
 instance_set.h instance_set.c \
+memory_model.h memory_model.c \
 parameter.h parameter.c \
 semantic.h semantic.c \
-semantics.h semantics.c \
+runtime.h runtime.c \
+stack_frame.h stack_frame.c \
 strtab.h strtab.c \
 symbol.h symbol.c \
 symtab.h symtab.c \

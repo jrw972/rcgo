@@ -11,6 +11,9 @@
 struct instance_t
 {
   const type_t *type;
+  bool is_top_level;
+  // Pointer to the run-time instance.
+  void* ptr;
 };
 
 typedef struct
@@ -20,13 +23,13 @@ typedef struct
   instance_t *subinstance;
 } subinstance_t;
 
-typedef struct
+struct concrete_binding_t
 {
   instance_t *output_instance;
   const field_t *output_port;
   instance_t *input_instance;
   const action_t *input_reaction;
-} concrete_binding_t;
+};
 
 struct instance_table_t
 {
@@ -36,10 +39,12 @@ struct instance_table_t
 };
 
 static instance_t *
-instance_make (const type_t * type)
+instance_make (const type_t * type,
+               bool is_top_level)
 {
   instance_t *i = xmalloc (sizeof (instance_t));
   i->type = type;
+  i->is_top_level = is_top_level;
   return i;
 }
 
@@ -56,9 +61,9 @@ instance_table_make (void)
 }
 
 instance_t *
-instance_table_insert (instance_table_t * table, const type_t * type)
+instance_table_insert (instance_table_t * table, const type_t * type, bool is_top_level)
 {
-  instance_t *i = instance_make (type);
+  instance_t *i = instance_make (type, is_top_level);
   VECTOR_PUSH (table->instances, instance_t *, i);
   return i;
 }
@@ -73,9 +78,9 @@ subinstance_t s = { instance: instance, field: field, subinstance:subinstance
   VECTOR_PUSH (table->subinstances, subinstance_t, s);
 }
 
-static instance_t *
-lookup_subinstance (const instance_table_t * table,
-		    instance_t * instance, const field_t * field)
+instance_t* instance_table_get_subinstance (const instance_table_t * table,
+                                            instance_t * instance,
+                                            const field_t * field)
 {
   VECTOR_FOREACH (pos, limit, table->subinstances, subinstance_t)
   {
@@ -129,7 +134,7 @@ instance_table_enumerate_bindings (instance_table_t * table)
 	while (result_pos != result_limit)
 	  {
 	    output_instance =
-	      lookup_subinstance (table, output_instance, output_port);
+	      instance_table_get_subinstance (table, output_instance, output_port);
 	    output_port = *result_pos;
 	    result_pos = binding_output_next (result_pos);
 	  }
@@ -137,13 +142,11 @@ instance_table_enumerate_bindings (instance_table_t * table)
 	instance_t *input_instance = instance;
 	result_pos = binding_input_begin (binding);
 	result_limit = binding_input_end (binding);
-	field_t *input_reaction = *result_pos;
-	result_pos = binding_input_next (result_pos);
-	while (result_pos != result_limit)
-	  {
+        while (result_pos != result_limit)
+          {
+            field_t *input_reaction = *result_pos;
 	    input_instance =
-	      lookup_subinstance (table, input_instance, input_reaction);
-	    input_reaction = *result_pos;
+	      instance_table_get_subinstance (table, input_instance, input_reaction);
 	    result_pos = binding_input_next (result_pos);
 	  }
 
@@ -267,4 +270,74 @@ instance_table_dump (const instance_table_t * table)
     }
     printf ("\n");
   }
+}
+
+instance_t** instance_table_begin (instance_table_t* table)
+{
+  return VECTOR_BEGIN (table->instances);
+}
+
+instance_t** instance_table_end (instance_table_t* table)
+{
+  return VECTOR_END (table->instances);
+}
+
+instance_t** instance_table_next (instance_t** pos)
+{
+  return VECTOR_NEXT (pos);
+}
+
+concrete_binding_t* instance_table_binding_begin (instance_table_t* table)
+{
+  return VECTOR_BEGIN (table->bindings);
+}
+
+concrete_binding_t* instance_table_binding_end (instance_table_t* table)
+{
+  return VECTOR_END (table->bindings);
+}
+
+concrete_binding_t* instance_table_binding_next (concrete_binding_t* pos)
+{
+  return VECTOR_NEXT (pos);
+}
+
+const type_t* instance_type (const instance_t* instance)
+{
+  return instance->type;
+}
+
+void instance_set_ptr (instance_t* instance, void* ptr)
+{
+  instance->ptr = ptr;
+}
+
+void* instance_get_ptr (const instance_t* instance)
+{
+  return instance->ptr;
+}
+
+bool instance_is_top_level (const instance_t* instance)
+{
+  return instance->is_top_level;
+}
+
+instance_t* concrete_binding_output_instance (const concrete_binding_t* binding)
+{
+  return binding->output_instance;
+}
+
+const field_t* concrete_binding_output_port (const concrete_binding_t* binding)
+{
+  return binding->output_port;
+}
+
+instance_t* concrete_binding_input_instance (const concrete_binding_t* binding)
+{
+  return binding->input_instance;
+}
+
+const action_t* concrete_binding_input_reaction (const concrete_binding_t* binding)
+{
+  return binding->input_reaction;
 }

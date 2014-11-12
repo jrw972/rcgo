@@ -54,9 +54,10 @@ bool type_is_port (const type_t * type);
 
 bool type_is_component (const type_t * type);
 
-action_t *type_component_add_action (type_t * type);
+action_t *type_component_add_action (type_t * type, ast_t* node);
 
 action_t *type_component_add_reaction (type_t * component_type,
+                                       ast_t* node,
 				       string_t identifier,
 				       type_t * signature);
 
@@ -74,6 +75,8 @@ const type_t *type_logic_or (const type_t * x, const type_t * y);
 
 type_t *type_select (const type_t * type, string_t identifier);
 
+field_t* type_select_field (const type_t* type, string_t identifier);
+
 bool type_is_boolean (const type_t * type);
 
 action_t *type_component_get_reaction (const type_t * component_type,
@@ -81,11 +84,11 @@ action_t *type_component_get_reaction (const type_t * component_type,
 
 bool type_is_bindable (const type_t * output, const type_t * input);
 
-action_t *type_actions_begin (const type_t * type);
+action_t **type_actions_begin (const type_t * type);
 
-action_t *type_actions_end (const type_t * type);
+action_t **type_actions_end (const type_t * type);
 
-action_t *action_next (action_t * action);
+action_t **type_actions_next (action_t ** action);
 
 bool type_check_arg (const type_t * type, size_t idx, const type_t * arg);
 
@@ -95,6 +98,9 @@ type_t *type_make_field_list (void);
 
 field_t *type_field_list_find (const type_t * field_list,
 			       string_t field_name);
+
+void type_field_list_prepend (type_t* field_list,
+                              string_t field_name, type_t* field_type);
 
 void type_field_list_append (type_t * field_list,
 			     string_t field_name, type_t * field_type);
@@ -161,5 +167,8 @@ action_t **type_component_actions_begin (const type_t * component);
 action_t **type_component_actions_end (const type_t * component);
 
 action_t **type_component_actions_next (action_t ** pos);
+
+void type_print_value (const type_t* type,
+                       void* value);
 
 #endif /* type_h */

@@ -108,11 +108,11 @@ ast_print (const ast_t * node, size_t indent)
 	  printf ("AstPortCallExpr");
 	  break;
 	case AstTypedLiteral:
-	  unimplemented;
-	  break;
+          printf ("AstTypedLiteral");
+          break;
 	case AstUntypedLiteral:
-	  unimplemented;
-	  break;
+          printf ("AstUntypedLiteral");
+          break;
 	}
       break;
     case AstIdentifier:
@@ -643,6 +643,13 @@ ast_make_typed_literal (typed_value_t value)
   return node;
 }
 
+typed_value_t ast_get_typed_value (const ast_t* node)
+{
+  assert (node->kind == AstExpression);
+  assert (node->expression.kind == AstTypedLiteral);
+  return node->expression.typed_value;
+}
+
 bool
 ast_is_typed_literal (const ast_t * node)
 {
@@ -669,7 +676,7 @@ ast_is_boolean (const ast_t * node)
   assert (node->kind == AstExpression);
   if (node->expression.kind == AstTypedLiteral)
     {
-      unimplemented;
+      return type_is_boolean (node->expression.typed_value.type);
     }
   else if (node->expression.kind == AstUntypedLiteral)
     {
@@ -690,6 +697,7 @@ ast_set_type (ast_t * node, type_t * type, bool immutable,
 	  && node->expression.kind != AstUntypedLiteral);
   node->expression.type = type;
   node->expression.immutable = immutable;
+  node->expression.derived_from_receiver = derived_from_receiver;
 }
 
 type_t *
@@ -699,6 +707,20 @@ ast_get_type (const ast_t * node)
   assert (node->expression.kind != AstTypedLiteral
 	  && node->expression.kind != AstUntypedLiteral);
   return node->expression.type;
+}
+
+type_t *
+ast_get_type2 (const ast_t * node)
+{
+  assert (node->kind == AstExpression);
+  if (node->expression.kind == AstTypedLiteral)
+    {
+      return node->expression.typed_value.type;
+    }
+  else
+    {
+      return node->expression.type;
+    }
 }
 
 bool

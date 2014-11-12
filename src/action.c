@@ -9,19 +9,22 @@ struct action_t
   bool is_reaction;
   type_t *component_type;	/* Back-pointer to component type. */
     VECTOR_DECL (triggers, trigger_t *);
+  ast_t* node;
   /* Reactions only. */
   string_t name;
   type_t *reaction_type;
 };
 
 action_t *
-action_make (type_t * type)
+action_make (type_t * type,
+             ast_t* node)
 {
   assert (type_is_component (type));
   action_t *action = xmalloc (sizeof (action_t));
   action->is_reaction = false;
   action->component_type = type;
   VECTOR_INIT (action->triggers, trigger_t *, 0, NULL);
+  action->node = node;
   return action;
 }
 
@@ -43,9 +46,15 @@ action_type (const action_t * action)
   return action->component_type;
 }
 
+ast_t* action_node (const action_t* action)
+{
+  return action->node;
+}
+
 action_t *
 reaction_make (type_t * type,
-	       size_t number, string_t name, type_t * signature)
+               ast_t* node,
+	       string_t name, type_t * signature)
 {
   assert (type_is_component (type));
   assert (type_is_signature (signature));
@@ -53,6 +62,7 @@ reaction_make (type_t * type,
   action->is_reaction = true;
   action->component_type = type;
   VECTOR_INIT (action->triggers, trigger_t *, 0, NULL);
+  action->node = node;
   action->name = name;
   action->reaction_type = type_make_reaction (signature);
   return action;

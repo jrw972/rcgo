@@ -10,8 +10,10 @@
 #include "scanner.h"
 #include "yyparse.h"
 #include "semantic.h"
-#include "semantics.h"
 #include "debug.h"
+#include "instance.h"
+#include "runtime.h"
+#include "memory_model.h"
 
 static void
 print_version (void)
@@ -67,9 +69,7 @@ main (int argc, char **argv)
 	  printf ("Usage: %s OPTION... -c FILE -o FILE\n",
 		  program_invocation_short_name);
 	  puts ("Compile " PACKAGE_NAME " source code.\n" "\n"
-		"  -I PATH     specifies the path to the FBU headers\n"
 		"  -c FILE     specifies the input file\n"
-		"  -o FILE     specifies the output file\n"
 		"  -d, --debug turn on debugging output\n"
 		"  --help      display this help and exit\n"
 		"  --version   display version information and exit\n" "\n"
@@ -102,12 +102,27 @@ main (int argc, char **argv)
     }
   assert (root != NULL);
 
-
+  /* Check the semantics. */
   construct_symbol_table (root, NULL);
   enter_symbols (root);
   process_declarations (root);
   process_definitions (root);
-  check_composition (root);
+
+  /* Check composition. */
+  instance_table_t *instance_table = instance_table_make ();
+  enumerate_instances (root, instance_table);
+  instance_table_enumerate_bindings (instance_table);
+  instance_table_analyze_composition (instance_table);
+  /* instance_table_dump (instance_table); */
+
+  /* Calculate the offsets of all stack variables. */
+  memory_model_t* memory_model = memory_model_make (8);
+  allocate_stack_variables (root, memory_model);
+
+  runtime_t* runtime = runtime_make (instance_table, memory_model, 8 * 1024);
+  runtime_allocate_instances (runtime);
+  runtime_create_bindings (runtime);
+  runtime_run (runtime);
 
   return 0;
 }

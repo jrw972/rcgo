@@ -11,6 +11,7 @@
 #include "field.h"
 #include "binding.h"
 #include "symbol.h"
+#include "memory_model.h"
 
 void
 construct_symbol_table (ast_t * node, symtab_t * symtab)
@@ -144,7 +145,7 @@ enter_signature (ast_t * node, const type_t * type)
       if (s == NULL)
 	{
 	  s =
-	    symbol_make_parameter (identifier, type, node, ParameterOrdinary);
+	    symbol_make_parameter (identifier, type, node);
 	  symtab_enter (symtab, s);
 	}
       else
@@ -191,6 +192,8 @@ enter_symbols_helper (ast_t * node)
   }
 }
 
+static type_t* bool_type = NULL;
+
 void
 enter_symbols (ast_t * node)
 {
@@ -199,8 +202,12 @@ enter_symbols (ast_t * node)
 
   /* Insert types. */
   {
+    if (bool_type == NULL)
+      {
+        bool_type = type_make_bool ();
+      }
     symtab_enter (symtab,
-		  symbol_make_type (enter ("bool"), type_make_bool (), node));
+		  symbol_make_type (enter ("bool"), bool_type, node));
   }
 
   /* Insert untyped boolean constants. */
@@ -342,7 +349,7 @@ process_declarations (ast_t * node)
 			   "%s does not refer to a component",
 			   get (type_identifier));
 	  }
-	action_t *action = type_component_add_action (type);
+	action_t *action = type_component_add_action (type, node);
 	symtab_set_current_action (ast_get_symtab (node), action);
 	symtab_set_current_receiver_type (ast_get_symtab (node), type);
       }
@@ -441,7 +448,7 @@ process_declarations (ast_t * node)
 	type_t *signature = process_type_spec (signature_node);
 
 	action_t *action =
-	  type_component_add_reaction (type, identifier, signature);
+	  type_component_add_reaction (type, node, identifier, signature);
 	symtab_set_current_action (ast_get_symtab (node), action);
 	symtab_set_current_receiver_type (ast_get_symtab (node), type);
       }
@@ -886,13 +893,7 @@ check_statement (ast_t * node)
 	/* Re-insert this as a pointer to mutable. */
 	symbol_t *this_symbol = symtab_get_this (symtab);
 	symbol_t *new_this_symbol =
-	  symbol_make_parameter (symbol_identifier (this_symbol),
-				 type_make_pointer (PointerToMutable,
-						    type_pointer_base_type
-						    (symbol_parameter_type
-						     (this_symbol))),
-				 symbol_defining_node (this_symbol),
-				 ParameterReceiverDuplicate);
+	  symbol_make_receiver_duplicate (this_symbol);
 	enter_symbol (body_node, new_this_symbol);
 
 	/* Check the body. */
@@ -1120,14 +1121,20 @@ process_definitions (ast_t * node)
 	  ast_get_child (receiver_node, RECEIVER_THIS_IDENTIFIER);
 	string_t this_identifier = ast_get_identifier (this_node);
 	enter_symbol (receiver_node,
-		      symbol_make_parameter (this_identifier,
-					     type_make_pointer
-					     (PointerToImmutable,
-					      get_current_receiver_type
-					      (node)), this_node,
-					     ParameterReceiver));
+		      symbol_make_receiver (this_identifier,
+                                            type_make_pointer
+                                            (PointerToImmutable,
+                                             get_current_receiver_type
+                                             (node)), this_node));
+
 	/* Check the precondition. */
 	check_rvalue (precondition_node);
+
+        if (ast_expression_kind (*precondition_node) == AstUntypedLiteral)
+          {
+            convert (bool_type, precondition_node, *precondition_node);
+          }
+
 	if (!ast_is_boolean (*precondition_node))
 	  {
 	    error_at_line (-1, 0, ast_file (*precondition_node),
@@ -1148,12 +1155,11 @@ process_definitions (ast_t * node)
 	  ast_get_child (receiver_node, RECEIVER_THIS_IDENTIFIER);
 	string_t this_identifier = ast_get_identifier (this_node);
 	enter_symbol (receiver_node,
-		      symbol_make_parameter (this_identifier,
-					     type_make_pointer
-					     (PointerToImmutable,
-					      get_current_receiver_type
-					      (node)), this_node,
-					     ParameterReceiver));
+		      symbol_make_receiver (this_identifier,
+                                            type_make_pointer
+                                            (PointerToImmutable,
+                                             get_current_receiver_type
+                                             (node)), this_node));
 	/* Check the body. */
 	check_bind_statement (body_node);
       }
@@ -1181,11 +1187,11 @@ process_definitions (ast_t * node)
 	  ast_get_child (receiver_node, RECEIVER_THIS_IDENTIFIER);
 	string_t this_identifier = ast_get_identifier (this_node);
 	enter_symbol (receiver_node,
-		      symbol_make_parameter (this_identifier,
-					     type_make_pointer
-					     (PointerToImmutable,
-					      action_type (reaction)),
-					     this_node, ParameterReceiver));
+		      symbol_make_receiver (this_identifier,
+                                            type_make_pointer
+                                            (PointerToImmutable,
+                                             action_type (reaction)),
+                                            this_node));
 	/* Enter the signature into the symbol table. */
 	enter_signature (signature_node, reaction_signature (reaction));
 
@@ -1211,10 +1217,10 @@ process_definitions (ast_t * node)
 }
 
 static instance_t *
-instantiate (const type_t * type, instance_table_t * instance_table)
+instantiate (const type_t * type, instance_table_t * instance_table, bool is_top_level)
 {
   // Get the instance.
-  instance_t *instance = instance_table_insert (instance_table, type);
+  instance_t *instance = instance_table_insert (instance_table, type, is_top_level);
 
   const type_t *field_list = type_component_field_list (type);
 
@@ -1227,7 +1233,7 @@ instantiate (const type_t * type, instance_table_t * instance_table)
       const type_t *fieldtype = field_type (*field);
       if (type_is_component (fieldtype))
 	{
-	  instance_t *subinstance = instantiate (fieldtype, instance_table);
+	  instance_t *subinstance = instantiate (fieldtype, instance_table, false);
 	  instance_table_insert_subinstance (instance_table, instance, *field,
 					     subinstance);
 	}
@@ -1243,7 +1249,7 @@ instantiate (const type_t * type, instance_table_t * instance_table)
   1.  (instance) -> (type)
   2.  (instance, field) -> instance
  */
-static void
+void
 enumerate_instances (ast_t * node, instance_table_t * instance_table)
 {
   switch (ast_kind (node))
@@ -1264,7 +1270,7 @@ enumerate_instances (ast_t * node, instance_table_t * instance_table)
       {
 	symbol_t *symbol = ast_get_symbol (node);
 	const type_t *type = symbol_get_instance_type (symbol);
-	instantiate (type, instance_table);
+	instantiate (type, instance_table, true);
       }
       break;
     case AstPointerReceiverDefinition:
@@ -1288,16 +1294,159 @@ enumerate_instances (ast_t * node, instance_table_t * instance_table)
     }
 }
 
-void
-check_composition (ast_t * root)
+static void
+allocate_symbol (memory_model_t* memory_model,
+                 symbol_t* symbol)
 {
-  instance_table_t *instance_table = instance_table_make ();
+  switch (symbol_kind (symbol))
+    {
+    case SymbolInstance:
+      unimplemented;
+      break;
+    case SymbolParameter:
+      {
+        type_t* type = symbol_parameter_type (symbol);
+        memory_model_arguments_push (memory_model, type_size (type));
+        symbol_set_offset (symbol, memory_model_arguments_offset (memory_model));
+      }
+      break;
+    case SymbolType:
+      unimplemented;
+      break;
+    case SymbolTypedConstant:
+      unimplemented;
+      break;
+    case SymbolUntypedConstant:
+      unimplemented;
+      break;
+    case SymbolVariable:
+      unimplemented;
+      break;
+    }
+}
 
-  enumerate_instances (root, instance_table);
+static void
+allocate_symtab (ast_t* node, memory_model_t* memory_model)
+{
+  // Allocate the parameters.
+  symtab_t* symtab = ast_get_symtab (node);
+  symbol_t** pos;
+  symbol_t** limit;
+  for (pos = symtab_begin (symtab), limit = symtab_end (symtab);
+       pos != limit;
+       pos = symtab_next (pos))
+    {
+      allocate_symbol (memory_model, *pos);
+    }
+}
 
-  instance_table_enumerate_bindings (instance_table);
+static void
+allocate_statement_stack_variables (ast_t* node, memory_model_t* memory_model)
+{
+  switch (ast_statement_kind (node))
+    {
+    case AstAssignmentStmt:
+      unimplemented;
+      break;
+    case AstExpressionStmt:
+      unimplemented;
+      break;
+    case AstStmtList:
+      {
+        ptrdiff_t offset_before = memory_model_locals_offset (memory_model);
+        allocate_symtab (node, memory_model);
+        ptrdiff_t offset_after = memory_model_locals_offset (memory_model);
+	AST_FOREACH (child, node)
+          {
+            allocate_statement_stack_variables (child, memory_model);
+          }
+        memory_model_locals_pop (memory_model, offset_after - offset_before);
+        assert (memory_model_locals_offset (memory_model) == offset_before);
+      }
+      break;
+    case AstReturnStmt:
+      unimplemented;
+      break;
+    case AstTriggerStmt:
+      break;
+    case AstVarStmt:
+      unimplemented;
+      break;
+    }
+}
 
-  instance_table_dump (instance_table);
+static void
+allocate_parameter (memory_model_t* memory_model,
+                    symbol_t** pos,
+                    symbol_t** limit)
+{
+  if (pos != limit)
+    {
+      allocate_parameter (memory_model, symtab_next (pos), limit);
+      allocate_symbol (memory_model, *pos);
+    }
+}
 
-  instance_table_analyze_composition (instance_table);
+static void
+allocate_stack_variables_helper (ast_t* node,
+                                 ast_t* child,
+                                 memory_model_t* memory_model)
+{
+  assert (memory_model_arguments_empty (memory_model));
+  assert (memory_model_locals_empty (memory_model));
+  // Allocate the parameters.
+  symtab_t* symtab = ast_get_symtab (node);
+  symbol_t** pos = symtab_begin (symtab);
+  symbol_t** limit = symtab_end (symtab);
+  ptrdiff_t offset_before = memory_model_arguments_offset (memory_model);
+  allocate_parameter (memory_model, pos, limit);
+  ptrdiff_t offset_after = memory_model_arguments_offset (memory_model);
+  // Allocate the locals.
+  allocate_statement_stack_variables (child, memory_model);
+  // Deallocate the parameters.
+  memory_model_arguments_pop (memory_model, offset_before - offset_after);
+  assert (memory_model_arguments_empty (memory_model));
+  assert (memory_model_locals_empty (memory_model));
+}
+
+void
+allocate_stack_variables (ast_t* node, memory_model_t* memory_model)
+{
+  switch (ast_kind (node))
+    {
+    case AstAction:
+      allocate_stack_variables_helper (node, ast_get_child (node, ACTION_BODY), memory_model);
+      break;
+    case AstBind:
+      break;
+    case AstBindStatement:
+      unimplemented;
+    case AstExpression:
+      unimplemented;
+    case AstIdentifier:
+      unimplemented;
+    case AstIdentifierList:
+      unimplemented;
+    case AstInstance:
+      break;
+    case AstPointerReceiverDefinition:
+      unimplemented;
+    case AstReaction:
+      allocate_stack_variables_helper (node, ast_get_child (node, REACTION_BODY), memory_model);
+      break;
+    case AstStatement:
+      unimplemented;
+    case AstTopLevelList:
+      {
+	AST_FOREACH (child, node)
+          {
+            allocate_stack_variables (child, memory_model);
+          }
+      }
+      break;
+    case AstTypeDefinition:
+      break;
+    case AstTypeSpecification:
+      unimplemented;
+    }
 }

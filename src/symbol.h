@@ -15,6 +15,8 @@ typedef enum
   SymbolVariable,
 } SymbolKind;
 
+const char* symbol_kind_string (SymbolKind kind);
+
 string_t symbol_identifier (const symbol_t * symbol);
 
 SymbolKind symbol_kind (const symbol_t * symbol);
@@ -58,8 +60,6 @@ void symbol_set_instance_type (symbol_t * symbol, type_t * type);
 
 const type_t *symbol_get_instance_type (const symbol_t * symbol);
 
-size_t symbol_size (symbol_t * symbol);
-
 typedef enum
 {
   ParameterOrdinary,
@@ -68,10 +68,20 @@ typedef enum
 } ParameterKind;
 
 symbol_t *symbol_make_parameter (string_t identifier, type_t * type,
-				 ast_t * defining_node, ParameterKind kind);
+				 ast_t * defining_node);
+
+symbol_t *symbol_make_receiver (string_t identifier, type_t * type,
+                                ast_t* defining_node);
+
+symbol_t *symbol_make_receiver_duplicate (symbol_t* receiver);
 
 ParameterKind symbol_parameter_kind (const symbol_t * symbol);
 
 type_t *symbol_parameter_type (const symbol_t * symbol);
+
+void symbol_set_offset (symbol_t* symbol,
+                        ptrdiff_t offset);
+
+ptrdiff_t symbol_get_offset (const symbol_t* symbol);
 
 #endif /* symbol_h */

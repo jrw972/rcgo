@@ -233,6 +233,8 @@ untyped_value_t ast_get_untyped_value (const ast_t * node);
 
 ast_t *ast_make_typed_literal (typed_value_t value);
 
+typed_value_t ast_get_typed_value (const ast_t* node);
+
 bool ast_is_typed_literal (const ast_t * node);
 
 bool ast_is_untyped_literal (const ast_t * node);
@@ -245,6 +247,8 @@ void ast_set_type (ast_t * node, type_t * type, bool immutable,
 		   bool derived_from_receiver);
 
 type_t *ast_get_type (const ast_t * node);
+
+type_t *ast_get_type2 (const ast_t * node);
 
 bool ast_get_immutable (const ast_t * node);
 

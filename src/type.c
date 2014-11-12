@@ -26,7 +26,6 @@ struct type_t
     {
       VECTOR_DECL (fields, field_t *);
       ptrdiff_t offset;
-      size_t field_count;
       size_t alignment;
     } field_list;
     struct
@@ -296,6 +295,8 @@ type_t *
 type_make_component (type_t * field_list)
 {
   type_t *c = make (TypeComponent);
+  /* Prepend the field list with a pointer for the runtime. */
+  type_field_list_prepend (field_list, enter ("0"), type_make_pointer (PointerToMutable, make_void ()));
   c->component.field_list = field_list;
   VECTOR_INIT (c->component.actions, action_t *, 0, NULL);
   VECTOR_INIT (c->component.reactions, action_t *, 0, NULL);
@@ -333,22 +334,22 @@ type_is_component (const type_t * type)
 }
 
 action_t *
-type_component_add_action (type_t * type)
+type_component_add_action (type_t * type, ast_t* node)
 {
   assert (type_is_component (type));
-  action_t *action = action_make (type);
+  action_t *action = action_make (type, node);
   VECTOR_PUSH (type->component.actions, action_t *, action);
   return action;
 }
 
 action_t *
-type_component_add_reaction (type_t * component_type, string_t identifier,
+type_component_add_reaction (type_t * component_type, ast_t* node, string_t identifier,
 			     type_t * signature)
 {
   assert (type_is_component (component_type));
   action_t *r =
     reaction_make (component_type,
-		   VECTOR_SIZE (component_type->component.actions),
+                   node,
 		   identifier, signature);
   VECTOR_PUSH (component_type->component.reactions, action_t *, r);
   return r;
@@ -541,27 +542,24 @@ type_is_bindable (const type_t * output, const type_t * input)
   //return compatible_signatures (output->port.signature, input->reaction.signature);
 }
 
-action_t *
+action_t**
 type_actions_begin (const type_t * type)
 {
-  unimplemented;
-  /* assert (type_is_component (type)); */
-  /* return type->component.actions; */
+  assert (type_is_component (type));
+  return VECTOR_BEGIN (type->component.actions);
 }
 
-action_t *
+action_t **
 type_actions_end (const type_t * type)
 {
-  unimplemented;
-  /* assert (type_is_component (type)); */
-  /* return NULL; */
+  assert (type_is_component (type));
+  return VECTOR_END (type->component.actions);
 }
 
-action_t *
-action_next (action_t * action)
+action_t **
+type_actions_next (action_t ** action)
 {
-  unimplemented;
-  /* return action->next; */
+  return VECTOR_NEXT (action);
 }
 
 bool
@@ -607,74 +605,50 @@ type_return_value (const type_t * type)
   bug ("unhandled case");
 }
 
-/* binding_t* binding_make (void) */
-/* { */
-/*   binding_t* b = xmalloc (sizeof (binding_t)); */
-/*   select_result_t s; */
-/*   VECTOR_INIT (b->outputs, select_result_t, 0, s); */
-/*   VECTOR_INIT (b->inputs, select_result_t, 0, s); */
-/*   return b; */
-/* } */
-
-/* void binding_add (binding_t* binding, select_result_t result, bool input) */
-/* { */
-/*   if (!input) */
-/*     { */
-/*       VECTOR_PUSH (binding->outputs, select_result_t, result); */
-/*     } */
-/*   else */
-/*     { */
-/*       VECTOR_PUSH (binding->inputs, select_result_t, result); */
-/*     } */
-/* } */
-
-/* binding_t* type_bindings_end (const type_t* type) */
-/* { */
-/*   assert (type_is_component (type)); */
-/*   return NULL; */
-/* } */
-
-/* binding_t* type_bindings_next (binding_t* binding) */
-/* { */
-/*   return binding->next; */
-/* } */
-
-/* select_result_t* binding_output_begin (binding_t* binding) */
-/* { */
-/*   return VECTOR_BEGIN (binding->outputs); */
-/* } */
-
-/* select_result_t* binding_output_end (binding_t* binding) */
-/* { */
-/*   return VECTOR_END (binding->outputs); */
-/* } */
-
-/* select_result_t* binding_output_next (select_result_t* result) */
-/* { */
-/*   return result + 1; */
-/* } */
-
-/* select_result_t* binding_input_begin (binding_t* binding) */
-/* { */
-/*   return VECTOR_BEGIN (binding->inputs); */
-/* } */
-
-/* select_result_t* binding_input_end (binding_t* binding) */
-/* { */
-/*   return VECTOR_END (binding->inputs); */
-/* } */
-
-/* select_result_t* binding_input_next (select_result_t* result) */
-/* { */
-/*   return result + 1; */
-/* } */
-
 type_t *
 type_make_field_list (void)
 {
   type_t *t = make (TypeFieldList);
   VECTOR_INIT (t->field_list.fields, field_t *, 0, NULL);
   return t;
+}
+
+void type_field_list_prepend (type_t* field_list,
+                              string_t the_field_name, type_t* the_field_type)
+{
+  assert (field_list->kind == TypeFieldList);
+
+  // Append a null and shift everything down.
+  VECTOR_PUSH (field_list->field_list.fields, field_t*, NULL);
+
+  {
+    size_t idx;
+    for (idx = VECTOR_SIZE (field_list->field_list.fields) - 1;
+         idx > 0;
+         --idx)
+      {
+        VECTOR_SET (field_list->field_list.fields, idx, VECTOR_AT (field_list->field_list.fields, idx - 1));
+      }
+  }
+
+  // Prepend.
+  VECTOR_SET (field_list->field_list.fields, 0, field_make (the_field_name, the_field_type, 0));
+
+  // Recalculate all the offsets.
+  field_list->field_list.offset = 0;
+  field_list->field_list.alignment = 0;
+  VECTOR_FOREACH (pos, limit, field_list->field_list.fields, field_t*)
+    {
+      field_t* field = *pos;
+      size_t alignment = type_alignment (field_type (field));
+      field_list->field_list.offset = align_up (field_list->field_list.offset, alignment);
+      field_set_offset (field, field_list->field_list.offset);
+      field_list->field_list.offset += type_size (field_type (field));
+      if (alignment > field_list->field_list.alignment)
+        {
+          field_list->field_list.alignment = alignment;
+        }
+    }
 }
 
 void
@@ -687,8 +661,7 @@ type_field_list_append (type_t * field_list,
     align_up (field_list->field_list.offset, alignment);
 
   field_t *field =
-    field_make (field_name, field_type, field_list->field_list.offset,
-		field_list->field_list.field_count);
+    field_make (field_name, field_type, field_list->field_list.offset);
   VECTOR_PUSH (field_list->field_list.fields, field_t *, field);
 
   field_list->field_list.offset += type_size (field_type);
@@ -710,71 +683,6 @@ type_field_list_find (const type_t * type, string_t name)
   }
   return NULL;
 }
-
-
-/* bool */
-/* type_append_field (type_t * type, string_t field_name, */
-/* 		   const type_t * field_type) */
-/* { */
-/*   assert (type->kind == TypeComponent); */
-
-/*   field_t **ptr; */
-/*   for (ptr = &(type->component.field_list); *ptr != NULL; ptr = &(*ptr)->next) */
-/*     { */
-/*       if (streq (field_name, (*ptr)->name)) */
-/* 	{ */
-/* 	  /\* Duplicate field name. *\/ */
-/* 	  return false; */
-/* 	} */
-/*     } */
-
-/*   size_t alignment = type_alignment (field_type); */
-/*   type->component.offset = align_up (type->component.offset, alignment); */
-
-/*   *ptr = make_field (field_name, field_type, type->component.offset, type->component.field_count++); */
-/*   type->component.offset += type_size (field_type); */
-/*   if (alignment > type->component.alignment) */
-/*     { */
-/*       type->component.alignment = alignment; */
-/*     } */
-
-/*   return true; */
-/* } */
-
-
-
-/* static select_result_t */
-/* find_field_or_reaction_or_undefined (const field_t * field, */
-/*                                      const action_t * reaction, */
-/*                                      string_t identifier) */
-/* { */
-/*   select_result_t retval; */
-
-/*   /\* Search through the fields. *\/ */
-/*   for (; field != NULL; field = field->next) */
-/*     { */
-/*       if (streq (identifier, field->name)) */
-/* 	{ */
-/*           retval.kind = SelectResultField; */
-/*           retval.field = field; */
-/* 	  return retval; */
-/* 	} */
-/*     } */
-
-/*   /\* Search through the reactions. *\/ */
-/*   for (; reaction != NULL; reaction = reaction->next) */
-/*     { */
-/*       if (action_is_reaction (reaction) && streq (identifier, reaction->name)) */
-/* 	{ */
-/*           retval.kind = SelectResultReaction; */
-/*           retval.reaction = reaction; */
-/*           return retval; */
-/* 	} */
-/*     } */
-
-/*   retval.kind = SelectResultUndefined; */
-/*   return retval; */
-/* } */
 
 type_t *
 type_select (const type_t * type, string_t identifier)
@@ -823,6 +731,34 @@ type_select (const type_t * type, string_t identifier)
 	    return NULL;
 	  }
       }
+    case TypeSignature:
+      unimplemented;
+    }
+
+  bug ("unhandled case");
+}
+
+field_t *
+type_select_field (const type_t * type, string_t identifier)
+{
+  switch (type->kind)
+    {
+    case TypeUndefined:
+      unimplemented;
+    case TypeVoid:
+      unimplemented;
+    case TypeBool:
+      unimplemented;
+    case TypeComponent:
+      return type_select_field (type->component.field_list, identifier);
+    case TypePointer:
+      unimplemented;
+    case TypePort:
+      unimplemented;
+    case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      return type_field_list_find (type, identifier);
     case TypeSignature:
       unimplemented;
     }
@@ -1151,4 +1087,56 @@ action_t **
 type_component_actions_next (action_t ** pos)
 {
   return pos + 1;
+}
+
+void type_print_value (const type_t* type,
+                       void* value)
+{
+  switch (type->kind)
+    {
+    case TypeUndefined:
+      unimplemented;
+    case TypeVoid:
+      unimplemented;
+    case TypeBool:
+      {
+        bool* b = value;
+        if (*b)
+          {
+            printf ("true");
+          }
+        else
+          {
+            printf ("false");
+          }
+      }
+      break;
+    case TypeComponent:
+      type_print_value (type->component.field_list, value);
+      break;
+    case TypePointer:
+    case TypePort:
+      {
+        char** ptr = value;
+        printf ("%p", *ptr);
+      }
+      break;
+    case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      {
+        printf ("{");
+        VECTOR_FOREACH (pos, limit, type->field_list.fields, field_t*)
+          {
+            const field_t* field = *pos;
+            printf ("(%p)%s=", value + field_offset (field), get (field_name (field)));
+            type_print_value (field_type (field), value + field_offset (field));
+            printf (",");
+          }
+        printf ("}");
+      }
+      break;
+    case TypeSignature:
+      unimplemented;
+    }
 }
