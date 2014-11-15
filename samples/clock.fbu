@@ -3,21 +3,22 @@ type Clock component {
   response port (bit bool);
 };
 
-action (this #Clock) (true) {
+action (this $Clock) (true) {
   trigger {
-    this#.bit = this#.bit!;
+    this$.bit = this$.bit!;
+    //    println this$.bit;
   }
 }
 
-reaction (this #Clock) request () {
+reaction (this $Clock) request () {
   trigger {
-    this#.flag = true;
+    this$.flag = true;
   }
 }
 
-action (this #Clock) (this#.flag) {
-  trigger response (this#.bit) {
-    this#.flag = false;
+action (this $Clock) (this$.flag) {
+  trigger response (this$.bit) {
+    this$.flag = false;
   }
 }
 
@@ -26,15 +27,16 @@ type Sampler component {
   request port ();
 };
 
-action (this #Sampler) (this#.flag!) {
+action (this $Sampler) (this$.flag!) {
   trigger request () {
-    this#.flag = true;
+    this$.flag = true;
   }
 }
 
-reaction (this #Sampler) response (bit bool) {
+reaction (this $Sampler) response (bit bool) {
+  println bit;
   trigger {
-    this#.flag = false;
+    this$.flag = false;
   }
 }
 
@@ -43,9 +45,9 @@ type System component {
   clock Clock;
 };
 
-bind (this #System) {
-  this#.sampler.request -> this#.clock.request;
-  this#.clock.response -> this#.sampler.response;
+bind (this $System) {
+  this$.sampler.request -> this$.clock.request;
+  this$.clock.response -> this$.sampler.response;
 }
 
 instance s System;

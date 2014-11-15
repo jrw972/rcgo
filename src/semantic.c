@@ -49,11 +49,12 @@ construct_symbol_table (ast_t * node, symtab_t * symtab)
 	  }
 	  break;
 	case AstReturnStmt:
-	  break;
 	case AstTriggerStmt:
 	  break;
 	case AstVarStmt:
 	  unimplemented;
+        case AstPrintlnStmt:
+          break;
 	}
       break;
 
@@ -903,6 +904,13 @@ check_statement (ast_t * node)
 
     case AstVarStmt:
       unimplemented;
+
+    case AstPrintlnStmt:
+      {
+	ast_t **child = ast_get_child_ptr (node, UNARY_CHILD);
+	check_rvalue (child);
+      }
+      break;
     }
 }
 
@@ -1305,9 +1313,19 @@ allocate_symbol (memory_model_t* memory_model,
       break;
     case SymbolParameter:
       {
-        type_t* type = symbol_parameter_type (symbol);
-        memory_model_arguments_push (memory_model, type_size (type));
-        symbol_set_offset (symbol, memory_model_arguments_offset (memory_model));
+        switch (symbol_parameter_kind (symbol))
+          {
+          case ParameterOrdinary:
+          case ParameterReceiver:
+            {
+              type_t* type = symbol_parameter_type (symbol);
+              memory_model_arguments_push (memory_model, type_size (type));
+              symbol_set_offset (symbol, memory_model_arguments_offset (memory_model));
+            }
+            break;
+          case ParameterReceiverDuplicate:
+            break;
+          }
       }
       break;
     case SymbolType:
@@ -1346,7 +1364,7 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t* memory_model)
   switch (ast_statement_kind (node))
     {
     case AstAssignmentStmt:
-      unimplemented;
+      // Do nothing.
       break;
     case AstExpressionStmt:
       unimplemented;
@@ -1368,9 +1386,13 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t* memory_model)
       unimplemented;
       break;
     case AstTriggerStmt:
+      allocate_statement_stack_variables (ast_get_child (node, TRIGGER_BODY), memory_model);
       break;
     case AstVarStmt:
       unimplemented;
+      break;
+    case AstPrintlnStmt:
+      // Do nothing.
       break;
     }
 }

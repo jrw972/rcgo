@@ -50,8 +50,9 @@ typedef enum
 {
   AstAssignmentStmt,
   AstExpressionStmt,
-  AstStmtList,
+  AstPrintlnStmt,
   AstReturnStmt,
+  AstStmtList,
   AstTriggerStmt,
   AstVarStmt,
 } AstStatementKind;
@@ -200,6 +201,8 @@ ast_t *ast_make_trigger_stmt (ast_t * expr_list, ast_t * stmt);
 ast_t *ast_make_bind_list_stmt (void);
 
 ast_t *ast_make_bind_stmt (ast_t * output, ast_t * input);
+
+ast_t *ast_make_println_stmt (ast_t * expr);
 
 /* TypeSpec */
 

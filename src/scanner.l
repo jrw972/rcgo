@@ -16,6 +16,7 @@
 "component"            { return COMPONENT; }
 "instance"             { return INSTANCE; }
 "port"                 { return PORT; }
+"println"              { return PRINTLN; }
 "reaction"             { return REACTION; }
 "trigger"              { return TRIGGER; }
 "type"                 { return TYPE; }
@@ -25,7 +26,7 @@
                          return IDENTIFIER; }
 
 "!"|";"|","|"="        { return *yytext; }
-"#"|"."                { return *yytext; }
+"$"|"."                { return *yytext; }
 "{"|"}"                { return *yytext; }
 "("|")"                { return *yytext; }
 

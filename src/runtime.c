@@ -377,6 +377,42 @@ evaluate_statement (runtime_t* runtime,
       break;
     case AstVarStmt:
       unimplemented;
+    case AstPrintlnStmt:
+      // Evaluate the value.
+      evaluate_rvalue (runtime, ast_get_child (node, UNARY_CHILD));
+      switch (type_kind (ast_get_type2 (ast_get_child (node, UNARY_CHILD))))
+        {
+        case TypeUndefined:
+          unimplemented;
+        case TypeVoid:
+          unimplemented;
+        case TypeBool:
+          {
+            bool b = stack_frame_pop_bool (runtime->stack);
+            if (b)
+              {
+                printf ("true");
+              }
+            else
+              {
+                printf ("false");
+              }
+          }
+          break;
+        case TypeComponent:
+          unimplemented;
+        case TypePointer:
+          unimplemented;
+        case TypePort:
+          unimplemented;
+        case TypeReaction:
+          unimplemented;
+        case TypeFieldList:
+          unimplemented;
+        case TypeSignature:
+          unimplemented;
+        }
+      printf ("\n");
     }
 
   return CONTINUE;

@@ -152,6 +152,9 @@ ast_print (const ast_t * node, size_t indent)
 	  break;
 	case AstVarStmt:
 	  unimplemented;
+        case AstPrintlnStmt:
+          printf ("AstPrintlnStmt");
+          break;
 	}
       break;
     case AstTypeDefinition:
@@ -341,6 +344,13 @@ make_bind_stmt (AstBindStatementKind kind, size_t children_count)
 {
   ast_t *retval = make (AstBindStatement, children_count);
   retval->bind_statement.kind = kind;
+  return retval;
+}
+
+ast_t *ast_make_println_stmt (ast_t * expr)
+{
+  ast_t *retval = make_stmt (AstPrintlnStmt, 1);
+  ast_set_child (retval, UNARY_CHILD, expr);
   return retval;
 }
 

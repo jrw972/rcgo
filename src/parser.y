@@ -35,6 +35,7 @@
 %type <node> port_call
 %type <node> port_call_list
 %type <node> primary_expr
+%type <node> println_stmt
 %type <node> reaction_def
 %type <node> rvalue
 %type <node> signature
@@ -47,7 +48,7 @@
 %type <node> var_stmt
 %destructor { /* TODO:  Free the node. node_free ($$); */ } <node>
 
-%token ACTION BIND COMPONENT INSTANCE PORT REACTION TRIGGER TYPE VAR
+%token ACTION BIND COMPONENT INSTANCE PORT PRINTLN REACTION TRIGGER TYPE VAR
 
 %token ARROW LOGIC_AND LOGIC_OR
 
@@ -85,7 +86,7 @@ parameter: identifier_list type_spec { $$ = ast_make_identifier_list_type_spec (
 optional_semicolon: /* Empty. */
 | ';'
 
-pointer_receiver: '(' identifier '#' identifier ')' { $$ = ast_make_pointer_receiver ($2, $4); }
+pointer_receiver: '(' identifier '$' identifier ')' { $$ = ast_make_pointer_receiver ($2, $4); }
 
 bind_stmt_list: '{' bind_inner_stmt_list '}' { $$ = $2; }
 
@@ -104,8 +105,11 @@ stmt: expr_stmt { $$ = $1; }
 | assignment_stmt { $$ = $1; }
 | trigger_stmt { $$ = $1; }
 | stmt_list { $$ = $1; }
+| println_stmt { $$ = $1; }
 
 trigger_stmt: TRIGGER optional_port_call_list stmt_list { $$ = ast_make_trigger_stmt ($2, ast_add_child ($3, ast_make_stmt_list ())); }
+
+println_stmt: PRINTLN rvalue ';' { $$ = ast_make_println_stmt ($2); }
 
 optional_port_call_list: /* Empty. */ { $$ = ast_make_expression_list (); }
 | port_call_list { $$ = $1; }
@@ -157,6 +161,6 @@ primary_expr: lvalue { $$ = $1; }
 
 lvalue: identifier { $$ = ast_make_identifier_expr ($1); }
 | lvalue '.' identifier { $$ = ast_make_select ($1, $3); }
-| unary_expr '#' { $$ = ast_make_dereference ($1); }
+| unary_expr '$' { $$ = ast_make_dereference ($1); }
 
 %%

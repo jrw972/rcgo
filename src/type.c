@@ -93,7 +93,7 @@ type_to_string (const type_t * type)
 	case TypePointer:
 	  {
 	    char *str;
-	    asprintf (&str, "#%s", type_to_string (type->pointer.base_type));
+	    asprintf (&str, "$%s", type_to_string (type->pointer.base_type));
 	    return str;
 	  }
 	case TypePort:
