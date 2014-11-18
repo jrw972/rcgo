@@ -14,6 +14,7 @@ instance_set.h instance_set.c \
 memory_model.h memory_model.c \
 parameter.h parameter.c \
 semantic.h semantic.c \
+rtstring.h rtstring.c \
 runtime.h runtime.c \
 stack_frame.h stack_frame.c \
 strtab.h strtab.c \

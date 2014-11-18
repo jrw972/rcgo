@@ -113,6 +113,8 @@ type_to_string (const type_t * type)
 	  unimplemented;
 	case TypeSignature:
 	  unimplemented;
+        case TypeString:
+          unimplemented;
 	}
     }
 
@@ -152,6 +154,8 @@ type_move (type_t * to, type_t * from)
       unimplemented;
     case TypeSignature:
       unimplemented;
+    case TypeString:
+      unimplemented;
     }
 
   free (from);
@@ -179,6 +183,8 @@ type_size (const type_t * type)
     case TypeFieldList:
       return type->field_list.offset;
     case TypeSignature:
+      unimplemented;
+    case TypeString:
       unimplemented;
     }
 
@@ -216,6 +222,8 @@ duplicate (const type_t * type)
     case TypeFieldList:
       unimplemented;
     case TypeSignature:
+      unimplemented;
+    case TypeString:
       unimplemented;
     }
   return retval;
@@ -378,6 +386,8 @@ type_alignment (const type_t * type)
       return type->field_list.alignment;
     case TypeSignature:
       unimplemented;
+    case TypeString:
+      unimplemented;
     }
   not_reached;
 }
@@ -398,7 +408,7 @@ type_can_represent (const type_t * type, untyped_value_t u)
     case TypeVoid:
       unimplemented;
     case TypeBool:
-      return untyped_value_is_bool (u);
+      return u.kind == UntypedBool;
     case TypeComponent:
       unimplemented;
     case TypePointer:
@@ -411,6 +421,8 @@ type_can_represent (const type_t * type, untyped_value_t u)
       unimplemented;
     case TypeSignature:
       unimplemented;
+    case TypeString:
+      return u.kind == UntypedString;
     }
   bug ("unhandled case");
 }
@@ -437,6 +449,8 @@ type_assignable (const type_t * target, const type_t * source)
     case TypeFieldList:
       unimplemented;
     case TypeSignature:
+      unimplemented;
+    case TypeString:
       unimplemented;
     }
   bug ("unhandled case");
@@ -599,6 +613,7 @@ type_return_value (const type_t * type)
     case TypeReaction:
     case TypeFieldList:
     case TypeSignature:
+    case TypeString:
       return false;
     }
 
@@ -733,6 +748,8 @@ type_select (const type_t * type, string_t identifier)
       }
     case TypeSignature:
       unimplemented;
+    case TypeString:
+      unimplemented;
     }
 
   bug ("unhandled case");
@@ -760,6 +777,8 @@ type_select_field (const type_t * type, string_t identifier)
     case TypeFieldList:
       return type_field_list_find (type, identifier);
     case TypeSignature:
+      unimplemented;
+    case TypeString:
       unimplemented;
     }
 
@@ -860,6 +879,8 @@ type_callable (const type_t * type)
       unimplemented;
     case TypeSignature:
       unimplemented;
+    case TypeString:
+      unimplemented;
     }
   not_reached;
 }
@@ -887,6 +908,8 @@ type_parameter_count (const type_t * type)
       unimplemented;
     case TypeSignature:
       return VECTOR_SIZE (type->signature.parameters);
+    case TypeString:
+      unimplemented;
     }
   not_reached;
 }
@@ -914,6 +937,8 @@ type_parameter_type (const type_t * type, size_t idx)
       unimplemented;
     case TypeSignature:
       return parameter_type (VECTOR_AT (type->signature.parameters, idx));
+    case TypeString:
+      unimplemented;
     }
   not_reached;
 }
@@ -940,6 +965,8 @@ type_return_type (const type_t * type)
     case TypeFieldList:
       unimplemented;
     case TypeSignature:
+      unimplemented;
+    case TypeString:
       unimplemented;
     }
   not_reached;
@@ -1138,5 +1165,12 @@ void type_print_value (const type_t* type,
       break;
     case TypeSignature:
       unimplemented;
+    case TypeString:
+      unimplemented;
     }
+}
+
+type_t* type_make_string (void)
+{
+  return make (TypeString);
 }

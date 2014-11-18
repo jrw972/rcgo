@@ -17,6 +17,13 @@ typed_value_t retval = { type: type, bool_value:v };
   return retval;
 }
 
+typed_value_t
+typed_value_make_string (type_t * type, rtstring_t v)
+{
+typed_value_t retval = { type: type, string_value:v };
+  return retval;
+}
+
 type_t *
 typed_value_get_type (typed_value_t t)
 {
@@ -34,7 +41,7 @@ typed_value_from_untyped (untyped_value_t u, type_t * t)
     case TypeVoid:
       unimplemented;
     case TypeBool:
-      return typed_value_make_bool (t, untyped_value_bool_value (u));
+      return typed_value_make_bool (t, u.bool_value);
     case TypeComponent:
       unimplemented;
     case TypePointer:
@@ -47,6 +54,8 @@ typed_value_from_untyped (untyped_value_t u, type_t * t)
       unimplemented;
     case TypeSignature:
       unimplemented;
+    case TypeString:
+      return typed_value_make_string (t, u.string_value);
     }
   bug ("unhandled case");
 }

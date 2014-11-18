@@ -4,9 +4,11 @@
 #include "debug.h"
 %}
 
-%union { char* identifier; }
+%union { char* identifier;
+  untyped_value_t literal; }
 %token <identifier> IDENTIFIER
 %destructor { free ($$); } <identifier>
+%token <literal> LITERAL
 
 %union { ast_t* node; }
 %type <node> action_def
@@ -109,7 +111,7 @@ stmt: expr_stmt { $$ = $1; }
 
 trigger_stmt: TRIGGER optional_port_call_list stmt_list { $$ = ast_make_trigger_stmt ($2, ast_add_child ($3, ast_make_stmt_list ())); }
 
-println_stmt: PRINTLN rvalue ';' { $$ = ast_make_println_stmt ($2); }
+println_stmt: PRINTLN expr_list ';' { $$ = ast_make_println_stmt ($2); }
 
 optional_port_call_list: /* Empty. */ { $$ = ast_make_expression_list (); }
 | port_call_list { $$ = $1; }
@@ -123,7 +125,7 @@ optional_expr_list: /* Empty. */ { $$ = ast_make_expression_list (); }
 | expr_list { $$ = $1; }
 
 expr_list: rvalue { $$ = ast_add_child (ast_make_expression_list (), $1); }
-| expr_list ',' rvalue { unimplemented; }
+| expr_list ',' rvalue { $$ = ast_add_child ($1, $3); }
 
 expr_stmt: rvalue ';' {
   $$ = ast_make_expr_stmt ($1);
@@ -158,6 +160,7 @@ unary_expr: primary_expr { $$ = $1; }
 
 primary_expr: lvalue { $$ = $1; }
 | primary_expr '(' optional_expr_list ')' { $$ = ast_make_call_expr ($1, $3); }
+| LITERAL { $$ = ast_make_untyped_literal ($1); }
 
 lvalue: identifier { $$ = ast_make_identifier_expr ($1); }
 | lvalue '.' identifier { $$ = ast_make_select ($1, $3); }

@@ -690,7 +690,7 @@ ast_is_boolean (const ast_t * node)
     }
   else if (node->expression.kind == AstUntypedLiteral)
     {
-      return untyped_value_is_bool (node->expression.untyped_value);
+      return node->expression.untyped_value.kind == UntypedBool;
     }
   else
     {

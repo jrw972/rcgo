@@ -194,6 +194,7 @@ enter_symbols_helper (ast_t * node)
 }
 
 static type_t* bool_type = NULL;
+static type_t* string_type = NULL;
 
 void
 enter_symbols (ast_t * node)
@@ -209,6 +210,13 @@ enter_symbols (ast_t * node)
       }
     symtab_enter (symtab,
 		  symbol_make_type (enter ("bool"), bool_type, node));
+
+    if (string_type == NULL)
+      {
+        string_type = type_make_string ();
+      }
+    symtab_enter (symtab,
+		  symbol_make_type (enter ("string"), string_type, node));
   }
 
   /* Insert untyped boolean constants. */
@@ -654,7 +662,8 @@ check_rvalue (ast_t ** ptr)
     case AstDereferenceExpr:
       unimplemented;
     case AstExprList:
-      unimplemented;
+      check_rvalue_list (*ptr);
+      break;
     case AstIdentifierExpr:
       {
 	ast_t *identifier_node = ast_get_child (node, UNARY_CHILD);
@@ -758,7 +767,8 @@ check_rvalue (ast_t ** ptr)
     case AstTypedLiteral:
       unimplemented;
     case AstUntypedLiteral:
-      unimplemented;
+      // Do nothing.  Caller must convert to type if necessary.
+      break;
     }
 }
 
@@ -771,6 +781,42 @@ check_rvalue_list (ast_t * node)
   AST_FOREACH_PTR (child, node)
   {
     check_rvalue (child);
+  }
+}
+
+
+static void
+convert_rvalue_to_builtin_types (ast_t ** ptr)
+{
+  ast_t *node = *ptr;
+  assert (ast_kind (node) == AstExpression);
+
+  if (ast_expression_kind (node) == AstUntypedLiteral)
+    {
+      untyped_value_t uv = ast_get_untyped_value (node);
+
+      switch (uv.kind)
+        {
+        case UntypedUndefined:
+          unimplemented;
+        case UntypedBool:
+          unimplemented;
+        case UntypedString:
+          *ptr = ast_make_typed_literal (typed_value_from_untyped (uv, string_type));
+          break;
+        }
+    }
+}
+
+static void
+convert_rvalue_list_to_builtin_types (ast_t * node)
+{
+  assert (ast_kind (node) == AstExpression);
+  assert (ast_expression_kind (node) == AstExprList);
+
+  AST_FOREACH_PTR (child, node)
+  {
+    convert_rvalue_to_builtin_types (child);
   }
 }
 
@@ -908,7 +954,8 @@ check_statement (ast_t * node)
     case AstPrintlnStmt:
       {
 	ast_t **child = ast_get_child_ptr (node, UNARY_CHILD);
-	check_rvalue (child);
+        check_rvalue_list (*child);
+        convert_rvalue_list_to_builtin_types (*child);
       }
       break;
     }

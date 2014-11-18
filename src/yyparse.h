@@ -2,6 +2,7 @@
 #define yyparse_h
 
 #include "ast.h"
+#include "rtstring.h"
 
 extern ast_t *root;
 

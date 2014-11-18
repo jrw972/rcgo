@@ -2,6 +2,7 @@
 #define stack_frame_h
 
 #include "types.h"
+#include "rtstring.h"
 
 stack_frame_t* stack_frame_make (memory_model_t* memory_model,
                                  size_t size);
@@ -15,6 +16,11 @@ void stack_frame_push_bool (stack_frame_t* stack_frame,
                             bool b);
 
 bool stack_frame_pop_bool (stack_frame_t* stack_frame);
+
+void stack_frame_push_string (stack_frame_t* stack_frame,
+                              rtstring_t b);
+
+rtstring_t stack_frame_pop_string (stack_frame_t* stack_frame);
 
 /* Copy size bytes from base_pointer + offset to the top of the stack. */
 void stack_frame_push (stack_frame_t* stack_frame,

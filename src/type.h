@@ -16,6 +16,7 @@ typedef enum
   TypeReaction,
   TypeFieldList,
   TypeSignature,
+  TypeString,
 } TypeKind;
 
 typedef enum
@@ -170,5 +171,7 @@ action_t **type_component_actions_next (action_t ** pos);
 
 void type_print_value (const type_t* type,
                        void* value);
+
+type_t* type_make_string (void);
 
 #endif /* type_h */

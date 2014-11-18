@@ -6,7 +6,7 @@ type Clock component {
 action (this $Clock) (true) {
   trigger {
     this$.bit = this$.bit!;
-    //    println this$.bit;
+    println `Bit is now `, this$.bit;
   }
 }
 
@@ -34,7 +34,7 @@ action (this $Sampler) (this$.flag!) {
 }
 
 reaction (this $Sampler) response (bit bool) {
-  println bit;
+  println `Received `, bit;
   trigger {
     this$.flag = false;
   }

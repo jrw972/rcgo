@@ -25,6 +25,26 @@
 [_a-zA-Z][_a-zA-Z0-9]* { yylval.identifier = enter (yytext);
                          return IDENTIFIER; }
 
+"`"[^`]*"`"            { char* begin = yytext + 1;
+                         // Skip over the first and last `
+                         char* pos = begin;
+                         char* limit = yytext + yyleng - 1;
+                         // Set the desintation.
+                         char* destination = pos;
+                         // Replace carriage returns.
+                         while (pos != limit)
+                           {
+                             char c = *pos;
+                             if (c != '\r')
+                               {
+                                 *destination++ = c;
+                               }
+                             ++pos;
+                           }
+
+                         yylval.literal = untyped_value_make_string (rtstring_make (begin, destination - begin));
+                         return LITERAL; }
+
 "!"|";"|","|"="        { return *yytext; }
 "$"|"."                { return *yytext; }
 "{"|"}"                { return *yytext; }

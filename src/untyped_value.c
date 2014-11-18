@@ -1,6 +1,7 @@
 #include "untyped_value.h"
 #include "debug.h"
 #include "symtab.h"
+#include <string.h>
 
 const char *
 untyped_value_to_string (untyped_value_t u)
@@ -18,6 +19,8 @@ untyped_value_to_string (untyped_value_t u)
 	{
 	  return "false";
 	}
+    case UntypedString:
+      unimplemented;
     }
 
   bug ("unhandled case");
@@ -30,36 +33,11 @@ untyped_value_t retval = { kind:UntypedUndefined };
   return retval;
 }
 
-UntypedValueKind
-untyped_value_kind (untyped_value_t u)
-{
-  return u.kind;
-}
-
-bool
-untyped_value_is_undefined (untyped_value_t u)
-{
-  return u.kind == UntypedUndefined;
-}
-
 untyped_value_t
 untyped_value_make_bool (bool b)
 {
 untyped_value_t retval = { kind: UntypedBool, bool_value:b };
   return retval;
-}
-
-bool
-untyped_value_bool_value (untyped_value_t u)
-{
-  assert (u.kind == UntypedBool);
-  return u.bool_value;
-}
-
-bool
-untyped_value_is_bool (untyped_value_t u)
-{
-  return u.kind == UntypedBool;
 }
 
 untyped_value_t
@@ -101,16 +79,9 @@ untyped_value_logic_or (untyped_value_t x, untyped_value_t y)
     }
 }
 
-size_t
-untyped_value_size (untyped_value_t x)
+untyped_value_t
+untyped_value_make_string (rtstring_t b)
 {
-  switch (x.kind)
-    {
-    case UntypedUndefined:
-      not_reached;
-    case UntypedBool:
-      return 1;
-    }
-
-  not_reached;
+untyped_value_t retval = { kind: UntypedString, string_value:b };
+  return retval;
 }

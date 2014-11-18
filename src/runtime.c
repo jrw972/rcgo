@@ -307,11 +307,15 @@ evaluate_rvalue (runtime_t* runtime,
             unimplemented;
           case TypeSignature:
             unimplemented;
+          case TypeString:
+            stack_frame_push_string (runtime->stack, value.string_value);
+            break;
           }
       }
       break;
     case AstUntypedLiteral:
       bug ("AstUntyepdLiteral evaluated at runtime");
+      break;
     }
 }
 
@@ -378,40 +382,51 @@ evaluate_statement (runtime_t* runtime,
     case AstVarStmt:
       unimplemented;
     case AstPrintlnStmt:
-      // Evaluate the value.
-      evaluate_rvalue (runtime, ast_get_child (node, UNARY_CHILD));
-      switch (type_kind (ast_get_type2 (ast_get_child (node, UNARY_CHILD))))
-        {
-        case TypeUndefined:
-          unimplemented;
-        case TypeVoid:
-          unimplemented;
-        case TypeBool:
-          {
-            bool b = stack_frame_pop_bool (runtime->stack);
-            if (b)
+      {
+        ast_t* expr_list = ast_get_child (node, UNARY_CHILD);
+	AST_FOREACH (child, expr_list)
+	{
+	  evaluate_rvalue (runtime, child);
+          switch (type_kind (ast_get_type2 (child)))
+            {
+            case TypeUndefined:
+              unimplemented;
+            case TypeVoid:
+              unimplemented;
+            case TypeBool:
               {
-                printf ("true");
+                bool b = stack_frame_pop_bool (runtime->stack);
+                if (b)
+                  {
+                    printf ("true");
+                  }
+                else
+                  {
+                    printf ("false");
+                  }
               }
-            else
+              break;
+            case TypeComponent:
+              unimplemented;
+            case TypePointer:
+              unimplemented;
+            case TypePort:
+              unimplemented;
+            case TypeReaction:
+              unimplemented;
+            case TypeFieldList:
+              unimplemented;
+            case TypeSignature:
+              unimplemented;
+            case TypeString:
               {
-                printf ("false");
+                rtstring_t s = stack_frame_pop_string (runtime->stack);
+                fwrite (s.bytes, 1, s.size, stdout);
               }
-          }
-          break;
-        case TypeComponent:
-          unimplemented;
-        case TypePointer:
-          unimplemented;
-        case TypePort:
-          unimplemented;
-        case TypeReaction:
-          unimplemented;
-        case TypeFieldList:
-          unimplemented;
-        case TypeSignature:
-          unimplemented;
-        }
+              break;
+            }
+	}
+      }
       printf ("\n");
     }
 
