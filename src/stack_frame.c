@@ -92,6 +92,14 @@ void stack_frame_push (stack_frame_t* stack_frame,
   stack_frame->top += s;
 }
 
+void stack_frame_reserve (stack_frame_t* stack_frame,
+                          size_t size)
+{
+  size_t s = align_up (size, memory_model_stack_alignment (stack_frame->memory_model));
+  assert (stack_frame->top + s <= stack_frame->limit);
+  stack_frame->top += s;
+}
+
 void stack_frame_load (stack_frame_t* stack_frame,
                        void* ptr,
                        size_t size)
@@ -102,11 +110,23 @@ void stack_frame_load (stack_frame_t* stack_frame,
   stack_frame->top += s;
 }
 
-void stack_frame_store (stack_frame_t* stack_frame,
-                        void* ptr,
-                        size_t size)
+void stack_frame_store_heap (stack_frame_t* stack_frame,
+                             void* ptr,
+                             size_t size)
 {
   size_t s = align_up (size, memory_model_stack_alignment (stack_frame->memory_model));
+  assert (stack_frame->top - s >= stack_frame->data);
+  stack_frame->top -= s;
+  memcpy (ptr, stack_frame->top, size);
+}
+
+void stack_frame_store_stack (stack_frame_t* stack_frame,
+                              ptrdiff_t offset,
+                              size_t size)
+{
+  size_t s = align_up (size, memory_model_stack_alignment (stack_frame->memory_model));
+  char* ptr = stack_frame->base_pointer + offset;
+  assert (ptr >= stack_frame->data && ptr + size <= stack_frame->top);
   assert (stack_frame->top - s >= stack_frame->data);
   stack_frame->top -= s;
   memcpy (ptr, stack_frame->top, size);
@@ -144,6 +164,13 @@ void stack_frame_set_top (stack_frame_t* stack_frame,
                           char* top)
 {
   stack_frame->top = top;
+}
+
+void stack_frame_pop (stack_frame_t* stack_frame, size_t size)
+{
+  size_t s = align_up (size, memory_model_stack_alignment (stack_frame->memory_model));
+  assert (stack_frame->top - s >= stack_frame->data);
+  stack_frame->top -= s;
 }
 
 void* stack_frame_ip (const stack_frame_t* stack_frame)

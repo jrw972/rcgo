@@ -7,6 +7,7 @@
 #include "action.h"
 #include "parameter.h"
 #include "field.h"
+#include "getter.h"
 
 struct type_t
 {
@@ -21,6 +22,7 @@ struct type_t
         VECTOR_DECL (actions, action_t *);
         VECTOR_DECL (reactions, action_t *);
         VECTOR_DECL (bindings, binding_t *);
+        VECTOR_DECL (getters, getter_t *);
     } component;
     struct
     {
@@ -41,6 +43,11 @@ struct type_t
     {
       type_t *signature;
     } reaction;
+    struct
+    {
+      const type_t *signature;
+      type_t *return_type;
+    } getter;
     struct
     {
       VECTOR_DECL (parameters, parameter_t *);
@@ -112,9 +119,31 @@ type_to_string (const type_t * type)
 	case TypeFieldList:
 	  unimplemented;
 	case TypeSignature:
-	  unimplemented;
+          {
+            char *str;
+            asprintf (&str, "(");
+            bool flag = false;
+            VECTOR_FOREACH (ptr, limit, type->signature.parameters, parameter_t *)
+              {
+                if (flag)
+                  {
+                    asprintf (&str, "%s, ", str);
+                  }
+
+                asprintf (&str, "%s, %s", str, type_to_string (parameter_type (*ptr)));
+                flag = true;
+              }
+            asprintf (&str, "%s)", str);
+            return str;
+          }
         case TypeString:
           unimplemented;
+        case TypeGetter:
+          {
+            char *str;
+            asprintf (&str, "getter %s %s", type_to_string (type->getter.signature), type_to_string (type->getter.return_type));
+            return str;
+          }
 	}
     }
 
@@ -156,6 +185,8 @@ type_move (type_t * to, type_t * from)
       unimplemented;
     case TypeString:
       unimplemented;
+    case TypeGetter:
+      unimplemented;
     }
 
   free (from);
@@ -185,6 +216,8 @@ type_size (const type_t * type)
     case TypeSignature:
       unimplemented;
     case TypeString:
+      unimplemented;
+    case TypeGetter:
       unimplemented;
     }
 
@@ -224,6 +257,8 @@ duplicate (const type_t * type)
     case TypeSignature:
       unimplemented;
     case TypeString:
+      unimplemented;
+    case TypeGetter:
       unimplemented;
     }
   return retval;
@@ -363,6 +398,21 @@ type_component_add_reaction (type_t * component_type, ast_t* node, string_t iden
   return r;
 }
 
+getter_t *type_component_add_getter (type_t * component_type,
+                                     ast_t* node,
+                                     string_t identifier,
+                                     type_t * signature,
+                                     type_t * return_type)
+{
+  assert (type_is_component (component_type));
+  getter_t *g =
+    getter_make (component_type,
+                 node,
+                 identifier, signature, return_type);
+  VECTOR_PUSH (component_type->component.getters, getter_t*, g);
+  return g;
+}
+
 static size_t
 type_alignment (const type_t * type)
 {
@@ -387,6 +437,8 @@ type_alignment (const type_t * type)
     case TypeSignature:
       unimplemented;
     case TypeString:
+      unimplemented;
+    case TypeGetter:
       unimplemented;
     }
   not_reached;
@@ -423,6 +475,8 @@ type_can_represent (const type_t * type, untyped_value_t u)
       unimplemented;
     case TypeString:
       return u.kind == UntypedString;
+    case TypeGetter:
+      unimplemented;
     }
   bug ("unhandled case");
 }
@@ -451,6 +505,8 @@ type_assignable (const type_t * target, const type_t * source)
     case TypeSignature:
       unimplemented;
     case TypeString:
+      unimplemented;
+    case TypeGetter:
       unimplemented;
     }
   bug ("unhandled case");
@@ -511,6 +567,23 @@ type_component_get_reaction (const type_t * component_type,
   {
     action_t *a = *pos;
     if (streq (reaction_name (a), identifier))
+      {
+	return a;
+      }
+  }
+
+  return NULL;
+}
+
+getter_t *type_component_get_getter (const type_t * component_type,
+                                     string_t identifier)
+{
+  assert (component_type->kind == TypeComponent);
+
+  VECTOR_FOREACH (pos, limit, component_type->component.getters, getter_t *)
+  {
+    getter_t *a = *pos;
+    if (streq (getter_name (a), identifier))
       {
 	return a;
       }
@@ -615,6 +688,8 @@ type_return_value (const type_t * type)
     case TypeSignature:
     case TypeString:
       return false;
+    case TypeGetter:
+      unimplemented;
     }
 
   bug ("unhandled case");
@@ -718,13 +793,25 @@ type_select (const type_t * type, string_t identifier)
 	    return t;
 	  }
 
-	VECTOR_FOREACH (ptr, limit, type->component.reactions, action_t *)
-	{
-	  if (streq (identifier, reaction_name (*ptr)))
-	    {
-	      return reaction_type (*ptr);
-	    }
-	}
+        {
+          VECTOR_FOREACH (ptr, limit, type->component.reactions, action_t *)
+            {
+              if (streq (identifier, reaction_name (*ptr)))
+                {
+                  return reaction_type (*ptr);
+                }
+            }
+        }
+
+        {
+          VECTOR_FOREACH (ptr, limit, type->component.getters, getter_t *)
+            {
+              if (streq (identifier, getter_name (*ptr)))
+                {
+                  return getter_type (*ptr);
+                }
+            }
+        }
 
 	return NULL;
       }
@@ -749,6 +836,8 @@ type_select (const type_t * type, string_t identifier)
     case TypeSignature:
       unimplemented;
     case TypeString:
+      unimplemented;
+    case TypeGetter:
       unimplemented;
     }
 
@@ -779,6 +868,8 @@ type_select_field (const type_t * type, string_t identifier)
     case TypeSignature:
       unimplemented;
     case TypeString:
+      unimplemented;
+    case TypeGetter:
       unimplemented;
     }
 
@@ -881,6 +972,8 @@ type_callable (const type_t * type)
       unimplemented;
     case TypeString:
       unimplemented;
+    case TypeGetter:
+      return true;
     }
   not_reached;
 }
@@ -910,6 +1003,8 @@ type_parameter_count (const type_t * type)
       return VECTOR_SIZE (type->signature.parameters);
     case TypeString:
       unimplemented;
+    case TypeGetter:
+      return type_parameter_count (type->getter.signature);
     }
   not_reached;
 }
@@ -938,6 +1033,8 @@ type_parameter_type (const type_t * type, size_t idx)
     case TypeSignature:
       return parameter_type (VECTOR_AT (type->signature.parameters, idx));
     case TypeString:
+      unimplemented;
+    case TypeGetter:
       unimplemented;
     }
   not_reached;
@@ -968,6 +1065,8 @@ type_return_type (const type_t * type)
       unimplemented;
     case TypeString:
       unimplemented;
+    case TypeGetter:
+      return type->getter.return_type;
     }
   not_reached;
 }
@@ -1040,6 +1139,27 @@ type_signature_arity (const type_t * signature)
 {
   assert (signature->kind == TypeSignature);
   return VECTOR_SIZE (signature->signature.parameters);
+}
+
+type_t *type_make_getter (const type_t * signature,
+                          type_t * return_type)
+{
+  type_t *r = make (TypeGetter);
+  r->getter.signature = signature;
+  r->getter.return_type = return_type;
+  return r;
+}
+
+const type_t *type_getter_signature (const type_t * getter)
+{
+  assert (getter->kind == TypeGetter);
+  return getter->getter.signature;
+}
+
+type_t *type_getter_return_type (const type_t * getter)
+{
+  assert (getter->kind == TypeGetter);
+  return getter->getter.return_type;
 }
 
 field_t **
@@ -1166,6 +1286,8 @@ void type_print_value (const type_t* type,
     case TypeSignature:
       unimplemented;
     case TypeString:
+      unimplemented;
+    case TypeGetter:
       unimplemented;
     }
 }

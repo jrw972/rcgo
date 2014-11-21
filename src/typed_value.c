@@ -56,6 +56,8 @@ typed_value_from_untyped (untyped_value_t u, type_t * t)
       unimplemented;
     case TypeString:
       return typed_value_make_string (t, u.string_value);
+    case TypeGetter:
+      unimplemented;
     }
   bug ("unhandled case");
 }

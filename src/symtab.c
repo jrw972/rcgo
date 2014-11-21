@@ -12,6 +12,7 @@ struct symtab_t
   symtab_t *parent;
     VECTOR_DECL (symbols, symbol_t *);
   action_t *current_action;
+  getter_t *current_getter;
   trigger_t *current_trigger;
   type_t *current_receiver_type;
 };
@@ -161,6 +162,28 @@ symtab_get_current_action (const symtab_t * symtab)
 }
 
 void
+symtab_set_current_getter (symtab_t * symtab, getter_t * getter)
+{
+  symtab->current_getter = getter;
+}
+
+getter_t *
+symtab_get_current_getter (const symtab_t * symtab)
+{
+  if (symtab == NULL)
+    {
+      return NULL;
+    }
+
+  if (symtab->current_getter != NULL)
+    {
+      return symtab->current_getter;
+    }
+
+  return symtab_get_current_getter (symtab->parent);
+}
+
+void
 symtab_set_current_trigger (symtab_t * symtab, trigger_t * trigger)
 {
   symtab->current_trigger = trigger;
@@ -202,6 +225,26 @@ symtab_get_current_receiver_type (const symtab_t * symtab)
     }
 
   return symtab_get_current_receiver_type (symtab->parent);
+}
+
+symbol_t* symtab_get_first_return_parameter (const symtab_t * symtab)
+{
+  if (symtab == NULL)
+    {
+      return NULL;
+    }
+
+  if (!VECTOR_EMPTY (symtab->symbols))
+    {
+      symbol_t* symbol = VECTOR_AT (symtab->symbols, 0);
+      if (symbol_kind (symbol) == SymbolParameter &&
+          symbol_parameter_kind (symbol) == ParameterReturn)
+        {
+          return symbol;
+        }
+    }
+
+  return symtab_get_first_return_parameter (symtab->parent);
 }
 
 symbol_t** symtab_begin (const symtab_t* symtab)

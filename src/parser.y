@@ -23,6 +23,7 @@
 %type <node> expr_list
 %type <node> expr_stmt
 %type <node> field_list
+%type <node> getter_def
 %type <node> identifier
 %type <node> identifier_list
 %type <node> inner_stmt_list
@@ -39,6 +40,7 @@
 %type <node> primary_expr
 %type <node> println_stmt
 %type <node> reaction_def
+%type <node> return_stmt
 %type <node> rvalue
 %type <node> signature
 %type <node> stmt
@@ -50,7 +52,7 @@
 %type <node> var_stmt
 %destructor { /* TODO:  Free the node. node_free ($$); */ } <node>
 
-%token ACTION BIND COMPONENT INSTANCE PORT PRINTLN REACTION TRIGGER TYPE VAR
+%token ACTION BIND COMPONENT GETTER INSTANCE PORT PRINTLN REACTION RETURN TRIGGER TYPE VAR
 
 %token ARROW LOGIC_AND LOGIC_OR
 
@@ -66,6 +68,7 @@ def: type_def { $$ = $1; }
 | reaction_def { $$ = $1; }
 | bind_def { $$ = $1; }
 | instance_def { $$ = $1; }
+| getter_def { $$ = $1; }
 
 instance_def: INSTANCE identifier identifier ';' { $$ = ast_make_instance_def ($2, $3); }
 
@@ -76,6 +79,8 @@ action_def: ACTION pointer_receiver '(' rvalue ')' stmt_list { $$ = ast_make_act
 reaction_def: REACTION pointer_receiver identifier signature stmt_list { $$ = ast_make_reaction_def ($2, $3, $4, $5); }
 
 bind_def: BIND pointer_receiver bind_stmt_list { $$ = ast_make_bind_def ($2, $3); }
+
+getter_def: GETTER pointer_receiver identifier signature type_spec stmt_list { $$ = ast_make_getter_def ($2, $3, $4, $5, $6); }
 
 signature: '(' ')' { $$ = ast_make_signature (); }
 | '(' parameter_list optional_semicolon ')' { $$ = $2; }
@@ -108,10 +113,13 @@ stmt: expr_stmt { $$ = $1; }
 | trigger_stmt { $$ = $1; }
 | stmt_list { $$ = $1; }
 | println_stmt { $$ = $1; }
+| return_stmt { $$ = $1; }
 
 trigger_stmt: TRIGGER optional_port_call_list stmt_list { $$ = ast_make_trigger_stmt ($2, ast_add_child ($3, ast_make_stmt_list ())); }
 
 println_stmt: PRINTLN expr_list ';' { $$ = ast_make_println_stmt ($2); }
+
+return_stmt: RETURN rvalue ';' { $$ = ast_make_return_stmt ($2); }
 
 optional_port_call_list: /* Empty. */ { $$ = ast_make_expression_list (); }
 | port_call_list { $$ = $1; }

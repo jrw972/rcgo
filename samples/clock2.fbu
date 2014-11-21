@@ -1,0 +1,62 @@
+type Counter component {
+  bit bool;
+};
+
+action (this $Counter) (true) {
+  trigger {
+    this$.bit = this$.bit!;
+    println `Bit is now `, this$.bit;
+  }
+}
+
+getter (this $Counter) Bit () bool {
+  return this$.bit;
+}
+
+type Clock component {
+  counter Counter;
+  flag bool;
+  response port (bit bool);
+};
+
+reaction (this $Clock) request () {
+  trigger {
+    this$.flag = true;
+  }
+}
+
+action (this $Clock) (this$.flag) {
+  trigger response (this$.counter.Bit()) {
+    this$.flag = false;
+  }
+}
+
+type Sampler component {
+  flag bool;
+  request port ();
+};
+
+action (this $Sampler) (this$.flag!) {
+  trigger request () {
+    this$.flag = true;
+  }
+}
+
+reaction (this $Sampler) response (bit bool) {
+  println `Received `, bit;
+  trigger {
+    this$.flag = false;
+  }
+}
+
+type System component {
+  sampler Sampler;
+  clock Clock;
+};
+
+bind (this $System) {
+  this$.sampler.request -> this$.clock.request;
+  this$.clock.response -> this$.sampler.response;
+}
+
+instance s System;

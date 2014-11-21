@@ -17,6 +17,7 @@ typedef enum
   TypeFieldList,
   TypeSignature,
   TypeString,
+  TypeGetter,
 } TypeKind;
 
 typedef enum
@@ -62,6 +63,12 @@ action_t *type_component_add_reaction (type_t * component_type,
 				       string_t identifier,
 				       type_t * signature);
 
+getter_t *type_component_add_getter (type_t * component_type,
+                                     ast_t* node,
+                                     string_t identifier,
+                                     type_t * signature,
+                                     type_t * return_type);
+
 TypeKind type_kind (const type_t * type);
 
 bool type_can_represent (const type_t * type, untyped_value_t u);
@@ -82,6 +89,9 @@ bool type_is_boolean (const type_t * type);
 
 action_t *type_component_get_reaction (const type_t * component_type,
 				       string_t identifier);
+
+getter_t *type_component_get_getter (const type_t * component_type,
+                                     string_t identifier);
 
 bool type_is_bindable (const type_t * output, const type_t * input);
 
@@ -146,6 +156,13 @@ bool type_compatible_port_reaction (const type_t * port,
 				    const type_t * reaction);
 
 size_t type_signature_arity (const type_t * signature);
+
+type_t *type_make_getter (const type_t * signature,
+                          type_t * return_type);
+
+const type_t *type_getter_signature (const type_t * getter);
+
+type_t *type_getter_return_type (const type_t * getter);
 
 field_t **type_field_list_begin (const type_t * field_list);
 

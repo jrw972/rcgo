@@ -1,0 +1,185 @@
+The purpose of this document is the list potential features for fbu and to consider the order in which they may be implemented.
+
+Feature:      Scalar data types and operations  (bool, int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64)
+Academic:     Low
+Practical:    High
+Estimate:     Easy, long, repetitive
+Dependencies: None
+
+Feature:      Local variables
+Academic:     Low
+Practical:    High
+Estimate:     Medium difficulty
+Dependencies: None
+
+Feature:      Functions
+Academic:     Low
+Practical:    High
+Estimate:     Medium difficulty
+Dependencies: None
+
+Feature:      Methods
+Academic:     Low
+Practical:    Medium
+Estimate:     Easy once functions are done
+Dependencies: Functions
+
+Feature:      Interfaces
+Academic:     Low
+Practical:    Medium
+Estimate:     Medium to difficult
+Dependencies: Methods, Dynamic memory
+
+Feature:      Public/Private members
+Academic:     Low
+Practical:    Medium
+Estimate:     Easy to implement, challenging to find all spots
+Dependencies: Methods
+
+Feature:      Namespaces (scoping)
+Academic:     Low
+Practical:    Low
+Estimate:     Hard to estimate since based on require features
+Dependencies: None
+
+Feature:      Aggregate Data Types (structs, arrays, slices, sets, maps)
+Academic:     Low
+Practical:    High
+Estimate:     Varying difficulty.  Interaction with components may present some difficulty.
+Dependencies: None
+
+Feature:      Pointer Types, Dynamic Memory, Garbage Collection
+Academic:     Medium/High
+Practical:    High
+Estimate:     Pointers require significant design work and semantic checking.  Easy to implement dynamic memory and garabage collection.  Difficult to make it efficient.
+Dependencies: Structs
+
+Feature:      Byte-code compilation and interpretation
+Academic:     Low
+Practical:    High
+Estimate:     Best implemented in phases with increasing sophistication.
+Dependencies: Multiple.  (Sensitive to most features.)
+
+Feature:      Automatic ports and reactions
+Academic:     High
+Practical:    Medium
+Estimate:     Moderate difficulty.  Much infrastructure in place.
+Dependencies: None
+
+Feature:      Threads (Orchestrated sequences)
+Academic:     ?
+Practical:    Medium
+Estimate:     Difficult.  Will require significant semantic analysis and transformation.  Best implemented after other features.
+Dependencies: None
+
+Feature:      Multi-threaded scheduler
+Academic:     High
+Practical:    High
+Estimate:     Moderate to easy.
+Dependencies: None
+
+Feature:      POSIX I/O (internal reactor with file descriptors for POSIX environment)
+Academic:     Low
+Practical:    High
+Estimate:     Moderate difficulty.  Requires modification of scheduler and built-in components.
+Dependencies: None (but C interface would probably be useful)
+
+Feature:      Time-triggered actions (actions are enabled via a temporal expression)
+Academic:     Low
+Practical:    High
+Estimate:     Design will dictate difficulty.
+Dependencies: None
+
+Feature:      Dynamic components
+Academic:     Medium
+Practical:    High
+Estimate:     Very difficult.  Requires language and run-time functionality including admission control.
+Dependencies: Various.
+
+Feature:      Separate compilation
+Academic:     Low
+Practical:    Medium/High
+Estimate:     Very difficult but easier if dynamic components are implemented.  Semantics checking at compile-time, link-time, and run-time.
+Dependencies: Interfaces for components
+
+Feature:      Run on bare metal
+Academic:     Low
+Practical:    Low
+Estimate:     Very difficult.  Migration from POSIX to bare-metal.  Very interesting from an optimization and high-performance perspective.
+Dependencies: Dynamic memory optional.
+
+Feature:      Write an operating system
+Academic:     Low
+Practical:    Low
+Estimate:     Very difficult.  Will require a complete reexamination of OS concepts.
+Dependencies: Various.
+
+Feature:      Synchronous getters
+Academic:     Medium (enable more parallelism)
+Practical:    High
+Estimate:     Easy to moderate depending on implementation of functions and methods
+Dependencies: None
+
+Feature:      Basic control structures (loop, conditional)
+Academic:     Low
+Practical:    High
+Estimate:     Medium difficulty
+Dependencies: None
+
+Feature:      Advanced control structures
+Academic:     Low
+Practical:    High
+Estimate:     Medium difficulty
+Dependencies: Basic control structures
+
+Feature:      Inline assembly (necessary for drivers, OS, etc.)
+Academic:     Low
+Practical:    Low
+Estimate:     Difficult
+Dependencies: None
+
+Feature:      C interface (alternative to inline assembly)
+Academic:     Low
+Practical:    High
+Estimate:     Moderate
+Dependencies: None
+
+Feature:      Serialization (of objects)
+Academic:     Low
+Practical:    High
+Estimate:     Easy to moderate
+Dependencies: Solid type system and dynamic memory
+
+Feature:      Shell (for POSIX or OS)
+Academic:     Low
+Practical:    Low
+Estimate:     Moderate
+Dependencies: Dynamic components
+
+Feature:      Wrapped networked components  (Automagically generate a network interface for a component)
+Academic:     Low/Medium
+Practical:    Low/Medium
+Estimate:     Difficult.  Requires significant analysis and/or reflection.
+Dependencies: Serialization
+
+Feature:      Parsing infrastructure (equivalents of lex and yacc)
+Academic:     Low
+Practical:    Medium
+Estimate:     Difficult but useful for networking.
+Dependencies: None
+
+
+1 Introduction
+2 Background and Related Work
+3 Model Notation and Semantics
+4 Design and Implementation (for core features)
+5 Advanced Features and Scenarios
+  getters
+  automatic port and reactions
+  multi-threaded scheduler (high-level, thread per trigger)
+  pointers and transferrable objects, garbage collection
+    so what:  Efficient state transfer (move semantics)
+              Efficient read only state (deep-copy snap shot)
+              Delayering component bounderies for query execution
+6 Discussion and Evaluation
+7 Conclusion and Future Work

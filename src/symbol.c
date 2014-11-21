@@ -245,6 +245,15 @@ symbol_make_parameter (string_t identifier, type_t * type,
   return s;
 }
 
+symbol_t *symbol_make_return_parameter (string_t identifier, type_t * type,
+                                        ast_t * defining_node)
+{
+  symbol_t *s = make (identifier, SymbolParameter, defining_node);
+  s->parameter.type = type;
+  s->parameter.kind = ParameterReturn;
+  return s;
+}
+
 symbol_t *
 symbol_make_receiver (string_t identifier, type_t * type,
                       ast_t * defining_node)

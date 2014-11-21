@@ -27,15 +27,24 @@ void stack_frame_push (stack_frame_t* stack_frame,
                        ptrdiff_t offset,
                        size_t size);
 
+/* Reserve size bytes on the top of the stack . */
+void stack_frame_reserve (stack_frame_t* stack_frame,
+                          size_t size);
+
 /* Copy size bytes from ptr to the top of the stack. */
 void stack_frame_load (stack_frame_t* stack_frame,
                        void* ptr,
                        size_t size);
 
 /* Copy size bytes from the top of the stack to ptr and remove that many bytes from the stack. */
-void stack_frame_store (stack_frame_t* stack_frame,
-                        void* ptr,
-                        size_t size);
+void stack_frame_store_heap (stack_frame_t* stack_frame,
+                             void* ptr,
+                             size_t size);
+
+/* Copy size bytes from the top of the stack to base_pointer + offset and remove that many bytes from the stack. */
+void stack_frame_store_stack (stack_frame_t* stack_frame,
+                              ptrdiff_t offset,
+                              size_t size);
 
 // Return the base pointer.
 char* stack_frame_base_pointer (const stack_frame_t* stack_frame);
@@ -55,6 +64,9 @@ char* stack_frame_top (const stack_frame_t* stack_frame);
 
 void stack_frame_set_top (stack_frame_t* stack_frame,
                           char* top);
+
+// Pop size bytes from the top of the stack.
+void stack_frame_pop (stack_frame_t* stack_frame, size_t size);
 
 // Return a pointer to the return instruction pointer.
 void* stack_frame_ip (const stack_frame_t* stack_frame);

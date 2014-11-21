@@ -28,6 +28,10 @@ void symtab_set_current_action (symtab_t * symtab, action_t * action);
 
 action_t *symtab_get_current_action (const symtab_t * symtab);
 
+void symtab_set_current_getter (symtab_t * symtab, getter_t * getter);
+
+getter_t *symtab_get_current_getter (const symtab_t * symtab);
+
 void symtab_set_current_trigger (symtab_t * symtab, trigger_t * trigger);
 
 trigger_t *symtab_get_current_trigger (const symtab_t * symtab);
@@ -35,6 +39,8 @@ trigger_t *symtab_get_current_trigger (const symtab_t * symtab);
 void symtab_set_current_receiver_type (symtab_t * symtab, type_t * type);
 
 type_t *symtab_get_current_receiver_type (const symtab_t * symtab);
+
+symbol_t* symtab_get_first_return_parameter (const symtab_t * symtab);
 
 symbol_t** symtab_begin (const symtab_t* symtab);
 

@@ -115,6 +115,9 @@ ast_print (const ast_t * node, size_t indent)
           break;
 	}
       break;
+    case AstGetter:
+      printf ("AstGetter");
+      break;
     case AstIdentifier:
       printf ("AstIdentifier: %s", get (node->identifier.identifier));
       break;
@@ -407,6 +410,19 @@ ast_make_type_def (ast_t * identifier, ast_t * type_spec)
   ast_t *retval = make (AstTypeDefinition, 2);
   ast_set_child (retval, TYPE_IDENTIFIER, identifier);
   ast_set_child (retval, TYPE_TYPE_SPEC, type_spec);
+  return retval;
+}
+
+ast_t *ast_make_getter_def (ast_t * receiver, ast_t * identifier,
+                            ast_t * signature, ast_t * return_type,
+                            ast_t* body)
+{
+  ast_t *retval = make (AstGetter, 5);
+  ast_set_child (retval, GETTER_RECEIVER, receiver);
+  ast_set_child (retval, GETTER_IDENTIFIER, identifier);
+  ast_set_child (retval, GETTER_SIGNATURE, signature);
+  ast_set_child (retval, GETTER_RETURN_TYPE, return_type);
+  ast_set_child (retval, GETTER_BODY, body);
   return retval;
 }
 

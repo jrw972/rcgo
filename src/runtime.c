@@ -10,6 +10,7 @@
 #include "stack_frame.h"
 #include "symbol.h"
 #include "trigger.h"
+#include "getter.h"
 
 typedef struct instance_record_t instance_record_t;
 struct instance_record_t {
@@ -171,11 +172,21 @@ evaluate_lvalue (runtime_t* runtime,
       unimplemented;
     case AstSelectExpr:
       {
-        evaluate_lvalue (runtime, ast_get_child (expr, BINARY_LEFT_CHILD));
         ast_t *left = ast_get_child (expr, BINARY_LEFT_CHILD);
 	ast_t *right = ast_get_child (expr, BINARY_RIGHT_CHILD);
 	string_t identifier = ast_get_identifier (right);
+
+        type_t* selected_type = ast_get_type (expr);
 	type_t *type = ast_get_type (left);
+
+        if (type_kind (selected_type) == TypeGetter)
+          {
+            getter_t* getter = type_component_get_getter (type, identifier);
+            stack_frame_push_pointer (runtime->stack, getter_node (getter));
+            break;
+          }
+
+        evaluate_lvalue (runtime, ast_get_child (expr, BINARY_LEFT_CHILD));
 	field_t* field = type_select_field (type, identifier);
         assert (field != NULL);
         void* ptr = stack_frame_pop_pointer (runtime->stack);
@@ -193,6 +204,56 @@ static void
 execute (runtime_t* runtime,
          const action_t* action);
 
+typedef enum {
+  RETURN,
+  CONTINUE,
+} ControlAction;
+
+static ControlAction
+evaluate_statement (runtime_t* runtime,
+                    ast_t* node);
+
+static void
+call (runtime_t* runtime)
+{
+  ast_t* node = stack_frame_pop_pointer (runtime->stack);
+
+  switch (ast_kind (node))
+    {
+    case AstAction:
+      unimplemented;
+    case AstBind:
+      unimplemented;
+    case AstBindStatement:
+      unimplemented;
+    case AstExpression:
+      unimplemented;
+    case AstGetter:
+      stack_frame_push_base_pointer (runtime->stack);
+      evaluate_statement (runtime, ast_get_child (node, GETTER_BODY));
+      stack_frame_pop_base_pointer (runtime->stack);
+      break;
+    case AstIdentifier:
+      unimplemented;
+    case AstIdentifierList:
+      unimplemented;
+    case AstInstance:
+      unimplemented;
+    case AstPointerReceiverDefinition:
+      unimplemented;
+    case AstReaction:
+      unimplemented;
+    case AstStatement:
+      unimplemented;
+    case AstTopLevelList:
+      unimplemented;
+    case AstTypeDefinition:
+      unimplemented;
+    case AstTypeSpecification:
+      unimplemented;
+    }
+}
+
 static void
 evaluate_rvalue (runtime_t* runtime,
                  ast_t* expr)
@@ -200,7 +261,49 @@ evaluate_rvalue (runtime_t* runtime,
   switch (ast_expression_kind (expr))
     {
     case AstCallExpr:
-      unimplemented;
+      {
+        // Create space for the return.
+        type_t* return_type = ast_get_type (expr);
+        stack_frame_reserve (runtime->stack, type_size (return_type));
+
+        // Sample the top of the stack.
+        char* top_before = stack_frame_top (runtime->stack);
+
+        // Push an implicit this if necessary.
+        {
+          ast_t* callee_node = ast_get_child (expr, CALL_EXPR);
+          type_t* callee_type = ast_get_type (callee_node);
+          if (type_kind (callee_type) == TypeGetter)
+            {
+              // Strip the final select.
+              callee_node = ast_get_child (callee_node, BINARY_LEFT_CHILD);
+              evaluate_lvalue (runtime, callee_node);
+            }
+          else
+            {
+              unimplemented;
+            }
+        }
+
+        // Push the arguments.
+        evaluate_rvalue (runtime, ast_get_child (expr, CALL_ARGS));
+
+        // Push a fake instruction pointer.
+        stack_frame_push_pointer (runtime->stack, NULL);
+
+        // Sample the top.
+        char* top_after = stack_frame_top (runtime->stack);
+
+        // Push the thing to call.
+        evaluate_lvalue (runtime, ast_get_child (expr, CALL_EXPR));
+
+        // Perform the call.
+        call (runtime);
+
+        // Pop the arguments.
+        stack_frame_pop (runtime->stack, top_after - top_before);
+      }
+      break;
     case AstDereferenceExpr:
       unimplemented;
     case AstExprList:
@@ -310,6 +413,8 @@ evaluate_rvalue (runtime_t* runtime,
           case TypeString:
             stack_frame_push_string (runtime->stack, value.string_value);
             break;
+          case TypeGetter:
+            unimplemented;
           }
       }
       break;
@@ -318,11 +423,6 @@ evaluate_rvalue (runtime_t* runtime,
       break;
     }
 }
-
-typedef enum {
-  RETURN,
-  CONTINUE,
-} ControlAction;
 
 static ControlAction
 evaluate_statement (runtime_t* runtime,
@@ -340,7 +440,7 @@ evaluate_statement (runtime_t* runtime,
         // Evaluate the value.
         evaluate_rvalue (runtime, ast_get_child (node, BINARY_RIGHT_CHILD));
         // Store.
-        stack_frame_store (runtime->stack, ptr, size);
+        stack_frame_store_heap (runtime->stack, ptr, size);
       }
       break;
     case AstExpressionStmt:
@@ -358,7 +458,16 @@ evaluate_statement (runtime_t* runtime,
       }
       break;
     case AstReturnStmt:
-      unimplemented;
+      {
+        // Evaluate the expression.
+        evaluate_rvalue (runtime, ast_get_child (node, UNARY_CHILD));
+        // Get the return parameter.
+        symbol_t* symbol = symtab_get_first_return_parameter (ast_get_symtab (node));
+        assert (symbol != NULL);
+        stack_frame_store_stack (runtime->stack, symbol_get_offset (symbol), type_size (symbol_parameter_type (symbol)));
+        return RETURN;
+      }
+      break;
     case AstTriggerStmt:
       {
         // Need to keep track of the largest base pointer so we can process the mutable section.
@@ -424,6 +533,8 @@ evaluate_statement (runtime_t* runtime,
                 fwrite (s.bytes, 1, s.size, stdout);
               }
               break;
+            case TypeGetter:
+              unimplemented;
             }
 	}
       }

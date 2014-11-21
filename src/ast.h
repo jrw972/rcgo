@@ -10,6 +10,7 @@ typedef enum
   AstBind,
   AstBindStatement,
   AstExpression,
+  AstGetter,
   AstIdentifier,
   AstIdentifierList,
   AstInstance,
@@ -150,6 +151,16 @@ ast_t *ast_make_reaction_def (ast_t * receiver, ast_t * identifier,
 #define TYPE_TYPE_SPEC 1
 
 ast_t *ast_make_type_def (ast_t * identifier, ast_t * type_spec);
+
+#define GETTER_RECEIVER 0
+#define GETTER_IDENTIFIER 1
+#define GETTER_SIGNATURE 2
+#define GETTER_RETURN_TYPE 3
+#define GETTER_BODY 4
+
+ast_t *ast_make_getter_def (ast_t * receiver, ast_t * identifier,
+                            ast_t * signature, ast_t * return_type,
+                            ast_t* body);
 
 /* Expr */
 

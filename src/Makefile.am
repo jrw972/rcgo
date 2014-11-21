@@ -9,6 +9,8 @@ ast.h ast.c \
 binding.h binding.c \
 debug.h debug.c \
 field.h field.c \
+getter.h getter.c \
+getter_call.h getter_call.c \
 instance.h instance.c \
 instance_set.h instance_set.c \
 memory_model.h memory_model.c \

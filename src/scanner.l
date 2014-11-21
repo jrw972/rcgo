@@ -14,10 +14,12 @@
 "action"               { return ACTION; }
 "bind"                 { return BIND; }
 "component"            { return COMPONENT; }
+"getter"               { return GETTER; }
 "instance"             { return INSTANCE; }
 "port"                 { return PORT; }
 "println"              { return PRINTLN; }
 "reaction"             { return REACTION; }
+"return"               { return RETURN; }
 "trigger"              { return TRIGGER; }
 "type"                 { return TYPE; }
 "var"                  { return VAR; }

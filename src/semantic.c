@@ -12,6 +12,8 @@
 #include "binding.h"
 #include "symbol.h"
 #include "memory_model.h"
+#include "getter.h"
+#include "getter_call.h"
 
 void
 construct_symbol_table (ast_t * node, symtab_t * symtab)
@@ -25,6 +27,7 @@ construct_symbol_table (ast_t * node, symtab_t * symtab)
     {
     case AstAction:
     case AstBind:
+    case AstGetter:
     case AstReaction:
     case AstTopLevelList:
       {
@@ -166,24 +169,25 @@ enter_symbols_helper (ast_t * node)
     case AstAction:
     case AstBind:
     case AstBindStatement:
+    case AstGetter:
     case AstExpression:
     case AstIdentifier:
     case AstIdentifierList:
-      break;
-    case AstInstance:
-      enter_undefined_symbol (node, ast_get_child (node, INSTANCE_IDENTIFIER),
-			      SymbolInstance);
-      break;
     case AstPointerReceiverDefinition:
     case AstReaction:
     case AstStatement:
     case AstTopLevelList:
+    case AstTypeSpecification:
       break;
+
+    case AstInstance:
+      enter_undefined_symbol (node, ast_get_child (node, INSTANCE_IDENTIFIER),
+			      SymbolInstance);
+      break;
+
     case AstTypeDefinition:
       enter_undefined_symbol (node, ast_get_child (node, TYPE_IDENTIFIER),
 			      SymbolType);
-      break;
-    case AstTypeSpecification:
       break;
     }
 
@@ -239,7 +243,8 @@ lookup (ast_t * node, string_t identifier)
   symbol_t *symbol = symtab_find (symtab, identifier);
   if (!symbol_defined (symbol))
     {
-      unimplemented;
+      error_at_line (-1, 0, ast_file (node), ast_line (node),
+                     "%s was not defined in this scope", get (identifier));
     }
   return symbol;
 }
@@ -389,6 +394,49 @@ process_declarations (ast_t * node)
       unimplemented;
     case AstExpression:
       unimplemented;
+    case AstGetter:
+      {
+	ast_t *receiver = ast_get_child (node, GETTER_RECEIVER);
+	ast_t *type_node = ast_get_child (receiver, RECEIVER_TYPE_IDENTIFIER);
+	ast_t *signature_node = ast_get_child (node, GETTER_SIGNATURE);
+	ast_t *return_type_node = ast_get_child (node, GETTER_RETURN_TYPE);
+	ast_t *identifier_node = ast_get_child (node, GETTER_IDENTIFIER);
+	string_t identifier = ast_get_identifier (identifier_node);
+	string_t type_identifier = ast_get_identifier (type_node);
+	symbol_t *symbol = lookup (type_node, type_identifier);
+	if (symbol_kind (symbol) != SymbolType)
+	  {
+	    error_at_line (-1, 0, ast_file (type_node), ast_line (type_node),
+			   "%s does not refer to a type",
+			   get (type_identifier));
+	  }
+	type_t *type = symbol_get_type_type (symbol);
+	if (!type_is_component (type))
+	  {
+	    error_at_line (-1, 0, ast_file (type_node), ast_line (type_node),
+			   "%s does not refer to a component",
+			   get (type_identifier));
+	  }
+	const type_t *t = type_select (type, identifier);
+	if (t != NULL)
+	  {
+	    error_at_line (-1, 0, ast_file (identifier_node),
+			   ast_line (identifier_node),
+			   "component already contains a member named %s",
+			   get (identifier));
+	  }
+
+	/* Process the signature. */
+	type_t *signature = process_type_spec (signature_node);
+
+        /* Process the return type. */
+        type_t *return_type = process_type_spec (return_type_node);
+
+        getter_t* getter = type_component_add_getter (type, node, identifier, signature, return_type);
+	symtab_set_current_getter (ast_get_symtab (node), getter);
+	symtab_set_current_receiver_type (ast_get_symtab (node), type);
+      }
+      break;
     case AstIdentifier:
       unimplemented;
     case AstIdentifierList:
@@ -631,7 +679,116 @@ check_call (ast_t * node, ast_t * args, const type_t * expr_type)
   // Set the return type.
   // TODO:  Determine if the return type is derived from the receiver.
   // For safety, assume that it is.
+  // TODO:  Is this analysis the same for getters?
   ast_set_type (node, type_return_type (expr_type), true, true);
+}
+
+static action_t *
+get_current_action (const ast_t * node)
+{
+  return symtab_get_current_action (ast_get_symtab (node));
+}
+
+static getter_t *
+get_current_getter (const ast_t * node)
+{
+  return symtab_get_current_getter (ast_get_symtab (node));
+}
+
+static type_t *
+get_current_return_type (const ast_t * node)
+{
+  getter_t* g = get_current_getter (node);
+  if (g != NULL)
+    {
+      return getter_return_type (g);
+    }
+
+  return NULL;
+}
+
+static type_t *
+get_current_receiver_type (const ast_t * node)
+{
+  return symtab_get_current_receiver_type (ast_get_symtab (node));
+}
+
+static trigger_t *
+get_current_trigger (const ast_t * node)
+{
+  return symtab_get_current_trigger (ast_get_symtab (node));
+}
+
+static bool
+in_trigger_statement (const ast_t * node)
+{
+  symtab_t *symtab = ast_get_symtab (node);
+  return symtab_get_current_trigger (symtab) != NULL;
+}
+
+static bool
+in_immutable_section (const ast_t* node)
+{
+  if (get_current_getter (node) != NULL)
+    {
+      // Calling a getter in a getter is okay.
+      return true;
+    }
+
+  if (get_current_action (node) != NULL &&
+      get_current_trigger (node) == NULL)
+    {
+      // In an action or reaction but not in a trigger body.
+      return true;
+    }
+
+  return false;
+}
+
+static void
+populate_getter_call (const ast_t* node,
+                      getter_call_t* gc)
+{
+  switch (ast_expression_kind (node))
+    {
+    case AstCallExpr:
+      unimplemented;
+    case AstDereferenceExpr:
+      // Do nothing.
+      break;
+    case AstExprList:
+      unimplemented;
+    case AstIdentifierExpr:
+      unimplemented;
+    case AstLogicAndExpr:
+      unimplemented;
+    case AstLogicNotExpr:
+      unimplemented;
+    case AstLogicOrExpr:
+      unimplemented;
+    case AstPortCallExpr:
+      unimplemented;
+    case AstSelectExpr:
+      {
+	ast_t *left = ast_get_child (node, BINARY_LEFT_CHILD);
+	ast_t *right = ast_get_child (node, BINARY_RIGHT_CHILD);
+	string_t identifier = ast_get_identifier (right);
+        populate_getter_call (left, gc);
+
+	type_t *type = ast_get_type (left);
+	field_t* field = type_select_field (type, identifier);
+
+        if (field != NULL)
+          {
+            getter_call_add_field (gc, field);
+          }
+      }
+      break;
+    case AstTypedLiteral:
+      unimplemented;
+    case AstUntypedLiteral:
+      unimplemented;
+    }
 }
 
 static void
@@ -652,6 +809,33 @@ check_rvalue (ast_t ** ptr)
 	    error_at_line (-1, 0, ast_file (node), ast_line (node),
 			   "cannot call");
 	  }
+
+        if (type_kind (expr_type) == TypeGetter)
+          {
+            // Must be in immutable section.
+            if (!in_immutable_section (node))
+              {
+                error_at_line (-1, 0, ast_file (node), ast_line (node),
+                               "getter called outside of immutable section");
+              }
+
+            // Build a getter call and add it to the current action, reaction, or getter.
+            getter_call_t* gc = getter_call_make ();
+            populate_getter_call (*expr, gc);
+
+            if (get_current_action (node) != NULL)
+              {
+                action_add_getter_call (get_current_action (node), gc);
+              }
+            else if (get_current_getter (node) != NULL)
+              {
+                getter_add_getter_call (get_current_getter (node), gc);
+              }
+            else
+              {
+                bug ("unhandled case");
+              }
+          }
 
 	ast_t *args = ast_get_child (node, CALL_ARGS);
 	check_rvalue_list (args);
@@ -820,31 +1004,6 @@ convert_rvalue_list_to_builtin_types (ast_t * node)
   }
 }
 
-static action_t *
-get_current_action (const ast_t * node)
-{
-  return symtab_get_current_action (ast_get_symtab (node));
-}
-
-static type_t *
-get_current_receiver_type (const ast_t * node)
-{
-  return symtab_get_current_receiver_type (ast_get_symtab (node));
-}
-
-static trigger_t *
-get_current_trigger (const ast_t * node)
-{
-  return symtab_get_current_trigger (ast_get_symtab (node));
-}
-
-static bool
-in_trigger_statement (const ast_t * node)
-{
-  symtab_t *symtab = ast_get_symtab (node);
-  return symtab_get_current_trigger (symtab) != NULL;
-}
-
 static field_t *
 extract_port_field (const ast_t * node)
 {
@@ -898,7 +1057,16 @@ check_statement (ast_t * node)
       }
       break;
     case AstReturnStmt:
-      unimplemented;
+      {
+        // Check the expression.
+        ast_t** expr = ast_get_child_ptr (node, UNARY_CHILD);
+        check_rvalue (expr);
+        // Check that is matches with the return type.
+        type_t* return_type = get_current_return_type (node);
+        assert (return_type != NULL);
+        convert (return_type, expr, node);
+      }
+      break;
     case AstTriggerStmt:
       {
 	symtab_t *symtab = ast_get_symtab (node);
@@ -924,7 +1092,7 @@ check_statement (ast_t * node)
 
 	trigger_t *trigger = trigger_make ();
 	action_add_trigger (action, trigger);
-	symtab_set_current_trigger (ast_get_symtab (node), trigger);
+	symtab_set_current_trigger (ast_get_symtab (body_node), trigger);
 
 	/* Check the triggers. */
 	check_rvalue_list (expression_list_node);
@@ -1223,6 +1391,35 @@ process_definitions (ast_t * node)
       unimplemented;
     case AstExpression:
       unimplemented;
+    case AstGetter:
+      {
+	ast_t *receiver_node = ast_get_child (node, GETTER_RECEIVER);
+	ast_t *signature_node = ast_get_child (node, GETTER_SIGNATURE);
+	ast_t *body_node = ast_get_child (node, GETTER_BODY);
+        ast_t *return_type_node = ast_get_child (node, GETTER_RETURN_TYPE);
+	getter_t *getter = get_current_getter (node);
+
+        /* Enter the return type into the symbol table. */
+        enter_symbol (return_type_node, symbol_make_return_parameter (enter ("0return"), getter_return_type (getter), return_type_node));
+
+	/* Insert "this" into the symbol table. */
+	ast_t *this_node =
+	  ast_get_child (receiver_node, RECEIVER_THIS_IDENTIFIER);
+	string_t this_identifier = ast_get_identifier (this_node);
+	enter_symbol (receiver_node,
+		      symbol_make_receiver (this_identifier,
+                                            type_make_pointer
+                                            (PointerToImmutable,
+                                             getter_component_type (getter)),
+                                            this_node));
+
+	/* Enter the signature into the symbol table. */
+	enter_signature (signature_node, getter_signature (getter));
+
+	/* Check the body. */
+	check_statement (body_node);
+      }
+      break;
     case AstIdentifier:
       unimplemented;
     case AstIdentifierList:
@@ -1245,7 +1442,7 @@ process_definitions (ast_t * node)
 		      symbol_make_receiver (this_identifier,
                                             type_make_pointer
                                             (PointerToImmutable,
-                                             action_type (reaction)),
+                                             action_component_type (reaction)),
                                             this_node));
 	/* Enter the signature into the symbol table. */
 	enter_signature (signature_node, reaction_signature (reaction));
@@ -1317,6 +1514,8 @@ enumerate_instances (ast_t * node, instance_table_t * instance_table)
       unimplemented;
     case AstExpression:
       unimplemented;
+    case AstGetter:
+      break;
     case AstIdentifier:
       unimplemented;
     case AstIdentifierList:
@@ -1364,6 +1563,7 @@ allocate_symbol (memory_model_t* memory_model,
           {
           case ParameterOrdinary:
           case ParameterReceiver:
+          case ParameterReturn:
             {
               type_t* type = symbol_parameter_type (symbol);
               memory_model_arguments_push (memory_model, type_size (type));
@@ -1430,7 +1630,7 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t* memory_model)
       }
       break;
     case AstReturnStmt:
-      unimplemented;
+      // Do nothing.
       break;
     case AstTriggerStmt:
       allocate_statement_stack_variables (ast_get_child (node, TRIGGER_BODY), memory_model);
@@ -1492,6 +1692,9 @@ allocate_stack_variables (ast_t* node, memory_model_t* memory_model)
       unimplemented;
     case AstExpression:
       unimplemented;
+    case AstGetter:
+      allocate_stack_variables_helper (node, ast_get_child (node, GETTER_BODY), memory_model);
+      break;
     case AstIdentifier:
       unimplemented;
     case AstIdentifierList:
