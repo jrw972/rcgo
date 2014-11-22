@@ -18,6 +18,7 @@ typedef enum
   TypeSignature,
   TypeString,
   TypeGetter,
+  TypeUint,
 } TypeKind;
 
 typedef enum
@@ -195,5 +196,9 @@ void type_print_value (const type_t* type,
                        void* value);
 
 type_t* type_make_string (void);
+
+type_t* type_make_uint (void);
+
+bool type_is_arithmetic (const type_t* type);
 
 #endif /* type_h */

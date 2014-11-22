@@ -61,6 +61,25 @@ bool stack_frame_pop_bool (stack_frame_t* stack_frame)
   return retval;
 }
 
+void stack_frame_push_uint (stack_frame_t* stack_frame,
+                            uint64_t b)
+{
+  size_t s = align_up (sizeof (uint64_t), memory_model_stack_alignment (stack_frame->memory_model));
+  assert (stack_frame->top + s <= stack_frame->limit);
+  memcpy (stack_frame->top, &b, sizeof (uint64_t));
+  stack_frame->top += s;
+}
+
+uint64_t stack_frame_pop_uint (stack_frame_t* stack_frame)
+{
+  uint64_t retval;
+  size_t s = align_up (sizeof (uint64_t), memory_model_stack_alignment (stack_frame->memory_model));
+  assert (stack_frame->top - s >= stack_frame->data);
+  stack_frame->top -= s;
+  memcpy (&retval, stack_frame->top, sizeof (uint64_t));
+  return retval;
+}
+
 void stack_frame_push_string (stack_frame_t* stack_frame,
                               rtstring_t b)
 {

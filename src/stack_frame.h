@@ -17,6 +17,11 @@ void stack_frame_push_bool (stack_frame_t* stack_frame,
 
 bool stack_frame_pop_bool (stack_frame_t* stack_frame);
 
+void stack_frame_push_uint (stack_frame_t* stack_frame,
+                            uint64_t b);
+
+uint64_t stack_frame_pop_uint (stack_frame_t* stack_frame);
+
 void stack_frame_push_string (stack_frame_t* stack_frame,
                               rtstring_t b);
 

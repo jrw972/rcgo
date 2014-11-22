@@ -52,6 +52,7 @@ typedef enum
 {
   AstAssignmentStmt,
   AstExpressionStmt,
+  AstAddAssignStmt,
   AstPrintlnStmt,
   AstReturnStmt,
   AstStmtList,
@@ -204,6 +205,8 @@ ast_t *ast_make_expr_stmt (ast_t * expr);
 ast_t *ast_make_var_stmt (ast_t * identifier_list, ast_t * type_spec);
 
 ast_t *ast_make_assignment_stmt (ast_t * lvalue, ast_t * rvalue);
+
+ast_t *ast_make_add_assign_stmt (ast_t * lvalue, ast_t * rvalue);
 
 ast_t *ast_make_stmt_list (void);
 

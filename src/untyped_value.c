@@ -19,6 +19,8 @@ untyped_value_to_string (untyped_value_t u)
 	{
 	  return "false";
 	}
+    case UntypedInteger:
+      unimplemented;
     case UntypedString:
       unimplemented;
     }
@@ -77,6 +79,12 @@ untyped_value_logic_or (untyped_value_t x, untyped_value_t y)
     {
       return untyped_value_make_undefined ();
     }
+}
+
+untyped_value_t untyped_value_make_integer (int64_t u)
+{
+untyped_value_t retval = { kind: UntypedInteger, integer_value:u };
+  return retval;
 }
 
 untyped_value_t

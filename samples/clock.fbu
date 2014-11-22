@@ -1,12 +1,14 @@
+// A component based on the Clock automaton of Distributed Algorithms, p. 213.
 type Clock component {
-  bit, flag bool;
-  response port (bit bool);
+  counter uint;
+  flag bool;
+  response port (t uint);
 };
 
 action (this $Clock) (true) {
   trigger {
-    this$.bit = this$.bit!;
-    println `Bit is now `, this$.bit;
+    this$.counter++;
+    println `Counter is now `, this$.counter;
   }
 }
 
@@ -17,7 +19,7 @@ reaction (this $Clock) request () {
 }
 
 action (this $Clock) (this$.flag) {
-  trigger response (this$.bit) {
+  trigger response (this$.counter) {
     this$.flag = false;
   }
 }
@@ -33,8 +35,8 @@ action (this $Sampler) (this$.flag!) {
   }
 }
 
-reaction (this $Sampler) response (bit bool) {
-  println `Received `, bit;
+reaction (this $Sampler) response (t uint) {
+  println `Received `, t;
   trigger {
     this$.flag = false;
   }

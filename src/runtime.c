@@ -407,6 +407,9 @@ evaluate_rvalue (runtime_t* runtime,
           case TypeGetter:
             stack_frame_push_pointer (runtime->stack, getter_node (value.getter_value));
             break;
+          case TypeUint:
+            stack_frame_push_uint (runtime->stack, value.uint_value);
+            break;
           }
       }
       break;
@@ -437,6 +440,45 @@ evaluate_statement (runtime_t* runtime,
       break;
     case AstExpressionStmt:
       unimplemented;
+    case AstAddAssignStmt:
+      {
+        // Determine the size of the value being assigned.
+        type_t* type = ast_get_type2 (ast_get_child (node, BINARY_RIGHT_CHILD));
+        // Evaluate the address.
+        evaluate_lvalue (runtime, ast_get_child (node, BINARY_LEFT_CHILD));
+        void* ptr = stack_frame_pop_pointer (runtime->stack);
+        // Evaluate the value.
+        evaluate_rvalue (runtime, ast_get_child (node, BINARY_RIGHT_CHILD));
+        switch (type_kind (type))
+          {
+          case TypeUndefined:
+            unimplemented;
+          case TypeVoid:
+            unimplemented;
+          case TypeBool:
+            unimplemented;
+          case TypeComponent:
+            unimplemented;
+          case TypePointer:
+            unimplemented;
+          case TypePort:
+            unimplemented;
+          case TypeReaction:
+            unimplemented;
+          case TypeFieldList:
+            unimplemented;
+          case TypeSignature:
+            unimplemented;
+          case TypeString:
+            unimplemented;
+          case TypeGetter:
+            unimplemented;
+          case TypeUint:
+            *((uint64_t*)ptr) += stack_frame_pop_uint (runtime->stack);
+            break;
+          }
+      }
+      break;
     case AstStmtList:
       {
 	AST_FOREACH (child, node)
@@ -527,6 +569,12 @@ evaluate_statement (runtime_t* runtime,
               break;
             case TypeGetter:
               unimplemented;
+            case TypeUint:
+              {
+                uint64_t u = stack_frame_pop_uint (runtime->stack);
+                printf ("%lu", u);
+              }
+              break;
             }
 	}
       }
@@ -607,7 +655,7 @@ execute (runtime_t* runtime,
     }
 }
 
-static void
+void
 dump_schedule (const runtime_t* runtime)
 {
   if (runtime->head != NULL)
@@ -621,7 +669,7 @@ dump_schedule (const runtime_t* runtime)
     }
 }
 
-static void
+void
 dump_instances (const runtime_t* runtime)
 {
   instance_t** pos;

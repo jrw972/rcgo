@@ -19,10 +19,10 @@ struct type_t
     struct
     {
       type_t *field_list;
-        VECTOR_DECL (actions, action_t *);
-        VECTOR_DECL (reactions, action_t *);
-        VECTOR_DECL (bindings, binding_t *);
-        VECTOR_DECL (getters, getter_t *);
+      VECTOR_DECL (actions, action_t *);
+      VECTOR_DECL (reactions, action_t *);
+      VECTOR_DECL (bindings, binding_t *);
+      VECTOR_DECL (getters, getter_t *);
     } component;
     struct
     {
@@ -144,6 +144,9 @@ type_to_string (const type_t * type)
             asprintf (&str, "getter %s %s", type_to_string (type->getter.signature), type_to_string (type->getter.return_type));
             return str;
           }
+        case TypeUint:
+          unimplemented;
+
 	}
     }
 
@@ -187,6 +190,9 @@ type_move (type_t * to, type_t * from)
       unimplemented;
     case TypeGetter:
       unimplemented;
+    case TypeUint:
+      unimplemented;
+
     }
 
   free (from);
@@ -219,6 +225,9 @@ type_size (const type_t * type)
       unimplemented;
     case TypeGetter:
       unimplemented;
+    case TypeUint:
+      return 8;
+
     }
 
   not_reached;
@@ -260,6 +269,9 @@ duplicate (const type_t * type)
       unimplemented;
     case TypeGetter:
       unimplemented;
+    case TypeUint:
+      unimplemented;
+
     }
   return retval;
 }
@@ -440,6 +452,9 @@ type_alignment (const type_t * type)
       unimplemented;
     case TypeGetter:
       unimplemented;
+    case TypeUint:
+      return 8;
+
     }
   not_reached;
 }
@@ -477,8 +492,11 @@ type_can_represent (const type_t * type, untyped_value_t u)
       return u.kind == UntypedString;
     case TypeGetter:
       unimplemented;
+    case TypeUint:
+      // TODO:  This will need to change if we expand the range of untyped integers.
+      return u.kind == UntypedInteger;
     }
-  bug ("unhandled case");
+  not_reached;
 }
 
 bool
@@ -508,6 +526,9 @@ type_assignable (const type_t * target, const type_t * source)
       unimplemented;
     case TypeGetter:
       unimplemented;
+    case TypeUint:
+      unimplemented;
+
     }
   bug ("unhandled case");
 }
@@ -564,13 +585,13 @@ type_component_get_reaction (const type_t * component_type,
   assert (component_type->kind == TypeComponent);
 
   VECTOR_FOREACH (pos, limit, component_type->component.reactions, action_t *)
-  {
-    action_t *a = *pos;
-    if (streq (reaction_name (a), identifier))
-      {
-	return a;
-      }
-  }
+    {
+      action_t *a = *pos;
+      if (streq (reaction_name (a), identifier))
+        {
+          return a;
+        }
+    }
 
   return NULL;
 }
@@ -581,13 +602,13 @@ getter_t *type_component_get_getter (const type_t * component_type,
   assert (component_type->kind == TypeComponent);
 
   VECTOR_FOREACH (pos, limit, component_type->component.getters, getter_t *)
-  {
-    getter_t *a = *pos;
-    if (streq (getter_name (a), identifier))
-      {
-	return a;
-      }
-  }
+    {
+      getter_t *a = *pos;
+      if (streq (getter_name (a), identifier))
+        {
+          return a;
+        }
+    }
 
   return NULL;
 }
@@ -690,6 +711,9 @@ type_return_value (const type_t * type)
       return false;
     case TypeGetter:
       unimplemented;
+    case TypeUint:
+      unimplemented;
+
     }
 
   bug ("unhandled case");
@@ -765,12 +789,12 @@ field_t *
 type_field_list_find (const type_t * type, string_t name)
 {
   VECTOR_FOREACH (field, limit, type->field_list.fields, field_t *)
-  {
-    if (streq (name, field_name (*field)))
-      {
-	return (*field);
-      }
-  }
+    {
+      if (streq (name, field_name (*field)))
+        {
+          return (*field);
+        }
+    }
   return NULL;
 }
 
@@ -839,6 +863,9 @@ type_select (const type_t * type, string_t identifier)
       unimplemented;
     case TypeGetter:
       unimplemented;
+    case TypeUint:
+      unimplemented;
+
     }
 
   bug ("unhandled case");
@@ -871,6 +898,9 @@ type_select_field (const type_t * type, string_t identifier)
       unimplemented;
     case TypeGetter:
       unimplemented;
+    case TypeUint:
+      unimplemented;
+
     }
 
   bug ("unhandled case");
@@ -951,6 +981,9 @@ type_convertible (const type_t * to, const type_t * from)
       unimplemented;
     case TypeGetter:
       unimplemented;
+    case TypeUint:
+      unimplemented;
+
     }
 
   return false;
@@ -968,12 +1001,12 @@ parameter_t *
 type_signature_find (const type_t * signature, string_t name)
 {
   VECTOR_FOREACH (ptr, limit, signature->signature.parameters, parameter_t *)
-  {
-    if (streq (parameter_name ((*ptr)), name))
-      {
-	return *ptr;
-      }
-  }
+    {
+      if (streq (parameter_name ((*ptr)), name))
+        {
+          return *ptr;
+        }
+    }
   return NULL;
 }
 
@@ -1037,6 +1070,9 @@ type_callable (const type_t * type)
       unimplemented;
     case TypeGetter:
       return true;
+    case TypeUint:
+      unimplemented;
+
     }
   not_reached;
 }
@@ -1067,6 +1103,9 @@ bool type_called_with_receiver (const type_t * type)
       unimplemented;
     case TypeGetter:
       return true;
+    case TypeUint:
+      unimplemented;
+
     }
   not_reached;
 }
@@ -1098,6 +1137,9 @@ type_parameter_count (const type_t * type)
       unimplemented;
     case TypeGetter:
       return type_parameter_count (type->getter.signature);
+    case TypeUint:
+      unimplemented;
+
     }
   not_reached;
 }
@@ -1129,6 +1171,9 @@ type_parameter_type (const type_t * type, size_t idx)
       unimplemented;
     case TypeGetter:
       return type_parameter_type (type->getter.signature, idx);
+    case TypeUint:
+      unimplemented;
+
     }
   not_reached;
 }
@@ -1160,6 +1205,9 @@ type_return_type (const type_t * type)
       unimplemented;
     case TypeGetter:
       return type->getter.return_type;
+    case TypeUint:
+      unimplemented;
+
     }
   not_reached;
 }
@@ -1382,10 +1430,51 @@ void type_print_value (const type_t* type,
       unimplemented;
     case TypeGetter:
       unimplemented;
+    case TypeUint:
+      unimplemented;
+
     }
 }
 
 type_t* type_make_string (void)
 {
   return make (TypeString);
+}
+
+type_t *
+type_make_uint (void)
+{
+  return make (TypeUint);
+}
+
+bool type_is_arithmetic (const type_t* type)
+{
+  switch (type->kind)
+    {
+    case TypeUndefined:
+      unimplemented;
+    case TypeVoid:
+      unimplemented;
+    case TypeBool:
+      unimplemented;
+    case TypeComponent:
+      unimplemented;
+    case TypePointer:
+      unimplemented;
+    case TypePort:
+      unimplemented;
+    case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      unimplemented;
+    case TypeSignature:
+      unimplemented;
+    case TypeString:
+      unimplemented;
+    case TypeGetter:
+      unimplemented;
+    case TypeUint:
+      return true;
+    }
+  not_reached;
 }

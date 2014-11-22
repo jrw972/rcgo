@@ -40,6 +40,7 @@ construct_symbol_table (ast_t * node, symtab_t * symtab)
       switch (ast_statement_kind (node))
 	{
 	case AstAssignmentStmt:
+        case AstAddAssignStmt:
 	  break;
 	case AstExpressionStmt:
 	  unimplemented;
@@ -204,6 +205,7 @@ enter_symbols_helper (ast_t * node)
 }
 
 static type_t* bool_type = NULL;
+static type_t* uint_type = NULL;
 static type_t* string_type = NULL;
 
 void
@@ -220,6 +222,13 @@ enter_symbols (ast_t * node)
       }
     symtab_enter (symtab,
 		  symbol_make_type (enter ("bool"), bool_type, node));
+
+    if (uint_type == NULL)
+      {
+        uint_type = type_make_uint ();
+      }
+    symtab_enter (symtab,
+		  symbol_make_type (enter ("uint"), uint_type, node));
 
     if (string_type == NULL)
       {
@@ -247,7 +256,7 @@ lookup (ast_t * node, string_t identifier)
 {
   symtab_t *symtab = ast_get_symtab (node);
   symbol_t *symbol = symtab_find (symtab, identifier);
-  if (!symbol_defined (symbol))
+  if (symbol == NULL || !symbol_defined (symbol))
     {
       error_at_line (-1, 0, ast_file (node), ast_line (node),
                      "%s was not defined in this scope", get (identifier));
@@ -986,6 +995,8 @@ convert_rvalue_to_builtin_types (ast_t ** ptr)
           unimplemented;
         case UntypedBool:
           unimplemented;
+        case UntypedInteger:
+          unimplemented;
         case UntypedString:
           *ptr = ast_make_typed_literal (typed_value_from_untyped (uv, string_type));
           break;
@@ -1019,6 +1030,25 @@ extract_port_field (const ast_t * node)
 }
 
 static void
+check_assignment_target (ast_t** left, ast_t* node)
+{
+  check_lvalue (left);
+  if (ast_get_immutable (*left))
+    {
+      error_at_line (-1, 0, ast_file (node), ast_line (node),
+                     "cannot assign to read-only location");
+    }
+  if (ast_get_derived_from_receiver (*left))
+    {
+      trigger_t *trigger = get_current_trigger (node);
+      if (trigger != NULL)
+        {
+          trigger_set_mutates_receiver (trigger, true);
+        }
+    }
+}
+
+static void
 check_statement (ast_t * node)
 {
   assert (ast_kind (node) == AstStatement);
@@ -1027,20 +1057,7 @@ check_statement (ast_t * node)
     case AstAssignmentStmt:
       {
 	ast_t **left = ast_get_child_ptr (node, BINARY_LEFT_CHILD);
-	check_lvalue (left);
-	if (ast_get_immutable (*left))
-	  {
-	    error_at_line (-1, 0, ast_file (node), ast_line (node),
-			   "cannot assign to read-only location");
-	  }
-	if (ast_get_derived_from_receiver (*left))
-	  {
-	    trigger_t *trigger = get_current_trigger (node);
-	    if (trigger != NULL)
-	      {
-		trigger_set_mutates_receiver (trigger, true);
-	      }
-	  }
+        check_assignment_target (left, node);
 	ast_t **right = ast_get_child_ptr (node, BINARY_RIGHT_CHILD);
 	check_rvalue (right);
 	type_t *left_type = ast_get_type (*left);
@@ -1049,6 +1066,21 @@ check_statement (ast_t * node)
       break;
     case AstExpressionStmt:
       unimplemented;
+    case AstAddAssignStmt:
+      {
+	ast_t **left = ast_get_child_ptr (node, BINARY_LEFT_CHILD);
+        check_assignment_target (left, node);
+	ast_t **right = ast_get_child_ptr (node, BINARY_RIGHT_CHILD);
+	check_rvalue (right);
+	type_t *left_type = ast_get_type (*left);
+        if (!type_is_arithmetic (left_type))
+          {
+	    error_at_line (-1, 0, ast_file (node), ast_line (node),
+			   "cannot add to non-arithmetic type");
+          }
+	convert (left_type, right, node);
+      }
+      break;
     case AstStmtList:
       {
 	AST_FOREACH (child, node)
@@ -1608,6 +1640,9 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t* memory_model)
       break;
     case AstExpressionStmt:
       unimplemented;
+      break;
+    case AstAddAssignStmt:
+      // Do nothing.
       break;
     case AstStmtList:
       {

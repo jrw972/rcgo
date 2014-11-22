@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include "rtstring.h"
 
 /*
@@ -12,7 +13,7 @@ typedef struct untyped_value_t untyped_value_t;
 
 typedef enum
 {
-  UntypedUndefined, UntypedBool, UntypedString
+  UntypedUndefined, UntypedBool, UntypedInteger, UntypedString
 } UntypedValueKind;
 
 struct untyped_value_t
@@ -21,12 +22,14 @@ struct untyped_value_t
   union
   {
     bool bool_value;
+    int64_t integer_value;
     rtstring_t string_value;
   };
 };
 
 const char *untyped_value_to_string (untyped_value_t u);
 
+/* Booleans */
 untyped_value_t untyped_value_make_bool (bool b);
 
 untyped_value_t untyped_value_logic_not (untyped_value_t u);
@@ -36,6 +39,10 @@ untyped_value_logic_and (untyped_value_t x, untyped_value_t y);
 
 untyped_value_t untyped_value_logic_or (untyped_value_t x, untyped_value_t y);
 
+/* Integers */
+untyped_value_t untyped_value_make_integer (int64_t u);
+
+/* Strings */
 untyped_value_t untyped_value_make_string (rtstring_t s);
 
 #endif /* untyped_value_h */

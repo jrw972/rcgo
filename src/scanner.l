@@ -54,6 +54,7 @@
 
 "&&"                   { return LOGIC_AND; }
 "||"                   { return LOGIC_OR; }
+"++"                   { return INCREMENT; }
 "->"                   { return ARROW; }
 
 \/\/.*                 /* Discard line comments. */

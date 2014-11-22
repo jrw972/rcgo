@@ -14,14 +14,20 @@ typed_value_is_undefined (typed_value_t t)
 typed_value_t
 typed_value_make_bool (type_t * type, bool v)
 {
-typed_value_t retval = { type: type, bool_value:v };
+  typed_value_t retval = { type: type, bool_value:v };
+  return retval;
+}
+
+typed_value_t typed_value_make_uint (type_t * type, uint64_t u)
+{
+  typed_value_t retval = { type: type, uint_value:u };
   return retval;
 }
 
 typed_value_t
 typed_value_make_string (type_t * type, rtstring_t v)
 {
-typed_value_t retval = { type: type, string_value:v };
+  typed_value_t retval = { type: type, string_value:v };
   return retval;
 }
 
@@ -65,6 +71,9 @@ typed_value_from_untyped (untyped_value_t u, type_t * t)
       return typed_value_make_string (t, u.string_value);
     case TypeGetter:
       unimplemented;
+    case TypeUint:
+      return typed_value_make_uint (t, u.integer_value);
+
     }
-  bug ("unhandled case");
+  not_reached;
 }

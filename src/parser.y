@@ -26,6 +26,7 @@
 %type <node> getter_def
 %type <node> identifier
 %type <node> identifier_list
+%type <node> increment_stmt
 %type <node> inner_stmt_list
 %type <node> instance_def
 %type <node> lvalue
@@ -54,7 +55,7 @@
 
 %token ACTION BIND COMPONENT GETTER INSTANCE PORT PRINTLN REACTION RETURN TRIGGER TYPE VAR
 
-%token ARROW LOGIC_AND LOGIC_OR
+%token ARROW INCREMENT LOGIC_AND LOGIC_OR
 
 %%
 
@@ -114,12 +115,15 @@ stmt: expr_stmt { $$ = $1; }
 | stmt_list { $$ = $1; }
 | println_stmt { $$ = $1; }
 | return_stmt { $$ = $1; }
+| increment_stmt { $$ = $1; }
 
 trigger_stmt: TRIGGER optional_port_call_list stmt_list { $$ = ast_make_trigger_stmt ($2, ast_append_child ($3, ast_make_stmt_list ())); }
 
 println_stmt: PRINTLN expr_list ';' { $$ = ast_make_println_stmt ($2); }
 
 return_stmt: RETURN rvalue ';' { $$ = ast_make_return_stmt ($2); }
+
+increment_stmt: lvalue INCREMENT ';' { $$ = ast_make_add_assign_stmt ($1, ast_make_untyped_literal (untyped_value_make_integer (1))); }
 
 optional_port_call_list: /* Empty. */ { $$ = ast_make_expression_list (); }
 | port_call_list { $$ = $1; }

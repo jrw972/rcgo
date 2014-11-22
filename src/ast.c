@@ -145,6 +145,9 @@ ast_print (const ast_t * node, size_t indent)
 	case AstAssignmentStmt:
 	  printf ("AstAssignmentStmt");
 	  break;
+        case AstAddAssignStmt:
+          printf ("AstAddAssignStmt");
+          break;
 	case AstExpressionStmt:
 	  unimplemented;
 	case AstStmtList:
@@ -340,6 +343,14 @@ ast_t *
 ast_make_assignment_stmt (ast_t * lvalue, ast_t * rvalue)
 {
   ast_t *retval = make_stmt (AstAssignmentStmt, 2);
+  ast_set_child (retval, BINARY_LEFT_CHILD, lvalue);
+  ast_set_child (retval, BINARY_RIGHT_CHILD, rvalue);
+  return retval;
+}
+
+ast_t *ast_make_add_assign_stmt (ast_t * lvalue, ast_t * rvalue)
+{
+  ast_t *retval = make_stmt (AstAddAssignStmt, 2);
   ast_set_child (retval, BINARY_LEFT_CHILD, lvalue);
   ast_set_child (retval, BINARY_RIGHT_CHILD, rvalue);
   return retval;
