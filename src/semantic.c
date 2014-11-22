@@ -566,10 +566,76 @@ process_declarations (ast_t * node)
     }
 }
 
-static void check_rvalue (ast_t ** ptr);
+static void check_rvalue (ast_t ** ptr, binding_t* binding, bool output);
+
+static void check_identifier_expr (ast_t** ptr,
+                                   bool immutable)
+{
+  ast_t *node = *ptr;
+  ast_t *identifier_node = ast_get_child (node, UNARY_CHILD);
+  string_t identifier = ast_get_identifier (identifier_node);
+  symtab_t *symtab = ast_get_symtab (node);
+  symbol_t *symbol = symtab_find (symtab, identifier);
+  if (symbol == NULL)
+    {
+      error_at_line (-1, 0, ast_file (identifier_node),
+                     ast_line (identifier_node), "%s is not defined",
+                     get (identifier));
+    }
+
+  switch (symbol_kind (symbol))
+    {
+    case SymbolInstance:
+      unimplemented;
+    case SymbolParameter:
+      ast_set_type (*ptr, symbol_parameter_type (symbol), immutable,
+                    symbol_parameter_kind (symbol) ==
+                    ParameterReceiver
+                    || symbol_parameter_kind (symbol) ==
+                    ParameterReceiverDuplicate);
+      break;
+    case SymbolType:
+      unimplemented;
+    case SymbolTypedConstant:
+      unimplemented;
+    case SymbolUntypedConstant:
+      /* Replace ourselves with a literal. */
+      *ptr =
+        ast_make_untyped_literal (symbol_untyped_constant_value
+                                  (symbol));
+      break;
+    case SymbolVariable:
+      unimplemented;
+    }
+}
 
 static void
-check_lvalue (ast_t ** ptr)
+set_dereference_type (ast_t* node, const type_t* type)
+{
+  ast_set_type (node, type_pointer_base_type (type),
+                type_pointer_kind (type) == PointerToImmutable,
+                ast_get_derived_from_receiver (ast_get_child (node, UNARY_CHILD)));
+}
+
+typedef union {
+  field_t * field;
+  action_t * action;
+} FieldOrAction;
+
+static FieldOrAction make_field (field_t * field)
+{
+  FieldOrAction foa = { field: field };
+  return foa;
+}
+
+static FieldOrAction make_action (action_t * action)
+{
+  FieldOrAction foa = { action: action };
+  return foa;
+}
+
+static FieldOrAction
+check_lvalue (ast_t ** ptr, binding_t* binding, bool output)
 {
   ast_t *node = *ptr;
   assert (ast_kind (node) == AstExpression);
@@ -583,7 +649,7 @@ check_lvalue (ast_t ** ptr)
     case AstDereferenceExpr:
       {
 	ast_t **child = ast_get_child_ptr (node, UNARY_CHILD);
-	check_rvalue (child);
+	check_rvalue (child, binding, output);
 	/* Can't dereference literals. */
 	if (ast_is_literal (*child))
 	  {
@@ -596,15 +662,14 @@ check_lvalue (ast_t ** ptr)
 	    error_at_line (-1, 0, ast_file (node), ast_line (node),
 			   "cannot dereference non-pointer");
 	  }
-	ast_set_type (node, type_pointer_base_type (type),
-		      type_pointer_kind (type) == PointerToImmutable,
-		      ast_get_derived_from_receiver (*child));
+        set_dereference_type (node, type);
       }
       break;
     case AstExprList:
       unimplemented;
     case AstIdentifierExpr:
-      unimplemented;
+      check_identifier_expr (ptr, false);
+      break;
     case AstLogicAndExpr:
       unimplemented;
     case AstLogicNotExpr:
@@ -616,13 +681,22 @@ check_lvalue (ast_t ** ptr)
 	ast_t **left = ast_get_child_ptr (node, BINARY_LEFT_CHILD);
 	ast_t *right = ast_get_child (node, BINARY_RIGHT_CHILD);
 	string_t identifier = ast_get_identifier (right);
-	check_lvalue (left);
+	check_lvalue (left, binding, output);
 	if (ast_is_literal (*left))
 	  {
 	    error_at_line (-1, 0, ast_file (node), ast_line (node),
 			   "cannot select from literal");
 	  }
 	type_t *type = ast_get_type (*left);
+        if (type_is_pointer (type))
+          {
+            // Selecting from a pointer.  Insert a dereference.
+            ast_t* deref = ast_make_dereference (*left);
+            set_dereference_type (deref, type);
+            *left = deref;
+            type = ast_get_type (*left);
+          }
+
 	type_t *selected_type = type_select (type, identifier);
 	if (selected_type == NULL)
 	  {
@@ -632,6 +706,31 @@ check_lvalue (ast_t ** ptr)
 	  }
 	ast_set_type (node, selected_type, ast_get_immutable (*left),
 		      ast_get_derived_from_receiver (*left));
+
+        if (binding != NULL)
+          {
+            if (type_is_component (selected_type) || type_is_port (selected_type))
+              {
+                field_t *field = type_select_field (type, identifier);
+                assert (field != NULL);
+                if (output)
+                  {
+                    binding_add_output (binding, field);
+                  }
+                else
+                  {
+                    binding_add_input (binding, field);
+                  }
+                return make_field (field);
+              }
+            else if (type_is_reaction (selected_type))
+              {
+                action_t * reaction = type_component_get_reaction (type, identifier);
+                assert (reaction != NULL);
+                binding_set_reaction (binding, reaction);
+                return make_action (reaction);
+              }
+          }
       }
       break;
     case AstTypedLiteral:
@@ -641,6 +740,8 @@ check_lvalue (ast_t ** ptr)
     case AstUntypedLiteral:
       unimplemented;
     }
+
+  return make_field (NULL);
 }
 
 static void
@@ -767,7 +868,7 @@ in_immutable_section (const ast_t* node)
 }
 
 static void
-check_rvalue (ast_t ** ptr)
+check_rvalue (ast_t ** ptr, binding_t* binding, bool output)
 {
   ast_t *node = *ptr;
   assert (ast_kind (node) == AstExpression);
@@ -777,7 +878,7 @@ check_rvalue (ast_t ** ptr)
     case AstAddressOfExpr:
       {
         ast_t **expr = ast_get_child_ptr (node, UNARY_CHILD);
-        check_lvalue (expr);
+        check_lvalue (expr, binding, output);
         type_t * expr_type = ast_get_type (*expr);
         type_t* type;
         if (ast_get_immutable (*expr))
@@ -799,7 +900,7 @@ check_rvalue (ast_t ** ptr)
 	ast_t *args = ast_get_child (node, CALL_ARGS);
 
         // Analyze the callee.
-        check_rvalue (expr);
+        check_rvalue (expr, binding, output);
 
 	type_t *expr_type = ast_get_type (*expr);
 	if (!type_callable (expr_type))
@@ -859,52 +960,14 @@ check_rvalue (ast_t ** ptr)
       check_rvalue_list (*ptr);
       break;
     case AstIdentifierExpr:
-      {
-	ast_t *identifier_node = ast_get_child (node, UNARY_CHILD);
-	string_t identifier = ast_get_identifier (identifier_node);
-	symtab_t *symtab = ast_get_symtab (node);
-	symbol_t *symbol = symtab_find (symtab, identifier);
-	if (symbol != NULL)
-	  {
-	    switch (symbol_kind (symbol))
-	      {
-	      case SymbolInstance:
-		unimplemented;
-	      case SymbolParameter:
-		ast_set_type (*ptr, symbol_parameter_type (symbol), true,
-			      symbol_parameter_kind (symbol) ==
-			      ParameterReceiver
-			      || symbol_parameter_kind (symbol) ==
-			      ParameterReceiverDuplicate);
-		break;
-	      case SymbolType:
-		unimplemented;
-	      case SymbolTypedConstant:
-		unimplemented;
-	      case SymbolUntypedConstant:
-		/* Replace ourselves with a literal. */
-		*ptr =
-		  ast_make_untyped_literal (symbol_untyped_constant_value
-					    (symbol));
-		break;
-	      case SymbolVariable:
-		unimplemented;
-	      }
-	  }
-	else
-	  {
-	    error_at_line (-1, 0, ast_file (identifier_node),
-			   ast_line (identifier_node), "%s is not defined",
-			   get (identifier));
-	  }
-      }
+      check_identifier_expr (ptr, true);
       break;
     case AstLogicAndExpr:
       unimplemented;
     case AstLogicNotExpr:
       {
 	ast_t **child = ast_get_child_ptr (node, UNARY_CHILD);
-	check_rvalue (child);
+	check_rvalue (child, binding, output);
 	if (!ast_is_boolean (*child))
 	  {
 	    error_at_line (-1, 0, ast_file (node), ast_line (node),
@@ -929,7 +992,7 @@ check_rvalue (ast_t ** ptr)
     case AstLogicOrExpr:
       unimplemented;
     case AstSelectExpr:
-      check_lvalue (ptr);
+      check_lvalue (ptr, binding, output);
       break;
     case AstPortCallExpr:
       {
@@ -974,7 +1037,7 @@ check_rvalue_list (ast_t * node)
 
   AST_FOREACH_PTR (child, node)
   {
-    check_rvalue (child);
+    check_rvalue (child, NULL, false);
   }
 }
 
@@ -1032,7 +1095,7 @@ extract_port_field (const ast_t * node)
 static void
 check_assignment_target (ast_t** left, ast_t* node)
 {
-  check_lvalue (left);
+  check_lvalue (left, NULL, false);
   if (ast_get_immutable (*left))
     {
       error_at_line (-1, 0, ast_file (node), ast_line (node),
@@ -1059,7 +1122,7 @@ check_statement (ast_t * node)
 	ast_t **left = ast_get_child_ptr (node, BINARY_LEFT_CHILD);
         check_assignment_target (left, node);
 	ast_t **right = ast_get_child_ptr (node, BINARY_RIGHT_CHILD);
-	check_rvalue (right);
+	check_rvalue (right, NULL, false);
 	type_t *left_type = ast_get_type (*left);
 	convert (left_type, right, node);
       }
@@ -1071,7 +1134,7 @@ check_statement (ast_t * node)
 	ast_t **left = ast_get_child_ptr (node, BINARY_LEFT_CHILD);
         check_assignment_target (left, node);
 	ast_t **right = ast_get_child_ptr (node, BINARY_RIGHT_CHILD);
-	check_rvalue (right);
+	check_rvalue (right, NULL, false);
 	type_t *left_type = ast_get_type (*left);
         if (!type_is_arithmetic (left_type))
           {
@@ -1093,7 +1156,7 @@ check_statement (ast_t * node)
       {
         // Check the expression.
         ast_t** expr = ast_get_child_ptr (node, UNARY_CHILD);
-        check_rvalue (expr);
+        check_rvalue (expr, NULL, false);
         // Check that is matches with the return type.
         type_t* return_type = get_current_return_type (node);
         assert (return_type != NULL);
@@ -1162,163 +1225,6 @@ check_statement (ast_t * node)
     }
 }
 
-static field_t *
-check_output (ast_t ** node, binding_t * binding)
-{
-  switch (ast_expression_kind (*node))
-    {
-    case AstAddressOfExpr:
-      unimplemented;
-    case AstCallExpr:
-      unimplemented;
-    case AstDereferenceExpr:
-      check_lvalue (node);
-      break;
-    case AstExprList:
-      unimplemented;
-    case AstIdentifierExpr:
-      unimplemented;
-    case AstLogicAndExpr:
-      unimplemented;
-    case AstLogicNotExpr:
-      unimplemented;
-    case AstLogicOrExpr:
-      unimplemented;
-    case AstPortCallExpr:
-      unimplemented;
-    case AstSelectExpr:
-      {
-	ast_t **left = ast_get_child_ptr (*node, BINARY_LEFT_CHILD);
-	ast_t *right = ast_get_child (*node, BINARY_RIGHT_CHILD);
-	string_t identifier = ast_get_identifier (right);
-	check_output (left, binding);
-
-	const type_t *component_type = ast_get_type (*left);
-
-	if (!type_is_component (component_type))
-	  {
-	    error_at_line (-1, 0, ast_file (*node), ast_line (*node),
-			   "bind source path contains something other than a component or port");
-	  }
-
-	const type_t *field_list = type_component_field_list (component_type);
-	field_t *field = type_field_list_find (field_list, identifier);
-
-	if (field == NULL)
-	  {
-	    error_at_line (-1, 0, ast_file (*node), ast_line (*node),
-			   "component does not have a data member named %s",
-			   get (identifier));
-	  }
-
-	type_t *field_typ = field_type (field);
-	if (!(type_is_component (field_typ) || type_is_port (field_typ)))
-	  {
-	    error_at_line (-1, 0, ast_file (*node), ast_line (*node),
-			   "bind source path contains something other than a component or port");
-	  }
-
-	ast_set_type (*node, field_typ, ast_get_immutable (*left),
-		      ast_get_derived_from_receiver (*left));
-
-	binding_add_output (binding, field);
-
-	return field;
-      }
-      break;
-    case AstTypedLiteral:
-      unimplemented;
-    case AstUntypedLiteral:
-      unimplemented;
-    }
-
-  return NULL;
-}
-
-static action_t *
-check_input (ast_t ** node, binding_t * binding)
-{
-  switch (ast_expression_kind (*node))
-    {
-    case AstAddressOfExpr:
-      unimplemented;
-    case AstCallExpr:
-      unimplemented;
-    case AstDereferenceExpr:
-      check_lvalue (node);
-      break;
-    case AstExprList:
-      unimplemented;
-    case AstIdentifierExpr:
-      unimplemented;
-    case AstLogicAndExpr:
-      unimplemented;
-    case AstLogicNotExpr:
-      unimplemented;
-    case AstLogicOrExpr:
-      unimplemented;
-    case AstPortCallExpr:
-      unimplemented;
-    case AstSelectExpr:
-      {
-	ast_t **left = ast_get_child_ptr (*node, BINARY_LEFT_CHILD);
-	ast_t *right = ast_get_child (*node, BINARY_RIGHT_CHILD);
-	string_t identifier = ast_get_identifier (right);
-	check_input (left, binding);
-
-	const type_t *component_type = ast_get_type (*left);
-
-	if (!type_is_component (component_type))
-	  {
-	    error_at_line (-1, 0, ast_file (*node), ast_line (*node),
-			   "bind sink path contains something other than a component or reaction");
-	  }
-
-	type_t *selected_type = type_select (component_type, identifier);
-	if (selected_type == NULL)
-	  {
-	    error_at_line (-1, 0, ast_file (*node), ast_line (*node),
-			   "cannot select %s from expression of type %s",
-			   get (identifier), type_to_string (component_type));
-	  }
-
-	if (type_is_component (selected_type))
-	  {
-	    const type_t *field_list =
-	      type_component_field_list (component_type);
-	    field_t *field = type_field_list_find (field_list, identifier);
-	    assert (field != NULL);
-	    binding_add_input (binding, field);
-	    ast_set_type (*node, selected_type, ast_get_immutable (*left),
-			  ast_get_derived_from_receiver (*left));
-	  }
-	else if (type_is_reaction (selected_type))
-	  {
-	    action_t *reaction =
-	      type_component_get_reaction (component_type, identifier);
-	    assert (reaction != NULL);
-	    binding_set_reaction (binding, reaction);
-	    ast_set_type (*node, reaction_type (reaction),
-			  ast_get_immutable (*left),
-			  ast_get_derived_from_receiver (*left));
-	    return reaction;
-	  }
-	else
-	  {
-	    error_at_line (-1, 0, ast_file (*node), ast_line (*node),
-			   "bind sink path contains something other than a component or reaction");
-	  }
-      }
-      break;
-    case AstTypedLiteral:
-      unimplemented;
-    case AstUntypedLiteral:
-      unimplemented;
-    }
-
-  return NULL;
-}
-
 static void
 check_bind_statement (ast_t * node)
 {
@@ -1338,7 +1244,7 @@ check_bind_statement (ast_t * node)
 	binding_t *binding = binding_make ();
 
 	ast_t **port_node = ast_get_child_ptr (node, BINARY_LEFT_CHILD);
-	field_t *port_field = check_output (port_node, binding);
+	field_t *port_field = check_lvalue (port_node, binding, true).field;
 	const type_t *port_type = field_type (port_field);
 
 	if (!type_is_port (port_type))
@@ -1348,7 +1254,7 @@ check_bind_statement (ast_t * node)
 	  }
 
 	ast_t **reaction_node = ast_get_child_ptr (node, BINARY_RIGHT_CHILD);
-	action_t *reaction = check_input (reaction_node, binding);
+	action_t *reaction = check_lvalue (reaction_node, binding, false).action;
 	const type_t *reaction_typ = reaction_type (reaction);
 
 	if (!type_compatible_port_reaction (port_type, reaction_typ))
@@ -1388,7 +1294,7 @@ process_definitions (ast_t * node)
                                              (node)), this_node));
 
 	/* Check the precondition. */
-	check_rvalue (precondition_node);
+	check_rvalue (precondition_node, NULL, false);
 
         if (ast_expression_kind (*precondition_node) == AstUntypedLiteral)
           {

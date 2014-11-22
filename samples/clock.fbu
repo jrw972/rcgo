@@ -7,20 +7,20 @@ type Clock component {
 
 action (this $Clock) (true) {
   trigger {
-    this$.counter++;
-    println `Counter is now `, this$.counter;
+    this.counter++;
+    println `Counter is now `, this.counter;
   }
 }
 
 reaction (this $Clock) request () {
   trigger {
-    this$.flag = true;
+    this.flag = true;
   }
 }
 
-action (this $Clock) (this$.flag) {
-  trigger response (this$.counter) {
-    this$.flag = false;
+action (this $Clock) (this.flag) {
+  trigger response (this.counter) {
+    this.flag = false;
   }
 }
 
@@ -29,16 +29,16 @@ type Sampler component {
   request port ();
 };
 
-action (this $Sampler) (this$.flag!) {
+action (this $Sampler) (this.flag!) {
   trigger request () {
-    this$.flag = true;
+    this.flag = true;
   }
 }
 
 reaction (this $Sampler) response (t uint) {
   println `Received `, t;
   trigger {
-    this$.flag = false;
+    this.flag = false;
   }
 }
 
@@ -48,8 +48,8 @@ type System component {
 };
 
 bind (this $System) {
-  this$.sampler.request -> this$.clock.request;
-  this$.clock.response -> this$.sampler.response;
+  this.sampler.request -> this.clock.request;
+  this.clock.response -> this.sampler.response;
 }
 
 instance s System;
