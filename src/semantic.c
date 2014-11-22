@@ -13,7 +13,6 @@
 #include "symbol.h"
 #include "memory_model.h"
 #include "getter.h"
-#include "getter_call.h"
 
 void
 construct_symbol_table (ast_t * node, symtab_t * symtab)
@@ -141,15 +140,22 @@ enter_signature (ast_t * node, const type_t * type)
   for (pos = type_signature_begin (type), limit = type_signature_end (type);
        pos != limit; pos = type_signature_next (pos))
     {
+      parameter_t* parameter = *pos;
       // Check if the symbol is defined locally.
       symtab_t *symtab = ast_get_symtab (node);
-      string_t identifier = parameter_name (*pos);
-      type_t *type = parameter_type (*pos);
+      string_t identifier = parameter_name (parameter);
+      type_t *type = parameter_type (parameter);
       symbol_t *s = symtab_find_current (symtab, identifier);
       if (s == NULL)
 	{
-	  s =
-	    symbol_make_parameter (identifier, type, node);
+          if (parameter_is_receiver (parameter))
+            {
+              s = symbol_make_receiver (identifier, type, node);
+            }
+          else
+            {
+              s = symbol_make_parameter (identifier, type, node);
+            }
 	  symtab_enter (symtab, s);
 	}
       else
@@ -322,7 +328,7 @@ process_type_spec (ast_t * node)
 	      type_signature_find (signature, identifier);
 	    if (parameter == NULL)
 	      {
-		type_signature_append (signature, identifier, type);
+		type_signature_append (signature, identifier, type, false);
 	      }
 	    else
 	      {
@@ -428,6 +434,10 @@ process_declarations (ast_t * node)
 
 	/* Process the signature. */
 	type_t *signature = process_type_spec (signature_node);
+        /* Prepend the signature with the receiver. */
+        type_signature_prepend (signature,
+                                ast_get_identifier (ast_get_child (receiver, RECEIVER_THIS_IDENTIFIER)),
+                                type_make_pointer (PointerToImmutable, type), true);
 
         /* Process the return type. */
         type_t *return_type = process_type_spec (return_type_node);
@@ -557,6 +567,8 @@ check_lvalue (ast_t ** ptr)
 
   switch (ast_expression_kind (node))
     {
+    case AstAddressOfExpr:
+      unimplemented;
     case AstCallExpr:
       unimplemented;
     case AstDereferenceExpr:
@@ -646,10 +658,10 @@ convert (type_t * target_type, ast_t ** source, const ast_t * error_node)
   else
     {
       const type_t *source_type = ast_get_type (*source);
-      if (!type_equivalent (target_type, source_type))
+      if (!type_convertible (target_type, source_type))
 	{
 	  error_at_line (-1, 0, ast_file (error_node), ast_line (error_node),
-			 "types not equivalent in assignment");
+			 "can convert %s to %s", type_to_string (source_type), type_to_string (target_type));
 	}
     }
 }
@@ -746,52 +758,6 @@ in_immutable_section (const ast_t* node)
 }
 
 static void
-populate_getter_call (const ast_t* node,
-                      getter_call_t* gc)
-{
-  switch (ast_expression_kind (node))
-    {
-    case AstCallExpr:
-      unimplemented;
-    case AstDereferenceExpr:
-      // Do nothing.
-      break;
-    case AstExprList:
-      unimplemented;
-    case AstIdentifierExpr:
-      unimplemented;
-    case AstLogicAndExpr:
-      unimplemented;
-    case AstLogicNotExpr:
-      unimplemented;
-    case AstLogicOrExpr:
-      unimplemented;
-    case AstPortCallExpr:
-      unimplemented;
-    case AstSelectExpr:
-      {
-	ast_t *left = ast_get_child (node, BINARY_LEFT_CHILD);
-	ast_t *right = ast_get_child (node, BINARY_RIGHT_CHILD);
-	string_t identifier = ast_get_identifier (right);
-        populate_getter_call (left, gc);
-
-	type_t *type = ast_get_type (left);
-	field_t* field = type_select_field (type, identifier);
-
-        if (field != NULL)
-          {
-            getter_call_add_field (gc, field);
-          }
-      }
-      break;
-    case AstTypedLiteral:
-      unimplemented;
-    case AstUntypedLiteral:
-      unimplemented;
-    }
-}
-
-static void
 check_rvalue (ast_t ** ptr)
 {
   ast_t *node = *ptr;
@@ -799,10 +765,33 @@ check_rvalue (ast_t ** ptr)
 
   switch (ast_expression_kind (node))
     {
+    case AstAddressOfExpr:
+      {
+        ast_t **expr = ast_get_child_ptr (node, UNARY_CHILD);
+        check_lvalue (expr);
+        type_t * expr_type = ast_get_type (*expr);
+        type_t* type;
+        if (ast_get_immutable (*expr))
+          {
+            type = type_make_pointer (PointerToImmutable, expr_type);
+          }
+        else
+          {
+            type = type_make_pointer (PointerToMutable, expr_type);
+          }
+
+
+        ast_set_type (node, type, true, ast_get_derived_from_receiver (*expr));
+      }
+      break;
     case AstCallExpr:
       {
 	ast_t **expr = ast_get_child_ptr (node, CALL_EXPR);
-	check_lvalue (expr);
+	ast_t *args = ast_get_child (node, CALL_ARGS);
+
+        // Analyze the callee.
+        check_rvalue (expr);
+
 	type_t *expr_type = ast_get_type (*expr);
 	if (!type_callable (expr_type))
 	  {
@@ -810,36 +799,48 @@ check_rvalue (ast_t ** ptr)
 			   "cannot call");
 	  }
 
-        if (type_kind (expr_type) == TypeGetter)
+        if (type_called_with_receiver (expr_type))
           {
-            // Must be in immutable section.
-            if (!in_immutable_section (node))
-              {
-                error_at_line (-1, 0, ast_file (node), ast_line (node),
-                               "getter called outside of immutable section");
-              }
+            // The callee requires a receiver.
 
-            // Build a getter call and add it to the current action, reaction, or getter.
-            getter_call_t* gc = getter_call_make ();
-            populate_getter_call (*expr, gc);
+            // The receiver is either a copy or a pointer.
+            bool receiver_is_pointer = type_is_pointer (type_parameter_type (expr_type, 0));
 
-            if (get_current_action (node) != NULL)
+            // Transfer the computation for the receiver to the argument list.
+            assert (ast_expression_kind (*expr) == AstSelectExpr);
+            ast_t* receiver_select_expr = ast_get_child (*expr, BINARY_LEFT_CHILD);
+            if (receiver_is_pointer)
               {
-                action_add_getter_call (get_current_action (node), gc);
-              }
-            else if (get_current_getter (node) != NULL)
-              {
-                getter_add_getter_call (get_current_getter (node), gc);
+                ast_t* e = ast_make_address_of (receiver_select_expr);
+                ast_prepend_child (args, e);
               }
             else
               {
-                bug ("unhandled case");
+                ast_prepend_child (args, receiver_select_expr);
+              }
+
+            // Replace the callee with a literal or expression.
+            type_t* select_type = ast_get_type (receiver_select_expr);
+            string_t id = ast_get_identifier (ast_get_child (*expr, BINARY_RIGHT_CHILD));
+
+            if (type_kind (expr_type) == TypeGetter)
+              {
+                // Must be in immutable section.
+                if (!in_immutable_section (node))
+                  {
+                    error_at_line (-1, 0, ast_file (node), ast_line (node),
+                                   "getter called outside of immutable section");
+                  }
+                getter_t* getter = type_component_get_getter (select_type, id);
+                *expr = ast_make_typed_literal (typed_value_make_getter (getter));
+              }
+            else
+              {
+                unimplemented;
               }
           }
 
-	ast_t *args = ast_get_child (node, CALL_ARGS);
 	check_rvalue_list (args);
-
 	check_call (node, args, expr_type);
       }
       break;
@@ -1134,6 +1135,8 @@ check_output (ast_t ** node, binding_t * binding)
 {
   switch (ast_expression_kind (*node))
     {
+    case AstAddressOfExpr:
+      unimplemented;
     case AstCallExpr:
       unimplemented;
     case AstDereferenceExpr:
@@ -1205,6 +1208,8 @@ check_input (ast_t ** node, binding_t * binding)
 {
   switch (ast_expression_kind (*node))
     {
+    case AstAddressOfExpr:
+      unimplemented;
     case AstCallExpr:
       unimplemented;
     case AstDereferenceExpr:
@@ -1393,7 +1398,6 @@ process_definitions (ast_t * node)
       unimplemented;
     case AstGetter:
       {
-	ast_t *receiver_node = ast_get_child (node, GETTER_RECEIVER);
 	ast_t *signature_node = ast_get_child (node, GETTER_SIGNATURE);
 	ast_t *body_node = ast_get_child (node, GETTER_BODY);
         ast_t *return_type_node = ast_get_child (node, GETTER_RETURN_TYPE);
@@ -1401,17 +1405,6 @@ process_definitions (ast_t * node)
 
         /* Enter the return type into the symbol table. */
         enter_symbol (return_type_node, symbol_make_return_parameter (enter ("0return"), getter_return_type (getter), return_type_node));
-
-	/* Insert "this" into the symbol table. */
-	ast_t *this_node =
-	  ast_get_child (receiver_node, RECEIVER_THIS_IDENTIFIER);
-	string_t this_identifier = ast_get_identifier (this_node);
-	enter_symbol (receiver_node,
-		      symbol_make_receiver (this_identifier,
-                                            type_make_pointer
-                                            (PointerToImmutable,
-                                             getter_component_type (getter)),
-                                            this_node));
 
 	/* Enter the signature into the symbol table. */
 	enter_signature (signature_node, getter_signature (getter));

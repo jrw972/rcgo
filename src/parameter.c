@@ -6,14 +6,16 @@ struct parameter_t
 {
   string_t name;
   type_t *type;
+  bool is_receiver;
 };
 
 parameter_t *
-parameter_make (string_t name, type_t * type)
+parameter_make (string_t name, type_t * type, bool is_receiver)
 {
   parameter_t *p = xmalloc (sizeof (parameter_t));
   p->name = name;
   p->type = type;
+  p->is_receiver = is_receiver;
   return p;
 }
 
@@ -27,4 +29,9 @@ type_t *
 parameter_type (const parameter_t * parameter)
 {
   return parameter->type;
+}
+
+bool parameter_is_receiver (const parameter_t * parameter)
+{
+  return parameter->is_receiver;
 }

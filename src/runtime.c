@@ -153,6 +153,8 @@ evaluate_lvalue (runtime_t* runtime,
 {
   switch (ast_expression_kind (expr))
     {
+    case AstAddressOfExpr:
+      unimplemented;
     case AstCallExpr:
       unimplemented;
     case AstDereferenceExpr:
@@ -260,6 +262,11 @@ evaluate_rvalue (runtime_t* runtime,
 {
   switch (ast_expression_kind (expr))
     {
+    case AstAddressOfExpr:
+      {
+        evaluate_lvalue (runtime, ast_get_child (expr, UNARY_CHILD));
+      }
+      break;
     case AstCallExpr:
       {
         // Create space for the return.
@@ -268,22 +275,6 @@ evaluate_rvalue (runtime_t* runtime,
 
         // Sample the top of the stack.
         char* top_before = stack_frame_top (runtime->stack);
-
-        // Push an implicit this if necessary.
-        {
-          ast_t* callee_node = ast_get_child (expr, CALL_EXPR);
-          type_t* callee_type = ast_get_type (callee_node);
-          if (type_kind (callee_type) == TypeGetter)
-            {
-              // Strip the final select.
-              callee_node = ast_get_child (callee_node, BINARY_LEFT_CHILD);
-              evaluate_lvalue (runtime, callee_node);
-            }
-          else
-            {
-              unimplemented;
-            }
-        }
 
         // Push the arguments.
         evaluate_rvalue (runtime, ast_get_child (expr, CALL_ARGS));
@@ -295,7 +286,7 @@ evaluate_rvalue (runtime_t* runtime,
         char* top_after = stack_frame_top (runtime->stack);
 
         // Push the thing to call.
-        evaluate_lvalue (runtime, ast_get_child (expr, CALL_EXPR));
+        evaluate_rvalue (runtime, ast_get_child (expr, CALL_EXPR));
 
         // Perform the call.
         call (runtime);
@@ -414,7 +405,8 @@ evaluate_rvalue (runtime_t* runtime,
             stack_frame_push_string (runtime->stack, value.string_value);
             break;
           case TypeGetter:
-            unimplemented;
+            stack_frame_push_pointer (runtime->stack, getter_node (value.getter_value));
+            break;
           }
       }
       break;

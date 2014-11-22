@@ -58,10 +58,3 @@ getter_name (const getter_t* getter)
 {
   return getter->name;
 }
-
-void
-getter_add_getter_call (getter_t* getter,
-                        getter_call_t* gc)
-{
-  unimplemented;
-}

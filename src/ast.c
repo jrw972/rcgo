@@ -82,6 +82,9 @@ ast_print (const ast_t * node, size_t indent)
       printf ("AstExpression ");
       switch (node->expression.kind)
 	{
+        case AstAddressOfExpr:
+          printf ("AstAddressOfExpr");
+          break;
 	case AstCallExpr:
 	  printf ("AstCallExpr");
 	  break;
@@ -203,8 +206,14 @@ ast_kind (const ast_t * ast)
   return ast->kind;
 }
 
+ast_t *ast_prepend_child (ast_t * parent, ast_t * child)
+{
+  VECTOR_PUSH_FRONT (parent->children, ast_t, child);
+  return parent;
+}
+
 ast_t *
-ast_add_child (ast_t * parent, ast_t * child)
+ast_append_child (ast_t * parent, ast_t * child)
 {
   VECTOR_PUSH (parent->children, ast_t, child);
   return parent;
@@ -576,6 +585,14 @@ ast_make_select (ast_t * expr, ast_t * identifier)
   ast_set_child (retval, BINARY_LEFT_CHILD, expr);
   ast_set_child (retval, BINARY_RIGHT_CHILD, identifier);
   return retval;
+}
+
+ast_t *ast_make_address_of (ast_t * expr)
+{
+  ast_t *retval = make_expr (AstAddressOfExpr, 1);
+  ast_set_child (retval, UNARY_CHILD, expr);
+  return retval;
+
 }
 
 ast_t *

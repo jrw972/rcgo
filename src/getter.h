@@ -27,8 +27,4 @@ getter_return_type (const getter_t* getter);
 string_t
 getter_name (const getter_t* getter);
 
-void
-getter_add_getter_call (getter_t* getter,
-                        getter_call_t* gc);
-
 #endif /* getter_h */

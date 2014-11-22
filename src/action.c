@@ -9,7 +9,6 @@ struct action_t
   bool is_reaction;
   type_t *component_type;	/* Back-pointer to component type. */
     VECTOR_DECL (triggers, trigger_t *);
-  VECTOR_DECL (getter_calls, getter_call_t *);
   ast_t* node;
   /* Reactions only. */
   string_t name;
@@ -25,7 +24,6 @@ action_make (type_t * type,
   action->is_reaction = false;
   action->component_type = type;
   VECTOR_INIT (action->triggers, trigger_t *, 0, NULL);
-  VECTOR_INIT (action->getter_calls, getter_call_t *, 0, NULL);
   action->node = node;
   return action;
 }
@@ -111,29 +109,6 @@ action_trigger_end (const action_t * action)
 
 trigger_t **
 action_trigger_next (trigger_t ** pos)
-{
-  return pos + 1;
-}
-
-void action_add_getter_call (action_t * action, getter_call_t* gc)
-{
-  VECTOR_PUSH (action->getter_calls, getter_call_t*, gc);
-}
-
-getter_call_t **
-action_getter_call_begin (const action_t * action)
-{
-  return VECTOR_BEGIN (action->getter_calls);
-}
-
-getter_call_t **
-action_getter_call_end (const action_t * action)
-{
-  return VECTOR_END (action->getter_calls);
-}
-
-getter_call_t **
-action_getter_call_next (getter_call_t ** pos)
 {
   return pos + 1;
 }

@@ -61,7 +61,7 @@
 top: def_list { root = $1; }
 
 def_list: /* empty */ { $$ = ast_make_top_level_list (); }
-| def_list def { $$ = ast_add_child ($1, $2); }
+| def_list def { $$ = ast_append_child ($1, $2); }
 
 def: type_def { $$ = $1; }
 | action_def { $$ = $1; }
@@ -85,8 +85,8 @@ getter_def: GETTER pointer_receiver identifier signature type_spec stmt_list { $
 signature: '(' ')' { $$ = ast_make_signature (); }
 | '(' parameter_list optional_semicolon ')' { $$ = $2; }
 
-parameter_list: parameter { $$ = ast_add_child (ast_make_signature (), $1); }
-| parameter_list ';' parameter { $$ = ast_add_child ($1, $3); }
+parameter_list: parameter { $$ = ast_append_child (ast_make_signature (), $1); }
+| parameter_list ';' parameter { $$ = ast_append_child ($1, $3); }
 
 parameter: identifier_list type_spec { $$ = ast_make_identifier_list_type_spec ($1, $2); }
 
@@ -98,14 +98,14 @@ pointer_receiver: '(' identifier '$' identifier ')' { $$ = ast_make_pointer_rece
 bind_stmt_list: '{' bind_inner_stmt_list '}' { $$ = $2; }
 
 bind_inner_stmt_list: /* empty */ { $$ = ast_make_bind_list_stmt (); }
-| bind_inner_stmt_list bind_stmt { $$ = ast_add_child ($1, $2); }
+| bind_inner_stmt_list bind_stmt { $$ = ast_append_child ($1, $2); }
 
 bind_stmt: lvalue ARROW lvalue ';' { $$ = ast_make_bind_stmt ($1, $3); }
 
 stmt_list: '{' inner_stmt_list '}' { $$ = $2; }
 
 inner_stmt_list: /* empty */ { $$ = ast_make_stmt_list (); }
-| inner_stmt_list stmt { $$ = ast_add_child ($1, $2); }
+| inner_stmt_list stmt { $$ = ast_append_child ($1, $2); }
 
 stmt: expr_stmt { $$ = $1; }
 | var_stmt { $$ = $1; }
@@ -115,7 +115,7 @@ stmt: expr_stmt { $$ = $1; }
 | println_stmt { $$ = $1; }
 | return_stmt { $$ = $1; }
 
-trigger_stmt: TRIGGER optional_port_call_list stmt_list { $$ = ast_make_trigger_stmt ($2, ast_add_child ($3, ast_make_stmt_list ())); }
+trigger_stmt: TRIGGER optional_port_call_list stmt_list { $$ = ast_make_trigger_stmt ($2, ast_append_child ($3, ast_make_stmt_list ())); }
 
 println_stmt: PRINTLN expr_list ';' { $$ = ast_make_println_stmt ($2); }
 
@@ -124,7 +124,7 @@ return_stmt: RETURN rvalue ';' { $$ = ast_make_return_stmt ($2); }
 optional_port_call_list: /* Empty. */ { $$ = ast_make_expression_list (); }
 | port_call_list { $$ = $1; }
 
-port_call_list: port_call { $$ = ast_add_child (ast_make_expression_list (), $1); }
+port_call_list: port_call { $$ = ast_append_child (ast_make_expression_list (), $1); }
 | port_call_list ',' port_call { unimplemented; }
 
 port_call: identifier '(' optional_expr_list ')' { $$ = ast_make_port_call ($1, $3); }
@@ -132,8 +132,8 @@ port_call: identifier '(' optional_expr_list ')' { $$ = ast_make_port_call ($1, 
 optional_expr_list: /* Empty. */ { $$ = ast_make_expression_list (); }
 | expr_list { $$ = $1; }
 
-expr_list: rvalue { $$ = ast_add_child (ast_make_expression_list (), $1); }
-| expr_list ',' rvalue { $$ = ast_add_child ($1, $3); }
+expr_list: rvalue { $$ = ast_append_child (ast_make_expression_list (), $1); }
+| expr_list ',' rvalue { $$ = ast_append_child ($1, $3); }
 
 expr_stmt: rvalue ';' {
   $$ = ast_make_expr_stmt ($1);
@@ -143,8 +143,8 @@ var_stmt: VAR identifier_list type_spec ';' { $$ = ast_make_var_stmt ($2, $3); }
 
 assignment_stmt: lvalue '=' rvalue ';' { $$ = ast_make_assignment_stmt ($1, $3); }
 
-identifier_list: identifier { $$ = ast_add_child (ast_make_identifier_list (), $1); }
-| identifier_list ',' identifier { $$ = ast_add_child ($1, $3); }
+identifier_list: identifier { $$ = ast_append_child (ast_make_identifier_list (), $1); }
+| identifier_list ',' identifier { $$ = ast_append_child ($1, $3); }
 
 identifier: IDENTIFIER { $$ = ast_make_identifier ($1); }
 
@@ -153,7 +153,7 @@ type_spec: identifier { $$ = ast_make_identifier_type_spec ($1); }
 | PORT signature { $$ = ast_make_port ($2); }
 
 field_list: /* empty */ { $$ = ast_make_field_list (); }
-| field_list identifier_list type_spec ';' { $$ = ast_add_child ($1, ast_make_identifier_list_type_spec ($2, $3)); }
+| field_list identifier_list type_spec ';' { $$ = ast_append_child ($1, ast_make_identifier_list_type_spec ($2, $3)); }
 
 rvalue: or_expr { $$ = $1; }
 

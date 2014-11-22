@@ -26,6 +26,24 @@
     } \
   } while (0);
 
+#define VECTOR_PUSH_FRONT(array, type, value) do {      \
+  if (array##_size != 0)                              \
+    {                                                 \
+      VECTOR_ENSURE_ONE(array, type);                     \
+      ++array##_size;                                 \
+      size_t idx;                                   \
+      for (idx = array##_size - 1; idx != 0; --idx) \
+        {                                           \
+          array[idx] = array[idx - 1];              \
+        }                                           \
+      array[0] = value;                             \
+    }                                                 \
+  else                                                \
+    {                                                 \
+      VECTOR_PUSH(array, type, value);                \
+    }                                                 \
+} while (0);
+
 #define VECTOR_PUSH(array, type, value) do {  \
     VECTOR_ENSURE_ONE(array, type);                           \
     array[array##_size++] = value;                                    \

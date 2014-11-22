@@ -120,15 +120,18 @@ bool type_is_pointer (const type_t * type);
 
 PointerKind type_pointer_kind (const type_t * type);
 
-bool type_equivalent (const type_t * left, const type_t * right);
+bool type_convertible (const type_t * to, const type_t * from);
 
 type_t *type_make_signature (void);
 
 parameter_t *type_signature_find (const type_t * signature,
 				  string_t parameter_name);
 
+void type_signature_prepend (type_t * signature, string_t parameter_name,
+                             type_t * parameter_type, bool is_receiver);
+
 void type_signature_append (type_t * signature, string_t parameter_name,
-			    type_t * parameter_type);
+			    type_t * parameter_type, bool is_receiver);
 
 parameter_t **type_signature_begin (const type_t * signature);
 
@@ -137,6 +140,8 @@ parameter_t **type_signature_end (const type_t * signature);
 parameter_t **type_signature_next (parameter_t **);
 
 bool type_callable (const type_t * type);
+
+bool type_called_with_receiver (const type_t * type);
 
 size_t type_parameter_count (const type_t * type);
 

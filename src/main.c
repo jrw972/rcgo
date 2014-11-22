@@ -46,7 +46,7 @@ main (int argc, char **argv)
 	{0, 0, 0, 0}
       };
 
-      int c = getopt_long (argc, argv, "c:dhv", long_options, NULL);
+      int c = getopt_long (argc, argv, "dhv", long_options, NULL);
 
       if (c == -1)
 	break;
@@ -54,9 +54,6 @@ main (int argc, char **argv)
       switch (c)
 	{
 	case 0:
-	  break;
-	case 'c':
-	  in_file = optarg;
 	  break;
 	case 'd':
 	  debug = 1;
@@ -66,10 +63,9 @@ main (int argc, char **argv)
 	  exit (EXIT_SUCCESS);
 	  break;
 	case 'h':
-	  printf ("Usage: %s OPTION... -c FILE -o FILE\n",
+	  printf ("Usage: %s OPTION... FILE \n",
 		  program_invocation_short_name);
 	  puts ("Compile " PACKAGE_NAME " source code.\n" "\n"
-		"  -c FILE     specifies the input file\n"
 		"  -d, --debug turn on debugging output\n"
 		"  --help      display this help and exit\n"
 		"  --version   display version information and exit\n" "\n"
@@ -82,11 +78,13 @@ main (int argc, char **argv)
 	}
     }
 
-  if (in_file == NULL)
+  if (optind + 1 != argc)
     {
       fprintf (stderr, "No input file\n");
       try_help ();
     }
+
+  in_file = argv[optind];
 
   // Open the input file.
   yyin = fopen (in_file, "r");

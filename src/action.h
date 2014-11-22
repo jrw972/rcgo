@@ -33,12 +33,4 @@ trigger_t **action_trigger_end (const action_t * action);
 
 trigger_t **action_trigger_next (trigger_t ** pos);
 
-void action_add_getter_call (action_t * action, getter_call_t* gc);
-
-getter_call_t **action_getter_call_begin (const action_t * action);
-
-getter_call_t **action_getter_call_end (const action_t * action);
-
-getter_call_t **action_getter_call_next (getter_call_t ** pos);
-
 #endif /* action_h */

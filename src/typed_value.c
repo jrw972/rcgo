@@ -3,6 +3,7 @@
 #include "debug.h"
 #include "symtab.h"
 #include "type.h"
+#include "getter.h"
 
 bool
 typed_value_is_undefined (typed_value_t t)
@@ -21,6 +22,12 @@ typed_value_t
 typed_value_make_string (type_t * type, rtstring_t v)
 {
 typed_value_t retval = { type: type, string_value:v };
+  return retval;
+}
+
+typed_value_t typed_value_make_getter (getter_t* getter)
+{
+  typed_value_t retval = { type: getter_type (getter), getter_value:getter };
   return retval;
 }
 

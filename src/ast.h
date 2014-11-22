@@ -34,6 +34,7 @@ typedef enum
 
 typedef enum
 {
+  AstAddressOfExpr,
   AstCallExpr,
   AstDereferenceExpr,
   AstExprList,
@@ -70,7 +71,9 @@ void ast_print (const ast_t * ast, size_t indent);
 
 AstKind ast_kind (const ast_t * ast);
 
-ast_t *ast_add_child (ast_t * parent, ast_t * child);
+ast_t *ast_prepend_child (ast_t * parent, ast_t * child);
+
+ast_t *ast_append_child (ast_t * parent, ast_t * child);
 
 ast_t *ast_get_child (const ast_t * ast, size_t idx);
 
@@ -170,6 +173,8 @@ symbol_t *ast_get_symbol (ast_t * ast);
 
 #define CALL_EXPR 0
 #define CALL_ARGS 1
+
+ast_t *ast_make_address_of (ast_t * expr);
 
 ast_t *ast_make_call_expr (ast_t * expr, ast_t * args);
 #define UNARY_CHILD 0

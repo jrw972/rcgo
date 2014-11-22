@@ -1,8 +1,0 @@
-var x bool;
-var y,z bool;
-var w bool;
-x = true;
-y = false;
-w = x || y;
-z = x && !y;
-print w && z;

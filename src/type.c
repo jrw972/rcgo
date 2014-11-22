@@ -889,15 +889,71 @@ type_pointer_kind (const type_t * type)
   return type->pointer.kind;
 }
 
-bool
-type_equivalent (const type_t * left, const type_t * right)
+static bool
+type_equivalent (const type_t * x, const type_t* y)
 {
-  if (left->has_name || right->has_name)
+  if (x->has_name || y->has_name)
     {
-      return left == right;
+      // Named types must be exactly the same.
+      return x == y;
     }
 
   unimplemented;
+}
+
+bool
+type_convertible (const type_t * to, const type_t * from)
+{
+  if (to->has_name || from->has_name)
+    {
+      // Named types must be exactly the same.
+      return to == from;
+    }
+
+  switch (to->kind)
+    {
+    case TypeUndefined:
+      unimplemented;
+    case TypeVoid:
+      unimplemented;
+    case TypeBool:
+      unimplemented;
+    case TypeComponent:
+      unimplemented;
+    case TypePointer:
+      if (from->kind == TypePointer)
+        {
+          switch (to->pointer.kind)
+            {
+            case PointerToMutable:
+              unimplemented;
+            case PointerToImmutable:
+              switch (from->pointer.kind)
+                {
+                case PointerToMutable:
+                  unimplemented;
+                case PointerToImmutable:
+                  // From immutable to immutable.
+                  return type_equivalent (to->pointer.base_type, from->pointer.base_type);
+                }
+            }
+        }
+      break;
+    case TypePort:
+      unimplemented;
+    case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      unimplemented;
+    case TypeSignature:
+      unimplemented;
+    case TypeString:
+      unimplemented;
+    case TypeGetter:
+      unimplemented;
+    }
+
+  return false;
 }
 
 type_t *
@@ -921,11 +977,18 @@ type_signature_find (const type_t * signature, string_t name)
   return NULL;
 }
 
+void type_signature_prepend (type_t * signature, string_t parameter_name,
+                             type_t * parameter_type, bool is_receiver)
+{
+  parameter_t *p = parameter_make (parameter_name, parameter_type, is_receiver);
+  VECTOR_PUSH_FRONT (signature->signature.parameters, parameter_t *, p);
+}
+
 void
 type_signature_append (type_t * signature, string_t parameter_name,
-		       type_t * parameter_type)
+		       type_t * parameter_type, bool is_receiver)
 {
-  parameter_t *p = parameter_make (parameter_name, parameter_type);
+  parameter_t *p = parameter_make (parameter_name, parameter_type, is_receiver);
   VECTOR_PUSH (signature->signature.parameters, parameter_t *, p);
 }
 
@@ -964,6 +1027,36 @@ type_callable (const type_t * type)
       unimplemented;
     case TypePort:
       return true;
+    case TypeReaction:
+      unimplemented;
+    case TypeFieldList:
+      unimplemented;
+    case TypeSignature:
+      unimplemented;
+    case TypeString:
+      unimplemented;
+    case TypeGetter:
+      return true;
+    }
+  not_reached;
+}
+
+bool type_called_with_receiver (const type_t * type)
+{
+  switch (type->kind)
+    {
+    case TypeUndefined:
+      unimplemented;
+    case TypeVoid:
+      unimplemented;
+    case TypeBool:
+      unimplemented;
+    case TypeComponent:
+      unimplemented;
+    case TypePointer:
+      unimplemented;
+    case TypePort:
+      unimplemented;
     case TypeReaction:
       unimplemented;
     case TypeFieldList:
@@ -1035,7 +1128,7 @@ type_parameter_type (const type_t * type, size_t idx)
     case TypeString:
       unimplemented;
     case TypeGetter:
-      unimplemented;
+      return type_parameter_type (type->getter.signature, idx);
     }
   not_reached;
 }
@@ -1124,7 +1217,7 @@ type_compatible_port_reaction (const type_t * port, const type_t * reaction)
 	VECTOR_AT (reaction_signature->signature.parameters, idx);
       type_t *reaction_parameter_type = parameter_type (reaction_parameter);
 
-      if (!type_equivalent (port_parameter_type, reaction_parameter_type))
+      if (!type_convertible (port_parameter_type, reaction_parameter_type))
 	{
 	  return false;
 	}
