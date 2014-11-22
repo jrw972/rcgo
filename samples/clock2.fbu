@@ -1,22 +1,25 @@
+// A version of the Clock automaton of Distributed Algorithms, p. 213.
+// This implementation uses synchronous getters to increase parallelism.
+
 type Counter component {
-  bit bool;
+  counter uint;
 };
 
 action (this $Counter) (true) {
   trigger {
-    this$.bit = this$.bit!;
-    println `Bit is now `, this$.bit;
+    this$.counter++;
+    println `Counter is now `, this$.counter;
   }
 }
 
-getter (this $Counter) Bit () bool {
-  return this$.bit;
+getter (this $Counter) Counter () uint {
+  return this$.counter;
 }
 
 type Clock component {
   counter Counter;
   flag bool;
-  response port (bit bool);
+  response port (t uint);
 };
 
 reaction (this $Clock) request () {
@@ -26,7 +29,7 @@ reaction (this $Clock) request () {
 }
 
 action (this $Clock) (this$.flag) {
-  trigger response (this$.counter.Bit()) {
+  trigger response (this$.counter.Counter()) {
     this$.flag = false;
   }
 }
@@ -42,8 +45,8 @@ action (this $Sampler) (this$.flag!) {
   }
 }
 
-reaction (this $Sampler) response (bit bool) {
-  println `Received `, bit;
+reaction (this $Sampler) response (t uint) {
+  println `Received `, t;
   trigger {
     this$.flag = false;
   }
