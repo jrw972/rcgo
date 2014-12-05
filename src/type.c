@@ -32,6 +32,11 @@ struct type_t
     } field_list;
     struct
     {
+      const type_t *signature;
+      type_t *return_type;
+    } getter;
+    struct
+    {
       type_t *base_type;
       PointerKind kind;
     } pointer;
@@ -45,15 +50,16 @@ struct type_t
     } reaction;
     struct
     {
-      const type_t *signature;
-      type_t *return_type;
-    } getter;
-    struct
-    {
       VECTOR_DECL (parameters, parameter_t *);
     } signature;
+    struct
+    {
+      type_t * field_list;
+    } struct_;
   };
 };
+
+// TODO:  Replace functions with interface.
 
 /* static const char* */
 /* parameter_array_to_string (const parameter_t* begin, */
@@ -146,6 +152,21 @@ type_to_string (const type_t * type)
           }
         case TypeUint:
           unimplemented;
+        case TypeStruct:
+          unimplemented;
+
+        case UntypedUndefined:
+          unimplemented;
+
+        case UntypedNil:
+          return "nil";
+
+        case UntypedBool:
+          return "bool";
+        case UntypedInteger:
+          unimplemented;
+        case UntypedString:
+          unimplemented;
 
 	}
     }
@@ -192,6 +213,21 @@ type_move (type_t * to, type_t * from)
       unimplemented;
     case TypeUint:
       unimplemented;
+    case TypeStruct:
+      to->struct_.field_list = from->struct_.field_list;
+      break;
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
+      unimplemented;
 
     }
 
@@ -227,6 +263,21 @@ type_size (const type_t * type)
       unimplemented;
     case TypeUint:
       return 8;
+
+    case TypeStruct:
+      return type_size (type->struct_.field_list);
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
+      unimplemented;
 
     }
 
@@ -270,6 +321,20 @@ duplicate (const type_t * type)
     case TypeGetter:
       unimplemented;
     case TypeUint:
+      unimplemented;
+    case TypeStruct:
+      unimplemented;
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
       unimplemented;
 
     }
@@ -454,6 +519,20 @@ type_alignment (const type_t * type)
       unimplemented;
     case TypeUint:
       return 8;
+    case TypeStruct:
+      unimplemented;
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
+      unimplemented;
 
     }
   not_reached;
@@ -465,73 +544,42 @@ type_kind (const type_t * type)
   return type->kind;
 }
 
-bool
-type_can_represent (const type_t * type, untyped_value_t u)
-{
-  switch (type->kind)
-    {
-    case TypeUndefined:
-      return false;
-    case TypeVoid:
-      unimplemented;
-    case TypeBool:
-      return u.kind == UntypedBool;
-    case TypeComponent:
-      unimplemented;
-    case TypePointer:
-      unimplemented;
-    case TypePort:
-      unimplemented;
-    case TypeReaction:
-      unimplemented;
-    case TypeFieldList:
-      unimplemented;
-    case TypeSignature:
-      unimplemented;
-    case TypeString:
-      return u.kind == UntypedString;
-    case TypeGetter:
-      unimplemented;
-    case TypeUint:
-      // TODO:  This will need to change if we expand the range of untyped integers.
-      return u.kind == UntypedInteger;
-    }
-  not_reached;
-}
+/* bool */
+/* type_can_represent (const type_t * type, untyped_value_t u) */
+/* { */
+/*   switch (type->kind) */
+/*     { */
+/*     case TypeUndefined: */
+/*       return false; */
+/*     case TypeVoid: */
+/*       unimplemented; */
+/*     case TypeBool: */
+/*       return u.kind == UntypedBool; */
+/*     case TypeComponent: */
+/*       unimplemented; */
+/*     case TypePointer: */
+/*       unimplemented; */
+/*     case TypePort: */
+/*       unimplemented; */
+/*     case TypeReaction: */
+/*       unimplemented; */
+/*     case TypeFieldList: */
+/*       unimplemented; */
+/*     case TypeSignature: */
+/*       unimplemented; */
+/*     case TypeString: */
+/*       return u.kind == UntypedString; */
+/*     case TypeGetter: */
+/*       unimplemented; */
+/*     case TypeUint: */
+/*       // TODO:  This will need to change if we expand the range of untyped integers. */
+/*       return u.kind == UntypedInteger; */
+/*           case TypeStruct: */
+/*             unimplemented; */
 
-bool
-type_assignable (const type_t * target, const type_t * source)
-{
-  switch (target->kind)
-    {
-    case TypeUndefined:
-      return false;
-    case TypeVoid:
-      unimplemented;
-    case TypeBool:
-      return target == source;
-    case TypeComponent:
-      unimplemented;
-    case TypePointer:
-      unimplemented;
-    case TypePort:
-      unimplemented;
-    case TypeReaction:
-      unimplemented;
-    case TypeFieldList:
-      unimplemented;
-    case TypeSignature:
-      unimplemented;
-    case TypeString:
-      unimplemented;
-    case TypeGetter:
-      unimplemented;
-    case TypeUint:
-      unimplemented;
-
-    }
-  bug ("unhandled case");
-}
+/*     } */
+/*   not_reached; */
+/* } */
 
 const type_t *
 type_logic_not (const type_t * type)
@@ -570,12 +618,6 @@ type_logic_or (const type_t * x, const type_t * y)
     {
       return type_make_undefined ();
     }
-}
-
-bool
-type_is_boolean (const type_t * type)
-{
-  return type->kind == TypeBool;
 }
 
 action_t *
@@ -712,6 +754,20 @@ type_return_value (const type_t * type)
     case TypeGetter:
       unimplemented;
     case TypeUint:
+      unimplemented;
+    case TypeStruct:
+      unimplemented;
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
       unimplemented;
 
     }
@@ -866,6 +922,21 @@ type_select (const type_t * type, string_t identifier)
     case TypeUint:
       unimplemented;
 
+    case TypeStruct:
+      return type_select (type->struct_.field_list, identifier);
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
+      unimplemented;
+
     }
 
   bug ("unhandled case");
@@ -901,6 +972,21 @@ type_select_field (const type_t * type, string_t identifier)
     case TypeUint:
       unimplemented;
 
+    case TypeStruct:
+      return type_select_field (type->struct_.field_list, identifier);
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
+      unimplemented;
+
     }
 
   bug ("unhandled case");
@@ -928,15 +1014,64 @@ type_equivalent (const type_t * x, const type_t* y)
       return x == y;
     }
 
-  unimplemented;
+  if (x->kind != y->kind)
+    {
+      return false;
+    }
+
+  switch (x->kind)
+    {
+    case TypeBool:
+      unimplemented;
+    case TypeComponent:
+      unimplemented;
+    case TypeFieldList:
+      unimplemented;
+    case TypeGetter:
+      unimplemented;
+
+    case TypePointer:
+      return x->pointer.kind == y->pointer.kind &&
+        type_equivalent (x->pointer.base_type, y->pointer.base_type);
+
+    case TypePort:
+      unimplemented;
+    case TypeReaction:
+      unimplemented;
+    case TypeSignature:
+      unimplemented;
+    case TypeString:
+      unimplemented;
+    case TypeStruct:
+      unimplemented;
+    case TypeUint:
+      unimplemented;
+    case TypeVoid:
+      unimplemented;
+    case TypeUndefined:
+      unimplemented;
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
+      unimplemented;
+    }
+
+  not_reached;
 }
 
 bool
 type_convertible (const type_t * to, const type_t * from)
 {
-  if (to->has_name || from->has_name)
+  if (from->has_name)
     {
-      // Named types must be exactly the same.
+      // If from is named, to must be exactly the same.
       return to == from;
     }
 
@@ -946,17 +1081,34 @@ type_convertible (const type_t * to, const type_t * from)
       unimplemented;
     case TypeVoid:
       unimplemented;
+
     case TypeBool:
-      unimplemented;
+      // Converting to bool.
+      return from->kind == UntypedBool;
+
     case TypeComponent:
       unimplemented;
+
     case TypePointer:
+      // Converting to a pointer.
+      if (from->kind == UntypedNil)
+        {
+          return true;
+        }
       if (from->kind == TypePointer)
         {
           switch (to->pointer.kind)
             {
             case PointerToMutable:
-              unimplemented;
+              switch (from->pointer.kind)
+                {
+                case PointerToMutable:
+                  // From mutable to mutable.
+                  return type_equivalent (to->pointer.base_type, from->pointer.base_type);
+                case PointerToImmutable:
+                  unimplemented;
+                }
+
             case PointerToImmutable:
               switch (from->pointer.kind)
                 {
@@ -969,6 +1121,7 @@ type_convertible (const type_t * to, const type_t * from)
             }
         }
       break;
+
     case TypePort:
       unimplemented;
     case TypeReaction:
@@ -981,7 +1134,26 @@ type_convertible (const type_t * to, const type_t * from)
       unimplemented;
     case TypeGetter:
       unimplemented;
+
     case TypeUint:
+      // Converting to uint.
+      return from->kind == UntypedInteger;
+
+    case TypeStruct:
+      unimplemented;
+
+    case UntypedUndefined:
+      unimplemented;
+
+    case UntypedNil:
+      // It does not make sense to convert to nil.
+      return false;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
       unimplemented;
 
     }
@@ -1072,6 +1244,20 @@ type_callable (const type_t * type)
       return true;
     case TypeUint:
       unimplemented;
+    case TypeStruct:
+      unimplemented;
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
+      unimplemented;
 
     }
   not_reached;
@@ -1104,6 +1290,20 @@ bool type_called_with_receiver (const type_t * type)
     case TypeGetter:
       return true;
     case TypeUint:
+      unimplemented;
+    case TypeStruct:
+      unimplemented;
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
       unimplemented;
 
     }
@@ -1139,6 +1339,20 @@ type_parameter_count (const type_t * type)
       return type_parameter_count (type->getter.signature);
     case TypeUint:
       unimplemented;
+    case TypeStruct:
+      unimplemented;
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
+      unimplemented;
 
     }
   not_reached;
@@ -1173,6 +1387,20 @@ type_parameter_type (const type_t * type, size_t idx)
       return type_parameter_type (type->getter.signature, idx);
     case TypeUint:
       unimplemented;
+    case TypeStruct:
+      unimplemented;
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
+      unimplemented;
 
     }
   not_reached;
@@ -1206,6 +1434,20 @@ type_return_type (const type_t * type)
     case TypeGetter:
       return type->getter.return_type;
     case TypeUint:
+      unimplemented;
+    case TypeStruct:
+      unimplemented;
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
       unimplemented;
 
     }
@@ -1430,7 +1672,24 @@ void type_print_value (const type_t* type,
       unimplemented;
     case TypeGetter:
       unimplemented;
+
     case TypeUint:
+      printf ("%zd\n", *(uint64_t*)value);
+      break;
+
+    case TypeStruct:
+      unimplemented;
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
       unimplemented;
 
     }
@@ -1474,6 +1733,79 @@ bool type_is_arithmetic (const type_t* type)
     case TypeGetter:
       unimplemented;
     case TypeUint:
+      return true;
+    case TypeStruct:
+      unimplemented;
+
+    case UntypedUndefined:
+      unimplemented;
+    case UntypedNil:
+      unimplemented;
+
+    case UntypedBool:
+      unimplemented;
+    case UntypedInteger:
+      unimplemented;
+    case UntypedString:
+      unimplemented;
+
+    }
+  not_reached;
+}
+
+
+type_t *
+type_make_struct (type_t * field_list)
+{
+  type_t *c = make (TypeStruct);
+  c->struct_.field_list = field_list;
+  return c;
+}
+
+type_t* type_make_untyped_nil (void)
+{
+  return make (UntypedNil);
+}
+
+type_t* type_make_untyped_bool (void)
+{
+  return make (UntypedBool);
+}
+
+type_t* type_make_untyped_string (void)
+{
+  return make (UntypedString);
+}
+
+type_t* type_make_untyped_integer (void)
+{
+  return make (UntypedInteger);
+}
+
+bool type_is_untyped (const type_t* type)
+{
+  switch (type->kind)
+    {
+    case TypeBool:
+    case TypeComponent:
+    case TypeFieldList:
+    case TypeGetter:
+    case TypePointer:
+    case TypePort:
+    case TypeReaction:
+    case TypeSignature:
+    case TypeString:
+    case TypeStruct:
+    case TypeUint:
+    case TypeVoid:
+    case TypeUndefined:
+      return false;
+
+    case UntypedUndefined:
+    case UntypedNil:
+    case UntypedBool:
+    case UntypedInteger:
+    case UntypedString:
       return true;
     }
   not_reached;

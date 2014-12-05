@@ -1,0 +1,68 @@
+type Element struct
+{
+  value uint;
+  next $Element;
+};
+
+type Channel component
+{
+  head $Element;
+  tail $$Element;
+  receive port (message uint);
+};
+
+reaction (this $Channel) send (message uint)
+{
+  trigger
+  {
+    if this.tail == nil
+      {
+        this.tail = this.head&;
+      };
+    var e $Element;
+    e = new Element;
+    e.value = message;
+    this.tail$ = e;
+    this.tail = e.next&;
+  };
+}
+
+action (this $Channel) (this.head != nil)
+{
+  trigger receive (this.head.value)
+    {
+      this.head = this.head.next;
+      if this.head == nil
+        {
+          this.tail = nil;
+        };
+    };
+}
+
+type System component
+{
+  channel Channel;
+  send_count uint;
+  send port (message uint);
+};
+
+action (this $System) (this.send_count != 10)
+{
+  trigger send (this.send_count)
+  {
+    println `Sent `, this.send_count;
+    this.send_count++;
+  };
+}
+
+reaction (this $System) receive (message uint)
+{
+  println `Received `, message;
+}
+
+bind (this $System) {
+  this.send -> this.channel.send;
+  this.channel.receive -> this.receive;
+}
+
+instance s System;

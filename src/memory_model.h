@@ -21,7 +21,14 @@ ptrdiff_t memory_model_locals_offset (const memory_model_t* memory_model);
 
 bool memory_model_locals_empty (const memory_model_t* memory_model);
 
+void memory_model_locals_push (memory_model_t* memory_model,
+                               size_t size);
+
 void memory_model_locals_pop (memory_model_t* memory_model,
                               size_t size);
+
+size_t memory_model_locals_size (const memory_model_t* memory_model);
+
+void memory_model_reset_locals_size (memory_model_t* memory_model);
 
 #endif /* memory_model_h */

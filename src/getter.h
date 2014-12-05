@@ -27,4 +27,9 @@ getter_return_type (const getter_t* getter);
 string_t
 getter_name (const getter_t* getter);
 
+void getter_set_locals_size (getter_t* getter,
+                             size_t size);
+
+size_t getter_get_locals_size (const getter_t * getter);
+
 #endif /* getter_h */

@@ -10,6 +10,7 @@ struct action_t
   type_t *component_type;	/* Back-pointer to component type. */
     VECTOR_DECL (triggers, trigger_t *);
   ast_t* node;
+  size_t locals_size;
   /* Reactions only. */
   string_t name;
   type_t *reaction_type;
@@ -111,4 +112,15 @@ trigger_t **
 action_trigger_next (trigger_t ** pos)
 {
   return pos + 1;
+}
+
+void action_set_locals_size (action_t* action,
+                             size_t size)
+{
+  action->locals_size = size;
+}
+
+size_t action_get_locals_size (const action_t * action)
+{
+  return action->locals_size;
 }

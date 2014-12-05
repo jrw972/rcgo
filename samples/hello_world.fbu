@@ -6,7 +6,7 @@ action (this $HelloWorld) (this$.flag!) {
   trigger {
     println `Hello, world!`;
     this$.flag = true;
-  }
+  };
 }
 
 instance h HelloWorld;

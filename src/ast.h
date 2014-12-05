@@ -4,6 +4,7 @@
 #include "strtab.h"
 #include "symtab.h"
 
+// TODO:  Divide these into top-level and others.
 typedef enum
 {
   AstAction,
@@ -28,8 +29,10 @@ typedef enum
   AstFieldList,
   AstIdentifierListTypeSpec,
   AstIdentifierTypeSpec,
+  AstPointer,
   AstPort,
   AstSignature,
+  AstStruct,
 } AstTypeSpecificationKind;
 
 typedef enum
@@ -37,22 +40,25 @@ typedef enum
   AstAddressOfExpr,
   AstCallExpr,
   AstDereferenceExpr,
+  AstEqualExpr,
   AstExprList,
   AstIdentifierExpr,
   AstLogicAndExpr,
   AstLogicNotExpr,
   AstLogicOrExpr,
+  AstNewExpr,
+  AstNotEqualExpr,
   AstPortCallExpr,
   AstSelectExpr,
   AstTypedLiteral,
-  AstUntypedLiteral,
 } AstExpressionKind;
 
 typedef enum
 {
+  AstAddAssignStmt,
   AstAssignmentStmt,
   AstExpressionStmt,
-  AstAddAssignStmt,
+  AstIfStmt,
   AstPrintlnStmt,
   AstReturnStmt,
   AstStmtList,
@@ -198,7 +204,6 @@ ast_t *ast_make_select (ast_t * expr, ast_t * identifier);
 
 ast_t *ast_make_expr_stmt (ast_t * expr);
 
-/* TODO:  Use a field instead. */
 #define VAR_IDENTIFIER_LIST 0
 #define VAR_TYPE_SPEC 1
 
@@ -239,6 +244,10 @@ ast_t *ast_make_port (ast_t * signature);
 
 ast_t *ast_make_component_type_spec (ast_t * field_list);
 
+#define STRUCT_FIELD_LIST 0
+
+ast_t *ast_make_struct_type_spec (ast_t * field_list);
+
 AstTypeSpecificationKind ast_type_specification_kind (const ast_t * node);
 
 ast_t *ast_make_expression_list (void);
@@ -249,28 +258,14 @@ AstBindStatementKind ast_bind_statement_kind (const ast_t * node);
 
 AstExpressionKind ast_expression_kind (const ast_t * node);
 
-ast_t *ast_make_untyped_literal (untyped_value_t value);
-
-untyped_value_t ast_get_untyped_value (const ast_t * node);
-
 ast_t *ast_make_typed_literal (typed_value_t value);
+
+void ast_set_typed_value (ast_t* node, typed_value_t value);
 
 typed_value_t ast_get_typed_value (const ast_t* node);
 
-bool ast_is_typed_literal (const ast_t * node);
-
-bool ast_is_untyped_literal (const ast_t * node);
-
-bool ast_is_literal (const ast_t * node);
-
-bool ast_is_boolean (const ast_t * node);
-
-void ast_set_type (ast_t * node, type_t * type, bool immutable,
+void ast_set_type (ast_t * node, typed_value_t typed_value, bool immutable,
 		   bool derived_from_receiver);
-
-type_t *ast_get_type (const ast_t * node);
-
-type_t *ast_get_type2 (const ast_t * node);
 
 bool ast_get_immutable (const ast_t * node);
 
@@ -283,6 +278,21 @@ ast_t *ast_make_port_call (ast_t * identifier, ast_t * args);
 action_t *ast_get_current_action (const ast_t * node);
 
 type_t *ast_get_current_receiver_type (const ast_t * node);
+
+#define POINTER_BASE_TYPE 0
+
+ast_t *ast_make_pointer_type_spec (ast_t* type_spec);
+
+ast_t *ast_make_equal (ast_t* left, ast_t* right);
+
+ast_t *ast_make_not_equal (ast_t* left, ast_t* right);
+
+#define IF_CONDITION 0
+#define IF_TRUE_BRANCH 1
+
+ast_t *ast_make_if_stmt (ast_t* condition, ast_t* true_branch);
+
+ast_t *ast_make_new_expr (ast_t* identifier);
 
 #define AST_FOREACH(child, parent) size_t idx; size_t limit; ast_t* child; \
   for (idx = 0, limit = ast_children_count (parent), child = ((idx < ast_children_count (parent)) ? ast_get_child (parent, idx) : NULL); idx != limit; ++idx, child = (idx < (ast_children_count (parent)) ? ast_get_child (parent, idx) : NULL))

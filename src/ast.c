@@ -27,17 +27,9 @@ struct ast_t
     struct
     {
       AstExpressionKind kind;
-      union
-      {
-	struct
-	{
-	  type_t *type;		/* Typed */
-	  bool immutable;
-	  bool derived_from_receiver;
-	};
-	typed_value_t typed_value;	/* TypedLiteral */
-	untyped_value_t untyped_value;	/* UntypedLiteral */
-      };
+      typed_value_t typed_value;
+      bool immutable;
+      bool derived_from_receiver;
     } expression;
     struct
     {
@@ -83,40 +75,50 @@ ast_print (const ast_t * node, size_t indent)
       switch (node->expression.kind)
 	{
         case AstAddressOfExpr:
-          printf ("AstAddressOfExpr");
+          printf ("AstAddressOfExpr ");
           break;
 	case AstCallExpr:
-	  printf ("AstCallExpr");
+	  printf ("AstCallExpr ");
 	  break;
 	case AstDereferenceExpr:
-	  printf ("AstDeferenceExpr");
+	  printf ("AstDeferenceExpr ");
 	  break;
+        case AstEqualExpr:
+          printf ("AstEqualExpr ");
+          break;
 	case AstExprList:
-	  printf ("AstExprList");
+	  printf ("AstExprList ");
 	  break;
 	case AstIdentifierExpr:
-	  printf ("AstIdentifierExpr");
+	  printf ("AstIdentifierExpr ");
 	  break;
 	case AstLogicAndExpr:
 	  unimplemented;
 	case AstLogicNotExpr:
-	  printf ("AstLogicNotExpr");
+	  printf ("AstLogicNotExpr ");
 	  break;
 	case AstLogicOrExpr:
 	  unimplemented;
+        case AstNewExpr:
+          printf ("AstNewExpr ");
+          break;
+        case AstNotEqualExpr:
+          printf ("AstNotEqualExpr ");
+          break;
 	case AstSelectExpr:
-	  printf ("AstSelectExpr");
+	  printf ("AstSelectExpr ");
 	  break;
 	case AstPortCallExpr:
-	  printf ("AstPortCallExpr");
+	  printf ("AstPortCallExpr ");
 	  break;
 	case AstTypedLiteral:
-          printf ("AstTypedLiteral");
-          break;
-	case AstUntypedLiteral:
-          printf ("AstUntypedLiteral");
+          printf ("AstTypedLiteral ");
           break;
 	}
+      if (node->expression.typed_value.type != NULL)
+        {
+          printf ("type=%s has_value=%d immutable=%d derived_from_receiver=%d", type_to_string (node->expression.typed_value.type), node->expression.typed_value.has_value, node->expression.immutable, node->expression.derived_from_receiver);
+        }
       break;
     case AstGetter:
       printf ("AstGetter");
@@ -142,27 +144,32 @@ ast_print (const ast_t * node, size_t indent)
       printf ("AstStatement ");
       switch (node->statement.kind)
 	{
-	case AstAssignmentStmt:
-	  printf ("AstAssignmentStmt");
-	  break;
         case AstAddAssignStmt:
           printf ("AstAddAssignStmt");
           break;
-	case AstExpressionStmt:
-	  unimplemented;
-	case AstStmtList:
-	  printf ("AstStmtList");
+	case AstAssignmentStmt:
+	  printf ("AstAssignmentStmt");
 	  break;
+	case AstExpressionStmt:
+          printf ("AstExpressionStmt");
+          break;
+	case AstIfStmt:
+	  printf ("AstIfStmt");
+          break;
+        case AstPrintlnStmt:
+          printf ("AstPrintlnStmt");
+          break;
 	case AstReturnStmt:
 	  printf ("AstReturnStmt");
+	  break;
+	case AstStmtList:
+	  printf ("AstStmtList");
 	  break;
 	case AstTriggerStmt:
 	  printf ("AstTriggerStmt");
 	  break;
 	case AstVarStmt:
-	  unimplemented;
-        case AstPrintlnStmt:
-          printf ("AstPrintlnStmt");
+          printf ("AstVarStmt");
           break;
 	}
       break;
@@ -185,11 +192,17 @@ ast_print (const ast_t * node, size_t indent)
 	case AstIdentifierTypeSpec:
 	  printf ("AstIdentifierTypeSpec");
 	  break;
+        case AstPointer:
+          printf ("AstPointer");
+          break;
 	case AstPort:
 	  printf ("AstPort");
 	  break;
 	case AstSignature:
 	  printf ("AstSignature");
+	  break;
+	case AstStruct:
+	  printf ("AstStruct");
 	  break;
 	}
       break;
@@ -333,7 +346,7 @@ ast_make_expr_stmt (ast_t * expr)
 ast_t *
 ast_make_var_stmt (ast_t * identifier_list, ast_t * type_spec)
 {
-  ast_t *retval = make_stmt (AstVarStmt, 1);
+  ast_t *retval = make_stmt (AstVarStmt, 2);
   ast_set_child (retval, VAR_IDENTIFIER_LIST, identifier_list);
   ast_set_child (retval, VAR_TYPE_SPEC, type_spec);
   return retval;
@@ -639,6 +652,14 @@ ast_make_component_type_spec (ast_t * field_list)
   return retval;
 }
 
+ast_t *
+ast_make_struct_type_spec (ast_t * field_list)
+{
+  ast_t *retval = make_type_spec (AstStruct, 1);
+  ast_set_child (retval, STRUCT_FIELD_LIST, field_list);
+  return retval;
+}
+
 AstTypeSpecificationKind
 ast_type_specification_kind (const ast_t * node)
 {
@@ -674,22 +695,6 @@ ast_expression_kind (const ast_t * node)
 }
 
 ast_t *
-ast_make_untyped_literal (untyped_value_t value)
-{
-  ast_t *node = make_expr (AstUntypedLiteral, 0);
-  node->expression.untyped_value = value;
-  return node;
-}
-
-untyped_value_t
-ast_get_untyped_value (const ast_t * node)
-{
-  assert (node->kind == AstExpression);
-  assert (node->expression.kind == AstUntypedLiteral);
-  return node->expression.untyped_value;
-}
-
-ast_t *
 ast_make_typed_literal (typed_value_t value)
 {
   ast_t *node = make_expr (AstTypedLiteral, 0);
@@ -697,92 +702,34 @@ ast_make_typed_literal (typed_value_t value)
   return node;
 }
 
+void ast_set_typed_value (ast_t* node, typed_value_t value)
+{
+  assert (node->kind == AstExpression);
+  node->expression.typed_value = value;
+}
+
 typed_value_t ast_get_typed_value (const ast_t* node)
 {
   assert (node->kind == AstExpression);
-  assert (node->expression.kind == AstTypedLiteral);
   return node->expression.typed_value;
 }
 
-bool
-ast_is_typed_literal (const ast_t * node)
-{
-  assert (node->kind == AstExpression);
-  return node->expression.kind == AstTypedLiteral;
-}
-
-bool
-ast_is_untyped_literal (const ast_t * node)
-{
-  assert (node->kind == AstExpression);
-  return node->expression.kind == AstUntypedLiteral;
-}
-
-bool
-ast_is_literal (const ast_t * node)
-{
-  return ast_is_typed_literal (node) || ast_is_untyped_literal (node);
-}
-
-bool
-ast_is_boolean (const ast_t * node)
-{
-  assert (node->kind == AstExpression);
-  if (node->expression.kind == AstTypedLiteral)
-    {
-      return type_is_boolean (node->expression.typed_value.type);
-    }
-  else if (node->expression.kind == AstUntypedLiteral)
-    {
-      return node->expression.untyped_value.kind == UntypedBool;
-    }
-  else
-    {
-      return type_is_boolean (node->expression.type);
-    }
-}
-
 void
-ast_set_type (ast_t * node, type_t * type, bool immutable,
+ast_set_type (ast_t * node, typed_value_t typed_value, bool immutable,
 	      bool derived_from_receiver)
 {
   assert (node->kind == AstExpression);
-  assert (node->expression.kind != AstTypedLiteral
-	  && node->expression.kind != AstUntypedLiteral);
-  node->expression.type = type;
+  assert (node->expression.kind != AstTypedLiteral);
+  node->expression.typed_value = typed_value;
   node->expression.immutable = immutable;
   node->expression.derived_from_receiver = derived_from_receiver;
-}
-
-type_t *
-ast_get_type (const ast_t * node)
-{
-  assert (node->kind == AstExpression);
-  assert (node->expression.kind != AstTypedLiteral
-	  && node->expression.kind != AstUntypedLiteral);
-  return node->expression.type;
-}
-
-type_t *
-ast_get_type2 (const ast_t * node)
-{
-  assert (node->kind == AstExpression);
-  if (node->expression.kind == AstTypedLiteral)
-    {
-      return node->expression.typed_value.type;
-    }
-  else
-    {
-      return node->expression.type;
-    }
 }
 
 bool
 ast_get_immutable (const ast_t * node)
 {
   assert (node->kind == AstExpression);
-  assert (node->expression.kind != AstTypedLiteral
-	  && node->expression.kind != AstUntypedLiteral);
+  assert (node->expression.kind != AstTypedLiteral);
   return node->expression.immutable;
 }
 
@@ -790,8 +737,7 @@ bool
 ast_get_derived_from_receiver (const ast_t * node)
 {
   assert (node->kind == AstExpression);
-  assert (node->expression.kind != AstTypedLiteral
-	  && node->expression.kind != AstUntypedLiteral);
+  assert (node->expression.kind != AstTypedLiteral);
   return node->expression.derived_from_receiver;
 }
 
@@ -809,4 +755,43 @@ ast_make_port_call (ast_t * identifier, ast_t * args)
   ast_set_child (a, CALL_EXPR, identifier);
   ast_set_child (a, CALL_ARGS, args);
   return a;
+}
+
+ast_t *ast_make_pointer_type_spec (ast_t* type_spec)
+{
+  ast_t *retval = make_type_spec (AstPointer, 1);
+  ast_set_child (retval, POINTER_BASE_TYPE, type_spec);
+  return retval;
+}
+
+ast_t *ast_make_equal (ast_t* left, ast_t* right)
+{
+  ast_t *retval = make_expr (AstEqualExpr, 2);
+  ast_set_child (retval, BINARY_LEFT_CHILD, left);
+  ast_set_child (retval, BINARY_RIGHT_CHILD, right);
+  return retval;
+}
+
+ast_t *ast_make_not_equal (ast_t* left, ast_t* right)
+{
+  ast_t *retval = make_expr (AstNotEqualExpr, 2);
+  ast_set_child (retval, BINARY_LEFT_CHILD, left);
+  ast_set_child (retval, BINARY_RIGHT_CHILD, right);
+  return retval;
+}
+
+ast_t *ast_make_if_stmt (ast_t* condition, ast_t* true_branch)
+{
+  ast_t *retval = make_stmt (AstIfStmt, 2);
+  ast_set_child (retval, IF_CONDITION, condition);
+  ast_set_child (retval, IF_TRUE_BRANCH, true_branch);
+  return retval;
+}
+
+ast_t *ast_make_new_expr (ast_t* identifier)
+{
+  ast_t *retval = make_expr (AstNewExpr, 1);
+  ast_set_child (retval, UNARY_CHILD, identifier);
+  return retval;
+
 }

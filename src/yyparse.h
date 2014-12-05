@@ -3,6 +3,7 @@
 
 #include "ast.h"
 #include "rtstring.h"
+#include "type.h"
 
 extern ast_t *root;
 

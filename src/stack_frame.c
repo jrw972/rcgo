@@ -99,6 +99,36 @@ rtstring_t stack_frame_pop_string (stack_frame_t* stack_frame)
   return retval;
 }
 
+void stack_frame_push_address (stack_frame_t* stack_frame,
+                               ptrdiff_t offset)
+{
+  stack_frame_push_pointer (stack_frame, stack_frame->base_pointer + offset);
+}
+
+void stack_frame_equal (stack_frame_t* stack_frame,
+                        size_t size)
+{
+  size_t s = align_up (size, memory_model_stack_alignment (stack_frame->memory_model));
+  assert (stack_frame->top - 2 * s >= stack_frame->data);
+  stack_frame->top -= s;
+  char* y = stack_frame->top;
+  stack_frame->top -= s;
+  char* x = stack_frame->top;
+  stack_frame_push_bool (stack_frame, memcmp (x, y, size) == 0);
+}
+
+void stack_frame_not_equal (stack_frame_t* stack_frame,
+                            size_t size)
+{
+  size_t s = align_up (size, memory_model_stack_alignment (stack_frame->memory_model));
+  assert (stack_frame->top - 2 * s >= stack_frame->data);
+  stack_frame->top -= s;
+  char* y = stack_frame->top;
+  stack_frame->top -= s;
+  char* x = stack_frame->top;
+  stack_frame_push_bool (stack_frame, memcmp (x, y, size) != 0);
+}
+
 void stack_frame_push (stack_frame_t* stack_frame,
                        ptrdiff_t offset,
                        size_t size)
@@ -116,6 +146,7 @@ void stack_frame_reserve (stack_frame_t* stack_frame,
 {
   size_t s = align_up (size, memory_model_stack_alignment (stack_frame->memory_model));
   assert (stack_frame->top + s <= stack_frame->limit);
+  memset (stack_frame->top, 0, size);
   stack_frame->top += s;
 }
 
@@ -162,15 +193,18 @@ void stack_frame_set_base_pointer (stack_frame_t* stack_frame,
   stack_frame->base_pointer = base_pointer;
 }
 
-void stack_frame_push_base_pointer (stack_frame_t* stack_frame)
+void stack_frame_push_base_pointer (stack_frame_t* stack_frame, size_t size)
 {
   char* bp = stack_frame->top;
   stack_frame_push_pointer (stack_frame, stack_frame->base_pointer);
   stack_frame->base_pointer = bp;
+  stack_frame_reserve (stack_frame, size);
 }
 
 void stack_frame_pop_base_pointer (stack_frame_t* stack_frame)
 {
+  // Adjust the top.
+  stack_frame->top = stack_frame->base_pointer + sizeof (void*);
   stack_frame->base_pointer = stack_frame_pop_pointer (stack_frame);
 }
 

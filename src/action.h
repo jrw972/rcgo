@@ -33,4 +33,9 @@ trigger_t **action_trigger_end (const action_t * action);
 
 trigger_t **action_trigger_next (trigger_t ** pos);
 
+void action_set_locals_size (action_t* action,
+                             size_t size);
+
+size_t action_get_locals_size (const action_t * action);
+
 #endif /* action_h */

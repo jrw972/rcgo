@@ -10,6 +10,7 @@ binding.h binding.c \
 debug.h debug.c \
 field.h field.c \
 getter.h getter.c \
+heap.h heap.c \
 instance.h instance.c \
 instance_set.h instance_set.c \
 memory_model.h memory_model.c \
@@ -26,5 +27,4 @@ type.h type.c \
 typed_value.h typed_value.c \
 types.h \
 util.h util.c \
-untyped_value.h untyped_value.c \
 yyparse.h yyparse.c

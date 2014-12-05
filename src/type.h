@@ -1,24 +1,31 @@
 #ifndef type_h
 #define type_h
 
-#include "untyped_value.h"
 #include "typed_value.h"
 #include "strtab.h"
 #include "types.h"
 
 typedef enum
-{ TypeUndefined,
-  TypeVoid,
+{
   TypeBool,
   TypeComponent,
+  TypeFieldList,
+  TypeGetter,
   TypePointer,
   TypePort,
   TypeReaction,
-  TypeFieldList,
   TypeSignature,
   TypeString,
-  TypeGetter,
+  TypeStruct,
   TypeUint,
+  TypeVoid,
+  TypeUndefined,
+
+  UntypedUndefined,
+  UntypedNil,
+  UntypedBool,
+  UntypedInteger,
+  UntypedString,
 } TypeKind;
 
 typedef enum
@@ -72,10 +79,6 @@ getter_t *type_component_add_getter (type_t * component_type,
 
 TypeKind type_kind (const type_t * type);
 
-bool type_can_represent (const type_t * type, untyped_value_t u);
-
-bool type_assignable (const type_t * target, const type_t * source);
-
 const type_t *type_logic_not (const type_t * type);
 
 const type_t *type_logic_and (const type_t * x, const type_t * y);
@@ -85,8 +88,6 @@ const type_t *type_logic_or (const type_t * x, const type_t * y);
 type_t *type_select (const type_t * type, string_t identifier);
 
 field_t* type_select_field (const type_t* type, string_t identifier);
-
-bool type_is_boolean (const type_t * type);
 
 action_t *type_component_get_reaction (const type_t * component_type,
 				       string_t identifier);
@@ -200,5 +201,14 @@ type_t* type_make_string (void);
 type_t* type_make_uint (void);
 
 bool type_is_arithmetic (const type_t* type);
+
+type_t* type_make_struct (type_t* field_list);
+
+type_t* type_make_untyped_nil (void);
+type_t* type_make_untyped_bool (void);
+type_t* type_make_untyped_string (void);
+type_t* type_make_untyped_integer (void);
+
+bool type_is_untyped (const type_t* type);
 
 #endif /* type_h */

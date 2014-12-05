@@ -9,7 +9,7 @@ action (this $Counter) (true) {
   trigger {
     this.counter++;
     println `Counter is now `, this.counter;
-  }
+  };
 }
 
 getter (this $Counter) Counter () uint {
@@ -25,13 +25,13 @@ type Clock component {
 reaction (this $Clock) request () {
   trigger {
     this.flag = true;
-  }
+  };
 }
 
 action (this $Clock) (this.flag) {
   trigger response (this.counter.Counter()) {
     this.flag = false;
-  }
+  };
 }
 
 type Sampler component {
@@ -42,14 +42,14 @@ type Sampler component {
 action (this $Sampler) (this.flag!) {
   trigger request () {
     this.flag = true;
-  }
+  };
 }
 
 reaction (this $Sampler) response (t uint) {
   println `Received `, t;
   trigger {
     this.flag = false;
-  }
+  };
 }
 
 type System component {

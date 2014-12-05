@@ -37,8 +37,6 @@ void symtab_print (const symtab_t* symtab)
           unimplemented;
         case SymbolTypedConstant:
           unimplemented;
-        case SymbolUntypedConstant:
-          unimplemented;
         case SymbolVariable:
           unimplemented;
         }

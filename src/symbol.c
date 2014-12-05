@@ -17,10 +17,6 @@ struct symbol_t
     } typed_constant;
     struct
     {
-      untyped_value_t value;
-    } untyped_constant;
-    struct
-    {
       const type_t *type;
     } instance;
     struct
@@ -31,7 +27,7 @@ struct symbol_t
     } parameter;
     struct
     {
-      const type_t *type;
+      type_t *type;
     } variable;
     struct
     {
@@ -53,8 +49,6 @@ const char* symbol_kind_string (SymbolKind kind)
       return "Type";
     case SymbolTypedConstant:
       return "TypedConstant";
-    case SymbolUntypedConstant:
-      return "UntypedConstant";
     case SymbolVariable:
       return "Variable";
     }
@@ -85,8 +79,6 @@ symbol_defined (const symbol_t * symbol)
 {
   switch (symbol->kind)
     {
-    case SymbolUntypedConstant:
-      unimplemented;
     case SymbolTypedConstant:
       unimplemented;
     case SymbolInstance:
@@ -132,8 +124,6 @@ symbol_make_undefined (string_t identifier, SymbolKind kind,
     {
     case SymbolTypedConstant:
       unimplemented;
-    case SymbolUntypedConstant:
-      unimplemented;
     case SymbolInstance:
       return symbol_make_instance (identifier, NULL, defining_node);
     case SymbolParameter:
@@ -149,15 +139,14 @@ symbol_make_undefined (string_t identifier, SymbolKind kind,
 }
 
 symbol_t *
-symbol_make_variable (string_t identifier, const type_t * type)
+symbol_make_variable (string_t identifier, type_t * type, ast_t* defining_node)
 {
-  unimplemented;
-  /* symbol_t *s = make (identifier, Variable); */
-  /* s->variable.type = type; */
-  /* return s; */
+  symbol_t *s = make (identifier, SymbolVariable, defining_node);
+  s->variable.type = type;
+  return s;
 }
 
-const type_t *
+type_t *
 symbol_variable_type (const symbol_t * symbol)
 {
   assert (symbol_kind (symbol) == SymbolVariable);
@@ -194,22 +183,6 @@ symbol_typed_constant_value (const symbol_t * symbol)
 {
   assert (symbol_kind (symbol) == SymbolTypedConstant);
   return symbol->typed_constant.value;
-}
-
-symbol_t *
-symbol_make_untyped_constant (string_t identifier, untyped_value_t value,
-			      ast_t * defining_node)
-{
-  symbol_t *s = make (identifier, SymbolUntypedConstant, defining_node);
-  s->untyped_constant.value = value;
-  return s;
-}
-
-untyped_value_t
-symbol_untyped_constant_value (const symbol_t * symbol)
-{
-  assert (symbol_kind (symbol) == SymbolUntypedConstant);
-  return symbol->untyped_constant.value;
 }
 
 symbol_t *

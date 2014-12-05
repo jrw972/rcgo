@@ -11,7 +11,6 @@ typedef enum
   SymbolParameter,
   SymbolType,
   SymbolTypedConstant,
-  SymbolUntypedConstant,
   SymbolVariable,
 } SymbolKind;
 
@@ -32,9 +31,9 @@ void symbol_set_in_progress (symbol_t * symbol, bool in_progress);
 symbol_t *symbol_make_undefined (string_t identifier, SymbolKind kind,
 				 ast_t * defining_node);
 
-symbol_t *symbol_make_variable (string_t identifier, const type_t * type);
+symbol_t *symbol_make_variable (string_t identifier, type_t * type, ast_t* defining_node);
 
-const type_t *symbol_variable_type (const symbol_t * symbol);
+type_t *symbol_variable_type (const symbol_t * symbol);
 
 symbol_t *symbol_make_type (string_t identifier, type_t * type,
 			    ast_t * defining_node);
@@ -46,12 +45,6 @@ symbol_t *symbol_make_typed_constant (string_t identifier,
 				      ast_t * defining_node);
 
 typed_value_t symbol_typed_constant_value (const symbol_t * symbol);
-
-symbol_t *symbol_make_untyped_constant (string_t identifier,
-					untyped_value_t value,
-					ast_t * defining_node);
-
-untyped_value_t symbol_untyped_constant_value (const symbol_t * symbol);
 
 symbol_t *symbol_make_instance (string_t identifier, const type_t * type,
 				ast_t * defining_node);
