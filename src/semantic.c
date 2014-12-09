@@ -359,7 +359,7 @@ process_type_spec (ast_t * node, bool force_identifiers)
 
     case AstPointer:
       return
-	type_make_pointer (PointerToMutable, process_type_spec
+	type_make_pointer (process_type_spec
                            (ast_get_child (node, POINTER_BASE_TYPE), false));
 
     case AstPort:
@@ -496,7 +496,7 @@ process_declarations (ast_t * node)
         /* Prepend the signature with the receiver. */
         type_signature_prepend (signature,
                                 ast_get_identifier (ast_get_child (receiver, RECEIVER_THIS_IDENTIFIER)),
-                                type_make_pointer (PointerToImmutable, type), true);
+                                type_make_pointer (type_make_immutable (type)), true);
 
         /* Process the return type. */
         type_t *return_type = process_type_spec (return_type_node, true);
@@ -664,8 +664,9 @@ static void check_identifier_expr (ast_t** ptr,
 static void
 set_dereference_type (ast_t* node, typed_value_t tv)
 {
-  ast_set_type (node, typed_value_dereference (tv),
-                type_pointer_kind (tv.type) == PointerToImmutable,
+  tv = typed_value_dereference (tv);
+  ast_set_type (node, tv,
+                type_is_immutable (tv.type),
                 ast_get_derived_from_receiver (ast_get_child (node, UNARY_CHILD)));
 }
 
@@ -951,11 +952,11 @@ check_rvalue (ast_t ** ptr, binding_t* binding, bool output)
         type_t* type;
         if (ast_get_immutable (*expr))
           {
-            type = type_make_pointer (PointerToImmutable, expr_tv.type);
+            type = type_make_pointer (type_make_immutable (expr_tv.type));
           }
         else
           {
-            type = type_make_pointer (PointerToMutable, expr_tv.type);
+            type = type_make_pointer (expr_tv.type);
           }
 
         ast_set_type (node, typed_value_make (type), true, ast_get_derived_from_receiver (*expr));
@@ -1067,7 +1068,7 @@ check_rvalue (ast_t ** ptr, binding_t* binding, bool output)
 	    error_at_line (-1, 0, ast_file (node), ast_line (node),
 			   "%s is not a type", get (name));
           }
-        type_t* type = type_make_pointer (PointerToMutable, symbol_get_type_type (symbol));
+        type_t* type = type_make_pointer (symbol_get_type_type (symbol));
         ast_set_type (node, typed_value_make (type), false, false);
       }
       break;
@@ -1138,6 +1139,7 @@ convert_rvalue_to_builtin_types (ast_t ** ptr)
     case TypeComponent:
     case TypeFieldList:
     case TypeGetter:
+    case TypeImmutable:
     case TypePointer:
     case TypePort:
     case TypeReaction:
@@ -1184,7 +1186,7 @@ extract_port_field (const ast_t * node)
   string_t port_identifier =
     ast_get_identifier (ast_get_child (node, CALL_EXPR));
   const type_t *this_type =
-    type_pointer_base_type (symtab_get_this_type (ast_get_symtab (node)));
+    type_immutable_base_type (type_pointer_base_type (symtab_get_this_type (ast_get_symtab (node))));
   const type_t *field_list = type_component_field_list (this_type);
   return type_field_list_find (field_list, port_identifier);
 }
@@ -1458,9 +1460,8 @@ process_definitions (ast_t * node)
 	enter_symbol (receiver_node,
 		      symbol_make_receiver (this_identifier,
                                             type_make_pointer
-                                            (PointerToImmutable,
-                                             get_current_receiver_type
-                                             (node)), this_node));
+                                            (type_make_immutable (get_current_receiver_type
+                                                                  (node))), this_node));
 
 	/* Check the precondition. */
 	check_rvalue (precondition_node, NULL, false);
@@ -1491,8 +1492,7 @@ process_definitions (ast_t * node)
 	enter_symbol (receiver_node,
 		      symbol_make_receiver (this_identifier,
                                             type_make_pointer
-                                            (PointerToImmutable,
-                                             get_current_receiver_type
+                                            (get_current_receiver_type
                                              (node)), this_node));
 	/* Check the body. */
 	check_bind_statement (body_node);
@@ -1540,8 +1540,7 @@ process_definitions (ast_t * node)
 	enter_symbol (receiver_node,
 		      symbol_make_receiver (this_identifier,
                                             type_make_pointer
-                                            (PointerToImmutable,
-                                             action_component_type (reaction)),
+                                            (type_make_immutable (action_component_type (reaction))),
                                             this_node));
 	/* Enter the signature into the symbol table. */
 	enter_signature (signature_node, reaction_signature (reaction));

@@ -11,6 +11,7 @@ typedef enum
   TypeComponent,
   TypeFieldList,
   TypeGetter,
+  TypeImmutable,
   TypePointer,
   TypePort,
   TypeReaction,
@@ -27,11 +28,6 @@ typedef enum
   UntypedInteger,
   UntypedString,
 } TypeKind;
-
-typedef enum
-{ PointerToMutable,
-  PointerToImmutable,
-} PointerKind;
 
 const char *type_to_string (const type_t * type);
 
@@ -56,7 +52,7 @@ type_t *type_pointer_base_type (const type_t * type);
 
 type_t *type_make_component (type_t * type);
 
-type_t *type_make_pointer (PointerKind kind, type_t * base_type);
+type_t *type_make_pointer (type_t * base_type);
 
 type_t *type_make_port (const type_t * signature);
 
@@ -119,8 +115,6 @@ void type_field_list_append (type_t * field_list,
 			     string_t field_name, type_t * field_type);
 
 bool type_is_pointer (const type_t * type);
-
-PointerKind type_pointer_kind (const type_t * type);
 
 bool type_convertible (const type_t * to, const type_t * from);
 
@@ -210,5 +204,11 @@ type_t* type_make_untyped_string (void);
 type_t* type_make_untyped_integer (void);
 
 bool type_is_untyped (const type_t* type);
+
+type_t* type_make_immutable (type_t* type);
+
+bool type_is_immutable (const type_t* type);
+
+type_t* type_immutable_base_type (const type_t* type);
 
 #endif /* type_h */

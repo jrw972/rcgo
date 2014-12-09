@@ -11,7 +11,7 @@ type Channel component
   receive port (message uint);
 };
 
-reaction (this $Channel) send (message uint)
+reaction (this $ imm Channel) send (message uint)
 {
   trigger
   {
@@ -27,7 +27,7 @@ reaction (this $Channel) send (message uint)
   };
 }
 
-action (this $Channel) (this.head != nil)
+action (this $ imm Channel) (this.head != nil)
 {
   trigger receive (this.head.value)
     {
@@ -46,7 +46,7 @@ type System component
   send port (message uint);
 };
 
-action (this $System) (this.send_count != 10)
+action (this $ imm System) (this.send_count != 10)
 {
   trigger send (this.send_count)
   {
@@ -55,7 +55,7 @@ action (this $System) (this.send_count != 10)
   };
 }
 
-reaction (this $System) receive (message uint)
+reaction (this $ imm System) receive (message uint)
 {
   println `Received `, message;
 }

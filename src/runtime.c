@@ -300,6 +300,8 @@ evaluate_rvalue (runtime_t* runtime,
           break;
         case TypeComponent:
           unimplemented;
+        case TypeImmutable:
+          unimplemented;
         case TypePointer:
           stack_frame_push_pointer (runtime->stack, tv.pointer_value);
           break;
@@ -563,6 +565,8 @@ evaluate_statement (runtime_t* runtime,
             unimplemented;
           case TypeComponent:
             unimplemented;
+        case TypeImmutable:
+          unimplemented;
           case TypePointer:
             unimplemented;
           case TypePort:
@@ -671,6 +675,9 @@ evaluate_statement (runtime_t* runtime,
               break;
             case TypeComponent:
               unimplemented;
+
+        case TypeImmutable:
+          unimplemented;
 
             case TypePointer:
               {

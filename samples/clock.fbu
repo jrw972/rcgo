@@ -5,20 +5,20 @@ type Clock component {
   response port (t uint);
 };
 
-action (this $Clock) (true) {
+action (this $ imm Clock) (true) {
   trigger {
     this.counter++;
     println `Counter is now `, this.counter;
   };
 }
 
-reaction (this $Clock) request () {
+reaction (this $ imm Clock) request () {
   trigger {
     this.flag = true;
   };
 }
 
-action (this $Clock) (this.flag) {
+action (this $ imm Clock) (this.flag) {
   trigger response (this.counter) {
     this.flag = false;
   };
@@ -29,13 +29,13 @@ type Sampler component {
   request port ();
 };
 
-action (this $Sampler) (this.flag!) {
+action (this $ imm Sampler) (this.flag!) {
   trigger request () {
     this.flag = true;
   };
 }
 
-reaction (this $Sampler) response (t uint) {
+reaction (this $ imm Sampler) response (t uint) {
   println `Received `, t;
   trigger {
     this.flag = false;

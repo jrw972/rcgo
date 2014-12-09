@@ -38,6 +38,7 @@
 %type <node> parameter
 %type <node> parameter_list
 %type <node> pointer_receiver
+%type <node> pointer_to_imm_receiver
 %type <node> port_call
 %type <node> port_call_list
 %type <node> primary_expr
@@ -56,7 +57,7 @@
 %type <node> var_stmt
 %destructor { /* TODO:  Free the node. node_free ($$); */ } <node>
 
-%token ACTION BIND COMPONENT ELSE GETTER IF INSTANCE NEW PORT PRINTLN REACTION RETURN STRUCT TRIGGER TYPE VAR
+%token ACTION BIND COMPONENT ELSE GETTER IF IMM INSTANCE NEW PORT PRINTLN REACTION RETURN STRUCT TRIGGER TYPE VAR
 
 %token ARROW EQUAL INCREMENT LOGIC_AND LOGIC_OR NOT_EQUAL
 
@@ -78,13 +79,13 @@ instance_def: INSTANCE identifier identifier ';' { $$ = ast_make_instance_def ($
 
 type_def: TYPE identifier type_spec ';' { $$ = ast_make_type_def ($2, $3); }
 
-action_def: ACTION pointer_receiver '(' rvalue ')' stmt_list { $$ = ast_make_action_def ($2, $4, $6); }
+action_def: ACTION pointer_to_imm_receiver '(' rvalue ')' stmt_list { $$ = ast_make_action_def ($2, $4, $6); }
 
-reaction_def: REACTION pointer_receiver identifier signature stmt_list { $$ = ast_make_reaction_def ($2, $3, $4, $5); }
+reaction_def: REACTION pointer_to_imm_receiver identifier signature stmt_list { $$ = ast_make_reaction_def ($2, $3, $4, $5); }
 
 bind_def: BIND pointer_receiver bind_stmt_list { $$ = ast_make_bind_def ($2, $3); }
 
-getter_def: GETTER pointer_receiver identifier signature type_spec stmt_list { $$ = ast_make_getter_def ($2, $3, $4, $5, $6); }
+getter_def: GETTER pointer_to_imm_receiver identifier signature type_spec stmt_list { $$ = ast_make_getter_def ($2, $3, $4, $5, $6); }
 
 signature: '(' ')' { $$ = ast_make_signature (); }
 | '(' parameter_list optional_semicolon ')' { $$ = $2; }
@@ -98,6 +99,8 @@ optional_semicolon: /* Empty. */
 | ';'
 
 pointer_receiver: '(' identifier '$' identifier ')' { $$ = ast_make_pointer_receiver ($2, $4); }
+
+pointer_to_imm_receiver: '(' identifier '$' IMM identifier ')' { $$ = ast_make_pointer_receiver ($2, $5); }
 
 bind_stmt_list: '{' bind_inner_stmt_list '}' { $$ = $2; }
 

@@ -240,11 +240,14 @@ symbol_make_receiver (string_t identifier, type_t * type,
 symbol_t *
 symbol_make_receiver_duplicate (symbol_t* receiver)
 {
+  // Strip out the immutable.
+  type_t* t = symbol_parameter_type (receiver);
+  t = type_pointer_base_type (t);
+  t = type_immutable_base_type (t);
+  t = type_make_pointer (t);
+
   symbol_t *s = make (symbol_identifier (receiver), SymbolParameter, symbol_defining_node (receiver));
-  s->parameter.type = type_make_pointer (PointerToMutable,
-                                         type_pointer_base_type
-                                         (symbol_parameter_type
-                                          (receiver)));
+  s->parameter.type = t;
   s->parameter.kind = ParameterReceiverDuplicate;
   s->parameter.original = receiver;
   return s;

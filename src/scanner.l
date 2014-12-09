@@ -18,6 +18,7 @@
 "else"                 { return ELSE; }
 "getter"               { return GETTER; }
 "if"                   { return IF; }
+"imm"                  { return IMM; }
 "instance"             { return INSTANCE; }
 "new"                  { return NEW; }
 "port"                 { return PORT; }

@@ -9,8 +9,24 @@
 #include "field.h"
 #include "getter.h"
 
+typedef struct {
+  type_t * (*select) (const type_t * type, string_t identifier);
+  field_t * (*select_field) (const type_t * type, string_t identifier);
+} vtable_t;
+
+static type_t* no_select (const type_t* type, string_t identifier)
+{
+  unimplemented;
+}
+
+static field_t* no_select_field (const type_t* type, string_t identifier)
+{
+  unimplemented;
+}
+
 struct type_t
 {
+  const vtable_t* vtable;
   TypeKind kind;
   bool has_name;
   string_t name;
@@ -38,7 +54,10 @@ struct type_t
     struct
     {
       type_t *base_type;
-      PointerKind kind;
+    } immutable;
+    struct
+    {
+      type_t *base_type;
     } pointer;
     struct
     {
@@ -58,6 +77,116 @@ struct type_t
     } struct_;
   };
 };
+
+static vtable_t bool_vtable = { no_select, no_select_field };
+
+static type_t* component_select (const type_t* type, string_t identifier)
+{
+  type_t *t = type_select (type->component.field_list, identifier);
+  if (t != NULL)
+    {
+      return t;
+    }
+
+  {
+    VECTOR_FOREACH (ptr, limit, type->component.reactions, action_t *)
+      {
+        if (streq (identifier, reaction_name (*ptr)))
+          {
+            return reaction_type (*ptr);
+          }
+      }
+  }
+
+  {
+    VECTOR_FOREACH (ptr, limit, type->component.getters, getter_t *)
+      {
+        if (streq (identifier, getter_name (*ptr)))
+          {
+            return getter_type (*ptr);
+          }
+      }
+  }
+
+  return NULL;
+}
+
+static field_t* component_select_field (const type_t* type, string_t identifier)
+{
+  return type_select_field (type->component.field_list, identifier);
+}
+
+static vtable_t component_vtable = { component_select, component_select_field };
+
+static type_t* field_list_select (const type_t* type, string_t identifier)
+{
+  field_t *field = type_field_list_find (type, identifier);
+  if (field != NULL)
+    {
+      return field_type (field);
+    }
+  else
+    {
+      return NULL;
+    }
+}
+
+static field_t* field_list_select_field (const type_t* type, string_t identifier)
+{
+  return type_field_list_find (type, identifier);
+}
+
+static vtable_t field_list_vtable = { field_list_select, field_list_select_field };
+
+static vtable_t getter_vtable = { no_select, no_select_field };
+
+static type_t* immutable_select (const type_t* type, string_t identifier)
+{
+  return type_select (type->immutable.base_type, identifier);
+}
+
+static field_t* immutable_select_field (const type_t* type, string_t identifier)
+{
+  return type_select_field (type->immutable.base_type, identifier);
+}
+
+static vtable_t immutable_vtable = { immutable_select, immutable_select_field };
+
+static vtable_t pointer_vtable = { no_select, no_select_field };
+
+static vtable_t port_vtable = { no_select, no_select_field };
+
+static vtable_t reaction_vtable = { no_select, no_select_field };
+
+static vtable_t signature_vtable = { no_select, no_select_field };
+
+static vtable_t string_vtable = { no_select, no_select_field };
+
+static type_t* struct_select (const type_t* type, string_t identifier)
+{
+  return type_select (type->struct_.field_list, identifier);
+}
+
+static field_t* struct_select_field (const type_t* type, string_t identifier)
+{
+  return type_select_field (type->struct_.field_list, identifier);
+}
+
+static vtable_t struct_vtable = { struct_select, struct_select_field };
+
+static vtable_t undefined_vtable = { no_select, no_select_field };
+
+static vtable_t uint_vtable = { no_select, no_select_field };
+
+static vtable_t void_vtable = { no_select, no_select_field };
+
+static vtable_t untyped_bool_vtable = { no_select, no_select_field };
+
+static vtable_t untyped_integer_vtable = { no_select, no_select_field };
+
+static vtable_t untyped_nil_vtable = { no_select, no_select_field };
+
+static vtable_t untyped_string_vtable = { no_select, no_select_field };
 
 // TODO:  Replace functions with interface.
 
@@ -103,6 +232,9 @@ type_to_string (const type_t * type)
 	  unimplemented;
 	case TypeComponent:
 	  unimplemented;
+        case TypeImmutable:
+          unimplemented;
+
 	case TypePointer:
 	  {
 	    char *str;
@@ -180,6 +312,7 @@ type_move (type_t * to, type_t * from)
   assert (to->kind == TypeUndefined);
   assert (from->kind != TypeUndefined);
 
+  to->vtable = from->vtable;
   to->kind = from->kind;
   /* Do not copy has_name and name. */
 
@@ -197,6 +330,9 @@ type_move (type_t * to, type_t * from)
       VECTOR_MOVE (to->component.reactions, from->component.reactions);
       VECTOR_MOVE (to->component.bindings, from->component.bindings);
       break;
+    case TypeImmutable:
+      unimplemented;
+
     case TypePointer:
       unimplemented;
     case TypePort:
@@ -247,6 +383,9 @@ type_size (const type_t * type)
       return 1;
     case TypeComponent:
       return type_size (type->component.field_list);
+        case TypeImmutable:
+          unimplemented;
+
     case TypePointer:
       return 8;
     case TypePort:
@@ -285,9 +424,11 @@ type_size (const type_t * type)
 }
 
 static type_t *
-make (TypeKind kind)
+make (const vtable_t* vtable, TypeKind kind)
 {
+  assert (vtable != NULL);
   type_t *retval = xmalloc (sizeof (type_t));
+  retval->vtable = vtable;
   retval->kind = kind;
   return retval;
 }
@@ -295,7 +436,7 @@ make (TypeKind kind)
 static type_t *
 duplicate (const type_t * type)
 {
-  type_t *retval = make (type->kind);
+  type_t *retval = make (type->vtable, type->kind);
   switch (retval->kind)
     {
     case TypeUndefined:
@@ -306,6 +447,9 @@ duplicate (const type_t * type)
       unimplemented;
     case TypeComponent:
       unimplemented;
+        case TypeImmutable:
+          unimplemented;
+
     case TypePointer:
       unimplemented;
     case TypePort:
@@ -378,7 +522,7 @@ type_is_named (const type_t * type)
 type_t *
 type_make_undefined (void)
 {
-  return make (TypeUndefined);
+  return make (&undefined_vtable, TypeUndefined);
 }
 
 bool
@@ -390,7 +534,7 @@ type_is_undefined (const type_t * type)
 type_t *
 type_make_bool (void)
 {
-  return make (TypeBool);
+  return make (&bool_vtable, TypeBool);
 }
 
 type_t *
@@ -406,7 +550,7 @@ make_void ()
   static type_t *t = NULL;
   if (t == NULL)
     {
-      t = make (TypeVoid);
+      t = make (&void_vtable, TypeVoid);
     }
   return t;
 }
@@ -414,9 +558,9 @@ make_void ()
 type_t *
 type_make_component (type_t * field_list)
 {
-  type_t *c = make (TypeComponent);
+  type_t *c = make (&component_vtable, TypeComponent);
   /* Prepend the field list with a pointer for the runtime. */
-  type_field_list_prepend (field_list, enter ("0"), type_make_pointer (PointerToMutable, make_void ()));
+  type_field_list_prepend (field_list, enter ("0"), type_make_pointer (make_void ()));
   c->component.field_list = field_list;
   VECTOR_INIT (c->component.actions, action_t *, 0, NULL);
   VECTOR_INIT (c->component.reactions, action_t *, 0, NULL);
@@ -425,18 +569,17 @@ type_make_component (type_t * field_list)
 }
 
 type_t *
-type_make_pointer (PointerKind kind, type_t * base_type)
+type_make_pointer (type_t * base_type)
 {
-  type_t *t = make (TypePointer);
+  type_t *t = make (&pointer_vtable, TypePointer);
   t->pointer.base_type = base_type;
-  t->pointer.kind = kind;
   return t;
 }
 
 type_t *
 type_make_port (const type_t * signature)
 {
-  type_t *retval = make (TypePort);
+  type_t *retval = make (&port_vtable, TypePort);
   retval->port.signature = signature;
   return retval;
 }
@@ -503,6 +646,9 @@ type_alignment (const type_t * type)
       return 1;
     case TypeComponent:
       return type_alignment (type->component.field_list);
+        case TypeImmutable:
+          unimplemented;
+
     case TypePointer:
       return 8;
     case TypePort:
@@ -745,6 +891,8 @@ type_return_value (const type_t * type)
     case TypeVoid:
     case TypeBool:
     case TypeComponent:
+        case TypeImmutable:
+          unimplemented;
     case TypePointer:
     case TypeReaction:
     case TypeFieldList:
@@ -778,7 +926,7 @@ type_return_value (const type_t * type)
 type_t *
 type_make_field_list (void)
 {
-  type_t *t = make (TypeFieldList);
+  type_t *t = make (&field_list_vtable, TypeFieldList);
   VECTOR_INIT (t->field_list.fields, field_t *, 0, NULL);
   return t;
 }
@@ -857,152 +1005,19 @@ type_field_list_find (const type_t * type, string_t name)
 type_t *
 type_select (const type_t * type, string_t identifier)
 {
-  switch (type->kind)
-    {
-    case TypeUndefined:
-      unimplemented;
-    case TypeVoid:
-      unimplemented;
-    case TypeBool:
-      unimplemented;
-    case TypeComponent:
-      {
-	type_t *t = type_select (type->component.field_list, identifier);
-	if (t != NULL)
-	  {
-	    return t;
-	  }
-
-        {
-          VECTOR_FOREACH (ptr, limit, type->component.reactions, action_t *)
-            {
-              if (streq (identifier, reaction_name (*ptr)))
-                {
-                  return reaction_type (*ptr);
-                }
-            }
-        }
-
-        {
-          VECTOR_FOREACH (ptr, limit, type->component.getters, getter_t *)
-            {
-              if (streq (identifier, getter_name (*ptr)))
-                {
-                  return getter_type (*ptr);
-                }
-            }
-        }
-
-	return NULL;
-      }
-    case TypePointer:
-      unimplemented;
-    case TypePort:
-      unimplemented;
-    case TypeReaction:
-      unimplemented;
-    case TypeFieldList:
-      {
-	field_t *field = type_field_list_find (type, identifier);
-	if (field != NULL)
-	  {
-	    return field_type (field);
-	  }
-	else
-	  {
-	    return NULL;
-	  }
-      }
-    case TypeSignature:
-      unimplemented;
-    case TypeString:
-      unimplemented;
-    case TypeGetter:
-      unimplemented;
-    case TypeUint:
-      unimplemented;
-
-    case TypeStruct:
-      return type_select (type->struct_.field_list, identifier);
-
-    case UntypedUndefined:
-      unimplemented;
-    case UntypedNil:
-      unimplemented;
-
-    case UntypedBool:
-      unimplemented;
-    case UntypedInteger:
-      unimplemented;
-    case UntypedString:
-      unimplemented;
-
-    }
-
-  bug ("unhandled case");
+  return type->vtable->select (type, identifier);
 }
 
 field_t *
 type_select_field (const type_t * type, string_t identifier)
 {
-  switch (type->kind)
-    {
-    case TypeUndefined:
-      unimplemented;
-    case TypeVoid:
-      unimplemented;
-    case TypeBool:
-      unimplemented;
-    case TypeComponent:
-      return type_select_field (type->component.field_list, identifier);
-    case TypePointer:
-      unimplemented;
-    case TypePort:
-      unimplemented;
-    case TypeReaction:
-      unimplemented;
-    case TypeFieldList:
-      return type_field_list_find (type, identifier);
-    case TypeSignature:
-      unimplemented;
-    case TypeString:
-      unimplemented;
-    case TypeGetter:
-      unimplemented;
-    case TypeUint:
-      unimplemented;
-
-    case TypeStruct:
-      return type_select_field (type->struct_.field_list, identifier);
-
-    case UntypedUndefined:
-      unimplemented;
-    case UntypedNil:
-      unimplemented;
-
-    case UntypedBool:
-      unimplemented;
-    case UntypedInteger:
-      unimplemented;
-    case UntypedString:
-      unimplemented;
-
-    }
-
-  bug ("unhandled case");
+  return type->vtable->select_field (type, identifier);
 }
 
 bool
 type_is_pointer (const type_t * type)
 {
   return type->kind == TypePointer;
-}
-
-PointerKind
-type_pointer_kind (const type_t * type)
-{
-  assert (type->kind == TypePointer);
-  return type->pointer.kind;
 }
 
 static bool
@@ -1030,9 +1045,11 @@ type_equivalent (const type_t * x, const type_t* y)
     case TypeGetter:
       unimplemented;
 
+    case TypeImmutable:
+      return type_equivalent (x->immutable.base_type, y->immutable.base_type);
+
     case TypePointer:
-      return x->pointer.kind == y->pointer.kind &&
-        type_equivalent (x->pointer.base_type, y->pointer.base_type);
+      return type_equivalent (x->pointer.base_type, y->pointer.base_type);;
 
     case TypePort:
       unimplemented;
@@ -1079,6 +1096,7 @@ type_convertible (const type_t * to, const type_t * from)
     {
     case TypeUndefined:
       unimplemented;
+
     case TypeVoid:
       unimplemented;
 
@@ -1089,6 +1107,9 @@ type_convertible (const type_t * to, const type_t * from)
     case TypeComponent:
       unimplemented;
 
+    case TypeImmutable:
+      unimplemented;
+
     case TypePointer:
       // Converting to a pointer.
       if (from->kind == UntypedNil)
@@ -1097,28 +1118,17 @@ type_convertible (const type_t * to, const type_t * from)
         }
       if (from->kind == TypePointer)
         {
-          switch (to->pointer.kind)
+          // Converting from a pointer.
+          if (type_equivalent (to->pointer.base_type, from->pointer.base_type))
             {
-            case PointerToMutable:
-              switch (from->pointer.kind)
-                {
-                case PointerToMutable:
-                  // From mutable to mutable.
-                  return type_equivalent (to->pointer.base_type, from->pointer.base_type);
-                case PointerToImmutable:
-                  unimplemented;
-                }
-
-            case PointerToImmutable:
-              switch (from->pointer.kind)
-                {
-                case PointerToMutable:
-                  unimplemented;
-                case PointerToImmutable:
-                  // From immutable to immutable.
-                  return type_equivalent (to->pointer.base_type, from->pointer.base_type);
-                }
+              return true;
             }
+          // Maybe to is immutable.
+          if (type_equivalent (to->pointer.base_type, type_make_immutable (from->pointer.base_type)))
+            {
+              return true;
+            }
+          return false;
         }
       break;
 
@@ -1164,7 +1174,7 @@ type_convertible (const type_t * to, const type_t * from)
 type_t *
 type_make_signature (void)
 {
-  type_t *t = make (TypeSignature);
+  type_t *t = make (&signature_vtable, TypeSignature);
   VECTOR_INIT (t->signature.parameters, parameter_t *, 0, NULL);
   return t;
 }
@@ -1228,6 +1238,9 @@ type_callable (const type_t * type)
       unimplemented;
     case TypeComponent:
       unimplemented;
+        case TypeImmutable:
+          unimplemented;
+
     case TypePointer:
       unimplemented;
     case TypePort:
@@ -1275,6 +1288,9 @@ bool type_called_with_receiver (const type_t * type)
       unimplemented;
     case TypeComponent:
       unimplemented;
+        case TypeImmutable:
+          unimplemented;
+
     case TypePointer:
       unimplemented;
     case TypePort:
@@ -1323,6 +1339,9 @@ type_parameter_count (const type_t * type)
       unimplemented;
     case TypeComponent:
       unimplemented;
+        case TypeImmutable:
+          unimplemented;
+
     case TypePointer:
       unimplemented;
     case TypePort:
@@ -1371,6 +1390,9 @@ type_parameter_type (const type_t * type, size_t idx)
       unimplemented;
     case TypeComponent:
       unimplemented;
+        case TypeImmutable:
+          unimplemented;
+
     case TypePointer:
       unimplemented;
     case TypePort:
@@ -1419,6 +1441,9 @@ type_return_type (const type_t * type)
       unimplemented;
     case TypeComponent:
       unimplemented;
+        case TypeImmutable:
+          unimplemented;
+
     case TypePointer:
       unimplemented;
     case TypePort:
@@ -1469,7 +1494,7 @@ type_is_signature (const type_t * type)
 type_t *
 type_make_reaction (type_t * signature)
 {
-  type_t *r = make (TypeReaction);
+  type_t *r = make (&reaction_vtable, TypeReaction);
   r->reaction.signature = signature;
   return r;
 }
@@ -1527,7 +1552,7 @@ type_signature_arity (const type_t * signature)
 type_t *type_make_getter (const type_t * signature,
                           type_t * return_type)
 {
-  type_t *r = make (TypeGetter);
+  type_t *r = make (&getter_vtable, TypeGetter);
   r->getter.signature = signature;
   r->getter.return_type = return_type;
   return r;
@@ -1644,6 +1669,9 @@ void type_print_value (const type_t* type,
     case TypeComponent:
       type_print_value (type->component.field_list, value);
       break;
+        case TypeImmutable:
+          unimplemented;
+
     case TypePointer:
     case TypePort:
       {
@@ -1697,13 +1725,13 @@ void type_print_value (const type_t* type,
 
 type_t* type_make_string (void)
 {
-  return make (TypeString);
+  return make (&string_vtable, TypeString);
 }
 
 type_t *
 type_make_uint (void)
 {
-  return make (TypeUint);
+  return make (&uint_vtable, TypeUint);
 }
 
 bool type_is_arithmetic (const type_t* type)
@@ -1718,6 +1746,8 @@ bool type_is_arithmetic (const type_t* type)
       unimplemented;
     case TypeComponent:
       unimplemented;
+        case TypeImmutable:
+          unimplemented;
     case TypePointer:
       unimplemented;
     case TypePort:
@@ -1757,29 +1787,29 @@ bool type_is_arithmetic (const type_t* type)
 type_t *
 type_make_struct (type_t * field_list)
 {
-  type_t *c = make (TypeStruct);
+  type_t *c = make (&struct_vtable, TypeStruct);
   c->struct_.field_list = field_list;
   return c;
 }
 
 type_t* type_make_untyped_nil (void)
 {
-  return make (UntypedNil);
+  return make (&untyped_nil_vtable, UntypedNil);
 }
 
 type_t* type_make_untyped_bool (void)
 {
-  return make (UntypedBool);
+  return make (&untyped_bool_vtable, UntypedBool);
 }
 
 type_t* type_make_untyped_string (void)
 {
-  return make (UntypedString);
+  return make (&untyped_string_vtable, UntypedString);
 }
 
 type_t* type_make_untyped_integer (void)
 {
-  return make (UntypedInteger);
+  return make (&untyped_integer_vtable, UntypedInteger);
 }
 
 bool type_is_untyped (const type_t* type)
@@ -1790,6 +1820,7 @@ bool type_is_untyped (const type_t* type)
     case TypeComponent:
     case TypeFieldList:
     case TypeGetter:
+    case TypeImmutable:
     case TypePointer:
     case TypePort:
     case TypeReaction:
@@ -1809,4 +1840,22 @@ bool type_is_untyped (const type_t* type)
       return true;
     }
   not_reached;
+}
+
+type_t* type_make_immutable (type_t* type)
+{
+  type_t* t = make (&immutable_vtable, TypeImmutable);
+  t->immutable.base_type = type;
+  return t;
+}
+
+bool type_is_immutable (const type_t* type)
+{
+  return type->kind == TypeImmutable;
+}
+
+type_t* type_immutable_base_type (const type_t* type)
+{
+  assert (type->kind == TypeImmutable);
+  return type->immutable.base_type;
 }
