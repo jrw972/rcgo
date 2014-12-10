@@ -1,17 +1,17 @@
 type Element struct
 {
   value uint;
-  next $Element;
+  next @Element;
 };
 
 type Channel component
 {
-  head $Element;
-  tail $$Element;
+  head @Element;
+  tail @@Element;
   receive port (message uint);
 };
 
-reaction (this $ imm Channel) send (message uint)
+reaction (this @$Channel) send (message uint)
 {
   trigger
   {
@@ -19,15 +19,15 @@ reaction (this $ imm Channel) send (message uint)
       {
         this.tail = this.head&;
       };
-    var e $Element;
+    var e @Element;
     e = new Element;
     e.value = message;
-    this.tail$ = e;
+    this.tail@ = e;
     this.tail = e.next&;
   };
 }
 
-action (this $ imm Channel) (this.head != nil)
+action (this @$Channel) (this.head != nil)
 {
   trigger receive (this.head.value)
     {
@@ -46,7 +46,7 @@ type System component
   send port (message uint);
 };
 
-action (this $ imm System) (this.send_count != 10)
+action (this @$System) (this.send_count != 10)
 {
   trigger send (this.send_count)
   {
@@ -55,12 +55,12 @@ action (this $ imm System) (this.send_count != 10)
   };
 }
 
-reaction (this $ imm System) receive (message uint)
+reaction (this @$System) receive (message uint)
 {
   println `Received `, message;
 }
 
-bind (this $System) {
+bind (this @System) {
   this.send -> this.channel.send;
   this.channel.receive -> this.receive;
 }

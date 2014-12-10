@@ -755,7 +755,7 @@ check_lvalue (ast_t ** ptr, binding_t* binding, bool output)
 
         typed_value_t selected_tv = typed_value_select (tv, identifier);
 
-	ast_set_type (node, selected_tv, ast_get_immutable (*left),
+	ast_set_type (node, selected_tv, ast_get_derived_from_immutable (*left),
 		      ast_get_derived_from_receiver (*left));
 
         if (binding != NULL)
@@ -950,7 +950,7 @@ check_rvalue (ast_t ** ptr, binding_t* binding, bool output)
         check_lvalue (expr, binding, output);
         typed_value_t expr_tv = ast_get_typed_value (*expr);
         type_t* type;
-        if (ast_get_immutable (*expr))
+        if (ast_get_derived_from_immutable (*expr))
           {
             type = type_make_pointer (type_make_immutable (expr_tv.type));
           }
@@ -1051,7 +1051,7 @@ check_rvalue (ast_t ** ptr, binding_t* binding, bool output)
 	  }
         tv = typed_value_logic_not (tv);
         ast_set_type (node, tv,
-                      ast_get_immutable (*child),
+                      ast_get_derived_from_immutable (*child),
                       ast_get_derived_from_receiver (*child));
       }
       break;
@@ -1111,6 +1111,24 @@ check_rvalue (ast_t ** ptr, binding_t* binding, bool output)
     case AstTypedLiteral:
       // Do nothing.
       break;
+    }
+
+  if (ast_expression_kind (node) != AstExprList)
+    {
+      if (ast_get_derived_from_immutable (node))
+        {
+          typed_value_t tv = ast_get_typed_value (node);
+          if (type_is_pointer (tv.type))
+            {
+              type_t* base_type = type_pointer_base_type (tv.type);
+              if (!type_is_immutable (base_type))
+                {
+                  // Make the pointer immutable to avoid an immutability leak.
+                  tv.type = type_make_pointer (type_make_immutable (base_type));
+                  ast_set_typed_value (node, tv);
+                }
+            }
+        }
     }
 }
 
@@ -1195,7 +1213,7 @@ static void
 check_assignment_target (ast_t** left, ast_t* node)
 {
   check_lvalue (left, NULL, false);
-  if (ast_get_immutable (*left))
+  if (ast_get_derived_from_immutable (*left))
     {
       error_at_line (-1, 0, ast_file (node), ast_line (node),
                      "cannot assign to read-only location");
@@ -1224,12 +1242,20 @@ check_statement (ast_t * node)
 	check_rvalue (right, NULL, false);
 	typed_value_t left_type = ast_get_typed_value (*left);
         typed_value_t right_type = ast_get_typed_value (*right);
+
         if (!typed_value_convertible (left_type, right_type))
           {
 	    error_at_line (-1, 0, ast_file (node), ast_line (node),
 			   "cannot convert %s to %s in assignment", type_to_string (right_type.type), type_to_string (left_type.type));
-
           }
+
+        if (ast_get_derived_from_immutable (*right) &&
+            type_leaks_mutable_pointers (left_type.type))
+          {
+	    error_at_line (-1, 0, ast_file (node), ast_line (node),
+			   "assignment leaks mutable pointer");
+          }
+
         // Convert the rvalue since we must compute it.
         convert_if_untyped (left_type, *right);
       }

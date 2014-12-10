@@ -12,6 +12,9 @@
 typedef struct {
   type_t * (*select) (const type_t * type, string_t identifier);
   field_t * (*select_field) (const type_t * type, string_t identifier);
+  bool (*leaks_mutable_pointers) (const type_t * type);
+  size_t (*alignment) (const type_t * type);
+  size_t (*size) (const type_t* type);
 } vtable_t;
 
 static type_t* no_select (const type_t* type, string_t identifier)
@@ -20,6 +23,21 @@ static type_t* no_select (const type_t* type, string_t identifier)
 }
 
 static field_t* no_select_field (const type_t* type, string_t identifier)
+{
+  unimplemented;
+}
+
+static bool does_not_leak_mutable_pointers (const type_t* type)
+{
+  return false;
+}
+
+static size_t no_alignment (const type_t* type)
+{
+  unimplemented;
+}
+
+static size_t no_size (const type_t* type)
 {
   unimplemented;
 }
@@ -78,7 +96,23 @@ struct type_t
   };
 };
 
-static vtable_t bool_vtable = { no_select, no_select_field };
+static size_t
+type_alignment (const type_t * type)
+{
+  return type->vtable->alignment (type);
+}
+
+static size_t bool_alignment (const type_t* type)
+{
+  return 1;
+}
+
+static size_t bool_size (const type_t* type)
+{
+  return 1;
+}
+
+static vtable_t bool_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, bool_alignment, bool_size };
 
 static type_t* component_select (const type_t* type, string_t identifier)
 {
@@ -116,7 +150,22 @@ static field_t* component_select_field (const type_t* type, string_t identifier)
   return type_select_field (type->component.field_list, identifier);
 }
 
-static vtable_t component_vtable = { component_select, component_select_field };
+static bool component_leaks_mutable_pointers (const type_t* type)
+{
+  return type_leaks_mutable_pointers (type->component.field_list);
+}
+
+static size_t component_alignment (const type_t* type)
+{
+  return type_alignment (type->component.field_list);
+}
+
+static size_t component_size (const type_t* type)
+{
+  return type_size (type->component.field_list);
+}
+
+static vtable_t component_vtable = { component_select, component_select_field, component_leaks_mutable_pointers, component_alignment, component_size };
 
 static type_t* field_list_select (const type_t* type, string_t identifier)
 {
@@ -136,9 +185,33 @@ static field_t* field_list_select_field (const type_t* type, string_t identifier
   return type_field_list_find (type, identifier);
 }
 
-static vtable_t field_list_vtable = { field_list_select, field_list_select_field };
+static bool field_list_leaks_mutable_pointers (const type_t* type)
+{
+  VECTOR_FOREACH (pos, limit, type->field_list.fields, field_t*)
+    {
+      field_t* field = *pos;
+      if (type_leaks_mutable_pointers (field_type (field)))
+        {
+          return true;
+        }
+    }
 
-static vtable_t getter_vtable = { no_select, no_select_field };
+  return false;
+}
+
+static size_t field_list_alignment (const type_t* type)
+{
+  return type->field_list.alignment;
+}
+
+static size_t field_list_size (const type_t* type)
+{
+  return type->field_list.offset;
+}
+
+static vtable_t field_list_vtable = { field_list_select, field_list_select_field, field_list_leaks_mutable_pointers, field_list_alignment, field_list_size };
+
+static vtable_t getter_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
 
 static type_t* immutable_select (const type_t* type, string_t identifier)
 {
@@ -150,17 +223,53 @@ static field_t* immutable_select_field (const type_t* type, string_t identifier)
   return type_select_field (type->immutable.base_type, identifier);
 }
 
-static vtable_t immutable_vtable = { immutable_select, immutable_select_field };
+static size_t immutable_alignment (const type_t* type)
+{
+  return type_alignment (type->immutable.base_type);
+}
 
-static vtable_t pointer_vtable = { no_select, no_select_field };
+static size_t immutable_size (const type_t* type)
+{
+  return type_size (type->immutable.base_type);
+}
 
-static vtable_t port_vtable = { no_select, no_select_field };
+// Does not leak mutable pointers by definition.
+static vtable_t immutable_vtable = { immutable_select, immutable_select_field, does_not_leak_mutable_pointers, immutable_alignment, immutable_size };
 
-static vtable_t reaction_vtable = { no_select, no_select_field };
+static bool pointer_leaks_mutable_pointers (const type_t* type)
+{
+  return !type_is_immutable (type->pointer.base_type);
+}
 
-static vtable_t signature_vtable = { no_select, no_select_field };
+static size_t pointer_alignment (const type_t* type)
+{
+  return sizeof (void*);
+}
 
-static vtable_t string_vtable = { no_select, no_select_field };
+static size_t pointer_size (const type_t* type)
+{
+  return sizeof (void*);
+}
+
+static vtable_t pointer_vtable = { no_select, no_select_field, pointer_leaks_mutable_pointers, pointer_alignment, pointer_size };
+
+static size_t port_alignment (const type_t* type)
+{
+  return sizeof (void*);
+}
+
+static size_t port_size (const type_t* type)
+{
+  return sizeof (void*);
+}
+
+static vtable_t port_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, port_alignment, port_size };
+
+static vtable_t reaction_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+
+static vtable_t signature_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+
+static vtable_t string_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
 
 static type_t* struct_select (const type_t* type, string_t identifier)
 {
@@ -172,21 +281,46 @@ static field_t* struct_select_field (const type_t* type, string_t identifier)
   return type_select_field (type->struct_.field_list, identifier);
 }
 
-static vtable_t struct_vtable = { struct_select, struct_select_field };
+static bool struct_leaks_mutable_pointers (const type_t* type)
+{
+  return type_leaks_mutable_pointers (type->struct_.field_list);
+}
 
-static vtable_t undefined_vtable = { no_select, no_select_field };
+static size_t struct_alignment (const type_t* type)
+{
+  return type_alignment (type->struct_.field_list);
+}
 
-static vtable_t uint_vtable = { no_select, no_select_field };
+static size_t struct_size (const type_t* type)
+{
+  return type_size (type->struct_.field_list);
+}
 
-static vtable_t void_vtable = { no_select, no_select_field };
+static vtable_t struct_vtable = { struct_select, struct_select_field, struct_leaks_mutable_pointers, struct_alignment, struct_size };
 
-static vtable_t untyped_bool_vtable = { no_select, no_select_field };
+static vtable_t undefined_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
 
-static vtable_t untyped_integer_vtable = { no_select, no_select_field };
+static size_t uint_alignment (const type_t* type)
+{
+  return sizeof (void*);
+}
 
-static vtable_t untyped_nil_vtable = { no_select, no_select_field };
+static size_t uint_size (const type_t* type)
+{
+  return sizeof (void*);
+}
 
-static vtable_t untyped_string_vtable = { no_select, no_select_field };
+static vtable_t uint_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, uint_alignment, uint_size };
+
+static vtable_t void_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+
+static vtable_t untyped_bool_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+
+static vtable_t untyped_integer_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+
+static vtable_t untyped_nil_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+
+static vtable_t untyped_string_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
 
 // TODO:  Replace functions with interface.
 
@@ -232,13 +366,17 @@ type_to_string (const type_t * type)
 	  unimplemented;
 	case TypeComponent:
 	  unimplemented;
-        case TypeImmutable:
-          unimplemented;
 
+        case TypeImmutable:
+	  {
+	    char *str;
+	    asprintf (&str, "$%s", type_to_string (type->immutable.base_type));
+	    return str;
+	  }
 	case TypePointer:
 	  {
 	    char *str;
-	    asprintf (&str, "$%s", type_to_string (type->pointer.base_type));
+	    asprintf (&str, "@%s", type_to_string (type->pointer.base_type));
 	    return str;
 	  }
 	case TypePort:
@@ -373,54 +511,7 @@ type_move (type_t * to, type_t * from)
 size_t
 type_size (const type_t * type)
 {
-  switch (type->kind)
-    {
-    case TypeUndefined:
-      unimplemented;
-    case TypeVoid:
-      unimplemented;
-    case TypeBool:
-      return 1;
-    case TypeComponent:
-      return type_size (type->component.field_list);
-        case TypeImmutable:
-          unimplemented;
-
-    case TypePointer:
-      return 8;
-    case TypePort:
-      return 8;
-    case TypeReaction:
-      unimplemented;
-    case TypeFieldList:
-      return type->field_list.offset;
-    case TypeSignature:
-      unimplemented;
-    case TypeString:
-      unimplemented;
-    case TypeGetter:
-      unimplemented;
-    case TypeUint:
-      return 8;
-
-    case TypeStruct:
-      return type_size (type->struct_.field_list);
-
-    case UntypedUndefined:
-      unimplemented;
-    case UntypedNil:
-      unimplemented;
-
-    case UntypedBool:
-      unimplemented;
-    case UntypedInteger:
-      unimplemented;
-    case UntypedString:
-      unimplemented;
-
-    }
-
-  not_reached;
+  return type->vtable->size (type);
 }
 
 static type_t *
@@ -560,7 +651,7 @@ type_make_component (type_t * field_list)
 {
   type_t *c = make (&component_vtable, TypeComponent);
   /* Prepend the field list with a pointer for the runtime. */
-  type_field_list_prepend (field_list, enter ("0"), type_make_pointer (make_void ()));
+  type_field_list_prepend (field_list, enter ("0"), type_make_immutable (type_make_pointer (make_void ())));
   c->component.field_list = field_list;
   VECTOR_INIT (c->component.actions, action_t *, 0, NULL);
   VECTOR_INIT (c->component.reactions, action_t *, 0, NULL);
@@ -631,57 +722,6 @@ getter_t *type_component_add_getter (type_t * component_type,
                  identifier, signature, return_type);
   VECTOR_PUSH (component_type->component.getters, getter_t*, g);
   return g;
-}
-
-static size_t
-type_alignment (const type_t * type)
-{
-  switch (type->kind)
-    {
-    case TypeUndefined:
-      unimplemented;
-    case TypeVoid:
-      unimplemented;
-    case TypeBool:
-      return 1;
-    case TypeComponent:
-      return type_alignment (type->component.field_list);
-        case TypeImmutable:
-          unimplemented;
-
-    case TypePointer:
-      return 8;
-    case TypePort:
-      return 8;
-    case TypeReaction:
-      unimplemented;
-    case TypeFieldList:
-      return type->field_list.alignment;
-    case TypeSignature:
-      unimplemented;
-    case TypeString:
-      unimplemented;
-    case TypeGetter:
-      unimplemented;
-    case TypeUint:
-      return 8;
-    case TypeStruct:
-      unimplemented;
-
-    case UntypedUndefined:
-      unimplemented;
-    case UntypedNil:
-      unimplemented;
-
-    case UntypedBool:
-      unimplemented;
-    case UntypedInteger:
-      unimplemented;
-    case UntypedString:
-      unimplemented;
-
-    }
-  not_reached;
 }
 
 TypeKind
@@ -1858,4 +1898,9 @@ type_t* type_immutable_base_type (const type_t* type)
 {
   assert (type->kind == TypeImmutable);
   return type->immutable.base_type;
+}
+
+bool type_leaks_mutable_pointers (const type_t* type)
+{
+  return type->vtable->leaks_mutable_pointers (type);
 }

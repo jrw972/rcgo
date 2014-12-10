@@ -18,7 +18,6 @@
 "else"                 { return ELSE; }
 "getter"               { return GETTER; }
 "if"                   { return IF; }
-"imm"                  { return IMM; }
 "instance"             { return INSTANCE; }
 "new"                  { return NEW; }
 "port"                 { return PORT; }
@@ -41,7 +40,7 @@
 "("|")"                { return *yytext; }
 "<"|">"                { return *yytext; }
 "!"|";"|","|"="        { return *yytext; }
-"$"|"."|"&"            { return *yytext; }
+"$"|"@"|"."|"&"        { return *yytext; }
 
 [_a-zA-Z][_a-zA-Z0-9]* { yylval.identifier = enter (yytext);
                          return IDENTIFIER; }

@@ -264,10 +264,10 @@ void ast_set_typed_value (ast_t* node, typed_value_t value);
 
 typed_value_t ast_get_typed_value (const ast_t* node);
 
-void ast_set_type (ast_t * node, typed_value_t typed_value, bool immutable,
+void ast_set_type (ast_t * node, typed_value_t typed_value, bool derived_from_immutable,
 		   bool derived_from_receiver);
 
-bool ast_get_immutable (const ast_t * node);
+bool ast_get_derived_from_immutable (const ast_t * node);
 
 bool ast_get_derived_from_receiver (const ast_t * node);
 

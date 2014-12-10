@@ -1,0 +1,13 @@
+type S struct {
+  ptr @bool;
+};
+
+type C component {
+  s S;
+};
+
+action (this @$C) (true) {
+  // Try to get a mutable pointer to s.
+  var x @S;
+  x = this.s&;
+}

@@ -211,4 +211,6 @@ bool type_is_immutable (const type_t* type);
 
 type_t* type_immutable_base_type (const type_t* type);
 
+bool type_leaks_mutable_pointers (const type_t* type);
+
 #endif /* type_h */

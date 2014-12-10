@@ -57,7 +57,7 @@
 %type <node> var_stmt
 %destructor { /* TODO:  Free the node. node_free ($$); */ } <node>
 
-%token ACTION BIND COMPONENT ELSE GETTER IF IMM INSTANCE NEW PORT PRINTLN REACTION RETURN STRUCT TRIGGER TYPE VAR
+%token ACTION BIND COMPONENT ELSE GETTER IF INSTANCE NEW PORT PRINTLN REACTION RETURN STRUCT TRIGGER TYPE VAR
 
 %token ARROW EQUAL INCREMENT LOGIC_AND LOGIC_OR NOT_EQUAL
 
@@ -98,9 +98,9 @@ parameter: identifier_list type_spec { $$ = ast_make_identifier_list_type_spec (
 optional_semicolon: /* Empty. */
 | ';'
 
-pointer_receiver: '(' identifier '$' identifier ')' { $$ = ast_make_pointer_receiver ($2, $4); }
+pointer_receiver: '(' identifier '@' identifier ')' { $$ = ast_make_pointer_receiver ($2, $4); }
 
-pointer_to_imm_receiver: '(' identifier '$' IMM identifier ')' { $$ = ast_make_pointer_receiver ($2, $5); }
+pointer_to_imm_receiver: '(' identifier '@' '$' identifier ')' { $$ = ast_make_pointer_receiver ($2, $5); }
 
 bind_stmt_list: '{' bind_inner_stmt_list '}' { $$ = $2; }
 
@@ -178,7 +178,7 @@ type_spec: identifier { $$ = ast_make_identifier_type_spec ($1); }
 | COMPONENT '{' field_list '}' { $$ = ast_make_component_type_spec ($3); }
 | STRUCT '{' field_list '}' { $$ = ast_make_struct_type_spec ($3); }
 | PORT signature { $$ = ast_make_port ($2); }
-| '$' type_spec { $$ = ast_make_pointer_type_spec ($2); }
+| '@' type_spec { $$ = ast_make_pointer_type_spec ($2); }
 
 field_list: /* empty */ { $$ = ast_make_field_list (); }
 | field_list identifier_list type_spec ';' { $$ = ast_append_child ($1, ast_make_identifier_list_type_spec ($2, $3)); }
@@ -206,6 +206,6 @@ primary_expr: lvalue { $$ = $1; }
 
 lvalue: identifier { $$ = ast_make_identifier_expr ($1); }
 | lvalue '.' identifier { $$ = ast_make_select ($1, $3); }
-| unary_expr '$' { $$ = ast_make_dereference ($1); }
+| unary_expr '@' { $$ = ast_make_dereference ($1); }
 
 %%

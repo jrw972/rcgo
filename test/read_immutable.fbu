@@ -1,0 +1,8 @@
+type C component {
+  flag bool;
+};
+
+action (this @$C) (true) {
+  var x bool;
+  x = this.flag;
+}

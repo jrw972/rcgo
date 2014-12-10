@@ -2,10 +2,10 @@ type HelloWorld component {
   flag bool;
 };
 
-action (this $ imm HelloWorld) (this$.flag!) {
+action (this @$HelloWorld) (this.flag!) {
   trigger {
     println `Hello, world!`;
-    this$.flag = true;
+    this.flag = true;
   };
 }
 

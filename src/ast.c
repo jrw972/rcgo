@@ -28,7 +28,7 @@ struct ast_t
     {
       AstExpressionKind kind;
       typed_value_t typed_value;
-      bool immutable;
+      bool derived_from_immutable;
       bool derived_from_receiver;
     } expression;
     struct
@@ -117,7 +117,7 @@ ast_print (const ast_t * node, size_t indent)
 	}
       if (node->expression.typed_value.type != NULL)
         {
-          printf ("type=%s has_value=%d immutable=%d derived_from_receiver=%d", type_to_string (node->expression.typed_value.type), node->expression.typed_value.has_value, node->expression.immutable, node->expression.derived_from_receiver);
+          printf ("type=%s has_value=%d derived_from_immutable=%d derived_from_receiver=%d", type_to_string (node->expression.typed_value.type), node->expression.typed_value.has_value, node->expression.derived_from_immutable, node->expression.derived_from_receiver);
         }
       break;
     case AstGetter:
@@ -715,22 +715,22 @@ typed_value_t ast_get_typed_value (const ast_t* node)
 }
 
 void
-ast_set_type (ast_t * node, typed_value_t typed_value, bool immutable,
+ast_set_type (ast_t * node, typed_value_t typed_value, bool derived_from_immutable,
 	      bool derived_from_receiver)
 {
   assert (node->kind == AstExpression);
   assert (node->expression.kind != AstTypedLiteral);
   node->expression.typed_value = typed_value;
-  node->expression.immutable = immutable;
+  node->expression.derived_from_immutable = derived_from_immutable;
   node->expression.derived_from_receiver = derived_from_receiver;
 }
 
 bool
-ast_get_immutable (const ast_t * node)
+ast_get_derived_from_immutable (const ast_t * node)
 {
   assert (node->kind == AstExpression);
   assert (node->expression.kind != AstTypedLiteral);
-  return node->expression.immutable;
+  return node->expression.derived_from_immutable;
 }
 
 bool
