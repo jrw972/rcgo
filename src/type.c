@@ -7,7 +7,7 @@
 #include "action.h"
 #include "parameter.h"
 #include "field.h"
-#include "getter.h"
+#include "func.h"
 
 typedef struct {
   type_t * (*select) (const type_t * type, string_t identifier);
@@ -56,7 +56,7 @@ struct type_t
       VECTOR_DECL (actions, action_t *);
       VECTOR_DECL (reactions, action_t *);
       VECTOR_DECL (bindings, binding_t *);
-      VECTOR_DECL (getters, getter_t *);
+      VECTOR_DECL (funcs, func_t *);
     } component;
     struct
     {
@@ -68,7 +68,7 @@ struct type_t
     {
       const type_t *signature;
       type_t *return_type;
-    } getter;
+    } func;
     struct
     {
       type_t *base_type;
@@ -133,11 +133,11 @@ static type_t* component_select (const type_t* type, string_t identifier)
   }
 
   {
-    VECTOR_FOREACH (ptr, limit, type->component.getters, getter_t *)
+    VECTOR_FOREACH (ptr, limit, type->component.funcs, func_t *)
       {
-        if (streq (identifier, getter_name (*ptr)))
+        if (streq (identifier, func_name (*ptr)))
           {
-            return getter_type (*ptr);
+            return func_type (*ptr);
           }
       }
   }
@@ -211,7 +211,7 @@ static size_t field_list_size (const type_t* type)
 
 static vtable_t field_list_vtable = { field_list_select, field_list_select_field, field_list_leaks_mutable_pointers, field_list_alignment, field_list_size };
 
-static vtable_t getter_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+static vtable_t func_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
 
 static type_t* immutable_select (const type_t* type, string_t identifier)
 {
@@ -414,10 +414,10 @@ type_to_string (const type_t * type)
           }
         case TypeString:
           unimplemented;
-        case TypeGetter:
+        case TypeFunc:
           {
             char *str;
-            asprintf (&str, "getter %s %s", type_to_string (type->getter.signature), type_to_string (type->getter.return_type));
+            asprintf (&str, "func %s %s", type_to_string (type->func.signature), type_to_string (type->func.return_type));
             return str;
           }
         case TypeUint:
@@ -483,7 +483,7 @@ type_move (type_t * to, type_t * from)
       unimplemented;
     case TypeString:
       unimplemented;
-    case TypeGetter:
+    case TypeFunc:
       unimplemented;
     case TypeUint:
       unimplemented;
@@ -553,7 +553,7 @@ duplicate (const type_t * type)
       unimplemented;
     case TypeString:
       unimplemented;
-    case TypeGetter:
+    case TypeFunc:
       unimplemented;
     case TypeUint:
       unimplemented;
@@ -709,18 +709,18 @@ type_component_add_reaction (type_t * component_type, ast_t* node, string_t iden
   return r;
 }
 
-getter_t *type_component_add_getter (type_t * component_type,
+func_t *type_component_add_func (type_t * component_type,
                                      ast_t* node,
                                      string_t identifier,
                                      type_t * signature,
                                      type_t * return_type)
 {
   assert (type_is_component (component_type));
-  getter_t *g =
-    getter_make (component_type,
+  func_t *g =
+    func_make (component_type,
                  node,
                  identifier, signature, return_type);
-  VECTOR_PUSH (component_type->component.getters, getter_t*, g);
+  VECTOR_PUSH (component_type->component.funcs, func_t*, g);
   return g;
 }
 
@@ -755,7 +755,7 @@ type_kind (const type_t * type)
 /*       unimplemented; */
 /*     case TypeString: */
 /*       return u.kind == UntypedString; */
-/*     case TypeGetter: */
+/*     case TypeFunc: */
 /*       unimplemented; */
 /*     case TypeUint: */
 /*       // TODO:  This will need to change if we expand the range of untyped integers. */
@@ -824,15 +824,15 @@ type_component_get_reaction (const type_t * component_type,
   return NULL;
 }
 
-getter_t *type_component_get_getter (const type_t * component_type,
+func_t *type_component_get_func (const type_t * component_type,
                                      string_t identifier)
 {
   assert (component_type->kind == TypeComponent);
 
-  VECTOR_FOREACH (pos, limit, component_type->component.getters, getter_t *)
+  VECTOR_FOREACH (pos, limit, component_type->component.funcs, func_t *)
     {
-      getter_t *a = *pos;
-      if (streq (getter_name (a), identifier))
+      func_t *a = *pos;
+      if (streq (func_name (a), identifier))
         {
           return a;
         }
@@ -939,7 +939,7 @@ type_return_value (const type_t * type)
     case TypeSignature:
     case TypeString:
       return false;
-    case TypeGetter:
+    case TypeFunc:
       unimplemented;
     case TypeUint:
       unimplemented;
@@ -1082,7 +1082,7 @@ type_equivalent (const type_t * x, const type_t* y)
       unimplemented;
     case TypeFieldList:
       unimplemented;
-    case TypeGetter:
+    case TypeFunc:
       unimplemented;
 
     case TypeImmutable:
@@ -1182,7 +1182,7 @@ type_convertible (const type_t * to, const type_t * from)
       unimplemented;
     case TypeString:
       unimplemented;
-    case TypeGetter:
+    case TypeFunc:
       unimplemented;
 
     case TypeUint:
@@ -1293,7 +1293,7 @@ type_callable (const type_t * type)
       unimplemented;
     case TypeString:
       unimplemented;
-    case TypeGetter:
+    case TypeFunc:
       return true;
     case TypeUint:
       unimplemented;
@@ -1343,7 +1343,7 @@ bool type_called_with_receiver (const type_t * type)
       unimplemented;
     case TypeString:
       unimplemented;
-    case TypeGetter:
+    case TypeFunc:
       return true;
     case TypeUint:
       unimplemented;
@@ -1394,8 +1394,8 @@ type_parameter_count (const type_t * type)
       return VECTOR_SIZE (type->signature.parameters);
     case TypeString:
       unimplemented;
-    case TypeGetter:
-      return type_parameter_count (type->getter.signature);
+    case TypeFunc:
+      return type_parameter_count (type->func.signature);
     case TypeUint:
       unimplemented;
     case TypeStruct:
@@ -1445,8 +1445,8 @@ type_parameter_type (const type_t * type, size_t idx)
       return parameter_type (VECTOR_AT (type->signature.parameters, idx));
     case TypeString:
       unimplemented;
-    case TypeGetter:
-      return type_parameter_type (type->getter.signature, idx);
+    case TypeFunc:
+      return type_parameter_type (type->func.signature, idx);
     case TypeUint:
       unimplemented;
     case TypeStruct:
@@ -1496,8 +1496,8 @@ type_return_type (const type_t * type)
       unimplemented;
     case TypeString:
       unimplemented;
-    case TypeGetter:
-      return type->getter.return_type;
+    case TypeFunc:
+      return type->func.return_type;
     case TypeUint:
       unimplemented;
     case TypeStruct:
@@ -1589,25 +1589,25 @@ type_signature_arity (const type_t * signature)
   return VECTOR_SIZE (signature->signature.parameters);
 }
 
-type_t *type_make_getter (const type_t * signature,
+type_t *type_make_func (const type_t * signature,
                           type_t * return_type)
 {
-  type_t *r = make (&getter_vtable, TypeGetter);
-  r->getter.signature = signature;
-  r->getter.return_type = return_type;
+  type_t *r = make (&func_vtable, TypeFunc);
+  r->func.signature = signature;
+  r->func.return_type = return_type;
   return r;
 }
 
-const type_t *type_getter_signature (const type_t * getter)
+const type_t *type_func_signature (const type_t * func)
 {
-  assert (getter->kind == TypeGetter);
-  return getter->getter.signature;
+  assert (func->kind == TypeFunc);
+  return func->func.signature;
 }
 
-type_t *type_getter_return_type (const type_t * getter)
+type_t *type_func_return_type (const type_t * func)
 {
-  assert (getter->kind == TypeGetter);
-  return getter->getter.return_type;
+  assert (func->kind == TypeFunc);
+  return func->func.return_type;
 }
 
 field_t **
@@ -1738,7 +1738,7 @@ void type_print_value (const type_t* type,
       unimplemented;
     case TypeString:
       unimplemented;
-    case TypeGetter:
+    case TypeFunc:
       unimplemented;
 
     case TypeUint:
@@ -1800,7 +1800,7 @@ bool type_is_arithmetic (const type_t* type)
       unimplemented;
     case TypeString:
       unimplemented;
-    case TypeGetter:
+    case TypeFunc:
       unimplemented;
     case TypeUint:
       return true;
@@ -1859,7 +1859,7 @@ bool type_is_untyped (const type_t* type)
     case TypeBool:
     case TypeComponent:
     case TypeFieldList:
-    case TypeGetter:
+    case TypeFunc:
     case TypeImmutable:
     case TypePointer:
     case TypePort:

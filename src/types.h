@@ -10,7 +10,7 @@ typedef struct ast_t ast_t;
 typedef struct binding_t binding_t;
 typedef struct concrete_binding_t concrete_binding_t;
 typedef struct field_t field_t;
-typedef struct getter_t getter_t;
+typedef struct func_t func_t;
 typedef struct heap_t heap_t;
 typedef struct instance_t instance_t;
 typedef struct instance_set_t instance_set_t;

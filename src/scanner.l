@@ -16,7 +16,7 @@
 "bind"                 { return BIND; }
 "component"            { return COMPONENT; }
 "else"                 { return ELSE; }
-"getter"               { return GETTER; }
+"func"                 { return FUNC; }
 "if"                   { return IF; }
 "instance"             { return INSTANCE; }
 "new"                  { return NEW; }

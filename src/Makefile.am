@@ -9,7 +9,7 @@ ast.h ast.c \
 binding.h binding.c \
 debug.h debug.c \
 field.h field.c \
-getter.h getter.c \
+func.h func.c \
 heap.h heap.c \
 instance.h instance.c \
 instance_set.h instance_set.c \

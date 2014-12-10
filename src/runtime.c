@@ -10,7 +10,7 @@
 #include "stack_frame.h"
 #include "symbol.h"
 #include "trigger.h"
-#include "getter.h"
+#include "func.h"
 #include "semantic.h"
 #include "heap.h"
 
@@ -205,10 +205,10 @@ evaluate_lvalue (runtime_t* runtime,
         typed_value_t selected_type = ast_get_typed_value (expr);
 	typed_value_t type = ast_get_typed_value (left);
 
-        if (type_kind (selected_type.type) == TypeGetter)
+        if (type_kind (selected_type.type) == TypeFunc)
           {
-            getter_t* getter = type_component_get_getter (type.type, identifier);
-            stack_frame_push_pointer (runtime->stack, getter_node (getter));
+            func_t* func = type_component_get_func (type.type, identifier);
+            stack_frame_push_pointer (runtime->stack, func_node (func));
             break;
           }
 
@@ -253,11 +253,11 @@ call (runtime_t* runtime)
       unimplemented;
     case AstExpression:
       unimplemented;
-    case AstGetter:
+    case AstFunc:
       {
-        getter_t* getter = get_current_getter (node);
-        stack_frame_push_base_pointer (runtime->stack, getter_get_locals_size (getter));
-        evaluate_statement (runtime, ast_get_child (node, GETTER_BODY));
+        func_t* func = get_current_func (node);
+        stack_frame_push_base_pointer (runtime->stack, func_get_locals_size (func));
+        evaluate_statement (runtime, ast_get_child (node, FUNC_BODY));
         stack_frame_pop_base_pointer (runtime->stack);
       }
       break;
@@ -316,8 +316,8 @@ evaluate_rvalue (runtime_t* runtime,
         case TypeString:
           stack_frame_push_string (runtime->stack, tv.string_value);
           break;
-        case TypeGetter:
-          stack_frame_push_pointer (runtime->stack, getter_node (tv.getter_value));
+        case TypeFunc:
+          stack_frame_push_pointer (runtime->stack, func_node (tv.func_value));
           break;
         case TypeUint:
           stack_frame_push_uint (runtime->stack, tv.uint_value);
@@ -579,7 +579,7 @@ evaluate_statement (runtime_t* runtime,
             unimplemented;
           case TypeString:
             unimplemented;
-          case TypeGetter:
+          case TypeFunc:
             unimplemented;
           case TypeUint:
             *((uint64_t*)ptr) += stack_frame_pop_uint (runtime->stack);
@@ -700,7 +700,7 @@ evaluate_statement (runtime_t* runtime,
                 fwrite (s.bytes, 1, s.size, stdout);
               }
               break;
-            case TypeGetter:
+            case TypeFunc:
               unimplemented;
             case TypeUint:
               {

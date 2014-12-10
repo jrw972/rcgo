@@ -12,7 +12,7 @@ action (this @$Counter) (true) {
   };
 }
 
-getter (this @$Counter) Counter () uint {
+func (this @$Counter) Counter () uint {
   return this.counter;
 }
 

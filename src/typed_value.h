@@ -17,7 +17,7 @@ struct typed_value_t
     bool bool_value; /* For bools and untyped bools. */
     uint64_t uint_value;
     rtstring_t string_value;
-    getter_t* getter_value;
+    func_t* func_value;
     int64_t integer_value;
     void* pointer_value;
   };
@@ -33,7 +33,7 @@ typed_value_t typed_value_make_string (type_t* type, rtstring_t s);
 
 typed_value_t typed_value_make_integer (int64_t i);
 
-typed_value_t typed_value_make_getter (getter_t* getter);
+typed_value_t typed_value_make_func (func_t* func);
 
 typed_value_t typed_value_make_nil (void);
 

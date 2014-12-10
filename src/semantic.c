@@ -12,7 +12,7 @@
 #include "binding.h"
 #include "symbol.h"
 #include "memory_model.h"
-#include "getter.h"
+#include "func.h"
 
 // TODO:  Replace interacting with type_t* with typed_value_t.
 
@@ -28,7 +28,7 @@ construct_symbol_table (ast_t * node, symtab_t * symtab)
     {
     case AstAction:
     case AstBind:
-    case AstGetter:
+    case AstFunc:
     case AstReaction:
     case AstTopLevelList:
       {
@@ -176,7 +176,7 @@ enter_symbols_helper (ast_t * node)
     case AstAction:
     case AstBind:
     case AstBindStatement:
-    case AstGetter:
+    case AstFunc:
     case AstExpression:
     case AstIdentifier:
     case AstIdentifierList:
@@ -459,13 +459,13 @@ process_declarations (ast_t * node)
       unimplemented;
     case AstExpression:
       unimplemented;
-    case AstGetter:
+    case AstFunc:
       {
-	ast_t *receiver = ast_get_child (node, GETTER_RECEIVER);
+	ast_t *receiver = ast_get_child (node, FUNC_RECEIVER);
 	ast_t *type_node = ast_get_child (receiver, RECEIVER_TYPE_IDENTIFIER);
-	ast_t *signature_node = ast_get_child (node, GETTER_SIGNATURE);
-	ast_t *return_type_node = ast_get_child (node, GETTER_RETURN_TYPE);
-	ast_t *identifier_node = ast_get_child (node, GETTER_IDENTIFIER);
+	ast_t *signature_node = ast_get_child (node, FUNC_SIGNATURE);
+	ast_t *return_type_node = ast_get_child (node, FUNC_RETURN_TYPE);
+	ast_t *identifier_node = ast_get_child (node, FUNC_IDENTIFIER);
 	string_t identifier = ast_get_identifier (identifier_node);
 	string_t type_identifier = ast_get_identifier (type_node);
 	symbol_t *symbol = lookup_force (type_node, type_identifier);
@@ -501,8 +501,8 @@ process_declarations (ast_t * node)
         /* Process the return type. */
         type_t *return_type = process_type_spec (return_type_node, true);
 
-        getter_t* getter = type_component_add_getter (type, node, identifier, signature, return_type);
-	symtab_set_current_getter (ast_get_symtab (node), getter);
+        func_t* func = type_component_add_func (type, node, identifier, signature, return_type);
+	symtab_set_current_func (ast_get_symtab (node), func);
 	symtab_set_current_receiver_type (ast_get_symtab (node), type);
       }
       break;
@@ -857,19 +857,19 @@ get_current_action (const ast_t * node)
   return symtab_get_current_action (ast_get_symtab (node));
 }
 
-getter_t *
-get_current_getter (const ast_t * node)
+func_t *
+get_current_func (const ast_t * node)
 {
-  return symtab_get_current_getter (ast_get_symtab (node));
+  return symtab_get_current_func (ast_get_symtab (node));
 }
 
 static type_t *
 get_current_return_type (const ast_t * node)
 {
-  getter_t* g = get_current_getter (node);
+  func_t* g = get_current_func (node);
   if (g != NULL)
     {
-      return getter_return_type (g);
+      return func_return_type (g);
     }
 
   return NULL;
@@ -897,9 +897,9 @@ in_trigger_statement (const ast_t * node)
 static bool
 in_immutable_section (const ast_t* node)
 {
-  if (get_current_getter (node) != NULL)
+  if (get_current_func (node) != NULL)
     {
-      // Calling a getter in a getter is okay.
+      // Calling a func in a func is okay.
       return true;
     }
 
@@ -1002,16 +1002,16 @@ check_rvalue (ast_t ** ptr, binding_t* binding, bool output)
             typed_value_t select_tv = ast_get_typed_value (receiver_select_expr);
             string_t id = ast_get_identifier (ast_get_child (*expr, BINARY_RIGHT_CHILD));
 
-            if (type_kind (expr_tv.type) == TypeGetter)
+            if (type_kind (expr_tv.type) == TypeFunc)
               {
                 // Must be in immutable section.
                 if (!in_immutable_section (node))
                   {
                     error_at_line (-1, 0, ast_file (node), ast_line (node),
-                                   "getter called outside of immutable section");
+                                   "func called outside of immutable section");
                   }
-                getter_t* getter = type_component_get_getter (select_tv.type, id);
-                *expr = ast_make_typed_literal (typed_value_make_getter (getter));
+                func_t* func = type_component_get_func (select_tv.type, id);
+                *expr = ast_make_typed_literal (typed_value_make_func (func));
               }
             else
               {
@@ -1157,7 +1157,7 @@ convert_rvalue_to_builtin_types (ast_t ** ptr)
     case TypeBool:
     case TypeComponent:
     case TypeFieldList:
-    case TypeGetter:
+    case TypeFunc:
     case TypeImmutable:
     case TypePointer:
     case TypePort:
@@ -1529,18 +1529,18 @@ process_definitions (ast_t * node)
       unimplemented;
     case AstExpression:
       unimplemented;
-    case AstGetter:
+    case AstFunc:
       {
-	ast_t *signature_node = ast_get_child (node, GETTER_SIGNATURE);
-	ast_t *body_node = ast_get_child (node, GETTER_BODY);
-        ast_t *return_type_node = ast_get_child (node, GETTER_RETURN_TYPE);
-	getter_t *getter = get_current_getter (node);
+	ast_t *signature_node = ast_get_child (node, FUNC_SIGNATURE);
+	ast_t *body_node = ast_get_child (node, FUNC_BODY);
+        ast_t *return_type_node = ast_get_child (node, FUNC_RETURN_TYPE);
+	func_t *func = get_current_func (node);
 
         /* Enter the return type into the symbol table. */
-        enter_symbol (return_type_node, symbol_make_return_parameter (enter ("0return"), getter_return_type (getter), return_type_node));
+        enter_symbol (return_type_node, symbol_make_return_parameter (enter ("0return"), func_return_type (func), return_type_node));
 
 	/* Enter the signature into the symbol table. */
-	enter_signature (signature_node, getter_signature (getter));
+	enter_signature (signature_node, func_signature (func));
 
 	/* Check the body. */
 	check_statement (body_node);
@@ -1639,7 +1639,7 @@ enumerate_instances (ast_t * node, instance_table_t * instance_table)
       unimplemented;
     case AstExpression:
       unimplemented;
-    case AstGetter:
+    case AstFunc:
       break;
     case AstIdentifier:
       unimplemented;
@@ -1851,11 +1851,11 @@ allocate_stack_variables (ast_t* node, memory_model_t* memory_model)
     case AstExpression:
       unimplemented;
 
-    case AstGetter:
+    case AstFunc:
       {
-        getter_t* getter = get_current_getter (node);
-        size_t locals_size = allocate_stack_variables_helper (node, ast_get_child (node, GETTER_BODY), memory_model);
-        getter_set_locals_size (getter, locals_size);
+        func_t* func = get_current_func (node);
+        size_t locals_size = allocate_stack_variables_helper (node, ast_get_child (node, FUNC_BODY), memory_model);
+        func_set_locals_size (func, locals_size);
       }
       break;
 

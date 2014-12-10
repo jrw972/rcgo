@@ -3,7 +3,7 @@
 #include "debug.h"
 #include "symtab.h"
 #include "type.h"
-#include "getter.h"
+#include "func.h"
 
 typed_value_t typed_value_make (type_t * type)
 {
@@ -40,9 +40,9 @@ typed_value_t typed_value_make_integer (int64_t i)
   return retval;
 }
 
-typed_value_t typed_value_make_getter (getter_t* getter)
+typed_value_t typed_value_make_func (func_t* func)
 {
-  typed_value_t retval = { type: getter_type (getter), has_value: true, getter_value:getter };
+  typed_value_t retval = { type: func_type (func), has_value: true, func_value:func };
   return retval;
 }
 
@@ -88,7 +88,7 @@ bool typed_value_can_select (typed_value_t tv, string_t name)
 
 typed_value_t typed_value_select (typed_value_t tv, string_t name)
 {
-  // TODO:  If selected a method, getter, etc. remember what was selected.
+  // TODO:  If selected a method, func, etc. remember what was selected.
   return typed_value_make (type_select (tv.type, name));
 }
 
@@ -112,7 +112,7 @@ bool typed_value_can_convert (typed_value_t tv, type_t* type)
       unimplemented;
     case TypeFieldList:
       unimplemented;
-    case TypeGetter:
+    case TypeFunc:
       unimplemented;
         case TypeImmutable:
           unimplemented;
@@ -175,7 +175,7 @@ typed_value_t typed_value_convert (typed_value_t tv, type_t* type)
           unimplemented;
         case TypeFieldList:
           unimplemented;
-        case TypeGetter:
+        case TypeFunc:
           unimplemented;
         case TypeImmutable:
           unimplemented;

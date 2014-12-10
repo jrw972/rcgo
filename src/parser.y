@@ -24,7 +24,7 @@
 %type <node> expr_list
 %type <node> expr_stmt
 %type <node> field_list
-%type <node> getter_def
+%type <node> func_def
 %type <node> identifier
 %type <node> identifier_list
 %type <node> if_stmt
@@ -57,7 +57,7 @@
 %type <node> var_stmt
 %destructor { /* TODO:  Free the node. node_free ($$); */ } <node>
 
-%token ACTION BIND COMPONENT ELSE GETTER IF INSTANCE NEW PORT PRINTLN REACTION RETURN STRUCT TRIGGER TYPE VAR
+%token ACTION BIND COMPONENT ELSE FUNC IF INSTANCE NEW PORT PRINTLN REACTION RETURN STRUCT TRIGGER TYPE VAR
 
 %token ARROW EQUAL INCREMENT LOGIC_AND LOGIC_OR NOT_EQUAL
 
@@ -73,7 +73,7 @@ def: type_def { $$ = $1; }
 | reaction_def { $$ = $1; }
 | bind_def { $$ = $1; }
 | instance_def { $$ = $1; }
-| getter_def { $$ = $1; }
+| func_def { $$ = $1; }
 
 instance_def: INSTANCE identifier identifier ';' { $$ = ast_make_instance_def ($2, $3); }
 
@@ -85,7 +85,7 @@ reaction_def: REACTION pointer_to_imm_receiver identifier signature stmt_list { 
 
 bind_def: BIND pointer_receiver bind_stmt_list { $$ = ast_make_bind_def ($2, $3); }
 
-getter_def: GETTER pointer_to_imm_receiver identifier signature type_spec stmt_list { $$ = ast_make_getter_def ($2, $3, $4, $5, $6); }
+func_def: FUNC pointer_to_imm_receiver identifier signature type_spec stmt_list { $$ = ast_make_func_def ($2, $3, $4, $5, $6); }
 
 signature: '(' ')' { $$ = ast_make_signature (); }
 | '(' parameter_list optional_semicolon ')' { $$ = $2; }
