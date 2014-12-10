@@ -959,7 +959,7 @@ check_rvalue (ast_t ** ptr, binding_t* binding, bool output)
             type = type_make_pointer (expr_tv.type);
           }
 
-        ast_set_type (node, typed_value_make (type), true, ast_get_derived_from_receiver (*expr));
+        ast_set_type (node, typed_value_make (type), ast_get_derived_from_immutable (*expr), ast_get_derived_from_receiver (*expr));
       }
       break;
 
@@ -1113,7 +1113,8 @@ check_rvalue (ast_t ** ptr, binding_t* binding, bool output)
       break;
     }
 
-  if (ast_expression_kind (node) != AstExprList)
+  if (ast_expression_kind (node) != AstExprList &&
+      ast_expression_kind (node) != AstTypedLiteral)
     {
       if (ast_get_derived_from_immutable (node))
         {
@@ -1250,7 +1251,7 @@ check_statement (ast_t * node)
           }
 
         if (ast_get_derived_from_immutable (*right) &&
-            type_leaks_mutable_pointers (left_type.type))
+            type_leaks_mutable_pointers (right_type.type))
           {
 	    error_at_line (-1, 0, ast_file (node), ast_line (node),
 			   "assignment leaks mutable pointer");
