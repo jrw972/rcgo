@@ -10,7 +10,7 @@
 #include "stack_frame.h"
 #include "symbol.h"
 #include "trigger.h"
-#include "func.h"
+#include "method.h"
 #include "semantic.h"
 #include "heap.h"
 
@@ -207,8 +207,8 @@ evaluate_lvalue (runtime_t* runtime,
 
         if (type_kind (selected_type.type) == TypeFunc)
           {
-            func_t* func = type_component_get_func (type.type, identifier);
-            stack_frame_push_pointer (runtime->stack, func_node (func));
+            method_t* method = type_get_method (type.type, identifier);
+            stack_frame_push_pointer (runtime->stack, method_node (method));
             break;
           }
 
@@ -253,11 +253,11 @@ call (runtime_t* runtime)
       unimplemented;
     case AstExpression:
       unimplemented;
-    case AstFunc:
+    case AstMethod:
       {
-        func_t* func = get_current_func (node);
-        stack_frame_push_base_pointer (runtime->stack, func_get_locals_size (func));
-        evaluate_statement (runtime, ast_get_child (node, FUNC_BODY));
+        method_t* method = get_current_method (node);
+        stack_frame_push_base_pointer (runtime->stack, method_get_locals_size (method));
+        evaluate_statement (runtime, ast_get_child (node, METHOD_BODY));
         stack_frame_pop_base_pointer (runtime->stack);
       }
       break;
@@ -267,7 +267,7 @@ call (runtime_t* runtime)
       unimplemented;
     case AstInstance:
       unimplemented;
-    case AstPointerReceiverDefinition:
+    case AstReceiverDefinition:
       unimplemented;
     case AstReaction:
       unimplemented;
@@ -317,7 +317,7 @@ evaluate_rvalue (runtime_t* runtime,
           stack_frame_push_string (runtime->stack, tv.string_value);
           break;
         case TypeFunc:
-          stack_frame_push_pointer (runtime->stack, func_node (tv.func_value));
+          stack_frame_push_pointer (runtime->stack, method_node (tv.method_value));
           break;
         case TypeUint:
           stack_frame_push_uint (runtime->stack, tv.uint_value);
@@ -528,7 +528,16 @@ evaluate_statement (runtime_t* runtime,
       break;
 
     case AstExpressionStmt:
-      unimplemented;
+      {
+        ast_t* child = ast_get_child (node, UNARY_CHILD);
+        // Determine the size of the value being generated.
+        size_t size = type_size (ast_get_typed_value (child).type);
+        // Evaluate.
+        evaluate_rvalue (runtime, child);
+        // Remove value.
+        stack_frame_pop (runtime->stack, size);
+      }
+      break;
 
     case AstIfStmt:
       {

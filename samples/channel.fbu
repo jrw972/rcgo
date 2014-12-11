@@ -4,10 +4,48 @@ type Element struct
   next @Element;
 };
 
-type Channel component
+type Queue struct
 {
   head @Element;
   tail @@Element;
+};
+
+func (this @Queue) Push (v uint)
+{
+  if this.head == nil
+    {
+      this.tail = this.head&;
+    };
+
+  var e @Element;
+  e = new Element;
+  e.value = v;
+  this.tail@ = e;
+  this.tail = e.next&;
+}
+
+func (this @Queue) Pop ()
+{
+  this.head = this.head.next;
+  if this.head == nil
+    {
+      this.tail = this.head&;
+    };
+}
+
+func (this @$Queue) Empty () bool
+{
+  return this.head == nil;
+}
+
+func (this @$Queue) Front () uint
+{
+  return this.head.value;
+}
+
+type Channel component
+{
+  queue Queue;
   receive port (message uint);
 };
 
@@ -15,27 +53,15 @@ reaction (this @$Channel) send (message uint)
 {
   trigger
   {
-    if this.tail == nil
-      {
-        this.tail = this.head&;
-      };
-    var e @Element;
-    e = new Element;
-    e.value = message;
-    this.tail@ = e;
-    this.tail = e.next&;
+    this.queue.Push (message);
   };
 }
 
-action (this @$Channel) (this.head != nil)
+action (this @$Channel) (this.queue.Empty ()!)
 {
-  trigger receive (this.head.value)
+  trigger receive (this.queue.Front ())
     {
-      this.head = this.head.next;
-      if this.head == nil
-        {
-          this.tail = nil;
-        };
+      this.queue.Pop ();
     };
 }
 

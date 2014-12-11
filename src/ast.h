@@ -11,11 +11,11 @@ typedef enum
   AstBind,
   AstBindStatement,
   AstExpression,
-  AstFunc,
   AstIdentifier,
   AstIdentifierList,
   AstInstance,
-  AstPointerReceiverDefinition,
+  AstMethod,
+  AstReceiverDefinition,
   AstReaction,
   AstStatement,
   AstTopLevelList,
@@ -25,7 +25,14 @@ typedef enum
 
 typedef enum
 {
+  AstPointerReceiver,
+  AstPointerToImmutableReceiver,
+} AstReceiverKind;
+
+typedef enum
+{
   AstComponent,
+  AstEmptyTypeSpec,
   AstFieldList,
   AstIdentifierListTypeSpec,
   AstIdentifierTypeSpec,
@@ -121,8 +128,11 @@ ast_t *ast_make_identifier_list_type_spec (ast_t * identifier_list,
 #define RECEIVER_THIS_IDENTIFIER 0
 #define RECEIVER_TYPE_IDENTIFIER 1
 
-ast_t *ast_make_pointer_receiver (ast_t * this_identifier,
-				  ast_t * type_identifier);
+ast_t *ast_make_receiver (ast_t * this_identifier,
+                          ast_t * type_identifier,
+                          AstReceiverKind kind);
+
+AstReceiverKind ast_receiver_kind (const ast_t* receiver);
 
 /* Def */
 
@@ -162,15 +172,15 @@ ast_t *ast_make_reaction_def (ast_t * receiver, ast_t * identifier,
 
 ast_t *ast_make_type_def (ast_t * identifier, ast_t * type_spec);
 
-#define FUNC_RECEIVER 0
-#define FUNC_IDENTIFIER 1
-#define FUNC_SIGNATURE 2
-#define FUNC_RETURN_TYPE 3
-#define FUNC_BODY 4
+#define METHOD_RECEIVER 0
+#define METHOD_IDENTIFIER 1
+#define METHOD_SIGNATURE 2
+#define METHOD_RETURN_TYPE 3
+#define METHOD_BODY 4
 
-ast_t *ast_make_func_def (ast_t * receiver, ast_t * identifier,
-                          ast_t * signature, ast_t * return_type,
-                          ast_t* body);
+ast_t *ast_make_method_def (ast_t * receiver, ast_t * identifier,
+                            ast_t * signature, ast_t * return_type,
+                            ast_t* body);
 
 /* Expr */
 
@@ -248,7 +258,11 @@ ast_t *ast_make_component_type_spec (ast_t * field_list);
 
 ast_t *ast_make_struct_type_spec (ast_t * field_list);
 
+ast_t *ast_make_empty_type_spec (void);
+
 AstTypeSpecificationKind ast_type_specification_kind (const ast_t * node);
+
+
 
 ast_t *ast_make_expression_list (void);
 

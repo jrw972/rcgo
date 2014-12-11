@@ -3,7 +3,7 @@
 #include "debug.h"
 #include "symtab.h"
 #include "type.h"
-#include "func.h"
+#include "method.h"
 
 typed_value_t typed_value_make (type_t * type)
 {
@@ -40,9 +40,9 @@ typed_value_t typed_value_make_integer (int64_t i)
   return retval;
 }
 
-typed_value_t typed_value_make_func (func_t* func)
+typed_value_t typed_value_make_method (method_t* method)
 {
-  typed_value_t retval = { type: func_type (func), has_value: true, func_value:func };
+  typed_value_t retval = { type: method_type (method), has_value: true, method_value:method };
   return retval;
 }
 

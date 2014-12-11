@@ -28,9 +28,9 @@ void symtab_set_current_action (symtab_t * symtab, action_t * action);
 
 action_t *symtab_get_current_action (const symtab_t * symtab);
 
-void symtab_set_current_func (symtab_t * symtab, func_t * func);
+void symtab_set_current_method (symtab_t * symtab, method_t * method);
 
-func_t *symtab_get_current_func (const symtab_t * symtab);
+method_t *symtab_get_current_method (const symtab_t * symtab);
 
 void symtab_set_current_trigger (symtab_t * symtab, trigger_t * trigger);
 

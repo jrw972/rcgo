@@ -18,6 +18,12 @@ Practical:    High
 Estimate:     Medium difficulty
 Dependencies: None
 
+Feature:      Tail Recursion
+Academic:     Low
+Practical:    High
+Estimate:     Medium difficulty
+Dependencies: Functions
+
 Feature:      Methods
 Academic:     Low
 Practical:    Medium
@@ -183,3 +189,6 @@ Dependencies: None
               Delayering component bounderies for query execution
 6 Discussion and Evaluation
 7 Conclusion and Future Work
+
+Jan Vitek
+Ron Cytron for GC

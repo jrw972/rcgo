@@ -33,6 +33,10 @@ struct ast_t
     } expression;
     struct
     {
+      AstReceiverKind kind;
+    } receiver;
+    struct
+    {
       AstStatementKind kind;
     } statement;
     struct
@@ -120,8 +124,8 @@ ast_print (const ast_t * node, size_t indent)
           printf ("type=%s has_value=%d derived_from_immutable=%d derived_from_receiver=%d", type_to_string (node->expression.typed_value.type), node->expression.typed_value.has_value, node->expression.derived_from_immutable, node->expression.derived_from_receiver);
         }
       break;
-    case AstFunc:
-      printf ("AstFunc");
+    case AstMethod:
+      printf ("AstMethod");
       break;
     case AstIdentifier:
       printf ("AstIdentifier: %s", get (node->identifier.identifier));
@@ -133,9 +137,19 @@ ast_print (const ast_t * node, size_t indent)
       printf ("AstInstance");
       break;
     case AstTopLevelList:
-      unimplemented;
-    case AstPointerReceiverDefinition:
-      printf ("AstPointerReceiverDefinition");
+      printf ("AstTopLevelList");
+      break;
+    case AstReceiverDefinition:
+      printf ("AstReceiverDefinition ");
+      switch (node->receiver.kind)
+        {
+        case AstPointerReceiver:
+          printf ("Pointer");
+          break;
+        case AstPointerToImmutableReceiver:
+          printf ("PointerToImmutable");
+          break;
+        }
       break;
     case AstReaction:
       printf ("AstReaction");
@@ -183,6 +197,9 @@ ast_print (const ast_t * node, size_t indent)
 	case AstComponent:
 	  printf ("AstComponent");
 	  break;
+        case AstEmptyTypeSpec:
+          printf ("AstEmptyTypeSpec");
+          break;
 	case AstFieldList:
 	  printf ("AstFieldList");
 	  break;
@@ -446,16 +463,16 @@ ast_make_type_def (ast_t * identifier, ast_t * type_spec)
   return retval;
 }
 
-ast_t *ast_make_func_def (ast_t * receiver, ast_t * identifier,
+ast_t *ast_make_method_def (ast_t * receiver, ast_t * identifier,
                             ast_t * signature, ast_t * return_type,
                             ast_t* body)
 {
-  ast_t *retval = make (AstFunc, 5);
-  ast_set_child (retval, FUNC_RECEIVER, receiver);
-  ast_set_child (retval, FUNC_IDENTIFIER, identifier);
-  ast_set_child (retval, FUNC_SIGNATURE, signature);
-  ast_set_child (retval, FUNC_RETURN_TYPE, return_type);
-  ast_set_child (retval, FUNC_BODY, body);
+  ast_t *retval = make (AstMethod, 5);
+  ast_set_child (retval, METHOD_RECEIVER, receiver);
+  ast_set_child (retval, METHOD_IDENTIFIER, identifier);
+  ast_set_child (retval, METHOD_SIGNATURE, signature);
+  ast_set_child (retval, METHOD_RETURN_TYPE, return_type);
+  ast_set_child (retval, METHOD_BODY, body);
   return retval;
 }
 
@@ -549,12 +566,19 @@ ast_get_symbol (ast_t * node)
 }
 
 ast_t *
-ast_make_pointer_receiver (ast_t * this_identifier, ast_t * type_identifier)
+ast_make_receiver (ast_t * this_identifier, ast_t * type_identifier, AstReceiverKind kind)
 {
-  ast_t *retval = make (AstPointerReceiverDefinition, 2);
+  ast_t *retval = make (AstReceiverDefinition, 2);
+  retval->receiver.kind = kind;
   ast_set_child (retval, RECEIVER_THIS_IDENTIFIER, this_identifier);
   ast_set_child (retval, RECEIVER_TYPE_IDENTIFIER, type_identifier);
   return retval;
+}
+
+AstReceiverKind ast_receiver_kind (const ast_t* receiver)
+{
+  assert (receiver->kind == AstReceiverDefinition);
+  return receiver->receiver.kind;
 }
 
 ast_t *
@@ -658,6 +682,11 @@ ast_make_struct_type_spec (ast_t * field_list)
   ast_t *retval = make_type_spec (AstStruct, 1);
   ast_set_child (retval, STRUCT_FIELD_LIST, field_list);
   return retval;
+}
+
+ast_t *ast_make_empty_type_spec (void)
+{
+  return make_type_spec (AstEmptyTypeSpec, 0);
 }
 
 AstTypeSpecificationKind

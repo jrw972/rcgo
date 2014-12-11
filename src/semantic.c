@@ -12,7 +12,7 @@
 #include "binding.h"
 #include "symbol.h"
 #include "memory_model.h"
-#include "func.h"
+#include "method.h"
 
 // TODO:  Replace interacting with type_t* with typed_value_t.
 
@@ -28,7 +28,7 @@ construct_symbol_table (ast_t * node, symtab_t * symtab)
     {
     case AstAction:
     case AstBind:
-    case AstFunc:
+    case AstMethod:
     case AstReaction:
     case AstTopLevelList:
       {
@@ -80,7 +80,7 @@ construct_symbol_table (ast_t * node, symtab_t * symtab)
     case AstIdentifier:
     case AstIdentifierList:
     case AstInstance:
-    case AstPointerReceiverDefinition:
+    case AstReceiverDefinition:
     case AstTypeDefinition:
     case AstTypeSpecification:
       break;
@@ -176,11 +176,11 @@ enter_symbols_helper (ast_t * node)
     case AstAction:
     case AstBind:
     case AstBindStatement:
-    case AstFunc:
+    case AstMethod:
     case AstExpression:
     case AstIdentifier:
     case AstIdentifierList:
-    case AstPointerReceiverDefinition:
+    case AstReceiverDefinition:
     case AstReaction:
     case AstStatement:
     case AstTopLevelList:
@@ -305,6 +305,9 @@ process_type_spec (ast_t * node, bool force_identifiers)
       return
 	type_make_component (process_type_spec
 			     (ast_get_child (node, COMPONENT_FIELD_LIST), true));
+
+    case AstEmptyTypeSpec:
+      return type_make_void ();
 
     case AstFieldList:
       {
@@ -459,13 +462,13 @@ process_declarations (ast_t * node)
       unimplemented;
     case AstExpression:
       unimplemented;
-    case AstFunc:
+    case AstMethod:
       {
-	ast_t *receiver = ast_get_child (node, FUNC_RECEIVER);
+	ast_t *receiver = ast_get_child (node, METHOD_RECEIVER);
 	ast_t *type_node = ast_get_child (receiver, RECEIVER_TYPE_IDENTIFIER);
-	ast_t *signature_node = ast_get_child (node, FUNC_SIGNATURE);
-	ast_t *return_type_node = ast_get_child (node, FUNC_RETURN_TYPE);
-	ast_t *identifier_node = ast_get_child (node, FUNC_IDENTIFIER);
+	ast_t *signature_node = ast_get_child (node, METHOD_SIGNATURE);
+	ast_t *return_type_node = ast_get_child (node, METHOD_RETURN_TYPE);
+	ast_t *identifier_node = ast_get_child (node, METHOD_IDENTIFIER);
 	string_t identifier = ast_get_identifier (identifier_node);
 	string_t type_identifier = ast_get_identifier (type_node);
 	symbol_t *symbol = lookup_force (type_node, type_identifier);
@@ -476,12 +479,6 @@ process_declarations (ast_t * node)
 			   get (type_identifier));
 	  }
 	type_t *type = symbol_get_type_type (symbol);
-	if (!type_is_component (type))
-	  {
-	    error_at_line (-1, 0, ast_file (type_node), ast_line (type_node),
-			   "%s does not refer to a component",
-			   get (type_identifier));
-	  }
 	const type_t *t = type_select (type, identifier);
 	if (t != NULL)
 	  {
@@ -491,18 +488,30 @@ process_declarations (ast_t * node)
 			   get (identifier));
 	  }
 
+        /* Determine the type of this. */
+        type_t* this_type;
+        switch (ast_receiver_kind (receiver))
+          {
+          case AstPointerReceiver:
+            this_type = type_make_pointer (type);
+            break;
+          case AstPointerToImmutableReceiver:
+            this_type = type_make_pointer (type_make_immutable (type));
+            break;
+          }
+
 	/* Process the signature. */
 	type_t *signature = process_type_spec (signature_node, true);
         /* Prepend the signature with the receiver. */
         type_signature_prepend (signature,
                                 ast_get_identifier (ast_get_child (receiver, RECEIVER_THIS_IDENTIFIER)),
-                                type_make_pointer (type_make_immutable (type)), true);
+                                this_type, true);
 
         /* Process the return type. */
         type_t *return_type = process_type_spec (return_type_node, true);
 
-        func_t* func = type_component_add_func (type, node, identifier, signature, return_type);
-	symtab_set_current_func (ast_get_symtab (node), func);
+        method_t* method = type_add_method (type, node, identifier, signature, return_type);
+	symtab_set_current_method (ast_get_symtab (node), method);
 	symtab_set_current_receiver_type (ast_get_symtab (node), type);
       }
       break;
@@ -537,7 +546,7 @@ process_declarations (ast_t * node)
 	symbol_set_instance_type (symbol, type);
       }
       break;
-    case AstPointerReceiverDefinition:
+    case AstReceiverDefinition:
       unimplemented;
     case AstReaction:
       {
@@ -618,8 +627,7 @@ process_declarations (ast_t * node)
 
 static void check_rvalue (ast_t ** ptr, binding_t* binding, bool output);
 
-static void check_identifier_expr (ast_t** ptr,
-                                   bool immutable)
+static void check_identifier_expr (ast_t** ptr)
 {
   ast_t *node = *ptr;
   ast_t *identifier_node = ast_get_child (node, UNARY_CHILD);
@@ -639,11 +647,14 @@ static void check_identifier_expr (ast_t** ptr,
       unimplemented;
 
     case SymbolParameter:
-      ast_set_type (*ptr, typed_value_make (symbol_parameter_type (symbol)), immutable,
-                    symbol_parameter_kind (symbol) ==
-                    ParameterReceiver
-                    || symbol_parameter_kind (symbol) ==
-                    ParameterReceiverDuplicate);
+      {
+        type_t* t = symbol_parameter_type (symbol);
+        ast_set_type (*ptr, typed_value_make (t), type_is_immutable (t),
+                      symbol_parameter_kind (symbol) ==
+                      ParameterReceiver
+                      || symbol_parameter_kind (symbol) ==
+                      ParameterReceiverDuplicate);
+      }
       break;
 
     case SymbolType:
@@ -717,7 +728,7 @@ check_lvalue (ast_t ** ptr, binding_t* binding, bool output)
     case AstExprList:
       unimplemented;
     case AstIdentifierExpr:
-      check_identifier_expr (ptr, false);
+      check_identifier_expr (ptr);
       break;
     case AstLogicAndExpr:
       unimplemented;
@@ -812,6 +823,12 @@ convert_if_untyped (typed_value_t target_tv, ast_t * source)
     }
 }
 
+static trigger_t *
+get_current_trigger (const ast_t * node)
+{
+  return symtab_get_current_trigger (ast_get_symtab (node));
+}
+
 static void check_rvalue_list (ast_t * node);
 
 static void
@@ -826,6 +843,8 @@ check_call (ast_t * node, ast_t * args, const type_t * expr_type)
 		     "call expects %zd arguments but given %zd",
 		     parameter_count, argument_count);
     }
+
+  bool derived_from_receiver = false;
 
   for (idx = 0; idx != argument_count; ++idx)
     {
@@ -842,13 +861,21 @@ check_call (ast_t * node, ast_t * args, const type_t * expr_type)
 
       // Convert since we must compute.
       convert_if_untyped (parameter_tv, arg);
+
+      if (ast_get_derived_from_receiver (arg))
+        {
+          derived_from_receiver = true;
+          trigger_t *trigger = get_current_trigger (node);
+          if (trigger != NULL)
+            {
+              trigger_set_mutates_receiver (trigger, true);
+            }
+        }
     }
 
   // Set the return type.
-  // TODO:  Determine if the return type is derived from the receiver.
-  // For safety, assume that it is.
-  // TODO:  Is this analysis the same for getters?
-  ast_set_type (node, typed_value_make (type_return_type (expr_type)), true, true);
+  // TODO:  Don't know that we can assume the return is derived from immutable.
+  ast_set_type (node, typed_value_make (type_return_type (expr_type)), true, derived_from_receiver);
 }
 
 static action_t *
@@ -857,19 +884,19 @@ get_current_action (const ast_t * node)
   return symtab_get_current_action (ast_get_symtab (node));
 }
 
-func_t *
-get_current_func (const ast_t * node)
+method_t *
+get_current_method (const ast_t * node)
 {
-  return symtab_get_current_func (ast_get_symtab (node));
+  return symtab_get_current_method (ast_get_symtab (node));
 }
 
 static type_t *
 get_current_return_type (const ast_t * node)
 {
-  func_t* g = get_current_func (node);
+  method_t* g = get_current_method (node);
   if (g != NULL)
     {
-      return func_return_type (g);
+      return method_return_type (g);
     }
 
   return NULL;
@@ -881,12 +908,6 @@ get_current_receiver_type (const ast_t * node)
   return symtab_get_current_receiver_type (ast_get_symtab (node));
 }
 
-static trigger_t *
-get_current_trigger (const ast_t * node)
-{
-  return symtab_get_current_trigger (ast_get_symtab (node));
-}
-
 static bool
 in_trigger_statement (const ast_t * node)
 {
@@ -895,22 +916,10 @@ in_trigger_statement (const ast_t * node)
 }
 
 static bool
-in_immutable_section (const ast_t* node)
+in_mutable_section (const ast_t* node)
 {
-  if (get_current_func (node) != NULL)
-    {
-      // Calling a func in a func is okay.
-      return true;
-    }
-
-  if (get_current_action (node) != NULL &&
-      get_current_trigger (node) == NULL)
-    {
-      // In an action or reaction but not in a trigger body.
-      return true;
-    }
-
-  return false;
+  return get_current_action (node) != NULL &&
+    get_current_trigger (node) != NULL;
 }
 
 static void
@@ -934,6 +943,62 @@ check_comparison (ast_t* node)
   convert_if_untyped (right_tv, *left);
 
   ast_set_type (node, typed_value_make (type_make_untyped_bool ()), true, false);
+}
+
+static method_t*
+extract_method (const ast_t* node)
+{
+  assert (ast_kind (node) == AstExpression);
+  switch (ast_expression_kind (node))
+    {
+    case AstAddressOfExpr:
+      unimplemented;
+    case AstCallExpr:
+      unimplemented;
+    case AstDereferenceExpr:
+      unimplemented;
+    case AstEqualExpr:
+      unimplemented;
+    case AstExprList:
+      unimplemented;
+    case AstIdentifierExpr:
+      unimplemented;
+    case AstLogicAndExpr:
+      unimplemented;
+    case AstLogicNotExpr:
+      unimplemented;
+    case AstLogicOrExpr:
+      unimplemented;
+    case AstNewExpr:
+      unimplemented;
+    case AstNotEqualExpr:
+      unimplemented;
+    case AstPortCallExpr:
+      unimplemented;
+
+    case AstSelectExpr:
+      {
+	ast_t *left = ast_get_child (node, BINARY_LEFT_CHILD);
+	ast_t *right = ast_get_child (node, BINARY_RIGHT_CHILD);
+	string_t identifier = ast_get_identifier (right);
+
+        type_t* t = ast_get_typed_value (left).type;
+
+        if (type_is_pointer (t))
+          {
+            // Selecting from a pointer.  Insert a dereference.
+            t = type_pointer_base_type (t);
+          }
+
+        return type_get_method (t, identifier);
+      }
+      break;
+
+    case AstTypedLiteral:
+      unimplemented;
+    }
+
+  not_reached;
 }
 
 static void
@@ -978,9 +1043,10 @@ check_rvalue (ast_t ** ptr, binding_t* binding, bool output)
 			   "cannot call");
 	  }
 
-        if (type_called_with_receiver (expr_tv.type))
+        method_t* method = extract_method (*expr);
+        if (method != NULL)
           {
-            // The callee requires a receiver.
+            // Calling a method.
 
             // The receiver is either a copy or a pointer.
             bool receiver_is_pointer = type_is_pointer (type_parameter_type (expr_tv.type, 0));
@@ -998,25 +1064,23 @@ check_rvalue (ast_t ** ptr, binding_t* binding, bool output)
                 ast_prepend_child (args, receiver_select_expr);
               }
 
-            // Replace the callee with a literal or expression.
-            typed_value_t select_tv = ast_get_typed_value (receiver_select_expr);
-            string_t id = ast_get_identifier (ast_get_child (*expr, BINARY_RIGHT_CHILD));
-
-            if (type_kind (expr_tv.type) == TypeFunc)
+            if (in_mutable_section (node))
               {
-                // Must be in immutable section.
-                if (!in_immutable_section (node))
+                type_t* t = method_named_type (method);
+                if (type_is_component (t))
                   {
-                    error_at_line (-1, 0, ast_file (node), ast_line (node),
-                                   "func called outside of immutable section");
+                    // Invoking a method on a component in a mutable section.
+                    // Ensure the receiver is this.
+                    unimplemented;
                   }
-                func_t* func = type_component_get_func (select_tv.type, id);
-                *expr = ast_make_typed_literal (typed_value_make_func (func));
               }
-            else
-              {
-                unimplemented;
-              }
+
+            // Replace the callee with a literal or expression.
+            *expr = ast_make_typed_literal (typed_value_make_method (method));
+          }
+        else
+          {
+            unimplemented;
           }
 
 	check_rvalue_list (args);
@@ -1035,7 +1099,7 @@ check_rvalue (ast_t ** ptr, binding_t* binding, bool output)
       check_rvalue_list (*ptr);
       break;
     case AstIdentifierExpr:
-      check_identifier_expr (ptr, true);
+      check_identifier_expr (ptr);
       break;
     case AstLogicAndExpr:
       unimplemented;
@@ -1263,7 +1327,11 @@ check_statement (ast_t * node)
       break;
 
     case AstExpressionStmt:
-      unimplemented;
+      {
+        ast_t **child = ast_get_child_ptr (node, UNARY_CHILD);
+        check_rvalue (child, NULL, false);
+      }
+      break;
 
     case AstIfStmt:
       {
@@ -1288,10 +1356,6 @@ check_statement (ast_t * node)
         check_statement (*true_branch);
       }
       break;
-
-
-      ast_print (node, 0);
-      unimplemented;
 
     case AstAddAssignStmt:
       {
@@ -1529,18 +1593,18 @@ process_definitions (ast_t * node)
       unimplemented;
     case AstExpression:
       unimplemented;
-    case AstFunc:
+    case AstMethod:
       {
-	ast_t *signature_node = ast_get_child (node, FUNC_SIGNATURE);
-	ast_t *body_node = ast_get_child (node, FUNC_BODY);
-        ast_t *return_type_node = ast_get_child (node, FUNC_RETURN_TYPE);
-	func_t *func = get_current_func (node);
+	ast_t *signature_node = ast_get_child (node, METHOD_SIGNATURE);
+	ast_t *body_node = ast_get_child (node, METHOD_BODY);
+        ast_t *return_type_node = ast_get_child (node, METHOD_RETURN_TYPE);
+	method_t *method = get_current_method (node);
 
         /* Enter the return type into the symbol table. */
-        enter_symbol (return_type_node, symbol_make_return_parameter (enter ("0return"), func_return_type (func), return_type_node));
+        enter_symbol (return_type_node, symbol_make_return_parameter (enter ("0return"), method_return_type (method), return_type_node));
 
 	/* Enter the signature into the symbol table. */
-	enter_signature (signature_node, func_signature (func));
+	enter_signature (signature_node, method_signature (method));
 
 	/* Check the body. */
 	check_statement (body_node);
@@ -1552,7 +1616,7 @@ process_definitions (ast_t * node)
       unimplemented;
     case AstInstance:
       break;
-    case AstPointerReceiverDefinition:
+    case AstReceiverDefinition:
       unimplemented;
     case AstReaction:
       {
@@ -1639,7 +1703,7 @@ enumerate_instances (ast_t * node, instance_table_t * instance_table)
       unimplemented;
     case AstExpression:
       unimplemented;
-    case AstFunc:
+    case AstMethod:
       break;
     case AstIdentifier:
       unimplemented;
@@ -1652,7 +1716,7 @@ enumerate_instances (ast_t * node, instance_table_t * instance_table)
 	instantiate (type, instance_table, true);
       }
       break;
-    case AstPointerReceiverDefinition:
+    case AstReceiverDefinition:
       unimplemented;
     case AstReaction:
       break;
@@ -1745,7 +1809,7 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t* memory_model)
       break;
 
     case AstExpressionStmt:
-      unimplemented;
+      // Do nothing.
       break;
 
     case AstIfStmt:
@@ -1851,11 +1915,11 @@ allocate_stack_variables (ast_t* node, memory_model_t* memory_model)
     case AstExpression:
       unimplemented;
 
-    case AstFunc:
+    case AstMethod:
       {
-        func_t* func = get_current_func (node);
-        size_t locals_size = allocate_stack_variables_helper (node, ast_get_child (node, FUNC_BODY), memory_model);
-        func_set_locals_size (func, locals_size);
+        method_t* method = get_current_method (node);
+        size_t locals_size = allocate_stack_variables_helper (node, ast_get_child (node, METHOD_BODY), memory_model);
+        method_set_locals_size (method, locals_size);
       }
       break;
 
@@ -1868,7 +1932,7 @@ allocate_stack_variables (ast_t* node, memory_model_t* memory_model)
     case AstInstance:
       break;
 
-    case AstPointerReceiverDefinition:
+    case AstReceiverDefinition:
       unimplemented;
 
     case AstReaction:

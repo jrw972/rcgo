@@ -7,7 +7,7 @@
 #include "action.h"
 #include "parameter.h"
 #include "field.h"
-#include "func.h"
+#include "method.h"
 
 typedef struct {
   type_t * (*select) (const type_t * type, string_t identifier);
@@ -48,6 +48,7 @@ struct type_t
   TypeKind kind;
   bool has_name;
   string_t name;
+  VECTOR_DECL (methods, method_t *);
   union
   {
     struct
@@ -56,7 +57,6 @@ struct type_t
       VECTOR_DECL (actions, action_t *);
       VECTOR_DECL (reactions, action_t *);
       VECTOR_DECL (bindings, binding_t *);
-      VECTOR_DECL (funcs, func_t *);
     } component;
     struct
     {
@@ -128,16 +128,6 @@ static type_t* component_select (const type_t* type, string_t identifier)
         if (streq (identifier, reaction_name (*ptr)))
           {
             return reaction_type (*ptr);
-          }
-      }
-  }
-
-  {
-    VECTOR_FOREACH (ptr, limit, type->component.funcs, func_t *)
-      {
-        if (streq (identifier, func_name (*ptr)))
-          {
-            return func_type (*ptr);
           }
       }
   }
@@ -312,7 +302,12 @@ static size_t uint_size (const type_t* type)
 
 static vtable_t uint_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, uint_alignment, uint_size };
 
-static vtable_t void_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+static size_t void_size (const type_t* type)
+{
+  return 0;
+}
+
+static vtable_t void_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, void_size };
 
 static vtable_t untyped_bool_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
 
@@ -360,8 +355,10 @@ type_to_string (const type_t * type)
 	{
 	case TypeUndefined:
 	  return "undefined";
+
 	case TypeVoid:
-	  unimplemented;
+	  return "void";
+
 	case TypeBool:
 	  unimplemented;
 	case TypeComponent:
@@ -452,6 +449,11 @@ type_move (type_t * to, type_t * from)
 
   to->vtable = from->vtable;
   to->kind = from->kind;
+
+  to->methods = from->methods;
+  to->methods_size = from->methods_size;
+  to->methods_capacity = from->methods_capacity;
+
   /* Do not copy has_name and name. */
 
   switch (from->kind)
@@ -521,6 +523,7 @@ make (const vtable_t* vtable, TypeKind kind)
   type_t *retval = xmalloc (sizeof (type_t));
   retval->vtable = vtable;
   retval->kind = kind;
+  VECTOR_INIT (retval->methods, method_t *, 0, NULL);
   return retval;
 }
 
@@ -635,8 +638,8 @@ type_pointer_base_type (const type_t * type)
   return type->pointer.base_type;
 }
 
-static type_t *
-make_void ()
+type_t *
+type_make_void ()
 {
   static type_t *t = NULL;
   if (t == NULL)
@@ -651,7 +654,7 @@ type_make_component (type_t * field_list)
 {
   type_t *c = make (&component_vtable, TypeComponent);
   /* Prepend the field list with a pointer for the runtime. */
-  type_field_list_prepend (field_list, enter ("0"), type_make_immutable (type_make_pointer (make_void ())));
+  type_field_list_prepend (field_list, enter ("0"), type_make_immutable (type_make_pointer (type_make_void ())));
   c->component.field_list = field_list;
   VECTOR_INIT (c->component.actions, action_t *, 0, NULL);
   VECTOR_INIT (c->component.reactions, action_t *, 0, NULL);
@@ -709,18 +712,18 @@ type_component_add_reaction (type_t * component_type, ast_t* node, string_t iden
   return r;
 }
 
-func_t *type_component_add_func (type_t * component_type,
-                                     ast_t* node,
-                                     string_t identifier,
-                                     type_t * signature,
-                                     type_t * return_type)
+method_t *type_add_method (type_t * type,
+                       ast_t* node,
+                       string_t identifier,
+                       type_t * signature,
+                       type_t * return_type)
 {
-  assert (type_is_component (component_type));
-  func_t *g =
-    func_make (component_type,
-                 node,
-                 identifier, signature, return_type);
-  VECTOR_PUSH (component_type->component.funcs, func_t*, g);
+  assert (type_is_named (type));
+  method_t *g =
+    method_make (type,
+               node,
+               identifier, signature, return_type);
+  VECTOR_PUSH (type->methods, method_t*, g);
   return g;
 }
 
@@ -824,15 +827,13 @@ type_component_get_reaction (const type_t * component_type,
   return NULL;
 }
 
-func_t *type_component_get_func (const type_t * component_type,
-                                     string_t identifier)
+method_t *type_get_method (const type_t * component_type,
+                           string_t identifier)
 {
-  assert (component_type->kind == TypeComponent);
-
-  VECTOR_FOREACH (pos, limit, component_type->component.funcs, func_t *)
+  VECTOR_FOREACH (pos, limit, component_type->methods, method_t *)
     {
-      func_t *a = *pos;
-      if (streq (func_name (a), identifier))
+      method_t *a = *pos;
+      if (streq (method_name (a), identifier))
         {
           return a;
         }
@@ -926,7 +927,7 @@ type_return_value (const type_t * type)
   switch (type->kind)
     {
     case TypePort:
-      return make_void ();
+      return type_make_void ();
     case TypeUndefined:
     case TypeVoid:
     case TypeBool:
@@ -1045,7 +1046,23 @@ type_field_list_find (const type_t * type, string_t name)
 type_t *
 type_select (const type_t * type, string_t identifier)
 {
-  return type->vtable->select (type, identifier);
+  type_t* t = type->vtable->select (type, identifier);
+  if (t != NULL)
+    {
+      return t;
+    }
+
+  {
+    VECTOR_FOREACH (ptr, limit, type->methods, method_t *)
+      {
+        if (streq (identifier, method_name (*ptr)))
+          {
+            return method_type (*ptr);
+          }
+      }
+  }
+
+  return NULL;
 }
 
 field_t *
@@ -1316,56 +1333,6 @@ type_callable (const type_t * type)
   not_reached;
 }
 
-bool type_called_with_receiver (const type_t * type)
-{
-  switch (type->kind)
-    {
-    case TypeUndefined:
-      unimplemented;
-    case TypeVoid:
-      unimplemented;
-    case TypeBool:
-      unimplemented;
-    case TypeComponent:
-      unimplemented;
-        case TypeImmutable:
-          unimplemented;
-
-    case TypePointer:
-      unimplemented;
-    case TypePort:
-      unimplemented;
-    case TypeReaction:
-      unimplemented;
-    case TypeFieldList:
-      unimplemented;
-    case TypeSignature:
-      unimplemented;
-    case TypeString:
-      unimplemented;
-    case TypeFunc:
-      return true;
-    case TypeUint:
-      unimplemented;
-    case TypeStruct:
-      unimplemented;
-
-    case UntypedUndefined:
-      unimplemented;
-    case UntypedNil:
-      unimplemented;
-
-    case UntypedBool:
-      unimplemented;
-    case UntypedInteger:
-      unimplemented;
-    case UntypedString:
-      unimplemented;
-
-    }
-  not_reached;
-}
-
 size_t
 type_parameter_count (const type_t * type)
 {
@@ -1487,7 +1454,7 @@ type_return_type (const type_t * type)
     case TypePointer:
       unimplemented;
     case TypePort:
-      return make_void ();
+      return type_make_void ();
     case TypeReaction:
       unimplemented;
     case TypeFieldList:
@@ -1832,6 +1799,11 @@ type_make_struct (type_t * field_list)
   return c;
 }
 
+bool type_is_struct (const type_t* type)
+{
+  return type->kind == TypeStruct;
+}
+
 type_t* type_make_untyped_nil (void)
 {
   return make (&untyped_nil_vtable, UntypedNil);
@@ -1884,6 +1856,12 @@ bool type_is_untyped (const type_t* type)
 
 type_t* type_make_immutable (type_t* type)
 {
+  // Don't chain immutables.
+  if (type_is_immutable (type))
+    {
+      return type;
+    }
+
   type_t* t = make (&immutable_vtable, TypeImmutable);
   t->immutable.base_type = type;
   return t;

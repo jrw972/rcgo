@@ -100,6 +100,11 @@ main (int argc, char **argv)
     }
   assert (root != NULL);
 
+  if (debug)
+    {
+      ast_print (root, 0);
+    }
+
   /* Check the semantics. */
   construct_symbol_table (root, NULL);
   enter_symbols (root);

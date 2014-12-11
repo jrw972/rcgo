@@ -12,7 +12,7 @@ struct symtab_t
   symtab_t *parent;
     VECTOR_DECL (symbols, symbol_t *);
   action_t *current_action;
-  func_t *current_func;
+  method_t *current_method;
   trigger_t *current_trigger;
   type_t *current_receiver_type;
 };
@@ -160,25 +160,25 @@ symtab_get_current_action (const symtab_t * symtab)
 }
 
 void
-symtab_set_current_func (symtab_t * symtab, func_t * func)
+symtab_set_current_method (symtab_t * symtab, method_t * method)
 {
-  symtab->current_func = func;
+  symtab->current_method = method;
 }
 
-func_t *
-symtab_get_current_func (const symtab_t * symtab)
+method_t *
+symtab_get_current_method (const symtab_t * symtab)
 {
   if (symtab == NULL)
     {
       return NULL;
     }
 
-  if (symtab->current_func != NULL)
+  if (symtab->current_method != NULL)
     {
-      return symtab->current_func;
+      return symtab->current_method;
     }
 
-  return symtab_get_current_func (symtab->parent);
+  return symtab_get_current_method (symtab->parent);
 }
 
 void

@@ -24,7 +24,6 @@
 %type <node> expr_list
 %type <node> expr_stmt
 %type <node> field_list
-%type <node> func_def
 %type <node> identifier
 %type <node> identifier_list
 %type <node> if_stmt
@@ -32,6 +31,7 @@
 %type <node> inner_stmt_list
 %type <node> instance_def
 %type <node> lvalue
+%type <node> method_def
 %type <node> optional_expr_list
 %type <node> optional_port_call_list
 %type <node> or_expr
@@ -73,7 +73,7 @@ def: type_def { $$ = $1; }
 | reaction_def { $$ = $1; }
 | bind_def { $$ = $1; }
 | instance_def { $$ = $1; }
-| func_def { $$ = $1; }
+| method_def { $$ = $1; }
 
 instance_def: INSTANCE identifier identifier ';' { $$ = ast_make_instance_def ($2, $3); }
 
@@ -85,7 +85,9 @@ reaction_def: REACTION pointer_to_imm_receiver identifier signature stmt_list { 
 
 bind_def: BIND pointer_receiver bind_stmt_list { $$ = ast_make_bind_def ($2, $3); }
 
-func_def: FUNC pointer_to_imm_receiver identifier signature type_spec stmt_list { $$ = ast_make_func_def ($2, $3, $4, $5, $6); }
+method_def: FUNC pointer_to_imm_receiver identifier signature type_spec stmt_list { $$ = ast_make_method_def ($2, $3, $4, $5, $6); }
+| FUNC pointer_to_imm_receiver identifier signature stmt_list { $$ = ast_make_method_def ($2, $3, $4, ast_make_empty_type_spec (), $5); }
+| FUNC pointer_receiver identifier signature stmt_list { $$ = ast_make_method_def ($2, $3, $4, ast_make_empty_type_spec (), $5); }
 
 signature: '(' ')' { $$ = ast_make_signature (); }
 | '(' parameter_list optional_semicolon ')' { $$ = $2; }
@@ -98,9 +100,9 @@ parameter: identifier_list type_spec { $$ = ast_make_identifier_list_type_spec (
 optional_semicolon: /* Empty. */
 | ';'
 
-pointer_receiver: '(' identifier '@' identifier ')' { $$ = ast_make_pointer_receiver ($2, $4); }
+pointer_receiver: '(' identifier '@' identifier ')' { $$ = ast_make_receiver ($2, $4, AstPointerReceiver); }
 
-pointer_to_imm_receiver: '(' identifier '@' '$' identifier ')' { $$ = ast_make_pointer_receiver ($2, $5); }
+pointer_to_imm_receiver: '(' identifier '@' '$' identifier ')' { $$ = ast_make_receiver ($2, $5, AstPointerToImmutableReceiver); }
 
 bind_stmt_list: '{' bind_inner_stmt_list '}' { $$ = $2; }
 
@@ -123,7 +125,7 @@ stmt: simple_stmt { $$ = $1; }
 | if_stmt { $$ = $1; }
 
 simple_stmt: empty_stmt { unimplemented; }
-| expr_stmt { unimplemented; }
+| expr_stmt { $$ = $1; }
 | increment_stmt { $$ = $1; }
 | assignment_stmt { $$ = $1; }
 

@@ -50,6 +50,8 @@ type_t *type_make_bool (void);
 
 type_t *type_pointer_base_type (const type_t * type);
 
+type_t * type_make_void (void);
+
 type_t *type_make_component (type_t * type);
 
 type_t *type_make_pointer (type_t * base_type);
@@ -67,11 +69,11 @@ action_t *type_component_add_reaction (type_t * component_type,
 				       string_t identifier,
 				       type_t * signature);
 
-func_t *type_component_add_func (type_t * component_type,
-                                     ast_t* node,
-                                     string_t identifier,
-                                     type_t * signature,
-                                     type_t * return_type);
+method_t *type_add_method (type_t * component_type,
+                       ast_t* node,
+                       string_t identifier,
+                       type_t * signature,
+                       type_t * return_type);
 
 TypeKind type_kind (const type_t * type);
 
@@ -88,8 +90,8 @@ field_t* type_select_field (const type_t* type, string_t identifier);
 action_t *type_component_get_reaction (const type_t * component_type,
 				       string_t identifier);
 
-func_t *type_component_get_func (const type_t * component_type,
-                                     string_t identifier);
+method_t *type_get_method (const type_t * component_type,
+                           string_t identifier);
 
 bool type_is_bindable (const type_t * output, const type_t * input);
 
@@ -136,8 +138,6 @@ parameter_t **type_signature_end (const type_t * signature);
 parameter_t **type_signature_next (parameter_t **);
 
 bool type_callable (const type_t * type);
-
-bool type_called_with_receiver (const type_t * type);
 
 size_t type_parameter_count (const type_t * type);
 
@@ -197,6 +197,8 @@ type_t* type_make_uint (void);
 bool type_is_arithmetic (const type_t* type);
 
 type_t* type_make_struct (type_t* field_list);
+
+bool type_is_struct (const type_t* type);
 
 type_t* type_make_untyped_nil (void);
 type_t* type_make_untyped_bool (void);

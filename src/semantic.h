@@ -21,7 +21,7 @@ enumerate_instances (ast_t * node, instance_table_t * instance_table);
 void
 allocate_stack_variables (ast_t* node, memory_model_t* memory_model);
 
-func_t *
-get_current_func (const ast_t * node);
+method_t *
+get_current_method (const ast_t * node);
 
 #endif /* semantic_h */
