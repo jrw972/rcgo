@@ -114,8 +114,12 @@ bool typed_value_can_convert (typed_value_t tv, type_t* type)
       unimplemented;
     case TypeFunc:
       unimplemented;
-        case TypeImmutable:
-          unimplemented;
+
+    case TypeForeign:
+      unimplemented;
+
+    case TypeImmutable:
+      unimplemented;
 
     case TypePointer:
       return type_kind (tv.type) == UntypedNil;
@@ -174,6 +178,8 @@ typed_value_t typed_value_convert (typed_value_t tv, type_t* type)
         case TypeComponent:
           unimplemented;
         case TypeFieldList:
+          unimplemented;
+        case TypeForeign:
           unimplemented;
         case TypeFunc:
           unimplemented;

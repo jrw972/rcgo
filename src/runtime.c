@@ -300,6 +300,8 @@ evaluate_rvalue (runtime_t* runtime,
           break;
         case TypeComponent:
           unimplemented;
+        case TypeForeign:
+          unimplemented;
         case TypeImmutable:
           unimplemented;
         case TypePointer:
@@ -375,8 +377,15 @@ evaluate_rvalue (runtime_t* runtime,
         stack_frame_pop (runtime->stack, top_after - top_before);
       }
       break;
+
     case AstDereferenceExpr:
-      unimplemented;
+      {
+        typed_value_t tv = ast_get_typed_value (expr);
+        evaluate_rvalue (runtime, ast_get_child (expr, UNARY_CHILD));
+        void* ptr = stack_frame_pop_pointer (runtime->stack);
+        stack_frame_load (runtime->stack, ptr, type_size (tv.type));
+      }
+      break;
 
     case AstEqualExpr:
       {
@@ -574,6 +583,8 @@ evaluate_statement (runtime_t* runtime,
             unimplemented;
           case TypeComponent:
             unimplemented;
+          case TypeForeign:
+            unimplemented;
         case TypeImmutable:
           unimplemented;
           case TypePointer:
@@ -683,6 +694,9 @@ evaluate_statement (runtime_t* runtime,
               }
               break;
             case TypeComponent:
+              unimplemented;
+
+            case TypeForeign:
               unimplemented;
 
         case TypeImmutable:

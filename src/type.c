@@ -9,17 +9,53 @@
 #include "field.h"
 #include "method.h"
 
+typedef struct list_t list_t;
+struct list_t {
+  list_t* next;
+  const type_t* type;
+};
+
+static bool
+list_contains (const list_t* list,
+               const type_t* type)
+{
+  if (list == NULL)
+    {
+      return false;
+    }
+  else if (list->type == type)
+    {
+      return true;
+    }
+  else
+    {
+      return list_contains (list->next, type);
+    }
+}
+
 typedef struct {
   type_t * (*select) (const type_t * type, string_t identifier);
   field_t * (*select_field) (const type_t * type, string_t identifier);
   bool (*leaks_mutable_pointers) (const type_t * type);
+  bool (*leaks_mutable_or_immutable_pointers) (const type_t * type);
+  bool (*contains_foreign_pointers) (const type_t* type, list_t* list);
   size_t (*alignment) (const type_t * type);
   size_t (*size) (const type_t* type);
 } vtable_t;
 
+static type_t* cannot_select (const type_t* type, string_t identifier)
+{
+  return NULL;
+}
+
 static type_t* no_select (const type_t* type, string_t identifier)
 {
   unimplemented;
+}
+
+static field_t* cannot_select_field (const type_t* type, string_t identifier)
+{
+  return NULL;
 }
 
 static field_t* no_select_field (const type_t* type, string_t identifier)
@@ -32,12 +68,32 @@ static bool does_not_leak_mutable_pointers (const type_t* type)
   return false;
 }
 
+static bool does_not_leak_mutable_or_immutable_pointers (const type_t* type)
+{
+  return false;
+}
+
+static bool does_not_contain_foreign_pointers (const type_t* type, list_t* list)
+{
+  return false;
+}
+
 static size_t no_alignment (const type_t* type)
 {
   unimplemented;
 }
 
 static size_t no_size (const type_t* type)
+{
+  unimplemented;
+}
+
+static bool no_leaks_mutable_or_immutable_pointers (const type_t* type)
+{
+  unimplemented;
+}
+
+static bool no_contains_foreign_pointers (const type_t* type, list_t* list)
 {
   unimplemented;
 }
@@ -64,6 +120,10 @@ struct type_t
       ptrdiff_t offset;
       size_t alignment;
     } field_list;
+    struct
+    {
+      type_t* base_type;
+    } foreign;
     struct
     {
       const type_t *signature;
@@ -102,6 +162,21 @@ type_alignment (const type_t * type)
   return type->vtable->alignment (type);
 }
 
+static bool
+internal_contains_foreign_pointers (const type_t* type,
+                                    list_t* list)
+{
+  if (list_contains (list, type))
+    {
+      return false;
+    }
+
+  list_t head;
+  head.next = list;
+  head.type = type;
+  return type->vtable->contains_foreign_pointers (type, &head);
+}
+
 static size_t bool_alignment (const type_t* type)
 {
   return 1;
@@ -112,7 +187,14 @@ static size_t bool_size (const type_t* type)
   return 1;
 }
 
-static vtable_t bool_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, bool_alignment, bool_size };
+static vtable_t bool_vtable = {
+  cannot_select,
+  cannot_select_field,
+  does_not_leak_mutable_pointers,
+  does_not_leak_mutable_or_immutable_pointers,
+  does_not_contain_foreign_pointers,
+  bool_alignment,
+  bool_size };
 
 static type_t* component_select (const type_t* type, string_t identifier)
 {
@@ -155,7 +237,7 @@ static size_t component_size (const type_t* type)
   return type_size (type->component.field_list);
 }
 
-static vtable_t component_vtable = { component_select, component_select_field, component_leaks_mutable_pointers, component_alignment, component_size };
+static vtable_t component_vtable = { component_select, component_select_field, component_leaks_mutable_pointers, no_leaks_mutable_or_immutable_pointers, no_contains_foreign_pointers, component_alignment, component_size };
 
 static type_t* field_list_select (const type_t* type, string_t identifier)
 {
@@ -189,6 +271,20 @@ static bool field_list_leaks_mutable_pointers (const type_t* type)
   return false;
 }
 
+static bool field_list_contains_foreign_pointers (const type_t* type, list_t* list)
+{
+  VECTOR_FOREACH (pos, limit, type->field_list.fields, field_t*)
+    {
+      field_t* field = *pos;
+      if (internal_contains_foreign_pointers (field_type (field), list))
+        {
+          return true;
+        }
+    }
+
+  return false;
+}
+
 static size_t field_list_alignment (const type_t* type)
 {
   return type->field_list.alignment;
@@ -199,9 +295,21 @@ static size_t field_list_size (const type_t* type)
   return type->field_list.offset;
 }
 
-static vtable_t field_list_vtable = { field_list_select, field_list_select_field, field_list_leaks_mutable_pointers, field_list_alignment, field_list_size };
+static vtable_t field_list_vtable = { field_list_select, field_list_select_field, field_list_leaks_mutable_pointers, no_leaks_mutable_or_immutable_pointers, field_list_contains_foreign_pointers, field_list_alignment, field_list_size };
 
-static vtable_t func_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+static bool foreign_contains_foreign_pointers (const type_t* type, list_t* list)
+{
+  return internal_contains_foreign_pointers (type->foreign.base_type, list);
+}
+
+static size_t foreign_size (const type_t* type)
+{
+  return type_size (type->foreign.base_type);
+}
+
+static vtable_t foreign_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, does_not_leak_mutable_or_immutable_pointers, foreign_contains_foreign_pointers, no_alignment, foreign_size };
+
+static vtable_t func_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_leaks_mutable_or_immutable_pointers, no_contains_foreign_pointers, no_alignment, no_size };
 
 static type_t* immutable_select (const type_t* type, string_t identifier)
 {
@@ -224,11 +332,25 @@ static size_t immutable_size (const type_t* type)
 }
 
 // Does not leak mutable pointers by definition.
-static vtable_t immutable_vtable = { immutable_select, immutable_select_field, does_not_leak_mutable_pointers, immutable_alignment, immutable_size };
+static vtable_t immutable_vtable = { immutable_select, immutable_select_field, does_not_leak_mutable_pointers, no_leaks_mutable_or_immutable_pointers, no_contains_foreign_pointers, immutable_alignment, immutable_size };
 
 static bool pointer_leaks_mutable_pointers (const type_t* type)
 {
   return !type_is_immutable (type->pointer.base_type);
+}
+
+static bool pointer_leaks_mutable_or_immutable_pointers (const type_t* type)
+{
+  return !type_is_foreign (type->foreign.base_type);
+}
+
+static bool pointer_contains_foreign_pointers (const type_t* type, list_t* list)
+{
+  if (type_is_foreign (type->pointer.base_type))
+    {
+      return true;
+    }
+  return internal_contains_foreign_pointers (type->pointer.base_type, list);
 }
 
 static size_t pointer_alignment (const type_t* type)
@@ -241,7 +363,7 @@ static size_t pointer_size (const type_t* type)
   return sizeof (void*);
 }
 
-static vtable_t pointer_vtable = { no_select, no_select_field, pointer_leaks_mutable_pointers, pointer_alignment, pointer_size };
+static vtable_t pointer_vtable = { no_select, no_select_field, pointer_leaks_mutable_pointers, pointer_leaks_mutable_or_immutable_pointers, pointer_contains_foreign_pointers, pointer_alignment, pointer_size };
 
 static size_t port_alignment (const type_t* type)
 {
@@ -253,13 +375,26 @@ static size_t port_size (const type_t* type)
   return sizeof (void*);
 }
 
-static vtable_t port_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, port_alignment, port_size };
+static vtable_t port_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_leaks_mutable_or_immutable_pointers, no_contains_foreign_pointers, port_alignment, port_size };
 
-static vtable_t reaction_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+static vtable_t reaction_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_leaks_mutable_or_immutable_pointers, no_contains_foreign_pointers, no_alignment, no_size };
 
-static vtable_t signature_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+static bool signature_leaks_mutable_or_immutable_pointers (const type_t* type)
+{
+  VECTOR_FOREACH (ptr, limit, type->signature.parameters, parameter_t *)
+    {
+      if (type_leaks_mutable_or_immutable_pointers (parameter_type (*ptr)))
+        {
+          return true;
+        }
+    }
 
-static vtable_t string_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+  return false;
+}
+
+static vtable_t signature_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, signature_leaks_mutable_or_immutable_pointers, no_contains_foreign_pointers, no_alignment, no_size };
+
+static vtable_t string_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_leaks_mutable_or_immutable_pointers, no_contains_foreign_pointers, no_alignment, no_size };
 
 static type_t* struct_select (const type_t* type, string_t identifier)
 {
@@ -276,6 +411,11 @@ static bool struct_leaks_mutable_pointers (const type_t* type)
   return type_leaks_mutable_pointers (type->struct_.field_list);
 }
 
+static bool struct_contains_foreign_pointers (const type_t* type, list_t* list)
+{
+  return internal_contains_foreign_pointers (type->struct_.field_list, list);
+}
+
 static size_t struct_alignment (const type_t* type)
 {
   return type_alignment (type->struct_.field_list);
@@ -286,9 +426,9 @@ static size_t struct_size (const type_t* type)
   return type_size (type->struct_.field_list);
 }
 
-static vtable_t struct_vtable = { struct_select, struct_select_field, struct_leaks_mutable_pointers, struct_alignment, struct_size };
+static vtable_t struct_vtable = { struct_select, struct_select_field, struct_leaks_mutable_pointers, no_leaks_mutable_or_immutable_pointers, struct_contains_foreign_pointers, struct_alignment, struct_size };
 
-static vtable_t undefined_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+static vtable_t undefined_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_leaks_mutable_or_immutable_pointers, no_contains_foreign_pointers, no_alignment, no_size };
 
 static size_t uint_alignment (const type_t* type)
 {
@@ -300,22 +440,22 @@ static size_t uint_size (const type_t* type)
   return sizeof (void*);
 }
 
-static vtable_t uint_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, uint_alignment, uint_size };
+static vtable_t uint_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, does_not_leak_mutable_or_immutable_pointers, does_not_contain_foreign_pointers, uint_alignment, uint_size };
 
 static size_t void_size (const type_t* type)
 {
   return 0;
 }
 
-static vtable_t void_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, void_size };
+static vtable_t void_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_leaks_mutable_or_immutable_pointers, no_contains_foreign_pointers, no_alignment, void_size };
 
-static vtable_t untyped_bool_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+static vtable_t untyped_bool_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_leaks_mutable_or_immutable_pointers, does_not_contain_foreign_pointers, no_alignment, no_size };
 
-static vtable_t untyped_integer_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+static vtable_t untyped_integer_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_leaks_mutable_or_immutable_pointers, no_contains_foreign_pointers, no_alignment, no_size };
 
-static vtable_t untyped_nil_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+static vtable_t untyped_nil_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_leaks_mutable_or_immutable_pointers, no_contains_foreign_pointers, no_alignment, no_size };
 
-static vtable_t untyped_string_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_alignment, no_size };
+static vtable_t untyped_string_vtable = { no_select, no_select_field, does_not_leak_mutable_pointers, no_leaks_mutable_or_immutable_pointers, no_contains_foreign_pointers, no_alignment, no_size };
 
 // TODO:  Replace functions with interface.
 
@@ -364,6 +504,12 @@ type_to_string (const type_t * type)
 	case TypeComponent:
 	  unimplemented;
 
+        case TypeForeign:
+	  {
+	    char *str;
+	    asprintf (&str, "?%s", type_to_string (type->foreign.base_type));
+	    return str;
+	  }
         case TypeImmutable:
 	  {
 	    char *str;
@@ -430,8 +576,10 @@ type_to_string (const type_t * type)
 
         case UntypedBool:
           return "bool";
+
         case UntypedInteger:
-          unimplemented;
+          return "untyped integer";
+
         case UntypedString:
           unimplemented;
 
@@ -470,6 +618,9 @@ type_move (type_t * to, type_t * from)
       VECTOR_MOVE (to->component.reactions, from->component.reactions);
       VECTOR_MOVE (to->component.bindings, from->component.bindings);
       break;
+        case TypeForeign:
+          unimplemented;
+
     case TypeImmutable:
       unimplemented;
 
@@ -541,6 +692,9 @@ duplicate (const type_t * type)
       unimplemented;
     case TypeComponent:
       unimplemented;
+        case TypeForeign:
+          unimplemented;
+
         case TypeImmutable:
           unimplemented;
 
@@ -932,6 +1086,9 @@ type_return_value (const type_t * type)
     case TypeVoid:
     case TypeBool:
     case TypeComponent:
+        case TypeForeign:
+          unimplemented;
+
         case TypeImmutable:
           unimplemented;
     case TypePointer:
@@ -939,7 +1096,7 @@ type_return_value (const type_t * type)
     case TypeFieldList:
     case TypeSignature:
     case TypeString:
-      return false;
+      unimplemented;
     case TypeFunc:
       unimplemented;
     case TypeUint:
@@ -1105,6 +1262,9 @@ type_equivalent (const type_t * x, const type_t* y)
     case TypeImmutable:
       return type_equivalent (x->immutable.base_type, y->immutable.base_type);
 
+    case TypeForeign:
+      return type_equivalent (x->foreign.base_type, y->foreign.base_type);
+
     case TypePointer:
       return type_equivalent (x->pointer.base_type, y->pointer.base_type);;
 
@@ -1143,6 +1303,26 @@ type_equivalent (const type_t * x, const type_t* y)
 bool
 type_convertible (const type_t * to, const type_t * from)
 {
+  // We can always convert to immutable or foreign so strip them off.
+  if (type_is_immutable (to))
+    {
+      to = to->immutable.base_type;
+    }
+  else if (type_is_foreign (to))
+    {
+      to = to->foreign.base_type;
+    }
+
+  // Check if we can strip immutable/foreign from from.
+  if (type_is_immutable (from) && !type_leaks_mutable_pointers (from))
+    {
+      from = from->immutable.base_type;
+    }
+  else if (type_is_foreign (from) && !type_leaks_mutable_or_immutable_pointers (from))
+    {
+      from = from->foreign.base_type;
+    }
+
   if (from->has_name)
     {
       // If from is named, to must be exactly the same.
@@ -1164,6 +1344,9 @@ type_convertible (const type_t * to, const type_t * from)
     case TypeComponent:
       unimplemented;
 
+    case TypeForeign:
+      unimplemented;
+
     case TypeImmutable:
       unimplemented;
 
@@ -1175,17 +1358,22 @@ type_convertible (const type_t * to, const type_t * from)
         }
       if (from->kind == TypePointer)
         {
-          // Converting from a pointer.
           if (type_equivalent (to->pointer.base_type, from->pointer.base_type))
             {
               return true;
             }
-          // Maybe to is immutable.
-          if (type_equivalent (to->pointer.base_type, type_make_immutable (from->pointer.base_type)))
+          if (type_is_immutable (to->pointer.base_type) &&
+              type_equivalent (to->pointer.base_type->immutable.base_type, from->pointer.base_type))
             {
+              // We can always cast to immutable.
               return true;
             }
-          return false;
+          if (type_is_foreign (to->pointer.base_type) &&
+              type_equivalent (to->pointer.base_type->foreign.base_type, from->pointer.base_type))
+            {
+              // We can always cast to foreign.
+              return true;
+            }
         }
       break;
 
@@ -1204,7 +1392,7 @@ type_convertible (const type_t * to, const type_t * from)
 
     case TypeUint:
       // Converting to uint.
-      return from->kind == UntypedInteger;
+      return from->kind == TypeUint || from->kind == UntypedInteger;
 
     case TypeStruct:
       unimplemented;
@@ -1295,6 +1483,9 @@ type_callable (const type_t * type)
       unimplemented;
     case TypeComponent:
       unimplemented;
+    case TypeForeign:
+      unimplemented;
+
         case TypeImmutable:
           unimplemented;
 
@@ -1346,6 +1537,9 @@ type_parameter_count (const type_t * type)
       unimplemented;
     case TypeComponent:
       unimplemented;
+    case TypeForeign:
+      unimplemented;
+
         case TypeImmutable:
           unimplemented;
 
@@ -1397,6 +1591,8 @@ type_parameter_type (const type_t * type, size_t idx)
       unimplemented;
     case TypeComponent:
       unimplemented;
+    case TypeForeign:
+      unimplemented;
         case TypeImmutable:
           unimplemented;
 
@@ -1447,6 +1643,8 @@ type_return_type (const type_t * type)
     case TypeBool:
       unimplemented;
     case TypeComponent:
+      unimplemented;
+    case TypeForeign:
       unimplemented;
         case TypeImmutable:
           unimplemented;
@@ -1679,6 +1877,9 @@ void type_print_value (const type_t* type,
         case TypeImmutable:
           unimplemented;
 
+    case TypeForeign:
+      unimplemented;
+
     case TypePointer:
     case TypePort:
       {
@@ -1753,8 +1954,12 @@ bool type_is_arithmetic (const type_t* type)
       unimplemented;
     case TypeComponent:
       unimplemented;
+    case TypeForeign:
+      unimplemented;
         case TypeImmutable:
           unimplemented;
+
+
     case TypePointer:
       unimplemented;
     case TypePort:
@@ -1831,6 +2036,7 @@ bool type_is_untyped (const type_t* type)
     case TypeBool:
     case TypeComponent:
     case TypeFieldList:
+    case TypeForeign:
     case TypeFunc:
     case TypeImmutable:
     case TypePointer:
@@ -1881,4 +2087,32 @@ type_t* type_immutable_base_type (const type_t* type)
 bool type_leaks_mutable_pointers (const type_t* type)
 {
   return type->vtable->leaks_mutable_pointers (type);
+}
+
+bool type_leaks_mutable_or_immutable_pointers (const type_t* type)
+{
+  return type->vtable->leaks_mutable_or_immutable_pointers (type);
+}
+
+type_t* type_make_foreign (type_t* type)
+{
+  // Don't chain foreign.
+  if (type_is_foreign (type))
+    {
+      return type;
+    }
+
+  type_t* t = make (&foreign_vtable, TypeForeign);
+  t->foreign.base_type = type;
+  return t;
+}
+
+bool type_is_foreign (const type_t* type)
+{
+  return type->kind == TypeForeign;
+}
+
+bool type_contains_foreign_pointers (const type_t* type)
+{
+  return internal_contains_foreign_pointers (type, NULL);
 }

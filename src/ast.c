@@ -203,6 +203,9 @@ ast_print (const ast_t * node, size_t indent)
 	case AstFieldList:
 	  printf ("AstFieldList");
 	  break;
+	case AstForeign:
+	  printf ("AstForeign");
+	  break;
 	case AstIdentifierListTypeSpec:
 	  printf ("AstIdentifierListTypeSpec");
 	  break;
@@ -790,6 +793,13 @@ ast_t *ast_make_pointer_type_spec (ast_t* type_spec)
 {
   ast_t *retval = make_type_spec (AstPointer, 1);
   ast_set_child (retval, POINTER_BASE_TYPE, type_spec);
+  return retval;
+}
+
+ast_t *ast_make_foreign_type_spec (ast_t* type_spec)
+{
+  ast_t *retval = make_type_spec (AstForeign, 1);
+  ast_set_child (retval, FOREIGN_BASE_TYPE, type_spec);
   return retval;
 }
 

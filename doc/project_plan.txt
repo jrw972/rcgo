@@ -180,10 +180,10 @@ Dependencies: None
 3 Model Notation and Semantics
 4 Design and Implementation (for core features)
 5 Advanced Features and Scenarios
-  getters
+  getters DONE
   automatic port and reactions
   multi-threaded scheduler (high-level, thread per trigger)
-  pointers and transferrable objects, garbage collection
+  pointers and transferrable objects, garbage collection DONE
     so what:  Efficient state transfer (move semantics)
               Efficient read only state (deep-copy snap shot)
               Delayering component bounderies for query execution

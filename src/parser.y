@@ -181,6 +181,7 @@ type_spec: identifier { $$ = ast_make_identifier_type_spec ($1); }
 | STRUCT '{' field_list '}' { $$ = ast_make_struct_type_spec ($3); }
 | PORT signature { $$ = ast_make_port ($2); }
 | '@' type_spec { $$ = ast_make_pointer_type_spec ($2); }
+| '?' type_spec { $$ = ast_make_foreign_type_spec ($2); }
 
 field_list: /* empty */ { $$ = ast_make_field_list (); }
 | field_list identifier_list type_spec ';' { $$ = ast_append_child ($1, ast_make_identifier_list_type_spec ($2, $3)); }

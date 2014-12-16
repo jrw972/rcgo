@@ -1,0 +1,98 @@
+type Element struct
+{
+  value uint;
+  next @Element;
+};
+
+type Queue struct
+{
+  head @Element;
+  tail @@Element;
+};
+
+func (this @Queue) Push (v uint)
+{
+  if this.head == nil
+    {
+      this.tail = this.head&;
+    };
+
+  var e @Element;
+  e = new Element;
+  e.value = v;
+  this.tail@ = e;
+  this.tail = e.next&;
+}
+
+func (this @Queue) Pop ()
+{
+  this.head = this.head.next;
+  if this.head == nil
+    {
+      this.tail = this.head&;
+    };
+}
+
+func (this @$Queue) Empty () bool
+{
+  return this.head == nil;
+}
+
+func (this @$Queue) Front () uint
+{
+  return this.head.value;
+}
+
+type Channel component
+{
+  queue Queue;
+  receive port (message uint);
+};
+
+reaction (this @$Channel) send (message @?uint)
+{
+  trigger
+  {
+    this.queue.Push (message@);
+  };
+}
+
+action (this @$Channel) (this.queue.Empty ()!)
+{
+  trigger receive (this.queue.Front ())
+    {
+      this.queue.Pop ();
+    };
+}
+
+type System component
+{
+  channel Channel;
+  send_count uint;
+  send port (message @?uint);
+};
+
+action (this @$System) (this.send_count != 10)
+{
+  var x @uint;
+  x = new uint;
+  x@ = this.send_count;
+
+  trigger send (x)
+  {
+    println `Sent `, this.send_count;
+    this.send_count++;
+  };
+}
+
+reaction (this @$System) receive (message uint)
+{
+  println `Received `, message;
+}
+
+bind (this @System) {
+  this.send -> this.channel.send;
+  this.channel.receive -> this.receive;
+}
+
+instance s System;

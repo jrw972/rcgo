@@ -335,6 +335,11 @@ process_type_spec (ast_t * node, bool force_identifiers)
 	return field_list;
       }
 
+    case AstForeign:
+      return
+	type_make_foreign (process_type_spec
+                           (ast_get_child (node, FOREIGN_BASE_TYPE), false));
+
     case AstIdentifierListTypeSpec:
       not_reached;
 
@@ -366,9 +371,15 @@ process_type_spec (ast_t * node, bool force_identifiers)
                            (ast_get_child (node, POINTER_BASE_TYPE), false));
 
     case AstPort:
-      return
-	type_make_port (process_type_spec
-			(ast_get_child (node, PORT_SIGNATURE), true));
+      {
+        type_t* signature = process_type_spec (ast_get_child (node, PORT_SIGNATURE), true);
+        if (type_leaks_mutable_or_immutable_pointers (signature))
+          {
+	    error_at_line (-1, 0, ast_file (node), ast_line (node),
+			   "signature leaks pointers");
+          }
+        return type_make_port (signature);
+      }
 
     case AstSignature:
       {
@@ -677,7 +688,7 @@ set_dereference_type (ast_t* node, typed_value_t tv)
 {
   tv = typed_value_dereference (tv);
   ast_set_type (node, tv,
-                type_is_immutable (tv.type),
+                type_is_immutable (tv.type) || type_is_foreign (tv.type),
                 ast_get_derived_from_receiver (ast_get_child (node, UNARY_CHILD)));
 }
 
@@ -1089,7 +1100,19 @@ check_rvalue (ast_t ** ptr, binding_t* binding, bool output)
       break;
 
     case AstDereferenceExpr:
-      unimplemented;
+      {
+        ast_t** child = ast_get_child_ptr (node, UNARY_CHILD);
+        check_rvalue (child, binding, output);
+        typed_value_t tv = ast_get_typed_value (*child);
+        if (!typed_value_can_dereference (tv))
+          {
+	    error_at_line (-1, 0, ast_file (node), ast_line (node),
+			   "cannot apply @ to expression");
+          }
+
+        ast_set_type (node, typed_value_dereference (tv), ast_get_derived_from_immutable (*child), ast_get_derived_from_receiver (*child));
+      }
+      break;
 
     case AstEqualExpr:
       check_comparison (node);
@@ -1221,6 +1244,7 @@ convert_rvalue_to_builtin_types (ast_t ** ptr)
     case TypeBool:
     case TypeComponent:
     case TypeFieldList:
+    case TypeForeign:
     case TypeFunc:
     case TypeImmutable:
     case TypePointer:
@@ -1305,24 +1329,30 @@ check_statement (ast_t * node)
         check_assignment_target (left, node);
 	ast_t **right = ast_get_child_ptr (node, BINARY_RIGHT_CHILD);
 	check_rvalue (right, NULL, false);
-	typed_value_t left_type = ast_get_typed_value (*left);
-        typed_value_t right_type = ast_get_typed_value (*right);
+	typed_value_t left_tv = ast_get_typed_value (*left);
+        typed_value_t right_tv = ast_get_typed_value (*right);
 
-        if (!typed_value_convertible (left_type, right_type))
+        if (!typed_value_convertible (left_tv, right_tv))
           {
 	    error_at_line (-1, 0, ast_file (node), ast_line (node),
-			   "cannot convert %s to %s in assignment", type_to_string (right_type.type), type_to_string (left_type.type));
+			   "cannot convert %s to %s in assignment", type_to_string (right_tv.type), type_to_string (left_tv.type));
           }
 
         if (ast_get_derived_from_immutable (*right) &&
-            type_leaks_mutable_pointers (right_type.type))
+            type_leaks_mutable_pointers (right_tv.type))
           {
 	    error_at_line (-1, 0, ast_file (node), ast_line (node),
 			   "assignment leaks mutable pointer");
           }
 
+        if (type_contains_foreign_pointers (right_tv.type))
+          {
+	    error_at_line (-1, 0, ast_file (node), ast_line (node),
+			   "assignment leaks foreign pointer");
+          }
+
         // Convert the rvalue since we must compute it.
-        convert_if_untyped (left_type, *right);
+        convert_if_untyped (left_tv, *right);
       }
       break;
 

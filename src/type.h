@@ -10,6 +10,7 @@ typedef enum
   TypeBool,
   TypeComponent,
   TypeFieldList,
+  TypeForeign,
   TypeFunc,
   TypeImmutable,
   TypePointer,
@@ -214,5 +215,13 @@ bool type_is_immutable (const type_t* type);
 type_t* type_immutable_base_type (const type_t* type);
 
 bool type_leaks_mutable_pointers (const type_t* type);
+
+bool type_leaks_mutable_or_immutable_pointers (const type_t* type);
+
+type_t* type_make_foreign (type_t* type);
+
+bool type_is_foreign (const type_t* type);
+
+bool type_contains_foreign_pointers (const type_t* type);
 
 #endif /* type_h */

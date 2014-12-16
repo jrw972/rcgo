@@ -39,7 +39,7 @@
 "{"|"}"                { return *yytext; }
 "("|")"                { return *yytext; }
 "<"|">"                { return *yytext; }
-"!"|";"|","|"="        { return *yytext; }
+"!"|";"|","|"="|"?"    { return *yytext; }
 "$"|"@"|"."|"&"        { return *yytext; }
 
 [_a-zA-Z][_a-zA-Z0-9]* { yylval.identifier = enter (yytext);

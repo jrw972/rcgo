@@ -34,6 +34,7 @@ typedef enum
   AstComponent,
   AstEmptyTypeSpec,
   AstFieldList,
+  AstForeign,
   AstIdentifierListTypeSpec,
   AstIdentifierTypeSpec,
   AstPointer,
@@ -296,6 +297,10 @@ type_t *ast_get_current_receiver_type (const ast_t * node);
 #define POINTER_BASE_TYPE 0
 
 ast_t *ast_make_pointer_type_spec (ast_t* type_spec);
+
+#define FOREIGN_BASE_TYPE 0
+
+ast_t *ast_make_foreign_type_spec (ast_t* type_spec);
 
 ast_t *ast_make_equal (ast_t* left, ast_t* right);
 
