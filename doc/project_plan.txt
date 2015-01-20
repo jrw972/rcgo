@@ -192,3 +192,5 @@ Dependencies: None
 
 Jan Vitek
 Ron Cytron for GC
+
+TODO:  Remove parameters from reaction in trigger.

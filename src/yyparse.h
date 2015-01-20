@@ -5,6 +5,20 @@
 #include "rtstring.h"
 #include "type.h"
 
+#define YYLTYPE size_t
+
+#define YYLLOC_DEFAULT(Current, Rhs, N)                                \
+    do                                                                  \
+      if (N)                                                            \
+        {                                                               \
+          (Current)   = YYRHSLOC (Rhs, 1);        \
+        }                                                               \
+      else                                                              \
+        {                                                               \
+         (Current) =  YYRHSLOC (Rhs, 0);                                \
+        }                                                               \
+    while (0)
+
 extern ast_t *root;
 
 int yyparse (void);

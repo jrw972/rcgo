@@ -54,7 +54,7 @@ typed_value_t typed_value_make_nil (void)
 
 bool typed_value_is_boolean (typed_value_t t)
 {
-  return type_kind (t.type) == TypeBool || type_kind (t.type) == UntypedBool;
+  return type_is_boolean (t.type);
 }
 
 typed_value_t typed_value_logic_not (typed_value_t t)
@@ -72,13 +72,13 @@ typed_value_t typed_value_logic_not (typed_value_t t)
 
 bool typed_value_can_dereference (typed_value_t t)
 {
-  return type_is_pointer (t.type);
+  return type_can_dereference (t.type);
 }
 
 typed_value_t typed_value_dereference (typed_value_t t)
 {
   assert (typed_value_can_dereference (t));
-  return typed_value_make (type_pointer_base_type (t.type));
+  return typed_value_make (type_dereference (t.type));
 }
 
 bool typed_value_can_select (typed_value_t tv, string_t name)
@@ -118,10 +118,19 @@ bool typed_value_can_convert (typed_value_t tv, type_t* type)
     case TypeForeign:
       unimplemented;
 
-    case TypeImmutable:
+    case TypeHeap:
       unimplemented;
 
+    case TypeImmutable:
+      return typed_value_can_convert (tv, type_immutable_base_type (type));
+
     case TypePointer:
+      return type_kind (tv.type) == UntypedNil;
+
+    case TypePointerToForeign:
+      unimplemented;
+
+    case TypePointerToImmutable:
       return type_kind (tv.type) == UntypedNil;
 
     case TypePort:
@@ -183,10 +192,20 @@ typed_value_t typed_value_convert (typed_value_t tv, type_t* type)
           unimplemented;
         case TypeFunc:
           unimplemented;
-        case TypeImmutable:
+        case TypeHeap:
           unimplemented;
 
+        case TypeImmutable:
+          return typed_value_convert (tv, type_immutable_base_type (type));
+
         case TypePointer:
+          tv.pointer_value = NULL;
+          break;
+
+        case TypePointerToForeign:
+          unimplemented;
+
+        case TypePointerToImmutable:
           tv.pointer_value = NULL;
           break;
 
@@ -238,4 +257,39 @@ bool typed_value_convertible (typed_value_t target, typed_value_t source)
 bool typed_value_is_arithmetic (typed_value_t tv)
 {
   return type_is_arithmetic (tv.type);
+}
+
+bool typed_value_copyable (typed_value_t tv)
+{
+  return type_copyable (tv.type);
+}
+
+bool typed_value_can_assign (typed_value_t tv)
+{
+  return type_can_assign (tv.type);
+}
+
+bool typed_value_is_moveable (typed_value_t tv)
+{
+  return type_is_moveable (tv.type);
+}
+
+typed_value_t typed_value_move (typed_value_t tv)
+{
+  return typed_value_make (type_move (tv.type));
+}
+
+bool typed_value_is_mergeable (typed_value_t tv)
+{
+  return type_is_mergeable (tv.type);
+}
+
+typed_value_t typed_value_merge (typed_value_t tv)
+{
+  return typed_value_make (type_merge (tv.type));
+}
+
+bool typed_value_is_changeable (typed_value_t tv)
+{
+  return type_is_changeable (tv.type);
 }

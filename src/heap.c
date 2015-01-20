@@ -53,6 +53,17 @@ static block_t* block_make (size_t size)
   return block;
 }
 
+static void block_free (block_t* block)
+{
+  if (block != NULL)
+    {
+      block_free (block->left);
+      block_free (block->right);
+      free (block->begin);
+      free (block);
+    }
+}
+
 static void block_insert (block_t** ptr, block_t* block)
 {
   block_t* p = *ptr;
@@ -62,7 +73,7 @@ static void block_insert (block_t** ptr, block_t* block)
       return;
     }
 
-  if (block->bits < p->bits)
+  if (block->begin < p->begin)
     {
       block_insert (&(p->left), block);
     }
@@ -132,7 +143,7 @@ static unsigned char block_get_bits (block_t* block, size_t slot)
   return retval & 0x0F;
 }
 
-static void block_allocate (block_t* block, void* address, const type_t* type)
+static void block_allocate (block_t* block, void* address, size_t size)
 {
   assert (block->begin <= address);
   assert (address < block->end);
@@ -141,7 +152,7 @@ static void block_allocate (block_t* block, void* address, const type_t* type)
 
   block_set_bits (block, slot, OBJECT);
 
-  size_t slot_end = slot + type_size (type) / SLOT_SIZE;
+  size_t slot_end = slot + size / SLOT_SIZE;
   for (; slot != slot_end; ++slot)
     {
       block_set_bits (block, slot, ALLOCATED);
@@ -185,18 +196,18 @@ static void block_mark (block_t* block, void* address)
     }
 }
 
-static void scan (block_t* root_block, void* begin, void* end);
+static void scan (heap_t* heap, block_t* root_block, void* begin, void* end);
 
-static void block_scan (block_t* root_block, block_t* block)
+static void block_scan (heap_t* heap, block_t* root_block, block_t* block)
 {
   if (block == NULL)
     {
       return;
     }
 
-  block_scan (root_block, block->left);
-  block_scan (root_block, block->right);
-  scan (root_block, block->begin, block->end);
+  block_scan (heap, root_block, block->left);
+  block_scan (heap, root_block, block->right);
+  scan (heap, root_block, block->begin, block->end);
 }
 
 static void block_sweep (block_t* block, chunk_t** head)
@@ -243,6 +254,11 @@ struct heap_t {
   size_t next_allocation_size;
   chunk_t* free_list_head;
   bool dirty;  // The heap is dirty and should be collected.
+  heap_t* child;
+  heap_t* next;
+  size_t count; // Increment when changing to, decremented when changing from.
+  heap_t* parent;
+  bool reachable;
 };
 
 heap_t* heap_make (char* begin, char* end)
@@ -253,15 +269,58 @@ heap_t* heap_make (char* begin, char* end)
   return h;
 }
 
+heap_t* heap_make_size (size_t size_of_root)
+{
+  heap_t* h = heap_make (NULL, NULL);
+  h->begin = heap_allocate (h, size_of_root);
+  h->end = h->begin + size_of_root;
+  return h;
+
+}
+
 void* heap_instance (const heap_t* heap)
 {
   return heap->begin;
 }
 
-void* heap_allocate (heap_t* heap, type_t* type)
+static void block_dump (const block_t* block)
 {
+  if (block != NULL)
+    {
+      printf ("block=%p begin=%p end=%p left=%p right=%p\n", block, block->begin, block->end, block->left, block->right);
+      block_dump (block->left);
+      block_dump (block->right);
+    }
+}
+
+void heap_dump (const heap_t* heap)
+{
+  printf ("heap=%p begin=%p end=%p next_sz=%zd dirty=%d count=%zd reachable=%d parent=%p next=%p\n", heap, heap->begin, heap->end, heap->next_allocation_size, heap->dirty, heap->count, heap->reachable, heap->parent, heap->next);
+
+  block_dump (heap->block);
+
+  chunk_t* ch;
+  for (ch = heap->free_list_head; ch != NULL; ch = ch->next)
+    {
+      printf ("chunk=%p size=%zd next=%p\n", ch, ch->size, ch->next);
+    }
+
+  heap_t* c;
+  for (c = heap->child; c != NULL; c = c->next)
+    {
+      heap_dump (c);
+    }
+}
+
+void* heap_allocate (heap_t* heap, size_t size)
+{
+  if (size == 0)
+    {
+      return NULL;
+    }
+
   // Must be a multiple of the slot size.
-  size_t size = align_up (type_size (type), SLOT_SIZE);
+  size = align_up (size, SLOT_SIZE);
 
   // Find a chunk.
   chunk_t** chunk;
@@ -310,7 +369,7 @@ void* heap_allocate (heap_t* heap, type_t* type)
       block = block_find (heap->block, c);
     }
 
-  block_allocate (block, c, type);
+  block_allocate (block, c, size);
 
   // Clear the memory.
   memset (c, 0, size);
@@ -320,7 +379,7 @@ void* heap_allocate (heap_t* heap, type_t* type)
   return c;
 }
 
-static void scan (block_t* root_block, void* begin, void* end)
+static void scan (heap_t* heap, block_t* root_block, void* begin, void* end)
 {
   char** b;
   char** e;
@@ -336,7 +395,34 @@ static void scan (block_t* root_block, void* begin, void* end)
         {
           block_mark (block, p);
         }
+      else
+        {
+          heap_t* ptr;
+          for (ptr = heap->child; ptr != NULL; ptr = ptr->next)
+            {
+              if (ptr == (heap_t*)p)
+                {
+                  heap->reachable = true;
+                }
+            }
+        }
     }
+}
+
+static void heap_free (heap_t* heap)
+{
+  // Free all the blocks.
+  block_free (heap->block);
+
+  // Free the child heaps.
+  while (heap->child != NULL)
+    {
+      heap_t* c = heap->child;
+      heap->child = c->next;
+      heap_free (c);
+    }
+
+  free (heap);
 }
 
 void heap_collect_garbage (heap_t* heap)
@@ -344,12 +430,103 @@ void heap_collect_garbage (heap_t* heap)
   if (heap->dirty)
     {
       // Scan the root.
-      scan (heap->block, heap->begin, heap->end);
+      scan (heap, heap->block, heap->begin, heap->end);
       // Scan the heap.
-      block_scan (heap->block, heap->block);
+      block_scan (heap, heap->block, heap->block);
       // Sweep the heap.
       heap->free_list_head = NULL;
       block_sweep (heap->block, &heap->free_list_head);
       heap->dirty = false;
+
+      heap_t** child = &(heap->child);
+      while (*child != NULL)
+        {
+          if ((*child)->reachable)
+            {
+              heap_collect_garbage (*child);
+              (*child)->reachable = false;
+              child = &(*child)->next;
+            }
+          else
+            {
+              heap_t* h = *child;
+              *child = h->next;
+              heap_free (h);
+            }
+        }
     }
+}
+
+void heap_insert_child (heap_t* parent, heap_t* child)
+{
+  child->parent = parent;
+  child->next = parent->child;
+  parent->child = child;
+}
+
+static void merge_blocks (heap_t* heap, block_t* block)
+{
+  if (block != NULL)
+    {
+      merge_blocks (heap, block->left);
+      merge_blocks (heap, block->right);
+      block_insert (&(heap->block), block);
+    }
+}
+
+void heap_merge (heap_t* heap, heap_t* x)
+{
+  // Merge the blocks.
+  merge_blocks (heap, x->block);
+
+  // Merge the free list.
+  chunk_t** ch;
+  for (ch = &(heap->free_list_head); *ch != NULL; ch = &(*ch)->next)
+    ;;
+  *ch = x->free_list_head;
+
+  // Merge the children.
+  heap_t** h;
+  for (h = &(heap->child); *h != NULL; h = &(*h)->next)
+    ;;
+  *h = x->child;
+
+  // Calculate dirty.
+  heap->dirty = heap->dirty || x->dirty;
+
+  // Free the heap.
+  free (x);
+}
+
+void heap_remove_from_parent (heap_t* child)
+{
+  if (child->parent != NULL)
+    {
+      heap_t** ptr = &(child->parent->child);
+      while (*ptr != child)
+        {
+          ptr = &(*ptr)->next;
+        }
+
+      // Remove from parent's list.
+      *ptr = child->next;
+
+      // Make the child forget the parent.
+      child->parent = NULL;
+    }
+}
+
+void heap_inc (heap_t* heap)
+{
+  ++heap->count;
+}
+
+void heap_dec (heap_t* heap)
+{
+  --heap->count;
+}
+
+bool heap_in_use (const heap_t* heap)
+{
+  return heap->count != 0;
 }

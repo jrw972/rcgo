@@ -48,4 +48,7 @@ symbol_t** symtab_end (const symtab_t* symtab);
 
 symbol_t** symtab_next (symbol_t** pos);
 
+// Enter all parameters and variables that are in scope and pointers as pointers to foreign.
+void symtab_change (symtab_t* symtab);
+
 #endif /* symtab_h */

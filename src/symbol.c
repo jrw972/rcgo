@@ -28,6 +28,8 @@ struct symbol_t
     struct
     {
       type_t *type;
+      VariableKind kind;
+      symbol_t* original;
     } variable;
     struct
     {
@@ -143,6 +145,18 @@ symbol_make_variable (string_t identifier, type_t * type, ast_t* defining_node)
 {
   symbol_t *s = make (identifier, SymbolVariable, defining_node);
   s->variable.type = type;
+  s->variable.kind = VariableOrdinary;
+  return s;
+}
+
+symbol_t *
+symbol_make_variable_duplicate (symbol_t* symbol, type_t * type)
+{
+  assert (symbol->kind == SymbolVariable);
+  symbol_t *s = make (symbol->identifier, SymbolVariable, symbol->defining_node);
+  s->variable.type = type;
+  s->variable.kind = VariableDuplicate;
+  s->variable.original = symbol;
   return s;
 }
 
@@ -243,13 +257,23 @@ symbol_make_receiver_duplicate (symbol_t* receiver)
   // Strip out the immutable.
   type_t* t = symbol_parameter_type (receiver);
   t = type_pointer_base_type (t);
-  t = type_immutable_base_type (t);
   t = type_make_pointer (t);
 
   symbol_t *s = make (symbol_identifier (receiver), SymbolParameter, symbol_defining_node (receiver));
   s->parameter.type = t;
   s->parameter.kind = ParameterReceiverDuplicate;
   s->parameter.original = receiver;
+  return s;
+}
+
+symbol_t *
+symbol_make_parameter_duplicate (symbol_t* symbol, type_t * type)
+{
+  assert (symbol->kind == SymbolParameter);
+  symbol_t *s = make (symbol->identifier, SymbolParameter, symbol->defining_node);
+  s->parameter.type = type;
+  s->parameter.kind = ParameterDuplicate;
+  s->parameter.original = symbol;
   return s;
 }
 
@@ -275,9 +299,15 @@ void symbol_set_offset (symbol_t* symbol,
 
 ptrdiff_t symbol_get_offset (const symbol_t* symbol)
 {
-  if (symbol->kind == SymbolParameter && symbol->parameter.kind == ParameterReceiverDuplicate)
+  if (symbol->kind == SymbolParameter &&
+      (symbol->parameter.kind == ParameterReceiverDuplicate ||
+       symbol->parameter.kind == ParameterDuplicate))
     {
-      return symbol->parameter.original->offset;
+      return symbol_get_offset (symbol->parameter.original);
+    }
+  else if (symbol->kind == SymbolVariable && symbol->variable.kind == VariableDuplicate)
+    {
+      return symbol_get_offset (symbol->variable.original);
     }
   return symbol->offset;
 }

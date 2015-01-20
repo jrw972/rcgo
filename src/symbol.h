@@ -31,7 +31,15 @@ void symbol_set_in_progress (symbol_t * symbol, bool in_progress);
 symbol_t *symbol_make_undefined (string_t identifier, SymbolKind kind,
 				 ast_t * defining_node);
 
+typedef enum
+  {
+    VariableOrdinary,
+    VariableDuplicate
+  } VariableKind;
+
 symbol_t *symbol_make_variable (string_t identifier, type_t * type, ast_t* defining_node);
+
+symbol_t *symbol_make_variable_duplicate (symbol_t* symbol, type_t * type);
 
 type_t *symbol_variable_type (const symbol_t * symbol);
 
@@ -59,6 +67,7 @@ typedef enum
   ParameterReceiver,
   ParameterReceiverDuplicate,
   ParameterReturn,
+  ParameterDuplicate,
 } ParameterKind;
 
 symbol_t *symbol_make_parameter (string_t identifier, type_t * type,
@@ -71,6 +80,8 @@ symbol_t *symbol_make_receiver (string_t identifier, type_t * type,
                                 ast_t* defining_node);
 
 symbol_t *symbol_make_receiver_duplicate (symbol_t* receiver);
+
+symbol_t *symbol_make_parameter_duplicate (symbol_t* symbol, type_t * type);
 
 ParameterKind symbol_parameter_kind (const symbol_t * symbol);
 

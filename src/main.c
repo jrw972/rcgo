@@ -9,6 +9,7 @@
 #include "config.h"
 #include "scanner.h"
 #include "yyparse.h"
+#include "parser.h"
 #include "semantic.h"
 #include "debug.h"
 #include "instance.h"
@@ -93,6 +94,7 @@ main (int argc, char **argv)
       error (EXIT_FAILURE, errno, "Could not open '%s'", in_file);
     }
 
+  yylloc = 1;
   if (yyparse () != 0)
     {
       // TODO:  Error reporting.
@@ -110,6 +112,11 @@ main (int argc, char **argv)
   enter_symbols (root);
   process_declarations (root);
   process_definitions (root);
+
+  if (debug)
+    {
+      ast_print (root, 0);
+    }
 
   /* Check composition. */
   instance_table_t *instance_table = instance_table_make ();

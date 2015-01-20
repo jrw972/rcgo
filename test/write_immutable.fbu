@@ -2,6 +2,6 @@ type C component {
   flag bool;
 };
 
-action (this @$C) (true) {
+action (this $C) (true) {
   this.flag = true;
 }

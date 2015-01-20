@@ -14,11 +14,17 @@
 
 "action"               { return ACTION; }
 "bind"                 { return BIND; }
+"change"               { return CHANGE; }
 "component"            { return COMPONENT; }
+"const"                { return CONST; }
 "else"                 { return ELSE; }
+"foreign"              { return FOREIGN; }
 "func"                 { return FUNC; }
+"heap"                 { return HEAP; }
 "if"                   { return IF; }
 "instance"             { return INSTANCE; }
+"merge"                { return MERGE; }
+"move"                 { return MOVE; }
 "new"                  { return NEW; }
 "port"                 { return PORT; }
 "println"              { return PRINTLN; }
@@ -73,5 +79,5 @@
 \/\/.*                 /* Discard line comments. */
 
 [ \t]+                 /* Discard whitespace */
-[\n]                   { ++in_line; }
+[\n]                   { ++yylloc; }
 .                      { printf ("Unrecognized character: %s\n", yytext); }

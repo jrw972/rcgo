@@ -1,0 +1,29 @@
+"Const correctness" is necessary to support the semantics of reactive components.
+The first issue is the distinction between the immutable and mutable phases of action execution.
+The second issue is efficient communication.  A component should be able to share data with another component by passing a pointer.
+The third issue is not leaking pointers between components.  Components are not allowed to share data as this leads to non-deterministic memory behavior.
+
+Assume a "this" pointer, called a receiver, is provided to each action or reaction.
+The receiver will be immutable upon entering the action or reaction and recast to mutable upon entering the mutable phase.
+There are restrictions when a pointer is passed (directly or indirectly) into a port and on therefore a reaction.
+1.  No address derived from the pointer can serve as an lvalue.
+2.  No address derived from the pointer can be saved so as to be reached from the triggered receiver.
+Similarly, any pointer (direct or indirect) passed to a reaction cannot be accessed in the mutable phase.
+
+The compiler determines if an rvalue or lvalue is derived from immutable or derived from foreign.
+
+An lvalue is derived from immutable if (1) it is declared immutable, (2) the lvalue from which it is derived is derived from immutable, or (3) the lvalue is the result of dereferencing a pointer to immutable.
+An lvalue is derived from foreign if (1) it is declared foreign, (2) the lvalue from which is it derived is derived from foreign, or (3) the lvalue is the result of dereferencing a pointer to foreign.
+
+An rvalue is derived from immutable if (1) is is declared immutable and (2) the lvalue, e.g., address of, or rvalue from which it is derived is derived from immutable.
+An rvalue is derived from foreign if (1) is is declared foreign and (2) the lvalue, e.g., address of, or rvalue from which it is derived is derived from foreign.
+If an rvalue is derived from immutable and a pointer type, the pointer type is implicitly converted to pointer to immutable.
+If an rvalue is derived from foreign and a pointer type, the pointer type is implicitly converted to pointer to foreign.
+Foreign takes precedence over immutable.
+
+An lvalue cannot be assigned if it is derived from immutable or derived from foreign.
+A pointer can be promoted to a pointer to immutable or a pointer to foreign.
+A pointer to immutable can be promoted to a pointer to foreign.
+
+There are three pointer types:  pointer to mutable, pointer to immutable, and pointer to foreign.
+There are two type modifiers: const and foreign.

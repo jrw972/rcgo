@@ -69,4 +69,23 @@ bool typed_value_is_arithmetic (typed_value_t tv);
 /* Can we call the type? */
 bool typed_value_callable (typed_value_t tv);
 
+/* Can we copy values of this type (for call or assignment)? */
+bool typed_value_copyable (typed_value_t tv);
+
+/* Can we assign to this type? */
+bool typed_value_can_assign (typed_value_t tv);
+
+/* Can we move values of this type? */
+bool typed_value_is_moveable (typed_value_t tv);
+
+typed_value_t typed_value_move (typed_value_t tv);
+
+/* Can we merge values of this type? */
+bool typed_value_is_mergeable (typed_value_t tv);
+
+typed_value_t typed_value_merge (typed_value_t tv);
+
+/* Can we change value of this type? */
+bool typed_value_is_changeable (typed_value_t tv);
+
 #endif /* typed_value_h */

@@ -24,24 +24,28 @@ void symtab_print (const symtab_t* symtab)
       const symbol_t* symbol = *ptr;
       const char* name = get (symbol_identifier (symbol));
       const char* kind = symbol_kind_string (symbol_kind (symbol));
-      const char* type;
+      const type_t* type;
       size_t offset = symbol_get_offset (symbol);
       switch (symbol_kind (symbol))
         {
         case SymbolInstance:
-          unimplemented;
+          type = symbol_get_instance_type (symbol);
+          break;
         case SymbolParameter:
-          type = type_to_string (symbol_parameter_type (symbol));
+          type = symbol_parameter_type (symbol);
           break;
         case SymbolType:
-          unimplemented;
+          type = symbol_get_type_type (symbol);
+          break;
         case SymbolTypedConstant:
-          unimplemented;
+          type = symbol_typed_constant_value (symbol).type;
+          break;
         case SymbolVariable:
-          unimplemented;
+          type = symbol_variable_type (symbol);
+          break;
         }
 
-      printf ("%s\t%s\t%s\t%zd\n", name, kind, type, offset);
+      printf ("%s\t%s\t%s\t%zd\n", name, kind, type_to_string (type), offset);
     }
 }
 
@@ -258,4 +262,60 @@ symbol_t** symtab_end (const symtab_t* symtab)
 symbol_t** symtab_next (symbol_t** pos)
 {
   return VECTOR_NEXT (pos);
+}
+
+void symtab_change (symtab_t* symtab)
+{
+  symtab_t* s;
+  for (s = symtab->parent; s != NULL; s = s->parent)
+    {
+      VECTOR_FOREACH (ptr, limit, s->symbols, symbol_t*)
+        {
+          symbol_t* symbol = *ptr;
+          if (symbol_kind (symbol) == SymbolParameter)
+            {
+              type_t* type = symbol_parameter_type (symbol);
+              if (type_is_pointer (type))
+                {
+                  type_t* base_type = type_pointer_base_type (type);
+                  if (!type_is_foreign (base_type))
+                    {
+                      // Strip immutability.
+                      if (type_is_immutable (base_type))
+                        {
+                          base_type = type_immutable_base_type (base_type);
+                        }
+                      // Make a foreign pointer.
+                      base_type = type_make_foreign (base_type);
+                      type = type_make_pointer (base_type);
+                      // Enter as a duplicate.
+                      symbol_t* dup = symbol_make_parameter_duplicate (symbol, type);
+                      symtab_enter (symtab, dup);
+                    }
+                }
+            }
+          else if (symbol_kind (symbol) == SymbolVariable)
+            {
+              type_t* type = symbol_variable_type (symbol);
+              if (type_is_pointer (type))
+                {
+                  type_t* base_type = type_pointer_base_type (type);
+                  if (!type_is_foreign (base_type))
+                    {
+                      // Strip immutability.
+                      if (type_is_immutable (base_type))
+                        {
+                          base_type = type_immutable_base_type (base_type);
+                        }
+                      // Make a foreign pointer.
+                      base_type = type_make_foreign (base_type);
+                      type = type_make_pointer (base_type);
+                      // Enter as a duplicate.
+                      symbol_t* dup = symbol_make_variable_duplicate (symbol, type);
+                      symtab_enter (symtab, dup);
+                    }
+                }
+            }
+        }
+    }
 }

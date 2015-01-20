@@ -149,77 +149,66 @@ static void
 evaluate_rvalue (runtime_t* runtime,
                  ast_t* expr);
 
+static void evaluate_lvalue_dereference_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  evaluate_rvalue (runtime, ast_get_child (expr, UNARY_CHILD));
+}
+
+static void evaluate_lvalue_identifier_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  // Get the address of the identifier.
+  symbol_t* symbol = ast_get_symbol (expr);
+  assert (symbol != NULL);
+  ptrdiff_t offset = symbol_get_offset (symbol);
+  stack_frame_push_address (runtime->stack, offset);
+}
+
+static void
+evaluate_lvalue (runtime_t* runtime,
+                 ast_t* expr);
+
+static void evaluate_lvalue_select_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  ast_t *left = ast_get_child (expr, BINARY_LEFT_CHILD);
+  ast_t *right = ast_get_child (expr, BINARY_RIGHT_CHILD);
+  string_t identifier = ast_get_identifier (right);
+
+  typed_value_t selected_type = ast_get_typed_value (expr);
+  typed_value_t type = ast_get_typed_value (left);
+
+  if (type_kind (selected_type.type) == TypeFunc)
+    {
+      method_t* method = type_get_method (type.type, identifier);
+      stack_frame_push_pointer (runtime->stack, method_node (method));
+      return;
+    }
+
+  evaluate_lvalue (runtime, ast_get_child (expr, BINARY_LEFT_CHILD));
+  field_t* field = type_select_field (type.type, identifier);
+  assert (field != NULL);
+  void* ptr = stack_frame_pop_pointer (runtime->stack);
+  stack_frame_push_pointer (runtime->stack, ptr + field_offset (field));
+}
+
+static ast_const_visitor_t evaluate_lvalue_visitor = {
+ visit_dereference_expr: evaluate_lvalue_dereference_expr,
+ visit_identifier_expr: evaluate_lvalue_identifier_expr,
+ visit_select_expr: evaluate_lvalue_select_expr,
+};
+
 static void
 evaluate_lvalue (runtime_t* runtime,
                  ast_t* expr)
 {
+  ast_const_accept (expr, &evaluate_lvalue_visitor, runtime);
+
   typed_value_t tv = ast_get_typed_value (expr);
   if (tv.has_value)
     {
       ast_print (expr, 0);
-      unimplemented;
-    }
-
-  switch (ast_expression_kind (expr))
-    {
-    case AstAddressOfExpr:
-      unimplemented;
-    case AstCallExpr:
-      unimplemented;
-    case AstDereferenceExpr:
-      evaluate_rvalue (runtime, ast_get_child (expr, UNARY_CHILD));
-      break;
-    case AstEqualExpr:
-      unimplemented;
-    case AstExprList:
-      unimplemented;
-
-    case AstIdentifierExpr:
-      {
-        // Get the address of the identifier.
-        symbol_t* symbol = ast_get_symbol (expr);
-        assert (symbol != NULL);
-        ptrdiff_t offset = symbol_get_offset (symbol);
-        stack_frame_push_address (runtime->stack, offset);
-      }
-      break;
-
-    case AstLogicAndExpr:
-      unimplemented;
-    case AstLogicNotExpr:
-      unimplemented;
-    case AstLogicOrExpr:
-      unimplemented;
-    case AstNewExpr:
-      unimplemented;
-    case AstNotEqualExpr:
-      unimplemented;
-    case AstPortCallExpr:
-      unimplemented;
-    case AstSelectExpr:
-      {
-        ast_t *left = ast_get_child (expr, BINARY_LEFT_CHILD);
-	ast_t *right = ast_get_child (expr, BINARY_RIGHT_CHILD);
-	string_t identifier = ast_get_identifier (right);
-
-        typed_value_t selected_type = ast_get_typed_value (expr);
-	typed_value_t type = ast_get_typed_value (left);
-
-        if (type_kind (selected_type.type) == TypeFunc)
-          {
-            method_t* method = type_get_method (type.type, identifier);
-            stack_frame_push_pointer (runtime->stack, method_node (method));
-            break;
-          }
-
-        evaluate_lvalue (runtime, ast_get_child (expr, BINARY_LEFT_CHILD));
-	field_t* field = type_select_field (type.type, identifier);
-        assert (field != NULL);
-        void* ptr = stack_frame_pop_pointer (runtime->stack);
-        stack_frame_push_pointer (runtime->stack, ptr + field_offset (field));
-      }
-      break;
-    case AstTypedLiteral:
       unimplemented;
     }
 }
@@ -282,6 +271,269 @@ call (runtime_t* runtime)
     }
 }
 
+static void evaluate_rvalue_expr_list (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  AST_FOREACH (child, expr)
+    {
+      evaluate_rvalue (runtime, child);
+    }
+}
+
+static void evaluate_rvalue_address_of_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  evaluate_lvalue (runtime, ast_get_child (expr, UNARY_CHILD));
+}
+
+static void evaluate_rvalue_call_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  // Create space for the return.
+  typed_value_t return_tv = ast_get_typed_value (expr);
+  stack_frame_reserve (runtime->stack, type_size (return_tv.type));
+
+  // Sample the top of the stack.
+  char* top_before = stack_frame_top (runtime->stack);
+
+  // Push the arguments.
+  evaluate_rvalue (runtime, ast_get_child (expr, CALL_ARGS));
+
+  // Push a fake instruction pointer.
+  stack_frame_push_pointer (runtime->stack, NULL);
+
+  // Sample the top.
+  char* top_after = stack_frame_top (runtime->stack);
+
+  // Push the thing to call.
+  evaluate_rvalue (runtime, ast_get_child (expr, CALL_EXPR));
+
+  // Perform the call.
+  call (runtime);
+
+  // Pop the arguments.
+  stack_frame_pop (runtime->stack, top_after - top_before);
+}
+
+static void evaluate_rvalue_dereference_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  typed_value_t tv = ast_get_typed_value (expr);
+  evaluate_rvalue (runtime, ast_get_child (expr, UNARY_CHILD));
+  void* ptr = stack_frame_pop_pointer (runtime->stack);
+  stack_frame_load (runtime->stack, ptr, type_size (tv.type));
+}
+
+static void evaluate_rvalue_equal_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  ast_t* left = ast_get_child (expr, BINARY_LEFT_CHILD);
+  ast_t* right = ast_get_child (expr, BINARY_RIGHT_CHILD);
+  // Evaluate the left.
+  evaluate_rvalue (runtime, left);
+  // Evaluate the right.
+  evaluate_rvalue (runtime, right);
+  typed_value_t tv = ast_get_typed_value (left);
+  stack_frame_equal (runtime->stack, type_size (tv.type));
+}
+
+static void evaluate_rvalue_identifier_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  ast_t* identifier_node = ast_get_child (expr, UNARY_CHILD);
+  string_t name = ast_get_identifier (identifier_node);
+  symtab_t* symtab = ast_get_symtab (expr);
+  symbol_t* symbol = symtab_find (symtab, name);
+  typed_value_t tv = ast_get_typed_value (expr);
+  stack_frame_push (runtime->stack, symbol_get_offset (symbol), type_size (tv.type));
+}
+
+static void evaluate_rvalue_logic_not_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  evaluate_rvalue (runtime, ast_get_child (expr, UNARY_CHILD));
+  bool b = stack_frame_pop_bool (runtime->stack);
+  stack_frame_push_bool (runtime->stack, !b);
+}
+
+typedef struct {
+  heap_t* heap;
+} heap_link_t;
+
+static void evaluate_rvalue_new_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  // Allocate a new instance of the type.
+  typed_value_t tv = ast_get_typed_value (expr);
+  type_t* type = type_pointer_base_type (tv.type);
+  if (!type_is_heap (type))
+    {
+      void* ptr = heap_allocate (runtime->current_instance->heap, type_size (type));
+      // Return the instance.
+      stack_frame_push_pointer (runtime->stack, ptr);
+    }
+  else
+    {
+      const type_t* t = type_heap_base_type (type);
+      // Allocate a new heap and root object.
+      heap_t* h = heap_make_size (type_size (t));
+      // Insert it into its parent.
+      heap_insert_child (runtime->current_instance->heap, h);
+      // Allocate a new heap link in the parent.
+      heap_link_t* hl = heap_allocate (runtime->current_instance->heap, sizeof (heap_link_t));
+      // Set up the link.
+      hl->heap = h;
+      // Return the heap link.
+      stack_frame_push_pointer (runtime->stack, hl);
+    }
+}
+
+static void evaluate_rvalue_not_equal_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  ast_t* left = ast_get_child (expr, BINARY_LEFT_CHILD);
+  ast_t* right = ast_get_child (expr, BINARY_RIGHT_CHILD);
+  // Evaluate the left.
+  evaluate_rvalue (runtime, left);
+  // Evaluate the right.
+  evaluate_rvalue (runtime, right);
+  typed_value_t tv = ast_get_typed_value (left);
+  stack_frame_not_equal (runtime->stack, type_size (tv.type));
+}
+
+static void evaluate_rvalue_port_call_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  // Push all of the arguments first and measure their size.
+  char* top_before = stack_frame_top (runtime->stack);
+  evaluate_rvalue (runtime, ast_get_child (expr, CALL_ARGS));
+  char* top_after = stack_frame_top (runtime->stack);
+  ptrdiff_t arguments_size = top_after - top_before; // Assumes stack grows up.
+
+  // Find the port to trigger.
+  ast_t *e = ast_get_child (expr, CALL_EXPR);
+  string_t port_identifier = ast_get_identifier (e);
+  const type_t *this_type =
+    type_pointer_base_type (symtab_get_this_type
+                            (ast_get_symtab (e)));
+  field_t* field = type_select_field (this_type, port_identifier);
+  symbol_t* this = symtab_get_this (ast_get_symtab (e));
+  stack_frame_push (runtime->stack, symbol_get_offset (this), type_size (symbol_parameter_type (this)));
+  port_t* port = *((port_t**)(stack_frame_pop_pointer (runtime->stack) + field_offset (field)));
+
+  char* base_pointer = stack_frame_base_pointer (runtime->stack);
+  instance_record_t* instance = runtime->current_instance;
+
+  // Trigger all the reactions bound to the port.
+  while (port != NULL)
+    {
+      // Set up a frame.
+      // Push the instance.
+      stack_frame_push_pointer (runtime->stack, port->instance);
+      // Push the arguments.
+      stack_frame_load (runtime->stack, top_before, arguments_size);
+      // Push an instruction pointer.
+      stack_frame_push_pointer (runtime->stack, NULL);
+      execute (runtime, port->reaction, *(instance_record_t**)port->instance);
+      // Reset the base pointer because the callee won't do it.
+      stack_frame_set_base_pointer (runtime->stack, base_pointer);
+      // Also reset the current instance.
+      runtime->current_instance = instance;
+      port = port->next;
+    }
+}
+
+static void evaluate_rvalue_select_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  evaluate_lvalue (runtime, ast_get_child (expr, BINARY_LEFT_CHILD));
+  ast_t *left = ast_get_child (expr, BINARY_LEFT_CHILD);
+  ast_t *right = ast_get_child (expr, BINARY_RIGHT_CHILD);
+  string_t identifier = ast_get_identifier (right);
+  typed_value_t tv = ast_get_typed_value (left);
+  field_t* field = type_select_field (tv.type, identifier);
+  assert (field != NULL);
+  void* ptr = stack_frame_pop_pointer (runtime->stack);
+  stack_frame_load (runtime->stack, ptr + field_offset (field), type_size (ast_get_typed_value (expr).type));
+}
+
+static void evaluate_rvalue_move_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  ast_t* child = ast_get_child (expr, UNARY_CHILD);
+  evaluate_rvalue (runtime, child);
+  heap_link_t* hl = stack_frame_pop_pointer (runtime->stack);
+  if (hl != NULL && hl->heap != NULL && !heap_in_use (hl->heap))
+    {
+      // Break the link.
+      heap_t* h = hl->heap;
+      hl->heap = NULL;
+
+      // Remove from parent.
+      heap_remove_from_parent (h);
+      // Insert into the new parent.
+      heap_insert_child (runtime->current_instance->heap, h);
+
+      // Allocate a new heap link in the parent.
+      heap_link_t* new_hl = heap_allocate (runtime->current_instance->heap, sizeof (heap_link_t));
+      // Set up the link.
+      new_hl->heap = h;
+      // Return the heap link.
+      stack_frame_push_pointer (runtime->stack, new_hl);
+    }
+  else
+    {
+      stack_frame_push_pointer (runtime->stack, NULL);
+    }
+}
+
+static void evaluate_rvalue_merge_expr (void* data, const ast_t* expr)
+{
+  runtime_t* runtime = data;
+  ast_t* child = ast_get_child (expr, UNARY_CHILD);
+  evaluate_rvalue (runtime, child);
+  heap_link_t* hl = stack_frame_pop_pointer (runtime->stack);
+  if (hl != NULL && hl->heap != NULL && !heap_in_use (hl->heap))
+    {
+      // Break the link.
+      heap_t* h = hl->heap;
+      hl->heap = NULL;
+
+      // Get the heap root.
+      void* root = heap_instance (h);
+
+      // Remove from parent.
+      heap_remove_from_parent (h);
+
+      // Merge into the new parent.
+      heap_merge (runtime->current_instance->heap, h);
+
+      // Return the root.
+      stack_frame_push_pointer (runtime->stack, root);
+    }
+  else
+    {
+      stack_frame_push_pointer (runtime->stack, NULL);
+    }
+}
+
+static ast_const_visitor_t evaluate_rvalue_visitor = {
+ visit_address_of_expr: evaluate_rvalue_address_of_expr,
+ visit_call_expr: evaluate_rvalue_call_expr,
+ visit_dereference_expr: evaluate_rvalue_dereference_expr,
+ visit_equal_expr: evaluate_rvalue_equal_expr,
+ visit_identifier_expr: evaluate_rvalue_identifier_expr,
+ visit_logic_not_expr: evaluate_rvalue_logic_not_expr,
+ visit_merge_expr: evaluate_rvalue_merge_expr,
+ visit_move_expr: evaluate_rvalue_move_expr,
+ visit_new_expr: evaluate_rvalue_new_expr,
+ visit_not_equal_expr: evaluate_rvalue_not_equal_expr,
+ visit_port_call_expr: evaluate_rvalue_port_call_expr,
+ visit_select_expr: evaluate_rvalue_select_expr,
+
+ visit_expr_list: evaluate_rvalue_expr_list,
+};
+
 static void
 evaluate_rvalue (runtime_t* runtime,
                  ast_t* expr)
@@ -302,9 +554,13 @@ evaluate_rvalue (runtime_t* runtime,
           unimplemented;
         case TypeForeign:
           unimplemented;
+        case TypeHeap:
+          unimplemented;
         case TypeImmutable:
           unimplemented;
         case TypePointer:
+        case TypePointerToForeign:
+        case TypePointerToImmutable:
           stack_frame_push_pointer (runtime->stack, tv.pointer_value);
           break;
         case TypePort:
@@ -342,176 +598,7 @@ evaluate_rvalue (runtime_t* runtime,
       return;
     }
 
-  switch (ast_expression_kind (expr))
-    {
-    case AstAddressOfExpr:
-      {
-        evaluate_lvalue (runtime, ast_get_child (expr, UNARY_CHILD));
-      }
-      break;
-    case AstCallExpr:
-      {
-        // Create space for the return.
-        typed_value_t return_tv = ast_get_typed_value (expr);
-        stack_frame_reserve (runtime->stack, type_size (return_tv.type));
-
-        // Sample the top of the stack.
-        char* top_before = stack_frame_top (runtime->stack);
-
-        // Push the arguments.
-        evaluate_rvalue (runtime, ast_get_child (expr, CALL_ARGS));
-
-        // Push a fake instruction pointer.
-        stack_frame_push_pointer (runtime->stack, NULL);
-
-        // Sample the top.
-        char* top_after = stack_frame_top (runtime->stack);
-
-        // Push the thing to call.
-        evaluate_rvalue (runtime, ast_get_child (expr, CALL_EXPR));
-
-        // Perform the call.
-        call (runtime);
-
-        // Pop the arguments.
-        stack_frame_pop (runtime->stack, top_after - top_before);
-      }
-      break;
-
-    case AstDereferenceExpr:
-      {
-        typed_value_t tv = ast_get_typed_value (expr);
-        evaluate_rvalue (runtime, ast_get_child (expr, UNARY_CHILD));
-        void* ptr = stack_frame_pop_pointer (runtime->stack);
-        stack_frame_load (runtime->stack, ptr, type_size (tv.type));
-      }
-      break;
-
-    case AstEqualExpr:
-      {
-        ast_t* left = ast_get_child (expr, BINARY_LEFT_CHILD);
-        ast_t* right = ast_get_child (expr, BINARY_RIGHT_CHILD);
-        // Evaluate the left.
-        evaluate_rvalue (runtime, left);
-        // Evaluate the right.
-        evaluate_rvalue (runtime, right);
-        typed_value_t tv = ast_get_typed_value (left);
-        stack_frame_equal (runtime->stack, type_size (tv.type));
-      }
-      break;
-
-    case AstExprList:
-      {
-	AST_FOREACH (child, expr)
-	{
-	  evaluate_rvalue (runtime, child);
-	}
-      }
-      break;
-    case AstIdentifierExpr:
-      {
-        ast_t* identifier_node = ast_get_child (expr, UNARY_CHILD);
-        string_t name = ast_get_identifier (identifier_node);
-        symtab_t* symtab = ast_get_symtab (expr);
-        symbol_t* symbol = symtab_find (symtab, name);
-        typed_value_t tv = ast_get_typed_value (expr);
-        stack_frame_push (runtime->stack, symbol_get_offset (symbol), type_size (tv.type));
-      }
-      break;
-    case AstLogicAndExpr:
-      unimplemented;
-    case AstLogicNotExpr:
-      {
-        evaluate_rvalue (runtime, ast_get_child (expr, UNARY_CHILD));
-        bool b = stack_frame_pop_bool (runtime->stack);
-        stack_frame_push_bool (runtime->stack, !b);
-      }
-      break;
-    case AstLogicOrExpr:
-      unimplemented;
-
-    case AstNewExpr:
-      {
-        // Allocate a new instance of the type.
-        typed_value_t tv = ast_get_typed_value (expr);
-        type_t* type = type_pointer_base_type (tv.type);
-        void* ptr = heap_allocate (runtime->current_instance->heap, type);
-        // Return the instance.
-        stack_frame_push_pointer (runtime->stack, ptr);
-      }
-      break;
-
-    case AstNotEqualExpr:
-      {
-        ast_t* left = ast_get_child (expr, BINARY_LEFT_CHILD);
-        ast_t* right = ast_get_child (expr, BINARY_RIGHT_CHILD);
-        // Evaluate the left.
-        evaluate_rvalue (runtime, left);
-        // Evaluate the right.
-        evaluate_rvalue (runtime, right);
-        typed_value_t tv = ast_get_typed_value (left);
-        stack_frame_not_equal (runtime->stack, type_size (tv.type));
-      }
-      break;
-
-    case AstPortCallExpr:
-      {
-        // Push all of the arguments first and measure their size.
-        char* top_before = stack_frame_top (runtime->stack);
-        evaluate_rvalue (runtime, ast_get_child (expr, CALL_ARGS));
-        char* top_after = stack_frame_top (runtime->stack);
-        ptrdiff_t arguments_size = top_after - top_before; // Assumes stack grows up.
-
-        // Find the port to trigger.
-	ast_t *e = ast_get_child (expr, CALL_EXPR);
-	string_t port_identifier = ast_get_identifier (e);
-	const type_t *this_type =
-	  type_pointer_base_type (symtab_get_this_type
-				  (ast_get_symtab (e)));
-	field_t* field = type_select_field (this_type, port_identifier);
-        symbol_t* this = symtab_get_this (ast_get_symtab (e));
-        stack_frame_push (runtime->stack, symbol_get_offset (this), type_size (symbol_parameter_type (this)));
-        port_t* port = *((port_t**)(stack_frame_pop_pointer (runtime->stack) + field_offset (field)));
-
-        char* base_pointer = stack_frame_base_pointer (runtime->stack);
-        instance_record_t* instance = runtime->current_instance;
-
-        // Trigger all the reactions bound to the port.
-        while (port != NULL)
-          {
-            // Set up a frame.
-            // Push the instance.
-            stack_frame_push_pointer (runtime->stack, port->instance);
-            // Push the arguments.
-            stack_frame_load (runtime->stack, top_before, arguments_size);
-            // Push an instruction pointer.
-            stack_frame_push_pointer (runtime->stack, NULL);
-            execute (runtime, port->reaction, *(instance_record_t**)port->instance);
-            // Reset the base pointer because the callee won't do it.
-            stack_frame_set_base_pointer (runtime->stack, base_pointer);
-            // Also reset the current instance.
-            runtime->current_instance = instance;
-            port = port->next;
-          }
-      }
-      break;
-    case AstSelectExpr:
-      {
-        evaluate_lvalue (runtime, ast_get_child (expr, BINARY_LEFT_CHILD));
-        ast_t *left = ast_get_child (expr, BINARY_LEFT_CHILD);
-	ast_t *right = ast_get_child (expr, BINARY_RIGHT_CHILD);
-	string_t identifier = ast_get_identifier (right);
-	typed_value_t tv = ast_get_typed_value (left);
-	field_t* field = type_select_field (tv.type, identifier);
-        assert (field != NULL);
-        void* ptr = stack_frame_pop_pointer (runtime->stack);
-        stack_frame_load (runtime->stack, ptr + field_offset (field), type_size (ast_get_typed_value (expr).type));
-      }
-      break;
-    case AstTypedLiteral:
-      not_reached;
-      break;
-    }
+  ast_const_accept (expr, &evaluate_rvalue_visitor, runtime);
 }
 
 static ControlAction
@@ -533,6 +620,38 @@ evaluate_statement (runtime_t* runtime,
         evaluate_rvalue (runtime, right);
         // Store.
         stack_frame_store_heap (runtime->stack, ptr, size);
+      }
+      break;
+
+    case AstChangeStmt:
+      {
+        ast_t* expr = ast_get_child (node, CHANGE_EXPR);
+        ast_t* body = ast_get_child (node, CHANGE_BODY);
+        // Evaluate the pointer to the heap link.
+        evaluate_rvalue (runtime, expr);
+        heap_link_t* hl = stack_frame_pop_pointer (runtime->stack);
+        if (hl == NULL)
+          {
+            // Heap link is null.
+            unimplemented;
+          }
+        // Save the old heap.
+        heap_t* old_heap = runtime->current_instance->heap;
+        // Set the the new heap.
+        runtime->current_instance->heap = hl->heap;
+        heap_inc (runtime->current_instance->heap);
+
+        // Evaluate the address of the heap root.
+        evaluate_lvalue_identifier_expr (runtime, body);
+        char** root_value = stack_frame_pop_pointer (runtime->stack);
+        // Push a pointer to the root object.
+        *root_value = heap_instance (runtime->current_instance->heap);
+
+        evaluate_statement (runtime, body);
+
+        // Restore the old heap.
+        heap_dec (runtime->current_instance->heap);
+        runtime->current_instance->heap = old_heap;
       }
       break;
 
@@ -585,9 +704,15 @@ evaluate_statement (runtime_t* runtime,
             unimplemented;
           case TypeForeign:
             unimplemented;
-        case TypeImmutable:
-          unimplemented;
+          case TypeHeap:
+            unimplemented;
+          case TypeImmutable:
+            unimplemented;
           case TypePointer:
+            unimplemented;
+          case TypePointerToForeign:
+            unimplemented;
+          case TypePointerToImmutable:
             unimplemented;
           case TypePort:
             unimplemented;
@@ -699,8 +824,11 @@ evaluate_statement (runtime_t* runtime,
             case TypeForeign:
               unimplemented;
 
-        case TypeImmutable:
-          unimplemented;
+            case TypeHeap:
+              unimplemented;
+
+            case TypeImmutable:
+              unimplemented;
 
             case TypePointer:
               {
@@ -708,6 +836,11 @@ evaluate_statement (runtime_t* runtime,
                 printf ("%p", ptr);
               }
               break;
+
+            case TypePointerToForeign:
+              unimplemented;
+            case TypePointerToImmutable:
+              unimplemented;
 
             case TypePort:
               unimplemented;

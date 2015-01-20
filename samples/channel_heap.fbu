@@ -1,6 +1,6 @@
 type Element struct
 {
-  value uint;
+  value @heap uint;
   next @Element;
 };
 
@@ -10,7 +10,7 @@ type Queue struct
   tail @@Element;
 };
 
-func (this @Queue) Push (v uint)
+func (this @Queue) Push (v @heap uint)
 {
   if this.head == nil
     {
@@ -38,7 +38,7 @@ func (this $Queue) Empty () bool
   return this.head == nil;
 }
 
-func (this $Queue) Front () uint
+func (this $Queue) Front () $heap uint
 {
   return this.head.value;
 }
@@ -46,14 +46,16 @@ func (this $Queue) Front () uint
 type Channel component
 {
   queue Queue;
-  receive port (message uint);
+  receive port (message ?heap uint);
 };
 
-reaction (this $Channel) send (message ?uint)
+reaction (this $Channel) send (message ?heap uint)
 {
+  var x @heap uint;
+  x = move (message);
   trigger
   {
-    this.queue.Push (message@);
+    this.queue.Push (x);
   };
 }
 
@@ -69,15 +71,17 @@ type System component
 {
   channel Channel;
   send_count uint;
-  send port (message ?uint);
+  send port (message ?heap uint);
 };
 
 action (this $System) (this.send_count != 10)
 {
-  var x @uint;
-  x = new uint;
-  x@ = this.send_count;
-
+  var x @heap uint;
+  x = new heap uint;
+  change (x, y @uint)
+  {
+    y@ = this.send_count;
+  };
   trigger send (x)
   {
     println `Sent `, this.send_count;
@@ -85,9 +89,11 @@ action (this $System) (this.send_count != 10)
   };
 }
 
-reaction (this $System) receive (message uint)
+reaction (this $System) receive (message ?heap uint)
 {
-  println `Received `, message;
+  var x @uint;
+  x = merge (message);
+  println `Received `, x@;
 }
 
 bind (this @System) {

@@ -12,8 +12,11 @@ typedef enum
   TypeFieldList,
   TypeForeign,
   TypeFunc,
+  TypeHeap,
   TypeImmutable,
   TypePointer,
+  TypePointerToForeign,
+  TypePointerToImmutable,
   TypePort,
   TypeReaction,
   TypeSignature,
@@ -33,7 +36,7 @@ typedef enum
 const char *type_to_string (const type_t * type);
 
 /* Copy the guts of from to to and delete from. */
-void type_move (type_t * to, type_t * from);
+void type_move_guts_to (type_t * to, type_t * from);
 
 size_t type_size (const type_t * type);
 
@@ -56,6 +59,10 @@ type_t * type_make_void (void);
 type_t *type_make_component (type_t * type);
 
 type_t *type_make_pointer (type_t * base_type);
+
+type_t *type_make_pointer_to_foreign (type_t * base_type);
+
+type_t *type_make_pointer_to_immutable (type_t * base_type);
 
 type_t *type_make_port (const type_t * signature);
 
@@ -118,6 +125,10 @@ void type_field_list_append (type_t * field_list,
 			     string_t field_name, type_t * field_type);
 
 bool type_is_pointer (const type_t * type);
+
+bool type_is_pointer_to_foreign (const type_t * type);
+
+bool type_is_pointer_to_immutable (const type_t * type);
 
 bool type_convertible (const type_t * to, const type_t * from);
 
@@ -214,14 +225,51 @@ bool type_is_immutable (const type_t* type);
 
 type_t* type_immutable_base_type (const type_t* type);
 
+/* Return true if assigning a variable of this type would leak a mutable pointer. */
 bool type_leaks_mutable_pointers (const type_t* type);
 
-bool type_leaks_mutable_or_immutable_pointers (const type_t* type);
+/* Return true if copying a variable of this type would leak a non-foreign pointer. */
+bool type_leaks_non_foreign_pointers (const type_t* type);
 
 type_t* type_make_foreign (type_t* type);
 
 bool type_is_foreign (const type_t* type);
 
 bool type_contains_foreign_pointers (const type_t* type);
+
+type_t* type_make_heap (type_t* type);
+
+bool type_copyable (const type_t* type);
+
+bool type_is_heap (const type_t* type);
+
+type_t* type_heap_base_type (const type_t* type);
+
+bool
+type_equivalent (const type_t * x, const type_t* y);
+
+bool type_can_dereference (const type_t* type);
+
+type_t* type_foreign_base_type (const type_t* type);
+
+bool type_is_any_pointer (const type_t* type);
+
+type_t* type_dereference (const type_t* type);
+
+bool type_can_assign (const type_t* type);
+
+bool type_is_boolean (const type_t* type);
+
+bool type_is_moveable (const type_t* type);
+
+type_t* type_move (const type_t* type);
+
+bool type_is_mergeable (const type_t* type);
+
+type_t* type_merge (const type_t* type);
+
+bool type_is_changeable (const type_t* type);
+
+bool type_is_valid_root (const type_t* proposed, const type_t* change_type);
 
 #endif /* type_h */
