@@ -72,7 +72,7 @@ type System component
   send port (message ?uint);
 };
 
-action (this $System) (this.send_count != 10)
+action (this $System) (this.send_count != 100)
 {
   var x @uint;
   x = new uint;

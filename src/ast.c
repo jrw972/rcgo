@@ -276,6 +276,9 @@ static void print_statement (void* data, const ast_t* node)
     case AstStmtList:
       printf ("AstStmtList");
       break;
+    case AstSubtractAssignStmt:
+      printf ("AstSubtractAssignStmt");
+      break;
     case AstTriggerStmt:
       printf ("AstTriggerStmt");
       break;
@@ -311,6 +314,17 @@ static void print_bind_statement (void* data, const ast_t* node)
   }
 }
 
+static void print_top_level_list (void* data, const ast_t* node)
+{
+  size_t indent = *(size_t*)data;
+  print_indent (indent);
+  printf ("AstTopLevelList\n");
+  AST_FOREACH (child, node)
+  {
+    ast_print (child, indent + 2);
+  }
+}
+
 static ast_const_visitor_t print_visitor = {
  visit_expression: print_visitor_visit_expression,
 
@@ -324,6 +338,8 @@ static ast_const_visitor_t print_visitor = {
 
  visit_statement: print_statement,
  visit_bind_statement: print_bind_statement,
+
+ visit_top_level_list: print_top_level_list,
 };
 
 void
@@ -391,9 +407,6 @@ ast_print (const ast_t * node, size_t indent)
   /*     break; */
   /*   case AstInstance: */
   /*     printf ("AstInstance"); */
-  /*     break; */
-  /*   case AstTopLevelList: */
-  /*     printf ("AstTopLevelList"); */
   /*     break; */
   /*   case AstReceiverDefinition: */
   /*     printf ("AstReceiverDefinition "); */
@@ -671,6 +684,14 @@ ast_t *ast_make_add_assign_stmt (unsigned int line, ast_t * lvalue, ast_t * rval
   return retval;
 }
 
+ast_t *ast_make_subtract_assign_stmt (unsigned int line, ast_t * lvalue, ast_t * rvalue)
+{
+  ast_t *retval = make_stmt (line, AstSubtractAssignStmt, 2);
+  ast_set_child (retval, BINARY_LEFT_CHILD, lvalue);
+  ast_set_child (retval, BINARY_RIGHT_CHILD, rvalue);
+  return retval;
+}
+
 ast_t *
 ast_make_stmt_list (unsigned int line)
 {
@@ -736,7 +757,21 @@ ast_make_field_list (unsigned int line)
   return make_type_spec (line, AstFieldList, 0);
 }
 
-static vtable_t top_level_list_vtable;
+static void top_level_list_accept (ast_t* ast, ast_visitor_t* visitor, void* data)
+{
+  visitor->visit_top_level_list (data, ast);
+}
+
+static void top_level_list_const_accept (const ast_t* ast, ast_const_visitor_t* visitor, void* data)
+{
+  visitor->visit_top_level_list (data, ast);
+}
+
+static vtable_t top_level_list_vtable = {
+ accept: top_level_list_accept,
+ const_accept: top_level_list_const_accept,
+};
+
 ast_t *
 ast_make_top_level_list (void)
 {

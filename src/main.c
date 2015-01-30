@@ -129,10 +129,10 @@ main (int argc, char **argv)
   memory_model_t* memory_model = memory_model_make (8);
   allocate_stack_variables (root, memory_model);
 
-  runtime_t* runtime = runtime_make (instance_table, memory_model, 8 * 1024);
+  runtime_t* runtime = runtime_make (instance_table);
   runtime_allocate_instances (runtime);
   runtime_create_bindings (runtime);
-  runtime_run (runtime);
+  runtime_run (runtime, memory_model, 8 * 1024);
 
   return 0;
 }

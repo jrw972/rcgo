@@ -10,6 +10,7 @@ struct action_t
   type_t *component_type;	/* Back-pointer to component type. */
     VECTOR_DECL (triggers, trigger_t *);
   ast_t* node;
+  size_t number;
   size_t locals_size;
   /* Reactions only. */
   string_t name;
@@ -18,7 +19,8 @@ struct action_t
 
 action_t *
 action_make (type_t * type,
-             ast_t* node)
+             ast_t* node,
+             size_t number)
 {
   assert (type_is_component (type));
   action_t *action = xmalloc (sizeof (action_t));
@@ -26,6 +28,7 @@ action_make (type_t * type,
   action->component_type = type;
   VECTOR_INIT (action->triggers, trigger_t *, 0, NULL);
   action->node = node;
+  action->number = number;
   return action;
 }
 
@@ -50,6 +53,11 @@ action_component_type (const action_t * action)
 ast_t* action_node (const action_t* action)
 {
   return action->node;
+}
+
+size_t action_number (const action_t* action)
+{
+  return action->number;
 }
 
 action_t *

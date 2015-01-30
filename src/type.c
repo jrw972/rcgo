@@ -1794,7 +1794,7 @@ action_t *
 type_component_add_action (type_t * type, ast_t* node)
 {
   assert (type_is_component (type));
-  action_t *action = action_make (type, node);
+  action_t *action = action_make (type, node, VECTOR_SIZE (type->component.actions));
   VECTOR_PUSH (type->component.actions, action_t *, action);
   return action;
 }
@@ -1982,6 +1982,12 @@ type_is_bindable (const type_t * output, const type_t * input)
 
   unimplemented;
   //return compatible_signatures (output->port.signature, input->reaction.signature);
+}
+
+size_t type_action_count (const type_t* type)
+{
+  assert (type_is_component (type));
+  return VECTOR_SIZE (type->component.actions);
 }
 
 action_t**

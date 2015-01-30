@@ -5,7 +5,8 @@
 #include "strtab.h"
 
 action_t *action_make (type_t * type,
-                       ast_t* node);
+                       ast_t* node,
+                       size_t number);
 
 bool action_is_action (const action_t * action);
 
@@ -14,6 +15,8 @@ bool action_is_reaction (const action_t * action);
 type_t *action_component_type (const action_t * action);
 
 ast_t* action_node (const action_t* action);
+
+size_t action_number (const action_t* action);
 
 action_t *reaction_make (type_t * type,
                          ast_t* node,

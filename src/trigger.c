@@ -4,7 +4,7 @@
 struct trigger_t
 {
   VECTOR_DECL (fields, field_t *);
-  bool mutates_receiver;
+  TriggerAction action;
 };
 
 trigger_t *
@@ -12,6 +12,7 @@ trigger_make (void)
 {
   trigger_t *tg = xmalloc (sizeof (trigger_t));
   VECTOR_INIT (tg->fields, field_t *, 0, NULL);
+  tg->action = TRIGGER_READ;
   return tg;
 }
 
@@ -40,13 +41,13 @@ trigger_next (field_t ** pos)
 }
 
 void
-trigger_set_mutates_receiver (trigger_t * trigger, bool value)
+trigger_set_action (trigger_t * trigger, TriggerAction action)
 {
-  trigger->mutates_receiver = value;
+  trigger->action = action;
 }
 
-bool
-trigger_get_mutates_receiver (const trigger_t * trigger)
+TriggerAction
+trigger_get_action (const trigger_t * trigger)
 {
-  return trigger->mutates_receiver;
+  return trigger->action;
 }

@@ -38,6 +38,7 @@
 "&&"                   { return LOGIC_AND; }
 "||"                   { return LOGIC_OR; }
 "++"                   { return INCREMENT; }
+"--"                   { return DECREMENT; }
 "=="                   { return EQUAL; }
 "!="                   { return NOT_EQUAL; }
 "->"                   { return ARROW; }

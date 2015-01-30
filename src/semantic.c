@@ -50,11 +50,12 @@ construct_symbol_table (ast_t * node, symtab_t * symtab)
 	  }
 	  break;
 
-	case AstAssignmentStmt:
         case AstAddAssignStmt:
+	case AstAssignmentStmt:
         case AstChangeStmt:
 	case AstExpressionStmt:
 	case AstReturnStmt:
+        case AstSubtractAssignStmt:
 	case AstTriggerStmt:
 	case AstVarStmt:
         case AstPrintlnStmt:
@@ -913,7 +914,7 @@ check_call (ast_t * node, ast_t * args, const type_t * expr_type)
           trigger_t *trigger = get_current_trigger (node);
           if (trigger != NULL)
             {
-              trigger_set_mutates_receiver (trigger, true);
+              trigger_set_action (trigger, TRIGGER_WRITE);
             }
         }
     }
@@ -1394,7 +1395,7 @@ check_assignment_target (ast_t** left, ast_t* node)
       trigger_t *trigger = get_current_trigger (node);
       if (trigger != NULL)
         {
-          trigger_set_mutates_receiver (trigger, true);
+          trigger_set_action (trigger, TRIGGER_WRITE);
         }
     }
 }
@@ -1534,6 +1535,31 @@ check_statement (ast_t * node)
         convert_if_untyped (left_type, *right);
       }
       break;
+
+    case AstSubtractAssignStmt:
+      {
+	ast_t **left = ast_get_child_ptr (node, BINARY_LEFT_CHILD);
+        check_assignment_target (left, node);
+	ast_t **right = ast_get_child_ptr (node, BINARY_RIGHT_CHILD);
+	check_rvalue (right, NULL, false);
+	typed_value_t left_type = ast_get_typed_value (*left);
+        typed_value_t right_type = ast_get_typed_value (*right);
+        if (!typed_value_is_arithmetic (left_type))
+          {
+	    error_at_line (-1, 0, ast_file (node), ast_line (node),
+			   "cannot subtract from non-arithmetic type");
+          }
+        if (!typed_value_convertible (left_type, right_type))
+          {
+	    error_at_line (-1, 0, ast_file (node), ast_line (node),
+			   "cannot convert %s to %s in assignment", type_to_string (right_type.type), type_to_string (left_type.type));
+
+          }
+        // Convert the rvalue since we must compute it.
+        convert_if_untyped (left_type, *right);
+      }
+      break;
+
     case AstStmtList:
       {
 	AST_FOREACH (child, node)
@@ -1542,6 +1568,7 @@ check_statement (ast_t * node)
           }
       }
       break;
+
     case AstReturnStmt:
       {
         // Check the expression.
@@ -1980,6 +2007,10 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t* memory_model)
       break;
 
     case AstAddAssignStmt:
+      // Do nothing.
+      break;
+
+    case AstSubtractAssignStmt:
       // Do nothing.
       break;
 

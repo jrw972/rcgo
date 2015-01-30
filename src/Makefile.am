@@ -13,6 +13,7 @@ method.h method.c \
 heap.h heap.c \
 instance.h instance.c \
 instance_set.h instance_set.c \
+instance_trigger_set.h instance_trigger_set.c \
 memory_model.h memory_model.c \
 parameter.h parameter.c \
 semantic.h semantic.c \
@@ -28,3 +29,4 @@ typed_value.h typed_value.c \
 types.h \
 util.h util.c \
 yyparse.h yyparse.c
+fbu_LDADD=-lpthread

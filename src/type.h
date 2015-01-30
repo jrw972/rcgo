@@ -103,6 +103,8 @@ method_t *type_get_method (const type_t * component_type,
 
 bool type_is_bindable (const type_t * output, const type_t * input);
 
+size_t type_action_count (const type_t* type);
+
 action_t **type_actions_begin (const type_t * type);
 
 action_t **type_actions_end (const type_t * type);

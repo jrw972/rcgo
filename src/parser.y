@@ -60,7 +60,7 @@
 
 %token ACTION BIND CHANGE COMPONENT CONST ELSE FOREIGN FUNC HEAP IF INSTANCE MERGE MOVE NEW PORT PRINTLN REACTION RETURN STRUCT TRIGGER TYPE VAR
 
-%token ARROW EQUAL INCREMENT LOGIC_AND LOGIC_OR NOT_EQUAL
+%token ARROW DECREMENT EQUAL INCREMENT LOGIC_AND LOGIC_OR NOT_EQUAL
 
 %%
 
@@ -143,6 +143,7 @@ println_stmt: PRINTLN expr_list { $$ = ast_make_println_stmt (@1, $2); }
 return_stmt: RETURN rvalue { $$ = ast_make_return_stmt (@1, $2); }
 
 increment_stmt: lvalue INCREMENT { $$ = ast_make_add_assign_stmt (@1, $1, ast_make_typed_literal (@1, typed_value_make_integer (1))); }
+| lvalue DECREMENT { $$ = ast_make_subtract_assign_stmt (@1, $1, ast_make_typed_literal (@1, typed_value_make_integer (1))); }
 
 optional_port_call_list: /* Empty. */ { $$ = ast_make_expression_list (yyloc); }
 | port_call_list { $$ = $1; }

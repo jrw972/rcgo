@@ -74,7 +74,7 @@ type System component
   send port (message ?heap uint);
 };
 
-action (this $System) (this.send_count != 10)
+action (this $System) (this.send_count != 100)
 {
   var x @heap uint;
   x = new heap uint;

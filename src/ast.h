@@ -56,6 +56,7 @@ typedef enum
   AstPrintlnStmt,
   AstReturnStmt,
   AstStmtList,
+  AstSubtractAssignStmt,
   AstTriggerStmt,
   AstVarStmt,
 } AstStatementKind;
@@ -91,6 +92,8 @@ typedef struct {
 
   void (*visit_statement) (void* data, ast_t* ast);
   void (*visit_bind_statement) (void* data, ast_t* ast);
+
+  void (*visit_top_level_list) (void* data, ast_t* ast);
 } ast_visitor_t;
 
 typedef struct {
@@ -118,6 +121,8 @@ typedef struct {
 
   void (*visit_statement) (void* data, const ast_t* ast);
   void (*visit_bind_statement) (void* data, const ast_t* ast);
+
+  void (*visit_top_level_list) (void* data, const ast_t* ast);
 } ast_const_visitor_t;
 
 /* Generic functions. */
@@ -279,6 +284,8 @@ ast_t *ast_make_var_stmt (unsigned int line, ast_t * identifier_list, ast_t * ty
 ast_t *ast_make_assignment_stmt (unsigned int line, ast_t * lvalue, ast_t * rvalue);
 
 ast_t *ast_make_add_assign_stmt (unsigned int line, ast_t * lvalue, ast_t * rvalue);
+
+ast_t *ast_make_subtract_assign_stmt (unsigned int line, ast_t * lvalue, ast_t * rvalue);
 
 ast_t *ast_make_stmt_list (unsigned int line);
 

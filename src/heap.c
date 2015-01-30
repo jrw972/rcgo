@@ -3,6 +3,7 @@
 #include "type.h"
 #include "debug.h"
 #include <string.h>
+#include <pthread.h>
 
 /*
   A heap consists of a number of blocks.  A block represents a
@@ -15,14 +16,14 @@
 */
 
 // Size of a slot in bytes.
-#define SLOT_SIZE 16
+#define SLOT_SIZE (2 * sizeof (void*))
 // Keep this many bits per slot.
 #define BITS_PER_SLOT 4
 
 #define OBJECT 0x01
 #define ALLOCATED 0x02
 #define MARK 0x04
-// TODO:  Maybe we can use the extra bit to say the slot contains pointers and need to be scanned.
+#define SCANNED 0x08
 
 // Element in the free list.
 typedef struct chunk_t chunk_t;
@@ -31,22 +32,26 @@ struct chunk_t {
   size_t size;
 };
 
-#define CHUNK_SIZE sizeof (chunk_t)
-
 typedef struct block_t block_t;
 struct block_t {
-  // Blocks are organized into a tree.
+  // Blocks are organized into a tree sorted by begin.
   block_t* left;
   block_t* right;
+  // Blocks are also organized into a set/list when collecting garbage.
+  block_t* next;
+  // Beginning and end of the storage for this block.
   void* begin;
   void* end;
+  // Indicates that at least one slot is marked.
+  bool marked;
+  // Status bits.
   unsigned char bits[];
 };
 
 static block_t* block_make (size_t size)
 {
   size = align_up (size, SLOT_SIZE);
-  size_t bits_bytes = size / SLOT_SIZE * BITS_PER_SLOT / 8;
+  size_t bits_bytes = (size / SLOT_SIZE * BITS_PER_SLOT + BITS_PER_SLOT) / 8;
   block_t* block = xmalloc (sizeof (block_t) + bits_bytes);
   block->begin = xmalloc (size);
   block->end = block->begin + size;
@@ -105,6 +110,13 @@ static block_t* block_find (block_t* block, void* address)
     }
 }
 
+static size_t block_slot (const block_t* block, void* address)
+{
+  assert (block->begin <= address);
+  assert (address < block->end);
+  return (address - block->begin) / SLOT_SIZE;
+}
+
 static void block_set_bits (block_t* block, size_t slot, unsigned char mask)
 {
   if (slot % 2 == 1)
@@ -132,7 +144,7 @@ static void block_clear_bits (block_t* block, size_t slot)
   block_reset_bits (block, slot, 0x0F);
 }
 
-static unsigned char block_get_bits (block_t* block, size_t slot)
+static unsigned char block_get_bits (const block_t* block, size_t slot)
 {
   unsigned char retval = block->bits[slot / 2];
   if (slot % 2 == 1)
@@ -145,31 +157,26 @@ static unsigned char block_get_bits (block_t* block, size_t slot)
 
 static void block_allocate (block_t* block, void* address, size_t size)
 {
-  assert (block->begin <= address);
-  assert (address < block->end);
+  assert (size % SLOT_SIZE == 0);
 
-  size_t slot = (address - block->begin) / SLOT_SIZE;
+  size_t slot = block_slot (block, address);
+  size_t slot_end = slot + size / SLOT_SIZE;
 
   block_set_bits (block, slot, OBJECT);
-
-  size_t slot_end = slot + size / SLOT_SIZE;
   for (; slot != slot_end; ++slot)
     {
       block_set_bits (block, slot, ALLOCATED);
     }
 }
 
-static void block_mark (block_t* block, void* address)
+static void block_mark (block_t* block, void* address, block_t** work_list)
 {
-  assert (block->begin <= address);
-  assert (address < block->end);
-
-  size_t slot = (address - block->begin) / SLOT_SIZE;
+  size_t slot = block_slot (block, address);
 
   // Get the bits.
   unsigned char bits = block_get_bits (block, slot);
 
-  if (bits & MARK)
+  if ((bits & MARK) != 0)
     {
       // Already marked.
       return;
@@ -179,6 +186,19 @@ static void block_mark (block_t* block, void* address)
     {
       // Not allocated.
       return;
+    }
+
+  block->marked = true;
+
+  if (block->next == NULL)
+    {
+      // Not on the work list.
+      block->next = *work_list;
+      *work_list = block;
+      if (block->next == NULL)
+        {
+          block->next = (block_t*)1;
+        }
     }
 
   // Mark backward until we find the beginning of the object.
@@ -196,54 +216,135 @@ static void block_mark (block_t* block, void* address)
     }
 }
 
-static void scan (heap_t* heap, block_t* root_block, void* begin, void* end);
+static void scan (heap_t* heap, void* begin, void* end, block_t** work_list);
 
-static void block_scan (heap_t* heap, block_t* root_block, block_t* block)
+static void block_scan (heap_t* heap, block_t* block, block_t** work_list)
 {
-  if (block == NULL)
-    {
-      return;
-    }
-
-  block_scan (heap, root_block, block->left);
-  block_scan (heap, root_block, block->right);
-  scan (heap, root_block, block->begin, block->end);
-}
-
-static void block_sweep (block_t* block, chunk_t** head)
-{
-  if (block == NULL)
-    {
-      return;
-    }
-
-  block_sweep (block->left, head);
-  block_sweep (block->right, head);
-
-  size_t slot = 0;
-  size_t max_slot = (block->end - block->begin) / SLOT_SIZE;
-  while (slot != max_slot)
+  size_t slot;
+  size_t slots = (block->end - block->begin) / SLOT_SIZE;
+  for (slot = 0; slot != slots; ++slot)
     {
       unsigned char bits = block_get_bits (block, slot);
-      if ((bits & MARK) != 0)
+      if (((bits & MARK) != 0) &&
+          ((bits & SCANNED) == 0))
         {
-          // Marked.
-          block_reset_bits (block, slot, MARK);
-          ++slot;
+          block_set_bits (block, slot, SCANNED);
+          scan (heap, block->begin + slot * SLOT_SIZE, block->begin + (slot + 1) * SLOT_SIZE, work_list);
+        }
+    }
+}
+
+static block_t* block_remove_right_most (block_t** b)
+{
+  block_t* block = *b;
+  assert (block != NULL);
+
+  if (block->right == NULL)
+    {
+      // We are the right-most.
+      // Promote the left.
+      *b = block->left;
+      block->left = NULL;
+      return block;
+    }
+  else
+    {
+      return block_remove_right_most (&block->right);
+    }
+}
+
+static void block_dump (const block_t* block)
+{
+  if (block != NULL)
+    {
+      printf ("%zd block=%p begin=%p end=%p size=%zd left=%p right=%p\n", pthread_self(), block, block->begin, block->end, block->end - block->begin, block->left, block->right);
+      size_t slot;
+      size_t slots = (block->end - block->begin) / SLOT_SIZE;
+      for (slot = 0; slot != slots; ++slot)
+        {
+          unsigned char bits = block_get_bits (block, slot);
+          printf ("%zd slot %zd bits=%x scanned=%d mark=%d object=%d allocated=%d\n", pthread_self(), slot, bits, (bits & SCANNED) != 0, (bits & MARK) != 0, (bits & OBJECT) != 0, (bits & ALLOCATED) != 0);
+        }
+      char** begin = block->begin;
+      char** end = block->end;
+      for (; begin < end; ++begin)
+        {
+          printf ("%zd %p => %p\n", pthread_self(), begin, *begin);
+        }
+      block_dump (block->left);
+      block_dump (block->right);
+    }
+}
+
+static void block_sweep (block_t** b, chunk_t** head)
+{
+  block_t* block = *b;
+
+  if (block == NULL)
+    {
+      return;
+    }
+
+  block_sweep (&block->left, head);
+  block_sweep (&block->right, head);
+
+  if (block->marked)
+    {
+      size_t slot = 0;
+      size_t max_slot = (block->end - block->begin) / SLOT_SIZE;
+      while (slot != max_slot)
+        {
+          unsigned char bits = block_get_bits (block, slot);
+          if ((bits & MARK) != 0)
+            {
+              // Marked.
+              block_reset_bits (block, slot, SCANNED | MARK);
+              ++slot;
+            }
+          else
+            {
+              // Not marked.
+              size_t slot_begin = slot;
+              for (; slot != max_slot && (block_get_bits (block, slot) & MARK) == 0; ++slot)
+                {
+                  block_clear_bits (block, slot);
+                }
+              chunk_t* c = block->begin + slot_begin * SLOT_SIZE;
+              c->size = (slot - slot_begin) * SLOT_SIZE;
+              c->next = *head;
+              *head = c;
+            }
+        }
+      block->marked = false;
+    }
+  else
+    {
+      block_t* left = block->left;
+      block_t* right = block->right;
+
+      if (left == NULL && right == NULL)
+        {
+          *b = NULL;
+        }
+      else if (left == NULL && right != NULL)
+        {
+          *b = right;
+        }
+      else if (left != NULL && right == NULL)
+        {
+          *b = left;
         }
       else
         {
-          // Not marked.
-          size_t slot_begin = slot;
-          for (; slot != max_slot && (block_get_bits (block, slot) & MARK) == 0; ++slot)
-            {
-              block_clear_bits (block, slot);
-            }
-          chunk_t* c = block->begin + slot_begin * SLOT_SIZE;
-          c->size = (slot - slot_begin) * SLOT_SIZE;
-          c->next = *head;
-          *head = c;
+          block_t* r = block_remove_right_most (&block->left);
+          r->left = block->left;
+          r->right = block->right;
+          *b = r;
         }
+
+      // Free the data.
+      free (block->begin);
+      free (block);
     }
 }
 
@@ -256,9 +357,9 @@ struct heap_t {
   bool dirty;  // The heap is dirty and should be collected.
   heap_t* child;
   heap_t* next;
-  size_t count; // Increment when changing to, decremented when changing from.
   heap_t* parent;
   bool reachable;
+  pthread_mutex_t mutex;
 };
 
 heap_t* heap_make (char* begin, char* end)
@@ -266,6 +367,7 @@ heap_t* heap_make (char* begin, char* end)
   heap_t* h = xmalloc (sizeof (heap_t));
   h->begin = begin;
   h->end = end;
+  pthread_mutex_init (&h->mutex, NULL);
   return h;
 }
 
@@ -283,26 +385,26 @@ void* heap_instance (const heap_t* heap)
   return heap->begin;
 }
 
-static void block_dump (const block_t* block)
+static void heap_dump_i (heap_t* heap)
 {
-  if (block != NULL)
-    {
-      printf ("block=%p begin=%p end=%p left=%p right=%p\n", block, block->begin, block->end, block->left, block->right);
-      block_dump (block->left);
-      block_dump (block->right);
-    }
-}
+  printf ("%zd heap=%p begin=%p end=%p next_sz=%zd dirty=%d reachable=%d parent=%p next=%p\n", pthread_self(), heap, heap->begin, heap->end, heap->next_allocation_size, heap->dirty, heap->reachable, heap->parent, heap->next);
 
-void heap_dump (const heap_t* heap)
-{
-  printf ("heap=%p begin=%p end=%p next_sz=%zd dirty=%d count=%zd reachable=%d parent=%p next=%p\n", heap, heap->begin, heap->end, heap->next_allocation_size, heap->dirty, heap->count, heap->reachable, heap->parent, heap->next);
+  if (block_find (heap->block, heap->begin) == NULL)
+    {
+      char** begin = (char**)heap->begin;
+      char** end = (char**)heap->end;
+      for (; begin < end; ++begin)
+        {
+          printf ("%zd %p => %p\n", pthread_self(), begin, *begin);
+        }
+    }
 
   block_dump (heap->block);
 
   chunk_t* ch;
   for (ch = heap->free_list_head; ch != NULL; ch = ch->next)
     {
-      printf ("chunk=%p size=%zd next=%p\n", ch, ch->size, ch->next);
+      printf ("%zd chunk=%p size=%zd next=%p\n", pthread_self(), ch, ch->size, ch->next);
     }
 
   heap_t* c;
@@ -312,12 +414,21 @@ void heap_dump (const heap_t* heap)
     }
 }
 
+void heap_dump (heap_t* heap)
+{
+  pthread_mutex_lock (&heap->mutex);
+  heap_dump_i (heap);
+  pthread_mutex_unlock (&heap->mutex);
+}
+
 void* heap_allocate (heap_t* heap, size_t size)
 {
   if (size == 0)
     {
       return NULL;
     }
+
+  pthread_mutex_lock (&heap->mutex);
 
   // Must be a multiple of the slot size.
   size = align_up (size, SLOT_SIZE);
@@ -376,37 +487,9 @@ void* heap_allocate (heap_t* heap, size_t size)
 
   heap->dirty = true;
 
+  pthread_mutex_unlock (&heap->mutex);
+
   return c;
-}
-
-static void scan (heap_t* heap, block_t* root_block, void* begin, void* end)
-{
-  char** b;
-  char** e;
-
-  b = (char**)align_up ((size_t)begin, sizeof (void*));
-  e = end;
-
-  for (; b < e; ++b)
-    {
-      char* p = *b;
-      block_t* block = block_find (root_block, p);
-      if (block != NULL)
-        {
-          block_mark (block, p);
-        }
-      else
-        {
-          heap_t* ptr;
-          for (ptr = heap->child; ptr != NULL; ptr = ptr->next)
-            {
-              if (ptr == (heap_t*)p)
-                {
-                  heap->reachable = true;
-                }
-            }
-        }
-    }
 }
 
 static void heap_free (heap_t* heap)
@@ -425,17 +508,71 @@ static void heap_free (heap_t* heap)
   free (heap);
 }
 
+static void mark_slot_for_address (heap_t* heap, void* p, block_t** work_list)
+{
+  block_t* block = block_find (heap->block, p);
+  if (block != NULL)
+    {
+      block_mark (block, p, work_list);
+    }
+  else
+    {
+      heap_t* ptr;
+      for (ptr = heap->child; ptr != NULL; ptr = ptr->next)
+        {
+          if (ptr == (heap_t*)p)
+            {
+              ptr->reachable = true;
+              break;
+            }
+        }
+    }
+}
+
+static void scan (heap_t* heap, void* begin, void* end, block_t** work_list)
+{
+  char** b;
+  char** e;
+
+  b = (char**)align_up ((size_t)begin, sizeof (void*));
+  e = end;
+
+  for (; b < e; ++b)
+    {
+      char* p = *b;
+      mark_slot_for_address (heap, p, work_list);
+    }
+}
+
 void heap_collect_garbage (heap_t* heap)
 {
+  block_t* work_list = NULL;
+  pthread_mutex_lock (&heap->mutex);
   if (heap->dirty)
     {
-      // Scan the root.
-      scan (heap, heap->block, heap->begin, heap->end);
-      // Scan the heap.
-      block_scan (heap, heap->block, heap->block);
-      // Sweep the heap.
+      block_t* b = block_find (heap->block, heap->begin);
+      if (b != NULL)
+        {
+          block_mark (b, heap->begin, &work_list);
+        }
+      scan (heap, heap->begin, heap->end, &work_list);
+
+      while (work_list != NULL &&
+             work_list != (block_t*)1)
+        {
+          block_t* b = work_list;
+          work_list = b->next;
+          b->next = NULL;
+          block_scan (heap, b, &work_list);
+        }
+
+      // Sweep the heap (reconstruct the free list).
       heap->free_list_head = NULL;
-      block_sweep (heap->block, &heap->free_list_head);
+      block_sweep (&heap->block, &heap->free_list_head);
+      if (heap->block == NULL)
+        {
+          heap->next_allocation_size = 0;
+        }
       heap->dirty = false;
 
       heap_t** child = &(heap->child);
@@ -443,25 +580,21 @@ void heap_collect_garbage (heap_t* heap)
         {
           if ((*child)->reachable)
             {
+              // Recur on reachable children.
               heap_collect_garbage (*child);
               (*child)->reachable = false;
               child = &(*child)->next;
             }
           else
             {
+              // Free unreachable children.
               heap_t* h = *child;
               *child = h->next;
               heap_free (h);
             }
         }
     }
-}
-
-void heap_insert_child (heap_t* parent, heap_t* child)
-{
-  child->parent = parent;
-  child->next = parent->child;
-  parent->child = child;
+  pthread_mutex_unlock (&heap->mutex);
 }
 
 static void merge_blocks (heap_t* heap, block_t* block)
@@ -476,6 +609,7 @@ static void merge_blocks (heap_t* heap, block_t* block)
 
 void heap_merge (heap_t* heap, heap_t* x)
 {
+  pthread_mutex_lock (&heap->mutex);
   // Merge the blocks.
   merge_blocks (heap, x->block);
 
@@ -491,18 +625,32 @@ void heap_merge (heap_t* heap, heap_t* x)
     ;;
   *h = x->child;
 
-  // Calculate dirty.
-  heap->dirty = heap->dirty || x->dirty;
+  heap->dirty = true;
 
   // Free the heap.
   free (x);
+
+  pthread_mutex_unlock (&heap->mutex);
+}
+
+void heap_insert_child (heap_t* parent, heap_t* child)
+{
+  pthread_mutex_lock (&parent->mutex);
+  child->parent = parent;
+  child->next = parent->child;
+  parent->child = child;
+  parent->dirty = true;
+  pthread_mutex_unlock (&parent->mutex);
 }
 
 void heap_remove_from_parent (heap_t* child)
 {
-  if (child->parent != NULL)
+  heap_t* parent = child->parent;
+
+  if (parent != NULL)
     {
-      heap_t** ptr = &(child->parent->child);
+      pthread_mutex_lock (&parent->mutex);
+      heap_t** ptr = &(parent->child);
       while (*ptr != child)
         {
           ptr = &(*ptr)->next;
@@ -513,20 +661,8 @@ void heap_remove_from_parent (heap_t* child)
 
       // Make the child forget the parent.
       child->parent = NULL;
+
+      parent->dirty = true;
+      pthread_mutex_unlock (&parent->mutex);
     }
-}
-
-void heap_inc (heap_t* heap)
-{
-  ++heap->count;
-}
-
-void heap_dec (heap_t* heap)
-{
-  --heap->count;
-}
-
-bool heap_in_use (const heap_t* heap)
-{
-  return heap->count != 0;
 }

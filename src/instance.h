@@ -38,11 +38,18 @@ concrete_binding_t* instance_table_binding_next (concrete_binding_t* pos);
 
 const type_t* instance_type (const instance_t* instance);
 
-void instance_set_ptr (instance_t* instance, void* ptr);
+void instance_set_record (instance_t* instance, instance_record_t* record);
 
-void* instance_get_ptr (const instance_t* instance);
+instance_record_t* instance_get_record (const instance_t* instance);
 
 bool instance_is_top_level (const instance_t* instance);
+
+void instance_set_set (instance_t* instance,
+                       const action_t* action,
+                       instance_set_t* set);
+
+const instance_set_t* instance_get_set (const instance_t* instance,
+                                        const action_t* action);
 
 instance_t* concrete_binding_output_instance (const concrete_binding_t* binding);
 

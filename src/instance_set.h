@@ -3,16 +3,23 @@
 
 #include "types.h"
 
-instance_set_t *instance_set_make (void);
+typedef struct {
+  instance_t* instance;
+  TriggerAction action;
+} instance_set_element_t;
 
-bool instance_set_contains (instance_set_t * set,
-			    instance_t * instance, trigger_t * trigger);
+instance_set_t* instance_set_make (void);
 
-void instance_set_push (instance_set_t * set,
-			instance_t * instance, trigger_t * trigger);
+void instance_set_insert (instance_set_t* set,
+                          instance_t* instance,
+                          TriggerAction action);
 
-void instance_set_pop (instance_set_t * set);
+void instance_set_sort (instance_set_t* set);
 
-bool instance_set_empty (const instance_set_t * set);
+instance_set_element_t* instance_set_begin (const instance_set_t* set);
+
+instance_set_element_t* instance_set_end (const instance_set_t* set);
+
+instance_set_element_t* instance_set_next (instance_set_element_t* pos);
 
 #endif /* instance_set_h */

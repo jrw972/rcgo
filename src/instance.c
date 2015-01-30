@@ -4,6 +4,7 @@
 #include "debug.h"
 #include "binding.h"
 #include "instance_set.h"
+#include "instance_trigger_set.h"
 #include <error.h>
 #include "action.h"
 #include "trigger.h"
@@ -13,7 +14,8 @@ struct instance_t
   const type_t *type;
   bool is_top_level;
   // Pointer to the run-time instance.
-  void* ptr;
+  instance_record_t* ptr;
+  VECTOR_DECL (instance_sets, instance_set_t*);
 };
 
 typedef struct
@@ -45,6 +47,7 @@ instance_make (const type_t * type,
   instance_t *i = xmalloc (sizeof (instance_t));
   i->type = type;
   i->is_top_level = is_top_level;
+  VECTOR_INIT (i->instance_sets, instance_set_t*, type_action_count (type), NULL);
   return i;
 }
 
@@ -158,7 +161,8 @@ instance_table_enumerate_bindings (instance_table_t * table)
 
 static void
 transitive_closure (const instance_table_t * table,
-		    instance_set_t * set,
+		    instance_trigger_set_t * set,
+                    instance_set_t* local_set,
 		    instance_t * instance, const action_t * action)
 {
   trigger_t **trigger_pos;
@@ -169,11 +173,12 @@ transitive_closure (const instance_table_t * table,
     {
       trigger_t *tg = *trigger_pos;
 
-      if (instance_set_contains (set, instance, tg))
+      if (instance_trigger_set_contains (set, instance, tg))
 	{
 	  error (-1, 0, "system is non-deterministic");
 	}
-      instance_set_push (set, instance, tg);
+      instance_trigger_set_push (set, instance, tg);
+      instance_set_insert (local_set, instance, trigger_get_action (tg));
 
       field_t **field_pos;
       field_t **field_limit;
@@ -187,14 +192,14 @@ transitive_closure (const instance_table_t * table,
 	    if (binding_pos->output_instance == instance &&
 		binding_pos->output_port == field)
 	      {
-		transitive_closure (table, set,
+		transitive_closure (table, set, local_set,
 				    binding_pos->input_instance,
 				    binding_pos->input_reaction);
 	      }
 	  }
 	}
 
-      instance_set_pop (set);
+      instance_trigger_set_pop (set);
     }
 }
 
@@ -218,7 +223,7 @@ instance_table_analyze_composition (const instance_table_t * table)
     }
   }
 
-  instance_set_t *set = instance_set_make ();
+  instance_trigger_set_t *set = instance_trigger_set_make ();
 
   // For each instance.
   VECTOR_FOREACH (instance_pos, instance_limit, table->instances,
@@ -233,8 +238,11 @@ instance_table_analyze_composition (const instance_table_t * table)
 	 type_component_actions_end (type); action_pos != action_end;
 	 action_pos = type_component_actions_next (action_pos))
       {
-	assert (instance_set_empty (set));
-	transitive_closure (table, set, instance, *action_pos);
+        assert (instance_trigger_set_empty (set));
+        instance_set_t* local_set = instance_set_make ();
+	transitive_closure (table, set, local_set, instance, *action_pos);
+        instance_set_sort (local_set);
+        instance_set_set (instance, *action_pos, local_set);
       }
   }
 }
@@ -307,12 +315,12 @@ const type_t* instance_type (const instance_t* instance)
   return instance->type;
 }
 
-void instance_set_ptr (instance_t* instance, void* ptr)
+void instance_set_record (instance_t* instance, instance_record_t* ptr)
 {
   instance->ptr = ptr;
 }
 
-void* instance_get_ptr (const instance_t* instance)
+instance_record_t* instance_get_record (const instance_t* instance)
 {
   return instance->ptr;
 }
@@ -320,6 +328,19 @@ void* instance_get_ptr (const instance_t* instance)
 bool instance_is_top_level (const instance_t* instance)
 {
   return instance->is_top_level;
+}
+
+void instance_set_set (instance_t* instance,
+                       const action_t* action,
+                       instance_set_t* set)
+{
+  VECTOR_SET(instance->instance_sets, action_number (action), set);
+}
+
+const instance_set_t* instance_get_set (const instance_t* instance,
+                                        const action_t* action)
+{
+  return VECTOR_AT(instance->instance_sets, action_number (action));
 }
 
 instance_t* concrete_binding_output_instance (const concrete_binding_t* binding)

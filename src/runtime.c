@@ -4,6 +4,7 @@
 #include "instance.h"
 #include "type.h"
 #include <string.h>
+#include <pthread.h>
 #include "field.h"
 #include "ast.h"
 #include "action.h"
@@ -13,11 +14,12 @@
 #include "method.h"
 #include "semantic.h"
 #include "heap.h"
+#include "instance_set.h"
 
-typedef struct instance_record_t instance_record_t;
 struct instance_record_t {
-  // The type.
-  const type_t* type;
+  // Scheduling lock.
+  pthread_rwlock_t lock;
+  instance_t* instance;
   heap_t* heap;
   // Next instance on the schedule.
   // 0 means this instance is not on the schedule.
@@ -26,27 +28,110 @@ struct instance_record_t {
   instance_record_t* next;
 };
 
+static instance_record_t* instance_record_make (void* ptr, instance_t* instance)
+{
+  instance_record_t* record = xmalloc (sizeof (instance_record_t));
+  pthread_rwlock_init (&record->lock, NULL);
+  record->instance = instance;
+  record->heap = heap_make (ptr, ptr + type_size (instance_type (instance)));
+
+  // Link the instance to its scheduling information.
+  *((instance_record_t**)ptr) = record;
+
+  instance_set_record (instance, record);
+
+  return record;
+}
+
+static void* instance_record_get_ptr (const instance_record_t* record)
+{
+  return heap_instance (record->heap);
+}
+
+static void instance_record_lock (instance_record_t* record,
+                                  action_t* action)
+{
+  const instance_set_t* set = instance_get_set (record->instance, action);
+  instance_set_element_t* pos;
+  instance_set_element_t* limit;
+  for (pos = instance_set_begin (set), limit = instance_set_end (set);
+       pos != limit;
+       pos = instance_set_next (pos))
+    {
+      instance_record_t* record = instance_get_record (pos->instance);
+      switch (pos->action)
+        {
+        case TRIGGER_READ:
+          pthread_rwlock_rdlock (&record->lock);
+          break;
+        case TRIGGER_WRITE:
+          pthread_rwlock_wrlock (&record->lock);
+          break;
+        }
+    }
+}
+
+static void instance_record_unlock (instance_record_t* record,
+                                  action_t* action)
+{
+  const instance_set_t* set = instance_get_set (record->instance, action);
+  instance_set_element_t* pos;
+  instance_set_element_t* limit;
+  for (pos = instance_set_begin (set), limit = instance_set_end (set);
+       pos != limit;
+       pos = instance_set_next (pos))
+    {
+      instance_record_t* record = instance_get_record (pos->instance);
+      switch (pos->action)
+        {
+        case TRIGGER_READ:
+        case TRIGGER_WRITE:
+          pthread_rwlock_unlock (&record->lock);
+          break;
+        }
+    }
+}
+
+static void instance_record_collect_garbage (instance_record_t* record)
+{
+  pthread_rwlock_wrlock (&record->lock);
+  heap_collect_garbage (record->heap);
+  pthread_rwlock_unlock (&record->lock);
+}
+
 struct runtime_t {
   instance_table_t* instance_table;
   instance_record_t* head;
   instance_record_t** tail;
+  size_t pending;
+  pthread_mutex_t list_mutex;
+  pthread_cond_t list_cond;
+  pthread_mutex_t stdout_mutex;
+};
+
+typedef struct thread_runtime_t thread_runtime_t;
+struct thread_runtime_t {
+  pthread_t thread;
+  runtime_t* runtime;
   stack_frame_t* stack;
   char* mutable_phase_base_pointer;
   instance_record_t* current_instance;
 };
 
-runtime_t* runtime_make (instance_table_t* instance_table,
-                         memory_model_t* memory_model, size_t stack_size)
+runtime_t* runtime_make (instance_table_t* instance_table)
 {
   runtime_t* r = xmalloc (sizeof (runtime_t));
   r->instance_table = instance_table;
   r->tail = &(r->head);
-  r->stack = stack_frame_make (memory_model, stack_size);
+  pthread_mutex_init (&r->list_mutex, NULL);
+  pthread_cond_init (&r->list_cond, NULL);
+  pthread_mutex_init (&r->stdout_mutex, NULL);
   return r;
 }
 
 static void push (runtime_t* runtime, instance_record_t* record)
 {
+  pthread_mutex_lock (&runtime->list_mutex);
   if (record->next == 0)
     {
       // Not on the schedule.
@@ -54,25 +139,20 @@ static void push (runtime_t* runtime, instance_record_t* record)
       runtime->tail = &(record->next);
       record->next = (instance_record_t*)1;
     }
+  pthread_cond_signal (&runtime->list_cond);
+  pthread_mutex_unlock (&runtime->list_mutex);
 }
 
-static void initialize_instance (runtime_t* runtime, void* ptr, const type_t* type, instance_t* instance, instance_table_t* instance_table)
+static void initialize_instance (runtime_t* runtime, void* ptr, instance_t* instance, instance_table_t* instance_table)
 {
   // Set up the scheduling data structure.
-  instance_record_t* record = xmalloc (sizeof (instance_record_t));
-  record->type = type;
-  record->heap = heap_make (ptr, ptr + type_size (type));
-
-  // Link the instance to its scheduling information.
-  *((instance_record_t**)ptr) = record;
+  instance_record_t* record = instance_record_make (ptr, instance);
 
   // Add the instance to the schedule.
   push (runtime, record);
 
-  instance_set_ptr (instance, ptr);
-
   // Recur on all contained instances.
-  const type_t* field_list = type_component_field_list (type);
+  const type_t* field_list = type_component_field_list (instance_type (instance));
   field_t** pos;
   field_t** limit;
   for (pos = type_field_list_begin (field_list), limit = type_field_list_end (field_list);
@@ -83,7 +163,7 @@ static void initialize_instance (runtime_t* runtime, void* ptr, const type_t* ty
       const type_t* t = field_type (field);
       if (type_is_component (t))
         {
-          initialize_instance (runtime, ptr + field_offset (field), t, instance_table_get_subinstance (instance_table, instance, field), instance_table);
+          initialize_instance (runtime, ptr + field_offset (field), instance_table_get_subinstance (instance_table, instance, field), instance_table);
         }
     }
 }
@@ -102,7 +182,7 @@ void runtime_allocate_instances (runtime_t* runtime)
           const type_t* type = instance_type (instance);
           size_t size = type_size (type);
           void* ptr = xmalloc (size);
-          initialize_instance (runtime, ptr, type, instance, runtime->instance_table);
+          initialize_instance (runtime, ptr, instance, runtime->instance_table);
         }
     }
 }
@@ -137,27 +217,27 @@ void runtime_create_bindings (runtime_t* runtime)
       instance_t* input_instance = concrete_binding_input_instance (pos);
       const action_t* input_reaction = concrete_binding_input_reaction (pos);
 
-      port_t* port = port_make (instance_get_ptr (input_instance), input_reaction);
+      port_t* port = port_make (instance_record_get_ptr (instance_get_record (input_instance)), input_reaction);
 
-      port_t** p = instance_get_ptr (output_instance) + field_offset (output_port);
+      port_t** p = instance_record_get_ptr (instance_get_record (output_instance)) + field_offset (output_port);
       port->next = *p;
       *p = port;
     }
 }
 
 static void
-evaluate_rvalue (runtime_t* runtime,
+evaluate_rvalue (thread_runtime_t* runtime,
                  ast_t* expr);
 
 static void evaluate_lvalue_dereference_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   evaluate_rvalue (runtime, ast_get_child (expr, UNARY_CHILD));
 }
 
 static void evaluate_lvalue_identifier_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   // Get the address of the identifier.
   symbol_t* symbol = ast_get_symbol (expr);
   assert (symbol != NULL);
@@ -166,12 +246,12 @@ static void evaluate_lvalue_identifier_expr (void* data, const ast_t* expr)
 }
 
 static void
-evaluate_lvalue (runtime_t* runtime,
+evaluate_lvalue (thread_runtime_t* runtime,
                  ast_t* expr);
 
 static void evaluate_lvalue_select_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   ast_t *left = ast_get_child (expr, BINARY_LEFT_CHILD);
   ast_t *right = ast_get_child (expr, BINARY_RIGHT_CHILD);
   string_t identifier = ast_get_identifier (right);
@@ -200,7 +280,7 @@ static ast_const_visitor_t evaluate_lvalue_visitor = {
 };
 
 static void
-evaluate_lvalue (runtime_t* runtime,
+evaluate_lvalue (thread_runtime_t* runtime,
                  ast_t* expr)
 {
   ast_const_accept (expr, &evaluate_lvalue_visitor, runtime);
@@ -214,7 +294,7 @@ evaluate_lvalue (runtime_t* runtime,
 }
 
 static void
-execute (runtime_t* runtime,
+execute (thread_runtime_t* runtime,
          const action_t* action,
          instance_record_t* instance);
 
@@ -224,11 +304,11 @@ typedef enum {
 } ControlAction;
 
 static ControlAction
-evaluate_statement (runtime_t* runtime,
+evaluate_statement (thread_runtime_t* runtime,
                     ast_t* node);
 
 static void
-call (runtime_t* runtime)
+call (thread_runtime_t* runtime)
 {
   ast_t* node = stack_frame_pop_pointer (runtime->stack);
 
@@ -273,7 +353,7 @@ call (runtime_t* runtime)
 
 static void evaluate_rvalue_expr_list (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   AST_FOREACH (child, expr)
     {
       evaluate_rvalue (runtime, child);
@@ -282,13 +362,13 @@ static void evaluate_rvalue_expr_list (void* data, const ast_t* expr)
 
 static void evaluate_rvalue_address_of_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   evaluate_lvalue (runtime, ast_get_child (expr, UNARY_CHILD));
 }
 
 static void evaluate_rvalue_call_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   // Create space for the return.
   typed_value_t return_tv = ast_get_typed_value (expr);
   stack_frame_reserve (runtime->stack, type_size (return_tv.type));
@@ -317,7 +397,7 @@ static void evaluate_rvalue_call_expr (void* data, const ast_t* expr)
 
 static void evaluate_rvalue_dereference_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   typed_value_t tv = ast_get_typed_value (expr);
   evaluate_rvalue (runtime, ast_get_child (expr, UNARY_CHILD));
   void* ptr = stack_frame_pop_pointer (runtime->stack);
@@ -326,7 +406,7 @@ static void evaluate_rvalue_dereference_expr (void* data, const ast_t* expr)
 
 static void evaluate_rvalue_equal_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   ast_t* left = ast_get_child (expr, BINARY_LEFT_CHILD);
   ast_t* right = ast_get_child (expr, BINARY_RIGHT_CHILD);
   // Evaluate the left.
@@ -339,7 +419,7 @@ static void evaluate_rvalue_equal_expr (void* data, const ast_t* expr)
 
 static void evaluate_rvalue_identifier_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   ast_t* identifier_node = ast_get_child (expr, UNARY_CHILD);
   string_t name = ast_get_identifier (identifier_node);
   symtab_t* symtab = ast_get_symtab (expr);
@@ -350,7 +430,7 @@ static void evaluate_rvalue_identifier_expr (void* data, const ast_t* expr)
 
 static void evaluate_rvalue_logic_not_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   evaluate_rvalue (runtime, ast_get_child (expr, UNARY_CHILD));
   bool b = stack_frame_pop_bool (runtime->stack);
   stack_frame_push_bool (runtime->stack, !b);
@@ -358,11 +438,24 @@ static void evaluate_rvalue_logic_not_expr (void* data, const ast_t* expr)
 
 typedef struct {
   heap_t* heap;
+  pthread_mutex_t mutex;
+  size_t change_count;
 } heap_link_t;
+
+static heap_link_t* make_heap_link (heap_t* heap,
+                                    heap_t* allocator)
+{
+  // Allocate a new heap link in the parent.
+  heap_link_t* hl = heap_allocate (allocator, sizeof (heap_link_t));
+  // Set up the link.
+  hl->heap = heap;
+  pthread_mutex_init (&hl->mutex, NULL);
+  return hl;
+}
 
 static void evaluate_rvalue_new_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   // Allocate a new instance of the type.
   typed_value_t tv = ast_get_typed_value (expr);
   type_t* type = type_pointer_base_type (tv.type);
@@ -380,9 +473,7 @@ static void evaluate_rvalue_new_expr (void* data, const ast_t* expr)
       // Insert it into its parent.
       heap_insert_child (runtime->current_instance->heap, h);
       // Allocate a new heap link in the parent.
-      heap_link_t* hl = heap_allocate (runtime->current_instance->heap, sizeof (heap_link_t));
-      // Set up the link.
-      hl->heap = h;
+      heap_link_t* hl = make_heap_link (h, runtime->current_instance->heap);
       // Return the heap link.
       stack_frame_push_pointer (runtime->stack, hl);
     }
@@ -390,7 +481,7 @@ static void evaluate_rvalue_new_expr (void* data, const ast_t* expr)
 
 static void evaluate_rvalue_not_equal_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   ast_t* left = ast_get_child (expr, BINARY_LEFT_CHILD);
   ast_t* right = ast_get_child (expr, BINARY_RIGHT_CHILD);
   // Evaluate the left.
@@ -403,7 +494,7 @@ static void evaluate_rvalue_not_equal_expr (void* data, const ast_t* expr)
 
 static void evaluate_rvalue_port_call_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   // Push all of the arguments first and measure their size.
   char* top_before = stack_frame_top (runtime->stack);
   evaluate_rvalue (runtime, ast_get_child (expr, CALL_ARGS));
@@ -445,7 +536,7 @@ static void evaluate_rvalue_port_call_expr (void* data, const ast_t* expr)
 
 static void evaluate_rvalue_select_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   evaluate_lvalue (runtime, ast_get_child (expr, BINARY_LEFT_CHILD));
   ast_t *left = ast_get_child (expr, BINARY_LEFT_CHILD);
   ast_t *right = ast_get_child (expr, BINARY_RIGHT_CHILD);
@@ -459,28 +550,37 @@ static void evaluate_rvalue_select_expr (void* data, const ast_t* expr)
 
 static void evaluate_rvalue_move_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   ast_t* child = ast_get_child (expr, UNARY_CHILD);
   evaluate_rvalue (runtime, child);
   heap_link_t* hl = stack_frame_pop_pointer (runtime->stack);
-  if (hl != NULL && hl->heap != NULL && !heap_in_use (hl->heap))
+  if (hl != NULL)
     {
-      // Break the link.
-      heap_t* h = hl->heap;
-      hl->heap = NULL;
+      pthread_mutex_lock (&hl->mutex);
+      if (hl->heap != NULL && hl->change_count == 0)
+        {
+          // Break the link.
+          heap_t* h = hl->heap;
+          hl->heap = NULL;
+          pthread_mutex_unlock (&hl->mutex);
 
-      // Remove from parent.
-      heap_remove_from_parent (h);
-      // Insert into the new parent.
-      heap_insert_child (runtime->current_instance->heap, h);
+          // Remove from parent.
+          heap_remove_from_parent (h);
+          // Insert into the new parent.
+          heap_insert_child (runtime->current_instance->heap, h);
 
-      // Allocate a new heap link in the parent.
-      heap_link_t* new_hl = heap_allocate (runtime->current_instance->heap, sizeof (heap_link_t));
-      // Set up the link.
-      new_hl->heap = h;
-      // Return the heap link.
-      stack_frame_push_pointer (runtime->stack, new_hl);
-    }
+          // Allocate a new heap link in the parent.
+          heap_link_t* new_hl = make_heap_link (h, runtime->current_instance->heap);
+
+          // Return the heap link.
+          stack_frame_push_pointer (runtime->stack, new_hl);
+        }
+      else
+        {
+          pthread_mutex_unlock (&hl->mutex);
+          stack_frame_push_pointer (runtime->stack, NULL);
+        }
+      }
   else
     {
       stack_frame_push_pointer (runtime->stack, NULL);
@@ -489,27 +589,37 @@ static void evaluate_rvalue_move_expr (void* data, const ast_t* expr)
 
 static void evaluate_rvalue_merge_expr (void* data, const ast_t* expr)
 {
-  runtime_t* runtime = data;
+  thread_runtime_t* runtime = data;
   ast_t* child = ast_get_child (expr, UNARY_CHILD);
   evaluate_rvalue (runtime, child);
   heap_link_t* hl = stack_frame_pop_pointer (runtime->stack);
-  if (hl != NULL && hl->heap != NULL && !heap_in_use (hl->heap))
+  if (hl != NULL)
     {
-      // Break the link.
-      heap_t* h = hl->heap;
-      hl->heap = NULL;
+      pthread_mutex_lock (&hl->mutex);
+      if (hl->heap != NULL && hl->change_count == 0)
+        {
+          // Break the link.
+          heap_t* h = hl->heap;
+          hl->heap = NULL;
+          pthread_mutex_unlock (&hl->mutex);
 
-      // Get the heap root.
-      void* root = heap_instance (h);
+          // Get the heap root.
+          void* root = heap_instance (h);
 
-      // Remove from parent.
-      heap_remove_from_parent (h);
+          // Remove from parent.
+          heap_remove_from_parent (h);
 
-      // Merge into the new parent.
-      heap_merge (runtime->current_instance->heap, h);
+          // Merge into the new parent.
+          heap_merge (runtime->current_instance->heap, h);
 
-      // Return the root.
-      stack_frame_push_pointer (runtime->stack, root);
+          // Return the root.
+          stack_frame_push_pointer (runtime->stack, root);
+        }
+      else
+        {
+          pthread_mutex_unlock (&hl->mutex);
+          stack_frame_push_pointer (runtime->stack, NULL);
+        }
     }
   else
     {
@@ -535,7 +645,7 @@ static ast_const_visitor_t evaluate_rvalue_visitor = {
 };
 
 static void
-evaluate_rvalue (runtime_t* runtime,
+evaluate_rvalue (thread_runtime_t* runtime,
                  ast_t* expr)
 {
   typed_value_t tv = ast_get_typed_value (expr);
@@ -602,7 +712,7 @@ evaluate_rvalue (runtime_t* runtime,
 }
 
 static ControlAction
-evaluate_statement (runtime_t* runtime,
+evaluate_statement (thread_runtime_t* runtime,
                     ast_t* node)
 {
   switch (ast_statement_kind (node))
@@ -635,11 +745,14 @@ evaluate_statement (runtime_t* runtime,
             // Heap link is null.
             unimplemented;
           }
+        pthread_mutex_lock (&hl->mutex);
+        ++hl->change_count;
+        pthread_mutex_unlock (&hl->mutex);
+
         // Save the old heap.
         heap_t* old_heap = runtime->current_instance->heap;
         // Set the the new heap.
         runtime->current_instance->heap = hl->heap;
-        heap_inc (runtime->current_instance->heap);
 
         // Evaluate the address of the heap root.
         evaluate_lvalue_identifier_expr (runtime, body);
@@ -650,8 +763,11 @@ evaluate_statement (runtime_t* runtime,
         evaluate_statement (runtime, body);
 
         // Restore the old heap.
-        heap_dec (runtime->current_instance->heap);
         runtime->current_instance->heap = old_heap;
+
+        pthread_mutex_lock (&hl->mutex);
+        --hl->change_count;
+        pthread_mutex_unlock (&hl->mutex);
       }
       break;
 
@@ -746,6 +862,71 @@ evaluate_statement (runtime_t* runtime,
           }
       }
       break;
+
+    case AstSubtractAssignStmt:
+      {
+        // Determine the size of the value being assigned.
+        type_t* type = ast_get_typed_value (ast_get_child (node, BINARY_RIGHT_CHILD)).type;
+        // Evaluate the address.
+        evaluate_lvalue (runtime, ast_get_child (node, BINARY_LEFT_CHILD));
+        void* ptr = stack_frame_pop_pointer (runtime->stack);
+        // Evaluate the value.
+        evaluate_rvalue (runtime, ast_get_child (node, BINARY_RIGHT_CHILD));
+        switch (type_kind (type))
+          {
+          case TypeUndefined:
+            unimplemented;
+          case TypeVoid:
+            unimplemented;
+          case TypeBool:
+            unimplemented;
+          case TypeComponent:
+            unimplemented;
+          case TypeForeign:
+            unimplemented;
+          case TypeHeap:
+            unimplemented;
+          case TypeImmutable:
+            unimplemented;
+          case TypePointer:
+            unimplemented;
+          case TypePointerToForeign:
+            unimplemented;
+          case TypePointerToImmutable:
+            unimplemented;
+          case TypePort:
+            unimplemented;
+          case TypeReaction:
+            unimplemented;
+          case TypeFieldList:
+            unimplemented;
+          case TypeSignature:
+            unimplemented;
+          case TypeString:
+            unimplemented;
+          case TypeFunc:
+            unimplemented;
+          case TypeUint:
+            *((uint64_t*)ptr) -= stack_frame_pop_uint (runtime->stack);
+            break;
+          case TypeStruct:
+            unimplemented;
+
+          case UntypedUndefined:
+            unimplemented;
+          case UntypedNil:
+            unimplemented;
+          case UntypedBool:
+            unimplemented;
+          case UntypedInteger:
+            unimplemented;
+          case UntypedString:
+            unimplemented;
+
+          }
+      }
+      break;
+
     case AstStmtList:
       {
 	AST_FOREACH (child, node)
@@ -795,6 +976,7 @@ evaluate_statement (runtime_t* runtime,
 
     case AstPrintlnStmt:
       {
+        pthread_mutex_lock (&runtime->runtime->stdout_mutex);
         ast_t* expr_list = ast_get_child (node, UNARY_CHILD);
         AST_FOREACH (child, expr_list)
         {
@@ -831,16 +1013,13 @@ evaluate_statement (runtime_t* runtime,
               unimplemented;
 
             case TypePointer:
+            case TypePointerToForeign:
+            case TypePointerToImmutable:
               {
                 void* ptr = stack_frame_pop_pointer (runtime->stack);
                 printf ("%p", ptr);
               }
               break;
-
-            case TypePointerToForeign:
-              unimplemented;
-            case TypePointerToImmutable:
-              unimplemented;
 
             case TypePort:
               unimplemented;
@@ -883,13 +1062,14 @@ evaluate_statement (runtime_t* runtime,
         }
       }
       printf ("\n");
+      pthread_mutex_unlock (&runtime->runtime->stdout_mutex);
     }
 
   return CONTINUE;
 }
 
 static bool
-enabled (runtime_t* runtime,
+enabled (thread_runtime_t* runtime,
          instance_record_t* record,
          action_t* action)
 {
@@ -911,7 +1091,7 @@ enabled (runtime_t* runtime,
 }
 
 static void
-execute (runtime_t* runtime,
+execute (thread_runtime_t* runtime,
          const action_t* action,
          instance_record_t* instance)
 {
@@ -957,9 +1137,9 @@ execute (runtime_t* runtime,
           evaluate_statement (runtime, b);
 
           // Add to the schedule.
-          if (trigger_get_mutates_receiver (trigger))
+          if (trigger_get_action (trigger) == TRIGGER_WRITE)
             {
-              push (runtime, runtime->current_instance);
+              push (runtime->runtime, runtime->current_instance);
             }
 
           // Pop until the base pointer.
@@ -978,7 +1158,7 @@ dump_schedule (const runtime_t* runtime)
       instance_record_t* record = runtime->head;
       while (record != (instance_record_t*)1)
         {
-          printf ("%p instance=%p type=%p\n", record, heap_instance (record->heap), record->type);
+          printf ("%p instance=%p type=%p\n", record, heap_instance (record->heap), instance_type (record->instance));
           record = record->next;
         }
     }
@@ -996,34 +1176,62 @@ dump_instances (const runtime_t* runtime)
       instance_t* instance = *pos;
       if (instance_is_top_level (instance))
         {
-          void* ptr = instance_get_ptr (instance);
+          void* ptr = instance_record_get_ptr (instance_get_record (instance));
           type_print_value (instance_type (instance), ptr);
           printf ("\n");
         }
     }
 }
 
-void runtime_run (runtime_t* runtime)
+static void*
+run (void* arg)
 {
-  while (runtime->head != NULL)
+  thread_runtime_t* runtime = arg;
+
+  for (;;)
     {
+      pthread_mutex_lock (&runtime->runtime->list_mutex);
+      while (!(runtime->runtime->head != NULL ||
+               (runtime->runtime->head == NULL && runtime->runtime->pending == 0)))
+        {
+          pthread_cond_wait (&runtime->runtime->list_cond, &runtime->runtime->list_mutex);
+        }
+
+      if (runtime->runtime->head == NULL)
+        {
+          // Implies that runtime->pending == 0.
+          // Signal so other threads can exit.
+          pthread_cond_signal (&runtime->runtime->list_cond);
+          pthread_mutex_unlock (&runtime->runtime->list_mutex);
+          pthread_exit (NULL);
+        }
+
       /* printf ("BEGIN schedule before pop\n"); */
       /* dump_schedule (runtime); */
       /* printf ("END schedule before pop\n"); */
 
       // Get an instance to execute.
-      instance_record_t* record = runtime->head;
-      runtime->head = record->next;
-      if (runtime->head == (instance_record_t*)1)
+      instance_record_t* record = runtime->runtime->head;
+      runtime->runtime->head = record->next;
+      if (runtime->runtime->head == (instance_record_t*)1)
         {
-          runtime->head = NULL;
-          runtime->tail = &(runtime->head);
+          runtime->runtime->head = NULL;
+          runtime->runtime->tail = &(runtime->runtime->head);
         }
       record->next = NULL;
 
+      ++runtime->runtime->pending;
+      pthread_mutex_unlock (&runtime->runtime->list_mutex);
+
+      /* // TODO:  Comment this out. */
       /* if (rand () % 100 < 50) */
       /*   { */
-      /*     push (runtime, record); */
+      /*     push (runtime->runtime, record); */
+
+      /*     pthread_mutex_lock (&runtime->runtime->list_mutex); */
+      /*     --runtime->runtime->pending; */
+      /*     pthread_cond_signal (&runtime->runtime->list_cond); */
+      /*     pthread_mutex_unlock (&runtime->runtime->list_mutex); */
       /*     continue; */
       /*   } */
 
@@ -1034,7 +1242,8 @@ void runtime_run (runtime_t* runtime)
       // Try all the actions.
       action_t** pos;
       action_t** limit;
-      for (pos = type_actions_begin (record->type), limit = type_actions_end (record->type);
+      const type_t* type = instance_type (record->instance);
+      for (pos = type_actions_begin (type), limit = type_actions_end (type);
            pos != limit;
            pos = type_actions_next (pos))
         {
@@ -1043,6 +1252,7 @@ void runtime_run (runtime_t* runtime)
           /* printf ("END instances before enabled\n"); */
 
           action_t* action = *pos;
+          instance_record_lock (record, action);
           if (enabled (runtime, record, action))
             {
               /* printf ("BEGIN instances before execute\n"); */
@@ -1067,6 +1277,26 @@ void runtime_run (runtime_t* runtime)
               /* dump_instances (runtime); */
               /* printf ("END instances after execute\n"); */
             }
+          instance_record_unlock (record, action);
+
+          /* // TODO: Comment this out. */
+          /* { */
+          /*   instance_t** pos; */
+          /*   instance_t** limit; */
+          /*   for (pos = instance_table_begin (runtime->runtime->instance_table), limit = instance_table_end (runtime->runtime->instance_table); */
+          /*        pos != limit; */
+          /*        pos = instance_table_next (pos)) */
+          /*     { */
+          /*       instance_t* instance = *pos; */
+          /*       printf ("BEFORE FIRST\n"); */
+          /*       heap_dump (instance_get_record (instance)->heap); */
+          /*       printf ("BEFORE LAST\n"); */
+          /*       instance_record_collect_garbage (instance_get_record (instance)); */
+          /*       printf ("AFTER FIRST\n"); */
+          /*       heap_dump (instance_get_record (instance)->heap); */
+          /*       printf ("AFTER LAST\n"); */
+          /*     } */
+          /* } */
 
           /* printf ("BEGIN instances after enabled\n"); */
           /* dump_instances (runtime); */
@@ -1074,6 +1304,37 @@ void runtime_run (runtime_t* runtime)
         }
 
       // Collect garbage.
-      heap_collect_garbage (record->heap);
+      instance_record_collect_garbage (record);
+      //heap_dump (record->heap);
+
+      pthread_mutex_lock (&runtime->runtime->list_mutex);
+      --runtime->runtime->pending;
+      pthread_cond_signal (&runtime->runtime->list_cond);
+      pthread_mutex_unlock (&runtime->runtime->list_mutex);
+    }
+
+  return NULL;
+}
+
+#define NUM_THREADS 2
+
+void runtime_run (runtime_t* r,
+                  memory_model_t* memory_model,
+                  size_t stack_size)
+{
+  thread_runtime_t* runtimes = xmalloc (NUM_THREADS * sizeof (thread_runtime_t));
+  size_t idx;
+  for (idx = 0; idx != NUM_THREADS; ++idx)
+    {
+      thread_runtime_t* runtime = runtimes + idx;
+      runtime->runtime = r;
+      runtime->stack = stack_frame_make (memory_model, stack_size);
+      pthread_create (&runtime->thread, NULL, run, runtime);
+    }
+
+  for (idx = 0; idx != NUM_THREADS; ++idx)
+    {
+      thread_runtime_t* runtime = runtimes + idx;
+      pthread_join (runtime->thread, NULL);
     }
 }

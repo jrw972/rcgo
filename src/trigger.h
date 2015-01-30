@@ -13,8 +13,8 @@ field_t **trigger_end (const trigger_t * trigger);
 
 field_t **trigger_next (field_t ** pos);
 
-void trigger_set_mutates_receiver (trigger_t * trigger, bool value);
+void trigger_set_action (trigger_t * trigger, TriggerAction action);
 
-bool trigger_get_mutates_receiver (const trigger_t * trigger);
+TriggerAction trigger_get_action (const trigger_t * trigger);
 
 #endif /* trigger_h */

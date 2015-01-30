@@ -1,66 +1,62 @@
 #include "instance_set.h"
 #include "debug.h"
 #include "util.h"
-#include "trigger.h"
 
-typedef struct
-{
-  instance_t *instance;
-  trigger_t *trigger;
-} element_t;
-
-struct instance_set_t
-{
-  VECTOR_DECL (instances, element_t);
+struct instance_set_t {
+  VECTOR_DECL (instances, instance_set_element_t);
 };
 
-instance_set_t *
-instance_set_make (void)
+instance_set_t* instance_set_make (void)
 {
-  instance_set_t *set = xmalloc (sizeof (instance_set_t));
-  element_t e;
-  VECTOR_INIT (set->instances, element_t, 0, e);
+  instance_set_t* set = xmalloc (sizeof (instance_set_t));
+  instance_set_element_t e;
+  VECTOR_INIT (set->instances, instance_set_element_t, 0, e);
   return set;
 }
 
-bool
-instance_set_contains (instance_set_t * set,
-		       instance_t * instance, trigger_t * trigger)
+void instance_set_insert (instance_set_t* set,
+                          instance_t* instance,
+                          TriggerAction action)
 {
-  VECTOR_FOREACH (pos, limit, set->instances, element_t)
+  VECTOR_FOREACH (pos, limit, set->instances, instance_set_element_t)
   {
-    if (pos->instance == instance && pos->trigger == trigger)
+
+    if (pos->instance == instance)
       {
-	// Same instance and same trigger implies a recursive structure.
-	return true;
-      }
-    if (pos->instance == instance &&
-	trigger_get_mutates_receiver (pos->trigger) &&
-	trigger_get_mutates_receiver (trigger))
-      {
-	// Two different triggers are tryingt to mutate the state of the same instance.
-	return true;
+        // In set.
+        if (action > pos->action)
+          {
+            pos->action = action;
+          }
+        return;
       }
   }
-  return false;
+
+  instance_set_element_t e = { instance: instance, action: action };
+  VECTOR_PUSH (set->instances, instance_set_element_t, e);
 }
 
-void
-instance_set_push (instance_set_t * set,
-		   instance_t * instance, trigger_t * trigger)
+static int compare_element (const void* x, const void* y)
 {
-element_t e = { instance: instance, trigger:trigger };
-  VECTOR_PUSH (set->instances, element_t, e);
+  return (ptrdiff_t)((instance_set_element_t*)x)->instance - (ptrdiff_t)((instance_set_element_t*)y)->instance;
 }
 
-void
-instance_set_pop (instance_set_t * set)
+void instance_set_sort (instance_set_t* set)
 {
-  VECTOR_POP (set->instances);
+  qsort (VECTOR_BEGIN(set->instances), VECTOR_SIZE(set->instances), sizeof (instance_set_element_t), compare_element);
 }
 
-bool
-instance_set_empty (const instance_set_t * set)
+instance_set_element_t* instance_set_begin (const instance_set_t* set)
 {
-  return VECTOR_EMPTY (set->instances);
+  return VECTOR_BEGIN (set->instances);
+}
+
+instance_set_element_t* instance_set_end (const instance_set_t* set)
+{
+  return VECTOR_END (set->instances);
+}
+
+instance_set_element_t* instance_set_next (instance_set_element_t* pos)
+{
+  return VECTOR_NEXT (pos);
 }

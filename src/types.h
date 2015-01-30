@@ -13,7 +13,9 @@ typedef struct field_t field_t;
 typedef struct method_t method_t;
 typedef struct heap_t heap_t;
 typedef struct instance_t instance_t;
+typedef struct instance_record_t instance_record_t;
 typedef struct instance_set_t instance_set_t;
+typedef struct instance_trigger_set_t instance_trigger_set_t;
 typedef struct instance_table_t instance_table_t;
 typedef struct memory_model_t memory_model_t;
 typedef struct parameter_t parameter_t;
@@ -23,5 +25,11 @@ typedef struct symbol_t symbol_t;
 typedef struct symtab_t symtab_t;
 typedef struct trigger_t trigger_t;
 typedef struct type_t type_t;
+
+typedef enum {
+  /* TODO:  Add TRIGGER_NONE. */
+  TRIGGER_READ,  /* Trigger reads. */
+  TRIGGER_WRITE, /* Trigger writes (and reads). */
+} TriggerAction;
 
 #endif /* types_h */
