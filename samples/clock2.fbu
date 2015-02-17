@@ -57,9 +57,12 @@ type System component {
   clock Clock;
 };
 
+func (this @System) Initially ()
+{ }
+
 bind (this @System) {
   this.sampler.request -> this.clock.request;
   this.clock.response -> this.sampler.response;
 }
 
-instance s System;
+instance s System Initially;

@@ -1,0 +1,44 @@
+// From Distributed Algorithms, p. 205.
+
+type Process component
+{
+  i uint;
+  val [3]uint;
+  send [3] port (v uint);
+  decide port (v uint);
+};
+
+func (this @Process) Initially (i uint)
+{
+  this.i = i;
+}
+
+reaction (this $Process) init (v uint)
+{
+  trigger
+  {
+    this.val[this.i] = v;
+  };
+}
+
+[3] action (this $Process) (this.val[this.i] != 0)
+{
+  // send
+  trigger send[IOTA] (this.val[this.i])
+  { };
+}
+
+//reaction [3] (this $Process) receive (v uint)
+//{
+  //trigger
+  //{
+    //this.val[IOTA] = v;
+  //}
+//}
+
+//action (this $Process) (this.val[0] != 0 && this.val[1] != 0 && this.val[2] != 0)
+//{
+  // decide
+  //trigger decide (this.val[0] + this.val[1] + this.val[2])
+  //{ };
+//}

@@ -74,6 +74,9 @@ type System component
   send port (message ?heap uint);
 };
 
+func (this @System) Initially ()
+{ }
+
 action (this $System) (this.send_count != 100)
 {
   var x @heap uint;
@@ -101,4 +104,4 @@ bind (this @System) {
   this.channel.receive -> this.receive;
 }
 
-instance s System;
+instance s System Initially;

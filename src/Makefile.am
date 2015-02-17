@@ -1,32 +1,49 @@
-EXTRA_DIST = scanner.h
-BUILT_SOURCES = scanner.h parser.h
-AM_LFLAGS = --header=$(addsuffix .h,$(basename $@))
-AM_YFLAGS = -v -d
+EXTRA_DIST = scanner.l parser.y
+BUILT_SOURCES = scanner.hpp scanner.cpp parser.hpp parser.cpp
+
+scanner.hpp scanner.cpp: scanner.l
+	flex --header-file=scanner.hpp --outfile=scanner.cpp scanner.l
+
+parser.hpp parser.cpp: parser.y
+	bison --defines=parser.hpp --output=parser.cpp -v -d parser.y
+
+#AM_LFLAGS = --header=$(addsuffix .hpp,$(basename $@))
+#AM_YFLAGS = -v -d
 bin_PROGRAMS = fbu
-fbu_SOURCES = main.c scanner.l parser.y \
-action.h action.c \
-ast.h ast.c \
-binding.h binding.c \
-debug.h debug.c \
-field.h field.c \
-method.h method.c \
-heap.h heap.c \
-instance.h instance.c \
-instance_set.h instance_set.c \
-instance_trigger_set.h instance_trigger_set.c \
-memory_model.h memory_model.c \
-parameter.h parameter.c \
-semantic.h semantic.c \
-rtstring.h rtstring.c \
-runtime.h runtime.c \
-stack_frame.h stack_frame.c \
-strtab.h strtab.c \
-symbol.h symbol.c \
-symtab.h symtab.c \
-trigger.h trigger.c \
-type.h type.c \
-typed_value.h typed_value.c \
-types.h \
-util.h util.c \
-yyparse.h yyparse.c
+fbu_SOURCES = main.cpp \
+action.hpp action.cpp \
+ast.hpp ast.cpp \
+bind.hpp \
+binding.hpp binding.cpp \
+construct_symbol_table.cpp \
+debug.hpp debug.cpp \
+enter_symbols.cpp \
+enumerate_instances.cpp \
+field.hpp field.cpp \
+function.hpp function.cpp \
+method.hpp method.cpp \
+heap.hpp heap.cpp \
+instance.hpp instance.cpp \
+instance_set.hpp instance_set.cpp \
+instance_trigger_set.hpp instance_trigger_set.cpp \
+memory_model.hpp memory_model.cpp \
+parameter.hpp parameter.cpp \
+parser.hpp parser.cpp \
+process_declarations.cpp \
+process_definitions.cpp \
+process_type_spec.cpp \
+scanner.hpp scanner.cpp \
+semantic.hpp semantic.cpp \
+rtstring.hpp rtstring.cpp \
+runtime.hpp runtime.cpp \
+stack_frame.hpp stack_frame.cpp \
+strtab.hpp strtab.cpp \
+symbol.hpp symbol.cpp \
+symtab.hpp symtab.cpp \
+trigger.hpp trigger.cpp \
+type.hpp type.cpp \
+typed_value.hpp typed_value.cpp \
+types.hpp \
+util.hpp util.cpp \
+yyparse.hpp yyparse.cpp
 fbu_LDADD=-lpthread

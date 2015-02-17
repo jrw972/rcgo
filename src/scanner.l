@@ -3,11 +3,11 @@
 %option noinput
 
 %{
-#include "yyparse.h"
-#include "parser.h"
-#include "strtab.h"
-#include "debug.h"
-#include "type.h"
+#include "yyparse.hpp"
+#include "parser.hpp"
+#include "strtab.hpp"
+#include "debug.hpp"
+#include "type.hpp"
 %}
 
 %%
@@ -44,10 +44,11 @@
 "->"                   { return ARROW; }
 
 "{"|"}"                { return *yytext; }
+"["|"]"                { return *yytext; }
 "("|")"                { return *yytext; }
 "<"|">"                { return *yytext; }
 "!"|";"|","|"="|"?"    { return *yytext; }
-"$"|"@"|"."|"&"        { return *yytext; }
+"$"|"@"|"."|"&"|"+"    { return *yytext; }
 
 [_a-zA-Z][_a-zA-Z0-9]* { yylval.identifier = enter (yytext);
                          return IDENTIFIER; }
@@ -69,7 +70,7 @@
                              ++pos;
                            }
 
-                         yylval.literal = typed_value_make_string (type_make_untyped_string (), rtstring_make (begin, destination - begin));
+                         yylval.literal = typed_value_make_string (untyped_string_type_t::instance (), rtstring_make (begin, destination - begin));
                          return LITERAL; }
 
 [0]                    { yylval.literal = typed_value_make_integer (0);

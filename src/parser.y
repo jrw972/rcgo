@@ -1,7 +1,7 @@
 %{
-#include "scanner.h"
-#include "yyparse.h"
-#include "debug.h"
+#include "scanner.hpp"
+#include "yyparse.hpp"
+#include "debug.hpp"
 %}
 
 %union { char* identifier;
@@ -12,7 +12,9 @@
 
 %union { ast_t* node; }
 %type <node> action_def
+%type <node> add_expr
 %type <node> and_expr
+%type <node> array_dimension
 %type <node> assignment_stmt
 %type <node> bind_def
 %type <node> bind_inner_stmt_list
@@ -25,6 +27,7 @@
 %type <node> expr_list
 %type <node> expr_stmt
 %type <node> field_list
+%type <node> func_def
 %type <node> identifier
 %type <node> identifier_list
 %type <node> if_stmt
@@ -34,6 +37,7 @@
 %type <node> lvalue
 %type <node> method_def
 %type <node> optional_expr_list
+%type <node> index_expr
 %type <node> optional_port_call_list
 %type <node> or_expr
 %type <node> parameter
@@ -67,7 +71,7 @@
 top: def_list { root = $1; }
 
 def_list: /* empty */ { $$ = ast_make_top_level_list (); }
-| def_list def { $$ = ast_append_child ($1, $2); }
+| def_list def { $$ = $1->append ($2); }
 
 def: type_def { $$ = $1; }
 | action_def { $$ = $1; }
@@ -75,48 +79,53 @@ def: type_def { $$ = $1; }
 | bind_def { $$ = $1; }
 | instance_def { $$ = $1; }
 | method_def { $$ = $1; }
+| func_def { $$ = $1; }
 
-instance_def: INSTANCE identifier identifier ';' { $$ = ast_make_instance_def (@1, $2, $3); }
+instance_def: INSTANCE identifier identifier identifier ';' { $$ = ast_make_instance_def (@1, $2, $3, $4); }
 
 type_def: TYPE identifier type_spec ';' { $$ = ast_make_type_def (@1, $2, $3); }
 
-action_def: ACTION pointer_to_immutable_receiver '(' rvalue ')' stmt_list { $$ = ast_make_action_def (@1, $2, $4, $6); }
+action_def: array_dimension ACTION pointer_to_immutable_receiver '(' rvalue ')' stmt_list { $$ = new ast_dimensioned_action_t (@2, $1, $3, $5, $7); }
+| ACTION pointer_to_immutable_receiver '(' rvalue ')' stmt_list { $$ = new ast_action_t (@1, $2, $4, $6); }
 
-reaction_def: REACTION pointer_to_immutable_receiver identifier signature stmt_list { $$ = ast_make_reaction_def (@1, $2, $3, $4, $5); }
+reaction_def: REACTION pointer_to_immutable_receiver identifier signature stmt_list { $$ = new ast_reaction_t (@1, $2, $3, $4, $5); }
 
-bind_def: BIND pointer_receiver bind_stmt_list { $$ = ast_make_bind_def (@1, $2, $3); }
+bind_def: BIND pointer_receiver bind_stmt_list { $$ = new ast_bind_t (@1, $2, $3); }
 
 method_def: FUNC pointer_to_immutable_receiver identifier signature type_spec stmt_list { $$ = ast_make_method_def (@1, $2, $3, $4, $5, $6); }
 | FUNC pointer_to_immutable_receiver identifier signature stmt_list { $$ = ast_make_method_def (@1, $2, $3, $4, ast_make_empty_type_spec (@1), $5); }
 | FUNC pointer_receiver identifier signature type_spec stmt_list { $$ = ast_make_method_def (@1, $2, $3, $4, $5, $6); }
 | FUNC pointer_receiver identifier signature stmt_list { $$ = ast_make_method_def (@1, $2, $3, $4, ast_make_empty_type_spec (@1), $5); }
 
+func_def: FUNC identifier signature stmt_list { $$ = ast_make_function_def (@1, $2, $3, ast_make_empty_type_spec (@1), $4); }
+| FUNC identifier signature type_spec stmt_list { $$ = ast_make_function_def (@1, $2, $3, $4, $5); }
+
 signature: '(' ')' { $$ = ast_make_signature (yyloc); }
 | '(' parameter_list optional_semicolon ')' { $$ = $2; }
 
-parameter_list: parameter { $$ = ast_append_child (ast_make_signature (@1), $1); }
-| parameter_list ';' parameter { $$ = ast_append_child ($1, $3); }
+parameter_list: parameter { $$ = ast_make_signature (@1)->append ($1); }
+| parameter_list ';' parameter { $$ = $1->append ($3); }
 
 parameter: identifier_list type_spec { $$ = ast_make_identifier_list_type_spec (@1, $1, $2); }
 
 optional_semicolon: /* Empty. */
 | ';'
 
-pointer_receiver: '(' identifier '@' identifier ')' { $$ = ast_make_receiver (@1, $2, $4, AstPointerReceiver); }
+pointer_receiver: '(' identifier '@' identifier ')' { $$ = ast_make_receiver (@1, $2, $4, ast_receiver_definition_t::AstPointerReceiver); }
 
-pointer_to_immutable_receiver: '(' identifier '$' identifier ')' { $$ = ast_make_receiver (@1, $2, $4, AstPointerToImmutableReceiver); }
+pointer_to_immutable_receiver: '(' identifier '$' identifier ')' { $$ = ast_make_receiver (@1, $2, $4, ast_receiver_definition_t::AstPointerToImmutableReceiver); }
 
 bind_stmt_list: '{' bind_inner_stmt_list '}' { $$ = $2; }
 
 bind_inner_stmt_list: /* empty */ { $$ = ast_make_bind_list_stmt (yyloc); }
-| bind_inner_stmt_list bind_stmt { $$ = ast_append_child ($1, $2); }
+| bind_inner_stmt_list bind_stmt { $$ = $1->append ($2); }
 
-bind_stmt: lvalue ARROW lvalue ';' { $$ = ast_make_bind_stmt (@1, $1, $3); }
+bind_stmt: lvalue ARROW lvalue ';' { $$ = new ast_bind_statement_t (@1, $1, $3); }
 
 stmt_list: '{' inner_stmt_list '}' { $$ = $2; }
 
 inner_stmt_list: /* empty */ { $$ = ast_make_stmt_list (yyloc); }
-| inner_stmt_list stmt ';' { $$ = ast_append_child ($1, $2); }
+| inner_stmt_list stmt ';' { $$ = $1->append ($2); }
 
 stmt: simple_stmt { $$ = $1; }
 | var_stmt { $$ = $1; }
@@ -134,30 +143,33 @@ simple_stmt: empty_stmt { unimplemented; }
 
 empty_stmt: /* empty */ { unimplemented; }
 
-trigger_stmt: TRIGGER optional_port_call_list stmt_list { $$ = ast_make_trigger_stmt (@1, $2, $3); }
+trigger_stmt: TRIGGER optional_port_call_list stmt_list { $$ = new ast_trigger_statement_t (@1, $2, $3); }
 
-change_stmt: CHANGE '(' rvalue ',' identifier type_spec ')' stmt_list { $$ = ast_make_change_stmt (@1, $3, $5, $6, $8); }
+change_stmt: CHANGE '(' rvalue ',' identifier type_spec ')' stmt_list { $$ = new ast_change_statement_t (@1, $3, $5, $6, $8); }
 
 println_stmt: PRINTLN expr_list { $$ = ast_make_println_stmt (@1, $2); }
 
 return_stmt: RETURN rvalue { $$ = ast_make_return_stmt (@1, $2); }
 
-increment_stmt: lvalue INCREMENT { $$ = ast_make_add_assign_stmt (@1, $1, ast_make_typed_literal (@1, typed_value_make_integer (1))); }
+increment_stmt: lvalue INCREMENT { $$ = new ast_add_assign_statement_t (@1, $1, ast_make_typed_literal (@1, typed_value_make_integer (1))); }
 | lvalue DECREMENT { $$ = ast_make_subtract_assign_stmt (@1, $1, ast_make_typed_literal (@1, typed_value_make_integer (1))); }
 
 optional_port_call_list: /* Empty. */ { $$ = ast_make_expression_list (yyloc); }
 | port_call_list { $$ = $1; }
 
-port_call_list: port_call { $$ = ast_append_child (ast_make_expression_list (@1), $1); }
+port_call_list: port_call { $$ = ast_make_expression_list (@1)->append ($1); }
 | port_call_list ',' port_call { unimplemented; }
 
-port_call: identifier '(' optional_expr_list ')' { $$ = ast_make_port_call (@1, $1, $3); }
+port_call: identifier index_expr '(' optional_expr_list ')' { $$ = new ast_indexed_port_call_expr_t (@1, $1, $2, $4); }
+| identifier '(' optional_expr_list ')' { $$ = new ast_port_call_expr_t (@1, $1, $3); }
+
+index_expr: '[' rvalue ']' { $$ = $2; }
 
 optional_expr_list: /* Empty. */ { $$ = ast_make_expression_list (yyloc); }
 | expr_list { $$ = $1; }
 
-expr_list: rvalue { $$ = ast_append_child (ast_make_expression_list (@1), $1); }
-| expr_list ',' rvalue { $$ = ast_append_child ($1, $3); }
+expr_list: rvalue { $$ = ast_make_expression_list (@1)->append ($1); }
+| expr_list ',' rvalue { $$ = $1->append ($3); }
 
 expr_stmt: rvalue {
   $$ = ast_make_expr_stmt (@1, $1);
@@ -167,8 +179,7 @@ var_stmt: VAR identifier_list type_spec { $$ = ast_make_var_stmt (@1, $2, $3); }
 | VAR identifier_list type_spec '=' expr_list { unimplemented; }
 | VAR identifier_list '=' expr_list { unimplemented; }
 
-
-assignment_stmt: lvalue '=' rvalue { $$ = ast_make_assignment_stmt (@1, $1, $3); }
+assignment_stmt: lvalue '=' rvalue { $$ = new ast_assign_statement_t (@1, $1, $3); }
 
 if_stmt: IF rvalue stmt_list { $$ = ast_make_if_stmt (@1, $2, $3); }
 | IF rvalue stmt_list ELSE if_stmt { unimplemented; }
@@ -177,8 +188,8 @@ if_stmt: IF rvalue stmt_list { $$ = ast_make_if_stmt (@1, $2, $3); }
 | IF simple_stmt ';' rvalue stmt_list ELSE if_stmt { unimplemented; }
 | IF simple_stmt ';' rvalue stmt_list ELSE stmt_list { unimplemented; }
 
-identifier_list: identifier { $$ = ast_append_child (ast_make_identifier_list (@1), $1); }
-| identifier_list ',' identifier { $$ = ast_append_child ($1, $3); }
+identifier_list: identifier { $$ = ast_make_identifier_list (@1)->append ($1); }
+| identifier_list ',' identifier { $$ = $1->append ($3); }
 
 identifier: IDENTIFIER { $$ = ast_make_identifier (@1, $1); }
 
@@ -190,35 +201,61 @@ type_spec: identifier { $$ = ast_make_identifier_type_spec (@1, $1); }
 | '$' type_spec { $$ = ast_make_pointer_to_immutable_type_spec (@1, $2); }
 | '?' type_spec { $$ = ast_make_pointer_to_foreign_type_spec (@1, $2); }
 | HEAP type_spec { $$ = ast_make_heap_type_spec (@1, $2); }
+| array_dimension type_spec { $$ = ast_make_array_type_spec (@1, $1, $2); }
+
+array_dimension: '[' LITERAL ']' { $$ = ast_make_typed_literal (@2, $2); }
 
 field_list: /* empty */ { $$ = ast_make_field_list (yyloc); }
-| field_list identifier_list type_spec ';' { $$ = ast_append_child ($1, ast_make_identifier_list_type_spec (@1, $2, $3)); }
+| field_list identifier_list type_spec ';' { $$ = $1->append (ast_make_identifier_list_type_spec (@1, $2, $3)); }
 
 rvalue: or_expr { $$ = $1; }
 
 or_expr: and_expr { $$ = $1; }
-| and_expr LOGIC_OR or_expr { $$ = ast_make_logic_or (@1, $1, $3); }
+| and_expr LOGIC_OR or_expr {
+  if (dynamic_cast<ast_logic_or_expr_t*> ($3))
+    {
+      $$ = $3->prepend ($1);
+    }
+  else
+    {
+      $$ = ast_make_logic_or (@1, $1, $3);
+    }
+ }
 
 and_expr: compare_expr { $$ = $1; }
-| compare_expr LOGIC_AND and_expr { $$ = ast_make_logic_and (@1, $1, $3); }
+| compare_expr LOGIC_AND and_expr {
+  if (dynamic_cast<ast_logic_and_expr_t*> ($3))
+    {
+      $$ = $3->prepend ($1);
+    }
+  else
+    {
+      $$ = ast_make_logic_and (@1, $1, $3);
+    }
+ }
 
-compare_expr: unary_expr { $$ = $1; }
-| unary_expr EQUAL compare_expr { $$ = ast_make_equal (@1, $1, $3); }
-| unary_expr NOT_EQUAL compare_expr { $$ = ast_make_not_equal (@1, $1, $3); }
+compare_expr: add_expr { $$ = $1; }
+| add_expr EQUAL compare_expr { $$ = ast_make_equal (@1, $1, $3); }
+| add_expr NOT_EQUAL compare_expr { $$ = ast_make_not_equal (@1, $1, $3); }
+
+add_expr: unary_expr { $$ = $1; }
+| unary_expr '+' add_expr { $$ = ast_make_add_expr (@1, $1, $3); }
+| unary_expr '-' add_expr { unimplemented; }
 
 unary_expr: primary_expr { $$ = $1; }
 | unary_expr '!' { $$ = ast_make_logic_not (@1, $1); }
-| unary_expr '&' { $$ = ast_make_address_of (@1, $1); }
+| unary_expr '&' { $$ = new ast_address_of_expr_t (@1, $1); }
 
 primary_expr: lvalue { $$ = $1; }
-| primary_expr '(' optional_expr_list ')' { $$ = ast_make_call_expr (@1, $1, $3); }
+| primary_expr '(' optional_expr_list ')' { $$ = new ast_call_expr_t (@1, $1, $3); }
 | LITERAL { $$ = ast_make_typed_literal (@1, $1); }
 | NEW type_spec { $$ = ast_make_new_expr (@1, $2); }
 | MOVE '(' rvalue ')' { $$ = ast_make_move_expr (@1, $3); }
 | MERGE '(' rvalue ')' { $$ = ast_make_merge_expr (@1, $3); }
 
 lvalue: identifier { $$ = ast_make_identifier_expr (@1, $1); }
-| lvalue '.' identifier { $$ = ast_make_select (@1, $1, $3); }
-| unary_expr '@' { $$ = ast_make_dereference (@1, $1); }
+| lvalue '.' identifier { $$ = new ast_select_expr_t (@1, $1, $3); }
+| lvalue '[' rvalue ']' { $$ = new ast_index_expr_t (@1, $1, $3); }
+| unary_expr '@' { $$ = new ast_dereference_expr_t (@1, $1); }
 
 %%

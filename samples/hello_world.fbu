@@ -1,12 +1,7 @@
-type HelloWorld component {
-  flag bool;
-};
+type HelloWorld component { };
 
-action (this $HelloWorld) (this.flag!) {
-  trigger {
-    println `Hello, world!`;
-    this.flag = true;
-  };
+func (this @HelloWorld) print () {
+  println `Hello, world!`;
 }
 
-instance h HelloWorld;
+instance h HelloWorld print;
