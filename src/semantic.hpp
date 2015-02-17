@@ -26,7 +26,7 @@ const type_t * process_type_spec (ast_t * node, bool force_identifiers, bool is_
 /* Process all declarations (non-code). */
 void process_declarations (ast_t * node);
 
-void type_check_rvalue (ast_t::iterator ptr, binding_t* binding, bool output);
+void type_check_rvalue (ast_t::iterator ptr);
 
 /* Process all definitions (code). */
 void process_definitions (ast_t * node);

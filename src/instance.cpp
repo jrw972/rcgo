@@ -2,9 +2,6 @@
 #include "util.hpp"
 #include "type.hpp"
 #include "debug.hpp"
-#include "binding.hpp"
-#include "instance_set.hpp"
-#include "instance_trigger_set.hpp"
 #include <error.h>
 #include "action.hpp"
 #include "trigger.hpp"

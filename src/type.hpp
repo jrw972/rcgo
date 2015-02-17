@@ -352,11 +352,6 @@ public:
   BindsType::const_iterator binds_begin () const { return binds_.begin (); }
   BindsType::const_iterator binds_end () const { return binds_.end (); }
 
-  void add_binding (binding_t * binding);
-  typedef std::vector<binding_t*> BindingsType;
-  BindingsType::const_iterator bindings_begin () const { return bindings_.begin (); }
-  BindingsType::const_iterator bindings_end () const { return bindings_.end (); }
-
 private:
   string_t name_;
   const type_t* subtype_;
@@ -364,7 +359,6 @@ private:
   ActionsType actions_;
   ReactionsType reactions_;
   BindsType binds_;
-  BindingsType bindings_;
 };
 
 class immutable_type_t : public type_t, public base_type_t

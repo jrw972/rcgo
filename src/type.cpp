@@ -28,12 +28,6 @@ named_type_t::add_reaction (ast_t* node, string_t identifier, const signature_ty
   return r;
 }
 
-void
-named_type_t::add_binding (binding_t * binding)
-{
-  bindings_.push_back (binding);
-}
-
 reaction_t *
 named_type_t::get_reaction (string_t identifier) const
 {

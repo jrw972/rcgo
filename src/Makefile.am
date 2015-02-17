@@ -11,10 +11,9 @@ parser.hpp parser.cpp: parser.y
 #AM_YFLAGS = -v -d
 bin_PROGRAMS = fbu
 fbu_SOURCES = main.cpp \
-action.hpp action.cpp \
+action.hpp \
 ast.hpp ast.cpp \
 bind.hpp \
-binding.hpp binding.cpp \
 construct_symbol_table.cpp \
 debug.hpp debug.cpp \
 enter_symbols.cpp \
@@ -24,8 +23,6 @@ function.hpp function.cpp \
 method.hpp method.cpp \
 heap.hpp heap.cpp \
 instance.hpp instance.cpp \
-instance_set.hpp instance_set.cpp \
-instance_trigger_set.hpp instance_trigger_set.cpp \
 memory_model.hpp memory_model.cpp \
 parameter.hpp parameter.cpp \
 parser.hpp parser.cpp \
@@ -40,7 +37,7 @@ stack_frame.hpp stack_frame.cpp \
 strtab.hpp strtab.cpp \
 symbol.hpp symbol.cpp \
 symtab.hpp symtab.cpp \
-trigger.hpp trigger.cpp \
+trigger.hpp \
 type.hpp type.cpp \
 typed_value.hpp typed_value.cpp \
 types.hpp \

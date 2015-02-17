@@ -9,7 +9,6 @@
 #include "instance.hpp"
 #include "trigger.hpp"
 #include "field.hpp"
-#include "binding.hpp"
 #include "symbol.hpp"
 #include "memory_model.hpp"
 #include "method.hpp"

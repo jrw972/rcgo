@@ -10,7 +10,6 @@ class action_reaction_base_t;
 class action_t;
 class ast_t;
 class bind_t;
-typedef struct binding_t binding_t;
 typedef struct field_t field_t;
 typedef struct function_t function_t;
 typedef struct method_t method_t;
