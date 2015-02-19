@@ -55,6 +55,17 @@ instantiate_contained_instances (const named_type_t * type, instance_table_t * i
         }
     }
 
+    void visit (const array_type_t& type)
+    {
+      size_t address_before = address;
+      for (size_t idx = 0; idx != type.dimension (); ++idx)
+        {
+          address = address_before + idx * type.element_size ();
+          type.base_type ()->accept (*this);
+        }
+      address = address_before;
+    }
+
     void visit (const immutable_type_t& type)
     { }
 

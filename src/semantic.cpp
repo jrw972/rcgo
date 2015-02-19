@@ -228,6 +228,13 @@ allocate_stack_variables (ast_t* node, memory_model_t* memory_model)
       action->locals_size = locals_size;
     }
 
+    void visit (ast_dimensioned_reaction_t& node)
+    {
+      action_reaction_base_t* action = get_current_action (&node);
+      size_t locals_size = allocate_stack_variables_helper (&node, node.body ());
+      action->locals_size = locals_size;
+    }
+
     void visit (ast_top_level_list_t& node)
     {
       AST_FOREACH (child, &node)

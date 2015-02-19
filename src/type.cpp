@@ -19,16 +19,6 @@ named_type_t::add_method (ast_t* node,
 }
 
 reaction_t *
-named_type_t::add_reaction (ast_t* node, string_t identifier, const signature_type_t * signature)
-{
-  reaction_t *r = new reaction_t (this,
-                                  node,
-                                  identifier, signature);
-  reactions_.push_back (r);
-  return r;
-}
-
-reaction_t *
 named_type_t::get_reaction (string_t identifier) const
 {
   for (std::vector<reaction_t*>::const_iterator pos = reactions_.begin (),
@@ -141,6 +131,30 @@ type_select_field (const type_t * type, string_t identifier)
   return v.retval;
 }
 
+method_t *
+type_select_method (const type_t * type, string_t identifier)
+{
+  struct visitor : public const_type_visitor_t
+  {
+    method_t* retval;
+    string_t identifier;
+    visitor (string_t id) : retval (NULL), identifier (id) { }
+
+    void visit (const named_type_t& type)
+    {
+      retval = type.get_method (identifier);
+    }
+
+    void visit (const immutable_type_t& type)
+    {
+      type.base_type ()->accept (*this);
+    }
+  };
+  visitor v (identifier);
+  type->accept (v);
+  return v.retval;
+}
+
 reaction_t *
 type_select_reaction (const type_t * type, string_t identifier)
 {
@@ -158,6 +172,30 @@ type_select_reaction (const type_t * type, string_t identifier)
   visitor v (identifier);
   type->accept (v);
   return v.retval;
+}
+
+const type_t*
+type_select (const type_t* type, string_t identifier)
+{
+  field_t* f = type_select_field (type, identifier);
+  if (f)
+    {
+      return field_type (f);
+    }
+
+  method_t* m = type_select_method (type, identifier);
+  if (m)
+    {
+      return method_type (m);
+    }
+
+  reaction_t* r = type_select_reaction (type, identifier);
+  if (r)
+    {
+      return r->reaction_type ();
+    }
+
+  return NULL;
 }
 
 const pointer_type_t*
@@ -478,7 +516,7 @@ field_list_type_t::accept (const_type_visitor_t& visitor) const
 }
 
 void
-iota_type_t::accept (const_type_visitor_t& visitor) const
+untyped_iota_type_t::accept (const_type_visitor_t& visitor) const
 {
   visitor.visit (*this);
 }
@@ -563,6 +601,12 @@ signature_type_t::accept (const_type_visitor_t& visitor) const
 
 void
 string_type_t::accept (const_type_visitor_t& visitor) const
+{
+  visitor.visit (*this);
+}
+
+void
+int_type_t::accept (const_type_visitor_t& visitor) const
 {
   visitor.visit (*this);
 }
@@ -715,9 +759,29 @@ type_is_equal (const type_t * x, const type_t* y)
         }
     }
 
+    void visit (const bool_type_t& type)
+    {
+      flag = dynamic_cast<const bool_type_t*> (other) != NULL;
+    }
+
+    void visit (const uint_type_t& type)
+    {
+      flag = dynamic_cast<const uint_type_t*> (other) != NULL;
+    }
+
+    void visit (const int_type_t& type)
+    {
+      flag = dynamic_cast<const int_type_t*> (other) != NULL;
+    }
+
     void visit (const untyped_boolean_type_t& type)
     {
       flag = dynamic_cast<const untyped_boolean_type_t*> (other) != NULL;
+    }
+
+    void visit (const untyped_integer_type_t& type)
+    {
+      flag = dynamic_cast<const untyped_integer_type_t*> (other) != NULL;
     }
   };
 
@@ -915,7 +979,9 @@ static bool convertible (const type_t * to, const type_t * from)
     void visit (const uint_type_t& type)
     {
       // Only allow conversions from untyped.
-      flag = dynamic_cast<const untyped_integer_type_t*> (from) != NULL;
+      flag =
+        (dynamic_cast<const untyped_integer_type_t*> (from) != NULL) ||
+        (dynamic_cast<const untyped_iota_type_t*> (from) != NULL);
     }
 
     void visit (const string_type_t& type)
@@ -962,6 +1028,12 @@ static bool convertible (const type_t * to, const type_t * from)
           flag = type_is_equal (type.base_type (), dynamic_cast<const pointer_to_immutable_type_t*> (from)->base_type ());
         }
     }
+
+    void visit (const untyped_integer_type_t& type)
+    {
+      flag = dynamic_cast<const untyped_iota_type_t*> (from) != NULL;
+    }
+
   };
   visitor v (from);
   to->accept (v);
@@ -1001,109 +1073,6 @@ signature_type_t::to_string () const
     }
   str << ')';
   return str.str ();
-}
-
-const type_t* type_select (const type_t* type, string_t identifier)
-{
-  struct visitor : public const_type_visitor_t
-  {
-    const type_t* retval;
-    string_t identifier;
-
-    visitor (string_t id) : retval (NULL), identifier (id) { }
-
-    void visit (const field_list_type_t& type)
-    {
-      field_t *field = type.find (identifier);
-      if (field != NULL)
-        {
-          retval = field_type (field);
-        }
-    }
-
-    void visit (const named_type_t& type)
-    {
-      retval = type_select (type.subtype (), identifier);
-      if (retval)
-        {
-          return;
-        }
-
-      method_t* method = type.get_method (identifier);
-      if (method)
-        {
-          retval = method_type (method);
-          return;
-        }
-
-      reaction_t* reaction = type.get_reaction (identifier);
-      if (reaction)
-        {
-          retval = reaction->reaction_type ();
-        }
-    }
-
-    void visit (const immutable_type_t& type)
-    {
-      const type_t* t = type_select (type.base_type (), identifier);
-      if (t == NULL)
-        {
-          return;
-        }
-
-      if (type_to_immutable (t) || type_to_foreign (t))
-        {
-          retval = t;
-          return;
-        }
-
-      if (type_to_pointer (t))
-        {
-          t = pointer_to_immutable_type_t::make (dynamic_cast<const pointer_type_t*> (t)->base_type ());
-        }
-
-      retval = immutable_type_t::make (t);
-    }
-
-    void visit (const foreign_type_t& type)
-    {
-      const type_t* t = type_select (type.base_type (), identifier);
-      if (t == NULL)
-        {
-          return;
-        }
-
-      if (type_to_foreign (t))
-        {
-          retval = t;
-          return;
-        }
-
-      if (type_to_pointer (t))
-        {
-          t = pointer_to_foreign_type_t::make (dynamic_cast<const pointer_type_t*> (t)->base_type ());
-        }
-      else if (type_to_pointer_to_immutable (t))
-        {
-          t = pointer_to_foreign_type_t::make (dynamic_cast<const pointer_to_immutable_type_t*> (t)->base_type ());
-        }
-
-      retval = foreign_type_t::make (t);
-    }
-
-    void visit (const struct_type_t& type)
-    {
-      type.field_list ()->accept (*this);
-    }
-
-    void visit (const component_type_t& type)
-    {
-      type.field_list ()->accept (*this);
-    }
-  };
-  visitor v (identifier);
-  type->accept (v);
-  return v.retval;
 }
 
 bool type_is_foreign_safe (const type_t* type)
@@ -1260,6 +1229,11 @@ bool type_is_untyped (const type_t* type)
     {
       flag = true;
     }
+
+    void visit (const untyped_iota_type_t& type)
+    {
+      flag = true;
+    }
   };
   visitor v;
   type->accept (v);
@@ -1277,6 +1251,13 @@ const bool_type_t*
 bool_type_t::instance ()
 {
   static bool_type_t i;
+  return &i;
+}
+
+const int_type_t*
+int_type_t::instance ()
+{
+  static int_type_t i;
   return &i;
 }
 
@@ -1371,6 +1352,13 @@ immutable_type_t::make (const type_t* base_type)
     {
       return base_type;
     }
+
+  const pointer_type_t* pt = dynamic_cast<const pointer_type_t*> (base_type);
+  if (pt)
+    {
+      base_type = pointer_to_immutable_type_t::make (pt->base_type ());
+    }
+
   return new immutable_type_t (base_type);
 }
 

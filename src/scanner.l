@@ -43,6 +43,8 @@
 "!="                   { return NOT_EQUAL; }
 "->"                   { return ARROW; }
 
+".."                   { return DOTDOT; }
+
 "{"|"}"                { return *yytext; }
 "["|"]"                { return *yytext; }
 "("|")"                { return *yytext; }

@@ -219,9 +219,52 @@ process_declarations (ast_t * node)
       /* Process the signature. */
       const signature_type_t *signature = dynamic_cast<const signature_type_t*> (process_type_spec (signature_node, true));
 
-      reaction_t *action = type->add_reaction (&node, identifier, signature);
-      symtab_set_current_action (node.symtab, action);
+      reaction_t* reaction = new reaction_t (type, &node, identifier, signature);
+      type->add_reaction (reaction);
+      symtab_set_current_action (node.symtab, reaction);
       symtab_set_current_receiver_type (node.symtab, type);
+    }
+
+    void visit (ast_dimensioned_reaction_t& node)
+    {
+      size_t dimension = process_array_dimension (node.dimension_iter ());
+      ast_t *receiver = node.receiver ();
+      ast_t *type_node = receiver->at (RECEIVER_TYPE_IDENTIFIER);
+      ast_t *signature_node = node.signature ();
+      ast_t *identifier_node = node.identifier ();
+      string_t identifier = ast_get_identifier (identifier_node);
+      string_t type_identifier = ast_get_identifier (type_node);
+      symbol_t *symbol = lookup_force (type_node, type_identifier);
+      if (symbol_kind (symbol) != SymbolType)
+        {
+          error_at_line (-1, 0, type_node->file, type_node->line,
+                         "%s does not refer to a type",
+                         get (type_identifier));
+        }
+      named_type_t *type = symbol_get_type_type (symbol);
+      if (type_to_component (type) == NULL)
+        {
+          error_at_line (-1, 0, type_node->file, type_node->line,
+                         "%s does not refer to a component",
+                         get (type_identifier));
+        }
+      const type_t *t = type_select (type, identifier);
+      if (t != NULL)
+        {
+          error_at_line (-1, 0, identifier_node->file,
+                         identifier_node->line,
+                         "component already contains a member named %s",
+                         get (identifier));
+        }
+
+      /* Process the signature. */
+      const signature_type_t *signature = dynamic_cast<const signature_type_t*> (process_type_spec (signature_node, true));
+
+      reaction_t* reaction = new reaction_t (type, &node, identifier, signature, dimension);
+      type->add_reaction (reaction);
+      symtab_set_current_action (node.symtab, reaction);
+      symtab_set_current_receiver_type (node.symtab, type);
+      node.reaction = reaction;
     }
 
     void visit (ast_top_level_list_t& node)

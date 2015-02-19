@@ -5,6 +5,7 @@
 #include "type.hpp"
 #include "method.hpp"
 #include "function.hpp"
+#include "action.hpp"
 
 typed_value_t
 typed_value_make (const type_t* type)
@@ -79,6 +80,16 @@ typed_value_make_function (function_t* function)
 }
 
 typed_value_t
+typed_value_make_reaction (reaction_t* reaction)
+{
+  typed_value_t retval;
+  retval.type = reaction->reaction_type ();
+  retval.has_value = true;
+  retval.reaction_value = reaction;
+  return retval;
+}
+
+typed_value_t
 typed_value_make_nil (void)
 {
   typed_value_t retval = { type: untyped_nil_type_t::instance (), has_value: true};
@@ -104,8 +115,9 @@ typed_value_convert (typed_value_t& from, const typed_value_t& to)
         {
           struct visitor : public const_type_visitor_t
           {
-            typed_value_t& tv;
-            visitor (typed_value_t& t) : tv (t) { }
+            typed_value_t& from;
+            const typed_value_t& to;
+            visitor (typed_value_t& f, const typed_value_t& t) : from (f), to (t) { }
 
             void visit (const named_type_t& type)
             {
@@ -126,17 +138,17 @@ typed_value_convert (typed_value_t& from, const typed_value_t& to)
             void visit (const uint_type_t& type)
             {
               // Must be an untyped integer.
-              tv.uint_value = tv.integer_value;
+              from.uint_value = from.integer_value;
             }
 
             void visit (const pointer_type_t& type)
             {
-              tv.pointer_value = NULL;
+              from.pointer_value = NULL;
             }
 
             void visit (const pointer_to_immutable_type_t& type)
             {
-              tv.pointer_value = NULL;
+              from.pointer_value = NULL;
             }
 
             void default_action (const type_t& type)
@@ -144,10 +156,113 @@ typed_value_convert (typed_value_t& from, const typed_value_t& to)
               not_reached;
             }
           };
-          visitor v (from);
+          visitor v (from, to);
           to.type->accept (v);
         }
 
       from.type = to.type;
     }
+}
+
+void
+typed_value_convert_to_builtin_type (typed_value_t& tv)
+{
+  struct visitor : public const_type_visitor_t
+  {
+    typed_value_t& tv;
+
+    visitor (typed_value_t& t) : tv (t) { }
+
+    void default_action (const type_t& type)
+    {
+      not_reached;
+    }
+
+    void visit (const named_type_t&)
+    {
+      // Do nothing.
+    }
+
+    void visit (const void_type_t&)
+    {
+      // Do nothing.
+    }
+
+    void visit (const bool_type_t&)
+    {
+      // Do nothing.
+    }
+
+    void visit (const uint_type_t&)
+    {
+      // Do nothing.
+    }
+
+    void visit (const int_type_t&)
+    {
+      // Do nothing.
+    }
+
+    void visit (const pointer_to_immutable_type_t&)
+    {
+      // Do nothing.
+    }
+
+    void visit (const immutable_type_t&)
+    {
+      // Do nothing.
+    }
+
+    void visit (const untyped_boolean_type_t&)
+    {
+      tv.type = bool_type_t::instance ();
+      // No need to process value.
+    }
+
+    void visit (const untyped_integer_type_t&)
+    {
+      tv.type = int_type_t::instance ();
+      tv.int_value = tv.integer_value;
+    }
+
+    void visit (const untyped_string_type_t&)
+    {
+      tv.type = string_type_t::instance ();
+      // No need to process value.
+    }
+
+    void visit (const untyped_iota_type_t&)
+    {
+      tv.type = int_type_t::instance ();
+      // No value to process.
+    }
+
+  };
+  visitor v (tv);
+  tv.type->accept (v);
+}
+
+int64_t typed_value_to_index (typed_value_t tv)
+{
+  assert (tv.has_value);
+  struct visitor : public const_type_visitor_t
+  {
+    typed_value_t tv;
+    int64_t retval;
+
+    visitor (const typed_value_t& t) : tv (t) { }
+
+    void default_action (const type_t& type)
+    {
+      not_reached;
+    }
+
+    void visit (const int_type_t& type)
+    {
+      retval = tv.int_value;
+    }
+  };
+  visitor v (tv);
+  tv.type->accept (v);
+  return v.retval;
 }

@@ -13,10 +13,12 @@ struct typed_value_t
   const type_t *type;
   bool has_value;
   bool bool_value; /* For bools and untyped bools. */
+  int64_t int_value;
   uint64_t uint_value;
   rtstring_t string_value; /* For strings and untyped strings. */
   method_t* method_value;
   function_t* function_value;
+  reaction_t* reaction_value;
   int64_t integer_value;
   void* pointer_value;
 };
@@ -35,10 +37,16 @@ typed_value_t typed_value_make_method (method_t* method);
 
 typed_value_t typed_value_make_function (function_t* function);
 
+typed_value_t typed_value_make_reaction (reaction_t* reaction);
+
 typed_value_t typed_value_make_nil (void);
 
 typed_value_t typed_value_iota (void);
 
 void typed_value_convert (typed_value_t& from, const typed_value_t& to);
+
+void typed_value_convert_to_builtin_type (typed_value_t& tv);
+
+int64_t typed_value_to_index (typed_value_t tv);
 
 #endif /* typed_value_h */

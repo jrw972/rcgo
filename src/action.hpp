@@ -16,6 +16,14 @@ public:
     , node_ (node)
   { }
 
+  action_reaction_base_t (type_t* component_type, ast_t* node, size_t dimension)
+    : locals_size (0)
+    , component_type_ (component_type)
+    , node_ (node)
+    , has_dimension_ (true)
+    , dimension_ (dimension)
+  { }
+
   virtual ~action_reaction_base_t() { };
 
   type_t* component_type () const { return component_type_; }
@@ -32,25 +40,7 @@ public:
 
   size_t locals_size;
 
-private:
-  type_t *component_type_;	/* Back-pointer to component type. */
-  ast_t* node_;
-  TriggersType triggers_;
-};
-
-class action_t : public action_reaction_base_t
-{
-public:
-  action_t (named_type_t* type, ast_t* node)
-    : action_reaction_base_t (type, node)
-    , has_dimension_ (false)
-  { }
-
-  action_t (named_type_t* type, ast_t* node, size_t dimension)
-    : action_reaction_base_t (type, node)
-    , has_dimension_ (true)
-    , dimension_ (dimension)
-  { }
+  bool has_dimension () const { return has_dimension_; }
 
   size_t dimension () const
   {
@@ -59,8 +49,23 @@ public:
   }
 
 private:
+  type_t *component_type_;	/* Back-pointer to component type. */
+  ast_t* node_;
+  TriggersType triggers_;
   bool has_dimension_;
   size_t dimension_;
+};
+
+class action_t : public action_reaction_base_t
+{
+public:
+  action_t (named_type_t* type, ast_t* node)
+    : action_reaction_base_t (type, node)
+  { }
+
+  action_t (named_type_t* type, ast_t* node, size_t dimension)
+    : action_reaction_base_t (type, node, dimension)
+  { }
 };
 
 class reaction_t : public action_reaction_base_t
@@ -72,9 +77,14 @@ public:
     , reaction_type_ (new reaction_type_t (signature))
   { }
 
+  reaction_t (named_type_t* type, ast_t* node, string_t name, const signature_type_t* signature, size_t dimension)
+    : action_reaction_base_t (type, node, dimension)
+    , name_ (name)
+    , reaction_type_ (new reaction_type_t (signature))
+  { }
+
   string_t name () const { return name_; }
   const reaction_type_t* reaction_type () const { return reaction_type_; }
-  const signature_type_t* reaction_signature () const { return reaction_type_->signature (); }
 
 private:
   string_t name_;

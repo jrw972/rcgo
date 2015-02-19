@@ -1,3 +1,72 @@
+// From Distributed Algorithms, p. 204.
+
+type Element struct
+{
+  value uint;
+  next @Element;
+};
+
+type Queue struct
+{
+  head @Element;
+  tail @@Element;
+};
+
+func (this @Queue) Push (v uint)
+{
+  if this.head == nil
+    {
+      this.tail = this.head&;
+    };
+
+  var e @Element;
+  e = new Element;
+  e.value = v;
+  this.tail@ = e;
+  this.tail = e.next&;
+}
+
+func (this @Queue) Pop ()
+{
+  this.head = this.head.next;
+  if this.head == nil
+    {
+      this.tail = this.head&;
+    };
+}
+
+func (this $Queue) Empty () bool
+{
+  return this.head == nil;
+}
+
+func (this $Queue) Front () uint
+{
+  return this.head.value;
+}
+
+type Channel component
+{
+  queue Queue;
+  receive port (message uint);
+};
+
+reaction (this $Channel) send (message uint)
+{
+  trigger
+  {
+    this.queue.Push (message);
+  };
+}
+
+action (this $Channel) (this.queue.Empty ()!)
+{
+  trigger receive (this.queue.Front ())
+    {
+      this.queue.Pop ();
+    };
+}
+
 // From Distributed Algorithms, p. 205.
 
 type Process component
@@ -10,6 +79,7 @@ type Process component
 
 func (this @Process) Initially (i uint)
 {
+  println `I am process `, i;
   this.i = i;
 }
 
@@ -18,27 +88,98 @@ reaction (this $Process) init (v uint)
   trigger
   {
     this.val[this.i] = v;
+    println `Process `, this.i, ` initialized with value `, v;
   };
 }
 
-[3] action (this $Process) (this.val[this.i] != 0)
+[3] action (this $Process) (this.val[this.i] != 0 && this.i != IOTA)
 {
   // send
+  println `Process `, this.i, ` sending `, this.val[this.i], ` to process `, IOTA;
   trigger send[IOTA] (this.val[this.i])
   { };
 }
 
-//reaction [3] (this $Process) receive (v uint)
-//{
-  //trigger
-  //{
-    //this.val[IOTA] = v;
-  //}
-//}
+[3] reaction (this $Process) receive (v uint)
+{
+  println `Process `, this.i, ` received `, v, ` from process `, IOTA;
+  trigger
+  {
+    this.val[IOTA] = v;
+  };
+}
 
-//action (this $Process) (this.val[0] != 0 && this.val[1] != 0 && this.val[2] != 0)
-//{
+// TODO:  Use a loop.
+action (this $Process) (this.val[0] != 0 && this.val[1] != 0 && this.val[2] != 0)
+{
   // decide
-  //trigger decide (this.val[0] + this.val[1] + this.val[2])
-  //{ };
-//}
+  var v uint;
+  v = this.val[0] + this.val[1] + this.val[2];
+  println `Process `, this.i, ` decided the value is `, v;
+  trigger decide (v)
+  { };
+}
+
+type System component
+{
+  process [3]Process;
+  channel [3][3]Channel;
+  init [3] port (v uint);
+};
+
+// TODO:  Use a loop.
+func (this @System) Init ()
+{
+  this.process[0].Initially (0);
+  this.process[1].Initially (1);
+  this.process[2].Initially (2);
+}
+
+[3] action (this $System) (true)
+{
+  // send
+  trigger init[IOTA] (100 + IOTA)
+  { };
+}
+
+[3] reaction (this $System) decide (v uint)
+{
+  println `Process `, IOTA, ` decided the value is `, v;
+}
+
+bind (this @System) {
+  // TODO:  Use a loop.
+  this.init[0] -> this.process[0].init;
+  this.init[1] -> this.process[1].init;
+  this.init[2] -> this.process[2].init;
+
+  this.process[0].decide -> this.decide .. 0;
+  this.process[1].decide -> this.decide .. 1;
+  this.process[2].decide -> this.decide .. 2;
+
+  //this.process[0].send[0] -> this.channel[0][0].send;
+  this.process[0].send[1] -> this.channel[0][1].send;
+  this.process[0].send[2] -> this.channel[0][2].send;
+
+  //this.channel[0][0].receive -> this.process[0].receive .. 0;
+  this.channel[0][1].receive -> this.process[1].receive .. 0;
+  this.channel[0][2].receive -> this.process[2].receive .. 0;
+
+  this.process[1].send[0] -> this.channel[1][0].send;
+  //this.process[1].send[1] -> this.channel[1][1].send;
+  this.process[1].send[2] -> this.channel[1][2].send;
+
+  this.channel[1][0].receive -> this.process[0].receive .. 1;
+  //this.channel[1][1].receive -> this.process[1].receive .. 1;
+  this.channel[1][2].receive -> this.process[2].receive .. 1;
+
+  this.process[2].send[0] -> this.channel[2][0].send;
+  this.process[2].send[1] -> this.channel[2][1].send;
+  //this.process[2].send[2] -> this.channel[2][2].send;
+
+  this.channel[2][0].receive -> this.process[0].receive .. 2;
+  this.channel[2][1].receive -> this.process[1].receive .. 2;
+  //this.channel[2][2].receive -> this.process[2].receive .. 2;
+}
+
+instance system System Init;

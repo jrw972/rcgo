@@ -49,6 +49,18 @@ private:
   bool_type_t () { }
 };
 
+class int_type_t : public type_t
+{
+public:
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const { return "<int>"; }
+  size_t alignment () const { return sizeof (void*); }
+  size_t size () const { return sizeof (void*); }
+  static const int_type_t* instance ();
+private:
+  int_type_t () { }
+};
+
 class uint_type_t : public type_t
 {
 public:
@@ -207,9 +219,11 @@ public:
   size_t alignment () const { return base_type_->alignment (); }
   size_t size () const
   {
-    size_t s = base_type_->size ();
-    s = align_up (s, base_type_->alignment ());
-    return s * dimension_;
+    return element_size () * dimension_;
+  }
+  size_t element_size () const
+  {
+    return align_up (base_type_->size (), base_type_->alignment ());
   }
   size_t dimension () const { return dimension_; }
 private:
@@ -303,8 +317,8 @@ public:
     str << "reaction " << *signature_;
     return str.str ();
   }
-  size_t alignment () const { not_reached; }
-  size_t size () const { not_reached; }
+  size_t alignment () const { return sizeof (void*); }
+  size_t size () const { return sizeof (void*); }
   const signature_type_t * signature () const { return signature_; }
 private:
   const signature_type_t *signature_;
@@ -344,7 +358,7 @@ public:
   ActionsType::const_iterator actions_end () const { return actions_.end (); }
 
   typedef std::vector<reaction_t*> ReactionsType;
-  reaction_t * add_reaction (ast_t* node, string_t identifier, const signature_type_t * signature);
+  void add_reaction (reaction_t* reaction) { reactions_.push_back (reaction); }
   reaction_t * get_reaction (string_t identifier) const;
 
   void add_bind (bind_t* bind) { binds_.push_back (bind); }
@@ -447,10 +461,10 @@ private:
   untyped_nil_type_t () { }
 };
 
-class iota_type_t : public type_t
+class untyped_iota_type_t : public type_t
 {
 public:
-  iota_type_t (size_t bound) : bound_ (bound) { }
+  untyped_iota_type_t (size_t bound) : bound_ (bound) { }
   void accept (const_type_visitor_t& visitor) const;
   std::string to_string () const
   {
@@ -458,8 +472,8 @@ public:
     str << "<iota " << bound_ << '>';
     return str.str ();
   }
-  size_t alignment () const { not_reached; }
-  size_t size () const { not_reached; }
+  size_t alignment () const { return sizeof (void*); }
+  size_t size () const { return sizeof (void*); }
   size_t bound () const { return bound_; }
 private:
   size_t bound_;
@@ -476,7 +490,7 @@ struct const_type_visitor_t
   virtual void visit (const func_type_t& type) { default_action (type); }
   virtual void visit (const heap_type_t& type) { default_action (type); }
   virtual void visit (const immutable_type_t& type) { default_action (type); }
-  virtual void visit (const iota_type_t& type) { default_action (type); }
+  virtual void visit (const untyped_iota_type_t& type) { default_action (type); }
   virtual void visit (const named_type_t& type) { default_action (type); }
   virtual void visit (const pointer_to_foreign_type_t& type) { default_action (type); }
   virtual void visit (const pointer_to_immutable_type_t& type) { default_action (type); }
@@ -486,6 +500,7 @@ struct const_type_visitor_t
   virtual void visit (const signature_type_t& type) { default_action (type); }
   virtual void visit (const string_type_t& type) { default_action (type); }
   virtual void visit (const struct_type_t& type) { default_action (type); }
+  virtual void visit (const int_type_t& type) { default_action (type); }
   virtual void visit (const uint_type_t& type) { default_action (type); }
   virtual void visit (const untyped_boolean_type_t& type) { default_action (type); }
   virtual void visit (const untyped_integer_type_t& type) { default_action (type); }
@@ -530,14 +545,17 @@ const foreign_type_t*
 type_to_foreign (const type_t* type);
 
 // Operations.
-const type_t*
-type_select (const type_t* type, string_t identifier);
-
 field_t*
 type_select_field (const type_t* type, string_t identifier);
 
+method_t*
+type_select_method (const type_t* type, string_t identifier);
+
 reaction_t*
 type_select_reaction (const type_t* type, string_t identifier);
+
+const type_t*
+type_select (const type_t* type, string_t identifier);
 
 const type_t*
 type_dereference (const type_t* type);

@@ -64,7 +64,7 @@
 
 %token ACTION BIND CHANGE COMPONENT CONST ELSE FOREIGN FUNC HEAP IF INSTANCE MERGE MOVE NEW PORT PRINTLN REACTION RETURN STRUCT TRIGGER TYPE VAR
 
-%token ARROW DECREMENT EQUAL INCREMENT LOGIC_AND LOGIC_OR NOT_EQUAL
+%token ARROW DECREMENT DOTDOT EQUAL INCREMENT LOGIC_AND LOGIC_OR NOT_EQUAL
 
 %%
 
@@ -85,10 +85,11 @@ instance_def: INSTANCE identifier identifier identifier ';' { $$ = ast_make_inst
 
 type_def: TYPE identifier type_spec ';' { $$ = ast_make_type_def (@1, $2, $3); }
 
-action_def: array_dimension ACTION pointer_to_immutable_receiver '(' rvalue ')' stmt_list { $$ = new ast_dimensioned_action_t (@2, $1, $3, $5, $7); }
-| ACTION pointer_to_immutable_receiver '(' rvalue ')' stmt_list { $$ = new ast_action_t (@1, $2, $4, $6); }
+action_def: ACTION pointer_to_immutable_receiver '(' rvalue ')' stmt_list { $$ = new ast_action_t (@1, $2, $4, $6); }
+| array_dimension ACTION pointer_to_immutable_receiver '(' rvalue ')' stmt_list { $$ = new ast_dimensioned_action_t (@2, $1, $3, $5, $7); }
 
 reaction_def: REACTION pointer_to_immutable_receiver identifier signature stmt_list { $$ = new ast_reaction_t (@1, $2, $3, $4, $5); }
+| array_dimension REACTION pointer_to_immutable_receiver identifier signature stmt_list { $$ = new ast_dimensioned_reaction_t (@2, $1, $3, $4, $5, $6); }
 
 bind_def: BIND pointer_receiver bind_stmt_list { $$ = new ast_bind_t (@1, $2, $3); }
 
@@ -120,7 +121,8 @@ bind_stmt_list: '{' bind_inner_stmt_list '}' { $$ = $2; }
 bind_inner_stmt_list: /* empty */ { $$ = ast_make_bind_list_stmt (yyloc); }
 | bind_inner_stmt_list bind_stmt { $$ = $1->append ($2); }
 
-bind_stmt: lvalue ARROW lvalue ';' { $$ = new ast_bind_statement_t (@1, $1, $3); }
+bind_stmt: lvalue ARROW rvalue ';' { $$ = new ast_bind_statement_t (@1, $1, $3); }
+| lvalue ARROW rvalue DOTDOT rvalue';' { $$ = new ast_bind_param_statement_t (@1, $1, $3, $5); }
 
 stmt_list: '{' inner_stmt_list '}' { $$ = $2; }
 
@@ -152,7 +154,7 @@ println_stmt: PRINTLN expr_list { $$ = ast_make_println_stmt (@1, $2); }
 return_stmt: RETURN rvalue { $$ = ast_make_return_stmt (@1, $2); }
 
 increment_stmt: lvalue INCREMENT { $$ = new ast_add_assign_statement_t (@1, $1, ast_make_typed_literal (@1, typed_value_make_integer (1))); }
-| lvalue DECREMENT { $$ = ast_make_subtract_assign_stmt (@1, $1, ast_make_typed_literal (@1, typed_value_make_integer (1))); }
+| lvalue DECREMENT { $$ = new ast_subtract_assign_statement_t (@1, $1, ast_make_typed_literal (@1, typed_value_make_integer (1))); }
 
 optional_port_call_list: /* Empty. */ { $$ = ast_make_expression_list (yyloc); }
 | port_call_list { $$ = $1; }
@@ -235,25 +237,25 @@ and_expr: compare_expr { $$ = $1; }
  }
 
 compare_expr: add_expr { $$ = $1; }
-| add_expr EQUAL compare_expr { $$ = ast_make_equal (@1, $1, $3); }
-| add_expr NOT_EQUAL compare_expr { $$ = ast_make_not_equal (@1, $1, $3); }
+| add_expr EQUAL compare_expr { $$ = new ast_equal_expr_t (@1, $1, $3); }
+| add_expr NOT_EQUAL compare_expr { $$ = new ast_not_equal_expr_t (@1, $1, $3); }
 
 add_expr: unary_expr { $$ = $1; }
-| unary_expr '+' add_expr { $$ = ast_make_add_expr (@1, $1, $3); }
+| unary_expr '+' add_expr { $$ = new ast_add_expr_t (@1, $1, $3); }
 | unary_expr '-' add_expr { unimplemented; }
 
 unary_expr: primary_expr { $$ = $1; }
-| unary_expr '!' { $$ = ast_make_logic_not (@1, $1); }
+| unary_expr '!' { $$ = new ast_logic_not_expr_t (@1, $1); }
 | unary_expr '&' { $$ = new ast_address_of_expr_t (@1, $1); }
 
 primary_expr: lvalue { $$ = $1; }
 | primary_expr '(' optional_expr_list ')' { $$ = new ast_call_expr_t (@1, $1, $3); }
 | LITERAL { $$ = ast_make_typed_literal (@1, $1); }
 | NEW type_spec { $$ = ast_make_new_expr (@1, $2); }
-| MOVE '(' rvalue ')' { $$ = ast_make_move_expr (@1, $3); }
-| MERGE '(' rvalue ')' { $$ = ast_make_merge_expr (@1, $3); }
+| MOVE '(' rvalue ')' { $$ = new ast_move_expr_t (@1, $3); }
+| MERGE '(' rvalue ')' { $$ = new ast_merge_expr_t (@1, $3); }
 
-lvalue: identifier { $$ = ast_make_identifier_expr (@1, $1); }
+lvalue: identifier { $$ = new ast_identifier_expr_t (@1, $1); }
 | lvalue '.' identifier { $$ = new ast_select_expr_t (@1, $1, $3); }
 | lvalue '[' rvalue ']' { $$ = new ast_index_expr_t (@1, $1, $3); }
 | unary_expr '@' { $$ = new ast_dereference_expr_t (@1, $1); }

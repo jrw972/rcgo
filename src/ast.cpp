@@ -35,6 +35,36 @@ ast_print (const ast_t& node)
       print_expr (node, "address_of_expr");
     }
 
+    void visit (const ast_add_expr_t& node)
+    {
+      print_expr (node, "add_expr");
+    }
+
+    void visit (const ast_logic_not_expr_t& node)
+    {
+      print_expr (node, "logic_not_expr");
+    }
+
+    void visit (const ast_logic_and_expr_t& node)
+    {
+      print_expr (node, "logic_and_expr");
+    }
+
+    void visit (const ast_new_expr_t& node)
+    {
+      print_expr (node, "new_expr");
+    }
+
+    void visit (const ast_equal_expr_t& node)
+    {
+      print_expr (node, "equal_expr");
+    }
+
+    void visit (const ast_not_equal_expr_t& node)
+    {
+      print_expr (node, "not_equal_expr");
+    }
+
     void visit (const ast_dereference_expr_t& node)
     {
       print_expr (node, "dereference_expr");
@@ -75,6 +105,11 @@ ast_print (const ast_t& node)
       print_expr (node, "select_expr");
     }
 
+    void visit (const ast_port_call_expr_t& node)
+    {
+      print_expr (node, "port_call_expr");
+    }
+
     void visit (const ast_top_level_list_t& node)
     {
       print (node, "top_level_list");
@@ -88,6 +123,31 @@ ast_print (const ast_t& node)
     void visit (const ast_struct_type_spec_t& node)
     {
       print (node, "struct_type_spec");
+    }
+
+    void visit (const ast_array_type_spec_t& node)
+    {
+      print (node, "array_type_spec");
+    }
+
+    void visit (const ast_port_type_spec_t& node)
+    {
+      print (node, "port_type_spec");
+    }
+
+    void visit (const ast_component_type_spec_t& node)
+    {
+      print (node, "component_type_spec");
+    }
+
+    void visit (const ast_empty_type_spec_t& node)
+    {
+      print (node, "empty_type_spec");
+    }
+
+    void visit (const ast_signature_type_spec_t& node)
+    {
+      print (node, "signature_type_spec");
     }
 
     void visit (const ast_field_list_type_spec_t& node)
@@ -120,6 +180,31 @@ ast_print (const ast_t& node)
       print (node, "method");
     }
 
+    void visit (const ast_reaction_t& node)
+    {
+      print (node, "reaction");
+    }
+
+    void visit (const ast_dimensioned_reaction_t& node)
+    {
+      print (node, "dimensioned_reaction");
+    }
+
+    void visit (const ast_action_t& node)
+    {
+      print (node, "action");
+    }
+
+    void visit (const ast_dimensioned_action_t& node)
+    {
+      print (node, "dimensioned_action");
+    }
+
+    void visit (const ast_instance_t& node)
+    {
+      print (node, "instance");
+    }
+
     void visit (const ast_bind_t& node)
     {
       print (node, "bind");
@@ -135,6 +220,11 @@ ast_print (const ast_t& node)
       print (node, "bind_statement");
     }
 
+    void visit (const ast_bind_param_statement_t& node)
+    {
+      print (node, "bind_param_statement");
+    }
+
     void visit (const ast_receiver_definition_t& node)
     {
       print (node, "receiver_definition");
@@ -145,6 +235,31 @@ ast_print (const ast_t& node)
       print (node, "trigger_statement");
     }
 
+    void visit (const ast_println_statement_t& node)
+    {
+      print (node, "println_statement");
+    }
+
+    void visit (const ast_expression_statement_t& node)
+    {
+      print (node, "expression_statement");
+    }
+
+    void visit (const ast_return_statement_t& node)
+    {
+      print (node, "return_statement");
+    }
+
+    void visit (const ast_var_statement_t& node)
+    {
+      print (node, "var_statement");
+    }
+
+    void visit (const ast_if_statement_t& node)
+    {
+      print (node, "if_statement");
+    }
+
     void visit (const ast_list_statement_t& node)
     {
       print (node, "list_statement");
@@ -153,11 +268,6 @@ ast_print (const ast_t& node)
     void visit (const ast_assign_statement_t& node)
     {
       print (node, "assign_statement");
-    }
-
-    void visit (const ast_port_call_expr_t& node)
-    {
-      print_expr (node, "trigger_statement");
     }
 
     void print_indent ()
@@ -230,36 +340,20 @@ ast_make_identifier_list_type_spec (unsigned int line,
 }
 
 ast_t *
-ast_make_identifier_expr (unsigned int line, ast_t * identifier)
-{
-  ast_t *retval = new ast_identifier_expr_t (line, 1);
-  retval->set (UNARY_CHILD, identifier);
-  return retval;
-}
-
-ast_t *
-ast_make_logic_not (unsigned int line, ast_t * child)
-{
-  ast_t *retval = new ast_logic_not_expr_t (line, 1);
-  retval->set (UNARY_CHILD, child);
-  return retval;
-}
-
-ast_t *
 ast_make_logic_and (unsigned int line, ast_t * left, ast_t * right)
 {
-  ast_t *retval = new ast_logic_and_expr_t (line, 2);
-  retval->set (BINARY_LEFT_CHILD, left);
-  retval->set (BINARY_RIGHT_CHILD, right);
+  ast_t *retval = new ast_logic_and_expr_t (line, 0);
+  retval->children.push_back (left);
+  retval->children.push_back (right);
   return retval;
 }
 
 ast_t *
 ast_make_logic_or (unsigned int line, ast_t * left, ast_t * right)
 {
-  ast_t *retval = new ast_logic_or_expr_t (line, 2);
-  retval->set (BINARY_LEFT_CHILD, left);
-  retval->set (BINARY_RIGHT_CHILD, right);
+  ast_t *retval = new ast_logic_or_expr_t (line, 0);
+  retval->children.push_back (left);
+  retval->children.push_back (right);
   return retval;
 }
 
@@ -277,14 +371,6 @@ ast_make_var_stmt (unsigned int line, ast_t * identifier_list, ast_t * type_spec
   ast_t *retval = new ast_var_statement_t (line, 2);
   retval->set (VAR_IDENTIFIER_LIST, identifier_list);
   retval->set (VAR_TYPE_SPEC, type_spec);
-  return retval;
-}
-
-ast_t *ast_make_subtract_assign_stmt (unsigned int line, ast_t * lvalue, ast_t * rvalue)
-{
-  ast_t *retval = new ast_subtract_assign_statement_t (line, 2);
-  retval->set (BINARY_LEFT_CHILD, lvalue);
-  retval->set (BINARY_RIGHT_CHILD, rvalue);
   return retval;
 }
 
@@ -507,22 +593,6 @@ ast_t *ast_make_foreign_type_spec (unsigned int line, ast_t* type_spec)
   return retval;
 }
 
-ast_t *ast_make_equal (unsigned int line, ast_t* left, ast_t* right)
-{
-  ast_t *retval = new ast_equal_expr_t (line, 2);
-  retval->set (BINARY_LEFT_CHILD, left);
-  retval->set (BINARY_RIGHT_CHILD, right);
-  return retval;
-}
-
-ast_t *ast_make_not_equal (unsigned int line, ast_t* left, ast_t* right)
-{
-  ast_t *retval = new ast_not_equal_expr_t (line, 2);
-  retval->set (BINARY_LEFT_CHILD, left);
-  retval->set (BINARY_RIGHT_CHILD, right);
-  return retval;
-}
-
 ast_t *ast_make_if_stmt (unsigned int line, ast_t* condition, ast_t* true_branch)
 {
   ast_t *retval = new ast_if_statement_t (line, 2);
@@ -535,28 +605,6 @@ ast_t *ast_make_new_expr (unsigned int line, ast_t* identifier)
 {
   ast_t *retval = new ast_new_expr_t (line, 1);
   retval->set (UNARY_CHILD, identifier);
-  return retval;
-}
-
-ast_t *ast_make_move_expr (unsigned int line, ast_t* expr)
-{
-  ast_t *retval = new ast_move_expr_t (line, 1);
-  retval->set (UNARY_CHILD, expr);
-  return retval;
-}
-
-ast_t *ast_make_merge_expr (unsigned int line, ast_t* expr)
-{
-  ast_t *retval = new ast_merge_expr_t (line, 1);
-  retval->set (UNARY_CHILD, expr);
-  return retval;
-}
-
-ast_t *ast_make_add_expr (unsigned int line, ast_t* left, ast_t* right)
-{
-  ast_t *retval = new ast_add_expr_t (line, 2);
-  retval->set (BINARY_LEFT_CHILD, left);
-  retval->set (BINARY_RIGHT_CHILD, right);
   return retval;
 }
 
@@ -619,6 +667,7 @@ ACCEPT (ast_trigger_statement_t)
 ACCEPT (ast_var_statement_t)
 
 ACCEPT (ast_bind_statement_t)
+ACCEPT (ast_bind_param_statement_t)
 ACCEPT (ast_bind_statement_list_t)
 ACCEPT (ast_action_t)
 ACCEPT (ast_dimensioned_action_t)
@@ -628,6 +677,7 @@ ACCEPT (ast_instance_t)
 ACCEPT (ast_method_t)
 ACCEPT (ast_receiver_definition_t)
 ACCEPT (ast_reaction_t)
+ACCEPT (ast_dimensioned_reaction_t)
 ACCEPT (ast_type_definition_t)
 ACCEPT (ast_top_level_list_t)
 

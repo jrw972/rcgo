@@ -14,6 +14,7 @@
 #include "method.hpp"
 #include "semantic.hpp"
 #include "heap.hpp"
+#include <error.h>
 
 struct instance_record_t {
   // Scheduling lock.
@@ -163,23 +164,14 @@ void runtime_allocate_instances (runtime_t* runtime)
     }
 }
 
-typedef struct port_t port_t;
 struct port_t {
   void* instance;
   const reaction_t* reaction;
+  int64_t parameter;
   port_t* next;
-};
 
-static port_t*
-port_make (void* instance,
-           const reaction_t* reaction)
-{
-  port_t* p = (port_t*)malloc (sizeof (port_t));
-  memset (p, 0, sizeof (port_t));
-  p->instance = instance;
-  p->reaction = reaction;
-  return p;
-}
+  port_t (void* i, const reaction_t* r, int64_t p) : instance (i), reaction (r), parameter (p), next (NULL) { }
+};
 
 void runtime_create_bindings (runtime_t* runtime)
 {
@@ -196,11 +188,7 @@ void runtime_create_bindings (runtime_t* runtime)
            input_pos != input_limit;
            ++input_pos)
         {
-
-          instance_t* input_instance = input_pos->first;
-          const reaction_t* input_reaction = input_pos->second;
-
-          port_t* port = port_make (instance_record_get_ptr (input_instance->record), input_reaction);
+          port_t* port = new port_t (instance_record_get_ptr (input_pos->instance->record), input_pos->reaction, input_pos->parameter);
 
           port_t** p = (port_t**)((char*)instance_record_get_ptr (output_instance->record) + output_port);
           port->next = *p;
@@ -231,10 +219,10 @@ static void
 evaluate_lvalue (thread_runtime_t* runtime,
                  ast_t* expr);
 
-static void evaluate_lvalue_select_expr (thread_runtime_t* runtime, const ast_t* expr)
+static void evaluate_lvalue_select_expr (thread_runtime_t* runtime, const ast_select_expr_t* expr)
 {
-  ast_t *left = expr->at (BINARY_LEFT_CHILD);
-  ast_t *right = expr->at (BINARY_RIGHT_CHILD);
+  ast_t *left = expr->base ();
+  ast_t *right = expr->identifier ();
   string_t identifier = ast_get_identifier (right);
 
   typed_value_t selected_type = ast_get_typed_value (expr);
@@ -247,33 +235,66 @@ static void evaluate_lvalue_select_expr (thread_runtime_t* runtime, const ast_t*
       return;
     }
 
-  evaluate_lvalue (runtime, expr->at (BINARY_LEFT_CHILD));
+  evaluate_lvalue (runtime, left);
   field_t* field = type_select_field (type.type, identifier);
   assert (field != NULL);
   void* ptr = stack_frame_pop_pointer (runtime->stack);
   stack_frame_push_pointer (runtime->stack, (char*)ptr + field_offset (field));
 }
 
-struct evaluate_lvalue_visitor_t : public ast_const_visitor_t
-{
-  thread_runtime_t* runtime;
-
-  evaluate_lvalue_visitor_t (thread_runtime_t* r) : runtime (r) { }
-
-  void default_action (const ast_t& node)
-  {
-    not_reached;
-  }
-
-  void visit (const ast_dereference_expr_t& node) { evaluate_lvalue_dereference_expr (runtime, &node); }
-  void visit (const ast_identifier_expr_t& node) { evaluate_lvalue_identifier_expr (runtime, &node); }
-  void visit (const ast_select_expr_t& node) { evaluate_lvalue_select_expr (runtime, &node); }
-};
-
 static void
 evaluate_lvalue (thread_runtime_t* runtime,
                  ast_t* expr)
 {
+  struct evaluate_lvalue_visitor_t : public ast_const_visitor_t
+  {
+    thread_runtime_t* runtime;
+
+    evaluate_lvalue_visitor_t (thread_runtime_t* r) : runtime (r) { }
+
+    void default_action (const ast_t& node)
+    {
+      not_reached;
+    }
+
+    void visit (const ast_index_expr_t& node)
+    {
+      struct visitor : public const_type_visitor_t
+      {
+        thread_runtime_t* runtime;
+        const ast_index_expr_t& node;
+
+        visitor (thread_runtime_t* r, const ast_index_expr_t& n) : runtime (r), node (n) { }
+
+        void default_action (const type_t& type)
+        {
+          not_reached;
+        }
+
+        void visit (const array_type_t& type)
+        {
+          evaluate_lvalue (runtime, node.base ());
+          void* ptr = stack_frame_pop_pointer (runtime->stack);
+          evaluate_rvalue (runtime, node.index ());
+          int64_t idx = stack_frame_pop_int (runtime->stack);
+          if (idx < 0 || static_cast<size_t> (idx) >= type.dimension ())
+            {
+              error_at_line (-1, 0, node.file, node.line,
+                             "array index is out of bounds");
+            }
+          stack_frame_push_pointer (runtime->stack,
+                                    static_cast<char*> (ptr) + idx * type.element_size ());
+        }
+      };
+      visitor v (runtime, node);
+      ast_get_typed_value (node.base ()).type->accept (v);
+    }
+
+    void visit (const ast_dereference_expr_t& node) { evaluate_lvalue_dereference_expr (runtime, &node); }
+    void visit (const ast_identifier_expr_t& node) { evaluate_lvalue_identifier_expr (runtime, &node); }
+    void visit (const ast_select_expr_t& node) { evaluate_lvalue_select_expr (runtime, &node); }
+  };
+
   evaluate_lvalue_visitor_t evaluate_lvalue_visitor (runtime);
   expr->accept (evaluate_lvalue_visitor);
 
@@ -286,7 +307,7 @@ evaluate_lvalue (thread_runtime_t* runtime,
 
 static void
 execute (thread_runtime_t* runtime,
-         const action_reaction_base_t* action,
+         const reaction_t* reaction,
          instance_record_t* instance);
 
 typedef enum {
@@ -322,111 +343,6 @@ call (thread_runtime_t* runtime)
   node->accept (v);
 }
 
-static void evaluate_rvalue_expr_list (thread_runtime_t* runtime, const ast_t* expr)
-{
-  AST_FOREACH (child, expr)
-    {
-      evaluate_rvalue (runtime, child);
-    }
-}
-
-static void evaluate_rvalue_address_of_expr (thread_runtime_t* runtime, const ast_t* expr)
-{
-  evaluate_lvalue (runtime, expr->at (UNARY_CHILD));
-}
-
-static void evaluate_rvalue_call_expr (thread_runtime_t* runtime, const ast_call_expr_t* expr)
-{
-  // Create space for the return.
-  typed_value_t return_tv = ast_get_typed_value (expr);
-  stack_frame_reserve (runtime->stack, return_tv.type->size ());
-
-  // Sample the top of the stack.
-  char* top_before = stack_frame_top (runtime->stack);
-
-  // Push the arguments.
-  evaluate_rvalue (runtime, expr->args ());
-
-  // Push a fake instruction pointer.
-  stack_frame_push_pointer (runtime->stack, NULL);
-
-  // Sample the top.
-  char* top_after = stack_frame_top (runtime->stack);
-
-  // Push the thing to call.
-  evaluate_rvalue (runtime, expr->expr ());
-
-  // Perform the call.
-  call (runtime);
-
-  // Pop the arguments.
-  stack_frame_pop (runtime->stack, top_after - top_before);
-}
-
-static void evaluate_rvalue_dereference_expr (thread_runtime_t* runtime, const ast_t* expr)
-{
-  typed_value_t tv = ast_get_typed_value (expr);
-  evaluate_rvalue (runtime, expr->at (UNARY_CHILD));
-  void* ptr = stack_frame_pop_pointer (runtime->stack);
-  stack_frame_load (runtime->stack, ptr, tv.type->size ());
-}
-
-static void evaluate_rvalue_equal_expr (thread_runtime_t* runtime, const ast_t* expr)
-{
-  ast_t* left = expr->at (BINARY_LEFT_CHILD);
-  ast_t* right = expr->at (BINARY_RIGHT_CHILD);
-  // Evaluate the left.
-  evaluate_rvalue (runtime, left);
-  // Evaluate the right.
-  evaluate_rvalue (runtime, right);
-  typed_value_t tv = ast_get_typed_value (left);
-  stack_frame_equal (runtime->stack, tv.type->size ());
-}
-
-static void evaluate_rvalue_identifier_expr (thread_runtime_t* runtime, const ast_t* expr)
-{
-  ast_t* identifier_node = expr->at (UNARY_CHILD);
-  string_t name = ast_get_identifier (identifier_node);
-  symbol_t* symbol = symtab_find (expr->symtab, name);
-  typed_value_t tv = ast_get_typed_value (expr);
-  stack_frame_push (runtime->stack, symbol_get_offset (symbol), tv.type->size ());
-}
-
-static void evaluate_rvalue_logic_and_expr (thread_runtime_t* runtime, const ast_t* expr)
-{
-  AST_FOREACH (child, expr)
-    {
-      evaluate_rvalue (runtime, child);
-      if (!stack_frame_pop_bool (runtime->stack))
-        {
-          stack_frame_push_bool (runtime->stack, false);
-          return;
-        }
-    }
-  stack_frame_push_bool (runtime->stack, true);
-}
-
-static void evaluate_rvalue_logic_not_expr (thread_runtime_t* runtime, const ast_t* expr)
-{
-  evaluate_rvalue (runtime, expr->at (UNARY_CHILD));
-  bool b = stack_frame_pop_bool (runtime->stack);
-  stack_frame_push_bool (runtime->stack, !b);
-}
-
-static void evaluate_rvalue_logic_or_expr (thread_runtime_t* runtime, const ast_t* expr)
-{
-  AST_FOREACH (child, expr)
-    {
-      evaluate_rvalue (runtime, child);
-      if (stack_frame_pop_bool (runtime->stack))
-        {
-          stack_frame_push_bool (runtime->stack, true);
-          return;
-        }
-    }
-  stack_frame_push_bool (runtime->stack, false);
-}
-
 typedef struct {
   heap_t* heap;
   pthread_mutex_t mutex;
@@ -443,200 +359,6 @@ static heap_link_t* make_heap_link (heap_t* heap,
   pthread_mutex_init (&hl->mutex, NULL);
   return hl;
 }
-
-static void evaluate_rvalue_new_expr (thread_runtime_t* runtime, const ast_t* expr)
-{
-  // Allocate a new instance of the type.
-  typed_value_t tv = ast_get_typed_value (expr);
-  const type_t* type = dynamic_cast<const pointer_type_t*> (tv.type)->base_type ();
-  if (!type_to_heap (type))
-    {
-      void* ptr = heap_allocate (runtime->current_instance->heap, type->size ());
-      // Return the instance.
-      stack_frame_push_pointer (runtime->stack, ptr);
-    }
-  else
-    {
-      const type_t* t = dynamic_cast<const heap_type_t*> (type)->base_type ();
-      // Allocate a new heap and root object.
-      heap_t* h = heap_make_size (t->size ());
-      // Insert it into its parent.
-      heap_insert_child (runtime->current_instance->heap, h);
-      // Allocate a new heap link in the parent.
-      heap_link_t* hl = make_heap_link (h, runtime->current_instance->heap);
-      // Return the heap link.
-      stack_frame_push_pointer (runtime->stack, hl);
-    }
-}
-
-static void evaluate_rvalue_not_equal_expr (thread_runtime_t* runtime, const ast_t* expr)
-{
-  ast_t* left = expr->at (BINARY_LEFT_CHILD);
-  ast_t* right = expr->at (BINARY_RIGHT_CHILD);
-  // Evaluate the left.
-  evaluate_rvalue (runtime, left);
-  // Evaluate the right.
-  evaluate_rvalue (runtime, right);
-  typed_value_t tv = ast_get_typed_value (left);
-  stack_frame_not_equal (runtime->stack, tv.type->size ());
-}
-
-static void evaluate_rvalue_port_call_expr (thread_runtime_t* runtime, const ast_port_call_expr_t* expr)
-{
-  // Push all of the arguments first and measure their size.
-  char* top_before = stack_frame_top (runtime->stack);
-  evaluate_rvalue (runtime, expr->args ());
-  char* top_after = stack_frame_top (runtime->stack);
-  ptrdiff_t arguments_size = top_after - top_before; // Assumes stack grows up.
-
-  // Find the port to trigger.
-  ast_t *e = expr->name ();
-  string_t port_identifier = ast_get_identifier (e);
-  const type_t *this_type = symtab_get_current_receiver_type (e->symtab);
-  field_t* field = type_select_field (this_type, port_identifier);
-  symbol_t* this_ = symtab_get_this (e->symtab);
-  stack_frame_push (runtime->stack, symbol_get_offset (this_), symbol_parameter_type (this_)->size ());
-  port_t* port = *((port_t**)((char*)stack_frame_pop_pointer (runtime->stack) + field_offset (field)));
-
-  char* base_pointer = stack_frame_base_pointer (runtime->stack);
-  instance_record_t* instance = runtime->current_instance;
-
-  // Trigger all the reactions bound to the port.
-  while (port != NULL)
-    {
-      // Set up a frame.
-      // Push the instance.
-      stack_frame_push_pointer (runtime->stack, port->instance);
-      // Push the arguments.
-      stack_frame_load (runtime->stack, top_before, arguments_size);
-      // Push an instruction pointer.
-      stack_frame_push_pointer (runtime->stack, NULL);
-      execute (runtime, port->reaction, *(instance_record_t**)port->instance);
-      // Reset the base pointer because the callee won't do it.
-      stack_frame_set_base_pointer (runtime->stack, base_pointer);
-      // Also reset the current instance.
-      runtime->current_instance = instance;
-      port = port->next;
-    }
-}
-
-static void evaluate_rvalue_select_expr (thread_runtime_t* runtime, const ast_t* expr)
-{
-  evaluate_lvalue (runtime, expr->at (BINARY_LEFT_CHILD));
-  ast_t *left = expr->at (BINARY_LEFT_CHILD);
-  ast_t *right = expr->at (BINARY_RIGHT_CHILD);
-  string_t identifier = ast_get_identifier (right);
-  typed_value_t tv = ast_get_typed_value (left);
-  field_t* field = type_select_field (tv.type, identifier);
-  assert (field != NULL);
-  void* ptr = stack_frame_pop_pointer (runtime->stack);
-  stack_frame_load (runtime->stack, (char*)ptr + field_offset (field), ast_get_typed_value (expr).type->size ());
-}
-
-static void evaluate_rvalue_move_expr (thread_runtime_t* runtime, const ast_t* expr)
-{
-  ast_t* child = expr->at (UNARY_CHILD);
-  evaluate_rvalue (runtime, child);
-  heap_link_t* hl = (heap_link_t*)stack_frame_pop_pointer (runtime->stack);
-  if (hl != NULL)
-    {
-      pthread_mutex_lock (&hl->mutex);
-      if (hl->heap != NULL && hl->change_count == 0)
-        {
-          // Break the link.
-          heap_t* h = hl->heap;
-          hl->heap = NULL;
-          pthread_mutex_unlock (&hl->mutex);
-
-          // Remove from parent.
-          heap_remove_from_parent (h);
-          // Insert into the new parent.
-          heap_insert_child (runtime->current_instance->heap, h);
-
-          // Allocate a new heap link in the parent.
-          heap_link_t* new_hl = make_heap_link (h, runtime->current_instance->heap);
-
-          // Return the heap link.
-          stack_frame_push_pointer (runtime->stack, new_hl);
-        }
-      else
-        {
-          pthread_mutex_unlock (&hl->mutex);
-          stack_frame_push_pointer (runtime->stack, NULL);
-        }
-      }
-  else
-    {
-      stack_frame_push_pointer (runtime->stack, NULL);
-    }
-}
-
-static void evaluate_rvalue_merge_expr (thread_runtime_t* runtime, const ast_t* expr)
-{
-  ast_t* child = expr->at (UNARY_CHILD);
-  evaluate_rvalue (runtime, child);
-  heap_link_t* hl = (heap_link_t*)stack_frame_pop_pointer (runtime->stack);
-  if (hl != NULL)
-    {
-      pthread_mutex_lock (&hl->mutex);
-      if (hl->heap != NULL && hl->change_count == 0)
-        {
-          // Break the link.
-          heap_t* h = hl->heap;
-          hl->heap = NULL;
-          pthread_mutex_unlock (&hl->mutex);
-
-          // Get the heap root.
-          void* root = heap_instance (h);
-
-          // Remove from parent.
-          heap_remove_from_parent (h);
-
-          // Merge into the new parent.
-          heap_merge (runtime->current_instance->heap, h);
-
-          // Return the root.
-          stack_frame_push_pointer (runtime->stack, root);
-        }
-      else
-        {
-          pthread_mutex_unlock (&hl->mutex);
-          stack_frame_push_pointer (runtime->stack, NULL);
-        }
-    }
-  else
-    {
-      stack_frame_push_pointer (runtime->stack, NULL);
-    }
-}
-
-struct evaluate_rvalue_visitor_t : public ast_const_visitor_t
-{
-  thread_runtime_t* runtime;
-
-  evaluate_rvalue_visitor_t (thread_runtime_t* r) : runtime (r) { }
-
-  void default_action (const ast_t& node)
-  {
-    not_reached;
-  }
-
-  void visit (const ast_address_of_expr_t& node) { evaluate_rvalue_address_of_expr (runtime, &node); }
-  void visit (const ast_call_expr_t& node) { evaluate_rvalue_call_expr (runtime, &node); }
-  void visit (const ast_dereference_expr_t& node) { evaluate_rvalue_dereference_expr (runtime, &node); }
-  void visit (const ast_equal_expr_t& node) { evaluate_rvalue_equal_expr (runtime, &node); }
-  void visit (const ast_identifier_expr_t& node) { evaluate_rvalue_identifier_expr (runtime, &node); }
-  void visit (const ast_logic_and_expr_t& node) { evaluate_rvalue_logic_and_expr (runtime, &node); }
-  void visit (const ast_logic_not_expr_t& node) { evaluate_rvalue_logic_not_expr (runtime, &node); }
-  void visit (const ast_logic_or_expr_t& node) { evaluate_rvalue_logic_or_expr (runtime, &node); }
-  void visit (const ast_merge_expr_t& node) { evaluate_rvalue_merge_expr (runtime, &node); }
-  void visit (const ast_move_expr_t& node) { evaluate_rvalue_move_expr (runtime, &node); }
-  void visit (const ast_new_expr_t& node) { evaluate_rvalue_new_expr (runtime, &node); }
-  void visit (const ast_not_equal_expr_t& node) { evaluate_rvalue_not_equal_expr (runtime, &node); }
-  void visit (const ast_port_call_expr_t& node) { evaluate_rvalue_port_call_expr (runtime, &node); }
-  void visit (const ast_select_expr_t& node) { evaluate_rvalue_select_expr (runtime, &node); }
-  void visit (const ast_list_expr_t& node) { evaluate_rvalue_expr_list (runtime, &node); }
-};
 
 static void
 evaluate_rvalue (thread_runtime_t* runtime,
@@ -671,6 +393,11 @@ evaluate_rvalue (thread_runtime_t* runtime,
         void visit (const bool_type_t&)
         {
           stack_frame_push_bool (runtime->stack, tv.bool_value);
+        }
+
+        void visit (const int_type_t&)
+        {
+          stack_frame_push_int (runtime->stack, tv.int_value);
         }
 
         void visit (const uint_type_t&)
@@ -715,6 +442,387 @@ evaluate_rvalue (thread_runtime_t* runtime,
       return;
     }
 
+  struct evaluate_rvalue_visitor_t : public ast_const_visitor_t
+  {
+    thread_runtime_t* runtime;
+
+    evaluate_rvalue_visitor_t (thread_runtime_t* r) : runtime (r) { }
+
+    void default_action (const ast_t& node)
+    {
+      not_reached;
+    }
+
+    void visit (const ast_address_of_expr_t& node)
+    {
+      evaluate_lvalue (runtime, node.child ());
+    }
+
+    void visit (const ast_add_expr_t& node)
+    {
+      struct visitor : public const_type_visitor_t
+      {
+        thread_runtime_t* runtime;
+        const ast_add_expr_t& node;
+
+        visitor (thread_runtime_t* r, const ast_add_expr_t& n) : runtime (r), node (n) { }
+
+        void default_action (const type_t& type)
+        {
+          not_reached;
+        }
+
+        void visit (const named_type_t& type)
+        {
+          type.subtype ()->accept (*this);
+        }
+
+        void visit (const uint_type_t& type)
+        {
+          evaluate_rvalue (runtime, node.left ());
+          evaluate_rvalue (runtime, node.right ());
+          uint64_t v = stack_frame_pop_uint (runtime->stack);
+          v += stack_frame_pop_uint (runtime->stack);
+          stack_frame_push_uint (runtime->stack, v);
+        }
+
+        void visit (const int_type_t& type)
+        {
+          evaluate_rvalue (runtime, node.left ());
+          evaluate_rvalue (runtime, node.right ());
+          uint64_t v = stack_frame_pop_int (runtime->stack);
+          v += stack_frame_pop_int (runtime->stack);
+          stack_frame_push_int (runtime->stack, v);
+        }
+      };
+      visitor v (runtime, node);
+      node.get_type ().type->accept (v);
+    }
+
+    void visit (const ast_call_expr_t& node)
+    {
+      // Create space for the return.
+      typed_value_t return_tv = node.get_type ();
+      stack_frame_reserve (runtime->stack, return_tv.type->size ());
+
+      // Sample the top of the stack.
+      char* top_before = stack_frame_top (runtime->stack);
+
+      // Push the arguments.
+      evaluate_rvalue (runtime, node.args ());
+
+      // Push a fake instruction pointer.
+      stack_frame_push_pointer (runtime->stack, NULL);
+
+      // Sample the top.
+      char* top_after = stack_frame_top (runtime->stack);
+
+      // Push the thing to call.
+      evaluate_rvalue (runtime, node.expr ());
+
+      // Perform the call.
+      call (runtime);
+
+      // Pop the arguments.
+      stack_frame_pop (runtime->stack, top_after - top_before);
+    }
+
+    void visit (const ast_dereference_expr_t& node)
+    {
+      typed_value_t tv = node.get_type ();
+      evaluate_rvalue (runtime, node.child ());
+      void* ptr = stack_frame_pop_pointer (runtime->stack);
+      stack_frame_load (runtime->stack, ptr, tv.type->size ());
+    }
+
+    void visit (const ast_equal_expr_t& node)
+    {
+      ast_t* left = node.left ();
+      ast_t* right = node.right ();
+      // Evaluate the left.
+      evaluate_rvalue (runtime, left);
+      // Evaluate the right.
+      evaluate_rvalue (runtime, right);
+      typed_value_t tv = ast_get_typed_value (left);
+      stack_frame_equal (runtime->stack, tv.type->size ());
+    }
+
+    void visit (const ast_not_equal_expr_t& node)
+    {
+      ast_t* left = node.left ();
+      ast_t* right = node.right ();
+      // Evaluate the left.
+      evaluate_rvalue (runtime, left);
+      // Evaluate the right.
+      evaluate_rvalue (runtime, right);
+      typed_value_t tv = ast_get_typed_value (left);
+      stack_frame_not_equal (runtime->stack, tv.type->size ());
+    }
+
+    void visit (const ast_identifier_expr_t& node)
+    {
+      symbol_t* symbol = node.symbol.symbol ();
+      typed_value_t tv = node.get_type ();
+      stack_frame_push (runtime->stack, symbol_get_offset (symbol), tv.type->size ());
+    }
+
+    void visit (const ast_index_expr_t& node)
+    {
+      struct visitor : public const_type_visitor_t
+      {
+        thread_runtime_t* runtime;
+        const ast_index_expr_t& node;
+
+        visitor (thread_runtime_t* r, const ast_index_expr_t& n) : runtime (r), node (n) { }
+
+        void default_action (const type_t& type)
+        {
+          not_reached;
+        }
+
+        void visit (const immutable_type_t& type)
+        {
+          type.base_type ()->accept (*this);
+        }
+
+        void visit (const array_type_t& type)
+        {
+          evaluate_lvalue (runtime, node.base ());
+          void* ptr = stack_frame_pop_pointer (runtime->stack);
+          evaluate_rvalue (runtime, node.index ());
+          int64_t idx = stack_frame_pop_int (runtime->stack);
+          if (idx < 0 || static_cast<size_t> (idx) >= type.dimension ())
+            {
+              error_at_line (-1, 0, node.file, node.line,
+                             "array index is out of bounds");
+            }
+          stack_frame_load (runtime->stack,
+                            static_cast<char*> (ptr) + idx * type.element_size (),
+                            node.get_type ().type->size ());
+        }
+      };
+      visitor v (runtime, node);
+      ast_get_typed_value (node.base ()).type->accept (v);
+    }
+
+    void visit (const ast_logic_not_expr_t& node)
+    {
+      evaluate_rvalue (runtime, node.child ());
+      bool b = stack_frame_pop_bool (runtime->stack);
+      stack_frame_push_bool (runtime->stack, !b);
+    }
+
+    void visit (const ast_logic_and_expr_t& node)
+    {
+      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+           pos != limit;
+           ++pos)
+        {
+          evaluate_rvalue (runtime, *pos);
+          if (!stack_frame_pop_bool (runtime->stack))
+            {
+              stack_frame_push_bool (runtime->stack, false);
+              return;
+            }
+        }
+      stack_frame_push_bool (runtime->stack, true);
+    }
+
+    void visit (const ast_logic_or_expr_t& node)
+    {
+      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+           pos != limit;
+           ++pos)
+        {
+          evaluate_rvalue (runtime, *pos);
+          if (stack_frame_pop_bool (runtime->stack))
+            {
+              stack_frame_push_bool (runtime->stack, true);
+              return;
+            }
+        }
+      stack_frame_push_bool (runtime->stack, false);
+    }
+
+    void visit (const ast_merge_expr_t& node)
+    {
+      ast_t* child = node.child ();
+      evaluate_rvalue (runtime, child);
+      heap_link_t* hl = (heap_link_t*)stack_frame_pop_pointer (runtime->stack);
+      if (hl != NULL)
+        {
+          pthread_mutex_lock (&hl->mutex);
+          if (hl->heap != NULL && hl->change_count == 0)
+            {
+              // Break the link.
+              heap_t* h = hl->heap;
+              hl->heap = NULL;
+              pthread_mutex_unlock (&hl->mutex);
+
+              // Get the heap root.
+              void* root = heap_instance (h);
+
+              // Remove from parent.
+              heap_remove_from_parent (h);
+
+              // Merge into the new parent.
+              heap_merge (runtime->current_instance->heap, h);
+
+              // Return the root.
+              stack_frame_push_pointer (runtime->stack, root);
+            }
+          else
+            {
+              pthread_mutex_unlock (&hl->mutex);
+              stack_frame_push_pointer (runtime->stack, NULL);
+            }
+        }
+      else
+        {
+          stack_frame_push_pointer (runtime->stack, NULL);
+        }
+    }
+
+    void visit (const ast_move_expr_t& node)
+    {
+      ast_t* child = node.child ();
+      evaluate_rvalue (runtime, child);
+      heap_link_t* hl = (heap_link_t*)stack_frame_pop_pointer (runtime->stack);
+      if (hl != NULL)
+        {
+          pthread_mutex_lock (&hl->mutex);
+          if (hl->heap != NULL && hl->change_count == 0)
+            {
+              // Break the link.
+              heap_t* h = hl->heap;
+              hl->heap = NULL;
+              pthread_mutex_unlock (&hl->mutex);
+
+              // Remove from parent.
+              heap_remove_from_parent (h);
+              // Insert into the new parent.
+              heap_insert_child (runtime->current_instance->heap, h);
+
+              // Allocate a new heap link in the parent.
+              heap_link_t* new_hl = make_heap_link (h, runtime->current_instance->heap);
+
+              // Return the heap link.
+              stack_frame_push_pointer (runtime->stack, new_hl);
+            }
+          else
+            {
+              pthread_mutex_unlock (&hl->mutex);
+              stack_frame_push_pointer (runtime->stack, NULL);
+            }
+        }
+      else
+        {
+          stack_frame_push_pointer (runtime->stack, NULL);
+        }
+    }
+
+    void visit (const ast_new_expr_t& node)
+    {
+      // Allocate a new instance of the type.
+      typed_value_t tv = node.get_type ();
+      const type_t* type = dynamic_cast<const pointer_type_t*> (tv.type)->base_type ();
+      if (!type_to_heap (type))
+        {
+          void* ptr = heap_allocate (runtime->current_instance->heap, type->size ());
+          // Return the instance.
+          stack_frame_push_pointer (runtime->stack, ptr);
+        }
+      else
+        {
+          const type_t* t = dynamic_cast<const heap_type_t*> (type)->base_type ();
+          // Allocate a new heap and root object.
+          heap_t* h = heap_make_size (t->size ());
+          // Insert it into its parent.
+          heap_insert_child (runtime->current_instance->heap, h);
+          // Allocate a new heap link in the parent.
+          heap_link_t* hl = make_heap_link (h, runtime->current_instance->heap);
+          // Return the heap link.
+          stack_frame_push_pointer (runtime->stack, hl);
+        }
+    }
+
+    void port_call (const ast_t& node, ast_t* args, const field_t* field, size_t offset = 0)
+    {
+      // Push all of the arguments first and measure their size.
+      char* top_before = stack_frame_top (runtime->stack);
+      evaluate_rvalue (runtime, args);
+      char* top_after = stack_frame_top (runtime->stack);
+      ptrdiff_t arguments_size = top_after - top_before; // Assumes stack grows up.
+
+      // Find the port to trigger.
+      symbol_t* this_ = symtab_get_this (node.symtab);
+      stack_frame_push (runtime->stack, symbol_get_offset (this_), symbol_parameter_type (this_)->size ());
+      port_t* port = *((port_t**)((char*)stack_frame_pop_pointer (runtime->stack) + field_offset (field) + offset));
+
+      char* base_pointer = stack_frame_base_pointer (runtime->stack);
+      instance_record_t* instance = runtime->current_instance;
+
+      // Trigger all the reactions bound to the port.
+      while (port != NULL)
+        {
+          // Set up a frame.
+          // Push the instance.
+          stack_frame_push_pointer (runtime->stack, port->instance);
+          // Push the parameter.
+          if (port->reaction->has_dimension ())
+            {
+              stack_frame_push_int (runtime->stack, port->parameter);
+            }
+          // Push the arguments.
+          stack_frame_load (runtime->stack, top_before, arguments_size);
+          // Push an instruction pointer.
+          stack_frame_push_pointer (runtime->stack, NULL);
+          execute (runtime, port->reaction, *(instance_record_t**)port->instance);
+          // Reset the base pointer because the callee won't do it.
+          stack_frame_set_base_pointer (runtime->stack, base_pointer);
+          // Also reset the current instance.
+          runtime->current_instance = instance;
+          port = port->next;
+        }
+    }
+
+    void visit (const ast_port_call_expr_t& node)
+    {
+      port_call (node, node.args (), node.field);
+    }
+
+    void visit (const ast_indexed_port_call_expr_t& node)
+    {
+      // Determine the trigger index.
+      evaluate_rvalue (runtime, node.index ());
+      int64_t idx = stack_frame_pop_int (runtime->stack);
+      if (idx < 0 || static_cast<size_t> (idx) >= node.array_type->dimension ())
+        {
+          error_at_line (-1, 0, node.file, node.line,
+                         "array index is out of bounds");
+        }
+
+      port_call (node, node.args (), node.field, idx * node.array_type->element_size ());
+    }
+
+    void visit (const ast_select_expr_t& node)
+    {
+      evaluate_lvalue (runtime, node.base ());
+      void* ptr = stack_frame_pop_pointer (runtime->stack);
+      stack_frame_load (runtime->stack, (char*)ptr + field_offset (node.field), node.get_type ().type->size ());
+    }
+
+    void visit (const ast_list_expr_t& node)
+    {
+      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+           pos != limit;
+           ++pos)
+        {
+          evaluate_rvalue (runtime, *pos);
+        }
+    }
+  };
+
   evaluate_rvalue_visitor_t evaluate_rvalue_visitor (runtime);
   expr->accept (evaluate_rvalue_visitor);
 }
@@ -737,8 +845,8 @@ evaluate_statement (thread_runtime_t* runtime,
 
     void visit (const ast_assign_statement_t& node)
     {
-      ast_t* left = node.at (BINARY_LEFT_CHILD);
-      ast_t* right = node.at (BINARY_RIGHT_CHILD);
+      ast_t* left = node.left ();
+      ast_t* right = node.right ();
       // Determine the size of the value being assigned.
       size_t size = ast_get_typed_value (right).type->size ();
       // Evaluate the address.
@@ -823,12 +931,12 @@ evaluate_statement (thread_runtime_t* runtime,
     void visit (const ast_add_assign_statement_t& node)
     {
       // Determine the size of the value being assigned.
-      const type_t* type = ast_get_typed_value (node.at (BINARY_RIGHT_CHILD)).type;
+      const type_t* type = ast_get_typed_value (node.right ()).type;
       // Evaluate the address.
-      evaluate_lvalue (runtime, node.at (BINARY_LEFT_CHILD));
+      evaluate_lvalue (runtime, node.left ());
       void* ptr = stack_frame_pop_pointer (runtime->stack);
       // Evaluate the value.
-      evaluate_rvalue (runtime, node.at (BINARY_RIGHT_CHILD));
+      evaluate_rvalue (runtime, node.right ());
 
       struct visitor : public const_type_visitor_t
       {
@@ -858,12 +966,12 @@ evaluate_statement (thread_runtime_t* runtime,
     void visit (const ast_subtract_assign_statement_t& node)
     {
       // Determine the size of the value being assigned.
-      const type_t* type = ast_get_typed_value (node.at (BINARY_RIGHT_CHILD)).type;
+      const type_t* type = ast_get_typed_value (node.right ()).type;
       // Evaluate the address.
-      evaluate_lvalue (runtime, node.at (BINARY_LEFT_CHILD));
+      evaluate_lvalue (runtime, node.left ());
       void* ptr = stack_frame_pop_pointer (runtime->stack);
       // Evaluate the value.
-      evaluate_rvalue (runtime, node.at (BINARY_RIGHT_CHILD));
+      evaluate_rvalue (runtime, node.right ());
 
       struct visitor : public const_type_visitor_t
       {
@@ -951,9 +1059,20 @@ evaluate_statement (thread_runtime_t* runtime,
           {
             thread_runtime_t* runtime;
             visitor (thread_runtime_t* rt) : runtime (rt) { }
+
+            void default_action (const type_t& type)
+            {
+              not_reached;
+            }
+
             void visit (const named_type_t& type)
             {
               type.subtype ()->accept (*this);
+            }
+
+            void visit (const immutable_type_t& type)
+            {
+              type.base_type ()->accept (*this);
             }
 
             void visit (const bool_type_t& type)
@@ -998,6 +1117,12 @@ evaluate_statement (thread_runtime_t* runtime,
               uint64_t u = stack_frame_pop_uint (runtime->stack);
               printf ("%lu", u);
             }
+
+            void visit (const int_type_t& type)
+            {
+              int64_t u = stack_frame_pop_int (runtime->stack);
+              printf ("%lu", u);
+            }
           };
           visitor v (runtime);
           ast_get_typed_value (child).type->accept (v);
@@ -1015,11 +1140,27 @@ evaluate_statement (thread_runtime_t* runtime,
 static bool
 enabled (thread_runtime_t* runtime,
          instance_record_t* record,
-         const action_t* action)
+         const action_t* action,
+         size_t iota)
 {
   assert (stack_frame_empty (runtime->stack));
-  ast_t* precondition = dynamic_cast<ast_action_t*> (action->node ())->precondition ();
+  ast_t* precondition;
+  if (dynamic_cast<ast_action_t*> (action->node ()))
+    {
+      precondition = dynamic_cast<ast_action_t*> (action->node ())->precondition ();
+    }
+  else
+    {
+      precondition = dynamic_cast<ast_dimensioned_action_t*> (action->node ())->precondition ();
+    }
+
+  // Push this.
   stack_frame_push_pointer (runtime->stack, heap_instance (record->heap));
+  // Push iota.
+  if (action->has_dimension ())
+    {
+      stack_frame_push_uint (runtime->stack, iota);
+    }
   // Set the current instance.
   runtime->current_instance = record;
   // Push an instruction pointer.
@@ -1028,7 +1169,14 @@ enabled (thread_runtime_t* runtime,
   evaluate_rvalue (runtime, precondition);
   bool retval = stack_frame_pop_bool (runtime->stack);
   stack_frame_pop_base_pointer (runtime->stack);
+  // Pop the instruction pointer.
   stack_frame_pop_pointer (runtime->stack);
+  // Pop iota.
+  if (action->has_dimension ())
+    {
+      stack_frame_pop_uint (runtime->stack);
+    }
+  // Pop this.
   stack_frame_pop_pointer (runtime->stack);
   assert (stack_frame_empty (runtime->stack));
   return retval;
@@ -1036,64 +1184,91 @@ enabled (thread_runtime_t* runtime,
 
 static void
 execute (thread_runtime_t* runtime,
-         const action_reaction_base_t* action,
+         const action_t* action,
          instance_record_t* instance)
 {
   // Set the current instance.
   runtime->current_instance = instance;
 
   ast_t* body;
-
-  if (dynamic_cast<const reaction_t*> (action))
+  if (dynamic_cast<ast_action_t*> (action->node ()))
     {
-      body = dynamic_cast<const ast_reaction_t*> (action->node ())->body ();
+      body = dynamic_cast<ast_action_t*> (action->node ())->body ();
     }
   else
     {
-      body = dynamic_cast<ast_action_t*> (action->node ())->body ();
-      // Reset the mutable phase base pointer.
-      runtime->mutable_phase_base_pointer = 0;
+      body = dynamic_cast<ast_dimensioned_action_t*> (action->node ())->body ();
     }
+
+  // Reset the mutable phase base pointer.
+  runtime->mutable_phase_base_pointer = 0;
 
   stack_frame_push_base_pointer (runtime->stack, action->locals_size);
 
   evaluate_statement (runtime, body);
 
-  if (dynamic_cast<const action_t*> (action))
+  if (runtime->mutable_phase_base_pointer == 0)
     {
-      // Process all of the deferred trigger bodies.
-      // First, go to the last frame.
-      stack_frame_set_base_pointer (runtime->stack, runtime->mutable_phase_base_pointer);
-
-      while (stack_frame_base_pointer (runtime->stack) != NULL)
-        {
-          // Get the deferred body.
-          ast_t* b = *(ast_t**)stack_frame_ip (runtime->stack);
-
-          // Get the trigger.
-          trigger_t *trigger = symtab_get_current_trigger (b->symtab);
-          assert (trigger != NULL);
-
-          // Set the current record.
-          symbol_t* this_ = symtab_get_this (b->symtab);
-          stack_frame_push (runtime->stack, symbol_get_offset (this_), symbol_parameter_type (this_)->size ());
-          runtime->current_instance = *(instance_record_t**)stack_frame_pop_pointer (runtime->stack);
-
-          // Execute it.
-          evaluate_statement (runtime, b);
-
-          // Add to the schedule.
-          if (trigger->action == TRIGGER_WRITE)
-            {
-              push (runtime->runtime, runtime->current_instance);
-            }
-
-          // Pop until the base pointer.
-          stack_frame_set_top (runtime->stack, stack_frame_base_pointer (runtime->stack) + sizeof (void*));
-          // Pop the base pointer.
-          stack_frame_pop_base_pointer (runtime->stack);
-        }
+      // No triggers.  Pop the base pointer and finish.
+      stack_frame_pop_base_pointer (runtime->stack);
+      return;
     }
+
+  // Process all of the deferred trigger bodies.
+  // First, go to the last frame.
+  stack_frame_set_base_pointer (runtime->stack, runtime->mutable_phase_base_pointer);
+
+  while (stack_frame_base_pointer (runtime->stack) != NULL)
+    {
+      // Get the deferred body.
+      ast_t* b = *(ast_t**)stack_frame_ip (runtime->stack);
+
+      // Get the trigger.
+      trigger_t *trigger = symtab_get_current_trigger (b->symtab);
+      assert (trigger != NULL);
+
+      // Set the current record.
+      symbol_t* this_ = symtab_get_this (b->symtab);
+      stack_frame_push (runtime->stack, symbol_get_offset (this_), symbol_parameter_type (this_)->size ());
+      runtime->current_instance = *(instance_record_t**)stack_frame_pop_pointer (runtime->stack);
+
+      // Execute it.
+      evaluate_statement (runtime, b);
+
+      // Add to the schedule.
+      if (trigger->action == TRIGGER_WRITE)
+        {
+          push (runtime->runtime, runtime->current_instance);
+        }
+
+      // Pop until the base pointer.
+      stack_frame_set_top (runtime->stack, stack_frame_base_pointer (runtime->stack) + sizeof (void*));
+      // Pop the base pointer.
+      stack_frame_pop_base_pointer (runtime->stack);
+    }
+}
+
+static void
+execute (thread_runtime_t* runtime,
+         const reaction_t* reaction,
+         instance_record_t* instance)
+{
+  // Set the current instance.
+  runtime->current_instance = instance;
+
+  ast_t* body;
+  if (dynamic_cast<ast_reaction_t*> (reaction->node ()))
+    {
+      body = dynamic_cast<ast_reaction_t*> (reaction->node ())->body ();
+    }
+  else
+    {
+      body = dynamic_cast<ast_dimensioned_reaction_t*> (reaction->node ())->body ();
+    }
+
+  stack_frame_push_base_pointer (runtime->stack, reaction->locals_size);
+
+  evaluate_statement (runtime, body);
 }
 
 void
@@ -1195,22 +1370,34 @@ run (void* arg)
           /* dump_instances (runtime); */
           /* printf ("END instances before enabled\n"); */
 
-          const action_t* action = pos->first;
-          instance_record_lock (pos->second);
-          if (enabled (runtime, record, action))
+          const action_t* action = pos->action;
+
+          instance_record_lock (pos->set);
+          if (enabled (runtime, record, action, pos->iota))
             {
+              assert (stack_frame_empty (runtime->stack));
               /* printf ("BEGIN instances before execute\n"); */
               /* dump_instances (runtime); */
               /* printf ("END instances before execute\n"); */
 
               // Push the instance.
               stack_frame_push_pointer (runtime->stack, heap_instance (record->heap));
+              // Push iota.
+              if (action->has_dimension ())
+                {
+                  stack_frame_push_uint (runtime->stack, pos->iota);
+                }
               // Push the instruction pointer.
               stack_frame_push_pointer (runtime->stack, NULL);
               // Execute.
               execute (runtime, action, record);
               // Pop the instruction pointer.
               stack_frame_pop_pointer (runtime->stack);
+              // Pop iota.
+              if (action->has_dimension ())
+                {
+                  stack_frame_pop_uint (runtime->stack);
+                }
               // Pop the instance.
               stack_frame_pop_pointer (runtime->stack);
 
@@ -1220,8 +1407,9 @@ run (void* arg)
               /* printf ("BEGIN instances after execute\n"); */
               /* dump_instances (runtime); */
               /* printf ("END instances after execute\n"); */
+              assert (stack_frame_empty (runtime->stack));
             }
-          instance_record_unlock (pos->second);
+          instance_record_unlock (pos->set);
 
           /* // TODO: Comment this out. */
           /* { */
@@ -1279,6 +1467,9 @@ void runtime_run (runtime_t* r,
       if (instance->is_top_level ())
         {
           char* top_before = stack_frame_top (runtime.stack);
+          // Push this.
+          stack_frame_push_pointer (runtime.stack, heap_instance (instance->record->heap));
+          // Push a fake instruction pointer.
           stack_frame_push_pointer (runtime.stack, NULL);
           char* top_after = stack_frame_top (runtime.stack);
           stack_frame_push_pointer (runtime.stack, method_node (instance->method ()));

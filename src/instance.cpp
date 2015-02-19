@@ -35,6 +35,138 @@ instance_table_insert_port (instance_table_t* table,
   table->ports[address] = instance_table_t::PortValueType (output_instance);
 }
 
+static typed_value_t evaluate_static_rvalue (ast_t* node, size_t receiver_address);
+
+static size_t evaluate_static_lvalue (ast_t* node, const size_t receiver_address)
+{
+  struct visitor : public ast_const_visitor_t
+  {
+    const size_t receiver_address;
+    size_t address;
+
+    visitor (size_t ra) : receiver_address (ra) { }
+
+    void default_action (const ast_t& node)
+    {
+      not_reached;
+    }
+
+    void visit (const ast_select_expr_t& node)
+    {
+      node.base ()->accept (*this);
+
+      if (node.field)
+        {
+
+          address += field_offset (node.field);
+          return;
+        }
+
+      typed_value_t tv = node.get_type ();
+      if (!tv.has_value)
+        {
+          error_at_line (-1, 0, node.file, node.line,
+                         "non-static expression");
+
+        }
+
+      struct visitor : public const_type_visitor_t
+      {
+        const ast_select_expr_t& node;
+
+        visitor (const ast_select_expr_t& n) : node (n) { }
+
+        void default_action (const type_t& type)
+        {
+          error_at_line (-1, 0, node.file, node.line,
+                         "non-static expression");
+        }
+
+        void visit (const reaction_type_t& type)
+        {
+          // Do nothing.  Looking for address of base.
+          // This is a hack that should be solved by adding implicit deref nodes to the tree.
+        }
+      };
+      visitor v (node);
+      tv.type->accept (v);
+    }
+
+    void visit (const ast_index_expr_t& node)
+    {
+      node.base ()->accept (*this);
+      typed_value_t tv = evaluate_static_rvalue (node.index (), receiver_address);
+      int64_t index = typed_value_to_index (tv);
+      const array_type_t* array_type = dynamic_cast<const array_type_t*> (ast_get_typed_value (node.base ()).type);
+      assert (array_type != NULL);
+      address += index * array_type->element_size ();
+    }
+
+    void visit (const ast_dereference_expr_t& node)
+    {
+      ast_identifier_expr_t* id = dynamic_cast<ast_identifier_expr_t*> (node.child ());
+      if (id)
+        {
+          symbol_t* symbol = id->symbol.symbol ();
+          switch (symbol_kind (symbol))
+            {
+            case SymbolParameter:
+              if (symbol_parameter_kind (symbol) == ParameterReceiver)
+                {
+                  address = receiver_address;
+                }
+              break;
+            case SymbolFunction:
+            case SymbolInstance:
+            case SymbolType:
+            case SymbolTypedConstant:
+            case SymbolVariable:
+              break;
+            }
+        }
+    }
+  };
+  visitor v (receiver_address);
+  node->accept (v);
+  return v.address;
+}
+
+static typed_value_t evaluate_static_rvalue (ast_t* node, size_t receiver_address)
+{
+  struct visitor : public ast_const_visitor_t
+  {
+    const size_t receiver_address;
+    typed_value_t tv;
+
+    visitor (size_t ra) : receiver_address (ra) { }
+
+    void default_action (const ast_t& node)
+    {
+      not_reached;
+    }
+
+    void visit (const ast_select_expr_t& node)
+    {
+      typed_value_t t = node.get_type ();
+      if (!t.has_value)
+        {
+          error_at_line (-1, 0, node.file, node.line,
+                         "non-static expression");
+        }
+
+      tv = t;
+    }
+
+    void visit (const ast_literal_expr_t& node)
+    {
+      tv = node.get_type ();
+    }
+  };
+  visitor v (receiver_address);
+  node->accept (v);
+  return v.tv;
+}
+
 void
 instance_table_enumerate_bindings (instance_table_t * table)
 {
@@ -56,10 +188,8 @@ instance_table_enumerate_bindings (instance_table_t * table)
         {
           instance_table_t* table;
           const size_t receiver_address;
-          size_t computed_address;
-          reaction_t* reaction;
 
-          visitor (instance_table_t* t, size_t ra) : table (t), receiver_address (ra), computed_address (0), reaction (NULL) { }
+          visitor (instance_table_t* t, size_t ra) : table (t), receiver_address (ra) { }
 
           void default_action (const ast_t& node)
           {
@@ -76,65 +206,29 @@ instance_table_enumerate_bindings (instance_table_t * table)
             node.visit_children (*this);
           }
 
+          void bind (ast_t* left, ast_t* right, int64_t param = 0)
+          {
+            size_t port_address = evaluate_static_lvalue (left, receiver_address);
+            size_t input_address = evaluate_static_lvalue (right, receiver_address);
+            typed_value_t reaction_value = evaluate_static_rvalue (right, receiver_address);
+
+            assert (dynamic_cast<const reaction_type_t*> (reaction_value.type));
+            assert (reaction_value.has_value);
+
+            instance_table_t::InputType i (table->instances[input_address], reaction_value.reaction_value, param);
+            table->ports[port_address].inputs.insert (i);
+            table->reverse_ports[i].insert (port_address);
+          }
+
           void visit (const ast_bind_statement_t& node)
           {
-            // Process the left to get a port.
-            computed_address = -1;
-            node.left ()->accept (*this);
-            size_t port = computed_address;
-
-            // Process the right to get an instance and a reaction.
-            computed_address = -1;
-            reaction = NULL;
-            node.right ()->accept (*this);
-            size_t input = computed_address;
-            reaction_t* r = reaction;
-
-            instance_table_t::InputType i (table->instances[input], r);
-            table->ports[port].inputs.insert (i);
-            table->reverse_ports[i].insert (port);
+            bind (node.left (), node.right ());
           }
 
-          void visit (const ast_select_expr_t& node)
+          void visit (const ast_bind_param_statement_t& node)
           {
-            computed_address = -1;
-            node.base ()->accept (*this);
-            if (node.field)
-              {
-                computed_address += field_offset (node.field);
-              }
-            else if (node.reaction)
-              {
-                reaction = node.reaction;
-              }
-            else
-              {
-                not_reached;
-              }
-          }
-
-          void visit (const ast_dereference_expr_t& node)
-          {
-            ast_identifier_expr_t* id = dynamic_cast<ast_identifier_expr_t*> (node.child ());
-            if (id)
-              {
-                symbol_t* symbol = id->symbol.symbol ();
-                switch (symbol_kind (symbol))
-                  {
-                  case SymbolParameter:
-                    if (symbol_parameter_kind (symbol) == ParameterReceiver)
-                      {
-                        computed_address = receiver_address;
-                      }
-                    break;
-                  case SymbolFunction:
-                  case SymbolInstance:
-                  case SymbolType:
-                  case SymbolTypedConstant:
-                  case SymbolVariable:
-                    break;
-                  }
-              }
+            int64_t param = typed_value_to_index (ast_get_typed_value (node.param ()));
+            bind (node.left (), node.right (), param);
           }
 
         };
@@ -203,15 +297,19 @@ struct action_set_t
 static action_set_t
 transitive_closure (const instance_table_t * table,
 		    instance_t * instance,
-                    const action_reaction_base_t * action)
+                    const action_reaction_base_t * action,
+                    size_t iota = 0)
 {
   struct port_call_visitor : public ast_const_visitor_t
   {
     action_set_t set;
     const instance_table_t* table;
     const size_t address;
+    size_t iota;
+    bool have_port_index;
+    ssize_t port_index;
 
-    port_call_visitor (const instance_table_t* t, size_t a) : table (t), address (a) { }
+    port_call_visitor (const instance_table_t* t, size_t a, size_t i) : table (t), address (a), iota (i) { }
 
     void default_action (const ast_t& node)
     {
@@ -239,12 +337,69 @@ transitive_closure (const instance_table_t * table,
       if (pos != table->ports.find (port)->second.inputs.end ())
         {
           assert (port_pos->second.inputs.size () == 1);
-          instance_t* inst = pos->first;
+          instance_t* inst = pos->instance;
           // Merge the sets.
-          if (set.merge_no_upgrade (transitive_closure (table, inst, pos->second)))
+          if (set.merge_no_upgrade (transitive_closure (table, inst, pos->reaction)))
             {
-              error (-1, 0, "system is non-deterministic");
+              error_at_line (-1, 0, node.file, node.line,
+                             "system is non-deterministic");
+
             }
+        }
+    }
+
+    void visit (const ast_indexed_port_call_expr_t& node)
+    {
+      have_port_index = false;
+      node.index ()->accept (*this);
+
+      if (!have_port_index)
+        {
+          error_at_line (-1, 0, node.file, node.line,
+                         "port index is not constant");
+
+        }
+
+      if (port_index < 0)
+        {
+          error_at_line (-1, 0, node.file, node.line,
+                         "port index is negative");
+        }
+
+      if (static_cast<size_t> (port_index) >= node.array_type->dimension ())
+        {
+          error_at_line (-1, 0, node.file, node.line,
+                         "port index out of bounds");
+        }
+
+      size_t port = address + field_offset (node.field) + port_index * node.array_type->element_size ();
+
+      // Find what is bound to this port.
+      instance_table_t::PortsType::const_iterator port_pos = table->ports.find (port);
+      assert (port_pos != table->ports.end ());
+
+      instance_table_t::InputsType::const_iterator pos = port_pos->second.inputs.begin ();
+      if (pos != table->ports.find (port)->second.inputs.end ())
+        {
+          assert (port_pos->second.inputs.size () == 1);
+          instance_t* inst = pos->instance;
+          // Merge the sets.
+          if (set.merge_no_upgrade (transitive_closure (table, inst, pos->reaction)))
+            {
+              error_at_line (-1, 0, node.file, node.line,
+                             "system is non-deterministic");
+
+            }
+        }
+    }
+
+    void visit (const ast_identifier_expr_t& node)
+    {
+      string_t id = ast_get_identifier (node.child ());
+      if (streq (id, enter ("IOTA")))
+        {
+          have_port_index = true;
+          port_index = iota;
         }
     }
   };
@@ -322,7 +477,18 @@ transitive_closure (const instance_table_t * table,
       node.body ()->accept (*this);
     }
 
+    void visit (const ast_dimensioned_action_t& node)
+    {
+      node.precondition ()->accept (*this);
+      node.body ()->accept (*this);
+    }
+
     void visit (const ast_reaction_t& node)
+    {
+      node.body ()->accept (*this);
+    }
+
+    void visit (const ast_dimensioned_reaction_t& node)
     {
       node.body ()->accept (*this);
     }
@@ -402,7 +568,28 @@ transitive_closure (const instance_table_t * table,
       node.args ()->accept (*this);
     }
 
+    void visit (const ast_indexed_port_call_expr_t& node)
+    {
+      node.index ()->accept (*this);
+      node.args ()->accept (*this);
+    }
+
     void visit (const ast_println_statement_t& node)
+    {
+      node.visit_children (*this);
+    }
+
+    void visit (const ast_index_expr_t& node)
+    {
+      node.visit_children (*this);
+    }
+
+    void visit (const ast_logic_and_expr_t& node)
+    {
+      node.visit_children (*this);
+    }
+
+    void visit (const ast_add_expr_t& node)
     {
       node.visit_children (*this);
     }
@@ -436,7 +623,7 @@ transitive_closure (const instance_table_t * table,
        ++pos)
     {
       // Determine the set for this trigger.
-      port_call_visitor v (table, instance->address ());
+      port_call_visitor v (table, instance->address (), iota);
       (*pos)->node.accept (v);
       // Merge the sets from this trigger.
       set.merge_with_upgrade (v.set);
@@ -490,10 +677,24 @@ instance_table_analyze_composition (const instance_table_t * table)
          action_pos != action_end;
 	 ++action_pos)
       {
-	action_set_t set = transitive_closure (table, instance, *action_pos);
-        // Combine the immutable and mutable sets.
-        set.mutable_phase.insert (set.immutable_phase.begin (), set.immutable_phase.end ());
-        instance->instance_sets.push_back (std::make_pair (*action_pos, set.mutable_phase));
+        action_t* action = *action_pos;
+        if (action->has_dimension ())
+          {
+            for (size_t iota = 0; iota != action->dimension (); ++iota)
+              {
+                action_set_t set = transitive_closure (table, instance, action, iota);
+                // Combine the immutable and mutable sets.
+                set.mutable_phase.insert (set.immutable_phase.begin (), set.immutable_phase.end ());
+                instance->instance_sets.push_back (instance_t::ConcreteAction (action, set.mutable_phase, iota));
+              }
+          }
+        else
+          {
+            action_set_t set = transitive_closure (table, instance, action);
+            // Combine the immutable and mutable sets.
+            set.mutable_phase.insert (set.immutable_phase.begin (), set.immutable_phase.end ());
+            instance->instance_sets.push_back (instance_t::ConcreteAction (action, set.mutable_phase));
+          }
       }
   }
 }
@@ -529,7 +730,7 @@ instance_table_dump (const instance_table_t * table)
            p != l;
            ++p)
         {
-          printf ("(%zd,%s) ", p->first->address (), get (p->second->name ()));
+          printf ("(%zd,%s,%ld) ", p->instance->address (), get (p->reaction->name ()), p->parameter);
         }
       printf ("\n");
     }

@@ -22,6 +22,11 @@ void stack_frame_push_uint (stack_frame_t* stack_frame,
 
 uint64_t stack_frame_pop_uint (stack_frame_t* stack_frame);
 
+void stack_frame_push_int (stack_frame_t* stack_frame,
+                           int64_t b);
+
+int64_t stack_frame_pop_int (stack_frame_t* stack_frame);
+
 void stack_frame_push_string (stack_frame_t* stack_frame,
                               rtstring_t b);
 

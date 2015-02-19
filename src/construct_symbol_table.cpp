@@ -76,6 +76,11 @@ construct_symbol_table (ast_t * node)
       make (node);
     }
 
+    void visit (ast_dimensioned_reaction_t& node)
+    {
+      make (node);
+    }
+
     void visit (ast_top_level_list_t& node)
     {
       make (node);
