@@ -52,7 +52,7 @@
 "!"|";"|","|"="|"?"    { return *yytext; }
 "$"|"@"|"."|"&"|"+"    { return *yytext; }
 
-[_a-zA-Z][_a-zA-Z0-9]* { yylval.identifier = enter (yytext);
+[_a-zA-Z][_a-zA-Z0-9]* { yylval.node = ast_make_identifier (yylloc, enter (yytext));
                          return IDENTIFIER; }
 
 "`"[^`]*"`"            { char* begin = yytext + 1;
@@ -72,12 +72,12 @@
                              ++pos;
                            }
 
-                         yylval.literal = typed_value_make_string (untyped_string_type_t::instance (), rtstring_make (begin, destination - begin));
+                         yylval.node = ast_make_typed_literal (yylloc, typed_value_make_string (untyped_string_type_t::instance (), rtstring_make (begin, destination - begin)));
                          return LITERAL; }
 
-[0]                    { yylval.literal = typed_value_make_integer (0);
+[0]                    { yylval.node = ast_make_typed_literal (yylloc, typed_value_make_integer (0));
                          return LITERAL; }
-[1-9][0-9]*            { yylval.literal = typed_value_make_integer (atoi (yytext));
+[1-9][0-9]*            { yylval.node = ast_make_typed_literal (yylloc, typed_value_make_integer (atoi (yytext)));
                          return LITERAL; }
 
 \/\/.*                 /* Discard line comments. */

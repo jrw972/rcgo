@@ -4,13 +4,10 @@
 #include "debug.hpp"
 %}
 
-%union { char* identifier;
-  typed_value_t literal; }
-%token <identifier> IDENTIFIER
-%destructor { free ($$); } <identifier>
-%token <literal> LITERAL
-
 %union { ast_t* node; }
+%token <node> IDENTIFIER
+%token <node> LITERAL
+
 %type <node> action_def
 %type <node> add_expr
 %type <node> and_expr
@@ -193,7 +190,7 @@ if_stmt: IF rvalue stmt_list { $$ = ast_make_if_stmt (@1, $2, $3); }
 identifier_list: identifier { $$ = ast_make_identifier_list (@1)->append ($1); }
 | identifier_list ',' identifier { $$ = $1->append ($3); }
 
-identifier: IDENTIFIER { $$ = ast_make_identifier (@1, $1); }
+identifier: IDENTIFIER { $$ = $1; }
 
 type_spec: identifier { $$ = ast_make_identifier_type_spec (@1, $1); }
 | COMPONENT '{' field_list '}' { $$ = ast_make_component_type_spec (@1, $3); }
@@ -205,7 +202,7 @@ type_spec: identifier { $$ = ast_make_identifier_type_spec (@1, $1); }
 | HEAP type_spec { $$ = ast_make_heap_type_spec (@1, $2); }
 | array_dimension type_spec { $$ = ast_make_array_type_spec (@1, $1, $2); }
 
-array_dimension: '[' LITERAL ']' { $$ = ast_make_typed_literal (@2, $2); }
+array_dimension: '[' LITERAL ']' { $$ = $2; }
 
 field_list: /* empty */ { $$ = ast_make_field_list (yyloc); }
 | field_list identifier_list type_spec ';' { $$ = $1->append (ast_make_identifier_list_type_spec (@1, $2, $3)); }
@@ -250,7 +247,7 @@ unary_expr: primary_expr { $$ = $1; }
 
 primary_expr: lvalue { $$ = $1; }
 | primary_expr '(' optional_expr_list ')' { $$ = new ast_call_expr_t (@1, $1, $3); }
-| LITERAL { $$ = ast_make_typed_literal (@1, $1); }
+| LITERAL { $$ = $1; }
 | NEW type_spec { $$ = ast_make_new_expr (@1, $2); }
 | MOVE '(' rvalue ')' { $$ = new ast_move_expr_t (@1, $3); }
 | MERGE '(' rvalue ')' { $$ = new ast_merge_expr_t (@1, $3); }
