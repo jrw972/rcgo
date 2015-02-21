@@ -148,6 +148,11 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t* memory_model)
       // Do nothing.
     }
 
+    void visit (ast_increment_statement_t& node)
+    {
+      // Do nothing.
+    }
+
     void visit (ast_trigger_statement_t& node)
     {
       ptrdiff_t offset_before = memory_model_locals_offset (memory_model);

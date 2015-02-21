@@ -380,16 +380,6 @@ evaluate_rvalue (thread_runtime_t* runtime,
           type.subtype ()->accept (*this);
         }
 
-        void visit (const immutable_type_t& type)
-        {
-          type.base_type ()->accept (*this);
-        }
-
-        void visit (const foreign_type_t& type)
-        {
-          type.base_type ()->accept (*this);
-        }
-
         void visit (const bool_type_t&)
         {
           stack_frame_push_bool (runtime->stack, tv.bool_value);
@@ -412,17 +402,22 @@ evaluate_rvalue (thread_runtime_t* runtime,
 
         void visit (const pointer_type_t&)
         {
-          stack_frame_push_pointer (runtime->stack, tv.pointer_value);
+          stack_frame_push_pointer (runtime->stack, NULL);
         }
 
         void visit (const pointer_to_foreign_type_t&)
         {
-          stack_frame_push_pointer (runtime->stack, tv.pointer_value);
+          stack_frame_push_pointer (runtime->stack, NULL);
         }
 
         void visit (const pointer_to_immutable_type_t&)
         {
-          stack_frame_push_pointer (runtime->stack, tv.pointer_value);
+          stack_frame_push_pointer (runtime->stack, NULL);
+        }
+
+        void visit (const nil_type_t&)
+        {
+          stack_frame_push_pointer (runtime->stack, NULL);
         }
 
         void visit (const func_type_t&)
@@ -578,11 +573,6 @@ evaluate_rvalue (thread_runtime_t* runtime,
         void default_action (const type_t& type)
         {
           not_reached;
-        }
-
-        void visit (const immutable_type_t& type)
-        {
-          type.base_type ()->accept (*this);
         }
 
         void visit (const array_type_t& type)
@@ -1022,6 +1012,36 @@ evaluate_statement (thread_runtime_t* runtime,
       return;
     }
 
+    void visit (const ast_increment_statement_t& node)
+    {
+      evaluate_lvalue (runtime, node.child ());
+      void* ptr = stack_frame_pop_pointer (runtime->stack);
+
+      struct visitor : public const_type_visitor_t
+      {
+        void* ptr;
+
+        visitor (void* p) : ptr (p) { }
+
+        void default_action (const type_t& type)
+        {
+          not_reached;
+        }
+
+        void visit (const named_type_t& type)
+        {
+          type.subtype ()->accept (*this);
+        }
+
+        void visit (const uint_type_t& type)
+        {
+          ++(*static_cast<uint64_t*> (ptr));
+        }
+      };
+      visitor v (ptr);
+      ast_get_typed_value (node.child ()).type->accept (v);
+    }
+
     void visit (const ast_trigger_statement_t& node)
     {
       // Need to keep track of the largest base pointer so we can process the mutable section.
@@ -1068,11 +1088,6 @@ evaluate_statement (thread_runtime_t* runtime,
             void visit (const named_type_t& type)
             {
               type.subtype ()->accept (*this);
-            }
-
-            void visit (const immutable_type_t& type)
-            {
-              type.base_type ()->accept (*this);
             }
 
             void visit (const bool_type_t& type)

@@ -75,7 +75,7 @@ type System component
 func (this @System) Initially ()
 { }
 
-action (this $System) (this.send_count != 100)
+action (this $System) (this.send_count != 100u)
 {
   var x @uint;
   x = new uint;

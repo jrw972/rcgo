@@ -66,9 +66,6 @@ instantiate_contained_instances (const named_type_t * type, instance_table_t * i
       address = address_before;
     }
 
-    void visit (const immutable_type_t& type)
-    { }
-
     void visit (const struct_type_t& type)
     { }
 
@@ -76,6 +73,9 @@ instantiate_contained_instances (const named_type_t * type, instance_table_t * i
     { }
 
     void visit (const uint_type_t& type)
+    { }
+
+    void visit (const pointer_type_t& type)
     { }
 
     void visit (const port_type_t& type)

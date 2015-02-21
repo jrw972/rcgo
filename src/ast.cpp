@@ -125,6 +125,11 @@ ast_print (const ast_t& node)
       print (node, "struct_type_spec");
     }
 
+    void visit (const ast_pointer_to_foreign_type_spec_t& node)
+    {
+      print (node, "pointer_to_foreign_type_spec");
+    }
+
     void visit (const ast_array_type_spec_t& node)
     {
       print (node, "array_type_spec");
@@ -288,13 +293,7 @@ ast_print (const ast_t& node)
     void print_expr (const ast_expr_t& node, const char* s)
     {
       print_indent ();
-      std::cout << s;
-      typed_value_t tv = node.get_type ();
-      if (tv.type != NULL)
-        {
-          std::cout << " type=" << *tv.type << " has_value=" << tv.has_value;
-        }
-      std::cout << '\n';
+      std::cout << s << ' ' << node.get_type () << '\n';
       print_children (node);
     }
 
@@ -537,13 +536,6 @@ ast_make_typed_literal (unsigned int line, typed_value_t value)
   return node;
 }
 
-void ast_set_typed_value (ast_t* node, typed_value_t value)
-{
-  ast_expr_t* expr = dynamic_cast<ast_expr_t*> (node);
-  assert (expr != NULL);
-  expr->set_type (value);
-}
-
 typed_value_t ast_get_typed_value (const ast_t* node)
 {
   const ast_expr_t* expr = dynamic_cast<const ast_expr_t*> (node);
@@ -662,6 +654,8 @@ ACCEPT (ast_if_statement_t)
 ACCEPT (ast_println_statement_t)
 ACCEPT (ast_list_statement_t)
 ACCEPT (ast_return_statement_t)
+ACCEPT (ast_increment_statement_t)
+ACCEPT (ast_decrement_statement_t)
 ACCEPT (ast_subtract_assign_statement_t)
 ACCEPT (ast_trigger_statement_t)
 ACCEPT (ast_var_statement_t)

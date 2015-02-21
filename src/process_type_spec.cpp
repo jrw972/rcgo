@@ -24,11 +24,17 @@ process_array_dimension (ast_t::iterator ptr)
 
     visitor (ast_t* d, const typed_value_t& dt) : dimension_node (d), dimension_tv (dt) { }
 
-    void visit (const untyped_integer_type_t& type)
+    void default_action (const type_t& type)
     {
-      if (dimension_tv.integer_value >= 0)
+      error_at_line (-1, 0, dimension_node->file, dimension_node->line,
+                     "%s is not a valid array dimension type", type.to_string ().c_str ());
+    }
+
+    void visit (const int_type_t& type)
+    {
+      if (dimension_tv.int_value >= 0)
         {
-          dimension = dimension_tv.integer_value;
+          dimension = dimension_tv.int_value;
         }
       else
         {
@@ -36,12 +42,6 @@ process_array_dimension (ast_t::iterator ptr)
                          "array dimension is negative");
 
         }
-    }
-
-    void default_action (const type_t& type)
-    {
-      error_at_line (-1, 0, dimension_node->file, dimension_node->line,
-                     "%s is not a valid array dimension type", type.to_string ().c_str ());
     }
   };
   visitor v (*ptr, tv);
@@ -115,7 +115,8 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component)
 
     void visit (ast_foreign_type_spec_t& node)
     {
-      type = foreign_type_t::make (process_type_spec (node.at (FOREIGN_BASE_TYPE), false));
+      unimplemented;
+      //type = foreign_type_t::make (process_type_spec (node.at (FOREIGN_BASE_TYPE), false));
     }
 
     void visit (ast_heap_type_spec_t& node)

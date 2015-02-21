@@ -72,13 +72,35 @@
                              ++pos;
                            }
 
-                         yylval.node = ast_make_typed_literal (yylloc, typed_value_make_string (untyped_string_type_t::instance (), rtstring_make (begin, destination - begin)));
+                         yylval.node = ast_make_typed_literal (yylloc, typed_value_make_string (string_type_t::instance (), rtstring_make (begin, destination - begin)));
                          return LITERAL; }
 
-[0]                    { yylval.node = ast_make_typed_literal (yylloc, typed_value_make_integer (0));
-                         return LITERAL; }
-[1-9][0-9]*            { yylval.node = ast_make_typed_literal (yylloc, typed_value_make_integer (atoi (yytext)));
-                         return LITERAL; }
+[0]u? {
+  std::string x (yytext);
+  if (x.size () == 1)
+    {
+      yylval.node = ast_make_typed_literal (yylloc, typed_value_make_int (int_type_t::instance (), 0));
+    }
+  else
+    {
+      yylval.node = ast_make_typed_literal (yylloc, typed_value_make_uint (uint_type_t::instance (), 0));
+    }
+  return LITERAL;
+}
+
+[1-9][0-9]*u? {
+  std::string x (yytext);
+  if (*x.rbegin () == 'u')
+    {
+      yytext[x.size () - 1] = 0;
+      yylval.node = ast_make_typed_literal (yylloc, typed_value_make_uint (uint_type_t::instance (), atoi (yytext)));
+    }
+  else
+    {
+      yylval.node = ast_make_typed_literal (yylloc, typed_value_make_int (int_type_t::instance (), atoi (yytext)));
+    }
+  return LITERAL;
+}
 
 \/\/.*                 /* Discard line comments. */
 

@@ -29,11 +29,11 @@ enter_symbols (ast_t * node)
   /* Insert untyped boolean constants. */
   symtab_enter (symtab,
 		symbol_make_typed_constant (enter ("true"),
-                                            typed_value_make_bool (untyped_boolean_type_t::instance (), true),
+                                            typed_value_make_bool (bool_type_t::instance (), true),
                                             node));
   symtab_enter (symtab,
 		symbol_make_typed_constant (enter ("false"),
-                                            typed_value_make_bool (untyped_boolean_type_t::instance (), false),
+                                            typed_value_make_bool (bool_type_t::instance (), false),
                                             node));
 
   struct visitor : public ast_visitor_t

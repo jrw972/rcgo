@@ -45,7 +45,7 @@ static void check_identifier_expr (ast_identifier_expr_t& node)
     case SymbolFunction:
       {
         type_t* t = function_type (symbol_get_function_function (symbol));
-        node.set_type (typed_value_make (t));
+        node.set_type (typed_value_make (t, TV_CONSTANT));
       }
       break;
 
@@ -53,10 +53,7 @@ static void check_identifier_expr (ast_identifier_expr_t& node)
       unimplemented;
 
     case SymbolParameter:
-      {
-        const type_t* t = symbol_parameter_type (symbol);
-        node.set_type (typed_value_make (t));
-      }
+      node.set_type (typed_value_make (symbol_parameter_type (symbol), TV_MUTABLE));
       break;
 
     case SymbolType:
@@ -67,7 +64,7 @@ static void check_identifier_expr (ast_identifier_expr_t& node)
       break;
 
     case SymbolVariable:
-      node.set_type (typed_value_make (symbol_variable_type (symbol)));
+      node.set_type (typed_value_make (symbol_variable_type (symbol), TV_MUTABLE));
       break;
     }
 
@@ -90,11 +87,6 @@ static const type_t* check_index (const type_t* aggregate_type, typed_value_t id
       not_reached;
     }
 
-    void visit (const immutable_type_t& type)
-    {
-      type.base_type ()->accept (*this);
-    }
-
     void visit (const array_type_t& type)
     {
       struct visitor : public const_type_visitor_t
@@ -113,11 +105,6 @@ static const type_t* check_index (const type_t* aggregate_type, typed_value_t id
         void visit (const named_type_t& type)
         {
           type.subtype ()->accept (*this);
-        }
-
-        void visit (const immutable_type_t& type)
-        {
-          type.base_type ()->accept (*this);
         }
 
         void visit (const uint_type_t& type)
@@ -149,7 +136,7 @@ static const type_t* check_index (const type_t* aggregate_type, typed_value_t id
             }
         }
 
-        void visit (const untyped_iota_type_t& type)
+        void visit (const iota_type_t& type)
         {
           if (type.bound () > array_type.dimension ())
             {
@@ -189,14 +176,14 @@ type_check_lvalue (ast_t::iterator ptr)
     {
       ast_t::iterator child = node.get_child_ptr (UNARY_CHILD);
       type_check_rvalue (child);
-      typed_value_t tv = ast_get_typed_value (*child);
-      const type_t* type = type_dereference (tv.type);
-      if (type == NULL)
+      typed_value_t in = ast_get_typed_value (*child);
+      typed_value_t out = typed_value_dereference (in);
+      if (out.type == NULL)
         {
           error_at_line (-1, 0, node.file, node.line,
-                         "cannot dereference non-pointer");
+                         "incompatible types: @(%s)", in.type->to_string ().c_str ());
         }
-      node.set_type (typed_value_make (type));
+      node.set_type (out);
     }
 
     void visit (ast_identifier_expr_t& node)
@@ -215,8 +202,6 @@ type_check_lvalue (ast_t::iterator ptr)
       typed_value_t expr_tv = ast_get_typed_value (*expr);
       typed_value_t idx_tv = ast_get_typed_value (*idx);
 
-      typed_value_convert_to_builtin_type (idx_tv);
-
       const type_t* result_type = check_index (expr_tv.type, idx_tv, node);
 
       if (result_type == NULL)
@@ -225,8 +210,7 @@ type_check_lvalue (ast_t::iterator ptr)
                          "incompatible types (%s)[%s]", expr_tv.type->to_string ().c_str (), idx_tv.type->to_string ().c_str ());
         }
 
-      node.set_type (typed_value_make (result_type));
-      ast_set_typed_value (*idx, idx_tv);
+      node.set_type (typed_value_make (result_type, TV_MUTABLE));
     }
 
     void visit (ast_select_expr_t& node)
@@ -238,20 +222,12 @@ type_check_lvalue (ast_t::iterator ptr)
       typed_value_t tv = ast_get_typed_value (*left);
 
       const type_t* t = tv.type;
-      if (type_to_immutable (t))
-        {
-          t = dynamic_cast<const immutable_type_t*> (t)->base_type ();
-        }
-      else if (type_to_foreign (t))
-        {
-          t = type_to_foreign (t)->base_type ();
-        }
 
       if (type_is_any_pointer (t))
         {
           // Selecting from a pointer.  Insert a dereference.
           ast_dereference_expr_t* deref = new ast_dereference_expr_t (node.line, *left);
-          deref->set_type (typed_value_make (type_dereference (tv.type)));
+          deref->set_type (typed_value_dereference (tv));
           *left = deref;
           tv = ast_get_typed_value (*left);
         }
@@ -259,16 +235,7 @@ type_check_lvalue (ast_t::iterator ptr)
       node.field = type_select_field (tv.type, identifier);
       if (node.field)
         {
-          const type_t* t = field_type (node.field);
-          if (type_to_immutable (tv.type))
-            {
-              t = immutable_type_t::make (t);
-            }
-          else if (type_to_foreign (tv.type))
-            {
-              t = foreign_type_t::make (t);
-            }
-          node.set_type (typed_value_make (t));
+          node.set_type (typed_value_make (field_type (node.field), tv.kind));
           return;
         }
 
@@ -296,27 +263,32 @@ type_check_lvalue (ast_t::iterator ptr)
 }
 
 static void
-check_assignment_target (ast_t::iterator left, ast_t* node)
+check_assignment_target (ast_t::iterator left)
 {
   type_check_lvalue (left);
   typed_value_t tv = ast_get_typed_value (*left);
-  if (!type_is_assignable (tv.type))
+  if (tv.kind != TV_MUTABLE)
     {
-      error_at_line (-1, 0, node->file, node->line,
+      error_at_line (-1, 0, (*left)->file, (*left)->line,
                      "cannot assign to read-only location of type %s", tv.type->to_string ().c_str ());
+    }
+
+  if (type_contains_pointer_to_foreign (tv.type))
+    {
+      error_at_line (-1, 0, (*left)->file, (*left)->line,
+                     "assignment leaks pointer to foreign");
     }
 }
 
 static void arithmetic_assign (ast_binary_t* node, const char* symbol)
 {
   ast_t::iterator left = node->left_iter ();
-  check_assignment_target (left, node);
+  check_assignment_target (left);
   ast_t::iterator right = node->right_iter ();
   type_check_rvalue (right);
   typed_value_t left_tv = ast_get_typed_value (*left);
   typed_value_t right_tv = ast_get_typed_value (*right);
-  typed_value_convert (right_tv, left_tv);
-  if (!type_is_equal (left_tv.type, right_tv.type))
+  if (!type_is_convertible (left_tv.type, right_tv.type))
     {
       error_at_line (-1, 0, node->file, node->line,
                      "incompatible types (%s) %s (%s)", left_tv.type->to_string ().c_str (), symbol, right_tv.type->to_string ().c_str ());
@@ -347,8 +319,6 @@ static void arithmetic_assign (ast_binary_t* node, const char* symbol)
   };
   visitor v (node, symbol);
   left_tv.type->accept (v);
-
-  dynamic_cast<ast_expr_t*> (*right)->set_type (right_tv);
 }
 
 static void check_rvalue_list (ast_t * node);
@@ -371,19 +341,17 @@ check_call (ast_expr_t * node, ast_t * args, const type_t * expr_type)
       ast_t *arg = args->at (idx);
       typed_value_t argument_tv  = ast_get_typed_value (arg);
       const type_t *parameter_type = type_parameter_type (expr_type, idx);
-      typed_value_t parameter_tv = typed_value_make (parameter_type);
-      typed_value_convert (argument_tv, parameter_tv);
-      if (!type_is_equal (argument_tv.type, parameter_tv.type))
+      typed_value_t parameter_tv = typed_value_make (parameter_type, TV_MUTABLE);
+      if (!type_is_convertible (parameter_tv.type, argument_tv.type))
         {
           error_at_line (-1, 0, arg->file,
                          arg->line,
                          "cannot convert %s to %s for argument %zd", argument_tv.type->to_string ().c_str (), parameter_tv.type->to_string ().c_str (), idx);
         }
-      dynamic_cast<ast_expr_t*> (arg)->set_type (argument_tv);
     }
 
   // Set the return type.
-  node->set_type (typed_value_make (type_return_type (expr_type)));
+  node->set_type (typed_value_make (type_return_type (expr_type), TV_MUTABLE));
 }
 
 static bool
@@ -422,11 +390,6 @@ struct extract_method_visitor_t : public ast_const_visitor_t
         // Selecting from a pointer.  Insert a dereference.
         unimplemented;
         //t = type_pointer_base_type (t);
-      }
-
-    if (type_to_immutable (t))
-      {
-        t = dynamic_cast<const immutable_type_t*> (t)->base_type ();
       }
 
     retval = dynamic_cast<const named_type_t*> (t)->get_method (identifier);
@@ -505,23 +468,14 @@ type_check_rvalue (ast_t::iterator ptr)
     void check_address_of (ast_address_of_expr_t& node)
     {
       ast_t::iterator expr = node.get_child_ptr (UNARY_CHILD);
-      typed_value_t expr_tv = ast_get_typed_value (*expr);
-      const type_t* type;
-      // TODO:  Move to typed_value.
-      if (type_to_foreign (expr_tv.type))
+      typed_value_t in = ast_get_typed_value (*expr);
+      typed_value_t out = typed_value_address_of (in);
+      if (out.type == NULL)
         {
-          type = pointer_to_foreign_type_t::make (type_to_foreign (expr_tv.type)->base_type ());
+          error_at_line (-1, 0, node.file, node.line,
+                         "incompatible types: (%s)&", in.type->to_string ().c_str ());
         }
-      else if (type_to_immutable (expr_tv.type))
-        {
-          type = pointer_to_immutable_type_t::make (dynamic_cast<const immutable_type_t*> (expr_tv.type)->base_type ());
-        }
-      else
-        {
-          type = pointer_type_t::make (expr_tv.type);
-        }
-
-      node.set_type (typed_value_make (type));
+      node.set_type (out);
     }
 
     void visit (ast_address_of_expr_t& node)
@@ -606,15 +560,14 @@ type_check_rvalue (ast_t::iterator ptr)
     {
       ast_t::iterator child = node.get_child_ptr (UNARY_CHILD);
       type_check_rvalue (child);
-      typed_value_t tv = ast_get_typed_value (*child);
-      const type_t* type = type_dereference (tv.type);
-      if (type == NULL)
+      typed_value_t in = ast_get_typed_value (*child);
+      typed_value_t out = typed_value_dereference (in);
+      if (out.type == NULL)
         {
           error_at_line (-1, 0, node.file, node.line,
-                         "cannot apply @ to expression of type %s", tv.type->to_string ().c_str ());
+                         "incompatible types: (%s)@", out.type->to_string ().c_str ());
         }
-
-      node.set_type (typed_value_make (type));
+      node.set_type (out);
     }
 
     void visit (ast_equal_expr_t& node)
@@ -634,7 +587,7 @@ type_check_rvalue (ast_t::iterator ptr)
 
     void visit (ast_logic_and_expr_t& node)
     {
-      binary_boolean (node, typed_value_make_bool (untyped_boolean_type_t::instance (), true), "&&", logic_and);
+      binary_boolean (node, typed_value_make_bool (bool_type_t::instance (), true), "&&", logic_and);
     }
 
     void visit (ast_logic_not_expr_t& node)
@@ -655,28 +608,12 @@ type_check_rvalue (ast_t::iterator ptr)
           type.subtype ()->accept (*this);
         }
 
-        void visit (const immutable_type_t& type)
-        {
-          type.base_type ()->accept (*this);
-        }
-
-        void visit (const foreign_type_t& type)
-        {
-          type.base_type ()->accept (*this);
-        }
-
         void visit (const bool_type_t& type)
         {
           if (tv.has_value)
             {
               tv.bool_value = !tv.bool_value;
             }
-        }
-
-        void visit (const untyped_boolean_type_t& type)
-        {
-          assert (tv.has_value);
-          tv.bool_value = !tv.bool_value;
         }
 
         void default_action (const type_t& type)
@@ -693,7 +630,7 @@ type_check_rvalue (ast_t::iterator ptr)
 
     void visit (ast_logic_or_expr_t& node)
     {
-      binary_boolean (node, typed_value_make_bool (untyped_boolean_type_t::instance (), false), "||", logic_or);
+      binary_boolean (node, typed_value_make_bool (bool_type_t::instance (), false), "||", logic_or);
     }
 
     void visit (ast_merge_expr_t& node)
@@ -707,7 +644,7 @@ type_check_rvalue (ast_t::iterator ptr)
           error_at_line (-1, 0, node.file, node.line,
                          "cannot merge expression of type %s", tv.type->to_string ().c_str ());
         }
-      tv = typed_value_make (type);
+      tv = typed_value_make (type, TV_MUTABLE);
       node.set_type (tv);
     }
 
@@ -722,7 +659,7 @@ type_check_rvalue (ast_t::iterator ptr)
           error_at_line (-1, 0, node.file, node.line,
                          "cannot move expression of type %s", tv.type->to_string ().c_str ());
         }
-      tv = typed_value_make (type);
+      tv = typed_value_make (type, TV_MUTABLE);
       node.set_type (tv);
     }
 
@@ -731,7 +668,7 @@ type_check_rvalue (ast_t::iterator ptr)
       ast_t* type_spec = node.at (UNARY_CHILD);
       const type_t* t = process_type_spec (type_spec, false);
       const type_t* type = pointer_type_t::make (t);
-      node.set_type (typed_value_make (type));
+      node.set_type (typed_value_make (type, TV_MUTABLE));
     }
 
     void visit (ast_not_equal_expr_t& node)
@@ -813,24 +750,19 @@ type_check_rvalue (ast_t::iterator ptr)
     check_comparison (ast_binary_expr_t& node, const char* operation)
     {
       ast_t::iterator left = node.left_iter ();
-      type_check_rvalue (left);
-      typed_value_t left_tv = ast_get_typed_value (*left);
       ast_t::iterator right = node.right_iter ();
+      type_check_rvalue (left);
       type_check_rvalue (right);
+      typed_value_t left_tv = ast_get_typed_value (*left);
       typed_value_t right_tv = ast_get_typed_value (*right);
-      typed_value_convert (left_tv, right_tv);
-      typed_value_convert (right_tv, left_tv);
-      if (!type_is_equal (left_tv.type, right_tv.type))
+      if (!type_is_equivalent (left_tv.type, right_tv.type))
         {
           error_at_line (-1, 0, node.file, node.line,
-                         "incompatible types (%s) %s (%s)", right_tv.type->to_string ().c_str (), operation, left_tv.type->to_string ().c_str ());
+                         "incompatible types (%s) %s (%s)", left_tv.type->to_string ().c_str (), operation, right_tv.type->to_string ().c_str ());
 
         }
 
-      dynamic_cast<ast_expr_t*> (*left)->set_type (left_tv);
-      dynamic_cast<ast_expr_t*> (*right)->set_type (right_tv);
-
-      node.set_type (typed_value_make (untyped_boolean_type_t::instance ()));
+      node.set_type (typed_value_make (bool_type_t::instance (), TV_MUTABLE));
     }
 
     void
@@ -844,10 +776,7 @@ type_check_rvalue (ast_t::iterator ptr)
           type_check_rvalue (child);
           typed_value_t v = ast_get_typed_value (*child);
 
-          typed_value_convert (tv, v);
-          typed_value_convert (v, tv);
-
-          if (!type_is_equal (tv.type, v.type))
+          if (!type_is_equivalent (tv.type, v.type))
             {
               error_at_line (-1, 0, node.file, node.line,
                              "incompatible types (%s) %s (%s)", tv.type->to_string ().c_str (), operator_str, v.type->to_string ().c_str ());
@@ -880,20 +809,6 @@ type_check_rvalue (ast_t::iterator ptr)
                 }
             }
 
-            void visit (const untyped_boolean_type_t&)
-            {
-              assert (tv.has_value);
-              if (v.has_value)
-                {
-                  tv.bool_value = func (tv.bool_value, v.bool_value);
-                }
-              else
-                {
-                  tv.type = bool_type_t::instance ();
-                  tv.has_value = false;
-                }
-            }
-
             void default_action (const type_t& type)
             {
               error_at_line (-1, 0, node.file, node.line,
@@ -902,8 +817,6 @@ type_check_rvalue (ast_t::iterator ptr)
           };
           visitor vis (node, operator_str, func, tv, v);
           tv.type->accept (vis);
-
-          dynamic_cast<ast_expr_t*> (*child)->set_type (v);
         }
 
       node.set_type (tv);
@@ -914,80 +827,14 @@ type_check_rvalue (ast_t::iterator ptr)
     {
       type_check_rvalue (node.left_iter ());
       type_check_rvalue (node.right_iter ());
-
       typed_value_t left_tv = ast_get_typed_value (node.left ());
       typed_value_t right_tv = ast_get_typed_value (node.right ());
-
-      typed_value_convert (left_tv, right_tv);
-      typed_value_convert (right_tv, left_tv);
-
-      if (!type_is_equal (left_tv.type, right_tv.type))
+      typed_value_t tv = typed_value_binary_arithmetic (left_tv, right_tv);
+      if (!tv.type)
         {
           error_at_line (-1, 0, node.file, node.line,
                          "incompatible types (%s) %s (%s)", left_tv.type->to_string ().c_str (), operator_str, right_tv.type->to_string ().c_str ());
         }
-
-      typed_value_t tv = typed_value_make (left_tv.type);
-
-      struct visitor : public const_type_visitor_t
-      {
-        ast_t& node;
-        const char* operator_str;
-        typed_value_t& left_tv;
-        typed_value_t& right_tv;
-        typed_value_t& tv;
-
-        visitor (ast_t& n, const char* o, typed_value_t& left, typed_value_t& right, typed_value_t& t) : node (n), operator_str (o), left_tv (left), right_tv (right), tv (t) { }
-
-        void visit (const named_type_t& type)
-        {
-          type.subtype ()->accept (*this);
-        }
-
-        void visit (const uint_type_t&)
-        {
-          if (left_tv.has_value && right_tv.has_value)
-            {
-              tv.has_value = true;
-              tv.uint_value = left_tv.uint_value + right_tv.uint_value;
-            }
-        }
-
-        void visit (const int_type_t&)
-        {
-          if (left_tv.has_value && right_tv.has_value)
-            {
-              tv.has_value = true;
-              tv.uint_value = left_tv.int_value + right_tv.int_value;
-            }
-        }
-
-        void visit (const untyped_integer_type_t&)
-        {
-          if (left_tv.has_value && right_tv.has_value)
-            {
-              tv.has_value = true;
-              tv.integer_value = left_tv.integer_value + right_tv.integer_value;
-            }
-          else
-            {
-              // Convert both to builtin types.
-              typed_value_convert_to_builtin_type (left_tv);
-              typed_value_convert_to_builtin_type (right_tv);
-            }
-        }
-
-        void default_action (const type_t& type)
-        {
-          error_at_line (-1, 0, node.file, node.line,
-                         "incompatible types (%s) %s (%s)", left_tv.type->to_string ().c_str (), operator_str, right_tv.type->to_string ().c_str ());
-        }
-      };
-      visitor vis (node, operator_str, left_tv, right_tv, tv);
-      left_tv.type->accept (vis);
-
-      ast_set_typed_value (node.left (), left_tv);
-      ast_set_typed_value (node.right (), right_tv);
       node.set_type (tv);
     }
 
@@ -1020,32 +867,6 @@ check_rvalue_list (ast_t * node)
 
   check_rvalue_list_visitor_t check_rvalue_list_visitor;
   node->accept (check_rvalue_list_visitor);
-}
-
-static void
-convert_rvalue_list_to_builtin_types (ast_t * node)
-{
-  struct convert_rvalue_list_to_builtin_types_visitor_t : public ast_visitor_t
-  {
-    void default_action (ast_t& node)
-    {
-      not_reached;
-    }
-
-    void visit (ast_list_expr_t& node)
-    {
-      for (ast_t::iterator child = node.begin (), limit = node.end ();
-           child != limit;
-           ++child)
-        {
-          typed_value_t tv = ast_get_typed_value (*child);
-          typed_value_convert_to_builtin_type (tv);
-          ast_set_typed_value (*child, tv);
-        }
-    }
-  };
-  convert_rvalue_list_to_builtin_types_visitor_t convert_rvalue_list_to_builtin_types_visitor;
-  node->accept (convert_rvalue_list_to_builtin_types_visitor);
 }
 
 static void
@@ -1101,7 +922,6 @@ check_bind_statement (ast_t * node)
       ast_t::iterator param_node = node.param_iter ();
       type_check_rvalue (param_node);
       typed_value_t param_tv = ast_get_typed_value (*param_node);
-      typed_value_convert_to_builtin_type (param_tv);
       assert (reaction_tv.has_value);
       reaction_t* reaction = reaction_tv.reaction_value;
       if (!reaction->has_dimension ())
@@ -1110,7 +930,6 @@ check_bind_statement (ast_t * node)
                          "parameter specified for non-parameterized reaction");
         }
       check_index (new array_type_t (reaction->dimension (), reaction->reaction_type ()), param_tv, **param_node);
-      ast_set_typed_value (*param_node, param_tv);
     }
 
     void visit (ast_bind_statement_list_t& node)
@@ -1139,18 +958,41 @@ type_check_statement (ast_t * node)
     void visit (ast_assign_statement_t& node)
     {
       ast_t::iterator left = node.left_iter ();
-      check_assignment_target (left, &node);
+      check_assignment_target (left);
       ast_t::iterator right = node.right_iter ();
       type_check_rvalue (right);
       typed_value_t left_tv = ast_get_typed_value (*left);
       typed_value_t right_tv = ast_get_typed_value (*right);
-      typed_value_convert (right_tv, left_tv);
-      if (!type_is_equal (left_tv.type, right_tv.type))
+
+      if (!type_is_convertible (left_tv.type, right_tv.type))
         {
           error_at_line (-1, 0, node.file, node.line,
                          "incompatible types (%s) = (%s)", left_tv.type->to_string ().c_str (), right_tv.type->to_string ().c_str ());
         }
-      dynamic_cast<ast_expr_t*> (*right)->set_type (right_tv);
+
+      switch (right_tv.kind)
+        {
+        case TV_MUTABLE:
+          // No check.
+          break;
+        case TV_IMMUTABLE:
+          if (!type_is_immutable_safe (right_tv.type))
+            {
+              error_at_line (-1, 0, node.file, node.line,
+                             "assignment leaks mutable pointers");
+            }
+          break;
+        case TV_FOREIGN:
+          if (!type_is_foreign_safe (right_tv.type))
+            {
+              error_at_line (-1, 0, node.file, node.line,
+                             "assignment leaks mutable pointers");
+            }
+          break;
+        case TV_CONSTANT:
+          // No check.
+          break;
+        }
     }
 
     void visit (ast_change_statement_t& node)
@@ -1174,7 +1016,7 @@ type_check_statement (ast_t * node)
       // Process the root variable.
       const type_t* proposed_root_type = process_type_spec (type, false);
 
-      if (!type_is_convertible (root_type, proposed_root_type))
+      if (!type_is_convertible (proposed_root_type, root_type))
         {
           error_at_line (-1, 0, node.file, node.line,
                          "cannot convert %s to %s in change", root_type->to_string ().c_str (), proposed_root_type->to_string ().c_str ());
@@ -1195,9 +1037,6 @@ type_check_statement (ast_t * node)
     {
       ast_t::iterator child = node.get_child_ptr (UNARY_CHILD);
       type_check_rvalue (child);
-      typed_value_t tv = ast_get_typed_value (*child);
-      typed_value_convert_to_builtin_type (tv);
-      ast_set_typed_value (*child, tv);
     }
 
     void visit (ast_if_statement_t& node)
@@ -1209,7 +1048,6 @@ type_check_statement (ast_t * node)
       type_check_rvalue (condition_node);
 
       typed_value_t tv = ast_get_typed_value (*condition_node);
-      typed_value_convert_to_builtin_type (tv);
 
       if (type_to_bool (tv.type) == NULL)
         {
@@ -1220,8 +1058,6 @@ type_check_statement (ast_t * node)
 
       // Check the branch.
       type_check_statement (*true_branch);
-
-      ast_set_typed_value (*condition_node, tv);
     }
 
     void visit (ast_add_assign_statement_t& node)
@@ -1252,15 +1088,47 @@ type_check_statement (ast_t * node)
       // Check that it matches with the return type.
       const type_t* return_type = get_current_return_type (&node);
       assert (return_type != NULL);
-      typed_value_t return_tv = typed_value_make (return_type);
-      typed_value_convert (expr_tv, return_tv);
-      if (!type_is_equal (expr_tv.type, return_tv.type))
+      typed_value_t return_tv = typed_value_make (return_type, TV_MUTABLE);
+      if (!type_is_convertible (return_tv.type, expr_tv.type))
         {
           error_at_line (-1, 0, node.file, node.line,
                          "cannot convert %s to %s in return", expr_tv.type->to_string ().c_str (), return_tv.type->to_string ().c_str ());
         }
+    }
 
-      static_cast<ast_expr_t*> (*expr)->set_type (expr_tv);
+    void visit (ast_increment_statement_t& node)
+    {
+      ast_t::iterator expr = node.child_iter ();
+      check_assignment_target (expr);
+      struct visitor : public const_type_visitor_t
+      {
+        ast_t& node;
+
+        visitor (ast_t& n) : node (n) { }
+
+        void default_action (const type_t& type)
+        {
+          error_at_line (-1, 0, node.file, node.line,
+                         "cannot increment location of type %s", type.to_string ().c_str ());
+        }
+
+        void visit (const named_type_t& type)
+        {
+          type.subtype ()->accept (*this);
+        }
+
+        void visit (const uint_type_t& type)
+        {
+          // Okay.
+        }
+      };
+      visitor v (node);
+      static_cast<ast_expr_t*> (*expr)->get_type ().type->accept (v);
+    }
+
+    void visit (ast_decrement_statement_t& node)
+    {
+      unimplemented;
     }
 
     void visit (ast_trigger_statement_t& node)
@@ -1308,8 +1176,6 @@ type_check_statement (ast_t * node)
     {
       ast_t::iterator child = node.get_child_ptr (UNARY_CHILD);
       check_rvalue_list (*child);
-      // Convert to type so we can evaluate it.
-      convert_rvalue_list_to_builtin_types (*child);
     }
   };
 
@@ -1534,6 +1400,15 @@ mutates_check_statement (ast_t * node)
       node.right ()->accept (*this);
     }
 
+    void visit (ast_increment_statement_t& node)
+    {
+      derived_visitor v;
+      node.child ()->accept (v);
+      mutates_receiver = mutates_receiver || v.derived_from_receiver;
+
+      node.child ()->accept (*this);
+    }
+
     void visit (ast_change_statement_t& node)
     {
       node.expr ()->accept (*this);
@@ -1671,7 +1546,6 @@ process_definitions (ast_t * node)
 
       /* Must be typed since it will be evaluated. */
       typed_value_t tv = ast_get_typed_value (*precondition_node);
-      typed_value_convert_to_builtin_type (tv);
 
       if (type_to_bool (tv.type) == NULL)
         {
@@ -1683,8 +1557,6 @@ process_definitions (ast_t * node)
       type_check_statement (body_node);
       control_check_statement (body_node);
       mutates_check_statement (body_node);
-
-      ast_set_typed_value (*precondition_node, tv);
     }
 
     void visit (ast_dimensioned_action_t& node)
@@ -1704,7 +1576,7 @@ process_definitions (ast_t * node)
 
       /* Insert "iota" into the symbol table. */
       enter_symbol (node.symtab,
-                    symbol_make_parameter (enter ("IOTA"), new untyped_iota_type_t (node.action->dimension ()), dimension_node),
+                    symbol_make_parameter (enter ("IOTA"), new iota_type_t (node.action->dimension ()), dimension_node),
                     node.iota_symbol);
 
       /* Check the precondition. */
@@ -1712,7 +1584,6 @@ process_definitions (ast_t * node)
 
       /* Must be typed since it will be evaluated. */
       typed_value_t tv = ast_get_typed_value (*precondition_node);
-      typed_value_convert_to_builtin_type (tv);
 
       if (type_to_bool (tv.type) == NULL)
         {
@@ -1724,7 +1595,6 @@ process_definitions (ast_t * node)
       type_check_statement (body_node);
       control_check_statement (body_node);
       mutates_check_statement (body_node);
-      ast_set_typed_value (*precondition_node, tv);
     }
 
     void visit (ast_bind_t& node)
@@ -1844,7 +1714,7 @@ process_definitions (ast_t * node)
 
       /* Insert "iota" into the symbol table. */
       enter_symbol (node.symtab,
-                    symbol_make_parameter (enter ("IOTA"), new untyped_iota_type_t (node.reaction->dimension ()), dimension_node),
+                    symbol_make_parameter (enter ("IOTA"), new iota_type_t (node.reaction->dimension ()), dimension_node),
                     node.iota_symbol);
 
       /* Enter the signature into the symbol table. */

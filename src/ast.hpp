@@ -313,6 +313,24 @@ struct ast_unary_expr_t : public ast_expr_t
   iterator child_iter () { return begin () + CHILD; }
 };
 
+struct ast_unary_t : public ast_t
+{
+  enum
+    {
+      CHILD,
+      COUNT
+    };
+
+  ast_unary_t (unsigned int line, ast_t* child)
+    : ast_t (line, COUNT)
+  {
+    children[CHILD] = child;
+  }
+
+  ast_t* child () const { return children[CHILD]; }
+  iterator child_iter () { return begin () + CHILD; }
+};
+
 struct ast_binary_expr_t : public ast_expr_t
 {
   enum
@@ -740,6 +758,26 @@ struct ast_return_statement_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
 };
 
+struct ast_increment_statement_t : public ast_unary_t
+{
+  ast_increment_statement_t (unsigned int line, ast_t* child)
+    : ast_unary_t (line, child)
+  { }
+
+  void accept (ast_visitor_t& visitor);
+  void accept (ast_const_visitor_t& visitor) const;
+};
+
+struct ast_decrement_statement_t : public ast_unary_t
+{
+  ast_decrement_statement_t (unsigned int line, ast_t* child)
+    : ast_unary_t (line, child)
+  { }
+
+  void accept (ast_visitor_t& visitor);
+  void accept (ast_const_visitor_t& visitor) const;
+};
+
 struct ast_list_statement_t : public ast_t
 {
   ast_list_statement_t (unsigned int line, size_t children_count)
@@ -1135,6 +1173,8 @@ struct ast_visitor_t
   virtual void visit (ast_println_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_list_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_return_statement_t& ast) { default_action (ast); }
+  virtual void visit (ast_increment_statement_t& ast) { default_action (ast); }
+  virtual void visit (ast_decrement_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_subtract_assign_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_trigger_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_var_statement_t& ast) { default_action (ast); }
@@ -1207,6 +1247,8 @@ struct ast_const_visitor_t
   virtual void visit (const ast_println_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_list_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_return_statement_t& ast) { default_action (ast); }
+  virtual void visit (const ast_increment_statement_t& ast) { default_action (ast); }
+  virtual void visit (const ast_decrement_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_subtract_assign_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_trigger_statement_t& ast) { default_action (ast); }
 
@@ -1368,8 +1410,6 @@ ast_t *ast_make_expression_list (unsigned int line);
 ast_t *ast_make_typed_literal (unsigned int line, typed_value_t value);
 
 typed_value_t ast_get_typed_value (const ast_t* node);
-
-void ast_set_typed_value (ast_t* node, typed_value_t value);
 
 ast_t *ast_make_signature (unsigned int line);
 

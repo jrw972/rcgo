@@ -92,7 +92,7 @@ reaction (this $Process) init (v uint)
   };
 }
 
-[3] action (this $Process) (this.val[this.i] != 0 && this.i != IOTA)
+[3] action (this $Process) (this.val[this.i] != 0u && this.i != IOTA)
 {
   // send
   println `Process `, this.i, ` sending `, this.val[this.i], ` to process `, IOTA;
@@ -110,7 +110,7 @@ reaction (this $Process) init (v uint)
 }
 
 // TODO:  Use a loop.
-action (this $Process) (this.val[0] != 0 && this.val[1] != 0 && this.val[2] != 0)
+action (this $Process) (this.val[0] != 0u && this.val[1] != 0u && this.val[2] != 0u)
 {
   // decide
   var v uint;
@@ -130,15 +130,15 @@ type System component
 // TODO:  Use a loop.
 func (this @System) Init ()
 {
-  this.process[0].Initially (0);
-  this.process[1].Initially (1);
-  this.process[2].Initially (2);
+  this.process[0].Initially (0u);
+  this.process[1].Initially (1u);
+  this.process[2].Initially (2u);
 }
 
 [3] action (this $System) (true)
 {
   // send
-  trigger init[IOTA] (100 + IOTA)
+  trigger init[IOTA] (100u + IOTA)
   { };
 }
 

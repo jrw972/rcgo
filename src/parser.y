@@ -150,8 +150,8 @@ println_stmt: PRINTLN expr_list { $$ = ast_make_println_stmt (@1, $2); }
 
 return_stmt: RETURN rvalue { $$ = ast_make_return_stmt (@1, $2); }
 
-increment_stmt: lvalue INCREMENT { $$ = new ast_add_assign_statement_t (@1, $1, ast_make_typed_literal (@1, typed_value_make_integer (1))); }
-| lvalue DECREMENT { $$ = new ast_subtract_assign_statement_t (@1, $1, ast_make_typed_literal (@1, typed_value_make_integer (1))); }
+increment_stmt: lvalue INCREMENT { $$ = new ast_increment_statement_t (@1, $1); }
+| lvalue DECREMENT { $$ = new ast_decrement_statement_t (@1, $1); }
 
 optional_port_call_list: /* Empty. */ { $$ = ast_make_expression_list (yyloc); }
 | port_call_list { $$ = $1; }

@@ -10,12 +10,12 @@ struct symbol_t
   SymbolKind kind;
   ast_t *defining_node;
   bool in_progress;
+  struct
+  {
+    typed_value_t value;
+  } typed_constant;
   union
   {
-    struct
-    {
-      typed_value_t value;
-    } typed_constant;
     struct
     {
       const named_type_t *type;
