@@ -25,7 +25,7 @@ process_declarations (ast_t * node)
                          get (type_identifier));
         }
       named_type_t *type = symbol_get_type_type (symbol);
-      if (type_to_component (type) == NULL)
+      if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
           error_at_line (-1, 0, type_node->file, (type_node)->line,
                          "%s does not refer to a component",
@@ -51,7 +51,7 @@ process_declarations (ast_t * node)
                          get (type_identifier));
         }
       named_type_t *type = symbol_get_type_type (symbol);
-      if (type_to_component (type) == NULL)
+      if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
           error_at_line (-1, 0, type_node->file, (type_node)->line,
                          "%s does not refer to a component",
@@ -77,7 +77,7 @@ process_declarations (ast_t * node)
                          get (type_identifier));
         }
       named_type_t *type = symbol_get_type_type (symbol);
-      if (type_to_component (type) == NULL)
+      if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
           error_at_line (-1, 0, type_node->file, type_node->line,
                          "%s does not refer to a component",
@@ -174,7 +174,7 @@ process_declarations (ast_t * node)
                          get (type_identifier));
         }
       named_type_t *type = symbol_get_type_type (symbol);
-      if (type_to_component (type) == NULL)
+      if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
           error_at_line (-1, 0, type_identifier_node->file,
                          type_identifier_node->line,
@@ -201,7 +201,7 @@ process_declarations (ast_t * node)
                          get (type_identifier));
         }
       named_type_t *type = symbol_get_type_type (symbol);
-      if (type_to_component (type) == NULL)
+      if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
           error_at_line (-1, 0, type_node->file, type_node->line,
                          "%s does not refer to a component",
@@ -242,7 +242,7 @@ process_declarations (ast_t * node)
                          get (type_identifier));
         }
       named_type_t *type = symbol_get_type_type (symbol);
-      if (type_to_component (type) == NULL)
+      if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
           error_at_line (-1, 0, type_node->file, type_node->line,
                          "%s does not refer to a component",

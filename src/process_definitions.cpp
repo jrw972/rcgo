@@ -223,7 +223,7 @@ type_check_lvalue (ast_t::iterator ptr)
 
       const type_t* t = tv.type;
 
-      if (type_is_any_pointer (t))
+      if (type_dereference (t))
         {
           // Selecting from a pointer.  Insert a dereference.
           ast_dereference_expr_t* deref = new ast_dereference_expr_t (node.line, *left);
@@ -326,7 +326,6 @@ static void check_rvalue_list (ast_t * node);
 static void
 check_call (ast_expr_t * node, ast_t * args, const type_t * expr_type)
 {
-  size_t idx;
   size_t argument_count = args->size ();
   size_t parameter_count = type_parameter_count (expr_type);
   if (argument_count != parameter_count)
@@ -336,7 +335,7 @@ check_call (ast_expr_t * node, ast_t * args, const type_t * expr_type)
 		     parameter_count, argument_count);
     }
 
-  for (idx = 0; idx != argument_count; ++idx)
+  for (size_t idx = 0; idx != argument_count; ++idx)
     {
       ast_t *arg = args->at (idx);
       typed_value_t argument_tv  = ast_get_typed_value (arg);
@@ -385,7 +384,7 @@ struct extract_method_visitor_t : public ast_const_visitor_t
 
     const type_t* t = ast_get_typed_value (left).type;
 
-    if (type_to_pointer (t))
+    if (type_cast<pointer_type_t> (t))
       {
         // Selecting from a pointer.  Insert a dereference.
         unimplemented;
@@ -511,7 +510,7 @@ type_check_rvalue (ast_t::iterator ptr)
           // Calling a method.
 
           // The receiver is either a copy or a pointer.
-          bool receiver_is_pointer = type_is_any_pointer (type_parameter_type (expr_tv.type, 0));
+          bool receiver_is_pointer = type_dereference (type_parameter_type (expr_tv.type, 0));
 
           // Transfer the computation for the receiver to the argument list.
           ast_t* receiver_select_expr = dynamic_cast<ast_select_expr_t*> (*expr)->base ();
@@ -529,7 +528,7 @@ type_check_rvalue (ast_t::iterator ptr)
           if (in_mutable_section (&node))
             {
               named_type_t* t = method_named_type (method);
-              if (type_to_component (t))
+              if (type_cast<component_type_t> (t))
                 {
                   // Invoking a method on a component in a mutable section.
                   // Ensure the receiver is this.
@@ -689,7 +688,7 @@ type_check_rvalue (ast_t::iterator ptr)
                          "no port named %s", get (port_identifier));
         }
 
-      if (!type_to_port (port_type))
+      if (!type_cast<port_type_t> (port_type))
         {
           error_at_line (-1, 0, node.file, node.line,
                          "%s is not a port", get (port_identifier));
@@ -714,14 +713,14 @@ type_check_rvalue (ast_t::iterator ptr)
                          "no port named %s", get (port_identifier));
         }
 
-      const array_type_t* array_type = type_to_array (type);
+      const array_type_t* array_type = type_cast<array_type_t> (type);
       if (!array_type)
         {
           error_at_line (-1, 0, node.file, node.line,
                          "%s is not an array of ports", get (port_identifier));
         }
 
-      const port_type_t* port_type = type_to_port (array_type->base_type ());
+      const port_type_t* port_type = type_cast<port_type_t> (array_type->base_type ());
 
       if (!port_type)
         {
@@ -887,7 +886,7 @@ check_bind_statement (ast_t * node)
       typed_value_t port_tv = ast_get_typed_value (*port_node);
       typed_value_t reaction_tv = ast_get_typed_value (*reaction_node);
 
-      const port_type_t *port_type = type_to_port (port_tv.type);
+      const port_type_t *port_type = type_cast<port_type_t> (port_tv.type);
 
       if (port_type == NULL)
         {
@@ -895,14 +894,14 @@ check_bind_statement (ast_t * node)
                          "source of bind is not a port");
         }
 
-      const reaction_type_t *reaction_type = type_to_reaction (reaction_tv.type);
+      const reaction_type_t *reaction_type = type_cast<reaction_type_t> (reaction_tv.type);
       if (reaction_type == NULL)
         {
           error_at_line (-1, 0, node.file, node.line,
                          "target of bind is not a reaction");
         }
 
-      if (!type_is_compatible_port_reaction (port_type, reaction_type))
+      if (!type_is_equal (port_type->signature (), reaction_type->signature ()))
         {
           error_at_line (-1, 0, node.file, node.line,
                          "cannot bind %s to %s", port_type->to_string ().c_str (), reaction_type->to_string ().c_str ());
@@ -1049,7 +1048,7 @@ type_check_statement (ast_t * node)
 
       typed_value_t tv = ast_get_typed_value (*condition_node);
 
-      if (type_to_bool (tv.type) == NULL)
+      if (type_cast<bool_type_t> (type_strip (tv.type)) == NULL)
         {
           error_at_line (-1, 0, (*condition_node)->file,
                          (*condition_node)->line,
@@ -1324,7 +1323,7 @@ mutates_check_statement (ast_t * node)
     void check_for_pointer_copy (ast_t* node)
     {
       typed_value_t tv = ast_get_typed_value (node);
-      if (type_to_pointer (tv.type))
+      if (type_cast<pointer_type_t> (tv.type))
         {
           derived_visitor v;
           node->accept (v);
@@ -1547,7 +1546,7 @@ process_definitions (ast_t * node)
       /* Must be typed since it will be evaluated. */
       typed_value_t tv = ast_get_typed_value (*precondition_node);
 
-      if (type_to_bool (tv.type) == NULL)
+      if (type_cast<bool_type_t> (type_strip (tv.type)) == NULL)
         {
           error_at_line (-1, 0, (*precondition_node)->file,
                          (*precondition_node)->line,
@@ -1585,7 +1584,7 @@ process_definitions (ast_t * node)
       /* Must be typed since it will be evaluated. */
       typed_value_t tv = ast_get_typed_value (*precondition_node);
 
-      if (type_to_bool (tv.type) == NULL)
+      if (type_cast<bool_type_t> (type_strip (tv.type)) == NULL)
         {
           error_at_line (-1, 0, (*precondition_node)->file,
                          (*precondition_node)->line,

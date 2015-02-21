@@ -183,18 +183,6 @@ type_select (const type_t* type, string_t identifier)
   return NULL;
 }
 
-const pointer_type_t*
-type_to_pointer (const type_t * type)
-{
-  return dynamic_cast<const pointer_type_t*> (type);
-}
-
-const pointer_to_immutable_type_t*
-type_to_pointer_to_immutable (const type_t * type)
-{
-  return dynamic_cast<const pointer_to_immutable_type_t*> (type);
-}
-
 parameter_t *
 signature_type_t::find (string_t name) const
 {
@@ -307,97 +295,13 @@ type_return_type (const type_t * type)
   return v.retval;
 }
 
-const reaction_type_t*
-type_to_reaction (const type_t * type)
-{
-  return dynamic_cast<const reaction_type_t*> (type);
-}
-
-const signature_type_t*
-type_to_signature (const type_t * type)
-{
-  return dynamic_cast<const signature_type_t*> (type);
-}
-
-bool
-type_is_compatible_port_reaction (const port_type_t * port, const reaction_type_t * reaction)
-{
-  const signature_type_t *port_signature = port->signature ();
-  const signature_type_t *reaction_signature = reaction->signature ();
-
-  size_t port_arity = port_signature->arity ();
-  size_t reaction_arity = reaction_signature->arity ();
-  if (port_arity != reaction_arity)
-    {
-      return false;
-    }
-
-  size_t idx;
-  for (idx = 0; idx != port_arity; ++idx)
-    {
-      parameter_t *port_parameter = port_signature->at (idx);
-      const type_t *port_parameter_type = parameter_type (port_parameter);
-      parameter_t *reaction_parameter = reaction_signature->at (idx);
-      const type_t *reaction_parameter_type = parameter_type (reaction_parameter);
-
-      if (!type_is_equal (port_parameter_type, reaction_parameter_type))
-        {
-          return false;
-        }
-    }
-
-  return true;
-}
-
-const heap_type_t*
-type_to_heap (const type_t* type)
-{
-  return dynamic_cast<const heap_type_t*> (type);
-}
-
-bool type_is_any_pointer (const type_t* type)
-{
-  struct visitor : public const_type_visitor_t
-  {
-    bool flag;
-    visitor () : flag (false) { }
-    void visit (const pointer_type_t&) { flag = true; }
-    void visit (const pointer_to_immutable_type_t&) { flag = true; }
-    void visit (const pointer_to_foreign_type_t&) { flag = true; }
-  };
-  visitor v;
-  type->accept (v);
-  return v.flag;
-}
-
-const named_type_t*
-type_to_named_type (const type_t* type)
-{
-  return dynamic_cast<const named_type_t*> (type);
-}
-
-const bool_type_t*
-type_to_bool (const type_t* type)
-{
-  struct visitor : public const_type_visitor_t
-  {
-    const bool_type_t* retval;
-    visitor () : retval (NULL) { }
-    void visit (const named_type_t& type) { type.subtype ()->accept (*this); }
-    void visit (const bool_type_t& type) { retval = &type; }
-  };
-  visitor v;
-  type->accept (v);
-  return v.retval;
-}
-
 const type_t*
 type_move (const type_t* type)
 {
-  const pointer_to_foreign_type_t* ptf = dynamic_cast<const pointer_to_foreign_type_t*> (type);
+  const pointer_to_foreign_type_t* ptf = type_cast<pointer_to_foreign_type_t> (type);
   if (ptf)
     {
-      const heap_type_t* h = dynamic_cast<const heap_type_t*> (ptf->base_type ());
+      const heap_type_t* h = type_cast<heap_type_t> (ptf->base_type ());
       if (h)
         {
           return pointer_type_t::make (ptf->base_type ());
@@ -409,11 +313,11 @@ type_move (const type_t* type)
 
 const type_t* type_merge (const type_t* type)
 {
-  const pointer_to_foreign_type_t* ptf = dynamic_cast<const pointer_to_foreign_type_t*> (type);
+  const pointer_to_foreign_type_t* ptf = type_cast<pointer_to_foreign_type_t> (type);
 
   if (ptf)
     {
-      const heap_type_t* h = dynamic_cast<const heap_type_t*> (ptf->base_type ());
+      const heap_type_t* h = type_cast<heap_type_t> (ptf->base_type ());
       if (h)
         {
           return pointer_type_t::make (h->base_type ());
@@ -426,11 +330,11 @@ const type_t* type_merge (const type_t* type)
 const type_t*
 type_change (const type_t* type)
 {
-  const pointer_type_t* ptf = dynamic_cast<const pointer_type_t*> (type);
+  const pointer_type_t* ptf = type_cast<pointer_type_t> (type);
 
   if (ptf)
     {
-      const heap_type_t* h = dynamic_cast<const heap_type_t*> (ptf->base_type ());
+      const heap_type_t* h = type_cast<heap_type_t> (ptf->base_type ());
       if (h)
         {
           return pointer_type_t::make (h->base_type ());
@@ -560,38 +464,6 @@ pointer_to_immutable_type_t::accept (const_type_visitor_t& visitor) const
   visitor.visit (*this);
 }
 
-const component_type_t* type_to_component (const type_t* type)
-{
-  struct visitor : public const_type_visitor_t
-  {
-    const component_type_t* retval;
-    visitor () : retval (NULL) { }
-
-    void visit (const component_type_t& type) { retval = &type; }
-    void visit (const named_type_t& type) { type.subtype ()->accept (*this); }
-  };
-
-  visitor v;
-  type->accept (v);
-  return v.retval;
-}
-
-const array_type_t* type_to_array (const type_t* type)
-{
-  struct visitor : public const_type_visitor_t
-  {
-    const array_type_t* retval;
-    visitor () : retval (NULL) { }
-
-    void visit (const array_type_t& type) { retval = &type; }
-    void visit (const named_type_t& type) { type.subtype ()->accept (*this); }
-  };
-
-  visitor v;
-  type->accept (v);
-  return v.retval;
-}
-
 // Returns true if two types are equal.
 // If one type is a named type, then the other must be the same named type.
 // Otherwise, the types must have the same structure.
@@ -603,7 +475,7 @@ type_is_equal (const type_t * x, const type_t* y)
       return true;
     }
 
-  if (type_to_named_type (x) || type_to_named_type (y))
+  if (type_cast<named_type_t> (x) || type_cast<named_type_t> (y))
     {
       // Named types must be exactly the same.
       return false;
@@ -618,7 +490,7 @@ type_is_equal (const type_t * x, const type_t* y)
 
     void visit (const pointer_type_t& type)
     {
-      const pointer_type_t* t = dynamic_cast<const pointer_type_t*> (other);
+      const pointer_type_t* t = type_cast<pointer_type_t> (other);
       if (t != NULL)
         {
           flag = type_is_equal (type.base_type (), t->base_type ());
@@ -627,7 +499,7 @@ type_is_equal (const type_t * x, const type_t* y)
 
     void visit (const pointer_to_immutable_type_t& type)
     {
-      const pointer_to_immutable_type_t* t = dynamic_cast<const pointer_to_immutable_type_t*> (other);
+      const pointer_to_immutable_type_t* t = type_cast<pointer_to_immutable_type_t> (other);
       if (t != NULL)
         {
           flag = type_is_equal (type.base_type (), t->base_type ());
@@ -636,7 +508,7 @@ type_is_equal (const type_t * x, const type_t* y)
 
     void visit (const pointer_to_foreign_type_t& type)
     {
-      const pointer_to_foreign_type_t* t = dynamic_cast<const pointer_to_foreign_type_t*> (other);
+      const pointer_to_foreign_type_t* t = type_cast<pointer_to_foreign_type_t> (other);
       if (t != NULL)
         {
           flag = type_is_equal (type.base_type (), t->base_type ());
@@ -645,7 +517,7 @@ type_is_equal (const type_t * x, const type_t* y)
 
     void visit (const heap_type_t& type)
     {
-      const heap_type_t* t = dynamic_cast<const heap_type_t*> (other);
+      const heap_type_t* t = type_cast<heap_type_t> (other);
       if (t != NULL)
         {
           flag = type_is_equal (type.base_type (), t->base_type ());
@@ -671,6 +543,36 @@ type_is_equal (const type_t * x, const type_t* y)
     {
       flag = &type == other;
     }
+
+    void visit (const signature_type_t& type)
+    {
+      const signature_type_t* x = &type;
+      const signature_type_t* y = type_cast<signature_type_t> (other);
+      if (y)
+        {
+          size_t x_arity = x->arity ();
+          size_t y_arity = y->arity ();
+          if (x_arity != y_arity)
+            {
+              return;
+            }
+
+          for (size_t idx = 0; idx != x_arity; ++idx)
+            {
+              parameter_t *x_parameter = x->at (idx);
+              const type_t *x_parameter_type = parameter_type (x_parameter);
+              parameter_t *y_parameter = y->at (idx);
+              const type_t *y_parameter_type = parameter_type (y_parameter);
+
+              if (!type_is_equal (x_parameter_type, y_parameter_type))
+                {
+                  return;
+                }
+            }
+
+          flag = true;
+        }
+    }
   };
 
   visitor v (y);
@@ -686,14 +588,14 @@ type_is_convertible (const type_t * to, const type_t* from)
       return true;
     }
 
-  if (type_to_named_type (from))
+  if (type_cast<named_type_t> (from))
     {
       // Named types must be exactly the same.
       return false;
     }
 
   // Strip a named type on to.
-  const named_type_t* nt = type_to_named_type (to);
+  const named_type_t* nt = type_cast<named_type_t> (to);
   if (nt)
     {
       to = nt->subtype ();
@@ -715,7 +617,7 @@ type_is_convertible (const type_t * to, const type_t* from)
 
     void visit (const pointer_type_t& type)
     {
-      if (dynamic_cast<const nil_type_t*> (from))
+      if (type_cast<nil_type_t> (from))
         {
           flag = true;
         }
@@ -723,13 +625,13 @@ type_is_convertible (const type_t * to, const type_t* from)
 
     void visit (const pointer_to_immutable_type_t& type)
     {
-      if (dynamic_cast<const nil_type_t*> (from))
+      if (type_cast<nil_type_t> (from))
         {
           flag = true;
         }
 
       {
-        const pointer_type_t* p = dynamic_cast<const pointer_type_t*> (from);
+        const pointer_type_t* p = type_cast<pointer_type_t> (from);
         if (p)
           {
             flag = type_is_equal (type.base_type (), p->base_type ());
@@ -739,13 +641,13 @@ type_is_convertible (const type_t * to, const type_t* from)
 
     void visit (const pointer_to_foreign_type_t& type)
     {
-      if (dynamic_cast<const nil_type_t*> (from))
+      if (type_cast<nil_type_t> (from))
         {
           flag = true;
         }
 
       {
-        const pointer_type_t* p = dynamic_cast<const pointer_type_t*> (from);
+        const pointer_type_t* p = type_cast<pointer_type_t> (from);
         if (p)
           {
             flag = type_is_equal (type.base_type (), p->base_type ());
@@ -753,7 +655,7 @@ type_is_convertible (const type_t * to, const type_t* from)
       }
 
       {
-        const pointer_to_immutable_type_t* p = dynamic_cast<const pointer_to_immutable_type_t*> (from);
+        const pointer_to_immutable_type_t* p = type_cast<pointer_to_immutable_type_t> (from);
         if (p)
           {
             flag = type_is_equal (type.base_type (), p->base_type ());
@@ -763,12 +665,12 @@ type_is_convertible (const type_t * to, const type_t* from)
 
     void visit (const uint_type_t& type)
     {
-      flag = dynamic_cast<const iota_type_t*> (from) != NULL;
+      flag = type_cast<iota_type_t> (from) != NULL;
     }
 
     void visit (const int_type_t& type)
     {
-      flag = dynamic_cast<const iota_type_t*> (from) != NULL;
+      flag = type_cast<iota_type_t*> (from) != NULL;
     }
   };
 
@@ -1055,12 +957,7 @@ nil_type_t::instance ()
   return &i;
 }
 
-const port_type_t* type_to_port (const type_t* port)
-{
-  return dynamic_cast<const port_type_t*> (port);
-}
-
-const type_t* type_pointer_base_type (const type_t* type)
+const type_t* type_dereference (const type_t* type)
 {
   struct visitor : public const_type_visitor_t
   {
@@ -1155,7 +1052,7 @@ named_type_t::named_type_t (string_t name,
   : name_ (name)
 {
   // Don't chain named types.
-  const named_type_t* t = type_to_named_type (subtype);
+  const named_type_t* t = type_cast<named_type_t> (subtype);
   if (t)
     {
       subtype_ = t->subtype ();
@@ -1192,4 +1089,22 @@ type_is_arithmetic (const type_t* type)
   visitor v;
   type->accept (v);
   return v.flag;
+}
+
+const type_t*
+type_strip (const type_t* type)
+{
+  struct visitor : public const_type_visitor_t
+  {
+    const type_t* retval;
+    visitor (const type_t* t) : retval (t) { }
+
+    void visit (const named_type_t& type)
+    {
+      retval = type.subtype ();
+    }
+  };
+  visitor v (type);
+  type->accept (v);
+  return v.retval;
 }

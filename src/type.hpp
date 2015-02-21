@@ -468,38 +468,7 @@ struct const_type_visitor_t
   virtual void default_action (const type_t& type) { }
 };
 
-// Cast functions.
-const named_type_t*
-type_to_named_type (const type_t* type);
-
-const bool_type_t*
-type_to_bool (const type_t * type);
-
-const pointer_type_t*
-type_to_pointer (const type_t * type);
-
-const pointer_to_immutable_type_t*
-type_to_pointer_to_immutable (const type_t * type);
-
-const heap_type_t*
-type_to_heap (const type_t* type);
-
-const signature_type_t*
-type_to_signature (const type_t * type);
-
-const component_type_t*
-type_to_component (const type_t* type);
-
-const array_type_t*
-type_to_array (const type_t* type);
-
-const port_type_t*
-type_to_port (const type_t* port);
-
-const reaction_type_t*
-type_to_reaction (const type_t * type);
-
-// Operations.
+// Select the appropriate object.
 field_t*
 type_select_field (const type_t* type, string_t identifier);
 
@@ -509,68 +478,86 @@ type_select_method (const type_t* type, string_t identifier);
 reaction_t*
 type_select_reaction (const type_t* type, string_t identifier);
 
+// Return type of selected field, method, or reaction.
 const type_t*
 type_select (const type_t* type, string_t identifier);
 
+// Return type after applying dereference or NULL.
 const type_t*
 type_dereference (const type_t* type);
 
+// Return type after applying move or NULL.
 const type_t*
 type_move (const type_t* type);
 
+// Return type after applying merge or NULL.
 const type_t*
 type_merge (const type_t* type);
 
+// Return type after applying change or NULL.
 const type_t*
 type_change (const type_t* type);
 
-// Predicates.
-
+// True if the types are equal (strict).
 bool
 type_is_equal (const type_t* x, const type_t* y);
 
+// True if from can be converted to to.  (Useful for assignment, copy, etc.)
 bool
 type_is_convertible (const type_t* to, const type_t* from);
 
+// True if one can be converted to the other.  (Useful for binary operators.)
 inline bool
 type_is_equivalent (const type_t* x, const type_t* y)
 {
   return type_is_convertible (x, y) || type_is_convertible (y, x);
 }
 
-bool
-type_is_callable (const type_t * type);
-
-bool
-type_is_compatible_port_reaction (const port_type_t * port,
-                                  const reaction_type_t * reaction);
-
+// True if it is safe to drop foreign-ness.
 bool
 type_is_foreign_safe (const type_t* type);
 
-bool
-type_is_any_pointer (const type_t* type);
-
+// True if it is safe to drop immutability.
 bool
 type_is_immutable_safe (const type_t* type);
 
+// True if pointer-to-foreign value can be accessed given a value of this type.
 bool
 type_contains_pointer_to_foreign (const type_t* type);
 
+// True if arithmetic operators can be applied to values of this type.
 bool
 type_is_arithmetic (const type_t* type);
 
-// Getters.
-size_t
-type_parameter_count (const type_t * type);
-
+// Remove a named_type_t.
 const type_t*
-type_parameter_type (const type_t * type, size_t size);
+type_strip (const type_t* type);
 
-const type_t*
-type_return_type (const type_t * type);
+// Cast a type to a specific type.
+template<typename T>
+const T*
+type_cast (const type_t * type)
+{
+  struct visitor : public const_type_visitor_t
+  {
+    const T* retval;
 
-const type_t*
-type_pointer_base_type (const type_t* type);
+    visitor () : retval (NULL) { }
+
+    void visit (const T& type)
+    {
+      retval = &type;
+    }
+  };
+  visitor v;
+  type->accept (v);
+  return v.retval;
+}
+
+// TODO:  Extract a base class and make these members.
+bool type_is_callable (const type_t * type);
+size_t type_parameter_count (const type_t * type);
+const type_t* type_parameter_type (const type_t * type, size_t size);
+const type_t* type_return_type (const type_t * type);
 
 #endif /* type_hpp */

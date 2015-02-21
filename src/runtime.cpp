@@ -716,7 +716,7 @@ evaluate_rvalue (thread_runtime_t* runtime,
       // Allocate a new instance of the type.
       typed_value_t tv = node.get_type ();
       const type_t* type = dynamic_cast<const pointer_type_t*> (tv.type)->base_type ();
-      if (!type_to_heap (type))
+      if (!type_cast<heap_type_t> (type))
         {
           void* ptr = heap_allocate (runtime->current_instance->heap, type->size ());
           // Return the instance.
@@ -1134,6 +1134,12 @@ evaluate_statement (thread_runtime_t* runtime,
             }
 
             void visit (const int_type_t& type)
+            {
+              int64_t u = stack_frame_pop_int (runtime->stack);
+              printf ("%lu", u);
+            }
+
+            void visit (const iota_type_t& type)
             {
               int64_t u = stack_frame_pop_int (runtime->stack);
               printf ("%lu", u);

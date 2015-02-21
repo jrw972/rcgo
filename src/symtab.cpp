@@ -308,7 +308,7 @@ void symtab_change (symtab_t* symtab)
           if (symbol_kind (symbol) == SymbolParameter)
             {
               const type_t* type = symbol_parameter_type (symbol);
-              if (type_to_pointer (type))
+              if (type_cast<pointer_type_t> (type))
                 {
                   unimplemented;
                   // type_t* base_type = type_pointer_base_type (type);
@@ -331,7 +331,7 @@ void symtab_change (symtab_t* symtab)
             }
           else if (symbol_kind (symbol) == SymbolVariable)
             {
-              const type_t* base_type = type_pointer_base_type (symbol_variable_type (symbol));
+              const type_t* base_type = type_dereference (symbol_variable_type (symbol));
               if (base_type != NULL)
                 {
                   // Make a foreign pointer.
