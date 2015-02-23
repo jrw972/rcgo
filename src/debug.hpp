@@ -1,5 +1,5 @@
-#ifndef debug_h
-#define debug_h
+#ifndef debug_hpp
+#define debug_hpp
 
 #include <stdlib.h>
 #include <assert.h>
@@ -12,9 +12,6 @@
 
 #define not_reached bug("code designated unreachable has been reached")
 
-/* Flag indicating we are debugging. */
-extern int debug;
-
 extern const char *in_file;
 
-#endif /* debug_h */
+#endif /* debug_hp */

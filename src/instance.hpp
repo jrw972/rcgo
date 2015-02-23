@@ -66,6 +66,14 @@ public:
   InstanceSetsType instance_sets;
 };
 
+std::ostream&
+operator<< (std::ostream& o,
+            const instance_t& i);
+
+std::ostream&
+operator<< (std::ostream& o,
+            const instance_t::ConcreteAction& ca);
+
 struct instance_table_t
 {
   typedef std::map<size_t, instance_t*> InstancesType;
@@ -90,8 +98,10 @@ struct instance_table_t
   struct PortValueType
   {
     PortValueType () { }
-    PortValueType (instance_t* oi) : output_instance (oi) { }
+    PortValueType (size_t a, instance_t* oi, field_t* of) : address (a), output_instance (oi), output_field (of) { }
+    size_t address;
     instance_t* output_instance;
+    field_t* output_field;
     InputsType inputs;
   };
   typedef std::map<size_t, PortValueType> PortsType;
@@ -99,6 +109,10 @@ struct instance_table_t
   typedef std::map<InputType, std::set<size_t> > ReversePortsType;
   ReversePortsType reverse_ports;
 };
+
+std::ostream&
+operator<< (std::ostream&,
+            const instance_table_t::PortValueType&);
 
 instance_table_t *instance_table_make (void);
 
@@ -110,7 +124,8 @@ instance_t *instance_table_insert (instance_table_t * table,
 
 void instance_table_insert_port (instance_table_t* table,
                                  size_t address,
-                                 instance_t* output_instance);
+                                 instance_t* output_instance,
+                                 field_t* output_field);
 
 void instance_table_enumerate_bindings (instance_table_t * table);
 

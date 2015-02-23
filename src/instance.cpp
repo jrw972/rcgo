@@ -30,9 +30,10 @@ instance_table_insert (instance_table_t * table, instance_t* parent, const named
 void
 instance_table_insert_port (instance_table_t* table,
                             size_t address,
-                            instance_t* output_instance)
+                            instance_t* output_instance,
+                            field_t* output_field)
 {
-  table->ports[address] = instance_table_t::PortValueType (output_instance);
+  table->ports[address] = instance_table_t::PortValueType (address, output_instance, output_field);
 }
 
 static typed_value_t evaluate_static_rvalue (ast_t* node, size_t receiver_address);
@@ -699,41 +700,143 @@ instance_table_analyze_composition (const instance_table_t * table)
   }
 }
 
+std::ostream&
+operator<< (std::ostream& o,
+            const instance_t& i)
+{
+  o << '<' << *i.type () << ',' << i.address () << '>';
+  return o;
+}
+
+std::ostream&
+operator<< (std::ostream& o,
+            const instance_t::ConcreteAction& ca)
+{
+  o << '{' << ca.action->node ()->line << ',' << ca.iota;
+  for (instance_set_t::const_iterator pos = ca.set.begin (),
+         limit = ca.set.end ();
+       pos != limit;
+       ++pos)
+    {
+      o << ',' << '(' << *pos->first << ',';
+      switch (pos->second)
+        {
+        case TRIGGER_READ:
+          o << "READ";
+          break;
+        case TRIGGER_WRITE:
+          o << "WRITE";
+          break;
+        }
+      o << ')';
+    }
+  o << '}';
+  return o;
+}
+
+std::ostream&
+operator<< (std::ostream& o,
+            const instance_table_t::PortValueType& pv)
+{
+  o << '[' << *pv.output_instance << ',' << get (field_name (pv.output_field)) << ',' << pv.address << ']' << " ->";
+
+  for (instance_table_t::InputsType::const_iterator p = pv.inputs.begin (),
+         l = pv.inputs.end ();
+       p != l;
+       ++p)
+    {
+      o << ' ' << '(' << *p->instance << ',' << get (p->reaction->name ()) << ',' << p->parameter << ')';
+    }
+
+  return o;
+}
+
+static bool independent (const instance_set_t& x, const instance_set_t& y)
+{
+  instance_set_t::const_iterator xpos = x.begin ();
+  instance_set_t::const_iterator ypos = y.begin ();
+
+  while (xpos != x.end () && ypos != y.end ())
+    {
+      if (xpos->first < ypos->first)
+        {
+          ++xpos;
+        }
+      else if (ypos->first < xpos->first)
+        {
+          ++ypos;
+        }
+      else
+        {
+          if (xpos->second == TRIGGER_WRITE || ypos->second == TRIGGER_WRITE)
+            {
+              return false;
+            }
+          else
+            {
+              ++xpos;
+              ++ypos;
+            }
+        }
+    }
+
+  return true;
+}
+
 void
 instance_table_dump (const instance_table_t * table)
 {
-  {
-    printf ("instances\n");
-    printf ("%s\t%s\n", "address", "type");
-    for (instance_table_t::InstancesType::const_iterator pos = table->instances.begin (),
-           limit = table->instances.end ();
-         pos != limit;
-         ++pos)
+  std::cout << "instances\n";
+  for (instance_table_t::InstancesType::const_iterator pos = table->instances.begin (),
+         limit = table->instances.end ();
+       pos != limit;
+       ++pos)
     {
-      printf ("%zd\t%s\n", pos->first, pos->second->type ()->to_string ().c_str ());
+      std::cout << *pos->second << '\n';
     }
-    printf ("\n");
-  }
+  std::cout << '\n';
 
-  {
-    printf ("ports\n");
-    printf ("%s\t%s\n", "address", "inputs");
-    for (instance_table_t::PortsType::const_iterator pos = table->ports.begin (),
-           limit = table->ports.end ();
-         pos != limit;
-         ++pos)
+  std::cout << "ports\n";
+  for (instance_table_t::PortsType::const_iterator pos = table->ports.begin (),
+         limit = table->ports.end ();
+       pos != limit;
+       ++pos)
     {
-      printf ("%zd\t", pos->first);
+      std::cout << pos->second << '\n';
+    }
+  std::cout << '\n';
 
-      for (instance_table_t::InputsType::const_iterator p = pos->second.inputs.begin (),
-             l = pos->second.inputs.end ();
-           p != l;
-           ++p)
+  std::cout << "actions\n";
+  typedef std::vector<instance_t::ConcreteAction> ActionsType;
+  ActionsType actions;
+  for (instance_table_t::InstancesType::const_iterator instance_pos = table->instances.begin (),
+         instance_limit = table->instances.end ();
+       instance_pos != instance_limit;
+       ++instance_pos)
+    {
+      for (instance_t::InstanceSetsType::const_iterator action_pos = instance_pos->second->instance_sets.begin (),
+             action_limit = instance_pos->second->instance_sets.end ();
+           action_pos != action_limit;
+           ++action_pos)
         {
-          printf ("(%zd,%s,%ld) ", p->instance->address (), get (p->reaction->name ()), p->parameter);
+          std::cout << "Action " << *instance_pos->second << ' ' << *action_pos << '\n';
+          actions.push_back (*action_pos);
         }
-      printf ("\n");
     }
-    printf ("\n");
-  }
+  std::cout << '\n';
+
+  std::cout << "graph {\n";
+  for (ActionsType::const_iterator pos = actions.begin (), limit = actions.end ();
+       pos != limit;
+       ++pos)
+    {
+      for (ActionsType::const_iterator pos2 = pos + 1; pos2 != limit; ++pos2)
+        {
+          if (!independent (pos->set, pos2->set))
+            {
+              std::cout << '"' << *pos << '"' << " -- " << '"' << *pos2 << '"' << '\n';
+            }
+        }
+    }
+  std::cout << "}\n";
 }

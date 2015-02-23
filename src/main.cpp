@@ -37,16 +37,18 @@ try_help (void)
 int
 main (int argc, char **argv)
 {
+  int show_composition = 0;
+
   while (true)
     {
       static struct option long_options[] = {
-	{"debug", no_argument, &debug, 1},
+	{"composition", no_argument, &show_composition, 1},
 	{"help", no_argument, NULL, 'h'},
 	{"version", no_argument, NULL, 'v'},
 	{0, 0, 0, 0}
       };
 
-      int c = getopt_long (argc, argv, "dhv", long_options, NULL);
+      int c = getopt_long (argc, argv, "chv", long_options, NULL);
 
       if (c == -1)
 	break;
@@ -55,8 +57,8 @@ main (int argc, char **argv)
 	{
 	case 0:
 	  break;
-	case 'd':
-	  debug = 1;
+	case 'c':
+	  show_composition = 1;
 	  break;
 	case 'v':
 	  print_version ();
@@ -66,7 +68,7 @@ main (int argc, char **argv)
 	  printf ("Usage: %s OPTION... FILE \n",
 		  program_invocation_short_name);
 	  puts ("Compile " PACKAGE_NAME " source code.\n" "\n"
-		"  -d, --debug turn on debugging output\n"
+		"  -c, --composition print composition analysis and exit\n"
 		"  --help      display this help and exit\n"
 		"  --version   display version information and exit\n" "\n"
 		"Report bugs to: " PACKAGE_BUGREPORT);
@@ -101,21 +103,11 @@ main (int argc, char **argv)
     }
   assert (root != NULL);
 
-  if (debug)
-    {
-      ast_print (*root);
-    }
-
   /* Check the semantics. */
   construct_symbol_table (root);
   enter_symbols (root);
   process_declarations (root);
   process_definitions (root);
-
-  if (debug)
-    {
-      ast_print (*root);
-    }
 
   /* Check composition. */
   instance_table_t *instance_table = instance_table_make ();
@@ -123,9 +115,10 @@ main (int argc, char **argv)
   instance_table_enumerate_bindings (instance_table);
   instance_table_analyze_composition (instance_table);
 
-  if (debug)
+  if (show_composition)
     {
       instance_table_dump (instance_table);
+      return 0;
     }
 
   /* Calculate the offsets of all stack variables. */

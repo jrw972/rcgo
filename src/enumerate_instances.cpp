@@ -5,18 +5,27 @@
 #include "symbol.hpp"
 
 static void
-instantiate_contained_instances (const named_type_t * type, instance_table_t * instance_table, method_t* method, size_t address)
+instantiate_contained_instances (const type_t * type, instance_table_t * instance_table, instance_t* parent, method_t* method, size_t address)
 {
   struct visitor : public const_type_visitor_t
   {
-    instance_table_t* instance_table;
-    method_t* method;
-    size_t address;
-    const named_type_t* last_named_type;
-    instance_t* parent;
-    instance_t* last_instance;
+    instance_table_t* const instance_table;
+    instance_t* const parent;
+    method_t* const method;
+    size_t const address;
+    field_t* const field;
 
-    visitor (instance_table_t* it, method_t* m, size_t a) : instance_table (it), method (m), address (a), last_named_type (NULL), parent (NULL), last_instance (NULL) { }
+    const named_type_t* named_type;
+
+    visitor (instance_table_t* it, instance_t* p, method_t* m, size_t a, field_t* f)
+      : instance_table (it)
+      , parent (p)
+      , method (m)
+      , address (a)
+      , field (f)
+
+      , named_type (NULL)
+    { }
 
     void default_action (const type_t& type)
     {
@@ -25,49 +34,48 @@ instantiate_contained_instances (const named_type_t * type, instance_table_t * i
 
     void visit (const named_type_t& type)
     {
-      last_named_type = &type;
+      // Save the named typed.
+      named_type = &type;
       type.subtype ()->accept (*this);
     }
 
     void visit (const component_type_t& type)
     {
-      assert (last_named_type != NULL);
-      last_instance = instance_table_insert (instance_table, parent, last_named_type, method, address);
-      if (parent == NULL)
-        {
-          parent = last_instance;
-        }
-      last_named_type = NULL;
-      method = NULL;
-      type.field_list ()->accept (*this);
+      assert (named_type != NULL);
+      instance_t* instance = instance_table_insert (instance_table, parent, named_type, method, address);
+
+      // Recur changing instance.
+      visitor v (instance_table, instance, NULL, address, NULL);
+      type.field_list ()->accept (v);
     }
 
     void visit (const field_list_type_t& type)
     {
-      for (field_list_type_t::const_iterator field = type.begin (),
+      for (field_list_type_t::const_iterator pos = type.begin (),
              limit = type.end ();
-           field != limit;
-           ++field)
+           pos != limit;
+           ++pos)
         {
-          address += field_offset (*field);
-          field_type (*field)->accept (*this);
-          address -= field_offset (*field);
+          // Recur changing address (and field).
+          visitor v (instance_table, parent, NULL, address + field_offset (*pos), *pos);
+          field_type (*pos)->accept (v);
         }
     }
 
     void visit (const array_type_t& type)
     {
-      size_t address_before = address;
       for (size_t idx = 0; idx != type.dimension (); ++idx)
         {
-          address = address_before + idx * type.element_size ();
-          type.base_type ()->accept (*this);
+          // Recur changing address.
+          visitor v (instance_table, parent, NULL, address + idx * type.element_size (), field);
+          type.base_type ()->accept (v);
         }
-      address = address_before;
     }
 
     void visit (const struct_type_t& type)
-    { }
+    {
+      type.field_list ()->accept (*this);
+    }
 
     void visit (const bool_type_t& type)
     { }
@@ -80,10 +88,10 @@ instantiate_contained_instances (const named_type_t * type, instance_table_t * i
 
     void visit (const port_type_t& type)
     {
-      instance_table_insert_port (instance_table, address, last_instance);
+      instance_table_insert_port (instance_table, address, parent, field);
     }
   };
-  visitor v (instance_table, method, address);
+  visitor v (instance_table, parent, method, address, NULL);
   type->accept (v);
 }
 
@@ -108,7 +116,7 @@ enumerate_instances (ast_t * node, instance_table_t * instance_table)
       symbol_t *symbol = node.symbol.symbol ();
       const named_type_t *type = symbol_get_instance_type (symbol);
       method_t* method = symbol_get_instance_method (symbol);
-      instantiate_contained_instances (type, instance_table, method, address);
+      instantiate_contained_instances (type, instance_table, NULL, method, address);
       address += type->size ();
     }
 
