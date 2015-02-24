@@ -5,6 +5,7 @@
 #include "function.hpp"
 #include "action.hpp"
 #include "bind.hpp"
+#include "method.hpp"
 
 void
 process_declarations (ast_t * node)
@@ -100,7 +101,7 @@ process_declarations (ast_t * node)
       /* Process the return type. */
       const type_t *return_type = process_type_spec (return_type_node, true);
 
-      function_t* function = function_make (&node, symbol_identifier (symbol), signature, return_type);
+      function_t* function = new function_t (&node, symbol_identifier (symbol), new function_type_t (signature, return_type));
       symbol_set_function_function (symbol, function);
       symtab_set_current_function (node.symtab, function);
 
@@ -145,15 +146,21 @@ process_declarations (ast_t * node)
         }
 
       /* Process the signature. */
-      signature_type_t *signature = const_cast<signature_type_t*> (dynamic_cast<const signature_type_t*> (process_type_spec (signature_node, true)));
-      /* Prepend the signature with the receiver. */
-      signature->prepend (ast_get_identifier (receiver->at (RECEIVER_THIS_IDENTIFIER)),
-                          this_type, true);
+      const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
 
       /* Process the return type. */
       const type_t *return_type = process_type_spec (return_type_node, true);
 
-      method_t* method = type->add_method (&node, identifier, signature, return_type);
+
+      method_type_t* method_type = new method_type_t (type,
+                                                      ast_get_identifier (receiver->at (RECEIVER_THIS_IDENTIFIER)),
+                                                      this_type,
+                                                      signature,
+                                                      return_type);
+
+
+      method_t* method = new method_t (&node, identifier, method_type);
+      type->add_method (method);
       symtab_set_current_method (node.symtab, method);
       symtab_set_current_receiver_type (node.symtab, type);
     }

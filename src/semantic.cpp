@@ -201,29 +201,25 @@ allocate_stack_variables (ast_t* node, memory_model_t* memory_model)
     void visit (ast_action_t& node)
     {
       action_reaction_base_t* action = get_current_action (&node);
-      size_t locals_size = allocate_stack_variables_helper (&node, node.body ());
-      action->locals_size = locals_size;
+      action->locals_size = allocate_stack_variables_helper (&node, node.body ());
     }
 
     void visit (ast_dimensioned_action_t& node)
     {
       action_reaction_base_t* action = get_current_action (&node);
-      size_t locals_size = allocate_stack_variables_helper (&node, node.body ());
-      action->locals_size = locals_size;
+      action->locals_size = allocate_stack_variables_helper (&node, node.body ());
     }
 
     void visit (ast_function_t& node)
     {
       function_t* function = get_current_function (&node);
-      size_t locals_size = allocate_stack_variables_helper (&node, node.at (FUNCTION_BODY));
-      function_set_locals_size (function, locals_size);
+      function->locals_size = allocate_stack_variables_helper (&node, node.at (FUNCTION_BODY));
     }
 
     void visit (ast_method_t& node)
     {
       method_t* method = get_current_method (&node);
-      size_t locals_size = allocate_stack_variables_helper (&node, node.at (METHOD_BODY));
-      method_set_locals_size (method, locals_size);
+      method->locals_size = allocate_stack_variables_helper (&node, node.at (METHOD_BODY));
     }
 
     void visit (ast_reaction_t& node)

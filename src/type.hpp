@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include "parameter.hpp"
 
 class const_type_visitor_t;
 
@@ -32,6 +33,55 @@ operator<< (std::ostream& o, const type_t& type)
 {
   return o << type.to_string ();
 }
+
+class named_type_t : public type_t
+{
+public:
+  named_type_t (string_t name)
+    : name_ (name)
+    , subtype_ (NULL)
+  { }
+
+  named_type_t (string_t name,
+                const type_t* subtype);
+
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const
+  {
+    return get (name_);
+  }
+
+  void subtype (const type_t* s) { subtype_ = s; }
+  const type_t* subtype () const { return subtype_; }
+  virtual size_t alignment () const { return subtype_->alignment (); }
+  virtual size_t size () const { return subtype_->size (); }
+  virtual TypeLevel level () const { return NAMED_TYPE; }
+
+  void add_method (method_t* method) { methods_.push_back (method); }
+  method_t* get_method (string_t identifier) const;
+
+  void add_action (action_t* action) { actions_.push_back (action); }
+  typedef std::vector<action_t*> ActionsType;
+  ActionsType::const_iterator actions_begin () const { return actions_.begin (); }
+  ActionsType::const_iterator actions_end () const { return actions_.end (); }
+
+  typedef std::vector<reaction_t*> ReactionsType;
+  void add_reaction (reaction_t* reaction) { reactions_.push_back (reaction); }
+  reaction_t * get_reaction (string_t identifier) const;
+
+  void add_bind (bind_t* bind) { binds_.push_back (bind); }
+  typedef std::vector<bind_t*> BindsType;
+  BindsType::const_iterator binds_begin () const { return binds_.begin (); }
+  BindsType::const_iterator binds_end () const { return binds_.end (); }
+
+private:
+  string_t name_;
+  const type_t* subtype_;
+  std::vector<method_t*> methods_;
+  ActionsType actions_;
+  ReactionsType reactions_;
+  BindsType binds_;
+};
 
 class void_type_t : public type_t
 {
@@ -262,6 +312,8 @@ class signature_type_t : public type_t
 {
 public:
   typedef std::vector<parameter_t*> ParametersType;
+  typedef ParametersType::const_iterator const_iterator;
+
   void accept (const_type_visitor_t& visitor) const;
   std::string to_string () const;
   size_t alignment () const { not_reached; }
@@ -270,8 +322,8 @@ public:
 
   size_t arity () const { return parameters_.size (); }
   parameter_t* at (size_t idx) const { return parameters_.at (idx); }
-  ParametersType::const_iterator begin () const { return parameters_.begin (); }
-  ParametersType::const_iterator end () const { return parameters_.end (); }
+  const_iterator begin () const { return parameters_.begin (); }
+  const_iterator end () const { return parameters_.end (); }
   parameter_t * find (string_t name) const;
 
   void
@@ -286,11 +338,11 @@ private:
   ParametersType parameters_;
 };
 
-class func_type_t : public type_t
+class function_type_t : public type_t
 {
 public:
-  func_type_t (const signature_type_t * signature,
-               const type_t * return_type)
+  function_type_t (const signature_type_t * signature,
+                   const type_t * return_type)
     : signature_ (signature)
     , return_type_ (return_type)
   { }
@@ -311,6 +363,55 @@ public:
 private:
   const signature_type_t *signature_;
   const type_t *return_type_;
+};
+
+class method_type_t : public type_t
+{
+public:
+  method_type_t (const named_type_t* named_type_,
+                 string_t this_name,
+                 const type_t* receiver_type_,
+                 const signature_type_t * signature_,
+                 const type_t * return_type_)
+    : named_type (named_type_)
+    , receiver_type (receiver_type_)
+    , signature (signature_)
+    , return_type (return_type_)
+    , function_type (make_function_type (this_name, receiver_type_, signature_, return_type_))
+  {
+  }
+
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const
+  {
+    std::stringstream str;
+    str << '(' << *receiver_type << ')' << " func " << *signature << ' ' << *return_type;
+    return str.str ();
+  }
+  size_t alignment () const { return sizeof (void*); }
+  size_t size () const { return sizeof (void*); }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+
+  const named_type_t* const named_type;
+  const type_t* const receiver_type;
+  const signature_type_t* const signature;
+  const type_t* const return_type;
+  const function_type_t* function_type;
+
+private:
+  static function_type_t* make_function_type (string_t this_name, const type_t* receiver_type, const signature_type_t* signature, const type_t* return_type)
+  {
+    signature_type_t* sig = new signature_type_t ();
+    sig->append (this_name, receiver_type, true);
+    for (signature_type_t::const_iterator pos = signature->begin (),
+           limit = signature->end ();
+         pos != limit;
+         ++pos)
+      {
+        sig->append (parameter_name (*pos), parameter_type (*pos), false);
+      }
+    return new function_type_t (sig, return_type);
+  }
 };
 
 class port_type_t : public type_t
@@ -359,55 +460,6 @@ private:
   const signature_type_t *signature_;
 };
 
-class named_type_t : public type_t
-{
-public:
-  named_type_t (string_t name)
-    : name_ (name)
-    , subtype_ (NULL)
-  { }
-
-  named_type_t (string_t name,
-                const type_t* subtype);
-
-  void accept (const_type_visitor_t& visitor) const;
-  std::string to_string () const
-  {
-    return get (name_);
-  }
-
-  void subtype (const type_t* s) { subtype_ = s; }
-  const type_t* subtype () const { return subtype_; }
-  virtual size_t alignment () const { return subtype_->alignment (); }
-  virtual size_t size () const { return subtype_->size (); }
-  virtual TypeLevel level () const { return NAMED_TYPE; }
-
-  method_t* add_method (ast_t* node, string_t identifier, const signature_type_t* signature, const type_t* return_type);
-  method_t* get_method (string_t identifier) const;
-
-  void add_action (action_t* action) { actions_.push_back (action); }
-  typedef std::vector<action_t*> ActionsType;
-  ActionsType::const_iterator actions_begin () const { return actions_.begin (); }
-  ActionsType::const_iterator actions_end () const { return actions_.end (); }
-
-  typedef std::vector<reaction_t*> ReactionsType;
-  void add_reaction (reaction_t* reaction) { reactions_.push_back (reaction); }
-  reaction_t * get_reaction (string_t identifier) const;
-
-  void add_bind (bind_t* bind) { binds_.push_back (bind); }
-  typedef std::vector<bind_t*> BindsType;
-  BindsType::const_iterator binds_begin () const { return binds_.begin (); }
-  BindsType::const_iterator binds_end () const { return binds_.end (); }
-
-private:
-  string_t name_;
-  const type_t* subtype_;
-  std::vector<method_t*> methods_;
-  ActionsType actions_;
-  ReactionsType reactions_;
-  BindsType binds_;
-};
-
 class nil_type_t : public type_t
 {
 public:
@@ -449,7 +501,8 @@ struct const_type_visitor_t
   virtual void visit (const bool_type_t& type) { default_action (type); }
   virtual void visit (const component_type_t& type) { default_action (type); }
   virtual void visit (const field_list_type_t& type) { default_action (type); }
-  virtual void visit (const func_type_t& type) { default_action (type); }
+  virtual void visit (const function_type_t& type) { default_action (type); }
+  virtual void visit (const method_type_t& type) { default_action (type); }
   virtual void visit (const heap_type_t& type) { default_action (type); }
   virtual void visit (const iota_type_t& type) { default_action (type); }
   virtual void visit (const named_type_t& type) { default_action (type); }
@@ -553,11 +606,5 @@ type_cast (const type_t * type)
   type->accept (v);
   return v.retval;
 }
-
-// TODO:  Extract a base class and make these members.
-bool type_is_callable (const type_t * type);
-size_t type_parameter_count (const type_t * type);
-const type_t* type_parameter_type (const type_t * type, size_t size);
-const type_t* type_return_type (const type_t * type);
 
 #endif /* type_hpp */

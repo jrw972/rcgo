@@ -15,6 +15,7 @@
 #include "semantic.hpp"
 #include "heap.hpp"
 #include <error.h>
+#include "function.hpp"
 
 struct instance_record_t {
   // Scheduling lock.
@@ -228,10 +229,10 @@ static void evaluate_lvalue_select_expr (thread_runtime_t* runtime, const ast_se
   typed_value_t selected_type = ast_get_typed_value (expr);
   typed_value_t type = ast_get_typed_value (left);
 
-  if (dynamic_cast<const func_type_t*> (selected_type.type))
+  if (dynamic_cast<const function_type_t*> (selected_type.type))
     {
       method_t* method = dynamic_cast<const named_type_t*> (type.type)->get_method (identifier);
-      stack_frame_push_pointer (runtime->stack, method_node (method));
+      stack_frame_push_pointer (runtime->stack, method->node);
       return;
     }
 
@@ -322,18 +323,31 @@ evaluate_statement (thread_runtime_t* runtime,
 static void
 call (thread_runtime_t* runtime)
 {
-  ast_t* node = (ast_t*)stack_frame_pop_pointer (runtime->stack);
+  const ast_t* node = static_cast<const ast_t*> (stack_frame_pop_pointer (runtime->stack));
 
-  struct visitor : public ast_visitor_t
+  struct visitor : public ast_const_visitor_t
   {
     thread_runtime_t* runtime;
 
     visitor (thread_runtime_t* r) : runtime (r) { }
 
-    void visit (ast_method_t& node)
+    void default_action (const ast_method_t& node)
+    {
+      not_reached;
+    }
+
+    void visit (const ast_function_t& node)
+    {
+      function_t* function = get_current_function (&node);
+      stack_frame_push_base_pointer (runtime->stack, function->locals_size);
+      evaluate_statement (runtime, node.at (FUNCTION_BODY));
+      stack_frame_pop_base_pointer (runtime->stack);
+    }
+
+    void visit (const ast_method_t& node)
     {
       method_t* method = get_current_method (&node);
-      stack_frame_push_base_pointer (runtime->stack, method_get_locals_size (method));
+      stack_frame_push_base_pointer (runtime->stack, method->locals_size);
       evaluate_statement (runtime, node.at (METHOD_BODY));
       stack_frame_pop_base_pointer (runtime->stack);
     }
@@ -420,9 +434,14 @@ evaluate_rvalue (thread_runtime_t* runtime,
           stack_frame_push_pointer (runtime->stack, NULL);
         }
 
-        void visit (const func_type_t&)
+        void visit (const function_type_t&)
         {
-          stack_frame_push_pointer (runtime->stack, method_node (tv.method_value));
+          stack_frame_push_pointer (runtime->stack, tv.function_value->node);
+        }
+
+        void visit (const method_type_t&)
+        {
+          stack_frame_push_pointer (runtime->stack, tv.method_value->node);
         }
 
         void default_action (const type_t& type)
@@ -1493,7 +1512,7 @@ void runtime_run (runtime_t* r,
           // Push a fake instruction pointer.
           stack_frame_push_pointer (runtime.stack, NULL);
           char* top_after = stack_frame_top (runtime.stack);
-          stack_frame_push_pointer (runtime.stack, method_node (instance->method ()));
+          stack_frame_push_pointer (runtime.stack, instance->method ()->node);
           call (&runtime);
           stack_frame_pop (runtime.stack, top_after - top_before);
         }

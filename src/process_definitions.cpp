@@ -43,10 +43,7 @@ static void check_identifier_expr (ast_identifier_expr_t& node)
   switch (symbol_kind (symbol))
     {
     case SymbolFunction:
-      {
-        type_t* t = function_type (symbol_get_function_function (symbol));
-        node.set_type (typed_value_make (t, TV_CONSTANT));
-      }
+      node.set_type (typed_value_make_function (symbol_get_function_function (symbol)));
       break;
 
     case SymbolInstance:
@@ -323,118 +320,11 @@ static void arithmetic_assign (ast_binary_t* node, const char* symbol)
 
 static void check_rvalue_list (ast_t * node);
 
-static void
-check_call (ast_expr_t * node, ast_t * args, const type_t * expr_type)
-{
-  size_t argument_count = args->size ();
-  size_t parameter_count = type_parameter_count (expr_type);
-  if (argument_count != parameter_count)
-    {
-      error_at_line (-1, 0, node->file, node->line,
-		     "call expects %zd arguments but given %zd",
-		     parameter_count, argument_count);
-    }
-
-  for (size_t idx = 0; idx != argument_count; ++idx)
-    {
-      ast_t *arg = args->at (idx);
-      typed_value_t argument_tv  = ast_get_typed_value (arg);
-      const type_t *parameter_type = type_parameter_type (expr_type, idx);
-      typed_value_t parameter_tv = typed_value_make (parameter_type, TV_MUTABLE);
-      if (!type_is_convertible (parameter_tv.type, argument_tv.type))
-        {
-          error_at_line (-1, 0, arg->file,
-                         arg->line,
-                         "cannot convert %s to %s for argument %zd", argument_tv.type->to_string ().c_str (), parameter_tv.type->to_string ().c_str (), idx);
-        }
-    }
-
-  // Set the return type.
-  node->set_type (typed_value_make (type_return_type (expr_type), TV_MUTABLE));
-}
-
 static bool
 in_mutable_section (const ast_t* node)
 {
   return get_current_action (node) != NULL &&
     get_current_trigger (node) != NULL;
-}
-
-struct extract_method_visitor_t : public ast_const_visitor_t
-{
-  method_t* retval;
-
-  extract_method_visitor_t () : retval (NULL) { }
-
-  void default_action (const ast_t& node)
-  {
-    not_reached;
-  }
-
-  void visit (const ast_identifier_expr_t& node)
-  {
-    // Do nothing.
-  }
-
-  void visit (const ast_select_expr_t& node)
-  {
-    ast_t *left = node.base ();
-    ast_t *right = node.identifier ();
-    string_t identifier = ast_get_identifier (right);
-
-    const type_t* t = ast_get_typed_value (left).type;
-
-    if (type_cast<pointer_type_t> (t))
-      {
-        // Selecting from a pointer.  Insert a dereference.
-        unimplemented;
-        //t = type_pointer_base_type (t);
-      }
-
-    retval = dynamic_cast<const named_type_t*> (t)->get_method (identifier);
-  }
-};
-
-// TODO:  Fold this into check rvalue.
-static method_t*
-extract_method (const ast_t* node)
-{
-  extract_method_visitor_t extract_method_visitor;
-  node->accept (extract_method_visitor);
-  return extract_method_visitor.retval;
-}
-
-struct extract_function_visitor_t : public ast_const_visitor_t
-{
-  function_t* retval;
-
-  extract_function_visitor_t () : retval (NULL) { }
-
-  void default_action (const ast_t& node)
-  {
-    not_reached;
-  }
-
-  void visit (const ast_identifier_expr_t& node)
-  {
-    string_t s = ast_get_identifier (node.at (UNARY_CHILD));
-    symbol_t* symbol = symtab_find (node.symtab, s);
-    retval = symbol_get_function_function (symbol);
-  }
-
-  void visit (const ast_select_expr_t& node)
-  {
-    retval = NULL;
-  }
-};
-
-// TODO:  Fold this into check rvalue.
-static function_t*
-extract_function (const ast_t* node)
-{
-  extract_function_visitor_t extract_function_visitor;
-  node->accept (extract_function_visitor);
-  return extract_function_visitor.retval;
 }
 
 static bool logic_or (bool x, bool y) { return x || y; }
@@ -484,6 +374,38 @@ type_check_rvalue (ast_t::iterator ptr)
       check_address_of (node);
     }
 
+    void check_call (ast_expr_t& node, const signature_type_t* signature, const type_t* return_type, ast_t* args)
+    {
+      size_t argument_count = args->size ();
+      size_t parameter_count = signature->arity ();
+      if (argument_count != parameter_count)
+        {
+          error_at_line (-1, 0, node.file, node.line,
+                         "method call expects %zd arguments but given %zd",
+                         parameter_count, argument_count);
+        }
+
+      size_t idx = 0;
+      for (signature_type_t::const_iterator pos = signature->begin (),
+             limit = signature->end ();
+           pos != limit;
+           ++pos, ++idx)
+        {
+          ast_t *arg = args->at (idx);
+          typed_value_t argument_tv  = ast_get_typed_value (arg);
+          typed_value_t parameter_tv = typed_value_make (parameter_type (*pos), TV_MUTABLE);
+          if (!type_is_convertible (parameter_tv.type, argument_tv.type))
+            {
+              error_at_line (-1, 0, arg->file,
+                             arg->line,
+                             "cannot convert %s to %s for argument %zd", argument_tv.type->to_string ().c_str (), parameter_tv.type->to_string ().c_str (), idx);
+            }
+        }
+
+      // Set the return type.
+      node.set_type (typed_value_make (return_type, TV_MUTABLE));
+    }
+
     void visit (ast_call_expr_t& node)
     {
       ast_t::iterator expr = node.expr_iter ();
@@ -496,28 +418,43 @@ type_check_rvalue (ast_t::iterator ptr)
       type_check_rvalue (expr);
 
       typed_value_t expr_tv = ast_get_typed_value (*expr);
-      if (!type_is_callable (expr_tv.type))
+
+      // Fixup method calls.
+      struct visitor : public const_type_visitor_t
+      {
+        check_rvalue_visitor_t& rvalue_visitor;
+        ast_call_expr_t& node;
+
+        visitor (check_rvalue_visitor_t& rv,
+                 ast_call_expr_t& n) : rvalue_visitor (rv), node (n) { }
+
+        void default_action (const type_t& type)
         {
           error_at_line (-1, 0, node.file, node.line,
-                         "cannot call %s", expr_tv.type->to_string ().c_str ());
+                         "cannot call %s", type.to_string ().c_str ());
+
         }
 
-      function_t* function = extract_function (*expr);
-      method_t* method = extract_method (*expr);
-
-      if (method != NULL)
+        void visit (const function_type_t& type)
         {
-          // Calling a method.
+          rvalue_visitor.check_call (node, type.signature (), type.return_type (), node.args ());
+        }
 
-          // The receiver is either a copy or a pointer.
-          bool receiver_is_pointer = type_dereference (type_parameter_type (expr_tv.type, 0));
+        void visit (const method_type_t& type)
+        {
+          rvalue_visitor.check_call (node, type.signature, type.return_type, node.args ());
 
           // Transfer the computation for the receiver to the argument list.
-          ast_t* receiver_select_expr = dynamic_cast<ast_select_expr_t*> (*expr)->base ();
+          // The receiver is either a copy or a pointer.
+          bool receiver_is_pointer = type_dereference (type.receiver_type);
+          ast_t* expr = node.expr ();
+          ast_t* args = node.args ();
+
+          ast_t* receiver_select_expr = dynamic_cast<ast_select_expr_t*> (expr)->base ();
           if (receiver_is_pointer)
             {
               ast_address_of_expr_t* e = new ast_address_of_expr_t (node.line, receiver_select_expr);
-              check_address_of (*e);
+              rvalue_visitor.check_address_of (*e);
               args->prepend (e);
             }
           else
@@ -527,8 +464,8 @@ type_check_rvalue (ast_t::iterator ptr)
 
           if (in_mutable_section (&node))
             {
-              named_type_t* t = method_named_type (method);
-              if (type_cast<component_type_t> (t))
+              const named_type_t* t = type.named_type;
+              if (type_cast<component_type_t> (type_strip (t)))
                 {
                   // Invoking a method on a component in a mutable section.
                   // Ensure the receiver is this.
@@ -536,23 +473,12 @@ type_check_rvalue (ast_t::iterator ptr)
                   unimplemented;
                 }
             }
-
-          // Replace the callee with a literal or expression.
-          *expr = ast_make_typed_literal (node.line, typed_value_make_method (method));
         }
-      else if (function != NULL)
-        {
-          // Calling a function.
+      };
 
-          // Replace the callee with a literal or expression.
-          *expr = ast_make_typed_literal (node.line, typed_value_make_function (function));
-        }
-      else
-        {
-          unimplemented;
-        }
-
-      check_call (&node, args, expr_tv.type);
+      visitor v (*this, node);
+      expr_tv.type->accept (v);
+      assert (expr_tv.has_value);
     }
 
     void visit (ast_dereference_expr_t& node)
@@ -678,26 +604,17 @@ type_check_rvalue (ast_t::iterator ptr)
     void visit (ast_port_call_expr_t& node)
     {
       ast_t *expr = node.identifier ();
+      ast_t *args = node.args ();
       string_t port_identifier = ast_get_identifier (expr);
       const type_t *this_type = get_current_receiver_type (&node);
-      const type_t *port_type = type_select (this_type, port_identifier);
-
+      const port_type_t *port_type = type_cast<port_type_t> (type_select (this_type, port_identifier));
       if (port_type == NULL)
         {
           error_at_line (-1, 0, node.file, node.line,
                          "no port named %s", get (port_identifier));
         }
-
-      if (!type_cast<port_type_t> (port_type))
-        {
-          error_at_line (-1, 0, node.file, node.line,
-                         "%s is not a port", get (port_identifier));
-        }
-
-      ast_t *args = node.args ();
       check_rvalue_list (args);
-      check_call (&node, args, port_type);
-
+      check_call (node, port_type->signature (), void_type_t::instance (), args);
       node.field = type_select_field (this_type, port_identifier);
     }
 
@@ -734,7 +651,7 @@ type_check_rvalue (ast_t::iterator ptr)
 
       ast_t *args = node.args ();
       check_rvalue_list (args);
-      check_call (&node, args, port_type);
+      check_call (node, port_type->signature (), void_type_t::instance (), args);
 
       node.field = type_select_field (this_type, port_identifier);
       node.array_type = array_type;
@@ -1622,10 +1539,10 @@ process_definitions (ast_t * node)
       function_t *function = get_current_function (&node);
 
       /* Enter the return type into the symbol table. */
-      enter_symbol (node.symtab, symbol_make_return_parameter (enter ("0return"), function_return_type (function), return_type_node), node.return_symbol);
+      enter_symbol (node.symtab, symbol_make_return_parameter (enter ("0return"), function->func_type->return_type (), return_type_node), node.return_symbol);
 
       /* Enter the signature into the symbol table. */
-      enter_signature (signature_node, function_signature (function));
+      enter_signature (signature_node, function->func_type->signature ());
 
       type_check_statement (body_node);
       control_check_statement (body_node);
@@ -1639,10 +1556,10 @@ process_definitions (ast_t * node)
       method_t *method = get_current_method (&node);
 
       /* Enter the return type into the symbol table. */
-      enter_symbol (node.symtab, symbol_make_return_parameter (enter ("0return"), method_return_type (method), return_type_node), node.return_symbol);
+      enter_symbol (node.symtab, symbol_make_return_parameter (enter ("0return"), method->method_type->return_type, return_type_node), node.return_symbol);
 
       /* Enter the signature into the symbol table. */
-      enter_signature (signature_node, method_signature (method));
+      enter_signature (signature_node, method->method_type->function_type->signature ());
 
       type_check_statement (body_node);
       control_check_statement (body_node);
@@ -1662,7 +1579,7 @@ process_definitions (ast_t * node)
                          "no method named %s",
                          get (ast_get_identifier (initializer)));
         }
-      if (method_arity (method) != 1)
+      if (method->method_type->signature->arity () != 0)
         {
           error_at_line (-1, 0, initializer->file,
                          initializer->line,

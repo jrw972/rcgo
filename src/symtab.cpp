@@ -32,11 +32,7 @@ void symtab_print (const symtab_t* symtab)
                 function_t* function = symbol_get_function_function (symbol);
                 if (function)
                   {
-                    const type_t* type = function_type (function);
-                    if (type)
-                      {
-                        type_str = type->to_string ();
-                      }
+                    type_str = function->func_type->to_string ();
                   }
               }
               break;

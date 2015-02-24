@@ -1,24 +1,22 @@
-#ifndef function_h
-#define function_h
+#ifndef function_hpp
+#define function_hpp
 
 #include "types.hpp"
 #include "strtab.hpp"
 #include "type.hpp"
 
-function_t* function_make (ast_t* node,
-                           string_t identifier,
-                           const signature_type_t* signature,
-                           const type_t* return_type);
+struct function_t {
+  function_t (ast_t* node_, string_t name_, const function_type_t* func_type_)
+    : node (node_)
+    , name (name_)
+    , func_type (func_type_)
+    , locals_size (0)
+  { }
 
-type_t* function_type (const function_t* function);
+  ast_t* const node;
+  string_t const name;
+  const function_type_t* const func_type;
+  size_t locals_size;
+};
 
-const signature_type_t* function_signature (const function_t* function);
-
-const type_t* function_return_type (const function_t* function);
-
-void function_set_locals_size (function_t* function,
-                               size_t size);
-
-size_t function_get_locals_size (const function_t * function);
-
-#endif /* function_h */
+#endif /* function_hpp */

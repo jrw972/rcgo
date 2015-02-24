@@ -100,7 +100,7 @@ typed_value_t
 typed_value_make_method (method_t* method)
 {
   typed_value_t retval;
-  retval.type = method_type (method);
+  retval.type = method->method_type;
   retval.has_value = true;
   retval.method_value = method;
   return retval;
@@ -110,7 +110,7 @@ typed_value_t
 typed_value_make_function (function_t* function)
 {
   typed_value_t retval;
-  retval.type = function_type (function);
+  retval.type = function->func_type;
   retval.has_value = true;
   retval.function_value = function;
   return retval;

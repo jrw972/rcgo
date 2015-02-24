@@ -110,11 +110,21 @@ reaction (this $Process) init (v uint)
 }
 
 // TODO:  Use a loop.
-action (this $Process) (this.val[0] != 0u && this.val[1] != 0u && this.val[2] != 0u)
+func p (val [3]uint) bool
+{
+  return val[0] != 0u && val[1] != 0u && val[2] != 0u;
+}
+
+func f (val [3]uint) uint
+{
+  return val[0] + val[1] + val[2];
+}
+
+action (this $Process) (p (this.val))
 {
   // decide
   var v uint;
-  v = this.val[0] + this.val[1] + this.val[2];
+  v = f (this.val);
   println `Process `, this.i, ` decided the value is `, v;
   trigger decide (v)
   { };

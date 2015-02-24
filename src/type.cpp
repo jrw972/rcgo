@@ -4,20 +4,6 @@
 #include "field.hpp"
 #include "method.hpp"
 
-method_t*
-named_type_t::add_method (ast_t* node,
-                          string_t identifier,
-                          const signature_type_t* signature,
-                          const type_t* return_type)
-{
-  method_t *g =
-    method_make (this,
-                 node,
-                 identifier, signature, return_type);
-  this->methods_.push_back (g);
-  return g;
-}
-
 reaction_t *
 named_type_t::get_reaction (string_t identifier) const
 {
@@ -45,7 +31,7 @@ named_type_t::get_method (string_t identifier) const
        ++pos)
     {
       method_t *a = *pos;
-      if (streq (method_name (a), identifier))
+      if (streq (a->name, identifier))
         {
           return a;
         }
@@ -171,7 +157,7 @@ type_select (const type_t* type, string_t identifier)
   method_t* m = type_select_method (type, identifier);
   if (m)
     {
-      return method_type (m);
+      return m->method_type;
     }
 
   reaction_t* r = type_select_reaction (type, identifier);
@@ -213,86 +199,6 @@ signature_type_t::append (string_t parameter_name,
 {
   parameter_t *p = parameter_make (parameter_name, parameter_type, is_receiver);
   parameters_.push_back (p);
-}
-
-size_t
-type_parameter_count (const type_t * type)
-{
-  struct visitor : public const_type_visitor_t
-  {
-    size_t count;
-    visitor () : count (0) { }
-
-    void visit (const func_type_t& type)
-    {
-      type.signature ()->accept (*this);
-    }
-
-    void visit (const port_type_t& type)
-    {
-      type.signature ()->accept (*this);
-    }
-
-    void visit (const signature_type_t& type)
-    {
-      count = type.arity ();
-    }
-  };
-  visitor v;
-  type->accept (v);
-  return v.count;
-}
-
-const type_t *
-type_parameter_type (const type_t * type, size_t idx)
-{
-  struct visitor : public const_type_visitor_t
-  {
-    const type_t* retval;
-    size_t idx;
-    visitor (size_t i) : retval (NULL), idx (i) { }
-
-    void visit (const func_type_t& type)
-    {
-      type.signature ()->accept (*this);
-    }
-
-    void visit (const port_type_t& type)
-    {
-      type.signature ()->accept (*this);
-    }
-
-    void visit (const signature_type_t& type)
-    {
-      retval = parameter_type (type.at (idx));
-    }
-  };
-  visitor v (idx);
-  type->accept (v);
-  return v.retval;
-}
-
-const type_t *
-type_return_type (const type_t * type)
-{
-  struct visitor : public const_type_visitor_t
-  {
-    const type_t* retval;
-    visitor () : retval (NULL) { }
-
-    void visit (const func_type_t& type)
-    {
-      retval = type.return_type ();
-    }
-
-    void visit (const port_type_t& type)
-    {
-      retval = void_type_t::instance ();
-    }
-  };
-  visitor v;
-  type->accept (v);
-  return v.retval;
 }
 
 const type_t*
@@ -387,7 +293,13 @@ bool_type_t::accept (const_type_visitor_t& visitor) const
 }
 
 void
-func_type_t::accept (const_type_visitor_t& visitor) const
+function_type_t::accept (const_type_visitor_t& visitor) const
+{
+  visitor.visit (*this);
+}
+
+void
+method_type_t::accept (const_type_visitor_t& visitor) const
 {
   visitor.visit (*this);
 }
@@ -571,6 +483,16 @@ type_is_equal (const type_t * x, const type_t* y)
             }
 
           flag = true;
+        }
+    }
+
+    void visit (const array_type_t& type)
+    {
+      const array_type_t* x = &type;
+      const array_type_t* y = type_cast<array_type_t> (other);
+      if (y)
+        {
+          flag = type_is_equal (x->base_type (), y->base_type ());
         }
     }
   };
@@ -861,25 +783,6 @@ bool type_is_foreign_safe (const type_t* type)
             }
         }
 
-      flag = true;
-    }
-  };
-  visitor v;
-  type->accept (v);
-  return v.flag;
-}
-
-bool
-type_is_callable (const type_t * type)
-{
-  struct visitor : public const_type_visitor_t
-  {
-    bool flag;
-
-    visitor () : flag (false) { }
-
-    void visit (const func_type_t& type)
-    {
       flag = true;
     }
   };

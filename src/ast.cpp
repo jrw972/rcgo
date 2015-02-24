@@ -719,14 +719,14 @@ get_current_return_type (const ast_t * node)
     method_t* g = get_current_method (node);
     if (g != NULL)
       {
-        return method_return_type (g);
+        return g->method_type->return_type;
       }
   }
   {
     function_t* f = get_current_function (node);
     if (f != NULL)
       {
-        return function_return_type (f);
+        return f->func_type->return_type ();
       }
   }
 

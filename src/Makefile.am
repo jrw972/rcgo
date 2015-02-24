@@ -19,8 +19,8 @@ debug.hpp debug.cpp \
 enter_symbols.cpp \
 enumerate_instances.cpp \
 field.hpp field.cpp \
-function.hpp function.cpp \
-method.hpp method.cpp \
+function.hpp \
+method.hpp \
 heap.hpp heap.cpp \
 instance.hpp instance.cpp \
 memory_model.hpp memory_model.cpp \
