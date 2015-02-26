@@ -35,9 +35,9 @@ ast_print (const ast_t& node)
       print_expr (node, "address_of_expr");
     }
 
-    void visit (const ast_add_expr_t& node)
+    void visit (const ast_binary_arithmetic_expr_t& node)
     {
-      print_expr (node, "add_expr");
+      print_expr (node, "binary_arithmetic_expr");
     }
 
     void visit (const ast_logic_not_expr_t& node)
@@ -585,14 +585,6 @@ ast_t *ast_make_foreign_type_spec (unsigned int line, ast_t* type_spec)
   return retval;
 }
 
-ast_t *ast_make_if_stmt (unsigned int line, ast_t* condition, ast_t* true_branch)
-{
-  ast_t *retval = new ast_if_statement_t (line, 2);
-  retval->set (IF_CONDITION, condition);
-  retval->set (IF_TRUE_BRANCH, true_branch);
-  return retval;
-}
-
 ast_t *ast_make_new_expr (unsigned int line, ast_t* identifier)
 {
   ast_t *retval = new ast_new_expr_t (line, 1);
@@ -627,7 +619,7 @@ ACCEPT (ast_pointer_type_spec_t)
 ACCEPT (ast_port_type_spec_t)
 ACCEPT (ast_signature_type_spec_t)
 ACCEPT (ast_struct_type_spec_t)
-ACCEPT (ast_add_expr_t)
+ACCEPT (ast_binary_arithmetic_expr_t)
 ACCEPT (ast_address_of_expr_t)
 ACCEPT (ast_call_expr_t)
 ACCEPT (ast_dereference_expr_t)
@@ -651,6 +643,7 @@ ACCEPT (ast_change_statement_t)
 ACCEPT (ast_assign_statement_t)
 ACCEPT (ast_expression_statement_t)
 ACCEPT (ast_if_statement_t)
+ACCEPT (ast_while_statement_t)
 ACCEPT (ast_println_statement_t)
 ACCEPT (ast_list_statement_t)
 ACCEPT (ast_return_statement_t)

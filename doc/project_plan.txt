@@ -6,28 +6,10 @@ Practical:    High
 Estimate:     Easy, long, repetitive
 Dependencies: None
 
-Feature:      Local variables
-Academic:     Low
-Practical:    High
-Estimate:     Medium difficulty
-Dependencies: None
-
-Feature:      Functions
-Academic:     Low
-Practical:    High
-Estimate:     Medium difficulty
-Dependencies: None
-
 Feature:      Tail Recursion
 Academic:     Low
 Practical:    High
 Estimate:     Medium difficulty
-Dependencies: Functions
-
-Feature:      Methods
-Academic:     Low
-Practical:    Medium
-Estimate:     Easy once functions are done
 Dependencies: Functions
 
 Feature:      Interfaces
@@ -53,12 +35,6 @@ Academic:     Low
 Practical:    High
 Estimate:     Varying difficulty.  Interaction with components may present some difficulty.
 Dependencies: None
-
-Feature:      Pointer Types, Dynamic Memory, Garbage Collection
-Academic:     Medium/High
-Practical:    High
-Estimate:     Pointers require significant design work and semantic checking.  Easy to implement dynamic memory and garabage collection.  Difficult to make it efficient.
-Dependencies: Structs
 
 Feature:      Byte-code compilation and interpretation
 Academic:     Low
@@ -119,12 +95,6 @@ Academic:     Low
 Practical:    Low
 Estimate:     Very difficult.  Will require a complete reexamination of OS concepts.
 Dependencies: Various.
-
-Feature:      Synchronous getters
-Academic:     Medium (enable more parallelism)
-Practical:    High
-Estimate:     Easy to moderate depending on implementation of functions and methods
-Dependencies: None
 
 Feature:      Basic control structures (loop, conditional)
 Academic:     Low

@@ -57,11 +57,12 @@
 %type <node> type_spec
 %type <node> unary_expr
 %type <node> var_stmt
+%type <node> while_stmt
 %destructor { /* TODO:  Free the node. node_free ($$); */ } <node>
 
-%token ACTION BIND CHANGE COMPONENT CONST ELSE FOREIGN FUNC HEAP IF INSTANCE MERGE MOVE NEW PORT PRINTLN REACTION RETURN STRUCT TRIGGER TYPE VAR
+%token ACTION BIND CHANGE COMPONENT CONST ELSE FOREIGN FUNC HEAP IF INSTANCE MERGE MOVE NEW PORT PRINTLN REACTION RETURN STRUCT TRIGGER TYPE VAR WHILE
 
-%token ARROW DECREMENT DOTDOT EQUAL INCREMENT LOGIC_AND LOGIC_OR NOT_EQUAL
+%token ADD_ASSIGN ARROW DECREMENT DOTDOT EQUAL INCREMENT LOGIC_AND LOGIC_OR NOT_EQUAL
 
 %%
 
@@ -133,6 +134,7 @@ stmt: simple_stmt { $$ = $1; }
 | println_stmt { $$ = $1; }
 | return_stmt { $$ = $1; }
 | if_stmt { $$ = $1; }
+| while_stmt { $$ = $1; }
 | change_stmt { $$ = $1; }
 
 simple_stmt: empty_stmt { unimplemented; }
@@ -179,13 +181,16 @@ var_stmt: VAR identifier_list type_spec { $$ = ast_make_var_stmt (@1, $2, $3); }
 | VAR identifier_list '=' expr_list { unimplemented; }
 
 assignment_stmt: lvalue '=' rvalue { $$ = new ast_assign_statement_t (@1, $1, $3); }
+| lvalue ADD_ASSIGN rvalue { $$ = new ast_add_assign_statement_t (@1, $1, $3); }
 
-if_stmt: IF rvalue stmt_list { $$ = ast_make_if_stmt (@1, $2, $3); }
+if_stmt: IF rvalue stmt_list { $$ = new ast_if_statement_t (@1, $2, $3); }
 | IF rvalue stmt_list ELSE if_stmt { unimplemented; }
 | IF rvalue stmt_list ELSE stmt_list { unimplemented; }
 | IF simple_stmt ';' rvalue stmt_list { unimplemented; }
 | IF simple_stmt ';' rvalue stmt_list ELSE if_stmt { unimplemented; }
 | IF simple_stmt ';' rvalue stmt_list ELSE stmt_list { unimplemented; }
+
+while_stmt: WHILE rvalue stmt_list { $$ = new ast_while_statement_t (@1, $2, $3); }
 
 identifier_list: identifier { $$ = ast_make_identifier_list (@1)->append ($1); }
 | identifier_list ',' identifier { $$ = $1->append ($3); }
@@ -238,7 +243,7 @@ compare_expr: add_expr { $$ = $1; }
 | add_expr NOT_EQUAL compare_expr { $$ = new ast_not_equal_expr_t (@1, $1, $3); }
 
 add_expr: unary_expr { $$ = $1; }
-| unary_expr '+' add_expr { $$ = new ast_add_expr_t (@1, $1, $3); }
+| unary_expr '+' add_expr { $$ = new ast_binary_arithmetic_expr_t (@1, ADD, $1, $3); }
 | unary_expr '-' add_expr { unimplemented; }
 
 unary_expr: primary_expr { $$ = $1; }

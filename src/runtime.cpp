@@ -472,14 +472,17 @@ evaluate_rvalue (thread_runtime_t* runtime,
       evaluate_lvalue (runtime, node.child ());
     }
 
-    void visit (const ast_add_expr_t& node)
+    void visit (const ast_binary_arithmetic_expr_t& node)
     {
+      evaluate_rvalue (runtime, node.left ());
+      evaluate_rvalue (runtime, node.right ());
+
       struct visitor : public const_type_visitor_t
       {
         thread_runtime_t* runtime;
-        const ast_add_expr_t& node;
+        const ast_binary_arithmetic_expr_t& node;
 
-        visitor (thread_runtime_t* r, const ast_add_expr_t& n) : runtime (r), node (n) { }
+        visitor (thread_runtime_t* r, const ast_binary_arithmetic_expr_t& n) : runtime (r), node (n) { }
 
         void default_action (const type_t& type)
         {
@@ -493,20 +496,32 @@ evaluate_rvalue (thread_runtime_t* runtime,
 
         void visit (const uint_type_t& type)
         {
-          evaluate_rvalue (runtime, node.left ());
-          evaluate_rvalue (runtime, node.right ());
-          uint64_t v = stack_frame_pop_uint (runtime->stack);
-          v += stack_frame_pop_uint (runtime->stack);
-          stack_frame_push_uint (runtime->stack, v);
+          uint64_t right = stack_frame_pop_uint (runtime->stack);
+          uint64_t left = stack_frame_pop_uint (runtime->stack);
+          switch (node.arithmetic)
+            {
+            case ADD:
+              stack_frame_push_uint (runtime->stack, left + right);
+              break;
+            case SUBTRACT:
+              stack_frame_push_uint (runtime->stack, left - right);
+              break;
+            }
         }
 
         void visit (const int_type_t& type)
         {
-          evaluate_rvalue (runtime, node.left ());
-          evaluate_rvalue (runtime, node.right ());
-          uint64_t v = stack_frame_pop_int (runtime->stack);
-          v += stack_frame_pop_int (runtime->stack);
-          stack_frame_push_int (runtime->stack, v);
+          int64_t right = stack_frame_pop_int (runtime->stack);
+          int64_t left = stack_frame_pop_int (runtime->stack);
+          switch (node.arithmetic)
+            {
+            case ADD:
+              stack_frame_push_int (runtime->stack, left + right);
+              break;
+            case SUBTRACT:
+              stack_frame_push_int (runtime->stack, left - right);
+              break;
+            }
         }
       };
       visitor v (runtime, node);
@@ -923,15 +938,34 @@ evaluate_statement (thread_runtime_t* runtime,
 
     void visit (const ast_if_statement_t& node)
     {
-      ast_t* condition = node.at (IF_CONDITION);
-      evaluate_rvalue (runtime, condition);
+      evaluate_rvalue (runtime, node.condition ());
       bool c = stack_frame_pop_bool (runtime->stack);
       if (c)
         {
-          ast_t* true_branch = node.at (IF_TRUE_BRANCH);
-          if (evaluate_statement (runtime, true_branch) == RETURN)
+          if (evaluate_statement (runtime, node.true_branch ()) == RETURN)
             {
               retval = RETURN;
+              return;
+            }
+        }
+    }
+
+    void visit (const ast_while_statement_t& node)
+    {
+      for (;;)
+        {
+          evaluate_rvalue (runtime, node.condition ());
+          bool c = stack_frame_pop_bool (runtime->stack);
+          if (c)
+            {
+              if (evaluate_statement (runtime, node.body ()) == RETURN)
+                {
+                  retval = RETURN;
+                  return;
+                }
+            }
+          else
+            {
               return;
             }
         }

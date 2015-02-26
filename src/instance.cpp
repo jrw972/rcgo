@@ -590,7 +590,7 @@ transitive_closure (const instance_table_t * table,
       node.visit_children (*this);
     }
 
-    void visit (const ast_add_expr_t& node)
+    void visit (const ast_binary_arithmetic_expr_t& node)
     {
       node.visit_children (*this);
     }
@@ -839,4 +839,17 @@ instance_table_dump (const instance_table_t * table)
         }
     }
   std::cout << "}\n";
+
+  for (ActionsType::const_iterator pos = actions.begin (), limit = actions.end ();
+       pos != limit;
+       ++pos)
+    {
+      for (ActionsType::const_iterator pos2 = actions.begin (), limit2 = actions.end ();
+           pos2 != limit2;
+           ++pos2)
+        {
+          std::cout << *pos << ' ' << *pos2 << ' ' << independent (pos->set, pos2->set) << '\n';
+        }
+    }
+
 }

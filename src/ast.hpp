@@ -353,11 +353,20 @@ struct ast_binary_expr_t : public ast_expr_t
   iterator right_iter () { return begin () + RIGHT; }
 };
 
-struct ast_add_expr_t : public ast_binary_expr_t
+enum Arithmetic
+  {
+    ADD,
+    SUBTRACT,
+  };
+
+struct ast_binary_arithmetic_expr_t : public ast_binary_expr_t
 {
-  ast_add_expr_t (unsigned int line, ast_t* left, ast_t* right)
+  ast_binary_arithmetic_expr_t (unsigned int line, Arithmetic a, ast_t* left, ast_t* right)
     : ast_binary_expr_t (line, left, right)
+    , arithmetic (a)
   { }
+
+  const Arithmetic arithmetic;
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -730,9 +739,47 @@ struct ast_expression_statement_t : public ast_t
 
 struct ast_if_statement_t : public ast_t
 {
-  ast_if_statement_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
-  { }
+  enum
+    {
+      CONDITION,
+      TRUE_BRANCH,
+      COUNT,
+    };
+
+  ast_if_statement_t (unsigned int line, ast_t* condition, ast_t* true_branch)
+    : ast_t (line, COUNT)
+  {
+    children[CONDITION] = condition;
+    children[TRUE_BRANCH] = true_branch;
+  }
+
+  ast_t* condition () const { return children[CONDITION]; }
+  iterator condition_iter () { return begin () + CONDITION; }
+  ast_t* true_branch () const { return children[TRUE_BRANCH]; }
+
+  void accept (ast_visitor_t& visitor);
+  void accept (ast_const_visitor_t& visitor) const;
+};
+
+struct ast_while_statement_t : public ast_t
+{
+  enum
+    {
+      CONDITION,
+      BODY,
+      COUNT
+    };
+
+  ast_while_statement_t (unsigned int line, ast_t* condition, ast_t* body)
+    : ast_t (line, COUNT)
+  {
+    children[CONDITION] = condition;
+    children[BODY] = body;
+  }
+
+  ast_t* condition () const { return children[CONDITION]; }
+  iterator condition_iter () { return begin () + CONDITION; }
+  ast_t* body () const { return children[BODY]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -1145,7 +1192,7 @@ struct ast_visitor_t
   virtual void visit (ast_signature_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_struct_type_spec_t& ast) { default_action (ast); }
 
-  virtual void visit (ast_add_expr_t& ast) { default_action (ast); }
+  virtual void visit (ast_binary_arithmetic_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_address_of_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_call_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_dereference_expr_t& ast) { default_action (ast); }
@@ -1170,6 +1217,7 @@ struct ast_visitor_t
   virtual void visit (ast_assign_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_expression_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_if_statement_t& ast) { default_action (ast); }
+  virtual void visit (ast_while_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_println_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_list_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_return_statement_t& ast) { default_action (ast); }
@@ -1219,7 +1267,7 @@ struct ast_const_visitor_t
   virtual void visit (const ast_signature_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_struct_type_spec_t& ast) { default_action (ast); }
 
-  virtual void visit (const ast_add_expr_t& ast) { default_action (ast); }
+  virtual void visit (const ast_binary_arithmetic_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_address_of_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_call_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_dereference_expr_t& ast) { default_action (ast); }
@@ -1244,6 +1292,7 @@ struct ast_const_visitor_t
   virtual void visit (const ast_assign_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_expression_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_if_statement_t& ast) { default_action (ast); }
+  virtual void visit (const ast_while_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_println_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_list_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_return_statement_t& ast) { default_action (ast); }
@@ -1416,11 +1465,6 @@ ast_t *ast_make_signature (unsigned int line);
 action_t *ast_get_current_action (const ast_t * node);
 
 type_t *ast_get_current_receiver_type (const ast_t * node);
-
-#define IF_CONDITION 0
-#define IF_TRUE_BRANCH 1
-
-ast_t *ast_make_if_stmt (unsigned int line, ast_t* condition, ast_t* true_branch);
 
 ast_t *ast_make_new_expr (unsigned int line, ast_t* identifier);
 

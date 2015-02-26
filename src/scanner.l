@@ -34,7 +34,9 @@
 "trigger"              { return TRIGGER; }
 "type"                 { return TYPE; }
 "var"                  { return VAR; }
+"while"                { return WHILE; }
 
+"+="                   { return ADD_ASSIGN; }
 "&&"                   { return LOGIC_AND; }
 "||"                   { return LOGIC_OR; }
 "++"                   { return INCREMENT; }

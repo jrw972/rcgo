@@ -109,15 +109,29 @@ reaction (this $Process) init (v uint)
   };
 }
 
-// TODO:  Use a loop.
-func p (val [3]uint) bool
-{
-  return val[0] != 0u && val[1] != 0u && val[2] != 0u;
+func p (val [3]uint) bool {
+  var i uint;
+  i = 0u;
+  while i != 3u {
+    if val[i] == 0u {
+      return false;
+    };
+    i++;
+  };
+
+  return true;
 }
 
 func f (val [3]uint) uint
 {
-  return val[0] + val[1] + val[2];
+  var i, sum uint;
+  i = 0u;
+  sum = 0u;
+  while i != 3u {
+    sum += val[i];
+    i++;
+  };
+  return sum;
 }
 
 action (this $Process) (p (this.val))
@@ -137,12 +151,14 @@ type System component
   init [3] port (v uint);
 };
 
-// TODO:  Use a loop.
 func (this @System) Init ()
 {
-  this.process[0].Initially (0u);
-  this.process[1].Initially (1u);
-  this.process[2].Initially (2u);
+  var i uint;
+  i = 0u;
+  while i != 3u {
+    this.process[i].Initially (i);
+    i++;
+  };
 }
 
 [3] action (this $System) (true)

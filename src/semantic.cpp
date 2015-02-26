@@ -116,8 +116,12 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t* memory_model)
 
     void visit (ast_if_statement_t& node)
     {
-      ast_t* true_branch = node.at (IF_TRUE_BRANCH);
-      allocate_statement_stack_variables (true_branch, memory_model);
+      allocate_statement_stack_variables (node.true_branch (), memory_model);
+    }
+
+    void visit (ast_while_statement_t& node)
+    {
+      allocate_statement_stack_variables (node.body (), memory_model);
     }
 
     void visit (ast_add_assign_statement_t& node)

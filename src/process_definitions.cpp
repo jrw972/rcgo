@@ -349,9 +349,17 @@ type_check_rvalue (ast_t::iterator ptr)
       // Do nothing.
     }
 
-    void visit (ast_add_expr_t& node)
+    void visit (ast_binary_arithmetic_expr_t& node)
     {
-      binary_arithmetic (node, "+");
+      switch (node.arithmetic)
+        {
+        case ADD:
+          binary_arithmetic (node, "+");
+          break;
+        case SUBTRACT:
+          binary_arithmetic (node, "-");
+          break;
+        }
     }
 
     void check_address_of (ast_address_of_expr_t& node)
@@ -862,6 +870,19 @@ check_bind_statement (ast_t * node)
 }
 
 static void
+check_condition (ast_t::iterator condition_node)
+{
+  type_check_rvalue (condition_node);
+  typed_value_t tv = ast_get_typed_value (*condition_node);
+  if (type_cast<bool_type_t> (type_strip (tv.type)) == NULL)
+    {
+      error_at_line (-1, 0, (*condition_node)->file,
+                     (*condition_node)->line,
+                     "cannot convert (%s) to boolean expression in condition", tv.type->to_string ().c_str ());
+    }
+}
+
+static void
 type_check_statement (ast_t * node)
 {
   struct visitor : public ast_visitor_t
@@ -957,23 +978,18 @@ type_check_statement (ast_t * node)
 
     void visit (ast_if_statement_t& node)
     {
-      ast_t::iterator condition_node = node.get_child_ptr (IF_CONDITION);
-      ast_t::iterator true_branch = node.get_child_ptr (IF_TRUE_BRANCH);
+      ast_t::iterator condition = node.condition_iter ();
+      ast_t* true_branch = node.true_branch ();
+      check_condition (condition);
+      type_check_statement (true_branch);
+    }
 
-      // Check the condition.
-      type_check_rvalue (condition_node);
-
-      typed_value_t tv = ast_get_typed_value (*condition_node);
-
-      if (type_cast<bool_type_t> (type_strip (tv.type)) == NULL)
-        {
-          error_at_line (-1, 0, (*condition_node)->file,
-                         (*condition_node)->line,
-                         "cannot convert (%s) to boolean expression in condition", tv.type->to_string ().c_str ());
-        }
-
-      // Check the branch.
-      type_check_statement (*true_branch);
+    void visit (ast_while_statement_t& node)
+    {
+      ast_t::iterator condition = node.condition_iter ();
+      ast_t* body = node.body ();
+      check_condition (condition);
+      type_check_statement (body);
     }
 
     void visit (ast_add_assign_statement_t& node)
@@ -1115,7 +1131,12 @@ control_check_statement (ast_t * node)
 
     void visit (ast_if_statement_t& node)
     {
-      node.at (IF_TRUE_BRANCH)->accept (*this);
+      node.true_branch ()->accept (*this);
+    }
+
+    void visit (ast_while_statement_t& node)
+    {
+      node.body ()->accept (*this);
     }
 
     void visit (ast_list_statement_t& node)
@@ -1338,8 +1359,12 @@ mutates_check_statement (ast_t * node)
 
     void visit (ast_if_statement_t& node)
     {
-      node.at (IF_CONDITION)->accept (*this);
-      node.at (IF_TRUE_BRANCH)->accept (*this);
+      node.visit_children (*this);
+    }
+
+    void visit (ast_while_statement_t& node)
+    {
+      node.visit_children (*this);
     }
 
     void visit (ast_list_statement_t& node)
@@ -1369,7 +1394,12 @@ mutates_check_statement (ast_t * node)
 
     void visit (ast_if_statement_t& node)
     {
-      node.at (IF_TRUE_BRANCH)->accept (*this);
+      node.true_branch ()->accept (*this);
+    }
+
+    void visit (ast_while_statement_t& node)
+    {
+      node.body ()->accept (*this);
     }
 
     void visit (ast_list_statement_t& node)
@@ -1457,19 +1487,7 @@ process_definitions (ast_t * node)
                                           pointer_to_immutable_type_t::make (get_current_receiver_type
                                                                              (&node)), this_node), node.this_symbol);
 
-      /* Check the precondition. */
-      type_check_rvalue (precondition_node);
-
-      /* Must be typed since it will be evaluated. */
-      typed_value_t tv = ast_get_typed_value (*precondition_node);
-
-      if (type_cast<bool_type_t> (type_strip (tv.type)) == NULL)
-        {
-          error_at_line (-1, 0, (*precondition_node)->file,
-                         (*precondition_node)->line,
-                         "cannot convert (%s) to boolean expression in precondition", tv.type->to_string ().c_str ());
-        }
-
+      check_condition (precondition_node);
       type_check_statement (body_node);
       control_check_statement (body_node);
       mutates_check_statement (body_node);
@@ -1495,19 +1513,7 @@ process_definitions (ast_t * node)
                     symbol_make_parameter (enter ("IOTA"), new iota_type_t (node.action->dimension ()), dimension_node),
                     node.iota_symbol);
 
-      /* Check the precondition. */
-      type_check_rvalue (precondition_node);
-
-      /* Must be typed since it will be evaluated. */
-      typed_value_t tv = ast_get_typed_value (*precondition_node);
-
-      if (type_cast<bool_type_t> (type_strip (tv.type)) == NULL)
-        {
-          error_at_line (-1, 0, (*precondition_node)->file,
-                         (*precondition_node)->line,
-                         "cannot convert (%s) to boolean expression in precondition", tv.type->to_string ().c_str ());
-        }
-
+      check_condition (precondition_node);
       type_check_statement (body_node);
       control_check_statement (body_node);
       mutates_check_statement (body_node);

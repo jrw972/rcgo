@@ -26,6 +26,11 @@ construct_symbol_table (ast_t * node)
       make (node);
     }
 
+    void visit (ast_while_statement_t& node)
+    {
+      make (node);
+    }
+
     void visit (ast_change_statement_t& node)
     {
       make (node);
