@@ -14,6 +14,9 @@ enter_symbols (ast_t * node)
 		  symbol_make_type (enter ("bool"), new named_type_t (enter ("bool"), bool_type_t::instance ()), node));
 
     symtab_enter (symtab,
+		  symbol_make_type (enter ("int"), new named_type_t (enter ("int"), int_type_t::instance ()), node));
+
+    symtab_enter (symtab,
 		  symbol_make_type (enter ("uint"), new named_type_t (enter ("uint"), uint_type_t::instance ()), node));
 
     symtab_enter (symtab,
@@ -23,17 +26,17 @@ enter_symbols (ast_t * node)
   /* Insert zero constant. */
   symtab_enter (symtab,
                 symbol_make_typed_constant (enter ("nil"),
-                                            typed_value_make_nil (),
+                                            typed_value_t::nil (),
                                             node));
 
   /* Insert untyped boolean constants. */
   symtab_enter (symtab,
 		symbol_make_typed_constant (enter ("true"),
-                                            typed_value_make_bool (bool_type_t::instance (), true),
+                                            typed_value_t (true),
                                             node));
   symtab_enter (symtab,
 		symbol_make_typed_constant (enter ("false"),
-                                            typed_value_make_bool (bool_type_t::instance (), false),
+                                            typed_value_t (false),
                                             node));
 
   struct visitor : public ast_visitor_t

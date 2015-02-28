@@ -25,7 +25,7 @@ ast_print (const ast_t& node)
 
     void visit (const ast_identifier_t& node)
     {
-      print_indent ();
+      print_indent (node);
       std::cout << "identifier " << get (node.identifier ()) << '\n';
       print_children (node);
     }
@@ -45,29 +45,19 @@ ast_print (const ast_t& node)
       print_expr (node, "logic_not_expr");
     }
 
-    void visit (const ast_logic_and_expr_t& node)
-    {
-      print_expr (node, "logic_and_expr");
-    }
-
     void visit (const ast_new_expr_t& node)
     {
       print_expr (node, "new_expr");
     }
 
-    void visit (const ast_equal_expr_t& node)
-    {
-      print_expr (node, "equal_expr");
-    }
-
-    void visit (const ast_not_equal_expr_t& node)
-    {
-      print_expr (node, "not_equal_expr");
-    }
-
     void visit (const ast_dereference_expr_t& node)
     {
       print_expr (node, "dereference_expr");
+    }
+
+    void visit (const ast_implicit_dereference_expr_t& node)
+    {
+      print_expr (node, "implicit_dereference_expr");
     }
 
     void visit (const ast_call_expr_t& node)
@@ -275,24 +265,25 @@ ast_print (const ast_t& node)
       print (node, "assign_statement");
     }
 
-    void print_indent ()
+    void print_indent (const ast_t& node)
     {
       for (size_t idx = 0; idx != indent; ++idx)
         {
           std::cout << ' ';
         }
+      std::cout << node.line << ' ';
     }
 
     void print (const ast_t& node, const char* s)
     {
-      print_indent ();
+      print_indent (node);
       std::cout << s << '\n';
       print_children (node);
     }
 
     void print_expr (const ast_expr_t& node, const char* s)
     {
-      print_indent ();
+      print_indent (node);
       std::cout << s << ' ' << node.get_type () << '\n';
       print_children (node);
     }
@@ -336,24 +327,6 @@ ast_make_identifier_list_type_spec (unsigned int line,
   node->set (IDENTIFIER_LIST, identifier_list);
   node->set (TYPE_SPEC, type_spec);
   return node;
-}
-
-ast_t *
-ast_make_logic_and (unsigned int line, ast_t * left, ast_t * right)
-{
-  ast_t *retval = new ast_logic_and_expr_t (line, 0);
-  retval->children.push_back (left);
-  retval->children.push_back (right);
-  return retval;
-}
-
-ast_t *
-ast_make_logic_or (unsigned int line, ast_t * left, ast_t * right)
-{
-  ast_t *retval = new ast_logic_or_expr_t (line, 0);
-  retval->children.push_back (left);
-  retval->children.push_back (right);
-  return retval;
 }
 
 ast_t *
@@ -528,14 +501,6 @@ ast_make_expression_list (unsigned int line)
   return new ast_list_expr_t (line, 0);
 }
 
-ast_t *
-ast_make_typed_literal (unsigned int line, typed_value_t value)
-{
-  ast_literal_expr_t *node = new ast_literal_expr_t (line, 0);
-  node->set_type (value);
-  return node;
-}
-
 typed_value_t ast_get_typed_value (const ast_t* node)
 {
   const ast_expr_t* expr = dynamic_cast<const ast_expr_t*> (node);
@@ -623,19 +588,16 @@ ACCEPT (ast_binary_arithmetic_expr_t)
 ACCEPT (ast_address_of_expr_t)
 ACCEPT (ast_call_expr_t)
 ACCEPT (ast_dereference_expr_t)
-ACCEPT (ast_equal_expr_t)
+ACCEPT (ast_implicit_dereference_expr_t)
 ACCEPT (ast_identifier_expr_t)
 ACCEPT (ast_index_expr_t)
 ACCEPT (ast_indexed_port_call_expr_t)
 ACCEPT (ast_list_expr_t)
 ACCEPT (ast_literal_expr_t)
-ACCEPT (ast_logic_and_expr_t)
 ACCEPT (ast_logic_not_expr_t)
-ACCEPT (ast_logic_or_expr_t)
 ACCEPT (ast_merge_expr_t)
 ACCEPT (ast_move_expr_t)
 ACCEPT (ast_new_expr_t)
-ACCEPT (ast_not_equal_expr_t)
 ACCEPT (ast_port_call_expr_t)
 ACCEPT (ast_select_expr_t)
 ACCEPT (ast_add_assign_statement_t)

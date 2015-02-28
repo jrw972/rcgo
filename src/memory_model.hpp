@@ -1,34 +1,57 @@
-#ifndef memory_model_h
-#define memory_model_h
+#ifndef memory_model_hpp
+#define memory_model_hpp
 
 #include "types.hpp"
+#include "util.hpp"
 
-memory_model_t* memory_model_make (size_t stack_alignment);
+class memory_model_t
+{
+public:
+  static size_t stack_alignment;
 
-size_t memory_model_stack_alignment (const memory_model_t* memory_model);
+  memory_model_t ()
+    : arguments_offset_ (-(ptrdiff_t)sizeof (void*))
+    , locals_offset_ (sizeof (void*))
+    , locals_size_ (0)
+  { }
 
-ptrdiff_t memory_model_arguments_offset (const memory_model_t* memory_model);
+  bool arguments_empty () const
+  {
+    return arguments_offset_ == -(ptrdiff_t)sizeof (void*);
+  }
 
-bool memory_model_arguments_empty (const memory_model_t* memory_model);
+  void arguments_push (size_t size)
+  {
+    arguments_offset_ -= align_up (size, stack_alignment);
+  }
 
-void memory_model_arguments_push (memory_model_t* memory_model,
-                                  size_t size);
+  bool locals_empty () const
+  {
+    return locals_offset_ == sizeof (void*);
+  }
 
-void memory_model_arguments_pop (memory_model_t* memory_model,
-                                  size_t size);
+  void locals_push (size_t size)
+  {
+    size = align_up (size, stack_alignment);
+    locals_offset_ += size;
+    locals_size_ += size;
+  }
 
-ptrdiff_t memory_model_locals_offset (const memory_model_t* memory_model);
+  void locals_pop (size_t size)
+  {
+    locals_offset_ -= align_up (size, stack_alignment);
+  }
 
-bool memory_model_locals_empty (const memory_model_t* memory_model);
+  ptrdiff_t arguments_offset () const { return arguments_offset_; }
 
-void memory_model_locals_push (memory_model_t* memory_model,
-                               size_t size);
+  ptrdiff_t locals_offset () const { return locals_offset_; }
 
-void memory_model_locals_pop (memory_model_t* memory_model,
-                              size_t size);
+  size_t locals_size () const { return locals_size_; }
 
-size_t memory_model_locals_size (const memory_model_t* memory_model);
+private:
+  ptrdiff_t arguments_offset_;
+  ptrdiff_t locals_offset_;
+  size_t locals_size_;
+};
 
-void memory_model_reset_locals_size (memory_model_t* memory_model);
-
-#endif /* memory_model_h */
+#endif /* memory_model_hpp */

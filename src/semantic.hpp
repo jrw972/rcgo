@@ -26,7 +26,7 @@ const type_t * process_type_spec (ast_t * node, bool force_identifiers, bool is_
 /* Process all declarations (non-code). */
 void process_declarations (ast_t * node);
 
-void type_check_rvalue (ast_t::iterator ptr);
+typed_value_t type_check_expr (ast_t::iterator ptr);
 
 /* Process all definitions (code). */
 void process_definitions (ast_t * node);
@@ -35,7 +35,7 @@ void
 enumerate_instances (ast_t * node, instance_table_t * instance_table);
 
 void
-allocate_stack_variables (ast_t* node, memory_model_t* memory_model);
+allocate_stack_variables (ast_t* node);
 
 method_t *
 get_current_method (const ast_t * node);

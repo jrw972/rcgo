@@ -36,136 +36,231 @@ instance_table_insert_port (instance_table_t* table,
   table->ports[address] = instance_table_t::PortValueType (address, output_instance, output_field);
 }
 
-static typed_value_t evaluate_static_rvalue (ast_t* node, size_t receiver_address);
-
-static size_t evaluate_static_lvalue (ast_t* node, const size_t receiver_address)
+class static_memory_t
 {
-  struct visitor : public ast_const_visitor_t
+public:
+
+  void set_value_at_offset (ptrdiff_t offset, size_t value)
   {
-    const size_t receiver_address;
-    size_t address;
+    stack_[offset] = value;
+  }
 
-    visitor (size_t ra) : receiver_address (ra) { }
+  size_t get_value_at_offset (ptrdiff_t offset) const
+  {
+    return stack_.find (offset)->second;
+  }
 
-    void default_action (const ast_t& node)
+private:
+  typedef std::map<ptrdiff_t, size_t> StackType;
+  StackType stack_;
+};
+
+struct static_value_t
+{
+  enum Kind
     {
-      not_reached;
-    }
+      STACK_ADDRESS,
+      ABSOLUTE_ADDRESS,
+      VALUE,
+    };
 
-    void visit (const ast_select_expr_t& node)
-    {
-      node.base ()->accept (*this);
-
-      if (node.field)
-        {
-
-          address += field_offset (node.field);
-          return;
-        }
-
-      typed_value_t tv = node.get_type ();
-      if (!tv.has_value)
-        {
-          error_at_line (-1, 0, node.file, node.line,
-                         "non-static expression");
-
-        }
-
-      struct visitor : public const_type_visitor_t
-      {
-        const ast_select_expr_t& node;
-
-        visitor (const ast_select_expr_t& n) : node (n) { }
-
-        void default_action (const type_t& type)
-        {
-          error_at_line (-1, 0, node.file, node.line,
-                         "non-static expression");
-        }
-
-        void visit (const reaction_type_t& type)
-        {
-          // Do nothing.  Looking for address of base.
-          // This is a hack that should be solved by adding implicit deref nodes to the tree.
-        }
-      };
-      visitor v (node);
-      tv.type->accept (v);
-    }
-
-    void visit (const ast_index_expr_t& node)
-    {
-      node.base ()->accept (*this);
-      typed_value_t tv = evaluate_static_rvalue (node.index (), receiver_address);
-      int64_t index = typed_value_to_index (tv);
-      const array_type_t* array_type = dynamic_cast<const array_type_t*> (ast_get_typed_value (node.base ()).type);
-      assert (array_type != NULL);
-      address += index * array_type->element_size ();
-    }
-
-    void visit (const ast_dereference_expr_t& node)
-    {
-      ast_identifier_expr_t* id = dynamic_cast<ast_identifier_expr_t*> (node.child ());
-      if (id)
-        {
-          symbol_t* symbol = id->symbol.symbol ();
-          switch (symbol_kind (symbol))
-            {
-            case SymbolParameter:
-              if (symbol_parameter_kind (symbol) == ParameterReceiver)
-                {
-                  address = receiver_address;
-                }
-              break;
-            case SymbolFunction:
-            case SymbolInstance:
-            case SymbolType:
-            case SymbolTypedConstant:
-            case SymbolVariable:
-              break;
-            }
-        }
-    }
+  Kind kind;
+  union {
+    ptrdiff_t offset; // STACK_ADDRESS
+    size_t address; // ABSOLUTE_ADDRESS
+    size_t value; // VALUE
   };
-  visitor v (receiver_address);
-  node->accept (v);
-  return v.address;
+
+  static_value_t ()
+    : kind (VALUE)
+    , value (0)
+  { }
+
+  static static_value_t make_stack_offset (ptrdiff_t offset)
+  {
+    static_value_t v;
+    v.kind = STACK_ADDRESS;
+    v.offset = offset;
+    return v;
+  }
+
+  static static_value_t make_value (size_t value)
+  {
+    static_value_t v;
+    v.kind = VALUE;
+    v.value = value;
+    return v;
+  }
+
+  static static_value_t implicit_dereference (static_value_t in, const static_memory_t& memory)
+  {
+    static_value_t out;
+    switch (in.kind)
+      {
+      case STACK_ADDRESS:
+        out.kind = VALUE;
+        out.value = memory.get_value_at_offset (in.offset);
+        break;
+      case ABSOLUTE_ADDRESS:
+        unimplemented;
+      case VALUE:
+        not_reached;
+      }
+    return out;
+  }
+
+  static static_value_t dereference (static_value_t in)
+  {
+    static_value_t out;
+    switch (in.kind)
+      {
+      case STACK_ADDRESS:
+      case ABSOLUTE_ADDRESS:
+        not_reached;
+      case VALUE:
+        out.kind = ABSOLUTE_ADDRESS;
+        out.address = in.value;
+        break;
+      }
+    return out;
+  }
+
+  static static_value_t select (static_value_t in, ptrdiff_t offset)
+  {
+    static_value_t out;
+    switch (in.kind)
+      {
+      case STACK_ADDRESS:
+        out = in;
+        out.offset += offset;
+        break;
+      case ABSOLUTE_ADDRESS:
+        out = in;
+        out.address += offset;
+        break;
+      case VALUE:
+        not_reached;
+      }
+    return out;
+  }
+
+  static static_value_t index (static_value_t in, const array_type_t* type, static_value_t idx)
+  {
+    static_value_t out;
+    switch (in.kind)
+      {
+      case STACK_ADDRESS:
+        out = in;
+        out.offset += type->element_size () * idx.value;
+        break;
+      case ABSOLUTE_ADDRESS:
+        out = in;
+        out.address += type->element_size () * idx.value;
+        break;
+      case VALUE:
+        not_reached;
+      }
+    return out;
+  }
+};
+
+std::ostream&
+operator<< (std::ostream& o,
+            const static_value_t& v)
+{
+  switch (v.kind)
+    {
+    case static_value_t::STACK_ADDRESS:
+      o << "STACK " << v.offset;
+      break;
+    case static_value_t::ABSOLUTE_ADDRESS:
+      o << "ABSOLUTE " << v.address;
+      break;
+    case static_value_t::VALUE:
+      o << "VALUE " << v.value;
+      break;
+    }
+  return o;
 }
 
-static typed_value_t evaluate_static_rvalue (ast_t* node, size_t receiver_address)
+static static_value_t
+evaluate_static (const ast_t* node, const static_memory_t& memory)
 {
   struct visitor : public ast_const_visitor_t
   {
-    const size_t receiver_address;
-    typed_value_t tv;
+    const static_memory_t& memory;
+    static_value_t result;
 
-    visitor (size_t ra) : receiver_address (ra) { }
+    visitor (const static_memory_t& m) : memory (m) { }
 
     void default_action (const ast_t& node)
     {
       not_reached;
-    }
-
-    void visit (const ast_select_expr_t& node)
-    {
-      typed_value_t t = node.get_type ();
-      if (!t.has_value)
-        {
-          error_at_line (-1, 0, node.file, node.line,
-                         "non-static expression");
-        }
-
-      tv = t;
     }
 
     void visit (const ast_literal_expr_t& node)
     {
-      tv = node.get_type ();
+      typed_value_t tv = node.get_type ();
+      struct visitor : public const_type_visitor_t
+      {
+        typed_value_t tv;
+        static_value_t result;
+
+        visitor (typed_value_t t) : tv (t) { }
+
+        void default_action (const type_t& type)
+        {
+          not_reached;
+        }
+
+        void visit (const int_type_t& type)
+        {
+          result = static_value_t::make_value (tv.int_value);
+        }
+      };
+      visitor v (tv);
+      tv.type->accept (v);
+      result = v.result;
+    }
+
+    void visit (const ast_index_expr_t& node)
+    {
+      static_value_t base = evaluate_static (node.base (), memory);
+      static_value_t index = evaluate_static (node.index (), memory);
+      typed_value_t base_tv = ast_get_typed_value (node.base ());
+      const array_type_t* array_type = type_cast<array_type_t> (base_tv.type);
+      result = static_value_t::index (base, array_type, index);
+    }
+
+    void visit (const ast_select_expr_t& node)
+    {
+      typed_value_t tv = node.get_type ();
+      assert (tv.has_offset);
+      static_value_t v = evaluate_static (node.base (), memory);
+      result = static_value_t::select (v, tv.offset);
+    }
+
+    void visit (const ast_dereference_expr_t& node)
+    {
+      static_value_t v = evaluate_static (node.child (), memory);
+      result = static_value_t::dereference (v);
+    }
+
+    void visit (const ast_implicit_dereference_expr_t& node)
+    {
+      static_value_t v = evaluate_static (node.child (), memory);
+      result = static_value_t::implicit_dereference (v, memory);
+    }
+
+    void visit (const ast_identifier_expr_t& node)
+    {
+      ptrdiff_t offset = symbol_get_offset (node.symbol.symbol ());
+      result = static_value_t::make_stack_offset (offset);
     }
   };
-  visitor v (receiver_address);
+  visitor v (memory);
   node->accept (v);
-  return v.tv;
+  return v.result;
 }
 
 void
@@ -189,6 +284,7 @@ instance_table_enumerate_bindings (instance_table_t * table)
         {
           instance_table_t* table;
           const size_t receiver_address;
+          static_memory_t memory;
 
           visitor (instance_table_t* t, size_t ra) : table (t), receiver_address (ra) { }
 
@@ -199,6 +295,7 @@ instance_table_enumerate_bindings (instance_table_t * table)
 
           void visit (const ast_bind_t& node)
           {
+            memory.set_value_at_offset (symbol_get_offset (node.this_symbol.symbol ()), receiver_address);
             node.body ()->accept (*this);
           }
 
@@ -207,18 +304,20 @@ instance_table_enumerate_bindings (instance_table_t * table)
             node.visit_children (*this);
           }
 
-          void bind (ast_t* left, ast_t* right, int64_t param = 0)
+          void bind (ast_t* left, ast_t* right, static_value_t param = static_value_t ())
           {
-            size_t port_address = evaluate_static_lvalue (left, receiver_address);
-            size_t input_address = evaluate_static_lvalue (right, receiver_address);
-            typed_value_t reaction_value = evaluate_static_rvalue (right, receiver_address);
+            static_value_t port = evaluate_static (left, memory);
+            // Strip off the implicit dereference and selecting of the reaction.
+            static_value_t input = evaluate_static (right->children[0]->children[0], memory);
+            typed_value_t reaction = ast_get_typed_value (right);
 
-            assert (dynamic_cast<const reaction_type_t*> (reaction_value.type));
-            assert (reaction_value.has_value);
+            assert (port.kind == static_value_t::ABSOLUTE_ADDRESS);
+            assert (input.kind == static_value_t::ABSOLUTE_ADDRESS);
+            assert (param.kind == static_value_t::VALUE);
 
-            instance_table_t::InputType i (table->instances[input_address], reaction_value.reaction_value, param);
-            table->ports[port_address].inputs.insert (i);
-            table->reverse_ports[i].insert (port_address);
+            instance_table_t::InputType i (table->instances[input.address], reaction.reaction_value, param.value);
+            table->ports[port.address].inputs.insert (i);
+            table->reverse_ports[i].insert (port.address);
           }
 
           void visit (const ast_bind_statement_t& node)
@@ -228,7 +327,7 @@ instance_table_enumerate_bindings (instance_table_t * table)
 
           void visit (const ast_bind_param_statement_t& node)
           {
-            int64_t param = typed_value_to_index (ast_get_typed_value (node.param ()));
+            static_value_t param = evaluate_static (node.param (), memory);
             bind (node.left (), node.right (), param);
           }
 
@@ -394,6 +493,11 @@ transitive_closure (const instance_table_t * table,
         }
     }
 
+    void visit (const ast_implicit_dereference_expr_t& node)
+    {
+      node.visit_children (*this);
+    }
+
     void visit (const ast_identifier_expr_t& node)
     {
       string_t id = ast_get_identifier (node.child ());
@@ -417,6 +521,12 @@ transitive_closure (const instance_table_t * table,
       not_reached;
     }
 
+    void visit (const ast_implicit_dereference_expr_t& node)
+    {
+      computed_address = -1;
+      node.visit_children (*this);
+    }
+
     void visit (const ast_address_of_expr_t& node)
     {
       computed_address = -1;
@@ -429,7 +539,8 @@ transitive_closure (const instance_table_t * table,
       node.base ()->accept (*this);
       if (computed_address != static_cast<size_t> (-1))
         {
-          computed_address += field_offset (node.field);
+          unimplemented;
+          //computed_address += field_offset (node.field);
         }
     }
 
@@ -543,17 +654,17 @@ transitive_closure (const instance_table_t * table,
       node.visit_children (*this);
     }
 
-    void visit (const ast_not_equal_expr_t& node)
-    {
-      node.visit_children (*this);
-    }
-
     void visit (const ast_select_expr_t& node)
     {
       node.base ()->accept (*this);
     }
 
     void visit (const ast_dereference_expr_t& node)
+    {
+      node.visit_children (*this);
+    }
+
+    void visit (const ast_implicit_dereference_expr_t& node)
     {
       node.visit_children (*this);
     }
@@ -581,11 +692,6 @@ transitive_closure (const instance_table_t * table,
     }
 
     void visit (const ast_index_expr_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (const ast_logic_and_expr_t& node)
     {
       node.visit_children (*this);
     }

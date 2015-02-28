@@ -4,8 +4,7 @@
 #include "types.hpp"
 #include "rtstring.hpp"
 
-stack_frame_t* stack_frame_make (memory_model_t* memory_model,
-                                 size_t size);
+stack_frame_t* stack_frame_make (size_t size);
 
 void stack_frame_push_pointer (stack_frame_t* stack_frame,
                                void* pointer);

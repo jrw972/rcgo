@@ -109,6 +109,11 @@ main (int argc, char **argv)
   process_declarations (root);
   process_definitions (root);
 
+  // Calculate the offsets of all stack variables.
+  // Do this before checking composition so the receiver of binds has an offset.
+  memory_model_t::stack_alignment = sizeof (void*);
+  allocate_stack_variables (root);
+
   /* Check composition. */
   instance_table_t *instance_table = instance_table_make ();
   enumerate_instances (root, instance_table);
@@ -121,14 +126,10 @@ main (int argc, char **argv)
       return 0;
     }
 
-  /* Calculate the offsets of all stack variables. */
-  memory_model_t* memory_model = memory_model_make (8);
-  allocate_stack_variables (root, memory_model);
-
   runtime_t* runtime = runtime_make (instance_table);
   runtime_allocate_instances (runtime);
   runtime_create_bindings (runtime);
-  runtime_run (runtime, memory_model, 8 * 1024);
+  runtime_run (runtime, 8 * 1024);
 
   return 0;
 }

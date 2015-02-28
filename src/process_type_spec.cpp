@@ -7,7 +7,7 @@
 size_t
 process_array_dimension (ast_t::iterator ptr)
 {
-  type_check_rvalue (ptr);
+  type_check_expr (ptr);
   typed_value_t tv = ast_get_typed_value (*ptr);
 
   if (!tv.has_value)

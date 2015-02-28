@@ -199,114 +199,6 @@ void runtime_create_bindings (runtime_t* runtime)
 }
 
 static void
-evaluate_rvalue (thread_runtime_t* runtime,
-                 ast_t* expr);
-
-static void evaluate_lvalue_dereference_expr (thread_runtime_t* runtime, const ast_t* expr)
-{
-  evaluate_rvalue (runtime, expr->at (UNARY_CHILD));
-}
-
-static void evaluate_lvalue_identifier_expr (thread_runtime_t* runtime, const ast_identifier_expr_t* expr)
-{
-  // Get the address of the identifier.
-  symbol_t* symbol = expr->symbol.symbol ();
-  assert (symbol != NULL);
-  ptrdiff_t offset = symbol_get_offset (symbol);
-  stack_frame_push_address (runtime->stack, offset);
-}
-
-static void
-evaluate_lvalue (thread_runtime_t* runtime,
-                 ast_t* expr);
-
-static void evaluate_lvalue_select_expr (thread_runtime_t* runtime, const ast_select_expr_t* expr)
-{
-  ast_t *left = expr->base ();
-  ast_t *right = expr->identifier ();
-  string_t identifier = ast_get_identifier (right);
-
-  typed_value_t selected_type = ast_get_typed_value (expr);
-  typed_value_t type = ast_get_typed_value (left);
-
-  if (dynamic_cast<const function_type_t*> (selected_type.type))
-    {
-      method_t* method = dynamic_cast<const named_type_t*> (type.type)->get_method (identifier);
-      stack_frame_push_pointer (runtime->stack, method->node);
-      return;
-    }
-
-  evaluate_lvalue (runtime, left);
-  field_t* field = type_select_field (type.type, identifier);
-  assert (field != NULL);
-  void* ptr = stack_frame_pop_pointer (runtime->stack);
-  stack_frame_push_pointer (runtime->stack, (char*)ptr + field_offset (field));
-}
-
-static void
-evaluate_lvalue (thread_runtime_t* runtime,
-                 ast_t* expr)
-{
-  struct evaluate_lvalue_visitor_t : public ast_const_visitor_t
-  {
-    thread_runtime_t* runtime;
-
-    evaluate_lvalue_visitor_t (thread_runtime_t* r) : runtime (r) { }
-
-    void default_action (const ast_t& node)
-    {
-      not_reached;
-    }
-
-    void visit (const ast_index_expr_t& node)
-    {
-      struct visitor : public const_type_visitor_t
-      {
-        thread_runtime_t* runtime;
-        const ast_index_expr_t& node;
-
-        visitor (thread_runtime_t* r, const ast_index_expr_t& n) : runtime (r), node (n) { }
-
-        void default_action (const type_t& type)
-        {
-          not_reached;
-        }
-
-        void visit (const array_type_t& type)
-        {
-          evaluate_lvalue (runtime, node.base ());
-          void* ptr = stack_frame_pop_pointer (runtime->stack);
-          evaluate_rvalue (runtime, node.index ());
-          int64_t idx = stack_frame_pop_int (runtime->stack);
-          if (idx < 0 || static_cast<size_t> (idx) >= type.dimension ())
-            {
-              error_at_line (-1, 0, node.file, node.line,
-                             "array index is out of bounds");
-            }
-          stack_frame_push_pointer (runtime->stack,
-                                    static_cast<char*> (ptr) + idx * type.element_size ());
-        }
-      };
-      visitor v (runtime, node);
-      ast_get_typed_value (node.base ()).type->accept (v);
-    }
-
-    void visit (const ast_dereference_expr_t& node) { evaluate_lvalue_dereference_expr (runtime, &node); }
-    void visit (const ast_identifier_expr_t& node) { evaluate_lvalue_identifier_expr (runtime, &node); }
-    void visit (const ast_select_expr_t& node) { evaluate_lvalue_select_expr (runtime, &node); }
-  };
-
-  evaluate_lvalue_visitor_t evaluate_lvalue_visitor (runtime);
-  expr->accept (evaluate_lvalue_visitor);
-
-  typed_value_t tv = ast_get_typed_value (expr);
-  if (tv.has_value)
-    {
-      unimplemented;
-    }
-}
-
-static void
 execute (thread_runtime_t* runtime,
          const reaction_t* reaction,
          instance_record_t* instance);
@@ -339,7 +231,7 @@ call (thread_runtime_t* runtime)
     void visit (const ast_function_t& node)
     {
       function_t* function = get_current_function (&node);
-      stack_frame_push_base_pointer (runtime->stack, function->locals_size);
+      stack_frame_push_base_pointer (runtime->stack, function->memory_model.locals_size ());
       evaluate_statement (runtime, node.at (FUNCTION_BODY));
       stack_frame_pop_base_pointer (runtime->stack);
     }
@@ -347,7 +239,7 @@ call (thread_runtime_t* runtime)
     void visit (const ast_method_t& node)
     {
       method_t* method = get_current_method (&node);
-      stack_frame_push_base_pointer (runtime->stack, method->locals_size);
+      stack_frame_push_base_pointer (runtime->stack, method->memory_model.locals_size ());
       evaluate_statement (runtime, node.at (METHOD_BODY));
       stack_frame_pop_base_pointer (runtime->stack);
     }
@@ -374,225 +266,170 @@ static heap_link_t* make_heap_link (heap_t* heap,
   return hl;
 }
 
+// static void
+// evaluate_rvalue (thread_runtime_t* runtime,
+//                  ast_t* expr)
+// {
+//   struct evaluate_rvalue_visitor_t : public ast_const_visitor_t
+//   {
+//     thread_runtime_t* runtime;
+
+//     evaluate_rvalue_visitor_t (thread_runtime_t* r) : runtime (r) { }
+
+//     void visit (const ast_index_expr_t& node)
+//     {
+//       struct visitor : public const_type_visitor_t
+//       {
+//         thread_runtime_t* runtime;
+//         const ast_index_expr_t& node;
+
+//         visitor (thread_runtime_t* r, const ast_index_expr_t& n) : runtime (r), node (n) { }
+
+//         void default_action (const type_t& type)
+//         {
+//           not_reached;
+//         }
+
+//         void visit (const array_type_t& type)
+//         {
+//           evaluate_lvalue (runtime, node.base ());
+//           void* ptr = stack_frame_pop_pointer (runtime->stack);
+//           evaluate_rvalue (runtime, node.index ());
+//           int64_t idx = stack_frame_pop_int (runtime->stack);
+//           if (idx < 0 || static_cast<size_t> (idx) >= type.dimension ())
+//             {
+//               error_at_line (-1, 0, node.file, node.line,
+//                              "array index is out of bounds");
+//             }
+//           stack_frame_load (runtime->stack,
+//                             static_cast<char*> (ptr) + idx * type.element_size (),
+//                             node.get_type ().type->size ());
+//         }
+//       };
+//       visitor v (runtime, node);
+//       ast_get_typed_value (node.base ()).type->accept (v);
+//     }
+
+//   };
+
+//   evaluate_rvalue_visitor_t evaluate_rvalue_visitor (runtime);
+//   expr->accept (evaluate_rvalue_visitor);
+// }
+
 static void
-evaluate_rvalue (thread_runtime_t* runtime,
-                 ast_t* expr)
+evaluate_expr (thread_runtime_t* runtime,
+               ast_t* node)
 {
-  typed_value_t tv = ast_get_typed_value (expr);
+  typed_value_t tv = ast_get_typed_value (node);
   if (tv.has_value)
     {
-      struct visitor : public const_type_visitor_t
-      {
-        thread_runtime_t* runtime;
-        const typed_value_t& tv;
-
-        visitor (thread_runtime_t* r,
-                 const typed_value_t& t) : runtime (r), tv (t) { }
-
-        void visit (const named_type_t& type)
+      switch (tv.kind)
         {
-          type.subtype ()->accept (*this);
+        case typed_value_t::VALUE:
+          {
+            struct visitor : public const_type_visitor_t
+            {
+              thread_runtime_t* runtime;
+              const typed_value_t& tv;
+
+              visitor (thread_runtime_t* r,
+                       const typed_value_t& t) : runtime (r), tv (t) { }
+
+              void visit (const named_type_t& type)
+              {
+                type.subtype ()->accept (*this);
+              }
+
+              void visit (const bool_type_t&)
+              {
+                stack_frame_push_bool (runtime->stack, tv.bool_value);
+              }
+
+              void visit (const int_type_t&)
+              {
+                stack_frame_push_int (runtime->stack, tv.int_value);
+              }
+
+              void visit (const uint_type_t&)
+              {
+                stack_frame_push_uint (runtime->stack, tv.uint_value);
+              }
+
+              void visit (const string_type_t&)
+              {
+                stack_frame_push_string (runtime->stack, tv.string_value);
+              }
+
+              void visit (const pointer_type_t&)
+              {
+                stack_frame_push_pointer (runtime->stack, NULL);
+              }
+
+              void visit (const pointer_to_foreign_type_t&)
+              {
+                stack_frame_push_pointer (runtime->stack, NULL);
+              }
+
+              void visit (const pointer_to_immutable_type_t&)
+              {
+                stack_frame_push_pointer (runtime->stack, NULL);
+              }
+
+              void visit (const nil_type_t&)
+              {
+                stack_frame_push_pointer (runtime->stack, NULL);
+              }
+
+              void visit (const function_type_t&)
+              {
+                stack_frame_push_pointer (runtime->stack, tv.function_value->node);
+              }
+
+              void visit (const method_type_t&)
+              {
+                stack_frame_push_pointer (runtime->stack, tv.method_value->node);
+              }
+
+              void default_action (const type_t& type)
+              {
+                not_reached;
+              }
+            };
+
+            visitor v (runtime, tv);
+            tv.type->accept (v);
+
+            return;
+          }
+          break;
+        case typed_value_t::REFERENCE:
+          unimplemented;
         }
-
-        void visit (const bool_type_t&)
-        {
-          stack_frame_push_bool (runtime->stack, tv.bool_value);
-        }
-
-        void visit (const int_type_t&)
-        {
-          stack_frame_push_int (runtime->stack, tv.int_value);
-        }
-
-        void visit (const uint_type_t&)
-        {
-          stack_frame_push_uint (runtime->stack, tv.uint_value);
-        }
-
-        void visit (const string_type_t&)
-        {
-          stack_frame_push_string (runtime->stack, tv.string_value);
-        }
-
-        void visit (const pointer_type_t&)
-        {
-          stack_frame_push_pointer (runtime->stack, NULL);
-        }
-
-        void visit (const pointer_to_foreign_type_t&)
-        {
-          stack_frame_push_pointer (runtime->stack, NULL);
-        }
-
-        void visit (const pointer_to_immutable_type_t&)
-        {
-          stack_frame_push_pointer (runtime->stack, NULL);
-        }
-
-        void visit (const nil_type_t&)
-        {
-          stack_frame_push_pointer (runtime->stack, NULL);
-        }
-
-        void visit (const function_type_t&)
-        {
-          stack_frame_push_pointer (runtime->stack, tv.function_value->node);
-        }
-
-        void visit (const method_type_t&)
-        {
-          stack_frame_push_pointer (runtime->stack, tv.method_value->node);
-        }
-
-        void default_action (const type_t& type)
-        {
-          not_reached;
-        }
-      };
-
-      visitor v (runtime, tv);
-      tv.type->accept (v);
-
-      return;
     }
 
-  struct evaluate_rvalue_visitor_t : public ast_const_visitor_t
+  struct visitor : public ast_const_visitor_t
   {
     thread_runtime_t* runtime;
 
-    evaluate_rvalue_visitor_t (thread_runtime_t* r) : runtime (r) { }
+    visitor (thread_runtime_t* r) : runtime (r) { }
 
     void default_action (const ast_t& node)
     {
       not_reached;
     }
 
-    void visit (const ast_address_of_expr_t& node)
+    void visit (const ast_indexed_port_call_expr_t& node)
     {
-      evaluate_lvalue (runtime, node.child ());
-    }
-
-    void visit (const ast_binary_arithmetic_expr_t& node)
-    {
-      evaluate_rvalue (runtime, node.left ());
-      evaluate_rvalue (runtime, node.right ());
-
-      struct visitor : public const_type_visitor_t
-      {
-        thread_runtime_t* runtime;
-        const ast_binary_arithmetic_expr_t& node;
-
-        visitor (thread_runtime_t* r, const ast_binary_arithmetic_expr_t& n) : runtime (r), node (n) { }
-
-        void default_action (const type_t& type)
+      // Determine the trigger index.
+      evaluate_expr (runtime, node.index ());
+      int64_t idx = stack_frame_pop_int (runtime->stack);
+      if (idx < 0 || static_cast<size_t> (idx) >= node.array_type->dimension ())
         {
-          not_reached;
+          error_at_line (-1, 0, node.file, node.line,
+                         "array index is out of bounds");
         }
 
-        void visit (const named_type_t& type)
-        {
-          type.subtype ()->accept (*this);
-        }
-
-        void visit (const uint_type_t& type)
-        {
-          uint64_t right = stack_frame_pop_uint (runtime->stack);
-          uint64_t left = stack_frame_pop_uint (runtime->stack);
-          switch (node.arithmetic)
-            {
-            case ADD:
-              stack_frame_push_uint (runtime->stack, left + right);
-              break;
-            case SUBTRACT:
-              stack_frame_push_uint (runtime->stack, left - right);
-              break;
-            }
-        }
-
-        void visit (const int_type_t& type)
-        {
-          int64_t right = stack_frame_pop_int (runtime->stack);
-          int64_t left = stack_frame_pop_int (runtime->stack);
-          switch (node.arithmetic)
-            {
-            case ADD:
-              stack_frame_push_int (runtime->stack, left + right);
-              break;
-            case SUBTRACT:
-              stack_frame_push_int (runtime->stack, left - right);
-              break;
-            }
-        }
-      };
-      visitor v (runtime, node);
-      node.get_type ().type->accept (v);
-    }
-
-    void visit (const ast_call_expr_t& node)
-    {
-      // Create space for the return.
-      typed_value_t return_tv = node.get_type ();
-      stack_frame_reserve (runtime->stack, return_tv.type->size ());
-
-      // Sample the top of the stack.
-      char* top_before = stack_frame_top (runtime->stack);
-
-      // Push the arguments.
-      evaluate_rvalue (runtime, node.args ());
-
-      // Push a fake instruction pointer.
-      stack_frame_push_pointer (runtime->stack, NULL);
-
-      // Sample the top.
-      char* top_after = stack_frame_top (runtime->stack);
-
-      // Push the thing to call.
-      evaluate_rvalue (runtime, node.expr ());
-
-      // Perform the call.
-      call (runtime);
-
-      // Pop the arguments.
-      stack_frame_pop (runtime->stack, top_after - top_before);
-    }
-
-    void visit (const ast_dereference_expr_t& node)
-    {
-      typed_value_t tv = node.get_type ();
-      evaluate_rvalue (runtime, node.child ());
-      void* ptr = stack_frame_pop_pointer (runtime->stack);
-      stack_frame_load (runtime->stack, ptr, tv.type->size ());
-    }
-
-    void visit (const ast_equal_expr_t& node)
-    {
-      ast_t* left = node.left ();
-      ast_t* right = node.right ();
-      // Evaluate the left.
-      evaluate_rvalue (runtime, left);
-      // Evaluate the right.
-      evaluate_rvalue (runtime, right);
-      typed_value_t tv = ast_get_typed_value (left);
-      stack_frame_equal (runtime->stack, tv.type->size ());
-    }
-
-    void visit (const ast_not_equal_expr_t& node)
-    {
-      ast_t* left = node.left ();
-      ast_t* right = node.right ();
-      // Evaluate the left.
-      evaluate_rvalue (runtime, left);
-      // Evaluate the right.
-      evaluate_rvalue (runtime, right);
-      typed_value_t tv = ast_get_typed_value (left);
-      stack_frame_not_equal (runtime->stack, tv.type->size ());
-    }
-
-    void visit (const ast_identifier_expr_t& node)
-    {
-      symbol_t* symbol = node.symbol.symbol ();
-      typed_value_t tv = node.get_type ();
-      stack_frame_push (runtime->stack, symbol_get_offset (symbol), tv.type->size ());
+      port_call (node, node.args (), node.field, idx * node.array_type->element_size ());
     }
 
     void visit (const ast_index_expr_t& node)
@@ -611,67 +448,27 @@ evaluate_rvalue (thread_runtime_t* runtime,
 
         void visit (const array_type_t& type)
         {
-          evaluate_lvalue (runtime, node.base ());
+          evaluate_expr (runtime, node.base ());
           void* ptr = stack_frame_pop_pointer (runtime->stack);
-          evaluate_rvalue (runtime, node.index ());
+          evaluate_expr (runtime, node.index ());
           int64_t idx = stack_frame_pop_int (runtime->stack);
           if (idx < 0 || static_cast<size_t> (idx) >= type.dimension ())
             {
               error_at_line (-1, 0, node.file, node.line,
                              "array index is out of bounds");
             }
-          stack_frame_load (runtime->stack,
-                            static_cast<char*> (ptr) + idx * type.element_size (),
-                            node.get_type ().type->size ());
+          stack_frame_push_pointer (runtime->stack,
+                                    static_cast<char*> (ptr) + idx * type.element_size ());
         }
       };
       visitor v (runtime, node);
       ast_get_typed_value (node.base ()).type->accept (v);
     }
 
-    void visit (const ast_logic_not_expr_t& node)
-    {
-      evaluate_rvalue (runtime, node.child ());
-      bool b = stack_frame_pop_bool (runtime->stack);
-      stack_frame_push_bool (runtime->stack, !b);
-    }
-
-    void visit (const ast_logic_and_expr_t& node)
-    {
-      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
-           pos != limit;
-           ++pos)
-        {
-          evaluate_rvalue (runtime, *pos);
-          if (!stack_frame_pop_bool (runtime->stack))
-            {
-              stack_frame_push_bool (runtime->stack, false);
-              return;
-            }
-        }
-      stack_frame_push_bool (runtime->stack, true);
-    }
-
-    void visit (const ast_logic_or_expr_t& node)
-    {
-      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
-           pos != limit;
-           ++pos)
-        {
-          evaluate_rvalue (runtime, *pos);
-          if (stack_frame_pop_bool (runtime->stack))
-            {
-              stack_frame_push_bool (runtime->stack, true);
-              return;
-            }
-        }
-      stack_frame_push_bool (runtime->stack, false);
-    }
-
     void visit (const ast_merge_expr_t& node)
     {
       ast_t* child = node.child ();
-      evaluate_rvalue (runtime, child);
+      evaluate_expr (runtime, child);
       heap_link_t* hl = (heap_link_t*)stack_frame_pop_pointer (runtime->stack);
       if (hl != NULL)
         {
@@ -710,7 +507,7 @@ evaluate_rvalue (thread_runtime_t* runtime,
     void visit (const ast_move_expr_t& node)
     {
       ast_t* child = node.child ();
-      evaluate_rvalue (runtime, child);
+      evaluate_expr (runtime, child);
       heap_link_t* hl = (heap_link_t*)stack_frame_pop_pointer (runtime->stack);
       if (hl != NULL)
         {
@@ -770,11 +567,44 @@ evaluate_rvalue (thread_runtime_t* runtime,
         }
     }
 
+    void visit (const ast_address_of_expr_t& node)
+    {
+      evaluate_expr (runtime, node.child ());
+    }
+
+    void visit (const ast_call_expr_t& node)
+    {
+      // Create space for the return.
+      typed_value_t return_tv = node.get_type ();
+      stack_frame_reserve (runtime->stack, return_tv.type->size ());
+
+      // Sample the top of the stack.
+      char* top_before = stack_frame_top (runtime->stack);
+
+      // Push the arguments.
+      evaluate_expr (runtime, node.args ());
+
+      // Push a fake instruction pointer.
+      stack_frame_push_pointer (runtime->stack, NULL);
+
+      // Sample the top.
+      char* top_after = stack_frame_top (runtime->stack);
+
+      // Push the thing to call.
+      evaluate_expr (runtime, node.expr ());
+
+      // Perform the call.
+      call (runtime);
+
+      // Pop the arguments.
+      stack_frame_pop (runtime->stack, top_after - top_before);
+    }
+
     void port_call (const ast_t& node, ast_t* args, const field_t* field, size_t offset = 0)
     {
       // Push all of the arguments first and measure their size.
       char* top_before = stack_frame_top (runtime->stack);
-      evaluate_rvalue (runtime, args);
+      evaluate_expr (runtime, args);
       char* top_after = stack_frame_top (runtime->stack);
       ptrdiff_t arguments_size = top_after - top_before; // Assumes stack grows up.
 
@@ -815,40 +645,174 @@ evaluate_rvalue (thread_runtime_t* runtime,
       port_call (node, node.args (), node.field);
     }
 
-    void visit (const ast_indexed_port_call_expr_t& node)
-    {
-      // Determine the trigger index.
-      evaluate_rvalue (runtime, node.index ());
-      int64_t idx = stack_frame_pop_int (runtime->stack);
-      if (idx < 0 || static_cast<size_t> (idx) >= node.array_type->dimension ())
-        {
-          error_at_line (-1, 0, node.file, node.line,
-                         "array index is out of bounds");
-        }
-
-      port_call (node, node.args (), node.field, idx * node.array_type->element_size ());
-    }
-
-    void visit (const ast_select_expr_t& node)
-    {
-      evaluate_lvalue (runtime, node.base ());
-      void* ptr = stack_frame_pop_pointer (runtime->stack);
-      stack_frame_load (runtime->stack, (char*)ptr + field_offset (node.field), node.get_type ().type->size ());
-    }
-
     void visit (const ast_list_expr_t& node)
     {
       for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
            pos != limit;
            ++pos)
         {
-          evaluate_rvalue (runtime, *pos);
+          evaluate_expr (runtime, *pos);
+        }
+    }
+
+    void visit (const ast_select_expr_t& node)
+    {
+      evaluate_expr (runtime, node.base ());
+      char* ptr = static_cast<char*> (stack_frame_pop_pointer (runtime->stack));
+      typed_value_t tv = node.get_type ();
+      assert (tv.has_offset);
+      stack_frame_push_pointer (runtime->stack, ptr + tv.offset);
+    }
+
+    void visit (const ast_dereference_expr_t& node)
+    {
+      evaluate_expr (runtime, node.child ());
+    }
+
+    void visit (const ast_identifier_expr_t& node)
+    {
+      // Get the address of the identifier.
+      symbol_t* symbol = node.symbol.symbol ();
+      ptrdiff_t offset = symbol_get_offset (symbol);
+      stack_frame_push_address (runtime->stack, offset);
+    }
+
+    void visit (const ast_logic_not_expr_t& node)
+    {
+      evaluate_expr (runtime, node.child ());
+      bool b = stack_frame_pop_bool (runtime->stack);
+      stack_frame_push_bool (runtime->stack, !b);
+    }
+
+    void visit (const ast_implicit_dereference_expr_t& node)
+    {
+      evaluate_expr (runtime, node.child ());
+      void* ptr = stack_frame_pop_pointer (runtime->stack);
+      typed_value_t tv = node.get_type ();
+      stack_frame_load (runtime->stack, ptr, tv.type->size ());
+    }
+
+    void visit (const ast_binary_arithmetic_expr_t& node)
+    {
+      switch (node.arithmetic)
+        {
+        case ast_binary_arithmetic_expr_t::EQUAL:
+          {
+            evaluate_expr (runtime, node.left ());
+            evaluate_expr (runtime, node.right ());
+            typed_value_t tv = ast_get_typed_value (node.left ());
+            stack_frame_equal (runtime->stack, tv.type->size ());
+          }
+          break;
+        case ast_binary_arithmetic_expr_t::NOT_EQUAL:
+          {
+            evaluate_expr (runtime, node.left ());
+            evaluate_expr (runtime, node.right ());
+            typed_value_t tv = ast_get_typed_value (node.left ());
+            stack_frame_not_equal (runtime->stack, tv.type->size ());
+          }
+          break;
+        case ast_binary_arithmetic_expr_t::LOGIC_OR:
+          {
+            evaluate_expr (runtime, node.left ());
+            bool b = stack_frame_pop_bool (runtime->stack);
+            if (b)
+              {
+                stack_frame_push_bool (runtime->stack, true);
+              }
+            else
+              {
+                evaluate_expr (runtime, node.right ());
+              }
+          }
+          break;
+        case ast_binary_arithmetic_expr_t::LOGIC_AND:
+          {
+            evaluate_expr (runtime, node.left ());
+            bool b = stack_frame_pop_bool (runtime->stack);
+            if (b)
+              {
+                evaluate_expr (runtime, node.right ());
+              }
+            else
+              {
+                stack_frame_push_bool (runtime->stack, false);
+              }
+          }
+          break;
+        case ast_binary_arithmetic_expr_t::ADD:
+          {
+            evaluate_expr (runtime, node.left ());
+            evaluate_expr (runtime, node.right ());
+
+            struct visitor : public const_type_visitor_t
+            {
+              thread_runtime_t* runtime;
+              const ast_binary_arithmetic_expr_t& node;
+
+              visitor (thread_runtime_t* r, const ast_binary_arithmetic_expr_t& n) : runtime (r), node (n) { }
+
+              void default_action (const type_t& type)
+              {
+                not_reached;
+              }
+
+              void visit (const named_type_t& type)
+              {
+                type.subtype ()->accept (*this);
+              }
+
+              void visit (const uint_type_t& type)
+              {
+                uint64_t right = stack_frame_pop_uint (runtime->stack);
+                uint64_t left = stack_frame_pop_uint (runtime->stack);
+                switch (node.arithmetic)
+                  {
+                  case ast_binary_arithmetic_expr_t::EQUAL:
+                  case ast_binary_arithmetic_expr_t::NOT_EQUAL:
+                  case ast_binary_arithmetic_expr_t::LOGIC_OR:
+                  case ast_binary_arithmetic_expr_t::LOGIC_AND:
+                    not_reached;
+                  case ast_binary_arithmetic_expr_t::ADD:
+                    stack_frame_push_uint (runtime->stack, left + right);
+                    break;
+                  case ast_binary_arithmetic_expr_t::SUBTRACT:
+                    stack_frame_push_uint (runtime->stack, left - right);
+                    break;
+                  }
+              }
+
+              void visit (const int_type_t& type)
+              {
+                int64_t right = stack_frame_pop_int (runtime->stack);
+                int64_t left = stack_frame_pop_int (runtime->stack);
+                switch (node.arithmetic)
+                  {
+                  case ast_binary_arithmetic_expr_t::EQUAL:
+                  case ast_binary_arithmetic_expr_t::NOT_EQUAL:
+                  case ast_binary_arithmetic_expr_t::LOGIC_OR:
+                  case ast_binary_arithmetic_expr_t::LOGIC_AND:
+                    not_reached;
+                  case ast_binary_arithmetic_expr_t::ADD:
+                    stack_frame_push_int (runtime->stack, left + right);
+                    break;
+                  case ast_binary_arithmetic_expr_t::SUBTRACT:
+                    stack_frame_push_int (runtime->stack, left - right);
+                    break;
+                  }
+              }
+            };
+            visitor v (runtime, node);
+            node.get_type ().type->accept (v);
+          }
+          break;
+        case ast_binary_arithmetic_expr_t::SUBTRACT:
+          unimplemented;
         }
     }
   };
-
-  evaluate_rvalue_visitor_t evaluate_rvalue_visitor (runtime);
-  expr->accept (evaluate_rvalue_visitor);
+  visitor v (runtime);
+  node->accept (v);
 }
 
 static ControlAction
@@ -874,10 +838,10 @@ evaluate_statement (thread_runtime_t* runtime,
       // Determine the size of the value being assigned.
       size_t size = ast_get_typed_value (right).type->size ();
       // Evaluate the address.
-      evaluate_lvalue (runtime, left);
+      evaluate_expr (runtime, left);
       void* ptr = stack_frame_pop_pointer (runtime->stack);
       // Evaluate the value.
-      evaluate_rvalue (runtime, right);
+      evaluate_expr (runtime, right);
       // Store.
       stack_frame_store_heap (runtime->stack, ptr, size);
     }
@@ -887,7 +851,7 @@ evaluate_statement (thread_runtime_t* runtime,
       ast_t* expr = node.expr ();
       ast_t* body = node.body ();
       // Evaluate the pointer to the heap link.
-      evaluate_rvalue (runtime, expr);
+      evaluate_expr (runtime, expr);
       heap_link_t* hl = (heap_link_t*)stack_frame_pop_pointer (runtime->stack);
       if (hl == NULL)
         {
@@ -931,14 +895,14 @@ evaluate_statement (thread_runtime_t* runtime,
       // Determine the size of the value being generated.
       size_t size = ast_get_typed_value (child).type->size ();
       // Evaluate.
-      evaluate_rvalue (runtime, child);
+      evaluate_expr (runtime, child);
       // Remove value.
       stack_frame_pop (runtime->stack, size);
     }
 
     void visit (const ast_if_statement_t& node)
     {
-      evaluate_rvalue (runtime, node.condition ());
+      evaluate_expr (runtime, node.condition ());
       bool c = stack_frame_pop_bool (runtime->stack);
       if (c)
         {
@@ -954,7 +918,7 @@ evaluate_statement (thread_runtime_t* runtime,
     {
       for (;;)
         {
-          evaluate_rvalue (runtime, node.condition ());
+          evaluate_expr (runtime, node.condition ());
           bool c = stack_frame_pop_bool (runtime->stack);
           if (c)
             {
@@ -976,10 +940,10 @@ evaluate_statement (thread_runtime_t* runtime,
       // Determine the size of the value being assigned.
       const type_t* type = ast_get_typed_value (node.right ()).type;
       // Evaluate the address.
-      evaluate_lvalue (runtime, node.left ());
+      evaluate_expr (runtime, node.left ());
       void* ptr = stack_frame_pop_pointer (runtime->stack);
       // Evaluate the value.
-      evaluate_rvalue (runtime, node.right ());
+      evaluate_expr (runtime, node.right ());
 
       struct visitor : public const_type_visitor_t
       {
@@ -1011,10 +975,10 @@ evaluate_statement (thread_runtime_t* runtime,
       // Determine the size of the value being assigned.
       const type_t* type = ast_get_typed_value (node.right ()).type;
       // Evaluate the address.
-      evaluate_lvalue (runtime, node.left ());
+      evaluate_expr (runtime, node.left ());
       void* ptr = stack_frame_pop_pointer (runtime->stack);
       // Evaluate the value.
-      evaluate_rvalue (runtime, node.right ());
+      evaluate_expr (runtime, node.right ());
 
       struct visitor : public const_type_visitor_t
       {
@@ -1056,7 +1020,7 @@ evaluate_statement (thread_runtime_t* runtime,
     void visit (const ast_return_statement_t& node)
     {
       // Evaluate the expression.
-      evaluate_rvalue (runtime, node.at (UNARY_CHILD));
+      evaluate_expr (runtime, node.at (UNARY_CHILD));
       // Get the return parameter.
       symbol_t* symbol = symtab_get_first_return_parameter (node.symtab);
       assert (symbol != NULL);
@@ -1067,7 +1031,7 @@ evaluate_statement (thread_runtime_t* runtime,
 
     void visit (const ast_increment_statement_t& node)
     {
-      evaluate_lvalue (runtime, node.child ());
+      evaluate_expr (runtime, node.child ());
       void* ptr = stack_frame_pop_pointer (runtime->stack);
 
       struct visitor : public const_type_visitor_t
@@ -1109,7 +1073,7 @@ evaluate_statement (thread_runtime_t* runtime,
       ast_t* body = node.body ();
       memcpy (stack_frame_ip (runtime->stack), &body, sizeof (void*));
       // Execute the expression list.
-      evaluate_rvalue (runtime, node.expr_list ());
+      evaluate_expr (runtime, node.expr_list ());
 
       // Stop execution.
       retval = RETURN;
@@ -1127,7 +1091,7 @@ evaluate_statement (thread_runtime_t* runtime,
       ast_t* expr_list = node.at (UNARY_CHILD);
       AST_FOREACH (child, expr_list)
         {
-          evaluate_rvalue (runtime, child);
+          evaluate_expr (runtime, child);
           struct visitor : public const_type_visitor_t
           {
             thread_runtime_t* runtime;
@@ -1240,7 +1204,7 @@ enabled (thread_runtime_t* runtime,
   // Push an instruction pointer.
   stack_frame_push_pointer (runtime->stack, NULL);
   stack_frame_push_base_pointer (runtime->stack, 0 /* No locals. */);
-  evaluate_rvalue (runtime, precondition);
+  evaluate_expr (runtime, precondition);
   bool retval = stack_frame_pop_bool (runtime->stack);
   stack_frame_pop_base_pointer (runtime->stack);
   // Pop the instruction pointer.
@@ -1277,7 +1241,7 @@ execute (thread_runtime_t* runtime,
   // Reset the mutable phase base pointer.
   runtime->mutable_phase_base_pointer = 0;
 
-  stack_frame_push_base_pointer (runtime->stack, action->locals_size);
+  stack_frame_push_base_pointer (runtime->stack, action->memory_model.locals_size ());
 
   evaluate_statement (runtime, body);
 
@@ -1340,7 +1304,7 @@ execute (thread_runtime_t* runtime,
       body = dynamic_cast<ast_dimensioned_reaction_t*> (reaction->node ())->body ();
     }
 
-  stack_frame_push_base_pointer (runtime->stack, reaction->locals_size);
+  stack_frame_push_base_pointer (runtime->stack, reaction->memory_model.locals_size ());
 
   evaluate_statement (runtime, body);
 }
@@ -1525,12 +1489,11 @@ run (void* arg)
 #define NUM_THREADS 2
 
 void runtime_run (runtime_t* r,
-                  memory_model_t* memory_model,
                   size_t stack_size)
 {
   thread_runtime_t runtime;
   runtime.runtime = r;
-  runtime.stack = stack_frame_make (memory_model, stack_size);
+  runtime.stack = stack_frame_make (stack_size);
 
   for (instance_table_t::InstancesType::const_iterator pos = r->instance_table->instances.begin (),
          limit = r->instance_table->instances.end ();
@@ -1559,7 +1522,7 @@ void runtime_run (runtime_t* r,
     {
       thread_runtime_t* runtime = runtimes + idx;
       runtime->runtime = r;
-      runtime->stack = stack_frame_make (memory_model, stack_size);
+      runtime->stack = stack_frame_make (stack_size);
       pthread_create (&runtime->thread, NULL, run, runtime);
     }
 

@@ -14,6 +14,18 @@ struct symbol_t
   {
     typed_value_t value;
   } typed_constant;
+  struct
+  {
+    typed_value_t value;
+    VariableKind kind;
+    symbol_t* original;
+  } variable;
+  struct
+  {
+    typed_value_t value;
+    ParameterKind kind;
+    symbol_t* original;
+  } parameter;
   union
   {
     struct
@@ -21,18 +33,6 @@ struct symbol_t
       const named_type_t *type;
       method_t* method;
     } instance;
-    struct
-    {
-      const type_t *type;
-      ParameterKind kind;
-      symbol_t* original;
-    } parameter;
-    struct
-    {
-      const type_t *type;
-      VariableKind kind;
-      symbol_t* original;
-    } variable;
     struct
     {
       named_type_t *type;
@@ -157,7 +157,7 @@ symbol_t *
 symbol_make_variable (string_t identifier, const type_t * type, ast_t* defining_node)
 {
   symbol_t *s = make (identifier, SymbolVariable, defining_node);
-  s->variable.type = type;
+  s->variable.value = typed_value_t::make_ref (type, typed_value_t::MUTABLE);
   s->variable.kind = VariableOrdinary;
   return s;
 }
@@ -167,7 +167,7 @@ symbol_make_variable_duplicate (symbol_t* symbol, const type_t * type)
 {
   assert (symbol->kind == SymbolVariable);
   symbol_t *s = make (symbol->identifier, SymbolVariable, symbol->defining_node);
-  s->variable.type = type;
+  s->variable.value = typed_value_t::make_ref (type, typed_value_t::MUTABLE);
   s->variable.kind = VariableDuplicate;
   s->variable.original = symbol;
   return s;
@@ -177,7 +177,14 @@ const type_t *
 symbol_variable_type (const symbol_t * symbol)
 {
   assert (symbol_kind (symbol) == SymbolVariable);
-  return symbol->variable.type;
+  return symbol->variable.value.type;
+}
+
+typed_value_t
+symbol_variable_value (const symbol_t * symbol)
+{
+  assert (symbol_kind (symbol) == SymbolVariable);
+  return symbol->variable.value;
 }
 
 symbol_t *
@@ -200,7 +207,7 @@ symbol_make_typed_constant (string_t identifier, typed_value_t value,
 			    ast_t * defining_node)
 {
   symbol_t *s = make (identifier, SymbolTypedConstant, defining_node);
-  s->typed_constant.value = value;
+  s->typed_constant.value = typed_value_t::make_ref (value);
   return s;
 }
 
@@ -251,7 +258,7 @@ symbol_make_parameter (string_t identifier, const type_t * type,
 		       ast_t * defining_node)
 {
   symbol_t *s = make (identifier, SymbolParameter, defining_node);
-  s->parameter.type = type;
+  s->parameter.value = typed_value_t::make_ref (type, typed_value_t::MUTABLE);
   s->parameter.kind = ParameterOrdinary;
   return s;
 }
@@ -260,7 +267,7 @@ symbol_t *symbol_make_return_parameter (string_t identifier, const type_t * type
                                         ast_t * defining_node)
 {
   symbol_t *s = make (identifier, SymbolParameter, defining_node);
-  s->parameter.type = type;
+  s->parameter.value = typed_value_t::make_ref (type, typed_value_t::MUTABLE);
   s->parameter.kind = ParameterReturn;
   return s;
 }
@@ -270,7 +277,7 @@ symbol_make_receiver (string_t identifier, const type_t * type,
                       ast_t * defining_node)
 {
   symbol_t *s = make (identifier, SymbolParameter, defining_node);
-  s->parameter.type = type;
+  s->parameter.value = typed_value_t::make_ref (type, typed_value_t::MUTABLE);
   s->parameter.kind = ParameterReceiver;
   return s;
 }
@@ -284,7 +291,7 @@ symbol_make_receiver_duplicate (symbol_t* receiver)
   t = pointer_type_t::make (t);
 
   symbol_t *s = make (symbol_identifier (receiver), SymbolParameter, symbol_defining_node (receiver));
-  s->parameter.type = t;
+  s->parameter.value = typed_value_t::make_ref (t, typed_value_t::MUTABLE);
   s->parameter.kind = ParameterReceiverDuplicate;
   s->parameter.original = receiver;
   return s;
@@ -295,7 +302,7 @@ symbol_make_parameter_duplicate (symbol_t* symbol, type_t * type)
 {
   assert (symbol->kind == SymbolParameter);
   symbol_t *s = make (symbol->identifier, SymbolParameter, symbol->defining_node);
-  s->parameter.type = type;
+  s->parameter.value = typed_value_t::make_ref (type, typed_value_t::MUTABLE);
   s->parameter.kind = ParameterDuplicate;
   s->parameter.original = symbol;
   return s;
@@ -312,7 +319,13 @@ const type_t *
 symbol_parameter_type (const symbol_t * symbol)
 {
   assert (symbol_kind (symbol) == SymbolParameter);
-  return symbol->parameter.type;
+  return symbol->parameter.value.type;
+}
+
+typed_value_t symbol_parameter_value (const symbol_t * symbol)
+{
+  assert (symbol_kind (symbol) == SymbolParameter);
+  return symbol->parameter.value;
 }
 
 void symbol_set_offset (symbol_t* symbol,

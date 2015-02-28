@@ -967,12 +967,68 @@ named_type_t::named_type_t (string_t name,
 }
 
 bool
+type_is_boolean (const type_t* type)
+{
+  struct visitor : public const_type_visitor_t
+  {
+    bool flag;
+    visitor () : flag (false) { }
+
+    void visit (const named_type_t& type)
+    {
+      type.subtype ()->accept (*this);
+    }
+
+    void visit (const bool_type_t& type)
+    {
+      flag = true;
+    }
+  };
+  visitor v;
+  type->accept (v);
+  return v.flag;
+}
+
+bool
 type_is_arithmetic (const type_t* type)
 {
   struct visitor : public const_type_visitor_t
   {
     bool flag;
     visitor () : flag (false) { }
+
+    void visit (const named_type_t& type)
+    {
+      type.subtype ()->accept (*this);
+    }
+
+    void visit (const int_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const uint_type_t& type)
+    {
+      flag = true;
+    }
+  };
+  visitor v;
+  type->accept (v);
+  return v.flag;
+}
+
+bool
+type_is_comparable (const type_t* type)
+{
+ struct visitor : public const_type_visitor_t
+  {
+    bool flag;
+    visitor () : flag (false) { }
+
+    void visit (const pointer_type_t& type)
+    {
+      flag = true;
+    }
 
     void visit (const named_type_t& type)
     {
@@ -1010,4 +1066,77 @@ type_strip (const type_t* type)
   visitor v (type);
   type->accept (v);
   return v.retval;
+}
+
+const type_t*
+type_index (const type_t* base, const type_t* index)
+{
+  struct visitor : public const_type_visitor_t
+  {
+    const type_t* index;
+    const type_t* result;
+
+    visitor (const type_t* i) : index (i), result (NULL) { }
+
+    void visit (const array_type_t& type)
+    {
+      struct visitor : public const_type_visitor_t
+      {
+        const array_type_t& array_type;
+        const type_t* result;
+
+        visitor (const array_type_t& at) : array_type (at), result (NULL) { }
+
+        void visit (const named_type_t& type)
+        {
+          type.subtype ()->accept (*this);
+        }
+
+        void visit (const uint_type_t& type)
+        {
+          result = array_type.base_type ();
+        }
+
+        void visit (const int_type_t& type)
+        {
+          result = array_type.base_type ();
+        }
+
+        void visit (const iota_type_t& type)
+        {
+          if (type.bound () <= array_type.dimension ())
+            {
+              result = array_type.base_type ();
+            }
+        }
+      };
+      visitor v (type);
+      index->accept (v);
+      result = v.result;
+    }
+
+  };
+  visitor v (index);
+  base->accept (v);
+  return v.result;
+}
+
+bool
+type_is_index (const type_t* type, int64_t index)
+{
+  struct visitor : public const_type_visitor_t
+  {
+    int64_t index;
+    bool flag;
+
+    visitor (int64_t i) : index (i), flag (false) { }
+
+    void visit (const array_type_t& type)
+    {
+      flag = index >= 0 && static_cast<size_t> (index) < type.dimension ();
+    }
+  };
+  visitor v (index);
+  type->accept (v);
+  return v.flag;
 }

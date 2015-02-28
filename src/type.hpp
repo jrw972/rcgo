@@ -535,6 +535,10 @@ type_select_reaction (const type_t* type, string_t identifier);
 const type_t*
 type_select (const type_t* type, string_t identifier);
 
+// Return the type of indexing into the other type.
+const type_t*
+type_index (const type_t* base, const type_t* index);
+
 // Return type after applying dereference or NULL.
 const type_t*
 type_dereference (const type_t* type);
@@ -578,13 +582,33 @@ type_is_immutable_safe (const type_t* type);
 bool
 type_contains_pointer_to_foreign (const type_t* type);
 
+// True if boolean operators can be applied to values of this type.
+bool
+type_is_boolean (const type_t* type);
+
 // True if arithmetic operators can be applied to values of this type.
 bool
 type_is_arithmetic (const type_t* type);
 
+// True if == or != can be applied to values of this type.
+bool
+type_is_comparable (const type_t* type);
+
+// True if index is valid.
+bool
+type_is_index (const type_t* type, int64_t index);
+
 // Remove a named_type_t.
 const type_t*
 type_strip (const type_t* type);
+
+// Choose between equivalent types.
+inline const type_t*
+type_choose (const type_t* x, const type_t* y)
+{
+  if (y->level () < x->level ()) { return y; }
+  return x;
+}
 
 // Cast a type to a specific type.
 template<typename T>

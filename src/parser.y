@@ -215,42 +215,24 @@ field_list: /* empty */ { $$ = ast_make_field_list (yyloc); }
 rvalue: or_expr { $$ = $1; }
 
 or_expr: and_expr { $$ = $1; }
-| and_expr LOGIC_OR or_expr {
-  if (dynamic_cast<ast_logic_or_expr_t*> ($3))
-    {
-      $$ = $3->prepend ($1);
-    }
-  else
-    {
-      $$ = ast_make_logic_or (@1, $1, $3);
-    }
- }
+| and_expr LOGIC_OR or_expr { $$ = new ast_binary_arithmetic_expr_t (@1, ast_binary_arithmetic_expr_t::LOGIC_OR, $1, $3); }
 
 and_expr: compare_expr { $$ = $1; }
-| compare_expr LOGIC_AND and_expr {
-  if (dynamic_cast<ast_logic_and_expr_t*> ($3))
-    {
-      $$ = $3->prepend ($1);
-    }
-  else
-    {
-      $$ = ast_make_logic_and (@1, $1, $3);
-    }
- }
+| compare_expr LOGIC_AND and_expr { $$ = new ast_binary_arithmetic_expr_t (@1, ast_binary_arithmetic_expr_t::LOGIC_AND, $1, $3); }
 
 compare_expr: add_expr { $$ = $1; }
-| add_expr EQUAL compare_expr { $$ = new ast_equal_expr_t (@1, $1, $3); }
-| add_expr NOT_EQUAL compare_expr { $$ = new ast_not_equal_expr_t (@1, $1, $3); }
+| add_expr EQUAL compare_expr { $$ = new ast_binary_arithmetic_expr_t (@1, ast_binary_arithmetic_expr_t::EQUAL, $1, $3); }
+| add_expr NOT_EQUAL compare_expr { $$ = new ast_binary_arithmetic_expr_t (@1, ast_binary_arithmetic_expr_t::NOT_EQUAL, $1, $3); }
 
 add_expr: unary_expr { $$ = $1; }
-| unary_expr '+' add_expr { $$ = new ast_binary_arithmetic_expr_t (@1, ADD, $1, $3); }
+| unary_expr '+' add_expr { $$ = new ast_binary_arithmetic_expr_t (@1, ast_binary_arithmetic_expr_t::ADD, $1, $3); }
 | unary_expr '-' add_expr { unimplemented; }
 
 unary_expr: primary_expr { $$ = $1; }
 | unary_expr '!' { $$ = new ast_logic_not_expr_t (@1, $1); }
-| unary_expr '&' { $$ = new ast_address_of_expr_t (@1, $1); }
+| lvalue '&' { $$ = new ast_address_of_expr_t (@1, $1); }
 
-primary_expr: lvalue { $$ = $1; }
+primary_expr: lvalue { $$ = new ast_implicit_dereference_expr_t (@1, $1); }
 | primary_expr '(' optional_expr_list ')' { $$ = new ast_call_expr_t (@1, $1, $3); }
 | LITERAL { $$ = $1; }
 | NEW type_spec { $$ = ast_make_new_expr (@1, $2); }

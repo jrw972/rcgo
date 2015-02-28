@@ -34,6 +34,7 @@ process_declarations (ast_t * node)
         }
       action_t *action = new action_t (type, &node);
       type->add_action (action);
+      node.action = action;
       symtab_set_current_action (node.symtab, action);
       symtab_set_current_receiver_type (node.symtab, type);
     }
@@ -60,9 +61,9 @@ process_declarations (ast_t * node)
         }
       action_t *action = new action_t (type, &node, dimension);
       type->add_action (action);
+      node.action = action;
       symtab_set_current_action (node.symtab, action);
       symtab_set_current_receiver_type (node.symtab, type);
-      node.action = action;
     }
 
     void visit (ast_bind_t& node)
@@ -86,6 +87,7 @@ process_declarations (ast_t * node)
         }
       bind_t* bind = new bind_t (&node);
       type->add_bind (bind);
+      node.bind = bind;
       symtab_set_current_receiver_type (node.symtab, type);
     }
 
@@ -102,6 +104,7 @@ process_declarations (ast_t * node)
       const type_t *return_type = process_type_spec (return_type_node, true);
 
       function_t* function = new function_t (&node, symbol_identifier (symbol), new function_type_t (signature, return_type));
+      node.function = function;
       symbol_set_function_function (symbol, function);
       symtab_set_current_function (node.symtab, function);
 
@@ -161,6 +164,7 @@ process_declarations (ast_t * node)
 
       method_t* method = new method_t (&node, identifier, method_type);
       type->add_method (method);
+      node.method = method;
       symtab_set_current_method (node.symtab, method);
       symtab_set_current_receiver_type (node.symtab, type);
     }
@@ -228,6 +232,7 @@ process_declarations (ast_t * node)
 
       reaction_t* reaction = new reaction_t (type, &node, identifier, signature);
       type->add_reaction (reaction);
+      node.reaction = reaction;
       symtab_set_current_action (node.symtab, reaction);
       symtab_set_current_receiver_type (node.symtab, type);
     }
@@ -269,9 +274,9 @@ process_declarations (ast_t * node)
 
       reaction_t* reaction = new reaction_t (type, &node, identifier, signature, dimension);
       type->add_reaction (reaction);
+      node.reaction = reaction;
       symtab_set_current_action (node.symtab, reaction);
       symtab_set_current_receiver_type (node.symtab, type);
-      node.reaction = reaction;
     }
 
     void visit (ast_top_level_list_t& node)

@@ -353,14 +353,20 @@ struct ast_binary_expr_t : public ast_expr_t
   iterator right_iter () { return begin () + RIGHT; }
 };
 
-enum Arithmetic
-  {
-    ADD,
-    SUBTRACT,
-  };
-
 struct ast_binary_arithmetic_expr_t : public ast_binary_expr_t
 {
+  enum Arithmetic
+    {
+      EQUAL,
+      NOT_EQUAL,
+
+      LOGIC_OR,
+      LOGIC_AND,
+
+      ADD,
+      SUBTRACT,
+    };
+
   ast_binary_arithmetic_expr_t (unsigned int line, Arithmetic a, ast_t* left, ast_t* right)
     : ast_binary_expr_t (line, left, right)
     , arithmetic (a)
@@ -407,30 +413,20 @@ struct ast_call_expr_t : public ast_expr_t
   void accept (ast_const_visitor_t& visitor) const;
 };
 
-struct ast_dereference_expr_t : public ast_expr_t
+struct ast_dereference_expr_t : public ast_unary_expr_t
 {
-  enum
-    {
-      CHILD,
-      COUNT
-    };
-
   ast_dereference_expr_t (unsigned int line, ast_t* child)
-    : ast_expr_t (line, COUNT)
-  {
-    children[CHILD] = child;
-  }
-
-  ast_t* child () const { return children[CHILD]; }
+    : ast_unary_expr_t (line, child)
+  { }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
 };
 
-struct ast_equal_expr_t : public ast_binary_expr_t
+struct ast_implicit_dereference_expr_t : public ast_unary_expr_t
 {
-  ast_equal_expr_t (unsigned int line, ast_t* left, ast_t* right)
-    : ast_binary_expr_t (line, left, right)
+  ast_implicit_dereference_expr_t (unsigned int line, ast_t* child)
+    : ast_unary_expr_t (line, child)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -494,26 +490,6 @@ struct ast_logic_not_expr_t : public ast_unary_expr_t
   void accept (ast_const_visitor_t& visitor) const;
 };
 
-struct ast_logic_and_expr_t : public ast_expr_t
-{
-  ast_logic_and_expr_t (unsigned int line, size_t children_count)
-    : ast_expr_t (line, children_count)
-  { }
-
-  void accept (ast_visitor_t& visitor);
-  void accept (ast_const_visitor_t& visitor) const;
-};
-
-struct ast_logic_or_expr_t : public ast_expr_t
-{
-  ast_logic_or_expr_t (unsigned int line, size_t children_count)
-    : ast_expr_t (line, children_count)
-  { }
-
-  void accept (ast_visitor_t& visitor);
-  void accept (ast_const_visitor_t& visitor) const;
-};
-
 struct ast_merge_expr_t : public ast_unary_expr_t
 {
   ast_merge_expr_t (unsigned int line, ast_t* child)
@@ -538,16 +514,6 @@ struct ast_new_expr_t : public ast_expr_t
 {
   ast_new_expr_t (unsigned int line, size_t children_count)
     : ast_expr_t (line, children_count)
-  { }
-
-  void accept (ast_visitor_t& visitor);
-  void accept (ast_const_visitor_t& visitor) const;
-};
-
-struct ast_not_equal_expr_t : public ast_binary_expr_t
-{
-  ast_not_equal_expr_t (unsigned int line, ast_t* left, ast_t* right)
-    : ast_binary_expr_t (line, left, right)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -623,7 +589,6 @@ struct ast_select_expr_t : public ast_expr_t
 
   ast_select_expr_t (unsigned int line, ast_t* base, ast_t* identifier)
     : ast_expr_t (line, COUNT)
-    , field (NULL)
   {
     children[BASE] = base;
     children[IDENTIFIER] = identifier;
@@ -635,15 +600,15 @@ struct ast_select_expr_t : public ast_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-
-  field_t* field;
 };
 
 struct ast_literal_expr_t : public ast_expr_t
 {
-  ast_literal_expr_t (unsigned int line, size_t children_count)
-    : ast_expr_t (line, children_count)
-  { }
+  ast_literal_expr_t (unsigned int line, typed_value_t tv)
+    : ast_expr_t (line, 0)
+  {
+    set_type (tv);
+  }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -943,6 +908,7 @@ struct ast_action_t : public ast_t
 
   ast_action_t (unsigned int line, ast_t* receiver, ast_t* precondition, ast_t* body)
     : ast_t (line, COUNT)
+    , action (NULL)
   {
     children[RECEIVER] = receiver;
     children[PRECONDITION] = precondition;
@@ -957,6 +923,7 @@ struct ast_action_t : public ast_t
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
 
+  action_t* action;
   symbol_holder this_symbol;
 };
 
@@ -1007,6 +974,7 @@ struct ast_bind_t : public ast_t
 
   ast_bind_t (unsigned int line, ast_t * receiver, ast_t * body)
     : ast_t (line, COUNT)
+    , bind (NULL)
   {
     children[RECEIVER] = receiver;
     children[BODY] = body;
@@ -1019,12 +987,14 @@ struct ast_bind_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
 
   symbol_holder this_symbol;
+  bind_t* bind;
 };
 
 struct ast_function_t : public ast_t
 {
   ast_function_t (unsigned int line, size_t children_count)
     : ast_t (line, children_count)
+    , function (NULL)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -1032,6 +1002,7 @@ struct ast_function_t : public ast_t
 
   symbol_holder function_symbol;
   symbol_holder return_symbol;
+  function_t* function;
 };
 
 struct ast_instance_t : public ast_t
@@ -1050,11 +1021,13 @@ struct ast_method_t : public ast_t
 {
   ast_method_t (unsigned int line, size_t children_count)
     : ast_t (line, children_count)
+    , method (NULL)
   { }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
 
+  method_t* method;
   symbol_holder return_symbol;
 };
 
@@ -1071,6 +1044,7 @@ struct ast_reaction_t : public ast_t
 
   ast_reaction_t (unsigned int line, ast_t* receiver, ast_t* identifier, ast_t* signature, ast_t* body)
     : ast_t (line, COUNT)
+    , reaction (NULL)
   {
     children[RECEIVER] = receiver;
     children[IDENTIFIER] = identifier;
@@ -1086,6 +1060,7 @@ struct ast_reaction_t : public ast_t
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
 
+  reaction_t* reaction;
   symbol_holder this_symbol;
 };
 
@@ -1196,19 +1171,16 @@ struct ast_visitor_t
   virtual void visit (ast_address_of_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_call_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_dereference_expr_t& ast) { default_action (ast); }
-  virtual void visit (ast_equal_expr_t& ast) { default_action (ast); }
+  virtual void visit (ast_implicit_dereference_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_identifier_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_index_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_indexed_port_call_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_list_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_literal_expr_t& ast) { default_action (ast); }
-  virtual void visit (ast_logic_and_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_logic_not_expr_t& ast) { default_action (ast); }
-  virtual void visit (ast_logic_or_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_merge_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_move_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_new_expr_t& ast) { default_action (ast); }
-  virtual void visit (ast_not_equal_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_port_call_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_select_expr_t& ast) { default_action (ast); }
 
@@ -1271,19 +1243,16 @@ struct ast_const_visitor_t
   virtual void visit (const ast_address_of_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_call_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_dereference_expr_t& ast) { default_action (ast); }
-  virtual void visit (const ast_equal_expr_t& ast) { default_action (ast); }
+  virtual void visit (const ast_implicit_dereference_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_identifier_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_index_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_indexed_port_call_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_list_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_literal_expr_t& ast) { default_action (ast); }
-  virtual void visit (const ast_logic_and_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_logic_not_expr_t& ast) { default_action (ast); }
-  virtual void visit (const ast_logic_or_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_merge_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_move_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_new_expr_t& ast) { default_action (ast); }
-  virtual void visit (const ast_not_equal_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_port_call_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_select_expr_t& ast) { default_action (ast); }
 
@@ -1390,10 +1359,6 @@ ast_t *ast_make_function_def (unsigned int line, ast_t * identifier, ast_t * sig
 
 #define UNARY_CHILD 0
 
-ast_t *ast_make_logic_and (unsigned int line, ast_t * left, ast_t * right);
-
-ast_t *ast_make_logic_or (unsigned int line, ast_t * left, ast_t * right);
-
 /* Stmt */
 
 ast_t *ast_make_expr_stmt (unsigned int line, ast_t * expr);
@@ -1455,8 +1420,6 @@ ast_t *ast_make_heap_type_spec (unsigned int line, ast_t * type);
 ast_t *ast_make_array_type_spec (unsigned int line, ast_t * dimension, ast_t * type_spec);
 
 ast_t *ast_make_expression_list (unsigned int line);
-
-ast_t *ast_make_typed_literal (unsigned int line, typed_value_t value);
 
 typed_value_t ast_get_typed_value (const ast_t* node);
 

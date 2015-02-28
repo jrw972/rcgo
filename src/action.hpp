@@ -4,6 +4,7 @@
 #include "types.hpp"
 #include "strtab.hpp"
 #include "type.hpp"
+#include "memory_model.hpp"
 
 class action_reaction_base_t
 {
@@ -11,14 +12,12 @@ public:
   typedef std::vector<trigger_t*> TriggersType;
 
   action_reaction_base_t (type_t* component_type, ast_t* node)
-    : locals_size (0)
-    , component_type_ (component_type)
+    : component_type_ (component_type)
     , node_ (node)
   { }
 
   action_reaction_base_t (type_t* component_type, ast_t* node, size_t dimension)
-    : locals_size (0)
-    , component_type_ (component_type)
+    : component_type_ (component_type)
     , node_ (node)
     , has_dimension_ (true)
     , dimension_ (dimension)
@@ -38,7 +37,7 @@ public:
   TriggersType::const_iterator begin () const { return triggers_.begin (); }
   TriggersType::const_iterator end () const { return triggers_.end (); }
 
-  size_t locals_size;
+  memory_model_t memory_model;
 
   bool has_dimension () const { return has_dimension_; }
 

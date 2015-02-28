@@ -45,6 +45,8 @@ symbol_t *symbol_make_variable_duplicate (symbol_t* symbol, const type_t * type)
 
 const type_t *symbol_variable_type (const symbol_t * symbol);
 
+typed_value_t symbol_variable_value (const symbol_t * symbol);
+
 symbol_t *symbol_make_type (string_t identifier, named_type_t * type,
 			    ast_t * defining_node);
 
@@ -92,6 +94,8 @@ symbol_t *symbol_make_parameter_duplicate (symbol_t* symbol, type_t * type);
 ParameterKind symbol_parameter_kind (const symbol_t * symbol);
 
 const type_t *symbol_parameter_type (const symbol_t * symbol);
+
+typed_value_t symbol_parameter_value (const symbol_t * symbol);
 
 void symbol_set_offset (symbol_t* symbol,
                         ptrdiff_t offset);

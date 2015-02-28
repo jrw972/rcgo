@@ -13,13 +13,12 @@ struct method_t
     : node (n)
     , name (na)
     , method_type (method_type_)
-    , locals_size (0)
   { }
 
   ast_t* const node;
   string_t const name;
   const method_type_t * const method_type;
-  size_t locals_size;
+  memory_model_t memory_model;
 };
 
 #endif /* method_h */
