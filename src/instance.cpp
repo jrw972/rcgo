@@ -198,6 +198,30 @@ evaluate_static (const ast_t* node, const static_memory_t& memory)
       not_reached;
     }
 
+    void visit (const ast_binary_arithmetic_expr_t& node)
+    {
+      switch (node.arithmetic)
+        {
+        case ast_binary_arithmetic_expr_t::EQUAL:
+          unimplemented;
+        case ast_binary_arithmetic_expr_t::NOT_EQUAL:
+          {
+            static_value_t left = evaluate_static (node.left (), memory);
+            static_value_t right = evaluate_static (node.right (), memory);
+            result = static_value_t::make_value (left.value != right.value);
+          }
+          break;
+        case ast_binary_arithmetic_expr_t::LOGIC_OR:
+          unimplemented;
+        case ast_binary_arithmetic_expr_t::LOGIC_AND:
+          unimplemented;
+        case ast_binary_arithmetic_expr_t::ADD:
+          unimplemented;
+        case ast_binary_arithmetic_expr_t::SUBTRACT:
+          unimplemented;
+        }
+    }
+
     void visit (const ast_literal_expr_t& node)
     {
       typed_value_t tv = node.get_type ();
@@ -293,15 +317,33 @@ instance_table_enumerate_bindings (instance_table_t * table)
             not_reached;
           }
 
+          void visit (const ast_if_statement_t& node)
+          {
+            static_value_t c = evaluate_static (node.condition (), memory);
+            if (c.value != 0)
+              {
+                node.true_branch ()->accept (*this);
+              }
+          }
+
+          void visit (const ast_list_statement_t& node)
+          {
+            node.visit_children (*this);
+          }
+
+          void visit (const ast_for_iota_statement_t& node)
+          {
+            for (size_t idx = 0; idx != node.limit; ++idx)
+              {
+                memory.set_value_at_offset (symbol_get_offset (node.symbol.symbol ()), idx);
+                node.body ()->accept (*this);
+              }
+          }
+
           void visit (const ast_bind_t& node)
           {
             memory.set_value_at_offset (symbol_get_offset (node.this_symbol.symbol ()), receiver_address);
             node.body ()->accept (*this);
-          }
-
-          void visit (const ast_bind_statement_list_t& node)
-          {
-            node.visit_children (*this);
           }
 
           void bind (ast_t* left, ast_t* right, static_value_t param = static_value_t ())
@@ -582,6 +624,9 @@ transitive_closure (const instance_table_t * table,
     {
       not_reached;
     }
+
+    void visit (const ast_empty_statement_t& node)
+    { }
 
     void visit (const ast_action_t& node)
     {

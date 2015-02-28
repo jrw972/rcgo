@@ -451,6 +451,11 @@ type_is_equal (const type_t * x, const type_t* y)
       flag = &type == other;
     }
 
+    void visit (const iota_type_t& type)
+    {
+      flag = type_cast<iota_type_t> (other) != NULL;
+    }
+
     void visit (const nil_type_t& type)
     {
       flag = &type == other;
@@ -625,6 +630,11 @@ bool type_is_immutable_safe (const type_t* type)
     }
 
     void visit (const uint_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const int_type_t& type)
     {
       flag = true;
     }
@@ -920,6 +930,10 @@ type_contains_pointer_to_foreign (const type_t* type)
     {
     }
 
+    void visit (const int_type_t& type)
+    {
+    }
+
     void visit (const pointer_type_t& type)
     {
     }
@@ -1041,6 +1055,11 @@ type_is_comparable (const type_t* type)
     }
 
     void visit (const uint_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const iota_type_t& type)
     {
       flag = true;
     }

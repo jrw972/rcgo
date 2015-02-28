@@ -174,38 +174,17 @@ func (this @System) Init ()
 }
 
 bind (this @System) {
-  // TODO:  Use a loop.
-  this.init[0] -> this.process[0].init;
-  this.init[1] -> this.process[1].init;
-  this.init[2] -> this.process[2].init;
+  for i .. 3 {
+    this.init[i] -> this.process[i].init;
+    this.process[i].decide -> this.decide .. i;
 
-  this.process[0].decide -> this.decide .. 0;
-  this.process[1].decide -> this.decide .. 1;
-  this.process[2].decide -> this.decide .. 2;
-
-  //this.process[0].send[0] -> this.channel[0][0].send;
-  this.process[0].send[1] -> this.channel[0][1].send;
-  this.process[0].send[2] -> this.channel[0][2].send;
-
-  //this.channel[0][0].receive -> this.process[0].receive .. 0;
-  this.channel[0][1].receive -> this.process[1].receive .. 0;
-  this.channel[0][2].receive -> this.process[2].receive .. 0;
-
-  this.process[1].send[0] -> this.channel[1][0].send;
-  //this.process[1].send[1] -> this.channel[1][1].send;
-  this.process[1].send[2] -> this.channel[1][2].send;
-
-  this.channel[1][0].receive -> this.process[0].receive .. 1;
-  //this.channel[1][1].receive -> this.process[1].receive .. 1;
-  this.channel[1][2].receive -> this.process[2].receive .. 1;
-
-  this.process[2].send[0] -> this.channel[2][0].send;
-  this.process[2].send[1] -> this.channel[2][1].send;
-  //this.process[2].send[2] -> this.channel[2][2].send;
-
-  this.channel[2][0].receive -> this.process[0].receive .. 2;
-  this.channel[2][1].receive -> this.process[1].receive .. 2;
-  //this.channel[2][2].receive -> this.process[2].receive .. 2;
+    for j .. 3 {
+      if i != j {
+        this.process[i].send[j] -> this.channel[i][j].send;
+        this.channel[i][j].receive -> this.process[j].receive .. i;
+      }
+    }
+  }
 }
 
 instance system System Init;

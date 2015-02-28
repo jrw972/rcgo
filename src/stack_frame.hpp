@@ -67,6 +67,11 @@ void stack_frame_store_stack (stack_frame_t* stack_frame,
                               ptrdiff_t offset,
                               size_t size);
 
+// Clear bytes relative to the base pointer.
+void stack_frame_clear_stack (stack_frame_t* stack_frame,
+                              ptrdiff_t offset,
+                              size_t size);
+
 // Return the base pointer.
 char* stack_frame_base_pointer (const stack_frame_t* stack_frame);
 

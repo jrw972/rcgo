@@ -95,15 +95,15 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t& memory_model)
       not_reached;
     }
 
-    void visit (ast_bind_statement_list_t& node)
+    void visit (ast_empty_statement_t& node)
+    { }
+
+    void visit (ast_for_iota_statement_t& node)
     {
       ptrdiff_t offset_before = memory_model.locals_offset ();
       allocate_symtab (&node, memory_model);
       ptrdiff_t offset_after = memory_model.locals_offset ();
-      AST_FOREACH (child, &node)
-        {
-          allocate_statement_stack_variables (child, memory_model);
-        }
+      allocate_statement_stack_variables (node.body (), memory_model);
       memory_model.locals_pop (offset_after - offset_before);
       assert (memory_model.locals_offset () == offset_before);
     }

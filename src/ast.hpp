@@ -1,5 +1,5 @@
-#ifndef ast_h
-#define ast_h
+#ifndef ast_hpp
+#define ast_hpp
 
 #include "strtab.hpp"
 #include "symtab.hpp"
@@ -113,8 +113,8 @@ private:
 class ast_identifier_t : public ast_t
 {
 public:
-  ast_identifier_t (unsigned int line, size_t children_count, string_t identifier)
-    : ast_t (line, children_count)
+  ast_identifier_t (unsigned int line, string_t identifier)
+    : ast_t (line, 0)
     , identifier_ (identifier)
   { }
 
@@ -129,8 +129,8 @@ private:
 
 struct ast_identifier_list_t : public ast_t
 {
-  ast_identifier_list_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  ast_identifier_list_t (unsigned int line)
+    : ast_t (line, 0)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -139,9 +139,22 @@ struct ast_identifier_list_t : public ast_t
 
 struct ast_array_type_spec_t : public ast_t
 {
-  ast_array_type_spec_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
-  { }
+  enum
+    {
+      DIMENSION,
+      BASE_TYPE,
+      COUNT,
+    };
+
+  ast_array_type_spec_t (unsigned int line, ast_t* dimension, ast_t* base_type)
+    : ast_t (line, COUNT)
+  {
+    children[DIMENSION] = dimension;
+    children[BASE_TYPE] = base_type;
+  }
+
+  iterator dimension_iter () { return begin () + DIMENSION; }
+  ast_t* base_type () const { return children[BASE_TYPE]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -259,8 +272,8 @@ struct ast_port_type_spec_t : public ast_t
 
 struct ast_signature_type_spec_t : public ast_t
 {
-  ast_signature_type_spec_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  ast_signature_type_spec_t (unsigned int line)
+    : ast_t (line, 0)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -435,8 +448,8 @@ struct ast_implicit_dereference_expr_t : public ast_unary_expr_t
 
 struct ast_list_expr_t : public ast_expr_t
 {
-  ast_list_expr_t (unsigned int line, size_t children_count)
-    : ast_expr_t (line, children_count)
+  ast_list_expr_t (unsigned int line)
+    : ast_expr_t (line, 0)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -510,10 +523,10 @@ struct ast_move_expr_t : public ast_unary_expr_t
   void accept (ast_const_visitor_t& visitor) const;
 };
 
-struct ast_new_expr_t : public ast_expr_t
+struct ast_new_expr_t : public ast_unary_expr_t
 {
-  ast_new_expr_t (unsigned int line, size_t children_count)
-    : ast_expr_t (line, children_count)
+  ast_new_expr_t (unsigned int line, ast_t* child)
+    : ast_unary_expr_t (line, child)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -634,6 +647,16 @@ struct ast_binary_t : public ast_t
   iterator left_iter () { return begin () + LEFT; }
   ast_t* right () const { return children[RIGHT]; }
   iterator right_iter () { return begin () + RIGHT; }
+};
+
+struct ast_empty_statement_t : public ast_t
+{
+  ast_empty_statement_t (unsigned int line)
+    : ast_t (line, 0)
+  { }
+
+  void accept (ast_visitor_t& visitor);
+  void accept (ast_const_visitor_t& visitor) const;
 };
 
 struct ast_add_assign_statement_t : public ast_binary_t
@@ -886,14 +909,33 @@ struct ast_bind_param_statement_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
 };
 
-struct ast_bind_statement_list_t : public ast_t
+struct ast_for_iota_statement_t : public ast_t
 {
-  ast_bind_statement_list_t (unsigned int line)
-    : ast_t (line, 0)
-  { }
+  enum
+    {
+      IDENTIFIER,
+      LIMIT,
+      BODY,
+      COUNT
+    };
+
+  ast_for_iota_statement_t (unsigned int line, ast_t* identifier, ast_t* limit, ast_t* body)
+    : ast_t (line, COUNT)
+  {
+    children[IDENTIFIER] = identifier;
+    children[LIMIT] = limit;
+    children[BODY] = body;
+  }
+
+  ast_t* identifier () const { return children[IDENTIFIER]; }
+  iterator limit_iter () { return begin () + LIMIT; }
+  ast_t* body () const { return children[BODY]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+
+  symbol_holder symbol;
+  size_t limit;
 };
 
 struct ast_action_t : public ast_t
@@ -1184,6 +1226,7 @@ struct ast_visitor_t
   virtual void visit (ast_port_call_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_select_expr_t& ast) { default_action (ast); }
 
+  virtual void visit (ast_empty_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_add_assign_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_change_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_assign_statement_t& ast) { default_action (ast); }
@@ -1201,7 +1244,7 @@ struct ast_visitor_t
 
   virtual void visit (ast_bind_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_bind_param_statement_t& ast) { default_action (ast); }
-  virtual void visit (ast_bind_statement_list_t& ast) { default_action (ast); }
+  virtual void visit (ast_for_iota_statement_t& ast) { default_action (ast); }
 
   virtual void visit (ast_action_t& ast) { default_action (ast); }
   virtual void visit (ast_dimensioned_action_t& ast) { default_action (ast); }
@@ -1256,6 +1299,7 @@ struct ast_const_visitor_t
   virtual void visit (const ast_port_call_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_select_expr_t& ast) { default_action (ast); }
 
+  virtual void visit (const ast_empty_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_add_assign_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_change_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_assign_statement_t& ast) { default_action (ast); }
@@ -1272,7 +1316,7 @@ struct ast_const_visitor_t
 
   virtual void visit (const ast_bind_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_bind_param_statement_t& ast) { default_action (ast); }
-  virtual void visit (const ast_bind_statement_list_t& ast) { default_action (ast); }
+  virtual void visit (const ast_for_iota_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_var_statement_t& ast) { default_action (ast); }
 
   virtual void visit (const ast_action_t& ast) { default_action (ast); }
@@ -1300,10 +1344,6 @@ void ast_set_symtab (ast_t * ast, symtab_t * symtab);
 string_t ast_get_identifier (const ast_t* ast);
 
 /* Decl */
-
-ast_t *ast_make_identifier (unsigned int line, string_t identifier);
-
-ast_t *ast_make_identifier_list (unsigned int line);
 
 #define IDENTIFIER_LIST 0
 #define TYPE_SPEC 1
@@ -1372,8 +1412,6 @@ ast_t *ast_make_stmt_list (unsigned int line);
 
 ast_t *ast_make_return_stmt (unsigned int line, ast_t * expr);
 
-ast_t *ast_make_bind_list_stmt (unsigned int line);
-
 ast_t *ast_make_println_stmt (unsigned int line, ast_t * expr);
 
 /* TypeSpec */
@@ -1414,24 +1452,7 @@ ast_t *ast_make_foreign_type_spec (unsigned int line, ast_t* type_spec);
 
 ast_t *ast_make_heap_type_spec (unsigned int line, ast_t * type);
 
-#define ARRAY_DIMENSION 0
-#define ARRAY_BASE_TYPE 1
-
-ast_t *ast_make_array_type_spec (unsigned int line, ast_t * dimension, ast_t * type_spec);
-
-ast_t *ast_make_expression_list (unsigned int line);
-
 typed_value_t ast_get_typed_value (const ast_t* node);
-
-ast_t *ast_make_signature (unsigned int line);
-
-action_t *ast_get_current_action (const ast_t * node);
-
-type_t *ast_get_current_receiver_type (const ast_t * node);
-
-ast_t *ast_make_new_expr (unsigned int line, ast_t* identifier);
-
-ast_t *ast_make_merge_expr (unsigned int line, ast_t* expr);
 
 #define AST_FOREACH(child, parent) size_t idx; size_t limit; ast_t* child; \
   for (idx = 0, limit = (parent)->size (), child = ((idx < (parent)->size ()) ? (parent)->at (idx) : NULL); idx != limit; ++idx, child = (idx < ((parent)->size ()) ? (parent)->at (idx) : NULL))
@@ -1454,4 +1475,4 @@ get_current_function (const ast_t * node);
 const type_t *
 get_current_return_type (const ast_t * node);
 
-#endif /* ast_h */
+#endif /* ast_hpp */

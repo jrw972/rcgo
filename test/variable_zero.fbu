@@ -1,0 +1,14 @@
+type HelloWorld component { };
+
+func (this @HelloWorld) print () {
+  {
+    var x int;
+    x = 3;
+  }
+  {
+    var x int;
+    println x;
+  }
+}
+
+instance h HelloWorld print;

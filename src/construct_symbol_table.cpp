@@ -31,6 +31,11 @@ construct_symbol_table (ast_t * node)
       make (node);
     }
 
+    void visit (ast_for_iota_statement_t& node)
+    {
+      make (node);
+    }
+
     void visit (ast_change_statement_t& node)
     {
       make (node);
@@ -42,11 +47,6 @@ construct_symbol_table (ast_t * node)
     }
 
     void visit (ast_list_statement_t& node)
-    {
-      make (node);
-    }
-
-    void visit (ast_bind_statement_list_t& node)
     {
       make (node);
     }

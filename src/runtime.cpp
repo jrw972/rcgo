@@ -831,6 +831,9 @@ evaluate_statement (thread_runtime_t* runtime,
       not_reached;
     }
 
+    void visit (const ast_empty_statement_t& node)
+    { }
+
     void visit (const ast_assign_statement_t& node)
     {
       ast_t* left = node.left ();
@@ -1082,7 +1085,12 @@ evaluate_statement (thread_runtime_t* runtime,
 
     void visit (const ast_var_statement_t& node)
     {
-      // Do nothing.  Variable is already on the stack and zeroed out.
+      // Zero out the variable.
+      for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
+        {
+          symbol_t* symbol = node.symbols[idx].symbol ();
+          stack_frame_clear_stack (runtime->stack, symbol_get_offset (symbol), symbol_variable_type (symbol)->size ());
+        }
     }
 
     void visit (const ast_println_statement_t& node)

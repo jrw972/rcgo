@@ -199,6 +199,16 @@ void stack_frame_store_stack (stack_frame_t* stack_frame,
   memcpy (ptr, stack_frame->top, size);
 }
 
+void stack_frame_clear_stack (stack_frame_t* stack_frame,
+                              ptrdiff_t offset,
+                              size_t size)
+{
+  size_t s = align_up (size, memory_model_t::stack_alignment);
+  char* ptr = stack_frame->base_pointer + offset;
+  assert (ptr >= stack_frame->data && ptr + size <= stack_frame->top);
+  memset (ptr, 0, s);
+}
+
 char* stack_frame_base_pointer (const stack_frame_t* stack_frame)
 {
   return stack_frame->base_pointer;

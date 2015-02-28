@@ -30,6 +30,11 @@ ast_print (const ast_t& node)
       print_children (node);
     }
 
+    void visit (const ast_for_iota_statement_t& node)
+    {
+      print (node, "for_iota_statement");
+    }
+
     void visit (const ast_address_of_expr_t& node)
     {
       print_expr (node, "address_of_expr");
@@ -205,11 +210,6 @@ ast_print (const ast_t& node)
       print (node, "bind");
     }
 
-    void visit (const ast_bind_statement_list_t& node)
-    {
-      print (node, "bind_statement_list");
-    }
-
     void visit (const ast_bind_statement_t& node)
     {
       print (node, "bind_statement");
@@ -307,18 +307,6 @@ ast_print (const ast_t& node)
 }
 
 ast_t *
-ast_make_identifier (unsigned int line, char *id)
-{
-  return new ast_identifier_t (line, 0, id);
-}
-
-ast_t *
-ast_make_identifier_list (unsigned int line)
-{
-  return new ast_identifier_list_t (line, 0);
-}
-
-ast_t *
 ast_make_identifier_list_type_spec (unsigned int line,
                                     ast_t * identifier_list,
 				    ast_t * type_spec)
@@ -357,12 +345,6 @@ ast_t *ast_make_println_stmt (unsigned int line, ast_t * expr)
   ast_t *retval = new ast_println_statement_t (line, 1);
   retval->set (UNARY_CHILD, expr);
   return retval;
-}
-
-ast_t *
-ast_make_bind_list_stmt (unsigned int line)
-{
-  return new ast_bind_statement_list_t (line);
 }
 
 ast_t *
@@ -487,20 +469,6 @@ ast_t *ast_make_heap_type_spec (unsigned int line, ast_t * type)
   return retval;
 }
 
-ast_t *ast_make_array_type_spec (unsigned int line, ast_t * dimension, ast_t * type_spec)
-{
-  ast_t * retval = new ast_array_type_spec_t (line, 2);
-  retval->set (ARRAY_DIMENSION, dimension);
-  retval->set (ARRAY_BASE_TYPE, type_spec);
-  return retval;
-}
-
-ast_t *
-ast_make_expression_list (unsigned int line)
-{
-  return new ast_list_expr_t (line, 0);
-}
-
 typed_value_t ast_get_typed_value (const ast_t* node)
 {
   const ast_expr_t* expr = dynamic_cast<const ast_expr_t*> (node);
@@ -514,12 +482,6 @@ ast_set_type (ast_t * node, typed_value_t typed_value)
   ast_expr_t* expr = dynamic_cast<ast_expr_t*> (node);
   assert (expr != NULL);
   expr->set_type (typed_value);
-}
-
-ast_t *
-ast_make_signature (unsigned int line)
-{
-  return new ast_signature_type_spec_t (line, 0);
 }
 
 ast_t *ast_make_pointer_type_spec (unsigned int line, ast_t* type_spec)
@@ -547,13 +509,6 @@ ast_t *ast_make_foreign_type_spec (unsigned int line, ast_t* type_spec)
 {
   ast_t *retval = new ast_foreign_type_spec_t (line, 1);
   retval->set (FOREIGN_BASE_TYPE, type_spec);
-  return retval;
-}
-
-ast_t *ast_make_new_expr (unsigned int line, ast_t* identifier)
-{
-  ast_t *retval = new ast_new_expr_t (line, 1);
-  retval->set (UNARY_CHILD, identifier);
   return retval;
 }
 
@@ -600,6 +555,8 @@ ACCEPT (ast_move_expr_t)
 ACCEPT (ast_new_expr_t)
 ACCEPT (ast_port_call_expr_t)
 ACCEPT (ast_select_expr_t)
+
+ACCEPT (ast_empty_statement_t)
 ACCEPT (ast_add_assign_statement_t)
 ACCEPT (ast_change_statement_t)
 ACCEPT (ast_assign_statement_t)
@@ -614,10 +571,10 @@ ACCEPT (ast_decrement_statement_t)
 ACCEPT (ast_subtract_assign_statement_t)
 ACCEPT (ast_trigger_statement_t)
 ACCEPT (ast_var_statement_t)
-
 ACCEPT (ast_bind_statement_t)
 ACCEPT (ast_bind_param_statement_t)
-ACCEPT (ast_bind_statement_list_t)
+ACCEPT (ast_for_iota_statement_t)
+
 ACCEPT (ast_action_t)
 ACCEPT (ast_dimensioned_action_t)
 ACCEPT (ast_bind_t)

@@ -72,8 +72,8 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component)
 
     void visit (ast_array_type_spec_t& node)
     {
-      size_t dimension = process_array_dimension (node.get_child_ptr (ARRAY_DIMENSION));
-      const type_t* base_type = process_type_spec (node.at (ARRAY_BASE_TYPE), true);
+      size_t dimension = process_array_dimension (node.dimension_iter ());
+      const type_t* base_type = process_type_spec (node.base_type (), true);
       type = new array_type_t (dimension, base_type);
     }
 

@@ -18,6 +18,7 @@
 "component"            { return COMPONENT; }
 "const"                { return CONST; }
 "else"                 { return ELSE; }
+"for"                  { return FOR; }
 "foreign"              { return FOREIGN; }
 "func"                 { return FUNC; }
 "heap"                 { return HEAP; }
@@ -54,7 +55,7 @@
 "!"|";"|","|"="|"?"    { return *yytext; }
 "$"|"@"|"."|"&"|"+"    { return *yytext; }
 
-[_a-zA-Z][_a-zA-Z0-9]* { yylval.node = ast_make_identifier (yylloc, enter (yytext));
+[_a-zA-Z][_a-zA-Z0-9]* { yylval.node = new ast_identifier_t (yylloc, enter (yytext));
                          return IDENTIFIER; }
 
 "`"[^`]*"`"            { char* begin = yytext + 1;

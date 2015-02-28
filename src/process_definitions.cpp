@@ -651,7 +651,20 @@ check_rvalue_list (ast_t * node)
 }
 
 static void
-check_bind_statement (ast_t * node)
+check_condition (ast_t::iterator condition_node)
+{
+  type_check_expr (condition_node);
+  typed_value_t tv = ast_get_typed_value (*condition_node);
+  if (!type_is_boolean (tv.type))
+    {
+      error_at_line (-1, 0, (*condition_node)->file,
+                     (*condition_node)->line,
+                     "cannot convert (%s) to boolean expression in condition", tv.type->to_string ().c_str ());
+    }
+}
+
+static void
+type_check_statement (ast_t * node)
 {
   struct visitor : public ast_visitor_t
   {
@@ -659,6 +672,9 @@ check_bind_statement (ast_t * node)
     {
       not_reached;
     }
+
+    void visit (ast_empty_statement_t& node)
+    { }
 
     typed_value_t bind (ast_t& node, ast_t::iterator port_node, ast_t::iterator reaction_node)
     {
@@ -713,40 +729,14 @@ check_bind_statement (ast_t * node)
       check_index (new array_type_t (reaction->dimension (), reaction->reaction_type ()), param_tv, **param_node);
     }
 
-    void visit (ast_bind_statement_list_t& node)
+    void visit (ast_for_iota_statement_t& node)
     {
-      AST_FOREACH (child, &node)
-        {
-          check_bind_statement (child);
-        }
-    }
-  };
-
-  visitor v;
-  node->accept (v);
-}
-
-static void
-check_condition (ast_t::iterator condition_node)
-{
-  type_check_expr (condition_node);
-  typed_value_t tv = ast_get_typed_value (*condition_node);
-  if (!type_is_boolean (tv.type))
-    {
-      error_at_line (-1, 0, (*condition_node)->file,
-                     (*condition_node)->line,
-                     "cannot convert (%s) to boolean expression in condition", tv.type->to_string ().c_str ());
-    }
-}
-
-static void
-type_check_statement (ast_t * node)
-{
-  struct visitor : public ast_visitor_t
-  {
-    void default_action (ast_t& node)
-    {
-      not_reached;
+      string_t identifier = ast_get_identifier (node.identifier ());
+      size_t limit = process_array_dimension (node.limit_iter ());
+      symbol_t* symbol = symbol_make_variable (identifier, new iota_type_t (limit), node.identifier ());
+      enter_symbol (node.symtab, symbol, node.symbol);
+      type_check_statement (node.body ());
+      node.limit = limit;
     }
 
     void visit (ast_assign_statement_t& node)
@@ -1402,7 +1392,7 @@ process_definitions (ast_t * node)
                                            (&node)), this_node), node.this_symbol);
 
       /* Check the body. */
-      check_bind_statement (body_node);
+      type_check_statement (body_node);
       control_check_statement (body_node);
     }
 
