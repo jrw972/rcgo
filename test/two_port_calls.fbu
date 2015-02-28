@@ -1,0 +1,32 @@
+type Actuator component {
+  flag bool;
+  bang1 port ();
+  bang2 port ();
+};
+
+action (this $Actuator) (this.flag!) {
+  trigger bang1 (), bang2 () {
+    this.flag = true;
+  }
+}
+
+type Detector component { };
+
+reaction (this $Detector) bang () {
+  println `Bang`;
+}
+
+type System component {
+  actuator Actuator;
+  detector1 Detector;
+  detector2 Detector;
+};
+
+bind (this @System) {
+  this.actuator.bang1 -> this.detector1.bang;
+  this.actuator.bang2 -> this.detector2.bang;
+}
+
+func (this @System) init () { }
+
+instance system System init;

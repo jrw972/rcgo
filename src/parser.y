@@ -158,7 +158,7 @@ optional_port_call_list: /* Empty. */ { $$ = new ast_list_expr_t (yyloc); }
 | port_call_list { $$ = $1; }
 
 port_call_list: port_call { $$ = (new ast_list_expr_t (@1))->append ($1); }
-| port_call_list ',' port_call { unimplemented; }
+| port_call_list ',' port_call { $$ = $1->append ($3); }
 
 port_call: identifier index_expr '(' optional_expr_list ')' { $$ = new ast_indexed_port_call_expr_t (@1, $1, $2, $4); }
 | identifier '(' optional_expr_list ')' { $$ = new ast_port_call_expr_t (@1, $1, $3); }
