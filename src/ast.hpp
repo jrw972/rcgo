@@ -1164,30 +1164,6 @@ struct ast_dimensioned_reaction_t : public ast_t
   reaction_t* reaction;
 };
 
-class ast_receiver_definition_t : public ast_t
-{
-public:
-  enum
-    {
-      THIS_IDENTIFIER,
-      TYPE_IDENTIFIER,
-      COUNT,
-    };
-
-  ast_receiver_definition_t (unsigned int line, ast_t* this_identifier, ast_t* type_identifier)
-    : ast_t (line, COUNT)
-  {
-    children[THIS_IDENTIFIER] = this_identifier;
-    children[TYPE_IDENTIFIER] = type_identifier;
-  }
-
-  ast_t* this_identifier () const { return children[THIS_IDENTIFIER]; }
-  ast_t* type_identifier () const { return children[TYPE_IDENTIFIER]; }
-
-  void accept (ast_visitor_t& visitor);
-  void accept (ast_const_visitor_t& visitor) const;
-};
-
 struct ast_type_definition_t : public ast_t
 {
   ast_type_definition_t (unsigned int line, size_t children_count)
@@ -1272,7 +1248,6 @@ struct ast_visitor_t
   virtual void visit (ast_method_t& ast) { default_action (ast); }
   virtual void visit (ast_reaction_t& ast) { default_action (ast); }
   virtual void visit (ast_dimensioned_reaction_t& ast) { default_action (ast); }
-  virtual void visit (ast_receiver_definition_t& ast) { default_action (ast); }
   virtual void visit (ast_type_definition_t& ast) { default_action (ast); }
 
   virtual void visit (ast_top_level_list_t& ast) { default_action (ast); }
@@ -1342,7 +1317,6 @@ struct ast_const_visitor_t
   virtual void visit (const ast_method_t& ast) { default_action (ast); }
   virtual void visit (const ast_reaction_t& ast) { default_action (ast); }
   virtual void visit (const ast_dimensioned_reaction_t& ast) { default_action (ast); }
-  virtual void visit (const ast_receiver_definition_t& ast) { default_action (ast); }
   virtual void visit (const ast_type_definition_t& ast) { default_action (ast); }
 
   virtual void visit (const ast_top_level_list_t& ast) { default_action (ast); }

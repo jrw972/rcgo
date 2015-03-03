@@ -39,7 +39,6 @@
 %type <node> or_expr
 %type <node> parameter
 %type <node> parameter_list
-%type <node> pointer_receiver
 %type <node> port_call
 %type <node> port_call_list
 %type <node> primary_expr
@@ -116,8 +115,6 @@ parameter: identifier_list type_spec { $$ = new ast_identifier_list_type_spec_t 
 
 optional_semicolon: /* Empty. */
 | ';'
-
-pointer_receiver: '(' identifier '@' identifier ')' { $$ = new ast_receiver_definition_t (@1, $2, $4); }
 
 bind_stmt: lvalue ARROW rvalue ';' { $$ = new ast_bind_statement_t (@1, $1, $3); }
 | lvalue ARROW rvalue DOTDOT rvalue';' { $$ = new ast_bind_param_statement_t (@1, $1, $3, $5); }

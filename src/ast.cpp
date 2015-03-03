@@ -215,11 +215,6 @@ ast_print (const ast_t& node)
       print (node, "bind_param_statement");
     }
 
-    void visit (const ast_receiver_definition_t& node)
-    {
-      print (node, "receiver_definition");
-    }
-
     void visit (const ast_trigger_statement_t& node)
     {
       print (node, "trigger_statement");
@@ -511,7 +506,6 @@ ACCEPT (ast_bind_t)
 ACCEPT (ast_function_t)
 ACCEPT (ast_instance_t)
 ACCEPT (ast_method_t)
-ACCEPT (ast_receiver_definition_t)
 ACCEPT (ast_reaction_t)
 ACCEPT (ast_dimensioned_reaction_t)
 ACCEPT (ast_type_definition_t)
