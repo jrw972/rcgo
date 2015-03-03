@@ -1,0 +1,7 @@
+type S struct {
+    ptr @int;
+};
+
+func (this @S const) f () @int {
+    return this.ptr;
+}
