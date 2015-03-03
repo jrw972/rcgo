@@ -177,7 +177,7 @@ signature_type_t::find (string_t name) const
        ptr != limit;
        ++ptr)
     {
-      if (streq (parameter_name ((*ptr)), name))
+      if (streq ((*ptr)->name, name))
         {
           return *ptr;
         }
@@ -185,26 +185,10 @@ signature_type_t::find (string_t name) const
   return NULL;
 }
 
-void
-signature_type_t::prepend (string_t parameter_name,
-                           const type_t * parameter_type, bool is_receiver)
-{
-  parameter_t *p = parameter_make (parameter_name, parameter_type, is_receiver);
-  parameters_.insert (parameters_.begin (), p);
-}
-
-void
-signature_type_t::append (string_t parameter_name,
-                          const type_t * parameter_type, bool is_receiver)
-{
-  parameter_t *p = parameter_make (parameter_name, parameter_type, is_receiver);
-  parameters_.push_back (p);
-}
-
 const type_t*
 type_move (const type_t* type)
 {
-  const pointer_to_foreign_type_t* ptf = type_cast<pointer_to_foreign_type_t> (type);
+  const pointer_type_t* ptf = type_cast<pointer_type_t> (type);
   if (ptf)
     {
       const heap_type_t* h = type_cast<heap_type_t> (ptf->base_type ());
@@ -219,7 +203,7 @@ type_move (const type_t* type)
 
 const type_t* type_merge (const type_t* type)
 {
-  const pointer_to_foreign_type_t* ptf = type_cast<pointer_to_foreign_type_t> (type);
+  const pointer_type_t* ptf = type_cast<pointer_type_t> (type);
 
   if (ptf)
     {
@@ -317,12 +301,6 @@ pointer_type_t::accept (const_type_visitor_t& visitor) const
 }
 
 void
-pointer_to_foreign_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
 reaction_type_t::accept (const_type_visitor_t& visitor) const
 {
   visitor.visit (*this);
@@ -370,12 +348,6 @@ array_type_t::accept (const_type_visitor_t& visitor) const
   visitor.visit (*this);
 }
 
-void
-pointer_to_immutable_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
 // Returns true if two types are equal.
 // If one type is a named type, then the other must be the same named type.
 // Otherwise, the types must have the same structure.
@@ -403,24 +375,6 @@ type_is_equal (const type_t * x, const type_t* y)
     void visit (const pointer_type_t& type)
     {
       const pointer_type_t* t = type_cast<pointer_type_t> (other);
-      if (t != NULL)
-        {
-          flag = type_is_equal (type.base_type (), t->base_type ());
-        }
-    }
-
-    void visit (const pointer_to_immutable_type_t& type)
-    {
-      const pointer_to_immutable_type_t* t = type_cast<pointer_to_immutable_type_t> (other);
-      if (t != NULL)
-        {
-          flag = type_is_equal (type.base_type (), t->base_type ());
-        }
-    }
-
-    void visit (const pointer_to_foreign_type_t& type)
-    {
-      const pointer_to_foreign_type_t* t = type_cast<pointer_to_foreign_type_t> (other);
       if (t != NULL)
         {
           flag = type_is_equal (type.base_type (), t->base_type ());
@@ -477,9 +431,9 @@ type_is_equal (const type_t * x, const type_t* y)
           for (size_t idx = 0; idx != x_arity; ++idx)
             {
               parameter_t *x_parameter = x->at (idx);
-              const type_t *x_parameter_type = parameter_type (x_parameter);
+              const type_t *x_parameter_type = x_parameter->value.type;
               parameter_t *y_parameter = y->at (idx);
-              const type_t *y_parameter_type = parameter_type (y_parameter);
+              const type_t *y_parameter_type = y_parameter->value.type;
 
               if (!type_is_equal (x_parameter_type, y_parameter_type))
                 {
@@ -550,46 +504,6 @@ type_is_convertible (const type_t * to, const type_t* from)
         }
     }
 
-    void visit (const pointer_to_immutable_type_t& type)
-    {
-      if (type_cast<nil_type_t> (from))
-        {
-          flag = true;
-        }
-
-      {
-        const pointer_type_t* p = type_cast<pointer_type_t> (from);
-        if (p)
-          {
-            flag = type_is_equal (type.base_type (), p->base_type ());
-          }
-      }
-    }
-
-    void visit (const pointer_to_foreign_type_t& type)
-    {
-      if (type_cast<nil_type_t> (from))
-        {
-          flag = true;
-        }
-
-      {
-        const pointer_type_t* p = type_cast<pointer_type_t> (from);
-        if (p)
-          {
-            flag = type_is_equal (type.base_type (), p->base_type ());
-          }
-      }
-
-      {
-        const pointer_to_immutable_type_t* p = type_cast<pointer_to_immutable_type_t> (from);
-        if (p)
-          {
-            flag = type_is_equal (type.base_type (), p->base_type ());
-          }
-      }
-    }
-
     void visit (const uint_type_t& type)
     {
       flag = type_cast<iota_type_t> (from) != NULL;
@@ -603,86 +517,6 @@ type_is_convertible (const type_t * to, const type_t* from)
 
   visitor v (from);
   to->accept (v);
-  return v.flag;
-}
-
-bool type_is_immutable_safe (const type_t* type)
-{
-  struct visitor : public const_type_visitor_t
-  {
-    bool flag;
-
-    visitor () : flag (false) { }
-
-    void default_action (const type_t& type)
-    {
-      not_reached;
-    }
-
-    void visit (const named_type_t& type)
-    {
-      type.subtype ()->accept (*this);
-    }
-
-    void visit (const bool_type_t& type)
-    {
-      flag = true;
-    }
-
-    void visit (const uint_type_t& type)
-    {
-      flag = true;
-    }
-
-    void visit (const int_type_t& type)
-    {
-      flag = true;
-    }
-
-    void visit (const pointer_type_t& type)
-    {
-      // Do nothing.
-    }
-
-    // void visit (const pointer_to_immutable_type_t& type)
-    // {
-    //   flag = true;
-    // }
-
-    // void visit (const pointer_to_foreign_type_t& type)
-    // {
-    //   flag = true;
-    // }
-
-    // void visit (const component_type_t& type)
-    // {
-    //   type.field_list ()->accept (*this);
-    // }
-
-    void visit (const struct_type_t& type)
-    {
-      type.field_list ()->accept (*this);
-    }
-
-    void visit (const field_list_type_t& type)
-    {
-      for (std::vector<field_t*>::const_iterator pos = type.begin (),
-             limit = type.end ();
-           pos != limit;
-           ++pos)
-        {
-          field_t* field = *pos;
-          if (!type_is_immutable_safe (field_type (field)))
-            {
-              return;
-            }
-        }
-
-      flag = true;
-    }
-  };
-  visitor v;
-  type->accept (v);
   return v.flag;
 }
 
@@ -702,103 +536,11 @@ signature_type_t::to_string () const
           str << ", ";
         }
 
-      str << parameter_type (*ptr)->to_string ();
+      str << (*ptr)->value.type->to_string ();
       flag = true;
     }
   str << ')';
   return str.str ();
-}
-
-bool type_is_foreign_safe (const type_t* type)
-{
-  struct visitor : public const_type_visitor_t
-  {
-    bool flag;
-
-    visitor () : flag (false) { }
-
-    void default_action (const type_t& type)
-    {
-      not_reached;
-    }
-
-    void visit (const named_type_t& type)
-    {
-      type.subtype ()->accept (*this);
-    }
-
-    void visit (const bool_type_t& type)
-    {
-      flag = true;
-    }
-
-    void visit (const uint_type_t& type)
-    {
-      flag = true;
-    }
-
-    void visit (const pointer_type_t& type)
-    {
-      // Do nothing.
-    }
-
-    // void visit (const pointer_to_immutable_type_t& type)
-    // {
-    //   flag = true;
-    // }
-
-    void visit (const pointer_to_foreign_type_t& type)
-    {
-      flag = true;
-    }
-
-    // void visit (const component_type_t& type)
-    // {
-    //   type.field_list ()->accept (*this);
-    // }
-
-    // void visit (const struct_type_t& type)
-    // {
-    //   type.field_list ()->accept (*this);
-    // }
-
-    // void visit (const field_list_type_t& type)
-    // {
-    //   for (std::vector<field_t*>::const_iterator pos = type.begin (),
-    //          limit = type.end ();
-    //        pos != limit;
-    //        ++pos)
-    //     {
-    //       field_t* field = *pos;
-    //       if (!type_is_immutable_safe (field_type (field)))
-    //         {
-    //           return;
-    //         }
-    //     }
-
-    //   flag = true;
-    // }
-
-    void visit (const signature_type_t& type)
-    {
-      for (signature_type_t::ParametersType::const_iterator pos = type.begin (),
-             limit = type.end ();
-           pos != limit;
-           ++pos)
-        {
-          parameter_t* parameter = *pos;
-          if (!type_is_foreign_safe (parameter_type (parameter)))
-            {
-              return;
-            }
-        }
-
-      flag = true;
-    }
-  };
-  visitor v;
-  type->accept (v);
-  return v.flag;
 }
 
 const void_type_t*
@@ -842,18 +584,6 @@ pointer_type_t::make (const type_t* base_type)
   return new pointer_type_t (base_type);
 }
 
-const type_t*
-pointer_to_immutable_type_t::make (const type_t* base_type)
-{
-  return new pointer_to_immutable_type_t (base_type);
-}
-
-const type_t*
-pointer_to_foreign_type_t::make (const type_t* base_type)
-{
-  return new pointer_to_foreign_type_t (base_type);
-}
-
 field_list_type_t::field_list_type_t (bool insert_runtime) : offset_ (0), alignment_ (0)
 {
   if (insert_runtime)
@@ -882,16 +612,6 @@ const type_t* type_dereference (const type_t* type)
     {
       retval = type.base_type ();
     }
-
-    void visit (const pointer_to_immutable_type_t& type)
-    {
-      retval = type.base_type ();
-    }
-
-    void visit (const pointer_to_foreign_type_t& type)
-    {
-      retval = type.base_type ();
-    }
   };
   visitor v;
   type->accept (v);
@@ -899,7 +619,7 @@ const type_t* type_dereference (const type_t* type)
 }
 
 bool
-type_contains_pointer_to_foreign (const type_t* type)
+type_contains_pointer (const type_t* type)
 {
   struct visitor : public const_type_visitor_t
   {
@@ -917,25 +637,26 @@ type_contains_pointer_to_foreign (const type_t* type)
       type.subtype ()->accept (*this);
     }
 
-    void visit (const pointer_to_foreign_type_t& type)
-    {
-      flag = true;
-    }
-
     void visit (const bool_type_t& type)
-    {
-    }
-
-    void visit (const uint_type_t& type)
-    {
-    }
+    { }
 
     void visit (const int_type_t& type)
+    { }
+
+    void visit (const uint_type_t& type)
+    { }
+
+    void visit (const iota_type_t& type)
+    { }
+
+    void visit (const array_type_t& type)
     {
+      type.base_type ()->accept (*this);
     }
 
     void visit (const pointer_type_t& type)
     {
+      flag = true;
     }
 
     void visit (const struct_type_t& type)
@@ -945,17 +666,11 @@ type_contains_pointer_to_foreign (const type_t* type)
 
     void visit (const field_list_type_t& type)
     {
-      for (std::vector<field_t*>::const_iterator pos = type.begin (),
-             limit = type.end ();
+      for (field_list_type_t::const_iterator pos = type.begin (), limit = type.end ();
            pos != limit;
            ++pos)
         {
-          field_t* field = *pos;
-          if (type_contains_pointer_to_foreign (field_type (field)))
-            {
-              flag = true;
-              return;
-            }
+          field_type ((*pos))->accept (*this);
         }
     }
   };
@@ -1158,4 +873,39 @@ type_is_index (const type_t* type, int64_t index)
   visitor v (index);
   type->accept (v);
   return v.flag;
+}
+
+std::string
+function_type_t::to_string () const
+{
+  std::stringstream str;
+  str << "func " << *signature << ' ' << *return_parameter->value.type;
+  return str.str ();
+}
+
+std::string
+method_type_t::to_string () const
+{
+  std::stringstream str;
+  str << '(' << *receiver_type << ')' << " func " << *signature << ' ' << *function_type->return_parameter->value.type;
+  return str.str ();
+}
+
+function_type_t*
+method_type_t::make_function_type (string_t this_name, const type_t* receiver_type, Mutability dereference_mutability, const signature_type_t* signature, const parameter_t* return_parameter)
+{
+  signature_type_t* sig = new signature_type_t ();
+  typed_value_t this_value = typed_value_t::make_value (receiver_type,
+                                                        typed_value_t::STACK,
+                                                        MUTABLE,
+                                                        dereference_mutability);
+  sig->append (new parameter_t (NULL, this_name, this_value, true));
+  for (signature_type_t::const_iterator pos = signature->begin (),
+         limit = signature->end ();
+       pos != limit;
+       ++pos)
+    {
+      sig->append (*pos);
+    }
+  return new function_type_t (sig, return_parameter);
 }

@@ -120,11 +120,6 @@ ast_print (const ast_t& node)
       print (node, "struct_type_spec");
     }
 
-    void visit (const ast_pointer_to_foreign_type_spec_t& node)
-    {
-      print (node, "pointer_to_foreign_type_spec");
-    }
-
     void visit (const ast_array_type_spec_t& node)
     {
       print (node, "array_type_spec");
@@ -307,17 +302,6 @@ ast_print (const ast_t& node)
 }
 
 ast_t *
-ast_make_identifier_list_type_spec (unsigned int line,
-                                    ast_t * identifier_list,
-				    ast_t * type_spec)
-{
-  ast_t *node = new ast_identifier_list_type_spec_t (line, 2);
-  node->set (IDENTIFIER_LIST, identifier_list);
-  node->set (TYPE_SPEC, type_spec);
-  return node;
-}
-
-ast_t *
 ast_make_expr_stmt (unsigned int line, ast_t * expr)
 {
   ast_t *retval = new ast_expression_statement_t (line, 1);
@@ -376,19 +360,6 @@ ast_make_type_def (unsigned int line, ast_t * identifier, ast_t * type_spec)
   return retval;
 }
 
-ast_t *ast_make_method_def (unsigned int line, ast_t * receiver, ast_t * identifier,
-                            ast_t * signature, ast_t * return_type,
-                            ast_t* body)
-{
-  ast_t *retval = new ast_method_t (line, 5);
-  retval->set (METHOD_RECEIVER, receiver);
-  retval->set (METHOD_IDENTIFIER, identifier);
-  retval->set (METHOD_SIGNATURE, signature);
-  retval->set (METHOD_RETURN_TYPE, return_type);
-  retval->set (METHOD_BODY, body);
-  return retval;
-}
-
 ast_t *ast_make_function_def (unsigned int line, ast_t * identifier, ast_t * signature, ast_t* return_type, ast_t* body)
 {
   ast_t *retval = new ast_function_t (line, 4);
@@ -407,29 +378,12 @@ ast_set_symtab (ast_t * node, symtab_t * symtab)
 }
 
 ast_t *
-ast_make_receiver (unsigned int line, ast_t * this_identifier, ast_t * type_identifier, ast_receiver_definition_t::Kind kind)
-{
-  ast_t *retval = new ast_receiver_definition_t (line, 2, kind);
-  retval->set (RECEIVER_THIS_IDENTIFIER, this_identifier);
-  retval->set (RECEIVER_TYPE_IDENTIFIER, type_identifier);
-  return retval;
-}
-
-ast_t *
 ast_make_instance_def (unsigned int line, ast_t * instance_id, ast_t * type_id, ast_t* initializer)
 {
   ast_t *retval = new ast_instance_t (line, 3);
   retval->set (INSTANCE_IDENTIFIER, instance_id);
   retval->set (INSTANCE_TYPE_IDENTIFIER, type_id);
   retval->set (INSTANCE_INITIALIZER, initializer);
-  return retval;
-}
-
-ast_t *
-ast_make_return_stmt (unsigned int line, ast_t * expr)
-{
-  ast_t *retval = new ast_return_statement_t (line, 1);
-  retval->set (UNARY_CHILD, expr);
   return retval;
 }
 
@@ -491,27 +445,6 @@ ast_t *ast_make_pointer_type_spec (unsigned int line, ast_t* type_spec)
   return retval;
 }
 
-ast_t *ast_make_pointer_to_immutable_type_spec (unsigned int line, ast_t* type_spec)
-{
-  ast_t *retval = new ast_pointer_to_immutable_type_spec_t (line, 1);
-  retval->set (POINTER_BASE_TYPE, type_spec);
-  return retval;
-}
-
-ast_t *ast_make_pointer_to_foreign_type_spec (unsigned int line, ast_t* type_spec)
-{
-  ast_t *retval = new ast_pointer_to_foreign_type_spec_t (line, 1);
-  retval->set (POINTER_BASE_TYPE, type_spec);
-  return retval;
-}
-
-ast_t *ast_make_foreign_type_spec (unsigned int line, ast_t* type_spec)
-{
-  ast_t *retval = new ast_foreign_type_spec_t (line, 1);
-  retval->set (FOREIGN_BASE_TYPE, type_spec);
-  return retval;
-}
-
 #define ACCEPT(type) void \
 type::accept (ast_visitor_t& visitor) \
 { \
@@ -529,12 +462,9 @@ ACCEPT (ast_array_type_spec_t)
 ACCEPT (ast_component_type_spec_t)
 ACCEPT (ast_empty_type_spec_t)
 ACCEPT (ast_field_list_type_spec_t)
-ACCEPT (ast_foreign_type_spec_t)
 ACCEPT (ast_heap_type_spec_t)
 ACCEPT (ast_identifier_list_type_spec_t)
 ACCEPT (ast_identifier_type_spec_t)
-ACCEPT (ast_pointer_to_foreign_type_spec_t)
-ACCEPT (ast_pointer_to_immutable_type_spec_t)
 ACCEPT (ast_pointer_type_spec_t)
 ACCEPT (ast_port_type_spec_t)
 ACCEPT (ast_signature_type_spec_t)
@@ -624,21 +554,21 @@ get_current_function (const ast_t * node)
   return symtab_get_current_function (node->symtab);
 }
 
-const type_t *
-get_current_return_type (const ast_t * node)
+const symbol_t*
+get_current_return_symbol (const ast_t * node)
 {
   {
     method_t* g = get_current_method (node);
     if (g != NULL)
       {
-        return g->method_type->return_type;
+        return g->return_symbol;
       }
   }
   {
     function_t* f = get_current_function (node);
     if (f != NULL)
       {
-        return f->func_type->return_type ();
+        return f->return_symbol;
       }
   }
 

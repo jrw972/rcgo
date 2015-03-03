@@ -2,7 +2,7 @@ type C component {
   flag bool;
 };
 
-reaction (this $C) r (x ?bool) {
+reaction (this @C const) r (x @bool foreign) {
   var y bool;
   y = x@;
 }

@@ -24,7 +24,7 @@ method.hpp \
 heap.hpp heap.cpp \
 instance.hpp instance.cpp \
 memory_model.hpp memory_model.cpp \
-parameter.hpp parameter.cpp \
+parameter.hpp \
 parser.hpp parser.cpp \
 process_declarations.cpp \
 process_definitions.cpp \

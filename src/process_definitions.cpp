@@ -9,15 +9,15 @@
 #include "field.hpp"
 #include "parameter.hpp"
 
-static symbol_t*
+symbol_t*
 enter_symbol (symtab_t* symtab, symbol_t * symbol, symbol_holder& holder)
 {
   // Check if the symbol is defined locally.
   string_t identifier = symbol_identifier (symbol);
-  symbol_t *s = symtab_find_current (symtab, identifier);
+  symbol_t *s = symtab->find_current (identifier);
   if (s == NULL)
     {
-      symtab_enter (symtab, symbol);
+      symtab->enter (symbol);
       holder.symbol (symbol);
     }
   else
@@ -116,65 +116,36 @@ static const type_t* check_index (const type_t* aggregate_type, typed_value_t id
   return v.retval;
 }
 
-static typed_value_t
-check_assignment_target (ast_t::iterator left)
+static void
+check_assignment (typed_value_t left_tv, typed_value_t right_tv, const ast_t& node, const char* conversion_message, const char* leak_message, const char* store_foreign_message)
 {
-  typed_value_t tv = type_check_expr (left);
-  if (! (tv.kind == typed_value_t::REFERENCE &&
-         tv.reference_kind == typed_value_t::MUTABLE))
-    {
-      error_at_line (-1, 0, (*left)->file, (*left)->line,
-                     "cannot assign to read-only location of type %s", tv.type->to_string ().c_str ());
-    }
+  assert (left_tv.type != NULL);
+  assert (left_tv.kind == typed_value_t::REFERENCE);
+  assert (right_tv.type != NULL);
+  assert (right_tv.kind == typed_value_t::VALUE);
 
-  if (type_contains_pointer_to_foreign (tv.type))
-    {
-      error_at_line (-1, 0, (*left)->file, (*left)->line,
-                     "assignment leaks pointer to foreign");
-    }
-
-  return tv;
-}
-
-static void arithmetic_assign (ast_binary_t* node, const char* symbol)
-{
-  ast_t::iterator left = node->left_iter ();
-  check_assignment_target (left);
-  ast_t::iterator right = node->right_iter ();
-  type_check_expr (right);
-  typed_value_t left_tv = ast_get_typed_value (*left);
-  typed_value_t right_tv = ast_get_typed_value (*right);
   if (!type_is_convertible (left_tv.type, right_tv.type))
     {
-      error_at_line (-1, 0, node->file, node->line,
-                     "incompatible types (%s) %s (%s)", left_tv.type->to_string ().c_str (), symbol, right_tv.type->to_string ().c_str ());
+      error_at_line (-1, 0, node.file, node.line,
+                     conversion_message, left_tv.type->to_string ().c_str (), right_tv.type->to_string ().c_str ());
     }
 
-  struct visitor : public const_type_visitor_t
-  {
-    ast_t* node;
-    const char* symbol;
-
-    visitor (ast_t* n, const char* s) : node (n), symbol (s) { }
-
-    void visit (const named_type_t& type)
+  if (type_contains_pointer (left_tv.type))
     {
-      type.subtype ()->accept (*this);
-    }
+      if (left_tv.dereference_mutability < right_tv.intrinsic_mutability ||
+          left_tv.dereference_mutability < right_tv.dereference_mutability)
+        {
+          error_at_line (-1, 0, node.file, node.line,
+                         leak_message);
+        }
 
-    void visit (const uint_type_t& type)
-    {
-      // Okay.
+      if (right_tv.intrinsic_mutability == FOREIGN &&
+          left_tv.region != typed_value_t::STACK)
+        {
+          error_at_line (-1, 0, node.file, node.line,
+                         store_foreign_message);
+        }
     }
-
-    void default_action (const type_t& type)
-    {
-      error_at_line (-1, 0, node->file, node->line,
-                     "incompatible types (%s) %s (%s)", type.to_string ().c_str (), symbol, type.to_string ().c_str ());
-    }
-  };
-  visitor v (node, symbol);
-  left_tv.type->accept (v);
 }
 
 static void check_rvalue_list (ast_t * node);
@@ -185,6 +156,8 @@ in_mutable_section (const ast_t* node)
   return get_current_action (node) != NULL &&
     get_current_trigger (node) != NULL;
 }
+
+
 
 typed_value_t
 type_check_expr (ast_t::iterator ptr)
@@ -233,8 +206,11 @@ type_check_expr (ast_t::iterator ptr)
 
       ast_t *args = node.args ();
       check_rvalue_list (args);
-      check_call (node, port_type->signature (), void_type_t::instance (), args);
-
+      typed_value_t tv = typed_value_t::make_value (void_type_t::instance (),
+                                                    typed_value_t::STACK,
+                                                    IMMUTABLE,
+                                                    IMMUTABLE);
+      check_call (node, port_type->signature (), tv, args);
       node.field = type_select_field (this_type, port_identifier);
       node.array_type = array_type;
     }
@@ -267,17 +243,17 @@ type_check_expr (ast_t::iterator ptr)
 
     void visit (ast_new_expr_t& node)
     {
-      ast_t* type_spec = node.at (UNARY_CHILD);
+      ast_t* type_spec = node.child ();
       const type_t* t = process_type_spec (type_spec, false);
       const type_t* type = pointer_type_t::make (t);
-      node.set_type (typed_value_t::make_value (type, typed_value_t::MUTABLE));
+      node.set_type (typed_value_t::make_value (type, typed_value_t::HEAP, MUTABLE, MUTABLE));
     }
 
     void visit (ast_identifier_expr_t& node)
     {
       ast_t *identifier_node = node.at (UNARY_CHILD);
       string_t identifier = ast_get_identifier (identifier_node);
-      symbol_t *symbol = symtab_find (node.symtab, identifier);
+      symbol_t *symbol = node.symtab->find (identifier);
       if (symbol == NULL)
         {
           error_at_line (-1, 0, identifier_node->file,
@@ -307,6 +283,12 @@ type_check_expr (ast_t::iterator ptr)
 
         case SymbolVariable:
           node.set_type (symbol_variable_value (symbol));
+          break;
+
+        case SymbolHidden:
+          error_at_line (-1, 0, identifier_node->file,
+                         identifier_node->line, "%s is not accessible in this scope",
+                         get (identifier));
           break;
         }
 
@@ -452,7 +434,7 @@ type_check_expr (ast_t::iterator ptr)
       node.set_type (result);
     }
 
-    void check_call (ast_expr_t& node, const signature_type_t* signature, const type_t* return_type, ast_t* args)
+    void check_call (ast_expr_t& node, const signature_type_t* signature, typed_value_t return_value, ast_t* args)
     {
       size_t argument_count = args->size ();
       size_t parameter_count = signature->arity ();
@@ -471,17 +453,15 @@ type_check_expr (ast_t::iterator ptr)
         {
           ast_t *arg = args->at (idx);
           typed_value_t argument_tv  = ast_get_typed_value (arg);
-          typed_value_t parameter_tv = typed_value_t::make_value (parameter_type (*pos), typed_value_t::IMMUTABLE);
-          if (!type_is_convertible (parameter_tv.type, argument_tv.type))
-            {
-              error_at_line (-1, 0, arg->file,
-                             arg->line,
-                             "cannot convert %s to %s for argument %zd", argument_tv.type->to_string ().c_str (), parameter_tv.type->to_string ().c_str (), idx);
-            }
+          typed_value_t parameter_tv = typed_value_t::make_ref ((*pos)->value);
+          check_assignment (parameter_tv, argument_tv, *arg,
+                            "incompatible types (%s) = (%s)",
+                            "argument leaks mutable pointers",
+                            "argument may store foreign pointer");
         }
 
       // Set the return type.
-      node.set_type (typed_value_t::make_value (return_type, typed_value_t::IMMUTABLE));
+      node.set_type (return_value);
     }
 
     void visit (ast_call_expr_t& node)
@@ -513,12 +493,12 @@ type_check_expr (ast_t::iterator ptr)
 
         void visit (const function_type_t& type)
         {
-          rvalue_visitor.check_call (node, type.signature (), type.return_type (), node.args ());
+          rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
         }
 
         void visit (const method_type_t& type)
         {
-          rvalue_visitor.check_call (node, type.signature, type.return_type, node.args ());
+          rvalue_visitor.check_call (node, type.signature, type.function_type->return_parameter->value, node.args ());
 
           // Transfer the computation for the receiver to the argument list.
           // The receiver is either a copy or a pointer.
@@ -572,7 +552,11 @@ type_check_expr (ast_t::iterator ptr)
                          "no port named %s", get (port_identifier));
         }
       check_rvalue_list (args);
-      check_call (node, port_type->signature (), void_type_t::instance (), args);
+      typed_value_t tv = typed_value_t::make_value (void_type_t::instance (),
+                                                    typed_value_t::STACK,
+                                                    IMMUTABLE,
+                                                    IMMUTABLE);
+      check_call (node, port_type->signature (), tv, args);
       node.field = type_select_field (this_type, port_identifier);
     }
 
@@ -739,45 +723,70 @@ type_check_statement (ast_t * node)
       node.limit = limit;
     }
 
-    void visit (ast_assign_statement_t& node)
+    static typed_value_t
+    check_assignment_target (ast_t::iterator left)
     {
-      ast_t::iterator left = node.left_iter ();
-      typed_value_t left_tv = check_assignment_target (left);
-      ast_t::iterator right = node.right_iter ();
-      typed_value_t right_tv = type_check_expr (right);
+      typed_value_t tv = type_check_expr (left);
+      assert (tv.kind == typed_value_t::REFERENCE);
+      if (tv.intrinsic_mutability != MUTABLE)
+        {
+          ast_print (**left);
+          error_at_line (-1, 0, (*left)->file, (*left)->line,
+                         "cannot assign to read-only location of type %s", tv.type->to_string ().c_str ());
+        }
 
-      assert (right_tv.type != NULL);
-      assert (right_tv.kind == typed_value_t::VALUE);
+      return tv;
+    }
 
+    static void arithmetic_assign (ast_binary_t* node, const char* symbol)
+    {
+      ast_t::iterator left = node->left_iter ();
+      check_assignment_target (left);
+      ast_t::iterator right = node->right_iter ();
+      type_check_expr (right);
+      typed_value_t left_tv = ast_get_typed_value (*left);
+      typed_value_t right_tv = ast_get_typed_value (*right);
       if (!type_is_convertible (left_tv.type, right_tv.type))
         {
-          error_at_line (-1, 0, node.file, node.line,
-                         "incompatible types (%s) = (%s)", left_tv.type->to_string ().c_str (), right_tv.type->to_string ().c_str ());
+          error_at_line (-1, 0, node->file, node->line,
+                         "incompatible types (%s) %s (%s)", left_tv.type->to_string ().c_str (), symbol, right_tv.type->to_string ().c_str ());
         }
 
-      switch (right_tv.reference_kind)
+      struct visitor : public const_type_visitor_t
+      {
+        ast_t* node;
+        const char* symbol;
+
+        visitor (ast_t* n, const char* s) : node (n), symbol (s) { }
+
+        void visit (const named_type_t& type)
         {
-        case typed_value_t::MUTABLE:
-          break;
-        case typed_value_t::IMMUTABLE:
-          if (!type_is_immutable_safe (right_tv.type))
-            {
-              error_at_line (-1, 0, node.file, node.line,
-                             "assignment leaks mutable pointers");
-            }
-          break;
-        case typed_value_t::FOREIGN:
-          if (!type_is_foreign_safe (right_tv.type))
-            {
-              error_at_line (-1, 0, node.file, node.line,
-                             "assignment leaks mutable pointers");
-            }
-          break;
-        case typed_value_t::CONSTANT:
-          break;
+          type.subtype ()->accept (*this);
         }
 
+        void visit (const uint_type_t& type)
+        {
+          // Okay.
+        }
 
+        void default_action (const type_t& type)
+        {
+          error_at_line (-1, 0, node->file, node->line,
+                         "incompatible types (%s) %s (%s)", type.to_string ().c_str (), symbol, type.to_string ().c_str ());
+        }
+      };
+      visitor v (node, symbol);
+      left_tv.type->accept (v);
+    }
+
+    void visit (ast_assign_statement_t& node)
+    {
+      typed_value_t left_tv = check_assignment_target (node.left_iter ());
+      typed_value_t right_tv = type_check_expr (node.right_iter ());
+      check_assignment (left_tv, right_tv, node,
+                        "incompatible types (%s) = (%s)",
+                        "assignment leaks mutable pointers",
+                        "assignment may store foreign pointer");
     }
 
     void visit (ast_change_statement_t& node)
@@ -812,7 +821,7 @@ type_check_statement (ast_t * node)
       enter_symbol (node.symtab, symbol, node.root_symbol);
 
       // Enter all parameters and variables in scope that are pointers as pointers to foreign.
-      symtab_change (node.symtab);
+      node.symtab->change ();
 
       // Check the body.
       type_check_statement (body);
@@ -861,19 +870,16 @@ type_check_statement (ast_t * node)
     void visit (ast_return_statement_t& node)
     {
       // Check the expression.
-      ast_t::iterator expr = node.get_child_ptr (UNARY_CHILD);
-      type_check_expr (expr);
-      typed_value_t expr_tv = ast_get_typed_value (*expr);
+      typed_value_t expr_tv = type_check_expr (node.child_iter ());
 
       // Check that it matches with the return type.
-      const type_t* return_type = get_current_return_type (&node);
-      assert (return_type != NULL);
-      typed_value_t return_tv = typed_value_t::make_value (return_type, typed_value_t::IMMUTABLE);
-      if (!type_is_convertible (return_tv.type, expr_tv.type))
-        {
-          error_at_line (-1, 0, node.file, node.line,
-                         "cannot convert %s to %s in return", expr_tv.type->to_string ().c_str (), return_tv.type->to_string ().c_str ());
-        }
+      node.return_symbol = get_current_return_symbol (&node);
+      assert (node.return_symbol != NULL);
+
+      check_assignment (symbol_parameter_value (node.return_symbol), expr_tv, node,
+                        "cannot convert to (%s) from (%s) in return",
+                        "return leaks mutable pointers",
+                        "return may store foreign pointer");
     }
 
     void visit (ast_increment_statement_t& node)
@@ -925,10 +931,7 @@ type_check_statement (ast_t * node)
       check_rvalue_list (expression_list_node);
 
       /* Re-insert this as a pointer to mutable. */
-      symbol_t *this_symbol = symtab_get_this (node.symtab);
-      symbol_t *new_this_symbol =
-        symbol_make_receiver_duplicate (this_symbol);
-      enter_symbol (node.symtab, new_this_symbol, node.this_symbol);
+      node.symtab->trigger (node.this_symbol, &node);
 
       /* Check the body. */
       type_check_statement (body_node);
@@ -1095,6 +1098,7 @@ mutates_check_statement (ast_t * node)
         case SymbolType:
         case SymbolTypedConstant:
         case SymbolVariable:
+        case SymbolHidden:
           break;
         }
     }
@@ -1284,7 +1288,8 @@ mutates_check_statement (ast_t * node)
   node->accept (v);
 }
 
-static void
+// TODO: Replace node with its symbol table.
+void
 enter_signature (ast_t * node, const signature_type_t * type)
 {
   for (signature_type_t::ParametersType::const_iterator pos = type->begin (), limit = type->end ();
@@ -1292,24 +1297,23 @@ enter_signature (ast_t * node, const signature_type_t * type)
     {
       parameter_t* parameter = *pos;
       // Check if the symbol is defined locally.
-      string_t identifier = parameter_name (parameter);
-      const type_t *type = parameter_type (parameter);
-      symbol_t *s = symtab_find_current (node->symtab, identifier);
+      string_t identifier = parameter->name;
+      symbol_t *s = node->symtab->find_current (identifier);
       if (s == NULL)
         {
-          if (parameter_is_receiver (parameter))
+          if (parameter->is_receiver)
             {
-              s = symbol_make_receiver (identifier, type, node);
+              s = symbol_make_receiver (parameter);
             }
           else
             {
-              s = symbol_make_parameter (identifier, type, node);
+              s = symbol_make_parameter (parameter);
             }
-          symtab_enter (node->symtab, s);
+          node->symtab->enter (s);
         }
       else
         {
-          error_at_line (-1, 0, node->file, node->line,
+          error_at_line (-1, 0, parameter->defining_node->file, parameter->defining_node->line,
         		 "%s is already defined in this scope",
         		 get (identifier));
         }
@@ -1332,18 +1336,26 @@ process_definitions (ast_t * node)
 
     void visit (ast_action_t& node)
     {
-      ast_t *receiver_node = node.receiver ();
       ast_t::iterator precondition_node = node.precondition_iter ();
       ast_t *body_node = node.body ();
 
       /* Insert "this" into the symbol table. */
       // TODO:  Unify with others as entering signature and return value.
-      ast_t *this_node = receiver_node->at (RECEIVER_THIS_IDENTIFIER);
-      string_t this_identifier = ast_get_identifier (this_node);
+      ast_t *this_identifier_node = node.this_identifier ();
+      string_t this_identifier = ast_get_identifier (this_identifier_node);
+      typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make (get_current_receiver_type
+                                                                                  (&node)),
+                                                            typed_value_t::STACK,
+                                                            MUTABLE,
+                                                            IMMUTABLE);
+      parameter_t* this_parameter = new parameter_t (this_identifier_node,
+                                                     this_identifier,
+                                                     this_value,
+                                                     true);
+
       enter_symbol (node.symtab,
-                    symbol_make_receiver (this_identifier,
-                                          pointer_to_immutable_type_t::make (get_current_receiver_type
-                                                                             (&node)), this_node), node.this_symbol);
+                    symbol_make_receiver (this_parameter),
+                    node.this_symbol);
 
       check_condition (precondition_node);
       type_check_statement (body_node);
@@ -1354,21 +1366,38 @@ process_definitions (ast_t * node)
     void visit (ast_dimensioned_action_t& node)
     {
       ast_t *dimension_node = node.dimension ();
-      ast_t *receiver_node = node.receiver ();
       ast_t::iterator precondition_node = node.precondition_iter ();
       ast_t *body_node = node.body ();
 
       /* Insert "this" into the symbol table. */
-      ast_t *this_node = receiver_node->at (RECEIVER_THIS_IDENTIFIER);
-      string_t this_identifier = ast_get_identifier (this_node);
+      ast_t *this_identifier_node = node.this_identifier ();
+      string_t this_identifier = ast_get_identifier (this_identifier_node);
+      typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make (get_current_receiver_type
+                                                                                  (&node)),
+                                                            typed_value_t::STACK,
+                                                            MUTABLE,
+                                                            IMMUTABLE);
+      parameter_t* this_parameter = new parameter_t (this_identifier_node,
+                                                     this_identifier,
+                                                     this_value,
+                                                     true);
+
       enter_symbol (node.symtab,
-                    symbol_make_receiver (this_identifier,
-                                          pointer_to_immutable_type_t::make (get_current_receiver_type
-                                                                             (&node)), this_node), node.this_symbol);
+                    symbol_make_receiver (this_parameter),
+                    node.this_symbol);
 
       /* Insert "iota" into the symbol table. */
+      typed_value_t iota_value = typed_value_t::make_value (new iota_type_t (node.action->dimension ()),
+                                                            typed_value_t::STACK,
+                                                            IMMUTABLE,
+                                                            IMMUTABLE);
+      parameter_t* iota_parameter = new parameter_t (dimension_node,
+                                                     enter ("IOTA"),
+                                                     iota_value,
+                                                     false);
+
       enter_symbol (node.symtab,
-                    symbol_make_parameter (enter ("IOTA"), new iota_type_t (node.action->dimension ()), dimension_node),
+                    symbol_make_parameter (iota_parameter),
                     node.iota_symbol);
 
       check_condition (precondition_node);
@@ -1379,17 +1408,24 @@ process_definitions (ast_t * node)
 
     void visit (ast_bind_t& node)
     {
-      ast_t *receiver_node = node.receiver ();
       ast_t *body_node = node.body ();
       /* Insert "this" into the symbol table. */
-      ast_t *this_node =
-        receiver_node->at (RECEIVER_THIS_IDENTIFIER);
+      ast_t *this_node = node.this_identifier ();
       string_t this_identifier = ast_get_identifier (this_node);
+      typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make
+                                                            (get_current_receiver_type
+                                                             (&node)),
+                                                            typed_value_t::STACK,
+                                                            MUTABLE,
+                                                            MUTABLE);
+      parameter_t* this_parameter = new parameter_t (this_node,
+                                                     this_identifier,
+                                                     this_value,
+                                                     true);
+
       enter_symbol (node.symtab,
-                    symbol_make_receiver (this_identifier,
-                                          pointer_type_t::make
-                                          (get_current_receiver_type
-                                           (&node)), this_node), node.this_symbol);
+                    symbol_make_receiver (this_parameter),
+                    node.this_symbol);
 
       /* Check the body. */
       type_check_statement (body_node);
@@ -1398,34 +1434,14 @@ process_definitions (ast_t * node)
 
     void visit (ast_function_t& node)
     {
-      ast_t *signature_node = node.at (FUNCTION_SIGNATURE);
       ast_t *body_node = node.at (FUNCTION_BODY);
-      ast_t *return_type_node = node.at (FUNCTION_RETURN_TYPE);
-      function_t *function = get_current_function (&node);
-
-      /* Enter the return type into the symbol table. */
-      enter_symbol (node.symtab, symbol_make_return_parameter (enter ("0return"), function->func_type->return_type (), return_type_node), node.return_symbol);
-
-      /* Enter the signature into the symbol table. */
-      enter_signature (signature_node, function->func_type->signature ());
-
       type_check_statement (body_node);
       control_check_statement (body_node);
     }
 
     void visit (ast_method_t& node)
     {
-      ast_t *signature_node = node.at (METHOD_SIGNATURE);
-      ast_t *body_node = node.at (METHOD_BODY);
-      ast_t *return_type_node = node.at (METHOD_RETURN_TYPE);
-      method_t *method = get_current_method (&node);
-
-      /* Enter the return type into the symbol table. */
-      enter_symbol (node.symtab, symbol_make_return_parameter (enter ("0return"), method->method_type->return_type, return_type_node), node.return_symbol);
-
-      /* Enter the signature into the symbol table. */
-      enter_signature (signature_node, method->method_type->function_type->signature ());
-
+      ast_t *body_node = node.body ();
       type_check_statement (body_node);
       control_check_statement (body_node);
     }
@@ -1455,18 +1471,23 @@ process_definitions (ast_t * node)
 
     void visit (ast_reaction_t& node)
     {
-      ast_t *receiver_node = node.receiver ();
       ast_t *signature_node = node.signature ();
       ast_t *body_node = node.body ();
-      reaction_t *reaction = dynamic_cast<reaction_t*> (get_current_action (&node));
+      reaction_t *reaction = node.reaction;
       /* Insert "this" into the symbol table. */
-      ast_t *this_node =
-        receiver_node->at (RECEIVER_THIS_IDENTIFIER);
-      string_t this_identifier = ast_get_identifier (this_node);
+      ast_t *this_identifier_node = node.this_identifier ();
+      string_t this_identifier = ast_get_identifier (this_identifier_node);
+      typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make (reaction->component_type ()),
+                                                            typed_value_t::STACK,
+                                                            MUTABLE,
+                                                            IMMUTABLE);
+      parameter_t* this_parameter = new parameter_t (this_identifier_node,
+                                                     this_identifier,
+                                                     this_value,
+                                                     true);
       enter_symbol (node.symtab,
-                    symbol_make_receiver (this_identifier,
-                                          pointer_to_immutable_type_t::make (reaction->component_type ()),
-                                          this_node), node.this_symbol);
+                    symbol_make_receiver (this_parameter),
+                    node.this_symbol);
       /* Enter the signature into the symbol table. */
       enter_signature (signature_node, reaction->reaction_type ()->signature ());
 
@@ -1478,24 +1499,37 @@ process_definitions (ast_t * node)
     void visit (ast_dimensioned_reaction_t& node)
     {
       ast_t *dimension_node = node.dimension ();
-      ast_t *receiver_node = node.receiver ();
       ast_t *signature_node = node.signature ();
       ast_t *body_node = node.body ();
       reaction_t *reaction = dynamic_cast<reaction_t*> (get_current_action (&node));
 
       /* Insert "this" into the symbol table. */
-      ast_t *this_node =
-        receiver_node->at (RECEIVER_THIS_IDENTIFIER);
-      string_t this_identifier = ast_get_identifier (this_node);
+      ast_t *this_identifier_node = node.this_identifier ();
+      string_t this_identifier = ast_get_identifier (this_identifier_node);
+      typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make (reaction->component_type ()),
+                                                            typed_value_t::STACK,
+                                                            MUTABLE,
+                                                            IMMUTABLE);
+      parameter_t* this_parameter = new parameter_t (this_identifier_node,
+                                                     this_identifier,
+                                                     this_value,
+                                                     true);
       enter_symbol (node.symtab,
-                    symbol_make_receiver (this_identifier,
-                                          pointer_to_immutable_type_t::make (reaction->component_type ()),
-                                          this_node), node.this_symbol);
-
+                    symbol_make_receiver (this_parameter),
+                    node.this_symbol);
 
       /* Insert "iota" into the symbol table. */
+      typed_value_t iota_value = typed_value_t::make_value (new iota_type_t (node.reaction->dimension ()),
+                                                            typed_value_t::STACK,
+                                                            IMMUTABLE,
+                                                            IMMUTABLE);
+      parameter_t* iota_parameter = new parameter_t (dimension_node,
+                                                     enter ("IOTA"),
+                                                     iota_value,
+                                                     false);
+
       enter_symbol (node.symtab,
-                    symbol_make_parameter (enter ("IOTA"), new iota_type_t (node.reaction->dimension ()), dimension_node),
+                    symbol_make_parameter (iota_parameter),
                     node.iota_symbol);
 
       /* Enter the signature into the symbol table. */

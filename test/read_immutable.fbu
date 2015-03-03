@@ -2,7 +2,7 @@ type C component {
   flag bool;
 };
 
-action (this $C) (true) {
+action (this @C const) (true) {
   var x bool;
   x = this.flag;
 }

@@ -8,7 +8,6 @@
 #include <vector>
 #include <string>
 #include <sstream>
-#include "parameter.hpp"
 
 class const_type_visitor_t;
 
@@ -182,44 +181,6 @@ private:
   pointer_type_t (const type_t* base_type) : base_type_t (base_type) { }
 };
 
-class pointer_to_immutable_type_t : public type_t, public base_type_t
-{
-public:
-  void accept (const_type_visitor_t& visitor) const;
-  std::string to_string () const
-  {
-    std::stringstream str;
-    str << "$" << *base_type_;
-    return str.str ();
-  }
-  size_t alignment () const { return sizeof (void*); }
-  size_t size () const { return sizeof (void*); }
-  virtual TypeLevel level () const { return CONVENTIONAL; }
-
-  static const type_t* make (const type_t* base_type);
-private:
-  pointer_to_immutable_type_t (const type_t* base_type) : base_type_t (base_type) { }
-};
-
-class pointer_to_foreign_type_t : public type_t, public base_type_t
-{
-public:
-  void accept (const_type_visitor_t& visitor) const;
-  std::string to_string () const
-  {
-    std::stringstream str;
-    str << "?" << *base_type_;
-    return str.str ();
-  }
-  size_t alignment () const { return sizeof (void*); }
-  size_t size () const { return sizeof (void*); }
-  virtual TypeLevel level () const { return CONVENTIONAL; }
-
-  static const type_t* make (const type_t* base_type);
-private:
-  pointer_to_foreign_type_t (const type_t* base_type) : base_type_t (base_type) { }
-};
-
 struct heap_type_t : public type_t, public base_type_t
 {
   heap_type_t (const type_t* base_type) : base_type_t (base_type) { }
@@ -327,12 +288,7 @@ public:
   parameter_t * find (string_t name) const;
 
   void
-  prepend (string_t parameter_name,
-           const type_t * parameter_type, bool is_receiver);
-
-  void
-  append (string_t parameter_name,
-          const type_t * parameter_type, bool is_receiver);
+  append (parameter_t* p) { parameters_.push_back (p); }
 
 private:
   ParametersType parameters_;
@@ -341,28 +297,20 @@ private:
 class function_type_t : public type_t
 {
 public:
-  function_type_t (const signature_type_t * signature,
-                   const type_t * return_type)
-    : signature_ (signature)
-    , return_type_ (return_type)
+  function_type_t (const signature_type_t * signature_,
+                   const parameter_t * return_parameter_)
+    : signature (signature_)
+    , return_parameter (return_parameter_)
   { }
 
   void accept (const_type_visitor_t& visitor) const;
-  std::string to_string () const
-  {
-    std::stringstream str;
-    str << "func " << *signature_ << ' ' << *return_type_;
-    return str.str ();
-  }
+  std::string to_string () const;
   size_t alignment () const { return sizeof (void*); }
   size_t size () const { return sizeof (void*); }
   virtual TypeLevel level () const { return CONVENTIONAL; }
 
-  const signature_type_t* signature () const { return signature_; }
-  const type_t* return_type () const { return return_type_; }
-private:
-  const signature_type_t *signature_;
-  const type_t *return_type_;
+  const signature_type_t * const signature;
+  const parameter_t * const return_parameter;
 };
 
 class method_type_t : public type_t
@@ -371,23 +319,18 @@ public:
   method_type_t (const named_type_t* named_type_,
                  string_t this_name,
                  const type_t* receiver_type_,
+                 Mutability dereference_mutability,
                  const signature_type_t * signature_,
-                 const type_t * return_type_)
+                 const parameter_t* return_parameter)
     : named_type (named_type_)
     , receiver_type (receiver_type_)
     , signature (signature_)
-    , return_type (return_type_)
-    , function_type (make_function_type (this_name, receiver_type_, signature_, return_type_))
+    , function_type (make_function_type (this_name, receiver_type_, dereference_mutability, signature_, return_parameter))
   {
   }
 
   void accept (const_type_visitor_t& visitor) const;
-  std::string to_string () const
-  {
-    std::stringstream str;
-    str << '(' << *receiver_type << ')' << " func " << *signature << ' ' << *return_type;
-    return str.str ();
-  }
+  std::string to_string () const;
   size_t alignment () const { return sizeof (void*); }
   size_t size () const { return sizeof (void*); }
   virtual TypeLevel level () const { return CONVENTIONAL; }
@@ -395,23 +338,10 @@ public:
   const named_type_t* const named_type;
   const type_t* const receiver_type;
   const signature_type_t* const signature;
-  const type_t* const return_type;
   const function_type_t* function_type;
 
 private:
-  static function_type_t* make_function_type (string_t this_name, const type_t* receiver_type, const signature_type_t* signature, const type_t* return_type)
-  {
-    signature_type_t* sig = new signature_type_t ();
-    sig->append (this_name, receiver_type, true);
-    for (signature_type_t::const_iterator pos = signature->begin (),
-           limit = signature->end ();
-         pos != limit;
-         ++pos)
-      {
-        sig->append (parameter_name (*pos), parameter_type (*pos), false);
-      }
-    return new function_type_t (sig, return_type);
-  }
+  static function_type_t* make_function_type (string_t this_name, const type_t* receiver_type, Mutability dereference_mutability, const signature_type_t* signature, const parameter_t* return_parameter);
 };
 
 class port_type_t : public type_t
@@ -506,8 +436,6 @@ struct const_type_visitor_t
   virtual void visit (const heap_type_t& type) { default_action (type); }
   virtual void visit (const iota_type_t& type) { default_action (type); }
   virtual void visit (const named_type_t& type) { default_action (type); }
-  virtual void visit (const pointer_to_foreign_type_t& type) { default_action (type); }
-  virtual void visit (const pointer_to_immutable_type_t& type) { default_action (type); }
   virtual void visit (const pointer_type_t& type) { default_action (type); }
   virtual void visit (const port_type_t& type) { default_action (type); }
   virtual void visit (const reaction_type_t& type) { default_action (type); }
@@ -570,17 +498,9 @@ type_is_equivalent (const type_t* x, const type_t* y)
   return type_is_convertible (x, y) || type_is_convertible (y, x);
 }
 
-// True if it is safe to drop foreign-ness.
+// True if any pointer is accessible.
 bool
-type_is_foreign_safe (const type_t* type);
-
-// True if it is safe to drop immutability.
-bool
-type_is_immutable_safe (const type_t* type);
-
-// True if pointer-to-foreign value can be accessed given a value of this type.
-bool
-type_contains_pointer_to_foreign (const type_t* type);
+type_contains_pointer (const type_t* type);
 
 // True if boolean operators can be applied to values of this type.
 bool

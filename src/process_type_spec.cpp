@@ -3,6 +3,7 @@
 #include "ast.hpp"
 #include <error.h>
 #include "symbol.hpp"
+#include "parameter.hpp"
 
 size_t
 process_array_dimension (ast_t::iterator ptr)
@@ -49,6 +50,22 @@ process_array_dimension (ast_t::iterator ptr)
   return v.dimension;
 }
 
+void
+check_port_reaction_signature (const signature_type_t* signature)
+{
+  for (signature_type_t::const_iterator pos = signature->begin (), limit = signature->end ();
+       pos != limit;
+       ++pos)
+    {
+      parameter_t* parameter = *pos;
+      if (type_contains_pointer (parameter->value.type) && parameter->value.dereference_mutability != FOREIGN)
+        {
+          error_at_line (-1, 0, parameter->defining_node->file, parameter->defining_node->line,
+                         "signature leaks pointers");
+        }
+    }
+}
+
 const type_t *
 process_type_spec (ast_t * node, bool force_identifiers, bool is_component)
 {
@@ -92,8 +109,9 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component)
       field_list_type_t *field_list = new field_list_type_t (is_component);
       AST_FOREACH (child, &node)
         {
-          ast_t *identifier_list = child->at (IDENTIFIER_LIST);
-          ast_t *type_spec = child->at (TYPE_SPEC);
+          ast_identifier_list_type_spec_t* c = static_cast<ast_identifier_list_type_spec_t*> (child);
+          ast_t *identifier_list = c->identifier_list ();
+          ast_t *type_spec = c->type_spec ();
           const type_t *type = process_type_spec (type_spec, true);
           AST_FOREACH (id, identifier_list)
             {
@@ -111,12 +129,6 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component)
             }
         }
       type = field_list;
-    }
-
-    void visit (ast_foreign_type_spec_t& node)
-    {
-      unimplemented;
-      //type = foreign_type_t::make (process_type_spec (node.at (FOREIGN_BASE_TYPE), false));
     }
 
     void visit (ast_heap_type_spec_t& node)
@@ -151,42 +163,38 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component)
       type = pointer_type_t::make (process_type_spec (node.at (POINTER_BASE_TYPE), false));
     }
 
-    void visit (ast_pointer_to_foreign_type_spec_t& node)
-    {
-      type = pointer_to_foreign_type_t::make (process_type_spec (node.at (POINTER_BASE_TYPE), false));
-    }
-
-    void visit (ast_pointer_to_immutable_type_spec_t& node)
-    {
-      type = pointer_to_immutable_type_t::make (process_type_spec (node.at (POINTER_BASE_TYPE), false));
-    }
-
     void visit (ast_port_type_spec_t& node)
     {
-      const signature_type_t* signature = dynamic_cast<const signature_type_t*> (process_type_spec (node.at (PORT_SIGNATURE), true));
-      if (!type_is_foreign_safe (signature))
-        {
-          error_at_line (-1, 0, node.file, node.line,
-                         "signature leaks pointers");
-        }
+      const signature_type_t* signature = type_cast<signature_type_t> (process_type_spec (node.at (PORT_SIGNATURE), true));
+      check_port_reaction_signature (signature);
       type = new port_type_t (signature);
     }
 
     void visit (ast_signature_type_spec_t& node)
     {
       signature_type_t *signature = new signature_type_t ();
-      AST_FOREACH (child, &node)
+      for (ast_t::iterator pos1 = node.begin (), limit1 = node.end ();
+           pos1 != limit1;
+           ++pos1)
         {
-          ast_t *identifier_list = child->at (IDENTIFIER_LIST);
-          ast_t *type_spec = child->at (TYPE_SPEC);
+          ast_identifier_list_type_spec_t* child = static_cast<ast_identifier_list_type_spec_t*> (*pos1);
+          ast_t *identifier_list = child->identifier_list ();
+          ast_t *type_spec = child->type_spec ();
           const type_t *type = process_type_spec (type_spec, true);
-          AST_FOREACH (id, identifier_list)
+          for (ast_t::iterator pos2 = identifier_list->begin (), limit2 = identifier_list->end ();
+               pos2 != limit2;
+               ++pos2)
             {
+              ast_t* id = *pos2;
               string_t identifier = ast_get_identifier (id);
               const parameter_t *parameter = signature->find (identifier);
               if (parameter == NULL)
                 {
-                  signature->append (identifier, type, false);
+                  typed_value_t tv = typed_value_t::make_value (type,
+                                                                typed_value_t::STACK,
+                                                                MUTABLE,
+                                                                child->dereference_mutability);
+                  signature->append (new parameter_t (id, identifier, tv, false));
                 }
               else
                 {

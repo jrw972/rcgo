@@ -33,12 +33,12 @@ func (this @Queue) Pop ()
     };
 }
 
-func (this $Queue) Empty () bool
+func (this @Queue const) Empty () bool
 {
   return this.head == nil;
 }
 
-func (this $Queue) Front () uint
+func (this @Queue const) Front () uint
 {
   return this.head.value;
 }
@@ -49,15 +49,17 @@ type Channel component
   receive port (message uint);
 };
 
-reaction (this $Channel) send (message ?uint)
+reaction (this @Channel const) send (message @uint foreign)
 {
+  var x uint;
+  x = message@;
   trigger
   {
-    this.queue.Push (message@);
+    this.queue.Push (x);
   };
 }
 
-action (this $Channel) (this.queue.Empty ()!)
+action (this @Channel const) (this.queue.Empty ()!)
 {
   trigger receive (this.queue.Front ())
     {
@@ -69,13 +71,13 @@ type System component
 {
   channel Channel;
   send_count uint;
-  send port (message ?uint);
+  send port (message @uint foreign);
 };
 
 func (this @System) Initially ()
 { }
 
-action (this $System) (this.send_count != 100u)
+action (this @System const) (this.send_count != 100u)
 {
   var x @uint;
   x = new uint;
@@ -88,7 +90,7 @@ action (this $System) (this.send_count != 100u)
   };
 }
 
-reaction (this $System) receive (message uint)
+reaction (this @System const) receive (message uint)
 {
   println `Received `, message;
 }

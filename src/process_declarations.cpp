@@ -6,6 +6,7 @@
 #include "action.hpp"
 #include "bind.hpp"
 #include "method.hpp"
+#include "parameter.hpp"
 
 void
 process_declarations (ast_t * node)
@@ -15,20 +16,19 @@ process_declarations (ast_t * node)
 
     void visit (ast_action_t& node)
     {
-      ast_t *receiver = node.receiver ();
-      ast_t *type_node = receiver->at (RECEIVER_TYPE_IDENTIFIER);
-      string_t type_identifier = ast_get_identifier (type_node);
-      symbol_t *symbol = lookup_force (type_node, type_identifier);
+      ast_t *type_identifier_node = node.type_identifier ();
+      string_t type_identifier = ast_get_identifier (type_identifier_node);
+      symbol_t *symbol = lookup_force (type_identifier_node, type_identifier);
       if (symbol_kind (symbol) != SymbolType)
         {
-          error_at_line (-1, 0, type_node->file, (type_node)->line,
+          error_at_line (-1, 0, type_identifier_node->file, (type_identifier_node)->line,
                          "%s does not refer to a type",
                          get (type_identifier));
         }
       named_type_t *type = symbol_get_type_type (symbol);
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
-          error_at_line (-1, 0, type_node->file, (type_node)->line,
+          error_at_line (-1, 0, type_identifier_node->file, (type_identifier_node)->line,
                          "%s does not refer to a component",
                          get (type_identifier));
         }
@@ -42,20 +42,19 @@ process_declarations (ast_t * node)
     void visit (ast_dimensioned_action_t& node)
     {
       size_t dimension = process_array_dimension (node.dimension_iter ());
-      ast_t *receiver = node.receiver ();
-      ast_t *type_node = receiver->at (RECEIVER_TYPE_IDENTIFIER);
-      string_t type_identifier = ast_get_identifier (type_node);
-      symbol_t *symbol = lookup_force (type_node, type_identifier);
+      ast_t *type_identifier_node = node.type_identifier ();
+      string_t type_identifier = ast_get_identifier (type_identifier_node);
+      symbol_t *symbol = lookup_force (type_identifier_node, type_identifier);
       if (symbol_kind (symbol) != SymbolType)
         {
-          error_at_line (-1, 0, type_node->file, (type_node)->line,
+          error_at_line (-1, 0, type_identifier_node->file, type_identifier_node->line,
                          "%s does not refer to a type",
                          get (type_identifier));
         }
       named_type_t *type = symbol_get_type_type (symbol);
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
-          error_at_line (-1, 0, type_node->file, (type_node)->line,
+          error_at_line (-1, 0, type_identifier_node->file, type_identifier_node->line,
                          "%s does not refer to a component",
                          get (type_identifier));
         }
@@ -68,8 +67,7 @@ process_declarations (ast_t * node)
 
     void visit (ast_bind_t& node)
     {
-      ast_t *receiver = node.receiver ();
-      ast_t *type_node = receiver->at (RECEIVER_TYPE_IDENTIFIER);
+      ast_t *type_node = node.type_identifier ();
       string_t type_identifier = ast_get_identifier (type_node);
       symbol_t *symbol = lookup_force (type_node, type_identifier);
       if (symbol_kind (symbol) != SymbolType)
@@ -102,21 +100,36 @@ process_declarations (ast_t * node)
 
       /* Process the return type. */
       const type_t *return_type = process_type_spec (return_type_node, true);
+      typed_value_t return_value = typed_value_t::make_value (return_type,
+                                                              typed_value_t::STACK,
+                                                              MUTABLE,
+                                                              MUTABLE);
 
-      function_t* function = new function_t (&node, symbol_identifier (symbol), new function_type_t (signature, return_type));
+      parameter_t* return_parameter = new parameter_t (return_type_node,
+                                                       enter ("0return"),
+                                                       return_value,
+                                                       false);
+
+      symbol_t* return_symbol = symbol_make_return_parameter (return_parameter);
+
+      function_t* function = new function_t (&node, symbol_identifier (symbol), new function_type_t (signature, return_parameter), return_symbol);
+
+      // Enter the return first as it is deeper on the stack.
+      enter_symbol (node.symtab, return_symbol, node.return_symbol);
+      enter_signature (signature_node, signature);
+
       node.function = function;
       symbol_set_function_function (symbol, function);
       symtab_set_current_function (node.symtab, function);
-
     }
 
     void visit (ast_method_t& node)
     {
-      ast_receiver_definition_t* receiver = dynamic_cast<ast_receiver_definition_t*> (node.at (METHOD_RECEIVER));
-      ast_t *type_node = receiver->at (RECEIVER_TYPE_IDENTIFIER);
-      ast_t *signature_node = node.at (METHOD_SIGNATURE);
-      ast_t *return_type_node = node.at (METHOD_RETURN_TYPE);
-      ast_t *identifier_node = node.at (METHOD_IDENTIFIER);
+      ast_t* this_node = node.this_identifier ();
+      ast_t *type_node = node.type_identifier ();
+      ast_t *signature_node = node.signature ();
+      ast_t *return_type_node = node.return_type ();
+      ast_t *identifier_node = node.identifier ();
       string_t identifier = ast_get_identifier (identifier_node);
       string_t type_identifier = ast_get_identifier (type_node);
       symbol_t *symbol = lookup_force (type_node, type_identifier);
@@ -137,32 +150,39 @@ process_declarations (ast_t * node)
         }
 
       /* Determine the type of this. */
-      const type_t* this_type;
-      switch (receiver->kind ())
-        {
-        case ast_receiver_definition_t::AstPointerReceiver:
-          this_type = pointer_type_t::make (type);
-          break;
-        case ast_receiver_definition_t::AstPointerToImmutableReceiver:
-          this_type = pointer_to_immutable_type_t::make (type);
-          break;
-        }
+      const type_t* this_type = pointer_type_t::make (type);
 
       /* Process the signature. */
       const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
 
+
       /* Process the return type. */
       const type_t *return_type = process_type_spec (return_type_node, true);
+      typed_value_t return_value = typed_value_t::make_value (return_type,
+                                                              typed_value_t::STACK,
+                                                              MUTABLE,
+                                                              node.return_dereference_mutability);
 
+      parameter_t* return_parameter = new parameter_t (return_type_node,
+                                                       enter ("0return"),
+                                                       return_value,
+                                                       false);
+
+      symbol_t* return_symbol = symbol_make_return_parameter (return_parameter);
 
       method_type_t* method_type = new method_type_t (type,
-                                                      ast_get_identifier (receiver->at (RECEIVER_THIS_IDENTIFIER)),
+                                                      ast_get_identifier (this_node),
                                                       this_type,
+                                                      node.dereference_mutability,
                                                       signature,
-                                                      return_type);
+                                                      return_parameter);
 
+      method_t* method = new method_t (&node, identifier, method_type, return_symbol);
 
-      method_t* method = new method_t (&node, identifier, method_type);
+      // Enter the return first as it is deeper on the stack.
+      enter_symbol (node.symtab, return_symbol, node.return_symbol);
+      enter_signature (signature_node, method->method_type->function_type->signature);
+
       type->add_method (method);
       node.method = method;
       symtab_set_current_method (node.symtab, method);
@@ -198,8 +218,7 @@ process_declarations (ast_t * node)
 
     void visit (ast_reaction_t& node)
     {
-      ast_t *receiver = node.receiver ();
-      ast_t *type_node = receiver->at (RECEIVER_TYPE_IDENTIFIER);
+      ast_t *type_node = node.type_identifier ();
       ast_t *signature_node = node.signature ();
       ast_t *identifier_node = node.identifier ();
       string_t identifier = ast_get_identifier (identifier_node);
@@ -228,7 +247,8 @@ process_declarations (ast_t * node)
         }
 
       /* Process the signature. */
-      const signature_type_t *signature = dynamic_cast<const signature_type_t*> (process_type_spec (signature_node, true));
+      const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
+      check_port_reaction_signature (signature);
 
       reaction_t* reaction = new reaction_t (type, &node, identifier, signature);
       type->add_reaction (reaction);
@@ -240,8 +260,7 @@ process_declarations (ast_t * node)
     void visit (ast_dimensioned_reaction_t& node)
     {
       size_t dimension = process_array_dimension (node.dimension_iter ());
-      ast_t *receiver = node.receiver ();
-      ast_t *type_node = receiver->at (RECEIVER_TYPE_IDENTIFIER);
+      ast_t *type_node = node.type_identifier ();
       ast_t *signature_node = node.signature ();
       ast_t *identifier_node = node.identifier ();
       string_t identifier = ast_get_identifier (identifier_node);
@@ -318,7 +337,7 @@ process_declarations (ast_t * node)
 symbol_t *
 lookup_force (ast_t * node, string_t identifier)
 {
-  symbol_t *symbol = symtab_find (node->symtab, identifier);
+  symbol_t *symbol = node->symtab->find (identifier);
   if (symbol == NULL)
     {
       error_at_line (-1, 0, node->file, node->line,
@@ -341,7 +360,7 @@ lookup_force (ast_t * node, string_t identifier)
 symbol_t *
 lookup_no_force (ast_t * node, string_t identifier)
 {
-  symbol_t *symbol = symtab_find (node->symtab, identifier);
+  symbol_t *symbol = node->symtab->find (identifier);
   if (symbol == NULL)
     {
       error_at_line (-1, 0, node->file, node->line,

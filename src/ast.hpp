@@ -91,25 +91,6 @@ protected:
   }
 };
 
-class symbol_holder
-{
-public:
-  symbol_holder ()
-    : symbol_ (NULL)
-  { }
-
-  void symbol (symbol_t* s)
-  {
-    assert (symbol_ == NULL);
-    symbol_ = s;
-  }
-
-  symbol_t* symbol () const { return symbol_; }
-
-private:
-  symbol_t* symbol_;
-};
-
 class ast_identifier_t : public ast_t
 {
 public:
@@ -190,16 +171,6 @@ struct ast_field_list_type_spec_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
 };
 
-struct ast_foreign_type_spec_t : public ast_t
-{
-  ast_foreign_type_spec_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
-  { }
-
-  void accept (ast_visitor_t& visitor);
-  void accept (ast_const_visitor_t& visitor) const;
-};
-
 struct ast_heap_type_spec_t : public ast_t
 {
   ast_heap_type_spec_t (unsigned int line, size_t children_count)
@@ -222,9 +193,25 @@ struct ast_identifier_type_spec_t : public ast_t
 
 struct ast_identifier_list_type_spec_t : public ast_t
 {
-  ast_identifier_list_type_spec_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
-  { }
+  enum
+    {
+      IDENTIFIER_LIST,
+      TYPE_SPEC,
+      COUNT,
+    };
+
+  ast_identifier_list_type_spec_t (unsigned int line, ast_t* identifier_list, ast_t* type_spec, Mutability dereference_mutability_)
+    : ast_t (line, COUNT)
+    , dereference_mutability (dereference_mutability_)
+  {
+    children[IDENTIFIER_LIST] = identifier_list;
+    children[TYPE_SPEC] = type_spec;
+  }
+
+  const Mutability dereference_mutability;
+
+  ast_t* identifier_list () const { return children[IDENTIFIER_LIST]; }
+  ast_t* type_spec () const { return children[TYPE_SPEC]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -233,26 +220,6 @@ struct ast_identifier_list_type_spec_t : public ast_t
 struct ast_pointer_type_spec_t : public ast_t
 {
   ast_pointer_type_spec_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
-  { }
-
-  void accept (ast_visitor_t& visitor);
-  void accept (ast_const_visitor_t& visitor) const;
-};
-
-struct ast_pointer_to_immutable_type_spec_t : public ast_t
-{
-  ast_pointer_to_immutable_type_spec_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
-  { }
-
-  void accept (ast_visitor_t& visitor);
-  void accept (ast_const_visitor_t& visitor) const;
-};
-
-struct ast_pointer_to_foreign_type_spec_t : public ast_t
-{
-  ast_pointer_to_foreign_type_spec_t (unsigned int line, size_t children_count)
     : ast_t (line, children_count)
   { }
 
@@ -783,14 +750,17 @@ struct ast_println_statement_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
 };
 
-struct ast_return_statement_t : public ast_t
+struct ast_return_statement_t : public ast_unary_t
 {
-  ast_return_statement_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  ast_return_statement_t (unsigned int line, ast_t* child)
+    : ast_unary_t (line, child)
+    , return_symbol (NULL)
   { }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+
+  const symbol_t* return_symbol;
 };
 
 struct ast_increment_statement_t : public ast_unary_t
@@ -942,22 +912,25 @@ struct ast_action_t : public ast_t
 {
   enum
     {
-      RECEIVER,
+      THIS_IDENTIFIER,
+      TYPE_IDENTIFIER,
       PRECONDITION,
       BODY,
       COUNT
     };
 
-  ast_action_t (unsigned int line, ast_t* receiver, ast_t* precondition, ast_t* body)
+  ast_action_t (unsigned int line, ast_t* this_identifier, ast_t* type_identifier, ast_t* precondition, ast_t* body)
     : ast_t (line, COUNT)
     , action (NULL)
   {
-    children[RECEIVER] = receiver;
+    children[THIS_IDENTIFIER] = this_identifier;
+    children[TYPE_IDENTIFIER] = type_identifier;
     children[PRECONDITION] = precondition;
     children[BODY] = body;
   }
 
-  ast_t* receiver () const { return children[RECEIVER]; }
+  ast_t* this_identifier () const { return children[THIS_IDENTIFIER]; }
+  ast_t* type_identifier () const { return children[TYPE_IDENTIFIER]; }
   ast_t* precondition () const { return children[PRECONDITION]; }
   iterator precondition_iter () { return children.begin () + PRECONDITION; }
   ast_t* body () const { return children[BODY]; }
@@ -974,25 +947,28 @@ struct ast_dimensioned_action_t : public ast_t
   enum
     {
       DIMENSION,
-      RECEIVER,
+      THIS_IDENTIFIER,
+      TYPE_IDENTIFIER,
       PRECONDITION,
       BODY,
       COUNT
     };
 
-  ast_dimensioned_action_t (unsigned int line, ast_t* dimension, ast_t* receiver, ast_t* precondition, ast_t* body)
+  ast_dimensioned_action_t (unsigned int line, ast_t* dimension, ast_t* this_identifier, ast_t* type_identifier, ast_t* precondition, ast_t* body)
     : ast_t (line, COUNT)
     , action (NULL)
   {
     children[DIMENSION] = dimension;
-    children[RECEIVER] = receiver;
+    children[THIS_IDENTIFIER] = this_identifier;
+    children[TYPE_IDENTIFIER] = type_identifier;
     children[PRECONDITION] = precondition;
     children[BODY] = body;
   }
 
   ast_t* dimension () const { return children[DIMENSION]; }
   iterator dimension_iter () { return children.begin () + DIMENSION; }
-  ast_t* receiver () const { return children[RECEIVER]; }
+  ast_t* this_identifier () const { return children[THIS_IDENTIFIER]; }
+  ast_t* type_identifier () const { return children[TYPE_IDENTIFIER]; }
   ast_t* precondition () const { return children[PRECONDITION]; }
   iterator precondition_iter () { return children.begin () + PRECONDITION; }
   ast_t* body () const { return children[BODY]; }
@@ -1009,20 +985,23 @@ struct ast_bind_t : public ast_t
 {
   enum
     {
-      RECEIVER,
+      THIS_IDENTIFIER,
+      TYPE_IDENTIFIER,
       BODY,
       COUNT,
     };
 
-  ast_bind_t (unsigned int line, ast_t * receiver, ast_t * body)
+  ast_bind_t (unsigned int line, ast_t * this_identifier, ast_t* type_identifier, ast_t * body)
     : ast_t (line, COUNT)
     , bind (NULL)
   {
-    children[RECEIVER] = receiver;
+    children[THIS_IDENTIFIER] = this_identifier;
+    children[TYPE_IDENTIFIER] = type_identifier;
     children[BODY] = body;
   }
 
-  ast_t* receiver () const { return children[RECEIVER]; }
+  ast_t* this_identifier () const { return children[THIS_IDENTIFIER]; }
+  ast_t* type_identifier () const { return children[TYPE_IDENTIFIER]; }
   ast_t* body () const { return children[BODY]; }
 
   void accept (ast_visitor_t& visitor);
@@ -1061,15 +1040,50 @@ struct ast_instance_t : public ast_t
 
 struct ast_method_t : public ast_t
 {
-  ast_method_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  enum
+    {
+      THIS_IDENTIFIER,
+      TYPE_IDENTIFIER,
+      IDENTIFIER,
+      SIGNATURE,
+      RETURN_TYPE,
+      BODY,
+      COUNT
+    };
+
+  ast_method_t (unsigned int line, ast_t * this_identifier,
+                ast_t* type_identifier, Mutability dm,
+                ast_t * identifier,
+                ast_t * signature,
+                ast_t * return_type,
+                Mutability return_dm,
+                ast_t* body)
+    : ast_t (line, COUNT)
     , method (NULL)
-  { }
+    , dereference_mutability (dm)
+    , return_dereference_mutability (return_dm)
+  {
+    children[THIS_IDENTIFIER] = this_identifier;
+    children[TYPE_IDENTIFIER] = type_identifier;
+    children[IDENTIFIER] = identifier;
+    children[SIGNATURE] = signature;
+    children[RETURN_TYPE] = return_type;
+    children[BODY] = body;
+  }
+
+  ast_t* this_identifier () const { return children[THIS_IDENTIFIER]; }
+  ast_t* type_identifier () const { return children[TYPE_IDENTIFIER]; }
+  ast_t* identifier () const { return children[IDENTIFIER]; }
+  ast_t* signature () const { return children[SIGNATURE]; }
+  ast_t* return_type () const { return children[RETURN_TYPE]; }
+  ast_t* body () const { return children[BODY]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
 
   method_t* method;
+  Mutability const dereference_mutability;
+  Mutability const return_dereference_mutability;
   symbol_holder return_symbol;
 };
 
@@ -1077,24 +1091,27 @@ struct ast_reaction_t : public ast_t
 {
   enum
     {
-      RECEIVER,
+      THIS_IDENTIFIER,
+      TYPE_IDENTIFIER,
       IDENTIFIER,
       SIGNATURE,
       BODY,
       COUNT,
     };
 
-  ast_reaction_t (unsigned int line, ast_t* receiver, ast_t* identifier, ast_t* signature, ast_t* body)
+  ast_reaction_t (unsigned int line, ast_t* this_identifier, ast_t* type_identifier, ast_t* identifier, ast_t* signature, ast_t* body)
     : ast_t (line, COUNT)
     , reaction (NULL)
   {
-    children[RECEIVER] = receiver;
+    children[THIS_IDENTIFIER] = this_identifier;
+    children[TYPE_IDENTIFIER] = type_identifier;
     children[IDENTIFIER] = identifier;
     children[SIGNATURE] = signature;
     children[BODY] = body;
   }
 
-  ast_t* receiver () const { return children[RECEIVER]; }
+  ast_t* this_identifier () const { return children[THIS_IDENTIFIER]; }
+  ast_t* type_identifier () const { return children[TYPE_IDENTIFIER]; }
   ast_t* identifier () const { return children[IDENTIFIER]; }
   ast_t* signature () const { return children[SIGNATURE]; }
   ast_t* body () const { return children[BODY]; }
@@ -1111,19 +1128,21 @@ struct ast_dimensioned_reaction_t : public ast_t
   enum
     {
       DIMENSION,
-      RECEIVER,
+      THIS_IDENTIFIER,
+      TYPE_IDENTIFIER,
       IDENTIFIER,
       SIGNATURE,
       BODY,
       COUNT,
     };
 
-  ast_dimensioned_reaction_t (unsigned int line, ast_t* dimension, ast_t* receiver, ast_t* identifier, ast_t* signature, ast_t* body)
+  ast_dimensioned_reaction_t (unsigned int line, ast_t* dimension, ast_t* this_identifier, ast_t* type_identifier, ast_t* identifier, ast_t* signature, ast_t* body)
     : ast_t (line, COUNT)
     , reaction (NULL)
   {
     children[DIMENSION] = dimension;
-    children[RECEIVER] = receiver;
+    children[THIS_IDENTIFIER] = this_identifier;
+    children[TYPE_IDENTIFIER] = type_identifier;
     children[IDENTIFIER] = identifier;
     children[SIGNATURE] = signature;
     children[BODY] = body;
@@ -1131,7 +1150,8 @@ struct ast_dimensioned_reaction_t : public ast_t
 
   ast_t* dimension () const { return children[DIMENSION]; }
   iterator dimension_iter () { return children.begin () + DIMENSION; }
-  ast_t* receiver () const { return children[RECEIVER]; }
+  ast_t* this_identifier () const { return children[THIS_IDENTIFIER]; }
+  ast_t* type_identifier () const { return children[TYPE_IDENTIFIER]; }
   ast_t* identifier () const { return children[IDENTIFIER]; }
   ast_t* signature () const { return children[SIGNATURE]; }
   ast_t* body () const { return children[BODY]; }
@@ -1147,24 +1167,25 @@ struct ast_dimensioned_reaction_t : public ast_t
 class ast_receiver_definition_t : public ast_t
 {
 public:
-  enum Kind
+  enum
     {
-      AstPointerReceiver,
-      AstPointerToImmutableReceiver,
+      THIS_IDENTIFIER,
+      TYPE_IDENTIFIER,
+      COUNT,
     };
 
-  ast_receiver_definition_t (unsigned int line, size_t children_count, Kind kind)
-    : ast_t (line, children_count)
-    , kind_ (kind)
-  { }
+  ast_receiver_definition_t (unsigned int line, ast_t* this_identifier, ast_t* type_identifier)
+    : ast_t (line, COUNT)
+  {
+    children[THIS_IDENTIFIER] = this_identifier;
+    children[TYPE_IDENTIFIER] = type_identifier;
+  }
+
+  ast_t* this_identifier () const { return children[THIS_IDENTIFIER]; }
+  ast_t* type_identifier () const { return children[TYPE_IDENTIFIER]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-
-  Kind kind () const { return kind_; }
-
-private:
-  Kind kind_;
 };
 
 struct ast_type_definition_t : public ast_t
@@ -1198,12 +1219,9 @@ struct ast_visitor_t
   virtual void visit (ast_component_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_empty_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_field_list_type_spec_t& ast) { default_action (ast); }
-  virtual void visit (ast_foreign_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_heap_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_identifier_list_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_identifier_type_spec_t& ast) { default_action (ast); }
-  virtual void visit (ast_pointer_to_foreign_type_spec_t& ast) { default_action (ast); }
-  virtual void visit (ast_pointer_to_immutable_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_pointer_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_port_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_signature_type_spec_t& ast) { default_action (ast); }
@@ -1271,12 +1289,9 @@ struct ast_const_visitor_t
   virtual void visit (const ast_component_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_empty_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_field_list_type_spec_t& ast) { default_action (ast); }
-  virtual void visit (const ast_foreign_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_heap_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_identifier_list_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_identifier_type_spec_t& ast) { default_action (ast); }
-  virtual void visit (const ast_pointer_to_foreign_type_spec_t& ast) { default_action (ast); }
-  virtual void visit (const ast_pointer_to_immutable_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_pointer_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_port_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_signature_type_spec_t& ast) { default_action (ast); }
@@ -1343,22 +1358,6 @@ void ast_set_symtab (ast_t * ast, symtab_t * symtab);
 
 string_t ast_get_identifier (const ast_t* ast);
 
-/* Decl */
-
-#define IDENTIFIER_LIST 0
-#define TYPE_SPEC 1
-
-ast_t *ast_make_identifier_list_type_spec (unsigned int line,
-                                           ast_t * identifier_list,
-					   ast_t * type_spec);
-
-#define RECEIVER_THIS_IDENTIFIER 0
-#define RECEIVER_TYPE_IDENTIFIER 1
-
-ast_t *ast_make_receiver (unsigned int line, ast_t * this_identifier,
-                          ast_t * type_identifier,
-                          ast_receiver_definition_t::Kind kind);
-
 /* Def */
 
 #define INSTANCE_IDENTIFIER 0
@@ -1377,16 +1376,6 @@ ast_t *ast_make_top_level_list (void);
 #define TYPE_TYPE_SPEC 1
 
 ast_t *ast_make_type_def (unsigned int line, ast_t * identifier, ast_t * type_spec);
-
-#define METHOD_RECEIVER 0
-#define METHOD_IDENTIFIER 1
-#define METHOD_SIGNATURE 2
-#define METHOD_RETURN_TYPE 3
-#define METHOD_BODY 4
-
-ast_t *ast_make_method_def (unsigned int line, ast_t * receiver, ast_t * identifier,
-                            ast_t * signature, ast_t * return_type,
-                            ast_t* body);
 
 #define FUNCTION_IDENTIFIER 0
 #define FUNCTION_SIGNATURE 1
@@ -1409,8 +1398,6 @@ ast_t *ast_make_expr_stmt (unsigned int line, ast_t * expr);
 ast_t *ast_make_var_stmt (unsigned int line, ast_t * identifier_list, ast_t * type_spec);
 
 ast_t *ast_make_stmt_list (unsigned int line);
-
-ast_t *ast_make_return_stmt (unsigned int line, ast_t * expr);
 
 ast_t *ast_make_println_stmt (unsigned int line, ast_t * expr);
 
@@ -1440,14 +1427,6 @@ ast_t *ast_make_empty_type_spec (unsigned int line);
 
 ast_t *ast_make_pointer_type_spec (unsigned int line, ast_t* type_spec);
 
-ast_t *ast_make_pointer_to_immutable_type_spec (unsigned int line, ast_t* type_spec);
-
-ast_t *ast_make_pointer_to_foreign_type_spec (unsigned int line, ast_t* type_spec);
-
-#define FOREIGN_BASE_TYPE 0
-
-ast_t *ast_make_foreign_type_spec (unsigned int line, ast_t* type_spec);
-
 #define HEAP_BASE_TYPE 0
 
 ast_t *ast_make_heap_type_spec (unsigned int line, ast_t * type);
@@ -1472,7 +1451,7 @@ get_current_method (const ast_t * node);
 function_t *
 get_current_function (const ast_t * node);
 
-const type_t *
-get_current_return_type (const ast_t * node);
+const symbol_t*
+get_current_return_symbol (const ast_t * node);
 
 #endif /* ast_hpp */

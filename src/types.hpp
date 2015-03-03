@@ -27,11 +27,20 @@ typedef struct symtab_t symtab_t;
 typedef struct trigger_t trigger_t;
 typedef struct type_t type_t;
 
-typedef enum {
-  /* TODO:  Add TRIGGER_NONE. */
-  TRIGGER_READ,  /* Trigger reads. */
-  TRIGGER_WRITE, /* Trigger writes (and reads). */
-} TriggerAction;
+// A reference is either mutable, immutable, or foreign.
+enum Mutability
+  {
+    MUTABLE,
+    IMMUTABLE,
+    FOREIGN,
+  };
+
+enum TriggerAction
+  {
+    /* TODO:  Add TRIGGER_NONE. */
+    TRIGGER_READ,  /* Trigger reads. */
+    TRIGGER_WRITE, /* Trigger writes (and reads). */
+  };
 
 typedef std::map<instance_t*, TriggerAction> instance_set_t;
 

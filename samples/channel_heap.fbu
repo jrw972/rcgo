@@ -33,12 +33,12 @@ func (this @Queue) Pop ()
     };
 }
 
-func (this $Queue) Empty () bool
+func (this @Queue const) Empty () bool
 {
   return this.head == nil;
 }
 
-func (this $Queue) Front () $heap uint
+func (this @Queue const) Front () @heap uint const
 {
   return this.head.value;
 }
@@ -46,10 +46,10 @@ func (this $Queue) Front () $heap uint
 type Channel component
 {
   queue Queue;
-  receive port (message ?heap uint);
+  receive port (message @heap uint foreign);
 };
 
-reaction (this $Channel) send (message ?heap uint)
+reaction (this @Channel const) send (message @heap uint foreign)
 {
   var x @heap uint;
   x = move (message);
@@ -59,7 +59,7 @@ reaction (this $Channel) send (message ?heap uint)
   };
 }
 
-action (this $Channel) (this.queue.Empty ()!)
+action (this @Channel const) (this.queue.Empty ()!)
 {
   trigger receive (this.queue.Front ())
     {
@@ -71,13 +71,13 @@ type System component
 {
   channel Channel;
   send_count uint;
-  send port (message ?heap uint);
+  send port (message @heap uint foreign);
 };
 
 func (this @System) Initially ()
 { }
 
-action (this $System) (this.send_count != 100u)
+action (this @System const) (this.send_count != 100u)
 {
   var x @heap uint;
   x = new heap uint;
@@ -92,7 +92,7 @@ action (this $System) (this.send_count != 100u)
   };
 }
 
-reaction (this $System) receive (message ?heap uint)
+reaction (this @System const) receive (message @heap uint foreign)
 {
   var x @uint;
   x = merge (message);

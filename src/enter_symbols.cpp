@@ -10,34 +10,27 @@ enter_symbols (ast_t * node)
 
   /* Insert types. */
   {
-    symtab_enter (symtab,
-		  symbol_make_type (enter ("bool"), new named_type_t (enter ("bool"), bool_type_t::instance ()), node));
+    symtab->enter (symbol_make_type (enter ("bool"), new named_type_t (enter ("bool"), bool_type_t::instance ()), node));
 
-    symtab_enter (symtab,
-		  symbol_make_type (enter ("int"), new named_type_t (enter ("int"), int_type_t::instance ()), node));
+    symtab->enter (symbol_make_type (enter ("int"), new named_type_t (enter ("int"), int_type_t::instance ()), node));
 
-    symtab_enter (symtab,
-		  symbol_make_type (enter ("uint"), new named_type_t (enter ("uint"), uint_type_t::instance ()), node));
+    symtab->enter (symbol_make_type (enter ("uint"), new named_type_t (enter ("uint"), uint_type_t::instance ()), node));
 
-    symtab_enter (symtab,
-		  symbol_make_type (enter ("string"), new named_type_t (enter ("string"), string_type_t::instance ()), node));
+    symtab->enter (symbol_make_type (enter ("string"), new named_type_t (enter ("string"), string_type_t::instance ()), node));
   }
 
   /* Insert zero constant. */
-  symtab_enter (symtab,
-                symbol_make_typed_constant (enter ("nil"),
-                                            typed_value_t::nil (),
-                                            node));
+  symtab->enter (symbol_make_typed_constant (enter ("nil"),
+                                             typed_value_t::nil (),
+                                             node));
 
   /* Insert untyped boolean constants. */
-  symtab_enter (symtab,
-		symbol_make_typed_constant (enter ("true"),
-                                            typed_value_t (true),
-                                            node));
-  symtab_enter (symtab,
-		symbol_make_typed_constant (enter ("false"),
-                                            typed_value_t (false),
-                                            node));
+  symtab->enter (symbol_make_typed_constant (enter ("true"),
+                                             typed_value_t (true),
+                                             node));
+  symtab->enter (symbol_make_typed_constant (enter ("false"),
+                                             typed_value_t (false),
+                                             node));
 
   struct visitor : public ast_visitor_t
   {
@@ -73,11 +66,11 @@ enter_symbols (ast_t * node)
                             symtab_t* symtab)
     {
       string_t identifier = ast_get_identifier (identifier_node);
-      symbol_t *symbol = symtab_find_current (symtab, identifier);
+      symbol_t *symbol = symtab->find_current (identifier);
       if (symbol == NULL)
         {
           symbol = symbol_make_undefined (identifier, kind, identifier_node);
-          symtab_enter (symtab, symbol);
+          symtab->enter (symbol);
           node.symbol (symbol);
         }
       else

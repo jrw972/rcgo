@@ -14,6 +14,7 @@ typedef enum
   SymbolType,
   SymbolTypedConstant,
   SymbolVariable,
+  SymbolHidden,
 } SymbolKind;
 
 const char* symbol_kind_string (SymbolKind kind);
@@ -41,7 +42,7 @@ typedef enum
 
 symbol_t *symbol_make_variable (string_t identifier, const type_t * type, ast_t* defining_node);
 
-symbol_t *symbol_make_variable_duplicate (symbol_t* symbol, const type_t * type);
+symbol_t *symbol_make_variable_duplicate (symbol_t* symbol);
 
 const type_t *symbol_variable_type (const symbol_t * symbol);
 
@@ -78,18 +79,15 @@ typedef enum
   ParameterDuplicate,
 } ParameterKind;
 
-symbol_t *symbol_make_parameter (string_t identifier, const type_t * type,
-				 ast_t * defining_node);
+symbol_t *symbol_make_parameter (const parameter_t* parameter);
 
-symbol_t *symbol_make_return_parameter (string_t identifier, const type_t * type,
-                                        ast_t * defining_node);
+symbol_t *symbol_make_return_parameter (const parameter_t* parameter);
 
-symbol_t *symbol_make_receiver (string_t identifier, const type_t * type,
-                                ast_t* defining_node);
+symbol_t *symbol_make_receiver (const parameter_t* parameter);
 
 symbol_t *symbol_make_receiver_duplicate (symbol_t* receiver);
 
-symbol_t *symbol_make_parameter_duplicate (symbol_t* symbol, type_t * type);
+symbol_t *symbol_make_parameter_duplicate (symbol_t* symbol);
 
 ParameterKind symbol_parameter_kind (const symbol_t * symbol);
 
@@ -107,5 +105,9 @@ symbol_t* symbol_make_function (string_t identifier, ast_t* defining_node);
 void symbol_set_function_function (symbol_t* symbol, function_t* function);
 
 function_t* symbol_get_function_function (const symbol_t* symbol);
+
+const type_t* symbol_type (const symbol_t* symbol);
+
+symbol_t* symbol_make_hidden (const symbol_t* symbol, ast_t* defining_node);
 
 #endif /* symbol_h */

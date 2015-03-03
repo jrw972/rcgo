@@ -1,15 +1,24 @@
-#ifndef parameter_h
-#define parameter_h
+#ifndef parameter_hpp
+#define parameter_hpp
 
 #include "types.hpp"
 #include "strtab.hpp"
+#include "typed_value.hpp"
 
-parameter_t *parameter_make (string_t name, const type_t * type, bool is_receiver);
+struct parameter_t
+{
+  ast_t* const defining_node;
+  string_t const name;
+  const typed_value_t value;
+  bool const is_receiver;
 
-string_t parameter_name (const parameter_t * parameter);
+  parameter_t (ast_t* dn,
+               string_t name_, const typed_value_t& tv, bool is_receiver_)
+    : defining_node (dn)
+    , name (name_)
+    , value (tv)
+    , is_receiver (is_receiver_)
+  { }
+};
 
-const type_t *parameter_type (const parameter_t * parameter);
-
-bool parameter_is_receiver (const parameter_t * parameter);
-
-#endif /* parameter_h */
+#endif /* parameter_hpp */

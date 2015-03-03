@@ -4,7 +4,7 @@ type Actuator component {
   bang2 port ();
 };
 
-action (this $Actuator) (this.flag!) {
+action (this @Actuator const) (this.flag!) {
   trigger bang1 (), bang2 () {
     this.flag = true;
   }
@@ -12,7 +12,7 @@ action (this $Actuator) (this.flag!) {
 
 type Detector component { };
 
-reaction (this $Detector) bang () {
+reaction (this @Detector const) bang () {
   println `Bang`;
 }
 

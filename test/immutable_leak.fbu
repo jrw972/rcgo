@@ -2,7 +2,7 @@ type C component {
   ptr @bool;
 };
 
-action (this $C) (true) {
+action (this @C const) (true) {
   // Try to cast away immutability of ptr.
   var x @bool;
   x = this.ptr;

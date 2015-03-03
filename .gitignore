@@ -1,3 +1,7 @@
 *~
 Makefile*
 *.o
+GPATH
+GRTAGS
+GSYMS
+GTAGS

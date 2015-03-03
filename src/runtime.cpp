@@ -240,7 +240,7 @@ call (thread_runtime_t* runtime)
     {
       method_t* method = get_current_method (&node);
       stack_frame_push_base_pointer (runtime->stack, method->memory_model.locals_size ());
-      evaluate_statement (runtime, node.at (METHOD_BODY));
+      evaluate_statement (runtime, node.body ());
       stack_frame_pop_base_pointer (runtime->stack);
     }
   };
@@ -361,16 +361,6 @@ evaluate_expr (thread_runtime_t* runtime,
               }
 
               void visit (const pointer_type_t&)
-              {
-                stack_frame_push_pointer (runtime->stack, NULL);
-              }
-
-              void visit (const pointer_to_foreign_type_t&)
-              {
-                stack_frame_push_pointer (runtime->stack, NULL);
-              }
-
-              void visit (const pointer_to_immutable_type_t&)
               {
                 stack_frame_push_pointer (runtime->stack, NULL);
               }
@@ -609,7 +599,7 @@ evaluate_expr (thread_runtime_t* runtime,
       ptrdiff_t arguments_size = top_after - top_before; // Assumes stack grows up.
 
       // Find the port to trigger.
-      symbol_t* this_ = symtab_get_this (node.symtab);
+      symbol_t* this_ = node.symtab->get_this ();
       stack_frame_push (runtime->stack, symbol_get_offset (this_), symbol_parameter_type (this_)->size ());
       port_t* port = *((port_t**)((char*)stack_frame_pop_pointer (runtime->stack) + field_offset (field) + offset));
 
@@ -1024,10 +1014,8 @@ evaluate_statement (thread_runtime_t* runtime,
     {
       // Evaluate the expression.
       evaluate_expr (runtime, node.at (UNARY_CHILD));
-      // Get the return parameter.
-      symbol_t* symbol = symtab_get_first_return_parameter (node.symtab);
-      assert (symbol != NULL);
-      stack_frame_store_stack (runtime->stack, symbol_get_offset (symbol), symbol_parameter_type (symbol)->size ());
+      // Store in the return parameter.
+      stack_frame_store_stack (runtime->stack, symbol_get_offset (node.return_symbol), symbol_parameter_type (node.return_symbol)->size ());
       retval = RETURN;
       return;
     }
@@ -1129,18 +1117,6 @@ evaluate_statement (thread_runtime_t* runtime,
             }
 
             void visit (const pointer_type_t& type)
-            {
-              void* ptr = stack_frame_pop_pointer (runtime->stack);
-              printf ("%p", ptr);
-            }
-
-            void visit (const pointer_to_foreign_type_t& type)
-            {
-              void* ptr = stack_frame_pop_pointer (runtime->stack);
-              printf ("%p", ptr);
-            }
-
-            void visit (const pointer_to_immutable_type_t& type)
             {
               void* ptr = stack_frame_pop_pointer (runtime->stack);
               printf ("%p", ptr);
@@ -1274,7 +1250,7 @@ execute (thread_runtime_t* runtime,
       assert (trigger != NULL);
 
       // Set the current record.
-      symbol_t* this_ = symtab_get_this (b->symtab);
+      symbol_t* this_ = b->symtab->get_this ();
       stack_frame_push (runtime->stack, symbol_get_offset (this_), symbol_parameter_type (this_)->size ());
       runtime->current_instance = *(instance_record_t**)stack_frame_pop_pointer (runtime->stack);
 

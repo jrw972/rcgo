@@ -3,6 +3,7 @@
 #include "type.hpp"
 #include "util.hpp"
 #include <string.h>
+#include "parameter.hpp"
 
 struct symbol_t
 {
@@ -61,6 +62,8 @@ const char* symbol_kind_string (SymbolKind kind)
       return "TypedConstant";
     case SymbolVariable:
       return "Variable";
+    case SymbolHidden:
+      return "Hidden";
     }
 
   return "<Unknown Symbol Kind>";
@@ -101,6 +104,8 @@ symbol_defined (const symbol_t * symbol)
       unimplemented;
     case SymbolType:
       return symbol->type.type->subtype () != NULL;
+    case SymbolHidden:
+      unimplemented;
     }
 
   not_reached;
@@ -148,6 +153,8 @@ symbol_make_undefined (string_t identifier, SymbolKind kind,
     case SymbolType:
       return symbol_make_type (identifier, new named_type_t (identifier),
 			       defining_node);
+    case SymbolHidden:
+      unimplemented;
     }
 
   not_reached;
@@ -157,17 +164,17 @@ symbol_t *
 symbol_make_variable (string_t identifier, const type_t * type, ast_t* defining_node)
 {
   symbol_t *s = make (identifier, SymbolVariable, defining_node);
-  s->variable.value = typed_value_t::make_ref (type, typed_value_t::MUTABLE);
+  s->variable.value = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE);
   s->variable.kind = VariableOrdinary;
   return s;
 }
 
 symbol_t *
-symbol_make_variable_duplicate (symbol_t* symbol, const type_t * type)
+symbol_make_variable_duplicate (symbol_t* symbol)
 {
   assert (symbol->kind == SymbolVariable);
   symbol_t *s = make (symbol->identifier, SymbolVariable, symbol->defining_node);
-  s->variable.value = typed_value_t::make_ref (type, typed_value_t::MUTABLE);
+  s->variable.value = typed_value_t::make_ref (symbol_variable_type (symbol), typed_value_t::STACK, FOREIGN, FOREIGN);
   s->variable.kind = VariableDuplicate;
   s->variable.original = symbol;
   return s;
@@ -254,30 +261,27 @@ method_t* symbol_get_instance_method (symbol_t* symbol)
 }
 
 symbol_t *
-symbol_make_parameter (string_t identifier, const type_t * type,
-		       ast_t * defining_node)
+symbol_make_parameter (const parameter_t* parameter)
 {
-  symbol_t *s = make (identifier, SymbolParameter, defining_node);
-  s->parameter.value = typed_value_t::make_ref (type, typed_value_t::MUTABLE);
+  symbol_t *s = make (parameter->name, SymbolParameter, parameter->defining_node);
+  s->parameter.value = typed_value_t::make_ref (parameter->value);
   s->parameter.kind = ParameterOrdinary;
   return s;
 }
 
-symbol_t *symbol_make_return_parameter (string_t identifier, const type_t * type,
-                                        ast_t * defining_node)
+symbol_t *symbol_make_return_parameter (const parameter_t* parameter)
 {
-  symbol_t *s = make (identifier, SymbolParameter, defining_node);
-  s->parameter.value = typed_value_t::make_ref (type, typed_value_t::MUTABLE);
+  symbol_t *s = make (parameter->name, SymbolParameter, parameter->defining_node);
+  s->parameter.value = typed_value_t::make_ref (parameter->value);
   s->parameter.kind = ParameterReturn;
   return s;
 }
 
 symbol_t *
-symbol_make_receiver (string_t identifier, const type_t * type,
-                      ast_t * defining_node)
+symbol_make_receiver (const parameter_t* parameter)
 {
-  symbol_t *s = make (identifier, SymbolParameter, defining_node);
-  s->parameter.value = typed_value_t::make_ref (type, typed_value_t::MUTABLE);
+  symbol_t *s = make (parameter->name, SymbolParameter, parameter->defining_node);
+  s->parameter.value = typed_value_t::make_ref (parameter->value);
   s->parameter.kind = ParameterReceiver;
   return s;
 }
@@ -285,24 +289,20 @@ symbol_make_receiver (string_t identifier, const type_t * type,
 symbol_t *
 symbol_make_receiver_duplicate (symbol_t* receiver)
 {
-  // Strip out the immutable.
-  const type_t* t = symbol_parameter_type (receiver);
-  t = dynamic_cast<const pointer_to_immutable_type_t*> (t)->base_type ();
-  t = pointer_type_t::make (t);
-
   symbol_t *s = make (symbol_identifier (receiver), SymbolParameter, symbol_defining_node (receiver));
-  s->parameter.value = typed_value_t::make_ref (t, typed_value_t::MUTABLE);
+  s->parameter.value = receiver->parameter.value;
+  s->parameter.value.dereference_mutability = MUTABLE;
   s->parameter.kind = ParameterReceiverDuplicate;
   s->parameter.original = receiver;
   return s;
 }
 
 symbol_t *
-symbol_make_parameter_duplicate (symbol_t* symbol, type_t * type)
+symbol_make_parameter_duplicate (symbol_t* symbol)
 {
   assert (symbol->kind == SymbolParameter);
   symbol_t *s = make (symbol->identifier, SymbolParameter, symbol->defining_node);
-  s->parameter.value = typed_value_t::make_ref (type, typed_value_t::MUTABLE);
+  s->parameter.value = typed_value_t::make_ref (symbol_parameter_type (symbol), typed_value_t::STACK, FOREIGN, FOREIGN);
   s->parameter.kind = ParameterDuplicate;
   s->parameter.original = symbol;
   return s;
@@ -364,4 +364,9 @@ function_t* symbol_get_function_function (const symbol_t* symbol)
 {
   assert (symbol->kind == SymbolFunction);
   return symbol->function.function;
+}
+
+symbol_t* symbol_make_hidden (const symbol_t* symbol, ast_t* defining_node)
+{
+  return make (symbol->identifier, SymbolHidden, defining_node);
 }

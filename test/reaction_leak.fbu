@@ -1,0 +1,6 @@
+type C component {
+  flag bool;
+};
+
+reaction (this @C const) r (x @bool) {
+}

@@ -114,8 +114,6 @@ std::ostream&
 operator<< (std::ostream&,
             const instance_table_t::PortValueType&);
 
-instance_table_t *instance_table_make (void);
-
 instance_t *instance_table_insert (instance_table_t * table,
                                    instance_t* parent,
 				   const named_type_t * type,

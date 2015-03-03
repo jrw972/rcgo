@@ -8,6 +8,7 @@
 #include "strtab.hpp"
 #include "debug.hpp"
 #include "type.hpp"
+#include <error.h>
 %}
 
 %%
@@ -19,7 +20,7 @@
 "const"                { return CONST; }
 "else"                 { return ELSE; }
 "for"                  { return FOR; }
-"foreign"              { return FOREIGN; }
+"foreign"              { return FOREIGN_KW; }
 "func"                 { return FUNC; }
 "heap"                 { return HEAP; }
 "if"                   { return IF; }
@@ -52,8 +53,8 @@
 "["|"]"                { return *yytext; }
 "("|")"                { return *yytext; }
 "<"|">"                { return *yytext; }
-"!"|";"|","|"="|"?"    { return *yytext; }
-"$"|"@"|"."|"&"|"+"    { return *yytext; }
+"!"|";"|","|"="        { return *yytext; }
+"@"|"."|"&"|"+"        { return *yytext; }
 
 [_a-zA-Z][_a-zA-Z0-9]* { yylval.node = new ast_identifier_t (yylloc, enter (yytext));
                          return IDENTIFIER; }
@@ -109,4 +110,7 @@
 
 [ \t]+                 /* Discard whitespace */
 [\n]                   { ++yylloc; }
-.                      { printf ("Unrecognized character: %s\n", yytext); }
+. {
+error_at_line (-1, 0, in_file, yylloc,
+                   "unrecognized character: %s", yytext);
+}

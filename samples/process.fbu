@@ -35,12 +35,12 @@ func (this @Queue) Pop ()
     };
 }
 
-func (this $Queue) Empty () bool
+func (this @Queue) Empty () bool
 {
   return this.head == nil;
 }
 
-func (this $Queue) Front () uint
+func (this @Queue) Front () uint
 {
   return this.head.value;
 }
@@ -51,7 +51,7 @@ type Channel component
   receive port (message uint);
 };
 
-reaction (this $Channel) send (message uint)
+reaction (this @Channel const) send (message uint)
 {
   trigger
   {
@@ -59,7 +59,7 @@ reaction (this $Channel) send (message uint)
   };
 }
 
-action (this $Channel) (this.queue.Empty ()!)
+action (this @Channel const) (this.queue.Empty ()!)
 {
   trigger receive (this.queue.Front ())
     {
@@ -83,7 +83,7 @@ func (this @Process) Initially (i uint)
   this.i = i;
 }
 
-reaction (this $Process) init (v uint)
+reaction (this @Process const) init (v uint)
 {
   trigger
   {
@@ -92,7 +92,7 @@ reaction (this $Process) init (v uint)
   };
 }
 
-[3] action (this $Process) (this.val[this.i] != 0u && this.i != IOTA)
+[3] action (this @Process const) (this.val[this.i] != 0u && this.i != IOTA)
 {
   // send
   println `Process `, this.i, ` sending `, this.val[this.i], ` to process `, IOTA;
@@ -100,7 +100,7 @@ reaction (this $Process) init (v uint)
   { };
 }
 
-[3] reaction (this $Process) receive (v uint)
+[3] reaction (this @Process const) receive (v uint)
 {
   println `Process `, this.i, ` received `, v, ` from process `, IOTA;
   trigger
@@ -134,7 +134,7 @@ func f (val [3]uint) uint
   return sum;
 }
 
-action (this $Process) (p (this.val))
+action (this @Process const) (p (this.val))
 {
   // decide
   var v uint;
@@ -161,14 +161,14 @@ func (this @System) Init ()
   };
 }
 
-[3] action (this $System) (true)
+[3] action (this @System const) (true)
 {
   // send
   trigger init[IOTA] (100u + IOTA)
   { };
 }
 
-[3] reaction (this $System) decide (v uint)
+[3] reaction (this @System const) decide (v uint)
 {
   println `Process `, IOTA, ` decided the value is `, v;
 }

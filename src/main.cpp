@@ -115,7 +115,7 @@ main (int argc, char **argv)
   allocate_stack_variables (root);
 
   /* Check composition. */
-  instance_table_t *instance_table = instance_table_make ();
+  instance_table_t *instance_table = new instance_table_t ();
   enumerate_instances (root, instance_table);
   instance_table_enumerate_bindings (instance_table);
   instance_table_analyze_composition (instance_table);

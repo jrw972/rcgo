@@ -66,6 +66,10 @@ allocate_symbol (memory_model_t& memory_model,
         memory_model.locals_push (type->size ());
       }
       break;
+
+    case SymbolHidden:
+      // Do nothing.
+      break;
     }
 }
 
@@ -244,7 +248,7 @@ allocate_stack_variables (ast_t* node)
 
     void visit (ast_method_t& node)
     {
-      node.method->memory_model = allocate_stack_variables_helper (&node, node.at (METHOD_BODY));
+      node.method->memory_model = allocate_stack_variables_helper (&node, node.body ());
     }
 
     void visit (ast_reaction_t& node)

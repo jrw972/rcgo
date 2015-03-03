@@ -12,13 +12,6 @@
 #include "bind.hpp"
 #include "field.hpp"
 
-instance_table_t *
-instance_table_make (void)
-{
-  instance_table_t *t = new instance_table_t;
-  return t;
-}
-
 instance_t *
 instance_table_insert (instance_table_t * table, instance_t* parent, const named_type_t * type, method_t* method, size_t address)
 {
@@ -605,6 +598,7 @@ transitive_closure (const instance_table_t * table,
             case SymbolType:
             case SymbolTypedConstant:
             case SymbolVariable:
+            case SymbolHidden:
               break;
             }
         }

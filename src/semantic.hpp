@@ -8,8 +8,14 @@
 /* Associate a symbol table with each node in the tree. */
 void construct_symbol_table (ast_t * node);
 
-/* Enter all symbols except vars. */
+/* Enter all symbols except vars and parameters. */
 void enter_symbols (ast_t * node);
+
+// Enter a symbol.
+symbol_t* enter_symbol (symtab_t* symtab, symbol_t * symbol, symbol_holder& holder);
+
+// Enter a signature.
+void enter_signature (ast_t * node, const signature_type_t * type);
 
 // Look up a symbol.  If it is not defined, process its definition.
 symbol_t * lookup_force (ast_t * node, string_t identifier);
@@ -19,6 +25,9 @@ symbol_t * lookup_no_force (ast_t * node, string_t identifier);
 
 // Extract an array dimension or error.
 size_t process_array_dimension (ast_t::iterator ptr);
+
+// Check that port and reaction sigantures have appropriate foreign attributes.
+void check_port_reaction_signature (const signature_type_t* signature);
 
 // Process a type specification.
 const type_t * process_type_spec (ast_t * node, bool force_identifiers, bool is_component = false);

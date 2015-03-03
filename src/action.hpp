@@ -14,6 +14,7 @@ public:
   action_reaction_base_t (type_t* component_type, ast_t* node)
     : component_type_ (component_type)
     , node_ (node)
+    , has_dimension_ (false)
   { }
 
   action_reaction_base_t (type_t* component_type, ast_t* node, size_t dimension)

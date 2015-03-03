@@ -10,54 +10,79 @@
 #include <vector>
 #include "action.hpp"
 
-void symtab_print (const symtab_t* symtab)
+std::ostream& symtab_t::print (std::ostream& o) const
 {
-  if (symtab != NULL)
+  o << "Symtab " << this << '\n';
+  for (std::vector<symbol_t*>::const_iterator ptr = symbols_.begin (),
+         limit = symbols_.end ();
+       ptr != limit;
+       ++ptr)
     {
-      printf ("Symtab %p\n", symtab);
-      for (std::vector<symbol_t*>::const_iterator ptr = symtab->symbols.begin (),
-             limit = symtab->symbols.end ();
-           ptr != limit;
-           ++ptr)
+      const symbol_t* symbol = *ptr;
+      const char* name = get (symbol_identifier (symbol));
+      const char* kind = symbol_kind_string (symbol_kind (symbol));
+      std::string type_str = "(none)";
+      size_t offset = symbol_get_offset (symbol);
+      switch (symbol_kind (symbol))
         {
-          const symbol_t* symbol = *ptr;
-          const char* name = get (symbol_identifier (symbol));
-          const char* kind = symbol_kind_string (symbol_kind (symbol));
-          std::string type_str = "(none)";
-          size_t offset = symbol_get_offset (symbol);
-          switch (symbol_kind (symbol))
-            {
-            case SymbolFunction:
+        case SymbolFunction:
+          {
+            function_t* function = symbol_get_function_function (symbol);
+            if (function)
               {
-                function_t* function = symbol_get_function_function (symbol);
-                if (function)
-                  {
-                    type_str = function->func_type->to_string ();
-                  }
+                type_str = function->function_type->to_string ();
               }
-              break;
-            case SymbolInstance:
+          }
+          break;
+        case SymbolInstance:
+          if (symbol_get_instance_type (symbol))
+            {
               type_str = symbol_get_instance_type (symbol)->to_string ();
+            }
+          break;
+        case SymbolParameter:
+          type_str = symbol_parameter_type (symbol)->to_string ();
+          switch (symbol_parameter_kind (symbol))
+            {
+            case ParameterOrdinary:
+              o << "Ordinary\n";
               break;
-            case SymbolParameter:
-              type_str = symbol_parameter_type (symbol)->to_string ();
+            case ParameterReceiver:
+              o << "Receiver\n";
               break;
-            case SymbolType:
-              type_str = symbol_get_type_type (symbol)->to_string ();
+            case ParameterReceiverDuplicate:
+              o << "ReceiverDuplicate\n";
               break;
-            case SymbolTypedConstant:
-              type_str = symbol_typed_constant_value (symbol).type->to_string ();
+            case ParameterReturn:
+              o << "Return\n";
               break;
-            case SymbolVariable:
-              type_str = symbol_variable_type (symbol)->to_string ();
+            case ParameterDuplicate:
+              o << "Duplicate\n";
               break;
             }
-
-          printf ("%s\t%s\t%s\t%zd\n", name, kind, type_str.c_str (), offset);
+          break;
+        case SymbolType:
+          type_str = symbol_get_type_type (symbol)->to_string ();
+          break;
+        case SymbolTypedConstant:
+          type_str = symbol_typed_constant_value (symbol).type->to_string ();
+          break;
+        case SymbolVariable:
+          type_str = symbol_variable_type (symbol)->to_string ();
+          break;
+        case SymbolHidden:
+          break;
         }
 
-      symtab_print (symtab->parent);
+      std::cout << name << '\t' << kind << '\t' << type_str.c_str () << '\t' << offset << '\n';
     }
+
+  if (parent)
+    {
+      parent->print (o);
+    }
+
+  return o;
 }
 
 symtab_t *
@@ -82,82 +107,10 @@ symtab_get_root (symtab_t * symtab)
   return symtab;
 }
 
-void
-symtab_enter (symtab_t * symtab, symbol_t * symbol)
-{
-  symtab->symbols.push_back (symbol);
-}
-
-symbol_t *
-symtab_find (const symtab_t * symtab, string_t identifier)
-{
-  if (symtab == NULL)
-    {
-      return NULL;
-    }
-
-  for (std::vector<symbol_t*>::const_iterator pos = symtab->symbols.begin (),
-         limit = symtab->symbols.end ();
-       pos != limit;
-       ++pos)
-  {
-    symbol_t *s = *pos;
-    if (streq (identifier, symbol_identifier (s)))
-      {
-	return s;
-      }
-  }
-
-  /* Not found in this scope.  Try the parent. */
-  return symtab_find (symtab->parent, identifier);
-}
-
-symbol_t *
-symtab_find_current (const symtab_t * symtab, string_t identifier)
-{
-  for (std::vector<symbol_t*>::const_iterator pos = symtab->symbols.begin (),
-         limit = symtab->symbols.end ();
-       pos != limit;
-       ++pos)
-  {
-    symbol_t *s = *pos;
-    if (streq (identifier, symbol_identifier (s)))
-      {
-	return s;
-      }
-  }
-
-  return NULL;
-}
-
-symbol_t *
-symtab_get_this (const symtab_t * symtab)
-{
-  if (symtab == NULL)
-    {
-      return NULL;
-    }
-
-  for (std::vector<symbol_t*>::const_iterator pos = symtab->symbols.begin (),
-         limit = symtab->symbols.end ();
-       pos != limit;
-       ++pos)
-  {
-    symbol_t *s = *pos;
-    if (symbol_kind (s) == SymbolParameter
-	&& symbol_parameter_kind (s) == ParameterReceiver)
-      {
-	return s;
-      }
-  }
-
-  return symtab_get_this (symtab->parent);
-}
-
 const type_t *
 symtab_get_this_type (const symtab_t * symtab)
 {
-  return symbol_parameter_type (symtab_get_this (symtab));
+  return symbol_parameter_type (symtab->get_this ());
 }
 
 void
@@ -270,71 +223,101 @@ symtab_get_current_receiver_type (const symtab_t * symtab)
   return symtab_get_current_receiver_type (symtab->parent);
 }
 
-symbol_t* symtab_get_first_return_parameter (const symtab_t * symtab)
+void
+symtab_t::trigger (symbol_holder& holder, ast_t* defining_node)
 {
-  if (symtab == NULL)
-    {
-      return NULL;
-    }
+  symbol_t *this_symbol = get_this ();
+  symbol_t *new_this_symbol =
+    symbol_make_receiver_duplicate (this_symbol);
+  enter (new_this_symbol);
+  holder.symbol (new_this_symbol);
 
-  if (!symtab->symbols.empty ())
+  // Remove all parameters containing pointers to avoid a leak.
+  symtab_t* s;
+  for (s = parent; s != NULL; s = s->parent)
     {
-      symbol_t* symbol = symtab->symbols.at (0);
-      if (symbol_kind (symbol) == SymbolParameter &&
-          symbol_parameter_kind (symbol) == ParameterReturn)
+      for (std::vector<symbol_t*>::const_iterator ptr = s->symbols_.begin (),
+             limit = s->symbols_.end ();
+           ptr != limit;
+           ++ptr)
         {
-          return symbol;
+          const symbol_t* symbol = *ptr;
+
+          switch (symbol_kind (symbol))
+            {
+            case SymbolFunction:
+              // Do nothing.
+              break;
+            case SymbolInstance:
+              // Do nothing.
+              break;
+            case SymbolParameter:
+              {
+                if (symbol != this_symbol)
+                  {
+                    typed_value_t tv = symbol_parameter_value (symbol);
+                    if (type_contains_pointer (tv.type) && tv.dereference_mutability == FOREIGN)
+                      {
+                        // Hide this parameter.
+                        enter (symbol_make_hidden (symbol, defining_node));
+                      }
+                  }
+              }
+              break;
+              unimplemented;
+            case SymbolType:
+              // Do nothing.
+              break;
+            case SymbolTypedConstant:
+              // Do nothing.
+              break;
+            case SymbolVariable:
+              {
+                typed_value_t tv = symbol_variable_value (symbol);
+                if (type_contains_pointer (tv.type) && tv.dereference_mutability == FOREIGN)
+                  {
+                    // Hide this variable.
+                    enter (symbol_make_hidden (symbol, defining_node));
+                  }
+              }
+              break;
+            case SymbolHidden:
+              unimplemented;
+            }
         }
     }
-
-  return symtab_get_first_return_parameter (symtab->parent);
 }
 
-void symtab_change (symtab_t* symtab)
+void
+symtab_t::change ()
 {
   symtab_t* s;
-  for (s = symtab->parent; s != NULL; s = s->parent)
+  for (s = parent; s != NULL; s = s->parent)
     {
-      for (std::vector<symbol_t*>::const_iterator ptr = s->symbols.begin (),
-             limit = s->symbols.end ();
+      for (std::vector<symbol_t*>::const_iterator ptr = s->symbols_.begin (),
+             limit = s->symbols_.end ();
            ptr != limit;
            ++ptr)
         {
           symbol_t* symbol = *ptr;
           if (symbol_kind (symbol) == SymbolParameter)
             {
-              const type_t* type = symbol_parameter_type (symbol);
-              if (type_cast<pointer_type_t> (type))
+              typed_value_t tv = symbol_parameter_value (symbol);
+              if (type_contains_pointer (tv.type))
                 {
-                  unimplemented;
-                  // type_t* base_type = type_pointer_base_type (type);
-                  // if (type_to_foreign (base_type) == NULL)
-                  //   {
-                  //     // Strip immutability.
-                  //     if (type_is_immutable (base_type))
-                  //       {
-                  //         unimplemented;
-                  //         //base_type = type_immutable_base_type (base_type);
-                  //       }
-                  //     // Make a foreign pointer.
-                  //     base_type = type_make_foreign (base_type);
-                  //     type = type_make_pointer (base_type);
-                  //     // Enter as a duplicate.
-                  //     symbol_t* dup = symbol_make_parameter_duplicate (symbol, type);
-                  //     symtab_enter (symtab, dup);
-                  //   }
+                  // Enter as a duplicate.
+                  symbol_t* dup = symbol_make_parameter_duplicate (symbol);
+                  enter (dup);
                 }
             }
           else if (symbol_kind (symbol) == SymbolVariable)
             {
-              const type_t* base_type = type_dereference (symbol_variable_type (symbol));
-              if (base_type != NULL)
+              typed_value_t tv = symbol_variable_value (symbol);
+              if (type_contains_pointer (tv.type))
                 {
-                  // Make a foreign pointer.
-                  const type_t* t = pointer_to_foreign_type_t::make (base_type);
                   // Enter as a duplicate.
-                  symbol_t* dup = symbol_make_variable_duplicate (symbol, t);
-                  symtab_enter (symtab, dup);
+                  symbol_t* dup = symbol_make_variable_duplicate (symbol);
+                  enter (dup);
                 }
             }
         }

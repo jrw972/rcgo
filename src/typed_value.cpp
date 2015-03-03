@@ -9,67 +9,94 @@
 #include "field.hpp"
 
 std::ostream&
-operator<< (std::ostream& out, const typed_value_t& tv)
+typed_value_t::print (std::ostream& out) const
 {
-  if (tv.type)
+  if (type)
     {
-      out << *tv.type;
+      out << *type;
     }
   else
     {
       out << "(no type)";
     }
 
-  switch (tv.kind)
+  switch (kind)
     {
-    case typed_value_t::VALUE:
+    case VALUE:
       out << " VALUE";
       break;
-    case typed_value_t::REFERENCE:
+    case REFERENCE:
       out << " REFERENCE";
       break;
     }
 
-  switch (tv.reference_kind)
+  switch (region)
     {
-    case typed_value_t::MUTABLE:
-      out << " mutable";
-      break;
-    case typed_value_t::IMMUTABLE:
-      out << " immutable";
-      break;
-    case typed_value_t::FOREIGN:
-      out << " foreign";
-      break;
-    case typed_value_t::CONSTANT:
+    case CONSTANT:
       out << " constant";
+      break;
+    case STACK:
+      out << " stack";
+      break;
+    case HEAP:
+      out << " heap";
       break;
     }
 
-  out << " has_value=" << tv.has_value;
-  out << " has_offset=" << tv.has_offset;
+  switch (intrinsic_mutability)
+    {
+    case MUTABLE:
+      out << " mutable";
+      break;
+    case IMMUTABLE:
+      out << " immutable";
+      break;
+    case FOREIGN:
+      out << " foreign";
+      break;
+    }
+
+  switch (dereference_mutability)
+    {
+    case MUTABLE:
+      out << " mutable";
+      break;
+    case IMMUTABLE:
+      out << " immutable";
+      break;
+    case FOREIGN:
+      out << " foreign";
+      break;
+    }
+
+  out << " has_value=" << has_value;
+  out << " has_offset=" << has_offset;
 
   return out;
 }
 
 typed_value_t
-typed_value_t::make_value (const type_t* type, ReferenceKind k)
+typed_value_t::make_value (const type_t* type, Region region, Mutability intrinsic, Mutability dereference)
 {
   typed_value_t tv;
   tv.type = type;
   tv.kind = VALUE;
-  tv.reference_kind = k;
+  tv.region = region;
+  tv.intrinsic_mutability = intrinsic;
+  tv.dereference_mutability = dereference;
   tv.has_value = false;
   return tv;
 }
 
 typed_value_t
-typed_value_t::make_ref (const type_t* type, ReferenceKind k)
+typed_value_t::make_ref (const type_t* type, Region region, Mutability intrinsic, Mutability dereference)
 {
   typed_value_t tv;
   tv.type = type;
   tv.kind = REFERENCE;
-  tv.reference_kind = k;
+  tv.region = region;
+  tv.intrinsic_mutability = intrinsic;
+  tv.dereference_mutability = dereference;
   tv.has_value = false;
   return tv;
 }
@@ -86,7 +113,7 @@ typed_value_t::make_ref (typed_value_t tv)
 typed_value_t
 typed_value_t::nil (void)
 {
-  typed_value_t retval = make_value (nil_type_t::instance (), CONSTANT);
+  typed_value_t retval = make_value (nil_type_t::instance (), CONSTANT, IMMUTABLE, IMMUTABLE);
   retval.has_value = true;
   return retval;
 }
@@ -119,17 +146,7 @@ typed_value_t::dereference (typed_value_t in)
 
     void visit (const pointer_type_t& type)
     {
-      out = typed_value_t::make_ref (type.base_type (), in.reference_kind);
-    }
-
-    void visit (const pointer_to_foreign_type_t& type)
-    {
-      out = typed_value_t::make_ref (type.base_type (), FOREIGN);
-    }
-
-    void visit (const pointer_to_immutable_type_t& type)
-    {
-      out = typed_value_t::make_ref (type.base_type (), std::max (IMMUTABLE, in.reference_kind));
+      out = typed_value_t::make_ref (type.base_type (), HEAP, in.dereference_mutability, in.dereference_mutability);
     }
   };
   visitor v (in);
@@ -141,31 +158,21 @@ typed_value_t
 typed_value_t::address_of (typed_value_t in)
 {
   assert (in.kind == REFERENCE);
-
-  switch (in.reference_kind)
-    {
-    case MUTABLE:
-      return typed_value_t::make_value (pointer_type_t::make (in.type), MUTABLE);
-    case IMMUTABLE:
-      return typed_value_t::make_value (pointer_to_immutable_type_t::make (in.type), IMMUTABLE);
-    case FOREIGN:
-      return typed_value_t::make_value (pointer_to_foreign_type_t::make (in.type), FOREIGN);
-    case CONSTANT:
-      return typed_value_t ();
-    }
-
-  not_reached;
+  typed_value_t out = in;
+  out.kind = VALUE;
+  out.type = pointer_type_t::make (in.type);
+  return out;
 }
 
 typed_value_t
 typed_value_t::select (typed_value_t in, string_t identifier)
 {
   assert (in.kind == REFERENCE);
-
   field_t* f = type_select_field (in.type, identifier);
   if (f)
     {
-      typed_value_t out = make_ref (field_type (f), in.reference_kind);
+      typed_value_t out = in;
+      out.type = field_type (f);
       out.has_offset = true;
       out.offset = field_offset (f);
       return out;
@@ -291,9 +298,14 @@ binary_logic (typed_value_t left, typed_value_t right, bool (*func) (bool, bool)
 
   result.type = type_choose (left.type, right.type);
   result.kind = typed_value_t::VALUE;
-  result.reference_kind = typed_value_t::IMMUTABLE;
+  result.region = typed_value_t::CONSTANT;
+  result.intrinsic_mutability = IMMUTABLE;
+  result.dereference_mutability = IMMUTABLE;
   result.has_value = left.has_value && right.has_value;
-  result.bool_value = func (left.bool_value, right.bool_value);
+  if (result.has_value)
+    {
+      result.bool_value = func (left.bool_value, right.bool_value);
+    }
 
   return result;
 }
@@ -337,7 +349,9 @@ compare (typed_value_t left, typed_value_t right)
 
   result.type = bool_type_t::instance ();
   result.kind = typed_value_t::VALUE;
-  result.reference_kind = typed_value_t::IMMUTABLE;
+  result.region = typed_value_t::CONSTANT;
+  result.intrinsic_mutability = IMMUTABLE;
+  result.dereference_mutability = IMMUTABLE;
 
   if (left.has_value && right.has_value)
     {
@@ -376,6 +390,7 @@ typed_value_t::merge (typed_value_t in)
 
   out = in;
   out.type = type;
+  out.dereference_mutability = MUTABLE;
 
   return out;
 }
@@ -395,6 +410,7 @@ typed_value_t::move (typed_value_t in)
 
   out = in;
   out.type = type;
+  out.dereference_mutability = MUTABLE;
 
   return out;
 }
@@ -421,7 +437,9 @@ typed_value_t::add (typed_value_t left, typed_value_t right)
 
   result.type = type_choose (left.type, right.type);
   result.kind = typed_value_t::VALUE;
-  result.reference_kind = typed_value_t::IMMUTABLE;
+  result.region = typed_value_t::CONSTANT;
+  result.intrinsic_mutability = IMMUTABLE;
+  result.dereference_mutability = IMMUTABLE;
   result.has_value = left.has_value && right.has_value;
 
   if (result.has_value)

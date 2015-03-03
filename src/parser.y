@@ -40,7 +40,6 @@
 %type <node> parameter
 %type <node> parameter_list
 %type <node> pointer_receiver
-%type <node> pointer_to_immutable_receiver
 %type <node> port_call
 %type <node> port_call_list
 %type <node> primary_expr
@@ -60,7 +59,7 @@
 %type <node> while_stmt
 %destructor { /* TODO:  Free the node. node_free ($$); */ } <node>
 
-%token ACTION BIND CHANGE COMPONENT CONST ELSE FOR FOREIGN FUNC HEAP IF INSTANCE MERGE MOVE NEW PORT PRINTLN REACTION RETURN STRUCT TRIGGER TYPE VAR WHILE
+%token ACTION BIND CHANGE COMPONENT CONST ELSE FOR FOREIGN_KW FUNC HEAP IF INSTANCE MERGE MOVE NEW PORT PRINTLN REACTION RETURN STRUCT TRIGGER TYPE VAR WHILE
 
 %token ADD_ASSIGN ARROW DECREMENT DOTDOT EQUAL INCREMENT LOGIC_AND LOGIC_OR NOT_EQUAL
 
@@ -83,18 +82,23 @@ instance_def: INSTANCE identifier identifier identifier ';' { $$ = ast_make_inst
 
 type_def: TYPE identifier type_spec ';' { $$ = ast_make_type_def (@1, $2, $3); }
 
-action_def: ACTION pointer_to_immutable_receiver '(' rvalue ')' stmt_list { $$ = new ast_action_t (@1, $2, $4, $6); }
-| array_dimension ACTION pointer_to_immutable_receiver '(' rvalue ')' stmt_list { $$ = new ast_dimensioned_action_t (@2, $1, $3, $5, $7); }
+action_def: ACTION '(' identifier '@' identifier CONST ')' '(' rvalue ')' stmt_list { $$ = new ast_action_t (@1, $3, $5, $9, $11); }
+| array_dimension ACTION '(' identifier '@' identifier CONST ')' '(' rvalue ')' stmt_list { $$ = new ast_dimensioned_action_t (@2, $1, $4, $6, $10, $12); }
 
-reaction_def: REACTION pointer_to_immutable_receiver identifier signature stmt_list { $$ = new ast_reaction_t (@1, $2, $3, $4, $5); }
-| array_dimension REACTION pointer_to_immutable_receiver identifier signature stmt_list { $$ = new ast_dimensioned_reaction_t (@2, $1, $3, $4, $5, $6); }
+reaction_def:
+                  REACTION '(' identifier '@' identifier CONST ')' identifier signature stmt_list { $$ = new ast_reaction_t (@1, $3, $5, $8, $9, $10); }
+| array_dimension REACTION '(' identifier '@' identifier CONST ')' identifier signature stmt_list { $$ = new ast_dimensioned_reaction_t (@2, $1, $4, $6, $9, $10, $11); }
 
-bind_def: BIND pointer_receiver stmt_list { $$ = new ast_bind_t (@1, $2, $3); }
+bind_def: BIND '(' identifier '@' identifier ')' stmt_list { $$ = new ast_bind_t (@1, $3, $5, $7); }
 
-method_def: FUNC pointer_to_immutable_receiver identifier signature type_spec stmt_list { $$ = ast_make_method_def (@1, $2, $3, $4, $5, $6); }
-| FUNC pointer_to_immutable_receiver identifier signature stmt_list { $$ = ast_make_method_def (@1, $2, $3, $4, ast_make_empty_type_spec (@1), $5); }
-| FUNC pointer_receiver identifier signature type_spec stmt_list { $$ = ast_make_method_def (@1, $2, $3, $4, $5, $6); }
-| FUNC pointer_receiver identifier signature stmt_list { $$ = ast_make_method_def (@1, $2, $3, $4, ast_make_empty_type_spec (@1), $5); }
+method_def:
+  FUNC '(' identifier '@' identifier       ')' identifier signature type_spec stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, $9, MUTABLE, $10); }
+| FUNC '(' identifier '@' identifier CONST ')' identifier signature type_spec stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, $10, MUTABLE, $11); }
+| FUNC '(' identifier '@' identifier       ')' identifier signature type_spec CONST stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, $9, IMMUTABLE, $11); }
+| FUNC '(' identifier '@' identifier CONST ')' identifier signature type_spec CONST stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, $10, IMMUTABLE, $12); }
+| FUNC '(' identifier '@' identifier       ')' identifier signature           stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, ast_make_empty_type_spec (@1), IMMUTABLE, $9); }
+| FUNC '(' identifier '@' identifier CONST ')' identifier signature           stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, ast_make_empty_type_spec (@1), IMMUTABLE, $10); }
+
 
 func_def: FUNC identifier signature stmt_list { $$ = ast_make_function_def (@1, $2, $3, ast_make_empty_type_spec (@1), $4); }
 | FUNC identifier signature type_spec stmt_list { $$ = ast_make_function_def (@1, $2, $3, $4, $5); }
@@ -105,14 +109,15 @@ signature: '(' ')' { $$ = new ast_signature_type_spec_t (yyloc); }
 parameter_list: parameter { $$ = (new ast_signature_type_spec_t (@1))->append ($1); }
 | parameter_list ';' parameter { $$ = $1->append ($3); }
 
-parameter: identifier_list type_spec { $$ = ast_make_identifier_list_type_spec (@1, $1, $2); }
+parameter: identifier_list type_spec { $$ = new ast_identifier_list_type_spec_t (@1, $1, $2, MUTABLE); }
+| identifier_list type_spec CONST { $$ = new ast_identifier_list_type_spec_t (@1, $1, $2, IMMUTABLE); }
+| identifier_list type_spec FOREIGN_KW { $$ = new ast_identifier_list_type_spec_t (@1, $1, $2, FOREIGN); }
+
 
 optional_semicolon: /* Empty. */
 | ';'
 
-pointer_receiver: '(' identifier '@' identifier ')' { $$ = ast_make_receiver (@1, $2, $4, ast_receiver_definition_t::AstPointerReceiver); }
-
-pointer_to_immutable_receiver: '(' identifier '$' identifier ')' { $$ = ast_make_receiver (@1, $2, $4, ast_receiver_definition_t::AstPointerToImmutableReceiver); }
+pointer_receiver: '(' identifier '@' identifier ')' { $$ = new ast_receiver_definition_t (@1, $2, $4); }
 
 bind_stmt: lvalue ARROW rvalue ';' { $$ = new ast_bind_statement_t (@1, $1, $3); }
 | lvalue ARROW rvalue DOTDOT rvalue';' { $$ = new ast_bind_param_statement_t (@1, $1, $3, $5); }
@@ -149,7 +154,7 @@ for_iota_stmt: FOR identifier DOTDOT rvalue stmt_list { $$ = new ast_for_iota_st
 
 println_stmt: PRINTLN expr_list ';' { $$ = ast_make_println_stmt (@1, $2); }
 
-return_stmt: RETURN rvalue ';' { $$ = ast_make_return_stmt (@1, $2); }
+return_stmt: RETURN rvalue ';' { $$ = new ast_return_statement_t (@1, $2); }
 
 increment_stmt: lvalue INCREMENT ';' { $$ = new ast_increment_statement_t (@1, $1); }
 | lvalue DECREMENT ';' { $$ = new ast_decrement_statement_t (@1, $1); }
@@ -201,15 +206,13 @@ type_spec: identifier { $$ = ast_make_identifier_type_spec (@1, $1); }
 | STRUCT '{' field_list '}' { $$ = ast_make_struct_type_spec (@1, $3); }
 | PORT signature { $$ = ast_make_port (@1, $2); }
 | '@' type_spec { $$ = ast_make_pointer_type_spec (@1, $2); }
-| '$' type_spec { $$ = ast_make_pointer_to_immutable_type_spec (@1, $2); }
-| '?' type_spec { $$ = ast_make_pointer_to_foreign_type_spec (@1, $2); }
 | HEAP type_spec { $$ = ast_make_heap_type_spec (@1, $2); }
 | array_dimension type_spec { $$ = new ast_array_type_spec_t (@1, $1, $2); }
 
 array_dimension: '[' LITERAL ']' { $$ = $2; }
 
 field_list: /* empty */ { $$ = ast_make_field_list (yyloc); }
-| field_list identifier_list type_spec ';' { $$ = $1->append (ast_make_identifier_list_type_spec (@1, $2, $3)); }
+| field_list identifier_list type_spec ';' { $$ = $1->append (new ast_identifier_list_type_spec_t (@1, $2, $3, MUTABLE)); }
 
 rvalue: or_expr { $$ = $1; }
 
@@ -225,7 +228,7 @@ compare_expr: add_expr { $$ = $1; }
 
 add_expr: unary_expr { $$ = $1; }
 | unary_expr '+' add_expr { $$ = new ast_binary_arithmetic_expr_t (@1, ast_binary_arithmetic_expr_t::ADD, $1, $3); }
-| unary_expr '-' add_expr { unimplemented; }
+| unary_expr '-' add_expr { $$ = new ast_binary_arithmetic_expr_t (@1, ast_binary_arithmetic_expr_t::SUBTRACT, $1, $3); }
 
 unary_expr: primary_expr { $$ = $1; }
 | unary_expr '!' { $$ = new ast_logic_not_expr_t (@1, $1); }
