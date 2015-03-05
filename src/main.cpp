@@ -14,6 +14,7 @@
 #include "instance.hpp"
 #include "runtime.hpp"
 #include "memory_model.hpp"
+#include "instance_scheduler.hpp"
 
 static void
 print_version (void)
@@ -115,7 +116,7 @@ main (int argc, char **argv)
   allocate_stack_variables (root);
 
   /* Check composition. */
-  instance_table_t *instance_table = new instance_table_t ();
+  instance_table_t instance_table;
   enumerate_instances (root, instance_table);
   instance_table_enumerate_bindings (instance_table);
   instance_table_analyze_composition (instance_table);
@@ -126,10 +127,10 @@ main (int argc, char **argv)
       return 0;
     }
 
-  runtime_t* runtime = runtime_make (instance_table);
-  runtime_allocate_instances (runtime);
-  runtime_create_bindings (runtime);
-  runtime_run (runtime, 8 * 1024);
+  instance_scheduler_t scheduler (instance_table);
+  scheduler.allocate_instances ();
+  scheduler.create_bindings ();
+  scheduler.run (8 * 1024);
 
   return 0;
 }

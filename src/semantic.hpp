@@ -41,7 +41,7 @@ typed_value_t type_check_expr (ast_t::iterator ptr);
 void process_definitions (ast_t * node);
 
 void
-enumerate_instances (ast_t * node, instance_table_t * instance_table);
+enumerate_instances (ast_t* node, instance_table_t& instance_table);
 
 void
 allocate_stack_variables (ast_t* node);

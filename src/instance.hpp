@@ -114,21 +114,21 @@ std::ostream&
 operator<< (std::ostream&,
             const instance_table_t::PortValueType&);
 
-instance_t *instance_table_insert (instance_table_t * table,
+instance_t *instance_table_insert (instance_table_t& table,
                                    instance_t* parent,
 				   const named_type_t * type,
                                    method_t* method,
                                    size_t address);
 
-void instance_table_insert_port (instance_table_t* table,
+void instance_table_insert_port (instance_table_t& table,
                                  size_t address,
                                  instance_t* output_instance,
                                  field_t* output_field);
 
-void instance_table_enumerate_bindings (instance_table_t * table);
+void instance_table_enumerate_bindings (instance_table_t& table);
 
-void instance_table_analyze_composition (const instance_table_t * table);
+void instance_table_analyze_composition (const instance_table_t& table);
 
-void instance_table_dump (const instance_table_t * table);
+void instance_table_dump (const instance_table_t& table);
 
 #endif /* instance_hpp */

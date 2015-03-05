@@ -18,11 +18,13 @@ construct_symbol_table.cpp \
 debug.hpp debug.cpp \
 enter_symbols.cpp \
 enumerate_instances.cpp \
+executor.hpp \
 field.hpp field.cpp \
 function.hpp \
 method.hpp \
 heap.hpp heap.cpp \
 instance.hpp instance.cpp \
+instance_scheduler.hpp instance_scheduler.cpp \
 memory_model.hpp memory_model.cpp \
 parameter.hpp \
 parser.hpp parser.cpp \
@@ -30,6 +32,7 @@ process_declarations.cpp \
 process_definitions.cpp \
 process_type_spec.cpp \
 scanner.hpp scanner.cpp \
+scheduler.hpp \
 semantic.hpp semantic.cpp \
 rtstring.hpp rtstring.cpp \
 runtime.hpp runtime.cpp \

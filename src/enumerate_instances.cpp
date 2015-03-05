@@ -5,11 +5,11 @@
 #include "symbol.hpp"
 
 static void
-instantiate_contained_instances (const type_t * type, instance_table_t * instance_table, instance_t* parent, method_t* method, size_t address)
+instantiate_contained_instances (const type_t * type, instance_table_t& instance_table, instance_t* parent, method_t* method, size_t address)
 {
   struct visitor : public const_type_visitor_t
   {
-    instance_table_t* const instance_table;
+    instance_table_t& instance_table;
     instance_t* const parent;
     method_t* const method;
     size_t const address;
@@ -17,7 +17,7 @@ instantiate_contained_instances (const type_t * type, instance_table_t * instanc
 
     const named_type_t* named_type;
 
-    visitor (instance_table_t* it, instance_t* p, method_t* m, size_t a, field_t* f)
+    visitor (instance_table_t& it, instance_t* p, method_t* m, size_t a, field_t* f)
       : instance_table (it)
       , parent (p)
       , method (m)
@@ -102,14 +102,14 @@ instantiate_contained_instances (const type_t * type, instance_table_t * instanc
   2.  (instance, field) -> instance
 */
 void
-enumerate_instances (ast_t * node, instance_table_t * instance_table)
+enumerate_instances (ast_t * node, instance_table_t& instance_table)
 {
   struct visitor : public ast_visitor_t
   {
-    instance_table_t* instance_table;
+    instance_table_t& instance_table;
     size_t address;
 
-    visitor (instance_table_t* it) : instance_table (it), address (0) { }
+    visitor (instance_table_t& it) : instance_table (it), address (0) { }
 
     void visit (ast_instance_t& node)
     {

@@ -1,14 +1,26 @@
-#ifndef runtime_h
-#define runtime_h
+#ifndef runtime_hpp
+#define runtime_hpp
 
 #include "types.hpp"
+#include "executor.hpp"
 
-runtime_t* runtime_make (instance_table_t* instance_table);
+void bind (port_t** output_port,
+           void* input_instance,
+           const reaction_t* reaction,
+           int64_t parameter);
 
-void runtime_allocate_instances (runtime_t* runtime);
+bool
+enabled (executor_t& exec,
+         instance_record_t* record,
+         const action_t* action,
+         size_t iota);
 
-void runtime_create_bindings (runtime_t* runtime);
+void
+execute (executor_t& exec,
+         const action_t* action,
+         instance_record_t* instance);
 
-void runtime_run (runtime_t* runtime, size_t stack_size);
+void
+call (executor_t& exec);
 
-#endif /* runtime_h */
+#endif /* runtime_hpp */
