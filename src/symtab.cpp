@@ -1,6 +1,5 @@
 #include "symtab.hpp"
 #include <stdlib.h>
-#include "strtab.hpp"
 #include <string.h>
 #include "debug.hpp"
 #include "util.hpp"
@@ -19,7 +18,7 @@ std::ostream& symtab_t::print (std::ostream& o) const
        ++ptr)
     {
       const symbol_t* symbol = *ptr;
-      const char* name = get (symbol_identifier (symbol));
+      const std::string& name = symbol_identifier (symbol);
       const char* kind = symbol_kind_string (symbol_kind (symbol));
       std::string type_str = "(none)";
       size_t offset = symbol_get_offset (symbol);

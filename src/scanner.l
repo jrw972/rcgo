@@ -5,7 +5,6 @@
 %{
 #include "yyparse.hpp"
 #include "parser.hpp"
-#include "strtab.hpp"
 #include "debug.hpp"
 #include "type.hpp"
 #include <error.h>
@@ -56,7 +55,7 @@
 "!"|";"|","|"="        { return *yytext; }
 "@"|"."|"&"|"+"        { return *yytext; }
 
-[_a-zA-Z][_a-zA-Z0-9]* { yylval.node = new ast_identifier_t (yylloc, enter (yytext));
+[_a-zA-Z][_a-zA-Z0-9]* { yylval.node = new ast_identifier_t (yylloc, yytext);
                          return IDENTIFIER; }
 
 "`"[^`]*"`"            { char* begin = yytext + 1;

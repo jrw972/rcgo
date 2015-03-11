@@ -1,7 +1,6 @@
 #ifndef type_hpp
 #define type_hpp
 
-#include "strtab.hpp"
 #include "types.hpp"
 #include "debug.hpp"
 #include "util.hpp"
@@ -36,18 +35,18 @@ operator<< (std::ostream& o, const type_t& type)
 class named_type_t : public type_t
 {
 public:
-  named_type_t (string_t name)
+  named_type_t (const std::string& name)
     : name_ (name)
     , subtype_ (NULL)
   { }
 
-  named_type_t (string_t name,
+  named_type_t (const std::string& name,
                 const type_t* subtype);
 
   void accept (const_type_visitor_t& visitor) const;
   std::string to_string () const
   {
-    return get (name_);
+    return name_;
   }
 
   void subtype (const type_t* s) { subtype_ = s; }
@@ -57,7 +56,7 @@ public:
   virtual TypeLevel level () const { return NAMED_TYPE; }
 
   void add_method (method_t* method) { methods_.push_back (method); }
-  method_t* get_method (string_t identifier) const;
+  method_t* get_method (const std::string& identifier) const;
 
   void add_action (action_t* action) { actions_.push_back (action); }
   typedef std::vector<action_t*> ActionsType;
@@ -66,7 +65,7 @@ public:
 
   typedef std::vector<reaction_t*> ReactionsType;
   void add_reaction (reaction_t* reaction) { reactions_.push_back (reaction); }
-  reaction_t * get_reaction (string_t identifier) const;
+  reaction_t * get_reaction (const std::string& identifier) const;
 
   void add_bind (bind_t* bind) { binds_.push_back (bind); }
   typedef std::vector<bind_t*> BindsType;
@@ -74,7 +73,7 @@ public:
   BindsType::const_iterator binds_end () const { return binds_.end (); }
 
 private:
-  string_t name_;
+  std::string const name_;
   const type_t* subtype_;
   std::vector<method_t*> methods_;
   ActionsType actions_;
@@ -210,8 +209,8 @@ public:
 
   const_iterator begin () const { return fields_.begin (); }
   const_iterator end () const { return fields_.end (); }
-  void append (string_t field_name, const type_t * field_type);
-  field_t * find (string_t name) const;
+  void append (const std::string& field_name, const type_t * field_type);
+  field_t * find (const std::string& name) const;
 private:
   FieldsType fields_;
   ptrdiff_t offset_;
@@ -285,7 +284,7 @@ public:
   parameter_t* at (size_t idx) const { return parameters_.at (idx); }
   const_iterator begin () const { return parameters_.begin (); }
   const_iterator end () const { return parameters_.end (); }
-  parameter_t * find (string_t name) const;
+  parameter_t * find (const std::string& name) const;
 
   void
   append (parameter_t* p) { parameters_.push_back (p); }
@@ -317,7 +316,7 @@ class method_type_t : public type_t
 {
 public:
   method_type_t (const named_type_t* named_type_,
-                 string_t this_name,
+                 const std::string& this_name,
                  const type_t* receiver_type_,
                  Mutability dereference_mutability,
                  const signature_type_t * signature_,
@@ -341,7 +340,7 @@ public:
   const function_type_t* function_type;
 
 private:
-  static function_type_t* make_function_type (string_t this_name, const type_t* receiver_type, Mutability dereference_mutability, const signature_type_t* signature, const parameter_t* return_parameter);
+  static function_type_t* make_function_type (const std::string& this_name, const type_t* receiver_type, Mutability dereference_mutability, const signature_type_t* signature, const parameter_t* return_parameter);
 };
 
 class port_type_t : public type_t
@@ -451,17 +450,17 @@ struct const_type_visitor_t
 
 // Select the appropriate object.
 field_t*
-type_select_field (const type_t* type, string_t identifier);
+type_select_field (const type_t* type, const std::string& identifier);
 
 method_t*
-type_select_method (const type_t* type, string_t identifier);
+type_select_method (const type_t* type, const std::string& identifier);
 
 reaction_t*
-type_select_reaction (const type_t* type, string_t identifier);
+type_select_reaction (const type_t* type, const std::string& identifier);
 
 // Return type of selected field, method, or reaction.
 const type_t*
-type_select (const type_t* type, string_t identifier);
+type_select (const type_t* type, const std::string& identifier);
 
 // Return the type of indexing into the other type.
 const type_t*

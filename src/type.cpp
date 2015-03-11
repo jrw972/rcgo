@@ -5,7 +5,7 @@
 #include "method.hpp"
 
 reaction_t *
-named_type_t::get_reaction (string_t identifier) const
+named_type_t::get_reaction (const std::string& identifier) const
 {
   for (std::vector<reaction_t*>::const_iterator pos = reactions_.begin (),
          limit = reactions_.end ();
@@ -13,7 +13,7 @@ named_type_t::get_reaction (string_t identifier) const
        ++pos)
     {
       reaction_t *a = *pos;
-      if (streq (a->name (), identifier))
+      if (a->name () == identifier)
         {
           return a;
         }
@@ -23,7 +23,7 @@ named_type_t::get_reaction (string_t identifier) const
 }
 
 method_t*
-named_type_t::get_method (string_t identifier) const
+named_type_t::get_method (const std::string& identifier) const
 {
   for (std::vector<method_t*>::const_iterator pos = this->methods_.begin (),
          limit = this->methods_.end ();
@@ -31,7 +31,7 @@ named_type_t::get_method (string_t identifier) const
        ++pos)
     {
       method_t *a = *pos;
-      if (streq (a->name, identifier))
+      if (a->name == identifier)
         {
           return a;
         }
@@ -41,7 +41,7 @@ named_type_t::get_method (string_t identifier) const
 }
 
 void
-field_list_type_t::append (string_t field_name, const type_t * field_type)
+field_list_type_t::append (const std::string& field_name, const type_t * field_type)
 {
   size_t alignment = field_type->alignment ();
   offset_ = align_up (offset_, alignment);
@@ -57,14 +57,14 @@ field_list_type_t::append (string_t field_name, const type_t * field_type)
 }
 
 field_t *
-field_list_type_t::find (string_t name) const
+field_list_type_t::find (const std::string& name) const
 {
   for (std::vector<field_t*>::const_iterator field = fields_.begin (),
          limit = fields_.end ();
        field != limit;
        ++field)
     {
-      if (streq (name, field_name (*field)))
+      if (name == field_name (*field))
         {
           return (*field);
         }
@@ -73,13 +73,13 @@ field_list_type_t::find (string_t name) const
 }
 
 field_t *
-type_select_field (const type_t * type, string_t identifier)
+type_select_field (const type_t * type, const std::string& identifier)
 {
   struct visitor : public const_type_visitor_t
   {
     field_t* retval;
-    string_t identifier;
-    visitor (string_t id) : retval (NULL), identifier (id) { }
+    const std::string& identifier;
+    visitor (const std::string& id) : retval (NULL), identifier (id) { }
 
     void visit (const named_type_t& type)
     {
@@ -108,13 +108,13 @@ type_select_field (const type_t * type, string_t identifier)
 }
 
 method_t *
-type_select_method (const type_t * type, string_t identifier)
+type_select_method (const type_t * type, const std::string& identifier)
 {
   struct visitor : public const_type_visitor_t
   {
     method_t* retval;
-    string_t identifier;
-    visitor (string_t id) : retval (NULL), identifier (id) { }
+    const std::string& identifier;
+    visitor (const std::string& id) : retval (NULL), identifier (id) { }
 
     void visit (const named_type_t& type)
     {
@@ -127,13 +127,13 @@ type_select_method (const type_t * type, string_t identifier)
 }
 
 reaction_t *
-type_select_reaction (const type_t * type, string_t identifier)
+type_select_reaction (const type_t * type, const std::string& identifier)
 {
   struct visitor : public const_type_visitor_t
   {
     reaction_t* retval;
-    string_t identifier;
-    visitor (string_t id) : retval (NULL), identifier (id) { }
+    const std::string& identifier;
+    visitor (const std::string& id) : retval (NULL), identifier (id) { }
 
     void visit (const named_type_t& type)
     {
@@ -146,7 +146,7 @@ type_select_reaction (const type_t * type, string_t identifier)
 }
 
 const type_t*
-type_select (const type_t* type, string_t identifier)
+type_select (const type_t* type, const std::string& identifier)
 {
   field_t* f = type_select_field (type, identifier);
   if (f)
@@ -170,14 +170,14 @@ type_select (const type_t* type, string_t identifier)
 }
 
 parameter_t *
-signature_type_t::find (string_t name) const
+signature_type_t::find (const std::string& name) const
 {
   for (std::vector<parameter_t*>::const_iterator ptr = parameters_.begin (),
          limit = parameters_.end ();
        ptr != limit;
        ++ptr)
     {
-      if (streq ((*ptr)->name, name))
+      if ((*ptr)->name == name)
         {
           return *ptr;
         }
@@ -589,7 +589,7 @@ field_list_type_t::field_list_type_t (bool insert_runtime) : offset_ (0), alignm
   if (insert_runtime)
     {
       /* Prepend the field list with a pointer for the runtime. */
-      append (enter ("0"), pointer_type_t::make (void_type_t::instance ()));
+      append ("0", pointer_type_t::make (void_type_t::instance ()));
     }
 }
 
@@ -679,7 +679,7 @@ type_contains_pointer (const type_t* type)
   return v.flag;
 }
 
-named_type_t::named_type_t (string_t name,
+named_type_t::named_type_t (const std::string& name,
                             const type_t* subtype)
   : name_ (name)
 {
@@ -892,7 +892,7 @@ method_type_t::to_string () const
 }
 
 function_type_t*
-method_type_t::make_function_type (string_t this_name, const type_t* receiver_type, Mutability dereference_mutability, const signature_type_t* signature, const parameter_t* return_parameter)
+method_type_t::make_function_type (const std::string& this_name, const type_t* receiver_type, Mutability dereference_mutability, const signature_type_t* signature, const parameter_t* return_parameter)
 {
   signature_type_t* sig = new signature_type_t ();
   typed_value_t this_value = typed_value_t::make_value (receiver_type,

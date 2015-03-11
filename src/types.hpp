@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <map>
+#include <string>
 
 class action_reaction_base_t;
 class action_t;

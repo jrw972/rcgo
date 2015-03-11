@@ -3,7 +3,6 @@
 
 #include "types.hpp"
 #include "rtstring.hpp"
-#include "strtab.hpp"
 #include <ostream>
 #include "function.hpp"
 #include "method.hpp"
@@ -235,7 +234,7 @@ struct typed_value_t
   static typed_value_t implicit_dereference (typed_value_t tv);
   static typed_value_t dereference (typed_value_t tv);
   static typed_value_t address_of (typed_value_t tv);
-  static typed_value_t select (typed_value_t tv, string_t identifier);
+  static typed_value_t select (typed_value_t tv, const std::string& identifier);
   static typed_value_t index (typed_value_t tv, typed_value_t index);
   static typed_value_t logic_not (typed_value_t tv);
   static typed_value_t logic_or (typed_value_t left, typed_value_t right);

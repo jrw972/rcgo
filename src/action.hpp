@@ -2,7 +2,6 @@
 #define action_h
 
 #include "types.hpp"
-#include "strtab.hpp"
 #include "type.hpp"
 #include "memory_model.hpp"
 
@@ -71,23 +70,23 @@ public:
 class reaction_t : public action_reaction_base_t
 {
 public:
-  reaction_t (named_type_t* type, ast_t* node, string_t name, const signature_type_t* signature)
+  reaction_t (named_type_t* type, ast_t* node, const std::string& name, const signature_type_t* signature)
     : action_reaction_base_t (type, node)
     , name_ (name)
     , reaction_type_ (new reaction_type_t (signature))
   { }
 
-  reaction_t (named_type_t* type, ast_t* node, string_t name, const signature_type_t* signature, size_t dimension)
+  reaction_t (named_type_t* type, ast_t* node, const std::string& name, const signature_type_t* signature, size_t dimension)
     : action_reaction_base_t (type, node, dimension)
     , name_ (name)
     , reaction_type_ (new reaction_type_t (signature))
   { }
 
-  string_t name () const { return name_; }
+  std::string name () const { return name_; }
   const reaction_type_t* reaction_type () const { return reaction_type_; }
 
 private:
-  string_t name_;
+  std::string const name_;
   reaction_type_t* reaction_type_;
 };
 

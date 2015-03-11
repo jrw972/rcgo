@@ -10,25 +10,25 @@ enter_symbols (ast_t * node)
 
   /* Insert types. */
   {
-    symtab->enter (symbol_make_type (enter ("bool"), new named_type_t (enter ("bool"), bool_type_t::instance ()), node));
+    symtab->enter (symbol_make_type ("bool", new named_type_t ("bool", bool_type_t::instance ()), node));
 
-    symtab->enter (symbol_make_type (enter ("int"), new named_type_t (enter ("int"), int_type_t::instance ()), node));
+    symtab->enter (symbol_make_type ("int", new named_type_t ("int", int_type_t::instance ()), node));
 
-    symtab->enter (symbol_make_type (enter ("uint"), new named_type_t (enter ("uint"), uint_type_t::instance ()), node));
+    symtab->enter (symbol_make_type ("uint", new named_type_t ("uint", uint_type_t::instance ()), node));
 
-    symtab->enter (symbol_make_type (enter ("string"), new named_type_t (enter ("string"), string_type_t::instance ()), node));
+    symtab->enter (symbol_make_type ("string", new named_type_t ("string", string_type_t::instance ()), node));
   }
 
   /* Insert zero constant. */
-  symtab->enter (symbol_make_typed_constant (enter ("nil"),
+  symtab->enter (symbol_make_typed_constant ("nil",
                                              typed_value_t::nil (),
                                              node));
 
   /* Insert untyped boolean constants. */
-  symtab->enter (symbol_make_typed_constant (enter ("true"),
+  symtab->enter (symbol_make_typed_constant ("true",
                                              typed_value_t (true),
                                              node));
-  symtab->enter (symbol_make_typed_constant (enter ("false"),
+  symtab->enter (symbol_make_typed_constant ("false",
                                              typed_value_t (false),
                                              node));
 
@@ -65,7 +65,7 @@ enter_symbols (ast_t * node)
                             ast_t * identifier_node, SymbolKind kind,
                             symtab_t* symtab)
     {
-      string_t identifier = ast_get_identifier (identifier_node);
+      const std::string& identifier = ast_get_identifier (identifier_node);
       symbol_t *symbol = symtab->find_current (identifier);
       if (symbol == NULL)
         {
@@ -77,7 +77,7 @@ enter_symbols (ast_t * node)
         {
           error_at_line (-1, 0, identifier_node->file,
                          identifier_node->line,
-                         "%s is already defined in this scope", get (identifier));
+                         "%s is already defined in this scope", identifier.c_str ());
         }
     }
   };

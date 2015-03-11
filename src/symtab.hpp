@@ -3,7 +3,6 @@
 
 /* Symbol table. */
 
-#include "strtab.hpp"
 #include "typed_value.hpp"
 #include "type.hpp"
 #include "symbol.hpp"
@@ -48,7 +47,7 @@ public:
   }
 
   symbol_t *
-  find (string_t identifier) const
+  find (const std::string& identifier) const
   {
     for (std::vector<symbol_t*>::const_iterator pos = symbols_.begin (),
            limit = symbols_.end ();
@@ -56,7 +55,7 @@ public:
          ++pos)
       {
         symbol_t *s = *pos;
-        if (streq (identifier, symbol_identifier (s)))
+        if (identifier == symbol_identifier (s))
           {
             return s;
           }
@@ -74,7 +73,7 @@ public:
   }
 
   symbol_t *
-  find_current (string_t identifier) const
+  find_current (const std::string& identifier) const
   {
     for (std::vector<symbol_t*>::const_iterator pos = symbols_.begin (),
            limit = symbols_.end ();
@@ -82,7 +81,7 @@ public:
          ++pos)
       {
         symbol_t *s = *pos;
-        if (streq (identifier, symbol_identifier (s)))
+        if (identifier == symbol_identifier (s))
           {
             return s;
           }

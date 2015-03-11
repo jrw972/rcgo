@@ -3,22 +3,25 @@
 
 struct field_t
 {
-  string_t name;
+  std::string const name;
   const type_t *type;
   ptrdiff_t offset;
+
+  field_t (const std::string& n)
+    : name (n)
+  { }
 };
 
 field_t *
-field_make (string_t name, const type_t * type, ptrdiff_t offset)
+field_make (const std::string& name, const type_t * type, ptrdiff_t offset)
 {
-  field_t *retval = new field_t;
-  retval->name = name;
+  field_t *retval = new field_t (name);
   retval->type = type;
   retval->offset = offset;
   return retval;
 }
 
-string_t
+const std::string&
 field_name (const field_t * field)
 {
   return field->name;

@@ -2,13 +2,12 @@
 #define method_h
 
 #include "types.hpp"
-#include "strtab.hpp"
 #include "type.hpp"
 
 struct method_t
 {
   method_t (ast_t* n,
-            string_t na,
+            const std::string& na,
             const method_type_t* method_type_,
             const symbol_t* return_symbol_)
     : node (n)
@@ -18,7 +17,7 @@ struct method_t
   { }
 
   ast_t* const node;
-  string_t const name;
+  std::string const name;
   const method_type_t * const method_type;
   const symbol_t* const return_symbol;
   memory_model_t memory_model;

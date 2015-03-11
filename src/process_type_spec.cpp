@@ -115,7 +115,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component)
           const type_t *type = process_type_spec (type_spec, true);
           AST_FOREACH (id, identifier_list)
             {
-              string_t identifier = ast_get_identifier (id);
+              const std::string& identifier = ast_get_identifier (id);
               const type_t *field = type_select (field_list, identifier);
               if (field == NULL)
                 {
@@ -124,7 +124,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component)
               else
                 {
                   error_at_line (-1, 0, id->file, id->line,
-                                 "duplicate field name %s", get (identifier));
+                                 "duplicate field name %s", identifier.c_str ());
                 }
             }
         }
@@ -139,7 +139,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component)
     void visit (ast_identifier_type_spec_t& node)
     {
       ast_t *child = node.at (IDENTIFIER_TYPE_SPEC_CHILD);
-      string_t identifier = ast_get_identifier (child);
+      const std::string& identifier = ast_get_identifier (child);
       symbol_t *symbol;
       if (force_identifiers)
         {
@@ -153,7 +153,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component)
       if (symbol_kind (symbol) != SymbolType)
         {
           error_at_line (-1, 0, child->file, child->line,
-                         "%s does not refer to a type", get (identifier));
+                         "%s does not refer to a type", identifier.c_str ());
         }
       type = symbol_get_type_type (symbol);
     }
@@ -186,7 +186,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component)
                ++pos2)
             {
               ast_t* id = *pos2;
-              string_t identifier = ast_get_identifier (id);
+              const std::string& identifier = ast_get_identifier (id);
               const parameter_t *parameter = signature->find (identifier);
               if (parameter == NULL)
                 {
@@ -200,7 +200,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component)
                 {
                   error_at_line (-1, 0, id->file, id->line,
                                  "duplicate parameter name %s",
-                                 get (identifier));
+                                 identifier.c_str ());
                 }
             }
         }

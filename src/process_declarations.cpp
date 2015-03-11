@@ -17,20 +17,20 @@ process_declarations (ast_t * node)
     void visit (ast_action_t& node)
     {
       ast_t *type_identifier_node = node.type_identifier ();
-      string_t type_identifier = ast_get_identifier (type_identifier_node);
+      const std::string& type_identifier = ast_get_identifier (type_identifier_node);
       symbol_t *symbol = lookup_force (type_identifier_node, type_identifier);
       if (symbol_kind (symbol) != SymbolType)
         {
           error_at_line (-1, 0, type_identifier_node->file, (type_identifier_node)->line,
                          "%s does not refer to a type",
-                         get (type_identifier));
+                         type_identifier.c_str ());
         }
       named_type_t *type = symbol_get_type_type (symbol);
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
           error_at_line (-1, 0, type_identifier_node->file, (type_identifier_node)->line,
                          "%s does not refer to a component",
-                         get (type_identifier));
+                         type_identifier.c_str ());
         }
       action_t *action = new action_t (type, &node);
       type->add_action (action);
@@ -43,20 +43,20 @@ process_declarations (ast_t * node)
     {
       size_t dimension = process_array_dimension (node.dimension_iter ());
       ast_t *type_identifier_node = node.type_identifier ();
-      string_t type_identifier = ast_get_identifier (type_identifier_node);
+      const std::string& type_identifier = ast_get_identifier (type_identifier_node);
       symbol_t *symbol = lookup_force (type_identifier_node, type_identifier);
       if (symbol_kind (symbol) != SymbolType)
         {
           error_at_line (-1, 0, type_identifier_node->file, type_identifier_node->line,
                          "%s does not refer to a type",
-                         get (type_identifier));
+                         type_identifier.c_str ());
         }
       named_type_t *type = symbol_get_type_type (symbol);
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
           error_at_line (-1, 0, type_identifier_node->file, type_identifier_node->line,
                          "%s does not refer to a component",
-                         get (type_identifier));
+                         type_identifier.c_str ());
         }
       action_t *action = new action_t (type, &node, dimension);
       type->add_action (action);
@@ -68,20 +68,20 @@ process_declarations (ast_t * node)
     void visit (ast_bind_t& node)
     {
       ast_t *type_node = node.type_identifier ();
-      string_t type_identifier = ast_get_identifier (type_node);
+      const std::string& type_identifier = ast_get_identifier (type_node);
       symbol_t *symbol = lookup_force (type_node, type_identifier);
       if (symbol_kind (symbol) != SymbolType)
         {
           error_at_line (-1, 0, type_node->file, type_node->line,
                          "%s does not refer to a type",
-                         get (type_identifier));
+                         type_identifier.c_str ());
         }
       named_type_t *type = symbol_get_type_type (symbol);
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
           error_at_line (-1, 0, type_node->file, type_node->line,
                          "%s does not refer to a component",
-                         get (type_identifier));
+                         type_identifier.c_str ());
         }
       bind_t* bind = new bind_t (&node);
       type->add_bind (bind);
@@ -106,7 +106,7 @@ process_declarations (ast_t * node)
                                                               MUTABLE);
 
       parameter_t* return_parameter = new parameter_t (return_type_node,
-                                                       enter ("0return"),
+                                                       "0return",
                                                        return_value,
                                                        false);
 
@@ -130,14 +130,14 @@ process_declarations (ast_t * node)
       ast_t *signature_node = node.signature ();
       ast_t *return_type_node = node.return_type ();
       ast_t *identifier_node = node.identifier ();
-      string_t identifier = ast_get_identifier (identifier_node);
-      string_t type_identifier = ast_get_identifier (type_node);
+      const std::string& identifier = ast_get_identifier (identifier_node);
+      const std::string& type_identifier = ast_get_identifier (type_node);
       symbol_t *symbol = lookup_force (type_node, type_identifier);
       if (symbol_kind (symbol) != SymbolType)
         {
           error_at_line (-1, 0, type_node->file, type_node->line,
                          "%s does not refer to a type",
-                         get (type_identifier));
+                         type_identifier.c_str ());
         }
       named_type_t *type = symbol_get_type_type (symbol);
       const type_t *t = type_select (type, identifier);
@@ -146,7 +146,7 @@ process_declarations (ast_t * node)
           error_at_line (-1, 0, identifier_node->file,
                          identifier_node->line,
                          "component already contains a member named %s",
-                         get (identifier));
+                         identifier.c_str ());
         }
 
       /* Determine the type of this. */
@@ -164,7 +164,7 @@ process_declarations (ast_t * node)
                                                               node.return_dereference_mutability);
 
       parameter_t* return_parameter = new parameter_t (return_type_node,
-                                                       enter ("0return"),
+                                                       "0return",
                                                        return_value,
                                                        false);
 
@@ -193,7 +193,7 @@ process_declarations (ast_t * node)
     {
       ast_t *type_identifier_node =
         node.at (INSTANCE_TYPE_IDENTIFIER);
-      string_t type_identifier = ast_get_identifier (type_identifier_node);
+      const std::string& type_identifier = ast_get_identifier (type_identifier_node);
       symbol_t *symbol =
         lookup_force (type_identifier_node,
                       ast_get_identifier (type_identifier_node));
@@ -202,7 +202,7 @@ process_declarations (ast_t * node)
           error_at_line (-1, 0, type_identifier_node->file,
                          type_identifier_node->line,
                          "%s does not refer to a type",
-                         get (type_identifier));
+                         type_identifier.c_str ());
         }
       named_type_t *type = symbol_get_type_type (symbol);
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
@@ -210,7 +210,7 @@ process_declarations (ast_t * node)
           error_at_line (-1, 0, type_identifier_node->file,
                          type_identifier_node->line,
                          "%s does not refer to a component",
-                         get (type_identifier));
+                         type_identifier.c_str ());
         }
       symbol = node.symbol.symbol ();
       symbol_set_instance_type (symbol, type);
@@ -221,21 +221,21 @@ process_declarations (ast_t * node)
       ast_t *type_node = node.type_identifier ();
       ast_t *signature_node = node.signature ();
       ast_t *identifier_node = node.identifier ();
-      string_t identifier = ast_get_identifier (identifier_node);
-      string_t type_identifier = ast_get_identifier (type_node);
+      const std::string& identifier = ast_get_identifier (identifier_node);
+      const std::string& type_identifier = ast_get_identifier (type_node);
       symbol_t *symbol = lookup_force (type_node, type_identifier);
       if (symbol_kind (symbol) != SymbolType)
         {
           error_at_line (-1, 0, type_node->file, type_node->line,
                          "%s does not refer to a type",
-                         get (type_identifier));
+                         type_identifier.c_str ());
         }
       named_type_t *type = symbol_get_type_type (symbol);
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
           error_at_line (-1, 0, type_node->file, type_node->line,
                          "%s does not refer to a component",
-                         get (type_identifier));
+                         type_identifier.c_str ());
         }
       const type_t *t = type_select (type, identifier);
       if (t != NULL)
@@ -243,7 +243,7 @@ process_declarations (ast_t * node)
           error_at_line (-1, 0, identifier_node->file,
                          identifier_node->line,
                          "component already contains a member named %s",
-                         get (identifier));
+                         identifier.c_str ());
         }
 
       /* Process the signature. */
@@ -263,21 +263,21 @@ process_declarations (ast_t * node)
       ast_t *type_node = node.type_identifier ();
       ast_t *signature_node = node.signature ();
       ast_t *identifier_node = node.identifier ();
-      string_t identifier = ast_get_identifier (identifier_node);
-      string_t type_identifier = ast_get_identifier (type_node);
+      const std::string& identifier = ast_get_identifier (identifier_node);
+      const std::string& type_identifier = ast_get_identifier (type_node);
       symbol_t *symbol = lookup_force (type_node, type_identifier);
       if (symbol_kind (symbol) != SymbolType)
         {
           error_at_line (-1, 0, type_node->file, type_node->line,
                          "%s does not refer to a type",
-                         get (type_identifier));
+                         type_identifier.c_str ());
         }
       named_type_t *type = symbol_get_type_type (symbol);
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
           error_at_line (-1, 0, type_node->file, type_node->line,
                          "%s does not refer to a component",
-                         get (type_identifier));
+                         type_identifier.c_str ());
         }
       const type_t *t = type_select (type, identifier);
       if (t != NULL)
@@ -285,7 +285,7 @@ process_declarations (ast_t * node)
           error_at_line (-1, 0, identifier_node->file,
                          identifier_node->line,
                          "component already contains a member named %s",
-                         get (identifier));
+                         identifier.c_str ());
         }
 
       /* Process the signature. */
@@ -309,7 +309,7 @@ process_declarations (ast_t * node)
     void visit (ast_type_definition_t& node)
     {
       symbol_t *symbol = node.symbol.symbol ();
-      string_t identifier = symbol_identifier (symbol);
+      const std::string& identifier = symbol_identifier (symbol);
       named_type_t *type = symbol_get_type_type (symbol);
 
       if (symbol_defined (symbol))
@@ -318,7 +318,7 @@ process_declarations (ast_t * node)
       if (symbol_get_in_progress (symbol))
         {
           error_at_line (-1, 0, node.file, node.line,
-                         "%s is defined recursively", get (identifier));
+                         "%s is defined recursively", identifier.c_str ());
         }
 
       symbol_set_in_progress (symbol, true);
@@ -335,18 +335,18 @@ process_declarations (ast_t * node)
 
 // Look up a symbol.  If it is not defined, process its definition.
 symbol_t *
-lookup_force (ast_t * node, string_t identifier)
+lookup_force (ast_t * node, const std::string& identifier)
 {
   symbol_t *symbol = node->symtab->find (identifier);
   if (symbol == NULL)
     {
       error_at_line (-1, 0, node->file, node->line,
-                     "%s was not declared in this scope", get (identifier));
+                     "%s was not declared in this scope", identifier.c_str ());
     }
   if (symbol_get_in_progress (symbol))
     {
       error_at_line (-1, 0, node->file, node->line,
-                     "%s is defined recursively", get (identifier));
+                     "%s is defined recursively", identifier.c_str ());
     }
   if (!symbol_defined (symbol))
     {
@@ -358,13 +358,13 @@ lookup_force (ast_t * node, string_t identifier)
 }
 
 symbol_t *
-lookup_no_force (ast_t * node, string_t identifier)
+lookup_no_force (ast_t * node, const std::string& identifier)
 {
   symbol_t *symbol = node->symtab->find (identifier);
   if (symbol == NULL)
     {
       error_at_line (-1, 0, node->file, node->line,
-                     "%s was not declared in this scope", get (identifier));
+                     "%s was not declared in this scope", identifier.c_str ());
     }
   return symbol;
 }

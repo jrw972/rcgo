@@ -38,7 +38,6 @@ semantic.hpp semantic.cpp \
 rtstring.hpp rtstring.cpp \
 runtime.hpp runtime.cpp \
 stack_frame.hpp stack_frame.cpp \
-strtab.hpp strtab.cpp \
 symbol.hpp symbol.cpp \
 symtab.hpp symtab.cpp \
 trigger.hpp \

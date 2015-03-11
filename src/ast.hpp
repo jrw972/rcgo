@@ -1,7 +1,6 @@
 #ifndef ast_hpp
 #define ast_hpp
 
-#include "strtab.hpp"
 #include "symtab.hpp"
 #include "debug.hpp"
 #include <vector>
@@ -94,18 +93,15 @@ protected:
 class ast_identifier_t : public ast_t
 {
 public:
-  ast_identifier_t (unsigned int line, string_t identifier)
+  ast_identifier_t (unsigned int line, const std::string& id)
     : ast_t (line, 0)
-    , identifier_ (identifier)
+    , identifier (id)
   { }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
 
-  string_t identifier () const { return identifier_; }
-
-private:
-  string_t identifier_;
+  std::string const identifier;
 };
 
 struct ast_identifier_list_t : public ast_t
@@ -1330,7 +1326,7 @@ void ast_print (const ast_t& ast);
 
 void ast_set_symtab (ast_t * ast, symtab_t * symtab);
 
-string_t ast_get_identifier (const ast_t* ast);
+const std::string& ast_get_identifier (const ast_t* ast);
 
 /* Def */
 

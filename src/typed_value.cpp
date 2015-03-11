@@ -165,7 +165,7 @@ typed_value_t::address_of (typed_value_t in)
 }
 
 typed_value_t
-typed_value_t::select (typed_value_t in, string_t identifier)
+typed_value_t::select (typed_value_t in, const std::string& identifier)
 {
   assert (in.kind == REFERENCE);
   field_t* f = type_select_field (in.type, identifier);

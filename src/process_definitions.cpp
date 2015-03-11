@@ -13,7 +13,7 @@ symbol_t*
 enter_symbol (symtab_t* symtab, symbol_t * symbol, symbol_holder& holder)
 {
   // Check if the symbol is defined locally.
-  string_t identifier = symbol_identifier (symbol);
+  const std::string& identifier = symbol_identifier (symbol);
   symbol_t *s = symtab->find_current (identifier);
   if (s == NULL)
     {
@@ -24,7 +24,7 @@ enter_symbol (symtab_t* symtab, symbol_t * symbol, symbol_holder& holder)
     {
       const ast_t* node = symbol_defining_node (symbol);
       error_at_line (-1, 0, node->file, node->line,
-		     "%s is already defined in this scope", get (identifier));
+		     "%s is already defined in this scope", identifier.c_str ());
     }
   return symbol;
 }
@@ -175,21 +175,21 @@ type_check_expr (ast_t::iterator ptr)
 
     void visit (ast_indexed_port_call_expr_t& node)
     {
-      string_t port_identifier = ast_get_identifier (node.identifier ());
+      const std::string& port_identifier = ast_get_identifier (node.identifier ());
       const type_t *this_type = get_current_receiver_type (&node);
       const type_t *type = type_select (this_type, port_identifier);
 
       if (type == NULL)
         {
           error_at_line (-1, 0, node.file, node.line,
-                         "no port named %s", get (port_identifier));
+                         "no port named %s", port_identifier.c_str ());
         }
 
       const array_type_t* array_type = type_cast<array_type_t> (type);
       if (!array_type)
         {
           error_at_line (-1, 0, node.file, node.line,
-                         "%s is not an array of ports", get (port_identifier));
+                         "%s is not an array of ports", port_identifier.c_str ());
         }
 
       const port_type_t* port_type = type_cast<port_type_t> (array_type->base_type ());
@@ -197,7 +197,7 @@ type_check_expr (ast_t::iterator ptr)
       if (!port_type)
         {
           error_at_line (-1, 0, node.file, node.line,
-                         "%s is not an array of ports", get (port_identifier));
+                         "%s is not an array of ports", port_identifier.c_str ());
         }
 
       ast_t::iterator index = node.index_iter ();
@@ -252,13 +252,13 @@ type_check_expr (ast_t::iterator ptr)
     void visit (ast_identifier_expr_t& node)
     {
       ast_t *identifier_node = node.at (UNARY_CHILD);
-      string_t identifier = ast_get_identifier (identifier_node);
+      const std::string& identifier = ast_get_identifier (identifier_node);
       symbol_t *symbol = node.symtab->find (identifier);
       if (symbol == NULL)
         {
           error_at_line (-1, 0, identifier_node->file,
                          identifier_node->line, "%s is not defined",
-                         get (identifier));
+                         identifier.c_str ());
         }
 
       switch (symbol_kind (symbol))
@@ -288,7 +288,7 @@ type_check_expr (ast_t::iterator ptr)
         case SymbolHidden:
           error_at_line (-1, 0, identifier_node->file,
                          identifier_node->line, "%s is not accessible in this scope",
-                         get (identifier));
+                         identifier.c_str ());
           break;
         }
 
@@ -306,7 +306,7 @@ type_check_expr (ast_t::iterator ptr)
     {
       ast_t::iterator left = node.base_iter ();
       ast_t *right = node.identifier ();
-      string_t identifier = ast_get_identifier (right);
+      const std::string& identifier = ast_get_identifier (right);
       typed_value_t in = type_check_expr (left);
 
       assert (in.type != NULL);
@@ -333,7 +333,7 @@ type_check_expr (ast_t::iterator ptr)
         {
           error_at_line (-1, 0, node.file, node.line,
                          "cannot select %s from expression of type %s",
-                         get (identifier), in.type->to_string ().c_str ());
+                         identifier.c_str (), in.type->to_string ().c_str ());
         }
 
       node.set_type (out);
@@ -543,13 +543,13 @@ type_check_expr (ast_t::iterator ptr)
     {
       ast_t *expr = node.identifier ();
       ast_t *args = node.args ();
-      string_t port_identifier = ast_get_identifier (expr);
+      const std::string& port_identifier = ast_get_identifier (expr);
       const type_t *this_type = get_current_receiver_type (&node);
       const port_type_t *port_type = type_cast<port_type_t> (type_select (this_type, port_identifier));
       if (port_type == NULL)
         {
           error_at_line (-1, 0, node.file, node.line,
-                         "no port named %s", get (port_identifier));
+                         "no port named %s", port_identifier.c_str ());
         }
       check_rvalue_list (args);
       typed_value_t tv = typed_value_t::make_value (void_type_t::instance (),
@@ -715,7 +715,7 @@ type_check_statement (ast_t * node)
 
     void visit (ast_for_iota_statement_t& node)
     {
-      string_t identifier = ast_get_identifier (node.identifier ());
+      const std::string& identifier = ast_get_identifier (node.identifier ());
       size_t limit = process_array_dimension (node.limit_iter ());
       symbol_t* symbol = symbol_make_variable (identifier, new iota_type_t (limit), node.identifier ());
       enter_symbol (node.symtab, symbol, node.symbol);
@@ -792,7 +792,7 @@ type_check_statement (ast_t * node)
     void visit (ast_change_statement_t& node)
     {
       ast_t::iterator expr = node.expr_iter ();
-      string_t identifier = ast_get_identifier (node.identifier ());
+      const std::string& identifier = ast_get_identifier (node.identifier ());
       ast_t* type = node.type ();
       ast_t* body = node.body ();
 
@@ -948,7 +948,7 @@ type_check_statement (ast_t * node)
       // Enter each symbol.
       AST_FOREACH (child, *identifier_list)
         {
-          string_t name = ast_get_identifier (child);
+          const std::string& name = ast_get_identifier (child);
           symbol_t* symbol = symbol_make_variable (name, type, child);
           node.symbols.push_back (symbol_holder ());
           enter_symbol (node.symtab, symbol, node.symbols.back ());
@@ -1297,7 +1297,7 @@ enter_signature (ast_t * node, const signature_type_t * type)
     {
       parameter_t* parameter = *pos;
       // Check if the symbol is defined locally.
-      string_t identifier = parameter->name;
+      const std::string& identifier = parameter->name;
       symbol_t *s = node->symtab->find_current (identifier);
       if (s == NULL)
         {
@@ -1315,7 +1315,7 @@ enter_signature (ast_t * node, const signature_type_t * type)
         {
           error_at_line (-1, 0, parameter->defining_node->file, parameter->defining_node->line,
         		 "%s is already defined in this scope",
-        		 get (identifier));
+        		 identifier.c_str ());
         }
     }
 }
@@ -1342,7 +1342,7 @@ process_definitions (ast_t * node)
       /* Insert "this" into the symbol table. */
       // TODO:  Unify with others as entering signature and return value.
       ast_t *this_identifier_node = node.this_identifier ();
-      string_t this_identifier = ast_get_identifier (this_identifier_node);
+      const std::string& this_identifier = ast_get_identifier (this_identifier_node);
       typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make (get_current_receiver_type
                                                                                   (&node)),
                                                             typed_value_t::STACK,
@@ -1371,7 +1371,7 @@ process_definitions (ast_t * node)
 
       /* Insert "this" into the symbol table. */
       ast_t *this_identifier_node = node.this_identifier ();
-      string_t this_identifier = ast_get_identifier (this_identifier_node);
+      const std::string& this_identifier = ast_get_identifier (this_identifier_node);
       typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make (get_current_receiver_type
                                                                                   (&node)),
                                                             typed_value_t::STACK,
@@ -1392,7 +1392,7 @@ process_definitions (ast_t * node)
                                                             IMMUTABLE,
                                                             IMMUTABLE);
       parameter_t* iota_parameter = new parameter_t (dimension_node,
-                                                     enter ("IOTA"),
+                                                     "IOTA",
                                                      iota_value,
                                                      false);
 
@@ -1411,7 +1411,7 @@ process_definitions (ast_t * node)
       ast_t *body_node = node.body ();
       /* Insert "this" into the symbol table. */
       ast_t *this_node = node.this_identifier ();
-      string_t this_identifier = ast_get_identifier (this_node);
+      const std::string& this_identifier = ast_get_identifier (this_node);
       typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make
                                                             (get_current_receiver_type
                                                              (&node)),
@@ -1458,7 +1458,7 @@ process_definitions (ast_t * node)
           error_at_line (-1, 0, initializer->file,
                          initializer->line,
                          "no method named %s",
-                         get (ast_get_identifier (initializer)));
+                         ast_get_identifier (initializer).c_str ());
         }
       if (method->method_type->signature->arity () != 0)
         {
@@ -1476,7 +1476,7 @@ process_definitions (ast_t * node)
       reaction_t *reaction = node.reaction;
       /* Insert "this" into the symbol table. */
       ast_t *this_identifier_node = node.this_identifier ();
-      string_t this_identifier = ast_get_identifier (this_identifier_node);
+      const std::string& this_identifier = ast_get_identifier (this_identifier_node);
       typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make (reaction->component_type ()),
                                                             typed_value_t::STACK,
                                                             MUTABLE,
@@ -1505,7 +1505,7 @@ process_definitions (ast_t * node)
 
       /* Insert "this" into the symbol table. */
       ast_t *this_identifier_node = node.this_identifier ();
-      string_t this_identifier = ast_get_identifier (this_identifier_node);
+      const std::string& this_identifier = ast_get_identifier (this_identifier_node);
       typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make (reaction->component_type ()),
                                                             typed_value_t::STACK,
                                                             MUTABLE,
@@ -1524,7 +1524,7 @@ process_definitions (ast_t * node)
                                                             IMMUTABLE,
                                                             IMMUTABLE);
       parameter_t* iota_parameter = new parameter_t (dimension_node,
-                                                     enter ("IOTA"),
+                                                     "IOTA",
                                                      iota_value,
                                                      false);
 

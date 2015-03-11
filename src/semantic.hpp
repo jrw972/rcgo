@@ -2,7 +2,6 @@
 #define semantic_h
 
 #include "types.hpp"
-#include "strtab.hpp"
 #include "ast.hpp"
 
 /* Associate a symbol table with each node in the tree. */
@@ -18,10 +17,10 @@ symbol_t* enter_symbol (symtab_t* symtab, symbol_t * symbol, symbol_holder& hold
 void enter_signature (ast_t * node, const signature_type_t * type);
 
 // Look up a symbol.  If it is not defined, process its definition.
-symbol_t * lookup_force (ast_t * node, string_t identifier);
+symbol_t * lookup_force (ast_t * node, const std::string& identifier);
 
 // Look up a symbol.  Error if it is not defined.
-symbol_t * lookup_no_force (ast_t * node, string_t identifier);
+symbol_t * lookup_no_force (ast_t * node, const std::string& identifier);
 
 // Extract an array dimension or error.
 size_t process_array_dimension (ast_t::iterator ptr);

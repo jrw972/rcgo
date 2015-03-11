@@ -7,9 +7,9 @@
 
 struct symbol_t
 {
-  string_t identifier;
-  SymbolKind kind;
-  ast_t *defining_node;
+  std::string const identifier;
+  SymbolKind const kind;
+  ast_t* const defining_node;
   bool in_progress;
   struct
   {
@@ -44,6 +44,24 @@ struct symbol_t
     } function;
   };
   ptrdiff_t offset;
+
+  symbol_t (const std::string& id, SymbolKind k, ast_t* dn)
+    : identifier (id)
+    , kind (k)
+    , defining_node (dn)
+    , in_progress (false)
+    , offset (0)
+  {
+    memset (&typed_constant.value, 0, sizeof (typed_value_t));
+    memset (&variable.value, 0, sizeof (typed_value_t));
+    variable.kind = static_cast<VariableKind> (0);
+    variable.original = NULL;
+    memset (&parameter.value, 0, sizeof (typed_value_t));
+    parameter.kind = static_cast<ParameterKind> (0);
+    parameter.original = NULL;
+    instance.type = NULL;
+    instance.method = NULL;
+  }
 };
 
 const char* symbol_kind_string (SymbolKind kind)
@@ -69,7 +87,7 @@ const char* symbol_kind_string (SymbolKind kind)
   return "<Unknown Symbol Kind>";
 }
 
-string_t
+const std::string&
 symbol_identifier (const symbol_t * symbol)
 {
   return symbol->identifier;
@@ -123,19 +141,8 @@ symbol_set_in_progress (symbol_t * symbol, bool in_progress)
   symbol->in_progress = in_progress;
 }
 
-static symbol_t *
-make (string_t identifier, SymbolKind kind, ast_t * defining_node)
-{
-  symbol_t *s = (symbol_t*)malloc (sizeof (symbol_t));
-  memset (s, 0, sizeof (symbol_t));
-  s->identifier = identifier;
-  s->kind = kind;
-  s->defining_node = defining_node;
-  return s;
-}
-
 symbol_t *
-symbol_make_undefined (string_t identifier, SymbolKind kind,
+symbol_make_undefined (const std::string& identifier, SymbolKind kind,
 		       ast_t * defining_node)
 {
   switch (kind)
@@ -161,9 +168,9 @@ symbol_make_undefined (string_t identifier, SymbolKind kind,
 }
 
 symbol_t *
-symbol_make_variable (string_t identifier, const type_t * type, ast_t* defining_node)
+symbol_make_variable (const std::string& identifier, const type_t * type, ast_t* defining_node)
 {
-  symbol_t *s = make (identifier, SymbolVariable, defining_node);
+  symbol_t *s = new symbol_t (identifier, SymbolVariable, defining_node);
   s->variable.value = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE);
   s->variable.kind = VariableOrdinary;
   return s;
@@ -173,7 +180,7 @@ symbol_t *
 symbol_make_variable_duplicate (symbol_t* symbol)
 {
   assert (symbol->kind == SymbolVariable);
-  symbol_t *s = make (symbol->identifier, SymbolVariable, symbol->defining_node);
+  symbol_t *s = new symbol_t (symbol->identifier, SymbolVariable, symbol->defining_node);
   s->variable.value = typed_value_t::make_ref (symbol_variable_type (symbol), typed_value_t::STACK, FOREIGN, FOREIGN);
   s->variable.kind = VariableDuplicate;
   s->variable.original = symbol;
@@ -195,9 +202,9 @@ symbol_variable_value (const symbol_t * symbol)
 }
 
 symbol_t *
-symbol_make_type (string_t identifier, named_type_t * type, ast_t * defining_node)
+symbol_make_type (const std::string& identifier, named_type_t * type, ast_t * defining_node)
 {
-  symbol_t *s = make (identifier, SymbolType, defining_node);
+  symbol_t *s = new symbol_t (identifier, SymbolType, defining_node);
   s->type.type = type;
   return s;
 }
@@ -210,10 +217,10 @@ symbol_get_type_type (const symbol_t * symbol)
 }
 
 symbol_t *
-symbol_make_typed_constant (string_t identifier, typed_value_t value,
+symbol_make_typed_constant (const std::string& identifier, typed_value_t value,
 			    ast_t * defining_node)
 {
-  symbol_t *s = make (identifier, SymbolTypedConstant, defining_node);
+  symbol_t *s = new symbol_t (identifier, SymbolTypedConstant, defining_node);
   s->typed_constant.value = typed_value_t::make_ref (value);
   return s;
 }
@@ -226,10 +233,10 @@ symbol_typed_constant_value (const symbol_t * symbol)
 }
 
 symbol_t *
-symbol_make_instance (string_t identifier, const named_type_t * type,
+symbol_make_instance (const std::string& identifier, const named_type_t * type,
 		      ast_t * defining_node)
 {
-  symbol_t *s = make (identifier, SymbolInstance, defining_node);
+  symbol_t *s = new symbol_t (identifier, SymbolInstance, defining_node);
   s->instance.type = type;
   return s;
 }
@@ -263,7 +270,7 @@ method_t* symbol_get_instance_method (symbol_t* symbol)
 symbol_t *
 symbol_make_parameter (const parameter_t* parameter)
 {
-  symbol_t *s = make (parameter->name, SymbolParameter, parameter->defining_node);
+  symbol_t *s = new symbol_t (parameter->name, SymbolParameter, parameter->defining_node);
   s->parameter.value = typed_value_t::make_ref (parameter->value);
   s->parameter.kind = ParameterOrdinary;
   return s;
@@ -271,7 +278,7 @@ symbol_make_parameter (const parameter_t* parameter)
 
 symbol_t *symbol_make_return_parameter (const parameter_t* parameter)
 {
-  symbol_t *s = make (parameter->name, SymbolParameter, parameter->defining_node);
+  symbol_t *s = new symbol_t (parameter->name, SymbolParameter, parameter->defining_node);
   s->parameter.value = typed_value_t::make_ref (parameter->value);
   s->parameter.kind = ParameterReturn;
   return s;
@@ -280,7 +287,7 @@ symbol_t *symbol_make_return_parameter (const parameter_t* parameter)
 symbol_t *
 symbol_make_receiver (const parameter_t* parameter)
 {
-  symbol_t *s = make (parameter->name, SymbolParameter, parameter->defining_node);
+  symbol_t *s = new symbol_t (parameter->name, SymbolParameter, parameter->defining_node);
   s->parameter.value = typed_value_t::make_ref (parameter->value);
   s->parameter.kind = ParameterReceiver;
   return s;
@@ -289,7 +296,7 @@ symbol_make_receiver (const parameter_t* parameter)
 symbol_t *
 symbol_make_receiver_duplicate (symbol_t* receiver)
 {
-  symbol_t *s = make (symbol_identifier (receiver), SymbolParameter, symbol_defining_node (receiver));
+  symbol_t *s = new symbol_t (symbol_identifier (receiver), SymbolParameter, symbol_defining_node (receiver));
   s->parameter.value = receiver->parameter.value;
   s->parameter.value.dereference_mutability = MUTABLE;
   s->parameter.kind = ParameterReceiverDuplicate;
@@ -301,7 +308,7 @@ symbol_t *
 symbol_make_parameter_duplicate (symbol_t* symbol)
 {
   assert (symbol->kind == SymbolParameter);
-  symbol_t *s = make (symbol->identifier, SymbolParameter, symbol->defining_node);
+  symbol_t *s = new symbol_t (symbol->identifier, SymbolParameter, symbol->defining_node);
   s->parameter.value = typed_value_t::make_ref (symbol_parameter_type (symbol), typed_value_t::STACK, FOREIGN, FOREIGN);
   s->parameter.kind = ParameterDuplicate;
   s->parameter.original = symbol;
@@ -349,9 +356,9 @@ ptrdiff_t symbol_get_offset (const symbol_t* symbol)
   return symbol->offset;
 }
 
-symbol_t* symbol_make_function (string_t identifier, ast_t* defining_node)
+symbol_t* symbol_make_function (const std::string& identifier, ast_t* defining_node)
 {
-  return make (identifier, SymbolFunction, defining_node);
+  return new symbol_t (identifier, SymbolFunction, defining_node);
 }
 
 void symbol_set_function_function (symbol_t* symbol, function_t* function)
@@ -368,5 +375,5 @@ function_t* symbol_get_function_function (const symbol_t* symbol)
 
 symbol_t* symbol_make_hidden (const symbol_t* symbol, ast_t* defining_node)
 {
-  return make (symbol->identifier, SymbolHidden, defining_node);
+  return new symbol_t (symbol->identifier, SymbolHidden, defining_node);
 }

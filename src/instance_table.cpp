@@ -540,8 +540,8 @@ transitive_closure (const instance_table_t& table,
 
     void visit (const ast_identifier_expr_t& node)
     {
-      string_t id = ast_get_identifier (node.child ());
-      if (streq (id, enter ("IOTA")))
+      const std::string& id = ast_get_identifier (node.child ());
+      if (id == "IOTA")
         {
           have_port_index = true;
           port_index = iota;
@@ -888,14 +888,14 @@ std::ostream&
 operator<< (std::ostream& o,
             const instance_table_t::PortValueType& pv)
 {
-  o << '[' << *pv.output_instance << ',' << get (field_name (pv.output_field)) << ',' << pv.address << ']' << " ->";
+  o << '[' << *pv.output_instance << ',' << field_name (pv.output_field) << ',' << pv.address << ']' << " ->";
 
   for (instance_table_t::InputsType::const_iterator p = pv.inputs.begin (),
          l = pv.inputs.end ();
        p != l;
        ++p)
     {
-      o << ' ' << '(' << *p->instance << ',' << get (p->reaction->name ()) << ',' << p->parameter << ')';
+      o << ' ' << '(' << *p->instance << ',' << p->reaction->name () << ',' << p->parameter << ')';
     }
 
   return o;

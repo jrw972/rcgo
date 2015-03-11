@@ -1,7 +1,6 @@
 #include "ast.hpp"
 #include <stdlib.h>
 #include <string.h>
-#include "strtab.hpp"
 #include "debug.hpp"
 #include "util.hpp"
 #include "type.hpp"
@@ -26,7 +25,7 @@ ast_print (const ast_t& node)
     void visit (const ast_identifier_t& node)
     {
       print_indent (node);
-      std::cout << "identifier " << get (node.identifier ()) << '\n';
+      std::cout << "identifier " << node.identifier << '\n';
       print_children (node);
     }
 
@@ -511,11 +510,11 @@ ACCEPT (ast_dimensioned_reaction_t)
 ACCEPT (ast_type_definition_t)
 ACCEPT (ast_top_level_list_t)
 
-string_t ast_get_identifier (const ast_t* ast)
+const std::string& ast_get_identifier (const ast_t* ast)
 {
   const ast_identifier_t* id = dynamic_cast<const ast_identifier_t*> (ast);
   assert (id != NULL);
-  return id->identifier ();
+  return id->identifier;
 }
 
 named_type_t *
