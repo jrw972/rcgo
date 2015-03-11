@@ -1,5 +1,5 @@
 #include "type.hpp"
-#include "instance.hpp"
+#include "instance_table.hpp"
 #include "field.hpp"
 #include "ast.hpp"
 #include "symbol.hpp"
@@ -42,7 +42,9 @@ instantiate_contained_instances (const type_t * type, instance_table_t& instance
     void visit (const component_type_t& type)
     {
       assert (named_type != NULL);
-      instance_t* instance = instance_table_insert (instance_table, parent, named_type, method, address);
+
+      instance_t* instance = new instance_t (parent, address, named_type, method);
+      instance_table.insert (instance);
 
       // Recur changing instance.
       visitor v (instance_table, instance, NULL, address, NULL);

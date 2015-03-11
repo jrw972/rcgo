@@ -15,6 +15,7 @@
 #include "runtime.hpp"
 #include "memory_model.hpp"
 #include "instance_scheduler.hpp"
+#include "partitioned_scheduler.hpp"
 
 static void
 print_version (void)
@@ -39,6 +40,7 @@ int
 main (int argc, char **argv)
 {
   int show_composition = 0;
+  int thread_count = 2;
 
   while (true)
     {
@@ -46,10 +48,11 @@ main (int argc, char **argv)
 	{"composition", no_argument, &show_composition, 1},
 	{"help", no_argument, NULL, 'h'},
 	{"version", no_argument, NULL, 'v'},
+        {"thread", required_argument, NULL, 't'},
 	{0, 0, 0, 0}
       };
 
-      int c = getopt_long (argc, argv, "chv", long_options, NULL);
+      int c = getopt_long (argc, argv, "chvt:", long_options, NULL);
 
       if (c == -1)
 	break;
@@ -75,6 +78,9 @@ main (int argc, char **argv)
 		"Report bugs to: " PACKAGE_BUGREPORT);
 	  exit (EXIT_SUCCESS);
 	  break;
+        case 't':
+          thread_count = atoi (optarg);
+          break;
 	default:
 	  try_help ();
 	  break;
@@ -85,6 +91,11 @@ main (int argc, char **argv)
     {
       fprintf (stderr, "No input file\n");
       try_help ();
+    }
+
+  if (thread_count < 0 || thread_count > 64)
+    {
+      error (EXIT_FAILURE, 0, "Illegal thread count: %d", thread_count);
     }
 
   in_file = argv[optind];
@@ -127,10 +138,13 @@ main (int argc, char **argv)
       return 0;
     }
 
-  instance_scheduler_t scheduler (instance_table);
-  scheduler.allocate_instances ();
-  scheduler.create_bindings ();
-  scheduler.run (8 * 1024);
+  //typedef instance_scheduler_t SchedulerType;
+  typedef partitioned_scheduler_t SchedulerType;
+
+  SchedulerType scheduler;
+  runtime::allocate_instances (instance_table);
+  runtime::create_bindings (instance_table);
+  scheduler.run (instance_table, 8 * 1024, thread_count);
 
   return 0;
 }

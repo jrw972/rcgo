@@ -1,11 +1,10 @@
 type Actuator component {
   flag bool;
   bang1 port ();
-  bang2 port ();
 };
 
 action (this @Actuator const) (this.flag!) {
-  trigger bang1 (), bang2 () {
+  trigger bang1 () {
     this.flag = true;
   }
 }
@@ -27,7 +26,7 @@ type System component {
 
 bind (this @System) {
   this.actuator.bang1 -> this.detector1.bang;
-  this.actuator.bang2 -> this.detector2.bang;
+  this.actuator.bang1 -> this.detector2.bang;
 }
 
 func (this @System) init () { }

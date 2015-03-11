@@ -31,7 +31,7 @@
 "port"                 { return PORT; }
 "println"              { return PRINTLN; }
 "reaction"             { return REACTION; }
-"return"               { return RETURN; }
+"return"               { return RETURN_KW; }
 "struct"               { return STRUCT; }
 "trigger"              { return TRIGGER; }
 "type"                 { return TYPE; }

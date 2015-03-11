@@ -58,7 +58,7 @@
 %type <node> while_stmt
 %destructor { /* TODO:  Free the node. node_free ($$); */ } <node>
 
-%token ACTION BIND CHANGE COMPONENT CONST ELSE FOR FOREIGN_KW FUNC HEAP IF INSTANCE MERGE MOVE NEW PORT PRINTLN REACTION RETURN STRUCT TRIGGER TYPE VAR WHILE
+%token ACTION BIND CHANGE COMPONENT CONST ELSE FOR FOREIGN_KW FUNC HEAP IF INSTANCE MERGE MOVE NEW PORT PRINTLN REACTION RETURN_KW STRUCT TRIGGER TYPE VAR WHILE
 
 %token ADD_ASSIGN ARROW DECREMENT DOTDOT EQUAL INCREMENT LOGIC_AND LOGIC_OR NOT_EQUAL
 
@@ -151,7 +151,7 @@ for_iota_stmt: FOR identifier DOTDOT rvalue stmt_list { $$ = new ast_for_iota_st
 
 println_stmt: PRINTLN expr_list ';' { $$ = ast_make_println_stmt (@1, $2); }
 
-return_stmt: RETURN rvalue ';' { $$ = new ast_return_statement_t (@1, $2); }
+return_stmt: RETURN_KW rvalue ';' { $$ = new ast_return_statement_t (@1, $2); }
 
 increment_stmt: lvalue INCREMENT ';' { $$ = new ast_increment_statement_t (@1, $1); }
 | lvalue DECREMENT ';' { $$ = new ast_decrement_statement_t (@1, $1); }

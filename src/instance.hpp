@@ -15,13 +15,17 @@ public:
     : parent_ (parent)
     , address_ (address)
     , type_ (type)
+    , ptr_ (NULL)
     , method_ (method)
-    , record (NULL)
   { }
 
   instance_t* parent () const { return parent_; }
   size_t address () const { return address_; }
   const named_type_t* type () const { return type_; }
+
+  void ptr (component_t* p) { ptr_ = p; }
+  component_t* ptr () const { return ptr_; }
+
   method_t* method () const { return method_; }
 
   bool is_top_level () const { return parent_ == NULL; }
@@ -41,12 +45,10 @@ private:
   instance_t* parent_;
   size_t address_;
   const named_type_t *type_;
+  component_t* ptr_;
   method_t* method_;
 
 public:
-  // Pointer to the run-time instance.
-  instance_record_t* record;
-
   struct ConcreteAction
   {
     const action_t* action;
@@ -73,62 +75,5 @@ operator<< (std::ostream& o,
 std::ostream&
 operator<< (std::ostream& o,
             const instance_t::ConcreteAction& ca);
-
-struct instance_table_t
-{
-  typedef std::map<size_t, instance_t*> InstancesType;
-  InstancesType instances;
-  struct InputType
-  {
-    instance_t* instance;
-    reaction_t* reaction;
-    int64_t parameter;
-
-    InputType () { }
-    InputType (instance_t* i, reaction_t* r, int64_t p) : instance (i), reaction (r), parameter (p) { }
-
-    bool operator< (const InputType& other) const
-    {
-      if (this->instance != other.instance) return this->instance < other.instance;
-      if (this->reaction != other.reaction) return this->reaction < other.reaction;
-      return this->parameter < other.parameter;
-    }
-  };
-  typedef std::set<InputType> InputsType;
-  struct PortValueType
-  {
-    PortValueType () { }
-    PortValueType (size_t a, instance_t* oi, field_t* of) : address (a), output_instance (oi), output_field (of) { }
-    size_t address;
-    instance_t* output_instance;
-    field_t* output_field;
-    InputsType inputs;
-  };
-  typedef std::map<size_t, PortValueType> PortsType;
-  PortsType ports;
-  typedef std::map<InputType, std::set<size_t> > ReversePortsType;
-  ReversePortsType reverse_ports;
-};
-
-std::ostream&
-operator<< (std::ostream&,
-            const instance_table_t::PortValueType&);
-
-instance_t *instance_table_insert (instance_table_t& table,
-                                   instance_t* parent,
-				   const named_type_t * type,
-                                   method_t* method,
-                                   size_t address);
-
-void instance_table_insert_port (instance_table_t& table,
-                                 size_t address,
-                                 instance_t* output_instance,
-                                 field_t* output_field);
-
-void instance_table_enumerate_bindings (instance_table_t& table);
-
-void instance_table_analyze_composition (const instance_table_t& table);
-
-void instance_table_dump (const instance_table_t& table);
 
 #endif /* instance_hpp */

@@ -3,7 +3,7 @@
 
 #include "types.hpp"
 
-heap_t* heap_make (char* begin, char* end);
+heap_t* heap_make (void* begin, size_t size);
 
 heap_t* heap_make_size (size_t size_of_root);
 

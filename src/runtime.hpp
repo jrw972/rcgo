@@ -2,25 +2,28 @@
 #define runtime_hpp
 
 #include "types.hpp"
-#include "executor.hpp"
+#include "ast.hpp"
+#include "heap.hpp"
+#include "field.hpp"
+#include <error.h>
+#include "trigger.hpp"
+#include <string.h>
+#include "instance_table.hpp"
+#include "executor_base.hpp"
 
-void bind (port_t** output_port,
-           void* input_instance,
-           const reaction_t* reaction,
-           int64_t parameter);
+namespace runtime
+{
+  void
+  allocate_instances (instance_table_t& instance_table);
 
-bool
-enabled (executor_t& exec,
-         instance_record_t* record,
-         const action_t* action,
-         size_t iota);
+  void
+  create_bindings (instance_table_t& instance_table);
 
-void
-execute (executor_t& exec,
-         const action_t* action,
-         instance_record_t* instance);
+  void
+  initialize (executor_base_t& exec, instance_t* instance);
 
-void
-call (executor_t& exec);
+  void exec (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota);
+
+}
 
 #endif /* runtime_hpp */

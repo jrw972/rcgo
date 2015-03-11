@@ -364,19 +364,19 @@ struct heap_t {
   pthread_mutex_t mutex;
 };
 
-heap_t* heap_make (char* begin, char* end)
+heap_t* heap_make (void* begin, size_t size)
 {
   heap_t* h = (heap_t*)malloc (sizeof (heap_t));
   memset (h, 0, sizeof (heap_t));
-  h->begin = begin;
-  h->end = end;
+  h->begin = static_cast<char*> (begin);
+  h->end = h->begin + size;
   pthread_mutex_init (&h->mutex, NULL);
   return h;
 }
 
 heap_t* heap_make_size (size_t size_of_root)
 {
-  heap_t* h = heap_make (NULL, NULL);
+  heap_t* h = heap_make (NULL, 0);
   h->begin = (char*)heap_allocate (h, size_of_root);
   h->end = h->begin + size_of_root;
   return h;
