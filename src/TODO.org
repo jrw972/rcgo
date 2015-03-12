@@ -4,7 +4,6 @@
 * Garbage Collector
 - TODO Consider marking subinstances as as "non-scannable."
 - TODO Use load to determine if collection is necessary
-- TODO Only consider a heap to be dirty if a new block is allocated.
 - TODO Use a dirty read for garbage collection check.
 * Runtime
 - TODO Profile and optimize
@@ -12,11 +11,11 @@
 - TODO Instrument to find bottlenecks.
 - TODO Support migration
 - TODO Skip precondition for always enabled actions
-- TODO Use a generation counter to determine if an action needs to run
+- TODO Use a generation counter to determine if an action needs to run (run it that many times)
 - TODO Investigate ways to avoid spinning (random selection, skip N times if conflict, etc.)
+- TODO Optimize hits per cycle
 * Scanner
 - TODO Implement support for more literals.
-* Parser
 * AST
 - TODO Consolidate similar nodes.
 - TODO Implement a node_cast similar to type_cast.

@@ -278,17 +278,20 @@ static void block_dump (const block_t* block)
     }
 }
 
-static void block_sweep (block_t** b, chunk_t** head)
+// Return the number of allocated slots.
+static size_t block_sweep (block_t** b, chunk_t** head)
 {
   block_t* block = *b;
 
   if (block == NULL)
     {
-      return;
+      return 0;
     }
 
-  block_sweep (&block->left, head);
-  block_sweep (&block->right, head);
+  size_t retval = 0;
+
+  retval += block_sweep (&block->left, head);
+  retval += block_sweep (&block->right, head);
 
   if (block->marked)
     {
@@ -302,6 +305,7 @@ static void block_sweep (block_t** b, chunk_t** head)
               // Marked.
               block_reset_bits (block, slot, SCANNED | MARK);
               ++slot;
+              ++retval;
             }
           else
             {
@@ -348,20 +352,37 @@ static void block_sweep (block_t** b, chunk_t** head)
       free (block->begin);
       free (block);
     }
+
+  return retval;
 }
 
 struct heap_t {
+  // The root block of this heap.
   block_t* block;
-  char* begin; // This part of the component is allocated in its parent.
-  char* end;   // It is the root.
-  size_t next_allocation_size;
+  // Lock for this heap.
+  pthread_mutex_t mutex;
+
+  // List of free chunks.
   chunk_t* free_list_head;
-  bool dirty;  // The heap is dirty and should be collected.
+
+  // TODO:  These should be counted in slots, not bytes.
+  // Number of slots allocated in this heap.
+  size_t allocated_size;
+  // Size of the next block to be allocated.
+  size_t next_block_size;
+  // Size when next collection will be triggered.
+  size_t next_collection_size;
+
+  /* The beginning and end of the root of the heap.  For a statically allocated component, they refer to a chunk in the parent component.  For a child heap, they refer to a chunk in the heap. */
+  char* begin;
+  char* end;
+
+  // The pointers for a tree of heaps.
   heap_t* child;
   heap_t* next;
   heap_t* parent;
+  // Flag indicating heap was reachable during garbage collection.
   bool reachable;
-  pthread_mutex_t mutex;
 };
 
 heap_t* heap_make (void* begin, size_t size)
@@ -390,7 +411,7 @@ void* heap_instance (const heap_t* heap)
 
 static void heap_dump_i (heap_t* heap)
 {
-  printf ("%zd heap=%p begin=%p end=%p next_sz=%zd dirty=%d reachable=%d parent=%p next=%p\n", pthread_self(), heap, heap->begin, heap->end, heap->next_allocation_size, heap->dirty, heap->reachable, heap->parent, heap->next);
+  printf ("%zd heap=%p begin=%p end=%p next_sz=%zd reachable=%d parent=%p next=%p\n", pthread_self(), heap, heap->begin, heap->end, heap->next_block_size, heap->reachable, heap->parent, heap->next);
 
   if (block_find (heap->block, heap->begin) == NULL)
     {
@@ -448,20 +469,20 @@ void* heap_allocate (heap_t* heap, size_t size)
   if (*chunk == NULL)
     {
       // We need to allocate a block.
-      if (size > heap->next_allocation_size)
+      if (size > heap->next_block_size)
         {
-          heap->next_allocation_size = size;
+          heap->next_block_size = size;
         }
       // Allocate the block.
-      block = block_make (heap->next_allocation_size);
+      block = block_make (heap->next_block_size);
       // Insert the block into the heap.
       block_insert (&(heap->block), block);
       // Insert the chunk at the end of the free list.
       *chunk = (chunk_t*)block->begin;
-      (*chunk)->size = heap->next_allocation_size;
+      (*chunk)->size = heap->next_block_size;
       (*chunk)->next = NULL;
 
-      heap->next_allocation_size *= 2;
+      heap->next_block_size *= 2;
     }
 
   // Remove the chunk from the free list.
@@ -488,7 +509,7 @@ void* heap_allocate (heap_t* heap, size_t size)
   // Clear the memory.
   memset (c, 0, size);
 
-  heap->dirty = true;
+  heap->allocated_size += size;
 
   pthread_mutex_unlock (&heap->mutex);
 
@@ -551,8 +572,10 @@ void heap_collect_garbage (heap_t* heap)
 {
   block_t* work_list = NULL;
   pthread_mutex_lock (&heap->mutex);
-  if (heap->dirty)
+  if (heap->allocated_size >= heap->next_collection_size)
     {
+      // Full collection.
+
       block_t* b = block_find (heap->block, heap->begin);
       if (b != NULL)
         {
@@ -571,12 +594,13 @@ void heap_collect_garbage (heap_t* heap)
 
       // Sweep the heap (reconstruct the free list).
       heap->free_list_head = NULL;
-      block_sweep (&heap->block, &heap->free_list_head);
+      heap->allocated_size = block_sweep (&heap->block, &heap->free_list_head) * SLOT_SIZE;
+      heap->next_collection_size = heap->allocated_size * 2;
+
       if (heap->block == NULL)
         {
-          heap->next_allocation_size = 0;
+          heap->next_block_size = 0;
         }
-      heap->dirty = false;
 
       heap_t** child = &(heap->child);
       while (*child != NULL)
@@ -595,6 +619,14 @@ void heap_collect_garbage (heap_t* heap)
               *child = h->next;
               heap_free (h);
             }
+        }
+    }
+  else
+    {
+      // Just process children.
+      for (heap_t* child = heap->child; child != NULL; child = child->next)
+        {
+          heap_collect_garbage (child);
         }
     }
   pthread_mutex_unlock (&heap->mutex);
@@ -622,13 +654,15 @@ void heap_merge (heap_t* heap, heap_t* x)
     ;;
   *ch = x->free_list_head;
 
+  heap->allocated_size += x->allocated_size;
+  // Not quite sure how to combine next_collection_size.
+  // Doing nothing should work but may not be optimal.
+
   // Merge the children.
   heap_t** h;
   for (h = &(heap->child); *h != NULL; h = &(*h)->next)
     ;;
   *h = x->child;
-
-  heap->dirty = true;
 
   // Free the heap.
   free (x);
@@ -642,7 +676,8 @@ void heap_insert_child (heap_t* parent, heap_t* child)
   child->parent = parent;
   child->next = parent->child;
   parent->child = child;
-  parent->dirty = true;
+  // Force garbage collection.
+  parent->next_collection_size = 0;
   pthread_mutex_unlock (&parent->mutex);
 }
 
@@ -665,7 +700,9 @@ void heap_remove_from_parent (heap_t* child)
       // Make the child forget the parent.
       child->parent = NULL;
 
-      parent->dirty = true;
+      // Force garbage collection.
+      parent->next_collection_size = 0;
+
       pthread_mutex_unlock (&parent->mutex);
     }
 }
