@@ -1,0 +1,35 @@
+type Actuator component {
+  flag bool;
+  bang1 port ();
+};
+
+action (this @Actuator const) (this.flag!) {
+  trigger bang1 (), bang1 () {
+    this.flag = true;
+  }
+}
+
+type Detector component {
+  flag bool;
+};
+
+reaction (this @Detector const) bang () {
+  println `Bang Immutable`;
+  trigger {
+    println `Bang Mutable`;
+    this.flag = true;
+  }
+}
+
+type System component {
+  actuator Actuator;
+  detector1 Detector;
+};
+
+bind (this @System) {
+  this.actuator.bang1 -> this.detector1.bang;
+}
+
+func (this @System) init () { }
+
+instance system System init;
