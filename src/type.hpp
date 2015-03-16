@@ -534,6 +534,11 @@ template<typename T>
 const T*
 type_cast (const type_t * type)
 {
+  if (type == NULL)
+    {
+      return NULL;
+    }
+
   struct visitor : public const_type_visitor_t
   {
     const T* retval;

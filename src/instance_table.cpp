@@ -473,10 +473,11 @@ transitive_closure (const instance_table_t& table,
       instance_table_t::PortsType::const_iterator port_pos = table.ports.find (port);
       assert (port_pos != table.ports.end ());
 
-      instance_table_t::InputsType::const_iterator pos = port_pos->second.inputs.begin ();
-      if (pos != table.ports.find (port)->second.inputs.end ())
+      for (instance_table_t::InputsType::const_iterator pos = port_pos->second.inputs.begin (),
+             limit = port_pos->second.inputs.end ();
+           pos != limit;
+           ++pos)
         {
-          assert (port_pos->second.inputs.size () == 1);
           instance_t* inst = pos->instance;
           // Merge the sets.
           if (set.merge_no_upgrade (transitive_closure (table, inst, pos->reaction)))

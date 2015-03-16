@@ -1,16 +1,59 @@
 * General
 - TODO Remove field.cpp.
 - TODO Refactor symbol. OO.
+- TODO Implement data-aware scheduling.  For example, a component that
+  routes messages needs to trigger a reaction based on an id in the
+  message.
 * Garbage Collector
 - TODO Consider marking subinstances as as "non-scannable."
-- TODO Use load to determine if collection is necessary
-- TODO Use a dirty read for garbage collection check.
 * Runtime
 - TODO Profile and optimize
-* Scheduler
+* Paritioned Scheduler
+** Design Goals
+- Fairness
+  Assume a fixed point.
+
+- Efficiency
+  - Balance
+
+  - TODO Topological sort of list
+
+** Description
+A /task/ is a recurring unit of work corresponding to a concrete action or garbage collection on a component instance.
+Each task is assigned to an /executor/ that is responsible for executing that task.
+The /scheduler/ consists of a group of cooperating executors.
+
+
+
+- Task - a recurring unit of work corresponding to a concrete action or garbage collection.
+- Executor - an object that executes a collection of tasks.  In the partitioned scheduler, each task is assigned to an executor.
+- Scheduler - a cooperating group of executors.
+- Opportunity - an executor considers a task for execution.
+- Hit - the task was executed (the precondition was true, there was garbage to collect, etc.).
+- Cycle -
+** Partitioned Scheduler
+The paritioned scheduler assigns each task to a specific executor.
+
+** Scheduler Optimization
+** Executor Optimization
+** Task Optimization
+  Once the executor has selected a task, it should execute that task
+  as efficiently as possible.  The main optimization is to avoid
+  evaluating the precondition.  Thus, a simple optimization is to
+  classify the precondition as being dynamic, constant false, or
+  constant true.  Dynamic preconditions must be evaluated.  No task
+  should be generated for constant false preconditions.  Constant true
+  preconditions never need to be evaluated.  Another approach would be
+  to evaluate relevant preconditions at the end of an action and store
+  the bits.  This approach will require sophisticated semantic analysis.
+
+  - TODO Precondition optimizations
+
+Assumption of fixed-point?
+
+
 - TODO Instrument to find bottlenecks.
 - TODO Support migration
-- TODO Skip precondition for always enabled actions
 - TODO Use a generation counter to determine if an action needs to run (run it that many times)
 - TODO Investigate ways to avoid spinning (random selection, skip N times if conflict, etc.)
 - TODO Optimize hits per cycle
