@@ -1143,7 +1143,7 @@ namespace runtime
       }
   }
 
-  void exec (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota)
+  bool exec (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota)
   {
     if (enabled (exec, instance, action, iota))
       {
@@ -1171,7 +1171,10 @@ namespace runtime
         stack_frame_pop_pointer (exec.stack ());
 
         assert (stack_frame_empty (exec.stack ()));
+        return true;
       }
+
+    return false;
   }
 
 }

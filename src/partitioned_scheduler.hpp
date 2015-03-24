@@ -7,9 +7,9 @@
 #include "heap.hpp"
 #include "stack_frame.hpp"
 #include "executor_base.hpp"
-#include <list>
 #include "instance_table.hpp"
 #include "runtime.hpp"
+#include <queue>
 
 class partitioned_scheduler_t
 {
@@ -19,46 +19,219 @@ public:
     pthread_mutex_init (&stdout_mutex_, NULL);
   }
 
-  void run (instance_table_t& instance_table, size_t stack_size, size_t thread_count);
+  void run (instance_table_t& instance_table,
+            size_t stack_size,
+            size_t thread_count);
 
 private:
-  struct info_t
-  {
-    instance_t* instance;
-    heap_t* heap;
+  class task_t;
 
+  class info_t
+  {
+  public:
     info_t (instance_t* instance)
-      : instance (instance)
-      , heap (heap_make (instance->ptr (), instance->type ()->size ()))
+      : instance_ (instance)
+      , heap_ (heap_make (instance->ptr (), instance->type ()->size ()))
+      , lock_ (0)
+      , count_ (0)
+      , head_ (NULL)
+      , tail_ (&head_)
     {
       // Link the instance to its scheduling information.
       *((info_t**)instance->ptr ()) = this;
     }
 
-    char* get_ptr () const
+    component_t* ptr () const
     {
-      return static_cast<char*> (heap_instance (heap));
+      return instance_->ptr ();
     }
+
+    heap_t* heap () const
+    {
+      return heap_;
+    }
+
+    void heap (heap_t* heap)
+    {
+      heap_ = heap;
+    }
+
+    bool read_lock (task_t* task)
+    {
+      assert (task->next == NULL);
+      bool retval = false;
+      while (__sync_lock_test_and_set (&lock_, 1)) while (lock_) ;
+
+      if (count_ == 0)
+        {
+          // First reader.
+          ++count_;
+        }
+      else if (count_ > 0 && head_ == NULL)
+        {
+          // Subsequent reader.
+          ++count_;
+        }
+      else
+        {
+          // Enqueue the read lock.
+          task->read_lock = true;
+          *tail_ = task;
+          tail_ = &task->next;
+          retval = true;
+        }
+
+      __sync_lock_release (&lock_);
+      return retval;
+    }
+
+    bool write_lock (task_t* task)
+    {
+      assert (task->next == NULL);
+      bool retval = false;
+      while (__sync_lock_test_and_set (&lock_, 1)) while (lock_) ;
+
+      if (count_ == 0)
+        {
+          --count_;
+        }
+      else
+        {
+          // Enqueue the write lock.
+          task->read_lock = false;
+          *tail_ = task;
+          tail_ = &task->next;
+          retval = true;
+        }
+
+      __sync_lock_release (&lock_);
+      return retval;
+    }
+
+    void read_unlock ()
+    {
+      while (__sync_lock_test_and_set (&lock_, 1)) while (lock_) ;
+      assert (count_ > 0);
+      --count_;
+      process_list ();
+    }
+
+    void write_unlock ()
+    {
+      while (__sync_lock_test_and_set (&lock_, 1)) while (lock_) ;
+      assert (count_ == -1);
+      ++count_;
+      process_list ();
+    }
+
+  private:
+    void
+    process_list ()
+    {
+      task_t* h = NULL;
+      if (count_ == 0 && head_ != NULL)
+        {
+          h = head_;
+          if (h->read_lock)
+            {
+              task_t** t = &h->next;
+              size_t size = 1;
+              while (t != tail_ && (*t)->read_lock == true)
+                {
+                  t = &(*t)->next;
+                  ++size;
+                }
+              head_ = *t;
+              *t = NULL;
+              // Lock.
+              count_ = size;
+            }
+          else
+            {
+              head_ = h->next;
+              h->next = NULL;
+              // Lock.
+              count_ = -1;
+            }
+
+          if (head_ == NULL)
+            {
+              tail_ = &head_;
+            }
+        }
+      __sync_lock_release (&lock_);
+      // Signal.
+      while (h != NULL)
+        {
+          task_t* next = h->next;
+          h->next = NULL;
+          h->to_ready_list ();
+          h = next;
+        }
+    }
+
+    instance_t* instance_;
+    heap_t* heap_;
+    volatile size_t lock_;
+    ssize_t count_;
+    task_t* head_;
+    task_t** tail_;
   };
 
-  typedef uint8_t processor_id_t;
   class executor_t;
 
-  struct task_t
-  {
-    uint64_t mask;
-    typedef std::vector<processor_id_t> ProcessorListType;
-    ProcessorListType processor_list;
-
-    task_t () : mask (0) { }
-
-    void add_conflict (processor_id_t i)
+  enum ExecutionResult
     {
-      mask |= (1 << i);
-      processor_list.push_back (i);
-    }
+      NONE,
+      SKIP,
+      HIT,
+      FIRST_SKIP,
+      FIRST_HIT,
+    };
+
+  class task_t
+  {
+  public:
+    enum ExecutionKind
+      {
+        HIT,
+        SKIP,
+      };
+
+    task_t ()
+      : executor (NULL)
+      , read_lock (false)
+      , next (NULL)
+      , last_execution_kind_ (HIT)
+      , generation_ (0)
+    { }
+
     virtual const instance_set_t& set () const = 0;
-    virtual void execute (executor_t& exec) const = 0;
+    virtual void print (std::ostream& out) const = 0;
+
+    ExecutionResult execute (size_t generation);
+    ExecutionResult resume (size_t generation);
+    void to_ready_list ()
+    {
+      executor->to_ready_list (this);
+    }
+
+    void to_idle_list ()
+    {
+      executor->to_idle_list (this);
+    }
+
+    executor_t* executor;
+    bool read_lock;
+    task_t* next;
+
+  private:
+    // Return true if the precondition was true.
+    virtual bool execute_i () const = 0;
+    instance_set_t::const_iterator pos_;
+    instance_set_t::const_iterator limit_;
+    ExecutionKind last_execution_kind_;
+    size_t generation_;
   };
 
   struct action_task_t : public task_t
@@ -72,15 +245,20 @@ private:
     instance_t::ConcreteAction action;
 
     const instance_set_t& set () const { return action.set; }
-    virtual void execute (executor_t& exec) const
+    virtual bool execute_i () const
     {
-      runtime::exec (exec, instance->ptr (), action.action, action.iota);
+      return runtime::exec (*executor, instance->ptr (), action.action, action.iota);
+    }
+
+    virtual void print (std::ostream& out) const
+    {
+      out << "action task " << this;
     }
   };
 
   struct gc_task_t : public task_t
   {
-    gc_task_t (processor_id_t id, instance_t* i)
+    gc_task_t (instance_t* i)
       : instance (i)
     {
       set_[i] = TRIGGER_WRITE;
@@ -90,10 +268,15 @@ private:
     instance_set_t set_;
 
     const instance_set_t& set () const { return set_; }
-    virtual void execute (executor_t& exec) const
+    virtual bool execute_i () const
     {
-      exec.current_instance (instance->ptr ());
-      heap_collect_garbage (exec.heap ());
+      executor->current_instance (instance->ptr ());
+      return heap_collect_garbage (executor->heap ());
+    }
+
+    virtual void print (std::ostream& out) const
+    {
+      out << "gc task " << this;
     }
   };
 
@@ -101,48 +284,44 @@ private:
   {
   public:
     executor_t (partitioned_scheduler_t& scheduler,
-                processor_id_t id,
+                size_t id,
+                size_t neighbor_id,
                 size_t stack_size,
                 pthread_mutex_t* stdout_mutex)
       : executor_base_t (stack_size, stdout_mutex)
       , scheduler_ (scheduler)
       , id_ (id)
-      , mask_ (0)
-    { }
-
-    void add (instance_t* instance, const instance_t::ConcreteAction& a)
+      , neighbor_id_ (neighbor_id)
+      // , opportunities_ (0)
+      //, executions_ (0)
+      , idle_head_ (NULL)
+      , idle_tail_ (&idle_head_)
+      , ready_head_ (NULL)
+      , ready_tail_ (&ready_head_)
+      , task_count_ (0)
     {
-      tasks_.push_back (new action_task_t (instance, a));
-      actions_.insert (a.set.begin (), a.set.end ());
+      pthread_mutex_init (&mutex_, NULL);
+      pthread_cond_init (&cond_, NULL);
     }
 
-    void add (instance_t* i)
+    void to_idle_list (task_t* task)
     {
-      tasks_.push_back (new gc_task_t (id_, i));
-      actions_.insert (std::make_pair (i, TRIGGER_WRITE));
+      assert (task->next == NULL);
+      *idle_tail_ = task;
+      idle_tail_ = &task->next;
     }
 
-    void compute_masks ()
+    void to_ready_list (task_t* task)
     {
-      for (ListType::iterator pos = tasks_.begin (), limit = tasks_.end ();
-           pos != limit;
-           ++pos)
+      assert (task->next == NULL);
+      pthread_mutex_lock (&mutex_);
+      if (ready_head_ == NULL)
         {
-          for (processor_id_t i = 0; i != scheduler_.executors_.size (); ++i)
-            {
-              if (i != id_)
-                {
-                  if (!independent (scheduler_.executors_[i]->actions_.begin (), scheduler_.executors_[i]->actions_.end (), (*pos)->set ().begin (), (*pos)->set ().end ()))
-                    {
-                      (*pos)->add_conflict (i);
-                    }
-                }
-              else
-                {
-                  (*pos)->add_conflict (i);
-                }
-            }
+          pthread_cond_signal (&cond_);
         }
+      *ready_tail_ = task;
+      ready_tail_ = &task->next;
+      pthread_mutex_unlock (&mutex_);
     }
 
     void spawn ()
@@ -167,37 +346,143 @@ private:
     virtual heap_t* heap () const
     {
       info_t* info = *reinterpret_cast<info_t**> (current_instance ());
-      return info->heap;
+      return info->heap ();
     }
 
     virtual void heap (heap_t* heap)
     {
       info_t* info = *reinterpret_cast<info_t**> (current_instance ());
-      info->heap = heap;
+      info->heap (heap);
     }
 
-    virtual void push () { dirty_flag_ = true; }
+    virtual void push () { /*dirty_flag_ = true;*/ }
+
+    void add_task () { ++task_count_; }
 
   private:
-    enum Mode
+
+    struct Message
+    {
+      enum Kind
+        {
+          START_SHOOT_DOWN,
+          START_WAITING1,
+          START_DOUBLE_CHECK,
+          START_WAITING2,
+          TERMINATE,
+          RESET,
+        };
+      Kind kind;
+      size_t id;
+
+      static Message make_start_shoot_down (size_t id)
       {
-        DIRTY,
-        CLEAN
-      };
+        Message m;
+        m.kind = START_SHOOT_DOWN;
+        m.id = id;
+        return m;
+      }
+
+      static Message make_start_waiting1 (size_t id)
+      {
+        Message m;
+        m.kind = START_WAITING1;
+        m.id = id;
+        return m;
+      }
+
+      static Message make_start_double_check (size_t id)
+      {
+        Message m;
+        m.kind = START_DOUBLE_CHECK;
+        m.id = id;
+        return m;
+      }
+
+      static Message make_start_waiting2 (size_t id)
+      {
+        Message m;
+        m.kind = START_WAITING2;
+        m.id = id;
+        return m;
+      }
+
+      static Message make_terminate ()
+      {
+        Message m;
+        m.kind = TERMINATE;
+        return m;
+      }
+
+      static Message make_reset (size_t id)
+      {
+        Message m;
+        m.kind = RESET;
+        m.id = id;
+        return m;
+      }
+    };
+
+    void send (Message m)
+    {
+      pthread_mutex_lock (&mutex_);
+      if (message_queue_.empty ())
+        {
+          pthread_cond_signal (&cond_);
+        }
+      message_queue_.push (m);
+      pthread_mutex_unlock (&mutex_);
+    }
+
+    void sleep ()
+    {
+      pthread_mutex_lock (&mutex_);
+      while (ready_head_ == NULL && message_queue_.empty ())
+        {
+          pthread_cond_wait (&cond_, &mutex_);
+        }
+      pthread_mutex_unlock (&mutex_);
+    }
+
+    //void add_opportunity () { __sync_add_and_fetch (&opportunities_, 1); }
+    //size_t get_opportunities () { return __sync_add_and_fetch (&opportunities_, 0); }
+
+    //void add_execution () { __sync_add_and_fetch (&executions_, 1); }
+    //size_t get_executions () { return __sync_add_and_fetch (&executions_, 0); }
+
+    task_t*
+    get_task_to_migrate ();
+
+    // enum Mode
+    //   {
+    //     DIRTY,
+    //     CLEAN
+    //   };
     partitioned_scheduler_t& scheduler_;
-    const processor_id_t id_;
-    std::multiset<std::pair<instance_t*, TriggerAction> > actions_;
-    typedef std::list<task_t*> ListType;
-    ListType tasks_;
+    const size_t id_;
+    const size_t neighbor_id_;
     pthread_t thread_;
-    volatile uint64_t mask_;
-    Mode mode_;
-    bool dirty_flag_;
+    //Mode mode_;
+    //bool dirty_flag_;
+    //size_t opportunities_;
+    //size_t executions_;
+
+    task_t* idle_head_;
+    task_t** idle_tail_;
+    pthread_mutex_t mutex_;
+    pthread_cond_t cond_;
+    task_t* ready_head_;
+    task_t** ready_tail_;
+    std::queue<Message> message_queue_;
+    size_t task_count_;
   };
+
+  void
+  initialize_task (task_t* task, size_t thread_count);
 
   pthread_mutex_t stdout_mutex_;
   std::vector<executor_t*> executors_;
-  size_t dirty_count_;
+  //size_t dirty_count_;
 };
 
 #endif /* partitioned_scheduler_hpp */

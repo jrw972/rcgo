@@ -11,7 +11,7 @@ void* heap_instance (const heap_t* heap);
 
 void* heap_allocate (heap_t* heap, size_t size);
 
-void heap_collect_garbage (heap_t* heap);
+bool heap_collect_garbage (heap_t* heap);
 
 void heap_merge (heap_t* heap, heap_t* x);
 

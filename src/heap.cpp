@@ -568,14 +568,16 @@ static void scan (heap_t* heap, void* begin, void* end, block_t** work_list)
     }
 }
 
-void heap_collect_garbage (heap_t* heap)
+bool heap_collect_garbage (heap_t* heap)
 {
+  bool retval = false;
+
   block_t* work_list = NULL;
   pthread_mutex_lock (&heap->mutex);
-  if (heap->allocated_size >= heap->next_collection_size)
+  // Strictly greater.  This avoids continuous collection if both are zero.
+  if (heap->allocated_size > heap->next_collection_size)
     {
       // Full collection.
-
       block_t* b = block_find (heap->block, heap->begin);
       if (b != NULL)
         {
@@ -620,16 +622,18 @@ void heap_collect_garbage (heap_t* heap)
               heap_free (h);
             }
         }
+      retval = true;
     }
   else
     {
       // Just process children.
       for (heap_t* child = heap->child; child != NULL; child = child->next)
         {
-          heap_collect_garbage (child);
+          retval |= heap_collect_garbage (child);
         }
     }
   pthread_mutex_unlock (&heap->mutex);
+  return retval;
 }
 
 static void merge_blocks (heap_t* heap, block_t* block)
