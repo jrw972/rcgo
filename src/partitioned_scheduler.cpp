@@ -61,7 +61,19 @@ partitioned_scheduler_t::run (instance_table_t& instance_table,
            action_pos != action_limit;
            ++action_pos)
         {
-          initialize_task (new action_task_t (instance, *action_pos), thread_count);
+          instance_t::ConcreteAction action = *action_pos;
+          switch (action.action->precondition_kind)
+            {
+            case action_t::DYNAMIC:
+              initialize_task (new action_task_t (instance, action), thread_count);
+              break;
+            case action_t::STATIC_TRUE:
+              initialize_task (new always_task_t (instance, action), thread_count);
+              break;
+            case action_t::STATIC_FALSE:
+              // Do nothing.
+              break;
+            }
         }
 
       initialize_task (new gc_task_t (instance), thread_count);
@@ -327,227 +339,10 @@ partitioned_scheduler_t::executor_t::run_i ()
           continue;
         }
 
-      // Sleep until something is put on the queue.
+      // Sleep until something is put on the queues.
+      // TODO:  Steal work from another executor.
       sleep ();
     }
-
-  // mode_ = DIRTY;
-
-  // size_t local_opportunities = 0;
-  // size_t previous_neighbor_opportunities = 0;
-
-  // for (;;)
-  //   {
-  //     // Grab a migration task.
-  //     task_t* task = __sync_lock_test_and_set (&task_, NULL);
-  //     if (task != NULL)
-  //       {
-  //         unimplemented;
-  //         //tasks_.push_back (task);
-  //       }
-
-  //     // Reset the dirty flag for this cycle.
-  //     dirty_flag_ = false;
-
-    //   // TODO:  Pick tasks at random?
-    //   for (ListType::const_iterator pos = tasks_.begin (), limit = tasks_.end ();
-    //        pos != limit;
-    //        ++pos)
-    //     {
-    //       task_t* task = *pos;
-
-    //       // Lock.
-    //       for (instance_set_t::const_iterator pos = task->set ().begin (),
-    //              limit = task->set ().end ();
-    //            pos != limit;
-    //            ++pos)
-    //         {
-    //           instance_t* instance = pos->first;
-    //           info_t* info = *reinterpret_cast<info_t**> (instance->ptr ());
-    //           assert (info->instance == instance);
-    //           switch (pos->second)
-    //             {
-    //             case TRIGGER_READ:
-    //               std::cout << "Lock " << info << " READ" << std::endl;
-    //               break;
-    //             case TRIGGER_WRITE:
-    //               std::cout << "Lock " << info << " WRITE" << std::endl;
-    //               break;
-    //             }
-    //         }
-
-
-    //       unimplemented;
-
-    //       // Lock.
-    //       if (task->processor_list ().size () != 1)
-    //         {
-    //           for (task_t::ProcessorListType::const_iterator pos = task->processor_list ().begin (),
-    //                  limit = task->processor_list ().end ();
-    //                pos != limit;
-    //                ++pos)
-    //             {
-    //               processor_id_t pid = *pos;
-    //               uint64_t mask;
-    //               if (pid != id_)
-    //                 {
-    //                   mask = (1 << pid);
-    //                 }
-    //               else
-    //                 {
-    //                   mask = task->mask ();
-    //                 }
-
-
-    //               for (;;)
-    //                 {
-    //                   uint64_t oldval;
-    //                   // Spin until all our bits are clear.
-    //                   while ((oldval = scheduler_.executors_[pid]->mask_) & mask) ;
-    //                   // Set the bits.
-    //                   uint64_t newval = oldval | mask;
-    //                   if (__sync_bool_compare_and_swap (&scheduler_.executors_[pid]->mask_, oldval, newval))
-    //                     {
-    //                       break;
-    //                     }
-    //                 }
-    //             }
-    //         }
-
-    //       if (task->execute (*this))
-    //         {
-    //           add_execution ();
-    //         }
-
-    //       // Unlock.
-    //       if (task->processor_list ().size () != 1)
-    //         {
-    //           for (task_t::ProcessorListType::const_iterator pos = task->processor_list ().begin (),
-    //                  limit = task->processor_list ().end ();
-    //                pos != limit;
-    //                ++pos)
-    //             {
-    //               processor_id_t pid = *pos;
-    //               uint64_t mask;
-    //               if (pid != id_)
-    //                 {
-    //                   mask = (1 << pid);
-    //                 }
-    //               else
-    //                 {
-    //                   mask = task->mask ();
-    //                 }
-
-    //               uint64_t v = __sync_and_and_fetch (&scheduler_.executors_[pid]->mask_, ~mask);
-    //               assert ((v & mask) == 0);
-    //             }
-    //         }
-
-    //       // Update the number of opportunities.
-    //       add_opportunity ();
-    //       ++local_opportunities;
-
-    //       // TODO: Magic numbers.
-    //       const size_t sample_size = 1000;
-    //       const size_t migration_threshold = sample_size; // * 1618 / 1000;
-
-    //       if (local_opportunities == sample_size)
-    //         {
-    //           std::cout << "ID " << (int)id_ << ' ' << opportunities_ << ' ' << executions_ << '\n';
-
-    //           size_t current_neighbor_opportunities = scheduler_.executors_[neighbor_id_]->get_opportunities ();
-
-    //           if (previous_neighbor_opportunities < current_neighbor_opportunities)
-    //             {
-    //               size_t diff = current_neighbor_opportunities - previous_neighbor_opportunities;
-    //               if (diff > migration_threshold)
-    //                 {
-    //                   task_t* task = get_task_to_migrate ();
-    //                   if (task != NULL)
-    //                     {
-    //                       if (!__sync_bool_compare_and_swap (&scheduler_.executors_[neighbor_id_]->task_, NULL, task))
-    //                         {
-    //                           // Neighbor was not ready.
-    //                           tasks_.push_back (task);
-    //                         }
-    //                     }
-    //                 }
-    //             }
-
-    //           local_opportunities = 0;
-    //           previous_neighbor_opportunities = current_neighbor_opportunities;
-    //         }
-    //     }
-
-    //   switch (mode_)
-    //     {
-    //     case DIRTY:
-    //       if (dirty_flag_)
-    //         {
-    //           // Do nothing.
-    //         }
-    //       else
-    //         {
-    //           // Last run was clean.
-    //           mode_ = CLEAN;
-    //           __sync_sub_and_fetch (&scheduler_.dirty_count_, 1);
-    //         }
-    //       break;
-    //     case CLEAN:
-    //       if (dirty_flag_)
-    //         {
-    //           // Last run was dirty.
-    //           mode_ = DIRTY;
-    //           __sync_add_and_fetch (&scheduler_.dirty_count_, 1);
-    //         }
-    //       else
-    //         {
-    //           if (__sync_add_and_fetch (&scheduler_.dirty_count_, 0) == 0)
-    //             {
-    //               return;
-    //             }
-    //         }
-    //       break;
-    //     }
-    // }
-}
-
-partitioned_scheduler_t::task_t*
-partitioned_scheduler_t::executor_t::get_task_to_migrate ()
-{
-  // TODO
-  unimplemented;
-  // // TODO:  Make a better decision.
-  // partitioned_scheduler_t::task_t* task = NULL;
-  // size_t task_index = 0;
-  // size_t set_size = 1;
-
-  // for (size_t idx = 0, limit = tasks_.size ();
-  //      idx != limit;
-  //      ++idx)
-  //   {
-  //     size_t s = tasks_[idx]->set ().size ();
-  //     if (s > set_size)
-  //       {
-  //         task = tasks_[idx];
-  //         task_index = idx;
-  //         set_size = s;
-  //       }
-  //   }
-
-  // if (task != NULL)
-  //   {
-  //     std::swap (tasks_[task_index], tasks_.back ());
-  //     tasks_.pop_back ();
-  //     scheduler_.lock_sets ();
-  //     task->change_pid (neighbor_id_);
-  //     scheduler_.unlock_sets ();
-  //     return task;
-  //   }
-  // else
-  //   {
-  //     return NULL;
-  //   }
 }
 
 partitioned_scheduler_t::ExecutionResult

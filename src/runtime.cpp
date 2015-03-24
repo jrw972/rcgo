@@ -1147,34 +1147,39 @@ namespace runtime
   {
     if (enabled (exec, instance, action, iota))
       {
-        assert (stack_frame_empty (exec.stack ()));
-
-        // Push the instance.
-        stack_frame_push_pointer (exec.stack (), instance);
-        // Push iota.
-        if (action->has_dimension ())
-          {
-            stack_frame_push_uint (exec.stack (), iota);
-          }
-        // Push the instruction pointer.
-        stack_frame_push_pointer (exec.stack (), NULL);
-        // Execute.
-        runtime::execute (exec, action, instance);
-        // Pop the instruction pointer.
-        stack_frame_pop_pointer (exec.stack ());
-        // Pop iota.
-        if (action->has_dimension ())
-          {
-            stack_frame_pop_uint (exec.stack ());
-          }
-        // Pop the instance.
-        stack_frame_pop_pointer (exec.stack ());
-
-        assert (stack_frame_empty (exec.stack ()));
-        return true;
+        return exec_no_check (exec, instance, action, iota);
       }
 
     return false;
+  }
+
+  bool exec_no_check (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota)
+  {
+    assert (stack_frame_empty (exec.stack ()));
+
+    // Push the instance.
+    stack_frame_push_pointer (exec.stack (), instance);
+    // Push iota.
+    if (action->has_dimension ())
+      {
+        stack_frame_push_uint (exec.stack (), iota);
+      }
+    // Push the instruction pointer.
+    stack_frame_push_pointer (exec.stack (), NULL);
+    // Execute.
+    runtime::execute (exec, action, instance);
+    // Pop the instruction pointer.
+    stack_frame_pop_pointer (exec.stack ());
+    // Pop iota.
+    if (action->has_dimension ())
+      {
+        stack_frame_pop_uint (exec.stack ());
+      }
+    // Pop the instance.
+    stack_frame_pop_pointer (exec.stack ());
+
+    assert (stack_frame_empty (exec.stack ()));
+    return true;
   }
 
 }

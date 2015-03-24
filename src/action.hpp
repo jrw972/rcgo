@@ -48,7 +48,7 @@ public:
   }
 
 private:
-  type_t *component_type_;	/* Back-pointer to component type. */
+  type_t* component_type_;	/* Back-pointer to component type. */
   ast_t* node_;
   TriggersType triggers_;
   bool has_dimension_;
@@ -58,13 +58,24 @@ private:
 class action_t : public action_reaction_base_t
 {
 public:
+  enum PreconditionKind
+    {
+      DYNAMIC,
+      STATIC_TRUE,
+      STATIC_FALSE,
+    };
+
   action_t (named_type_t* type, ast_t* node)
     : action_reaction_base_t (type, node)
+    , precondition_kind (DYNAMIC)
   { }
 
   action_t (named_type_t* type, ast_t* node, size_t dimension)
     : action_reaction_base_t (type, node, dimension)
+    , precondition_kind (DYNAMIC)
   { }
+
+  PreconditionKind precondition_kind;
 };
 
 class reaction_t : public action_reaction_base_t

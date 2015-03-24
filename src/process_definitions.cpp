@@ -1361,6 +1361,19 @@ process_definitions (ast_t * node)
       type_check_statement (body_node);
       control_check_statement (body_node);
       mutates_check_statement (body_node);
+
+      typed_value_t tv = ast_get_typed_value (*precondition_node);
+      if (tv.has_value)
+        {
+          if (tv.bool_value)
+            {
+              node.action->precondition_kind = action_t::STATIC_TRUE;
+            }
+          else
+            {
+              node.action->precondition_kind = action_t::STATIC_FALSE;
+            }
+        }
     }
 
     void visit (ast_dimensioned_action_t& node)

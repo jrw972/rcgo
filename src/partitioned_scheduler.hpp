@@ -207,7 +207,6 @@ private:
     { }
 
     virtual const instance_set_t& set () const = 0;
-    virtual void print (std::ostream& out) const = 0;
 
     ExecutionResult execute (size_t generation);
     ExecutionResult resume (size_t generation);
@@ -249,10 +248,22 @@ private:
     {
       return runtime::exec (*executor, instance->ptr (), action.action, action.iota);
     }
+  };
 
-    virtual void print (std::ostream& out) const
+  struct always_task_t : public task_t
+  {
+    always_task_t (instance_t* i, const instance_t::ConcreteAction& a)
+      : instance (i)
+      , action (a)
+    { }
+
+    instance_t* instance;
+    instance_t::ConcreteAction action;
+
+    const instance_set_t& set () const { return action.set; }
+    virtual bool execute_i () const
     {
-      out << "action task " << this;
+      return runtime::exec_no_check (*executor, instance->ptr (), action.action, action.iota);
     }
   };
 
@@ -273,11 +284,6 @@ private:
       executor->current_instance (instance->ptr ());
       return heap_collect_garbage (executor->heap ());
     }
-
-    virtual void print (std::ostream& out) const
-    {
-      out << "gc task " << this;
-    }
   };
 
   class executor_t : public executor_base_t
@@ -292,8 +298,6 @@ private:
       , scheduler_ (scheduler)
       , id_ (id)
       , neighbor_id_ (neighbor_id)
-      // , opportunities_ (0)
-      //, executions_ (0)
       , idle_head_ (NULL)
       , idle_tail_ (&idle_head_)
       , ready_head_ (NULL)
@@ -444,28 +448,10 @@ private:
       pthread_mutex_unlock (&mutex_);
     }
 
-    //void add_opportunity () { __sync_add_and_fetch (&opportunities_, 1); }
-    //size_t get_opportunities () { return __sync_add_and_fetch (&opportunities_, 0); }
-
-    //void add_execution () { __sync_add_and_fetch (&executions_, 1); }
-    //size_t get_executions () { return __sync_add_and_fetch (&executions_, 0); }
-
-    task_t*
-    get_task_to_migrate ();
-
-    // enum Mode
-    //   {
-    //     DIRTY,
-    //     CLEAN
-    //   };
     partitioned_scheduler_t& scheduler_;
     const size_t id_;
     const size_t neighbor_id_;
     pthread_t thread_;
-    //Mode mode_;
-    //bool dirty_flag_;
-    //size_t opportunities_;
-    //size_t executions_;
 
     task_t* idle_head_;
     task_t** idle_tail_;
@@ -482,7 +468,6 @@ private:
 
   pthread_mutex_t stdout_mutex_;
   std::vector<executor_t*> executors_;
-  //size_t dirty_count_;
 };
 
 #endif /* partitioned_scheduler_hpp */

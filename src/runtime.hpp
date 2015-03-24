@@ -25,6 +25,10 @@ namespace runtime
   // Returns true if the action was executed.
   bool exec (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota);
 
+  // Execute the action without checking the precondition.
+  // Returns true.
+  bool exec_no_check (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota);
+
 }
 
 #endif /* runtime_hpp */
