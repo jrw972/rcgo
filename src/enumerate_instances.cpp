@@ -59,8 +59,8 @@ instantiate_contained_instances (const type_t * type, instance_table_t& instance
            ++pos)
         {
           // Recur changing address (and field).
-          visitor v (instance_table, parent, NULL, address + field_offset (*pos), *pos);
-          field_type (*pos)->accept (v);
+          visitor v (instance_table, parent, NULL, address + (*pos)->offset, *pos);
+          (*pos)->type->accept (v);
         }
     }
 

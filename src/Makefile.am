@@ -19,7 +19,7 @@ debug.hpp debug.cpp \
 enter_symbols.cpp \
 enumerate_instances.cpp \
 executor_base.hpp \
-field.hpp field.cpp \
+field.hpp \
 function.hpp \
 method.hpp \
 heap.hpp heap.cpp \

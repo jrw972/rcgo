@@ -46,7 +46,7 @@ field_list_type_t::append (const std::string& field_name, const type_t * field_t
   size_t alignment = field_type->alignment ();
   offset_ = align_up (offset_, alignment);
 
-  field_t *field = field_make (field_name, field_type, offset_);
+  field_t *field = new field_t (field_name, field_type, offset_);
   fields_.push_back (field);
 
   offset_ += field_type->size ();
@@ -64,7 +64,7 @@ field_list_type_t::find (const std::string& name) const
        field != limit;
        ++field)
     {
-      if (name == field_name (*field))
+      if (name == (*field)->name)
         {
           return (*field);
         }
@@ -151,7 +151,7 @@ type_select (const type_t* type, const std::string& identifier)
   field_t* f = type_select_field (type, identifier);
   if (f)
     {
-      return field_type (f);
+      return f->type;
     }
 
   method_t* m = type_select_method (type, identifier);
@@ -599,7 +599,7 @@ type_contains_pointer (const type_t* type)
            pos != limit;
            ++pos)
         {
-          field_type ((*pos))->accept (*this);
+          (*pos)->type->accept (*this);
         }
     }
   };

@@ -489,7 +489,7 @@ transitive_closure (const instance_table_t& table,
 
     void visit (const ast_port_call_expr_t& node)
     {
-      size_t port = address + field_offset (node.field);
+      size_t port = address + node.field->offset;
       // Find what is bound to this port.
       instance_table_t::PortsType::const_iterator port_pos = table.ports.find (port);
       assert (port_pos != table.ports.end ());
@@ -534,7 +534,7 @@ transitive_closure (const instance_table_t& table,
                          "port index out of bounds");
         }
 
-      size_t port = address + field_offset (node.field) + port_index * node.array_type->element_size ();
+      size_t port = address + node.field->offset + port_index * node.array_type->element_size ();
 
       // Find what is bound to this port.
       instance_table_t::PortsType::const_iterator port_pos = table.ports.find (port);
@@ -961,7 +961,7 @@ std::ostream&
 operator<< (std::ostream& o,
             const instance_table_t::PortValueType& pv)
 {
-  o << '[' << *pv.output_instance << ',' << field_name (pv.output_field) << ',' << pv.address << ']' << " ->";
+  o << '[' << *pv.output_instance << ',' << pv.output_field->name << ',' << pv.address << ']' << " ->";
 
   for (instance_table_t::InputsType::const_iterator p = pv.inputs.begin (),
          l = pv.inputs.end ();

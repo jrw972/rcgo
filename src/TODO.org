@@ -1,5 +1,4 @@
 * General
-- TODO Remove field.cpp.
 - TODO Refactor symbol. OO.
 - TODO Implement data-aware scheduling.  For example, a component that
   routes messages needs to trigger a reaction based on an id in the

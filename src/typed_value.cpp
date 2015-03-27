@@ -172,9 +172,9 @@ typed_value_t::select (typed_value_t in, const std::string& identifier)
   if (f)
     {
       typed_value_t out = in;
-      out.type = field_type (f);
+      out.type = f->type;
       out.has_offset = true;
-      out.offset = field_offset (f);
+      out.offset = f->offset;
       return out;
     }
 

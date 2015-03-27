@@ -484,7 +484,7 @@ namespace runtime
         // Find the port to trigger.
         symbol_t* this_ = node.symtab->get_this ();
         stack_frame_push (exec.stack (), symbol_get_offset (this_), symbol_parameter_type (this_)->size ());
-        port_t* port = *((port_t**)((char*)stack_frame_pop_pointer (exec.stack ()) + field_offset (field) + offset));
+        port_t* port = *((port_t**)((char*)stack_frame_pop_pointer (exec.stack ()) + field->offset + offset));
 
         char* base_pointer = stack_frame_base_pointer (exec.stack ());
         component_t* instance = exec.current_instance ();
