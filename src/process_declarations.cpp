@@ -41,7 +41,7 @@ process_declarations (ast_t * node)
 
     void visit (ast_dimensioned_action_t& node)
     {
-      size_t dimension = process_array_dimension (node.dimension_iter ());
+      size_t dimension = process_array_dimension (node.dimension ());
       ast_t *type_identifier_node = node.type_identifier ();
       const std::string& type_identifier = ast_get_identifier (type_identifier_node);
       symbol_t *symbol = lookup_force (type_identifier_node, type_identifier);
@@ -152,6 +152,16 @@ process_declarations (ast_t * node)
       /* Determine the type of this. */
       const type_t* this_type = pointer_type_t::make (type);
 
+      if (type_cast<component_type_t> (type_strip (type)) != NULL &&
+          type_dereference (this_type) == NULL)
+        {
+          // Components must have pointer receivers.
+          error_at_line (-1, 0, node.file,
+                         node.line,
+                         "component methods must have pointer receiver");
+        }
+
+
       /* Process the signature. */
       const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
 
@@ -160,7 +170,7 @@ process_declarations (ast_t * node)
       const type_t *return_type = process_type_spec (return_type_node, true);
       typed_value_t return_value = typed_value_t::make_value (return_type,
                                                               typed_value_t::STACK,
-                                                              MUTABLE,
+                                                              IMMUTABLE,
                                                               node.return_dereference_mutability);
 
       parameter_t* return_parameter = new parameter_t (return_type_node,
@@ -181,7 +191,7 @@ process_declarations (ast_t * node)
 
       // Enter the return first as it is deeper on the stack.
       enter_symbol (node.symtab, return_symbol, node.return_symbol);
-      enter_signature (signature_node, method->method_type->function_type->signature);
+      enter_signature (signature_node, method->method_type->function_type->signature ());
 
       type->add_method (method);
       node.method = method;
@@ -259,7 +269,7 @@ process_declarations (ast_t * node)
 
     void visit (ast_dimensioned_reaction_t& node)
     {
-      size_t dimension = process_array_dimension (node.dimension_iter ());
+      size_t dimension = process_array_dimension (node.dimension ());
       ast_t *type_node = node.type_identifier ();
       ast_t *signature_node = node.signature ();
       ast_t *identifier_node = node.identifier ();
@@ -323,7 +333,7 @@ process_declarations (ast_t * node)
 
       symbol_set_in_progress (symbol, true);
       ast_t *type_spec_node = node.at (TYPE_TYPE_SPEC);
-      const type_t *new_type = process_type_spec (type_spec_node, true);
+      const type_t *new_type = process_type_spec (type_spec_node, true, false, type);
       type->subtype (new_type);
       symbol_set_in_progress (symbol, false);
     }

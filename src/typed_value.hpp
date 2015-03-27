@@ -143,6 +143,7 @@ struct typed_value_t
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
     , has_value (true)
+    , has_offset (false)
     , bool_value (v)
   { }
 
@@ -153,6 +154,7 @@ struct typed_value_t
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
     , has_value (true)
+    , has_offset (false)
     , int_value (v)
   { }
 
@@ -163,6 +165,7 @@ struct typed_value_t
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
     , has_value (true)
+    , has_offset (false)
     , uint_value (v)
   { }
 
@@ -173,6 +176,7 @@ struct typed_value_t
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
     , has_value (true)
+    , has_offset (false)
     , string_value (s)
   { }
 
@@ -183,6 +187,7 @@ struct typed_value_t
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
     , has_value (true)
+    , has_offset (false)
     , function_value (f)
   { }
 
@@ -193,6 +198,7 @@ struct typed_value_t
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
     , has_value (true)
+    , has_offset (false)
     , method_value (m)
   { }
 
@@ -203,7 +209,20 @@ struct typed_value_t
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
     , has_value (true)
+    , has_offset (false)
     , reaction_value (r)
+  { }
+
+  typed_value_t (const type_t* type,
+                 size_t e)
+    : type (type)
+    , kind (VALUE)
+    , region (CONSTANT)
+    , intrinsic_mutability (IMMUTABLE)
+    , dereference_mutability (IMMUTABLE)
+    , has_value (true)
+    , has_offset (false)
+    , enum_value (e)
   { }
 
   const type_t *type;
@@ -223,6 +242,7 @@ struct typed_value_t
     method_t* method_value;
     function_t* function_value;
     reaction_t* reaction_value;
+    size_t enum_value;
   };
 
   static typed_value_t make_value (const type_t* type, Region region, Mutability intrinsic, Mutability dereference);
@@ -245,6 +265,12 @@ struct typed_value_t
   static typed_value_t move (typed_value_t tv);
   static typed_value_t add (typed_value_t left, typed_value_t right);
 
+  bool is_foreign_safe () const
+  {
+    return !(type_contains_pointer (type) &&
+             dereference_mutability != FOREIGN);
+  }
+
   std::ostream& print (std::ostream& o) const;
 };
 
@@ -253,5 +279,7 @@ operator<< (std::ostream& out, const typed_value_t& tv)
 {
   return tv.print (out);
 }
+
+
 
 #endif /* typed_value_h */

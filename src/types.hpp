@@ -46,4 +46,12 @@ enum TriggerAction
 
 typedef std::map<instance_t*, TriggerAction> instance_set_t;
 
+struct pfunc_t {
+  component_t* instance;
+  union {
+    const method_t* method;
+    const function_t* function;
+  };
+};
+
 #endif /* types_h */

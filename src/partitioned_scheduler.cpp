@@ -181,7 +181,9 @@ partitioned_scheduler_t::executor_t::run_i ()
                   break;
                 case WAIT1:
                 case WAIT2:
-                  bug ("illegal state");
+                  // Straggler.
+                  task->resume (generation);
+                  break;
                 }
             }
 

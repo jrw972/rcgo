@@ -25,15 +25,6 @@ instance_table_t::actions () const
   return retval;
 }
 
-void
-instance_table_insert_port (instance_table_t& table,
-                            size_t address,
-                            instance_t* output_instance,
-                            field_t* output_field)
-{
-  table.ports[address] = instance_table_t::PortValueType (address, output_instance, output_field);
-}
-
 class static_memory_t
 {
 public:
@@ -322,6 +313,10 @@ instance_table_enumerate_bindings (instance_table_t& table)
                 {
                   node.true_branch ()->accept (*this);
                 }
+              else
+                {
+                  node.false_branch ()->accept (*this);
+                }
             }
 
             void visit (const ast_list_statement_t& node)
@@ -360,17 +355,43 @@ instance_table_enumerate_bindings (instance_table_t& table)
               table.reverse_ports[i].insert (port.address);
             }
 
-            void visit (const ast_bind_statement_t& node)
+            void visit (const ast_bind_port_statement_t& node)
             {
               bind (node.left (), node.right ());
             }
 
-            void visit (const ast_bind_param_statement_t& node)
+            void visit (const ast_bind_port_param_statement_t& node)
             {
               static_value_t param = evaluate_static (node.param (), memory);
               bind (node.left (), node.right (), param);
             }
 
+            void visit (const ast_bind_pfunc_statement_t& node)
+            {
+              static_value_t pfunc = evaluate_static (node.left (), memory);
+              assert (pfunc.kind == static_value_t::ABSOLUTE_ADDRESS);
+              typed_value_t tv = ast_get_typed_value (node.right ());
+              const method_type_t* method_type = type_cast<method_type_t> (tv.type);
+              if (method_type != NULL)
+                {
+                  // Strip off the implicit dereference and selecting of the reaction.
+                  static_value_t input = evaluate_static (node.right ()->children[0]->children[0], memory);
+                  assert (input.kind == static_value_t::ABSOLUTE_ADDRESS);
+                  instance_table_t::OutputType o (table.instances[input.address], tv.method_value);
+                  table.pfuncs[pfunc.address].outputs.insert (o);
+                  return;
+                }
+
+              const function_type_t* function_type = type_cast<function_type_t> (tv.type);
+              if (function_type != NULL)
+                {
+                  instance_table_t::OutputType o (tv.function_value);
+                  table.pfuncs[pfunc.address].outputs.insert (o);
+                  return;
+                }
+
+              not_reached;
+            }
           };
           visitor v (table, instance_pos->first);
           (*bind_pos)->node ()->accept (v);
@@ -562,6 +583,27 @@ transitive_closure (const instance_table_t& table,
       not_reached;
     }
 
+    void visit (const ast_identifier_expr_t& node)
+    {
+      symbol_t* symbol = node.symbol.symbol ();
+      switch (symbol_kind (symbol))
+        {
+        case SymbolParameter:
+          if (symbol_parameter_kind (symbol) == ParameterReceiver)
+            {
+              computed_address = receiver_address;
+            }
+          break;
+        case SymbolFunction:
+        case SymbolInstance:
+        case SymbolType:
+        case SymbolTypedConstant:
+        case SymbolVariable:
+        case SymbolHidden:
+          break;
+        }
+    }
+
     void visit (const ast_implicit_dereference_expr_t& node)
     {
       computed_address = -1;
@@ -580,34 +622,16 @@ transitive_closure (const instance_table_t& table,
       node.base ()->accept (*this);
       if (computed_address != static_cast<size_t> (-1))
         {
-          unimplemented;
-          //computed_address += field_offset (node.field);
+          typed_value_t tv = node.get_type ();
+          assert (tv.has_offset);
+          computed_address += tv.offset;
         }
     }
 
     void visit (const ast_dereference_expr_t& node)
     {
-      ast_identifier_expr_t* id = dynamic_cast<ast_identifier_expr_t*> (node.child ());
-      if (id)
-        {
-          symbol_t* symbol = id->symbol.symbol ();
-          switch (symbol_kind (symbol))
-            {
-            case SymbolParameter:
-              if (symbol_parameter_kind (symbol) == ParameterReceiver)
-                {
-                  computed_address = receiver_address;
-                }
-              break;
-            case SymbolFunction:
-            case SymbolInstance:
-            case SymbolType:
-            case SymbolTypedConstant:
-            case SymbolVariable:
-            case SymbolHidden:
-              break;
-            }
-        }
+      computed_address = -1;
+      node.child ()->accept (*this);
     }
 
   };
@@ -627,6 +651,11 @@ transitive_closure (const instance_table_t& table,
 
     void visit (const ast_empty_statement_t& node)
     { }
+
+    void visit (const ast_address_of_expr_t& node)
+    {
+      node.visit_children (*this);
+    }
 
     void visit (const ast_action_t& node)
     {
@@ -653,6 +682,13 @@ transitive_closure (const instance_table_t& table,
     void visit (const ast_list_statement_t& node)
     {
       node.visit_children (*this);
+    }
+
+    void visit (const ast_if_statement_t& node)
+    {
+      node.condition ()->accept (*this);
+      node.true_branch ()->accept (*this);
+      node.false_branch ()->accept (*this);
     }
 
     void visit (const ast_trigger_statement_t& node)
@@ -748,19 +784,43 @@ transitive_closure (const instance_table_t& table,
 
     void visit (const ast_call_expr_t& node)
     {
-      // See if the first argument is a component.
-      if (!node.args ()->children.empty ())
+      node.visit_children (*this);
+
+      switch (node.kind)
         {
-          offset_visitor v (receiver_address);
-          node.args ()->children[0]->accept (v);
-          if (v.computed_address != static_cast<size_t> (-1))
-            {
-              instance_table_t::InstancesType::const_iterator pos = table.instances.find (v.computed_address);
-              if (pos != table.instances.end ())
-                {
-                  set.immutable_phase.insert (std::make_pair (pos->second, TRIGGER_READ));
-                }
-            }
+        case ast_call_expr_t::NONE:
+          not_reached;
+        case ast_call_expr_t::FUNCTION:
+          break;
+        case ast_call_expr_t::METHOD:
+          {
+            // See if invoking a method on a component.
+            typed_value_t tv = ast_get_typed_value (node.expr ());
+            const method_type_t* method_type = type_cast<method_type_t> (tv.type);
+            if (type_cast<component_type_t> (type_strip (method_type->named_type)) != NULL)
+              {
+                offset_visitor v (receiver_address);
+                node.expr ()->children[0]->children[0]->accept (v);
+                instance_table_t::InstancesType::const_iterator pos = table.instances.find (v.computed_address);
+                assert (pos != table.instances.end ());
+                set.immutable_phase.insert (std::make_pair (pos->second, TRIGGER_READ));
+              }
+          }
+          break;
+        case ast_call_expr_t::PFUNC:
+          {
+            // See if invoking a pfunc on a component.
+            offset_visitor v (receiver_address);
+            node.expr ()->children[0]->accept (v);
+            instance_table_t::PfuncsType::const_iterator pos = table.pfuncs.find (v.computed_address);
+            assert (pos != table.pfuncs.end ());
+            instance_table_t::OutputType out = *pos->second.outputs.begin ();
+            if (out.instance != NULL)
+              {
+                set.immutable_phase.insert (std::make_pair (out.instance, TRIGGER_READ));
+              }
+          }
+          break;
         }
     }
   };
@@ -812,6 +872,18 @@ instance_table_analyze_composition (const instance_table_t& table)
       if (pos1->second.size () > 1)
         {
           error (-1, 0, "reaction bound more than once");
+        }
+    }
+
+  // Check that every pfunc is bound exactly once.
+  for (instance_table_t::PfuncsType::const_iterator pos = table.pfuncs.begin (),
+         limit = table.pfuncs.end ();
+       pos != limit;
+       ++pos)
+    {
+      if (pos->second.outputs.size () != 1)
+        {
+          error (-1, 0, "unbound pfunc");
         }
     }
 

@@ -275,3 +275,9 @@ void stack_frame_dump (const stack_frame_t* stack_frame)
       printf ("%p => %zx %s\n", ptr, x, ptr == stack_frame->base_pointer ? "<--" : "");
     }
 }
+
+void* stack_frame_address_for_offset (const stack_frame_t* stack_frame,
+                                      ptrdiff_t offset)
+{
+  return stack_frame->base_pointer + offset;
+}

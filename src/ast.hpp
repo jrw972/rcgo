@@ -130,17 +130,35 @@ struct ast_array_type_spec_t : public ast_t
     children[BASE_TYPE] = base_type;
   }
 
-  iterator dimension_iter () { return begin () + DIMENSION; }
+  ast_t* dimension () const { return children[DIMENSION]; }
   ast_t* base_type () const { return children[BASE_TYPE]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
 };
 
-struct ast_component_type_spec_t : public ast_t
+struct ast_unary_t : public ast_t
 {
-  ast_component_type_spec_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  enum
+    {
+      CHILD,
+      COUNT
+    };
+
+  ast_unary_t (unsigned int line, ast_t* child)
+    : ast_t (line, COUNT)
+  {
+    children[CHILD] = child;
+  }
+
+  ast_t* child () const { return children[CHILD]; }
+  iterator child_iter () { return begin () + CHILD; }
+};
+
+struct ast_component_type_spec_t : public ast_unary_t
+{
+  ast_component_type_spec_t (unsigned int line, ast_t* child)
+    : ast_unary_t (line, child)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -149,9 +167,29 @@ struct ast_component_type_spec_t : public ast_t
 
 struct ast_empty_type_spec_t : public ast_t
 {
-  ast_empty_type_spec_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  ast_empty_type_spec_t (unsigned int line)
+    : ast_t (line, 0)
   { }
+
+  void accept (ast_visitor_t& visitor);
+  void accept (ast_const_visitor_t& visitor) const;
+};
+
+struct ast_enum_type_spec_t : public ast_t
+{
+  enum
+    {
+      VALUES,
+      COUNT,
+    };
+
+  ast_enum_type_spec_t (unsigned int line, ast_t* values)
+    : ast_t (line, COUNT)
+  {
+    children[VALUES] = values;
+  }
+
+  ast_t* values () const { return children[VALUES]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -159,28 +197,28 @@ struct ast_empty_type_spec_t : public ast_t
 
 struct ast_field_list_type_spec_t : public ast_t
 {
-  ast_field_list_type_spec_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  ast_field_list_type_spec_t (unsigned int line)
+    : ast_t (line, 0)
   { }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
 };
 
-struct ast_heap_type_spec_t : public ast_t
+struct ast_heap_type_spec_t : public ast_unary_t
 {
-  ast_heap_type_spec_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  ast_heap_type_spec_t (unsigned int line, ast_t* child)
+    : ast_unary_t (line, child)
   { }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
 };
 
-struct ast_identifier_type_spec_t : public ast_t
+struct ast_identifier_type_spec_t : public ast_unary_t
 {
-  ast_identifier_type_spec_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  ast_identifier_type_spec_t (unsigned int line, ast_t* child)
+    : ast_unary_t (line, child)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -213,10 +251,10 @@ struct ast_identifier_list_type_spec_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
 };
 
-struct ast_pointer_type_spec_t : public ast_t
+struct ast_pointer_type_spec_t : public ast_unary_t
 {
-  ast_pointer_type_spec_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  ast_pointer_type_spec_t (unsigned int line, ast_t* child)
+    : ast_unary_t (line, child)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -225,9 +263,42 @@ struct ast_pointer_type_spec_t : public ast_t
 
 struct ast_port_type_spec_t : public ast_t
 {
-  ast_port_type_spec_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
-  { }
+  enum
+    {
+      SIGNATURE,
+      COUNT,
+    };
+
+  ast_port_type_spec_t (unsigned int line, ast_t* signature)
+    : ast_t (line, COUNT)
+  {
+    children[SIGNATURE] = signature;
+  }
+
+  ast_t* signature () const { return children[SIGNATURE]; }
+
+  void accept (ast_visitor_t& visitor);
+  void accept (ast_const_visitor_t& visitor) const;
+};
+
+struct ast_pfunc_type_spec_t : public ast_t
+{
+  enum
+    {
+      SIGNATURE,
+      RETURN_TYPE,
+      COUNT,
+    };
+
+  ast_pfunc_type_spec_t (unsigned int line, ast_t* signature, ast_t* return_type)
+    : ast_t (line, COUNT)
+  {
+    children[SIGNATURE] = signature;
+    children[RETURN_TYPE] = return_type;
+  }
+
+  ast_t* signature () const { return children[SIGNATURE]; }
+  ast_t* return_type () const { return children[RETURN_TYPE]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -243,10 +314,10 @@ struct ast_signature_type_spec_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
 };
 
-struct ast_struct_type_spec_t : public ast_t
+struct ast_struct_type_spec_t : public ast_unary_t
 {
-  ast_struct_type_spec_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  ast_struct_type_spec_t (unsigned int line, ast_t* child)
+    : ast_unary_t (line, child)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -281,24 +352,6 @@ struct ast_unary_expr_t : public ast_expr_t
 
   ast_unary_expr_t (unsigned int line, ast_t* child)
     : ast_expr_t (line, COUNT)
-  {
-    children[CHILD] = child;
-  }
-
-  ast_t* child () const { return children[CHILD]; }
-  iterator child_iter () { return begin () + CHILD; }
-};
-
-struct ast_unary_t : public ast_t
-{
-  enum
-    {
-      CHILD,
-      COUNT
-    };
-
-  ast_unary_t (unsigned int line, ast_t* child)
-    : ast_t (line, COUNT)
   {
     children[CHILD] = child;
   }
@@ -373,8 +426,17 @@ struct ast_call_expr_t : public ast_expr_t
       COUNT,
     };
 
+  enum Kind
+    {
+      NONE,
+      FUNCTION,
+      METHOD,
+      PFUNC,
+    };
+
   ast_call_expr_t (unsigned int line, ast_t* expr, ast_t* args)
     : ast_expr_t (line, COUNT)
+    , kind (NONE)
   {
     children[EXPR] = expr;
     children[ARGS] = args;
@@ -387,6 +449,8 @@ struct ast_call_expr_t : public ast_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+
+  Kind kind;
 };
 
 struct ast_dereference_expr_t : public ast_unary_expr_t
@@ -694,19 +758,22 @@ struct ast_if_statement_t : public ast_t
     {
       CONDITION,
       TRUE_BRANCH,
+      FALSE_BRANCH,
       COUNT,
     };
 
-  ast_if_statement_t (unsigned int line, ast_t* condition, ast_t* true_branch)
+  ast_if_statement_t (unsigned int line, ast_t* condition, ast_t* true_branch, ast_t* false_branch)
     : ast_t (line, COUNT)
   {
     children[CONDITION] = condition;
     children[TRUE_BRANCH] = true_branch;
+    children[FALSE_BRANCH] = false_branch;
   }
 
   ast_t* condition () const { return children[CONDITION]; }
   iterator condition_iter () { return begin () + CONDITION; }
   ast_t* true_branch () const { return children[TRUE_BRANCH]; }
+  ast_t* false_branch () const { return children[FALSE_BRANCH]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -781,8 +848,8 @@ struct ast_decrement_statement_t : public ast_unary_t
 
 struct ast_list_statement_t : public ast_t
 {
-  ast_list_statement_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  ast_list_statement_t (unsigned int line)
+    : ast_t (line, 0)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -836,9 +903,9 @@ struct ast_var_statement_t : public ast_t
   std::vector<symbol_holder> symbols;
 };
 
-struct ast_bind_statement_t : public ast_binary_t
+struct ast_bind_port_statement_t : public ast_binary_t
 {
-  ast_bind_statement_t (unsigned int line, ast_t* left, ast_t* right)
+  ast_bind_port_statement_t (unsigned int line, ast_t* left, ast_t* right)
     : ast_binary_t (line, left, right)
   { }
 
@@ -846,7 +913,7 @@ struct ast_bind_statement_t : public ast_binary_t
   void accept (ast_const_visitor_t& visitor) const;
 };
 
-struct ast_bind_param_statement_t : public ast_t
+struct ast_bind_port_param_statement_t : public ast_t
 {
   enum
     {
@@ -856,7 +923,7 @@ struct ast_bind_param_statement_t : public ast_t
       COUNT,
     };
 
-  ast_bind_param_statement_t (unsigned int line, ast_t* left, ast_t* right, ast_t* param)
+  ast_bind_port_param_statement_t (unsigned int line, ast_t* left, ast_t* right, ast_t* param)
     : ast_t (line, COUNT)
   {
     children[LEFT] = left;
@@ -870,6 +937,16 @@ struct ast_bind_param_statement_t : public ast_t
   iterator right_iter () { return begin () + RIGHT; }
   ast_t* param () const { return children[PARAM]; }
   iterator param_iter () { return begin () + PARAM; }
+
+  void accept (ast_visitor_t& visitor);
+  void accept (ast_const_visitor_t& visitor) const;
+};
+
+struct ast_bind_pfunc_statement_t : public ast_binary_t
+{
+  ast_bind_pfunc_statement_t (unsigned int line, ast_t* left, ast_t* right)
+    : ast_binary_t (line, left, right)
+  { }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -894,7 +971,7 @@ struct ast_for_iota_statement_t : public ast_t
   }
 
   ast_t* identifier () const { return children[IDENTIFIER]; }
-  iterator limit_iter () { return begin () + LIMIT; }
+  ast_t* limit_node () const { return children[LIMIT]; }
   ast_t* body () const { return children[BODY]; }
 
   void accept (ast_visitor_t& visitor);
@@ -1190,12 +1267,14 @@ struct ast_visitor_t
   virtual void visit (ast_array_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_component_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_empty_type_spec_t& ast) { default_action (ast); }
+  virtual void visit (ast_enum_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_field_list_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_heap_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_identifier_list_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_identifier_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_pointer_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_port_type_spec_t& ast) { default_action (ast); }
+  virtual void visit (ast_pfunc_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_signature_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_struct_type_spec_t& ast) { default_action (ast); }
 
@@ -1232,8 +1311,9 @@ struct ast_visitor_t
   virtual void visit (ast_trigger_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_var_statement_t& ast) { default_action (ast); }
 
-  virtual void visit (ast_bind_statement_t& ast) { default_action (ast); }
-  virtual void visit (ast_bind_param_statement_t& ast) { default_action (ast); }
+  virtual void visit (ast_bind_port_statement_t& ast) { default_action (ast); }
+  virtual void visit (ast_bind_port_param_statement_t& ast) { default_action (ast); }
+  virtual void visit (ast_bind_pfunc_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_for_iota_statement_t& ast) { default_action (ast); }
 
   virtual void visit (ast_action_t& ast) { default_action (ast); }
@@ -1259,12 +1339,14 @@ struct ast_const_visitor_t
   virtual void visit (const ast_array_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_component_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_empty_type_spec_t& ast) { default_action (ast); }
+  virtual void visit (const ast_enum_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_field_list_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_heap_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_identifier_list_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_identifier_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_pointer_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_port_type_spec_t& ast) { default_action (ast); }
+  virtual void visit (const ast_pfunc_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_signature_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_struct_type_spec_t& ast) { default_action (ast); }
 
@@ -1300,8 +1382,9 @@ struct ast_const_visitor_t
   virtual void visit (const ast_subtract_assign_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_trigger_statement_t& ast) { default_action (ast); }
 
-  virtual void visit (const ast_bind_statement_t& ast) { default_action (ast); }
-  virtual void visit (const ast_bind_param_statement_t& ast) { default_action (ast); }
+  virtual void visit (const ast_bind_port_statement_t& ast) { default_action (ast); }
+  virtual void visit (const ast_bind_port_param_statement_t& ast) { default_action (ast); }
+  virtual void visit (const ast_bind_pfunc_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_for_iota_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_var_statement_t& ast) { default_action (ast); }
 
@@ -1367,39 +1450,7 @@ ast_t *ast_make_expr_stmt (unsigned int line, ast_t * expr);
 
 ast_t *ast_make_var_stmt (unsigned int line, ast_t * identifier_list, ast_t * type_spec);
 
-ast_t *ast_make_stmt_list (unsigned int line);
-
 ast_t *ast_make_println_stmt (unsigned int line, ast_t * expr);
-
-/* TypeSpec */
-
-ast_t *ast_make_field_list (unsigned int line);
-
-#define IDENTIFIER_TYPE_SPEC_CHILD 0
-
-ast_t *ast_make_identifier_type_spec (unsigned int line, ast_t * identifier);
-
-#define PORT_SIGNATURE 0
-
-ast_t *ast_make_port (unsigned int line, ast_t * signature);
-
-#define COMPONENT_FIELD_LIST 0
-
-ast_t *ast_make_component_type_spec (unsigned int line, ast_t * field_list);
-
-#define STRUCT_FIELD_LIST 0
-
-ast_t *ast_make_struct_type_spec (unsigned int line, ast_t * field_list);
-
-ast_t *ast_make_empty_type_spec (unsigned int line);
-
-#define POINTER_BASE_TYPE 0
-
-ast_t *ast_make_pointer_type_spec (unsigned int line, ast_t* type_spec);
-
-#define HEAP_BASE_TYPE 0
-
-ast_t *ast_make_heap_type_spec (unsigned int line, ast_t * type);
 
 typed_value_t ast_get_typed_value (const ast_t* node);
 

@@ -58,9 +58,9 @@
 %type <node> while_stmt
 %destructor { /* TODO:  Free the node. node_free ($$); */ } <node>
 
-%token ACTION BIND CHANGE COMPONENT CONST ELSE FOR FOREIGN_KW FUNC HEAP IF INSTANCE MERGE MOVE NEW PORT PRINTLN REACTION RETURN_KW STRUCT TRIGGER TYPE VAR WHILE
+%token ACTION BIND CHANGE COMPONENT CONST ELSE ENUM FOR FOREIGN_KW FUNC HEAP IF INSTANCE MERGE MOVE NEW PFUNC PORT PRINTLN REACTION RETURN_KW STRUCT TRIGGER TYPE VAR WHILE
 
-%token ADD_ASSIGN ARROW DECREMENT DOTDOT EQUAL INCREMENT LOGIC_AND LOGIC_OR NOT_EQUAL
+%token ADD_ASSIGN RIGHT_ARROW LEFT_ARROW DECREMENT DOTDOT EQUAL INCREMENT LOGIC_AND LOGIC_OR NOT_EQUAL
 
 %%
 
@@ -95,11 +95,11 @@ method_def:
 | FUNC '(' identifier '@' identifier CONST ')' identifier signature type_spec stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, $10, MUTABLE, $11); }
 | FUNC '(' identifier '@' identifier       ')' identifier signature type_spec CONST stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, $9, IMMUTABLE, $11); }
 | FUNC '(' identifier '@' identifier CONST ')' identifier signature type_spec CONST stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, $10, IMMUTABLE, $12); }
-| FUNC '(' identifier '@' identifier       ')' identifier signature           stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, ast_make_empty_type_spec (@1), IMMUTABLE, $9); }
-| FUNC '(' identifier '@' identifier CONST ')' identifier signature           stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, ast_make_empty_type_spec (@1), IMMUTABLE, $10); }
+| FUNC '(' identifier '@' identifier       ')' identifier signature           stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, new ast_empty_type_spec_t (@1), IMMUTABLE, $9); }
+| FUNC '(' identifier '@' identifier CONST ')' identifier signature           stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, new ast_empty_type_spec_t (@1), IMMUTABLE, $10); }
 
 
-func_def: FUNC identifier signature stmt_list { $$ = ast_make_function_def (@1, $2, $3, ast_make_empty_type_spec (@1), $4); }
+func_def: FUNC identifier signature stmt_list { $$ = ast_make_function_def (@1, $2, $3, new ast_empty_type_spec_t (@1), $4); }
 | FUNC identifier signature type_spec stmt_list { $$ = ast_make_function_def (@1, $2, $3, $4, $5); }
 
 signature: '(' ')' { $$ = new ast_signature_type_spec_t (yyloc); }
@@ -116,12 +116,13 @@ parameter: identifier_list type_spec { $$ = new ast_identifier_list_type_spec_t 
 optional_semicolon: /* Empty. */
 | ';'
 
-bind_stmt: lvalue ARROW rvalue ';' { $$ = new ast_bind_statement_t (@1, $1, $3); }
-| lvalue ARROW rvalue DOTDOT rvalue';' { $$ = new ast_bind_param_statement_t (@1, $1, $3, $5); }
+bind_stmt: lvalue RIGHT_ARROW rvalue ';' { $$ = new ast_bind_port_statement_t (@1, $1, $3); }
+| lvalue RIGHT_ARROW rvalue DOTDOT rvalue';' { $$ = new ast_bind_port_param_statement_t (@1, $1, $3, $5); }
+| lvalue LEFT_ARROW rvalue ';' { $$ = new ast_bind_pfunc_statement_t (@1, $1, $3); }
 
 stmt_list: '{' inner_stmt_list '}' { $$ = $2; }
 
-inner_stmt_list: /* empty */ { $$ = ast_make_stmt_list (yyloc); }
+inner_stmt_list: /* empty */ { $$ = new ast_list_statement_t (yyloc); }
 | inner_stmt_list stmt { $$ = $1->append ($2); }
 
 stmt: simple_stmt { $$ = $1; }
@@ -184,9 +185,9 @@ var_stmt: VAR identifier_list type_spec ';' { $$ = ast_make_var_stmt (@1, $2, $3
 assignment_stmt: lvalue '=' rvalue ';' { $$ = new ast_assign_statement_t (@1, $1, $3); }
 | lvalue ADD_ASSIGN rvalue ';' { $$ = new ast_add_assign_statement_t (@1, $1, $3); }
 
-if_stmt: IF rvalue stmt_list { $$ = new ast_if_statement_t (@1, $2, $3); }
+if_stmt: IF rvalue stmt_list { $$ = new ast_if_statement_t (@1, $2, $3, new ast_list_statement_t (@1)); }
 | IF rvalue stmt_list ELSE if_stmt { unimplemented; }
-| IF rvalue stmt_list ELSE stmt_list { unimplemented; }
+| IF rvalue stmt_list ELSE stmt_list { $$ = new ast_if_statement_t (@1, $2, $3, $5); }
 | IF simple_stmt ';' rvalue stmt_list { unimplemented; }
 | IF simple_stmt ';' rvalue stmt_list ELSE if_stmt { unimplemented; }
 | IF simple_stmt ';' rvalue stmt_list ELSE stmt_list { unimplemented; }
@@ -198,17 +199,19 @@ identifier_list: identifier { $$ = (new ast_identifier_list_t (@1))->append ($1)
 
 identifier: IDENTIFIER { $$ = $1; }
 
-type_spec: identifier { $$ = ast_make_identifier_type_spec (@1, $1); }
-| COMPONENT '{' field_list '}' { $$ = ast_make_component_type_spec (@1, $3); }
-| STRUCT '{' field_list '}' { $$ = ast_make_struct_type_spec (@1, $3); }
-| PORT signature { $$ = ast_make_port (@1, $2); }
-| '@' type_spec { $$ = ast_make_pointer_type_spec (@1, $2); }
-| HEAP type_spec { $$ = ast_make_heap_type_spec (@1, $2); }
+type_spec: identifier { $$ = new ast_identifier_type_spec_t (@1, $1); }
+| COMPONENT '{' field_list '}' { $$ = new ast_component_type_spec_t (@1, $3); }
+| STRUCT '{' field_list '}' { $$ = new ast_struct_type_spec_t (@1, $3); }
+| PORT signature { $$ = new ast_port_type_spec_t (@1, $2); }
+| PFUNC signature type_spec { $$ = new ast_pfunc_type_spec_t (@1, $2, $3); }
+| '@' type_spec { $$ = new ast_pointer_type_spec_t (@1, $2); }
+| HEAP type_spec { $$ = new ast_heap_type_spec_t (@1, $2); }
 | array_dimension type_spec { $$ = new ast_array_type_spec_t (@1, $1, $2); }
+| ENUM '{' identifier_list '}' { $$ = new ast_enum_type_spec_t (@1, $3); }
 
 array_dimension: '[' LITERAL ']' { $$ = $2; }
 
-field_list: /* empty */ { $$ = ast_make_field_list (yyloc); }
+field_list: /* empty */ { $$ = new ast_field_list_type_spec_t (yyloc); }
 | field_list identifier_list type_spec ';' { $$ = $1->append (new ast_identifier_list_type_spec_t (@1, $2, $3, MUTABLE)); }
 
 rvalue: or_expr { $$ = $1; }

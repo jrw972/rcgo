@@ -82,7 +82,13 @@ instantiate_contained_instances (const type_t * type, instance_table_t& instance
     void visit (const bool_type_t& type)
     { }
 
+    void visit (const int_type_t& type)
+    { }
+
     void visit (const uint_type_t& type)
+    { }
+
+    void visit (const enum_type_t& type)
     { }
 
     void visit (const pointer_type_t& type)
@@ -90,7 +96,12 @@ instantiate_contained_instances (const type_t * type, instance_table_t& instance
 
     void visit (const port_type_t& type)
     {
-      instance_table_insert_port (instance_table, address, parent, field);
+      instance_table.insert_port (address, parent, field);
+    }
+
+    void visit (const pfunc_type_t& type)
+    {
+      instance_table.insert_pfunc (address, parent, field);
     }
   };
   visitor v (instance_table, parent, method, address, NULL);

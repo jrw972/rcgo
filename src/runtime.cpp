@@ -102,6 +102,27 @@ namespace runtime
                   input_pos->parameter);
           }
       }
+
+    for (instance_table_t::PfuncsType::const_iterator input_pos = instance_table.pfuncs.begin (),
+           input_limit = instance_table.pfuncs.end ();
+         input_pos != input_limit;
+         ++input_pos)
+      {
+        instance_t* input_instance = input_pos->second.input_instance;
+        size_t input_pfunc = input_pos->first - input_instance->address ();
+        instance_table_t::OutputType output = *input_pos->second.outputs.begin ();
+        pfunc_t* pfunc = reinterpret_cast<pfunc_t*> (reinterpret_cast<char*> (input_instance->ptr ()) + input_pfunc);
+        if (output.instance != NULL)
+          {
+            pfunc->instance = output.instance->ptr ();
+            pfunc->method = output.method;
+          }
+        else
+          {
+            pfunc->instance = NULL;
+            pfunc->function = output.function;
+          }
+      }
   }
 
   void
@@ -220,6 +241,11 @@ namespace runtime
                 void visit (const method_type_t&)
                 {
                   stack_frame_push_pointer (exec.stack (), tv.method_value->node);
+                }
+
+                void visit (const enum_type_t&)
+                {
+                  stack_frame_push_uint (exec.stack (), tv.enum_value);
                 }
 
                 void default_action (const type_t& type)
@@ -414,6 +440,19 @@ namespace runtime
 
         // Sample the top of the stack.
         char* top_before = stack_frame_top (exec.stack ());
+
+        switch (node.kind)
+          {
+          case ast_call_expr_t::NONE:
+            not_reached;
+          case ast_call_expr_t::FUNCTION:
+            break;
+          case ast_call_expr_t::METHOD:
+            evaluate_expr (exec, node.expr ()->children[0]->children[0]);
+            break;
+          case ast_call_expr_t::PFUNC:
+            unimplemented;
+          }
 
         // Push the arguments.
         evaluate_expr (exec, node.args ());
@@ -754,6 +793,14 @@ namespace runtime
                 return;
               }
           }
+        else
+          {
+            if (evaluate_statement (exec, node.false_branch ()) == RETURN)
+              {
+                retval = RETURN;
+                return;
+              }
+          }
       }
 
       void visit (const ast_while_statement_t& node)
@@ -772,6 +819,20 @@ namespace runtime
               }
             else
               {
+                return;
+              }
+          }
+      }
+
+      void visit (const ast_for_iota_statement_t& node)
+      {
+        for (size_t idx = 0; idx != node.limit; ++idx)
+          {
+            size_t* ptr = static_cast<size_t*> (stack_frame_address_for_offset (exec.stack (), symbol_get_offset (node.symbol.symbol ())));
+            *ptr = idx;
+            if (evaluate_statement (exec, node.body ()) == RETURN)
+              {
+                retval = RETURN;
                 return;
               }
           }

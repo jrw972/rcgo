@@ -234,119 +234,33 @@ type_change (const type_t* type)
   return false;
 }
 
-void
-field_list_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
+#define ACCEPT(type) void \
+type::accept (const_type_visitor_t& visitor) const \
+{ \
+  visitor.visit (*this); \
 }
 
-void
-iota_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-named_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-component_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-struct_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-port_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-bool_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-function_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-method_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-heap_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-pointer_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-reaction_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-signature_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-string_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-int_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-uint_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-void_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-nil_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
-
-void
-array_type_t::accept (const_type_visitor_t& visitor) const
-{
-  visitor.visit (*this);
-}
+ACCEPT(enum_type_t)
+ACCEPT(field_list_type_t)
+ACCEPT(iota_type_t)
+ACCEPT(named_type_t)
+ACCEPT(component_type_t)
+ACCEPT(struct_type_t)
+ACCEPT(port_type_t)
+ACCEPT(pfunc_type_t)
+ACCEPT(bool_type_t)
+ACCEPT(function_type_t)
+ACCEPT(method_type_t)
+ACCEPT(heap_type_t)
+ACCEPT(pointer_type_t)
+ACCEPT(reaction_type_t)
+ACCEPT(signature_type_t)
+ACCEPT(string_type_t)
+ACCEPT(int_type_t)
+ACCEPT(uint_type_t)
+ACCEPT(void_type_t)
+ACCEPT(nil_type_t)
+ACCEPT(array_type_t)
 
 // Returns true if two types are equal.
 // If one type is a named type, then the other must be the same named type.
@@ -452,6 +366,18 @@ type_is_equal (const type_t * x, const type_t* y)
       if (y)
         {
           flag = type_is_equal (x->base_type (), y->base_type ());
+        }
+    }
+
+    void visit (const function_type_t& type)
+    {
+      const function_type_t* x = &type;
+      const function_type_t* y = type_cast<function_type_t> (other);
+      if (y)
+        {
+          flag = type_is_equal (x->signature (), y->signature ()) &&
+            type_is_equal (x->return_parameter ()->value.type, y->return_parameter ()->value.type) &&
+            x->return_parameter ()->value.is_foreign_safe () && y->return_parameter ()->value.is_foreign_safe ();
         }
     }
   };
@@ -649,6 +575,9 @@ type_contains_pointer (const type_t* type)
     void visit (const iota_type_t& type)
     { }
 
+    void visit (const enum_type_t& type)
+    { }
+
     void visit (const array_type_t& type)
     {
       type.base_type ()->accept (*this);
@@ -778,6 +707,11 @@ type_is_comparable (const type_t* type)
     {
       flag = true;
     }
+
+    void visit (const enum_type_t& type)
+    {
+      flag = true;
+    }
   };
   visitor v;
   type->accept (v);
@@ -879,7 +813,15 @@ std::string
 function_type_t::to_string () const
 {
   std::stringstream str;
-  str << "func " << *signature << ' ' << *return_parameter->value.type;
+  str << "func " << *signature () << ' ' << *return_parameter ()->value.type;
+  return str.str ();
+}
+
+std::string
+pfunc_type_t::to_string () const
+{
+  std::stringstream str;
+  str << "pfunc " << *signature () << ' ' << *return_parameter ()->value.type;
   return str.str ();
 }
 
@@ -887,7 +829,7 @@ std::string
 method_type_t::to_string () const
 {
   std::stringstream str;
-  str << '(' << *receiver_type << ')' << " func " << *signature << ' ' << *function_type->return_parameter->value.type;
+  str << '(' << *receiver_type << ')' << " func " << *signature () << ' ' << *function_type->return_parameter ()->value.type;
   return str.str ();
 }
 

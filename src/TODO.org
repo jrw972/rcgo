@@ -4,10 +4,12 @@
 - TODO Implement data-aware scheduling.  For example, a component that
   routes messages needs to trigger a reaction based on an id in the
   message.
+- TODO Add reactions that pick a parameter automatically.
 * Garbage Collector
 - TODO Consider marking subinstances as as "non-scannable."
 * Runtime
 - TODO Profile and optimize
+- TODO Clean up stack frame.
 * Paritioned Scheduler
 ** Design Goals
 - Fairness
@@ -62,6 +64,8 @@ Assumption of fixed-point?
 * AST
 - TODO Consolidate similar nodes.
 - TODO Implement a node_cast similar to type_cast.
+- TODO Use an ast namespace.
+- TODO Replace ast_print with insertion operator.
 * Typed Value
 - TODO Move any remaining checking from process_definitions et al. to typed_value.
 * Type System

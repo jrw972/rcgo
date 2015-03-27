@@ -102,4 +102,8 @@ bool stack_frame_empty (const stack_frame_t* stack_frame);
 
 void stack_frame_dump (const stack_frame_t* stack_frame);
 
+// Translate the given offset to a address using the base pointer.
+void* stack_frame_address_for_offset (const stack_frame_t* stack_frame,
+                                      ptrdiff_t offset);
+
 #endif /* stack_frame_h */

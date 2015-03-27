@@ -9,11 +9,6 @@ struct instance_table_t
   typedef std::map<size_t, instance_t*> InstancesType;
   InstancesType instances;
 
-  void insert (instance_t* instance)
-  {
-    instances[instance->address ()] = instance;
-  }
-
   struct InputType
   {
     instance_t* instance;
@@ -46,18 +41,73 @@ struct instance_table_t
   typedef std::map<InputType, std::set<size_t> > ReversePortsType;
   ReversePortsType reverse_ports;
 
+  struct OutputType
+  {
+    instance_t* instance;
+    union {
+      method_t* method;
+      function_t* function;
+    };
+
+    OutputType () { }
+    OutputType (instance_t* i, method_t* m)
+      : instance (i)
+      , method (m)
+    { }
+
+    OutputType (function_t* f)
+      : instance (NULL)
+      , function (f)
+    { }
+
+    bool operator< (const OutputType& other) const
+    {
+      if (this->instance != other.instance) return this->instance < other.instance;
+      return this->method < other.method;
+    }
+  };
+  typedef std::set<OutputType> OutputsType;
+
+  struct PfuncValueType
+  {
+    PfuncValueType () { }
+    PfuncValueType (size_t a, instance_t* oi, field_t* of) : address (a), input_instance (oi), input_field (of) { }
+    size_t address;
+    instance_t* input_instance;
+    field_t* input_field;
+    OutputsType outputs;
+  };
+  typedef std::map<size_t, PfuncValueType> PfuncsType;
+  PfuncsType pfuncs;
+
   typedef std::vector<instance_t::ConcreteAction> ActionsType;
   ActionsType actions () const;
+
+  void insert (instance_t* instance)
+  {
+    instances[instance->address ()] = instance;
+  }
+
+  void
+  insert_port (size_t address,
+               instance_t* output_instance,
+               field_t* output_field)
+  {
+    ports[address] = PortValueType (address, output_instance, output_field);
+  }
+
+  void
+  insert_pfunc (size_t address,
+                instance_t* input_instance,
+                field_t* input_field)
+  {
+    pfuncs[address] = PfuncValueType (address, input_instance, input_field);
+  }
 };
 
 std::ostream&
 operator<< (std::ostream&,
             const instance_table_t::PortValueType&);
-
-void instance_table_insert_port (instance_table_t& table,
-                                 size_t address,
-                                 instance_t* output_instance,
-                                 field_t* output_field);
 
 void instance_table_enumerate_bindings (instance_table_t& table);
 

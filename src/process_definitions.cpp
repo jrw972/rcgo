@@ -160,13 +160,13 @@ in_mutable_section (const ast_t* node)
 
 
 typed_value_t
-type_check_expr (ast_t::iterator ptr)
+type_check_expr (ast_t* ptr)
 {
   struct check_visitor : public ast_visitor_t
   {
-    ast_t::iterator ptr;
+    ast_t* ptr;
 
-    check_visitor (ast_t::iterator p) : ptr (p) { }
+    check_visitor (ast_t* p) : ptr (p) { }
 
     void default_action (ast_t& node)
     {
@@ -200,9 +200,9 @@ type_check_expr (ast_t::iterator ptr)
                          "%s is not an array of ports", port_identifier.c_str ());
         }
 
-      ast_t::iterator index = node.index_iter ();
+      ast_t* index = node.index ();
       type_check_expr (index);
-      check_index (array_type, ast_get_typed_value (*index), **index);
+      check_index (array_type, ast_get_typed_value (index), *index);
 
       ast_t *args = node.args ();
       check_rvalue_list (args);
@@ -217,7 +217,7 @@ type_check_expr (ast_t::iterator ptr)
 
     void visit (ast_merge_expr_t& node)
     {
-      ast_t::iterator child = node.get_child_ptr (UNARY_CHILD);
+      ast_t* child = node.at (UNARY_CHILD);
       typed_value_t in = type_check_expr (child);
       typed_value_t out = typed_value_t::merge (in);
       if (out.type == NULL)
@@ -230,7 +230,7 @@ type_check_expr (ast_t::iterator ptr)
 
     void visit (ast_move_expr_t& node)
     {
-      ast_t::iterator child = node.get_child_ptr (UNARY_CHILD);
+      ast_t* child = node.at (UNARY_CHILD);
       typed_value_t in = type_check_expr (child);
       typed_value_t out = typed_value_t::move (in);
       if (out.type == NULL)
@@ -297,7 +297,7 @@ type_check_expr (ast_t::iterator ptr)
 
     void visit (ast_implicit_dereference_expr_t& node)
     {
-      typed_value_t tv = type_check_expr (node.child_iter ());
+      typed_value_t tv = type_check_expr (node.child ());
       tv = typed_value_t::implicit_dereference (tv);
       node.set_type (tv);
     }
@@ -307,7 +307,7 @@ type_check_expr (ast_t::iterator ptr)
       ast_t::iterator left = node.base_iter ();
       ast_t *right = node.identifier ();
       const std::string& identifier = ast_get_identifier (right);
-      typed_value_t in = type_check_expr (left);
+      typed_value_t in = type_check_expr (*left);
 
       assert (in.type != NULL);
       assert (in.kind == typed_value_t::REFERENCE);
@@ -341,7 +341,7 @@ type_check_expr (ast_t::iterator ptr)
 
     void visit (ast_dereference_expr_t& node)
     {
-      ast_t::iterator child = node.child_iter ();
+      ast_t* child = node.child ();
       typed_value_t in = type_check_expr (child);
       typed_value_t out = typed_value_t::dereference (in);
       if (out.type == NULL)
@@ -372,14 +372,14 @@ type_check_expr (ast_t::iterator ptr)
 
     void visit (ast_address_of_expr_t& node)
     {
-      ast_t::iterator expr = node.child_iter ();
+      ast_t* expr = node.child ();
       type_check_expr (expr);
       check_address_of (node);
     }
 
     void visit (ast_logic_not_expr_t& node)
     {
-      ast_t::iterator child = node.get_child_ptr (UNARY_CHILD);
+      ast_t* child = node.at (UNARY_CHILD);
       typed_value_t in = type_check_expr (child);
       typed_value_t out = typed_value_t::logic_not (in);
       if (out.type == NULL)
@@ -392,8 +392,8 @@ type_check_expr (ast_t::iterator ptr)
 
     void visit (ast_binary_arithmetic_expr_t& node)
     {
-      typed_value_t left = type_check_expr (node.left_iter ());
-      typed_value_t right = type_check_expr (node.right_iter ());
+      typed_value_t left = type_check_expr (node.left ());
+      typed_value_t right = type_check_expr (node.right ());
       typed_value_t result;
       const char* operator_str = "";
 
@@ -466,8 +466,8 @@ type_check_expr (ast_t::iterator ptr)
 
     void visit (ast_call_expr_t& node)
     {
-      ast_t::iterator expr = node.expr_iter ();
-      ast_t *args = node.args ();
+      ast_t* expr = node.expr ();
+      ast_t* args = node.args ();
 
       // Analyze the args.
       check_rvalue_list (args);
@@ -488,45 +488,49 @@ type_check_expr (ast_t::iterator ptr)
         {
           error_at_line (-1, 0, node.file, node.line,
                          "cannot call %s", type.to_string ().c_str ());
-
         }
 
         void visit (const function_type_t& type)
         {
-          rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
+          node.kind = ast_call_expr_t::FUNCTION;
+          rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args ());
+        }
+
+        void visit (const pfunc_type_t& type)
+        {
+          node.kind = ast_call_expr_t::PFUNC;
+          rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args ());
+          if (in_mutable_section (&node))
+            {
+              error_at_line (-1, 0, node.file, node.line,
+                             "cannot call pfunc in mutable section");
+
+            }
         }
 
         void visit (const method_type_t& type)
         {
-          rvalue_visitor.check_call (node, type.signature, type.function_type->return_parameter->value, node.args ());
+          node.kind = ast_call_expr_t::METHOD;
+          rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args ());
 
-          // Transfer the computation for the receiver to the argument list.
-          // The receiver is either a copy or a pointer.
-          bool receiver_is_pointer = type_dereference (type.receiver_type);
-          ast_t* expr = node.expr ();
-          ast_t* args = node.args ();
-
-          // Strip off implicit deref and select.
-          ast_t* receiver_select_expr = expr->children[0]->children[0];
-
-          if (receiver_is_pointer)
+          if (type_dereference (type.receiver_type) != NULL)
             {
+              // Method expects a pointer.  Insert address of.
+              // Strip off implicit deref and select.
+              ast_t* receiver_select_expr = node.expr ()->children[0]->children[0];
               ast_address_of_expr_t* e = new ast_address_of_expr_t (node.line, receiver_select_expr);
               rvalue_visitor.check_address_of (*e);
-              args->prepend (e);
-            }
-          else
-            {
-              args->prepend (receiver_select_expr);
+              node.expr ()->children[0]->children[0] = e;
             }
 
-          if (in_mutable_section (&node))
+          if (type_cast<component_type_t> (type_strip (type.named_type)))
             {
-              const named_type_t* t = type.named_type;
-              if (type_cast<component_type_t> (type_strip (t)))
+              // Invoking a method on a component.
+              if (in_mutable_section (&node))
                 {
                   // Invoking a method on a component in a mutable section.
                   // Ensure the receiver is this.
+                  // TODO
                   std::cout << node.line << '\n';
                   unimplemented;
                 }
@@ -562,8 +566,8 @@ type_check_expr (ast_t::iterator ptr)
 
     void visit (ast_index_expr_t& node)
     {
-      ast_t::iterator expr = node.base_iter ();
-      ast_t::iterator idx = node.index_iter ();
+      ast_t* expr = node.base ();
+      ast_t* idx = node.index ();
       typed_value_t expr_tv = type_check_expr (expr);
       typed_value_t idx_tv = type_check_expr (idx);
       typed_value_t result = typed_value_t::index (expr_tv, idx_tv);
@@ -577,8 +581,8 @@ type_check_expr (ast_t::iterator ptr)
 
   };
   check_visitor check_lvalue_visitor (ptr);
-  (*ptr)->accept (check_lvalue_visitor);
-  return ast_get_typed_value (*ptr);
+  ptr->accept (check_lvalue_visitor);
+  return ast_get_typed_value (ptr);
 }
 
 // void
@@ -625,7 +629,7 @@ check_rvalue_list (ast_t * node)
            child != limit;
            ++child)
         {
-          type_check_expr (child);
+          type_check_expr (*child);
         }
     }
   };
@@ -635,14 +639,14 @@ check_rvalue_list (ast_t * node)
 }
 
 static void
-check_condition (ast_t::iterator condition_node)
+check_condition (ast_t* condition_node)
 {
   type_check_expr (condition_node);
-  typed_value_t tv = ast_get_typed_value (*condition_node);
+  typed_value_t tv = ast_get_typed_value (condition_node);
   if (!type_is_boolean (tv.type))
     {
-      error_at_line (-1, 0, (*condition_node)->file,
-                     (*condition_node)->line,
+      error_at_line (-1, 0, condition_node->file,
+                     condition_node->line,
                      "cannot convert (%s) to boolean expression in condition", tv.type->to_string ().c_str ());
     }
 }
@@ -660,13 +664,13 @@ type_check_statement (ast_t * node)
     void visit (ast_empty_statement_t& node)
     { }
 
-    typed_value_t bind (ast_t& node, ast_t::iterator port_node, ast_t::iterator reaction_node)
+    typed_value_t bind (ast_t& node, ast_t* port_node, ast_t* reaction_node)
     {
       type_check_expr (port_node);
       type_check_expr (reaction_node);
 
-      typed_value_t port_tv = ast_get_typed_value (*port_node);
-      typed_value_t reaction_tv = ast_get_typed_value (*reaction_node);
+      typed_value_t port_tv = ast_get_typed_value (port_node);
+      typed_value_t reaction_tv = ast_get_typed_value (reaction_node);
 
       const port_type_t *port_type = type_cast<port_type_t> (port_tv.type);
 
@@ -692,17 +696,17 @@ type_check_statement (ast_t * node)
       return reaction_tv;
     }
 
-    void visit (ast_bind_statement_t& node)
+    void visit (ast_bind_port_statement_t& node)
     {
-      bind (node, node.left_iter (), node.right_iter ());
+      bind (node, node.left (), node.right ());
     }
 
-    void visit (ast_bind_param_statement_t& node)
+    void visit (ast_bind_port_param_statement_t& node)
     {
-      typed_value_t reaction_tv = bind (node, node.left_iter (), node.right_iter ());
-      ast_t::iterator param_node = node.param_iter ();
+      typed_value_t reaction_tv = bind (node, node.left (), node.right ());
+      ast_t* param_node = node.param ();
       type_check_expr (param_node);
-      typed_value_t param_tv = ast_get_typed_value (*param_node);
+      typed_value_t param_tv = ast_get_typed_value (param_node);
       assert (reaction_tv.has_value);
       reaction_t* reaction = reaction_tv.reaction_value;
       if (!reaction->has_dimension ())
@@ -710,13 +714,66 @@ type_check_statement (ast_t * node)
           error_at_line (-1, 0, node.file, node.line,
                          "parameter specified for non-parameterized reaction");
         }
-      check_index (new array_type_t (reaction->dimension (), reaction->reaction_type ()), param_tv, **param_node);
+      check_index (new array_type_t (reaction->dimension (), reaction->reaction_type ()), param_tv, *param_node);
+    }
+
+    void visit (ast_bind_pfunc_statement_t& node)
+    {
+      ast_t* pfunc_node = node.left ();
+      ast_t* func_node = node.right ();
+      type_check_expr (pfunc_node);
+      type_check_expr (func_node);
+      typed_value_t pfunc_tv = ast_get_typed_value (pfunc_node);
+      typed_value_t func_tv = ast_get_typed_value (func_node);
+
+      const pfunc_type_t* pfunc_type = type_cast<pfunc_type_t> (pfunc_tv.type);
+
+      if (pfunc_type == NULL)
+        {
+          error_at_line (-1, 0, node.file, node.line,
+                         "target of bind is not a pfunc");
+        }
+
+      const method_type_t* method_type = type_cast<method_type_t> (func_tv.type);
+
+      if (method_type != NULL)
+        {
+          if (type_dereference (method_type->receiver_type) == NULL)
+            {
+              error_at_line (-1, 0, node.file, node.line,
+                             "method must take pointer receiver");
+            }
+
+          if (!type_is_equal (pfunc_type->bind_type (), method_type->bind_type ()))
+            {
+              error_at_line (-1, 0, node.file, node.line,
+                             "cannot bind %s to %s", pfunc_type->to_string ().c_str (), method_type->to_string ().c_str ());
+            }
+          return;
+        }
+
+      const function_type_t* function_type = type_cast<function_type_t> (func_tv.type);
+
+      if (function_type != NULL)
+        {
+          unimplemented;
+          return;
+        }
+
+      error_at_line (-1, 0, node.file, node.line,
+                     "source of bind is not a method or function");
+
+      // if (!type_is_equal (port_type->signature (), reaction_type->signature ()))
+      //   {
+      //     error_at_line (-1, 0, node.file, node.line,
+      //                    "cannot bind %s to %s", port_type->to_string ().c_str (), reaction_type->to_string ().c_str ());
+      //   }
     }
 
     void visit (ast_for_iota_statement_t& node)
     {
       const std::string& identifier = ast_get_identifier (node.identifier ());
-      size_t limit = process_array_dimension (node.limit_iter ());
+      size_t limit = process_array_dimension (node.limit_node ());
       symbol_t* symbol = symbol_make_variable (identifier, new iota_type_t (limit), node.identifier ());
       enter_symbol (node.symtab, symbol, node.symbol);
       type_check_statement (node.body ());
@@ -724,14 +781,14 @@ type_check_statement (ast_t * node)
     }
 
     static typed_value_t
-    check_assignment_target (ast_t::iterator left)
+    check_assignment_target (ast_t* left)
     {
       typed_value_t tv = type_check_expr (left);
       assert (tv.kind == typed_value_t::REFERENCE);
       if (tv.intrinsic_mutability != MUTABLE)
         {
-          ast_print (**left);
-          error_at_line (-1, 0, (*left)->file, (*left)->line,
+          ast_print (*left);
+          error_at_line (-1, 0, left->file, left->line,
                          "cannot assign to read-only location of type %s", tv.type->to_string ().c_str ());
         }
 
@@ -740,12 +797,12 @@ type_check_statement (ast_t * node)
 
     static void arithmetic_assign (ast_binary_t* node, const char* symbol)
     {
-      ast_t::iterator left = node->left_iter ();
+      ast_t* left = node->left ();
       check_assignment_target (left);
-      ast_t::iterator right = node->right_iter ();
+      ast_t* right = node->right ();
       type_check_expr (right);
-      typed_value_t left_tv = ast_get_typed_value (*left);
-      typed_value_t right_tv = ast_get_typed_value (*right);
+      typed_value_t left_tv = ast_get_typed_value (left);
+      typed_value_t right_tv = ast_get_typed_value (right);
       if (!type_is_convertible (left_tv.type, right_tv.type))
         {
           error_at_line (-1, 0, node->file, node->line,
@@ -781,8 +838,8 @@ type_check_statement (ast_t * node)
 
     void visit (ast_assign_statement_t& node)
     {
-      typed_value_t left_tv = check_assignment_target (node.left_iter ());
-      typed_value_t right_tv = type_check_expr (node.right_iter ());
+      typed_value_t left_tv = check_assignment_target (node.left ());
+      typed_value_t right_tv = type_check_expr (node.right ());
       check_assignment (left_tv, right_tv, node,
                         "incompatible types (%s) = (%s)",
                         "assignment leaks mutable pointers",
@@ -791,14 +848,14 @@ type_check_statement (ast_t * node)
 
     void visit (ast_change_statement_t& node)
     {
-      ast_t::iterator expr = node.expr_iter ();
+      ast_t* expr = node.expr ();
       const std::string& identifier = ast_get_identifier (node.identifier ());
       ast_t* type = node.type ();
       ast_t* body = node.body ();
 
       // Process the expression.
       type_check_expr (expr);
-      typed_value_t tv = ast_get_typed_value (*expr);
+      typed_value_t tv = ast_get_typed_value (expr);
 
       const type_t* root_type = type_change (tv.type);
       if (root_type == NULL)
@@ -829,21 +886,20 @@ type_check_statement (ast_t * node)
 
     void visit (ast_expression_statement_t& node)
     {
-      ast_t::iterator child = node.get_child_ptr (UNARY_CHILD);
+      ast_t* child = node.at (UNARY_CHILD);
       type_check_expr (child);
     }
 
     void visit (ast_if_statement_t& node)
     {
-      ast_t::iterator condition = node.condition_iter ();
-      ast_t* true_branch = node.true_branch ();
-      check_condition (condition);
-      type_check_statement (true_branch);
+      check_condition (node.condition ());
+      type_check_statement (node.true_branch ());
+      type_check_statement (node.false_branch ());
     }
 
     void visit (ast_while_statement_t& node)
     {
-      ast_t::iterator condition = node.condition_iter ();
+      ast_t* condition = node.condition ();
       ast_t* body = node.body ();
       check_condition (condition);
       type_check_statement (body);
@@ -870,7 +926,7 @@ type_check_statement (ast_t * node)
     void visit (ast_return_statement_t& node)
     {
       // Check the expression.
-      typed_value_t expr_tv = type_check_expr (node.child_iter ());
+      typed_value_t expr_tv = type_check_expr (node.child ());
 
       // Check that it matches with the return type.
       node.return_symbol = get_current_return_symbol (&node);
@@ -884,7 +940,7 @@ type_check_statement (ast_t * node)
 
     void visit (ast_increment_statement_t& node)
     {
-      ast_t::iterator expr = node.child_iter ();
+      ast_t* expr = node.child ();
       check_assignment_target (expr);
       struct visitor : public const_type_visitor_t
       {
@@ -909,7 +965,7 @@ type_check_statement (ast_t * node)
         }
       };
       visitor v (node);
-      static_cast<ast_expr_t*> (*expr)->get_type ().type->accept (v);
+      static_cast<ast_expr_t*> (expr)->get_type ().type->accept (v);
     }
 
     void visit (ast_decrement_statement_t& node)
@@ -983,6 +1039,7 @@ control_check_statement (ast_t * node)
     void visit (ast_if_statement_t& node)
     {
       node.true_branch ()->accept (*this);
+      node.false_branch ()->accept (*this);
     }
 
     void visit (ast_while_statement_t& node)
@@ -1130,6 +1187,11 @@ mutates_check_statement (ast_t * node)
     {
       node.expr ()->accept (*this);
 
+      if (node.kind == ast_call_expr_t::METHOD)
+        {
+          check_for_pointer_copy (node.expr ()->children[0]->children[0]);
+        }
+
       for (ast_t::iterator pos = node.args ()->begin (), limit = node.args ()->end ();
            pos != limit;
            ++pos)
@@ -1257,6 +1319,7 @@ mutates_check_statement (ast_t * node)
     void visit (ast_if_statement_t& node)
     {
       node.true_branch ()->accept (*this);
+      node.false_branch ()->accept (*this);
     }
 
     void visit (ast_while_statement_t& node)
@@ -1336,7 +1399,7 @@ process_definitions (ast_t * node)
 
     void visit (ast_action_t& node)
     {
-      ast_t::iterator precondition_node = node.precondition_iter ();
+      ast_t* precondition_node = node.precondition ();
       ast_t *body_node = node.body ();
 
       /* Insert "this" into the symbol table. */
@@ -1362,7 +1425,7 @@ process_definitions (ast_t * node)
       control_check_statement (body_node);
       mutates_check_statement (body_node);
 
-      typed_value_t tv = ast_get_typed_value (*precondition_node);
+      typed_value_t tv = ast_get_typed_value (precondition_node);
       if (tv.has_value)
         {
           if (tv.bool_value)
@@ -1379,7 +1442,7 @@ process_definitions (ast_t * node)
     void visit (ast_dimensioned_action_t& node)
     {
       ast_t *dimension_node = node.dimension ();
-      ast_t::iterator precondition_node = node.precondition_iter ();
+      ast_t* precondition_node = node.precondition ();
       ast_t *body_node = node.body ();
 
       /* Insert "this" into the symbol table. */
@@ -1473,7 +1536,7 @@ process_definitions (ast_t * node)
                          "no method named %s",
                          ast_get_identifier (initializer).c_str ());
         }
-      if (method->method_type->signature->arity () != 0)
+      if (method->method_type->signature ()->arity () != 0)
         {
           error_at_line (-1, 0, initializer->file,
                          initializer->line,

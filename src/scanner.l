@@ -18,6 +18,7 @@
 "component"            { return COMPONENT; }
 "const"                { return CONST; }
 "else"                 { return ELSE; }
+"enum"                 { return ENUM; }
 "for"                  { return FOR; }
 "foreign"              { return FOREIGN_KW; }
 "func"                 { return FUNC; }
@@ -27,6 +28,7 @@
 "merge"                { return MERGE; }
 "move"                 { return MOVE; }
 "new"                  { return NEW; }
+"pfunc"                { return PFUNC; }
 "port"                 { return PORT; }
 "println"              { return PRINTLN; }
 "reaction"             { return REACTION; }
@@ -44,7 +46,8 @@
 "--"                   { return DECREMENT; }
 "=="                   { return EQUAL; }
 "!="                   { return NOT_EQUAL; }
-"->"                   { return ARROW; }
+"->"                   { return RIGHT_ARROW; }
+"<-"                   { return LEFT_ARROW; }
 
 ".."                   { return DOTDOT; }
 
@@ -91,7 +94,7 @@
   return LITERAL;
 }
 
-[1-9][0-9]*u? {
+-?[1-9][0-9]*u? {
   std::string x (yytext);
   if (*x.rbegin () == 'u')
     {

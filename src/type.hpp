@@ -137,6 +137,15 @@ private:
   uint_type_t () { }
 };
 
+class enum_type_t : public type_t
+{
+  virtual void accept (const_type_visitor_t& visitor) const;
+  virtual std::string to_string () const { return "<enum>"; }
+  virtual size_t alignment () const { return sizeof (void*); }
+  virtual size_t size () const { return sizeof (void*); }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+};
+
 class string_type_t : public type_t
 {
 public:
@@ -296,10 +305,10 @@ private:
 class function_type_t : public type_t
 {
 public:
-  function_type_t (const signature_type_t * signature_,
-                   const parameter_t * return_parameter_)
-    : signature (signature_)
-    , return_parameter (return_parameter_)
+  function_type_t (const signature_type_t * signature,
+                   const parameter_t * return_parameter)
+    : signature_ (signature)
+    , return_parameter_ (return_parameter)
   { }
 
   void accept (const_type_visitor_t& visitor) const;
@@ -308,8 +317,12 @@ public:
   size_t size () const { return sizeof (void*); }
   virtual TypeLevel level () const { return CONVENTIONAL; }
 
-  const signature_type_t * const signature;
-  const parameter_t * const return_parameter;
+  const signature_type_t* signature () const { return signature_; }
+  const parameter_t* return_parameter () const { return return_parameter_; }
+
+private:
+  const signature_type_t * const signature_;
+  const parameter_t * return_parameter_;
 };
 
 class method_type_t : public type_t
@@ -319,12 +332,13 @@ public:
                  const std::string& this_name,
                  const type_t* receiver_type_,
                  Mutability dereference_mutability,
-                 const signature_type_t * signature_,
+                 const signature_type_t * signature,
                  const parameter_t* return_parameter)
     : named_type (named_type_)
     , receiver_type (receiver_type_)
-    , signature (signature_)
-    , function_type (make_function_type (this_name, receiver_type_, dereference_mutability, signature_, return_parameter))
+    , function_type (make_function_type (this_name, receiver_type_, dereference_mutability, signature, return_parameter))
+    , signature_ (signature)
+    , bind_type_ (new function_type_t (signature_, return_parameter))
   {
   }
 
@@ -336,11 +350,15 @@ public:
 
   const named_type_t* const named_type;
   const type_t* const receiver_type;
-  const signature_type_t* const signature;
   const function_type_t* function_type;
+  const type_t* bind_type () const { return bind_type_; }
+  const signature_type_t* signature () const { return signature_; }
+  const parameter_t* return_parameter () const { return function_type->return_parameter (); }
 
 private:
   static function_type_t* make_function_type (const std::string& this_name, const type_t* receiver_type, Mutability dereference_mutability, const signature_type_t* signature, const parameter_t* return_parameter);
+  const signature_type_t* signature_;
+  const type_t* bind_type_;
 };
 
 class port_type_t : public type_t
@@ -364,6 +382,27 @@ public:
   const signature_type_t* signature () const { return signature_; }
 private:
   const signature_type_t *signature_;
+};
+
+class pfunc_type_t : public type_t
+{
+public:
+  pfunc_type_t (const signature_type_t* signature_, const parameter_t* return_parameter_)
+    : function_type_ (new function_type_t (signature_, return_parameter_))
+  { }
+
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const;
+  size_t alignment () const { return sizeof (void*); }
+  size_t size () const { return sizeof (pfunc_t); }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+
+  const signature_type_t * signature () const { return function_type_->signature (); }
+  const parameter_t * return_parameter () const { return function_type_->return_parameter (); }
+  const type_t* bind_type () const { return function_type_; }
+
+private:
+  const function_type_t* function_type_;
 };
 
 class reaction_type_t : public type_t
@@ -429,6 +468,7 @@ struct const_type_visitor_t
   virtual void visit (const array_type_t& type) { default_action (type); }
   virtual void visit (const bool_type_t& type) { default_action (type); }
   virtual void visit (const component_type_t& type) { default_action (type); }
+  virtual void visit (const enum_type_t& type) { default_action (type); }
   virtual void visit (const field_list_type_t& type) { default_action (type); }
   virtual void visit (const function_type_t& type) { default_action (type); }
   virtual void visit (const method_type_t& type) { default_action (type); }
@@ -437,6 +477,7 @@ struct const_type_visitor_t
   virtual void visit (const named_type_t& type) { default_action (type); }
   virtual void visit (const pointer_type_t& type) { default_action (type); }
   virtual void visit (const port_type_t& type) { default_action (type); }
+  virtual void visit (const pfunc_type_t& type) { default_action (type); }
   virtual void visit (const reaction_type_t& type) { default_action (type); }
   virtual void visit (const signature_type_t& type) { default_action (type); }
   virtual void visit (const string_type_t& type) { default_action (type); }

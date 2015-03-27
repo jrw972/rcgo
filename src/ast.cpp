@@ -204,14 +204,19 @@ ast_print (const ast_t& node)
       print (node, "bind");
     }
 
-    void visit (const ast_bind_statement_t& node)
+    void visit (const ast_bind_port_statement_t& node)
     {
-      print (node, "bind_statement");
+      print (node, "bind_port_statement");
     }
 
-    void visit (const ast_bind_param_statement_t& node)
+    void visit (const ast_bind_port_param_statement_t& node)
     {
       print (node, "bind_param_statement");
+    }
+
+    void visit (const ast_bind_pfunc_statement_t& node)
+    {
+      print (node, "bind_pfunc_statement");
     }
 
     void visit (const ast_trigger_statement_t& node)
@@ -312,31 +317,11 @@ ast_make_var_stmt (unsigned int line, ast_t * identifier_list, ast_t * type_spec
   return retval;
 }
 
-ast_t *
-ast_make_stmt_list (unsigned int line)
-{
-  return new ast_list_statement_t (line, 0);
-}
-
 ast_t *ast_make_println_stmt (unsigned int line, ast_t * expr)
 {
   ast_t *retval = new ast_println_statement_t (line, 1);
   retval->set (UNARY_CHILD, expr);
   return retval;
-}
-
-ast_t *
-ast_make_identifier_type_spec (unsigned int line, ast_t * identifier)
-{
-  ast_t *retval = new ast_identifier_type_spec_t (line, 1);
-  retval->set (UNARY_CHILD, identifier);
-  return retval;
-}
-
-ast_t *
-ast_make_field_list (unsigned int line)
-{
-  return new ast_field_list_type_spec_t (line, 0);
 }
 
 ast_t *
@@ -381,42 +366,6 @@ ast_make_instance_def (unsigned int line, ast_t * instance_id, ast_t * type_id, 
   return retval;
 }
 
-ast_t *
-ast_make_port (unsigned int line, ast_t * signature)
-{
-  ast_t *retval = new ast_port_type_spec_t (line, 1);
-  retval->set (PORT_SIGNATURE, signature);
-  return retval;
-}
-
-ast_t *
-ast_make_component_type_spec (unsigned int line, ast_t * field_list)
-{
-  ast_t *retval = new ast_component_type_spec_t (line, 1);
-  retval->set (COMPONENT_FIELD_LIST, field_list);
-  return retval;
-}
-
-ast_t *
-ast_make_struct_type_spec (unsigned int line, ast_t * field_list)
-{
-  ast_t *retval = new ast_struct_type_spec_t (line, 1);
-  retval->set (STRUCT_FIELD_LIST, field_list);
-  return retval;
-}
-
-ast_t *ast_make_empty_type_spec (unsigned int line)
-{
-  return new ast_empty_type_spec_t (line, 0);
-}
-
-ast_t *ast_make_heap_type_spec (unsigned int line, ast_t * type)
-{
-  ast_t * retval = new ast_heap_type_spec_t (line, 1);
-  retval->set (HEAP_BASE_TYPE, type);
-  return retval;
-}
-
 typed_value_t ast_get_typed_value (const ast_t* node)
 {
   const ast_expr_t* expr = dynamic_cast<const ast_expr_t*> (node);
@@ -430,13 +379,6 @@ ast_set_type (ast_t * node, typed_value_t typed_value)
   ast_expr_t* expr = dynamic_cast<ast_expr_t*> (node);
   assert (expr != NULL);
   expr->set_type (typed_value);
-}
-
-ast_t *ast_make_pointer_type_spec (unsigned int line, ast_t* type_spec)
-{
-  ast_t *retval = new ast_pointer_type_spec_t (line, 1);
-  retval->set (POINTER_BASE_TYPE, type_spec);
-  return retval;
 }
 
 #define ACCEPT(type) void \
@@ -455,12 +397,14 @@ ACCEPT (ast_identifier_list_t)
 ACCEPT (ast_array_type_spec_t)
 ACCEPT (ast_component_type_spec_t)
 ACCEPT (ast_empty_type_spec_t)
+ACCEPT (ast_enum_type_spec_t)
 ACCEPT (ast_field_list_type_spec_t)
 ACCEPT (ast_heap_type_spec_t)
 ACCEPT (ast_identifier_list_type_spec_t)
 ACCEPT (ast_identifier_type_spec_t)
 ACCEPT (ast_pointer_type_spec_t)
 ACCEPT (ast_port_type_spec_t)
+ACCEPT (ast_pfunc_type_spec_t)
 ACCEPT (ast_signature_type_spec_t)
 ACCEPT (ast_struct_type_spec_t)
 ACCEPT (ast_binary_arithmetic_expr_t)
@@ -495,8 +439,9 @@ ACCEPT (ast_decrement_statement_t)
 ACCEPT (ast_subtract_assign_statement_t)
 ACCEPT (ast_trigger_statement_t)
 ACCEPT (ast_var_statement_t)
-ACCEPT (ast_bind_statement_t)
-ACCEPT (ast_bind_param_statement_t)
+ACCEPT (ast_bind_port_statement_t)
+ACCEPT (ast_bind_port_param_statement_t)
+ACCEPT (ast_bind_pfunc_statement_t)
 ACCEPT (ast_for_iota_statement_t)
 
 ACCEPT (ast_action_t)

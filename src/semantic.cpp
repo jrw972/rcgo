@@ -112,12 +112,17 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t& memory_model)
       assert (memory_model.locals_offset () == offset_before);
     }
 
-    void visit (ast_bind_statement_t& node)
+    void visit (ast_bind_port_statement_t& node)
     {
       // Do nothing.
     }
 
-    void visit (ast_bind_param_statement_t& node)
+    void visit (ast_bind_port_param_statement_t& node)
+    {
+      // Do nothing.
+    }
+
+    void visit (ast_bind_pfunc_statement_t& node)
     {
       // Do nothing.
     }
@@ -145,6 +150,7 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t& memory_model)
     void visit (ast_if_statement_t& node)
     {
       allocate_statement_stack_variables (node.true_branch (), memory_model);
+      allocate_statement_stack_variables (node.false_branch (), memory_model);
     }
 
     void visit (ast_while_statement_t& node)
