@@ -119,6 +119,16 @@ ast_print (const ast_t& node)
       print (node, "struct_type_spec");
     }
 
+    void visit (const ast_enum_type_spec_t& node)
+    {
+      print (node, "enum_type_spec");
+    }
+
+    void visit (const ast_pfunc_type_spec_t& node)
+    {
+      print (node, "pfunc_type_spec");
+    }
+
     void visit (const ast_array_type_spec_t& node)
     {
       print (node, "array_type_spec");

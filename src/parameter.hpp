@@ -8,7 +8,7 @@ struct parameter_t
 {
   ast_t* const defining_node;
   std::string const name;
-  const typed_value_t value;
+  typed_value_t const value;
   bool const is_receiver;
 
   parameter_t (ast_t* dn,

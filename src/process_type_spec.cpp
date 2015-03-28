@@ -57,7 +57,7 @@ check_port_reaction_signature (const signature_type_t* signature)
        pos != limit;
        ++pos)
     {
-      parameter_t* parameter = *pos;
+      const parameter_t* parameter = *pos;
       if (!parameter->value.is_foreign_safe ())
         {
           error_at_line (-1, 0, parameter->defining_node->file, parameter->defining_node->line,
@@ -118,6 +118,12 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
            ++pos, ++e)
         {
           std::string id = ast_get_identifier (*pos);
+          if (node.symtab->find_current (id) != NULL)
+            {
+              error_at_line (-1, 0, (*pos)->file, (*pos)->line,
+                             "%s is already defined in this scope", id.c_str ());
+            }
+
           node.symtab->enter (symbol_make_typed_constant (id,
                                                           typed_value_t (named_type, e),
                                                           *pos));

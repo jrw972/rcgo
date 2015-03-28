@@ -6,7 +6,7 @@
 
 struct method_t
 {
-  method_t (ast_t* n,
+  method_t (ast_method_t* n,
             const std::string& na,
             const method_type_t* method_type_,
             const symbol_t* return_symbol_)
@@ -16,7 +16,7 @@ struct method_t
     , return_symbol (return_symbol_)
   { }
 
-  ast_t* const node;
+  ast_method_t* const node;
   std::string const name;
   const method_type_t * const method_type;
   const symbol_t* const return_symbol;

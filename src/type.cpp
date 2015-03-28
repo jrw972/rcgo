@@ -169,10 +169,10 @@ type_select (const type_t* type, const std::string& identifier)
   return NULL;
 }
 
-parameter_t *
+const parameter_t *
 signature_type_t::find (const std::string& name) const
 {
-  for (std::vector<parameter_t*>::const_iterator ptr = parameters_.begin (),
+  for (ParametersType::const_iterator ptr = parameters_.begin (),
          limit = parameters_.end ();
        ptr != limit;
        ++ptr)
@@ -344,9 +344,9 @@ type_is_equal (const type_t * x, const type_t* y)
 
           for (size_t idx = 0; idx != x_arity; ++idx)
             {
-              parameter_t *x_parameter = x->at (idx);
+              const parameter_t *x_parameter = x->at (idx);
               const type_t *x_parameter_type = x_parameter->value.type;
-              parameter_t *y_parameter = y->at (idx);
+              const parameter_t *y_parameter = y->at (idx);
               const type_t *y_parameter_type = y_parameter->value.type;
 
               if (!type_is_equal (x_parameter_type, y_parameter_type))
@@ -413,7 +413,7 @@ type_is_convertible (const type_t * to, const type_t* from)
       return true;
     }
 
-  // to and from are not equal and neither refere to a named type.
+  // to and from are not equal and neither refer to a named type.
 
   struct visitor : public const_type_visitor_t
   {
@@ -424,20 +424,17 @@ type_is_convertible (const type_t * to, const type_t* from)
 
     void visit (const pointer_type_t& type)
     {
-      if (type_cast<nil_type_t> (from))
-        {
-          flag = true;
-        }
+      flag = (type_cast<nil_type_t> (from) != NULL);
     }
 
     void visit (const uint_type_t& type)
     {
-      flag = type_cast<iota_type_t> (from) != NULL;
+      flag = (type_cast<iota_type_t> (from) != NULL);
     }
 
     void visit (const int_type_t& type)
     {
-      flag = type_cast<iota_type_t*> (from) != NULL;
+      flag = (type_cast<iota_type_t> (from) != NULL);
     }
   };
 
@@ -452,7 +449,7 @@ signature_type_t::to_string () const
   std::stringstream str;
   str << '(';
   bool flag = false;
-  for (std::vector<parameter_t*>::const_iterator ptr = parameters_.begin (),
+  for (ParametersType::const_iterator ptr = parameters_.begin (),
          limit = parameters_.end ();
        ptr != limit;
        ++ptr)
@@ -669,6 +666,11 @@ type_is_arithmetic (const type_t* type)
     {
       flag = true;
     }
+
+    void visit (const iota_type_t& type)
+    {
+      flag = true;
+    }
   };
   visitor v;
   type->accept (v);
@@ -833,15 +835,23 @@ method_type_t::to_string () const
   return str.str ();
 }
 
+parameter_t*
+method_type_t::make_this_parameter (const std::string& this_name,
+                                    const type_t* receiver_type,
+                                    Mutability dereference_mutability)
+{
+  typed_value_t this_value = typed_value_t::make_value (receiver_type, typed_value_t::STACK, MUTABLE, dereference_mutability);
+  return new parameter_t (NULL, this_name, this_value, true);
+}
+
 function_type_t*
-method_type_t::make_function_type (const std::string& this_name, const type_t* receiver_type, Mutability dereference_mutability, const signature_type_t* signature, const parameter_t* return_parameter)
+method_type_t::make_function_type (const parameter_t* this_parameter,
+                                   const signature_type_t* signature,
+                                   const parameter_t* return_parameter)
 {
   signature_type_t* sig = new signature_type_t ();
-  typed_value_t this_value = typed_value_t::make_value (receiver_type,
-                                                        typed_value_t::STACK,
-                                                        MUTABLE,
-                                                        dereference_mutability);
-  sig->append (new parameter_t (NULL, this_name, this_value, true));
+
+  sig->append (this_parameter);
   for (signature_type_t::const_iterator pos = signature->begin (),
          limit = signature->end ();
        pos != limit;

@@ -280,7 +280,7 @@ private:
 class signature_type_t : public type_t
 {
 public:
-  typedef std::vector<parameter_t*> ParametersType;
+  typedef std::vector<const parameter_t*> ParametersType;
   typedef ParametersType::const_iterator const_iterator;
 
   void accept (const_type_visitor_t& visitor) const;
@@ -290,13 +290,13 @@ public:
   virtual TypeLevel level () const { return CONVENTIONAL; }
 
   size_t arity () const { return parameters_.size (); }
-  parameter_t* at (size_t idx) const { return parameters_.at (idx); }
+  const parameter_t* at (size_t idx) const { return parameters_.at (idx); }
   const_iterator begin () const { return parameters_.begin (); }
   const_iterator end () const { return parameters_.end (); }
-  parameter_t * find (const std::string& name) const;
+  const parameter_t * find (const std::string& name) const;
 
   void
-  append (parameter_t* p) { parameters_.push_back (p); }
+  append (const parameter_t* p) { parameters_.push_back (p); }
 
 private:
   ParametersType parameters_;
@@ -336,7 +336,8 @@ public:
                  const parameter_t* return_parameter)
     : named_type (named_type_)
     , receiver_type (receiver_type_)
-    , function_type (make_function_type (this_name, receiver_type_, dereference_mutability, signature, return_parameter))
+    , this_parameter (make_this_parameter (this_name, receiver_type_, dereference_mutability))
+    , function_type (make_function_type (this_parameter, signature, return_parameter))
     , signature_ (signature)
     , bind_type_ (new function_type_t (signature_, return_parameter))
   {
@@ -350,13 +351,19 @@ public:
 
   const named_type_t* const named_type;
   const type_t* const receiver_type;
+  const parameter_t* const this_parameter;
   const function_type_t* function_type;
   const type_t* bind_type () const { return bind_type_; }
   const signature_type_t* signature () const { return signature_; }
   const parameter_t* return_parameter () const { return function_type->return_parameter (); }
 
 private:
-  static function_type_t* make_function_type (const std::string& this_name, const type_t* receiver_type, Mutability dereference_mutability, const signature_type_t* signature, const parameter_t* return_parameter);
+  static parameter_t* make_this_parameter (const std::string& this_name,
+                                           const type_t* receiver_type,
+                                           Mutability dereference_mutability);
+  static function_type_t* make_function_type (const parameter_t* this_parameter,
+                                              const signature_type_t* signature,
+                                              const parameter_t* return_parameter);
   const signature_type_t* signature_;
   const type_t* bind_type_;
 };

@@ -1,0 +1,149 @@
+// Distributed Algorithms, p. 240, 242
+
+type Variable component {
+    value int;
+};
+
+func (this @Variable) init () {
+    this.value = -1;
+}
+
+[3] reaction (this @Variable const) Set (v int) {
+    trigger {
+        this.value = v;
+    }
+}
+
+func (this @Variable const) Get () int {
+    return this.value;
+}
+
+type ProcessStatus enum {
+    PROCESS_IDLE,
+    PROCESS_ACCESS,
+    PROCESS_DECIDE,
+    PROCESS_DONE
+};
+
+type Process component {
+    status ProcessStatus;
+    input int;
+    output int;
+    get_x pfunc () int;
+    set_x port (v int);
+    Decide port (v int);
+};
+
+func (this @Process) init () {
+    this.status = PROCESS_IDLE;
+    this.input = -1;
+    this.output = -1;
+}
+
+reaction (this @Process const) Init (v int) {
+    trigger {
+        this.input = v;
+        if this.status == PROCESS_IDLE {
+            this.status = PROCESS_ACCESS;
+        }
+    }
+}
+
+// Access
+action (this @Process const) (this.status == PROCESS_ACCESS) {
+    var x int;
+    x = this.get_x ();
+    if x == -1 {
+        trigger set_x (this.input) {
+            println `x set to `, this.input;
+            this.output = this.input;
+            this.status = PROCESS_DECIDE;
+        }
+    }
+    else {
+        trigger {
+            this.output = x;
+            this.status = PROCESS_DECIDE;
+        }
+    }
+}
+
+// Decide
+action (this @Process const) (this.status == PROCESS_DECIDE) {
+    trigger Decide (this.output) {
+        this.status = PROCESS_DONE;
+    }
+}
+
+type UserStatus enum {
+    USER_REQUEST,
+    USER_WAIT,
+    USER_DONE
+};
+
+type User component {
+    v int;
+    status UserStatus;
+    decision int;
+    error bool;
+    Init port (v int);
+};
+
+func (this @User) init (v int) {
+    this.v = v;
+    this.status = USER_REQUEST;
+    this.decision = -1;
+    this.error = false;
+}
+
+// Init
+action (this @User const) (this.status == USER_REQUEST || this.error) {
+    trigger Init (this.v) {
+        if this.error! {
+            this.status = USER_WAIT;
+        }
+    }
+}
+
+// Dummy
+action (this @User const) (this.error) {
+}
+
+reaction (this @User const) Decide (v int) {
+    println this, ` decided value is `, v;
+    trigger {
+        if this.error! {
+            if this.status == USER_WAIT {
+                this.decision = v;
+                this.status = USER_DONE;
+            } else {
+                this.error = true;
+            }
+        }
+    }
+}
+
+type System component {
+    x Variable;
+    process [3]Process;
+    user [3]User;
+};
+
+func (this @System) init () {
+    this.x.init ();
+    for i .. 3 {
+        this.process[i].init ();
+        this.user[i].init (i + 100);
+    }
+}
+
+bind (this @System) {
+    for i .. 3 {
+        this.process[i].get_x <- this.x.Get;
+        this.process[i].set_x -> this.x.Set .. i;
+        this.user[i].Init -> this.process[i].Init;
+        this.process[i].Decide -> this.user[i].Decide;
+    }
+}
+
+instance s System init;

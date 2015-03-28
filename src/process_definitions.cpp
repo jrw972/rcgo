@@ -475,7 +475,6 @@ type_check_expr (ast_t* ptr)
       // Analyze the callee.
       typed_value_t expr_tv = type_check_expr (expr);
 
-      // Fixup method calls.
       struct visitor : public const_type_visitor_t
       {
         check_visitor& rvalue_visitor;
@@ -535,6 +534,13 @@ type_check_expr (ast_t* ptr)
                   unimplemented;
                 }
             }
+
+          typed_value_t argument_tv = ast_get_typed_value (node.expr ()->children[0]->children[0]);
+          typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
+          check_assignment (parameter_tv, argument_tv, node,
+                            "call expects %s but given %s",
+                            "argument leaks mutable pointers",
+                            "argument may store foreign pointer");
         }
       };
 
@@ -787,7 +793,6 @@ type_check_statement (ast_t * node)
       assert (tv.kind == typed_value_t::REFERENCE);
       if (tv.intrinsic_mutability != MUTABLE)
         {
-          ast_print (*left);
           error_at_line (-1, 0, left->file, left->line,
                          "cannot assign to read-only location of type %s", tv.type->to_string ().c_str ());
         }
@@ -1243,6 +1248,16 @@ mutates_check_statement (ast_t * node)
       node.base ()->accept (*this);
     }
 
+    void visit (ast_logic_not_expr_t& node)
+    {
+      node.visit_children (*this);
+    }
+
+    void visit (ast_binary_arithmetic_expr_t& node)
+    {
+      node.visit_children (*this);
+    }
+
     void visit (ast_assign_statement_t& node)
     {
       {
@@ -1363,7 +1378,7 @@ enter_signature (ast_t * node, const signature_type_t * type)
   for (signature_type_t::ParametersType::const_iterator pos = type->begin (), limit = type->end ();
        pos != limit; ++pos)
     {
-      parameter_t* parameter = *pos;
+      const parameter_t* parameter = *pos;
       // Check if the symbol is defined locally.
       const std::string& identifier = parameter->name;
       symbol_t *s = node->symtab->find_current (identifier);

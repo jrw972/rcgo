@@ -18,9 +18,6 @@ namespace runtime
     size_t change_count;
   };
 
-  static void
-  call (executor_base_t& exec);
-
   enum ControlAction {
     RETURN,
     CONTINUE,
@@ -125,6 +122,30 @@ namespace runtime
       }
   }
 
+  static void
+  call (executor_base_t& exec, const function_t* function)
+  {
+    stack_frame_push_base_pointer (exec.stack (), function->memory_model.locals_size ());
+    evaluate_statement (exec, function->node->body ());
+    stack_frame_pop_base_pointer (exec.stack ());
+  }
+
+  static void
+  call (executor_base_t& exec, const method_t* method)
+  {
+    stack_frame_push_base_pointer (exec.stack (), method->memory_model.locals_size ());
+    evaluate_statement (exec, method->node->body ());
+    stack_frame_pop_base_pointer (exec.stack ());
+  }
+
+  //     void visit (const ast_method_t& node)
+  //     {
+  //       method_t* method = get_current_method (&node);
+  //       stack_frame_push_base_pointer (exec.stack (), method->memory_model.locals_size ());
+  //       evaluate_statement (exec, node.body ());
+  //       stack_frame_pop_base_pointer (exec.stack ());
+  //     }
+
   void
   initialize (executor_base_t& exec, instance_t* instance)
   {
@@ -136,47 +157,9 @@ namespace runtime
         // Push a fake instruction pointer.
         stack_frame_push_pointer (exec.stack (), NULL);
         char* top_after = stack_frame_top (exec.stack ());
-        stack_frame_push_pointer (exec.stack (), instance->method ()->node);
-        call (exec);
+        call (exec, instance->method ());
         stack_frame_pop (exec.stack (), top_after - top_before);
       }
-  }
-
-  static void
-  call (executor_base_t& exec)
-  {
-    const ast_t* node = static_cast<const ast_t*> (stack_frame_pop_pointer (exec.stack ()));
-
-    struct visitor : public ast_const_visitor_t
-    {
-      executor_base_t& exec;
-
-      visitor (executor_base_t& e) : exec (e) { }
-
-      void default_action (const ast_method_t& node)
-      {
-        not_reached;
-      }
-
-      void visit (const ast_function_t& node)
-      {
-        function_t* function = get_current_function (&node);
-        stack_frame_push_base_pointer (exec.stack (), function->memory_model.locals_size ());
-        evaluate_statement (exec, node.body ());
-        stack_frame_pop_base_pointer (exec.stack ());
-      }
-
-      void visit (const ast_method_t& node)
-      {
-        method_t* method = get_current_method (&node);
-        stack_frame_push_base_pointer (exec.stack (), method->memory_model.locals_size ());
-        evaluate_statement (exec, node.body ());
-        stack_frame_pop_base_pointer (exec.stack ());
-      }
-    };
-
-    visitor v (exec);
-    node->accept (v);
   }
 
   static void
@@ -441,6 +424,7 @@ namespace runtime
         // Sample the top of the stack.
         char* top_before = stack_frame_top (exec.stack ());
 
+        pfunc_t pfunc;
         switch (node.kind)
           {
           case ast_call_expr_t::NONE:
@@ -451,7 +435,13 @@ namespace runtime
             evaluate_expr (exec, node.expr ()->children[0]->children[0]);
             break;
           case ast_call_expr_t::PFUNC:
-            unimplemented;
+            evaluate_expr (exec, node.expr ());
+            stack_frame_store_heap (exec.stack (), &pfunc, sizeof (pfunc_t));
+            if (pfunc.instance != NULL)
+              {
+                stack_frame_push_pointer (exec.stack (), pfunc.instance);
+              }
+            break;
           }
 
         // Push the arguments.
@@ -463,11 +453,29 @@ namespace runtime
         // Sample the top.
         char* top_after = stack_frame_top (exec.stack ());
 
-        // Push the thing to call.
-        evaluate_expr (exec, node.expr ());
-
         // Perform the call.
-        call (exec);
+        typed_value_t tv = ast_get_typed_value (node.expr ());
+        switch (node.kind)
+          {
+          case ast_call_expr_t::NONE:
+            not_reached;
+          case ast_call_expr_t::FUNCTION:
+            call (exec, tv.function_value);
+            break;
+          case ast_call_expr_t::METHOD:
+            call (exec, tv.method_value);
+            break;
+          case ast_call_expr_t::PFUNC:
+            if (pfunc.instance != NULL)
+              {
+                call (exec, pfunc.method);
+              }
+            else
+              {
+                call (exec, pfunc.function);
+              }
+            break;
+          }
 
         // Pop the arguments.
         stack_frame_pop (exec.stack (), top_after - top_before);
@@ -1053,7 +1061,7 @@ namespace runtime
               void visit (const int_type_t& type)
               {
                 int64_t u = stack_frame_pop_int (exec.stack ());
-                printf ("%lu", u);
+                printf ("%ld", u);
               }
 
               void visit (const iota_type_t& type)
