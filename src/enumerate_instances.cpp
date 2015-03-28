@@ -135,9 +135,11 @@ enumerate_instances (ast_t * node, instance_table_t& instance_table)
 
     void visit (ast_top_level_list_t& node)
     {
-      AST_FOREACH (child, &node)
+      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+           pos != limit;
+           ++pos)
         {
-          child->accept (*this);
+          (*pos)->accept (*this);
         }
     }
   };

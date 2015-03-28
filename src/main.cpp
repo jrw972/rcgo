@@ -119,6 +119,7 @@ main (int argc, char **argv)
   construct_symbol_table (root);
   enter_symbols (root);
   process_declarations (root);
+
   process_definitions (root);
 
   // Calculate the offsets of all stack variables.

@@ -742,10 +742,10 @@ struct ast_change_statement_t : public ast_t
   symbol_holder root_symbol;
 };
 
-struct ast_expression_statement_t : public ast_t
+struct ast_expression_statement_t : public ast_unary_t
 {
-  ast_expression_statement_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  ast_expression_statement_t (unsigned int line, ast_t* child)
+    : ast_unary_t (line, child)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -803,10 +803,10 @@ struct ast_while_statement_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
 };
 
-struct ast_println_statement_t : public ast_t
+struct ast_println_statement_t : public ast_unary_t
 {
-  ast_println_statement_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  ast_println_statement_t (unsigned int line, ast_t* child)
+    : ast_unary_t (line, child)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -893,9 +893,22 @@ struct ast_trigger_statement_t : public ast_t
 
 struct ast_var_statement_t : public ast_t
 {
-  ast_var_statement_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
-  { }
+  enum
+    {
+      IDENTIFIER_LIST,
+      TYPE_SPEC,
+      COUNT
+    };
+
+  ast_var_statement_t (unsigned int line, ast_t* identifier_list, ast_t* type_spec)
+    : ast_t (line, COUNT)
+  {
+    children[IDENTIFIER_LIST] = identifier_list;
+    children[TYPE_SPEC] = type_spec;
+  }
+
+  ast_t* identifier_list () const { return children[IDENTIFIER_LIST]; }
+  ast_t* type_spec () const { return children[TYPE_SPEC]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -1086,10 +1099,29 @@ struct ast_bind_t : public ast_t
 
 struct ast_function_t : public ast_t
 {
-  ast_function_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  enum
+    {
+      IDENTIFIER,
+      SIGNATURE,
+      RETURN_TYPE,
+      BODY,
+      COUNT
+    };
+
+  ast_function_t (unsigned int line, ast_t* identifier, ast_t* signature, ast_t* return_type, ast_t* body)
+    : ast_t (line, COUNT)
     , function (NULL)
-  { }
+  {
+    children[IDENTIFIER] = identifier;
+    children[SIGNATURE] = signature;
+    children[RETURN_TYPE] = return_type;
+    children[BODY] = body;
+  }
+
+  ast_t* identifier () const { return children[IDENTIFIER]; }
+  ast_t* signature () const { return children[SIGNATURE]; }
+  ast_t* return_type () const { return children[RETURN_TYPE]; }
+  ast_t* body () const { return children[BODY]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -1101,9 +1133,25 @@ struct ast_function_t : public ast_t
 
 struct ast_instance_t : public ast_t
 {
-  ast_instance_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
-  { }
+  enum
+    {
+      IDENTIFIER,
+      TYPE_IDENTIFIER,
+      INITIALIZER,
+      COUNT
+    };
+
+  ast_instance_t (unsigned int line, ast_t* identifier, ast_t* type_identifier, ast_t* initializer)
+    : ast_t (line, COUNT)
+  {
+    children[IDENTIFIER] = identifier;
+    children[TYPE_IDENTIFIER] = type_identifier;
+    children[INITIALIZER] = initializer;
+  }
+
+  ast_t* identifier () const { return children[IDENTIFIER]; }
+  ast_t* type_identifier () const { return children[TYPE_IDENTIFIER]; }
+  ast_t* initializer () const { return children[INITIALIZER]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -1239,9 +1287,22 @@ struct ast_dimensioned_reaction_t : public ast_t
 
 struct ast_type_definition_t : public ast_t
 {
-  ast_type_definition_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
-  { }
+  enum
+    {
+      IDENTIFIER,
+      TYPE_SPEC,
+      COUNT
+    };
+
+  ast_type_definition_t (unsigned int line, ast_t* identifier, ast_t* type_spec)
+    : ast_t (line, COUNT)
+  {
+    children[IDENTIFIER] = identifier;
+    children[TYPE_SPEC] = type_spec;
+  }
+
+  ast_t* identifier () const { return children[IDENTIFIER]; }
+  ast_t* type_spec () const { return children[TYPE_SPEC]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -1251,8 +1312,8 @@ struct ast_type_definition_t : public ast_t
 
 struct ast_top_level_list_t : public ast_t
 {
-  ast_top_level_list_t (unsigned int line, size_t children_count)
-    : ast_t (line, children_count)
+  ast_top_level_list_t ()
+    : ast_t (-1, 0)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -1411,51 +1472,11 @@ void ast_set_symtab (ast_t * ast, symtab_t * symtab);
 
 const std::string& ast_get_identifier (const ast_t* ast);
 
-/* Def */
-
-#define INSTANCE_IDENTIFIER 0
-#define INSTANCE_TYPE_IDENTIFIER 1
-#define INSTANCE_INITIALIZER 2
-
-ast_t *ast_make_instance_def (unsigned int line, ast_t * instance_id, ast_t * type_id, ast_t * initializer);
-
 void ast_instance_set_type (ast_t * ast, type_t * type);
 
 type_t *ast_instance_get_type (ast_t * ast);
 
-ast_t *ast_make_top_level_list (void);
-
-#define TYPE_IDENTIFIER 0
-#define TYPE_TYPE_SPEC 1
-
-ast_t *ast_make_type_def (unsigned int line, ast_t * identifier, ast_t * type_spec);
-
-#define FUNCTION_IDENTIFIER 0
-#define FUNCTION_SIGNATURE 1
-#define FUNCTION_RETURN_TYPE 2
-#define FUNCTION_BODY 3
-
-ast_t *ast_make_function_def (unsigned int line, ast_t * identifier, ast_t * signature, ast_t* return_type, ast_t* body);
-
-/* Expr */
-
-#define UNARY_CHILD 0
-
-/* Stmt */
-
-ast_t *ast_make_expr_stmt (unsigned int line, ast_t * expr);
-
-#define VAR_IDENTIFIER_LIST 0
-#define VAR_TYPE_SPEC 1
-
-ast_t *ast_make_var_stmt (unsigned int line, ast_t * identifier_list, ast_t * type_spec);
-
-ast_t *ast_make_println_stmt (unsigned int line, ast_t * expr);
-
 typed_value_t ast_get_typed_value (const ast_t* node);
-
-#define AST_FOREACH(child, parent) size_t idx; size_t limit; ast_t* child; \
-  for (idx = 0, limit = (parent)->size (), child = ((idx < (parent)->size ()) ? (parent)->at (idx) : NULL); idx != limit; ++idx, child = (idx < ((parent)->size ()) ? (parent)->at (idx) : NULL))
 
 named_type_t *
 get_current_receiver_type (const ast_t * node);

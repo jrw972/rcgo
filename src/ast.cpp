@@ -300,70 +300,11 @@ ast_print (const ast_t& node)
   node.accept (v);
 }
 
-ast_t *
-ast_make_expr_stmt (unsigned int line, ast_t * expr)
-{
-  ast_t *retval = new ast_expression_statement_t (line, 1);
-  retval->set (UNARY_CHILD, expr);
-  return retval;
-}
-
-ast_t *
-ast_make_var_stmt (unsigned int line, ast_t * identifier_list, ast_t * type_spec)
-{
-  ast_t *retval = new ast_var_statement_t (line, 2);
-  retval->set (VAR_IDENTIFIER_LIST, identifier_list);
-  retval->set (VAR_TYPE_SPEC, type_spec);
-  return retval;
-}
-
-ast_t *ast_make_println_stmt (unsigned int line, ast_t * expr)
-{
-  ast_t *retval = new ast_println_statement_t (line, 1);
-  retval->set (UNARY_CHILD, expr);
-  return retval;
-}
-
-ast_t *
-ast_make_top_level_list (void)
-{
-  return new ast_top_level_list_t (1, 0);
-}
-
-ast_t *
-ast_make_type_def (unsigned int line, ast_t * identifier, ast_t * type_spec)
-{
-  ast_t *retval = new ast_type_definition_t (line, 2);
-  retval->set (TYPE_IDENTIFIER, identifier);
-  retval->set (TYPE_TYPE_SPEC, type_spec);
-  return retval;
-}
-
-ast_t *ast_make_function_def (unsigned int line, ast_t * identifier, ast_t * signature, ast_t* return_type, ast_t* body)
-{
-  ast_t *retval = new ast_function_t (line, 4);
-  retval->set (FUNCTION_IDENTIFIER, identifier);
-  retval->set (FUNCTION_SIGNATURE, signature);
-  retval->set (FUNCTION_RETURN_TYPE, return_type);
-  retval->set (FUNCTION_BODY, body);
-  return retval;
-}
-
 void
 ast_set_symtab (ast_t * node, symtab_t * symtab)
 {
   assert (node->symtab == NULL);
   node->symtab = symtab;
-}
-
-ast_t *
-ast_make_instance_def (unsigned int line, ast_t * instance_id, ast_t * type_id, ast_t* initializer)
-{
-  ast_t *retval = new ast_instance_t (line, 3);
-  retval->set (INSTANCE_IDENTIFIER, instance_id);
-  retval->set (INSTANCE_TYPE_IDENTIFIER, type_id);
-  retval->set (INSTANCE_INITIALIZER, initializer);
-  return retval;
 }
 
 typed_value_t ast_get_typed_value (const ast_t* node)

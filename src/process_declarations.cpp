@@ -91,8 +91,8 @@ process_declarations (ast_t * node)
 
     void visit (ast_function_t& node)
     {
-      ast_t *signature_node = node.at (FUNCTION_SIGNATURE);
-      ast_t *return_type_node = node.at (FUNCTION_RETURN_TYPE);
+      ast_t *signature_node = node.signature ();
+      ast_t *return_type_node = node.return_type ();
       symbol_t* symbol = node.function_symbol.symbol ();
 
       /* Process the signature. */
@@ -201,8 +201,7 @@ process_declarations (ast_t * node)
 
     void visit (ast_instance_t& node)
     {
-      ast_t *type_identifier_node =
-        node.at (INSTANCE_TYPE_IDENTIFIER);
+      ast_t *type_identifier_node = node.type_identifier ();
       const std::string& type_identifier = ast_get_identifier (type_identifier_node);
       symbol_t *symbol =
         lookup_force (type_identifier_node,
@@ -310,9 +309,11 @@ process_declarations (ast_t * node)
 
     void visit (ast_top_level_list_t& node)
     {
-      AST_FOREACH (child, &node)
+      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+           pos != limit;
+           ++pos)
         {
-          process_declarations (child);
+          process_declarations (*pos);
         }
     }
 
@@ -332,7 +333,7 @@ process_declarations (ast_t * node)
         }
 
       symbol_set_in_progress (symbol, true);
-      ast_t *type_spec_node = node.at (TYPE_TYPE_SPEC);
+      ast_t *type_spec_node = node.type_spec ();
       const type_t *new_type = process_type_spec (type_spec_node, true, false, type);
       type->subtype (new_type);
       symbol_set_in_progress (symbol, false);

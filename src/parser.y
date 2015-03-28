@@ -66,7 +66,7 @@
 
 top: def_list { root = $1; }
 
-def_list: /* empty */ { $$ = ast_make_top_level_list (); }
+def_list: /* empty */ { $$ = new ast_top_level_list_t (); }
 | def_list def { $$ = $1->append ($2); }
 
 def: type_def { $$ = $1; }
@@ -77,9 +77,9 @@ def: type_def { $$ = $1; }
 | method_def { $$ = $1; }
 | func_def { $$ = $1; }
 
-instance_def: INSTANCE identifier identifier identifier ';' { $$ = ast_make_instance_def (@1, $2, $3, $4); }
+instance_def: INSTANCE identifier identifier identifier ';' { $$ = new ast_instance_t (@1, $2, $3, $4); }
 
-type_def: TYPE identifier type_spec ';' { $$ = ast_make_type_def (@1, $2, $3); }
+type_def: TYPE identifier type_spec ';' { $$ = new ast_type_definition_t (@1, $2, $3); }
 
 action_def: ACTION '(' identifier '@' identifier CONST ')' '(' rvalue ')' stmt_list { $$ = new ast_action_t (@1, $3, $5, $9, $11); }
 | array_dimension ACTION '(' identifier '@' identifier CONST ')' '(' rvalue ')' stmt_list { $$ = new ast_dimensioned_action_t (@2, $1, $4, $6, $10, $12); }
@@ -99,8 +99,8 @@ method_def:
 | FUNC '(' identifier '@' identifier CONST ')' identifier signature           stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, new ast_empty_type_spec_t (@1), IMMUTABLE, $10); }
 
 
-func_def: FUNC identifier signature stmt_list { $$ = ast_make_function_def (@1, $2, $3, new ast_empty_type_spec_t (@1), $4); }
-| FUNC identifier signature type_spec stmt_list { $$ = ast_make_function_def (@1, $2, $3, $4, $5); }
+func_def: FUNC identifier signature stmt_list { $$ = new ast_function_t (@1, $2, $3, new ast_empty_type_spec_t (@1), $4); }
+| FUNC identifier signature type_spec stmt_list { $$ = new ast_function_t (@1, $2, $3, $4, $5); }
 
 signature: '(' ')' { $$ = new ast_signature_type_spec_t (yyloc); }
 | '(' parameter_list optional_semicolon ')' { $$ = $2; }
@@ -150,7 +150,7 @@ change_stmt: CHANGE '(' rvalue ',' identifier type_spec ')' stmt_list { $$ = new
 
 for_iota_stmt: FOR identifier DOTDOT rvalue stmt_list { $$ = new ast_for_iota_statement_t (@1, $2, $4, $5); }
 
-println_stmt: PRINTLN expr_list ';' { $$ = ast_make_println_stmt (@1, $2); }
+println_stmt: PRINTLN expr_list ';' { $$ = new ast_println_statement_t (@1, $2); }
 
 return_stmt: RETURN_KW rvalue ';' { $$ = new ast_return_statement_t (@1, $2); }
 
@@ -175,10 +175,10 @@ expr_list: rvalue { $$ = (new ast_list_expr_t (@1))->append ($1); }
 | expr_list ',' rvalue { $$ = $1->append ($3); }
 
 expr_stmt: rvalue ';' {
-  $$ = ast_make_expr_stmt (@1, $1);
+  $$ = new ast_expression_statement_t (@1, $1);
  }
 
-var_stmt: VAR identifier_list type_spec ';' { $$ = ast_make_var_stmt (@1, $2, $3); }
+var_stmt: VAR identifier_list type_spec ';' { $$ = new ast_var_statement_t (@1, $2, $3); }
 | VAR identifier_list type_spec '=' expr_list ';' { unimplemented; }
 | VAR identifier_list '=' expr_list ';' { unimplemented; }
 

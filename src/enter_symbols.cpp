@@ -36,27 +36,29 @@ enter_symbols (ast_t * node)
   {
     void default_action (ast_t& node)
     {
-      AST_FOREACH (child, &node)
+      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+           pos != limit;
+           ++pos)
         {
-          child->accept (*this);
+          (*pos)->accept (*this);
         }
     }
 
     void visit (ast_instance_t& node)
     {
-      enter_undefined_symbol (node.symbol, node.at (INSTANCE_IDENTIFIER),
+      enter_undefined_symbol (node.symbol, node.identifier (),
 			      SymbolInstance, node.symtab);
     }
 
     void visit (ast_type_definition_t& node)
     {
-      enter_undefined_symbol (node.symbol, node.at (TYPE_IDENTIFIER),
+      enter_undefined_symbol (node.symbol, node.identifier (),
 			      SymbolType, node.symtab);
     }
 
     void visit (ast_function_t& node)
     {
-      enter_undefined_symbol (node.function_symbol, node.at (FUNCTION_IDENTIFIER),
+      enter_undefined_symbol (node.function_symbol, node.identifier (),
                               SymbolFunction, symtab_parent (node.symtab));
     }
 

@@ -162,7 +162,7 @@ namespace runtime
       {
         function_t* function = get_current_function (&node);
         stack_frame_push_base_pointer (exec.stack (), function->memory_model.locals_size ());
-        evaluate_statement (exec, node.at (FUNCTION_BODY));
+        evaluate_statement (exec, node.body ());
         stack_frame_pop_base_pointer (exec.stack ());
       }
 
@@ -772,7 +772,7 @@ namespace runtime
 
       void visit (const ast_expression_statement_t& node)
       {
-        ast_t* child = node.at (UNARY_CHILD);
+        ast_t* child = node.child ();
         // Determine the size of the value being generated.
         size_t size = ast_get_typed_value (child).type->size ();
         // Evaluate.
@@ -910,9 +910,11 @@ namespace runtime
 
       void visit (const ast_list_statement_t& node)
       {
-        AST_FOREACH (child, &node)
+        for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+             pos != limit;
+             ++pos)
           {
-            if (evaluate_statement (exec, child) == RETURN)
+            if (evaluate_statement (exec, *pos) == RETURN)
               {
                 retval = RETURN;
                 return;
@@ -923,7 +925,7 @@ namespace runtime
       void visit (const ast_return_statement_t& node)
       {
         // Evaluate the expression.
-        evaluate_expr (exec, node.at (UNARY_CHILD));
+        evaluate_expr (exec, node.child ());
         // Store in the return parameter.
         stack_frame_store_stack (exec.stack (), symbol_get_offset (node.return_symbol), symbol_parameter_type (node.return_symbol)->size ());
         retval = RETURN;
@@ -994,9 +996,13 @@ namespace runtime
       void visit (const ast_println_statement_t& node)
       {
         exec.lock_stdout ();
-        ast_t* expr_list = node.at (UNARY_CHILD);
-        AST_FOREACH (child, expr_list)
+        ast_t* expr_list = node.child ();
+        for (ast_t::const_iterator pos = expr_list->begin (),
+               limit = expr_list->end ();
+             pos != limit;
+             ++pos)
           {
+            ast_t* child = *pos;
             evaluate_expr (exec, child);
             struct visitor : public const_type_visitor_t
             {

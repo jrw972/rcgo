@@ -217,7 +217,7 @@ type_check_expr (ast_t* ptr)
 
     void visit (ast_merge_expr_t& node)
     {
-      ast_t* child = node.at (UNARY_CHILD);
+      ast_t* child = node.child ();
       typed_value_t in = type_check_expr (child);
       typed_value_t out = typed_value_t::merge (in);
       if (out.type == NULL)
@@ -230,7 +230,7 @@ type_check_expr (ast_t* ptr)
 
     void visit (ast_move_expr_t& node)
     {
-      ast_t* child = node.at (UNARY_CHILD);
+      ast_t* child = node.child ();
       typed_value_t in = type_check_expr (child);
       typed_value_t out = typed_value_t::move (in);
       if (out.type == NULL)
@@ -251,7 +251,7 @@ type_check_expr (ast_t* ptr)
 
     void visit (ast_identifier_expr_t& node)
     {
-      ast_t *identifier_node = node.at (UNARY_CHILD);
+      ast_t *identifier_node = node.child ();
       const std::string& identifier = ast_get_identifier (identifier_node);
       symbol_t *symbol = node.symtab->find (identifier);
       if (symbol == NULL)
@@ -359,8 +359,8 @@ type_check_expr (ast_t* ptr)
 
     void check_address_of (ast_address_of_expr_t& node)
     {
-      ast_t::iterator expr = node.get_child_ptr (UNARY_CHILD);
-      typed_value_t in = ast_get_typed_value (*expr);
+      ast_t* expr = node.child ();
+      typed_value_t in = ast_get_typed_value (expr);
       typed_value_t out = typed_value_t::address_of (in);
       if (out.type == NULL)
         {
@@ -379,7 +379,7 @@ type_check_expr (ast_t* ptr)
 
     void visit (ast_logic_not_expr_t& node)
     {
-      ast_t* child = node.at (UNARY_CHILD);
+      ast_t* child = node.child ();
       typed_value_t in = type_check_expr (child);
       typed_value_t out = typed_value_t::logic_not (in);
       if (out.type == NULL)
@@ -886,7 +886,7 @@ type_check_statement (ast_t * node)
 
     void visit (ast_expression_statement_t& node)
     {
-      ast_t* child = node.at (UNARY_CHILD);
+      ast_t* child = node.child ();
       type_check_expr (child);
     }
 
@@ -917,9 +917,11 @@ type_check_statement (ast_t * node)
 
     void visit (ast_list_statement_t& node)
     {
-      AST_FOREACH (child, &node)
+      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+           pos != limit;
+           ++pos)
         {
-          type_check_statement (child);
+          type_check_statement (*pos);
         }
     }
 
@@ -995,17 +997,20 @@ type_check_statement (ast_t * node)
 
     void visit (ast_var_statement_t& node)
     {
-      ast_t::iterator identifier_list = node.get_child_ptr (VAR_IDENTIFIER_LIST);
-      ast_t::iterator type_spec = node.get_child_ptr (VAR_TYPE_SPEC);
+      ast_t* identifier_list = node.identifier_list ();
+      ast_t* type_spec = node.type_spec ();
 
       // Process the type spec.
-      const type_t* type = process_type_spec (*type_spec, true);
+      const type_t* type = process_type_spec (type_spec, true);
 
       // Enter each symbol.
-      AST_FOREACH (child, *identifier_list)
+      for (ast_t::const_iterator pos = identifier_list->begin (),
+             limit = identifier_list->end ();
+           pos != limit;
+           ++pos)
         {
-          const std::string& name = ast_get_identifier (child);
-          symbol_t* symbol = symbol_make_variable (name, type, child);
+          const std::string& name = ast_get_identifier (*pos);
+          symbol_t* symbol = symbol_make_variable (name, type, *pos);
           node.symbols.push_back (symbol_holder ());
           enter_symbol (node.symtab, symbol, node.symbols.back ());
         }
@@ -1013,8 +1018,7 @@ type_check_statement (ast_t * node)
 
     void visit (ast_println_statement_t& node)
     {
-      ast_t::iterator child = node.get_child_ptr (UNARY_CHILD);
-      check_rvalue_list (*child);
+      check_rvalue_list (node.child ());
     }
   };
 
@@ -1049,9 +1053,11 @@ control_check_statement (ast_t * node)
 
     void visit (ast_list_statement_t& node)
     {
-      AST_FOREACH (child, &node)
+      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+           pos != limit;
+           ++pos)
         {
-          child->accept (*this);
+          (*pos)->accept (*this);
         }
     }
 
@@ -1278,7 +1284,7 @@ mutates_check_statement (ast_t * node)
 
     void visit (ast_expression_statement_t& node)
     {
-      node.at (UNARY_CHILD)->accept (*this);
+      node.child ()->accept (*this);
     }
 
     void visit (ast_if_statement_t& node)
@@ -1293,9 +1299,11 @@ mutates_check_statement (ast_t * node)
 
     void visit (ast_list_statement_t& node)
     {
-      AST_FOREACH (child, &node)
+      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+           pos != limit;
+           ++pos)
         {
-          child->accept (*this);
+          (*pos)->accept (*this);
           if (mutates_receiver)
             {
               break;
@@ -1305,7 +1313,7 @@ mutates_check_statement (ast_t * node)
 
     void visit (ast_println_statement_t& node)
     {
-      node.at (UNARY_CHILD)->accept (*this);
+      node.child ()->accept (*this);
     }
   };
 
@@ -1329,10 +1337,7 @@ mutates_check_statement (ast_t * node)
 
     void visit (ast_list_statement_t& node)
     {
-      AST_FOREACH (child, &node)
-        {
-          child->accept (*this);
-        }
+      node.visit_children (*this);
     }
 
     void visit (ast_trigger_statement_t& node)
@@ -1510,7 +1515,7 @@ process_definitions (ast_t * node)
 
     void visit (ast_function_t& node)
     {
-      ast_t *body_node = node.at (FUNCTION_BODY);
+      ast_t *body_node = node.body ();
       type_check_statement (body_node);
       control_check_statement (body_node);
     }
@@ -1527,7 +1532,7 @@ process_definitions (ast_t * node)
       // Check the initialization function.
       symbol_t* symbol = node.symbol.symbol ();
       const named_type_t* type = symbol_get_instance_type (symbol);
-      ast_t* initializer = node.at (INSTANCE_INITIALIZER);
+      ast_t* initializer = node.initializer ();
       method_t* method = type->get_method (ast_get_identifier (initializer));
       if (method == NULL)
         {
@@ -1618,10 +1623,7 @@ process_definitions (ast_t * node)
 
     void visit (ast_top_level_list_t& node)
     {
-      AST_FOREACH (child, &node)
-        {
-          child->accept (*this);
-        }
+      node.visit_children (*this);
     }
   };
 

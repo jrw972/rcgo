@@ -13,10 +13,12 @@ construct_symbol_table (ast_t * node)
     void default_action (ast_t& node)
     {
       ast_set_symtab (&node, symtab);
-      AST_FOREACH (child, &node)
+      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+           pos != limit;
+           ++pos)
         {
           symtab_t* s = symtab;
-          child->accept (*this);
+          (*pos)->accept (*this);
           symtab = s;
         }
     }

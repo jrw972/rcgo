@@ -127,14 +127,21 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
     void visit (ast_field_list_type_spec_t& node)
     {
       field_list_type_t *field_list = new field_list_type_t (is_component);
-      AST_FOREACH (child, &node)
+      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+           pos != limit;
+           ++pos)
         {
+          ast_t* child = *pos;
           ast_identifier_list_type_spec_t* c = static_cast<ast_identifier_list_type_spec_t*> (child);
           ast_t *identifier_list = c->identifier_list ();
           ast_t *type_spec = c->type_spec ();
           const type_t *type = process_type_spec (type_spec, true);
-          AST_FOREACH (id, identifier_list)
+          for (ast_t::const_iterator pos2 = identifier_list->begin (),
+                 limit2 = identifier_list->end ();
+               pos2 != limit2;
+               ++pos2)
             {
+              ast_t* id = *pos2;
               const std::string& identifier = ast_get_identifier (id);
               const type_t *field = type_select (field_list, identifier);
               if (field == NULL)

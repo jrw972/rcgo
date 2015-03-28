@@ -1,15 +1,23 @@
 * General
+- TODO Get rid of dynamic, static, and reinterpret casts.
 - TODO Refactor symbol. OO.
 - TODO Implement data-aware scheduling.  For example, a component that
   routes messages needs to trigger a reaction based on an id in the
   message.
 - TODO Add reactions that pick a parameter automatically.
 * Garbage Collector
-- TODO Consider marking subinstances as as "non-scannable."
+- TODO Consider marking slots as "non-scannable" if it belongs to a sub-instance or non-pointer.
 * Runtime
 - TODO Profile and optimize
 - TODO Clean up stack frame.
 * Paritioned Scheduler
+- TODO Instrument to find bottlenecks.
+- TODO Support migration
+- TODO Use a generation counter to determine if an action needs to run (run it that many times)
+- TODO Investigate ways to avoid spinning (random selection, skip N times if conflict, etc.)
+- TODO Optimize hits per cycle
+- TODO Topological sort of list
+
 ** Design Goals
 - Fairness
   Assume a fixed point.
@@ -17,14 +25,10 @@
 - Efficiency
   - Balance
 
-  - TODO Topological sort of list
-
 ** Description
 A /task/ is a recurring unit of work corresponding to a concrete action or garbage collection on a component instance.
 Each task is assigned to an /executor/ that is responsible for executing that task.
 The /scheduler/ consists of a group of cooperating executors.
-
-
 
 - Task - a recurring unit of work corresponding to a concrete action or garbage collection.
 - Executor - an object that executes a collection of tasks.  In the partitioned scheduler, each task is assigned to an executor.
@@ -48,34 +52,16 @@ The paritioned scheduler assigns each task to a specific executor.
   to evaluate relevant preconditions at the end of an action and store
   the bits.  This approach will require sophisticated semantic analysis.
 
-  - TODO Precondition optimizations
-
 Assumption of fixed-point?
 
-
-- TODO Instrument to find bottlenecks.
-- TODO Support migration
-- TODO Use a generation counter to determine if an action needs to run (run it that many times)
-- TODO Investigate ways to avoid spinning (random selection, skip N times if conflict, etc.)
-- TODO Optimize hits per cycle
-* Scanner
-- TODO Implement support for more literals.
 * AST
 - TODO Consolidate similar nodes.
 - TODO Implement a node_cast similar to type_cast.
 - TODO Use an ast namespace.
 - TODO Replace ast_print with insertion operator.
-* Typed Value
-- TODO Move any remaining checking from process_definitions et al. to typed_value.
-* Type System
-- TODO Replace getters with const members.
-- TODO Add various types.
-- TODO Add an enum type
 * Semantic Analysis
 - TODO Move type visitors to typed_value.
-- TODO Consolidate similar processing.
-- TODO Improve the select from pointer code.
-- TODO Improve the call code.
+- TODO Move any remaining checking from process_definitions et al. to typed_value.
 * Composition Analysis
 - TODO Add support for TRIGGER_NONE.
 * IO

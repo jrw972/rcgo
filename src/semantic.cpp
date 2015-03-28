@@ -173,9 +173,11 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t& memory_model)
       ptrdiff_t offset_before = memory_model.locals_offset ();
       allocate_symtab (&node, memory_model);
       ptrdiff_t offset_after = memory_model.locals_offset ();
-      AST_FOREACH (child, &node)
+      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+           pos != limit;
+           ++pos)
         {
-          allocate_statement_stack_variables (child, memory_model);
+          allocate_statement_stack_variables (*pos, memory_model);
         }
       memory_model.locals_pop (offset_after - offset_before);
       assert (memory_model.locals_offset () == offset_before);
@@ -249,7 +251,7 @@ allocate_stack_variables (ast_t* node)
 
     void visit (ast_function_t& node)
     {
-      node.function->memory_model = allocate_stack_variables_helper (&node, node.at (FUNCTION_BODY));
+      node.function->memory_model = allocate_stack_variables_helper (&node, node.body ());
     }
 
     void visit (ast_method_t& node)
@@ -269,10 +271,7 @@ allocate_stack_variables (ast_t* node)
 
     void visit (ast_top_level_list_t& node)
     {
-      AST_FOREACH (child, &node)
-        {
-          child->accept (*this);
-        }
+      node.visit_children (*this);
     }
 
     // Return the size of the locals.

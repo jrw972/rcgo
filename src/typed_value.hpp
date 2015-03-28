@@ -132,6 +132,10 @@ struct typed_value_t
 
   typed_value_t ()
     : type (NULL)
+    , kind (VALUE)
+    , region (CONSTANT)
+    , intrinsic_mutability (IMMUTABLE)
+    , dereference_mutability (IMMUTABLE)
     , has_value (false)
     , has_offset (false)
   { }
