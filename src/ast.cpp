@@ -288,7 +288,7 @@ ast_print (const ast_t& node)
     void print_expr (const ast_expr_t& node, const char* s)
     {
       print_indent (node);
-      std::cout << s << ' ' << node.get_type () << '\n';
+      std::cout << s << ' ' << node.typed_value << '\n';
       print_children (node);
     }
 
@@ -315,21 +315,6 @@ ast_set_symtab (ast_t * node, symtab_t * symtab)
 {
   assert (node->symtab == NULL);
   node->symtab = symtab;
-}
-
-typed_value_t ast_get_typed_value (const ast_t* node)
-{
-  const ast_expr_t* expr = dynamic_cast<const ast_expr_t*> (node);
-  assert (expr != NULL);
-  return expr->get_type ();
-}
-
-void
-ast_set_type (ast_t * node, typed_value_t typed_value)
-{
-  ast_expr_t* expr = dynamic_cast<ast_expr_t*> (node);
-  assert (expr != NULL);
-  expr->set_type (typed_value);
 }
 
 #define ACCEPT(type) void \
@@ -406,11 +391,25 @@ ACCEPT (ast_dimensioned_reaction_t)
 ACCEPT (ast_type_definition_t)
 ACCEPT (ast_top_level_list_t)
 
-const std::string& ast_get_identifier (const ast_t* ast)
+std::string ast_get_identifier (const ast_t* ast)
 {
-  const ast_identifier_t* id = dynamic_cast<const ast_identifier_t*> (ast);
-  assert (id != NULL);
-  return id->identifier;
+  struct visitor : public ast_const_visitor_t
+  {
+    std::string retval;
+
+    void default_action (const ast_t* node)
+    {
+      not_reached;
+    }
+
+    void visit (const ast_identifier_t& ast)
+    {
+      retval = ast.identifier;
+    }
+  };
+  visitor v;
+  ast->accept (v);
+  return v.retval;
 }
 
 named_type_t *

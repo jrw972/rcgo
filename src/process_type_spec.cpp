@@ -9,7 +9,7 @@ size_t
 process_array_dimension (ast_t* ptr)
 {
   type_check_expr (ptr);
-  typed_value_t tv = ast_get_typed_value (ptr);
+  typed_value_t tv = ptr->typed_value;
 
   if (!tv.has_value)
     {
@@ -99,7 +99,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
 
     void visit (ast_component_type_spec_t& node)
     {
-      type = new component_type_t (dynamic_cast<const field_list_type_t*> (process_type_spec (node.child (), true, true)));
+      type = new component_type_t (type_cast<field_list_type_t> (process_type_spec (node.child (), true, true)));
     }
 
     void visit (ast_empty_type_spec_t& node)
@@ -261,7 +261,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
 
     void visit (ast_struct_type_spec_t& node)
     {
-      type = new struct_type_t (dynamic_cast<const field_list_type_t*> (process_type_spec (node.child (), true)));
+      type = new struct_type_t (type_cast<field_list_type_t> (process_type_spec (node.child (), true)));
     }
   };
   type_spec_visitor_t type_spec_visitor (force_identifiers, is_component, named_type);

@@ -10,15 +10,17 @@ class action_reaction_base_t
 public:
   typedef std::vector<trigger_t*> TriggersType;
 
-  action_reaction_base_t (type_t* component_type, ast_t* node)
+  action_reaction_base_t (type_t* component_type, ast_t* node_, ast_t* body_)
     : component_type_ (component_type)
-    , node_ (node)
+    , node (node_)
+    , body (body_)
     , has_dimension_ (false)
   { }
 
-  action_reaction_base_t (type_t* component_type, ast_t* node, size_t dimension)
+  action_reaction_base_t (type_t* component_type, ast_t* node_, ast_t* body_, size_t dimension)
     : component_type_ (component_type)
-    , node_ (node)
+    , node (node_)
+    , body (body_)
     , has_dimension_ (true)
     , dimension_ (dimension)
   { }
@@ -26,7 +28,6 @@ public:
   virtual ~action_reaction_base_t() { };
 
   type_t* component_type () const { return component_type_; }
-  ast_t* node () const { return node_; }
 
   void
   add_trigger (trigger_t * trigger)
@@ -49,7 +50,10 @@ public:
 
 private:
   type_t* component_type_;	/* Back-pointer to component type. */
-  ast_t* node_;
+public:
+  ast_t* const node;
+  ast_t* const body;
+private:
   TriggersType triggers_;
   bool has_dimension_;
   size_t dimension_;
@@ -65,40 +69,39 @@ public:
       STATIC_FALSE,
     };
 
-  action_t (named_type_t* type, ast_t* node)
-    : action_reaction_base_t (type, node)
+  action_t (named_type_t* type, ast_t* node, ast_t* precondition_, ast_t* body_)
+    : action_reaction_base_t (type, node, body_)
     , precondition_kind (DYNAMIC)
+    , precondition (precondition_)
   { }
 
-  action_t (named_type_t* type, ast_t* node, size_t dimension)
-    : action_reaction_base_t (type, node, dimension)
+  action_t (named_type_t* type, ast_t* node, ast_t* precondition_, ast_t* body_, size_t dimension)
+    : action_reaction_base_t (type, node, body_, dimension)
     , precondition_kind (DYNAMIC)
+    , precondition (precondition_)
   { }
 
   PreconditionKind precondition_kind;
+  ast_t* const precondition;
 };
 
 class reaction_t : public action_reaction_base_t
 {
 public:
-  reaction_t (named_type_t* type, ast_t* node, const std::string& name, const signature_type_t* signature)
-    : action_reaction_base_t (type, node)
-    , name_ (name)
-    , reaction_type_ (new reaction_type_t (signature))
+  reaction_t (named_type_t* type, ast_t* node, ast_t* body_, const std::string& name_, const signature_type_t* signature)
+    : action_reaction_base_t (type, node, body_)
+    , name (name_)
+    , reaction_type (new reaction_type_t (signature))
   { }
 
-  reaction_t (named_type_t* type, ast_t* node, const std::string& name, const signature_type_t* signature, size_t dimension)
-    : action_reaction_base_t (type, node, dimension)
-    , name_ (name)
-    , reaction_type_ (new reaction_type_t (signature))
+  reaction_t (named_type_t* type, ast_t* node, ast_t* body_, const std::string& name_, const signature_type_t* signature, size_t dimension)
+    : action_reaction_base_t (type, node, body_, dimension)
+    , name (name_)
+    , reaction_type (new reaction_type_t (signature))
   { }
 
-  std::string name () const { return name_; }
-  const reaction_type_t* reaction_type () const { return reaction_type_; }
-
-private:
-  std::string const name_;
-  reaction_type_t* reaction_type_;
+  std::string const name;
+  reaction_type_t* const reaction_type;
 };
 
 #endif /* action_h */

@@ -213,7 +213,7 @@ evaluate_static (const ast_t* node, const static_memory_t& memory)
 
     void visit (const ast_literal_expr_t& node)
     {
-      typed_value_t tv = node.get_type ();
+      typed_value_t tv = node.typed_value;
       struct visitor : public const_type_visitor_t
       {
         typed_value_t tv;
@@ -240,14 +240,14 @@ evaluate_static (const ast_t* node, const static_memory_t& memory)
     {
       static_value_t base = evaluate_static (node.base (), memory);
       static_value_t index = evaluate_static (node.index (), memory);
-      typed_value_t base_tv = ast_get_typed_value (node.base ());
+      typed_value_t base_tv = node.base ()->typed_value;
       const array_type_t* array_type = type_cast<array_type_t> (base_tv.type);
       result = static_value_t::index (base, array_type, index);
     }
 
     void visit (const ast_select_expr_t& node)
     {
-      typed_value_t tv = node.get_type ();
+      typed_value_t tv = node.typed_value;
       assert (tv.has_offset);
       static_value_t v = evaluate_static (node.base (), memory);
       result = static_value_t::select (v, tv.offset);
@@ -344,7 +344,7 @@ instance_table_enumerate_bindings (instance_table_t& table)
               static_value_t port = evaluate_static (left, memory);
               // Strip off the implicit dereference and selecting of the reaction.
               static_value_t input = evaluate_static (right->children[0]->children[0], memory);
-              typed_value_t reaction = ast_get_typed_value (right);
+              typed_value_t reaction = right->typed_value;
 
               assert (port.kind == static_value_t::ABSOLUTE_ADDRESS);
               assert (input.kind == static_value_t::ABSOLUTE_ADDRESS);
@@ -370,7 +370,7 @@ instance_table_enumerate_bindings (instance_table_t& table)
             {
               static_value_t pfunc = evaluate_static (node.left (), memory);
               assert (pfunc.kind == static_value_t::ABSOLUTE_ADDRESS);
-              typed_value_t tv = ast_get_typed_value (node.right ());
+              typed_value_t tv = node.right ()->typed_value;
               const method_type_t* method_type = type_cast<method_type_t> (tv.type);
               if (method_type != NULL)
                 {
@@ -622,7 +622,7 @@ transitive_closure (const instance_table_t& table,
       node.base ()->accept (*this);
       if (computed_address != static_cast<size_t> (-1))
         {
-          typed_value_t tv = node.get_type ();
+          typed_value_t tv = node.typed_value;
           assert (tv.has_offset);
           computed_address += tv.offset;
         }
@@ -795,7 +795,7 @@ transitive_closure (const instance_table_t& table,
         case ast_call_expr_t::METHOD:
           {
             // See if invoking a method on a component.
-            typed_value_t tv = ast_get_typed_value (node.expr ());
+            typed_value_t tv = node.expr ()->typed_value;
             const method_type_t* method_type = type_cast<method_type_t> (tv.type);
             if (type_cast<component_type_t> (type_strip (method_type->named_type)) != NULL)
               {
@@ -855,7 +855,7 @@ transitive_closure (const instance_table_t& table,
 
   // Add instances accessed in the immutable phase.
   immutable_phase_visitor v (table, instance->address (), set);
-  action->node ()->accept (v);
+  action->node->accept (v);
 
   return set;
 }
@@ -935,7 +935,7 @@ std::ostream&
 operator<< (std::ostream& o,
             const instance_t::ConcreteAction& ca)
 {
-  o << '{' << ca.action->node ()->line << ',' << ca.iota;
+  o << '{' << ca.action->node->line << ',' << ca.iota;
   for (instance_set_t::const_iterator pos = ca.set.begin (),
          limit = ca.set.end ();
        pos != limit;
@@ -968,7 +968,7 @@ operator<< (std::ostream& o,
        p != l;
        ++p)
     {
-      o << ' ' << '(' << *p->instance << ',' << p->reaction->name () << ',' << p->parameter << ')';
+      o << ' ' << '(' << *p->instance << ',' << p->reaction->name << ',' << p->parameter << ')';
     }
 
   return o;

@@ -202,7 +202,7 @@ type_check_expr (ast_t* ptr)
 
       ast_t* index = node.index ();
       type_check_expr (index);
-      check_index (array_type, ast_get_typed_value (index), *index);
+      check_index (array_type, index->typed_value, *index);
 
       ast_t *args = node.args ();
       check_rvalue_list (args);
@@ -225,7 +225,7 @@ type_check_expr (ast_t* ptr)
           error_at_line (-1, 0, node.file, node.line,
                          "cannot merge expression of type %s", in.type->to_string ().c_str ());
         }
-      node.set_type (out);
+      node.typed_value = out;
     }
 
     void visit (ast_move_expr_t& node)
@@ -238,7 +238,7 @@ type_check_expr (ast_t* ptr)
           error_at_line (-1, 0, node.file, node.line,
                          "cannot move expression of type %s", in.type->to_string ().c_str ());
         }
-      node.set_type (out);
+      node.typed_value = out;
     }
 
     void visit (ast_new_expr_t& node)
@@ -246,7 +246,7 @@ type_check_expr (ast_t* ptr)
       ast_t* type_spec = node.child ();
       const type_t* t = process_type_spec (type_spec, false);
       const type_t* type = pointer_type_t::make (t);
-      node.set_type (typed_value_t::make_value (type, typed_value_t::HEAP, MUTABLE, MUTABLE));
+      node.typed_value = typed_value_t::make_value (type, typed_value_t::HEAP, MUTABLE, MUTABLE);
     }
 
     void visit (ast_identifier_expr_t& node)
@@ -264,25 +264,25 @@ type_check_expr (ast_t* ptr)
       switch (symbol_kind (symbol))
         {
         case SymbolFunction:
-          node.set_type (typed_value_t::make_ref (typed_value_t (symbol_get_function_function (symbol))));
+          node.typed_value = typed_value_t::make_ref (typed_value_t (symbol_get_function_function (symbol)));
           break;
 
         case SymbolInstance:
           unimplemented;
 
         case SymbolParameter:
-          node.set_type (symbol_parameter_value (symbol));
+          node.typed_value = symbol_parameter_value (symbol);
           break;
 
         case SymbolType:
           unimplemented;
 
         case SymbolTypedConstant:
-          node.set_type (symbol_typed_constant_value (symbol));
+          node.typed_value = symbol_typed_constant_value (symbol);
           break;
 
         case SymbolVariable:
-          node.set_type (symbol_variable_value (symbol));
+          node.typed_value = symbol_variable_value (symbol);
           break;
 
         case SymbolHidden:
@@ -297,9 +297,7 @@ type_check_expr (ast_t* ptr)
 
     void visit (ast_implicit_dereference_expr_t& node)
     {
-      typed_value_t tv = type_check_expr (node.child ());
-      tv = typed_value_t::implicit_dereference (tv);
-      node.set_type (tv);
+      node.typed_value = typed_value_t::implicit_dereference (type_check_expr (node.child ()));
     }
 
     void visit (ast_select_expr_t& node)
@@ -318,12 +316,12 @@ type_check_expr (ast_t* ptr)
           // Insert an implicit dereference.
           ast_implicit_dereference_expr_t* id = new ast_implicit_dereference_expr_t (node.line, *left);
           in = typed_value_t::implicit_dereference (in);
-          id->set_type (in);
+          id->typed_value = in;
 
           // Insert a dereference.
           ast_dereference_expr_t* deref = new ast_dereference_expr_t (node.line, id);
           in = typed_value_t::dereference (in);
-          deref->set_type (in);
+          deref->typed_value = in;
           *left = deref;
         }
 
@@ -336,7 +334,7 @@ type_check_expr (ast_t* ptr)
                          identifier.c_str (), in.type->to_string ().c_str ());
         }
 
-      node.set_type (out);
+      node.typed_value = out;
     }
 
     void visit (ast_dereference_expr_t& node)
@@ -349,7 +347,7 @@ type_check_expr (ast_t* ptr)
           error_at_line (-1, 0, node.file, node.line,
                          "incompatible types: (%s)@", in.type->to_string ().c_str ());
         }
-      node.set_type (out);
+      node.typed_value = out;
     }
 
     void visit (ast_literal_expr_t& node)
@@ -360,14 +358,14 @@ type_check_expr (ast_t* ptr)
     void check_address_of (ast_address_of_expr_t& node)
     {
       ast_t* expr = node.child ();
-      typed_value_t in = ast_get_typed_value (expr);
+      typed_value_t in = expr->typed_value;
       typed_value_t out = typed_value_t::address_of (in);
       if (out.type == NULL)
         {
           error_at_line (-1, 0, node.file, node.line,
                          "incompatible types: (%s)&", in.type->to_string ().c_str ());
         }
-      node.set_type (out);
+      node.typed_value = out;
     }
 
     void visit (ast_address_of_expr_t& node)
@@ -387,7 +385,7 @@ type_check_expr (ast_t* ptr)
           error_at_line (-1, 0, node.file, node.line,
                          "incompatible types (%s) !", in.type->to_string ().c_str ());
         }
-      node.set_type (out);
+      node.typed_value = out;
     }
 
     void visit (ast_binary_arithmetic_expr_t& node)
@@ -431,7 +429,7 @@ type_check_expr (ast_t* ptr)
                          "incompatible types (%s) %s (%s)", left.type->to_string ().c_str (), operator_str, right.type->to_string ().c_str ());
         }
 
-      node.set_type (result);
+      node.typed_value = result;
     }
 
     void check_call (ast_expr_t& node, const signature_type_t* signature, typed_value_t return_value, ast_t* args)
@@ -452,7 +450,7 @@ type_check_expr (ast_t* ptr)
            ++pos, ++idx)
         {
           ast_t *arg = args->at (idx);
-          typed_value_t argument_tv  = ast_get_typed_value (arg);
+          typed_value_t argument_tv  = arg->typed_value;
           typed_value_t parameter_tv = typed_value_t::make_ref ((*pos)->value);
           check_assignment (parameter_tv, argument_tv, *arg,
                             "incompatible types (%s) = (%s)",
@@ -461,7 +459,7 @@ type_check_expr (ast_t* ptr)
         }
 
       // Set the return type.
-      node.set_type (return_value);
+      node.typed_value = return_value;
     }
 
     void visit (ast_call_expr_t& node)
@@ -535,7 +533,7 @@ type_check_expr (ast_t* ptr)
                 }
             }
 
-          typed_value_t argument_tv = ast_get_typed_value (node.expr ()->children[0]->children[0]);
+          typed_value_t argument_tv = node.expr ()->children[0]->children[0]->typed_value;
           typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
           check_assignment (parameter_tv, argument_tv, node,
                             "call expects %s but given %s",
@@ -582,13 +580,13 @@ type_check_expr (ast_t* ptr)
           error_at_line (-1, 0, node.file, node.line,
                          "incompatible types (%s)[%s]", expr_tv.type->to_string ().c_str (), idx_tv.type->to_string ().c_str ());
         }
-      node.set_type (result);
+      node.typed_value = result;
     }
 
   };
   check_visitor check_lvalue_visitor (ptr);
   ptr->accept (check_lvalue_visitor);
-  return ast_get_typed_value (ptr);
+  return ptr->typed_value;
 }
 
 // void
@@ -648,7 +646,7 @@ static void
 check_condition (ast_t* condition_node)
 {
   type_check_expr (condition_node);
-  typed_value_t tv = ast_get_typed_value (condition_node);
+  typed_value_t tv = condition_node->typed_value;
   if (!type_is_boolean (tv.type))
     {
       error_at_line (-1, 0, condition_node->file,
@@ -675,8 +673,8 @@ type_check_statement (ast_t * node)
       type_check_expr (port_node);
       type_check_expr (reaction_node);
 
-      typed_value_t port_tv = ast_get_typed_value (port_node);
-      typed_value_t reaction_tv = ast_get_typed_value (reaction_node);
+      typed_value_t port_tv = port_node->typed_value;
+      typed_value_t reaction_tv = reaction_node->typed_value;
 
       const port_type_t *port_type = type_cast<port_type_t> (port_tv.type);
 
@@ -712,7 +710,7 @@ type_check_statement (ast_t * node)
       typed_value_t reaction_tv = bind (node, node.left (), node.right ());
       ast_t* param_node = node.param ();
       type_check_expr (param_node);
-      typed_value_t param_tv = ast_get_typed_value (param_node);
+      typed_value_t param_tv = param_node->typed_value;
       assert (reaction_tv.has_value);
       reaction_t* reaction = reaction_tv.reaction_value;
       if (!reaction->has_dimension ())
@@ -720,7 +718,7 @@ type_check_statement (ast_t * node)
           error_at_line (-1, 0, node.file, node.line,
                          "parameter specified for non-parameterized reaction");
         }
-      check_index (new array_type_t (reaction->dimension (), reaction->reaction_type ()), param_tv, *param_node);
+      check_index (new array_type_t (reaction->dimension (), reaction->reaction_type), param_tv, *param_node);
     }
 
     void visit (ast_bind_pfunc_statement_t& node)
@@ -729,8 +727,8 @@ type_check_statement (ast_t * node)
       ast_t* func_node = node.right ();
       type_check_expr (pfunc_node);
       type_check_expr (func_node);
-      typed_value_t pfunc_tv = ast_get_typed_value (pfunc_node);
-      typed_value_t func_tv = ast_get_typed_value (func_node);
+      typed_value_t pfunc_tv = pfunc_node->typed_value;
+      typed_value_t func_tv = func_node->typed_value;
 
       const pfunc_type_t* pfunc_type = type_cast<pfunc_type_t> (pfunc_tv.type);
 
@@ -806,8 +804,8 @@ type_check_statement (ast_t * node)
       check_assignment_target (left);
       ast_t* right = node->right ();
       type_check_expr (right);
-      typed_value_t left_tv = ast_get_typed_value (left);
-      typed_value_t right_tv = ast_get_typed_value (right);
+      typed_value_t left_tv = left->typed_value;
+      typed_value_t right_tv = right->typed_value;
       if (!type_is_convertible (left_tv.type, right_tv.type))
         {
           error_at_line (-1, 0, node->file, node->line,
@@ -860,7 +858,7 @@ type_check_statement (ast_t * node)
 
       // Process the expression.
       type_check_expr (expr);
-      typed_value_t tv = ast_get_typed_value (expr);
+      typed_value_t tv = expr->typed_value;
 
       const type_t* root_type = type_change (tv.type);
       if (root_type == NULL)
@@ -972,7 +970,7 @@ type_check_statement (ast_t * node)
         }
       };
       visitor v (node);
-      static_cast<ast_expr_t*> (expr)->get_type ().type->accept (v);
+      expr->typed_value.type->accept (v);
     }
 
     void visit (ast_decrement_statement_t& node)
@@ -1185,7 +1183,7 @@ mutates_check_statement (ast_t * node)
 
     void check_for_pointer_copy (ast_t* node)
     {
-      typed_value_t tv = ast_get_typed_value (node);
+      typed_value_t tv = node->typed_value;
       if (type_cast<pointer_type_t> (tv.type))
         {
           derived_visitor v;
@@ -1445,7 +1443,7 @@ process_definitions (ast_t * node)
       control_check_statement (body_node);
       mutates_check_statement (body_node);
 
-      typed_value_t tv = ast_get_typed_value (precondition_node);
+      typed_value_t tv = precondition_node->typed_value;
       if (tv.has_value)
         {
           if (tv.bool_value)
@@ -1585,7 +1583,7 @@ process_definitions (ast_t * node)
                     symbol_make_receiver (this_parameter),
                     node.this_symbol);
       /* Enter the signature into the symbol table. */
-      enter_signature (signature_node, reaction->reaction_type ()->signature ());
+      enter_signature (signature_node, reaction->reaction_type->signature ());
 
       type_check_statement (body_node);
       control_check_statement (body_node);
@@ -1597,12 +1595,11 @@ process_definitions (ast_t * node)
       ast_t *dimension_node = node.dimension ();
       ast_t *signature_node = node.signature ();
       ast_t *body_node = node.body ();
-      reaction_t *reaction = dynamic_cast<reaction_t*> (get_current_action (&node));
 
       /* Insert "this" into the symbol table. */
       ast_t *this_identifier_node = node.this_identifier ();
       const std::string& this_identifier = ast_get_identifier (this_identifier_node);
-      typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make (reaction->component_type ()),
+      typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make (node.reaction->component_type ()),
                                                             typed_value_t::STACK,
                                                             MUTABLE,
                                                             IMMUTABLE);
@@ -1629,7 +1626,7 @@ process_definitions (ast_t * node)
                     node.iota_symbol);
 
       /* Enter the signature into the symbol table. */
-      enter_signature (signature_node, reaction->reaction_type ()->signature ());
+      enter_signature (signature_node, node.reaction->reaction_type->signature ());
 
       type_check_statement (body_node);
       control_check_statement (body_node);

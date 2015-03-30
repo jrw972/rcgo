@@ -32,7 +32,7 @@ process_declarations (ast_t * node)
                          "%s does not refer to a component",
                          type_identifier.c_str ());
         }
-      action_t *action = new action_t (type, &node);
+      action_t *action = new action_t (type, &node, node.precondition (), node.body ());
       type->add_action (action);
       node.action = action;
       symtab_set_current_action (node.symtab, action);
@@ -58,7 +58,7 @@ process_declarations (ast_t * node)
                          "%s does not refer to a component",
                          type_identifier.c_str ());
         }
-      action_t *action = new action_t (type, &node, dimension);
+      action_t *action = new action_t (type, &node, node.precondition (), node.body (), dimension);
       type->add_action (action);
       node.action = action;
       symtab_set_current_action (node.symtab, action);
@@ -96,7 +96,7 @@ process_declarations (ast_t * node)
       symbol_t* symbol = node.function_symbol.symbol ();
 
       /* Process the signature. */
-      const signature_type_t *signature = dynamic_cast<const signature_type_t*> (process_type_spec (signature_node, true));
+      const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
 
       /* Process the return type. */
       const type_t *return_type = process_type_spec (return_type_node, true);
@@ -259,7 +259,7 @@ process_declarations (ast_t * node)
       const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
       check_port_reaction_signature (signature);
 
-      reaction_t* reaction = new reaction_t (type, &node, identifier, signature);
+      reaction_t* reaction = new reaction_t (type, &node, node.body (), identifier, signature);
       type->add_reaction (reaction);
       node.reaction = reaction;
       symtab_set_current_action (node.symtab, reaction);
@@ -298,9 +298,9 @@ process_declarations (ast_t * node)
         }
 
       /* Process the signature. */
-      const signature_type_t *signature = dynamic_cast<const signature_type_t*> (process_type_spec (signature_node, true));
+      const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
 
-      reaction_t* reaction = new reaction_t (type, &node, identifier, signature, dimension);
+      reaction_t* reaction = new reaction_t (type, &node, node.body (), identifier, signature, dimension);
       type->add_reaction (reaction);
       node.reaction = reaction;
       symtab_set_current_action (node.symtab, reaction);

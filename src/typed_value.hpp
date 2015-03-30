@@ -207,7 +207,7 @@ struct typed_value_t
   { }
 
   explicit typed_value_t (reaction_t* r)
-    : type (r->reaction_type ())
+    : type (r->reaction_type)
     , kind (VALUE)
     , region (CONSTANT)
     , intrinsic_mutability (IMMUTABLE)

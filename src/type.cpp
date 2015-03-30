@@ -13,7 +13,7 @@ named_type_t::get_reaction (const std::string& identifier) const
        ++pos)
     {
       reaction_t *a = *pos;
-      if (a->name () == identifier)
+      if (a->name == identifier)
         {
           return a;
         }
@@ -163,7 +163,7 @@ type_select (const type_t* type, const std::string& identifier)
   reaction_t* r = type_select_reaction (type, identifier);
   if (r)
     {
-      return r->reaction_type ();
+      return r->reaction_type;
     }
 
   return NULL;

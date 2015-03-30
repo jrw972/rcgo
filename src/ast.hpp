@@ -37,6 +37,7 @@ struct ast_t {
   const char * const file;
   unsigned int const line;
   symtab_t *symtab;
+  typed_value_t typed_value;
 
   size_t size () const { return children.size (); }
 
@@ -330,16 +331,6 @@ public:
   ast_expr_t (unsigned int line, size_t children_count)
     : ast_t (line, children_count)
   { }
-
-  void set_type (typed_value_t typed_value)
-  {
-    typed_value_ = typed_value;
-  }
-
-  typed_value_t get_type () const { return typed_value_; }
-
-private:
-  typed_value_t typed_value_;
 };
 
 struct ast_unary_expr_t : public ast_expr_t
@@ -647,7 +638,7 @@ struct ast_literal_expr_t : public ast_expr_t
   ast_literal_expr_t (unsigned int line, typed_value_t tv)
     : ast_expr_t (line, 0)
   {
-    set_type (tv);
+    typed_value = tv;
   }
 
   void accept (ast_visitor_t& visitor);
@@ -1470,13 +1461,11 @@ void ast_print (const ast_t& ast);
 
 void ast_set_symtab (ast_t * ast, symtab_t * symtab);
 
-const std::string& ast_get_identifier (const ast_t* ast);
+std::string ast_get_identifier (const ast_t* ast);
 
 void ast_instance_set_type (ast_t * ast, type_t * type);
 
 type_t *ast_instance_get_type (ast_t * ast);
-
-typed_value_t ast_get_typed_value (const ast_t* node);
 
 named_type_t *
 get_current_receiver_type (const ast_t * node);

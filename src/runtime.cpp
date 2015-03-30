@@ -166,7 +166,7 @@ namespace runtime
   evaluate_expr (executor_base_t& exec,
                  ast_t* node)
   {
-    typed_value_t tv = ast_get_typed_value (node);
+    typed_value_t tv = node->typed_value;
     if (tv.has_value)
       {
         switch (tv.kind)
@@ -303,7 +303,7 @@ namespace runtime
           }
         };
         visitor v (exec, node);
-        ast_get_typed_value (node.base ()).type->accept (v);
+        node.base ()->typed_value.type->accept (v);
       }
 
       void visit (const ast_merge_expr_t& node)
@@ -387,9 +387,10 @@ namespace runtime
       void visit (const ast_new_expr_t& node)
       {
         // Allocate a new instance of the type.
-        typed_value_t tv = node.get_type ();
-        const type_t* type = dynamic_cast<const pointer_type_t*> (tv.type)->base_type ();
-        if (!type_cast<heap_type_t> (type))
+        typed_value_t tv = node.typed_value;
+        const type_t* type = type_dereference (tv.type);
+        const heap_type_t* heap_type = type_cast<heap_type_t> (type);
+        if (heap_type == NULL)
           {
             void* ptr = heap_allocate (exec.heap (), type->size ());
             // Return the instance.
@@ -397,7 +398,7 @@ namespace runtime
           }
         else
           {
-            const type_t* t = dynamic_cast<const heap_type_t*> (type)->base_type ();
+            const type_t* t = heap_type->base_type ();
             // Allocate a new heap and root object.
             heap_t* h = heap_make_size (t->size ());
             // Insert it into its parent.
@@ -418,7 +419,7 @@ namespace runtime
       void visit (const ast_call_expr_t& node)
       {
         // Create space for the return.
-        typed_value_t return_tv = node.get_type ();
+        typed_value_t return_tv = node.typed_value;
         stack_frame_reserve (exec.stack (), return_tv.type->size ());
 
         // Sample the top of the stack.
@@ -454,7 +455,7 @@ namespace runtime
         char* top_after = stack_frame_top (exec.stack ());
 
         // Perform the call.
-        typed_value_t tv = ast_get_typed_value (node.expr ());
+        typed_value_t tv = node.expr ()->typed_value;
         switch (node.kind)
           {
           case ast_call_expr_t::NONE:
@@ -545,7 +546,7 @@ namespace runtime
       {
         evaluate_expr (exec, node.base ());
         char* ptr = static_cast<char*> (stack_frame_pop_pointer (exec.stack ()));
-        typed_value_t tv = node.get_type ();
+        typed_value_t tv = node.typed_value;
         assert (tv.has_offset);
         stack_frame_push_pointer (exec.stack (), ptr + tv.offset);
       }
@@ -574,7 +575,7 @@ namespace runtime
       {
         evaluate_expr (exec, node.child ());
         void* ptr = stack_frame_pop_pointer (exec.stack ());
-        typed_value_t tv = node.get_type ();
+        typed_value_t tv = node.typed_value;
         stack_frame_load (exec.stack (), ptr, tv.type->size ());
       }
 
@@ -586,7 +587,7 @@ namespace runtime
             {
               evaluate_expr (exec, node.left ());
               evaluate_expr (exec, node.right ());
-              typed_value_t tv = ast_get_typed_value (node.left ());
+              typed_value_t tv = node.left ()->typed_value;
               stack_frame_equal (exec.stack (), tv.type->size ());
             }
             break;
@@ -594,7 +595,7 @@ namespace runtime
             {
               evaluate_expr (exec, node.left ());
               evaluate_expr (exec, node.right ());
-              typed_value_t tv = ast_get_typed_value (node.left ());
+              typed_value_t tv = node.left ()->typed_value;
               stack_frame_not_equal (exec.stack (), tv.type->size ());
             }
             break;
@@ -689,7 +690,7 @@ namespace runtime
                 }
               };
               visitor v (exec, node);
-              node.get_type ().type->accept (v);
+              node.typed_value.type->accept (v);
             }
             break;
           case ast_binary_arithmetic_expr_t::SUBTRACT:
@@ -725,7 +726,7 @@ namespace runtime
         ast_t* left = node.left ();
         ast_t* right = node.right ();
         // Determine the size of the value being assigned.
-        size_t size = ast_get_typed_value (right).type->size ();
+        size_t size = right->typed_value.type->size ();
         // Evaluate the address.
         evaluate_expr (exec, left);
         void* ptr = stack_frame_pop_pointer (exec.stack ());
@@ -782,7 +783,7 @@ namespace runtime
       {
         ast_t* child = node.child ();
         // Determine the size of the value being generated.
-        size_t size = ast_get_typed_value (child).type->size ();
+        size_t size = child->typed_value.type->size ();
         // Evaluate.
         evaluate_expr (exec, child);
         // Remove value.
@@ -849,7 +850,7 @@ namespace runtime
       void visit (const ast_add_assign_statement_t& node)
       {
         // Determine the size of the value being assigned.
-        const type_t* type = ast_get_typed_value (node.right ()).type;
+        const type_t* type = node.right ()->typed_value.type;
         // Evaluate the address.
         evaluate_expr (exec, node.left ());
         void* ptr = stack_frame_pop_pointer (exec.stack ());
@@ -884,7 +885,7 @@ namespace runtime
       void visit (const ast_subtract_assign_statement_t& node)
       {
         // Determine the size of the value being assigned.
-        const type_t* type = ast_get_typed_value (node.right ()).type;
+        const type_t* type = node.right ()->typed_value.type;
         // Evaluate the address.
         evaluate_expr (exec, node.left ());
         void* ptr = stack_frame_pop_pointer (exec.stack ());
@@ -967,7 +968,7 @@ namespace runtime
           }
         };
         visitor v (ptr);
-        ast_get_typed_value (node.child ()).type->accept (v);
+        node.child ()->typed_value.type->accept (v);
       }
 
       void visit (const ast_trigger_statement_t& node)
@@ -1071,7 +1072,7 @@ namespace runtime
               }
             };
             visitor v (exec);
-            ast_get_typed_value (child).type->accept (v);
+            child->typed_value.type->accept (v);
           }
         printf ("\n");
         exec.unlock_stdout ();
@@ -1090,15 +1091,6 @@ namespace runtime
            size_t iota)
   {
     assert (stack_frame_empty (exec.stack ()));
-    ast_t* precondition;
-    if (dynamic_cast<ast_action_t*> (action->node ()))
-      {
-        precondition = dynamic_cast<ast_action_t*> (action->node ())->precondition ();
-      }
-    else
-      {
-        precondition = dynamic_cast<ast_dimensioned_action_t*> (action->node ())->precondition ();
-      }
 
     // Set the current instance.
     exec.current_instance (instance);
@@ -1113,7 +1105,7 @@ namespace runtime
     // Push an instruction pointer.
     stack_frame_push_pointer (exec.stack (), NULL);
     stack_frame_push_base_pointer (exec.stack (), 0 /* No locals. */);
-    evaluate_expr (exec, precondition);
+    evaluate_expr (exec, action->precondition);
     bool retval = stack_frame_pop_bool (exec.stack ());
     stack_frame_pop_base_pointer (exec.stack ());
     // Pop the instruction pointer.
@@ -1137,19 +1129,9 @@ namespace runtime
     // Set the current instance.
     exec.current_instance (instance);
 
-    ast_t* body;
-    if (dynamic_cast<ast_reaction_t*> (reaction->node ()))
-      {
-        body = dynamic_cast<ast_reaction_t*> (reaction->node ())->body ();
-      }
-    else
-      {
-        body = dynamic_cast<ast_dimensioned_reaction_t*> (reaction->node ())->body ();
-      }
-
     stack_frame_push_base_pointer (exec.stack (), reaction->memory_model.locals_size ());
 
-    evaluate_statement (exec, body);
+    evaluate_statement (exec, reaction->body);
   }
 
   static void
@@ -1160,22 +1142,12 @@ namespace runtime
     // Set the current instance.
     exec.current_instance (instance);
 
-    ast_t* body;
-    if (dynamic_cast<ast_action_t*> (action->node ()))
-      {
-        body = dynamic_cast<ast_action_t*> (action->node ())->body ();
-      }
-    else
-      {
-        body = dynamic_cast<ast_dimensioned_action_t*> (action->node ())->body ();
-      }
-
     // Reset the mutable phase base pointer.
     exec.mutable_phase_base_pointer (0);
 
     stack_frame_push_base_pointer (exec.stack (), action->memory_model.locals_size ());
 
-    evaluate_statement (exec, body);
+    evaluate_statement (exec, action->body);
 
     if (exec.mutable_phase_base_pointer () == 0)
       {
