@@ -1,0 +1,219 @@
+\expandafter\ifx\csname graph\endcsname\relax
+   \csname newbox\expandafter\endcsname\csname graph\endcsname
+\fi
+\ifx\graphtemp\undefined
+  \csname newdimen\endcsname\graphtemp
+\fi
+\expandafter\setbox\csname graph\endcsname
+ =\vtop{\vskip 0pt\hbox{%
+    \special{pn 8}%
+    \special{ar 500 1250 500 250 0 6.28319}%
+    \graphtemp=.5ex
+    \advance\graphtemp by 1.250in
+    \rlap{\kern 0.500in\lower\graphtemp\hbox to 0pt{\hss clock.Tick\hss}}%
+    \special{ar 2000 750 500 250 0 6.28319}%
+    \graphtemp=.5ex
+    \advance\graphtemp by 0.750in
+    \rlap{\kern 2.000in\lower\graphtemp\hbox to 0pt{\hss poll.Request\hss}}%
+    \special{sh 1.000}%
+    \special{pn 1}%
+    \special{pa 2025 1400}%
+    \special{pa 2000 1500}%
+    \special{pa 1975 1400}%
+    \special{pa 2025 1400}%
+    \special{fp}%
+    \special{pn 8}%
+    \special{pa 2000 1000}%
+    \special{pa 2000 1400}%
+    \special{fp}%
+    \special{ar 2316 1776 190 190 -0.671354 -0.543861}%
+    \special{ar 2286 1800 228 228 -0.783941 -0.671179}%
+    \special{ar 2176 1937 404 404 -1.080691 -0.957024}%
+    \special{ar 2079 2139 629 629 -1.256453 -1.177015}%
+    \special{ar 2024 2326 825 825 -1.385820 -1.325187}%
+    \special{ar 2003 2455 955 955 -1.494510 -1.442133}%
+    \special{ar 2000 2500 1000 1000 -1.595824 -1.545819}%
+    \special{ar 1997 2455 955 955 -1.699513 -1.647133}%
+    \special{ar 1976 2326 824 824 -1.816469 -1.755830}%
+    \special{ar 1921 2139 629 629 -1.964663 -1.885211}%
+    \special{ar 1824 1937 404 404 -2.184708 -2.061008}%
+    \special{ar 1714 1800 228 228 -2.470652 -2.357849}%
+    \special{ar 1684 1776 190 190 -2.598015 -2.470477}%
+    \special{ar 1625 1750 125 125 2.941214 3.341179}%
+    \special{ar 1684 1724 190 190 2.470001 2.597448}%
+    \special{ar 1714 1700 229 229 2.357454 2.470176}%
+    \special{ar 1824 1563 405 405 2.060795 2.184429}%
+    \special{ar 1921 1361 629 629 1.885067 1.964491}%
+    \special{ar 1976 1173 825 825 1.755715 1.816343}%
+    \special{ar 1997 1045 955 955 1.647032 1.699407}%
+    \special{ar 2000 1000 1000 1000 1.545719 1.595724}%
+    \special{ar 2003 1045 955 955 1.442026 1.494409}%
+    \special{ar 2024 1174 824 824 1.325061 1.385706}%
+    \special{ar 2079 1361 629 629 1.176843 1.256309}%
+    \special{ar 2176 1563 404 404 0.956746 1.080478}%
+    \special{ar 2286 1700 228 228 0.670703 0.783546}%
+    \special{ar 2316 1724 190 190 0.543295 0.670878}%
+    \special{ar 2375 1750 125 125 -0.200775 0.199190}%
+    \graphtemp=.5ex
+    \advance\graphtemp by 1.750in
+    \rlap{\kern 2.000in\lower\graphtemp\hbox to 0pt{\hss clock.Request\hss}}%
+    \special{ar 3500 250 500 250 0 6.28319}%
+    \graphtemp=.5ex
+    \advance\graphtemp by 0.250in
+    \rlap{\kern 3.500in\lower\graphtemp\hbox to 0pt{\hss clock.Clock\hss}}%
+    \special{sh 1.000}%
+    \special{pn 1}%
+    \special{pa 3525 900}%
+    \special{pa 3500 1000}%
+    \special{pa 3475 900}%
+    \special{pa 3525 900}%
+    \special{fp}%
+    \special{pn 8}%
+    \special{pa 3500 500}%
+    \special{pa 3500 900}%
+    \special{fp}%
+    \special{sh 1}%
+    \special{ia 3990 1201 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3965 1158 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3929 1122 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3888 1092 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3844 1068 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3797 1049 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3749 1033 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3700 1021 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3651 1012 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3601 1005 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3550 1001 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3500 1000 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3450 1001 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3399 1005 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3349 1012 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3300 1021 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3251 1033 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3203 1049 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3156 1068 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3112 1092 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3071 1122 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3035 1158 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3010 1201 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3000 1250 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3010 1299 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3035 1342 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3071 1378 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3112 1408 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3156 1432 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3203 1451 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3251 1467 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3300 1479 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3349 1488 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3399 1495 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3450 1499 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3500 1500 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3551 1499 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3601 1495 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3651 1488 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3700 1479 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3749 1467 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3797 1451 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3844 1431 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3888 1408 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3929 1378 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3965 1342 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 3990 1299 -6 -6 0 6.28319}%
+    \special{sh 1}%
+    \special{ia 4000 1250 -6 -6 0 6.28319}%
+    \graphtemp=.5ex
+    \advance\graphtemp by 1.250in
+    \rlap{\kern 3.500in\lower\graphtemp\hbox to 0pt{\hss poll.G1\hss}}%
+    \special{sh 1.000}%
+    \special{pn 1}%
+    \special{pa 3525 1900}%
+    \special{pa 3500 2000}%
+    \special{pa 3475 1900}%
+    \special{pa 3525 1900}%
+    \special{fp}%
+    \special{pn 8}%
+    \special{pa 3500 1500}%
+    \special{pa 3500 1900}%
+    \special{fp}%
+    \special{ar 3816 2276 190 190 -0.671354 -0.543861}%
+    \special{ar 3786 2300 228 228 -0.783941 -0.671179}%
+    \special{ar 3676 2437 404 404 -1.080691 -0.957024}%
+    \special{ar 3579 2639 629 629 -1.256453 -1.177015}%
+    \special{ar 3524 2826 825 825 -1.385820 -1.325187}%
+    \special{ar 3503 2955 955 955 -1.494510 -1.442133}%
+    \special{ar 3500 3000 1000 1000 -1.595824 -1.545819}%
+    \special{ar 3497 2955 955 955 -1.699513 -1.647133}%
+    \special{ar 3476 2826 824 824 -1.816469 -1.755830}%
+    \special{ar 3421 2639 629 629 -1.964663 -1.885211}%
+    \special{ar 3324 2437 404 404 -2.184708 -2.061008}%
+    \special{ar 3214 2300 228 228 -2.470652 -2.357849}%
+    \special{ar 3184 2276 190 190 -2.598015 -2.470477}%
+    \special{ar 3125 2250 125 125 2.941214 3.341179}%
+    \special{ar 3184 2224 190 190 2.470001 2.597448}%
+    \special{ar 3214 2200 229 229 2.357454 2.470176}%
+    \special{ar 3324 2063 405 405 2.060795 2.184429}%
+    \special{ar 3421 1861 629 629 1.885067 1.964491}%
+    \special{ar 3476 1673 825 825 1.755715 1.816343}%
+    \special{ar 3497 1545 955 955 1.647032 1.699407}%
+    \special{ar 3500 1500 1000 1000 1.545719 1.595724}%
+    \special{ar 3503 1545 955 955 1.442026 1.494409}%
+    \special{ar 3524 1674 824 824 1.325061 1.385706}%
+    \special{ar 3579 1861 629 629 1.176843 1.256309}%
+    \special{ar 3676 2063 404 404 0.956746 1.080478}%
+    \special{ar 3786 2200 228 228 0.670703 0.783546}%
+    \special{ar 3816 2224 190 190 0.543295 0.670878}%
+    \special{ar 3875 2250 125 125 -0.200775 0.199190}%
+    \graphtemp=.5ex
+    \advance\graphtemp by 2.250in
+    \rlap{\kern 3.500in\lower\graphtemp\hbox to 0pt{\hss counter.Clock\hss}}%
+    \hbox{\vrule depth2.500in width0pt height 0pt}%
+    \kern 4.000in
+  }%
+}%

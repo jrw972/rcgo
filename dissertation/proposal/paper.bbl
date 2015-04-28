@@ -1,0 +1,304 @@
+\begin{thebibliography}{10}
+
+\bibitem{ioatoolkit}
+Ioa language and toolset.
+\newblock \url{http://groups.csail.mit.edu/tds/ioa/}.
+
+\bibitem{1983proceedings}
+{\em Proceedings of the ACM SIGSOFT/SIGPLAN Software Engineering Symposium on
+  High-Level Debugging, Pacific Grove, California, March 20-23, 1983}.
+\newblock Software engineering notes. Association for Computing Machinery,
+  1983.
+
+\bibitem{cxx11}
+C++11.
+\newblock ISO/IEC 14882:2011, September 2011.
+
+\bibitem{adya2002cooperative}
+A.~Adya, J.~Howell, M.~Theimer, W.J. Bolosky, and J.R. Douceur.
+\newblock Cooperative task management without manual stack management.
+\newblock In {\em Proceedings of the 2002 Usenix ATC}, 2002.
+
+\bibitem{agha1985actors}
+G.A. Agha.
+\newblock {\em Actors: a model of concurrent computation in distributed
+  systems}.
+\newblock MIT Press, 1986.
+
+\bibitem{andrews1983concepts}
+G.R. Andrews and F.B. Schneider.
+\newblock Concepts and notations for concurrent programming.
+\newblock {\em ACM Computing Surveys (CSUR)}, 15(1):3--43, 1983.
+
+\bibitem{armstrong1996concurrent}
+J.~Armstrong, R.~Virding, C.~Wikstr, M.~Williams, et~al.
+\newblock Concurrent programming in erlang.
+\newblock 1996.
+
+\bibitem{baeten2005brief}
+J.C.M. Baeten.
+\newblock A brief history of process algebra.
+\newblock {\em Theoretical Computer Science}, 335(2):131--146, 2005.
+
+\bibitem{barron1963main}
+D.W. Barron, J.N. Buxton, D.F. Hartley, E.~Nixon, and C.~Strachey.
+\newblock The main features of cpl.
+\newblock {\em The Computer Journal}, 6(2):134--143, 1963.
+
+\bibitem{bergstra1982fixed}
+J.A. Berstra and J.W. Klop.
+\newblock Fixed point semantics in process algebra.
+\newblock Technical Report IW 208, Mathematical Centre, Amsterdam, 1982.
+
+\bibitem{blumofe1995cilk}
+R.D. Blumofe, C.F. Joerg, B.C. Kuszmaul, C.E. Leiserson, K.H. Randall, and
+  Y.~Zhou.
+\newblock {\em Cilk: An efficient multithreaded runtime system}, volume~30.
+\newblock ACM, 1995.
+
+\bibitem{booch1982object}
+G.~Booch.
+\newblock Object-oriented design.
+\newblock {\em ACM SIGAda Ada Letters}, 1(3):64--76, 1982.
+
+\bibitem{brooks1995mythical}
+F.P. Brooks~Jr.
+\newblock {\em The mythical man-month (anniversary ed.)}.
+\newblock Addison-Wesley Longman Publishing Co., Inc., 1995.
+
+\bibitem{chandy1989parallel}
+K.M. Chandy and J.~Misra.
+\newblock {\em Parallel program design}.
+\newblock Reading, MA; Addison-Wesley Pub. Co. Inc., 1989.
+
+\bibitem{church1936unsolvable}
+A.~Church.
+\newblock An unsolvable problem of elementary number theory.
+\newblock {\em American journal of mathematics}, 58(2):345--363, 1936.
+
+\bibitem{clinger1981foundations}
+W.D. Clinger.
+\newblock {\em Foundations of actor semantics}.
+\newblock PhD thesis, Massachusetts Institute of Technology, 1981.
+
+\bibitem{corbet2005linux}
+J.~Corbet, A.~Rubini, and G.~Kroah-Hartman.
+\newblock {\em Linux device drivers}.
+\newblock O'Reilly Media, 2005.
+
+\bibitem{culler1993parallel}
+D.E. Culler, A.~Dusseau, S.C. Goldstein, A.~Krishnamurthy, S.~Lumetta,
+  T.~Von~Eicken, and K.~Yelick.
+\newblock Parallel programming in split-c.
+\newblock In {\em Supercomputing'93. Proceedings}, pages 262--273. IEEE, 1993.
+
+\bibitem{dahl1972structured}
+O.J. Dahl, E.W. Dijkstra, and C.A.R. Hoare.
+\newblock {\em Structured programming}.
+\newblock Academic Press Ltd., 1972.
+
+\bibitem{deroure1991parallel}
+D.C. DeRoure.
+\newblock Parallel implementation of unity.
+\newblock {\em The PUMA and GENESIS Projects}, pages 67--75, 1991.
+
+\bibitem{dijkstra1965cooperating}
+E.W. Dijkstra.
+\newblock Cooperating sequential processes.
+\newblock Technical report, Technological University, Eindhoven, The
+  Netherlands, September 1965.
+
+\bibitem{driscoll1989making}
+J.R. Driscoll, N.~Sarnak, D.D. Sleator, and R.E. Tarjan.
+\newblock Making data structures persistent.
+\newblock {\em Journal of computer and system sciences}, 38(1):86--124, 1989.
+
+\bibitem{Eswaran:1976:NCP:360363.360369}
+K.~P. Eswaran, J.~N. Gray, R.~A. Lorie, and I.~L. Traiger.
+\newblock The notions of consistency and predicate locks in a database system.
+\newblock {\em Commun. ACM}, 19(11):624--633, November 1976.
+
+\bibitem{apache}
+The Apache~Software Foundation.
+\newblock \url{http://www.apache.org}.
+
+\bibitem{georgiou2009automated}
+C.~Georgiou, N.~Lynch, P.~Mavrommatis, and J.A. Tauber.
+\newblock Automated implementation of complex distributed algorithms specified
+  in the ioa language.
+\newblock {\em International Journal on Software Tools for Technology Transfer
+  (STTT)}, 11(2):153--171, 2009.
+
+\bibitem{goldman1990distributed}
+K.J. Goldman.
+\newblock Distributed algorithm simulation using input/output automata.
+\newblock Technical report, DTIC Document, 1990.
+
+\bibitem{gopinath1989copy}
+K.~Gopinath and J.L. Hennessy.
+\newblock Copy elimination in functional languages.
+\newblock In {\em Proceedings of the 16th ACM SIGPLAN-SIGACT symposium on
+  Principles of programming languages}, pages 303--314. ACM, 1989.
+
+\bibitem{GZH03}
+A.~Granicz, D.~Zimmerman, and J.~Hickey.
+\newblock Rewriting {UNITY}.
+\newblock In Eobert Nieuwenhuis, editor, {\em Proceedings of the 4th
+  International Conference on Rewriting Techniques and Applications {(RTA
+  14)}}, volume 2706 of {\em Lecture Notes in Computer Science}. Springer, June
+  2003.
+
+\bibitem{halloway2009programming}
+S.~Halloway.
+\newblock {\em Programming Clojure}.
+\newblock Pragmatic Bookshelf, 2009.
+
+\bibitem{Herlihy:1993:TMA:165123.165164}
+Maurice Herlihy and J.~Eliot~B. Moss.
+\newblock Transactional memory: architectural support for lock-free data
+  structures.
+\newblock In {\em Proceedings of the 20th annual international symposium on
+  computer architecture}, ISCA '93, pages 289--300, New York, NY, USA, 1993.
+  ACM.
+
+\bibitem{hewitt1973universal}
+C.~Hewitt, P.~Bishop, and R.~Steiger.
+\newblock A universal modular actor formalism for artificial intelligence.
+\newblock In {\em Proceedings of the 3rd international joint conference on
+  Artificial intelligence}, pages 235--245. Morgan Kaufmann Publishers Inc.,
+  1973.
+
+\bibitem{hind2001pointer}
+M.~Hind.
+\newblock Pointer analysis: haven't we solved this problem yet?
+\newblock In {\em Proceedings of the 2001 ACM SIGPLAN-SIGSOFT workshop on
+  Program analysis for software tools and engineering}, pages 54--61. ACM,
+  2001.
+
+\bibitem{hoare1978communicating}
+C.A.R. Hoare.
+\newblock Communicating sequential processes.
+\newblock {\em Communications of the ACM}, 21(8):666--677, 1978.
+
+\bibitem{huber1992maspar}
+M.~Huber.
+\newblock Maspar unity version 1.0.
+\newblock \url{ftp://sanfrancisco.ira.uka.de/pub/maspar/maspar_unity.tar.Z},
+  1992.
+
+\bibitem{kahn1974semantics}
+G.~Kahn.
+\newblock The semantics of a simple language for parallel programming.
+\newblock {\em proceedings of IFIP Congress74}, 74:471--475, 1974.
+
+\bibitem{Knight:1986:AMF:319838.319854}
+Tom Knight.
+\newblock An architecture for mostly functional languages.
+\newblock In {\em Proceedings of the 1986 ACM conference on LISP and functional
+  programming}, LFP '86, pages 105--112, New York, NY, USA, 1986. ACM.
+
+\bibitem{lea2000concurrent}
+D.~Lea.
+\newblock {\em Concurrent programming in Java: design principles and patterns}.
+\newblock Prentice Hall, 2000.
+
+\bibitem{lee2006problem}
+E.A. Lee.
+\newblock The problem with threads.
+\newblock {\em Computer}, 39(5):33--42, 2006.
+
+\bibitem{nancy1996distributed}
+N.A. Lynch.
+\newblock {\em Distributed algorithms}.
+\newblock Morgan Kaufmann, 1996.
+
+\bibitem{manna1992temporal}
+Z.~Manna and A.~Pnueli.
+\newblock {\em The temporal logic of reactive and concurrent systems:
+  Specification}, volume~1.
+\newblock Springer, 1992.
+
+\bibitem{milner1982calculus}
+R.~Milner.
+\newblock {\em A calculus of communicating systems}.
+\newblock Springer-Verlag New York, Inc., 1982.
+
+\bibitem{okasaki1999purely}
+C.~Okasaki.
+\newblock {\em Purely functional data structures}.
+\newblock Cambridge Univ Pr, 1999.
+
+\bibitem{ousterhout1996threads}
+J.~Ousterhout.
+\newblock Why threads are a bad idea (for most purposes).
+\newblock In {\em Presentation given at the 1996 Usenix Annual Technical
+  Conference}, 1996.
+
+\bibitem{parnas1972criteria}
+D.L. Parnas.
+\newblock On the criteria to be used in decomposing systems into modules.
+\newblock {\em Communications of the ACM}, 15(12):1053--1058, 1972.
+
+\bibitem{pnueli1981temporal}
+A.~Pnueli.
+\newblock The temporal semantics of concurrent programs.
+\newblock {\em Theoretical Computer Science}, 13(1):45--60, 1981.
+
+\bibitem{radha1993portable}
+S.~Radha and C.R. Muthukrishnan.
+\newblock A portable implementation of unity on von neumann machines.
+\newblock {\em Computer Languages}, 18(1):17--30, 1993.
+
+\bibitem{haswell}
+James Reinders.
+\newblock Transactional synchronization in haswell.
+\newblock
+  \url{http://software.intel.com/en-us/blogs/2012/02/07/transactional-synchronization-in-haswell},
+  February 2012.
+
+\bibitem{ryzhyk2009dingo}
+L.~Ryzhyk, P.~Chubb, I.~Kuz, and G.~Heiser.
+\newblock Dingo: Taming device drivers.
+\newblock In {\em Proceedings of the 4th ACM European conference on Computer
+  systems}, pages 275--288. ACM, 2009.
+
+\bibitem{schmidt2000pattern}
+D.~Schmidt, M.~Stal, H.~Rohnert, and F.~Buschmann.
+\newblock {\em Pattern-oriented software architecture: Patterns for concurrent
+  and networked objects}, volume~2.
+\newblock Wiley, 2000.
+
+\bibitem{shavit1997software}
+N.~Shavit and D.~Touitou.
+\newblock Software transactional memory.
+\newblock {\em Distributed Computing}, 10(2):99--116, 1997.
+
+\bibitem{silberschatz2005operating}
+A.~Silberschatz, P.B. Galvin, and G~Gagne.
+\newblock {\em Operating system concepts}, volume~7.
+\newblock Addison-Wesley, 2005.
+
+\bibitem{sutter2005software}
+H.~Sutter and J.~Larus.
+\newblock Software and the concurrency revolution.
+\newblock {\em Queue}, 3(7):54--62, 2005.
+
+\bibitem{turing1936computable}
+A.~Turing.
+\newblock On computable numbers, with an application to the
+  entscheidungsproblem.
+\newblock {\em Proceedings of the London Mathematical Society}, 2(42):230--265,
+  1936.
+
+\bibitem{wadler1990comprehending}
+P.~Wadler.
+\newblock Comprehending monads.
+\newblock In {\em Proceedings of the 1990 ACM conference on LISP and functional
+  programming}, pages 61--78. ACM, 1990.
+
+\bibitem{wirth1971program}
+N.~Wirth.
+\newblock Program development by stepwise refinement.
+\newblock {\em Communications of the ACM}, 14(4):221--227, 1971.
+
+\end{thebibliography}

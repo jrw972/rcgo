@@ -1,0 +1,47 @@
+.PS
+
+down
+Source: [
+right
+C1: ellipse width 1 "Component1"
+move
+C2: ellipse width 1 "Component2"
+move 
+C3: ellipse width 1 "Component3*"
+]
+move
+Compile: [
+A:
+[
+right
+box "Substitution"
+arrow
+box "Semantic" "Analysis"
+arrow
+box "Code" "Generation"
+]
+box width (A.width + .30) height (A.height + .5) with .s at A.s + (0,-.15);
+"Compile" at last box.top + (0,-.15)
+]
+arrow
+[
+Source: ellipse "$\alpha$-machine" "image"
+move
+Target: [
+right
+C1: ellipse width 1 "Static" "Variables" dashed
+move
+C2: ellipse width 1 "$\alpha$-statements" dashed
+move
+C3: ellipse width 1 "Schedule" dashed
+]
+line from Source.s to Target.C1.n dashed
+line from Source.s to Target.C2.n dashed
+line from Source.s to Target.C3.n dashed
+]
+
+arrow from Source.C1.s to Compile.n
+arrow from Source.C2.s to Compile.n
+arrow from Source.C3.s to Compile.n
+
+.PE

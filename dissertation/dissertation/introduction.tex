@@ -1,0 +1,259 @@
+\chapter{Introduction \label{introduction}}
+
+\paragraph{Definitions.}
+Manna and Pnueli classify programs as either being \emph{transformational} or \emph{reactive}~\cite{manna1992temporal}.
+As implied by their name, transformational programs transform a finite input sequence into a finite output sequence.
+Transformational programs can often be divided into three distinct phases corresponding to the activities of input, processing, and output.
+A compiler is a classic example of a transformational program as it transforms a source file into an object file.
+Formal models of computation like the Turing machine~\cite{turing1936computable} and $\lambda$-calculus~\cite{church1936unsolvable} are concerned with transformational programs.
+
+In contrast, a reactive program is characterized by ``ongoing interactions with its environment\cite{manna1992temporal}.''
+Whereas transformational programs are designed to halt and produce an output (when possible, i.e., the halting problem), reactive programs are often designed to run forever.
+The activities of input, processing, and output are thus overlapped in the execution of a reactive program.
+A web server is a classic example of a reactive program as it continually receives requests, processes them, and sends responses.
+Reactive systems include operating systems, databases, networked applications, interactive applications, and embedded systems.
+A number of formal models have been developed to reason about reactive systems and include the Calculus of Communicating Systems~\cite{milner1982calculus}, the Algebra of Communicating Processes~\cite{bergstra1982fixed}, Cooperating Sequential Processes~\cite{dijkstra1965cooperating}, Communicating Sequential Processes~\cite{hoare1978communicating}, the Actor Model~\cite{hewitt1973universal}\cite{clinger1981foundations}\cite{agha1985actors}, UNITY~\cite{chandy1989parallel}, and I/O automata~\cite{nancy1996distributed}.
+
+Asynchrony and concurrency are two fundamental characteristics of reactive systems that make them difficult to develop.
+A reactive program and its external environment may evolve concurrently and must share common resources to facilitate communication (input and output).
+For example, in a system consisting of two threads that communicate using shared variables, each thread is in the environment of the other thread.
+Many of the difficulties associated with concurrency stem from the concurrent use of shared resources, e.g., the threads' shared variables.
+To ensure correctness in models that allow the environment to deliver input to a reactive program asynchronously, the environment must be viewed as an adversary that will deliver inputs at inopportune times.
+Since a reactive program may run forever, the designers of reactive programs thus must often reason about infinite event sequences containing interleaved input, output, and processing.
+
+Failure to account for asynchrony and concurrency results in a reactive program with \emph{timing bugs} meaning that correct execution depends on arbitrary scheduling decisions.
+Timing bugs may be manifested when the schedule of events is perturbed, e.g., a new processor, a new operating system, or part of the program takes more or less time than normal.
+Operating systems are particularly susceptible to timing bugs caused by device drivers~\cite{ryzhyk2009dingo}.
+Timing bugs can escape even a rigorous software development process and lay dormant for years~\cite{lee2006problem}.
+Furthermore, timing bugs are notoriously difficult to diagnose inspiring the term \emph{heisenbug}, a bug that disappears or changes its behavior when someone is attempting to find it (because the debugging process alters the timing of the program)~\cite{1983proceedings}.
+Timing bugs cost man-hours of debugging time and can lead to a poor user experience, e.g., a non-responsive device or application, and loss of revenue, e.g., when an advertisement service cannot be used while it reboots.
+
+\emph{Decomposition} and \emph{composition} are essential techniques when designing, implementing, and understanding complex systems.
+Decomposition, dividing a complex system into a number of simpler systems, is often used when \emph{designing} a system, e.g., top-down design~\cite{wirth1971program}.
+Composition, building a complex system from a number of simpler systems, is often used when \emph{implementing} a system.
+The simpler systems are implemented, tested, and integrated to create larger systems~\cite{brooks1995mythical}.
+Often, the simplest systems in a design are common and can be reused across problem domains.
+Similarly, systems in the same problem domain often have common sub-systems.
+Thus, one goal is the ability to guide a design toward reusable components.
+Decomposition also often imparts a logical organization to a system when the resulting sub-systems are cohesive, i.e., each sub-system has a well-defined purpose~\cite{parnas1972criteria}.
+Thus, decomposition is a significant aid to understanding complex systems.
+
+\paragraph{Trends.}
+Developments in hardware and software platforms have resulted in an increasing demand for reactive systems.
+Embedded systems continue to proliferate due to advances in hardware that continue to produce new platforms, form factors, sensors, actuators, and price points, which allow embedded computers to be applied to a variety of application domains.
+Individuals, businesses, and governments are deploying networks of sensors and actuators to monitor, control, and coordinate critical infrastructures such as power grids and telecommunication networks.
+These advances have also led to platforms targeted at the individual, such as smart phones, e-readers, and tablets.
+Applications for these personal platforms are necessarily interactive and therefore reactive.
+The leveling of processor speeds and the resulting trend toward multicore processors is also creating demand for reactive systems as it is believed that increases in performance must come through increasing concurrent applications~\cite{sutter2005software}.
+
+A general trend toward distribution is also increasing demand for reactive systems.
+Increasingly, network services form the core or are a critical component of an application and are fundamental to delivering content (e.g., downloading books and movies) and communication (e.g., social media) that drive the application.
+More and more devices are being equipped with (especially wireless) network adapters due to the introduction of inexpensive networking technologies.
+Networks are now also \emph{emerging}, as opposed to being intentionally deployed, in environments such as the home, office, hospitals, etc.
+Applications that take advantage of these new networks are necessarily reactive.
+The trend toward distribution is already established in enterprise computing infrastructures as networked systems, e.g., file servers, print servers, web servers, application servers, databases, etc., are critical or central to supporting business processes and achieving business objectives.
+
+Given the continued proliferation of reactive systems, their number, diversity, and complexity is likely to increase as reactive systems encompass more and more interactions.
+This is most evident in large-scale distributed systems where a computation is spread over a variety of nodes.
+Such systems often \emph{evolve} as new systems are introduced and integrated into the existing infrastructure.
+The individual nodes themselves may also contain a variety of interactions.
+For example, it is not uncommon to find a smart phone application that simultaneously uses a service on the Internet, interacts with the user, and uses a variety of devices (e.g., an accelerometer) typically found in embedded environments.
+Similarly, sophisticated servers like web servers and databases are often built from collections of interacting reactive modules.
+
+\paragraph{Challenges.}
+The first challenge towards adequately supporting such complex reactive systems is to reduce the accidental complexity associated with their design and implementation.
+For software, accidental complexity is defined as the ``difficulties that today attend its production but that are not inherent~\cite{brooks1995mythical}.''
+One source of accidental complexity is the \emph{conflation} of semantics, where a problem naturally expressed using one set of semantics is implemented with a different set of semantics resulting in a semantic gap and obfuscation.
+To illustrate, Lee shows how the common practice of introducing thread-based concurrency via a library to an inherently sequential language significantly alters the semantics of the language~\cite{lee2006problem}.
+We claim that the currently dominant approaches to developing reactive systems rely on inherently transformational languages that have been augmented with features for concurrency, which introduces an example of the kind of problem that Lee has identified.
+Thus, reducing the accidental complexity in reactive systems requires a platform that provides direct support for reactive semantics.
+
+The second challenge is to ensure that reactive systems can be decomposed and composed in a principled way.
+Asynchrony and concurrency, two inherent characteristics of reactive systems, undermine decomposition and composition when not properly encapsulated and therefore limit our ability to design and implement complex reactive systems.
+Such problems of asynchrony and concurrency stem from the interactions between reactive programs.
+Decomposition increases the number of reactive programs constituting a system which in turn increases the number of susceptible interactions and opportunities for timing bugs.
+For decomposition to achieve an overall reduction in complexity when designing a reactive system, it must reduce the amount of reasoning that must be performed at each level of the design.
+Thus, it must be possible to replace the details of how a reactive program is implemented with higher-level statements about its behavior in terms of its interface.
+
+\paragraph{Limitations of the state of the art.}
+State is fundamental to reactive systems and may be modeled directly (variables and assignment) or indirectly.
+Some examples of indirect approaches to modeling state include monads~\cite{wadler1990comprehending} which are typically used in functional languages such as Haskell, and a mail queue with message-behavior pairs~\cite{agha1985actors} which is used in actor-oriented languages such as Erlang.
+The dominant languages used to implement reactive systems, such as C, C++, and Java, support the imperative programming paradigm by way of the von Neumann architecture and model state directly with variables and assignment.
+As we are interested in expressing reactive semantics directly, we limit the remaining discussion to languages like C, C++, and Java.
+
+Imperative programming languages have three characteristics that are germane to reactive programs.
+The first characteristic is \emph{deterministic sequencing}.
+Imperative programs are constructed by concatenating assignment statements and control statements.
+Control flows implicitly to the next statement unless modified by a control statement (conditional or loop).
+In an imperative program, the next statement to be executed is \emph{always} determined by the program.
+The second characteristic is \emph{sequential composition}.
+In the imperative programming paradigm, a block of statements can be packaged as a subroutine or function.
+This facilitates composition since complex logic can be built from smaller units.
+The composition is sequential since the same sequential flow of control applies to the change in control introduced by the call.
+The third characteristic is \emph{explicit atomicity} meaning that the developer is responsible for designating which sequences of statements appear as a single statement with respect to another program in the environment.
+Of interest to this research is the combined effect of deterministic sequencing, sequential composition, and explicit atomicity on the accidental complexity of reactive programs and their composition and decomposition.
+
+A key limitation of deterministic sequencing and explicit atomicity is the burden it places on the developer.
+The misuse of synchronization primitives, which becomes likely as transitions become complex, may introduce concurrency hazards, e.g., deadlock~\cite{dijkstra1965cooperating}, which manifest themselves as timing bugs.
+A number of design patterns for concurrency have been developed to help developers avoid concurrency hazards~\cite{schmidt2000pattern}, \cite{lea2000concurrent}.
+These design patterns represent a move toward implicit atomicity as they often attempt to leverage language features to control atomicity, e.g., scoped locking~\cite{schmidt2000pattern}.
+While some of these patterns have been incorporated into programming languages, e.g., the \verb+synchronized+ keyword of Java implements the thread-safe interface pattern~\cite{schmidt2000pattern}, they are most often enforced by convention and therefore easily violated or ignored (e.g., if a new developer is unaware of the convention).
+In practice, the use of synchronization primitives has proven to be tedious and error prone~\cite{sutter2005software}.
+
+Correct synchronization with sequential composition and explicit atomicity is a holistic problem that resists encapsulation.
+Reactive programs based on sequential composition are often designed using modular principles such as object-oriented programming.
+The sequence of transitions that constitute a reactive program is typically distributed over a variety of modules, i.e., the graph of procedure calls.
+The challenge for a developer then is to identify all of the shared state and then use synchronization primitives to guard against concurrent updates.
+Proper synchronization is based upon a complete understanding of the call graph (which may not be fully known due to aliasing).
+The resulting code tends to be fragile, i.e., modifications tend to introduce new bugs.
+%% Existing approaches to synchronization attempt to impose structure on the call graph, e.g., an object can only participate in one transition at a time (thread-safe interface~\cite{schmidt2000pattern}), to avoid concurrency hazards.
+%% The most common formal approach to verifying correct synchronization is model checking which has its own limitation, e.g., the size and fidelity of the model.
+%% The active object pattern~\cite{schmidt2000pattern} is an attempt to encapsulate the behavior of a reactive program.
+
+Reactive programs and processes based on deterministic sequencing and explicit atomicity are not subject to principled decomposition and composition.
+To illustrate, consider three reactive programs $A$, $X$, and $Y$ that are based on deterministic sequencing where $A$ is composed of $X$ and $Y$.
+Principled composition requires that the definition of $A$ can be formed by substituting the definitions of $X$ and $Y$.
+To preserve the reactive semantics when composing $X$ and $Y$, one must consider all pairs of transitions, i.e., the Cartesian product, which represents all possible interleavings between the two sequences.
+The result of composition then is a two-dimensional torus where each node represents a compound state, each edge represents a transition, and each direction corresponds to taking a transition in one of the reactive programs.
+Appropriate measures must be taken to ensure that all transitions, i.e., all vertical, horizontal, and diagonal moves in the torus, are well-defined, i.e., explicit atomicity.
+We observe that 1)~no existing platforms support the direct definition of such tori and 2)~reasoning about a two-dimensional torus (or $N$-dimensional for $N$ composed sequences) is qualitatively different that reasoning about a sequence.
+Thus, reactive programs based on deterministic sequencing are not subject to recursive encapsulation and substitutional equivalence.
+
+
+%% Responsiveness or the ability to consume input promptly is a goal for many reactive systems.
+%% One approach is for the producer to asynchronously signal a consumer when input is available.
+%% In user space, this customarily referred to as a \emph{signal} and in kernel space, this is customarily referred to as an \emph{interrupt}.
+%% The receipt of a signal diverts the flow of control to a \emph{signal handler} which typically restores the ``normal'' flow of control upon completion.
+%% The hazard of asynchronous input when using deterministic sequencing is that the signal handler may update the state of the system in arbitrary ways.
+%% Thus, state updated in asynchronous contexts must be protected against concurent updates, e.g., by disabling interrupts in operating systems~\cite{corbet2005linux}.
+%% In user space, synchronous I/O multiplexing, e.g., the \verb+select+ system call, is often preferred to (asynchronous) signals precisely because of this disruption in the ``normal'' flow of control.
+%% While asynchronous input is avoidable in user space, asynchronous input, i.e., interrupts, is necessary in kernel space as software interrupts are often the basis for system calls including synchronous output and hardware interrupts are often the basis for interacting with physical devices.
+
+%% The activities of input, output, and internal processing correspond to reading shared state, writing shared state, and updating private state.
+%% A number of modes for input and output have developed in platforms based on sequential composition for complex state transitions.
+%% A \emph{synchronous} operation is one that occurs within the normal flow of control.
+%% An \emph{asynchronous} operation disrupts the normal flow of control but typically resumes the normal flow of control after the disruption.
+%% Input may either be synchronous or asynchronous but output is always synchronous as it is under the control of the reactive process.
+%% A \emph{blocking} operation suspends the normal flow of control until the operation may be completed.
+%% A \emph{non-blocking} operation executes if possible without suspending the normal flow of control.
+%% Non-blocking operations must be used if a reactive process needs to be responsive to multiple ``clients.''
+
+%% Practice shows that asynchronous input is tedious and error prone when compared to synchronous input.
+%% The hazard of asynchronous input is that code executed by the diverted flow may update the state of the system in arbitrary ways.
+%% Data structures used in asynchronous contexts must be guarded, e.g., by disabling interrupts in operating systems~\cite{corbet2005linux}.
+%% In user space, synchronous I/O multiplexing, e.g., the \verb+select+ system call, is often preferred to (asynchronous) signals precisely because of the disruption in the ``normal'' flow of control.
+%% While asynchronous input is avoidable in user space, asynchronous input, i.e., interrupts, is necessary in kernel space as software interrupts are often the basis for system calls including synchronous output and hardware interrupts are often the basis for interacting with physical devices.
+
+%% Don't share variables, share transitions!!
+
+%% The activities of input, output, and internal processing correspond to reading shared state, writing shared state, and updating private state.
+%% A number of modes for input and output have developed in platforms based on sequential composition for complex state transitions.
+%% A \emph{synchronous} operation is one that occurs within the normal flow of control.
+%% An \emph{asynchronous} operation disrupts the normal flow of control but typically resumes the normal flow of control after the disruption.
+%% Input may either be synchronous or asynchronous but output is always synchronous as it is under the control of the reactive process.
+%% A \emph{blocking} operation suspends the normal flow of control until the operation may be completed.
+%% A \emph{non-blocking} operation executes if possible without suspending the normal flow of control.
+%% Non-blocking operations must be used if a reactive process needs to be responsive to multiple ``clients.''
+
+%% Practice shows that asynchronous input is tedious and error prone when compared to synchronous input.
+%% The hazard of asynchronous input is that code executed by the diverted flow may update the state of the system in arbitrary ways.
+%% Data structures used in asynchronous contexts must be guarded, e.g., by disabling interrupts in operating systems~\cite{corbet2005linux}.
+%% In user space, synchronous I/O multiplexing, e.g., the \verb+select+ system call, is often preferred to (asynchronous) signals precisely because of the disruption in the ``normal'' flow of control.
+%% While asynchronous input is avoidable in user space, asynchronous input, i.e., interrupts, is necessary in kernel space as software interrupts are often the basis for system calls including synchronous output and hardware interrupts are often the basis for interacting with physical devices.
+
+%% For complex reactive systems, we are interested in the effect of sequential composition for complex state transitions on the composition of reactive programs.
+%% Reactive systems implemented using sequential composition typically use threads and/or events and modular principles such as procedures and object-oriented programming.
+%% In general, a system designed and implemented exclusively with threads is organized into a number of objects and threads that represent concurrent activities.
+%% In a web server, for example, each thread might process a request while various objects provide the data used to generate the response.
+%% After a thread is created or dispatched in response to a new input, the thread then invokes a number of procedures to accomplish its work while possibly producing output events before exiting or returning to a pool to be dispatched again.
+
+%% STRIKE REACTIVE BEHAVIOR
+
+%% With respect to composition and decomposition, reactive behavior is not encapsulated in designs using threads.
+%% %% In the examples above, module boundaries roughly correspond to objects.
+%% A thread that enters an object (i.e., invokes a method on it) can also enter any other object whose identity is known to that object.
+%% Thus, the behavior of a thread may be distributed over a variety of modules.
+%% Proper synchronization, then, is based upon a complete understanding of the call graph (which may not be fully known due to aliasing).
+%% Existing approaches to synchronization attempt to impose structure on the call graph, e.g., only one object is active at a time (thread-safe interface~\cite{schmidt2000pattern}), to avoid concurrency hazards.
+%% %% Existing approaches are often expressed as design patterns, meaning that they are enforced by convention and are easily violated or ignored (e.g., a new developer is unaware of the convention).
+%% The difficulties of using multiple threads are well known~\cite{lee2006problem}.
+
+%% Events have been proposed as an alternative to threads~\cite{ousterhout1996threads}.
+%% A system designed and implemented exclusively with events consists of a single flow of control that invokes an event handler upon reception of an input.
+%% Since event handlers run to completion, event handlers should not invoke any blocking operations but should instead use non-blocking or asynchronous I/O to ensure responsiveness.
+%% Events can be seen as an attempt to realize implicit atomicity since the absence of multiple flows of control guarantees that each event is atomic.
+%% A computation normally performed by one thread is distributed over a set of event handlers that are punctuated by I/O operations.
+%% The context of each computation then must be managed explicitly which is referred to as ``stack ripping\cite{adya2002cooperative}.''
+%% Event handlers from different logical computations may be interleaved giving the illusion of concurrency while avoiding the challenges of synchronization.
+%% Event systems wishing to take advantage of true concurrency must use multiple event loops and face all of the challenges of multi-threaded programming.
+
+%% Unfortunately, reactive behavior is not encapsulated in designs using events, either.
+%% While there is no danger of corruption due to multiple threads, there is the possibility that a thread will enter the same object twice due to a cycle in the graph of objects.
+%% Thus, the caveats pertaining to call graphs in threaded designs also apply to event-based designs.
+%% Furthermore, the set of available events in a system is limited to those defined by the module running the loop that dispatches events.
+
+%% \paragraph{Requirements.}
+%% A reduction in the accidental complexity that accompanies reactive systems and the broad-scale application of composition and decomposition to the design and implementation of reactive systems requires a model and platform for reactive programs with a combination of features not found in existing models and platforms.
+%% To achieve correct semantics in the face of asynchrony and concurrency, while allowing useful decomposition and composition, the following requirements must be met.
+
+%% First, atomicity must be implicit.
+%% This implies that parallel composition is the default means of constructing complex state transitions.
+%% Decomposing a complex atomic transition into a sequence is typically an \emph{optimization}, e.g., increasing parallelism, improving responsiveness by making critical sections smaller, etc. and should be treated as such.
+%% Consequently, the sequencing required to decompose a complex state transition into a sequence of transitions must be made explicit by the developer.
+%% Expressions may use sequential composition with the understanding that the sequence is part of an atomic operation.
+
+%% Second, reactive behaviors should be rigorously encapsulated in units of composition.
+%% Such units of composition can be contrasted with threads whose behavior may be spread over a variety of modules.
+%% Allowing reactive behavior to leak across module boundaries creates the potential for unintended interactions, e.g., race conditions, and undermines composition and decomposition.
+
+%% Third, a model for reactive programs should support the recursive encapsulation of units of composition.
+%% The result of decomposition is often a hierarchy where one system logically contains other systems.
+%% Recursive encapsulation provides the flexibility needed to design and construct complex systems by allowing a designer to apply decomposition an arbitrary number of times.
+%% Recursive encapsulation also promotes uniformity as the same reactive semantics are used to construct each module in a system.
+
+%% Fourth, composition can only restrict the behavior of a unit of composition.
+%% When introduced into a compositional context, the behavior exhibited by a unit of composition within that context must be a subset of the overall set of possible behaviors of the unit of composition.
+%% This can be contrasted readily with threads where the behavior of a thread can easily be altered by introducing a new thread.
+%% The concept of a unit of composition with a closed set of behaviors is thus inherent to reusable reactive software.
+
+%% Fifth, units of composition should be compositional meaning that the properties of a unit of composition can be expressed in terms of the properties of its constituent members.
+%% Thus, the behavior of a unit of composition can be understood by understanding the behavior and interactions of its members.
+
+%% Sixth, a model for reactive programs requires implementation support.
+%% One alternative is to add concurrency and asynchrony to an existing language via a library, e.g., POSIX threads in C, which changes the semantics of the language without changing its syntax~\cite{lee2006problem}.
+%% However, changing semantics without changing syntax may be detrimental to programmers as they are forced to go outside of the language when reasoning about a system.
+%% Also, changing semantics without changing syntax forgoes the opportunity for a compiler to check the application of reactive semantics for correctness.
+%% In order to build the complex reactive systems we envision, efficient automated methods for analyzing reactive semantics must become part of the development work flow.
+
+
+
+%% Sixth, a model for reactive programs must have an effective implementation.
+%% Said another way, the model should not rely on techniques that cannot be implemented efficiently.
+
+%% \paragraph{Solution approach.}
+%% Actor models are currently being explored as an alternative to thread and event models.
+%% The motivation behind actor models is the observation that most of the challenges associated with reactive programs are derived from shared (mutable) state and/or arbitrary control flows.
+%% An actor has private state and (conceptually) a private persistent thread of control that processes inputs arriving on input ports and places outputs on ports that can be accessed by other actors~\cite{lee2011heterogeneous}.
+%% Each actor model prescribes different semantics for the execution of the actors and ports.
+%% In the Kahn process network model, for example, ports are infinite buffers with blocking reads and non-blocking writes~\cite{kahn1974semantics}.
+
+%% The research proposed here can be thought of as providing a new actor model with semantics that meet the above requirements for the broad-scale application of composition and decomposition to reactive systems.
+%% Instead of a sequential thread of control, an actor in our model comprises a set of atomic actions that may be scheduled non-deterministically.
+%% When defined this way, a set of actors may be composed by taking the union of their programs, as opposed to taking their cross-product as would be the case with threads.
+%% A port links actions in different actors and optionally transfers values from one actor to another.
+%% Since ports link atomic actions in independent actors, one can relate the state and behavior of interacting actors and therefore make strong claims about the state and behavior of a network of actors.
+%% Furthermore, designs in our model are not limited exclusively to pair-wise interactions since ports facilitate the construction of interactions that involve more than two parties.
+%% The ports constitute an actor's interface and simultaneously encapsulate reactive behavior while providing a principled and flexible mechanism for composing reactive behaviors.
+
+\paragraph{TODO Approach.}
+To reduce the accidental complexity associated with the design and implementation of reactive systems while ensuring that reactive systems can be decomposed and composed in a principled way, we developed a new model and platform for reactive systems based on the direct manipulation of state, implicit atomicity, and non-deterministic sequencing.
+Implicit atomicity relieves the burden of specifying critical sections with synchronization primitives, which seems to be one of the greatest sources of accidental complexity in reactive systems, while the semantics of non-deterministic sequencing allows reactive programs to be subject to principled decomposition and composition.
+%% We do not exclude the possibility of using deterministic sequencing, but rather view it as a special case of non-deterministic sequencing.
+%% Reactive programs are composed by linking transitions, i.e., parallel composition.
+%% Both parallel and sequential composition may be used to compose complex state transitions within a single reactive program.
+
+\paragraph{TODO Contributions.}
+This research makes three contributions to the state of the art in reactive system development.
+In section~\ref{model}, we develop a model for reactive systems based on implicit atomicity and non-deterministic sequencing in an effort to reduce the accidental complexity associated with their development and enable principled decomposition and composition.
+In section~\ref{implementation}, we propose a programming language based on the model and the assumption of a static system.
+In section~\ref{evaluation}, we propose a qualitative evaluation of the model to determine if the model facilitates design processes based on principled composition and decomposition and a quantitative evaluation of its implementation to determine if the model has an efficient implementation on modern architectures.

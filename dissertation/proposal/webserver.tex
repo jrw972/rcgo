@@ -1,0 +1,103 @@
+\expandafter\ifx\csname graph\endcsname\relax
+   \csname newbox\expandafter\endcsname\csname graph\endcsname
+\fi
+\ifx\graphtemp\undefined
+  \csname newdimen\endcsname\graphtemp
+\fi
+\expandafter\setbox\csname graph\endcsname
+ =\vtop{\vskip 0pt\hbox{%
+    \special{pn 8}%
+    \special{pa 0 500}%
+    \special{pa 1500 500}%
+    \special{pa 1500 0}%
+    \special{pa 0 0}%
+    \special{pa 0 500}%
+    \special{fp}%
+    \graphtemp=.5ex
+    \advance\graphtemp by 0.250in
+    \rlap{\kern 0.750in\lower\graphtemp\hbox to 0pt{\hss Web Server\hss}}%
+    \special{pa 0 1000}%
+    \special{pa 1500 1000}%
+    \special{pa 1500 500}%
+    \special{pa 0 500}%
+    \special{pa 0 1000}%
+    \special{fp}%
+    \graphtemp=\baselineskip
+    \multiply\graphtemp by -1
+    \divide\graphtemp by 2
+    \advance\graphtemp by .5ex
+    \advance\graphtemp by 0.750in
+    \rlap{\kern 0.750in\lower\graphtemp\hbox to 0pt{\hss Hyper-Text Transfer\hss}}%
+    \graphtemp=\baselineskip
+    \multiply\graphtemp by 1
+    \divide\graphtemp by 2
+    \advance\graphtemp by .5ex
+    \advance\graphtemp by 0.750in
+    \rlap{\kern 0.750in\lower\graphtemp\hbox to 0pt{\hss Protocol (HTTP)\hss}}%
+    \special{pa 0 1500}%
+    \special{pa 1500 1500}%
+    \special{pa 1500 1000}%
+    \special{pa 0 1000}%
+    \special{pa 0 1500}%
+    \special{fp}%
+    \graphtemp=\baselineskip
+    \multiply\graphtemp by -1
+    \divide\graphtemp by 2
+    \advance\graphtemp by .5ex
+    \advance\graphtemp by 1.250in
+    \rlap{\kern 0.750in\lower\graphtemp\hbox to 0pt{\hss Transmission Control\hss}}%
+    \graphtemp=\baselineskip
+    \multiply\graphtemp by 1
+    \divide\graphtemp by 2
+    \advance\graphtemp by .5ex
+    \advance\graphtemp by 1.250in
+    \rlap{\kern 0.750in\lower\graphtemp\hbox to 0pt{\hss Protocol (TCP)\hss}}%
+    \special{pa 0 2000}%
+    \special{pa 1500 2000}%
+    \special{pa 1500 1500}%
+    \special{pa 0 1500}%
+    \special{pa 0 2000}%
+    \special{fp}%
+    \graphtemp=\baselineskip
+    \multiply\graphtemp by -1
+    \divide\graphtemp by 2
+    \advance\graphtemp by .5ex
+    \advance\graphtemp by 1.750in
+    \rlap{\kern 0.750in\lower\graphtemp\hbox to 0pt{\hss Internet\hss}}%
+    \graphtemp=\baselineskip
+    \multiply\graphtemp by 1
+    \divide\graphtemp by 2
+    \advance\graphtemp by .5ex
+    \advance\graphtemp by 1.750in
+    \rlap{\kern 0.750in\lower\graphtemp\hbox to 0pt{\hss Protocol (IP)\hss}}%
+    \special{pa 0 2500}%
+    \special{pa 1500 2500}%
+    \special{pa 1500 2000}%
+    \special{pa 0 2000}%
+    \special{pa 0 2500}%
+    \special{fp}%
+    \graphtemp=\baselineskip
+    \multiply\graphtemp by -1
+    \divide\graphtemp by 2
+    \advance\graphtemp by .5ex
+    \advance\graphtemp by 2.250in
+    \rlap{\kern 0.750in\lower\graphtemp\hbox to 0pt{\hss Ethernet\hss}}%
+    \graphtemp=\baselineskip
+    \multiply\graphtemp by 1
+    \divide\graphtemp by 2
+    \advance\graphtemp by .5ex
+    \advance\graphtemp by 2.250in
+    \rlap{\kern 0.750in\lower\graphtemp\hbox to 0pt{\hss Protocol\hss}}%
+    \special{pa 0 3000}%
+    \special{pa 1500 3000}%
+    \special{pa 1500 2500}%
+    \special{pa 0 2500}%
+    \special{pa 0 3000}%
+    \special{fp}%
+    \graphtemp=.5ex
+    \advance\graphtemp by 2.750in
+    \rlap{\kern 0.750in\lower\graphtemp\hbox to 0pt{\hss I/O Driver\hss}}%
+    \hbox{\vrule depth3.000in width0pt height 0pt}%
+    \kern 1.500in
+  }%
+}%

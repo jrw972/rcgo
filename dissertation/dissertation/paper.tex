@@ -1,0 +1,49 @@
+\documentclass[letterpaper]{book}
+
+%%\usepackage{cite}
+%%\usepackage{pstricks}
+\usepackage{url}
+
+%%\newtheorem{theorem}{Theorem}
+
+\title{A Model and Platform for Designing and Implementing Reactive Systems}
+\author{Justin R. Wilson}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\input introduction.tex
+
+\input background.tex
+
+\input model.tex
+
+\input implementation.tex
+
+\input advanced.tex
+
+\input evaluation.tex
+
+\input conclusion.tex
+
+%% 1 Introduction
+%% 2 Background and Related Work
+%% 3 Model Notation and Semantics
+%% 4 Design and Implementation (for core features)
+%% 5 Advanced Features and Scenarios
+%%   getters DONE
+%%   automatic port and reactions
+%%   multi-threaded scheduler (high-level, thread per trigger)
+%%   pointers and transferrable objects, garbage collection DONE
+%%     so what:  Efficient state transfer (move semantics)
+%%               Efficient read only state (deep-copy snap shot)
+%%               Delayering component bounderies for query execution
+%% 6 Discussion and Evaluation
+%% 7 Conclusion and Future Work
+
+\bibliographystyle{plain}
+\bibliography{paper}{}
+
+\end{document}

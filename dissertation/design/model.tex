@@ -1,0 +1,79 @@
+\section{Reactive Component Model\label{model}}
+
+\paragraph{Reactive components.}
+A reactive component consists of \emph{state}, \emph{actions}, \emph{reactions}, \emph{ports}, \emph{sub-components}, \emph{bindings}, and \emph{accessors}.
+The state of a component may be finite or logically infinite.
+An action consists of a \emph{precondition} and \emph{effect}.
+A precondition is a Boolean expression that indicates that the action can be executed.
+The effect specifies a deterministic update to the state variables.
+A reaction is a named effect.
+A port is a named interaction point used to link an action or reaction to a reaction.
+A reactive component may contain sub-components.
+A binding links a port to a reaction.
+An accessor synchronously reads the state of a component.
+
+\paragraph{Effect sets.}
+Effects can conditionally \emph{trigger} ports.
+If a port is bound to a reaction, then the reaction is applied with the triggering effect.
+Let $(c,e)$ be a pair consisting of the component $c$ and the effect $e$.
+We can define the relation $(c_0, e_0) triggers (c_1, e_1)$.
+The transitive closure $Triggers(c,e)$ forms the \emph{effect set} of $(c,e)$.
+
+\paragraph{Execution.}
+Computation proceeds by selecting a component-action pair $(c,e)$, evaluating the precondition, and applying the effect and all triggered effects in the effect set $Triggers(c,e)$ if the precondition is true.
+Actions are selected non-deterministically and their corresponding effect sets are executed atomically with respect to each other.
+These tasks are performed by a \emph{scheduler}.
+
+\paragraph{Non-interference condition.}
+The state of a reactive component can only be updated by its associated actions and reactions.
+
+\paragraph{Deterministic execution condition.}
+The execution of each action must result in a unique next state, that is, the execution of each action must be deterministic.
+
+\paragraph{Explanation of conditions.}
+The ultimate goal of both conditions is to facilitate the development of robust, predictable systems.
+The conditions guarantee certain behaviors which in turn allows programmers to reason about the systems they build.
+Non-interference allows a component developer to establish the properties (safety, progress) of a component from the text of the component.
+This is analogous to information hiding in OOP.
+The deterministic execution condition prevents a component from interfering with itself when composed.
+Let us consider a slightly more complex model of execution.
+
+Let each effect consists of an \emph{immutable phase} and a \emph{mutable phase}.
+A component can perform arbitrary computation in the immutable phase (including accessing the state of other components with accessors) but cannot update its own state.
+In the mutable phase, state updates are allowed but accessors are not.
+Ports are triggered in between the two phases.
+Thus, when applying an effect set, all immutable phases are processed, ports are triggered, and then all of the mutable phases are processed.
+
+For deterministic execution, we only care about the mutable phase.
+An effect is \emph{potent} if its mutable phase might perform a state update.
+For deterministic execution, we require that there is at most one potent effect for a component in an effect set.
+Furthermore, we require that the $triggers$ relation induce a tree structure as opposed to an arbitrary directed graph.
+A effect triggered by multiple ports (including cycles) may require that the state be updated in conflicting ways, hence, the structure is restricted to a tree.
+
+I believe the formulation above is more tractable than a more general formulation that involves looking at the individual variables updated by the effect.
+For example, we can consider a component with two state variables and corresponding reactions that update the state variables.
+It is obvious that both reactions can be in the same effect set since the state on which they operate is disjoint.
+However, the situation becomes much more difficult if the state variables represent arbitrary linked data structures.
+The deterministic execution condition would then require pointer analysis which is is difficult.
+I hypothesize the existence of a decomposition theorem that allows state variables or groups of state variables to be replaced with sub-components which could then be analyzed using the ``single potent effect'' framework.
+
+%% This requirement can be interpretted for individual action trees.
+%% Given an action tree, we can enumerate the components and by extension the state variables.
+%% We can divide the set of variables into those that are read and those that are written.
+%% The requirement says that each written variable must have a unique value.
+%% An action tree is \emph{non-deterministic} if it violates this requirement.
+%% A feedback loop occurs when the same component appears multiple times in an action tree.
+%% One foreseeable way to create a non-deterministic action tree is to introduce a feedback loop that writes the same variable two different ways.
+
+The non-deterministic condition also provides a way to loosen the assumption that the execution of each action be physically atomic.
+Consider all of the components implied by two actions.
+We can annotate each component as being read-only or read-write in the first action and read-only or read-write in the second action.
+The two effects sets are \emph{independent} if the read-write components in each action are disjoint and the read-only components in the first action are disjoint from read-write components in the second action and vice versa.
+Independent actions can be executed in parallel.
+
+\paragraph{Summary of conditions.}
+The two conditions that must be met in a system for reactive components are determinism and non-interference.
+Determinism says that each action yield a unique next state.
+Non-interference says that the state of a component will not be changed by any other party except the component.
+The conditions must always hold but can be established at any time between compilation and execution.
+These conditions are the driving force behind many of the design decisions.

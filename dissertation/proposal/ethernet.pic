@@ -1,0 +1,30 @@
+.PS
+G: [
+Clock: [
+A: [
+down
+ellipse "send";
+Request: .e of last ellipse;
+ellipse "receive";
+Clock: .e of last ellipse;
+]
+box width (A.width + .30) height (A.height + .5) with .s at A.s + (0,-.15);
+"Ethernet Driver" at last box.top + (0,-.15);
+]
+move
+ClockPoll: [
+A: [
+down
+ellipse "send";
+Request: .w of last ellipse;
+ellipse "receive";
+ClockIn: .w of last ellipse;
+]
+box width (A.width + .30) height (A.height + .5) with .s at A.s + (0,-.15);
+"Ethernet Client" at last box.top + (0,-.15);
+]
+arrow from ClockPoll.A.Request to Clock.A.Request;
+arrow from Clock.A.Clock to ClockPoll.A.ClockIn;
+]
+
+.PE

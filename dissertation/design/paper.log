@@ -1,0 +1,164 @@
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2013.8.5)  24 JAN 2014 07:13
+entering extended mode
+ %&-line parsing enabled.
+**paper
+(./paper.tex
+LaTeX2e <2009/09/24>
+Babel <v3.8l> and hyphenation patterns for english, usenglishmax, dumylang, noh
+yphenation, loaded.
+(/usr/share/texmf-texlive/tex/latex/base/article.cls
+Document Class: article 2007/10/19 v1.4h Standard LaTeX document class
+(/usr/share/texmf-texlive/tex/latex/base/size10.clo
+File: size10.clo 2007/10/19 v1.4h Standard LaTeX file (size option)
+)
+\c@part=\count79
+\c@section=\count80
+\c@subsection=\count81
+\c@subsubsection=\count82
+\c@paragraph=\count83
+\c@subparagraph=\count84
+\c@figure=\count85
+\c@table=\count86
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+(/usr/share/texmf-texlive/tex/latex/cite/cite.sty
+LaTeX Info: Redefining \cite on input line 285.
+LaTeX Info: Redefining \nocite on input line 356.
+Package: cite 2009/08/29  v 5.2
+)
+(/usr/share/texmf-texlive/tex/latex/amscls/amsthm.sty
+Package: amsthm 2004/08/06 v2.20
+\thm@style=\toks14
+\thm@bodyfont=\toks15
+\thm@headfont=\toks16
+\thm@notefont=\toks17
+\thm@headpunct=\toks18
+\thm@preskip=\skip43
+\thm@postskip=\skip44
+\thm@headsep=\skip45
+\dth@everypar=\toks19
+)
+(/usr/share/texmf-texlive/tex/latex/pstricks/pstricks.sty
+Package: pstricks 2008/11/26 v0.40 LaTeX wrapper for `PSTricks' (RN,HV)
+
+(/usr/share/texmf-texlive/tex/generic/pstricks/pstricks.tex
+`PSTricks' v1.29  <2009/05/19> (tvz)
+\pst@dima=\dimen103
+\pst@dimb=\dimen104
+\pst@dimc=\dimen105
+\pst@dimd=\dimen106
+\pst@dimg=\dimen107
+\pst@dimh=\dimen108
+\pst@hbox=\box26
+\pst@boxg=\box27
+\pst@cnta=\count87
+\pst@cntb=\count88
+\pst@cntc=\count89
+\pst@cntd=\count90
+\pst@cntg=\count91
+\pst@cnth=\count92
+\pst@toks=\toks20
+(/usr/share/texmf-texlive/tex/generic/pstricks/pstricks.con)
+\psunit=\dimen109
+\psxunit=\dimen110
+\psyunit=\dimen111
+\pslinewidth=\dimen112
+\pst@customdefs=\toks21
+\pslinearc=\dimen113
+\everypsbox=\toks22
+\psframesep=\dimen114
+\pslabelsep=\dimen115
+\pst@shift=\dimen116
+\theoverlaybox=\box28
+)
+File: pstricks.tex 2009/05/19 v1.29 `PSTricks' (tvz,hv)
+
+(/usr/share/texmf/tex/latex/xcolor/xcolor.sty
+Package: xcolor 2007/01/21 v2.11 LaTeX color extensions (UK)
+
+(/etc/texmf/tex/latex/config/color.cfg
+File: color.cfg 2007/01/18 v1.5 color configuration of teTeX/TeXLive
+)
+Package xcolor Info: Driver file: dvips.def on input line 225.
+
+(/usr/share/texmf-texlive/tex/latex/graphics/dvips.def
+File: dvips.def 1999/02/16 v3.0i Driver-dependant file (DPC,SPQR)
+)
+Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1337.
+Package xcolor Info: Model `RGB' extended on input line 1353.
+Package xcolor Info: Model `HTML' substituted by `rgb' on input line 1355.
+Package xcolor Info: Model `Hsb' substituted by `hsb' on input line 1356.
+Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1357.
+Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1358.
+Package xcolor Info: Model `Gray' substituted by `gray' on input line 1359.
+Package xcolor Info: Model `wave' substituted by `hsb' on input line 1360.
+))
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/url.sty
+\Urlmuskip=\muskip10
+Package: url 2006/04/12  ver 3.3  Verb mode for urls, etc.
+)
+\c@constraint=\count93
+\c@theorem=\count94
+ (./paper.aux)
+\openout1 = `paper.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <12> on input line 17.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 17.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 17.
+
+Overfull \hbox (0.45166pt too wide) in paragraph at lines 42--45
+ \OT1/cmr/bx/n/10 Ex-e-cu-tion.[] \OT1/cmr/m/n/10 Com-pu-ta-tion pro-ceeds by s
+e-lect-ing a component-action pair, eval-
+ []
+
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 49.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 49.
+[1
+
+] [2] [3] [4]
+Overfull \hbox (11.17201pt too wide) in paragraph at lines 163--170
+ \OT1/cmr/bx/n/10 Non-interference vs. com-mu-ni-ca-tion.[] \OT1/cmr/m/n/10 One
+ way of en-forc-ing non-interference
+ []
+
+[5] [6] (./pointer.tex
+\graph=\box29
+\graphtemp=\dimen117
+) [7]
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 261.
+
+ (/usr/share/texmf-texlive/tex/latex/base/omscmr.fd
+File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 261.
+[8] [9] (./paper.aux) ) 
+Here is how much of TeX's memory you used:
+ 2061 strings out of 495062
+ 23400 string characters out of 1182645
+ 96318 words of memory out of 3000000
+ 5268 multiletter control sequences out of 15000+50000
+ 8541 words of font info for 30 fonts, out of 3000000 for 9000
+ 28 hyphenation exceptions out of 8191
+ 30i,8n,37p,285b,225s stack positions out of 5000i,500n,10000p,200000b,50000s
+
+Output written on paper.dvi (9 pages, 36760 bytes).
