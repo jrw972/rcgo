@@ -3,7 +3,7 @@
 \paragraph{Definitions.}
 Manna and Pnueli classify programs as either being \emph{transformational} or \emph{reactive}~\cite{manna1992temporal}.
 As implied by their name, transformational programs transform a finite input sequence into a finite output sequence.
-Transformational programs can often be divided into three distinct phases corresponding to the activities of input, processing, and output.
+Transformational programs often can be divided into three distinct phases corresponding to the activities of input, processing, and output.
 A compiler is a classic example of a transformational program as it transforms a source file into an object file.
 Formal models of computation like the Turing machine~\cite{turing1936computable} and $\lambda$-calculus~\cite{church1936unsolvable} are concerned with transformational programs.
 
@@ -17,51 +17,51 @@ A number of formal models have been developed to reason about reactive systems a
 Asynchrony and concurrency are two fundamental characteristics of reactive systems that make them difficult to develop.
 A reactive program and its external environment may evolve concurrently and must share common resources to facilitate communication (input and output).
 For example, in a system consisting of two threads that communicate using shared variables, each thread is in the environment of the other thread.
+\emph{TODO:  Elaborate.}
 Many of the difficulties associated with concurrency stem from the concurrent use of shared resources, e.g., the threads' shared variables.
-To ensure correctness in models that allow the environment to deliver input to a reactive program asynchronously, the environment must be viewed as an adversary that will deliver inputs at inopportune times.
+A common approach to ensuring correctness in models that allow the environment to deliver input to a reactive program asynchronously is to view the environment as an adversary that will deliver inputs at inopportune times.
 Since a reactive program may run forever, the designers of reactive programs thus must often reason about infinite event sequences containing interleaved input, output, and processing.
 
-Failure to account for asynchrony and concurrency results in a reactive program with \emph{timing bugs} meaning that correct execution depends on arbitrary scheduling decisions.
-Timing bugs may be manifested when the schedule of events is perturbed, e.g., a new processor, a new operating system, or part of the program takes more or less time than normal.
+Failure to account for asynchrony and concurrency may result in a reactive program with \emph{timing bugs}, meaning that correct execution depends on arbitrary scheduling decisions.
+Timing bugs may be manifested when the schedule of events is perturbed, e.g., due to a new processor or operating system, or when part of the program takes more or less time than normal.
 Operating systems are particularly susceptible to timing bugs caused by device drivers~\cite{ryzhyk2009dingo}.
 Timing bugs can escape even a rigorous software development process and lay dormant for years~\cite{lee2006problem}.
-Furthermore, timing bugs are notoriously difficult to diagnose inspiring the term \emph{heisenbug}, a bug that disappears or changes its behavior when someone is attempting to find it (because the debugging process alters the timing of the program)~\cite{1983proceedings}.
-Timing bugs cost man-hours of debugging time and can lead to a poor user experience, e.g., a non-responsive device or application, and loss of revenue, e.g., when an advertisement service cannot be used while it reboots.
+Furthermore, timing bugs are notoriously difficult to diagnose, inspiring the term \emph{heisenbug}, a bug that disappears or changes its behavior when someone is attempting to find it (because the debugging process alters the timing of the program)~\cite{1983proceedings}.
+Timing bugs can cost many hours of debugging time and can lead to a poor user experience, e.g., a non-responsive device or application, and loss of revenue, e.g., when an advertisement service cannot be used while a server reboots.
 
 \emph{Decomposition} and \emph{composition} are essential techniques when designing, implementing, and understanding complex systems.
-Decomposition, dividing a complex system into a number of simpler systems, is often used when \emph{designing} a system, e.g., top-down design~\cite{wirth1971program}.
-Composition, building a complex system from a number of simpler systems, is often used when \emph{implementing} a system.
-The simpler systems are implemented, tested, and integrated to create larger systems~\cite{brooks1995mythical}.
+Decomposition, dividing a complex system into a number of simpler systems, is often used when \emph{designing} a system, e.g., through top-down design~\cite{wirth1971program}.
+Composition, building a complex system from a number of simpler systems, is often used when \emph{implementing} a system; i.e., simpler systems are implemented, tested, and integrated to create larger systems~\cite{brooks1995mythical}.
 Often, the simplest systems in a design are common and can be reused across problem domains.
 Similarly, systems in the same problem domain often have common sub-systems.
-Thus, one goal is the ability to guide a design toward reusable components.
+Thus, a common goal in software engineering is fostering design processes that produce and leverage reusable components.
 Decomposition also often imparts a logical organization to a system when the resulting sub-systems are cohesive, i.e., each sub-system has a well-defined purpose~\cite{parnas1972criteria}.
-Thus, decomposition is a significant aid to understanding complex systems.
+Thus, decomposition is a significant aid to understanding and managing complex systems.
 
 \paragraph{Trends.}
 Developments in hardware and software platforms have resulted in an increasing demand for reactive systems.
 Embedded systems continue to proliferate due to advances in hardware that continue to produce new platforms, form factors, sensors, actuators, and price points, which allow embedded computers to be applied to a variety of application domains.
 Individuals, businesses, and governments are deploying networks of sensors and actuators to monitor, control, and coordinate critical infrastructures such as power grids and telecommunication networks.
-These advances have also led to platforms targeted at the individual, such as smart phones, e-readers, and tablets.
+These advances also have led to platforms for individual users, such as smart phones, e-readers, and tablets.
 Applications for these personal platforms are necessarily interactive and therefore reactive.
-The leveling of processor speeds and the resulting trend toward multicore processors is also creating demand for reactive systems as it is believed that increases in performance must come through increasing concurrent applications~\cite{sutter2005software}.
+The leveling-off of processor speeds and the resulting trend toward multicore processors is also creating demand for reactive systems, as increases in performance must come through increasingly concurrent applications~\cite{sutter2005software}.
 
-A general trend toward distribution is also increasing demand for reactive systems.
-Increasingly, network services form the core or are a critical component of an application and are fundamental to delivering content (e.g., downloading books and movies) and communication (e.g., social media) that drive the application.
+A general trend toward distribution is also driving demand for reactive systems.
+Increasingly, network services form the core (or are at least a critical component) of many applications and are fundamental to delivering content (e.g., downloading books and movies) and communication (e.g., social media) that drive the application.
 More and more devices are being equipped with (especially wireless) network adapters due to the introduction of inexpensive networking technologies.
 Networks are now also \emph{emerging}, as opposed to being intentionally deployed, in environments such as the home, office, hospitals, etc.
 Applications that take advantage of these new networks are necessarily reactive.
-The trend toward distribution is already established in enterprise computing infrastructures as networked systems, e.g., file servers, print servers, web servers, application servers, databases, etc., are critical or central to supporting business processes and achieving business objectives.
+The trend toward distribution is already established in enterprise computing infrastructures where networked systems like file servers, print servers, web servers, application servers, and databases are critical or central to supporting business processes and achieving business objectives.
 
-Given the continued proliferation of reactive systems, their number, diversity, and complexity is likely to increase as reactive systems encompass more and more interactions.
+Given the continued proliferation of reactive systems, their number, diversity, and complexity is likely to increase as they encompass more and more interactions.
 This is most evident in large-scale distributed systems where a computation is spread over a variety of nodes.
-Such systems often \emph{evolve} as new systems are introduced and integrated into the existing infrastructure.
+Such systems often \emph{evolve} as new sub-systems are introduced and integrated into the existing infrastructure.
 The individual nodes themselves may also contain a variety of interactions.
-For example, it is not uncommon to find a smart phone application that simultaneously uses a service on the Internet, interacts with the user, and uses a variety of devices (e.g., an accelerometer) typically found in embedded environments.
+For example, it is not uncommon to find a smart phone application that simultaneously interacts with the user via a graphical user interface, an application server via an Internet connection, and sensors (e.g., accelerometers) that are embedded in the hardware.
 Similarly, sophisticated servers like web servers and databases are often built from collections of interacting reactive modules.
 
 \paragraph{Challenges.}
-The first challenge towards adequately supporting such complex reactive systems is to reduce the accidental complexity associated with their design and implementation.
+A key challenge towards adequately supporting such complex reactive systems is to reduce the accidental complexity associated with their design and implementation.
 For software, accidental complexity is defined as the ``difficulties that today attend its production but that are not inherent~\cite{brooks1995mythical}.''
 One source of accidental complexity is the \emph{conflation} of semantics, where a problem naturally expressed using one set of semantics is implemented with a different set of semantics resulting in a semantic gap and obfuscation.
 To illustrate, Lee shows how the common practice of introducing thread-based concurrency via a library to an inherently sequential language significantly alters the semantics of the language~\cite{lee2006problem}.
@@ -77,35 +77,36 @@ Thus, it must be possible to replace the details of how a reactive program is im
 
 \paragraph{Limitations of the state of the art.}
 State is fundamental to reactive systems and may be modeled directly (variables and assignment) or indirectly.
-Some examples of indirect approaches to modeling state include monads~\cite{wadler1990comprehending} which are typically used in functional languages such as Haskell, and a mail queue with message-behavior pairs~\cite{agha1985actors} which is used in actor-oriented languages such as Erlang.
+Some examples of indirect approaches to modeling state include monads~\cite{wadler1990comprehending} which are typically used in functional languages such as Haskell, or mail queues with message-behavior pairs~\cite{agha1985actors} which are used in actor-oriented languages such as Erlang.
 The dominant languages used to implement reactive systems, such as C, C++, and Java, support the imperative programming paradigm by way of the von Neumann architecture and model state directly with variables and assignment.
 As we are interested in expressing reactive semantics directly, we limit the remaining discussion to languages like C, C++, and Java.
 
-Imperative programming languages have three characteristics that are germane to reactive programs.
-The first characteristic is \emph{deterministic sequencing}.
-Imperative programs are constructed by concatenating assignment statements and control statements.
+Imperative programming languages have three characteristics that are germane to reactive programs:  \emph{deterministic sequencing}, \emph{sequential composition}, and \emph{explicit atomicity}.
+Imperative programs are composed sequentially by concatenating assignment statements and control statements.
 Control flows implicitly to the next statement unless modified by a control statement (conditional or loop).
 In an imperative program, the next statement to be executed is \emph{always} determined by the program.
+
 The second characteristic is \emph{sequential composition}.
 In the imperative programming paradigm, a block of statements can be packaged as a subroutine or function.
 This facilitates composition since complex logic can be built from smaller units.
 The composition is sequential since the same sequential flow of control applies to the change in control introduced by the call.
-The third characteristic is \emph{explicit atomicity} meaning that the developer is responsible for designating which sequences of statements appear as a single statement with respect to another program in the environment.
-Of interest to this research is the combined effect of deterministic sequencing, sequential composition, and explicit atomicity on the accidental complexity of reactive programs and their composition and decomposition.
+
+The third characteristic is \emph{explicit atomicity}, meaning that the developer is responsible for designating which sequences of statements appear as a single statement with respect to another program in the environment.
+Of primary interest to this dissertation is the combined effect of deterministic sequencing, sequential composition, and explicit atomicity on the accidental complexity of reactive programs and their composition and decomposition.
 
 A key limitation of deterministic sequencing and explicit atomicity is the burden it places on the developer.
-The misuse of synchronization primitives, which becomes likely as transitions become complex, may introduce concurrency hazards, e.g., deadlock~\cite{dijkstra1965cooperating}, which manifest themselves as timing bugs.
+The misuse of synchronization primitives, which becomes likely as transitions become complex, may introduce concurrency hazards (e.g., deadlock~\cite{dijkstra1965cooperating}) which manifest themselves as timing bugs.
 A number of design patterns for concurrency have been developed to help developers avoid concurrency hazards~\cite{schmidt2000pattern}, \cite{lea2000concurrent}.
-These design patterns represent a move toward implicit atomicity as they often attempt to leverage language features to control atomicity, e.g., scoped locking~\cite{schmidt2000pattern}.
-While some of these patterns have been incorporated into programming languages, e.g., the \verb+synchronized+ keyword of Java implements the thread-safe interface pattern~\cite{schmidt2000pattern}, they are most often enforced by convention and therefore easily violated or ignored (e.g., if a new developer is unaware of the convention).
+These design patterns represent a move toward implicit atomicity as they often attempt to leverage language features to control atomicity (e.g., scoped locking~\cite{schmidt2000pattern}).
+While some of these patterns have been incorporated into programming languages (e.g., the \verb+synchronized+ keyword of Java implements the thread-safe interface pattern~\cite{schmidt2000pattern}), they are most often enforced only by convention and therefore easily violated or ignored (e.g., if a new developer is unaware of the convention).
 In practice, the use of synchronization primitives has proven to be tedious and error prone~\cite{sutter2005software}.
 
 Correct synchronization with sequential composition and explicit atomicity is a holistic problem that resists encapsulation.
-Reactive programs based on sequential composition are often designed using modular principles such as object-oriented programming.
+Reactive programs based on sequential composition are often designed using functionally modular principles such as object-oriented programming.
 The sequence of transitions that constitute a reactive program is typically distributed over a variety of modules, i.e., the graph of procedure calls.
-The challenge for a developer then is to identify all of the shared state and then use synchronization primitives to guard against concurrent updates.
+The challenge for a developer then is to identify all of the shared state and then use synchronization primitives to guard concurrent updates.
 Proper synchronization is based upon a complete understanding of the call graph (which may not be fully known due to aliasing).
-The resulting code tends to be fragile, i.e., modifications tend to introduce new bugs.
+The resulting code tends to be fragile, i.e., modifications tend to introduce new timing bugs.
 %% Existing approaches to synchronization attempt to impose structure on the call graph, e.g., an object can only participate in one transition at a time (thread-safe interface~\cite{schmidt2000pattern}), to avoid concurrency hazards.
 %% The most common formal approach to verifying correct synchronization is model checking which has its own limitation, e.g., the size and fidelity of the model.
 %% The active object pattern~\cite{schmidt2000pattern} is an attempt to encapsulate the behavior of a reactive program.
