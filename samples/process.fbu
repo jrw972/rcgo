@@ -16,14 +16,14 @@ func (this @Queue) Push (v uint)
 {
   if this.head == nil
     {
-      this.tail = this.head&;
+      this.tail = &this.head;
     };
 
   var e @Element;
   e = new Element;
   e.value = v;
-  this.tail@ = e;
-  this.tail = e.next&;
+  @this.tail = e;
+  this.tail = &e.next;
 }
 
 func (this @Queue) Pop ()
@@ -31,16 +31,16 @@ func (this @Queue) Pop ()
   this.head = this.head.next;
   if this.head == nil
     {
-      this.tail = this.head&;
+      this.tail = &this.head;
     };
 }
 
-func (this @Queue) Empty () bool
+func (this @Queue const) Empty () bool
 {
   return this.head == nil;
 }
 
-func (this @Queue) Front () uint
+func (this @Queue const) Front () uint
 {
   return this.head.value;
 }
@@ -59,7 +59,7 @@ reaction (this @Channel const) send (message uint)
   };
 }
 
-action (this @Channel const) (this.queue.Empty ()!)
+action (this @Channel const) (!this.queue.Empty ())
 {
   trigger receive (this.queue.Front ())
     {
@@ -72,8 +72,8 @@ action (this @Channel const) (this.queue.Empty ()!)
 type Process component
 {
   i uint;
-  val [3]uint;
-  send [3] port (v uint);
+  val [3u]uint;
+  send [3u] port (v uint);
   decide port (v uint);
 };
 
@@ -92,7 +92,7 @@ reaction (this @Process const) init (v uint)
   };
 }
 
-[3] action (this @Process const) (this.val[this.i] != 0u && this.i != IOTA)
+[3u] action (this @Process const) (this.val[this.i] != 0u && this.i != IOTA)
 {
   // send
   println `Process `, this.i, ` sending `, this.val[this.i], ` to process `, IOTA;
@@ -100,7 +100,7 @@ reaction (this @Process const) init (v uint)
   { };
 }
 
-[3] reaction (this @Process const) receive (v uint)
+[3u] reaction (this @Process const) receive (v uint)
 {
   println `Process `, this.i, ` received `, v, ` from process `, IOTA;
   trigger
@@ -109,7 +109,7 @@ reaction (this @Process const) init (v uint)
   };
 }
 
-func p (val [3]uint) bool {
+func p (val [3u]uint) bool {
   var i uint;
   i = 0u;
   while i != 3u {
@@ -122,7 +122,7 @@ func p (val [3]uint) bool {
   return true;
 }
 
-func f (val [3]uint) uint
+func f (val [3u]uint) uint
 {
   var i, sum uint;
   i = 0u;
@@ -146,9 +146,9 @@ action (this @Process const) (p (this.val))
 
 type System component
 {
-  process [3]Process;
-  channel [3][3]Channel;
-  init [3] port (v uint);
+  process [3u]Process;
+  channel [3u][3u]Channel;
+  init [3u] port (v uint);
 };
 
 func (this @System) Init ()
@@ -161,24 +161,24 @@ func (this @System) Init ()
   };
 }
 
-[3] action (this @System const) (true)
+[3u] action (this @System const) (true)
 {
   // send
   trigger init[IOTA] (100u + IOTA)
   { };
 }
 
-[3] reaction (this @System const) decide (v uint)
+[3u] reaction (this @System const) decide (v uint)
 {
   println `Process `, IOTA, ` decided the value is `, v;
 }
 
 bind (this @System) {
-  for i .. 3 {
+  for i .. 3u {
     this.init[i] -> this.process[i].init;
     this.process[i].decide -> this.decide .. i;
 
-    for j .. 3 {
+    for j .. 3u {
       if i != j {
         this.process[i].send[j] -> this.channel[i][j].send;
         this.channel[i][j].receive -> this.process[j].receive .. i;

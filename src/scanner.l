@@ -10,10 +10,44 @@
 #include <error.h>
 %}
 
+%s IN_COMMENT
+
+DECIMAL_DIGIT [0-9]
+HEX_DIGIT [0-9a-fA-F]
+
+DECIMAL1 {DECIMAL_DIGIT}+("."{DECIMAL_DIGIT}*)?
+DECIMAL2 {DECIMAL_DIGIT}*"."{DECIMAL_DIGIT}+
+DECIMAL_EXPONENT [Ee][+-]?{DECIMAL_DIGIT}+
+DECIMAL_NUMBER ({DECIMAL1}|{DECIMAL2}){DECIMAL_EXPONENT}?
+
+HEX1 {HEX_DIGIT}+("."{HEX_DIGIT}*)?
+HEX2 {HEX_DIGIT}*"."{HEX_DIGIT}+
+BINARY_EXPONENT [Pp][+-]?{DECIMAL_DIGIT}+
+HEXADECIMAL_NUMBER (0x|0X)({HEX1}{BINARY_EXPONENT}|{HEX2}{BINARY_EXPONENT}?)
+
+INFINITY ([Ii][Nn][Ff])|([Ii][Nn][Ff][Ii][Nn][Ii][Tt][Yy])
+NAN [Nn][Aa][Nn]
+
+FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
+
 %%
+
+\/\/.*                 /* Discard line comments. */
+
+<INITIAL>{
+  "/*"              BEGIN(IN_COMMENT);
+}
+
+<IN_COMMENT>{
+  "*/"      BEGIN(INITIAL);
+  [^*\n]+   // eat comment in chunks
+  "*"       // eat the lone star
+  \n        ++yylloc;
+}
 
 "action"               { return ACTION; }
 "bind"                 { return BIND; }
+"cast"                 { return CAST; }
 "change"               { return CHANGE; }
 "component"            { return COMPONENT; }
 "const"                { return CONST; }
@@ -40,23 +74,29 @@
 "while"                { return WHILE; }
 
 "+="                   { return ADD_ASSIGN; }
-"&&"                   { return LOGIC_AND; }
-"||"                   { return LOGIC_OR; }
+"&&"                   { return LOGIC_AND_TOKEN; }
+"||"                   { return LOGIC_OR_TOKEN; }
 "++"                   { return INCREMENT; }
 "--"                   { return DECREMENT; }
-"=="                   { return EQUAL; }
-"!="                   { return NOT_EQUAL; }
+"=="                   { return EQUAL_TOKEN; }
+"!="                   { return NOT_EQUAL_TOKEN; }
+"<="                   { return LESS_EQUAL_TOKEN; }
+">="                   { return MORE_EQUAL_TOKEN; }
 "->"                   { return RIGHT_ARROW; }
 "<-"                   { return LEFT_ARROW; }
-
+"<<"                   { return LEFT_SHIFT_TOKEN; }
+">>"                   { return RIGHT_SHIFT_TOKEN; }
+"&^"                   { return AND_NOT_TOKEN; }
 ".."                   { return DOTDOT; }
 
 "{"|"}"                { return *yytext; }
 "["|"]"                { return *yytext; }
 "("|")"                { return *yytext; }
 "<"|">"                { return *yytext; }
+"*"|"/"|"%"|"&"        { return *yytext; }
+"+"|"-"|"|"|"^"        { return *yytext; }
 "!"|";"|","|"="        { return *yytext; }
-"@"|"."|"&"|"+"        { return *yytext; }
+"@"|"."                { return *yytext; }
 
 [_a-zA-Z][_a-zA-Z0-9]* { yylval.node = new ast_identifier_t (yylloc, yytext);
                          return IDENTIFIER; }
@@ -78,37 +118,130 @@
                              ++pos;
                            }
 
-                         yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (rtstring_make (begin, destination - begin)));
+                         yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (std::string (begin, destination - begin)));
                          return LITERAL; }
 
-[0]u? {
-  std::string x (yytext);
-  if (x.size () == 1)
+-?(0|([1-9][0-9]*)|(0x[0-9a-fA-F]+))i(8|16|32|64|128)? {
+  int base = 10;
+  if (yyleng >= 2 && yytext[0] == '0' && yytext[1] == 'x')
     {
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t ((int64_t)0));
+      base = 16;
+    }
+
+  const char* ptr = yytext + yyleng;
+  for (; *ptr != 'i'; --ptr) ;;
+
+  if (strcmp (ptr, "i") == 0)
+    {
+      yytext[yyleng - 1] = 0;
+      yyleng -= 1;
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int_type_t::instance (), strtol (yytext, NULL, base)));
+    }
+  else if (strcmp (ptr, "i8") == 0)
+    {
+      yytext[yyleng - 2] = 0;
+      yyleng -= 2;
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int8_type_t::instance (), strtol (yytext, NULL, base)));
+    }
+  else if (strcmp (ptr, "i16") == 0)
+    {
+      yytext[yyleng - 3] = 0;
+      yyleng -= 3;
+      //yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int16_type_t::instance (), strtol (yytext, NULL, base)));
+      unimplemented;
+    }
+  else if (strcmp (ptr, "i32") == 0)
+    {
+      yytext[yyleng - 3] = 0;
+      yyleng -= 3;
+      //yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int32_type_t::instance (), strtol (yytext, NULL, base)));
+      unimplemented;
+    }
+  else if (strcmp (ptr, "i64") == 0)
+    {
+      yytext[yyleng - 3] = 0;
+      yyleng -= 3;
+      //yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int64_type_t::instance (), strtol (yytext, NULL, base)));
+      unimplemented;
+    }
+  else if (strcmp (ptr, "i128") == 0)
+    {
+      yytext[yyleng - 4] = 0;
+      yyleng -= 4;
+      //yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int128_type_t::instance (), strtol (yytext, NULL, base)));
+      unimplemented;
     }
   else
     {
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t ((uint64_t)0));
+      not_reached;
     }
+
   return LITERAL;
 }
 
--?[1-9][0-9]*u? {
-  std::string x (yytext);
-  if (*x.rbegin () == 'u')
+(0|([1-9][0-9]*)|(0x[0-9a-fA-F]+))u(8|16|32|64|128)? {
+  // TODO:  Fix format to match strtol.
+  int base = 10;
+  if (yyleng >= 2 && yytext[0] == '0' && yytext[1] == 'x')
     {
-      yytext[x.size () - 1] = 0;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t ((uint64_t)atoi (yytext)));
+      base = 16;
+    }
+
+  const char* ptr = yytext + yyleng;
+  for (; *ptr != 'u'; --ptr) ;;
+
+  if (strcmp (ptr, "u") == 0)
+    {
+      yytext[yyleng - 1] = 0;
+      yyleng -= 1;
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (uint_type_t::instance (), strtol (yytext, NULL, base)));
+    }
+  else if (strcmp (ptr, "u8") == 0)
+    {
+      yytext[yyleng - 2] = 0;
+      yyleng -= 2;
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (uint8_type_t::instance (), strtol (yytext, NULL, base)));
+    }
+  else if (strcmp (ptr, "u16") == 0)
+    {
+      yytext[yyleng - 3] = 0;
+      yyleng -= 3;
+      //yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (uint16_type_t::instance (), strtol (yytext, NULL, base)));
+      unimplemented;
+    }
+  else if (strcmp (ptr, "u32") == 0)
+    {
+      yytext[yyleng - 3] = 0;
+      yyleng -= 3;
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (uint32_type_t::instance (), strtol (yytext, NULL, base)));
+    }
+  else if (strcmp (ptr, "u64") == 0)
+    {
+      yytext[yyleng - 3] = 0;
+      yyleng -= 3;
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (uint64_type_t::instance (), strtol (yytext, NULL, base)));
+    }
+  else if (strcmp (ptr, "u128") == 0)
+    {
+      yytext[yyleng - 4] = 0;
+      yyleng -= 4;
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (uint128_type_t::instance (), strtoll (yytext, NULL, base)));
     }
   else
     {
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t ((int64_t)atoi (yytext)));
+      not_reached;
     }
+
   return LITERAL;
 }
 
-\/\/.*                 /* Discard line comments. */
+{FLOAT}f(32|64) {
+  // TODO:  Fix format to match strtod.
+  yytext[yyleng - 3] = 0;
+  yyleng =- 3;
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (float64_type_t::instance (), atof (yytext)));
+  return LITERAL;
+}
 
 [ \t]+                 /* Discard whitespace */
 [\n]                   { ++yylloc; }

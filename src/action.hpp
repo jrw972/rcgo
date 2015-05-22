@@ -1,9 +1,10 @@
-#ifndef action_h
-#define action_h
+#ifndef action_hpp
+#define action_hpp
 
 #include "types.hpp"
 #include "type.hpp"
 #include "memory_model.hpp"
+#include "typed_value.hpp"
 
 class action_reaction_base_t
 {
@@ -17,7 +18,7 @@ public:
     , has_dimension_ (false)
   { }
 
-  action_reaction_base_t (type_t* component_type, ast_t* node_, ast_t* body_, size_t dimension)
+  action_reaction_base_t (type_t* component_type, ast_t* node_, ast_t* body_, const typed_value_t& dimension)
     : component_type_ (component_type)
     , node (node_)
     , body (body_)
@@ -42,7 +43,7 @@ public:
 
   bool has_dimension () const { return has_dimension_; }
 
-  size_t dimension () const
+  typed_value_t dimension () const
   {
     assert (has_dimension_);
     return dimension_;
@@ -56,7 +57,7 @@ public:
 private:
   TriggersType triggers_;
   bool has_dimension_;
-  size_t dimension_;
+  typed_value_t dimension_;
 };
 
 class action_t : public action_reaction_base_t
@@ -75,7 +76,7 @@ public:
     , precondition (precondition_)
   { }
 
-  action_t (named_type_t* type, ast_t* node, ast_t* precondition_, ast_t* body_, size_t dimension)
+  action_t (named_type_t* type, ast_t* node, ast_t* precondition_, ast_t* body_, const typed_value_t& dimension)
     : action_reaction_base_t (type, node, body_, dimension)
     , precondition_kind (DYNAMIC)
     , precondition (precondition_)
@@ -94,7 +95,7 @@ public:
     , reaction_type (new reaction_type_t (signature))
   { }
 
-  reaction_t (named_type_t* type, ast_t* node, ast_t* body_, const std::string& name_, const signature_type_t* signature, size_t dimension)
+  reaction_t (named_type_t* type, ast_t* node, ast_t* body_, const std::string& name_, const signature_type_t* signature, const typed_value_t& dimension)
     : action_reaction_base_t (type, node, body_, dimension)
     , name (name_)
     , reaction_type (new reaction_type_t (signature))
@@ -104,4 +105,4 @@ public:
   reaction_type_t* const reaction_type;
 };
 
-#endif /* action_h */
+#endif /* action_hpp */

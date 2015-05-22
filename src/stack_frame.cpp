@@ -3,13 +3,7 @@
 #include "util.hpp"
 #include <string.h>
 #include "memory_model.hpp"
-
-struct stack_frame_t {
-  char* base_pointer;
-  char* top;
-  char* limit;
-  char data[];
-};
+#include "type.hpp"
 
 stack_frame_t* stack_frame_make (size_t capacity)
 {
@@ -37,63 +31,6 @@ void* stack_frame_pop_pointer (stack_frame_t* stack_frame)
   assert (stack_frame->top - s >= stack_frame->data);
   stack_frame->top -= s;
   memcpy (&retval, stack_frame->top, sizeof (void*));
-  return retval;
-}
-
-void stack_frame_push_bool (stack_frame_t* stack_frame,
-                            bool b)
-{
-  size_t s = align_up (sizeof (bool), memory_model_t::stack_alignment);
-  assert (stack_frame->top + s <= stack_frame->limit);
-  memcpy (stack_frame->top, &b, sizeof (bool));
-  stack_frame->top += s;
-}
-
-bool stack_frame_pop_bool (stack_frame_t* stack_frame)
-{
-  bool retval;
-  size_t s = align_up (sizeof (bool), memory_model_t::stack_alignment);
-  assert (stack_frame->top - s >= stack_frame->data);
-  stack_frame->top -= s;
-  memcpy (&retval, stack_frame->top, sizeof (bool));
-  return retval;
-}
-
-void stack_frame_push_uint (stack_frame_t* stack_frame,
-                            uint64_t b)
-{
-  size_t s = align_up (sizeof (uint64_t), memory_model_t::stack_alignment);
-  assert (stack_frame->top + s <= stack_frame->limit);
-  memcpy (stack_frame->top, &b, sizeof (uint64_t));
-  stack_frame->top += s;
-}
-
-uint64_t stack_frame_pop_uint (stack_frame_t* stack_frame)
-{
-  uint64_t retval;
-  size_t s = align_up (sizeof (uint64_t), memory_model_t::stack_alignment);
-  assert (stack_frame->top - s >= stack_frame->data);
-  stack_frame->top -= s;
-  memcpy (&retval, stack_frame->top, sizeof (uint64_t));
-  return retval;
-}
-
-void stack_frame_push_int (stack_frame_t* stack_frame,
-                           int64_t b)
-{
-  size_t s = align_up (sizeof (int64_t), memory_model_t::stack_alignment);
-  assert (stack_frame->top + s <= stack_frame->limit);
-  memcpy (stack_frame->top, &b, sizeof (int64_t));
-  stack_frame->top += s;
-}
-
-int64_t stack_frame_pop_int (stack_frame_t* stack_frame)
-{
-  int64_t retval;
-  size_t s = align_up (sizeof (int64_t), memory_model_t::stack_alignment);
-  assert (stack_frame->top - s >= stack_frame->data);
-  stack_frame->top -= s;
-  memcpy (&retval, stack_frame->top, sizeof (int64_t));
   return retval;
 }
 
@@ -131,7 +68,7 @@ void stack_frame_equal (stack_frame_t* stack_frame,
   char* y = stack_frame->top;
   stack_frame->top -= s;
   char* x = stack_frame->top;
-  stack_frame_push_bool (stack_frame, memcmp (x, y, size) == 0);
+  stack_frame_push<bool_type_t::ValueType> (stack_frame, memcmp (x, y, size) == 0);
 }
 
 void stack_frame_not_equal (stack_frame_t* stack_frame,
@@ -143,7 +80,7 @@ void stack_frame_not_equal (stack_frame_t* stack_frame,
   char* y = stack_frame->top;
   stack_frame->top -= s;
   char* x = stack_frame->top;
-  stack_frame_push_bool (stack_frame, memcmp (x, y, size) != 0);
+  stack_frame_push<bool_type_t::ValueType> (stack_frame, memcmp (x, y, size) != 0);
 }
 
 void stack_frame_push (stack_frame_t* stack_frame,
@@ -246,7 +183,7 @@ void stack_frame_set_top (stack_frame_t* stack_frame,
   stack_frame->top = top;
 }
 
-void stack_frame_pop (stack_frame_t* stack_frame, size_t size)
+void stack_frame_popn (stack_frame_t* stack_frame, size_t size)
 {
   size_t s = align_up (size, memory_model_t::stack_alignment);
   assert (stack_frame->top - s >= stack_frame->data);

@@ -35,7 +35,6 @@ process_definitions.cpp \
 process_type_spec.cpp \
 scanner.hpp scanner.cpp \
 semantic.hpp semantic.cpp \
-rtstring.hpp rtstring.cpp \
 runtime.hpp runtime.cpp \
 stack_frame.hpp stack_frame.cpp \
 symbol.hpp symbol.cpp \
@@ -45,5 +44,6 @@ type.hpp type.cpp \
 typed_value.hpp typed_value.cpp \
 types.hpp \
 util.hpp util.cpp \
+value.hpp value.cpp \
 yyparse.hpp yyparse.cpp
 fbu_LDADD=-lpthread

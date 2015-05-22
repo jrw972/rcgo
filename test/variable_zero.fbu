@@ -3,7 +3,7 @@ type HelloWorld component { };
 func (this @HelloWorld) print () {
   {
     var x int;
-    x = 3;
+    x = 3i;
   }
   {
     var x int;

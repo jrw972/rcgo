@@ -1,5 +1,8 @@
+* Tasks
+- TODO Get rid of static_cast (22).
+- TODO Get rid of reinterpret cast (10).
+
 * General
-- TODO Get rid of static, and reinterpret casts.
 - TODO Refactor symbol. OO.
 - TODO Implement data-aware scheduling.  For example, a component that
   routes messages needs to trigger a reaction based on an id in the

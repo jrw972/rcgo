@@ -14,7 +14,19 @@ enter_symbols (ast_t * node)
 
     symtab->enter (symbol_make_type ("int", new named_type_t ("int", int_type_t::instance ()), node));
 
+    symtab->enter (symbol_make_type ("int8", new named_type_t ("int8", int8_type_t::instance ()), node));
+
     symtab->enter (symbol_make_type ("uint", new named_type_t ("uint", uint_type_t::instance ()), node));
+
+    symtab->enter (symbol_make_type ("uint8", new named_type_t ("uint8", uint8_type_t::instance ()), node));
+
+    symtab->enter (symbol_make_type ("uint32", new named_type_t ("uint32", uint32_type_t::instance ()), node));
+
+    symtab->enter (symbol_make_type ("uint64", new named_type_t ("uint64", uint32_type_t::instance ()), node));
+
+    symtab->enter (symbol_make_type ("uint128", new named_type_t ("uint128", uint128_type_t::instance ()), node));
+
+    symtab->enter (symbol_make_type ("float64", new named_type_t ("float64", float64_type_t::instance ()), node));
 
     symtab->enter (symbol_make_type ("string", new named_type_t ("string", string_type_t::instance ()), node));
   }
@@ -26,10 +38,10 @@ enter_symbols (ast_t * node)
 
   /* Insert untyped boolean constants. */
   symtab->enter (symbol_make_typed_constant ("true",
-                                             typed_value_t (true),
+                                             typed_value_t (bool_type_t::instance (), true),
                                              node));
   symtab->enter (symbol_make_typed_constant ("false",
-                                             typed_value_t (false),
+                                             typed_value_t (bool_type_t::instance (), false),
                                              node));
 
   struct visitor : public ast_visitor_t
@@ -77,8 +89,8 @@ enter_symbols (ast_t * node)
         }
       else
         {
-          error_at_line (-1, 0, identifier_node->file,
-                         identifier_node->line,
+          error_at_line (-1, 0, identifier_node->location.file,
+                         identifier_node->location.line,
                          "%s is already defined in this scope", identifier.c_str ());
         }
     }

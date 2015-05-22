@@ -2,6 +2,6 @@ type C component { };
 
 reaction (this @C const) r (x @bool foreign) {
   trigger {
-    println x@;
+    println @x;
   }
 }

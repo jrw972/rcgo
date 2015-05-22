@@ -3,7 +3,7 @@ type Actuator component {
   bang1 port ();
 };
 
-action (this @Actuator const) (this.flag!) {
+action (this @Actuator const) (!this.flag) {
   trigger bang1 (), bang1 () {
     this.flag = true;
   }

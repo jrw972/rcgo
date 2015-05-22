@@ -5,10 +5,10 @@ type Variable component {
 };
 
 func (this @Variable) init () {
-    this.value = -1;
+    this.value = -1i;
 }
 
-[3] reaction (this @Variable const) Set (v int) {
+[3u] reaction (this @Variable const) Set (v int) {
     trigger {
         this.value = v;
     }
@@ -37,8 +37,8 @@ type Process component {
 
 func (this @Process) init () {
     this.status = PROCESS_IDLE;
-    this.input = -1;
-    this.output = -1;
+    this.input = -1i;
+    this.output = -1i;
 }
 
 reaction (this @Process const) Init (v int) {
@@ -54,7 +54,7 @@ reaction (this @Process const) Init (v int) {
 action (this @Process const) (this.status == PROCESS_READ) {
     var x int;
     x = this.get_x ();
-    if x == -1 {
+    if x == -1i {
         trigger {
             this.output = this.input;
             this.status = PROCESS_WRITE;
@@ -100,14 +100,14 @@ type User component {
 func (this @User) init (v int) {
     this.v = v;
     this.status = USER_REQUEST;
-    this.decision = -1;
+    this.decision = -1i;
     this.error = false;
 }
 
 // Init
 action (this @User const) (this.status == USER_REQUEST || this.error) {
     trigger Init (this.v) {
-        if this.error! {
+        if !this.error {
             this.status = USER_WAIT;
         }
     }
@@ -120,7 +120,7 @@ action (this @User const) (this.error) {
 reaction (this @User const) Decide (v int) {
     println this, ` decided value is `, v;
     trigger {
-        if this.error! {
+        if !this.error {
             if this.status == USER_WAIT {
                 this.decision = v;
                 this.status = USER_DONE;
@@ -133,20 +133,20 @@ reaction (this @User const) Decide (v int) {
 
 type System component {
     x Variable;
-    process [3]Process;
-    user [3]User;
+    process [3u]Process;
+    user [3u]User;
 };
 
 func (this @System) init () {
     this.x.init ();
-    for i .. 3 {
+    for i .. 3i {
         this.process[i].init ();
-        this.user[i].init (i + 100);
+        this.user[i].init (i + 100i);
     }
 }
 
 bind (this @System) {
-    for i .. 3 {
+    for i .. 3u {
         this.process[i].get_x <- this.x.Get;
         this.process[i].set_x -> this.x.Set .. i;
         this.user[i].Init -> this.process[i].Init;

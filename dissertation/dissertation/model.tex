@@ -3,6 +3,33 @@
 In this chapter, we present a model for reactive programs called \emph{reactive components}.
 The model is biased toward practical software development as opposed to formal methods.
 Consequently, the model favors utility, practicality, flexibility, and ease of implementation.
+
+\section{Reactive Components, Instances, and State}
+
+A \emph{reactive component} is an abstract data type consisting of a set of state variables and a set of associated atomic actions.
+An \emph{instance} of a reactive component is a physical realization of a reactive component.
+By analogy, reactive components and instances correspond to classes and objects, respectively, in object-orient programming.
+In formal models like UNITY and I/O automata, one reasons directly with instances.
+If a system contains multiple instances of the same component, then the instances are endowed with identifying subscripts.
+
+
+
+
+Influential models based on non-deterministic sequencing include the UNITY model of Chandy and Misra~\cite{chandy1989parallel} and Lynch's I/O automata~\cite{nancy1996distributed}.
+
+
+
+\section{Atomic State Transitions}
+
+The core of a reactive component is a
+
+
+
+\section{TODO}
+
+In this chapter, we present a model for reactive programs called \emph{reactive components}.
+The model is biased toward practical software development as opposed to formal methods.
+Consequently, the model favors utility, practicality, flexibility, and ease of implementation.
 The model is presented as a sequence of modifications to the I/O automata model of Lynch~\cite{nancy1996distributed}.
 
 As a starting point, we consider the $Clock$ automaton presented in~\cite{nancy1996distributed}.

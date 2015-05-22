@@ -13,10 +13,10 @@ struct instance_table_t
   {
     instance_t* instance;
     reaction_t* reaction;
-    int64_t parameter;
+    int_type_t::ValueType parameter;
 
     InputType () { }
-    InputType (instance_t* i, reaction_t* r, int64_t p) : instance (i), reaction (r), parameter (p) { }
+    InputType (instance_t* i, reaction_t* r, int_type_t::ValueType p) : instance (i), reaction (r), parameter (p) { }
 
     bool operator< (const InputType& other) const
     {

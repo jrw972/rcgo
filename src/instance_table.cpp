@@ -4,6 +4,7 @@
 #include "field.hpp"
 #include <error.h>
 #include "trigger.hpp"
+#include "action.hpp"
 
 instance_table_t::ActionsType
 instance_table_t::actions () const
@@ -191,22 +192,38 @@ evaluate_static (const ast_t* node, const static_memory_t& memory)
     {
       switch (node.arithmetic)
         {
-        case ast_binary_arithmetic_expr_t::EQUAL:
+        case MULTIPLY:
+        case DIVIDE:
+        case MODULUS:
+        case LEFT_SHIFT:
+        case RIGHT_SHIFT:
+        case BIT_AND:
+        case BIT_AND_NOT:
           unimplemented;
-        case ast_binary_arithmetic_expr_t::NOT_EQUAL:
+
+        case ADD:
+        case SUBTRACT:
+        case BIT_OR:
+        case BIT_XOR:
+          unimplemented;
+
+        case EQUAL:
+          unimplemented;
+        case NOT_EQUAL:
           {
             static_value_t left = evaluate_static (node.left (), memory);
             static_value_t right = evaluate_static (node.right (), memory);
             result = static_value_t::make_value (left.value != right.value);
           }
           break;
-        case ast_binary_arithmetic_expr_t::LOGIC_OR:
+        case LESS_THAN:
+        case LESS_EQUAL:
+        case MORE_THAN:
+        case MORE_EQUAL:
           unimplemented;
-        case ast_binary_arithmetic_expr_t::LOGIC_AND:
+        case LOGIC_AND:
           unimplemented;
-        case ast_binary_arithmetic_expr_t::ADD:
-          unimplemented;
-        case ast_binary_arithmetic_expr_t::SUBTRACT:
+        case LOGIC_OR:
           unimplemented;
         }
     }
@@ -228,7 +245,8 @@ evaluate_static (const ast_t* node, const static_memory_t& memory)
 
         void visit (const int_type_t& type)
         {
-          result = static_value_t::make_value (tv.int_value);
+          unimplemented;
+          //result = static_value_t::make_value (tv.int_value);
         }
       };
       visitor v (tv);
@@ -326,7 +344,9 @@ instance_table_enumerate_bindings (instance_table_t& table)
 
             void visit (const ast_for_iota_statement_t& node)
             {
-              for (size_t idx = 0; idx != node.limit; ++idx)
+              for (int_type_t::ValueType idx = 0, limit = node.limit.value.integral_value (node.limit.type);
+                   idx != limit;
+                   ++idx)
                 {
                   memory.set_value_at_offset (symbol_get_offset (node.symbol.symbol ()), idx);
                   node.body ()->accept (*this);
@@ -350,7 +370,7 @@ instance_table_enumerate_bindings (instance_table_t& table)
               assert (input.kind == static_value_t::ABSOLUTE_ADDRESS);
               assert (param.kind == static_value_t::VALUE);
 
-              instance_table_t::InputType i (table.instances[input.address], reaction.reaction_value, param.value);
+              instance_table_t::InputType i (table.instances[input.address], reaction.value.reaction_value (), param.value);
               table.ports[port.address].inputs.insert (i);
               table.reverse_ports[i].insert (port.address);
             }
@@ -377,7 +397,7 @@ instance_table_enumerate_bindings (instance_table_t& table)
                   // Strip off the implicit dereference and selecting of the reaction.
                   static_value_t input = evaluate_static (node.right ()->children[0]->children[0], memory);
                   assert (input.kind == static_value_t::ABSOLUTE_ADDRESS);
-                  instance_table_t::OutputType o (table.instances[input.address], tv.method_value);
+                  instance_table_t::OutputType o (table.instances[input.address], tv.value.method_value ());
                   table.pfuncs[pfunc.address].outputs.insert (o);
                   return;
                 }
@@ -385,8 +405,9 @@ instance_table_enumerate_bindings (instance_table_t& table)
               const function_type_t* function_type = type_cast<function_type_t> (tv.type);
               if (function_type != NULL)
                 {
-                  instance_table_t::OutputType o (tv.function_value);
-                  table.pfuncs[pfunc.address].outputs.insert (o);
+                  unimplemented;
+                  // instance_table_t::OutputType o (tv.function_value);
+                  // table.pfuncs[pfunc.address].outputs.insert (o);
                   return;
                 }
 
@@ -503,7 +524,7 @@ transitive_closure (const instance_table_t& table,
           // Merge the sets.
           if (set.merge_no_upgrade (transitive_closure (table, inst, pos->reaction)))
             {
-              error_at_line (-1, 0, node.file, node.line,
+              error_at_line (-1, 0, node.location.file, node.location.line,
                              "system is non-deterministic");
 
             }
@@ -517,20 +538,20 @@ transitive_closure (const instance_table_t& table,
 
       if (!have_port_index)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "port index is not constant");
 
         }
 
       if (port_index < 0)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "port index is negative");
         }
 
-      if (static_cast<size_t> (port_index) >= node.array_type->dimension ())
+      if (port_index >= node.array_type->dimension)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "port index out of bounds");
         }
 
@@ -548,7 +569,7 @@ transitive_closure (const instance_table_t& table,
           // Merge the sets.
           if (set.merge_no_upgrade (transitive_closure (table, inst, pos->reaction)))
             {
-              error_at_line (-1, 0, node.file, node.line,
+              error_at_line (-1, 0, node.location.file, node.location.line,
                              "system is non-deterministic");
 
             }
@@ -904,7 +925,9 @@ instance_table_analyze_composition (const instance_table_t& table)
           action_t* action = *action_pos;
           if (action->has_dimension ())
             {
-              for (size_t iota = 0; iota != action->dimension (); ++iota)
+              for (int_type_t::ValueType iota = 0, limit = action->dimension ().value.integral_value(action->dimension ().type);
+                   iota != limit;
+                   ++iota)
                 {
                   action_set_t set = transitive_closure (table, instance, action, iota);
                   // Combine the immutable and mutable sets.
@@ -935,7 +958,7 @@ std::ostream&
 operator<< (std::ostream& o,
             const instance_t::ConcreteAction& ca)
 {
-  o << '{' << ca.action->node->line << ',' << ca.iota;
+  o << '{' << ca.action->node->location.line << ',' << ca.iota;
   for (instance_set_t::const_iterator pos = ca.set.begin (),
          limit = ca.set.end ();
        pos != limit;

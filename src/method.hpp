@@ -1,8 +1,9 @@
-#ifndef method_h
-#define method_h
+#ifndef method_hpp
+#define method_hpp
 
 #include "types.hpp"
 #include "type.hpp"
+#include "memory_model.hpp"
 
 struct method_t
 {
@@ -23,4 +24,4 @@ struct method_t
   memory_model_t memory_model;
 };
 
-#endif /* method_h */
+#endif /* method_hpp */

@@ -39,7 +39,7 @@ typedef enum
     VariableDuplicate
   } VariableKind;
 
-symbol_t *symbol_make_variable (const std::string& identifier, const type_t * type, ast_t* defining_node);
+symbol_t *symbol_make_variable (const std::string& identifier, const typed_value_t& tv, ast_t* defining_node);
 
 symbol_t *symbol_make_variable_duplicate (symbol_t* symbol);
 

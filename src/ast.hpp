@@ -12,6 +12,7 @@ struct ast_t {
   virtual ~ast_t() { }
   virtual void accept (ast_visitor_t& visitor) = 0;
   virtual void accept (ast_const_visitor_t& visitor) const = 0;
+  virtual void print (std::ostream& out) const = 0;
 
   void visit_children (ast_visitor_t& visitor)
   {
@@ -34,8 +35,7 @@ struct ast_t {
   typedef ChildrenType::const_iterator const_iterator;
 
   ChildrenType children;
-  const char * const file;
-  unsigned int const line;
+  location_t const location;
   symtab_t *symtab;
   typed_value_t typed_value;
 
@@ -82,14 +82,16 @@ struct ast_t {
 
 protected:
   ast_t (unsigned int line_, size_t children_count)
-    : file (in_file)
-    , line (line_)
+    : location (in_file, line_)
     , symtab (NULL)
   {
-    assert (line != 0);
+    assert (location.line != 0);
     children.resize (children_count);
   }
 };
+
+std::ostream&
+operator<< (std::ostream& out, const ast_t& node);
 
 class ast_identifier_t : public ast_t
 {
@@ -101,6 +103,7 @@ public:
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { out << "identifier " << identifier; }
 
   std::string const identifier;
 };
@@ -113,6 +116,7 @@ struct ast_identifier_list_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { out << "identifier_list"; }
 };
 
 struct ast_array_type_spec_t : public ast_t
@@ -136,6 +140,7 @@ struct ast_array_type_spec_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_unary_t : public ast_t
@@ -164,6 +169,7 @@ struct ast_component_type_spec_t : public ast_unary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_empty_type_spec_t : public ast_t
@@ -174,6 +180,7 @@ struct ast_empty_type_spec_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_enum_type_spec_t : public ast_t
@@ -194,6 +201,7 @@ struct ast_enum_type_spec_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_field_list_type_spec_t : public ast_t
@@ -204,6 +212,7 @@ struct ast_field_list_type_spec_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_heap_type_spec_t : public ast_unary_t
@@ -214,6 +223,7 @@ struct ast_heap_type_spec_t : public ast_unary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_identifier_type_spec_t : public ast_unary_t
@@ -224,6 +234,7 @@ struct ast_identifier_type_spec_t : public ast_unary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { out << "identifier_type"; }
 };
 
 struct ast_identifier_list_type_spec_t : public ast_t
@@ -250,6 +261,7 @@ struct ast_identifier_list_type_spec_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_pointer_type_spec_t : public ast_unary_t
@@ -260,6 +272,7 @@ struct ast_pointer_type_spec_t : public ast_unary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_port_type_spec_t : public ast_t
@@ -280,6 +293,7 @@ struct ast_port_type_spec_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_pfunc_type_spec_t : public ast_t
@@ -303,6 +317,7 @@ struct ast_pfunc_type_spec_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_signature_type_spec_t : public ast_t
@@ -313,6 +328,7 @@ struct ast_signature_type_spec_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_struct_type_spec_t : public ast_unary_t
@@ -323,6 +339,7 @@ struct ast_struct_type_spec_t : public ast_unary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 class ast_expr_t : public ast_t
@@ -331,6 +348,30 @@ public:
   ast_expr_t (unsigned int line, size_t children_count)
     : ast_t (line, children_count)
   { }
+};
+
+struct ast_cast_expr_t : public ast_expr_t
+{
+  enum
+    {
+      TYPE_SPEC,
+      CHILD,
+      COUNT
+    };
+
+  ast_cast_expr_t (unsigned int line, ast_t* type_spec, ast_t* child)
+    : ast_expr_t (line, COUNT)
+  {
+    children[TYPE_SPEC] = type_spec;
+    children[CHILD] = child;
+  }
+
+  ast_t* type_spec () const { return children[TYPE_SPEC]; }
+  ast_t* child () const { return children[CHILD]; }
+
+  virtual void accept (ast_visitor_t& visitor);
+  virtual void accept (ast_const_visitor_t& visitor) const;
+  virtual void print (std::ostream& out) const { out << "cast"; }
 };
 
 struct ast_unary_expr_t : public ast_expr_t
@@ -375,27 +416,19 @@ struct ast_binary_expr_t : public ast_expr_t
 
 struct ast_binary_arithmetic_expr_t : public ast_binary_expr_t
 {
-  enum Arithmetic
-    {
-      EQUAL,
-      NOT_EQUAL,
-
-      LOGIC_OR,
-      LOGIC_AND,
-
-      ADD,
-      SUBTRACT,
-    };
-
-  ast_binary_arithmetic_expr_t (unsigned int line, Arithmetic a, ast_t* left, ast_t* right)
+  ast_binary_arithmetic_expr_t (unsigned int line, BinaryArithmetic a, ast_t* left, ast_t* right)
     : ast_binary_expr_t (line, left, right)
     , arithmetic (a)
   { }
 
-  const Arithmetic arithmetic;
+  const BinaryArithmetic arithmetic;
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const
+  {
+    out << binary_arithmetic_symbol (arithmetic);
+  }
 };
 
 struct ast_address_of_expr_t : public ast_unary_expr_t
@@ -406,6 +439,7 @@ struct ast_address_of_expr_t : public ast_unary_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_call_expr_t : public ast_expr_t
@@ -440,6 +474,7 @@ struct ast_call_expr_t : public ast_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   Kind kind;
 };
@@ -452,6 +487,7 @@ struct ast_dereference_expr_t : public ast_unary_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_implicit_dereference_expr_t : public ast_unary_expr_t
@@ -462,6 +498,7 @@ struct ast_implicit_dereference_expr_t : public ast_unary_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { out << "implicit dereference"; }
 };
 
 struct ast_list_expr_t : public ast_expr_t
@@ -472,6 +509,7 @@ struct ast_list_expr_t : public ast_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { out << "list_expr"; }
 };
 
 struct ast_identifier_expr_t : public ast_unary_expr_t
@@ -482,6 +520,7 @@ struct ast_identifier_expr_t : public ast_unary_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { out << "identifier_expr"; }
 
   symbol_holder symbol;
 };
@@ -509,6 +548,7 @@ struct ast_index_expr_t : public ast_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_logic_not_expr_t : public ast_unary_expr_t
@@ -519,6 +559,7 @@ struct ast_logic_not_expr_t : public ast_unary_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_merge_expr_t : public ast_unary_expr_t
@@ -529,6 +570,7 @@ struct ast_merge_expr_t : public ast_unary_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_move_expr_t : public ast_unary_expr_t
@@ -539,6 +581,7 @@ struct ast_move_expr_t : public ast_unary_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_new_expr_t : public ast_unary_expr_t
@@ -549,6 +592,7 @@ struct ast_new_expr_t : public ast_unary_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_port_call_expr_t : public ast_expr_t
@@ -572,6 +616,7 @@ struct ast_port_call_expr_t : public ast_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   field_t* field;
 };
@@ -604,6 +649,7 @@ struct ast_indexed_port_call_expr_t : public ast_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   field_t* field;
   const array_type_t* array_type;
@@ -631,6 +677,7 @@ struct ast_select_expr_t : public ast_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_literal_expr_t : public ast_expr_t
@@ -643,6 +690,7 @@ struct ast_literal_expr_t : public ast_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { out << "literal"; }
 };
 
 struct ast_binary_t : public ast_t
@@ -675,6 +723,7 @@ struct ast_empty_statement_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_add_assign_statement_t : public ast_binary_t
@@ -685,6 +734,7 @@ struct ast_add_assign_statement_t : public ast_binary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_assign_statement_t : public ast_binary_t
@@ -695,6 +745,7 @@ struct ast_assign_statement_t : public ast_binary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_change_statement_t : public ast_t
@@ -729,6 +780,7 @@ struct ast_change_statement_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   symbol_holder root_symbol;
 };
@@ -741,6 +793,7 @@ struct ast_expression_statement_t : public ast_unary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_if_statement_t : public ast_t
@@ -768,6 +821,7 @@ struct ast_if_statement_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_while_statement_t : public ast_t
@@ -792,6 +846,7 @@ struct ast_while_statement_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_println_statement_t : public ast_unary_t
@@ -802,6 +857,7 @@ struct ast_println_statement_t : public ast_unary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_return_statement_t : public ast_unary_t
@@ -813,6 +869,7 @@ struct ast_return_statement_t : public ast_unary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   const symbol_t* return_symbol;
 };
@@ -825,6 +882,7 @@ struct ast_increment_statement_t : public ast_unary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_decrement_statement_t : public ast_unary_t
@@ -835,6 +893,7 @@ struct ast_decrement_statement_t : public ast_unary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_list_statement_t : public ast_t
@@ -845,6 +904,7 @@ struct ast_list_statement_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_subtract_assign_statement_t : public ast_binary_t
@@ -855,6 +915,7 @@ struct ast_subtract_assign_statement_t : public ast_binary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_trigger_statement_t : public ast_t
@@ -878,6 +939,7 @@ struct ast_trigger_statement_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   symbol_holder this_symbol;
 };
@@ -903,6 +965,36 @@ struct ast_var_statement_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
+
+  std::vector<symbol_holder> symbols;
+};
+
+struct ast_var_type_init_statement_t : public ast_t
+{
+  enum
+    {
+      IDENTIFIER_LIST,
+      TYPE_SPEC,
+      INITIALIZER_LIST,
+      COUNT
+    };
+
+  ast_var_type_init_statement_t (unsigned int line, ast_t* identifier_list, ast_t* type_spec, ast_t* initializer_list)
+    : ast_t (line, COUNT)
+  {
+    children[IDENTIFIER_LIST] = identifier_list;
+    children[TYPE_SPEC] = type_spec;
+    children[INITIALIZER_LIST] = initializer_list;
+  }
+
+  ast_t* identifier_list () const { return children[IDENTIFIER_LIST]; }
+  ast_t* type_spec () const { return children[TYPE_SPEC]; }
+  ast_t* initializer_list () const { return children[INITIALIZER_LIST]; }
+
+  void accept (ast_visitor_t& visitor);
+  void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { out << "var_type_init_statement"; }
 
   std::vector<symbol_holder> symbols;
 };
@@ -915,6 +1007,7 @@ struct ast_bind_port_statement_t : public ast_binary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_bind_port_param_statement_t : public ast_t
@@ -944,6 +1037,7 @@ struct ast_bind_port_param_statement_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_bind_pfunc_statement_t : public ast_binary_t
@@ -954,6 +1048,7 @@ struct ast_bind_pfunc_statement_t : public ast_binary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_for_iota_statement_t : public ast_t
@@ -980,9 +1075,10 @@ struct ast_for_iota_statement_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   symbol_holder symbol;
-  size_t limit;
+  typed_value_t limit;
 };
 
 struct ast_action_t : public ast_t
@@ -1014,6 +1110,7 @@ struct ast_action_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   action_t* action;
   symbol_holder this_symbol;
@@ -1052,6 +1149,7 @@ struct ast_dimensioned_action_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   symbol_holder this_symbol;
   symbol_holder iota_symbol;
@@ -1083,6 +1181,7 @@ struct ast_bind_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   symbol_holder this_symbol;
   bind_t* bind;
@@ -1116,6 +1215,7 @@ struct ast_function_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   symbol_holder function_symbol;
   symbol_holder return_symbol;
@@ -1146,6 +1246,36 @@ struct ast_instance_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
+
+  symbol_holder symbol;
+};
+
+struct ast_const_t : public ast_t
+{
+  enum
+    {
+      IDENTIFIER,
+      TYPE_SPEC,
+      EXPR,
+      COUNT
+    };
+
+  ast_const_t (unsigned int line, ast_t* identifier, ast_t* type_spec, ast_t* expr)
+    : ast_t (line, COUNT)
+  {
+    children[IDENTIFIER] = identifier;
+    children[TYPE_SPEC] = type_spec;
+    children[EXPR] = expr;
+  }
+
+  ast_t* identifier () const { return children[IDENTIFIER]; }
+  ast_t* type_spec () const { return children[TYPE_SPEC]; }
+  ast_t* expr () const { return children[EXPR]; }
+
+  void accept (ast_visitor_t& visitor);
+  void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { out << "ast_const_t"; }
 
   symbol_holder symbol;
 };
@@ -1192,6 +1322,7 @@ struct ast_method_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   method_t* method;
   Mutability const dereference_mutability;
@@ -1230,6 +1361,7 @@ struct ast_reaction_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   reaction_t* reaction;
   symbol_holder this_symbol;
@@ -1270,6 +1402,7 @@ struct ast_dimensioned_reaction_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   symbol_holder this_symbol;
   symbol_holder iota_symbol;
@@ -1297,6 +1430,7 @@ struct ast_type_definition_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 
   symbol_holder symbol;
 };
@@ -1309,6 +1443,7 @@ struct ast_top_level_list_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { unimplemented; }
 };
 
 struct ast_visitor_t
@@ -1330,6 +1465,7 @@ struct ast_visitor_t
   virtual void visit (ast_signature_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_struct_type_spec_t& ast) { default_action (ast); }
 
+  virtual void visit (ast_cast_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_binary_arithmetic_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_address_of_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_call_expr_t& ast) { default_action (ast); }
@@ -1362,6 +1498,7 @@ struct ast_visitor_t
   virtual void visit (ast_subtract_assign_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_trigger_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_var_statement_t& ast) { default_action (ast); }
+  virtual void visit (ast_var_type_init_statement_t& ast) { default_action (ast); }
 
   virtual void visit (ast_bind_port_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_bind_port_param_statement_t& ast) { default_action (ast); }
@@ -1369,6 +1506,7 @@ struct ast_visitor_t
   virtual void visit (ast_for_iota_statement_t& ast) { default_action (ast); }
 
   virtual void visit (ast_action_t& ast) { default_action (ast); }
+  virtual void visit (ast_const_t& ast) { default_action (ast); }
   virtual void visit (ast_dimensioned_action_t& ast) { default_action (ast); }
   virtual void visit (ast_bind_t& ast) { default_action (ast); }
   virtual void visit (ast_function_t& ast) { default_action (ast); }
@@ -1402,6 +1540,7 @@ struct ast_const_visitor_t
   virtual void visit (const ast_signature_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_struct_type_spec_t& ast) { default_action (ast); }
 
+  virtual void visit (const ast_cast_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_binary_arithmetic_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_address_of_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_call_expr_t& ast) { default_action (ast); }
@@ -1439,8 +1578,10 @@ struct ast_const_visitor_t
   virtual void visit (const ast_bind_pfunc_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_for_iota_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_var_statement_t& ast) { default_action (ast); }
+  virtual void visit (const ast_var_type_init_statement_t& ast) { default_action (ast); }
 
   virtual void visit (const ast_action_t& ast) { default_action (ast); }
+  virtual void visit (const ast_const_t& ast) { default_action (ast); }
   virtual void visit (const ast_dimensioned_action_t& ast) { default_action (ast); }
   virtual void visit (const ast_bind_t& ast) { default_action (ast); }
   virtual void visit (const ast_function_t& ast) { default_action (ast); }
@@ -1456,8 +1597,6 @@ struct ast_const_visitor_t
 };
 
 /* Generic functions. */
-
-void ast_print (const ast_t& ast);
 
 void ast_set_symtab (ast_t * ast, symtab_t * symtab);
 
@@ -1484,5 +1623,7 @@ get_current_function (const ast_t * node);
 
 const symbol_t*
 get_current_return_symbol (const ast_t * node);
+
+#define ast_not_reached(node) do { std::cerr << node; not_reached; } while (0);
 
 #endif /* ast_hpp */

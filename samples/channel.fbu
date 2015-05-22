@@ -16,14 +16,14 @@ func (this @Queue) Push (v uint)
 {
   if this.head == nil
     {
-      this.tail = this.head&;
+      this.tail = &this.head;
     };
 
   var e @Element;
   e = new Element;
   e.value = v;
-  this.tail@ = e;
-  this.tail = e.next&;
+  @this.tail = e;
+  this.tail = &e.next;
 }
 
 func (this @Queue) Pop ()
@@ -31,7 +31,7 @@ func (this @Queue) Pop ()
   this.head = this.head.next;
   if this.head == nil
     {
-      this.tail = this.head&;
+      this.tail = &this.head;
     };
 }
 
@@ -59,7 +59,7 @@ reaction (this @Channel const) send (message uint)
   };
 }
 
-action (this @Channel const) (this.queue.Empty ()!)
+action (this @Channel const) (!this.queue.Empty ())
 {
   trigger receive (this.queue.Front ())
     {

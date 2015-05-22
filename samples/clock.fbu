@@ -29,7 +29,7 @@ type Sampler component {
   request port ();
 };
 
-action (this @Sampler const) (this.flag!) {
+action (this @Sampler const) (!this.flag) {
   trigger request () {
     this.flag = true;
   };

@@ -2,11 +2,9 @@
 #define typed_value_h
 
 #include "types.hpp"
-#include "rtstring.hpp"
+#include "type.hpp"
 #include <ostream>
-#include "function.hpp"
-#include "method.hpp"
-#include "action.hpp"
+#include "value.hpp"
 
 /*
   A typed value represents an actual value described by the type system.
@@ -136,120 +134,148 @@ struct typed_value_t
     , region (CONSTANT)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
-    , has_value (false)
     , has_offset (false)
   { }
 
-  explicit typed_value_t (bool v)
-    : type (bool_type_t::instance ())
+  typed_value_t (const bool_type_t* t,
+                 bool_type_t::ValueType v)
+    : type (t)
     , kind (VALUE)
     , region (CONSTANT)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
-    , has_value (true)
+    , value (t, v)
     , has_offset (false)
-    , bool_value (v)
   { }
 
-  explicit typed_value_t (int64_t v)
-    : type (int_type_t::instance ())
+  typed_value_t (const int_type_t* t,
+                 int_type_t::ValueType v)
+    : type (t)
     , kind (VALUE)
     , region (CONSTANT)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
-    , has_value (true)
+    , value (t, v)
     , has_offset (false)
-    , int_value (v)
   { }
 
-  explicit typed_value_t (uint64_t v)
-    : type (uint_type_t::instance ())
+  typed_value_t (const int8_type_t* t,
+                 int8_type_t::ValueType v)
+    : type (t)
     , kind (VALUE)
     , region (CONSTANT)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
-    , has_value (true)
+    , value (t, v)
     , has_offset (false)
-    , uint_value (v)
   { }
 
-  explicit typed_value_t (rtstring_t s)
-    : type (string_type_t::instance ())
+  typed_value_t (const uint_type_t* t,
+                 uint_type_t::ValueType v)
+    : type (t)
     , kind (VALUE)
     , region (CONSTANT)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
-    , has_value (true)
+    , value (t, v)
     , has_offset (false)
-    , string_value (s)
   { }
 
-  explicit typed_value_t (function_t* f)
-    : type (f->function_type)
+  typed_value_t (const uint8_type_t* t,
+                 uint8_type_t::ValueType v)
+    : type (t)
     , kind (VALUE)
     , region (CONSTANT)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
-    , has_value (true)
+    , value (t, v)
     , has_offset (false)
-    , function_value (f)
   { }
 
-  explicit typed_value_t (method_t* m)
-    : type (m->method_type)
+  typed_value_t (const uint32_type_t* t,
+                 uint32_type_t::ValueType v)
+    : type (t)
     , kind (VALUE)
     , region (CONSTANT)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
-    , has_value (true)
+    , value (t, v)
     , has_offset (false)
-    , method_value (m)
   { }
 
-  explicit typed_value_t (reaction_t* r)
-    : type (r->reaction_type)
+  typed_value_t (const uint64_type_t* t,
+                 uint64_type_t::ValueType v)
+    : type (t)
     , kind (VALUE)
     , region (CONSTANT)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
-    , has_value (true)
+    , value (t, v)
     , has_offset (false)
-    , reaction_value (r)
   { }
 
-  typed_value_t (const type_t* type,
+  typed_value_t (const uint128_type_t* t,
+                 uint128_type_t::ValueType v)
+    : type (t)
+    , kind (VALUE)
+    , region (CONSTANT)
+    , intrinsic_mutability (IMMUTABLE)
+    , dereference_mutability (IMMUTABLE)
+    , value (t, v)
+    , has_offset (false)
+  { }
+
+  typed_value_t (const named_type_t* type,
                  size_t e)
     : type (type)
     , kind (VALUE)
     , region (CONSTANT)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
-    , has_value (true)
+    , value (type, e)
     , has_offset (false)
-    , enum_value (e)
   { }
+
+  typed_value_t (const float64_type_t* t,
+                 float64_type_t::ValueType v)
+    : type (t)
+    , kind (VALUE)
+    , region (CONSTANT)
+    , intrinsic_mutability (IMMUTABLE)
+    , dereference_mutability (IMMUTABLE)
+    , value (t, v)
+    , has_offset (false)
+  { }
+
+  explicit typed_value_t (const std::string& s)
+    : type (string_type_t::instance ())
+    , kind (VALUE)
+    , region (CONSTANT)
+    , intrinsic_mutability (IMMUTABLE)
+    , dereference_mutability (IMMUTABLE)
+    , value (s)
+    , has_offset (false)
+  { }
+
+  explicit typed_value_t (function_t* f);
+
+  explicit typed_value_t (method_t* m);
+
+  explicit typed_value_t (reaction_t* r);
 
   const type_t *type;
   Kind kind;
   Region region;
   Mutability intrinsic_mutability;
   Mutability dereference_mutability;
-  bool has_value;
+  value_t value;
+  value_t low_value;
+  value_t high_value;
   bool has_offset;
   ptrdiff_t offset;
 
-  union {
-    bool bool_value;
-    int64_t int_value;
-    uint64_t uint_value;
-    rtstring_t string_value; /* For strings and untyped strings. */
-    method_t* method_value;
-    function_t* function_value;
-    reaction_t* reaction_value;
-    size_t enum_value;
-  };
-
   static typed_value_t make_value (const type_t* type, Region region, Mutability intrinsic, Mutability dereference);
+  static typed_value_t make_range (const typed_value_t& low, const typed_value_t& high, Region region, Mutability intrinsic, Mutability dereference);
   static typed_value_t make_ref (const type_t* type, Region region, Mutability intrinsic, Mutability dereference);
   static typed_value_t make_ref (typed_value_t tv);
 
@@ -259,21 +285,19 @@ struct typed_value_t
   static typed_value_t dereference (typed_value_t tv);
   static typed_value_t address_of (typed_value_t tv);
   static typed_value_t select (typed_value_t tv, const std::string& identifier);
-  static typed_value_t index (typed_value_t tv, typed_value_t index);
+  static typed_value_t index (const location_t& location, typed_value_t tv, typed_value_t index);
   static typed_value_t logic_not (typed_value_t tv);
-  static typed_value_t logic_or (typed_value_t left, typed_value_t right);
-  static typed_value_t logic_and (typed_value_t left, typed_value_t right);
-  static typed_value_t equal (typed_value_t left, typed_value_t right);
-  static typed_value_t not_equal (typed_value_t left, typed_value_t right);
   static typed_value_t merge (typed_value_t tv);
   static typed_value_t move (typed_value_t tv);
-  static typed_value_t add (typed_value_t left, typed_value_t right);
+  static typed_value_t binary (const location_t& location, BinaryArithmetic arithmetic, typed_value_t left, typed_value_t right);
 
   bool is_foreign_safe () const
   {
     return !(type_contains_pointer (type) &&
              dereference_mutability != FOREIGN);
   }
+
+  void zero ();
 
   std::ostream& print (std::ostream& o) const;
 };

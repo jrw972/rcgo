@@ -1,8 +1,33 @@
-#ifndef stack_frame_h
-#define stack_frame_h
+#ifndef stack_frame_hpp
+#define stack_frame_hpp
 
 #include "types.hpp"
-#include "rtstring.hpp"
+#include "memory_model.hpp"
+#include <string.h>
+#include "debug.hpp"
+
+struct rtstring_t
+{
+  const char* bytes;
+  size_t size;
+
+  rtstring_t ()
+    : bytes (NULL)
+    , size (0)
+  { }
+
+  rtstring_t (const std::string& s)
+    : bytes (s.data ())
+    , size (s.size ())
+  { }
+};
+
+struct stack_frame_t {
+  char* base_pointer;
+  char* top;
+  char* limit;
+  char data[];
+};
 
 stack_frame_t* stack_frame_make (size_t size);
 
@@ -11,20 +36,27 @@ void stack_frame_push_pointer (stack_frame_t* stack_frame,
 
 void* stack_frame_pop_pointer (stack_frame_t* stack_frame);
 
-void stack_frame_push_bool (stack_frame_t* stack_frame,
-                            bool b);
+template <typename T>
+inline void
+stack_frame_push (stack_frame_t* stack_frame,
+                  T b)
+{
+  size_t s = align_up (sizeof (T), memory_model_t::stack_alignment);
+  assert (stack_frame->top + s <= stack_frame->limit);
+  memcpy (stack_frame->top, &b, sizeof (T));
+  stack_frame->top += s;
+}
 
-bool stack_frame_pop_bool (stack_frame_t* stack_frame);
-
-void stack_frame_push_uint (stack_frame_t* stack_frame,
-                            uint64_t b);
-
-uint64_t stack_frame_pop_uint (stack_frame_t* stack_frame);
-
-void stack_frame_push_int (stack_frame_t* stack_frame,
-                           int64_t b);
-
-int64_t stack_frame_pop_int (stack_frame_t* stack_frame);
+template <typename T>
+inline void
+stack_frame_pop (stack_frame_t* stack_frame,
+                 T& retval)
+{
+  size_t s = align_up (sizeof (T), memory_model_t::stack_alignment);
+  assert (stack_frame->top - s >= stack_frame->data);
+  stack_frame->top -= s;
+  memcpy (&retval, stack_frame->top, sizeof (T));
+}
 
 void stack_frame_push_string (stack_frame_t* stack_frame,
                               rtstring_t b);
@@ -93,7 +125,7 @@ void stack_frame_set_top (stack_frame_t* stack_frame,
                           char* top);
 
 // Pop size bytes from the top of the stack.
-void stack_frame_pop (stack_frame_t* stack_frame, size_t size);
+void stack_frame_popn (stack_frame_t* stack_frame, size_t size);
 
 // Return a pointer to the return instruction pointer.
 void* stack_frame_ip (const stack_frame_t* stack_frame);
@@ -106,4 +138,4 @@ void stack_frame_dump (const stack_frame_t* stack_frame);
 void* stack_frame_address_for_offset (const stack_frame_t* stack_frame,
                                       ptrdiff_t offset);
 
-#endif /* stack_frame_h */
+#endif /* stack_frame_hpp */

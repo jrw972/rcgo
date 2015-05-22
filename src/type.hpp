@@ -98,6 +98,8 @@ private:
 class bool_type_t : public type_t
 {
 public:
+  typedef bool ValueType;
+
   void accept (const_type_visitor_t& visitor) const;
   std::string to_string () const { return "<bool>"; }
   size_t alignment () const { return 1; }
@@ -112,6 +114,8 @@ private:
 class int_type_t : public type_t
 {
 public:
+  typedef int64_t ValueType;
+
   void accept (const_type_visitor_t& visitor) const;
   std::string to_string () const { return "<int>"; }
   size_t alignment () const { return sizeof (void*); }
@@ -123,9 +127,27 @@ private:
   int_type_t () { }
 };
 
+class int8_type_t : public type_t
+{
+public:
+  typedef int8_t ValueType;
+
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const { return "<int8>"; }
+  size_t alignment () const { return 1; }
+  size_t size () const { return 1; }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+
+  static const int8_type_t* instance ();
+private:
+  int8_type_t () { }
+};
+
 class uint_type_t : public type_t
 {
 public:
+  typedef uint64_t ValueType;
+
   void accept (const_type_visitor_t& visitor) const;
   std::string to_string () const { return "<uint>"; }
   size_t alignment () const { return sizeof (void*); }
@@ -137,8 +159,75 @@ private:
   uint_type_t () { }
 };
 
+class uint8_type_t : public type_t
+{
+public:
+  typedef uint8_t ValueType;
+
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const { return "<uint8>"; }
+  size_t alignment () const { return 1; }
+  size_t size () const { return 1; }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+
+  static const uint8_type_t* instance ();
+private:
+  uint8_type_t () { }
+};
+
+class uint32_type_t : public type_t
+{
+public:
+  typedef uint32_t ValueType;
+
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const { return "<uint32>"; }
+  size_t alignment () const { return 4; }
+  size_t size () const { return 4; }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+
+  static const uint32_type_t* instance ();
+private:
+  uint32_type_t () { }
+};
+
+class uint64_type_t : public type_t
+{
+public:
+  typedef uint64_t ValueType;
+
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const { return "<uint64>"; }
+  size_t alignment () const { return 8; }
+  size_t size () const { return 8; }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+
+  static const uint64_type_t* instance ();
+private:
+  uint64_type_t () { }
+};
+
+class uint128_type_t : public type_t
+{
+public:
+  typedef unsigned long long ValueType;
+
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const { return "<uint128>"; }
+  size_t alignment () const { return 16; }
+  size_t size () const { return 16; }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+
+  static const uint128_type_t* instance ();
+private:
+  uint128_type_t () { }
+};
+
 class enum_type_t : public type_t
 {
+public:
+  typedef size_t ValueType;
+
   virtual void accept (const_type_visitor_t& visitor) const;
   virtual std::string to_string () const { return "<enum>"; }
   virtual size_t alignment () const { return sizeof (void*); }
@@ -146,9 +235,27 @@ class enum_type_t : public type_t
   virtual TypeLevel level () const { return CONVENTIONAL; }
 };
 
+class float64_type_t : public type_t
+{
+public:
+  typedef double ValueType;
+
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const { return "<float64>"; }
+  size_t alignment () const { return 8; }
+  size_t size () const { return 8; }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+
+  static const float64_type_t* instance ();
+private:
+  float64_type_t () { }
+};
+
 class string_type_t : public type_t
 {
 public:
+  typedef std::string ValueType;
+
   void accept (const_type_visitor_t& visitor) const;
   std::string to_string () const { return "<string>"; }
   size_t alignment () const { unimplemented; }
@@ -173,6 +280,8 @@ protected:
 class pointer_type_t : public type_t, public base_type_t
 {
 public:
+  typedef void* ValueType;
+
   void accept (const_type_visitor_t& visitor) const;
   std::string to_string () const
   {
@@ -251,30 +360,29 @@ struct component_type_t : public struct_type_t
 class array_type_t : public type_t, public base_type_t
 {
 public:
-  array_type_t (size_t dimension,
+  array_type_t (int_type_t::ValueType d,
                 const type_t* base_type)
     : base_type_t (base_type)
-    , dimension_ (dimension)
+    , dimension (d)
   { }
 
   void accept (const_type_visitor_t& visitor) const;
   std::string to_string () const
   {
     std::stringstream str;
-    str << '[' << dimension_ << ']' << *base_type_;
+    str << '[' << dimension << ']' << *base_type_;
     return str.str ();
   }
   size_t alignment () const { return base_type_->alignment (); }
-  size_t size () const { return element_size () * dimension_; }
+  size_t size () const { return element_size () * dimension; }
   virtual TypeLevel level () const { return CONVENTIONAL; }
 
   size_t element_size () const
   {
     return align_up (base_type_->size (), base_type_->alignment ());
   }
-  size_t dimension () const { return dimension_; }
-private:
-  size_t dimension_;
+
+  const int_type_t::ValueType dimension;
 };
 
 class signature_type_t : public type_t
@@ -441,32 +549,12 @@ public:
   void accept (const_type_visitor_t& visitor) const;
   std::string to_string () const { return "<nil>"; }
   size_t alignment () const { not_reached; }
-  size_t size () const { not_reached; }
+  size_t size () const { return sizeof (void*); }
   virtual TypeLevel level () const { return UNTYPED; }
 
   static const nil_type_t* instance ();
 private:
   nil_type_t () { }
-};
-
-class iota_type_t : public type_t
-{
-public:
-  iota_type_t (size_t bound) : bound_ (bound) { }
-  void accept (const_type_visitor_t& visitor) const;
-  std::string to_string () const
-  {
-    std::stringstream str;
-    str << "<iota " << bound_ << '>';
-    return str.str ();
-  }
-  size_t alignment () const { return sizeof (void*); }
-  size_t size () const { return sizeof (void*); }
-  virtual TypeLevel level () const { return UNTYPED; }
-
-  size_t bound () const { return bound_; }
-private:
-  size_t bound_;
 };
 
 struct const_type_visitor_t
@@ -480,7 +568,6 @@ struct const_type_visitor_t
   virtual void visit (const function_type_t& type) { default_action (type); }
   virtual void visit (const method_type_t& type) { default_action (type); }
   virtual void visit (const heap_type_t& type) { default_action (type); }
-  virtual void visit (const iota_type_t& type) { default_action (type); }
   virtual void visit (const named_type_t& type) { default_action (type); }
   virtual void visit (const pointer_type_t& type) { default_action (type); }
   virtual void visit (const port_type_t& type) { default_action (type); }
@@ -490,7 +577,13 @@ struct const_type_visitor_t
   virtual void visit (const string_type_t& type) { default_action (type); }
   virtual void visit (const struct_type_t& type) { default_action (type); }
   virtual void visit (const int_type_t& type) { default_action (type); }
+  virtual void visit (const int8_type_t& type) { default_action (type); }
   virtual void visit (const uint_type_t& type) { default_action (type); }
+  virtual void visit (const uint8_type_t& type) { default_action (type); }
+  virtual void visit (const uint32_type_t& type) { default_action (type); }
+  virtual void visit (const uint64_type_t& type) { default_action (type); }
+  virtual void visit (const uint128_type_t& type) { default_action (type); }
+  virtual void visit (const float64_type_t& type) { default_action (type); }
   virtual void visit (const nil_type_t& type) { default_action (type); }
   virtual void visit (const void_type_t& type) { default_action (type); }
   virtual void default_action (const type_t& type) { }
@@ -534,17 +627,6 @@ type_change (const type_t* type);
 bool
 type_is_equal (const type_t* x, const type_t* y);
 
-// True if from can be converted to to.  (Useful for assignment, copy, etc.)
-bool
-type_is_convertible (const type_t* to, const type_t* from);
-
-// True if one can be converted to the other.  (Useful for binary operators.)
-inline bool
-type_is_equivalent (const type_t* x, const type_t* y)
-{
-  return type_is_convertible (x, y) || type_is_convertible (y, x);
-}
-
 // True if any pointer is accessible.
 bool
 type_contains_pointer (const type_t* type);
@@ -553,17 +635,32 @@ type_contains_pointer (const type_t* type);
 bool
 type_is_boolean (const type_t* type);
 
-// True if arithmetic operators can be applied to values of this type.
+// True if type is an integer.
 bool
-type_is_arithmetic (const type_t* type);
+type_is_integral (const type_t* type);
+
+// True if type is an unsigned integer.
+bool
+type_is_unsigned_integral (const type_t* type);
+
+// True if type is floating-point.
+bool
+type_is_floating (const type_t* type);
 
 // True if == or != can be applied to values of this type.
 bool
 type_is_comparable (const type_t* type);
 
+// True if <, <=, >, or >= can be applied to values of this type.
+bool
+type_is_orderable (const type_t* type);
+
 // True if index is valid.
 bool
-type_is_index (const type_t* type, int64_t index);
+type_is_index (const type_t* type, int_type_t::ValueType index);
+
+bool
+type_is_pointer_compare (const type_t* left, const type_t* right);
 
 // Remove a named_type_t.
 const type_t*
@@ -602,5 +699,7 @@ type_cast (const type_t * type)
   type->accept (v);
   return v.retval;
 }
+
+#define type_not_reached(type) do { std::cerr << type << std::endl; not_reached; } while (0);
 
 #endif /* type_hpp */

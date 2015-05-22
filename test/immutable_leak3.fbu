@@ -9,5 +9,5 @@ type C component {
 action (this @C const) (true) {
   // Try to get a mutable pointer to s.
   var x @S;
-  x = this.s&;
+  x = &this.s;
 }

@@ -52,11 +52,8 @@ struct symbol_t
     , in_progress (false)
     , offset (0)
   {
-    memset (&typed_constant.value, 0, sizeof (typed_value_t));
-    memset (&variable.value, 0, sizeof (typed_value_t));
     variable.kind = static_cast<VariableKind> (0);
     variable.original = NULL;
-    memset (&parameter.value, 0, sizeof (typed_value_t));
     parameter.kind = static_cast<ParameterKind> (0);
     parameter.original = NULL;
     instance.type = NULL;
@@ -168,10 +165,10 @@ symbol_make_undefined (const std::string& identifier, SymbolKind kind,
 }
 
 symbol_t *
-symbol_make_variable (const std::string& identifier, const type_t * type, ast_t* defining_node)
+symbol_make_variable (const std::string& identifier, const typed_value_t& tv, ast_t* defining_node)
 {
   symbol_t *s = new symbol_t (identifier, SymbolVariable, defining_node);
-  s->variable.value = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE);
+  s->variable.value = tv;
   s->variable.kind = VariableOrdinary;
   return s;
 }

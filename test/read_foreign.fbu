@@ -4,5 +4,5 @@ type C component {
 
 reaction (this @C const) r (x @bool foreign) {
   var y bool;
-  y = x@;
+  y = @x;
 }

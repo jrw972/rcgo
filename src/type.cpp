@@ -242,7 +242,6 @@ type::accept (const_type_visitor_t& visitor) const \
 
 ACCEPT(enum_type_t)
 ACCEPT(field_list_type_t)
-ACCEPT(iota_type_t)
 ACCEPT(named_type_t)
 ACCEPT(component_type_t)
 ACCEPT(struct_type_t)
@@ -257,28 +256,20 @@ ACCEPT(reaction_type_t)
 ACCEPT(signature_type_t)
 ACCEPT(string_type_t)
 ACCEPT(int_type_t)
+ACCEPT(int8_type_t)
 ACCEPT(uint_type_t)
+ACCEPT(uint8_type_t)
+ACCEPT(uint32_type_t)
+ACCEPT(uint64_type_t)
+ACCEPT(uint128_type_t)
+ACCEPT(float64_type_t)
 ACCEPT(void_type_t)
 ACCEPT(nil_type_t)
 ACCEPT(array_type_t)
 
-// Returns true if two types are equal.
-// If one type is a named type, then the other must be the same named type.
-// Otherwise, the types must have the same structure.
-bool
-type_is_equal (const type_t * x, const type_t* y)
+static bool
+structurally_equal (const type_t* x, const type_t* y)
 {
-  if (x == y)
-    {
-      return true;
-    }
-
-  if (type_cast<named_type_t> (x) || type_cast<named_type_t> (y))
-    {
-      // Named types must be exactly the same.
-      return false;
-    }
-
   struct visitor : public const_type_visitor_t
   {
     bool flag;
@@ -317,11 +308,6 @@ type_is_equal (const type_t * x, const type_t* y)
     void visit (const int_type_t& type)
     {
       flag = &type == other;
-    }
-
-    void visit (const iota_type_t& type)
-    {
-      flag = type_cast<iota_type_t> (other) != NULL;
     }
 
     void visit (const nil_type_t& type)
@@ -387,61 +373,81 @@ type_is_equal (const type_t * x, const type_t* y)
   return v.flag;
 }
 
+// Returns true if two types are equal.
+// If one type is a named type, then the other must be the same named type.
+// Otherwise, the types must have the same structure.
 bool
-type_is_convertible (const type_t * to, const type_t* from)
+type_is_equal (const type_t * x, const type_t* y)
 {
-  if (to == from)
+  if (x == y)
     {
       return true;
     }
 
-  if (type_cast<named_type_t> (from))
+  if (type_cast<named_type_t> (x) && type_cast<named_type_t> (y))
     {
       // Named types must be exactly the same.
       return false;
     }
 
-  // Strip a named type on to.
-  const named_type_t* nt = type_cast<named_type_t> (to);
-  if (nt)
-    {
-      to = nt->subtype ();
-    }
-
-  if (type_is_equal (to, from))
-    {
-      return true;
-    }
-
-  // to and from are not equal and neither refer to a named type.
-
-  struct visitor : public const_type_visitor_t
-  {
-    bool flag;
-    const type_t* from;
-
-    visitor (const type_t* o) : flag (false), from (o) { }
-
-    void visit (const pointer_type_t& type)
-    {
-      flag = (type_cast<nil_type_t> (from) != NULL);
-    }
-
-    void visit (const uint_type_t& type)
-    {
-      flag = (type_cast<iota_type_t> (from) != NULL);
-    }
-
-    void visit (const int_type_t& type)
-    {
-      flag = (type_cast<iota_type_t> (from) != NULL);
-    }
-  };
-
-  visitor v (from);
-  to->accept (v);
-  return v.flag;
+  return structurally_equal (type_strip (x), type_strip (y));
 }
+
+// bool
+// type_is_convertible (const type_t * to, const type_t* from)
+// {
+//   if (to == from)
+//     {
+//       return true;
+//     }
+
+//   if (type_cast<named_type_t> (from))
+//     {
+//       // Named types must be exactly the same.
+//       return false;
+//     }
+
+//   // Strip a named type on to.
+//   const named_type_t* nt = type_cast<named_type_t> (to);
+//   if (nt)
+//     {
+//       to = nt->subtype ();
+//     }
+
+//   if (type_is_equal (to, from))
+//     {
+//       return true;
+//     }
+
+//   // to and from are not equal and neither refer to a named type.
+
+//   struct visitor : public const_type_visitor_t
+//   {
+//     bool flag;
+//     const type_t* from;
+
+//     visitor (const type_t* o) : flag (false), from (o) { }
+
+//     void visit (const pointer_type_t& type)
+//     {
+//       flag = (type_cast<nil_type_t> (from) != NULL);
+//     }
+
+//     void visit (const uint_type_t& type)
+//     {
+//       flag = (type_cast<iota_type_t> (from) != NULL);
+//     }
+
+//     void visit (const int_type_t& type)
+//     {
+//       flag = (type_cast<iota_type_t> (from) != NULL);
+//     }
+//   };
+
+//   visitor v (from);
+//   to->accept (v);
+//   return v.flag;
+// }
 
 std::string
 signature_type_t::to_string () const
@@ -466,40 +472,25 @@ signature_type_t::to_string () const
   return str.str ();
 }
 
-const void_type_t*
-void_type_t::instance ()
-{
-  static void_type_t i;
-  return &i;
+#define INSTANCE(type) const type* \
+type::instance () \
+{ \
+  static type i; \
+  return &i; \
 }
 
-const bool_type_t*
-bool_type_t::instance ()
-{
-  static bool_type_t i;
-  return &i;
-}
-
-const int_type_t*
-int_type_t::instance ()
-{
-  static int_type_t i;
-  return &i;
-}
-
-const uint_type_t*
-uint_type_t::instance ()
-{
-  static uint_type_t i;
-  return &i;
-}
-
-const string_type_t*
-string_type_t::instance ()
-{
-  static string_type_t i;
-  return &i;
-}
+INSTANCE(void_type_t)
+INSTANCE(bool_type_t)
+INSTANCE(int_type_t)
+INSTANCE(int8_type_t)
+INSTANCE(uint_type_t)
+INSTANCE(uint8_type_t)
+INSTANCE(uint32_type_t)
+INSTANCE(uint64_type_t)
+INSTANCE(uint128_type_t)
+INSTANCE(float64_type_t)
+INSTANCE(string_type_t)
+INSTANCE(nil_type_t)
 
 const type_t*
 pointer_type_t::make (const type_t* base_type)
@@ -514,13 +505,6 @@ field_list_type_t::field_list_type_t (bool insert_runtime) : offset_ (0), alignm
       /* Prepend the field list with a pointer for the runtime. */
       append ("0", pointer_type_t::make (void_type_t::instance ()));
     }
-}
-
-const nil_type_t*
-nil_type_t::instance ()
-{
-  static nil_type_t i;
-  return &i;
 }
 
 const type_t* type_dereference (const type_t* type)
@@ -566,10 +550,16 @@ type_contains_pointer (const type_t* type)
     void visit (const int_type_t& type)
     { }
 
+    void visit (const int8_type_t& type)
+    { }
+
     void visit (const uint_type_t& type)
     { }
 
-    void visit (const iota_type_t& type)
+    void visit (const uint8_type_t& type)
+    { }
+
+    void visit (const float64_type_t& type)
     { }
 
     void visit (const enum_type_t& type)
@@ -645,7 +635,7 @@ type_is_boolean (const type_t* type)
 }
 
 bool
-type_is_arithmetic (const type_t* type)
+type_is_integral (const type_t* type)
 {
   struct visitor : public const_type_visitor_t
   {
@@ -666,10 +656,46 @@ type_is_arithmetic (const type_t* type)
     {
       flag = true;
     }
+  };
+  visitor v;
+  type->accept (v);
+  return v.flag;
+}
 
-    void visit (const iota_type_t& type)
+bool
+type_is_unsigned_integral (const type_t* type)
+{
+  struct visitor : public const_type_visitor_t
+  {
+    bool flag;
+    visitor () : flag (false) { }
+
+    void visit (const named_type_t& type)
+    {
+      type.subtype ()->accept (*this);
+    }
+
+    void visit (const uint_type_t& type)
     {
       flag = true;
+    }
+  };
+  visitor v;
+  type->accept (v);
+  return v.flag;
+}
+
+bool
+type_is_floating (const type_t* type)
+{
+  struct visitor : public const_type_visitor_t
+  {
+    bool flag;
+    visitor () : flag (false) { }
+
+    void visit (const named_type_t& type)
+    {
+      type.subtype ()->accept (*this);
     }
   };
   visitor v;
@@ -700,12 +726,12 @@ type_is_comparable (const type_t* type)
       flag = true;
     }
 
-    void visit (const uint_type_t& type)
+    void visit (const int8_type_t& type)
     {
       flag = true;
     }
 
-    void visit (const iota_type_t& type)
+    void visit (const uint_type_t& type)
     {
       flag = true;
     }
@@ -718,6 +744,61 @@ type_is_comparable (const type_t* type)
   visitor v;
   type->accept (v);
   return v.flag;
+}
+
+bool
+type_is_orderable (const type_t* type)
+{
+ struct visitor : public const_type_visitor_t
+  {
+    bool flag;
+    visitor () : flag (false) { }
+
+    void visit (const pointer_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const named_type_t& type)
+    {
+      type.subtype ()->accept (*this);
+    }
+
+    void visit (const int_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const int8_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const uint_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const enum_type_t& type)
+    {
+      flag = true;
+    }
+  };
+  visitor v;
+  type->accept (v);
+  return v.flag;
+}
+
+bool
+type_is_pointer_compare (const type_t* left, const type_t* right)
+{
+  const type_t* l = type_strip (left);
+  const type_t* r = type_strip (right);
+
+  return
+    (type_cast<pointer_type_t> (l) && type_cast<nil_type_t>(r)) ||
+    (type_cast<nil_type_t> (l) && type_cast<pointer_type_t> (r));
+
 }
 
 const type_t*
@@ -771,14 +852,6 @@ type_index (const type_t* base, const type_t* index)
         {
           result = array_type.base_type ();
         }
-
-        void visit (const iota_type_t& type)
-        {
-          if (type.bound () <= array_type.dimension ())
-            {
-              result = array_type.base_type ();
-            }
-        }
       };
       visitor v (type);
       index->accept (v);
@@ -792,18 +865,18 @@ type_index (const type_t* base, const type_t* index)
 }
 
 bool
-type_is_index (const type_t* type, int64_t index)
+type_is_index (const type_t* type, int_type_t::ValueType index)
 {
   struct visitor : public const_type_visitor_t
   {
-    int64_t index;
+    int_type_t::ValueType index;
     bool flag;
 
-    visitor (int64_t i) : index (i), flag (false) { }
+    visitor (int_type_t::ValueType i) : index (i), flag (false) { }
 
     void visit (const array_type_t& type)
     {
-      flag = index >= 0 && static_cast<size_t> (index) < type.dimension ();
+      flag = index >= 0 && index < type.dimension;
     }
   };
   visitor v (index);

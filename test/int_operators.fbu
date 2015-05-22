@@ -1,0 +1,82 @@
+type Test component { };
+
+func not_evaluated () bool {
+  println `NOT EVALUATED`;
+  return true;
+}
+
+func (this @Test) Main () {
+  {
+    println `-10017 `, 189i * -53i;
+    println `-3 `, 189i / -53i;
+    println `30 `, 189i % -53i;
+    println `378 `, 189i << 1u;
+    println `94 `, 189i >> 1u;
+    println `137 `, 189i & -53i;
+    println `52 `, 189i &^ -53i;
+
+    println `136 `, 189i + -53i;
+    println `242 `, 189i - -53i;
+    println `-1 `, 189i | -53i;
+    println `-138 `, 189i ^ -53i;
+
+    println `false `, 189i == -53i;
+    println `true `, 189i != -53i;
+    println `false `, 189i < -53i;
+    println `false `, 189i <= -53i;
+    println `true `, 189i > -53i;
+    println `true `, 189i >= -53i;
+  }
+
+  {
+    const x int = 189i;
+    const y int = -53i;
+
+    println `-10017 `, x * y;
+    println `-3 `, x / y;
+    println `30 `, x % y;
+    println `378 `, x << 1u;
+    println `94 `, x >> 1u;
+    println `137 `, x & y;
+    println `52 `, x &^ y;
+
+    println `136 `, x + y;
+    println `242 `, x - y;
+    println `-1 `, x | y;
+    println `-138 `, x ^ y;
+
+    println `false `, x == y;
+    println `true `, x != y;
+    println `false `, x < y;
+    println `false `, x <= y;
+    println `true `, x > y;
+    println `true `, x >= y;
+  }
+
+  {
+    var x int = 189i;
+    var y int = -53i;
+
+    println `-10017 `, x * y;
+    println `-3 `, x / y;
+    println `30 `, x % y;
+    println `378 `, x << 1u;
+    println `94 `, x >> 1u;
+    println `137 `, x & y;
+    println `52 `, x &^ y;
+
+    println `136 `, x + y;
+    println `242 `, x - y;
+    println `-1 `, x | y;
+    println `-138 `, x ^ y;
+
+    println `false `, x == y;
+    println `true `, x != y;
+    println `false `, x < y;
+    println `false `, x <= y;
+    println `true `, x > y;
+    println `true `, x >= y;
+  }
+}
+
+instance t Test Main;

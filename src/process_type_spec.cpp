@@ -5,49 +5,30 @@
 #include "symbol.hpp"
 #include "parameter.hpp"
 
-size_t
+typed_value_t
 process_array_dimension (ast_t* ptr)
 {
-  type_check_expr (ptr);
-  typed_value_t tv = ptr->typed_value;
+  typed_value_t tv = type_check_expr (ptr);
 
-  if (!tv.has_value)
+  if (!type_is_integral (tv.type))
     {
-      error_at_line (-1, 0, ptr->file, ptr->line,
+      error_at_line (-1, 0, ptr->location.file, ptr->location.line,
+                     "array dimension is not integral");
+    }
+
+  if (!tv.value.present)
+    {
+      error_at_line (-1, 0, ptr->location.file, ptr->location.line,
                      "array dimension is not constant");
     }
 
-  struct visitor : public const_type_visitor_t
-  {
-    size_t dimension;
-    ast_t* dimension_node;
-    const typed_value_t& dimension_tv;
-
-    visitor (ast_t* d, const typed_value_t& dt) : dimension_node (d), dimension_tv (dt) { }
-
-    void default_action (const type_t& type)
+  if (tv.value.integral_value (tv.type) < 0)
     {
-      error_at_line (-1, 0, dimension_node->file, dimension_node->line,
-                     "%s is not a valid array dimension type", type.to_string ().c_str ());
+      error_at_line (-1, 0, ptr->location.file, ptr->location.line,
+                     "array dimension is negative");
     }
 
-    void visit (const int_type_t& type)
-    {
-      if (dimension_tv.int_value >= 0)
-        {
-          dimension = dimension_tv.int_value;
-        }
-      else
-        {
-          error_at_line (-1, 0, dimension_node->file, dimension_node->line,
-                         "array dimension is negative");
-
-        }
-    }
-  };
-  visitor v (ptr, tv);
-  tv.type->accept (v);
-  return v.dimension;
+  return tv;
 }
 
 void
@@ -60,7 +41,7 @@ check_port_reaction_signature (const signature_type_t* signature)
       const parameter_t* parameter = *pos;
       if (!parameter->value.is_foreign_safe ())
         {
-          error_at_line (-1, 0, parameter->defining_node->file, parameter->defining_node->line,
+          error_at_line (-1, 0, parameter->defining_node->location.file, parameter->defining_node->location.line,
                          "signature leaks pointers");
         }
     }
@@ -92,9 +73,9 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
 
     void visit (ast_array_type_spec_t& node)
     {
-      size_t dimension = process_array_dimension (node.dimension ());
+      typed_value_t dimension = process_array_dimension (node.dimension ());
       const type_t* base_type = process_type_spec (node.base_type (), true);
-      type = new array_type_t (dimension, base_type);
+      type = new array_type_t (dimension.value.integral_value (dimension.type), base_type);
     }
 
     void visit (ast_component_type_spec_t& node)
@@ -120,7 +101,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
           std::string id = ast_get_identifier (*pos);
           if (node.symtab->find_current (id) != NULL)
             {
-              error_at_line (-1, 0, (*pos)->file, (*pos)->line,
+              error_at_line (-1, 0, (*pos)->location.file, (*pos)->location.line,
                              "%s is already defined in this scope", id.c_str ());
             }
 
@@ -156,7 +137,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
                 }
               else
                 {
-                  error_at_line (-1, 0, id->file, id->line,
+                  error_at_line (-1, 0, id->location.file, id->location.line,
                                  "duplicate field name %s", identifier.c_str ());
                 }
             }
@@ -185,7 +166,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
 
       if (symbol_kind (symbol) != SymbolType)
         {
-          error_at_line (-1, 0, child->file, child->line,
+          error_at_line (-1, 0, child->location.file, child->location.line,
                          "%s does not refer to a type", identifier.c_str ());
         }
       type = symbol_get_type_type (symbol);
@@ -216,7 +197,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
 
       if (!return_value.is_foreign_safe ())
         {
-          error_at_line (-1, 0, node.return_type ()->file, node.return_type ()->line,
+          error_at_line (-1, 0, node.return_type ()->location.file, node.return_type ()->location.line,
                          "return type leaks pointers");
         }
       type = new pfunc_type_t (signature, return_parameter);
@@ -250,7 +231,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
                 }
               else
                 {
-                  error_at_line (-1, 0, id->file, id->line,
+                  error_at_line (-1, 0, id->location.file, id->location.line,
                                  "duplicate parameter name %s",
                                  identifier.c_str ());
                 }

@@ -66,7 +66,7 @@ instantiate_contained_instances (const type_t * type, instance_table_t& instance
 
     void visit (const array_type_t& type)
     {
-      for (size_t idx = 0; idx != type.dimension (); ++idx)
+      for (int_type_t::ValueType idx = 0; idx != type.dimension; ++idx)
         {
           // Recur changing address.
           visitor v (instance_table, parent, NULL, address + idx * type.element_size (), field);
@@ -85,7 +85,19 @@ instantiate_contained_instances (const type_t * type, instance_table_t& instance
     void visit (const int_type_t& type)
     { }
 
+    void visit (const int8_type_t& type)
+    { }
+
     void visit (const uint_type_t& type)
+    { }
+
+    void visit (const uint8_type_t& type)
+    { }
+
+    void visit (const uint128_type_t& type)
+    { }
+
+    void visit (const float64_type_t& type)
     { }
 
     void visit (const enum_type_t& type)

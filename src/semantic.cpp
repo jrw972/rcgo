@@ -56,7 +56,7 @@ allocate_symbol (memory_model_t& memory_model,
       break;
 
     case SymbolTypedConstant:
-      unimplemented;
+      // No need to allocate.
       break;
 
     case SymbolVariable:
@@ -96,7 +96,12 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t& memory_model)
 
     void default_action (ast_t& node)
     {
-      not_reached;
+      ast_not_reached (node);
+    }
+
+    void visit (ast_const_t& node)
+    {
+      // Do nothing.
     }
 
     void visit (ast_empty_statement_t& node)
@@ -204,6 +209,11 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t& memory_model)
      }
 
     void visit (ast_var_statement_t& node)
+    {
+      // Do nothing.  The variables are allocated in the StmtList containing this.
+    }
+
+    void visit (ast_var_type_init_statement_t& node)
     {
       // Do nothing.  The variables are allocated in the StmtList containing this.
     }

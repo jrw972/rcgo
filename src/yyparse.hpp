@@ -2,7 +2,6 @@
 #define yyparse_h
 
 #include "ast.hpp"
-#include "rtstring.hpp"
 #include "type.hpp"
 
 #define YYLTYPE size_t

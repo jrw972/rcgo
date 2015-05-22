@@ -9,8 +9,8 @@ func (this @Test) Main () {
   println `false: `, false;
   println `true: `, true;
 
-  println `const false!: `, false!;
-  println `const true!: `, true!;
+  println `const false!: `, !false;
+  println `const true!: `, !true;
 
   println `const false || false: `, false || false;
   println `const false || true: `, false || true;
@@ -26,8 +26,8 @@ func (this @Test) Main () {
   f = false;
   t = true;
 
-  println `var false!: `, f!;
-  println `var true!: `, t!;
+  println `var false!: `, !f;
+  println `var true!: `, !t;
 
   println `var false || false: `, f || f;
   println `var false || true: `, f || t;

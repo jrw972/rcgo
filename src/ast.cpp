@@ -8,288 +8,31 @@
 #include "method.hpp"
 #include "function.hpp"
 
-void
-ast_print (const ast_t& node)
+std::ostream&
+operator<< (std::ostream& out, const ast_t& node)
 {
   struct visitor : public ast_const_visitor_t
   {
+    std::ostream& out;
     size_t indent;
 
-    visitor () : indent (0) { }
+    visitor (std::ostream& o) : out (o), indent (0) { }
 
     void default_action (const ast_t& node)
     {
-      not_reached;
-    }
-
-    void visit (const ast_identifier_t& node)
-    {
       print_indent (node);
-      std::cout << "identifier " << node.identifier << '\n';
+      node.print (out);
+      out << ' ' << node.typed_value << '\n';
       print_children (node);
-    }
-
-    void visit (const ast_for_iota_statement_t& node)
-    {
-      print (node, "for_iota_statement");
-    }
-
-    void visit (const ast_address_of_expr_t& node)
-    {
-      print_expr (node, "address_of_expr");
-    }
-
-    void visit (const ast_binary_arithmetic_expr_t& node)
-    {
-      print_expr (node, "binary_arithmetic_expr");
-    }
-
-    void visit (const ast_logic_not_expr_t& node)
-    {
-      print_expr (node, "logic_not_expr");
-    }
-
-    void visit (const ast_new_expr_t& node)
-    {
-      print_expr (node, "new_expr");
-    }
-
-    void visit (const ast_dereference_expr_t& node)
-    {
-      print_expr (node, "dereference_expr");
-    }
-
-    void visit (const ast_implicit_dereference_expr_t& node)
-    {
-      print_expr (node, "implicit_dereference_expr");
-    }
-
-    void visit (const ast_call_expr_t& node)
-    {
-      print_expr (node, "call_expr");
-    }
-
-    void visit (const ast_identifier_expr_t& node)
-    {
-      print_expr (node, "identifier_expr");
-    }
-
-    void visit (const ast_index_expr_t& node)
-    {
-      print_expr (node, "index_expr");
-    }
-
-    void visit (const ast_indexed_port_call_expr_t& node)
-    {
-      print_expr (node, "indexed_port_call_expr");
-    }
-
-    void visit (const ast_list_expr_t& node)
-    {
-      print_expr (node, "list_expr");
-    }
-
-    void visit (const ast_literal_expr_t& node)
-    {
-      print_expr (node, "literal_expr");
-    }
-
-    void visit (const ast_select_expr_t& node)
-    {
-      print_expr (node, "select_expr");
-    }
-
-    void visit (const ast_port_call_expr_t& node)
-    {
-      print_expr (node, "port_call_expr");
-    }
-
-    void visit (const ast_top_level_list_t& node)
-    {
-      print (node, "top_level_list");
-    }
-
-    void visit (const ast_type_definition_t& node)
-    {
-      print (node, "type_definition");
-    }
-
-    void visit (const ast_struct_type_spec_t& node)
-    {
-      print (node, "struct_type_spec");
-    }
-
-    void visit (const ast_enum_type_spec_t& node)
-    {
-      print (node, "enum_type_spec");
-    }
-
-    void visit (const ast_pfunc_type_spec_t& node)
-    {
-      print (node, "pfunc_type_spec");
-    }
-
-    void visit (const ast_array_type_spec_t& node)
-    {
-      print (node, "array_type_spec");
-    }
-
-    void visit (const ast_port_type_spec_t& node)
-    {
-      print (node, "port_type_spec");
-    }
-
-    void visit (const ast_component_type_spec_t& node)
-    {
-      print (node, "component_type_spec");
-    }
-
-    void visit (const ast_empty_type_spec_t& node)
-    {
-      print (node, "empty_type_spec");
-    }
-
-    void visit (const ast_signature_type_spec_t& node)
-    {
-      print (node, "signature_type_spec");
-    }
-
-    void visit (const ast_field_list_type_spec_t& node)
-    {
-      print (node, "field_list_type_spec");
-    }
-
-    void visit (const ast_identifier_list_type_spec_t& node)
-    {
-      print (node, "identifier_list_type_spec");
-    }
-
-    void visit (const ast_identifier_type_spec_t& node)
-    {
-      print (node, "identifier_type_spec");
-    }
-
-    void visit (const ast_pointer_type_spec_t& node)
-    {
-      print (node, "pointer_type_spec");
-    }
-
-    void visit (const ast_identifier_list_t& node)
-    {
-      print (node, "identifier_list");
-    }
-
-    void visit (const ast_method_t& node)
-    {
-      print (node, "method");
-    }
-
-    void visit (const ast_reaction_t& node)
-    {
-      print (node, "reaction");
-    }
-
-    void visit (const ast_dimensioned_reaction_t& node)
-    {
-      print (node, "dimensioned_reaction");
-    }
-
-    void visit (const ast_action_t& node)
-    {
-      print (node, "action");
-    }
-
-    void visit (const ast_dimensioned_action_t& node)
-    {
-      print (node, "dimensioned_action");
-    }
-
-    void visit (const ast_instance_t& node)
-    {
-      print (node, "instance");
-    }
-
-    void visit (const ast_bind_t& node)
-    {
-      print (node, "bind");
-    }
-
-    void visit (const ast_bind_port_statement_t& node)
-    {
-      print (node, "bind_port_statement");
-    }
-
-    void visit (const ast_bind_port_param_statement_t& node)
-    {
-      print (node, "bind_param_statement");
-    }
-
-    void visit (const ast_bind_pfunc_statement_t& node)
-    {
-      print (node, "bind_pfunc_statement");
-    }
-
-    void visit (const ast_trigger_statement_t& node)
-    {
-      print (node, "trigger_statement");
-    }
-
-    void visit (const ast_println_statement_t& node)
-    {
-      print (node, "println_statement");
-    }
-
-    void visit (const ast_expression_statement_t& node)
-    {
-      print (node, "expression_statement");
-    }
-
-    void visit (const ast_return_statement_t& node)
-    {
-      print (node, "return_statement");
-    }
-
-    void visit (const ast_var_statement_t& node)
-    {
-      print (node, "var_statement");
-    }
-
-    void visit (const ast_if_statement_t& node)
-    {
-      print (node, "if_statement");
-    }
-
-    void visit (const ast_list_statement_t& node)
-    {
-      print (node, "list_statement");
-    }
-
-    void visit (const ast_assign_statement_t& node)
-    {
-      print (node, "assign_statement");
     }
 
     void print_indent (const ast_t& node)
     {
       for (size_t idx = 0; idx != indent; ++idx)
         {
-          std::cout << ' ';
+          out << ' ';
         }
-      std::cout << node.line << ' ';
-    }
-
-    void print (const ast_t& node, const char* s)
-    {
-      print_indent (node);
-      std::cout << s << '\n';
-      print_children (node);
-    }
-
-    void print_expr (const ast_expr_t& node, const char* s)
-    {
-      print_indent (node);
-      std::cout << s << ' ' << node.typed_value << '\n';
-      print_children (node);
+      out << node.location.line << ' ';
     }
 
     void print_children (const ast_t& node)
@@ -306,8 +49,9 @@ ast_print (const ast_t& node)
     }
   };
 
-  visitor v;
+  visitor v (out);
   node.accept (v);
+  return out;
 }
 
 void
@@ -343,6 +87,8 @@ ACCEPT (ast_port_type_spec_t)
 ACCEPT (ast_pfunc_type_spec_t)
 ACCEPT (ast_signature_type_spec_t)
 ACCEPT (ast_struct_type_spec_t)
+
+ACCEPT (ast_cast_expr_t)
 ACCEPT (ast_binary_arithmetic_expr_t)
 ACCEPT (ast_address_of_expr_t)
 ACCEPT (ast_call_expr_t)
@@ -375,12 +121,14 @@ ACCEPT (ast_decrement_statement_t)
 ACCEPT (ast_subtract_assign_statement_t)
 ACCEPT (ast_trigger_statement_t)
 ACCEPT (ast_var_statement_t)
+ACCEPT (ast_var_type_init_statement_t)
 ACCEPT (ast_bind_port_statement_t)
 ACCEPT (ast_bind_port_param_statement_t)
 ACCEPT (ast_bind_pfunc_statement_t)
 ACCEPT (ast_for_iota_statement_t)
 
 ACCEPT (ast_action_t)
+ACCEPT (ast_const_t)
 ACCEPT (ast_dimensioned_action_t)
 ACCEPT (ast_bind_t)
 ACCEPT (ast_function_t)

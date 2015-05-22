@@ -23,110 +23,34 @@ enter_symbol (symtab_t* symtab, symbol_t * symbol, symbol_holder& holder)
   else
     {
       const ast_t* node = symbol_defining_node (symbol);
-      error_at_line (-1, 0, node->file, node->line,
+      error_at_line (-1, 0, node->location.file, node->location.line,
 		     "%s is already defined in this scope", identifier.c_str ());
     }
   return symbol;
 }
 
-static const type_t* check_index (const type_t* aggregate_type, typed_value_t idx_tv, const ast_t& error_node)
-{
-  struct visitor : public const_type_visitor_t
-  {
-    const type_t* retval;
-    const typed_value_t& idx_tv;
-    const ast_t& node;
-
-    visitor (const typed_value_t& it, const ast_t& n) : retval (NULL), idx_tv (it), node (n) { }
-
-
-    void default_action (const type_t& type)
-    {
-      not_reached;
-    }
-
-    void visit (const array_type_t& type)
-    {
-      struct visitor : public const_type_visitor_t
-      {
-        const typed_value_t& idx_tv;
-        const array_type_t& array_type;
-        const ast_t& node;
-
-        visitor (const typed_value_t& it, const array_type_t& at, const ast_t& n) : idx_tv (it), array_type (at), node (n) { }
-
-        void default_action (const type_t& type)
-        {
-          not_reached;
-        }
-
-        void visit (const named_type_t& type)
-        {
-          type.subtype ()->accept (*this);
-        }
-
-        void visit (const uint_type_t& type)
-        {
-          if (idx_tv.has_value)
-            {
-              // Check that the index is in bounds.
-              unimplemented;
-            }
-        }
-
-        void visit (const int_type_t& type)
-        {
-          if (idx_tv.has_value)
-            {
-              // Check that the index is in bounds.
-              if (idx_tv.int_value < 0)
-                {
-                  error_at_line (-1, 0, node.file, node.line,
-                                 "array index is negative");
-
-                }
-
-              if (static_cast<size_t> (idx_tv.int_value) >= array_type.dimension ())
-                {
-                  error_at_line (-1, 0, node.file, node.line,
-                                 "array index out of bounds");
-                }
-            }
-        }
-
-        void visit (const iota_type_t& type)
-        {
-          if (type.bound () > array_type.dimension ())
-            {
-              error_at_line (-1, 0, node.file, node.line,
-                             "iota bound (%zd) exceeds array dimension (%zd)", type.bound (), array_type.dimension ());
-            }
-        }
-      };
-      visitor v (idx_tv, type, node);
-      idx_tv.type->accept (v);
-
-      retval = type.base_type ();
-    }
-
-  };
-  visitor v (idx_tv, error_node);
-  aggregate_type->accept (v);
-
-  return v.retval;
-}
-
-static void
-check_assignment (typed_value_t left_tv, typed_value_t right_tv, const ast_t& node, const char* conversion_message, const char* leak_message, const char* store_foreign_message)
+void
+check_assignment (typed_value_t left_tv,
+                  typed_value_t right_tv,
+                  const ast_t& node,
+                  const char* conversion_message,
+                  const char* leak_message,
+                  const char* store_foreign_message)
 {
   assert (left_tv.type != NULL);
   assert (left_tv.kind == typed_value_t::REFERENCE);
   assert (right_tv.type != NULL);
   assert (right_tv.kind == typed_value_t::VALUE);
 
-  if (!type_is_convertible (left_tv.type, right_tv.type))
+  if (left_tv.intrinsic_mutability != MUTABLE)
     {
-      error_at_line (-1, 0, node.file, node.line,
+      error_at_line (-1, 0, node.location.file, node.location.line,
+                     "target of assignment is not mutable");
+    }
+
+  if (!type_is_equal (left_tv.type, right_tv.type))
+    {
+      error_at_line (-1, 0, node.location.file, node.location.line,
                      conversion_message, left_tv.type->to_string ().c_str (), right_tv.type->to_string ().c_str ());
     }
 
@@ -135,14 +59,14 @@ check_assignment (typed_value_t left_tv, typed_value_t right_tv, const ast_t& no
       if (left_tv.dereference_mutability < right_tv.intrinsic_mutability ||
           left_tv.dereference_mutability < right_tv.dereference_mutability)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          leak_message);
         }
 
       if (right_tv.intrinsic_mutability == FOREIGN &&
           left_tv.region != typed_value_t::STACK)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          store_foreign_message);
         }
     }
@@ -170,7 +94,17 @@ type_check_expr (ast_t* ptr)
 
     void default_action (ast_t& node)
     {
-      not_reached;
+      ast_not_reached(node);
+    }
+
+    void visit (ast_cast_expr_t& node)
+    {
+      const type_t* type = process_type_spec (node.type_spec (), true);
+      typed_value_t tv = type_check_expr (node.child ());
+
+      std::cout << *type << std::endl;
+      std::cout << tv << std::endl;
+      unimplemented;
     }
 
     void visit (ast_indexed_port_call_expr_t& node)
@@ -181,14 +115,14 @@ type_check_expr (ast_t* ptr)
 
       if (type == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "no port named %s", port_identifier.c_str ());
         }
 
       const array_type_t* array_type = type_cast<array_type_t> (type);
       if (!array_type)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "%s is not an array of ports", port_identifier.c_str ());
         }
 
@@ -196,13 +130,15 @@ type_check_expr (ast_t* ptr)
 
       if (!port_type)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "%s is not an array of ports", port_identifier.c_str ());
         }
 
       ast_t* index = node.index ();
       type_check_expr (index);
-      check_index (array_type, index->typed_value, *index);
+
+      typed_value_t::index (index->location, typed_value_t::make_ref (array_type, typed_value_t::HEAP, IMMUTABLE, IMMUTABLE), index->typed_value);
+
 
       ast_t *args = node.args ();
       check_rvalue_list (args);
@@ -222,7 +158,7 @@ type_check_expr (ast_t* ptr)
       typed_value_t out = typed_value_t::merge (in);
       if (out.type == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "cannot merge expression of type %s", in.type->to_string ().c_str ());
         }
       node.typed_value = out;
@@ -235,7 +171,7 @@ type_check_expr (ast_t* ptr)
       typed_value_t out = typed_value_t::move (in);
       if (out.type == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "cannot move expression of type %s", in.type->to_string ().c_str ());
         }
       node.typed_value = out;
@@ -256,8 +192,8 @@ type_check_expr (ast_t* ptr)
       symbol_t *symbol = node.symtab->find (identifier);
       if (symbol == NULL)
         {
-          error_at_line (-1, 0, identifier_node->file,
-                         identifier_node->line, "%s is not defined",
+          error_at_line (-1, 0, identifier_node->location.file,
+                         identifier_node->location.line, "%s is not defined",
                          identifier.c_str ());
         }
 
@@ -275,7 +211,9 @@ type_check_expr (ast_t* ptr)
           break;
 
         case SymbolType:
-          unimplemented;
+          error_at_line (-1, 0, identifier_node->location.file,
+                         identifier_node->location.line, "%s is a type (and not an expression)",
+                         identifier.c_str ());
 
         case SymbolTypedConstant:
           node.typed_value = symbol_typed_constant_value (symbol);
@@ -286,8 +224,8 @@ type_check_expr (ast_t* ptr)
           break;
 
         case SymbolHidden:
-          error_at_line (-1, 0, identifier_node->file,
-                         identifier_node->line, "%s is not accessible in this scope",
+          error_at_line (-1, 0, identifier_node->location.file,
+                         identifier_node->location.line, "%s is not accessible in this scope",
                          identifier.c_str ());
           break;
         }
@@ -314,12 +252,12 @@ type_check_expr (ast_t* ptr)
         {
           // Selecting from a pointer.
           // Insert an implicit dereference.
-          ast_implicit_dereference_expr_t* id = new ast_implicit_dereference_expr_t (node.line, *left);
+          ast_implicit_dereference_expr_t* id = new ast_implicit_dereference_expr_t (node.location.line, *left);
           in = typed_value_t::implicit_dereference (in);
           id->typed_value = in;
 
           // Insert a dereference.
-          ast_dereference_expr_t* deref = new ast_dereference_expr_t (node.line, id);
+          ast_dereference_expr_t* deref = new ast_dereference_expr_t (node.location.line, id);
           in = typed_value_t::dereference (in);
           deref->typed_value = in;
           *left = deref;
@@ -329,7 +267,7 @@ type_check_expr (ast_t* ptr)
 
       if (out.type == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "cannot select %s from expression of type %s",
                          identifier.c_str (), in.type->to_string ().c_str ());
         }
@@ -344,7 +282,7 @@ type_check_expr (ast_t* ptr)
       typed_value_t out = typed_value_t::dereference (in);
       if (out.type == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "incompatible types: (%s)@", in.type->to_string ().c_str ());
         }
       node.typed_value = out;
@@ -362,7 +300,7 @@ type_check_expr (ast_t* ptr)
       typed_value_t out = typed_value_t::address_of (in);
       if (out.type == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "incompatible types: (%s)&", in.type->to_string ().c_str ());
         }
       node.typed_value = out;
@@ -382,7 +320,7 @@ type_check_expr (ast_t* ptr)
       typed_value_t out = typed_value_t::logic_not (in);
       if (out.type == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "incompatible types (%s) !", in.type->to_string ().c_str ());
         }
       node.typed_value = out;
@@ -392,41 +330,12 @@ type_check_expr (ast_t* ptr)
     {
       typed_value_t left = type_check_expr (node.left ());
       typed_value_t right = type_check_expr (node.right ());
-      typed_value_t result;
-      const char* operator_str = "";
-
-      switch (node.arithmetic)
-        {
-        case ast_binary_arithmetic_expr_t::EQUAL:
-          result = typed_value_t::equal (left, right);
-          operator_str = "==";
-          break;
-        case ast_binary_arithmetic_expr_t::NOT_EQUAL:
-          result = typed_value_t::not_equal (left, right);
-          operator_str = "!=";
-          break;
-        case ast_binary_arithmetic_expr_t::LOGIC_OR:
-          result = typed_value_t::logic_or (left, right);
-          operator_str = "||";
-          break;
-        case ast_binary_arithmetic_expr_t::LOGIC_AND:
-          result = typed_value_t::logic_and (left, right);
-          operator_str = "&&";
-          break;
-        case ast_binary_arithmetic_expr_t::ADD:
-          result = typed_value_t::add (left, right);
-          operator_str = "+";
-          break;
-        case ast_binary_arithmetic_expr_t::SUBTRACT:
-          unimplemented;
-          //binary_arithmetic (node, "-");
-          break;
-        }
+      typed_value_t result = typed_value_t::binary (node.location, node.arithmetic, left, right);
 
       if (result.type == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
-                         "incompatible types (%s) %s (%s)", left.type->to_string ().c_str (), operator_str, right.type->to_string ().c_str ());
+          error_at_line (-1, 0, node.location.file, node.location.line,
+                         "incompatible types (%s) %s (%s)", left.type->to_string ().c_str (), binary_arithmetic_symbol (node.arithmetic), right.type->to_string ().c_str ());
         }
 
       node.typed_value = result;
@@ -438,7 +347,7 @@ type_check_expr (ast_t* ptr)
       size_t parameter_count = signature->arity ();
       if (argument_count != parameter_count)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "method call expects %zd arguments but given %zd",
                          parameter_count, argument_count);
         }
@@ -454,7 +363,7 @@ type_check_expr (ast_t* ptr)
           typed_value_t parameter_tv = typed_value_t::make_ref ((*pos)->value);
           check_assignment (parameter_tv, argument_tv, *arg,
                             "incompatible types (%s) = (%s)",
-                            "argument leaks mutable pointers",
+                            "E0002: argument leaks mutable pointers",
                             "argument may store foreign pointer");
         }
 
@@ -483,7 +392,7 @@ type_check_expr (ast_t* ptr)
 
         void default_action (const type_t& type)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "cannot call %s", type.to_string ().c_str ());
         }
 
@@ -499,7 +408,7 @@ type_check_expr (ast_t* ptr)
           rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args ());
           if (in_mutable_section (&node))
             {
-              error_at_line (-1, 0, node.file, node.line,
+              error_at_line (-1, 0, node.location.file, node.location.line,
                              "cannot call pfunc in mutable section");
 
             }
@@ -515,7 +424,7 @@ type_check_expr (ast_t* ptr)
               // Method expects a pointer.  Insert address of.
               // Strip off implicit deref and select.
               ast_t* receiver_select_expr = node.expr ()->children[0]->children[0];
-              ast_address_of_expr_t* e = new ast_address_of_expr_t (node.line, receiver_select_expr);
+              ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.line, receiver_select_expr);
               rvalue_visitor.check_address_of (*e);
               node.expr ()->children[0]->children[0] = e;
             }
@@ -528,7 +437,7 @@ type_check_expr (ast_t* ptr)
                   // Invoking a method on a component in a mutable section.
                   // Ensure the receiver is this.
                   // TODO
-                  std::cout << node.line << '\n';
+                  std::cout << node.location.line << '\n';
                   unimplemented;
                 }
             }
@@ -537,7 +446,7 @@ type_check_expr (ast_t* ptr)
           typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
           check_assignment (parameter_tv, argument_tv, node,
                             "call expects %s but given %s",
-                            "argument leaks mutable pointers",
+                            "E0001: argument leaks mutable pointers",
                             "argument may store foreign pointer");
         }
       };
@@ -556,7 +465,7 @@ type_check_expr (ast_t* ptr)
       const port_type_t *port_type = type_cast<port_type_t> (type_select (this_type, port_identifier));
       if (port_type == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "no port named %s", port_identifier.c_str ());
         }
       check_rvalue_list (args);
@@ -574,10 +483,10 @@ type_check_expr (ast_t* ptr)
       ast_t* idx = node.index ();
       typed_value_t expr_tv = type_check_expr (expr);
       typed_value_t idx_tv = type_check_expr (idx);
-      typed_value_t result = typed_value_t::index (expr_tv, idx_tv);
+      typed_value_t result = typed_value_t::index (node.location, expr_tv, idx_tv);
       if (result.type == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "incompatible types (%s)[%s]", expr_tv.type->to_string ().c_str (), idx_tv.type->to_string ().c_str ());
         }
       node.typed_value = result;
@@ -649,8 +558,8 @@ check_condition (ast_t* condition_node)
   typed_value_t tv = condition_node->typed_value;
   if (!type_is_boolean (tv.type))
     {
-      error_at_line (-1, 0, condition_node->file,
-                     condition_node->line,
+      error_at_line (-1, 0, condition_node->location.file,
+                     condition_node->location.line,
                      "cannot convert (%s) to boolean expression in condition", tv.type->to_string ().c_str ());
     }
 }
@@ -662,7 +571,12 @@ type_check_statement (ast_t * node)
   {
     void default_action (ast_t& node)
     {
-      not_reached;
+      ast_not_reached (node);
+    }
+
+    void visit (ast_const_t& node)
+    {
+      process_declarations (&node);
     }
 
     void visit (ast_empty_statement_t& node)
@@ -680,20 +594,20 @@ type_check_statement (ast_t * node)
 
       if (port_type == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "source of bind is not a port");
         }
 
       const reaction_type_t *reaction_type = type_cast<reaction_type_t> (reaction_tv.type);
       if (reaction_type == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "target of bind is not a reaction");
         }
 
       if (!type_is_equal (port_type->signature (), reaction_type->signature ()))
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "cannot bind %s to %s", port_type->to_string ().c_str (), reaction_type->to_string ().c_str ());
         }
 
@@ -711,14 +625,15 @@ type_check_statement (ast_t * node)
       ast_t* param_node = node.param ();
       type_check_expr (param_node);
       typed_value_t param_tv = param_node->typed_value;
-      assert (reaction_tv.has_value);
-      reaction_t* reaction = reaction_tv.reaction_value;
+      assert (reaction_tv.value.present);
+      reaction_t* reaction = reaction_tv.value.reaction_value ();
       if (!reaction->has_dimension ())
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "parameter specified for non-parameterized reaction");
         }
-      check_index (new array_type_t (reaction->dimension (), reaction->reaction_type), param_tv, *param_node);
+      typed_value_t dimension = reaction->dimension ();
+      typed_value_t::index (param_node->location, typed_value_t::make_ref (new array_type_t (dimension.value.integral_value (dimension.type), reaction->reaction_type), typed_value_t::CONSTANT, IMMUTABLE, IMMUTABLE), param_tv);
     }
 
     void visit (ast_bind_pfunc_statement_t& node)
@@ -734,7 +649,7 @@ type_check_statement (ast_t * node)
 
       if (pfunc_type == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "target of bind is not a pfunc");
         }
 
@@ -744,13 +659,13 @@ type_check_statement (ast_t * node)
         {
           if (type_dereference (method_type->receiver_type) == NULL)
             {
-              error_at_line (-1, 0, node.file, node.line,
+              error_at_line (-1, 0, node.location.file, node.location.line,
                              "method must take pointer receiver");
             }
 
           if (!type_is_equal (pfunc_type->bind_type (), method_type->bind_type ()))
             {
-              error_at_line (-1, 0, node.file, node.line,
+              error_at_line (-1, 0, node.location.file, node.location.line,
                              "cannot bind %s to %s", pfunc_type->to_string ().c_str (), method_type->to_string ().c_str ());
             }
           return;
@@ -764,21 +679,17 @@ type_check_statement (ast_t * node)
           return;
         }
 
-      error_at_line (-1, 0, node.file, node.line,
+      error_at_line (-1, 0, node.location.file, node.location.line,
                      "source of bind is not a method or function");
-
-      // if (!type_is_equal (port_type->signature (), reaction_type->signature ()))
-      //   {
-      //     error_at_line (-1, 0, node.file, node.line,
-      //                    "cannot bind %s to %s", port_type->to_string ().c_str (), reaction_type->to_string ().c_str ());
-      //   }
     }
 
     void visit (ast_for_iota_statement_t& node)
     {
       const std::string& identifier = ast_get_identifier (node.identifier ());
-      size_t limit = process_array_dimension (node.limit_node ());
-      symbol_t* symbol = symbol_make_variable (identifier, new iota_type_t (limit), node.identifier ());
+      typed_value_t limit = process_array_dimension (node.limit_node ());
+      typed_value_t zero = limit;
+      zero.zero ();
+      symbol_t* symbol = symbol_make_variable (identifier, typed_value_t::make_ref (typed_value_t::make_range (zero, limit, typed_value_t::STACK, IMMUTABLE, IMMUTABLE)), node.identifier ());
       enter_symbol (node.symtab, symbol, node.symbol);
       type_check_statement (node.body ());
       node.limit = limit;
@@ -791,7 +702,7 @@ type_check_statement (ast_t * node)
       assert (tv.kind == typed_value_t::REFERENCE);
       if (tv.intrinsic_mutability != MUTABLE)
         {
-          error_at_line (-1, 0, left->file, left->line,
+          error_at_line (-1, 0, left->location.file, left->location.line,
                          "cannot assign to read-only location of type %s", tv.type->to_string ().c_str ());
         }
 
@@ -806,9 +717,9 @@ type_check_statement (ast_t * node)
       type_check_expr (right);
       typed_value_t left_tv = left->typed_value;
       typed_value_t right_tv = right->typed_value;
-      if (!type_is_convertible (left_tv.type, right_tv.type))
+      if (!type_is_equal (left_tv.type, right_tv.type))
         {
-          error_at_line (-1, 0, node->file, node->line,
+          error_at_line (-1, 0, node->location.file, node->location.line,
                          "incompatible types (%s) %s (%s)", left_tv.type->to_string ().c_str (), symbol, right_tv.type->to_string ().c_str ());
         }
 
@@ -831,7 +742,7 @@ type_check_statement (ast_t * node)
 
         void default_action (const type_t& type)
         {
-          error_at_line (-1, 0, node->file, node->line,
+          error_at_line (-1, 0, node->location.file, node->location.line,
                          "incompatible types (%s) %s (%s)", type.to_string ().c_str (), symbol, type.to_string ().c_str ());
         }
       };
@@ -863,21 +774,21 @@ type_check_statement (ast_t * node)
       const type_t* root_type = type_change (tv.type);
       if (root_type == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "cannot change expression of type %s", tv.type->to_string ().c_str ());
         }
 
       // Process the root variable.
       const type_t* proposed_root_type = process_type_spec (type, false);
 
-      if (!type_is_convertible (proposed_root_type, root_type))
+      if (!type_is_equal (proposed_root_type, root_type))
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "cannot convert %s to %s in change", root_type->to_string ().c_str (), proposed_root_type->to_string ().c_str ());
         }
 
       // Enter the new heap root.
-      symbol_t* symbol = symbol_make_variable (identifier, root_type, &node);
+      symbol_t* symbol = symbol_make_variable (identifier, typed_value_t::make_ref (root_type, typed_value_t::STACK, MUTABLE, MUTABLE), &node);
       enter_symbol (node.symtab, symbol, node.root_symbol);
 
       // Enter all parameters and variables in scope that are pointers as pointers to foreign.
@@ -955,7 +866,7 @@ type_check_statement (ast_t * node)
 
         void default_action (const type_t& type)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "cannot increment location of type %s", type.to_string ().c_str ());
         }
 
@@ -1013,7 +924,46 @@ type_check_statement (ast_t * node)
            ++pos)
         {
           const std::string& name = ast_get_identifier (*pos);
-          symbol_t* symbol = symbol_make_variable (name, type, *pos);
+          symbol_t* symbol = symbol_make_variable (name, typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE), *pos);
+          node.symbols.push_back (symbol_holder ());
+          enter_symbol (node.symtab, symbol, node.symbols.back ());
+        }
+    }
+
+    void visit (ast_var_type_init_statement_t& node)
+    {
+      ast_t* identifier_list = node.identifier_list ();
+      ast_t* type_spec = node.type_spec ();
+      ast_t* initializer_list = node.initializer_list ();
+
+      // Process the type spec.
+      const type_t* type = process_type_spec (type_spec, true);
+
+      if (identifier_list->size () != initializer_list->size ())
+        {
+          error_at_line (-1, 0, node.location.file, node.location.line,
+                         "wrong number of initializers");
+        }
+
+      typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE);
+
+      // Enter each symbol.
+      for (ast_t::const_iterator id_pos = identifier_list->begin (),
+             id_limit = identifier_list->end (),
+             init_pos = initializer_list->begin ();
+           id_pos != id_limit;
+           ++id_pos, ++init_pos)
+        {
+          // Process the initializer.
+          typed_value_t right_tv = type_check_expr (*init_pos);
+
+          check_assignment (left_tv, right_tv, node,
+                            "incompatible types (%s) = (%s)",
+                            "assignment leaks mutable pointers",
+                            "assignment may store foreign pointer");
+
+          const std::string& name = ast_get_identifier (*id_pos);
+          symbol_t* symbol = symbol_make_variable (name, typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE), *id_pos);
           node.symbols.push_back (symbol_holder ());
           enter_symbol (node.symtab, symbol, node.symbols.back ());
         }
@@ -1076,13 +1026,13 @@ control_check_statement (ast_t * node)
 
       if (action == NULL)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "trigger outside of action or reaction");
         }
 
       if (in_trigger_statement)
         {
-          error_at_line (-1, 0, node.file, node.line,
+          error_at_line (-1, 0, node.location.file, node.location.line,
                          "triggers within triggers are not allowed");
         }
 
@@ -1394,7 +1344,7 @@ enter_signature (ast_t * node, const signature_type_t * type)
         }
       else
         {
-          error_at_line (-1, 0, parameter->defining_node->file, parameter->defining_node->line,
+          error_at_line (-1, 0, parameter->defining_node->location.file, parameter->defining_node->location.line,
         		 "%s is already defined in this scope",
         		 identifier.c_str ());
         }
@@ -1413,6 +1363,9 @@ process_definitions (ast_t * node)
     }
 
     void visit (ast_type_definition_t& node)
+    { }
+
+    void visit (ast_const_t& node)
     { }
 
     void visit (ast_action_t& node)
@@ -1444,9 +1397,9 @@ process_definitions (ast_t * node)
       mutates_check_statement (body_node);
 
       typed_value_t tv = precondition_node->typed_value;
-      if (tv.has_value)
+      if (tv.value.present)
         {
-          if (tv.bool_value)
+          if (tv.value.ref (*bool_type_t::instance ()))
             {
               node.action->precondition_kind = action_t::STATIC_TRUE;
             }
@@ -1459,7 +1412,6 @@ process_definitions (ast_t * node)
 
     void visit (ast_dimensioned_action_t& node)
     {
-      ast_t *dimension_node = node.dimension ();
       ast_t* precondition_node = node.precondition ();
       ast_t *body_node = node.body ();
 
@@ -1481,15 +1433,16 @@ process_definitions (ast_t * node)
                     node.this_symbol);
 
       /* Insert "iota" into the symbol table. */
-      typed_value_t iota_value = typed_value_t::make_value (new iota_type_t (node.action->dimension ()),
-                                                            typed_value_t::STACK,
-                                                            IMMUTABLE,
-                                                            IMMUTABLE);
-      parameter_t* iota_parameter = new parameter_t (dimension_node,
+      typed_value_t dimension = node.action->dimension ();
+      typed_value_t zero = dimension;
+      zero.zero ();
+
+      typed_value_t iota_value = typed_value_t::make_range (zero, dimension, typed_value_t::STACK, IMMUTABLE, IMMUTABLE);
+
+      parameter_t* iota_parameter = new parameter_t (node.dimension (),
                                                      "IOTA",
                                                      iota_value,
                                                      false);
-
       enter_symbol (node.symtab,
                     symbol_make_parameter (iota_parameter),
                     node.iota_symbol);
@@ -1549,15 +1502,15 @@ process_definitions (ast_t * node)
       method_t* method = type->get_method (ast_get_identifier (initializer));
       if (method == NULL)
         {
-          error_at_line (-1, 0, initializer->file,
-                         initializer->line,
+          error_at_line (-1, 0, initializer->location.file,
+                         initializer->location.line,
                          "no method named %s",
                          ast_get_identifier (initializer).c_str ());
         }
       if (method->method_type->signature ()->arity () != 0)
         {
-          error_at_line (-1, 0, initializer->file,
-                         initializer->line,
+          error_at_line (-1, 0, initializer->location.file,
+                         initializer->location.line,
                          "named method is not null-ary");
         }
       symbol_set_instance_method (symbol, method);
@@ -1612,10 +1565,12 @@ process_definitions (ast_t * node)
                     node.this_symbol);
 
       /* Insert "iota" into the symbol table. */
-      typed_value_t iota_value = typed_value_t::make_value (new iota_type_t (node.reaction->dimension ()),
-                                                            typed_value_t::STACK,
-                                                            IMMUTABLE,
-                                                            IMMUTABLE);
+      typed_value_t dimension = node.reaction->dimension ();
+      typed_value_t zero = dimension;
+      zero.zero ();
+
+      typed_value_t iota_value = typed_value_t::make_range (zero, dimension, typed_value_t::STACK, IMMUTABLE, IMMUTABLE);
+
       parameter_t* iota_parameter = new parameter_t (dimension_node,
                                                      "IOTA",
                                                      iota_value,

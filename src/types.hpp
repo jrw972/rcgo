@@ -1,11 +1,12 @@
-#ifndef types_h
-#define types_h
+#ifndef types_hpp
+#define types_hpp
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <map>
 #include <string>
+#include "debug.hpp"
 
 class action_reaction_base_t;
 class action_t;
@@ -56,4 +57,93 @@ struct pfunc_t {
   };
 };
 
-#endif /* types_h */
+enum BinaryArithmetic
+  {
+    MULTIPLY,
+    DIVIDE,
+    MODULUS,
+    LEFT_SHIFT,
+    RIGHT_SHIFT,
+    BIT_AND,
+    BIT_AND_NOT,
+
+    ADD,
+    SUBTRACT,
+    BIT_OR,
+    BIT_XOR,
+
+    EQUAL,
+    NOT_EQUAL,
+    LESS_THAN,
+    LESS_EQUAL,
+    MORE_THAN,
+    MORE_EQUAL,
+
+    LOGIC_OR,
+
+    LOGIC_AND,
+  };
+
+inline const char* binary_arithmetic_symbol (BinaryArithmetic ba)
+{
+  switch (ba)
+    {
+    case MULTIPLY:
+      return "*";
+    case DIVIDE:
+      return "/";
+    case MODULUS:
+      return "%";
+    case LEFT_SHIFT:
+      return "<<";
+    case RIGHT_SHIFT:
+      return ">>";
+    case BIT_AND:
+      return "&";
+    case BIT_AND_NOT:
+      return "&^";
+
+    case ADD:
+      return "+";
+    case SUBTRACT:
+      return "-";
+    case BIT_OR:
+      return "|";
+    case BIT_XOR:
+      return "^";
+
+    case EQUAL:
+      return "==";
+    case NOT_EQUAL:
+      return "!=";
+    case LESS_THAN:
+      return "<";
+    case LESS_EQUAL:
+      return "<=";
+    case MORE_THAN:
+      return ">";
+    case MORE_EQUAL:
+      return ">=";
+
+    case LOGIC_OR:
+      return "||";
+
+    case LOGIC_AND:
+      return "&&";
+    }
+
+  not_reached;
+}
+
+struct location_t
+{
+  const char * const file;
+  unsigned int const line;
+
+  location_t (const char* f, unsigned int l)
+    : file (f)
+    , line (l)
+  { }
+};
+
+#endif /* types_hpp */
