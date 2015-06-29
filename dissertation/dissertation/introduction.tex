@@ -60,7 +60,7 @@ The individual nodes themselves may also contain a variety of interactions.
 For example, it is not uncommon to find a smart phone application that simultaneously interacts with the user via a graphical user interface, an application server via an Internet connection, and sensors (e.g., accelerometers) that are embedded in the hardware.
 Similarly, sophisticated servers like web servers and databases are often built from collections of interacting reactive modules.
 
-\paragraph{Challenges.}
+\paragraph{Challenge:  Reduce accidental complexity.}
 A key challenge towards adequately supporting such complex reactive systems is to reduce the accidental complexity associated with their design and implementation.
 For software, accidental complexity is defined as the ``difficulties that today attend its production but that are not inherent~\cite{brooks1995mythical}.''
 One source of accidental complexity is the \emph{conflation} of semantics, where a problem naturally expressed using one set of semantics is implemented with a different set of semantics resulting in a semantic gap and obfuscation.
@@ -68,7 +68,48 @@ To illustrate, Lee shows how the common practice of introducing thread-based con
 We claim that the currently dominant approaches to developing reactive systems rely on inherently transformational languages that have been augmented with features for concurrency, which introduces an example of the kind of problem that Lee has identified.
 Thus, reducing the accidental complexity in reactive systems requires a platform that provides direct support for reactive semantics.
 
+\paragraph{Challenge:  Achieve principled composition and decomposition.}
 The second challenge is to ensure that reactive systems can be decomposed and composed in a principled way.
+A design process based on composition and decomposition tends to be effective when the model adheres to certain principles:
+\begin{enumerate}
+\item The model should define units of composition and a means of composition.
+Obviously, a model that does not define a unit of composition and a means of composition cannot support a design process based on composition or decomposition.
+
+\item The result of composition should either be a well-formed entity definable in the model or be undefined.
+Thus, it is impossible to create an entity whose behavior and properties go beyond the scope of the model and therefore cannot be understood in terms of the model.
+When the result of composition is defined, it should often (if not always) be a unit of composition.
+This principle facilitates reuse and permits decomposition to an arbitrary \emph{degree}.
+
+\item A unit of composition should be able to encapsulate other units of composition.
+When this principle is combined with the previous principle, the result is \emph{recursive encapsulation} which permits decomposition to an arbitrary \emph{depth}.
+Recursive encapsulation allows the system being designed to take on a hierarchical organization.
+
+\item The behavior of a unit of composition should be encapsulated by its interface.
+Encapsulation allows one to hide implementation details and is necessary for abstraction.
+
+%% \item The model, unit of composition, and composition operator(s) should be defined so that composition can only reduce the set of possible behaviors that can be exhibited by a unit of composition.
+%% That is, given a unit of composition with behavior set $B$ and an instance of composition resulting in a new behavior set $B'$, then it must be the case that $B' \subseteq B$.
+%% Given that properties are assertions over behavior, this principle can be restated to say that composition can only restrict properties proved in isolation.
+%% This principle facilitates reuse since the possible behaviors of a unit of composition is fixed.
+
+\item Composition should be compositional meaning that the properties of a unit of composition can be stated in terms of the properties of its constituent units of composition.
+Thus, when attempting to understand an entity resulting from composition, one need only examine its constituent parts and their interactions.
+To illustrate, consider a system $X$ that is a pipeline formed by composing a filter system $F$ with reliable FIFO channel system $C$.
+This principle states that the properties of the composed Filter-Channel $X$ can be expressed in terms of the properties of the Filter $F$ and Channel $C$.
+%% The more interesting question is if the properties of $X$ can be systematically derived from $F$ and $C$ as this facilitates hierarchical reasoning.
+
+\item Units of composition should have some notion of substitutional equivalence.
+If a unit of composition $X$ contains a unit of composition $Y$, then a unit of composition $X'$ formed by substituting the definition of $Y$ into $X$ should be equivalent to $X$.
+Substitutional equivalence guarantees that we can compose and decompose at will and summarizes the preceding principles.
+We believe that substitution should be linear in the size of the units of composition.
+To illustrate, suppose that $X$ and $Y$ are mathematical functions in the description above. %% and substitution, therefore, is equivalent to substituting function definitions.
+%% Thus, if we take the size of a unit of composition to be the terms in a function, then $|X'| \approx |X| + |Y|$.
+If we take the size of a unit of composition to be the number of terms in the definition of a function then $|X'| \approx |X| + |Y|$.
+\end{enumerate}
+A model adhering to these principles facilitates and supports \emph{principled composition and decomposition}.
+Principled composition requires language support for interfaces, definitions, and substitutional equivalence.
+A variety of useful domains including mathematical expressions, object-oriented programming, functional programming, and digital logic circuits support principled composition.
+
 Asynchrony and concurrency, two inherent characteristics of reactive systems, undermine decomposition and composition when not properly encapsulated and therefore limit our ability to design and implement complex reactive systems.
 Such problems of asynchrony and concurrency stem from the interactions between reactive programs.
 Decomposition increases the number of reactive programs constituting a system which in turn increases the number of susceptible interactions and opportunities for timing bugs.
