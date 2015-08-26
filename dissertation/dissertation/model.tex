@@ -1,10 +1,9 @@
-\chapter{Model \label{model}}
+\chapter{The Reactive Component Model \label{model}}
 
 \paragraph{Overview.}
-In this chapter, we present a model for reactive programs called \emph{reactive components}.
-The model is biased toward practical software development as opposed to formal methods.
+In this chapter, we present a model for composing and decomposing reactive programs called \emph{reactive components}.
+The model is biased toward practical software development even as it enforces properties based in formal methods.
 Consequently, the model favors utility, practicality, flexibility, and ease of implementation.
-\emph{TODO:  Summarize the model.}
 
 %% \paragraph{Formal models and software engineering.}
 %% I claim that most of the software that is ``put into production'' will never be proved formally correct.
@@ -23,63 +22,134 @@ Consequently, the model favors utility, practicality, flexibility, and ease of i
 %% Second, we must restrict the form of reactive programs so that they can be reasoned about from the text.
 %% I hope the proposed model of reactive systems is a step toward toward this goal.
 
-\paragraph{Reactive components and instances.}
-A \emph{reactive component} is an abstract data type consisting of a set of \emph{state variables} and a set of associated \emph{atomic state transitions}.
-An \emph{instance} of a reactive component is a physical realization of a reactive component.
-By analogy, reactive components and instances correspond to classes and objects, respectively, in object-oriented programming.
-This is a departure from formal models like UNITY and I/O automata where one reasons directly with instances.
-The main reason for this departure is that it facilitates a straight-forward implementation of the model in a strongly-typed programming language.
-The document uses the general term \emph{reactive component} when a distinction between type and instance is irrelevant or obvious from context.
-When such a distinction is important, this document uses \emph{reactive component type} or \emph{reactive component instance}.
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{reactive_component.eps}
+\caption{Diagram depicting the features of a reactive component\label{reactive_component}}
+\end{figure}
+
+Figure~\ref{reactive_component} shows the major features of a reactive component.
+Like other state-based formal models, the core of a reactive component is a set of \emph{state variables} and a set of atomic \emph{transitions} that manipulate those state variables.
+When reasoning about a system, behavior is expressed as propositions over the state variables where the propositions are derived from the transitions.
+The contribution that this work makes to existing state-based formal models of reactive systems is a number of interface elements and composition semantics that allow reactive programs to be composed in a principled way.
+For example, an \emph{active push port} allows a transition in one component to be linked to a transition in another component such that the resulting transaction is atomic.
+Active push ports allow reactive components to publicize their behavior.
+An active push port may be \emph{bound} to and conditionally \emph{activate} zero or more \emph{passive push ports}.
+A passive push port names the corresponding transition that will be executed when the passive push port is activated.
+This combination of passive push port and transition is called a \emph{reaction} because it reacts to a transition in another component.
+The atomic linkage of a transition in one component to a transition in another component through the push port mechanism allows the properties of each component to be related to one another and complex systems to be constructed by composing simpler systems.
+Transitions that are not executed via a passive push port have a precondition that nominates them for execution by a weakly fair scheduler.
+The combination of a precondition and transition is called an \emph{action} because it is a voluntary transition under the control the containing component.
+An \emph{active pull port} represents an immutable external data dependency.
+The component may \emph{call} an active pull port to yield a value required in a transition.
+Active pull ports must be bound to a \emph{passive pull port} which resembles a function returning a value, e.g., a getter or a predicate.
+Where push ports allow components to publicize their behavior, pull ports allow components to safely publicize their internal state for use by other components.
+
+Composition in the reactive component model has two main features.
+The first is recursive encapsulation where a state variable in one component may represent an instance of another reactive component.
+The second is the ability to bind push ports and pull ports through an \emph{explicit} set of \emph{bindings}.
+The decision to use an explicit set of bindings as opposed to implicit named-based matching is more inline with the goals and techniques of practical software development since it facilitates the use of software developed under different naming conventions, i.e., third-party software.
+A third minor feature called \emph{exporting} is the ability of an encapsulating component to adopt interface elements of its sub-components without defining complimentary ports and transitions that do nothing but forward an activation or call.
+The ability to publicize behavior and state and the ability to assemble well-defined behavior from existing behaviors in a straight-forward and flexible way are the defining characteristics of the reactive component model.
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{web_server.eps}
+\caption{Diagram of a web application built using reactive components\label{web_server}}
+\end{figure}
+
+To illustrate the utility of component interfaces and composition, we present a design for a web application or web server using reactive components in figure~\ref{web_server}.
+The web application consists of five reactive components.
+The first is an unnamed top-level component representing the complete application.
+This component has four sub-components representing a web server, the application logic, a database, and a logging service.
+The ports of the application logic have been bound to the corresponding ports in the web server, database, and logging service.
+The interface of a component, which consists of its ports, provides insight into the behavior of a component.
+For example, by just inspecting the interface of the web server component we expect it to 1) verify incoming HTTP requests with the application\footnote{A production web server may verify that the requested HTTP method can be applied to the given URI, that content length limits are respected, that content types are supported, etc.}, 2) pass on valid HTTP requests to the application, and 3) send HTTP responses to the web client.
+
+Figure~\ref{web_server} also demonstrates how reactive programs can be constructed by composing reactive components.
+From a software engineering perspective, it behooves a developer to focus on the application logic and use already developed components for the web server, database, and logging service.
+Furthermore, one can imagine developing three stateless components surrounding the application logic that do nothing but translate messages to and from application specific message types to the generic types required by the web server, database, and logging service.
+The application logic, then, is completely isolated from the surrounding libraries and may be tested by providing mock components for the web server, database, and logging service.
+The application logic itself has a well-defined interface and could be reused, say, by implementing a graphic front-end to drive the application instead of a web service.
+
+%% \begin{figure}
+%% \centering
+%% \includegraphics{composition.eps}
+%% \caption{Diagram of a component consisting of four sub-components\label{composition}}
+%% \end{figure}
+
+%% Figure~\ref{composition} shows a reactive component consisting of four sub-components labeled A, B, C, and D.
+%% Internals elements, i.e., the state variables and transitions, have been elided for clarity.
+%% The solid lines connecting ports are \emph{bindings} that explicitly link active push ports to passive push ports and active pull ports to passive pull ports.
+%% The interface of the top-level component consists of a single active push port that \emph{exports} the active push port of component B.
+%% From figure~\ref{composition}, we know nothing about the state variables and transitions of the components so we cannot describe in detail the properties of the top-level component.
+%% However, from the diagram, we can conclude that component C is an internal ``sink'' and doesn't contribute the visible behavior of the top-level component.
+%% Furthermore, we can conclude that
+
+%% \paragraph{Reactive components and instances.}
+%% A \emph{reactive component} is an abstract data type consisting of a set of \emph{state variables} and a set of associated \emph{atomic state transitions} \emph{TODO}.
+%% An \emph{instance} of a reactive component is a physical realization \emph{TODO} of a reactive component.
+%% By analogy, reactive components and instances correspond to classes and objects, respectively, in object-oriented programming.
+%% This is a departure from formal models like UNITY and I/O Automata where one reasons directly with instances.
+%% The main reason for this departure is that it facilitates a straight-forward implementation of the model in a strongly-typed programming language.
+%% This dissertation uses the general term \emph{reactive component} when a distinction between type and instance is irrelevant or obvious from context.
+%% When such a distinction is important, this dissertation uses \emph{reactive component type} or \emph{reactive component instance}.
 
 \paragraph{State variables.}
-Both bottom-up and top-down approaches are used when reasoning about state-based formal models.
-A designer or modeler may start with a high level notion of the desired properties for a component or system of components.
-The designer may then refine and expand these statements until they are expressed in terms of the state variables of the reactive components.
-On the other hand, a modeler may start with an implementation and generate propositions from the assignment statements manipulating the state variables.
-For formal reasoning, the types of the state variables are selected to make writing proofs easier.
-For modeling purposes, we will assume that state variables have \emph{value semantics} meaning we need not reason about references.
-However, since we advocate an imperative state-based implementation, we will introduce pointers for building arbitrary linked data structures and describe the issues of introducing pointers into the reactive component model.
-
+Half of the internal core of a reactive component is a set of state variables.
+When modeling, the state variables are subject of the various propositions that demonstrate the behavior of the system.
+When implementing, the state variables are manipulated by the various assignment statements that constitute the transitions.
+As in other formal models, the types of the state variables may be selected to make writing proofs easier.
+That is, the types of state variables are mathematically friendly like integers, sets, and lists.
+Implementations of the reactive component model must provide a type system that allows the state variables to be realized on the machine of interest.
 The type of a state variable may be a reactive component type which facilitates recursive encapsulation.
+For modeling purposes, state variables typically have \emph{value semantics} meaning we need not reason about references.
+As a practical concession, however, we will introduce pointers for building arbitrary linked data structures since we advocate an imperative state-based implementation and describe the issues of introducing pointers into the reactive component model.
 
 \paragraph{Atomic state transitions.}
-State variables are manipulated in atomic state transitions.
+The other half of the internal core of a reactive component is a set of atomic state transitions that manipulate the state variables.
 A precise definition of the atomicity of state transitions will be deferred to the discussion on composition and execution.
-State variables and state transitions are private meaning that transitions can only refer to the state variables of the associated reactive component and a transition in one reactive component can only be linked to a transition in another component through the composition mechanism.
+State variables and state transitions are private meaning that transitions can only refer to the state variables of the associated reactive component and a transition in one reactive component can only be linked to a transition in another component through the composition mechanisms.
 Thus, all initialization and updates to state variables can be determined by examining the transitions of the corresponding component.
 This means that composition is \emph{compositional} meaning that a property established for a reactive component independent of context can never be violated since the set of transitions from which the properties were derived is fixed.
 State transitions must be deterministic meaning that the next value of every state variable is uniquely and well defined.
 
-For presentation, a state transition is represented by a multiple assignment statement akin to the multiple assignment statements in UNITY~\cite{chandy1989parallel}.
-A transition is a list of assignment clauses: $clause_0 \; || \; ... \; || \; clause_n $.
-Each clause is either an unconditional assignment or a conditional assignment\footnote{UNITY also includes a quantified assignment clause which can used without loss of continuity}.
-An unconditional assignment has the form $LHS := RHS$ where $LHS$ is a list of lvalues and $RHS$ is a list of expressions.
-A conditional assignment has the form $LHS := \mathrm{if} \; condition_0 \; \mathrm{then} \; RHS_0 \; \mathrm{else~if} \; ... \; \mathrm{else} \; RHS_n$.
-In UNITY, the conditions are used as preconditions to guard the execution of the assignment statement.
-However, in reactive components, the conditions are merely used to provide alternative values.
-Consequently, the conditions in the conditional assignment must be disjoint and cover all of the cases so that the variables in $LHS$ are well-defined after the assignment is executed.
-Conceptually, the $RHS$ represents the next values for the state variables on the $LHS$.
-The arity of $LHS$ must be the same as $RHS$ and corresponding elements of $LHS$ and $RHS$ are type compatible.
-For determinism, every element of $LHS$ must be unique\footnote{This is a departure from UNITY where state variables can be repeated on the LHS but must all have the same next value.}.
+The reactive component model does not prescribe a specific language for encoding state transitions.
+The language used depends on the goals and tastes of the one developing or analyzing the model.
+For example, expressing transitions using the programming language of UNITY~\cite{chandy1989parallel} may allow the modeler to extract proofs from the text, a major goal of UNITY.
+The approach used by I/O Automata~\cite{nancy1996distributed} is to specify the condition established by each transition.
+The approach used by the implementation presented in this dissertation uses a C-like language augmented for port activations to encode the state transitions.
+
+%% For presentation, a state transition is represented by a multiple assignment statement akin to the multiple assignment statements in UNITY~\cite{chandy1989parallel}.
+%% A transition is a list of assignment clauses: $clause_0 \; || \; ... \; || \; clause_n $.
+%% Each clause is either an unconditional assignment or a conditional assignment\footnote{UNITY also includes a quantified assignment clause which can used without loss of continuity}.
+%% An unconditional assignment has the form $LHS := RHS$ where $LHS$ is a list of lvalues and $RHS$ is a list of expressions.
+%% A conditional assignment has the form $LHS := \mathrm{if} \; condition_0 \; \mathrm{then} \; RHS_0 \; \mathrm{else~if} \; ... \; \mathrm{else} \; RHS_n$.
+%% In UNITY, the conditions are used as preconditions to guard the execution of the assignment statement.
+%% However, in reactive components, the conditions are merely used to provide alternative values.
+%% Consequently, the conditions in the conditional assignment must be disjoint and cover all of the cases so that the variables in $LHS$ are well-defined after the assignment is executed.
+%% Conceptually, the $RHS$ represents the next values for the state variables on the $LHS$.
+%% The arity of $LHS$ must be the same as $RHS$ and corresponding elements of $LHS$ and $RHS$ are type compatible.
+%% For determinism, every element of $LHS$ must be unique\footnote{This is a departure from UNITY where state variables can be repeated on the LHS but must all have the same next value.}.
 
 \paragraph{Actions, reactions, push ports, and composition.}
-A state transition is either part of an \emph{action} or \emph{reaction}.
-An action is a state transition whose execution is under the control of the component to which it belongs.
+A state transition is either part of an action or reaction.
+An \emph{action} is a state transition whose execution is under the control of the component to which it belongs.
 The action is guarded by a \emph{precondition} that is guaranteed to be true when the action is executed.
-Actions are represented by augmenting the state transition with an optional \emph{precondition}: $\{ \mathrm{if} \; (precondition) \} \; LHS := RHS$.
+%% Actions are represented by augmenting the state transition with an optional \emph{precondition}: $\{ \mathrm{if} \; (precondition) \} \; LHS := RHS$.
 The precondition is a Boolean expression that determines if the action is \emph{enabled} or \emph{disabled}.
 If the precondition is absent, it is assumed to be true.
 
-A reaction is a state transition whose execution is under the control of another action or reaction.
+A \emph{reaction} is a state transition whose execution is under the control of another action or reaction.
 Thus, we require a mechanism for linking a reaction to an action or another reaction.
 To do this, we introduce the notion of a \emph{push port}.
-A push port is a typed interaction point consisting of an active side that \emph{activates} the port and provides arguments to the port and a passive side that \emph{reacts} to the port and may access the arguments provided by the active side.
-We revise the definition of a component to include a set of active push ports and passive push ports where each port has a (unique) name and signature.
-An action then has an optional set of active push ports: $\{ \mathrm{if} \; (precondition) \} \; LHS := RHS \; \{\mathrm{activates} \; ports \}$ where $ports$ is a list of unique port activations.
-A \emph{port activation} has the form $port_0(arg_0, ..., arg_n) \; ... \; \mathrm{if} \; condition$ where each $arg$ is an expression providing the value of the argument.
-A reaction is a state transition augmented with a passive push port and an optional set of port activations: $port(signature) \; LHS := RHS \; \{ \mathrm{activates } \; ports \}$.
-The $RHS$ and activations of a reaction may reference the arguments of the push port.
+A push port is a typed interaction point consisting of an active side that conditionally \emph{activates} the port and provides arguments to the port and a passive side that \emph{reacts} to the port and may access the arguments provided by the active side.
+The transition associated with a passive push port is executed atomically with the transition that activates the active push port.
+%% We revise the definition of a component to include a set of active push ports and passive push ports where each port has a (unique) name and signature.
+%% An action then has an optional set of active push ports: $\{ \mathrm{if} \; (precondition) \} \; LHS := RHS \; \{\mathrm{activates} \; ports \}$ where $ports$ is a list of unique port activations.
+%% A \emph{port activation} has the form $port_0(arg_0, ..., arg_n) \; ... \; \mathrm{if} \; condition$ where each $arg$ is an expression providing the value of the argument.
+%% A reaction is a state transition augmented with a passive push port and an optional set of port activations: $port(signature) \; LHS := RHS \; \{ \mathrm{activates } \; ports \}$.
+%% The $RHS$ and activations of a reaction may reference the arguments of the push port.
 
 \paragraph{Execution.}
 As with UNITY~\cite{chandy1989parallel} and I/O Automata~\cite{nancy1996distributed}, we assume the existence of a weakly fair scheduler that \emph{selects} and \emph{executes} enabled instance/action pairs.
@@ -89,7 +159,7 @@ Selection is also \emph{non-deterministic} meaning that the scheduler is free to
 This falls in line with the common practice of modeling concurrency with non-deterministically scheduled atomic actions.
 
 A \emph{trace} is the sequence of instance/action pairs executed by the scheduler.
-Weak fairness says that all instance/action pairs are selected an infinite numbers of times in an infinite run of the system.
+Weak fairness says that all instance/action pairs are selected an infinite number of times in an infinite run of the system.
 The key point is the difference between selections and execution.
 To illustrate, consider a component consisting of a single Boolean flag $b$ that is initially false and three actions labeled $A$, $B_0$, and $B_1$.
 Action $A$ is enabled when $b = false$ and sets $b$ to true.
@@ -102,10 +172,12 @@ Assume the trace contains no $B_1$s.
 From this, we can conclude that the scheduler always selected $B_0$ when $b = false$, which occurred an infinite number of times.
 
 When an action is executed it may conditionally activate various push ports.
-If these ports are bound to reactions, the reactions will be executed, their push ports activated and so on.
+If these ports are bound to reactions, the reactions will be executed, their push ports conditionally activated and so on.
 We divide a state transition into two steps called the \emph{immutable step} and the \emph{mutable step}.
-The immutable step corresponds to the computation of the $RHS$ in a state transition.
-The mutable step corresponds to the update of the values on the $LHS$ with the values on the $RHS$.
+Logically, a transition assigns values to a set of state variables.
+This can be modeled as a multiple assignment statement with a left-hand side (LHS) consisting of a list of state variables and a right-hand side (RHS) consisting of a list of expressions that provide the next value for the corresponding state variable.
+The immutable step corresponds to the computation of the RHS in a state transition.
+The mutable step corresponds to the update of the values on the LHS with the values on the RHS.
 When transitions are linked with composition, we must relate the mutable and immutable step in a state transition to the mutable and immutable steps in all dependent state transitions.
 Let $A$ be a transition and $B$ be a transition that depends on $A$.
 Let $A_I$ be the immutable step of $A$, $A_M$ be the mutable step of $A$, $B_I$ be the immutable step of $B$, and $B_M$ be the mutable step of $B$.
@@ -123,12 +195,11 @@ To illustrate reactive components, we rewrite the \emph{Clock automaton} example
 The Clock automaton consists of a free-running counter and flag used to implement a request-response protocol.
 The Clock automaton is listed in figure~\ref{clock_component}.
 The state variables are identified with \verb+var+ and their initial values are provided.
-The component contains a passive push port \verb+request+ for receiving requests to sample the current value of the counter.
+The component contains a reaction \verb+request+ for receiving requests to sample the current value of the counter.
 The component also contains an active push port \verb+clock+ for communicating the sampled value of the counter.
-The first transition \verb+Tick+ is an action that increments the free-running counter.
+The first action \verb+Tick+ is an action that increments the free-running counter.
 The absence of a precondition means this action is always enabled.
-The second transition \verb+Request+ is a reaction that is executed when the \verb+request+ port is activated.
-The third transition \verb+Clock+ is an action that is conditioned on the flag variable (which indicates that a request has been made) which resets the flag and communicates the value of \verb+counter+ by activating the \verb+clock+ port.
+The second action \verb+Clock+ is conditioned on the flag variable (which indicates that a request has been made) which resets the flag and communicates the value of \verb+counter+ by activating the \verb+clock+ port.
 A simple client for the Clock component that perpetually samples the clock is shown in figure~\ref{client_component}.
 
 \begin{figure}
@@ -136,14 +207,13 @@ A simple client for the Clock component that perpetually samples the clock is sh
 component Clock {
   var int counter (0)
   var bool flag (false)
-  passive push request()
-  active push clock(int t)
+  push clock(int t)
 
   Tick: counter := counter + 1
 
-  Request: request() flag := true
+  reaction request() flag := true
 
-  Clock: if (flag) flag := false activates clock(counter)
+  Clock: flag -> flag := false activates clock(counter)
 }
 \end{verbatim}
 \caption{Definition of the Clock component\label{clock_component}}
@@ -153,12 +223,11 @@ component Clock {
 \begin{verbatim}
 component Client {
   var bool flag (false)
-  active push request()
-  passive push clock(int t)
+  push request()
 
-  Request: if (!flag) flag := true activates request()
+  Request: !flag -> flag := true activates request()
 
-  Response: clock(int t) flag := false || /* do something with t */
+  reaction clock(int t) flag := false || /* do something with t */
 }
 \end{verbatim}
 \caption{Definition of a client of the Clock component\label{client_component}}
@@ -167,8 +236,8 @@ component Client {
 In isolation, the Clock component will increment its counter forever and the client component will make a request and then stop.
 In order to make the two components work together, we must compose them.
 Figure~\ref{system_component} shows a system component that instantiates a Clock component and a client component and binds the corresponding push ports in each instance.
-In this system, the client's \verb+Request+ action will be executed activating the \verb+request+ port which in turn causes the \verb+Request+ reaction in the Clock to be executed.
-Eventually, the Clock's \verb+Response+ action will be executed activating the \verb+clock+ port which in turn causes the \verb+Response+ reaction in the client to be executed with the current value of the Clock's counter.
+In this system, the client's \verb+Request+ action will be executed activating the \verb+request+ port which in turn causes the \verb+request+ reaction in the Clock to be executed.
+Eventually, the Clock's \verb+Response+ action will be executed activating the \verb+clock+ port which in turn causes the \verb+clock+ reaction in the client to be executed with the current value of the Clock's counter.
 In between these actions, the \verb+Tick+ action of the Clock is incrementing the counter.
 
 \begin{figure}
@@ -185,19 +254,6 @@ component System {
 \end{verbatim}
 \caption{Definition of a system component\label{system_component}}
 \end{figure}
-
-%% Figure~\ref{system_diagram} shows a graphical representation of the system component.
-%% Each component is depicted as a rectangle with centered caption near the top listing its type and name if instantiated, actions and reactions are depicted as rectangles with rounded corners, and ports are depicted as ellipses.
-%% - What's in a transaction and what is involved.
-%% - Reveals parallelism.
-
-%% \begin{figure}
-%% {
-%% \input system.tex
-%% \centerline{\box\graph}
-%% }
-%% \caption{Graphical representation of the system component\label{system_diagram}}
-%% \end{figure}
 
 \paragraph{Substitutional equivalence.}
 Substitutional equivalence as part of principled composition means that an instance of a component can be replaced with its definition and the result is a well-defined entity in the model.
@@ -217,23 +273,21 @@ component System {
   /* Substitution of clock component. */
   var int clock_counter (0)
   var bool clock_flag (false)
-  passive push clock_request()
-  active push clock_clock(int t)
+  push clock_clock(int t)
 
   clock_Tick: clock_counter := clock_counter + 1
 
-  clock_Request: clock_request() clock_flag := true
+  reaction clock_request() clock_flag := true
 
-  clock_Clock: if (clock_flag) clock_flag := false activates clock_clock(clock_counter)
+  clock_Clock: clock_flag -> clock_flag := false activates clock_clock(clock_counter)
 
   /* Substitution of client component. */
   var bool client_flag (false)
-  active push client_request()
-  passive push client_clock(int t)
+  push client_request()
 
-  client_Request: if (!client_flag) client_flag := true activates client_request()
+  client_Request: !client_flag -> client_flag := true activates client_request()
 
-  client_Response: client_clock(int t) client_flag := false || /* do something with t */
+  reaction client_clock(int t) client_flag := false || /* do something with t */
 
   bind {
     client_request -> clock_request
@@ -253,10 +307,10 @@ component System {
 
   clock_Tick: clock_counter := clock_counter + 1
 
-  clock_Clock: if (clock_flag) clock_flag, client_flag := false, false ||
+  clock_Clock: clock_flag -> clock_flag, client_flag := false, false ||
     /* do something with clock_counter */
 
-  client_Request: if (!client_flag) client_flag, clock_flag := true, true
+  client_Request: !client_flag -> client_flag, clock_flag := true, true
 }
 \end{verbatim}
 \caption{Simplification of ports, bindings, and transitions in expanded system component\label{se2}}
@@ -278,7 +332,7 @@ If the underlying transformational language admits pointers, then the problem of
 A necessary (but not sufficient) condition for non-deterministic assignment from composition is summarized by the following predicate $NDA(G): \exists (i_1, t_1), (i_2, t_2) \in G.N, i_1 = i_2, t_1 \ne t_2$ which says that the graph must have two different transitions involving the same instance.
 
 A recursively activated transition occurs when the transaction graph has a cycle.
-The execution of such a transaction may result in well-defined next values for all state variables assuming that 1) the recursion is bounded and 2) the parameters passed to every reaction result in identical computations.
+The execution of such a transaction may result in well-defined next values for all state variables assuming that 1)~the recursion is bounded and 2)~the parameters passed to every reaction result in identical computations.
 Both of these problems are undecidable in general.
 
 The difficulty of detecting composition that results in non-deterministic assignments suggests that these problems are best checked by a machine.
@@ -304,10 +358,10 @@ Two transaction graphs are independent if all of their nodes are independent $IG
 The significance of the preceding analysis is that the determination about what actions can be executed concurrently becomes machine checkable due to the strong guarantee that state variables belonging to an instance can only be modified in the transitions of that instance.
 
 To illustrate the mechanisms required for decomposition, we will factor out a Counter component from the Clock component of figure~\ref{clock_component} and then rewrite the Clock component using the Counter component.
-Upon inspection, the \verb+Tick+ and \verb+Request+ transitions can be executed concurrently since the state variables involved in each transition are disjoint.
+Upon inspection, the \verb+Tick+ action and \verb+request+ reaction can be executed concurrently since the state variables involved in each transition are disjoint.
 The Counter component consists of the \verb+counter+ state variable.
-The \verb+Tick+ transition can be moved to the Counter component without complication.
-The \verb+Clock+ transition \emph{reads} the value of \verb+counter+ which suggests a mechanism for accessing the state variables in a component.
+The \verb+Tick+ action can be moved to the Counter component without complication.
+The \verb+Clock+ action \emph{reads} the value of \verb+counter+ which suggests a mechanism for accessing the state variables in a component.
 Thus, we introduce the notion of a \emph{getter} which can be called on a component to produce a value.
 A getter is not allowed to modify the state of a component and may only be invoked in the immutable phase.
 These semantics preserve the strict separation of immutable phase and mutable phase.
@@ -335,12 +389,11 @@ component Counter {
 component Clock {
   var Counter c
   var bool flag (false)
-  passive push request()
-  active push clock(int t)
+  push clock(int t)
 
-  Request: request() flag := true
+  reaction request() flag := true
 
-  Clock: if (flag) flag := false activates clock(c.getCounter())
+  Clock: flag -> flag := false activates clock(c.getCounter())
 }
 \end{verbatim}
 \caption{Definition of the Clock component using the Counter component\label{factored_clock_component}}
@@ -352,24 +405,23 @@ A pull port represents an external value dependency.
 A component can demand a value from the pull port in the immutable phase.
 Like push ports, pull ports have an active and passive side.
 The active side represents the caller and the passive side represents the callee.
-The definition of a component is augmented with an optional set of pull ports that can be activated (called) in the immutable phase to produce a value.
+%% The definition of a component is augmented with an optional set of pull ports that can be activated (called) in the immutable phase to produce a value.
 Getters are sufficient to realize the passive side of a pull port.
-Every active pull port must be bound to exactly one getter via composition.
+Every active pull port must be bound to exactly one passive pull port via composition.
 Figure~\ref{flag_component} shows a component representing the request/response protocol using a pull port \verb+getValue+.
 Figure~\ref{factored2_clock_component} shows the Clock component written in terms of the Counter and Flag components.
-An \verb+export+ directive allows push ports in subcomponents to be available in the interface of the encapsulating component.
+An \verb+export+ directive allows ports in sub-components to be available in the interface of the encapsulating component.
 
 \begin{figure}
 \begin{verbatim}
 component Flag {
   var bool flag (false)
-  active pull getValue() int
-  passive push request()
-  active push response(int t)
+  pull getValue() int
+  push response(int t)
 
-  Request: request() flag := true
+  reaction request() flag := true
 
-  Response: if (flag) flag := false activates response(getValue())
+  Response: flag -> flag := false activates response(getValue())
 }
 \end{verbatim}
 \caption{Definition of the Flag component\label{flag_component}}
@@ -380,8 +432,8 @@ component Flag {
 component Clock {
   var Counter c
   var Flag f
-  passive push request()
-  active push clock(int t)
+  push request()
+  push clock(int t)
 
   bind {
     c.getCounter -> f.getValue
@@ -394,11 +446,38 @@ component Clock {
 \caption{Definition of the Clock component using the Counter and Flag components\label{factored2_clock_component}}
 \end{figure}
 
+Pull ports have compositional hazard similar to the recursive activation hazard of push ports.
+A cycle in the graph of composed pull ports is equivalent to a recursively defined function.
+The recursion may be bounded but this is undecidable in the general case.
+Consequently, an implementation may reject recursively defined push ports.
+
 \paragraph{Principled composition.}
-\emph{TODO:  Step through the points of principled composition and show how reactive components satisfies these requirements.}
+The goal of this section is to describe how reactive components satisfy principled composition.
+\begin{enumerate}
+\item The reactive component model defines a reactive component as the basic unit of composition.
+A reactive component consists of a set of state variables and transitions.
+The interface of a reactive component consists of push ports, and pull ports.
+Composition is supported through recursive encapsulation and explicit port binding.
+
+\item The result of composition is either well-defined due to the atomic nature of transactions or illegal due to non-determinism.
+
+\item Reactive components support recursive encapsulation.
+
+\item The external or visible behavior of a reactive component can be traced through its interface, specifically its push ports.
+The internal details of a component can often be abstracted away to permit reasoning about the behavior of a composed system at various levels of detail.
+
+\item Composition in reactive components is compositional since all updates to state variables are under the control of the transitions of the encapsulating reactive component.
+Composition cannot ``undo'' a property established for a component.
+
+\item Reactive components are subject to substitutional equivalence.
+\end{enumerate}
 
 \paragraph{Summary.}
-\emph{TODO:  Write a summary of the model.}
+In this chapter, we presented the reactive component model for reactive programs.
+A reactive component consists of a set of state variables and transitions that are private to the component.
+The interface of a reactive component consists of push ports, which allow a component to trigger a transition in another component, and pull ports, which allow a component to access the state of another component.
+Composition is achieved through recursive encapsulation and explicit port binding.
+Transitions that are linked through composition form an atomic transaction that allows the properties of one component to be related to another component.
 
 %% \paragraph{Composition, Push Ports, and Activation}
 
@@ -472,7 +551,7 @@ component Clock {
 %% In this chapter, we present a model for reactive programs called \emph{reactive components}.
 %% The model is biased toward practical software development as opposed to formal methods.
 %% Consequently, the model favors utility, practicality, flexibility, and ease of implementation.
-%% The model is presented as a sequence of modifications to the I/O automata model of Lynch~\cite{nancy1996distributed}.
+%% The model is presented as a sequence of modifications to the I/O Automata model of Lynch~\cite{nancy1996distributed}.
 
 %% As a starting point, we consider the $Clock$ automaton presented in~\cite{nancy1996distributed}.
 %% A $Clock$ represents a free-running timer that can be sampled.
@@ -495,12 +574,12 @@ component Clock {
 
 
 
-%% The main limitation of the I/O automata model is that it only permits the pair-wise linking of transitions.
+%% The main limitation of the I/O Automata model is that it only permits the pair-wise linking of transitions.
 %% To illustrate, we define an $\alpha$-statement to be a transition that can be selected by the scheduler and a $\beta$-statement to be a transition that cannot be selected by the scheduler but must be linked to another transition to be executed.
-%% $\alpha$-statements correspond to local actions in the I/O automata model and stand-alone assignment statements in UNITY while $\beta$-statements correspond to input actions in the I/O automata model and superimposed clauses in UNITY.
+%% $\alpha$-statements correspond to local actions in the I/O Automata model and stand-alone assignment statements in UNITY while $\beta$-statements correspond to input actions in the I/O Automata model and superimposed clauses in UNITY.
 %% (Internal actions correspond to $\alpha$-statements to which $\beta$-statements cannot be linked.)
 %% A single I/O automaton, then, can be viewed as a disconnected graph where each node is either an $\alpha$-statement or a $\beta$-statement.
-%% A system composed of multiple I/O automata results in a forest of two-level trees where each root node is an $\alpha$-statement and each child node is a $\beta$-statement.
+%% A system composed of multiple I/O Automata results in a forest of two-level trees where each root node is an $\alpha$-statement and each child node is a $\beta$-statement.
 
 
 
@@ -528,10 +607,10 @@ component Clock {
 %% \paragraph{Limitations of existing models.}
 %% %% The sequential nature of threads causes a Cartesian ``blow-up'' of their programs and makes them unsuitable as a unit of composition.
 %% %% One way to avoid this ``blow-up'' is to define a program to be a set of state variables and a set of multiple-assignment statements (as opposed to a list) as is done in the UNITY model~\cite{chandy1989parallel}.
-%% UNITY~\cite{chandy1989parallel} and I/O automata~\cite{nancy1996distributed} are two formal models for reactive systems based on non-deterministic sequencing.
+%% UNITY~\cite{chandy1989parallel} and I/O Automata~\cite{nancy1996distributed} are two formal models for reactive systems based on non-deterministic sequencing.
 %% Execution in these models proceeds with a scheduler repeatedly selecting a transition, evaluating its guard, and executing it if the guard is true.
 %% The scheduler is assumed to be fair meaning that it will select (but not necessary execute) a transition an infinite number of times in an infinite execution.
-%% Transitions correspond to \emph{(parallel) assignment statements} in the UNITY model and \emph{actions} in the I/O automata model.
+%% Transitions correspond to \emph{(parallel) assignment statements} in the UNITY model and \emph{actions} in the I/O Automata model.
 %% The UNITY model contains two means of composing programs which suggests that a model based on non-deterministic sequencing could support principled decomposition.
 %% Creating a program via the \emph{union} operation involves taking the union of the state variables (named-based equivalence) and assignment statements of the constituent programs.
 %% \emph{Superposition} is a means of composition that transforms an underlying program into another.
@@ -552,23 +631,23 @@ component Clock {
 %% They go on to say that a restricted form of superposition, i.e., one that only adds variables and assignment statements, is equivalent to union and can be analyzed as such.
 
 %% The essence of superposition is that a transition in one program can be linked to a transition in another program, i.e., parallel composition.
-%% Whereas UNITY lacks the language support for doing so, the I/O automata~\cite{nancy1996distributed} model presents a partial solution by associating names with transitions (actions).
-%% Actions in different automata can then be composed on the basis of name matching.
-%% The I/O automata model defines three kinds of actions:  output actions, input actions, and internal actions.
+%% Whereas UNITY lacks the language support for doing so, the I/O Automata~\cite{nancy1996distributed} model presents a partial solution by associating names with transitions (actions).
+%% Actions in different Automata can then be composed on the basis of name matching.
+%% The I/O Automata model defines three kinds of actions:  output actions, input actions, and internal actions.
 %% Output actions and internal actions, collectively called local actions, contain a guard and may be selected and executed by the scheduler.
 %% Input actions must be composed with an output action to be executed.
 %% Output actions can produce values that are consumed by input actions.
-%% Since the state of each I/O automaton is private, composition in I/O automata is property-preserving.
+%% Since the state of each I/O automaton is private, composition in I/O Automata is property-preserving.
 
-%% The main limitation of the I/O automata model is that it only permits the pair-wise linking of transitions.
+%% The main limitation of the I/O Automata model is that it only permits the pair-wise linking of transitions.
 %% To illustrate, we define an $\alpha$-statement to be a transition that can be selected by the scheduler and a $\beta$-statement to be a transition that cannot be selected by the scheduler but must be linked to another transition to be executed.
-%% $\alpha$-statements correspond to local actions in the I/O automata model and stand-alone assignment statements in UNITY while $\beta$-statements correspond to input actions in the I/O automata model and superimposed clauses in UNITY.
+%% $\alpha$-statements correspond to local actions in the I/O Automata model and stand-alone assignment statements in UNITY while $\beta$-statements correspond to input actions in the I/O Automata model and superimposed clauses in UNITY.
 %% (Internal actions correspond to $\alpha$-statements to which $\beta$-statements cannot be linked.)
 %% A single I/O automaton, then, can be viewed as a disconnected graph where each node is either an $\alpha$-statement or a $\beta$-statement.
-%% A system composed of multiple I/O automata results in a forest of two-level trees where each root node is an $\alpha$-statement and each child node is a $\beta$-statement.
+%% A system composed of multiple I/O Automata results in a forest of two-level trees where each root node is an $\alpha$-statement and each child node is a $\beta$-statement.
 
 %% \paragraph{Contribution.}
-%% We propose a model for reactive programs that resolves the weakness of superposition and the structural limitations of composition in I/O automata.
+%% We propose a model for reactive programs that resolves the weakness of superposition and the structural limitations of composition in I/O Automata.
 %% The idea for the proposed model is straightforward:  extend composition to support general transition structures such as trees of arbitrary depth.
 %% A program in our model consists of state variables, $\alpha$-statements, $\beta$-statements, and ports that allow transitions in different programs to be linked.
 %% %% As illustrated by superposition, programs based on a set of state variables and a set of assignment statements have the properties necessary to support principled decomposition.
@@ -748,7 +827,7 @@ component Clock {
 %% The ability for a component instance to appear multiple times creates the opportunity for the composition of well-defined components to result in a component that is not well-defined.
 %% This situation might occur, for example, if a component simultaneously drives two inputs that are mutually exclusive.
 %% More subtly, one can envision creating a ``feedback loop'' that includes incompatible statements in the same component.
-%% %% The phenomena does not appear in the UNITY and I/O automata models but seems to be the result of additional flexibility when composing components.
+%% %% The phenomena does not appear in the UNITY and I/O Automata models but seems to be the result of additional flexibility when composing components.
 %% By strengthening the well-definedness property to say that a port or next state can only be \emph{defined} once in the context of an $\alpha$-statement (instead of being defined to a unique value), one can mechanically check that a composed component is well-defined.
 
 %% \paragraph{Principled composition and decomposition.}
@@ -757,12 +836,12 @@ component Clock {
 
 %% To show that the behavior of a component is encapsulated by its interface, we first define its interface to be the set of input and output ports.
 %% The behavior of a component can then be described using execution traces where the events correspond to patterns of port definition.
-%% This treatment is consistent with trace properties in I/O automata which also serve to encapsulate and abstract the behavior of I/O automata.
+%% This treatment is consistent with trace properties in I/O Automata which also serve to encapsulate and abstract the behavior of I/O Automata.
 
-%% To show that properties survive composition, we must prove theorems that correspond to the superposition theorem in UNITY and composition theorems of I/O automata.
+%% To show that properties survive composition, we must prove theorems that correspond to the superposition theorem in UNITY and composition theorems of I/O Automata.
 %% In general, there are two kinds of properties:  those that are assertions about state variables and those that are assertions about execution traces.
 %% For state-based properties, we will replicate the superposition theorem of UNITY which is based on the observation that state variables cannot be modified outside of the component in which they are defined, therefore, all properties continue to hold when composed.
-%% For trace-based properties, we will replicate the composition theorems of I/O automata which state that traces compose due to the fairness property of the scheduler.
+%% For trace-based properties, we will replicate the composition theorems of I/O Automata which state that traces compose due to the fairness property of the scheduler.
 
 %% Substitutional equivalence can be shown through a constructive proof that substitutes the definition of a member for its instance.
 %% This can be performed mechanically by first changing all ports to internal and then renaming entities in the member component, e.g., prefixing with the name of the member.
@@ -771,17 +850,17 @@ component Clock {
 %% %%We will explore the conditions whereby the properties of a composed component may be mechanically derived from the properties of the member components.
 
 %% %% \paragraph{Proof logic.}
-%% %% One strategy for developing a proof logic for our model is to extend the techniques developed for the UNITY and I/O automata models.
+%% %% One strategy for developing a proof logic for our model is to extend the techniques developed for the UNITY and I/O Automata models.
 %% %% The proof logic of UNITY is based on the properties of programs being expressed in terms of state variables.
 %% %% In this style, a safety property says that some bad state is never reached and a liveness property says that eventually some good (goal) state is reached.
-%% %% The proof logic of I/O automata is based on the properties of programs being expressed in terms of execution traces.
+%% %% The proof logic of I/O Automata is based on the properties of programs being expressed in terms of execution traces.
 %% %% This is particularly useful when reasoning about a member component since the only observable part of a member component is its execution trace.
 %% %% In this style, a safety property says that some bad trace never occurs and a liveness property says that some good trace will occur.
-%% %% In order to reuse the proof logic of UNITY and I/O automata, one must show that our model meets the assumptions that allowed for the development of the corresponding proof logic.
+%% %% In order to reuse the proof logic of UNITY and I/O Automata, one must show that our model meets the assumptions that allowed for the development of the corresponding proof logic.
 %% %% Toward this end, we believe the well-definedness property is sufficient to establish the necessary assumptions.
 
 %% \paragraph{Summary.}
 %% In this section, we have proposed two contributions toward a model for reactive system development.
 %% First, we proposed formal definition for system structure that facilitates composition and decomposition.
-%% %%Second, we proposed to develop a proof logic for the model based on the existing proof logic of UNITY and I/O automata.
+%% %%Second, we proposed to develop a proof logic for the model based on the existing proof logic of UNITY and I/O Automata.
 %% Second, we proposed to show that the model supports principled composition and decomposition by appealing to the definitions of the model. %% and its proof logic.
