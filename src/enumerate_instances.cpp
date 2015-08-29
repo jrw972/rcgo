@@ -29,7 +29,7 @@ instantiate_contained_instances (const type_t * type, instance_table_t& instance
 
     void default_action (const type_t& type)
     {
-      not_reached;
+      type_not_reached (type);
     }
 
     void visit (const named_type_t& type)
@@ -92,6 +92,12 @@ instantiate_contained_instances (const type_t * type, instance_table_t& instance
     { }
 
     void visit (const uint8_type_t& type)
+    { }
+
+    void visit (const uint32_type_t& type)
+    { }
+
+    void visit (const uint64_type_t& type)
     { }
 
     void visit (const uint128_type_t& type)

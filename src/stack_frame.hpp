@@ -5,6 +5,7 @@
 #include "memory_model.hpp"
 #include <string.h>
 #include "debug.hpp"
+#include "typed_value.hpp"
 
 struct rtstring_t
 {
@@ -57,6 +58,12 @@ stack_frame_pop (stack_frame_t* stack_frame,
   stack_frame->top -= s;
   memcpy (&retval, stack_frame->top, sizeof (T));
 }
+
+void stack_frame_push_tv (stack_frame_t* stack_frame,
+                          const typed_value_t& tv);
+
+void stack_frame_pop_tv (stack_frame_t* stack_frame,
+                         typed_value_t& tv);
 
 void stack_frame_push_string (stack_frame_t* stack_frame,
                               rtstring_t b);

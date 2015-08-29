@@ -229,7 +229,7 @@ typed_value_t::dereference (typed_value_t in)
 
     void default_action (const type_t& type)
     {
-      not_reached;
+      type_not_reached (type);
     }
 
     void visit (const pointer_type_t& type)
@@ -601,7 +601,7 @@ struct symmetric_arithmetic : public needs_both
           type_is_equal (left, right)))
       {
         error_at_line (-1, 0, location.file, location.line,
-                       "incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
+                       "E12: incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
       }
 
     return type_choose (left, right);
@@ -628,7 +628,7 @@ struct symmetric_integer_arithmetic : public needs_both
           type_is_equal (left, right)))
       {
         error_at_line (-1, 0, location.file, location.line,
-                       "incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
+                       "E13: incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
       }
 
     return type_choose (left, right);
@@ -655,7 +655,7 @@ struct shift_arithmetic : public needs_both
           type_is_unsigned_integral (right)))
       {
         error_at_line (-1, 0, location.file, location.line,
-                       "incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
+                       "E14: incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
       }
 
     return left;
@@ -683,7 +683,7 @@ struct comparable : public needs_both
            type_is_pointer_compare (left, right))))
       {
         error_at_line (-1, 0, location.file, location.line,
-                       "incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
+                       "E15: incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
       }
 
     return bool_type_t::instance ();
@@ -710,7 +710,7 @@ struct orderable : public needs_both
           type_is_equal (left, right)))
       {
         error_at_line (-1, 0, location.file, location.line,
-                       "incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
+                       "E16: incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
       }
 
     return bool_type_t::instance ();
@@ -737,7 +737,7 @@ struct symmetric_boolean
           type_is_equal (left, right)))
       {
         error_at_line (-1, 0, location.file, location.line,
-                       "incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
+                       "E17: incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
       }
 
     return bool_type_t::instance ();
@@ -1320,4 +1320,121 @@ typed_value_t::binary (const location_t& location,
     }
 
   not_reached;
+}
+
+template<typename Action, typename DefaultAction>
+struct cast_visitor : public const_type_visitor_t {
+  Action& action;
+  DefaultAction& defaultaction;
+
+  cast_visitor (Action& a, DefaultAction& da) : action (a), defaultaction (da) { }
+
+  virtual void visit (const int_type_t& type) { action (type); }
+  virtual void visit (const int8_type_t& type) { action (type); }
+  virtual void visit (const uint_type_t& type) { action (type); }
+  virtual void visit (const uint8_type_t& type) { action (type); }
+  virtual void visit (const uint32_type_t& type) { action (type); }
+  virtual void visit (const uint64_type_t& type) { action (type); }
+  virtual void visit (const uint128_type_t& type) { action (type); }
+  virtual void visit (const float64_type_t& type) { action (type); }
+  virtual void default_action (const type_t& type) { defaultaction (type); }
+};
+
+template <typename Type1, typename F>
+struct DoubleDispatchAction2 {
+  const Type1& type1;
+  F& f;
+
+  DoubleDispatchAction2 (const Type1& t1, F& func) : type1 (t1), f(func) { }
+
+  template <typename Type2>
+  void operator() (const Type2& type2)
+  {
+    f (type1, type2);
+  }
+};
+
+struct DoubleDispatchDefaultAction2 {
+  void operator() (const type_t& type)
+  {
+    type_not_reached (type);
+  }
+};
+
+template <template <typename, typename> class Visitor2, typename F>
+struct DoubleDispatchAction1 {
+  const type_t* type2;
+  F& f;
+
+  DoubleDispatchAction1 (const type_t* t2, F& func)
+    : type2 (t2)
+    , f (func)
+  { }
+
+  template <typename Type1>
+  void operator() (const Type1& type1)
+  {
+    DoubleDispatchAction2<Type1, F> a (type1, f);
+    DoubleDispatchDefaultAction2 da;
+    Visitor2<DoubleDispatchAction2<Type1, F>, DoubleDispatchDefaultAction2> visitor2 (a, da);
+    type2->accept (visitor2);
+  }
+};
+
+struct DoubleDispatchDefaultAction1 {
+  void operator() (const type_t& type)
+  {
+    type_not_reached (type);
+  }
+};
+
+template <template <typename, typename> class Visitor1,
+          template <typename, typename> class Visitor2,
+          typename F>
+static void double_dispatch (const type_t* type1,
+                             const type_t* type2,
+                             F& f)
+{
+  DoubleDispatchAction1<Visitor2, F> a (type2, f);
+  DoubleDispatchDefaultAction1 da;
+  Visitor1<DoubleDispatchAction1<Visitor2, F>, DoubleDispatchDefaultAction1> visitor1 (a, da);
+  type1->accept (visitor1);
+}
+
+struct castor {
+  typed_value_t& tv;
+
+  castor (typed_value_t& t) : tv (t) { }
+
+  template<typename Type1, typename Type2>
+  void operator() (const Type1& type1, const Type2& type2)
+  {
+    tv.value.ref (type1) = tv.value.ref (type2);
+  }
+};
+
+typed_value_t
+typed_value_t::cast (const location_t& location, const type_t* type, const typed_value_t tv)
+{
+  if (!type_is_castable (tv.type, type))
+    {
+      error_at_line (-1, 0, location.file, location.line,
+                     "E20: cannot cast expression of type %s to type %s", tv.type->to_string().c_str(), type->to_string().c_str());
+    }
+
+  return cast_exec (type, tv);
+}
+
+typed_value_t
+typed_value_t::cast_exec (const type_t* type, const typed_value_t tv)
+{
+  typed_value_t retval = tv;
+  retval.type = type;
+  if (tv.value.present)
+    {
+      castor c (retval);
+      double_dispatch<cast_visitor, cast_visitor> (type_strip (type), type_strip (tv.type), c);
+    }
+
+  return retval;
 }

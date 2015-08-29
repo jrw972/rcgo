@@ -143,6 +143,22 @@ private:
   int8_type_t () { }
 };
 
+class int64_type_t : public type_t
+{
+public:
+  typedef int64_t ValueType;
+
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const { return "<int64>"; }
+  size_t alignment () const { return 1; }
+  size_t size () const { return 1; }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+
+  static const int64_type_t* instance ();
+private:
+  int64_type_t () { }
+};
+
 class uint_type_t : public type_t
 {
 public:
@@ -578,6 +594,7 @@ struct const_type_visitor_t
   virtual void visit (const struct_type_t& type) { default_action (type); }
   virtual void visit (const int_type_t& type) { default_action (type); }
   virtual void visit (const int8_type_t& type) { default_action (type); }
+  virtual void visit (const int64_type_t& type) { default_action (type); }
   virtual void visit (const uint_type_t& type) { default_action (type); }
   virtual void visit (const uint8_type_t& type) { default_action (type); }
   virtual void visit (const uint32_type_t& type) { default_action (type); }
@@ -647,6 +664,13 @@ type_is_unsigned_integral (const type_t* type);
 bool
 type_is_floating (const type_t* type);
 
+// True if type is numeric.
+inline bool
+type_is_numeric (const type_t* type)
+{
+  return type_is_integral (type) || type_is_floating (type);
+}
+
 // True if == or != can be applied to values of this type.
 bool
 type_is_comparable (const type_t* type);
@@ -658,6 +682,10 @@ type_is_orderable (const type_t* type);
 // True if index is valid.
 bool
 type_is_index (const type_t* type, int_type_t::ValueType index);
+
+// True if x can be cast to y.
+bool
+type_is_castable (const type_t* x, const type_t* y);
 
 bool
 type_is_pointer_compare (const type_t* left, const type_t* right);

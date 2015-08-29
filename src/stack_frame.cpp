@@ -218,3 +218,72 @@ void* stack_frame_address_for_offset (const stack_frame_t* stack_frame,
 {
   return stack_frame->base_pointer + offset;
 }
+
+void stack_frame_push_tv (stack_frame_t* stack_frame,
+                          const typed_value_t& tv)
+{
+  struct visitor : public const_type_visitor_t {
+    stack_frame_t* stack_frame;
+    const typed_value_t& tv;
+
+    visitor (stack_frame_t* sf, const typed_value_t& t)
+      : stack_frame (sf)
+      , tv (t)
+    { }
+
+    void visit (const int8_type_t& type) {
+      stack_frame_push (stack_frame, tv.value.ref (type));
+    }
+
+    void visit (const uint8_type_t& type) {
+      stack_frame_push (stack_frame, tv.value.ref (type));
+    }
+
+    void visit (const float64_type_t& type) {
+      stack_frame_push (stack_frame, tv.value.ref (type));
+    }
+
+    void default_action (const type_t& type) {
+      type_not_reached (type);
+    }
+  };
+
+  visitor v (stack_frame, tv);
+  type_strip (tv.type)->accept (v);
+}
+
+struct PopVisitor : public const_type_visitor_t {
+  stack_frame_t* stack_frame;
+  typed_value_t& tv;
+
+  PopVisitor (stack_frame_t* sf, typed_value_t& t)
+    : stack_frame (sf)
+    , tv (t)
+  { }
+
+  template <typename T>
+  void doit (const T& type) {
+    typename T::ValueType value;
+    stack_frame_pop (stack_frame, value);
+    tv.value = value_t (&type, value);
+  }
+
+  void visit (const int8_type_t& type) {
+    doit (type);
+  }
+
+  void visit (const uint64_type_t& type) {
+    doit (type);
+  }
+
+  void default_action (const type_t& type) {
+    type_not_reached (type);
+  }
+};
+
+void stack_frame_pop_tv (stack_frame_t* stack_frame,
+                         typed_value_t& tv)
+{
+  PopVisitor v (stack_frame, tv);
+  type_strip (tv.type)->accept (v);
+}

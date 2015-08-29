@@ -38,6 +38,11 @@ value_t::print (std::ostream& out, const type_t* type) const
           std::cout << " value=" << (int)tv.ref (type);
         }
 
+        void visit (const uint32_type_t& type)
+        {
+          std::cout << " value=" << tv.ref (type);
+        }
+
         void visit (const uint64_type_t& type)
         {
           std::cout << " value=" << tv.ref (type);
@@ -52,9 +57,14 @@ value_t::print (std::ostream& out, const type_t* type) const
         {
           std::cout << " value=" << (void*)NULL;
         }
+
+        void visit (const string_type_t& type)
+        {
+          std::cout << " value=" << tv.ref (type);
+        }
       };
       visitor v (*this);
-      type->accept (v);
+      type_strip (type)->accept (v);
     }
 }
 

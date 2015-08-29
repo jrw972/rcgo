@@ -8,6 +8,7 @@ struct value_t {
   value_t (const bool_type_t*  t, bool_type_t::ValueType v)  : present (true), bool_value_ (v) { }
   value_t (const int_type_t*   t, int_type_t::ValueType  v)  : present (true), int_value_ (v)  { }
   value_t (const int8_type_t*  t, int8_type_t::ValueType v)  : present (true), int8_value_ (v) { }
+  value_t (const int64_type_t*  t, int64_type_t::ValueType v)  : present (true), int64_value_ (v) { }
   value_t (const uint_type_t*  t, uint_type_t::ValueType v)  : present (true), uint_value_ (v) { }
   value_t (const uint8_type_t* t, uint8_type_t::ValueType v) : present (true), uint8_value_ (v) { }
   value_t (const uint32_type_t* t, uint32_type_t::ValueType v) : present (true), uint32_value_ (v) { }
@@ -42,10 +43,18 @@ struct value_t {
   { assert (present); return uint8_value_; }
   uint8_type_t::ValueType& ref (const uint8_type_t&)
   { assert (present); return uint8_value_; }
+  const uint32_type_t::ValueType& ref (const uint32_type_t&) const
+  { assert (present); return uint32_value_; }
+  uint32_type_t::ValueType& ref (const uint32_type_t&)
+  { assert (present); return uint32_value_; }
   const uint64_type_t::ValueType& ref (const uint64_type_t&) const
   { assert (present); return uint64_value_; }
   uint64_type_t::ValueType& ref (const uint64_type_t&)
   { assert (present); return uint64_value_; }
+  const uint128_type_t::ValueType& ref (const uint128_type_t&) const
+  { assert (present); return uint128_value_; }
+  uint128_type_t::ValueType& ref (const uint128_type_t&)
+  { assert (present); return uint128_value_; }
   const float64_type_t::ValueType& ref (const float64_type_t&) const
   { assert (present); return float64_value_; }
   float64_type_t::ValueType& ref (const float64_type_t&)
@@ -69,6 +78,7 @@ private:
     bool_type_t::ValueType bool_value_;
     int_type_t::ValueType int_value_;
     int8_type_t::ValueType int8_value_;
+    int64_type_t::ValueType int64_value_;
     uint_type_t::ValueType uint_value_;
     uint8_type_t::ValueType uint8_value_;
     uint32_type_t::ValueType uint32_value_;

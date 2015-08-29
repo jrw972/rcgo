@@ -164,3 +164,4 @@ Jan Vitek
 Ron Cytron for GC
 
 TODO:  Remove parameters from reaction in trigger.
+TODO:  Apply more semantic checks like control flow checks.

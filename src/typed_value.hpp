@@ -170,6 +170,17 @@ struct typed_value_t
     , has_offset (false)
   { }
 
+  typed_value_t (const int64_type_t* t,
+                 int64_type_t::ValueType v)
+    : type (t)
+    , kind (VALUE)
+    , region (CONSTANT)
+    , intrinsic_mutability (IMMUTABLE)
+    , dereference_mutability (IMMUTABLE)
+    , value (t, v)
+    , has_offset (false)
+  { }
+
   typed_value_t (const uint_type_t* t,
                  uint_type_t::ValueType v)
     : type (t)
@@ -290,6 +301,8 @@ struct typed_value_t
   static typed_value_t merge (typed_value_t tv);
   static typed_value_t move (typed_value_t tv);
   static typed_value_t binary (const location_t& location, BinaryArithmetic arithmetic, typed_value_t left, typed_value_t right);
+  static typed_value_t cast (const location_t& location, const type_t* type, const typed_value_t tv);
+  static typed_value_t cast_exec (const type_t* type, const typed_value_t tv);
 
   bool is_foreign_safe () const
   {

@@ -22,7 +22,7 @@ enter_symbols (ast_t * node)
 
     symtab->enter (symbol_make_type ("uint32", new named_type_t ("uint32", uint32_type_t::instance ()), node));
 
-    symtab->enter (symbol_make_type ("uint64", new named_type_t ("uint64", uint32_type_t::instance ()), node));
+    symtab->enter (symbol_make_type ("uint64", new named_type_t ("uint64", uint64_type_t::instance ()), node));
 
     symtab->enter (symbol_make_type ("uint128", new named_type_t ("uint128", uint128_type_t::instance ()), node));
 

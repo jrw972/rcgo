@@ -48,7 +48,10 @@ check_assignment (typed_value_t left_tv,
                      "target of assignment is not mutable");
     }
 
-  if (!type_is_equal (left_tv.type, right_tv.type))
+  if (!(
+        type_is_equal (left_tv.type, right_tv.type) ||
+        (type_cast<pointer_type_t> (type_strip(left_tv.type)) && right_tv.type == nil_type_t::instance())
+        ))
     {
       error_at_line (-1, 0, node.location.file, node.location.line,
                      conversion_message, left_tv.type->to_string ().c_str (), right_tv.type->to_string ().c_str ());
@@ -101,10 +104,7 @@ type_check_expr (ast_t* ptr)
     {
       const type_t* type = process_type_spec (node.type_spec (), true);
       typed_value_t tv = type_check_expr (node.child ());
-
-      std::cout << *type << std::endl;
-      std::cout << tv << std::endl;
-      unimplemented;
+      node.typed_value = typed_value_t::cast (node.location, type, tv);
     }
 
     void visit (ast_indexed_port_call_expr_t& node)
@@ -283,7 +283,7 @@ type_check_expr (ast_t* ptr)
       if (out.type == NULL)
         {
           error_at_line (-1, 0, node.location.file, node.location.line,
-                         "incompatible types: (%s)@", in.type->to_string ().c_str ());
+                         "E1: incompatible types: (%s)@", in.type->to_string ().c_str ());
         }
       node.typed_value = out;
     }
@@ -301,7 +301,7 @@ type_check_expr (ast_t* ptr)
       if (out.type == NULL)
         {
           error_at_line (-1, 0, node.location.file, node.location.line,
-                         "incompatible types: (%s)&", in.type->to_string ().c_str ());
+                         "E2: incompatible types: (%s)&", in.type->to_string ().c_str ());
         }
       node.typed_value = out;
     }
@@ -321,7 +321,7 @@ type_check_expr (ast_t* ptr)
       if (out.type == NULL)
         {
           error_at_line (-1, 0, node.location.file, node.location.line,
-                         "incompatible types (%s) !", in.type->to_string ().c_str ());
+                         "E3: incompatible types (%s) !", in.type->to_string ().c_str ());
         }
       node.typed_value = out;
     }
@@ -335,7 +335,7 @@ type_check_expr (ast_t* ptr)
       if (result.type == NULL)
         {
           error_at_line (-1, 0, node.location.file, node.location.line,
-                         "incompatible types (%s) %s (%s)", left.type->to_string ().c_str (), binary_arithmetic_symbol (node.arithmetic), right.type->to_string ().c_str ());
+                         "E4: incompatible types (%s) %s (%s)", left.type->to_string ().c_str (), binary_arithmetic_symbol (node.arithmetic), right.type->to_string ().c_str ());
         }
 
       node.typed_value = result;
@@ -362,8 +362,8 @@ type_check_expr (ast_t* ptr)
           typed_value_t argument_tv  = arg->typed_value;
           typed_value_t parameter_tv = typed_value_t::make_ref ((*pos)->value);
           check_assignment (parameter_tv, argument_tv, *arg,
-                            "incompatible types (%s) = (%s)",
-                            "E0002: argument leaks mutable pointers",
+                            "E5: incompatible types (%s) = (%s)",
+                            "E19: argument leaks mutable pointers",
                             "argument may store foreign pointer");
         }
 
@@ -446,7 +446,7 @@ type_check_expr (ast_t* ptr)
           typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
           check_assignment (parameter_tv, argument_tv, node,
                             "call expects %s but given %s",
-                            "E0001: argument leaks mutable pointers",
+                            "E18: argument leaks mutable pointers",
                             "argument may store foreign pointer");
         }
       };
@@ -487,7 +487,7 @@ type_check_expr (ast_t* ptr)
       if (result.type == NULL)
         {
           error_at_line (-1, 0, node.location.file, node.location.line,
-                         "incompatible types (%s)[%s]", expr_tv.type->to_string ().c_str (), idx_tv.type->to_string ().c_str ());
+                         "E6: incompatible types (%s)[%s]", expr_tv.type->to_string ().c_str (), idx_tv.type->to_string ().c_str ());
         }
       node.typed_value = result;
     }
@@ -720,7 +720,7 @@ type_check_statement (ast_t * node)
       if (!type_is_equal (left_tv.type, right_tv.type))
         {
           error_at_line (-1, 0, node->location.file, node->location.line,
-                         "incompatible types (%s) %s (%s)", left_tv.type->to_string ().c_str (), symbol, right_tv.type->to_string ().c_str ());
+                         "E7: incompatible types (%s) %s (%s)", left_tv.type->to_string ().c_str (), symbol, right_tv.type->to_string ().c_str ());
         }
 
       struct visitor : public const_type_visitor_t
@@ -743,7 +743,7 @@ type_check_statement (ast_t * node)
         void default_action (const type_t& type)
         {
           error_at_line (-1, 0, node->location.file, node->location.line,
-                         "incompatible types (%s) %s (%s)", type.to_string ().c_str (), symbol, type.to_string ().c_str ());
+                         "E8: incompatible types (%s) %s (%s)", type.to_string ().c_str (), symbol, type.to_string ().c_str ());
         }
       };
       visitor v (node, symbol);
@@ -755,7 +755,7 @@ type_check_statement (ast_t * node)
       typed_value_t left_tv = check_assignment_target (node.left ());
       typed_value_t right_tv = type_check_expr (node.right ());
       check_assignment (left_tv, right_tv, node,
-                        "incompatible types (%s) = (%s)",
+                        "E9: incompatible types (%s) = (%s)",
                         "assignment leaks mutable pointers",
                         "assignment may store foreign pointer");
     }
@@ -958,7 +958,7 @@ type_check_statement (ast_t * node)
           typed_value_t right_tv = type_check_expr (*init_pos);
 
           check_assignment (left_tv, right_tv, node,
-                            "incompatible types (%s) = (%s)",
+                            "E10: incompatible types (%s) = (%s)",
                             "assignment leaks mutable pointers",
                             "assignment may store foreign pointer");
 

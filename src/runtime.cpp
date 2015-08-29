@@ -187,6 +187,8 @@ namespace runtime
     void visit (const int8_type_t& t) { push (t); }
     void visit (const uint_type_t& t) { push (t); }
     void visit (const uint8_type_t& t) { push (t); }
+    //void visit (const uint32_type_t& t) { push (t); }
+    void visit (const uint64_type_t& t) { push (t); }
     void visit (const float64_type_t& t) { push (t); }
 
     void visit (const string_type_t& type)
@@ -220,7 +222,7 @@ namespace runtime
 
     void default_action (const type_t& type)
     {
-      not_reached;
+      type_not_reached (type);
     }
   };
 
@@ -258,7 +260,22 @@ namespace runtime
         op (exec, node, t);
       }
 
+      void visit (const int8_type_t& t)
+      {
+        op (exec, node, t);
+      }
+
       void visit (const uint_type_t& t)
+      {
+        op (exec, node, t);
+      }
+
+      void visit (const uint64_type_t& t)
+      {
+        op (exec, node, t);
+      }
+
+      void visit (const float64_type_t& t)
       {
         op (exec, node, t);
       }
@@ -302,18 +319,35 @@ namespace runtime
 
   struct Multiply : public RetvalDispatch
   {
+    template <typename T>
+    void
+    doit (executor_base_t& exec,
+          const ast_binary_expr_t& node,
+          const T&) const
+    {
+      evaluate_expr (exec, node.left ());
+      typename T::ValueType left;
+      stack_frame_pop (exec.stack (), left);
+      evaluate_expr (exec, node.right ());
+      typename T::ValueType right;
+      stack_frame_pop (exec.stack (), right);
+      stack_frame_push (exec.stack (), left * right);
+    }
+
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const int_type_t& t) const
     {
-      evaluate_expr (exec, node.left ());
-      int_type_t::ValueType left;
-      stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
-      int_type_t::ValueType right;
-      stack_frame_pop (exec.stack (), right);
-      stack_frame_push (exec.stack (), left * right);
+      doit (exec, node, t);
+    }
+
+    void
+    operator() (executor_base_t& exec,
+                const ast_binary_expr_t& node,
+                const int8_type_t& t) const
+    {
+      doit (exec, node, t);
     }
 
     void
@@ -337,6 +371,20 @@ namespace runtime
       stack_frame_pop (exec.stack (), left);
       evaluate_expr (exec, node.right ());
       int_type_t::ValueType right;
+      stack_frame_pop (exec.stack (), right);
+      stack_frame_push (exec.stack (), left / right);
+    }
+
+    void
+    operator() (executor_base_t& exec,
+                const ast_binary_expr_t& node,
+                const float64_type_t&) const
+    {
+      evaluate_expr (exec, node.left ());
+      float64_type_t::ValueType left;
+      stack_frame_pop (exec.stack (), left);
+      evaluate_expr (exec, node.right ());
+      float64_type_t::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left / right);
     }
@@ -375,48 +423,77 @@ namespace runtime
     }
   };
 
+  template <typename T>
+  struct LeftShiftVisitor : public const_type_visitor_t
+  {
+    executor_base_t& exec;
+    const ast_binary_expr_t& node;
+
+    LeftShiftVisitor (executor_base_t& e,
+                      const ast_binary_expr_t& n)
+      : exec (e)
+      , node (n)
+    { }
+
+    void default_action (const type_t& t)
+    {
+      type_not_reached (t);
+    }
+
+    void visit (const named_type_t& t)
+    {
+      t.subtype ()->accept (*this);
+    }
+
+    void visit (const uint_type_t& t)
+    {
+      doit (t);
+    }
+
+    void visit (const uint8_type_t& t)
+    {
+      doit (t);
+    }
+
+    template <typename U>
+    void doit (const U&)
+    {
+      evaluate_expr (exec, node.left ());
+      typename T::ValueType left;
+      stack_frame_pop (exec.stack (), left);
+      evaluate_expr (exec, node.right ());
+      typename U::ValueType right;
+      stack_frame_pop (exec.stack (), right);
+      stack_frame_push (exec.stack (), left << right);
+    }
+  };
+
   struct LeftShift : public RetvalDispatch
   {
+    template <typename T>
+    void
+    doit (executor_base_t& exec,
+          const ast_binary_expr_t& node,
+          const T&) const
+    {
+      LeftShiftVisitor<T> v (exec, node);
+      node.right ()->typed_value.type->accept (v);
+    }
+
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const int_type_t& t) const
     {
-      struct visitor : public const_type_visitor_t
-      {
-        executor_base_t& exec;
-        const ast_binary_expr_t& node;
+      doit (exec, node, t);
+    }
 
-        visitor (executor_base_t& e,
-                 const ast_binary_expr_t& n)
-          : exec (e)
-          , node (n)
-        { }
-
-        void default_action (const type_t& t)
-        {
-          type_not_reached (t);
-        }
-
-        void visit (const named_type_t& t)
-        {
-          t.subtype ()->accept (*this);
-        }
-
-        void visit (const uint_type_t&)
-        {
-          evaluate_expr (exec, node.left ());
-          int_type_t::ValueType left;
-          stack_frame_pop (exec.stack (), left);
-          evaluate_expr (exec, node.right ());
-          uint_type_t::ValueType right;
-          stack_frame_pop (exec.stack (), right);
-          stack_frame_push (exec.stack (), left << right);
-        }
-      };
-
-      visitor v (exec, node);
-      node.right ()->typed_value.type->accept (v);
+    void
+    operator() (executor_base_t& exec,
+                const ast_binary_expr_t& node,
+                const uint64_type_t& t) const
+    {
+      doit (exec, node, t);
     }
 
     void
@@ -764,6 +841,20 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
+                const int8_type_t&) const
+    {
+      evaluate_expr (exec, node.left ());
+      int8_type_t::ValueType left;
+      stack_frame_pop (exec.stack (), left);
+      evaluate_expr (exec, node.right ());
+      int8_type_t::ValueType right;
+      stack_frame_pop (exec.stack (), right);
+      stack_frame_push (exec.stack (), left < right);
+    }
+
+    void
+    operator() (executor_base_t& exec,
+                const ast_binary_expr_t& node,
                 const type_t& t) const
     {
       type_not_reached (t);
@@ -875,7 +966,7 @@ namespace runtime
 
       void default_action (const ast_t& node)
       {
-        not_reached;
+        ast_not_reached (node);
       }
 
       void visit (const ast_indexed_port_call_expr_t& node)
@@ -1199,6 +1290,15 @@ namespace runtime
         void* ptr = stack_frame_pop_pointer (exec.stack ());
         typed_value_t tv = node.typed_value;
         stack_frame_load (exec.stack (), ptr, tv.type->size ());
+      }
+
+      void visit (const ast_cast_expr_t& node)
+      {
+        evaluate_expr (exec, node.child ());
+        typed_value_t tv = node.child ()->typed_value;
+        stack_frame_pop_tv (exec.stack (), tv);
+        tv = typed_value_t::cast_exec (node.typed_value.type, tv);
+        stack_frame_push_tv (exec.stack (), tv);
       }
 
       void visit (const ast_binary_arithmetic_expr_t& node)
@@ -1642,12 +1742,7 @@ namespace runtime
 
               void default_action (const type_t& type)
               {
-                not_reached;
-              }
-
-              void visit (const named_type_t& type)
-              {
-                type.subtype ()->accept (*this);
+                type_not_reached (type);
               }
 
               void visit (const bool_type_t& type)
@@ -1703,9 +1798,16 @@ namespace runtime
                 stack_frame_pop (exec.stack (), u);
                 printf ("%d", u);
               }
+
+              void visit (const float64_type_t& type)
+              {
+                float64_type_t::ValueType u;
+                stack_frame_pop (exec.stack (), u);
+                printf ("%g", u);
+              }
             };
             visitor v (exec);
-            child->typed_value.type->accept (v);
+            type_strip (child->typed_value.type)->accept (v);
           }
         printf ("\n");
         exec.unlock_stdout ();

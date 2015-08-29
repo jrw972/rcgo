@@ -32,7 +32,7 @@ process_declarations (ast_t * node)
       typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, IMMUTABLE);
 
       check_assignment (left_tv, right_tv, node,
-                        "incompatible types (%s) = (%s)",
+                        "E11: incompatible types (%s) = (%s)",
                         "argument leaks mutable pointers",
                         "argument may store foreign pointer");
 

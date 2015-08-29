@@ -81,6 +81,7 @@ def: type_def { $$ = $1; }
 | instance_def { $$ = $1; }
 | method_def { $$ = $1; }
 | func_def { $$ = $1; }
+| const_def { $$ = $1; }
 
 const_def: CONST identifier type_spec '=' rvalue ';' { $$ = new ast_const_t (@1, $2, $3, $5); }
 

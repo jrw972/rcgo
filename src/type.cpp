@@ -257,6 +257,7 @@ ACCEPT(signature_type_t)
 ACCEPT(string_type_t)
 ACCEPT(int_type_t)
 ACCEPT(int8_type_t)
+ACCEPT(int64_type_t)
 ACCEPT(uint_type_t)
 ACCEPT(uint8_type_t)
 ACCEPT(uint32_type_t)
@@ -306,6 +307,16 @@ structurally_equal (const type_t* x, const type_t* y)
     }
 
     void visit (const int_type_t& type)
+    {
+      flag = &type == other;
+    }
+
+    void visit (const int8_type_t& type)
+    {
+      flag = &type == other;
+    }
+
+    void visit (const float64_type_t& type)
     {
       flag = &type == other;
     }
@@ -483,6 +494,7 @@ INSTANCE(void_type_t)
 INSTANCE(bool_type_t)
 INSTANCE(int_type_t)
 INSTANCE(int8_type_t)
+INSTANCE(int64_type_t)
 INSTANCE(uint_type_t)
 INSTANCE(uint8_type_t)
 INSTANCE(uint32_type_t)
@@ -557,6 +569,12 @@ type_contains_pointer (const type_t* type)
     { }
 
     void visit (const uint8_type_t& type)
+    { }
+
+    void visit (const uint32_type_t& type)
+    { }
+
+    void visit (const uint64_type_t& type)
     { }
 
     void visit (const float64_type_t& type)
@@ -652,7 +670,37 @@ type_is_integral (const type_t* type)
       flag = true;
     }
 
+    void visit (const int8_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const int64_type_t& type)
+    {
+      flag = true;
+    }
+
     void visit (const uint_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const uint8_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const uint32_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const uint64_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const uint128_type_t& type)
     {
       flag = true;
     }
@@ -679,6 +727,11 @@ type_is_unsigned_integral (const type_t* type)
     {
       flag = true;
     }
+
+    void visit (const uint8_type_t& type)
+    {
+      flag = true;
+    }
   };
   visitor v;
   type->accept (v);
@@ -696,6 +749,11 @@ type_is_floating (const type_t* type)
     void visit (const named_type_t& type)
     {
       type.subtype ()->accept (*this);
+    }
+
+    void visit (const float64_type_t& type)
+    {
+      flag = true;
     }
   };
   visitor v;
@@ -816,7 +874,12 @@ type_strip (const type_t* type)
   };
   visitor v (type);
   type->accept (v);
-  return v.retval;
+  if (type == v.retval) {
+    return type;
+  }
+  else {
+    return type_strip (v.retval);
+  }
 }
 
 const type_t*
@@ -882,6 +945,12 @@ type_is_index (const type_t* type, int_type_t::ValueType index)
   visitor v (index);
   type->accept (v);
   return v.flag;
+}
+
+bool
+type_is_castable (const type_t* x, const type_t* y)
+{
+  return type_is_numeric (x) && type_is_numeric (y);
 }
 
 std::string
