@@ -152,6 +152,7 @@ namespace runtime
   {
     if (instance->is_top_level ())
       {
+        exec.current_instance (instance->ptr ());
         char* top_before = stack_frame_top (exec.stack ());
         // Push this.
         stack_frame_push_pointer (exec.stack (), instance->ptr ());

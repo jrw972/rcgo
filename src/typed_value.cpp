@@ -557,6 +557,11 @@ static void invoke (const F& f,
     {
       f (result, type, left, right);
     }
+
+    void visit (const uint_type_t& type)
+    {
+      f (result, type, left, right);
+    }
   };
 
   visitor v (f, result, left, right);
@@ -881,6 +886,15 @@ struct Subtract : public location_t, public symmetric_arithmetic
 
   void
   operator() (typed_value_t& result,
+              const uint_type_t& type,
+              const typed_value_t& left,
+              const typed_value_t& right) const
+  {
+    result.value.ref (type) = left.value.ref (type) - right.value.ref (type);
+  }
+
+  void
+  operator() (typed_value_t& result,
               const type_t& type,
               const typed_value_t& left,
               const typed_value_t& right) const
@@ -898,6 +912,15 @@ struct LeftShift : public location_t, public shift_arithmetic
   void
   operator() (typed_value_t& result,
               const int_type_t& type,
+              const typed_value_t& left,
+              const typed_value_t& right) const
+  {
+    result.value.ref (type) = left.value.ref (type) << right.value.integral_value (right.type);
+  }
+
+  void
+  operator() (typed_value_t& result,
+              const uint_type_t& type,
               const typed_value_t& left,
               const typed_value_t& right) const
   {

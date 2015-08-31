@@ -306,6 +306,11 @@ structurally_equal (const type_t* x, const type_t* y)
       flag = &type == other;
     }
 
+    void visit (const uint64_type_t& type)
+    {
+      flag = &type == other;
+    }
+
     void visit (const int_type_t& type)
     {
       flag = &type == other;

@@ -95,9 +95,14 @@ value_t::integral_value (const type_t* type) const
     {
       value = tv.ref (type);
     }
+
+    void visit (const uint8_type_t& type)
+    {
+      value = tv.ref (type);
+    }
   };
 
   visitor v (*this);
-  type->accept (v);
+  type_strip (type)->accept (v);
   return v.value;
 }

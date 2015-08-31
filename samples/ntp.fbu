@@ -58,7 +58,7 @@ func LFP2D (a tstamp) float64 { return cast<float64>(a) / FRAC; }
 func LOG2D (a int8) float64 {
   /* poll, etc. */
   if a < 0i8 {
-    return 1.f64 / cast<float64>((1u64 << cast<uint8>((a * -1i8))));
+    return 1.f64 / cast<float64>(1u64 << cast<uint8>(a * -1i8));
   } else {
     return cast<float64>(1i64 << cast<uint8>(a));
   }
@@ -79,7 +79,7 @@ const MAXDIST float64 = 1f64;     /* % distance threshold (s) */
 const NOSYNC int8 = 0x3i8;        /* leap unsync */
 const MAXSTRAT int8 = 16i8;       /* maximum stratum (infinity metric) */
 const MINPOLL int8 = 6i8;         /* % minimum poll interval (64 s)*/
-const MAXPOLL uint = 17u;         /* % maximum poll interval (36.4 h) */
+const MAXPOLL int8 = 17i8;        /* % maximum poll interval (36.4 h) */
 const MINCLOCK uint = 3u;         /* minimum manycast survivors */
 const MAXCLOCK uint = 10u;        /* maximum manycast candidates */
 const TTLMAX uint = 8u;           /* max ttl manycast */
@@ -133,12 +133,13 @@ const A_CRYPTO uint = 3u;     /* crypto-NAK */
 /*
  * Association state codes
  */
-const X_INIT uint =         0u;       /* initialization */
-const X_STALE uint =        1u;       /* timeout */
-const X_STEP uint =         2u;       /* time step */
-const X_ERROR uint =        3u;       /* authentication error */
-const X_CRYPTO uint =       4u;       /* crypto-NAK received */
-const X_NKEY uint =         5u;       /* untrusted key */
+// TODO: Change to enum.
+const X_INIT int8 =         0i8;       /* initialization */
+const X_STALE int8 =        1i8;       /* timeout */
+const X_STEP int8 =         2i8;       /* time step */
+const X_ERROR int8 =        3i8;       /* authentication error */
+const X_CRYPTO int8 =       4i8;       /* crypto-NAK received */
+const X_NKEY int8 =         5i8;       /* untrusted key */
 
 /*
  * Protocol mode definitions
@@ -228,19 +229,41 @@ type x struct {
  * structures refers to process time, not real time.  Process time
  * increments by one second for every elapsed second of real time.
  */
-type f struct {
+type Filter struct {
         t       tstamp;         /* update time */
         offset  float64;         /* clock ofset */
         delay   float64;         /* roundtrip delay */
         disp    float64;         /* dispersion */
 };
 
+func (this @Filter) initialize () {
+     this.t = 0u64;
+     this.offset = 0f64;
+     this.delay = 0.f64;
+     this.disp = 0.f64;
+}
+
+/*
+ * Random Number Generator
+ */
+type Random struct {
+
+};
+
+func (this @Random) next () uint {
+  // TODO
+  return 0u;
+}
+
 /*
  * Association structure.  This is shared between the peer process
  * and poll process.
  */
-type p struct {
-         /*
+type Peer struct {
+        next     @Peer;
+        random   Random;
+
+        /*
          * Variables set by configuration
          */
         srcaddr  ipaddr;      /* source (remote) address */
@@ -249,7 +272,8 @@ type p struct {
         hmode    int8;        /* host mode */
         keyid    int;         /* key identifier */
         flags    int;         /* option flags */
-         /*
+
+        /*
          * Variables set by received packet
          */
         leap       int8;        /* leap indicator */
@@ -260,37 +284,84 @@ type p struct {
         rootdisp   float64;     /* root dispersion */
         refid      int8;        /* reference ID */
         reftime    tstamp;      /* reference time */
-//#define begin_clear org       /* beginning of clear area */
         org        tstamp;      /* originate timestamp */
         rec        tstamp;      /* receive timestamp */
         xmt        tstamp;      /* transmit timestamp */
-         /*
+        /*
          * Computed data
          */
-        t       float64;       /* update time */
-        f       [NSTAGE]f;     /* clock filter */
-        offset  float64;       /* peer offset */
-        delay   float64;       /* peer delay */
-        disp    float64;       /* peer dispersion */
-        jitter  float64;       /* RMS jitter */
-         /*
+        t       float64;        /* update time */
+        f       [NSTAGE]Filter; /* clock filter */
+        offset  float64;        /* peer offset */
+        delay   float64;        /* peer delay */
+        disp    float64;        /* peer dispersion */
+        jitter  float64;        /* RMS jitter */
+        /*
          * Poll process variables
          */
         hpoll        int8;      /* host poll interval */
         burst        int;       /* burst counter */
         reach        int;       /* reach register */
         ttl          int;       /* ttl (manycast) */
-//#define end_clear unreach     /* end of clear area */
         unreach      int;       /* unreach counter */
         outdate      int;       /* last poll time */
         nextdate     int;       /* next poll time */
 };
 
 /*
+ * initialize() - reinitialize for persistent association.  Based on clear().
+ */
+func (this @Peer) initialize (kiss      int8          /* kiss code */;
+                              precision int8;
+                              t         float64)
+{
+        var i int;
+
+        /*
+         * Initialize the association fields for general reset.
+         */
+        this.org = 0u64;
+        this.rec = 0u64;
+        this.xmt = 0u64;
+        this.t = 0f64;
+        for i .. NSTAGE {
+          this.f[i].initialize ();
+        }
+        this.offset = 0f64;
+        this.delay = 0f64;
+        this.disp = 0f64;
+        this.jitter = 0f64;
+        this.hpoll = 0i8;
+        this.burst = 0i;
+        this.reach = 0i;
+        this.ttl = 0i;
+
+        this.leap = NOSYNC;
+        this.stratum = MAXSTRAT;
+        this.ppoll = MAXPOLL;
+        this.hpoll = MINPOLL;
+        this.disp = MAXDISP;
+        this.jitter = LOG2D(precision);
+        this.refid = kiss;
+        for i .. NSTAGE {
+          this.f[i].disp = MAXDISP;
+        }
+
+        /*
+         * Randomize the first poll just in case thousands of broadcast
+         * clients have just been stirred up after a long absence of the
+         * broadcast server.
+         */
+        this.t = t;
+        this.outdate = cast<int>(t);
+        this.nextdate = this.outdate + cast<int> (this.random.next() & ((1u << cast<uint8>(MINPOLL)) - 1u));
+}
+
+/*
  * Chime list.  This is used by the intersection algorithm.
  */
 type m struct {              /* m is for Marzullo */
-        p     @p;            /* peer structure pointer */
+        p     @Peer;         /* peer structure pointer */
         type_ int;           /* high +1, mid 0, low -1 */
         edge  float64;       /* correctness interval edge */
 };
@@ -299,14 +370,14 @@ type m struct {              /* m is for Marzullo */
  * Survivor list.  This is used by the clustering algorithm.
  */
 type v struct {
-        p       @p;            /* peer structure pointer */
+        p       @Peer;         /* peer structure pointer */
         metric  float64;       /* sort metric */
 };
 
 /*
  * System structure
  */
-type s struct {
+type System struct {
         t            tstamp;    /* update time */
         leap         int8;      /* leap indicator */
         stratum      int8;      /* stratum */
@@ -318,14 +389,14 @@ type s struct {
         reftime      tstamp;    /* reference time */
         m            [NMAX]m;   /* chime list */
         v            [NMAX]v;   /* survivor list */
-        p            @p;        /* association ID */
+        p            @Peer;     /* association ID */
         offset       float64;   /* combined offset */
         jitter       float64;   /* combined jitter */
         flags        int;       /* option flags */
         n            int;       /* number of survivors */
 };
 
-func (this @s) rstclock (t tstamp /* new update time */)
+func (this @System) rstclock (t tstamp /* new update time */)
 {
   this.t = t;
 }
@@ -333,7 +404,7 @@ func (this @s) rstclock (t tstamp /* new update time */)
 /*
  * Local clock structure
  */
-type c struct {
+type LocalClock struct {
         t       tstamp;       /* update time */
         state   int;          /* current state */
         offset  float64;       /* current offset */
@@ -347,8 +418,8 @@ type c struct {
 /*
  * rstclock() - clock state machine
  */
-func (this @c) rstclock (state  int;     /* new state */
-                         offset float64  /* new offset */)
+func (this @LocalClock) rstclock (state  int;     /* new state */
+                                  offset float64  /* new offset */)
 {
         /*
          * Enter new state and set state variables.  Note, we use the
@@ -423,10 +494,8 @@ const MODE uint     =   0u;       /* any NTP mode */
 const KEYID uint    =   0u;       /* any key identifier */
 
 type NTP component {
-  p @p;            /* peer structure pointer */
-  r @r;            /* receive packet pointer */
-  s s;             /* system */
-  c c;             /* local clock */
+  s System;             /* system */
+  c LocalClock;         /* local clock */
 };
 
 func (this @NTP) Init ()
@@ -450,8 +519,11 @@ func (this @NTP) Init ()
    */
   // Skip rapid initialization using a frequency file.
   this.c.rstclock (NSET, 0f64);
-  this.s.rstclock (cast<tstamp>(0u64));
+  this.s.rstclock (0u64);
   this.c.jitter = LOG2D (this.s.precision);
+
+  var p @Peer;
+  p = new Peer;
 }
 
 // /*
@@ -460,6 +532,7 @@ func (this @NTP) Init ()
 // int
 // main()
 // {
+//         TODO
 //         /*
 //          * Read the configuration file and mobilize persistent
 //          * associations with specified addresses, version, mode, key ID,
@@ -483,5 +556,39 @@ func (this @NTP) Init ()
 
 //         return(0);
 // }
+
+/*
+ * mobilize() - mobilize and initialize an association
+ */
+func (this @System) mobilize (
+        srcaddr  ipaddr;     /* IP source address */
+        dstaddr  ipaddr;     /* IP destination address */
+        version  int8;       /* version */
+        mode     int8;       /* host mode */
+        keyid    int;        /* key identifier */
+        flags    int;        /* peer flags */
+        t        float64;
+        ) @Peer
+{
+        var p @Peer;            /* peer process pointer */
+
+        /*
+         * Allocate and initialize association memory
+         */
+        p = new Peer;
+        p.srcaddr = srcaddr;
+        p.dstaddr = dstaddr;
+        p.version = version;
+        p.hmode = mode;
+        p.keyid = keyid;
+        p.hpoll = MINPOLL;
+        p.initialize (X_INIT, this.precision, t);
+        p.flags = flags;
+
+        p.next = this.p;
+        this.p = p;
+
+        return p;
+}
 
 instance system NTP Init;
