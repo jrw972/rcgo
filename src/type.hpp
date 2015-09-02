@@ -57,6 +57,10 @@ public:
 
   void add_method (method_t* method) { methods_.push_back (method); }
   method_t* get_method (const std::string& identifier) const;
+  void add_initializer (initializer_t* initializer) { initializers_.push_back (initializer); }
+  initializer_t* get_initializer (const std::string& identifier) const;
+  void add_getter (getter_t* getter) { getters_.push_back (getter); }
+  getter_t* get_getter (const std::string& identifier) const;
 
   void add_action (action_t* action) { actions_.push_back (action); }
   typedef std::vector<action_t*> ActionsType;
@@ -76,6 +80,8 @@ private:
   std::string const name_;
   const type_t* subtype_;
   std::vector<method_t*> methods_;
+  std::vector<initializer_t*> initializers_;
+  std::vector<getter_t*> getters_;
   ActionsType actions_;
   ReactionsType reactions_;
   BindsType binds_;
@@ -449,7 +455,41 @@ private:
   const parameter_t * return_parameter_;
 };
 
-class method_type_t : public type_t
+class method_base : public type_t
+{
+public:
+  method_base (const named_type_t* named_type_,
+               const std::string& this_name,
+               const type_t* receiver_type_,
+               Mutability dereference_mutability,
+               const signature_type_t * signature_,
+               const parameter_t* return_parameter)
+    : named_type (named_type_)
+    , receiver_type (receiver_type_)
+    , this_parameter (make_this_parameter (this_name, receiver_type_, dereference_mutability))
+    , function_type (make_function_type (this_parameter, signature_, return_parameter))
+    , signature (signature_)
+    , return_parameter (function_type->return_parameter ())
+  {
+  }
+
+  const named_type_t* const named_type;
+  const type_t* const receiver_type;
+  const parameter_t* const this_parameter;
+  const function_type_t* const function_type;
+  const signature_type_t* const signature;
+  const parameter_t* const return_parameter;
+
+private:
+  static parameter_t* make_this_parameter (const std::string& this_name,
+                                           const type_t* receiver_type,
+                                           Mutability dereference_mutability);
+  static function_type_t* make_function_type (const parameter_t* this_parameter,
+                                              const signature_type_t* signature,
+                                              const parameter_t* return_parameter);
+};
+
+class method_type_t : public method_base
 {
 public:
   method_type_t (const named_type_t* named_type_,
@@ -458,12 +498,27 @@ public:
                  Mutability dereference_mutability,
                  const signature_type_t * signature,
                  const parameter_t* return_parameter)
-    : named_type (named_type_)
-    , receiver_type (receiver_type_)
-    , this_parameter (make_this_parameter (this_name, receiver_type_, dereference_mutability))
-    , function_type (make_function_type (this_parameter, signature, return_parameter))
-    , signature_ (signature)
-    , bind_type_ (new function_type_t (signature_, return_parameter))
+    : method_base (named_type_, this_name, receiver_type_, dereference_mutability, signature, return_parameter)
+  {
+  }
+
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const;
+  size_t alignment () const { return sizeof (void*); }
+  size_t size () const { return sizeof (void*); }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+};
+
+class getter_type_t : public method_base
+{
+public:
+  getter_type_t (const named_type_t* named_type_,
+                 const std::string& this_name,
+                 const type_t* receiver_type_,
+                 const signature_type_t * signature,
+                 const parameter_t* return_parameter)
+    : method_base (named_type_, this_name, receiver_type_, IMMUTABLE, signature, return_parameter)
+    , bind_type (new function_type_t (signature, return_parameter))
   {
   }
 
@@ -473,29 +528,53 @@ public:
   size_t size () const { return sizeof (void*); }
   virtual TypeLevel level () const { return CONVENTIONAL; }
 
-  const named_type_t* const named_type;
-  const type_t* const receiver_type;
-  const parameter_t* const this_parameter;
-  const function_type_t* function_type;
-  const type_t* bind_type () const { return bind_type_; }
-  const signature_type_t* signature () const { return signature_; }
-  const parameter_t* return_parameter () const { return function_type->return_parameter (); }
-
-private:
-  static parameter_t* make_this_parameter (const std::string& this_name,
-                                           const type_t* receiver_type,
-                                           Mutability dereference_mutability);
-  static function_type_t* make_function_type (const parameter_t* this_parameter,
-                                              const signature_type_t* signature,
-                                              const parameter_t* return_parameter);
-  const signature_type_t* signature_;
-  const type_t* bind_type_;
+  const type_t* const bind_type;
 };
 
-class port_type_t : public type_t
+class initializer_type_t : public method_base
 {
 public:
-  port_type_t (const signature_type_t* signature)
+  initializer_type_t (const named_type_t* named_type_,
+                      const std::string& this_name,
+                      const type_t* receiver_type_,
+                      Mutability dereference_mutability,
+                      const signature_type_t * signature,
+                      const parameter_t* return_parameter)
+    : method_base (named_type_, this_name, receiver_type_, dereference_mutability, signature, return_parameter)
+  {}
+
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const;
+  size_t alignment () const { return sizeof (void*); }
+  size_t size () const { return sizeof (void*); }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+ };
+
+class pull_port_type_t : public type_t
+{
+public:
+  pull_port_type_t (const signature_type_t* signature_, const parameter_t* return_parameter_)
+    : function_type_ (new function_type_t (signature_, return_parameter_))
+  { }
+
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const;
+  size_t alignment () const { return sizeof (void*); }
+  size_t size () const { return sizeof (pfunc_t); }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+
+  const signature_type_t * signature () const { return function_type_->signature (); }
+  const parameter_t * return_parameter () const { return function_type_->return_parameter (); }
+  const type_t* bind_type () const { return function_type_; }
+
+private:
+  const function_type_t* function_type_;
+};
+
+class push_port_type_t : public type_t
+{
+public:
+  push_port_type_t (const signature_type_t* signature)
     : signature_ (signature)
   { }
 
@@ -513,27 +592,6 @@ public:
   const signature_type_t* signature () const { return signature_; }
 private:
   const signature_type_t *signature_;
-};
-
-class pfunc_type_t : public type_t
-{
-public:
-  pfunc_type_t (const signature_type_t* signature_, const parameter_t* return_parameter_)
-    : function_type_ (new function_type_t (signature_, return_parameter_))
-  { }
-
-  void accept (const_type_visitor_t& visitor) const;
-  std::string to_string () const;
-  size_t alignment () const { return sizeof (void*); }
-  size_t size () const { return sizeof (pfunc_t); }
-  virtual TypeLevel level () const { return CONVENTIONAL; }
-
-  const signature_type_t * signature () const { return function_type_->signature (); }
-  const parameter_t * return_parameter () const { return function_type_->return_parameter (); }
-  const type_t* bind_type () const { return function_type_; }
-
-private:
-  const function_type_t* function_type_;
 };
 
 class reaction_type_t : public type_t
@@ -583,11 +641,13 @@ struct const_type_visitor_t
   virtual void visit (const field_list_type_t& type) { default_action (type); }
   virtual void visit (const function_type_t& type) { default_action (type); }
   virtual void visit (const method_type_t& type) { default_action (type); }
+  virtual void visit (const initializer_type_t& type) { default_action (type); }
+  virtual void visit (const getter_type_t& type) { default_action (type); }
   virtual void visit (const heap_type_t& type) { default_action (type); }
   virtual void visit (const named_type_t& type) { default_action (type); }
   virtual void visit (const pointer_type_t& type) { default_action (type); }
-  virtual void visit (const port_type_t& type) { default_action (type); }
-  virtual void visit (const pfunc_type_t& type) { default_action (type); }
+  virtual void visit (const push_port_type_t& type) { default_action (type); }
+  virtual void visit (const pull_port_type_t& type) { default_action (type); }
   virtual void visit (const reaction_type_t& type) { default_action (type); }
   virtual void visit (const signature_type_t& type) { default_action (type); }
   virtual void visit (const string_type_t& type) { default_action (type); }
@@ -612,6 +672,12 @@ type_select_field (const type_t* type, const std::string& identifier);
 
 method_t*
 type_select_method (const type_t* type, const std::string& identifier);
+
+initializer_t*
+type_select_initializer (const type_t* type, const std::string& identifier);
+
+getter_t*
+type_select_getter (const type_t* type, const std::string& identifier);
 
 reaction_t*
 type_select_reaction (const type_t* type, const std::string& identifier);

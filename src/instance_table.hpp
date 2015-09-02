@@ -36,7 +36,7 @@ struct instance_table_t
     InputsType inputs;
   };
   typedef std::map<size_t, PortValueType> PortsType;
-  PortsType ports;
+  PortsType push_ports;
 
   typedef std::map<InputType, std::set<size_t> > ReversePortsType;
   ReversePortsType reverse_ports;
@@ -44,41 +44,33 @@ struct instance_table_t
   struct OutputType
   {
     instance_t* instance;
-    union {
-      method_t* method;
-      function_t* function;
-    };
+    getter_t* getter;
 
     OutputType () { }
-    OutputType (instance_t* i, method_t* m)
+    OutputType (instance_t* i, getter_t* g)
       : instance (i)
-      , method (m)
-    { }
-
-    OutputType (function_t* f)
-      : instance (NULL)
-      , function (f)
+      , getter (g)
     { }
 
     bool operator< (const OutputType& other) const
     {
       if (this->instance != other.instance) return this->instance < other.instance;
-      return this->method < other.method;
+      return this->getter < other.getter;
     }
   };
   typedef std::set<OutputType> OutputsType;
 
-  struct PfuncValueType
+  struct PullPortValueType
   {
-    PfuncValueType () { }
-    PfuncValueType (size_t a, instance_t* oi, field_t* of) : address (a), input_instance (oi), input_field (of) { }
+    PullPortValueType () { }
+    PullPortValueType (size_t a, instance_t* oi, field_t* of) : address (a), input_instance (oi), input_field (of) { }
     size_t address;
     instance_t* input_instance;
     field_t* input_field;
     OutputsType outputs;
   };
-  typedef std::map<size_t, PfuncValueType> PfuncsType;
-  PfuncsType pfuncs;
+  typedef std::map<size_t, PullPortValueType> PullPortsType;
+  PullPortsType pull_ports;
 
   typedef std::vector<instance_t::ConcreteAction> ActionsType;
   ActionsType actions () const;
@@ -89,19 +81,19 @@ struct instance_table_t
   }
 
   void
-  insert_port (size_t address,
-               instance_t* output_instance,
-               field_t* output_field)
+  insert_push_port (size_t address,
+                    instance_t* output_instance,
+                    field_t* output_field)
   {
-    ports[address] = PortValueType (address, output_instance, output_field);
+    push_ports[address] = PortValueType (address, output_instance, output_field);
   }
 
   void
-  insert_pfunc (size_t address,
-                instance_t* input_instance,
-                field_t* input_field)
+  insert_pull_port (size_t address,
+                    instance_t* input_instance,
+                    field_t* input_field)
   {
-    pfuncs[address] = PfuncValueType (address, input_instance, input_field);
+    pull_ports[address] = PullPortValueType (address, input_instance, input_field);
   }
 };
 

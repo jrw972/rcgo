@@ -78,6 +78,16 @@ construct_symbol_table (ast_t * node)
       make (node);
     }
 
+    void visit (ast_initializer_t& node)
+    {
+      make (node);
+    }
+
+    void visit (ast_getter_t& node)
+    {
+      make (node);
+    }
+
     void visit (ast_reaction_t& node)
     {
       make (node);

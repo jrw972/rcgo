@@ -68,7 +68,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
 
     void default_action (ast_t& node)
     {
-      not_reached;
+      ast_not_reached (node);
     }
 
     void visit (ast_array_type_spec_t& node)
@@ -177,14 +177,14 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
       type = pointer_type_t::make (process_type_spec (node.child (), false));
     }
 
-    void visit (ast_port_type_spec_t& node)
+    void visit (ast_push_port_type_spec_t& node)
     {
       const signature_type_t* signature = type_cast<signature_type_t> (process_type_spec (node.signature (), true));
       check_port_reaction_signature (signature);
-      type = new port_type_t (signature);
+      type = new push_port_type_t (signature);
     }
 
-    void visit (ast_pfunc_type_spec_t& node)
+    void visit (ast_pull_port_type_spec_t& node)
     {
       const signature_type_t* signature = type_cast<signature_type_t> (process_type_spec (node.signature (), true));
       check_port_reaction_signature (signature);
@@ -200,7 +200,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
           error_at_line (-1, 0, node.return_type ()->location.file, node.return_type ()->location.line,
                          "return type leaks pointers");
         }
-      type = new pfunc_type_t (signature, return_parameter);
+      type = new pull_port_type_t (signature, return_parameter);
     }
 
     void visit (ast_signature_type_spec_t& node)

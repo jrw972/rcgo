@@ -11,12 +11,12 @@ public:
   instance_t (instance_t* parent,
               size_t address,
               const named_type_t* type,
-              method_t* method)
+              initializer_t* initializer)
     : parent_ (parent)
     , address_ (address)
     , type_ (type)
     , ptr_ (NULL)
-    , method_ (method)
+    , initializer_ (initializer)
   { }
 
   instance_t* parent () const { return parent_; }
@@ -26,7 +26,7 @@ public:
   void ptr (component_t* p) { ptr_ = p; }
   component_t* ptr () const { return ptr_; }
 
-  method_t* method () const { return method_; }
+  initializer_t* initializer () const { return initializer_; }
 
   bool is_top_level () const { return parent_ == NULL; }
   size_t offset () const
@@ -46,7 +46,7 @@ private:
   size_t address_;
   const named_type_t *type_;
   component_t* ptr_;
-  method_t* method_;
+  initializer_t* initializer_;
 
 public:
   struct ConcreteAction

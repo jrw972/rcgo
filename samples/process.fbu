@@ -48,7 +48,7 @@ func (this @Queue const) Front () uint
 type Channel component
 {
   queue Queue;
-  receive port (message uint);
+  receive push (message uint);
 };
 
 reaction (this @Channel const) send (message uint)
@@ -73,17 +73,17 @@ type Process component
 {
   i uint;
   val [3u]uint;
-  send [3u] port (v uint);
-  decide port (v uint);
+  send [3u] push (v uint);
+  decide push (v uint);
 };
 
-func (this @Process) Initially (i uint)
+init (this @Process) Init (i uint)
 {
   println `I am process `, i;
   this.i = i;
 }
 
-reaction (this @Process const) init (v uint)
+reaction (this @Process const) Initr (v uint)
 {
   trigger
   {
@@ -148,15 +148,15 @@ type System component
 {
   process [3u]Process;
   channel [3u][3u]Channel;
-  init [3u] port (v uint);
+  initp [3u] push (v uint);
 };
 
-func (this @System) Init ()
+init (this @System) Init ()
 {
   var i uint;
   i = 0u;
   while i != 3u {
-    this.process[i].Initially (i);
+    this.process[i].Init (i);
     i++;
   };
 }
@@ -164,7 +164,7 @@ func (this @System) Init ()
 [3u] action (this @System const) (true)
 {
   // send
-  trigger init[IOTA] (100u + IOTA)
+  trigger initp[IOTA] (100u + IOTA)
   { };
 }
 
@@ -175,7 +175,7 @@ func (this @System) Init ()
 
 bind (this @System) {
   for i .. 3u {
-    this.init[i] -> this.process[i].init;
+    this.initp[i] -> this.process[i].Initr;
     this.process[i].decide -> this.decide .. i;
 
     for j .. 3u {

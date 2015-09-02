@@ -12,6 +12,8 @@
 #include "symbol.hpp"
 #include "memory_model.hpp"
 #include "method.hpp"
+#include "initializer.hpp"
+#include "getter.hpp"
 #include "function.hpp"
 #include "bind.hpp"
 
@@ -117,17 +119,17 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t& memory_model)
       assert (memory_model.locals_offset () == offset_before);
     }
 
-    void visit (ast_bind_port_statement_t& node)
+    void visit (ast_bind_push_port_statement_t& node)
     {
       // Do nothing.
     }
 
-    void visit (ast_bind_port_param_statement_t& node)
+    void visit (ast_bind_push_port_param_statement_t& node)
     {
       // Do nothing.
     }
 
-    void visit (ast_bind_pfunc_statement_t& node)
+    void visit (ast_bind_pull_port_statement_t& node)
     {
       // Do nothing.
     }
@@ -267,6 +269,16 @@ allocate_stack_variables (ast_t* node)
     void visit (ast_method_t& node)
     {
       node.method->memory_model = allocate_stack_variables_helper (&node, node.body ());
+    }
+
+    void visit (ast_initializer_t& node)
+    {
+      node.initializer->memory_model = allocate_stack_variables_helper (&node, node.body ());
+    }
+
+    void visit (ast_getter_t& node)
+    {
+      node.getter->memory_model = allocate_stack_variables_helper (&node, node.body ());
     }
 
     void visit (ast_reaction_t& node)

@@ -36,6 +36,8 @@ public:
     , current_action (NULL)
     , current_function (NULL)
     , current_method (NULL)
+    , current_initializer (NULL)
+    , current_getter (NULL)
     , current_trigger (NULL)
     , current_receiver_type (NULL)
   { }
@@ -132,11 +134,13 @@ private:
   SymbolsType symbols_;
 
 public:
-  action_reaction_base_t *current_action;
+  action_reaction_base_t* current_action;
   function_t* current_function;
-  method_t *current_method;
-  trigger_t *current_trigger;
-  named_type_t *current_receiver_type;
+  method_t* current_method;
+  initializer_t* current_initializer;
+  getter_t* current_getter;
+  trigger_t* current_trigger;
+  named_type_t* current_receiver_type;
 };
 
 inline std::ostream&
@@ -164,6 +168,14 @@ function_t *symtab_get_current_function (const symtab_t * symtab);
 void symtab_set_current_method (symtab_t * symtab, method_t * method);
 
 method_t *symtab_get_current_method (const symtab_t * symtab);
+
+void symtab_set_current_initializer (symtab_t * symtab, initializer_t * initializer);
+
+initializer_t *symtab_get_current_initializer (const symtab_t * symtab);
+
+void symtab_set_current_getter (symtab_t * symtab, getter_t * getter);
+
+getter_t *symtab_get_current_getter (const symtab_t * symtab);
 
 void symtab_set_current_trigger (symtab_t * symtab, trigger_t * trigger);
 

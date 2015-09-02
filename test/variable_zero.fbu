@@ -1,6 +1,6 @@
 type HelloWorld component { };
 
-func (this @HelloWorld) print () {
+init (this @HelloWorld) print () {
   {
     var x int;
     x = 3i;

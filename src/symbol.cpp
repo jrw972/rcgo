@@ -32,7 +32,7 @@ struct symbol_t
     struct
     {
       const named_type_t *type;
-      method_t* method;
+      initializer_t* initializer;
     } instance;
     struct
     {
@@ -57,7 +57,7 @@ struct symbol_t
     parameter.kind = static_cast<ParameterKind> (0);
     parameter.original = NULL;
     instance.type = NULL;
-    instance.method = NULL;
+    instance.initializer = NULL;
   }
 };
 
@@ -252,16 +252,16 @@ symbol_get_instance_type (const symbol_t * symbol)
   return symbol->instance.type;
 }
 
-void symbol_set_instance_method (symbol_t* symbol, method_t* method)
+void symbol_set_instance_initializer (symbol_t* symbol, initializer_t* initializer)
 {
   assert (symbol->kind == SymbolInstance);
-  symbol->instance.method = method;
+  symbol->instance.initializer = initializer;
 }
 
-method_t* symbol_get_instance_method (symbol_t* symbol)
+initializer_t* symbol_get_instance_initializer (symbol_t* symbol)
 {
   assert (symbol->kind == SymbolInstance);
-  return symbol->instance.method;
+  return symbol->instance.initializer;
 }
 
 symbol_t *

@@ -2,7 +2,7 @@
 type Clock component {
   counter uint;
   flag bool;
-  response port (t uint);
+  response push (t uint);
 };
 
 action (this @Clock const) (true) {
@@ -26,7 +26,7 @@ action (this @Clock const) (this.flag) {
 
 type Sampler component {
   flag bool;
-  request port ();
+  request push ();
 };
 
 action (this @Sampler const) (!this.flag) {
@@ -47,7 +47,7 @@ type System component {
   clock Clock;
 };
 
-func (this @System) Initially ()
+init (this @System) Initially ()
 { }
 
 bind (this @System) {

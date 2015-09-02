@@ -272,6 +272,10 @@ struct typed_value_t
 
   explicit typed_value_t (method_t* m);
 
+  explicit typed_value_t (initializer_t* i);
+
+  explicit typed_value_t (getter_t* g);
+
   explicit typed_value_t (reaction_t* r);
 
   const type_t *type;

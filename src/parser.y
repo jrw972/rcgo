@@ -26,10 +26,12 @@
 %type <node> field_list
 %type <node> for_iota_stmt
 %type <node> func_def
+%type <node> getter_def
 %type <node> identifier
 %type <node> identifier_list
 %type <node> if_stmt
 %type <node> increment_stmt
+%type <node> init_def
 %type <node> inner_stmt_list
 %type <node> instance_def
 %type <node> lvalue
@@ -37,12 +39,12 @@
 %type <node> multiply_expr
 %type <node> optional_expr_list
 %type <node> index_expr
-%type <node> optional_port_call_list
+%type <node> optional_push_port_call_list
 %type <node> or_expr
 %type <node> parameter
 %type <node> parameter_list
-%type <node> port_call
-%type <node> port_call_list
+%type <node> push_port_call
+%type <node> push_port_call_list
 %type <node> primary_expr
 %type <node> primary_expr_no_call
 %type <node> primary_lvalue
@@ -63,7 +65,7 @@
 %type <node> while_stmt
 %destructor { /* TODO:  Free the node. node_free ($$); */ } <node>
 
-%token ACTION BIND CAST CHANGE COMPONENT CONST ELSE ENUM FOR FOREIGN_KW FUNC HEAP IF INSTANCE MERGE MOVE NEW PFUNC PORT PRINTLN REACTION RETURN_KW STRUCT TRIGGER TYPE VAR WHILE
+%token ACTION BIND CAST CHANGE COMPONENT CONST ELSE ENUM FOR FOREIGN_KW FUNC GETTER HEAP IF INIT INSTANCE MERGE MOVE NEW PRINTLN PULL PUSH REACTION RETURN_KW STRUCT TRIGGER TYPE VAR WHILE
 
 %token ADD_ASSIGN AND_NOT_TOKEN RIGHT_ARROW LEFT_ARROW DECREMENT DOTDOT EQUAL_TOKEN INCREMENT LESS_EQUAL_TOKEN LEFT_SHIFT_TOKEN LOGIC_AND_TOKEN LOGIC_OR_TOKEN MORE_EQUAL_TOKEN NOT_EQUAL_TOKEN RIGHT_SHIFT_TOKEN
 
@@ -75,6 +77,8 @@ def_list: /* empty */ { $$ = new ast_top_level_list_t (); }
 | def_list def { $$ = $1->append ($2); }
 
 def: type_def { $$ = $1; }
+| init_def { $$ = $1; }
+| getter_def { $$ = $1; }
 | action_def { $$ = $1; }
 | reaction_def { $$ = $1; }
 | bind_def { $$ = $1; }
@@ -97,6 +101,12 @@ reaction_def:
 | array_dimension REACTION '(' identifier '@' identifier CONST ')' identifier signature stmt_list { $$ = new ast_dimensioned_reaction_t (@2, $1, $4, $6, $9, $10, $11); }
 
 bind_def: BIND '(' identifier '@' identifier ')' stmt_list { $$ = new ast_bind_t (@1, $3, $5, $7); }
+
+init_def:
+  INIT '(' identifier '@' identifier       ')' identifier signature stmt_list { $$ = new ast_initializer_t (@1, $3, $5, $7, $8, $9); }
+
+getter_def:
+  GETTER '(' identifier '@' identifier CONST ')' identifier signature type_spec CONST stmt_list { $$ = new ast_getter_t (@1, $3, $5, $8, $9, $10, $12); }
 
 method_def:
   FUNC '(' identifier '@' identifier       ')' identifier signature type_spec stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, $9, MUTABLE, $10); }
@@ -124,9 +134,9 @@ parameter: identifier_list type_spec { $$ = new ast_identifier_list_type_spec_t 
 optional_semicolon: /* Empty. */
 | ';'
 
-bind_stmt: lvalue RIGHT_ARROW rvalue ';' { $$ = new ast_bind_port_statement_t (@1, $1, $3); }
-| lvalue RIGHT_ARROW rvalue DOTDOT rvalue';' { $$ = new ast_bind_port_param_statement_t (@1, $1, $3, $5); }
-| lvalue LEFT_ARROW rvalue ';' { $$ = new ast_bind_pfunc_statement_t (@1, $1, $3); }
+bind_stmt: lvalue RIGHT_ARROW rvalue ';' { $$ = new ast_bind_push_port_statement_t (@1, $1, $3); }
+| lvalue RIGHT_ARROW rvalue DOTDOT rvalue';' { $$ = new ast_bind_push_port_param_statement_t (@1, $1, $3, $5); }
+| lvalue LEFT_ARROW rvalue ';' { $$ = new ast_bind_pull_port_statement_t (@1, $1, $3); }
 
 stmt_list: '{' inner_stmt_list '}' { $$ = $2; }
 
@@ -153,7 +163,7 @@ simple_stmt: empty_stmt { $$ = $1; }
 
 empty_stmt: /* empty */ ';' { $$ = new ast_empty_statement_t (yyloc); }
 
-trigger_stmt: TRIGGER optional_port_call_list stmt_list { $$ = new ast_trigger_statement_t (@1, $2, $3); }
+trigger_stmt: TRIGGER optional_push_port_call_list stmt_list { $$ = new ast_trigger_statement_t (@1, $2, $3); }
 
 change_stmt: CHANGE '(' rvalue ',' identifier type_spec ')' stmt_list { $$ = new ast_change_statement_t (@1, $3, $5, $6, $8); }
 
@@ -166,14 +176,14 @@ return_stmt: RETURN_KW rvalue ';' { $$ = new ast_return_statement_t (@1, $2); }
 increment_stmt: lvalue INCREMENT ';' { $$ = new ast_increment_statement_t (@1, $1); }
 | lvalue DECREMENT ';' { $$ = new ast_decrement_statement_t (@1, $1); }
 
-optional_port_call_list: /* Empty. */ { $$ = new ast_list_expr_t (yyloc); }
-| port_call_list { $$ = $1; }
+optional_push_port_call_list: /* Empty. */ { $$ = new ast_list_expr_t (yyloc); }
+| push_port_call_list { $$ = $1; }
 
-port_call_list: port_call { $$ = (new ast_list_expr_t (@1))->append ($1); }
-| port_call_list ',' port_call { $$ = $1->append ($3); }
+push_port_call_list: push_port_call { $$ = (new ast_list_expr_t (@1))->append ($1); }
+| push_port_call_list ',' push_port_call { $$ = $1->append ($3); }
 
-port_call: identifier index_expr '(' optional_expr_list ')' { $$ = new ast_indexed_port_call_expr_t (@1, $1, $2, $4); }
-| identifier '(' optional_expr_list ')' { $$ = new ast_port_call_expr_t (@1, $1, $3); }
+push_port_call: identifier index_expr '(' optional_expr_list ')' { $$ = new ast_indexed_port_call_expr_t (@1, $1, $2, $4); }
+| identifier '(' optional_expr_list ')' { $$ = new ast_push_port_call_expr_t (@1, $1, $3); }
 
 index_expr: '[' rvalue ']' { $$ = $2; }
 
@@ -211,8 +221,8 @@ identifier: IDENTIFIER { $$ = $1; }
 type_spec: identifier { $$ = new ast_identifier_type_spec_t (@1, $1); }
 | COMPONENT '{' field_list '}' { $$ = new ast_component_type_spec_t (@1, $3); }
 | STRUCT '{' field_list '}' { $$ = new ast_struct_type_spec_t (@1, $3); }
-| PORT signature { $$ = new ast_port_type_spec_t (@1, $2); }
-| PFUNC signature type_spec { $$ = new ast_pfunc_type_spec_t (@1, $2, $3); }
+| PUSH signature { $$ = new ast_push_port_type_spec_t (@1, $2); }
+| PULL signature type_spec { $$ = new ast_pull_port_type_spec_t (@1, $2, $3); }
 | '@' type_spec { $$ = new ast_pointer_type_spec_t (@1, $2); }
 | HEAP type_spec { $$ = new ast_heap_type_spec_t (@1, $2); }
 | array_dimension type_spec { $$ = new ast_array_type_spec_t (@1, $1, $2); }

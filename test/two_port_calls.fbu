@@ -1,7 +1,7 @@
 type Actuator component {
   flag bool;
-  bang1 port ();
-  bang2 port ();
+  bang1 push ();
+  bang2 push ();
 };
 
 action (this @Actuator const) (!this.flag) {
@@ -30,6 +30,6 @@ bind (this @System) {
   this.actuator.bang2 -> this.detector2.bang;
 }
 
-func (this @System) init () { }
+init (this @System) Init () { }
 
-instance system System init;
+instance system System Init;

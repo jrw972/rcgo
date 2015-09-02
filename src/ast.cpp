@@ -7,6 +7,7 @@
 #include <vector>
 #include "method.hpp"
 #include "function.hpp"
+#include "getter.hpp"
 
 std::ostream&
 operator<< (std::ostream& out, const ast_t& node)
@@ -83,8 +84,8 @@ ACCEPT (ast_heap_type_spec_t)
 ACCEPT (ast_identifier_list_type_spec_t)
 ACCEPT (ast_identifier_type_spec_t)
 ACCEPT (ast_pointer_type_spec_t)
-ACCEPT (ast_port_type_spec_t)
-ACCEPT (ast_pfunc_type_spec_t)
+ACCEPT (ast_push_port_type_spec_t)
+ACCEPT (ast_pull_port_type_spec_t)
 ACCEPT (ast_signature_type_spec_t)
 ACCEPT (ast_struct_type_spec_t)
 
@@ -103,7 +104,7 @@ ACCEPT (ast_logic_not_expr_t)
 ACCEPT (ast_merge_expr_t)
 ACCEPT (ast_move_expr_t)
 ACCEPT (ast_new_expr_t)
-ACCEPT (ast_port_call_expr_t)
+ACCEPT (ast_push_port_call_expr_t)
 ACCEPT (ast_select_expr_t)
 
 ACCEPT (ast_empty_statement_t)
@@ -122,9 +123,9 @@ ACCEPT (ast_subtract_assign_statement_t)
 ACCEPT (ast_trigger_statement_t)
 ACCEPT (ast_var_statement_t)
 ACCEPT (ast_var_type_init_statement_t)
-ACCEPT (ast_bind_port_statement_t)
-ACCEPT (ast_bind_port_param_statement_t)
-ACCEPT (ast_bind_pfunc_statement_t)
+ACCEPT (ast_bind_push_port_statement_t)
+ACCEPT (ast_bind_push_port_param_statement_t)
+ACCEPT (ast_bind_pull_port_statement_t)
 ACCEPT (ast_for_iota_statement_t)
 
 ACCEPT (ast_action_t)
@@ -132,6 +133,8 @@ ACCEPT (ast_const_t)
 ACCEPT (ast_dimensioned_action_t)
 ACCEPT (ast_bind_t)
 ACCEPT (ast_function_t)
+ACCEPT (ast_getter_t)
+ACCEPT (ast_initializer_t)
 ACCEPT (ast_instance_t)
 ACCEPT (ast_method_t)
 ACCEPT (ast_reaction_t)
@@ -184,6 +187,18 @@ get_current_method (const ast_t * node)
   return symtab_get_current_method (node->symtab);
 }
 
+getter_t *
+get_current_getter (const ast_t * node)
+{
+  return symtab_get_current_getter (node->symtab);
+}
+
+initializer_t *
+get_current_initializer (const ast_t * node)
+{
+  return symtab_get_current_initializer (node->symtab);
+}
+
 function_t *
 get_current_function (const ast_t * node)
 {
@@ -193,6 +208,13 @@ get_current_function (const ast_t * node)
 const symbol_t*
 get_current_return_symbol (const ast_t * node)
 {
+  {
+    getter_t* g = get_current_getter (node);
+    if (g != NULL)
+      {
+        return g->return_symbol;
+      }
+  }
   {
     method_t* g = get_current_method (node);
     if (g != NULL)

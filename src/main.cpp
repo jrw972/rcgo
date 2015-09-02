@@ -40,7 +40,7 @@ int
 main (int argc, char **argv)
 {
   int show_composition = 0;
-  int thread_count = 2;
+  int thread_count = 1;
 
   while (true)
     {

@@ -371,47 +371,34 @@ instance_table_enumerate_bindings (instance_table_t& table)
               assert (param.kind == static_value_t::VALUE);
 
               instance_table_t::InputType i (table.instances[input.address], reaction.value.reaction_value (), param.value);
-              table.ports[port.address].inputs.insert (i);
+              table.push_ports[port.address].inputs.insert (i);
               table.reverse_ports[i].insert (port.address);
             }
 
-            void visit (const ast_bind_port_statement_t& node)
+            void visit (const ast_bind_push_port_statement_t& node)
             {
               bind (node.left (), node.right ());
             }
 
-            void visit (const ast_bind_port_param_statement_t& node)
+            void visit (const ast_bind_push_port_param_statement_t& node)
             {
               static_value_t param = evaluate_static (node.param (), memory);
               bind (node.left (), node.right (), param);
             }
 
-            void visit (const ast_bind_pfunc_statement_t& node)
+            void visit (const ast_bind_pull_port_statement_t& node)
             {
-              static_value_t pfunc = evaluate_static (node.left (), memory);
-              assert (pfunc.kind == static_value_t::ABSOLUTE_ADDRESS);
+              static_value_t pull_port = evaluate_static (node.left (), memory);
+              assert (pull_port.kind == static_value_t::ABSOLUTE_ADDRESS);
               typed_value_t tv = node.right ()->typed_value;
-              const method_type_t* method_type = type_cast<method_type_t> (tv.type);
-              if (method_type != NULL)
-                {
-                  // Strip off the implicit dereference and selecting of the reaction.
-                  static_value_t input = evaluate_static (node.right ()->children[0]->children[0], memory);
-                  assert (input.kind == static_value_t::ABSOLUTE_ADDRESS);
-                  instance_table_t::OutputType o (table.instances[input.address], tv.value.method_value ());
-                  table.pfuncs[pfunc.address].outputs.insert (o);
-                  return;
-                }
-
-              const function_type_t* function_type = type_cast<function_type_t> (tv.type);
-              if (function_type != NULL)
-                {
-                  unimplemented;
-                  // instance_table_t::OutputType o (tv.function_value);
-                  // table.pfuncs[pfunc.address].outputs.insert (o);
-                  return;
-                }
-
-              not_reached;
+              const getter_type_t* getter_type = type_cast<getter_type_t> (tv.type);
+              assert (getter_type != NULL);
+              // Strip off the implicit dereference and selecting of the getter.
+              static_value_t input = evaluate_static (node.right ()->children[0]->children[0], memory);
+              assert (input.kind == static_value_t::ABSOLUTE_ADDRESS);
+              instance_table_t::OutputType o (table.instances[input.address], tv.value.getter_value ());
+              table.pull_ports[pull_port.address].outputs.insert (o);
+              return;
             }
           };
           visitor v (table, instance_pos->first);
@@ -508,12 +495,12 @@ transitive_closure (const instance_table_t& table,
       node.visit_children (*this);
     }
 
-    void visit (const ast_port_call_expr_t& node)
+    void visit (const ast_push_port_call_expr_t& node)
     {
       size_t port = address + node.field->offset;
       // Find what is bound to this port.
-      instance_table_t::PortsType::const_iterator port_pos = table.ports.find (port);
-      assert (port_pos != table.ports.end ());
+      instance_table_t::PortsType::const_iterator port_pos = table.push_ports.find (port);
+      assert (port_pos != table.push_ports.end ());
 
       for (instance_table_t::InputsType::const_iterator pos = port_pos->second.inputs.begin (),
              limit = port_pos->second.inputs.end ();
@@ -558,11 +545,11 @@ transitive_closure (const instance_table_t& table,
       size_t port = address + node.field->offset + port_index * node.array_type->element_size ();
 
       // Find what is bound to this port.
-      instance_table_t::PortsType::const_iterator port_pos = table.ports.find (port);
-      assert (port_pos != table.ports.end ());
+      instance_table_t::PortsType::const_iterator port_pos = table.push_ports.find (port);
+      assert (port_pos != table.push_ports.end ());
 
       instance_table_t::InputsType::const_iterator pos = port_pos->second.inputs.begin ();
-      if (pos != table.ports.find (port)->second.inputs.end ())
+      if (pos != table.push_ports.find (port)->second.inputs.end ())
         {
           assert (port_pos->second.inputs.size () == 1);
           instance_t* inst = pos->instance;
@@ -777,7 +764,7 @@ transitive_closure (const instance_table_t& table,
     void visit (const ast_literal_expr_t& node)
     { }
 
-    void visit (const ast_port_call_expr_t& node)
+    void visit (const ast_push_port_call_expr_t& node)
     {
       node.args ()->accept (*this);
     }
@@ -812,34 +799,27 @@ transitive_closure (const instance_table_t& table,
         case ast_call_expr_t::NONE:
           not_reached;
         case ast_call_expr_t::FUNCTION:
-          break;
         case ast_call_expr_t::METHOD:
+          break;
+        case ast_call_expr_t::INITIALIZER:
+          not_reached;
+        case ast_call_expr_t::GETTER:
           {
-            // See if invoking a method on a component.
-            typed_value_t tv = node.expr ()->typed_value;
-            const method_type_t* method_type = type_cast<method_type_t> (tv.type);
-            if (type_cast<component_type_t> (type_strip (method_type->named_type)) != NULL)
-              {
-                offset_visitor v (receiver_address);
-                node.expr ()->children[0]->children[0]->accept (v);
-                instance_table_t::InstancesType::const_iterator pos = table.instances.find (v.computed_address);
-                assert (pos != table.instances.end ());
-                set.immutable_phase.insert (std::make_pair (pos->second, TRIGGER_READ));
-              }
+            offset_visitor v (receiver_address);
+            node.expr ()->children[0]->children[0]->accept (v);
+            instance_table_t::InstancesType::const_iterator pos = table.instances.find (v.computed_address);
+            assert (pos != table.instances.end ());
+            set.immutable_phase.insert (std::make_pair (pos->second, TRIGGER_READ));
           }
           break;
-        case ast_call_expr_t::PFUNC:
+        case ast_call_expr_t::PULL_PORT:
           {
-            // See if invoking a pfunc on a component.
             offset_visitor v (receiver_address);
             node.expr ()->children[0]->accept (v);
-            instance_table_t::PfuncsType::const_iterator pos = table.pfuncs.find (v.computed_address);
-            assert (pos != table.pfuncs.end ());
+            instance_table_t::PullPortsType::const_iterator pos = table.pull_ports.find (v.computed_address);
+            assert (pos != table.pull_ports.end ());
             instance_table_t::OutputType out = *pos->second.outputs.begin ();
-            if (out.instance != NULL)
-              {
-                set.immutable_phase.insert (std::make_pair (out.instance, TRIGGER_READ));
-              }
+            set.immutable_phase.insert (std::make_pair (out.instance, TRIGGER_READ));
           }
           break;
         }
@@ -896,9 +876,9 @@ instance_table_analyze_composition (const instance_table_t& table)
         }
     }
 
-  // Check that every pfunc is bound exactly once.
-  for (instance_table_t::PfuncsType::const_iterator pos = table.pfuncs.begin (),
-         limit = table.pfuncs.end ();
+  // Check that every pull port is bound exactly once.
+  for (instance_table_t::PullPortsType::const_iterator pos = table.pull_ports.begin (),
+         limit = table.pull_ports.end ();
        pos != limit;
        ++pos)
     {
@@ -1011,8 +991,8 @@ instance_table_dump (const instance_table_t& table)
   std::cout << '\n';
 
   std::cout << "ports\n";
-  for (instance_table_t::PortsType::const_iterator pos = table.ports.begin (),
-         limit = table.ports.end ();
+  for (instance_table_t::PortsType::const_iterator pos = table.push_ports.begin (),
+         limit = table.push_ports.end ();
        pos != limit;
        ++pos)
     {

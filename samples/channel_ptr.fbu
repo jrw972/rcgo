@@ -46,7 +46,7 @@ func (this @Queue const) Front () uint
 type Channel component
 {
   queue Queue;
-  receive port (message uint);
+  receive push (message uint);
 };
 
 reaction (this @Channel const) send (message @uint foreign)
@@ -71,10 +71,10 @@ type System component
 {
   channel Channel;
   send_count uint;
-  send port (message @uint foreign);
+  send push (message @uint foreign);
 };
 
-func (this @System) Initially ()
+init (this @System) Initially ()
 { }
 
 action (this @System const) (this.send_count != 100u)

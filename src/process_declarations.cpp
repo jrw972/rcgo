@@ -6,6 +6,8 @@
 #include "action.hpp"
 #include "bind.hpp"
 #include "method.hpp"
+#include "initializer.hpp"
+#include "getter.hpp"
 #include "parameter.hpp"
 
 void
@@ -15,7 +17,7 @@ process_declarations (ast_t * node)
   {
     void default_action (ast_t& node)
     {
-      not_reached;
+      ast_not_reached (node);
     }
 
     void visit (ast_const_t& node)
@@ -188,10 +190,8 @@ process_declarations (ast_t * node)
                          "component methods must have pointer receiver");
         }
 
-
       /* Process the signature. */
       const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
-
 
       /* Process the return type. */
       const type_t *return_type = process_type_spec (return_type_node, true);
@@ -223,6 +223,146 @@ process_declarations (ast_t * node)
       type->add_method (method);
       node.method = method;
       symtab_set_current_method (node.symtab, method);
+      symtab_set_current_receiver_type (node.symtab, type);
+    }
+
+    void visit (ast_initializer_t& node)
+    {
+      ast_t* this_node = node.this_identifier ();
+      ast_t *type_node = node.type_identifier ();
+      ast_t *signature_node = node.signature ();
+      ast_t *identifier_node = node.identifier ();
+      const std::string& identifier = ast_get_identifier (identifier_node);
+      const std::string& type_identifier = ast_get_identifier (type_node);
+      symbol_t *symbol = lookup_force (type_node, type_identifier);
+      if (symbol_kind (symbol) != SymbolType)
+        {
+          error_at_line (-1, 0, type_node->location.file, type_node->location.line,
+                         "%s does not refer to a type",
+                         type_identifier.c_str ());
+        }
+      named_type_t *type = symbol_get_type_type (symbol);
+
+      if (type_cast<component_type_t> (type_strip (type)) == NULL)
+        {
+          error_at_line (-1, 0, node.location.file,
+                         node.location.line,
+                         "E22: initializers must belong to a component");
+        }
+
+      const type_t *t = type_select (type, identifier);
+      if (t != NULL)
+        {
+          error_at_line (-1, 0, identifier_node->location.file,
+                         identifier_node->location.line,
+                         "component already contains a member named %s",
+                         identifier.c_str ());
+        }
+
+      /* Determine the type of this. */
+      const type_t* this_type = pointer_type_t::make (type);
+
+      /* Process the signature. */
+      const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
+
+      const type_t *return_type = void_type_t::instance ();
+      typed_value_t return_value = typed_value_t::make_value (return_type,
+                                                              typed_value_t::STACK,
+                                                              MUTABLE,
+                                                              IMMUTABLE);
+
+      parameter_t* return_parameter = new parameter_t (&node,
+                                                       "0return",
+                                                       return_value,
+                                                       false);
+
+      initializer_type_t* initializer_type =
+        new initializer_type_t (type,
+                                ast_get_identifier (this_node),
+                                this_type,
+                                MUTABLE,
+                                signature,
+                                return_parameter);
+
+      initializer_t* initializer = new initializer_t (&node, identifier, initializer_type);
+
+      enter_signature (signature_node, initializer->initializer_type->function_type->signature ());
+
+      type->add_initializer (initializer);
+      node.initializer = initializer;
+      symtab_set_current_initializer (node.symtab, initializer);
+      symtab_set_current_receiver_type (node.symtab, type);
+    }
+
+    void visit (ast_getter_t& node)
+    {
+      ast_t* this_node = node.this_identifier ();
+      ast_t *type_node = node.type_identifier ();
+      ast_t *signature_node = node.signature ();
+      ast_t *return_type_node = node.return_type ();
+      ast_t *identifier_node = node.identifier ();
+      const std::string& identifier = ast_get_identifier (identifier_node);
+      const std::string& type_identifier = ast_get_identifier (type_node);
+      symbol_t *symbol = lookup_force (type_node, type_identifier);
+      if (symbol_kind (symbol) != SymbolType)
+        {
+          error_at_line (-1, 0, type_node->location.file, type_node->location.line,
+                         "%s does not refer to a type",
+                         type_identifier.c_str ());
+        }
+      named_type_t *type = symbol_get_type_type (symbol);
+
+      if (type_cast<component_type_t> (type_strip (type)) == NULL)
+        {
+          error_at_line (-1, 0, node.location.file,
+                         node.location.line,
+                         "E22: getters must belong to a component");
+        }
+
+      const type_t *t = type_select (type, identifier);
+      if (t != NULL)
+        {
+          error_at_line (-1, 0, identifier_node->location.file,
+                         identifier_node->location.line,
+                         "component already contains a member named %s",
+                         identifier.c_str ());
+        }
+
+      /* Determine the type of this. */
+      const type_t* this_type = pointer_type_t::make (type);
+
+      /* Process the signature. */
+      const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
+
+      /* Process the return type. */
+      const type_t *return_type = process_type_spec (return_type_node, true);
+      typed_value_t return_value = typed_value_t::make_value (return_type,
+                                                              typed_value_t::STACK,
+                                                              MUTABLE,
+                                                              IMMUTABLE);
+
+      parameter_t* return_parameter = new parameter_t (return_type_node,
+                                                       "0return",
+                                                       return_value,
+                                                       false);
+
+      symbol_t* return_symbol = symbol_make_return_parameter (return_parameter);
+
+      getter_type_t* getter_type = new getter_type_t (type,
+                                                      ast_get_identifier (this_node),
+                                                      this_type,
+                                                      signature,
+                                                      return_parameter);
+
+      getter_t* getter = new getter_t (&node, identifier, getter_type, return_symbol);
+
+      // Enter the return first as it is deeper on the stack.
+      enter_symbol (node.symtab, return_symbol, node.return_symbol);
+      enter_signature (signature_node, getter->getter_type->function_type->signature ());
+
+      type->add_getter (getter);
+      node.getter = getter;
+      symtab_set_current_getter (node.symtab, getter);
       symtab_set_current_receiver_type (node.symtab, type);
     }
 

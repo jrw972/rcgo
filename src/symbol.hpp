@@ -65,9 +65,9 @@ void symbol_set_instance_type (symbol_t * symbol, named_type_t * type);
 
 const named_type_t *symbol_get_instance_type (const symbol_t * symbol);
 
-void symbol_set_instance_method (symbol_t* symbol, method_t* method);
+void symbol_set_instance_initializer (symbol_t* symbol, initializer_t* initializer);
 
-method_t* symbol_get_instance_method (symbol_t* symbol);
+initializer_t* symbol_get_instance_initializer (symbol_t* symbol);
 
 typedef enum
 {

@@ -4,6 +4,7 @@
 #include "semantic.hpp"
 #include "function.hpp"
 #include "method.hpp"
+#include "initializer.hpp"
 #include "trigger.hpp"
 #include "action.hpp"
 #include "field.hpp"
@@ -84,8 +85,6 @@ in_mutable_section (const ast_t* node)
     get_current_trigger (node) != NULL;
 }
 
-
-
 typed_value_t
 type_check_expr (ast_t* ptr)
 {
@@ -126,9 +125,9 @@ type_check_expr (ast_t* ptr)
                          "%s is not an array of ports", port_identifier.c_str ());
         }
 
-      const port_type_t* port_type = type_cast<port_type_t> (array_type->base_type ());
+      const push_port_type_t* push_port_type = type_cast<push_port_type_t> (array_type->base_type ());
 
-      if (!port_type)
+      if (!push_port_type)
         {
           error_at_line (-1, 0, node.location.file, node.location.line,
                          "%s is not an array of ports", port_identifier.c_str ());
@@ -146,7 +145,7 @@ type_check_expr (ast_t* ptr)
                                                     typed_value_t::STACK,
                                                     IMMUTABLE,
                                                     IMMUTABLE);
-      check_call (node, port_type->signature (), tv, args);
+      check_call (node, push_port_type->signature (), tv, args);
       node.field = type_select_field (this_type, port_identifier);
       node.array_type = array_type;
     }
@@ -268,7 +267,7 @@ type_check_expr (ast_t* ptr)
       if (out.type == NULL)
         {
           error_at_line (-1, 0, node.location.file, node.location.line,
-                         "cannot select %s from expression of type %s",
+                         "E23: cannot select %s from expression of type %s",
                          identifier.c_str (), in.type->to_string ().c_str ());
         }
 
@@ -398,26 +397,16 @@ type_check_expr (ast_t* ptr)
 
         void visit (const function_type_t& type)
         {
+          // No restrictions on caller.
           node.kind = ast_call_expr_t::FUNCTION;
           rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args ());
         }
 
-        void visit (const pfunc_type_t& type)
-        {
-          node.kind = ast_call_expr_t::PFUNC;
-          rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args ());
-          if (in_mutable_section (&node))
-            {
-              error_at_line (-1, 0, node.location.file, node.location.line,
-                             "cannot call pfunc in mutable section");
-
-            }
-        }
-
         void visit (const method_type_t& type)
         {
+          // No restrictions on caller.
           node.kind = ast_call_expr_t::METHOD;
-          rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args ());
+          rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
 
           if (type_dereference (type.receiver_type) != NULL)
             {
@@ -429,18 +418,35 @@ type_check_expr (ast_t* ptr)
               node.expr ()->children[0]->children[0] = e;
             }
 
-          if (type_cast<component_type_t> (type_strip (type.named_type)))
-            {
-              // Invoking a method on a component.
-              if (in_mutable_section (&node))
-                {
-                  // Invoking a method on a component in a mutable section.
-                  // Ensure the receiver is this.
-                  // TODO
-                  std::cout << node.location.line << '\n';
-                  unimplemented;
-                }
-            }
+          typed_value_t argument_tv = node.expr ()->children[0]->children[0]->typed_value;
+          typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
+          check_assignment (parameter_tv, argument_tv, node,
+                            "call expects %s but given %s",
+                            "E18: argument leaks mutable pointers",
+                            "argument may store foreign pointer");
+        }
+
+        void visit (const initializer_type_t& type)
+        {
+          // Caller must be an initializer.
+          initializer_t* initializer = get_current_initializer (&node);
+
+          if (initializer == NULL) {
+            error_at_line (-1, 0, node.location.file, node.location.line,
+                           "E25: initializers may only be called from initializeers");
+          }
+
+          node.kind = ast_call_expr_t::INITIALIZER;
+          rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
+
+          assert (type_dereference (type.receiver_type) != NULL);
+
+          // Method expects a pointer.  Insert address of.
+          // Strip off implicit deref and select.
+          ast_t* receiver_select_expr = node.expr ()->children[0]->children[0];
+          ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.line, receiver_select_expr);
+          rvalue_visitor.check_address_of (*e);
+          node.expr ()->children[0]->children[0] = e;
 
           typed_value_t argument_tv = node.expr ()->children[0]->children[0]->typed_value;
           typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
@@ -449,6 +455,44 @@ type_check_expr (ast_t* ptr)
                             "E18: argument leaks mutable pointers",
                             "argument may store foreign pointer");
         }
+
+        void visit (const getter_type_t& type)
+        {
+          // Must be called from either a getter, an action, or reaction.
+          if (get_current_getter (&node) == NULL &&
+              get_current_action (&node) == NULL)
+            {
+              error_at_line (-1, 0, node.location.file, node.location.line,
+                             "E26: getters may only be called from a getter, an action, or a reaction");
+            }
+
+          node.kind = ast_call_expr_t::GETTER;
+          rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
+          if (in_mutable_section (&node))
+            {
+              error_at_line (-1, 0, node.location.file, node.location.line,
+                             "cannot call getter in mutable section");
+            }
+        }
+
+        void visit (const pull_port_type_t& type)
+        {
+          // Must be called from either a getter, an action, or reaction.
+          if (get_current_getter (&node) == NULL &&
+              get_current_action (&node) == NULL)
+            {
+              error_at_line (-1, 0, node.location.file, node.location.line,
+                             "E26: pull ports may only be called from a getter, an action, or a reaction");
+            }
+
+          node.kind = ast_call_expr_t::PULL_PORT;
+          rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args ());
+          if (in_mutable_section (&node))
+            {
+              error_at_line (-1, 0, node.location.file, node.location.line,
+                             "cannot call pull port in mutable section");
+            }
+        }
       };
 
       visitor v (*this, node);
@@ -456,14 +500,14 @@ type_check_expr (ast_t* ptr)
       assert (expr_tv.type != NULL);
     }
 
-    void visit (ast_port_call_expr_t& node)
+    void visit (ast_push_port_call_expr_t& node)
     {
       ast_t *expr = node.identifier ();
       ast_t *args = node.args ();
       const std::string& port_identifier = ast_get_identifier (expr);
       const type_t *this_type = get_current_receiver_type (&node);
-      const port_type_t *port_type = type_cast<port_type_t> (type_select (this_type, port_identifier));
-      if (port_type == NULL)
+      const push_port_type_t *push_port_type = type_cast<push_port_type_t> (type_select (this_type, port_identifier));
+      if (push_port_type == NULL)
         {
           error_at_line (-1, 0, node.location.file, node.location.line,
                          "no port named %s", port_identifier.c_str ());
@@ -473,7 +517,7 @@ type_check_expr (ast_t* ptr)
                                                     typed_value_t::STACK,
                                                     IMMUTABLE,
                                                     IMMUTABLE);
-      check_call (node, port_type->signature (), tv, args);
+      check_call (node, push_port_type->signature (), tv, args);
       node.field = type_select_field (this_type, port_identifier);
     }
 
@@ -590,12 +634,12 @@ type_check_statement (ast_t * node)
       typed_value_t port_tv = port_node->typed_value;
       typed_value_t reaction_tv = reaction_node->typed_value;
 
-      const port_type_t *port_type = type_cast<port_type_t> (port_tv.type);
+      const push_port_type_t *push_port_type = type_cast<push_port_type_t> (port_tv.type);
 
-      if (port_type == NULL)
+      if (push_port_type == NULL)
         {
           error_at_line (-1, 0, node.location.file, node.location.line,
-                         "source of bind is not a port");
+                         "E28: source of bind is not a port");
         }
 
       const reaction_type_t *reaction_type = type_cast<reaction_type_t> (reaction_tv.type);
@@ -605,21 +649,21 @@ type_check_statement (ast_t * node)
                          "target of bind is not a reaction");
         }
 
-      if (!type_is_equal (port_type->signature (), reaction_type->signature ()))
+      if (!type_is_equal (push_port_type->signature (), reaction_type->signature ()))
         {
           error_at_line (-1, 0, node.location.file, node.location.line,
-                         "cannot bind %s to %s", port_type->to_string ().c_str (), reaction_type->to_string ().c_str ());
+                         "cannot bind %s to %s", push_port_type->to_string ().c_str (), reaction_type->to_string ().c_str ());
         }
 
       return reaction_tv;
     }
 
-    void visit (ast_bind_port_statement_t& node)
+    void visit (ast_bind_push_port_statement_t& node)
     {
       bind (node, node.left (), node.right ());
     }
 
-    void visit (ast_bind_port_param_statement_t& node)
+    void visit (ast_bind_push_port_param_statement_t& node)
     {
       typed_value_t reaction_tv = bind (node, node.left (), node.right ());
       ast_t* param_node = node.param ();
@@ -636,51 +680,36 @@ type_check_statement (ast_t * node)
       typed_value_t::index (param_node->location, typed_value_t::make_ref (new array_type_t (dimension.value.integral_value (dimension.type), reaction->reaction_type), typed_value_t::CONSTANT, IMMUTABLE, IMMUTABLE), param_tv);
     }
 
-    void visit (ast_bind_pfunc_statement_t& node)
+    void visit (ast_bind_pull_port_statement_t& node)
     {
-      ast_t* pfunc_node = node.left ();
-      ast_t* func_node = node.right ();
-      type_check_expr (pfunc_node);
-      type_check_expr (func_node);
-      typed_value_t pfunc_tv = pfunc_node->typed_value;
-      typed_value_t func_tv = func_node->typed_value;
+      ast_t* pull_port_node = node.left ();
+      ast_t* getter_node = node.right ();
+      type_check_expr (pull_port_node);
+      type_check_expr (getter_node);
+      typed_value_t pull_port_tv = pull_port_node->typed_value;
+      typed_value_t getter_tv = getter_node->typed_value;
 
-      const pfunc_type_t* pfunc_type = type_cast<pfunc_type_t> (pfunc_tv.type);
+      const pull_port_type_t* pull_port_type = type_cast<pull_port_type_t> (pull_port_tv.type);
 
-      if (pfunc_type == NULL)
+      if (pull_port_type == NULL)
         {
           error_at_line (-1, 0, node.location.file, node.location.line,
-                         "target of bind is not a pfunc");
+                         "target of bind is not a pull port");
         }
 
-      const method_type_t* method_type = type_cast<method_type_t> (func_tv.type);
+      const getter_type_t* getter_type = type_cast<getter_type_t> (getter_tv.type);
 
-      if (method_type != NULL)
+      if (getter_type == NULL)
         {
-          if (type_dereference (method_type->receiver_type) == NULL)
-            {
-              error_at_line (-1, 0, node.location.file, node.location.line,
-                             "method must take pointer receiver");
-            }
-
-          if (!type_is_equal (pfunc_type->bind_type (), method_type->bind_type ()))
-            {
-              error_at_line (-1, 0, node.location.file, node.location.line,
-                             "cannot bind %s to %s", pfunc_type->to_string ().c_str (), method_type->to_string ().c_str ());
-            }
-          return;
+          error_at_line (-1, 0, node.location.file, node.location.line,
+                         "E29: source of bind is not a getter");
         }
 
-      const function_type_t* function_type = type_cast<function_type_t> (func_tv.type);
-
-      if (function_type != NULL)
+      if (!type_is_equal (pull_port_type->bind_type (), getter_type->bind_type ))
         {
-          unimplemented;
-          return;
+          error_at_line (-1, 0, node.location.file, node.location.line,
+                         "cannot bind %s to %s", pull_port_type->to_string ().c_str (), getter_type->to_string ().c_str ());
         }
-
-      error_at_line (-1, 0, node.location.file, node.location.line,
-                     "source of bind is not a method or function");
     }
 
     void visit (ast_for_iota_statement_t& node)
@@ -1359,7 +1388,7 @@ process_definitions (ast_t * node)
   {
     void default_action (ast_t& node)
     {
-      not_reached;
+      ast_not_reached (node);
     }
 
     void visit (ast_type_definition_t& node)
@@ -1493,27 +1522,41 @@ process_definitions (ast_t * node)
       control_check_statement (body_node);
     }
 
+    void visit (ast_initializer_t& node)
+    {
+      ast_t *body_node = node.body ();
+      type_check_statement (body_node);
+      control_check_statement (body_node);
+    }
+
+    void visit (ast_getter_t& node)
+    {
+      ast_t *body_node = node.body ();
+      type_check_statement (body_node);
+      control_check_statement (body_node);
+    }
+
     void visit (ast_instance_t& node)
     {
       // Check the initialization function.
       symbol_t* symbol = node.symbol.symbol ();
       const named_type_t* type = symbol_get_instance_type (symbol);
-      ast_t* initializer = node.initializer ();
-      method_t* method = type->get_method (ast_get_identifier (initializer));
-      if (method == NULL)
+      ast_t* initializer_node = node.initializer ();
+      initializer_t* initializer = type->get_initializer (ast_get_identifier (initializer_node));
+      if (initializer == NULL)
         {
-          error_at_line (-1, 0, initializer->location.file,
-                         initializer->location.line,
-                         "no method named %s",
-                         ast_get_identifier (initializer).c_str ());
+          error_at_line (-1, 0, initializer_node->location.file,
+                         initializer_node->location.line,
+                         "E21: no initializer named %s",
+                         ast_get_identifier (initializer_node).c_str ());
         }
-      if (method->method_type->signature ()->arity () != 0)
+      if (initializer->initializer_type->signature->arity () != 0)
         {
-          error_at_line (-1, 0, initializer->location.file,
-                         initializer->location.line,
+          error_at_line (-1, 0, initializer_node->location.file,
+                         initializer_node->location.line,
                          "named method is not null-ary");
         }
-      symbol_set_instance_method (symbol, method);
+      symbol_set_instance_initializer (symbol, initializer);
     }
 
     void visit (ast_reaction_t& node)

@@ -3,6 +3,8 @@
 #include "parameter.hpp"
 #include "field.hpp"
 #include "method.hpp"
+#include "initializer.hpp"
+#include "getter.hpp"
 
 reaction_t *
 named_type_t::get_reaction (const std::string& identifier) const
@@ -39,6 +41,43 @@ named_type_t::get_method (const std::string& identifier) const
 
   return NULL;
 }
+
+initializer_t*
+named_type_t::get_initializer (const std::string& identifier) const
+{
+  for (std::vector<initializer_t*>::const_iterator pos = this->initializers_.begin (),
+         limit = this->initializers_.end ();
+       pos != limit;
+       ++pos)
+    {
+      initializer_t *a = *pos;
+      if (a->name == identifier)
+        {
+          return a;
+        }
+    }
+
+  return NULL;
+}
+
+getter_t*
+named_type_t::get_getter (const std::string& identifier) const
+{
+  for (std::vector<getter_t*>::const_iterator pos = this->getters_.begin (),
+         limit = this->getters_.end ();
+       pos != limit;
+       ++pos)
+    {
+      getter_t *a = *pos;
+      if (a->name == identifier)
+        {
+          return a;
+        }
+    }
+
+  return NULL;
+}
+
 
 void
 field_list_type_t::append (const std::string& field_name, const type_t * field_type)
@@ -126,6 +165,44 @@ type_select_method (const type_t * type, const std::string& identifier)
   return v.retval;
 }
 
+initializer_t *
+type_select_initializer (const type_t * type, const std::string& identifier)
+{
+  struct visitor : public const_type_visitor_t
+  {
+    initializer_t* retval;
+    const std::string& identifier;
+    visitor (const std::string& id) : retval (NULL), identifier (id) { }
+
+    void visit (const named_type_t& type)
+    {
+      retval = type.get_initializer (identifier);
+    }
+  };
+  visitor v (identifier);
+  type->accept (v);
+  return v.retval;
+}
+
+getter_t *
+type_select_getter (const type_t * type, const std::string& identifier)
+{
+  struct visitor : public const_type_visitor_t
+  {
+    getter_t* retval;
+    const std::string& identifier;
+    visitor (const std::string& id) : retval (NULL), identifier (id) { }
+
+    void visit (const named_type_t& type)
+    {
+      retval = type.get_getter (identifier);
+    }
+  };
+  visitor v (identifier);
+  type->accept (v);
+  return v.retval;
+}
+
 reaction_t *
 type_select_reaction (const type_t * type, const std::string& identifier)
 {
@@ -158,6 +235,18 @@ type_select (const type_t* type, const std::string& identifier)
   if (m)
     {
       return m->method_type;
+    }
+
+  initializer_t* i = type_select_initializer (type, identifier);
+  if (i)
+    {
+      return i->initializer_type;
+    }
+
+  getter_t* g = type_select_getter (type, identifier);
+  if (g)
+    {
+      return g->getter_type;
     }
 
   reaction_t* r = type_select_reaction (type, identifier);
@@ -245,11 +334,13 @@ ACCEPT(field_list_type_t)
 ACCEPT(named_type_t)
 ACCEPT(component_type_t)
 ACCEPT(struct_type_t)
-ACCEPT(port_type_t)
-ACCEPT(pfunc_type_t)
+ACCEPT(push_port_type_t)
+ACCEPT(pull_port_type_t)
 ACCEPT(bool_type_t)
 ACCEPT(function_type_t)
+ACCEPT(getter_type_t)
 ACCEPT(method_type_t)
+ACCEPT(initializer_type_t)
 ACCEPT(heap_type_t)
 ACCEPT(pointer_type_t)
 ACCEPT(reaction_type_t)
@@ -967,34 +1058,50 @@ function_type_t::to_string () const
 }
 
 std::string
-pfunc_type_t::to_string () const
+method_type_t::to_string () const
 {
   std::stringstream str;
-  str << "pfunc " << *signature () << ' ' << *return_parameter ()->value.type;
+  str << '(' << *receiver_type << ')' << " func " << *signature << ' ' << *function_type->return_parameter ()->value.type;
   return str.str ();
 }
 
 std::string
-method_type_t::to_string () const
+getter_type_t::to_string () const
 {
   std::stringstream str;
-  str << '(' << *receiver_type << ')' << " func " << *signature () << ' ' << *function_type->return_parameter ()->value.type;
+  str << '(' << *receiver_type << ')' << " getter " << *signature << ' ' << *function_type->return_parameter ()->value.type;
+  return str.str ();
+}
+
+std::string
+initializer_type_t::to_string () const
+{
+  std::stringstream str;
+  str << '(' << *receiver_type << ')' << " init " << *signature;
+  return str.str ();
+}
+
+std::string
+pull_port_type_t::to_string () const
+{
+  std::stringstream str;
+  str << "func " << *signature () << ' ' << *return_parameter ()->value.type;
   return str.str ();
 }
 
 parameter_t*
-method_type_t::make_this_parameter (const std::string& this_name,
-                                    const type_t* receiver_type,
-                                    Mutability dereference_mutability)
+method_base::make_this_parameter (const std::string& this_name,
+                                  const type_t* receiver_type,
+                                  Mutability dereference_mutability)
 {
   typed_value_t this_value = typed_value_t::make_value (receiver_type, typed_value_t::STACK, MUTABLE, dereference_mutability);
   return new parameter_t (NULL, this_name, this_value, true);
 }
 
 function_type_t*
-method_type_t::make_function_type (const parameter_t* this_parameter,
-                                   const signature_type_t* signature,
-                                   const parameter_t* return_parameter)
+method_base::make_function_type (const parameter_t* this_parameter,
+                                 const signature_type_t* signature,
+                                 const parameter_t* return_parameter)
 {
   signature_type_t* sig = new signature_type_t ();
 

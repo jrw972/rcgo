@@ -5,22 +5,26 @@
 #include "symbol.hpp"
 
 static void
-instantiate_contained_instances (const type_t * type, instance_table_t& instance_table, instance_t* parent, method_t* method, size_t address)
+instantiate_contained_instances (const type_t * type,
+                                 instance_table_t& instance_table,
+                                 instance_t* parent,
+                                 initializer_t* initializer,
+                                 size_t address)
 {
   struct visitor : public const_type_visitor_t
   {
     instance_table_t& instance_table;
     instance_t* const parent;
-    method_t* const method;
+    initializer_t* const initializer;
     size_t const address;
     field_t* const field;
 
     const named_type_t* named_type;
 
-    visitor (instance_table_t& it, instance_t* p, method_t* m, size_t a, field_t* f)
+    visitor (instance_table_t& it, instance_t* p, initializer_t* i, size_t a, field_t* f)
       : instance_table (it)
       , parent (p)
-      , method (m)
+      , initializer (i)
       , address (a)
       , field (f)
 
@@ -43,7 +47,7 @@ instantiate_contained_instances (const type_t * type, instance_table_t& instance
     {
       assert (named_type != NULL);
 
-      instance_t* instance = new instance_t (parent, address, named_type, method);
+      instance_t* instance = new instance_t (parent, address, named_type, initializer);
       instance_table.insert (instance);
 
       // Recur changing instance.
@@ -112,17 +116,17 @@ instantiate_contained_instances (const type_t * type, instance_table_t& instance
     void visit (const pointer_type_t& type)
     { }
 
-    void visit (const port_type_t& type)
+    void visit (const push_port_type_t& type)
     {
-      instance_table.insert_port (address, parent, field);
+      instance_table.insert_push_port (address, parent, field);
     }
 
-    void visit (const pfunc_type_t& type)
+    void visit (const pull_port_type_t& type)
     {
-      instance_table.insert_pfunc (address, parent, field);
+      instance_table.insert_pull_port (address, parent, field);
     }
   };
-  visitor v (instance_table, parent, method, address, NULL);
+  visitor v (instance_table, parent, initializer, address, NULL);
   type->accept (v);
 }
 
@@ -146,8 +150,8 @@ enumerate_instances (ast_t * node, instance_table_t& instance_table)
     {
       symbol_t *symbol = node.symbol.symbol ();
       const named_type_t *type = symbol_get_instance_type (symbol);
-      method_t* method = symbol_get_instance_method (symbol);
-      instantiate_contained_instances (type, instance_table, NULL, method, address);
+      initializer_t* initializer = symbol_get_instance_initializer (symbol);
+      instantiate_contained_instances (type, instance_table, NULL, initializer, address);
       address += type->size ();
     }
 

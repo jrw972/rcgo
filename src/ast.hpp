@@ -275,7 +275,7 @@ struct ast_pointer_type_spec_t : public ast_unary_t
   void print (std::ostream& out) const { unimplemented; }
 };
 
-struct ast_port_type_spec_t : public ast_t
+struct ast_push_port_type_spec_t : public ast_t
 {
   enum
     {
@@ -283,7 +283,7 @@ struct ast_port_type_spec_t : public ast_t
       COUNT,
     };
 
-  ast_port_type_spec_t (unsigned int line, ast_t* signature)
+  ast_push_port_type_spec_t (unsigned int line, ast_t* signature)
     : ast_t (line, COUNT)
   {
     children[SIGNATURE] = signature;
@@ -296,7 +296,7 @@ struct ast_port_type_spec_t : public ast_t
   void print (std::ostream& out) const { unimplemented; }
 };
 
-struct ast_pfunc_type_spec_t : public ast_t
+struct ast_pull_port_type_spec_t : public ast_t
 {
   enum
     {
@@ -305,7 +305,7 @@ struct ast_pfunc_type_spec_t : public ast_t
       COUNT,
     };
 
-  ast_pfunc_type_spec_t (unsigned int line, ast_t* signature, ast_t* return_type)
+  ast_pull_port_type_spec_t (unsigned int line, ast_t* signature, ast_t* return_type)
     : ast_t (line, COUNT)
   {
     children[SIGNATURE] = signature;
@@ -317,7 +317,7 @@ struct ast_pfunc_type_spec_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const { unimplemented; }
+  void print (std::ostream& out) const { out << "pull_port_type_spec"; }
 };
 
 struct ast_signature_type_spec_t : public ast_t
@@ -328,7 +328,7 @@ struct ast_signature_type_spec_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const { unimplemented; }
+  void print (std::ostream& out) const { out << "signature_type_spec"; }
 };
 
 struct ast_struct_type_spec_t : public ast_unary_t
@@ -456,7 +456,9 @@ struct ast_call_expr_t : public ast_expr_t
       NONE,
       FUNCTION,
       METHOD,
-      PFUNC,
+      INITIALIZER,
+      GETTER,
+      PULL_PORT,
     };
 
   ast_call_expr_t (unsigned int line, ast_t* expr, ast_t* args)
@@ -474,7 +476,7 @@ struct ast_call_expr_t : public ast_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const { unimplemented; }
+  void print (std::ostream& out) const { out << "call_expr"; }
 
   Kind kind;
 };
@@ -487,7 +489,7 @@ struct ast_dereference_expr_t : public ast_unary_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const { unimplemented; }
+  void print (std::ostream& out) const { out << "dereference_expr"; }
 };
 
 struct ast_implicit_dereference_expr_t : public ast_unary_expr_t
@@ -559,7 +561,7 @@ struct ast_logic_not_expr_t : public ast_unary_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const { unimplemented; }
+  void print (std::ostream& out) const { out << "logic_not_expr"; }
 };
 
 struct ast_merge_expr_t : public ast_unary_expr_t
@@ -595,7 +597,7 @@ struct ast_new_expr_t : public ast_unary_expr_t
   void print (std::ostream& out) const { unimplemented; }
 };
 
-struct ast_port_call_expr_t : public ast_expr_t
+struct ast_push_port_call_expr_t : public ast_expr_t
 {
   enum
     {
@@ -604,7 +606,7 @@ struct ast_port_call_expr_t : public ast_expr_t
       COUNT,
     };
 
-  ast_port_call_expr_t (unsigned int line, ast_t* identifier, ast_t* args)
+  ast_push_port_call_expr_t (unsigned int line, ast_t* identifier, ast_t* args)
     : ast_expr_t (line, COUNT)
   {
     children[IDENTIFIER] = identifier;
@@ -677,7 +679,7 @@ struct ast_select_expr_t : public ast_expr_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const { unimplemented; }
+  void print (std::ostream& out) const { out << "select_expr"; }
 };
 
 struct ast_literal_expr_t : public ast_expr_t
@@ -745,7 +747,7 @@ struct ast_assign_statement_t : public ast_binary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const { unimplemented; }
+  void print (std::ostream& out) const { out << "assign_statement"; }
 };
 
 struct ast_change_statement_t : public ast_t
@@ -793,7 +795,7 @@ struct ast_expression_statement_t : public ast_unary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const { unimplemented; }
+  void print (std::ostream& out) const { out << "expression_statement"; }
 };
 
 struct ast_if_statement_t : public ast_t
@@ -857,7 +859,7 @@ struct ast_println_statement_t : public ast_unary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const { unimplemented; }
+  void print (std::ostream& out) const { out << "println_statement"; }
 };
 
 struct ast_return_statement_t : public ast_unary_t
@@ -869,7 +871,7 @@ struct ast_return_statement_t : public ast_unary_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const { unimplemented; }
+  void print (std::ostream& out) const { out << "return_statement"; }
 
   const symbol_t* return_symbol;
 };
@@ -904,7 +906,7 @@ struct ast_list_statement_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const { unimplemented; }
+  void print (std::ostream& out) const { out << "list_statement"; }
 };
 
 struct ast_subtract_assign_statement_t : public ast_binary_t
@@ -965,7 +967,7 @@ struct ast_var_statement_t : public ast_t
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const { unimplemented; }
+  void print (std::ostream& out) const { out << "var_statement"; }
 
   std::vector<symbol_holder> symbols;
 };
@@ -999,9 +1001,9 @@ struct ast_var_type_init_statement_t : public ast_t
   std::vector<symbol_holder> symbols;
 };
 
-struct ast_bind_port_statement_t : public ast_binary_t
+struct ast_bind_push_port_statement_t : public ast_binary_t
 {
-  ast_bind_port_statement_t (unsigned int line, ast_t* left, ast_t* right)
+  ast_bind_push_port_statement_t (unsigned int line, ast_t* left, ast_t* right)
     : ast_binary_t (line, left, right)
   { }
 
@@ -1010,7 +1012,7 @@ struct ast_bind_port_statement_t : public ast_binary_t
   void print (std::ostream& out) const { unimplemented; }
 };
 
-struct ast_bind_port_param_statement_t : public ast_t
+struct ast_bind_push_port_param_statement_t : public ast_t
 {
   enum
     {
@@ -1020,7 +1022,7 @@ struct ast_bind_port_param_statement_t : public ast_t
       COUNT,
     };
 
-  ast_bind_port_param_statement_t (unsigned int line, ast_t* left, ast_t* right, ast_t* param)
+  ast_bind_push_port_param_statement_t (unsigned int line, ast_t* left, ast_t* right, ast_t* param)
     : ast_t (line, COUNT)
   {
     children[LEFT] = left;
@@ -1040,9 +1042,9 @@ struct ast_bind_port_param_statement_t : public ast_t
   void print (std::ostream& out) const { unimplemented; }
 };
 
-struct ast_bind_pfunc_statement_t : public ast_binary_t
+struct ast_bind_pull_port_statement_t : public ast_binary_t
 {
-  ast_bind_pfunc_statement_t (unsigned int line, ast_t* left, ast_t* right)
+  ast_bind_pull_port_statement_t (unsigned int line, ast_t* left, ast_t* right)
     : ast_binary_t (line, left, right)
   { }
 
@@ -1330,6 +1332,93 @@ struct ast_method_t : public ast_t
   symbol_holder return_symbol;
 };
 
+struct ast_getter_t : public ast_t
+{
+  enum
+    {
+      THIS_IDENTIFIER,
+      TYPE_IDENTIFIER,
+      IDENTIFIER,
+      SIGNATURE,
+      RETURN_TYPE,
+      BODY,
+      COUNT
+    };
+
+  ast_getter_t (unsigned int line,
+                ast_t * this_identifier,
+                ast_t* type_identifier,
+                ast_t * identifier,
+                ast_t * signature,
+                ast_t * return_type,
+                ast_t* body)
+    : ast_t (line, COUNT)
+    , getter (NULL)
+  {
+    children[THIS_IDENTIFIER] = this_identifier;
+    children[TYPE_IDENTIFIER] = type_identifier;
+    children[IDENTIFIER] = identifier;
+    children[SIGNATURE] = signature;
+    children[RETURN_TYPE] = return_type;
+    children[BODY] = body;
+  }
+
+  ast_t* this_identifier () const { return children[THIS_IDENTIFIER]; }
+  ast_t* type_identifier () const { return children[TYPE_IDENTIFIER]; }
+  ast_t* identifier () const { return children[IDENTIFIER]; }
+  ast_t* signature () const { return children[SIGNATURE]; }
+  ast_t* return_type () const { return children[RETURN_TYPE]; }
+  ast_t* body () const { return children[BODY]; }
+
+  void accept (ast_visitor_t& visitor);
+  void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { out << "getter"; }
+
+  getter_t* getter;
+  symbol_holder return_symbol;
+};
+
+struct ast_initializer_t : public ast_t
+{
+  enum
+    {
+      THIS_IDENTIFIER,
+      TYPE_IDENTIFIER,
+      IDENTIFIER,
+      SIGNATURE,
+      BODY,
+      COUNT
+    };
+
+  ast_initializer_t (unsigned int line, ast_t * this_identifier,
+                     ast_t* type_identifier,
+                     ast_t * identifier,
+                     ast_t * signature,
+                     ast_t* body)
+    : ast_t (line, COUNT)
+    , initializer (NULL)
+  {
+    children[THIS_IDENTIFIER] = this_identifier;
+    children[TYPE_IDENTIFIER] = type_identifier;
+    children[IDENTIFIER] = identifier;
+    children[SIGNATURE] = signature;
+    children[BODY] = body;
+  }
+
+  ast_t* this_identifier () const { return children[THIS_IDENTIFIER]; }
+  ast_t* type_identifier () const { return children[TYPE_IDENTIFIER]; }
+  ast_t* identifier () const { return children[IDENTIFIER]; }
+  ast_t* signature () const { return children[SIGNATURE]; }
+  ast_t* body () const { return children[BODY]; }
+
+  void accept (ast_visitor_t& visitor);
+  void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { out << "initializer"; }
+
+  initializer_t* initializer;
+  symbol_holder return_symbol;
+};
+
 struct ast_reaction_t : public ast_t
 {
   enum
@@ -1460,8 +1549,8 @@ struct ast_visitor_t
   virtual void visit (ast_identifier_list_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_identifier_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_pointer_type_spec_t& ast) { default_action (ast); }
-  virtual void visit (ast_port_type_spec_t& ast) { default_action (ast); }
-  virtual void visit (ast_pfunc_type_spec_t& ast) { default_action (ast); }
+  virtual void visit (ast_push_port_type_spec_t& ast) { default_action (ast); }
+  virtual void visit (ast_pull_port_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_signature_type_spec_t& ast) { default_action (ast); }
   virtual void visit (ast_struct_type_spec_t& ast) { default_action (ast); }
 
@@ -1480,7 +1569,7 @@ struct ast_visitor_t
   virtual void visit (ast_merge_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_move_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_new_expr_t& ast) { default_action (ast); }
-  virtual void visit (ast_port_call_expr_t& ast) { default_action (ast); }
+  virtual void visit (ast_push_port_call_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_select_expr_t& ast) { default_action (ast); }
 
   virtual void visit (ast_empty_statement_t& ast) { default_action (ast); }
@@ -1500,9 +1589,9 @@ struct ast_visitor_t
   virtual void visit (ast_var_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_var_type_init_statement_t& ast) { default_action (ast); }
 
-  virtual void visit (ast_bind_port_statement_t& ast) { default_action (ast); }
-  virtual void visit (ast_bind_port_param_statement_t& ast) { default_action (ast); }
-  virtual void visit (ast_bind_pfunc_statement_t& ast) { default_action (ast); }
+  virtual void visit (ast_bind_push_port_statement_t& ast) { default_action (ast); }
+  virtual void visit (ast_bind_push_port_param_statement_t& ast) { default_action (ast); }
+  virtual void visit (ast_bind_pull_port_statement_t& ast) { default_action (ast); }
   virtual void visit (ast_for_iota_statement_t& ast) { default_action (ast); }
 
   virtual void visit (ast_action_t& ast) { default_action (ast); }
@@ -1510,6 +1599,8 @@ struct ast_visitor_t
   virtual void visit (ast_dimensioned_action_t& ast) { default_action (ast); }
   virtual void visit (ast_bind_t& ast) { default_action (ast); }
   virtual void visit (ast_function_t& ast) { default_action (ast); }
+  virtual void visit (ast_getter_t& ast) { default_action (ast); }
+  virtual void visit (ast_initializer_t& ast) { default_action (ast); }
   virtual void visit (ast_instance_t& ast) { default_action (ast); }
   virtual void visit (ast_method_t& ast) { default_action (ast); }
   virtual void visit (ast_reaction_t& ast) { default_action (ast); }
@@ -1535,8 +1626,8 @@ struct ast_const_visitor_t
   virtual void visit (const ast_identifier_list_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_identifier_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_pointer_type_spec_t& ast) { default_action (ast); }
-  virtual void visit (const ast_port_type_spec_t& ast) { default_action (ast); }
-  virtual void visit (const ast_pfunc_type_spec_t& ast) { default_action (ast); }
+  virtual void visit (const ast_push_port_type_spec_t& ast) { default_action (ast); }
+  virtual void visit (const ast_pull_port_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_signature_type_spec_t& ast) { default_action (ast); }
   virtual void visit (const ast_struct_type_spec_t& ast) { default_action (ast); }
 
@@ -1555,7 +1646,7 @@ struct ast_const_visitor_t
   virtual void visit (const ast_merge_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_move_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_new_expr_t& ast) { default_action (ast); }
-  virtual void visit (const ast_port_call_expr_t& ast) { default_action (ast); }
+  virtual void visit (const ast_push_port_call_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_select_expr_t& ast) { default_action (ast); }
 
   virtual void visit (const ast_empty_statement_t& ast) { default_action (ast); }
@@ -1573,9 +1664,9 @@ struct ast_const_visitor_t
   virtual void visit (const ast_subtract_assign_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_trigger_statement_t& ast) { default_action (ast); }
 
-  virtual void visit (const ast_bind_port_statement_t& ast) { default_action (ast); }
-  virtual void visit (const ast_bind_port_param_statement_t& ast) { default_action (ast); }
-  virtual void visit (const ast_bind_pfunc_statement_t& ast) { default_action (ast); }
+  virtual void visit (const ast_bind_push_port_statement_t& ast) { default_action (ast); }
+  virtual void visit (const ast_bind_push_port_param_statement_t& ast) { default_action (ast); }
+  virtual void visit (const ast_bind_pull_port_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_for_iota_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_var_statement_t& ast) { default_action (ast); }
   virtual void visit (const ast_var_type_init_statement_t& ast) { default_action (ast); }
@@ -1585,6 +1676,8 @@ struct ast_const_visitor_t
   virtual void visit (const ast_dimensioned_action_t& ast) { default_action (ast); }
   virtual void visit (const ast_bind_t& ast) { default_action (ast); }
   virtual void visit (const ast_function_t& ast) { default_action (ast); }
+  virtual void visit (const ast_getter_t& ast) { default_action (ast); }
+  virtual void visit (const ast_initializer_t& ast) { default_action (ast); }
   virtual void visit (const ast_instance_t& ast) { default_action (ast); }
   virtual void visit (const ast_method_t& ast) { default_action (ast); }
   virtual void visit (const ast_reaction_t& ast) { default_action (ast); }
@@ -1617,6 +1710,12 @@ get_current_action (const ast_t * node);
 
 method_t *
 get_current_method (const ast_t * node);
+
+initializer_t *
+get_current_initializer (const ast_t * node);
+
+getter_t *
+get_current_getter (const ast_t * node);
 
 function_t *
 get_current_function (const ast_t * node);

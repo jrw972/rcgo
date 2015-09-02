@@ -179,6 +179,50 @@ symtab_get_current_method (const symtab_t * symtab)
 }
 
 void
+symtab_set_current_initializer (symtab_t * symtab, initializer_t * initializer)
+{
+  symtab->current_initializer = initializer;
+}
+
+initializer_t *
+symtab_get_current_initializer (const symtab_t * symtab)
+{
+  if (symtab == NULL)
+    {
+      return NULL;
+    }
+
+  if (symtab->current_initializer != NULL)
+    {
+      return symtab->current_initializer;
+    }
+
+  return symtab_get_current_initializer (symtab->parent);
+}
+
+void
+symtab_set_current_getter (symtab_t * symtab, getter_t * getter)
+{
+  symtab->current_getter = getter;
+}
+
+getter_t *
+symtab_get_current_getter (const symtab_t * symtab)
+{
+  if (symtab == NULL)
+    {
+      return NULL;
+    }
+
+  if (symtab->current_getter != NULL)
+    {
+      return symtab->current_getter;
+    }
+
+  return symtab_get_current_getter (symtab->parent);
+}
+
+void
 symtab_set_current_trigger (symtab_t * symtab, trigger_t * trigger)
 {
   symtab->current_trigger = trigger;

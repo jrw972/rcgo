@@ -19,6 +19,8 @@ struct value_t {
   value_t (const std::string& s) : present (true), string_value_ (s) { }
   value_t (function_t* f) : present (true), function_value_ (f) { }
   value_t (method_t* m) : present (true), method_value_ (m) { }
+  value_t (initializer_t* i) : present (true), initializer_value_ (i) { }
+  value_t (getter_t* i) : present (true), getter_value_ (i) { }
   value_t (reaction_t* r) : present (true), reaction_value_ (r) { }
 
   bool present;
@@ -68,6 +70,8 @@ struct value_t {
 
   int_type_t::ValueType integral_value (const type_t* type) const;
   method_t* method_value () const { return method_value_; }
+  initializer_t* initializer_value () const { return initializer_value_; }
+  getter_t* getter_value () const { return getter_value_; }
   function_t* function_value () const { return function_value_; }
   reaction_t* reaction_value () const { return reaction_value_; }
 
@@ -86,6 +90,8 @@ private:
     uint128_type_t::ValueType uint128_value_;
     float64_type_t::ValueType float64_value_;
     method_t* method_value_;
+    initializer_t* initializer_value_;
+    getter_t* getter_value_;
     function_t* function_value_;
     reaction_t* reaction_value_;
     enum_type_t::ValueType enum_value_;

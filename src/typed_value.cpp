@@ -4,7 +4,9 @@
 #include "symtab.hpp"
 #include "type.hpp"
 #include "method.hpp"
+#include "initializer.hpp"
 #include "function.hpp"
+#include "getter.hpp"
 #include "action.hpp"
 #include "field.hpp"
 #include <error.h>
@@ -26,6 +28,26 @@ typed_value_t::typed_value_t (method_t* m)
   , intrinsic_mutability (IMMUTABLE)
   , dereference_mutability (IMMUTABLE)
   , value (m)
+  , has_offset (false)
+{ }
+
+typed_value_t::typed_value_t (initializer_t* i)
+  : type (i->initializer_type)
+  , kind (VALUE)
+  , region (CONSTANT)
+  , intrinsic_mutability (IMMUTABLE)
+  , dereference_mutability (IMMUTABLE)
+  , value (i)
+  , has_offset (false)
+{ }
+
+typed_value_t::typed_value_t (getter_t* g)
+  : type (g->getter_type)
+  , kind (VALUE)
+  , region (CONSTANT)
+  , intrinsic_mutability (IMMUTABLE)
+  , dereference_mutability (IMMUTABLE)
+  , value (g)
   , has_offset (false)
 { }
 
@@ -270,6 +292,18 @@ typed_value_t::select (typed_value_t in, const std::string& identifier)
   if (m)
     {
       return make_ref (typed_value_t (m));
+    }
+
+  initializer_t* i = type_select_initializer (in.type, identifier);
+  if (i)
+    {
+      return make_ref (typed_value_t (i));
+    }
+
+  getter_t* g = type_select_getter (in.type, identifier);
+  if (g)
+    {
+      return make_ref (typed_value_t (g));
     }
 
   reaction_t* r = type_select_reaction (in.type, identifier);

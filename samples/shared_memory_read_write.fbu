@@ -4,7 +4,7 @@ type Variable component {
     value int;
 };
 
-func (this @Variable) init () {
+init (this @Variable) Init () {
     this.value = -1i;
 }
 
@@ -14,7 +14,7 @@ func (this @Variable) init () {
     }
 }
 
-func (this @Variable const) Get () int {
+getter (this @Variable const) Get () int const {
     return this.value;
 }
 
@@ -30,18 +30,18 @@ type Process component {
     status ProcessStatus;
     input int;
     output int;
-    get_x pfunc () int;
-    set_x port (v int);
-    Decide port (v int);
+    get_x pull () int;
+    set_x push (v int);
+    Decide push (v int);
 };
 
-func (this @Process) init () {
+init (this @Process) Init () {
     this.status = PROCESS_IDLE;
     this.input = -1i;
     this.output = -1i;
 }
 
-reaction (this @Process const) Init (v int) {
+reaction (this @Process const) initr (v int) {
     trigger {
         this.input = v;
         if this.status == PROCESS_IDLE {
@@ -94,10 +94,10 @@ type User component {
     status UserStatus;
     decision int;
     error bool;
-    Init port (v int);
+    initp push (v int);
 };
 
-func (this @User) init (v int) {
+init (this @User) Init (v int) {
     this.v = v;
     this.status = USER_REQUEST;
     this.decision = -1i;
@@ -106,7 +106,7 @@ func (this @User) init (v int) {
 
 // Init
 action (this @User const) (this.status == USER_REQUEST || this.error) {
-    trigger Init (this.v) {
+    trigger initp (this.v) {
         if !this.error {
             this.status = USER_WAIT;
         }
@@ -137,11 +137,11 @@ type System component {
     user [3u]User;
 };
 
-func (this @System) init () {
-    this.x.init ();
+init (this @System) Init () {
+    this.x.Init ();
     for i .. 3i {
-        this.process[i].init ();
-        this.user[i].init (i + 100i);
+        this.process[i].Init ();
+        this.user[i].Init (i + 100i);
     }
 }
 
@@ -149,9 +149,9 @@ bind (this @System) {
     for i .. 3u {
         this.process[i].get_x <- this.x.Get;
         this.process[i].set_x -> this.x.Set .. i;
-        this.user[i].Init -> this.process[i].Init;
+        this.user[i].initp -> this.process[i].initr;
         this.process[i].Decide -> this.user[i].Decide;
     }
 }
 
-instance s System init;
+instance s System Init;

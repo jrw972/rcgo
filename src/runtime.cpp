@@ -1,6 +1,8 @@
 #include "runtime.hpp"
 #include "function.hpp"
 #include "method.hpp"
+#include "initializer.hpp"
+#include "getter.hpp"
 
 namespace runtime
 {
@@ -81,8 +83,8 @@ namespace runtime
   void
   create_bindings (instance_table_t& instance_table)
   {
-    for (instance_table_t::PortsType::const_iterator output_pos = instance_table.ports.begin (),
-           output_limit = instance_table.ports.end ();
+    for (instance_table_t::PortsType::const_iterator output_pos = instance_table.push_ports.begin (),
+           output_limit = instance_table.push_ports.end ();
          output_pos != output_limit;
          ++output_pos)
       {
@@ -101,8 +103,8 @@ namespace runtime
           }
       }
 
-    for (instance_table_t::PfuncsType::const_iterator input_pos = instance_table.pfuncs.begin (),
-           input_limit = instance_table.pfuncs.end ();
+    for (instance_table_t::PullPortsType::const_iterator input_pos = instance_table.pull_ports.begin (),
+           input_limit = instance_table.pull_ports.end ();
          input_pos != input_limit;
          ++input_pos)
       {
@@ -110,16 +112,9 @@ namespace runtime
         size_t input_pfunc = input_pos->first - input_instance->address ();
         instance_table_t::OutputType output = *input_pos->second.outputs.begin ();
         pfunc_t* pfunc = reinterpret_cast<pfunc_t*> (reinterpret_cast<char*> (input_instance->ptr ()) + input_pfunc);
-        if (output.instance != NULL)
-          {
-            pfunc->instance = output.instance->ptr ();
-            pfunc->method = output.method;
-          }
-        else
-          {
-            pfunc->instance = NULL;
-            pfunc->function = output.function;
-          }
+        assert (output.instance != NULL);
+        pfunc->instance = output.instance->ptr ();
+        pfunc->getter = output.getter;
       }
   }
 
@@ -139,27 +134,48 @@ namespace runtime
     stack_frame_pop_base_pointer (exec.stack ());
   }
 
-  //     void visit (const ast_method_t& node)
-  //     {
-  //       method_t* method = get_current_method (&node);
-  //       stack_frame_push_base_pointer (exec.stack (), method->memory_model.locals_size ());
-  //       evaluate_statement (exec, node.body ());
-  //       stack_frame_pop_base_pointer (exec.stack ());
-  //     }
+  static void
+  call (executor_base_t& exec, const initializer_t* initializer)
+  {
+    stack_frame_push_base_pointer (exec.stack (), initializer->memory_model.locals_size ());
+    component_t* old_this = exec.current_instance ();
+    // Use this to set the the current instance.
+    symbol_t* this_symbol = initializer->node->symtab->get_this ();
+    stack_frame_push (exec.stack (), symbol_get_offset (this_symbol), symbol_parameter_type (this_symbol)->size ());
+    component_t* this_ = static_cast<component_t*> (stack_frame_pop_pointer (exec.stack ()));
+    exec.current_instance (this_);
+    evaluate_statement (exec, initializer->node->body ());
+    exec.current_instance (old_this);
+    stack_frame_pop_base_pointer (exec.stack ());
+  }
+
+  static void
+  call (executor_base_t& exec, const getter_t* getter)
+  {
+    stack_frame_push_base_pointer (exec.stack (), getter->memory_model.locals_size ());
+    component_t* old_this = exec.current_instance ();
+    // Use this to set the the current instance.
+    symbol_t* this_symbol = getter->node->symtab->get_this ();
+    stack_frame_push (exec.stack (), symbol_get_offset (this_symbol), symbol_parameter_type (this_symbol)->size ());
+    component_t* this_ = static_cast<component_t*> (stack_frame_pop_pointer (exec.stack ()));
+    exec.current_instance (this_);
+    evaluate_statement (exec, getter->node->body ());
+    exec.current_instance (old_this);
+    stack_frame_pop_base_pointer (exec.stack ());
+  }
 
   void
   initialize (executor_base_t& exec, instance_t* instance)
   {
     if (instance->is_top_level ())
       {
-        exec.current_instance (instance->ptr ());
         char* top_before = stack_frame_top (exec.stack ());
         // Push this.
         stack_frame_push_pointer (exec.stack (), instance->ptr ());
         // Push a fake instruction pointer.
         stack_frame_push_pointer (exec.stack (), NULL);
         char* top_after = stack_frame_top (exec.stack ());
-        call (exec, instance->method ());
+        call (exec, instance->initializer ());
         stack_frame_popn (exec.stack (), top_after - top_before);
       }
   }
@@ -982,7 +998,7 @@ namespace runtime
                            "array index is out of bounds");
           }
 
-        port_call (node, node.args (), node.field, idx * node.array_type->element_size ());
+        push_port_call (node, node.args (), node.field, idx * node.array_type->element_size ());
       }
 
       void visit (const ast_index_expr_t& node)
@@ -1146,15 +1162,14 @@ namespace runtime
           case ast_call_expr_t::FUNCTION:
             break;
           case ast_call_expr_t::METHOD:
+          case ast_call_expr_t::INITIALIZER:
+          case ast_call_expr_t::GETTER:
             evaluate_expr (exec, node.expr ()->children[0]->children[0]);
             break;
-          case ast_call_expr_t::PFUNC:
+          case ast_call_expr_t::PULL_PORT:
             evaluate_expr (exec, node.expr ());
             stack_frame_store_heap (exec.stack (), &pfunc, sizeof (pfunc_t));
-            if (pfunc.instance != NULL)
-              {
-                stack_frame_push_pointer (exec.stack (), pfunc.instance);
-              }
+            stack_frame_push_pointer (exec.stack (), pfunc.instance);
             break;
           }
 
@@ -1179,15 +1194,14 @@ namespace runtime
           case ast_call_expr_t::METHOD:
             call (exec, tv.value.method_value ());
             break;
-          case ast_call_expr_t::PFUNC:
-            if (pfunc.instance != NULL)
-              {
-                call (exec, pfunc.method);
-              }
-            else
-              {
-                call (exec, pfunc.function);
-              }
+          case ast_call_expr_t::INITIALIZER:
+            call (exec, tv.value.initializer_value ());
+            break;
+          case ast_call_expr_t::GETTER:
+            call (exec, tv.value.getter_value ());
+            break;
+          case ast_call_expr_t::PULL_PORT:
+            call (exec, pfunc.getter);
             break;
           }
 
@@ -1195,7 +1209,10 @@ namespace runtime
         stack_frame_popn (exec.stack (), top_after - top_before);
       }
 
-      void port_call (const ast_t& node, ast_t* args, const field_t* field, size_t offset = 0)
+      void push_port_call (const ast_t& node,
+                           ast_t* args,
+                           const field_t* field,
+                           size_t offset = 0)
       {
         // Push all of the arguments first and measure their size.
         char* top_before = stack_frame_top (exec.stack ());
@@ -1240,9 +1257,9 @@ namespace runtime
           }
       }
 
-      void visit (const ast_port_call_expr_t& node)
+      void visit (const ast_push_port_call_expr_t& node)
       {
-        port_call (node, node.args (), node.field);
+        push_port_call (node, node.args (), node.field);
       }
 
       void visit (const ast_list_expr_t& node)
