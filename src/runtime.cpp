@@ -109,12 +109,12 @@ namespace runtime
          ++input_pos)
       {
         instance_t* input_instance = input_pos->second.input_instance;
-        size_t input_pfunc = input_pos->first - input_instance->address ();
+        size_t input_pull_port = input_pos->first - input_instance->address ();
         instance_table_t::OutputType output = *input_pos->second.outputs.begin ();
-        pfunc_t* pfunc = reinterpret_cast<pfunc_t*> (reinterpret_cast<char*> (input_instance->ptr ()) + input_pfunc);
+        pull_port_t* pull_port = reinterpret_cast<pull_port_t*> (reinterpret_cast<char*> (input_instance->ptr ()) + input_pull_port);
         assert (output.instance != NULL);
-        pfunc->instance = output.instance->ptr ();
-        pfunc->getter = output.getter;
+        pull_port->instance = output.instance->ptr ();
+        pull_port->getter = output.getter;
       }
   }
 
@@ -1154,7 +1154,7 @@ namespace runtime
         // Sample the top of the stack.
         char* top_before = stack_frame_top (exec.stack ());
 
-        pfunc_t pfunc;
+        pull_port_t pull_port;
         switch (node.kind)
           {
           case ast_call_expr_t::NONE:
@@ -1168,8 +1168,8 @@ namespace runtime
             break;
           case ast_call_expr_t::PULL_PORT:
             evaluate_expr (exec, node.expr ());
-            stack_frame_store_heap (exec.stack (), &pfunc, sizeof (pfunc_t));
-            stack_frame_push_pointer (exec.stack (), pfunc.instance);
+            stack_frame_store_heap (exec.stack (), &pull_port, sizeof (pull_port_t));
+            stack_frame_push_pointer (exec.stack (), pull_port.instance);
             break;
           }
 
@@ -1201,7 +1201,7 @@ namespace runtime
             call (exec, tv.value.getter_value ());
             break;
           case ast_call_expr_t::PULL_PORT:
-            call (exec, pfunc.getter);
+            call (exec, pull_port.getter);
             break;
           }
 

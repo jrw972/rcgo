@@ -53,7 +53,7 @@ enum TriggerAction
 
 typedef std::map<instance_t*, TriggerAction> instance_set_t;
 
-struct pfunc_t {
+struct pull_port_t {
   component_t* instance;
   getter_t* getter;
 };

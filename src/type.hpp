@@ -560,7 +560,7 @@ public:
   void accept (const_type_visitor_t& visitor) const;
   std::string to_string () const;
   size_t alignment () const { return sizeof (void*); }
-  size_t size () const { return sizeof (pfunc_t); }
+  size_t size () const { return sizeof (pull_port_t); }
   virtual TypeLevel level () const { return CONVENTIONAL; }
 
   const signature_type_t * signature () const { return function_type_->signature (); }

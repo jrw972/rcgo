@@ -884,7 +884,7 @@ instance_table_analyze_composition (const instance_table_t& table)
     {
       if (pos->second.outputs.size () != 1)
         {
-          error (-1, 0, "unbound pfunc");
+          error (-1, 0, "unbound pull port");
         }
     }
 
