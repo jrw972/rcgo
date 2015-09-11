@@ -4,7 +4,7 @@
 #include "debug.hpp"
 #include "util.hpp"
 #include "type.hpp"
-#include "symbol.hpp"
+#include "Symbol.hpp"
 #include "function.hpp"
 #include <vector>
 #include "action.hpp"
@@ -12,68 +12,82 @@
 std::ostream& symtab_t::print (std::ostream& o) const
 {
   o << "Symtab " << this << '\n';
-  for (std::vector<symbol_t*>::const_iterator ptr = symbols_.begin (),
+  for (std::vector<Symbol*>::const_iterator ptr = symbols_.begin (),
          limit = symbols_.end ();
        ptr != limit;
        ++ptr)
     {
-      const symbol_t* symbol = *ptr;
-      const std::string& name = symbol_identifier (symbol);
-      const char* kind = symbol_kind_string (symbol_kind (symbol));
-      std::string type_str = "(none)";
-      size_t offset = symbol_get_offset (symbol);
-      switch (symbol_kind (symbol))
-        {
-        case SymbolFunction:
-          {
-            function_t* function = symbol_get_function_function (symbol);
-            if (function)
-              {
-                type_str = function->function_type->to_string ();
-              }
-          }
-          break;
-        case SymbolInstance:
-          if (symbol_get_instance_type (symbol))
-            {
-              type_str = symbol_get_instance_type (symbol)->to_string ();
-            }
-          break;
-        case SymbolParameter:
-          type_str = symbol_parameter_type (symbol)->to_string ();
-          switch (symbol_parameter_kind (symbol))
-            {
-            case ParameterOrdinary:
-              o << "Ordinary\n";
-              break;
-            case ParameterReceiver:
-              o << "Receiver\n";
-              break;
-            case ParameterReceiverDuplicate:
-              o << "ReceiverDuplicate\n";
-              break;
-            case ParameterReturn:
-              o << "Return\n";
-              break;
-            case ParameterDuplicate:
-              o << "Duplicate\n";
-              break;
-            }
-          break;
-        case SymbolType:
-          type_str = symbol_get_type_type (symbol)->to_string ();
-          break;
-        case SymbolTypedConstant:
-          type_str = symbol_typed_constant_value (symbol).type->to_string ();
-          break;
-        case SymbolVariable:
-          type_str = symbol_variable_type (symbol)->to_string ();
-          break;
-        case SymbolHidden:
-          break;
+      const Symbol* symbol = *ptr;
+      const std::string& name = symbol->identifier;
+      const char* kind = symbol->kindString ();
+      size_t offset = symbol->offset ();
+
+      struct visitor : public ConstSymbolVisitor {
+        std::string type_str;
+        std::ostream& o;
+
+        visitor (std::ostream& o_) : type_str ("(none)"), o (o_) { }
+
+        void defaultAction (const Symbol& symbol) {
+          not_reached;
         }
 
-      std::cout << name << '\t' << kind << '\t' << type_str.c_str () << '\t' << offset << '\n';
+        void visit (const FunctionSymbol& symbol) {
+          function_t* function = symbol.function;
+          if (function) {
+            type_str = function->function_type->to_string ();
+          }
+        }
+
+        void visit (const InstanceSymbol& symbol) {
+          if (symbol.type != NULL) {
+            type_str = symbol.type->to_string ();
+          }
+        }
+
+        void visit (const ParameterSymbol& symbol) {
+          type_str = symbol.value.type->to_string ();
+          switch (symbol.kind)
+            {
+            case ParameterSymbol::Ordinary:
+              o << "Ordinary\n";
+              break;
+            case ParameterSymbol::Receiver:
+              o << "Receiver\n";
+              break;
+            case ParameterSymbol::ReceiverDuplicate:
+              o << "ReceiverDuplicate\n";
+              break;
+            case ParameterSymbol::Return:
+              o << "Return\n";
+              break;
+            case ParameterSymbol::OrdinaryDuplicate:
+              o << "OrdinaryDuplicate\n";
+              break;
+            }
+        }
+
+        void visit (const TypeSymbol& symbol) {
+          type_str = symbol.type->to_string ();
+        }
+
+        void visit (const TypedConstantSymbol& symbol) {
+          type_str = symbol.value.type->to_string ();
+        }
+
+        void visit (const VariableSymbol& symbol) {
+          type_str = symbol.value.type->to_string ();
+        }
+
+        void visit (const HiddenSymbol& symbol) {
+          // Do nothing.
+        }
+      };
+
+      visitor v (o);
+      symbol->accept (v);
+
+      o << name << '\t' << kind << '\t' << v.type_str.c_str () << '\t' << offset << '\n';
     }
 
   if (parent)
@@ -109,7 +123,7 @@ symtab_get_root (symtab_t * symtab)
 const type_t *
 symtab_get_this_type (const symtab_t * symtab)
 {
-  return symbol_parameter_type (symtab->get_this ());
+  return SymbolCast<ParameterSymbol> (symtab->get_this ())->value.type;
 }
 
 void
@@ -269,9 +283,8 @@ symtab_get_current_receiver_type (const symtab_t * symtab)
 void
 symtab_t::trigger (symbol_holder& holder, ast_t* defining_node)
 {
-  symbol_t *this_symbol = get_this ();
-  symbol_t *new_this_symbol =
-    symbol_make_receiver_duplicate (this_symbol);
+  Symbol *this_symbol = get_this ();
+  Symbol *new_this_symbol = SymbolCast<ParameterSymbol> (this_symbol)->duplicate ();
   enter (new_this_symbol);
   holder.symbol (new_this_symbol);
 
@@ -279,54 +292,33 @@ symtab_t::trigger (symbol_holder& holder, ast_t* defining_node)
   symtab_t* s;
   for (s = parent; s != NULL; s = s->parent)
     {
-      for (std::vector<symbol_t*>::const_iterator ptr = s->symbols_.begin (),
+      for (std::vector<Symbol*>::const_iterator ptr = s->symbols_.begin (),
              limit = s->symbols_.end ();
            ptr != limit;
            ++ptr)
         {
-          const symbol_t* symbol = *ptr;
-
-          switch (symbol_kind (symbol))
-            {
-            case SymbolFunction:
-              // Do nothing.
-              break;
-            case SymbolInstance:
-              // Do nothing.
-              break;
-            case SymbolParameter:
-              {
-                if (symbol != this_symbol)
-                  {
-                    typed_value_t tv = symbol_parameter_value (symbol);
-                    if (type_contains_pointer (tv.type) && tv.dereference_mutability == FOREIGN)
-                      {
-                        // Hide this parameter.
-                        enter (symbol_make_hidden (symbol, defining_node));
-                      }
-                  }
+          {
+            const ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (*ptr);
+            if (symbol != NULL && symbol != this_symbol) {
+              typed_value_t tv = symbol->value;
+              if (type_contains_pointer (tv.type) && tv.dereference_mutability == FOREIGN) {
+                // Hide this parameter.
+                enter (new HiddenSymbol (symbol, defining_node));
               }
-              break;
-              unimplemented;
-            case SymbolType:
-              // Do nothing.
-              break;
-            case SymbolTypedConstant:
-              // Do nothing.
-              break;
-            case SymbolVariable:
-              {
-                typed_value_t tv = symbol_variable_value (symbol);
-                if (type_contains_pointer (tv.type) && tv.dereference_mutability == FOREIGN)
-                  {
-                    // Hide this variable.
-                    enter (symbol_make_hidden (symbol, defining_node));
-                  }
-              }
-              break;
-            case SymbolHidden:
-              unimplemented;
             }
+          }
+
+          {
+            const VariableSymbol* symbol = SymbolCast<VariableSymbol> (*ptr);
+            if (symbol != NULL) {
+              typed_value_t tv = symbol->value;
+              if (type_contains_pointer (tv.type) && tv.dereference_mutability == FOREIGN) {
+                // Hide this variable.
+                enter (new HiddenSymbol (symbol, defining_node));
+              }
+            }
+          }
+
         }
     }
 }
@@ -337,32 +329,34 @@ symtab_t::change ()
   symtab_t* s;
   for (s = parent; s != NULL; s = s->parent)
     {
-      for (std::vector<symbol_t*>::const_iterator ptr = s->symbols_.begin (),
+      for (std::vector<Symbol*>::const_iterator ptr = s->symbols_.begin (),
              limit = s->symbols_.end ();
            ptr != limit;
            ++ptr)
         {
-          symbol_t* symbol = *ptr;
-          if (symbol_kind (symbol) == SymbolParameter)
-            {
-              typed_value_t tv = symbol_parameter_value (symbol);
-              if (type_contains_pointer (tv.type))
-                {
-                  // Enter as a duplicate.
-                  symbol_t* dup = symbol_make_parameter_duplicate (symbol);
-                  enter (dup);
-                }
+          {
+            ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (*ptr);
+            if (symbol != NULL) {
+              typed_value_t tv = SymbolCast<ParameterSymbol> (symbol)->value;
+              if (type_contains_pointer (tv.type)) {
+                // Enter as a duplicate.
+                Symbol* dup = SymbolCast<ParameterSymbol> (symbol)->duplicate ();
+                enter (dup);
+              }
             }
-          else if (symbol_kind (symbol) == SymbolVariable)
-            {
-              typed_value_t tv = symbol_variable_value (symbol);
-              if (type_contains_pointer (tv.type))
-                {
-                  // Enter as a duplicate.
-                  symbol_t* dup = symbol_make_variable_duplicate (symbol);
-                  enter (dup);
-                }
+          }
+
+          {
+            VariableSymbol* symbol = SymbolCast<VariableSymbol> (*ptr);
+            if (symbol != NULL) {
+              typed_value_t tv = SymbolCast<VariableSymbol> (symbol)->value;
+              if (type_contains_pointer (tv.type)) {
+                // Enter as a duplicate.
+                Symbol* dup = SymbolCast<VariableSymbol> (symbol)->duplicate ();
+                enter (dup);
+              }
             }
+          }
         }
     }
 }

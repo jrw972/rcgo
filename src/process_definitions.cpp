@@ -1,5 +1,5 @@
 #include "ast.hpp"
-#include "symbol.hpp"
+#include "Symbol.hpp"
 #include <error.h>
 #include "semantic.hpp"
 #include "function.hpp"
@@ -10,12 +10,12 @@
 #include "field.hpp"
 #include "parameter.hpp"
 
-symbol_t*
-enter_symbol (symtab_t* symtab, symbol_t * symbol, symbol_holder& holder)
+Symbol*
+enter_symbol (symtab_t* symtab, Symbol * symbol, symbol_holder& holder)
 {
   // Check if the symbol is defined locally.
-  const std::string& identifier = symbol_identifier (symbol);
-  symbol_t *s = symtab->find_current (identifier);
+  const std::string& identifier = symbol->identifier;
+  Symbol *s = symtab->find_current (identifier);
   if (s == NULL)
     {
       symtab->enter (symbol);
@@ -23,7 +23,7 @@ enter_symbol (symtab_t* symtab, symbol_t * symbol, symbol_holder& holder)
     }
   else
     {
-      const ast_t* node = symbol_defining_node (symbol);
+      const ast_t* node = symbol->defining_node;
       error_at_line (-1, 0, node->location.file, node->location.line,
 		     "%s is already defined in this scope", identifier.c_str ());
     }
@@ -64,14 +64,14 @@ check_assignment (typed_value_t left_tv,
           left_tv.dereference_mutability < right_tv.dereference_mutability)
         {
           error_at_line (-1, 0, node.location.file, node.location.line,
-                         leak_message);
+                         "%s", leak_message);
         }
 
       if (right_tv.intrinsic_mutability == FOREIGN &&
           left_tv.region != typed_value_t::STACK)
         {
           error_at_line (-1, 0, node.location.file, node.location.line,
-                         store_foreign_message);
+                         "%s", store_foreign_message);
         }
     }
 }
@@ -188,7 +188,7 @@ type_check_expr (ast_t* ptr)
     {
       ast_t *identifier_node = node.child ();
       const std::string& identifier = ast_get_identifier (identifier_node);
-      symbol_t *symbol = node.symtab->find (identifier);
+      Symbol *symbol = node.symtab->find (identifier);
       if (symbol == NULL)
         {
           error_at_line (-1, 0, identifier_node->location.file,
@@ -196,38 +196,51 @@ type_check_expr (ast_t* ptr)
                          identifier.c_str ());
         }
 
-      switch (symbol_kind (symbol))
-        {
-        case SymbolFunction:
-          node.typed_value = typed_value_t::make_ref (typed_value_t (symbol_get_function_function (symbol)));
-          break;
+      struct visitor : public ConstSymbolVisitor {
+        ast_identifier_expr_t& node;
+        ast_t* identifier_node;
+        const std::string& identifier;
 
-        case SymbolInstance:
-          unimplemented;
+        visitor (ast_identifier_expr_t& n)
+          : node (n)
+          , identifier_node (node.child ())
+          , identifier (ast_get_identifier (identifier_node))
+        { }
 
-        case SymbolParameter:
-          node.typed_value = symbol_parameter_value (symbol);
-          break;
+        void defaultAction (const Symbol& symbol) {
+          not_reached;
+        }
 
-        case SymbolType:
+        void visit (const FunctionSymbol& symbol) {
+          node.typed_value = typed_value_t::make_ref (typed_value_t (symbol.function));
+        }
+
+        void visit (const ParameterSymbol& symbol) {
+          node.typed_value = symbol.value;
+        }
+
+        void visit (const TypeSymbol& symbol) {
           error_at_line (-1, 0, identifier_node->location.file,
                          identifier_node->location.line, "%s is a type (and not an expression)",
                          identifier.c_str ());
+        }
 
-        case SymbolTypedConstant:
-          node.typed_value = symbol_typed_constant_value (symbol);
-          break;
+        void visit (const TypedConstantSymbol& symbol) {
+          node.typed_value = symbol.value;
+        }
 
-        case SymbolVariable:
-          node.typed_value = symbol_variable_value (symbol);
-          break;
+        void visit (const VariableSymbol& symbol) {
+          node.typed_value = symbol.value;
+        }
 
-        case SymbolHidden:
+        void visit (const HiddenSymbol& symbol) {
           error_at_line (-1, 0, identifier_node->location.file,
                          identifier_node->location.line, "%s is not accessible in this scope",
                          identifier.c_str ());
-          break;
         }
+      };
+      visitor v (node);
+      symbol->accept (v);
 
       node.symbol.symbol (symbol);
     }
@@ -718,7 +731,7 @@ type_check_statement (ast_t * node)
       typed_value_t limit = process_array_dimension (node.limit_node ());
       typed_value_t zero = limit;
       zero.zero ();
-      symbol_t* symbol = symbol_make_variable (identifier, typed_value_t::make_ref (typed_value_t::make_range (zero, limit, typed_value_t::STACK, IMMUTABLE, IMMUTABLE)), node.identifier ());
+      Symbol* symbol = new VariableSymbol (identifier, node.identifier (), typed_value_t::make_ref (typed_value_t::make_range (zero, limit, typed_value_t::STACK, IMMUTABLE, IMMUTABLE)));
       enter_symbol (node.symtab, symbol, node.symbol);
       type_check_statement (node.body ());
       node.limit = limit;
@@ -817,7 +830,7 @@ type_check_statement (ast_t * node)
         }
 
       // Enter the new heap root.
-      symbol_t* symbol = symbol_make_variable (identifier, typed_value_t::make_ref (root_type, typed_value_t::STACK, MUTABLE, MUTABLE), &node);
+      Symbol* symbol = new VariableSymbol (identifier, &node, typed_value_t::make_ref (root_type, typed_value_t::STACK, MUTABLE, MUTABLE));
       enter_symbol (node.symtab, symbol, node.root_symbol);
 
       // Enter all parameters and variables in scope that are pointers as pointers to foreign.
@@ -877,7 +890,7 @@ type_check_statement (ast_t * node)
       node.return_symbol = get_current_return_symbol (&node);
       assert (node.return_symbol != NULL);
 
-      check_assignment (symbol_parameter_value (node.return_symbol), expr_tv, node,
+      check_assignment (SymbolCast<ParameterSymbol> (node.return_symbol)->value, expr_tv, node,
                         "cannot convert to (%s) from (%s) in return",
                         "return leaks mutable pointers",
                         "return may store foreign pointer");
@@ -953,7 +966,7 @@ type_check_statement (ast_t * node)
            ++pos)
         {
           const std::string& name = ast_get_identifier (*pos);
-          symbol_t* symbol = symbol_make_variable (name, typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE), *pos);
+          Symbol* symbol = new VariableSymbol (name, *pos, typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE));
           node.symbols.push_back (symbol_holder ());
           enter_symbol (node.symtab, symbol, node.symbols.back ());
         }
@@ -992,7 +1005,7 @@ type_check_statement (ast_t * node)
                             "assignment may store foreign pointer");
 
           const std::string& name = ast_get_identifier (*id_pos);
-          symbol_t* symbol = symbol_make_variable (name, typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE), *id_pos);
+          Symbol* symbol = new VariableSymbol (name, *id_pos, typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE));
           node.symbols.push_back (symbol_holder ());
           enter_symbol (node.symtab, symbol, node.symbols.back ());
         }
@@ -1129,23 +1142,11 @@ mutates_check_statement (ast_t * node)
 
     void visit (ast_identifier_expr_t& node)
     {
-      symbol_t* symbol = node.symbol.symbol ();
-
-      switch (symbol_kind (symbol))
-        {
-        case SymbolParameter:
-          assert (symbol_parameter_kind (symbol) != ParameterReceiver);
-          derived_from_receiver = (symbol_parameter_kind (symbol) == ParameterReceiverDuplicate);
-          break;
-
-        case SymbolFunction:
-        case SymbolInstance:
-        case SymbolType:
-        case SymbolTypedConstant:
-        case SymbolVariable:
-        case SymbolHidden:
-          break;
-        }
+      ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (node.symbol.symbol ());
+      if (symbol != NULL) {
+        assert (symbol->kind != ParameterSymbol::Receiver);
+        derived_from_receiver = symbol->kind == ParameterSymbol::ReceiverDuplicate;
+      }
     }
   };
 
@@ -1358,16 +1359,16 @@ enter_signature (ast_t * node, const signature_type_t * type)
       const parameter_t* parameter = *pos;
       // Check if the symbol is defined locally.
       const std::string& identifier = parameter->name;
-      symbol_t *s = node->symtab->find_current (identifier);
+      Symbol *s = node->symtab->find_current (identifier);
       if (s == NULL)
         {
           if (parameter->is_receiver)
             {
-              s = symbol_make_receiver (parameter);
+              s = ParameterSymbol::makeReceiver (parameter);
             }
           else
             {
-              s = symbol_make_parameter (parameter);
+              s = ParameterSymbol::make (parameter);
             }
           node->symtab->enter (s);
         }
@@ -1417,7 +1418,7 @@ process_definitions (ast_t * node)
                                                      true);
 
       enter_symbol (node.symtab,
-                    symbol_make_receiver (this_parameter),
+                    ParameterSymbol::makeReceiver (this_parameter),
                     node.this_symbol);
 
       check_condition (precondition_node);
@@ -1458,7 +1459,7 @@ process_definitions (ast_t * node)
                                                      true);
 
       enter_symbol (node.symtab,
-                    symbol_make_receiver (this_parameter),
+                    ParameterSymbol::makeReceiver (this_parameter),
                     node.this_symbol);
 
       /* Insert "iota" into the symbol table. */
@@ -1473,7 +1474,7 @@ process_definitions (ast_t * node)
                                                      iota_value,
                                                      false);
       enter_symbol (node.symtab,
-                    symbol_make_parameter (iota_parameter),
+                    ParameterSymbol::make (iota_parameter),
                     node.iota_symbol);
 
       check_condition (precondition_node);
@@ -1500,7 +1501,7 @@ process_definitions (ast_t * node)
                                                      true);
 
       enter_symbol (node.symtab,
-                    symbol_make_receiver (this_parameter),
+                    ParameterSymbol::makeReceiver (this_parameter),
                     node.this_symbol);
 
       /* Check the body. */
@@ -1539,8 +1540,8 @@ process_definitions (ast_t * node)
     void visit (ast_instance_t& node)
     {
       // Check the initialization function.
-      symbol_t* symbol = node.symbol.symbol ();
-      const named_type_t* type = symbol_get_instance_type (symbol);
+      Symbol* symbol = node.symbol.symbol ();
+      const named_type_t* type = SymbolCast<InstanceSymbol> (symbol)->type;
       ast_t* initializer_node = node.initializer ();
       initializer_t* initializer = type->get_initializer (ast_get_identifier (initializer_node));
       if (initializer == NULL)
@@ -1556,7 +1557,7 @@ process_definitions (ast_t * node)
                          initializer_node->location.line,
                          "named method is not null-ary");
         }
-      symbol_set_instance_initializer (symbol, initializer);
+      SymbolCast<InstanceSymbol> (symbol)->initializer = initializer;
     }
 
     void visit (ast_reaction_t& node)
@@ -1576,7 +1577,7 @@ process_definitions (ast_t * node)
                                                      this_value,
                                                      true);
       enter_symbol (node.symtab,
-                    symbol_make_receiver (this_parameter),
+                    ParameterSymbol::makeReceiver (this_parameter),
                     node.this_symbol);
       /* Enter the signature into the symbol table. */
       enter_signature (signature_node, reaction->reaction_type->signature ());
@@ -1604,7 +1605,7 @@ process_definitions (ast_t * node)
                                                      this_value,
                                                      true);
       enter_symbol (node.symtab,
-                    symbol_make_receiver (this_parameter),
+                    ParameterSymbol::makeReceiver (this_parameter),
                     node.this_symbol);
 
       /* Insert "iota" into the symbol table. */
@@ -1620,7 +1621,7 @@ process_definitions (ast_t * node)
                                                      false);
 
       enter_symbol (node.symtab,
-                    symbol_make_parameter (iota_parameter),
+                    ParameterSymbol::make (iota_parameter),
                     node.iota_symbol);
 
       /* Enter the signature into the symbol table. */

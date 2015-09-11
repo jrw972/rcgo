@@ -2,7 +2,7 @@
 #include "instance_table.hpp"
 #include "field.hpp"
 #include "ast.hpp"
-#include "symbol.hpp"
+#include "Symbol.hpp"
 
 static void
 instantiate_contained_instances (const type_t * type,
@@ -148,9 +148,9 @@ enumerate_instances (ast_t * node, instance_table_t& instance_table)
 
     void visit (ast_instance_t& node)
     {
-      symbol_t *symbol = node.symbol.symbol ();
-      const named_type_t *type = symbol_get_instance_type (symbol);
-      initializer_t* initializer = symbol_get_instance_initializer (symbol);
+      Symbol *symbol = node.symbol.symbol ();
+      const named_type_t *type = SymbolCast<InstanceSymbol> (symbol)->type;
+      initializer_t* initializer = SymbolCast<InstanceSymbol> (symbol)->initializer;
       instantiate_contained_instances (type, instance_table, NULL, initializer, address);
       address += type->size ();
     }

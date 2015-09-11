@@ -31,7 +31,7 @@ class port_t;
 class reaction_t;
 class scheduler_t;
 typedef struct stack_frame_t stack_frame_t;
-typedef struct symbol_t symbol_t;
+class Symbol;
 typedef struct symtab_t symtab_t;
 typedef struct trigger_t trigger_t;
 typedef struct type_t type_t;

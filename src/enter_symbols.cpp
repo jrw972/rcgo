@@ -1,6 +1,7 @@
 #include "ast.hpp"
-#include "symbol.hpp"
+#include "Symbol.hpp"
 #include <error.h>
+#include "parameter.hpp"
 
 void
 enter_symbols (ast_t * node)
@@ -9,40 +10,47 @@ enter_symbols (ast_t * node)
   symtab_t *symtab = symtab_get_root (node->symtab);
 
   /* Insert types. */
-  {
-    symtab->enter (symbol_make_type ("bool", new named_type_t ("bool", bool_type_t::instance ()), node));
+  symtab->enter (new TypeSymbol ("bool", node, new named_type_t ("bool", bool_type_t::instance ())));
 
-    symtab->enter (symbol_make_type ("int", new named_type_t ("int", int_type_t::instance ()), node));
+  symtab->enter (new TypeSymbol ("int", node, new named_type_t ("int", int_type_t::instance ())));
 
-    symtab->enter (symbol_make_type ("int8", new named_type_t ("int8", int8_type_t::instance ()), node));
+  symtab->enter (new TypeSymbol ("int8", node, new named_type_t ("int8", int8_type_t::instance ())));
 
-    symtab->enter (symbol_make_type ("uint", new named_type_t ("uint", uint_type_t::instance ()), node));
+  symtab->enter (new TypeSymbol ("uint", node, new named_type_t ("uint", uint_type_t::instance ())));
 
-    symtab->enter (symbol_make_type ("uint8", new named_type_t ("uint8", uint8_type_t::instance ()), node));
+  symtab->enter (new TypeSymbol ("uint8", node, new named_type_t ("uint8", uint8_type_t::instance ())));
 
-    symtab->enter (symbol_make_type ("uint32", new named_type_t ("uint32", uint32_type_t::instance ()), node));
+  symtab->enter (new TypeSymbol ("uint32", node, new named_type_t ("uint32", uint32_type_t::instance ())));
 
-    symtab->enter (symbol_make_type ("uint64", new named_type_t ("uint64", uint64_type_t::instance ()), node));
+  symtab->enter (new TypeSymbol ("uint64", node, new named_type_t ("uint64", uint64_type_t::instance ())));
 
-    symtab->enter (symbol_make_type ("uint128", new named_type_t ("uint128", uint128_type_t::instance ()), node));
+  symtab->enter (new TypeSymbol ("uint128", node, new named_type_t ("uint128", uint128_type_t::instance ())));
 
-    symtab->enter (symbol_make_type ("float64", new named_type_t ("float64", float64_type_t::instance ()), node));
+  symtab->enter (new TypeSymbol ("float64", node, new named_type_t ("float64", float64_type_t::instance ())));
 
-    symtab->enter (symbol_make_type ("string", new named_type_t ("string", string_type_t::instance ()), node));
-  }
+  symtab->enter (new TypeSymbol ("string", node, new named_type_t ("string", string_type_t::instance ())));
+
+  /* I/O facilities. */
+  named_type_t* fd_type = new named_type_t ("FileDescriptor", FileDescriptor_type_t::instance ());
+  symtab->enter (new TypeSymbol ("FileDescriptor", node, fd_type));
+
+  // new function_type_t (new signature_type_t (),
+  //                      new parameter_t (node, "0return", typed_value_t::make_value (fd_type, typed_value_t::HEAP, FOREIGN, FOREIGN), false));
+
+  //symtab->enter (symbol_make_builtin_function ("timerfd_create"));
 
   /* Insert zero constant. */
-  symtab->enter (symbol_make_typed_constant ("nil",
-                                             typed_value_t::nil (),
-                                             node));
+  symtab->enter (new TypedConstantSymbol ("nil",
+                                          node,
+                                          typed_value_t::nil ()));
 
   /* Insert untyped boolean constants. */
-  symtab->enter (symbol_make_typed_constant ("true",
-                                             typed_value_t (bool_type_t::instance (), true),
-                                             node));
-  symtab->enter (symbol_make_typed_constant ("false",
-                                             typed_value_t (bool_type_t::instance (), false),
-                                             node));
+  symtab->enter (new TypedConstantSymbol ("true",
+                                          node,
+                                          typed_value_t (bool_type_t::instance (), true)));
+  symtab->enter (new TypedConstantSymbol ("false",
+                                          node,
+                                          typed_value_t (bool_type_t::instance (), false)));
 
   struct visitor : public ast_visitor_t
   {
@@ -58,39 +66,42 @@ enter_symbols (ast_t * node)
 
     void visit (ast_instance_t& node)
     {
-      enter_undefined_symbol (node.symbol, node.identifier (),
-			      SymbolInstance, node.symtab);
+      enter_undefined_symbol (node.symbol,
+                              new InstanceSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),
+			      node.symtab);
     }
 
     void visit (ast_type_definition_t& node)
     {
-      enter_undefined_symbol (node.symbol, node.identifier (),
-			      SymbolType, node.symtab);
+      enter_undefined_symbol (node.symbol,
+                              new TypeSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),
+			      node.symtab);
     }
 
     void visit (ast_function_t& node)
     {
-      enter_undefined_symbol (node.function_symbol, node.identifier (),
-                              SymbolFunction, symtab_parent (node.symtab));
+      enter_undefined_symbol (node.function_symbol,
+                              new FunctionSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),
+                              symtab_parent (node.symtab));
     }
 
     static void
     enter_undefined_symbol (symbol_holder& node,
-                            ast_t * identifier_node, SymbolKind kind,
+                            Symbol* s,
                             symtab_t* symtab)
     {
-      const std::string& identifier = ast_get_identifier (identifier_node);
-      symbol_t *symbol = symtab->find_current (identifier);
+      const std::string& identifier = s->identifier;
+      Symbol *symbol = symtab->find_current (identifier);
       if (symbol == NULL)
         {
-          symbol = symbol_make_undefined (identifier, kind, identifier_node);
+          symbol = s;
           symtab->enter (symbol);
           node.symbol (symbol);
         }
       else
         {
-          error_at_line (-1, 0, identifier_node->location.file,
-                         identifier_node->location.line,
+          error_at_line (-1, 0, s->defining_node->location.file,
+                         s->defining_node->location.line,
                          "%s is already defined in this scope", identifier.c_str ());
         }
     }

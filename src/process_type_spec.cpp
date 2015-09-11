@@ -2,7 +2,7 @@
 #include "type.hpp"
 #include "ast.hpp"
 #include <error.h>
-#include "symbol.hpp"
+#include "Symbol.hpp"
 #include "parameter.hpp"
 
 typed_value_t
@@ -105,9 +105,9 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
                              "%s is already defined in this scope", id.c_str ());
             }
 
-          node.symtab->enter (symbol_make_typed_constant (id,
-                                                          typed_value_t (named_type, e),
-                                                          *pos));
+          node.symtab->enter (new TypedConstantSymbol (id,
+                                                       *pos,
+                                                       typed_value_t (named_type, e)));
         }
     }
 
@@ -154,22 +154,22 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
     {
       ast_t *child = node.child ();
       const std::string& identifier = ast_get_identifier (child);
-      symbol_t *symbol;
+      TypeSymbol* symbol;
       if (force_identifiers)
         {
-          symbol = lookup_force (child, identifier);
+          symbol = processAndLookup<TypeSymbol> (child, identifier);
         }
       else
         {
-          symbol = lookup_no_force (child, identifier);
+          symbol = SymbolCast<TypeSymbol> (lookup_no_force (child, identifier));
         }
 
-      if (symbol_kind (symbol) != SymbolType)
+      if (symbol == NULL)
         {
           error_at_line (-1, 0, child->location.file, child->location.line,
                          "%s does not refer to a type", identifier.c_str ());
         }
-      type = symbol_get_type_type (symbol);
+      type = SymbolCast<TypeSymbol> (symbol)->type;
     }
 
     void visit (ast_pointer_type_spec_t& node)

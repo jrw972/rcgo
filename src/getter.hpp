@@ -10,7 +10,7 @@ struct getter_t
   getter_t (ast_getter_t* n,
             const std::string& na,
             const getter_type_t* getter_type_,
-            const symbol_t* return_symbol_)
+            const Symbol* return_symbol_)
     : node (n)
     , name (na)
     , getter_type (getter_type_)
@@ -20,7 +20,7 @@ struct getter_t
   ast_getter_t* const node;
   std::string const name;
   const getter_type_t * const getter_type;
-  const symbol_t* const return_symbol;
+  const Symbol* const return_symbol;
   memory_model_t memory_model;
 };
 

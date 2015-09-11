@@ -205,7 +205,7 @@ get_current_function (const ast_t * node)
   return symtab_get_current_function (node->symtab);
 }
 
-const symbol_t*
+const Symbol*
 get_current_return_symbol (const ast_t * node)
 {
   {

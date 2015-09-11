@@ -873,7 +873,7 @@ struct ast_return_statement_t : public ast_unary_t
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const { out << "return_statement"; }
 
-  const symbol_t* return_symbol;
+  const Symbol* return_symbol;
 };
 
 struct ast_increment_statement_t : public ast_unary_t
@@ -1720,7 +1720,7 @@ get_current_getter (const ast_t * node);
 function_t *
 get_current_function (const ast_t * node);
 
-const symbol_t*
+const Symbol*
 get_current_return_symbol (const ast_t * node);
 
 #define ast_not_reached(node) do { std::cerr << node; not_reached; } while (0);

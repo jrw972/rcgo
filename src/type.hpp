@@ -335,6 +335,19 @@ struct heap_type_t : public type_t, public base_type_t
   virtual TypeLevel level () const { return CONVENTIONAL; }
 };
 
+struct FileDescriptor_type_t : public type_t
+{
+  void accept (const_type_visitor_t& visitor) const;
+  std::string to_string () const { return "<FileDescriptor>"; }
+  size_t alignment () const { return sizeof (void*); }
+  size_t size () const { return sizeof (void*); }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+  static const FileDescriptor_type_t* instance ();
+
+private:
+  FileDescriptor_type_t () { }
+};
+
 class field_list_type_t : public type_t
 {
 public:
@@ -644,6 +657,7 @@ struct const_type_visitor_t
   virtual void visit (const initializer_type_t& type) { default_action (type); }
   virtual void visit (const getter_type_t& type) { default_action (type); }
   virtual void visit (const heap_type_t& type) { default_action (type); }
+  virtual void visit (const FileDescriptor_type_t& type) { default_action (type); }
   virtual void visit (const named_type_t& type) { default_action (type); }
   virtual void visit (const pointer_type_t& type) { default_action (type); }
   virtual void visit (const push_port_type_t& type) { default_action (type); }

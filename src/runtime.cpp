@@ -140,8 +140,8 @@ namespace runtime
     stack_frame_push_base_pointer (exec.stack (), initializer->memory_model.locals_size ());
     component_t* old_this = exec.current_instance ();
     // Use this to set the the current instance.
-    symbol_t* this_symbol = initializer->node->symtab->get_this ();
-    stack_frame_push (exec.stack (), symbol_get_offset (this_symbol), symbol_parameter_type (this_symbol)->size ());
+    Symbol* this_symbol = initializer->node->symtab->get_this ();
+    stack_frame_push (exec.stack (), this_symbol->offset (), SymbolCast<ParameterSymbol> (this_symbol)->value.type->size ());
     component_t* this_ = static_cast<component_t*> (stack_frame_pop_pointer (exec.stack ()));
     exec.current_instance (this_);
     evaluate_statement (exec, initializer->node->body ());
@@ -155,8 +155,8 @@ namespace runtime
     stack_frame_push_base_pointer (exec.stack (), getter->memory_model.locals_size ());
     component_t* old_this = exec.current_instance ();
     // Use this to set the the current instance.
-    symbol_t* this_symbol = getter->node->symtab->get_this ();
-    stack_frame_push (exec.stack (), symbol_get_offset (this_symbol), symbol_parameter_type (this_symbol)->size ());
+    Symbol* this_symbol = getter->node->symtab->get_this ();
+    stack_frame_push (exec.stack (), this_symbol->offset (), SymbolCast<ParameterSymbol> (this_symbol)->value.type->size ());
     component_t* this_ = static_cast<component_t*> (stack_frame_pop_pointer (exec.stack ()));
     exec.current_instance (this_);
     evaluate_statement (exec, getter->node->body ());
@@ -1221,8 +1221,8 @@ namespace runtime
         ptrdiff_t arguments_size = top_after - top_before; // Assumes stack grows up.
 
         // Find the port to trigger.
-        symbol_t* this_ = node.symtab->get_this ();
-        stack_frame_push (exec.stack (), symbol_get_offset (this_), symbol_parameter_type (this_)->size ());
+        Symbol* this_ = node.symtab->get_this ();
+        stack_frame_push (exec.stack (), this_-> offset (), SymbolCast<ParameterSymbol> (this_)->value.type->size ());
         port_t* port = *((port_t**)((char*)stack_frame_pop_pointer (exec.stack ()) + field->offset + offset));
 
         char* base_pointer = stack_frame_base_pointer (exec.stack ());
@@ -1289,8 +1289,8 @@ namespace runtime
       void visit (const ast_identifier_expr_t& node)
       {
         // Get the address of the identifier.
-        symbol_t* symbol = node.symbol.symbol ();
-        ptrdiff_t offset = symbol_get_offset (symbol);
+        Symbol* symbol = node.symbol.symbol ();
+        ptrdiff_t offset = symbol->offset ();
         stack_frame_push_address (exec.stack (), offset);
       }
 
@@ -1471,9 +1471,9 @@ namespace runtime
 
         {
           // Evaluate the address of the heap root.
-          symbol_t* symbol = node.root_symbol.symbol ();
+          Symbol* symbol = node.root_symbol.symbol ();
           assert (symbol != NULL);
-          ptrdiff_t offset = symbol_get_offset (symbol);
+          ptrdiff_t offset = symbol->offset ();
           stack_frame_push_address (exec.stack (), offset);
         }
 
@@ -1553,7 +1553,7 @@ namespace runtime
              idx != limit;
              ++idx)
           {
-            size_t* ptr = static_cast<size_t*> (stack_frame_address_for_offset (exec.stack (), symbol_get_offset (node.symbol.symbol ())));
+            size_t* ptr = static_cast<size_t*> (stack_frame_address_for_offset (exec.stack (), node.symbol.symbol ()->offset ()));
             *ptr = idx;
             if (evaluate_statement (exec, node.body ()) == RETURN)
               {
@@ -1656,7 +1656,7 @@ namespace runtime
         // Evaluate the expression.
         evaluate_expr (exec, node.child ());
         // Store in the return parameter.
-        stack_frame_store_stack (exec.stack (), symbol_get_offset (node.return_symbol), symbol_parameter_type (node.return_symbol)->size ());
+        stack_frame_store_stack (exec.stack (), node.return_symbol->offset (), SymbolCast<ParameterSymbol> (node.return_symbol)->value.type->size ());
         retval = RETURN;
         return;
       }
@@ -1717,8 +1717,8 @@ namespace runtime
         // Zero out the variable.
         for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
           {
-            symbol_t* symbol = node.symbols[idx].symbol ();
-            stack_frame_clear_stack (exec.stack (), symbol_get_offset (symbol), symbol_variable_type (symbol)->size ());
+            Symbol* symbol = node.symbols[idx].symbol ();
+            stack_frame_clear_stack (exec.stack (), symbol->offset (), SymbolCast<VariableSymbol> (symbol)->value.type->size ());
           }
       }
 
@@ -1729,8 +1729,8 @@ namespace runtime
         for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
           {
             // Evaluate the address.
-            symbol_t* symbol = node.symbols[idx].symbol ();
-            ptrdiff_t offset = symbol_get_offset (symbol);
+            Symbol* symbol = node.symbols[idx].symbol ();
+            ptrdiff_t offset = symbol->offset ();
             stack_frame_push_address (exec.stack (), offset);
             void* ptr = stack_frame_pop_pointer (exec.stack ());
             ast_t* initializer = initializer_list->children.at (idx);
@@ -1801,6 +1801,13 @@ namespace runtime
                 uint8_type_t::ValueType u;
                 stack_frame_pop (exec.stack (), u);
                 printf ("%u", u);
+              }
+
+              void visit (const uint64_type_t& type)
+              {
+                uint64_type_t::ValueType u;
+                stack_frame_pop (exec.stack (), u);
+                printf ("%lu", u);
               }
 
               void visit (const int_type_t& type)
@@ -1925,8 +1932,8 @@ namespace runtime
         assert (trigger != NULL);
 
         // Set the current record.
-        symbol_t* this_ = b->symtab->get_this ();
-        stack_frame_push (exec.stack (), symbol_get_offset (this_), symbol_parameter_type (this_)->size ());
+        Symbol* this_ = b->symtab->get_this ();
+        stack_frame_push (exec.stack (), this_->offset (), SymbolCast<ParameterSymbol> (this_)->value.type->size ());
         exec.current_instance (static_cast<component_t*> (stack_frame_pop_pointer (exec.stack ())));
 
         // Execute it.

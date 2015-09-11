@@ -9,7 +9,7 @@
 #include "instance.hpp"
 #include "trigger.hpp"
 #include "field.hpp"
-#include "symbol.hpp"
+#include "Symbol.hpp"
 #include "memory_model.hpp"
 #include "method.hpp"
 #include "initializer.hpp"
@@ -21,58 +21,52 @@
 
 static void
 allocate_symbol (memory_model_t& memory_model,
-                 symbol_t* symbol)
+                 Symbol* symbol)
 {
-  switch (symbol_kind (symbol))
-    {
-    case SymbolFunction:
-      unimplemented;
-      break;
+  struct visitor : public SymbolVisitor {
+    memory_model_t& memory_model;
 
-    case SymbolInstance:
-      unimplemented;
-      break;
+    visitor (memory_model_t& mm) : memory_model (mm) { }
 
-    case SymbolParameter:
-      {
-        switch (symbol_parameter_kind (symbol))
-          {
-          case ParameterOrdinary:
-          case ParameterReceiver:
-          case ParameterReturn:
-            {
-              const type_t* type = symbol_parameter_type (symbol);
-              memory_model.arguments_push (type->size ());
-              symbol_set_offset (symbol, memory_model.arguments_offset ());
-            }
-            break;
-          case ParameterReceiverDuplicate:
-          case ParameterDuplicate:
-            break;
-          }
-      }
-      break;
-
-    case SymbolType:
-      unimplemented;
-      break;
-
-    case SymbolTypedConstant:
-      // No need to allocate.
-      break;
-
-    case SymbolVariable:
-      {
-        const type_t* type = symbol_variable_type (symbol);
-        symbol_set_offset (symbol, memory_model.locals_offset ());
-        memory_model.locals_push (type->size ());
-      }
-      break;
-
-    case SymbolHidden:
-      // Do nothing.
-      break;
+    void defineAction (Symbol& symbol) {
+      not_reached;
     }
+
+    void visit (ParameterSymbol& symbol) {
+      switch (symbol.kind)
+        {
+        case ParameterSymbol::Ordinary:
+        case ParameterSymbol::Receiver:
+        case ParameterSymbol::Return:
+          {
+            const type_t* type = symbol.value.type;
+            memory_model.arguments_push (type->size ());
+            static_cast<Symbol&> (symbol).offset (memory_model.arguments_offset ());
+          }
+          break;
+        case ParameterSymbol::ReceiverDuplicate:
+        case ParameterSymbol::OrdinaryDuplicate:
+          break;
+        }
+    }
+
+    void visit (TypedConstantSymbol& symbol) {
+      // No need to allocate.
+    }
+
+    void visit (VariableSymbol& symbol) {
+      const type_t* type = symbol.value.type;
+      static_cast<Symbol&>(symbol).offset (memory_model.locals_offset ());
+      memory_model.locals_push (type->size ());
+    }
+
+    void visit (HiddenSymbol& symbol) {
+      // Do nothing.
+    }
+  };
+
+  visitor v (memory_model);
+  symbol->accept (v);
 }
 
 static void

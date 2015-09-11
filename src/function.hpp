@@ -10,7 +10,7 @@ struct function_t
   function_t (ast_function_t* node_,
               const std::string& name_,
               const function_type_t* func_type_,
-              const symbol_t* return_symbol_)
+              const Symbol* return_symbol_)
     : node (node_)
     , name (name_)
     , function_type (func_type_)
@@ -20,7 +20,7 @@ struct function_t
   ast_function_t* const node;
   std::string const name;
   const function_type_t* const function_type;
-  const symbol_t* const return_symbol;
+  const Symbol* const return_symbol;
   memory_model_t memory_model;
 };
 

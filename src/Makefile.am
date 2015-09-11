@@ -37,7 +37,7 @@ scanner.hpp scanner.cpp \
 semantic.hpp semantic.cpp \
 runtime.hpp runtime.cpp \
 stack_frame.hpp stack_frame.cpp \
-symbol.hpp symbol.cpp \
+Symbol.hpp \
 symtab.hpp symtab.cpp \
 trigger.hpp \
 type.hpp type.cpp \

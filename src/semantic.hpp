@@ -3,6 +3,7 @@
 
 #include "types.hpp"
 #include "ast.hpp"
+#include <error.h>
 
 /* Associate a symbol table with each node in the tree. */
 void construct_symbol_table (ast_t * node);
@@ -11,16 +12,37 @@ void construct_symbol_table (ast_t * node);
 void enter_symbols (ast_t * node);
 
 // Enter a symbol.
-symbol_t* enter_symbol (symtab_t* symtab, symbol_t * symbol, symbol_holder& holder);
+Symbol* enter_symbol (symtab_t* symtab, Symbol * symbol, symbol_holder& holder);
 
 // Enter a signature.
 void enter_signature (ast_t * node, const signature_type_t * type);
 
 // Look up a symbol.  If it is not defined, process its definition.
-symbol_t * lookup_force (ast_t * node, const std::string& identifier);
+template<typename T>
+T* processAndLookup (ast_t * node, const std::string& identifier)
+{
+  Symbol *symbol = node->symtab->find (identifier);
+  if (symbol == NULL)
+    {
+      error_at_line (-1, 0, node->location.file, node->location.line,
+                     "%s was not declared in this scope", identifier.c_str ());
+    }
+  if (symbol->in_progress)
+    {
+      error_at_line (-1, 0, node->location.file, node->location.line,
+                     "%s is defined recursively", identifier.c_str ());
+    }
+  if (!symbol->defined ())
+    {
+      // Process the definition.
+      unimplemented;
+    }
+
+  return SymbolCast<T> (symbol);
+}
 
 // Look up a symbol.  Error if it is not defined.
-symbol_t * lookup_no_force (ast_t * node, const std::string& identifier);
+Symbol * lookup_no_force (ast_t * node, const std::string& identifier);
 
 // Extract an array dimension or error.
 typed_value_t process_array_dimension (ast_t* ptr);

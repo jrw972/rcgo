@@ -5,7 +5,7 @@
 
 #include "typed_value.hpp"
 #include "type.hpp"
-#include "symbol.hpp"
+#include "Symbol.hpp"
 
 class symbol_holder
 {
@@ -14,22 +14,22 @@ public:
     : symbol_ (NULL)
   { }
 
-  void symbol (symbol_t* s)
+  void symbol (Symbol* s)
   {
     assert (symbol_ == NULL);
     symbol_ = s;
   }
 
-  symbol_t* symbol () const { return symbol_; }
+  Symbol* symbol () const { return symbol_; }
 
 private:
-  symbol_t* symbol_;
+  Symbol* symbol_;
 };
 
 class symtab_t
 {
 public:
-  typedef std::vector<symbol_t*> SymbolsType;
+  typedef std::vector<Symbol*> SymbolsType;
 
   symtab_t ()
     : parent (NULL)
@@ -43,21 +43,21 @@ public:
   { }
 
   void
-  enter (symbol_t * symbol)
+  enter (Symbol * symbol)
   {
     symbols_.push_back (symbol);
   }
 
-  symbol_t *
+  Symbol *
   find (const std::string& identifier) const
   {
-    for (std::vector<symbol_t*>::const_iterator pos = symbols_.begin (),
+    for (std::vector<Symbol*>::const_iterator pos = symbols_.begin (),
            limit = symbols_.end ();
          pos != limit;
          ++pos)
       {
-        symbol_t *s = *pos;
-        if (identifier == symbol_identifier (s))
+        Symbol *s = *pos;
+        if (identifier == s->identifier)
           {
             return s;
           }
@@ -74,16 +74,16 @@ public:
       }
   }
 
-  symbol_t *
+  Symbol *
   find_current (const std::string& identifier) const
   {
-    for (std::vector<symbol_t*>::const_iterator pos = symbols_.begin (),
+    for (std::vector<Symbol*>::const_iterator pos = symbols_.begin (),
            limit = symbols_.end ();
          pos != limit;
          ++pos)
       {
-        symbol_t *s = *pos;
-        if (identifier == symbol_identifier (s))
+        Symbol *s = *pos;
+        if (identifier == s->identifier)
           {
             return s;
           }
@@ -92,17 +92,17 @@ public:
     return NULL;
   }
 
-  symbol_t *
+  Symbol *
   get_this () const
   {
-    for (std::vector<symbol_t*>::const_iterator pos = symbols_.begin (),
+    for (std::vector<Symbol*>::const_iterator pos = symbols_.begin (),
            limit = symbols_.end ();
          pos != limit;
          ++pos)
       {
-        symbol_t *s = *pos;
-        if (symbol_kind (s) == SymbolParameter
-            && symbol_parameter_kind (s) == ParameterReceiver)
+        ParameterSymbol *s = SymbolCast<ParameterSymbol> (*pos);
+        if (s != NULL
+            && s->kind == ParameterSymbol::Receiver)
           {
             return s;
           }

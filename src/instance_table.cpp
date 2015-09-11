@@ -285,7 +285,7 @@ evaluate_static (const ast_t* node, const static_memory_t& memory)
 
     void visit (const ast_identifier_expr_t& node)
     {
-      ptrdiff_t offset = symbol_get_offset (node.symbol.symbol ());
+      ptrdiff_t offset = node.symbol.symbol ()->offset ();
       result = static_value_t::make_stack_offset (offset);
     }
   };
@@ -348,14 +348,14 @@ instance_table_enumerate_bindings (instance_table_t& table)
                    idx != limit;
                    ++idx)
                 {
-                  memory.set_value_at_offset (symbol_get_offset (node.symbol.symbol ()), idx);
+                  memory.set_value_at_offset (node.symbol.symbol ()->offset (), idx);
                   node.body ()->accept (*this);
                 }
             }
 
             void visit (const ast_bind_t& node)
             {
-              memory.set_value_at_offset (symbol_get_offset (node.this_symbol.symbol ()), receiver_address);
+              memory.set_value_at_offset (node.this_symbol.symbol ()->offset (), receiver_address);
               node.body ()->accept (*this);
             }
 
@@ -593,23 +593,11 @@ transitive_closure (const instance_table_t& table,
 
     void visit (const ast_identifier_expr_t& node)
     {
-      symbol_t* symbol = node.symbol.symbol ();
-      switch (symbol_kind (symbol))
-        {
-        case SymbolParameter:
-          if (symbol_parameter_kind (symbol) == ParameterReceiver)
-            {
-              computed_address = receiver_address;
-            }
-          break;
-        case SymbolFunction:
-        case SymbolInstance:
-        case SymbolType:
-        case SymbolTypedConstant:
-        case SymbolVariable:
-        case SymbolHidden:
-          break;
-        }
+      ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (node.symbol.symbol ());
+      if (symbol != NULL &&
+          symbol->kind == ParameterSymbol::Receiver) {
+        computed_address = receiver_address;
+      }
     }
 
     void visit (const ast_implicit_dereference_expr_t& node)
