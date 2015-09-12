@@ -20,7 +20,14 @@ public:
   virtual heap_t* heap () const = 0;
   virtual void heap (heap_t* heap) = 0;
   component_t* current_instance () const { return current_instance_; }
-  void current_instance (component_t* instance) { current_instance_ = instance; }
+
+  component_t* current_instance (component_t* instance)
+  {
+    component_t* retval = current_instance_;
+    current_instance_ = instance;
+    return retval;
+  }
+
   char* mutable_phase_base_pointer () const { return mutable_phase_base_pointer_; }
   void mutable_phase_base_pointer (char* ptr) { mutable_phase_base_pointer_ = ptr; }
   void lock_stdout () { pthread_mutex_lock (stdout_mutex_); }

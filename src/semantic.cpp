@@ -11,11 +11,8 @@
 #include "field.hpp"
 #include "Symbol.hpp"
 #include "memory_model.hpp"
-#include "method.hpp"
-#include "initializer.hpp"
-#include "getter.hpp"
-#include "function.hpp"
 #include "bind.hpp"
+#include "Callable.hpp"
 
 // TODO:  Replace interacting with type_t* with typed_value_t.
 
@@ -257,22 +254,22 @@ allocate_stack_variables (ast_t* node)
 
     void visit (ast_function_t& node)
     {
-      node.function->memory_model = allocate_stack_variables_helper (&node, node.body ());
+      node.function->memoryModel = allocate_stack_variables_helper (&node, node.body ());
     }
 
     void visit (ast_method_t& node)
     {
-      node.method->memory_model = allocate_stack_variables_helper (&node, node.body ());
+      node.method->memoryModel = allocate_stack_variables_helper (&node, node.body ());
     }
 
     void visit (ast_initializer_t& node)
     {
-      node.initializer->memory_model = allocate_stack_variables_helper (&node, node.body ());
+      node.initializer->memoryModel = allocate_stack_variables_helper (&node, node.body ());
     }
 
     void visit (ast_getter_t& node)
     {
-      node.getter->memory_model = allocate_stack_variables_helper (&node, node.body ());
+      node.getter->memoryModel = allocate_stack_variables_helper (&node, node.body ());
     }
 
     void visit (ast_reaction_t& node)

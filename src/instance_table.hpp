@@ -44,10 +44,10 @@ struct instance_table_t
   struct OutputType
   {
     instance_t* instance;
-    getter_t* getter;
+    Getter* getter;
 
     OutputType () { }
-    OutputType (instance_t* i, getter_t* g)
+    OutputType (instance_t* i, Getter* g)
       : instance (i)
       , getter (g)
     { }

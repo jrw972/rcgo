@@ -5,9 +5,7 @@
 #include "util.hpp"
 #include "type.hpp"
 #include <vector>
-#include "method.hpp"
-#include "function.hpp"
-#include "getter.hpp"
+#include "Callable.hpp"
 
 std::ostream&
 operator<< (std::ostream& out, const ast_t& node)
@@ -181,25 +179,25 @@ get_current_action (const ast_t * node)
   return symtab_get_current_action (node->symtab);
 }
 
-method_t *
+Method*
 get_current_method (const ast_t * node)
 {
   return symtab_get_current_method (node->symtab);
 }
 
-getter_t *
+Getter*
 get_current_getter (const ast_t * node)
 {
   return symtab_get_current_getter (node->symtab);
 }
 
-initializer_t *
+Initializer*
 get_current_initializer (const ast_t * node)
 {
   return symtab_get_current_initializer (node->symtab);
 }
 
-function_t *
+Function*
 get_current_function (const ast_t * node)
 {
   return symtab_get_current_function (node->symtab);
@@ -209,24 +207,24 @@ const Symbol*
 get_current_return_symbol (const ast_t * node)
 {
   {
-    getter_t* g = get_current_getter (node);
+    Getter* g = get_current_getter (node);
     if (g != NULL)
       {
-        return g->return_symbol;
+        return g->returnSymbol;
       }
   }
   {
-    method_t* g = get_current_method (node);
+    Method* g = get_current_method (node);
     if (g != NULL)
       {
-        return g->return_symbol;
+        return g->returnSymbol;
       }
   }
   {
-    function_t* f = get_current_function (node);
+    Function* f = get_current_function (node);
     if (f != NULL)
       {
-        return f->return_symbol;
+        return f->returnSymbol;
       }
   }
 

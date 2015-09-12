@@ -2,13 +2,11 @@
 #include "Symbol.hpp"
 #include <error.h>
 #include "semantic.hpp"
-#include "function.hpp"
-#include "method.hpp"
-#include "initializer.hpp"
 #include "trigger.hpp"
 #include "action.hpp"
 #include "field.hpp"
 #include "parameter.hpp"
+#include "Callable.hpp"
 
 Symbol*
 enter_symbol (symtab_t* symtab, Symbol * symbol, symbol_holder& holder)
@@ -211,8 +209,12 @@ type_check_expr (ast_t* ptr)
           not_reached;
         }
 
+        void visit (const BuiltinFunctionSymbol& symbol) {
+          node.typed_value = symbol.value ();
+        }
+
         void visit (const FunctionSymbol& symbol) {
-          node.typed_value = typed_value_t::make_ref (typed_value_t (symbol.function));
+          node.typed_value = symbol.value ();
         }
 
         void visit (const ParameterSymbol& symbol) {
@@ -411,14 +413,14 @@ type_check_expr (ast_t* ptr)
         void visit (const function_type_t& type)
         {
           // No restrictions on caller.
-          node.kind = ast_call_expr_t::FUNCTION;
+          node.kind = ast_call_expr_t::CALLABLE;
           rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args ());
         }
 
         void visit (const method_type_t& type)
         {
           // No restrictions on caller.
-          node.kind = ast_call_expr_t::METHOD;
+          node.kind = ast_call_expr_t::CALLABLE;
           rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
 
           if (type_dereference (type.receiver_type) != NULL)
@@ -442,14 +444,14 @@ type_check_expr (ast_t* ptr)
         void visit (const initializer_type_t& type)
         {
           // Caller must be an initializer.
-          initializer_t* initializer = get_current_initializer (&node);
+          Initializer* initializer = get_current_initializer (&node);
 
           if (initializer == NULL) {
             error_at_line (-1, 0, node.location.file, node.location.line,
                            "E25: initializers may only be called from initializeers");
           }
 
-          node.kind = ast_call_expr_t::INITIALIZER;
+          node.kind = ast_call_expr_t::CALLABLE;
           rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
 
           assert (type_dereference (type.receiver_type) != NULL);
@@ -479,7 +481,7 @@ type_check_expr (ast_t* ptr)
                              "E26: getters may only be called from a getter, an action, or a reaction");
             }
 
-          node.kind = ast_call_expr_t::GETTER;
+          node.kind = ast_call_expr_t::CALLABLE;
           rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
           if (in_mutable_section (&node))
             {
@@ -797,9 +799,9 @@ type_check_statement (ast_t * node)
       typed_value_t left_tv = check_assignment_target (node.left ());
       typed_value_t right_tv = type_check_expr (node.right ());
       check_assignment (left_tv, right_tv, node,
-                        "E9: incompatible types (%s) = (%s)",
-                        "assignment leaks mutable pointers",
-                        "assignment may store foreign pointer");
+                        "E31: incompatible types (%s) = (%s)",
+                        "E32: assignment leaks mutable pointers",
+                        "E33:assignment may store foreign pointer");
     }
 
     void visit (ast_change_statement_t& node)
@@ -1000,9 +1002,9 @@ type_check_statement (ast_t * node)
           typed_value_t right_tv = type_check_expr (*init_pos);
 
           check_assignment (left_tv, right_tv, node,
-                            "E10: incompatible types (%s) = (%s)",
-                            "assignment leaks mutable pointers",
-                            "assignment may store foreign pointer");
+                            "E34: incompatible types (%s) = (%s)",
+                            "E35: assignment leaks mutable pointers",
+                            "E36: assignment may store foreign pointer");
 
           const std::string& name = ast_get_identifier (*id_pos);
           Symbol* symbol = new VariableSymbol (name, *id_pos, typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE));
@@ -1176,10 +1178,10 @@ mutates_check_statement (ast_t * node)
     {
       node.expr ()->accept (*this);
 
-      if (node.kind == ast_call_expr_t::METHOD)
-        {
-          check_for_pointer_copy (node.expr ()->children[0]->children[0]);
-        }
+      if (type_cast<method_type_t> (node.expr ()->typed_value.type) != NULL) {
+        // Invoking a method.
+        check_for_pointer_copy (node.expr ()->children[0]->children[0]);
+      }
 
       for (ast_t::iterator pos = node.args ()->begin (), limit = node.args ()->end ();
            pos != limit;
@@ -1543,7 +1545,7 @@ process_definitions (ast_t * node)
       Symbol* symbol = node.symbol.symbol ();
       const named_type_t* type = SymbolCast<InstanceSymbol> (symbol)->type;
       ast_t* initializer_node = node.initializer ();
-      initializer_t* initializer = type->get_initializer (ast_get_identifier (initializer_node));
+      Initializer* initializer = type->get_initializer (ast_get_identifier (initializer_node));
       if (initializer == NULL)
         {
           error_at_line (-1, 0, initializer_node->location.file,
@@ -1551,7 +1553,7 @@ process_definitions (ast_t * node)
                          "E21: no initializer named %s",
                          ast_get_identifier (initializer_node).c_str ());
         }
-      if (initializer->initializer_type->signature->arity () != 0)
+      if (initializer->initializerType->signature->arity () != 0)
         {
           error_at_line (-1, 0, initializer_node->location.file,
                          initializer_node->location.line,

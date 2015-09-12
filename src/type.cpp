@@ -2,9 +2,7 @@
 #include "action.hpp"
 #include "parameter.hpp"
 #include "field.hpp"
-#include "method.hpp"
-#include "initializer.hpp"
-#include "getter.hpp"
+#include "Callable.hpp"
 
 reaction_t *
 named_type_t::get_reaction (const std::string& identifier) const
@@ -24,15 +22,15 @@ named_type_t::get_reaction (const std::string& identifier) const
   return NULL;
 }
 
-method_t*
+Method*
 named_type_t::get_method (const std::string& identifier) const
 {
-  for (std::vector<method_t*>::const_iterator pos = this->methods_.begin (),
+  for (std::vector<Method*>::const_iterator pos = this->methods_.begin (),
          limit = this->methods_.end ();
        pos != limit;
        ++pos)
     {
-      method_t *a = *pos;
+      Method* a = *pos;
       if (a->name == identifier)
         {
           return a;
@@ -42,15 +40,15 @@ named_type_t::get_method (const std::string& identifier) const
   return NULL;
 }
 
-initializer_t*
+Initializer*
 named_type_t::get_initializer (const std::string& identifier) const
 {
-  for (std::vector<initializer_t*>::const_iterator pos = this->initializers_.begin (),
+  for (std::vector<Initializer*>::const_iterator pos = this->initializers_.begin (),
          limit = this->initializers_.end ();
        pos != limit;
        ++pos)
     {
-      initializer_t *a = *pos;
+      Initializer* a = *pos;
       if (a->name == identifier)
         {
           return a;
@@ -60,15 +58,15 @@ named_type_t::get_initializer (const std::string& identifier) const
   return NULL;
 }
 
-getter_t*
+Getter*
 named_type_t::get_getter (const std::string& identifier) const
 {
-  for (std::vector<getter_t*>::const_iterator pos = this->getters_.begin (),
+  for (std::vector<Getter*>::const_iterator pos = this->getters_.begin (),
          limit = this->getters_.end ();
        pos != limit;
        ++pos)
     {
-      getter_t *a = *pos;
+      Getter* a = *pos;
       if (a->name == identifier)
         {
           return a;
@@ -146,12 +144,12 @@ type_select_field (const type_t * type, const std::string& identifier)
   return v.retval;
 }
 
-method_t *
+Method*
 type_select_method (const type_t * type, const std::string& identifier)
 {
   struct visitor : public const_type_visitor_t
   {
-    method_t* retval;
+    Method* retval;
     const std::string& identifier;
     visitor (const std::string& id) : retval (NULL), identifier (id) { }
 
@@ -165,12 +163,12 @@ type_select_method (const type_t * type, const std::string& identifier)
   return v.retval;
 }
 
-initializer_t *
+Initializer*
 type_select_initializer (const type_t * type, const std::string& identifier)
 {
   struct visitor : public const_type_visitor_t
   {
-    initializer_t* retval;
+    Initializer* retval;
     const std::string& identifier;
     visitor (const std::string& id) : retval (NULL), identifier (id) { }
 
@@ -184,12 +182,12 @@ type_select_initializer (const type_t * type, const std::string& identifier)
   return v.retval;
 }
 
-getter_t *
+Getter*
 type_select_getter (const type_t * type, const std::string& identifier)
 {
   struct visitor : public const_type_visitor_t
   {
-    getter_t* retval;
+    Getter* retval;
     const std::string& identifier;
     visitor (const std::string& id) : retval (NULL), identifier (id) { }
 
@@ -231,22 +229,22 @@ type_select (const type_t* type, const std::string& identifier)
       return f->type;
     }
 
-  method_t* m = type_select_method (type, identifier);
+  Method* m = type_select_method (type, identifier);
   if (m)
     {
-      return m->method_type;
+      return m->methodType;
     }
 
-  initializer_t* i = type_select_initializer (type, identifier);
+  Initializer* i = type_select_initializer (type, identifier);
   if (i)
     {
-      return i->initializer_type;
+      return i->initializerType;
     }
 
-  getter_t* g = type_select_getter (type, identifier);
+  Getter* g = type_select_getter (type, identifier);
   if (g)
     {
-      return g->getter_type;
+      return g->getterType;
     }
 
   reaction_t* r = type_select_reaction (type, identifier);
@@ -646,7 +644,7 @@ type_contains_pointer (const type_t* type)
 
     void default_action (const type_t& type)
     {
-      not_reached;
+      type_not_reached (type);
     }
 
     void visit (const named_type_t& type)
@@ -688,6 +686,10 @@ type_contains_pointer (const type_t* type)
 
     void visit (const pointer_type_t& type)
     {
+      flag = true;
+    }
+
+    void visit (const FileDescriptor_type_t& type) {
       flag = true;
     }
 
@@ -1116,4 +1118,16 @@ method_base::make_function_type (const parameter_t* this_parameter,
       sig->append (*pos);
     }
   return new function_type_t (sig, return_parameter);
+}
+
+const type_t*
+function_type_t::return_type () const
+{
+  return return_parameter_->value.type;
+}
+
+const type_t*
+method_base::return_type () const
+{
+  return return_parameter->value.type;
 }

@@ -29,6 +29,18 @@ namespace runtime
   // Returns true.
   bool exec_no_check (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota);
 
+  enum ControlAction {
+    RETURN,
+    CONTINUE,
+  };
+
+  ControlAction
+  evaluate_statement (executor_base_t& exec,
+                      ast_t* node);
+
+  void
+  evaluate_expr (executor_base_t& exec,
+                 ast_t* node);
 }
 
 #endif /* runtime_hpp */

@@ -135,10 +135,10 @@ private:
 
 public:
   action_reaction_base_t* current_action;
-  function_t* current_function;
-  method_t* current_method;
-  initializer_t* current_initializer;
-  getter_t* current_getter;
+  Function* current_function;
+  Method* current_method;
+  Initializer* current_initializer;
+  Getter* current_getter;
   trigger_t* current_trigger;
   named_type_t* current_receiver_type;
 };
@@ -161,21 +161,21 @@ void symtab_set_current_action (symtab_t * symtab, action_reaction_base_t * acti
 
 action_reaction_base_t *symtab_get_current_action (const symtab_t * symtab);
 
-void symtab_set_current_function (symtab_t * symtab, function_t * function);
+void symtab_set_current_function (symtab_t * symtab, Function* function);
 
-function_t *symtab_get_current_function (const symtab_t * symtab);
+Function* symtab_get_current_function (const symtab_t * symtab);
 
-void symtab_set_current_method (symtab_t * symtab, method_t * method);
+void symtab_set_current_method (symtab_t * symtab, Method* method);
 
-method_t *symtab_get_current_method (const symtab_t * symtab);
+Method* symtab_get_current_method (const symtab_t * symtab);
 
-void symtab_set_current_initializer (symtab_t * symtab, initializer_t * initializer);
+void symtab_set_current_initializer (symtab_t * symtab, Initializer* initializer);
 
-initializer_t *symtab_get_current_initializer (const symtab_t * symtab);
+Initializer *symtab_get_current_initializer (const symtab_t * symtab);
 
-void symtab_set_current_getter (symtab_t * symtab, getter_t * getter);
+void symtab_set_current_getter (symtab_t * symtab, Getter* getter);
 
-getter_t *symtab_get_current_getter (const symtab_t * symtab);
+Getter* symtab_get_current_getter (const symtab_t * symtab);
 
 void symtab_set_current_trigger (symtab_t * symtab, trigger_t * trigger);
 

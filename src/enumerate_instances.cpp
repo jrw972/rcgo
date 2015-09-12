@@ -8,25 +8,28 @@ static void
 instantiate_contained_instances (const type_t * type,
                                  instance_table_t& instance_table,
                                  instance_t* parent,
-                                 initializer_t* initializer,
-                                 size_t address)
+                                 Initializer* initializer,
+                                 size_t address,
+                                 unsigned int line)
 {
   struct visitor : public const_type_visitor_t
   {
     instance_table_t& instance_table;
     instance_t* const parent;
-    initializer_t* const initializer;
+    Initializer* const initializer;
     size_t const address;
     field_t* const field;
+    unsigned int const line;
 
     const named_type_t* named_type;
 
-    visitor (instance_table_t& it, instance_t* p, initializer_t* i, size_t a, field_t* f)
+    visitor (instance_table_t& it, instance_t* p, Initializer* i, size_t a, field_t* f, unsigned int l)
       : instance_table (it)
       , parent (p)
       , initializer (i)
       , address (a)
       , field (f)
+      , line (l)
 
       , named_type (NULL)
     { }
@@ -47,11 +50,11 @@ instantiate_contained_instances (const type_t * type,
     {
       assert (named_type != NULL);
 
-      instance_t* instance = new instance_t (parent, address, named_type, initializer);
+      instance_t* instance = new instance_t (parent, address, named_type, initializer, line);
       instance_table.insert (instance);
 
       // Recur changing instance.
-      visitor v (instance_table, instance, NULL, address, NULL);
+      visitor v (instance_table, instance, NULL, address, NULL, line);
       type.field_list ()->accept (v);
     }
 
@@ -63,7 +66,7 @@ instantiate_contained_instances (const type_t * type,
            ++pos)
         {
           // Recur changing address (and field).
-          visitor v (instance_table, parent, NULL, address + (*pos)->offset, *pos);
+          visitor v (instance_table, parent, NULL, address + (*pos)->offset, *pos, line);
           (*pos)->type->accept (v);
         }
     }
@@ -73,7 +76,7 @@ instantiate_contained_instances (const type_t * type,
       for (int_type_t::ValueType idx = 0; idx != type.dimension; ++idx)
         {
           // Recur changing address.
-          visitor v (instance_table, parent, NULL, address + idx * type.element_size (), field);
+          visitor v (instance_table, parent, NULL, address + idx * type.element_size (), field, line);
           type.base_type ()->accept (v);
         }
     }
@@ -83,38 +86,27 @@ instantiate_contained_instances (const type_t * type,
       type.field_list ()->accept (*this);
     }
 
-    void visit (const bool_type_t& type)
-    { }
+    void visit (const bool_type_t& type) { }
 
-    void visit (const int_type_t& type)
-    { }
+    void visit (const int_type_t& type) { }
 
-    void visit (const int8_type_t& type)
-    { }
+    void visit (const int8_type_t& type) { }
 
-    void visit (const uint_type_t& type)
-    { }
+    void visit (const uint_type_t& type) { }
 
-    void visit (const uint8_type_t& type)
-    { }
+    void visit (const uint8_type_t& type) { }
 
-    void visit (const uint32_type_t& type)
-    { }
+    void visit (const uint32_type_t& type) { }
 
-    void visit (const uint64_type_t& type)
-    { }
+    void visit (const uint64_type_t& type) { }
 
-    void visit (const uint128_type_t& type)
-    { }
+    void visit (const uint128_type_t& type) { }
 
-    void visit (const float64_type_t& type)
-    { }
+    void visit (const float64_type_t& type) { }
 
-    void visit (const enum_type_t& type)
-    { }
+    void visit (const enum_type_t& type) { }
 
-    void visit (const pointer_type_t& type)
-    { }
+    void visit (const pointer_type_t& type) { }
 
     void visit (const push_port_type_t& type)
     {
@@ -125,8 +117,10 @@ instantiate_contained_instances (const type_t * type,
     {
       instance_table.insert_pull_port (address, parent, field);
     }
+
+    void visit (const FileDescriptor_type_t& type) { }
   };
-  visitor v (instance_table, parent, initializer, address, NULL);
+  visitor v (instance_table, parent, initializer, address, NULL, line);
   type->accept (v);
 }
 
@@ -150,8 +144,8 @@ enumerate_instances (ast_t * node, instance_table_t& instance_table)
     {
       Symbol *symbol = node.symbol.symbol ();
       const named_type_t *type = SymbolCast<InstanceSymbol> (symbol)->type;
-      initializer_t* initializer = SymbolCast<InstanceSymbol> (symbol)->initializer;
-      instantiate_contained_instances (type, instance_table, NULL, initializer, address);
+      Initializer* initializer = SymbolCast<InstanceSymbol> (symbol)->initializer;
+      instantiate_contained_instances (type, instance_table, NULL, initializer, address, node.location.line);
       address += type->size ();
     }
 

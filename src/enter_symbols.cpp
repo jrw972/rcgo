@@ -34,10 +34,10 @@ enter_symbols (ast_t * node)
   named_type_t* fd_type = new named_type_t ("FileDescriptor", FileDescriptor_type_t::instance ());
   symtab->enter (new TypeSymbol ("FileDescriptor", node, fd_type));
 
-  // new function_type_t (new signature_type_t (),
-  //                      new parameter_t (node, "0return", typed_value_t::make_value (fd_type, typed_value_t::HEAP, FOREIGN, FOREIGN), false));
+  function_type_t* ft = new function_type_t (new signature_type_t (),
+                                             new parameter_t (node, "0return", typed_value_t::make_value (fd_type, typed_value_t::HEAP, MUTABLE, MUTABLE), false));
 
-  //symtab->enter (symbol_make_builtin_function ("timerfd_create"));
+  symtab->enter (new BuiltinFunctionSymbol ("timerfd_create", node, ft));
 
   /* Insert zero constant. */
   symtab->enter (new TypedConstantSymbol ("nil",

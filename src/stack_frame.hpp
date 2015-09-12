@@ -37,6 +37,8 @@ void stack_frame_push_pointer (stack_frame_t* stack_frame,
 
 void* stack_frame_pop_pointer (stack_frame_t* stack_frame);
 
+void* stack_frame_read_pointer (stack_frame_t* stack_frame);
+
 template <typename T>
 inline void
 stack_frame_push (stack_frame_t* stack_frame,

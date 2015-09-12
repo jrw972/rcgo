@@ -1,8 +1,5 @@
 #include "runtime.hpp"
-#include "function.hpp"
-#include "method.hpp"
-#include "initializer.hpp"
-#include "getter.hpp"
+#include "Callable.hpp"
 
 namespace runtime
 {
@@ -21,12 +18,7 @@ namespace runtime
     size_t change_count;
   };
 
-  enum ControlAction {
-    RETURN,
-    CONTINUE,
-  };
-
-  static ControlAction
+  ControlAction
   evaluate_statement (executor_base_t& exec,
                       ast_t* node);
 
@@ -118,65 +110,17 @@ namespace runtime
       }
   }
 
-  static void
-  call (executor_base_t& exec, const function_t* function)
-  {
-    stack_frame_push_base_pointer (exec.stack (), function->memory_model.locals_size ());
-    evaluate_statement (exec, function->node->body ());
-    stack_frame_pop_base_pointer (exec.stack ());
-  }
-
-  static void
-  call (executor_base_t& exec, const method_t* method)
-  {
-    stack_frame_push_base_pointer (exec.stack (), method->memory_model.locals_size ());
-    evaluate_statement (exec, method->node->body ());
-    stack_frame_pop_base_pointer (exec.stack ());
-  }
-
-  static void
-  call (executor_base_t& exec, const initializer_t* initializer)
-  {
-    stack_frame_push_base_pointer (exec.stack (), initializer->memory_model.locals_size ());
-    component_t* old_this = exec.current_instance ();
-    // Use this to set the the current instance.
-    Symbol* this_symbol = initializer->node->symtab->get_this ();
-    stack_frame_push (exec.stack (), this_symbol->offset (), SymbolCast<ParameterSymbol> (this_symbol)->value.type->size ());
-    component_t* this_ = static_cast<component_t*> (stack_frame_pop_pointer (exec.stack ()));
-    exec.current_instance (this_);
-    evaluate_statement (exec, initializer->node->body ());
-    exec.current_instance (old_this);
-    stack_frame_pop_base_pointer (exec.stack ());
-  }
-
-  static void
-  call (executor_base_t& exec, const getter_t* getter)
-  {
-    stack_frame_push_base_pointer (exec.stack (), getter->memory_model.locals_size ());
-    component_t* old_this = exec.current_instance ();
-    // Use this to set the the current instance.
-    Symbol* this_symbol = getter->node->symtab->get_this ();
-    stack_frame_push (exec.stack (), this_symbol->offset (), SymbolCast<ParameterSymbol> (this_symbol)->value.type->size ());
-    component_t* this_ = static_cast<component_t*> (stack_frame_pop_pointer (exec.stack ()));
-    exec.current_instance (this_);
-    evaluate_statement (exec, getter->node->body ());
-    exec.current_instance (old_this);
-    stack_frame_pop_base_pointer (exec.stack ());
-  }
-
   void
   initialize (executor_base_t& exec, instance_t* instance)
   {
     if (instance->is_top_level ())
       {
-        char* top_before = stack_frame_top (exec.stack ());
-        // Push this.
-        stack_frame_push_pointer (exec.stack (), instance->ptr ());
-        // Push a fake instruction pointer.
-        stack_frame_push_pointer (exec.stack (), NULL);
-        char* top_after = stack_frame_top (exec.stack ());
-        call (exec, instance->initializer ());
-        stack_frame_popn (exec.stack (), top_after - top_before);
+        const unsigned int line = instance->line ();
+        ast_identifier_t id (line, "");
+        ast_identifier_expr_t expr (line, &id);
+        ast_list_expr_t args (line);
+        ast_call_expr_t node (line, &expr, &args);
+        instance->initializer ()->call (exec, node, instance->ptr ());
       }
   }
 
@@ -311,10 +255,6 @@ namespace runtime
     visitor v (exec, node, op);
     op.dispatch_type (node)->accept (v);
   }
-
-  static void
-  evaluate_expr (executor_base_t& exec,
-                 ast_t* node);
 
   struct RetvalDispatch
   {
@@ -953,7 +893,7 @@ namespace runtime
     }
   };
 
-  static void
+  void
   evaluate_expr (executor_base_t& exec,
                  ast_t* node)
   {
@@ -1147,66 +1087,24 @@ namespace runtime
 
       void visit (const ast_call_expr_t& node)
       {
-        // Create space for the return.
-        typed_value_t return_tv = node.typed_value;
-        stack_frame_reserve (exec.stack (), return_tv.type->size ());
-
-        // Sample the top of the stack.
-        char* top_before = stack_frame_top (exec.stack ());
-
-        pull_port_t pull_port;
         switch (node.kind)
           {
           case ast_call_expr_t::NONE:
             not_reached;
-          case ast_call_expr_t::FUNCTION:
             break;
-          case ast_call_expr_t::METHOD:
-          case ast_call_expr_t::INITIALIZER:
-          case ast_call_expr_t::GETTER:
-            evaluate_expr (exec, node.expr ()->children[0]->children[0]);
+          case ast_call_expr_t::CALLABLE:
+            node.expr ()->typed_value.value.callable_value ()->call (exec, node);
             break;
           case ast_call_expr_t::PULL_PORT:
-            evaluate_expr (exec, node.expr ());
-            stack_frame_store_heap (exec.stack (), &pull_port, sizeof (pull_port_t));
-            stack_frame_push_pointer (exec.stack (), pull_port.instance);
+            {
+              pull_port_t pull_port;
+              evaluate_expr (exec, node.expr ());
+              stack_frame_store_heap (exec.stack (), &pull_port, sizeof (pull_port_t));
+
+              pull_port.getter->call (exec, node, pull_port.instance);
+            }
             break;
           }
-
-        // Push the arguments.
-        evaluate_expr (exec, node.args ());
-
-        // Push a fake instruction pointer.
-        stack_frame_push_pointer (exec.stack (), NULL);
-
-        // Sample the top.
-        char* top_after = stack_frame_top (exec.stack ());
-
-        // Perform the call.
-        typed_value_t tv = node.expr ()->typed_value;
-        switch (node.kind)
-          {
-          case ast_call_expr_t::NONE:
-            not_reached;
-          case ast_call_expr_t::FUNCTION:
-            call (exec, tv.value.function_value ());
-            break;
-          case ast_call_expr_t::METHOD:
-            call (exec, tv.value.method_value ());
-            break;
-          case ast_call_expr_t::INITIALIZER:
-            call (exec, tv.value.initializer_value ());
-            break;
-          case ast_call_expr_t::GETTER:
-            call (exec, tv.value.getter_value ());
-            break;
-          case ast_call_expr_t::PULL_PORT:
-            call (exec, pull_port.getter);
-            break;
-          }
-
-        // Pop the arguments.
-        stack_frame_popn (exec.stack (), top_after - top_before);
       }
 
       void push_port_call (const ast_t& node,
@@ -1411,7 +1309,7 @@ namespace runtime
     node->accept (v);
   }
 
-  static ControlAction
+  ControlAction
   evaluate_statement (executor_base_t& exec,
                       ast_t* node)
   {

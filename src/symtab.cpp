@@ -5,7 +5,6 @@
 #include "util.hpp"
 #include "type.hpp"
 #include "Symbol.hpp"
-#include "function.hpp"
 #include <vector>
 #include "action.hpp"
 
@@ -33,9 +32,9 @@ std::ostream& symtab_t::print (std::ostream& o) const
         }
 
         void visit (const FunctionSymbol& symbol) {
-          function_t* function = symbol.function;
-          if (function) {
-            type_str = function->function_type->to_string ();
+          typed_value_t tv = symbol.value ();
+          if (tv.type != NULL) {
+            type_str = tv.type->to_string ();
           }
         }
 
@@ -149,12 +148,12 @@ symtab_get_current_action (const symtab_t * symtab)
 }
 
 void
-symtab_set_current_function (symtab_t * symtab, function_t * function)
+symtab_set_current_function (symtab_t * symtab, Function* function)
 {
   symtab->current_function = function;
 }
 
-function_t *
+Function*
 symtab_get_current_function (const symtab_t * symtab)
 {
   if (symtab == NULL)
@@ -171,12 +170,12 @@ symtab_get_current_function (const symtab_t * symtab)
 }
 
 void
-symtab_set_current_method (symtab_t * symtab, method_t * method)
+symtab_set_current_method (symtab_t * symtab, Method* method)
 {
   symtab->current_method = method;
 }
 
-method_t *
+Method*
 symtab_get_current_method (const symtab_t * symtab)
 {
   if (symtab == NULL)
@@ -193,12 +192,12 @@ symtab_get_current_method (const symtab_t * symtab)
 }
 
 void
-symtab_set_current_initializer (symtab_t * symtab, initializer_t * initializer)
+symtab_set_current_initializer (symtab_t * symtab, Initializer* initializer)
 {
   symtab->current_initializer = initializer;
 }
 
-initializer_t *
+Initializer*
 symtab_get_current_initializer (const symtab_t * symtab)
 {
   if (symtab == NULL)
@@ -215,12 +214,12 @@ symtab_get_current_initializer (const symtab_t * symtab)
 }
 
 void
-symtab_set_current_getter (symtab_t * symtab, getter_t * getter)
+symtab_set_current_getter (symtab_t * symtab, Getter* getter)
 {
   symtab->current_getter = getter;
 }
 
-getter_t *
+Getter*
 symtab_get_current_getter (const symtab_t * symtab)
 {
   if (symtab == NULL)

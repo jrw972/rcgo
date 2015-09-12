@@ -454,10 +454,7 @@ struct ast_call_expr_t : public ast_expr_t
   enum Kind
     {
       NONE,
-      FUNCTION,
-      METHOD,
-      INITIALIZER,
-      GETTER,
+      CALLABLE,
       PULL_PORT,
     };
 
@@ -1221,7 +1218,7 @@ struct ast_function_t : public ast_t
 
   symbol_holder function_symbol;
   symbol_holder return_symbol;
-  function_t* function;
+  Function* function;
 };
 
 struct ast_instance_t : public ast_t
@@ -1326,7 +1323,7 @@ struct ast_method_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const { unimplemented; }
 
-  method_t* method;
+  Method* method;
   Mutability const dereference_mutability;
   Mutability const return_dereference_mutability;
   symbol_holder return_symbol;
@@ -1374,7 +1371,7 @@ struct ast_getter_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const { out << "getter"; }
 
-  getter_t* getter;
+  Getter* getter;
   symbol_holder return_symbol;
 };
 
@@ -1415,7 +1412,7 @@ struct ast_initializer_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const { out << "initializer"; }
 
-  initializer_t* initializer;
+  Initializer* initializer;
   symbol_holder return_symbol;
 };
 
@@ -1708,16 +1705,16 @@ get_current_trigger (const ast_t * node);
 action_reaction_base_t *
 get_current_action (const ast_t * node);
 
-method_t *
+Method*
 get_current_method (const ast_t * node);
 
-initializer_t *
+Initializer*
 get_current_initializer (const ast_t * node);
 
-getter_t *
+Getter*
 get_current_getter (const ast_t * node);
 
-function_t *
+Function*
 get_current_function (const ast_t * node);
 
 const Symbol*

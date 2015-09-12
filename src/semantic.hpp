@@ -75,7 +75,7 @@ enumerate_instances (ast_t* node, instance_table_t& instance_table);
 void
 allocate_stack_variables (ast_t* node);
 
-method_t *
+Method*
 get_current_method (const ast_t * node);
 
 #endif /* semantic_hpp */

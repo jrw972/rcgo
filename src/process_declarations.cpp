@@ -2,13 +2,10 @@
 #include "semantic.hpp"
 #include <error.h>
 #include "Symbol.hpp"
-#include "function.hpp"
 #include "action.hpp"
 #include "bind.hpp"
-#include "method.hpp"
-#include "initializer.hpp"
-#include "getter.hpp"
 #include "parameter.hpp"
+#include "Callable.hpp"
 
 void
 process_declarations (ast_t * node)
@@ -141,14 +138,14 @@ process_declarations (ast_t * node)
 
       Symbol* return_symbol = ParameterSymbol::makeReturn (return_parameter);
 
-      function_t* function = new function_t (&node, symbol->identifier, new function_type_t (signature, return_parameter), return_symbol);
+      Function* function = new Function (&node, symbol->identifier, new function_type_t (signature, return_parameter), return_symbol);
 
       // Enter the return first as it is deeper on the stack.
       enter_symbol (node.symtab, return_symbol, node.return_symbol);
       enter_signature (signature_node, signature);
 
       node.function = function;
-      SymbolCast<FunctionSymbol> (symbol)->function = function;
+      SymbolCast<FunctionSymbol> (symbol)->function (function);
       symtab_set_current_function (node.symtab, function);
     }
 
@@ -214,11 +211,11 @@ process_declarations (ast_t * node)
                                                       signature,
                                                       return_parameter);
 
-      method_t* method = new method_t (&node, identifier, method_type, return_symbol);
+      Method* method = new Method (&node, identifier, method_type, return_symbol);
 
       // Enter the return first as it is deeper on the stack.
       enter_symbol (node.symtab, return_symbol, node.return_symbol);
-      enter_signature (signature_node, method->method_type->function_type->signature ());
+      enter_signature (signature_node, method->methodType->function_type->signature ());
 
       type->add_method (method);
       node.method = method;
@@ -284,9 +281,9 @@ process_declarations (ast_t * node)
                                 signature,
                                 return_parameter);
 
-      initializer_t* initializer = new initializer_t (&node, identifier, initializer_type);
+      Initializer* initializer = new Initializer (&node, identifier, initializer_type);
 
-      enter_signature (signature_node, initializer->initializer_type->function_type->signature ());
+      enter_signature (signature_node, initializer->initializerType->function_type->signature ());
 
       type->add_initializer (initializer);
       node.initializer = initializer;
@@ -354,11 +351,11 @@ process_declarations (ast_t * node)
                                                       signature,
                                                       return_parameter);
 
-      getter_t* getter = new getter_t (&node, identifier, getter_type, return_symbol);
+      Getter* getter = new Getter (&node, identifier, getter_type, return_symbol);
 
       // Enter the return first as it is deeper on the stack.
       enter_symbol (node.symtab, return_symbol, node.return_symbol);
-      enter_signature (signature_node, getter->getter_type->function_type->signature ());
+      enter_signature (signature_node, getter->getterType->function_type->signature ());
 
       type->add_getter (getter);
       node.getter = getter;

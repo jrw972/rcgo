@@ -14,14 +14,13 @@ fbu_SOURCES = main.cpp \
 action.hpp \
 ast.hpp ast.cpp \
 bind.hpp \
+Callable.hpp Callable.cpp \
 construct_symbol_table.cpp \
 debug.hpp debug.cpp \
 enter_symbols.cpp \
 enumerate_instances.cpp \
 executor_base.hpp \
 field.hpp \
-function.hpp \
-method.hpp \
 heap.hpp heap.cpp \
 instance.hpp instance.cpp \
 instance_table.hpp instance_table.cpp \

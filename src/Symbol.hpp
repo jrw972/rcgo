@@ -5,6 +5,7 @@
 #include "typed_value.hpp"
 #include "type.hpp"
 #include "parameter.hpp"
+#include "Callable.hpp"
 
 class SymbolVisitor;
 class ConstSymbolVisitor;
@@ -36,20 +37,36 @@ private:
 };
 
 struct BuiltinFunctionSymbol : public Symbol {
+  BuiltinFunctionSymbol (const std::string& id, ast_t* dn, const function_type_t* t)
+    : Symbol (id, dn)
+    , value_ (typed_value_t::make_ref (t, typed_value_t::CONSTANT, IMMUTABLE, IMMUTABLE))
+  { }
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
+  virtual const char* kindString () const { return "BuiltinFunction"; }
+
+  typed_value_t value () const { return value_; }
+
+private:
+  typed_value_t const value_;
 };
 
 struct FunctionSymbol : public Symbol {
   FunctionSymbol (const std::string& id, ast_t* dn)
     : Symbol (id, dn)
-    , function (NULL)
   { }
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
   virtual const char* kindString () const { return "Function"; }
 
-  function_t* function;
+  void function (Function* f) {
+    value_ = typed_value_t::make_ref (typed_value_t (f));
+  }
+
+  typed_value_t value () const { return value_; }
+
+private:
+  typed_value_t value_;
 };
 
 struct InstanceSymbol : public Symbol {
@@ -63,7 +80,7 @@ struct InstanceSymbol : public Symbol {
   virtual const char* kindString () const { return "Instance"; }
 
   const named_type_t *type;
-  initializer_t* initializer;
+  Initializer* initializer;
 };
 
 struct ParameterSymbol : public Symbol {

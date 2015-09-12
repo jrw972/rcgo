@@ -5,6 +5,7 @@
 #include <error.h>
 #include "trigger.hpp"
 #include "action.hpp"
+#include "Callable.hpp"
 
 instance_table_t::ActionsType
 instance_table_t::actions () const
@@ -396,7 +397,7 @@ instance_table_enumerate_bindings (instance_table_t& table)
               // Strip off the implicit dereference and selecting of the getter.
               static_value_t input = evaluate_static (node.right ()->children[0]->children[0], memory);
               assert (input.kind == static_value_t::ABSOLUTE_ADDRESS);
-              instance_table_t::OutputType o (table.instances[input.address], tv.value.getter_value ());
+              instance_table_t::OutputType o (table.instances[input.address], dynamic_cast<Getter*> (tv.value.callable_value ()));
               table.pull_ports[pull_port.address].outputs.insert (o);
               return;
             }
@@ -782,35 +783,21 @@ transitive_closure (const instance_table_t& table,
     {
       node.visit_children (*this);
 
-      switch (node.kind)
-        {
-        case ast_call_expr_t::NONE:
-          not_reached;
-        case ast_call_expr_t::FUNCTION:
-        case ast_call_expr_t::METHOD:
-          break;
-        case ast_call_expr_t::INITIALIZER:
-          not_reached;
-        case ast_call_expr_t::GETTER:
-          {
-            offset_visitor v (receiver_address);
-            node.expr ()->children[0]->children[0]->accept (v);
-            instance_table_t::InstancesType::const_iterator pos = table.instances.find (v.computed_address);
-            assert (pos != table.instances.end ());
-            set.immutable_phase.insert (std::make_pair (pos->second, TRIGGER_READ));
-          }
-          break;
-        case ast_call_expr_t::PULL_PORT:
-          {
-            offset_visitor v (receiver_address);
-            node.expr ()->children[0]->accept (v);
-            instance_table_t::PullPortsType::const_iterator pos = table.pull_ports.find (v.computed_address);
-            assert (pos != table.pull_ports.end ());
-            instance_table_t::OutputType out = *pos->second.outputs.begin ();
-            set.immutable_phase.insert (std::make_pair (out.instance, TRIGGER_READ));
-          }
-          break;
-        }
+      const type_t* t = node.expr ()->typed_value.type;
+      if (type_cast<getter_type_t> (t) != NULL) {
+        offset_visitor v (receiver_address);
+        node.expr ()->children[0]->children[0]->accept (v);
+        instance_table_t::InstancesType::const_iterator pos = table.instances.find (v.computed_address);
+        assert (pos != table.instances.end ());
+        set.immutable_phase.insert (std::make_pair (pos->second, TRIGGER_READ));
+      } else if (type_cast<pull_port_type_t> (t) != NULL) {
+        offset_visitor v (receiver_address);
+        node.expr ()->children[0]->accept (v);
+        instance_table_t::PullPortsType::const_iterator pos = table.pull_ports.find (v.computed_address);
+        assert (pos != table.pull_ports.end ());
+        instance_table_t::OutputType out = *pos->second.outputs.begin ();
+        set.immutable_phase.insert (std::make_pair (out.instance, TRIGGER_READ));
+      }
     }
   };
 

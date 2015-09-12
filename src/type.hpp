@@ -55,12 +55,12 @@ public:
   virtual size_t size () const { return subtype_->size (); }
   virtual TypeLevel level () const { return NAMED_TYPE; }
 
-  void add_method (method_t* method) { methods_.push_back (method); }
-  method_t* get_method (const std::string& identifier) const;
-  void add_initializer (initializer_t* initializer) { initializers_.push_back (initializer); }
-  initializer_t* get_initializer (const std::string& identifier) const;
-  void add_getter (getter_t* getter) { getters_.push_back (getter); }
-  getter_t* get_getter (const std::string& identifier) const;
+  void add_method (Method* method) { methods_.push_back (method); }
+  Method* get_method (const std::string& identifier) const;
+  void add_initializer (Initializer* initializer) { initializers_.push_back (initializer); }
+  Initializer* get_initializer (const std::string& identifier) const;
+  void add_getter (Getter* getter) { getters_.push_back (getter); }
+  Getter* get_getter (const std::string& identifier) const;
 
   void add_action (action_t* action) { actions_.push_back (action); }
   typedef std::vector<action_t*> ActionsType;
@@ -79,9 +79,9 @@ public:
 private:
   std::string const name_;
   const type_t* subtype_;
-  std::vector<method_t*> methods_;
-  std::vector<initializer_t*> initializers_;
-  std::vector<getter_t*> getters_;
+  std::vector<Method*> methods_;
+  std::vector<Initializer*> initializers_;
+  std::vector<Getter*> getters_;
   ActionsType actions_;
   ReactionsType reactions_;
   BindsType binds_;
@@ -462,6 +462,7 @@ public:
 
   const signature_type_t* signature () const { return signature_; }
   const parameter_t* return_parameter () const { return return_parameter_; }
+  const type_t* return_type () const;
 
 private:
   const signature_type_t * const signature_;
@@ -485,6 +486,8 @@ public:
     , return_parameter (function_type->return_parameter ())
   {
   }
+
+  const type_t* return_type () const;
 
   const named_type_t* const named_type;
   const type_t* const receiver_type;
@@ -684,13 +687,13 @@ struct const_type_visitor_t
 field_t*
 type_select_field (const type_t* type, const std::string& identifier);
 
-method_t*
+Method*
 type_select_method (const type_t* type, const std::string& identifier);
 
-initializer_t*
+Initializer*
 type_select_initializer (const type_t* type, const std::string& identifier);
 
-getter_t*
+Getter*
 type_select_getter (const type_t* type, const std::string& identifier);
 
 reaction_t*

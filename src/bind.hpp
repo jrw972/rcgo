@@ -6,7 +6,9 @@
 class bind_t
 {
 public:
-  bind_t (ast_t* node) : node_ (node) { }
+  bind_t (ast_t* node)
+    : node_ (node)
+  { }
 
   ast_t* node () const { return node_; }
 

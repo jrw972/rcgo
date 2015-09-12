@@ -11,17 +11,20 @@
 class action_reaction_base_t;
 class action_t;
 class ast_t;
+class ast_call_expr_t;
 class ast_function_t;
 class ast_getter_t;
 class ast_initializer_t;
 class ast_method_t;
 class bind_t;
+class Callable;
 class component_t;
+class executor_base_t;
 class field_t;
-class function_t;
-class getter_t;
-class initializer_t;
-typedef struct method_t method_t;
+class Function;
+class Getter;
+class Initializer;
+class Method;
 typedef struct heap_t heap_t;
 typedef struct instance_t instance_t;
 typedef struct instance_table_t instance_table_t;
@@ -55,7 +58,7 @@ typedef std::map<instance_t*, TriggerAction> instance_set_t;
 
 struct pull_port_t {
   component_t* instance;
-  getter_t* getter;
+  Getter* getter;
 };
 
 enum BinaryArithmetic

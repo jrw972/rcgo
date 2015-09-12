@@ -6,7 +6,6 @@
 #include "heap.hpp"
 #include "stack_frame.hpp"
 #include "action.hpp"
-#include "method.hpp"
 
 void
 instance_scheduler_t::lock (const instance_set_t& set)

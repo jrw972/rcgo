@@ -34,6 +34,15 @@ void* stack_frame_pop_pointer (stack_frame_t* stack_frame)
   return retval;
 }
 
+void* stack_frame_read_pointer (stack_frame_t* stack_frame)
+{
+  void* retval;
+  size_t s = align_up (sizeof (void*), memory_model_t::stack_alignment);
+  assert (stack_frame->top - s >= stack_frame->data);
+  memcpy (&retval, stack_frame->top - s, sizeof (void*));
+  return retval;
+}
+
 void stack_frame_push_string (stack_frame_t* stack_frame,
                               rtstring_t b)
 {
