@@ -81,7 +81,7 @@ enter_symbols (ast_t * node)
     void visit (ast_function_t& node)
     {
       enter_undefined_symbol (node.function_symbol,
-                              new FunctionSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),
+                              new Function (node),
                               symtab_parent (node.symtab));
     }
 
@@ -100,8 +100,8 @@ enter_symbols (ast_t * node)
         }
       else
         {
-          error_at_line (-1, 0, s->defining_node->location.file,
-                         s->defining_node->location.line,
+          error_at_line (-1, 0, s->definingNode->location.file,
+                         s->definingNode->location.line,
                          "%s is already defined in this scope", identifier.c_str ());
         }
     }

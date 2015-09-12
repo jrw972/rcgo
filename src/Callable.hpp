@@ -4,6 +4,7 @@
 #include "types.hpp"
 #include "type.hpp"
 #include "memory_model.hpp"
+#include "Symbol.hpp"
 
 /*
  * Base class for things that can be called.
@@ -20,28 +21,34 @@ public:
  * TODO:  I debate whether or not the return symbols should be recorded here.
  */
 
-struct Function : public Callable
+struct Function : public Callable, public Symbol
 {
-  Function (ast_function_t* node_,
-            const std::string& name_,
-            const function_type_t* func_type_,
-            const Symbol* return_symbol_)
-    : node (node_)
-    , name (name_)
-    , functionType (func_type_)
-    , returnSymbol (return_symbol_)
-    , returnSize (func_type_->return_type ()->size ())
-  { }
+  // TODO:  Remove duplication with Symbol.
+  Function (ast_function_t& node);
 
+  // Callable
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
-  virtual const type_t* type () const { return functionType; }
+  virtual const type_t* type () const { return functionType_; }
 
-  ast_function_t* const node;
-  std::string const name;
-  const function_type_t* const functionType;
-  const Symbol* const returnSymbol;
-  size_t const returnSize;
+  // Symbol
+  virtual void accept (SymbolVisitor& visitor);
+  virtual void accept (ConstSymbolVisitor& visitor) const;
+  virtual const char* kindString () const { return "Function"; }
+
+  ast_function_t& node;
   memory_model_t memoryModel;
+
+  void set (const function_type_t* functionType,
+            const Symbol* returnSymbol);
+
+  const Symbol* returnSymbol () const { return returnSymbol_; }
+  typed_value_t value () const { return value_; }
+
+private:
+  const function_type_t* functionType_;
+  const Symbol* returnSymbol_;
+  size_t returnSize_;
+  typed_value_t value_;
 };
 
 struct Method : public Callable

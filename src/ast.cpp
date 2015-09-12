@@ -224,7 +224,7 @@ get_current_return_symbol (const ast_t * node)
     Function* f = get_current_function (node);
     if (f != NULL)
       {
-        return f->returnSymbol;
+        return f->returnSymbol ();
       }
   }
 

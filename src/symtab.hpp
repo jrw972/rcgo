@@ -5,8 +5,9 @@
 
 #include "typed_value.hpp"
 #include "type.hpp"
-#include "Symbol.hpp"
+#include "SymbolVisitor.hpp"
 
+// TODO:  Remove this class.
 class symbol_holder
 {
 public:

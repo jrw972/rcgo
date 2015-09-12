@@ -21,7 +21,7 @@ enter_symbol (symtab_t* symtab, Symbol * symbol, symbol_holder& holder)
     }
   else
     {
-      const ast_t* node = symbol->defining_node;
+      const ast_t* node = symbol->definingNode;
       error_at_line (-1, 0, node->location.file, node->location.line,
 		     "%s is already defined in this scope", identifier.c_str ());
     }
@@ -213,7 +213,7 @@ type_check_expr (ast_t* ptr)
           node.typed_value = symbol.value ();
         }
 
-        void visit (const FunctionSymbol& symbol) {
+        void visit (const Function& symbol) {
           node.typed_value = symbol.value ();
         }
 

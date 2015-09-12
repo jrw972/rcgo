@@ -27,7 +27,7 @@ T* processAndLookup (ast_t * node, const std::string& identifier)
       error_at_line (-1, 0, node->location.file, node->location.line,
                      "%s was not declared in this scope", identifier.c_str ());
     }
-  if (symbol->in_progress)
+  if (symbol->inProgress)
     {
       error_at_line (-1, 0, node->location.file, node->location.line,
                      "%s is defined recursively", identifier.c_str ());

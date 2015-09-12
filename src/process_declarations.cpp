@@ -119,7 +119,7 @@ process_declarations (ast_t * node)
     {
       ast_t *signature_node = node.signature ();
       ast_t *return_type_node = node.return_type ();
-      Symbol* symbol = node.function_symbol.symbol ();
+      Function* function = SymbolCast<Function> (node.function_symbol.symbol ());
 
       /* Process the signature. */
       const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
@@ -138,14 +138,13 @@ process_declarations (ast_t * node)
 
       Symbol* return_symbol = ParameterSymbol::makeReturn (return_parameter);
 
-      Function* function = new Function (&node, symbol->identifier, new function_type_t (signature, return_parameter), return_symbol);
+      function->set (new function_type_t (signature, return_parameter), return_symbol);
 
       // Enter the return first as it is deeper on the stack.
       enter_symbol (node.symtab, return_symbol, node.return_symbol);
       enter_signature (signature_node, signature);
 
       node.function = function;
-      SymbolCast<FunctionSymbol> (symbol)->function (function);
       symtab_set_current_function (node.symtab, function);
     }
 
@@ -487,17 +486,17 @@ process_declarations (ast_t * node)
       if (symbol->defined ())
         return;
 
-      if (symbol->in_progress)
+      if (symbol->inProgress)
         {
           error_at_line (-1, 0, node.location.file, node.location.line,
                          "%s is defined recursively", identifier.c_str ());
         }
 
-      symbol->in_progress = true;
+      symbol->inProgress = true;
       ast_t *type_spec_node = node.type_spec ();
       const type_t *new_type = process_type_spec (type_spec_node, true, false, type);
       type->subtype (new_type);
-      symbol->in_progress = false;
+      symbol->inProgress = false;
     }
   };
 

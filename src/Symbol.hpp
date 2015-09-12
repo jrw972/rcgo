@@ -5,7 +5,6 @@
 #include "typed_value.hpp"
 #include "type.hpp"
 #include "parameter.hpp"
-#include "Callable.hpp"
 
 class SymbolVisitor;
 class ConstSymbolVisitor;
@@ -16,8 +15,8 @@ class ConstSymbolVisitor;
 struct Symbol {
   Symbol (const std::string& id, ast_t* dn)
     : identifier (id)
-    , defining_node (dn)
-    , in_progress (false)
+    , definingNode (dn)
+    , inProgress (false)
     , offset_ (0)
   { }
   virtual ~Symbol() { }
@@ -29,8 +28,8 @@ struct Symbol {
   virtual ptrdiff_t offset () const { return offset_; }
 
   std::string const identifier;
-  ast_t* const defining_node;
-  bool in_progress;
+  ast_t* const definingNode;
+  bool inProgress;
 
 private:
   ptrdiff_t offset_;
@@ -49,24 +48,6 @@ struct BuiltinFunctionSymbol : public Symbol {
 
 private:
   typed_value_t const value_;
-};
-
-struct FunctionSymbol : public Symbol {
-  FunctionSymbol (const std::string& id, ast_t* dn)
-    : Symbol (id, dn)
-  { }
-  virtual void accept (SymbolVisitor& visitor);
-  virtual void accept (ConstSymbolVisitor& visitor) const;
-  virtual const char* kindString () const { return "Function"; }
-
-  void function (Function* f) {
-    value_ = typed_value_t::make_ref (typed_value_t (f));
-  }
-
-  typed_value_t value () const { return value_; }
-
-private:
-  typed_value_t value_;
 };
 
 struct InstanceSymbol : public Symbol {
@@ -199,7 +180,7 @@ struct VariableSymbol : public Symbol {
   }
 
   VariableSymbol* duplicate() {
-    VariableSymbol* s = new VariableSymbol (this->identifier, this->defining_node, typed_value_t::make_ref (this->value.type, typed_value_t::STACK, FOREIGN, FOREIGN));
+    VariableSymbol* s = new VariableSymbol (this->identifier, this->definingNode, typed_value_t::make_ref (this->value.type, typed_value_t::STACK, FOREIGN, FOREIGN));
     s->original_ = this;
     return s;
   }
@@ -217,81 +198,5 @@ struct HiddenSymbol : public Symbol {
   virtual void accept (ConstSymbolVisitor& visitor) const;
   virtual const char* kindString () const { return "Hidden"; }
 };
-
-struct SymbolVisitor {
-  virtual ~SymbolVisitor() { }
-  virtual void visit (BuiltinFunctionSymbol& s) { defaultAction (s); }
-  virtual void visit (FunctionSymbol& s) { defaultAction (s); }
-  virtual void visit (InstanceSymbol& s) { defaultAction (s); }
-  virtual void visit (ParameterSymbol& s) { defaultAction (s); }
-  virtual void visit (TypeSymbol& s) { defaultAction (s); }
-  virtual void visit (TypedConstantSymbol& s) { defaultAction (s); }
-  virtual void visit (VariableSymbol& s) { defaultAction (s); }
-  virtual void visit (HiddenSymbol& s) { defaultAction (s); }
-  virtual void defaultAction (Symbol& s) { }
-};
-
-struct ConstSymbolVisitor {
-  virtual ~ConstSymbolVisitor() { }
-  virtual void visit (const BuiltinFunctionSymbol& s) { defaultAction (s); }
-  virtual void visit (const FunctionSymbol& s) { defaultAction (s); }
-  virtual void visit (const InstanceSymbol& s) { defaultAction (s); }
-  virtual void visit (const ParameterSymbol& s) { defaultAction (s); }
-  virtual void visit (const TypeSymbol& s) { defaultAction (s); }
-  virtual void visit (const TypedConstantSymbol& s) { defaultAction (s); }
-  virtual void visit (const VariableSymbol& s) { defaultAction (s); }
-  virtual void visit (const HiddenSymbol& s) { defaultAction (s); }
-  virtual void defaultAction (const Symbol& s) { }
-};
-
-#define ACCEPT(type) void \
-type::accept (ast_visitor_t& visitor) \
-{ \
-  visitor.visit (*this); \
-} \
-void \
-type::accept (ast_const_visitor_t& visitor) const \
-{ \
-  visitor.visit (*this); \
-}
-
-#undef ACCEPT
-#define ACCEPT(type) inline void type::accept (SymbolVisitor& visitor) { visitor.visit (*this); } \
-inline void type::accept (ConstSymbolVisitor& visitor) const { visitor.visit (*this); }
-ACCEPT(BuiltinFunctionSymbol)
-ACCEPT(FunctionSymbol)
-ACCEPT(InstanceSymbol)
-ACCEPT(ParameterSymbol)
-ACCEPT(TypeSymbol)
-ACCEPT(TypedConstantSymbol)
-ACCEPT(VariableSymbol)
-ACCEPT(HiddenSymbol)
-#undef ACCEPT
-
-template <typename T>
-T* SymbolCast (Symbol* symbol)
-{
-  struct visitor : public SymbolVisitor {
-    T* retval;
-    visitor () : retval (NULL) { }
-    virtual void visit (T& s) { retval = & s; }
-  };
-  visitor v;
-  symbol->accept (v);
-  return v.retval;
-}
-
-template <typename T>
-const T* SymbolCast (const Symbol* symbol)
-{
-  struct visitor : public ConstSymbolVisitor {
-    const T* retval;
-    visitor () : retval (NULL) { }
-    virtual void visit (const T& s) { retval = & s; }
-  };
-  visitor v;
-  symbol->accept (v);
-  return v.retval;
-}
 
 #endif /* Symbol_hpp */

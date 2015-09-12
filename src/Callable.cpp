@@ -3,10 +3,40 @@
 #include "ast.hpp"
 #include "runtime.hpp"
 
+Function::Function (ast_function_t& node_)
+  : Symbol (ast_get_identifier (node_.identifier ()), node_.identifier ())
+  , node (node_)
+  , functionType_ (NULL)
+  , returnSymbol_ (NULL)
+  , returnSize_ (0)
+{ }
+
+void
+Function::accept (SymbolVisitor& visitor)
+{
+  visitor.visit (*this);
+}
+
+void
+Function::accept (ConstSymbolVisitor& visitor) const
+{
+  visitor.visit (*this);
+}
+
+void
+Function::set (const function_type_t* functionType,
+               const Symbol* returnSymbol)
+{
+  functionType_ = functionType;
+  returnSymbol_ = returnSymbol;
+  returnSize_ = functionType->return_type ()->size ();
+  value_ = typed_value_t::make_ref (typed_value_t (this));
+}
+
 void Function::call (executor_base_t& exec, const ast_call_expr_t& node) const
 {
   // Create space for the return.
-  stack_frame_reserve (exec.stack (), this->returnSize);
+  stack_frame_reserve (exec.stack (), this->returnSize_);
 
   // Sample the top of the stack.
   char* top_before = stack_frame_top (exec.stack ());
@@ -22,7 +52,7 @@ void Function::call (executor_base_t& exec, const ast_call_expr_t& node) const
 
   // Do the call.
   stack_frame_push_base_pointer (exec.stack (), this->memoryModel.locals_size ());
-  runtime::evaluate_statement (exec, this->node->body ());
+  runtime::evaluate_statement (exec, this->node.body ());
   stack_frame_pop_base_pointer (exec.stack ());
 
   // Pop the arguments.

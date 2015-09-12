@@ -1206,6 +1206,7 @@ struct ast_function_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const { unimplemented; }
 
+  // TODO:  Eliminate redundancy.
   symbol_holder function_symbol;
   symbol_holder return_symbol;
   Function* function;
