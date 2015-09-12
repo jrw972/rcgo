@@ -451,16 +451,8 @@ struct ast_call_expr_t : public ast_expr_t
       COUNT,
     };
 
-  enum Kind
-    {
-      NONE,
-      CALLABLE,
-      PULL_PORT,
-    };
-
   ast_call_expr_t (unsigned int line, ast_t* expr, ast_t* args)
     : ast_expr_t (line, COUNT)
-    , kind (NONE)
   {
     children[EXPR] = expr;
     children[ARGS] = args;
@@ -474,8 +466,6 @@ struct ast_call_expr_t : public ast_expr_t
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const { out << "call_expr"; }
-
-  Kind kind;
 };
 
 struct ast_dereference_expr_t : public ast_unary_expr_t

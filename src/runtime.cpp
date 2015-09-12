@@ -115,11 +115,13 @@ namespace runtime
   {
     if (instance->is_top_level ())
       {
+        // Set up a call expression.
         const unsigned int line = instance->line ();
         ast_identifier_t id (line, "");
         ast_identifier_expr_t expr (line, &id);
         ast_list_expr_t args (line);
         ast_call_expr_t node (line, &expr, &args);
+        // Call the initializer.
         instance->initializer ()->call (exec, node, instance->ptr ());
       }
   }
@@ -1087,24 +1089,16 @@ namespace runtime
 
       void visit (const ast_call_expr_t& node)
       {
-        switch (node.kind)
-          {
-          case ast_call_expr_t::NONE:
-            not_reached;
-            break;
-          case ast_call_expr_t::CALLABLE:
-            node.expr ()->typed_value.value.callable_value ()->call (exec, node);
-            break;
-          case ast_call_expr_t::PULL_PORT:
-            {
-              pull_port_t pull_port;
-              evaluate_expr (exec, node.expr ());
-              stack_frame_store_heap (exec.stack (), &pull_port, sizeof (pull_port_t));
-
-              pull_port.getter->call (exec, node, pull_port.instance);
-            }
-            break;
-          }
+        if (type_cast<pull_port_type_t> (node.expr ()->typed_value.type) == NULL) {
+          node.expr ()->typed_value.value.callable_value ()->call (exec, node);
+        } else {
+          // Evaluate the pull port.
+          pull_port_t pull_port;
+          evaluate_expr (exec, node.expr ());
+          stack_frame_store_heap (exec.stack (), &pull_port, sizeof (pull_port_t));
+          // Execute the call.
+          pull_port.getter->call (exec, node, pull_port.instance);
+        }
       }
 
       void push_port_call (const ast_t& node,

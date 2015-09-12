@@ -1089,7 +1089,7 @@ std::string
 pull_port_type_t::to_string () const
 {
   std::stringstream str;
-  str << "func " << *signature () << ' ' << *return_parameter ()->value.type;
+  str << "pull " << *signature () << ' ' << *return_parameter ()->value.type;
   return str.str ();
 }
 

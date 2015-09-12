@@ -413,14 +413,12 @@ type_check_expr (ast_t* ptr)
         void visit (const function_type_t& type)
         {
           // No restrictions on caller.
-          node.kind = ast_call_expr_t::CALLABLE;
           rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args ());
         }
 
         void visit (const method_type_t& type)
         {
           // No restrictions on caller.
-          node.kind = ast_call_expr_t::CALLABLE;
           rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
 
           if (type_dereference (type.receiver_type) != NULL)
@@ -451,7 +449,6 @@ type_check_expr (ast_t* ptr)
                            "E25: initializers may only be called from initializeers");
           }
 
-          node.kind = ast_call_expr_t::CALLABLE;
           rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
 
           assert (type_dereference (type.receiver_type) != NULL);
@@ -481,7 +478,6 @@ type_check_expr (ast_t* ptr)
                              "E26: getters may only be called from a getter, an action, or a reaction");
             }
 
-          node.kind = ast_call_expr_t::CALLABLE;
           rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
           if (in_mutable_section (&node))
             {
@@ -500,7 +496,6 @@ type_check_expr (ast_t* ptr)
                              "E26: pull ports may only be called from a getter, an action, or a reaction");
             }
 
-          node.kind = ast_call_expr_t::PULL_PORT;
           rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args ());
           if (in_mutable_section (&node))
             {
