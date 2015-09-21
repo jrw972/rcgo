@@ -10,7 +10,8 @@
  * Base class for things that can be called.
  */
 
-class Callable {
+class Callable
+{
 public:
   virtual ~Callable () { }
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const = 0;

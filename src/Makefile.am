@@ -14,6 +14,7 @@ fbu_SOURCES = main.cpp \
 action.hpp \
 ast.hpp ast.cpp \
 bind.hpp \
+BuiltinFunction.hpp BuiltinFunction.cpp \
 Callable.hpp Callable.cpp \
 construct_symbol_table.cpp \
 debug.hpp debug.cpp \

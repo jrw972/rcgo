@@ -2,11 +2,12 @@
 #define SymbolVisitor_hpp
 
 #include "Symbol.hpp"
+#include "BuiltinFunction.hpp"
 #include "Callable.hpp"
 
 struct SymbolVisitor {
   virtual ~SymbolVisitor() { }
-  virtual void visit (BuiltinFunctionSymbol& s) { defaultAction (s); }
+  virtual void visit (BuiltinFunction& s) { defaultAction (s); }
   virtual void visit (Function& s) { defaultAction (s); }
   virtual void visit (InstanceSymbol& s) { defaultAction (s); }
   virtual void visit (ParameterSymbol& s) { defaultAction (s); }
@@ -19,7 +20,7 @@ struct SymbolVisitor {
 
 struct ConstSymbolVisitor {
   virtual ~ConstSymbolVisitor() { }
-  virtual void visit (const BuiltinFunctionSymbol& s) { defaultAction (s); }
+  virtual void visit (const BuiltinFunction& s) { defaultAction (s); }
   virtual void visit (const Function& s) { defaultAction (s); }
   virtual void visit (const InstanceSymbol& s) { defaultAction (s); }
   virtual void visit (const ParameterSymbol& s) { defaultAction (s); }

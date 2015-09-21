@@ -3,6 +3,34 @@
 
 #include "stack_frame.hpp"
 #include "action.hpp"
+#include "heap.hpp"
+
+class FileDescriptor {
+public:
+  int fd () const { return fd_; }
+  void registeredForRead (bool f) { registeredForRead_ = f; }
+  bool registeredForRead () const { return registeredForRead_; }
+  void readyToRead () { readyToRead_ = true; }
+  void registeredForWrite (bool f) { registeredForWrite_ = f; }
+  bool registeredForWrite () const { return registeredForWrite_; }
+  void readyToWrite () { readyToWrite_ = true; }
+
+private:
+  FileDescriptor (int fd)
+    : fd_ (fd)
+    , registeredForRead_ (false)
+    , readyToRead_ (false)
+    , registeredForWrite_ (false)
+    , readyToWrite_ (false)
+  { }
+  int const fd_;
+  bool registeredForRead_;
+  bool readyToRead_;
+  bool registeredForWrite_;
+  bool readyToWrite_;
+
+  friend executor_base_t;
+};
 
 class executor_base_t
 {
@@ -33,6 +61,12 @@ public:
   void lock_stdout () { pthread_mutex_lock (stdout_mutex_); }
   void unlock_stdout () { pthread_mutex_unlock (stdout_mutex_); }
   virtual void push () = 0;
+
+  FileDescriptor*
+  allocateFileDescriptor (int fd)
+  {
+    return new (static_cast<FileDescriptor*> (heap_allocate (this->heap (), sizeof (FileDescriptor)))) FileDescriptor (fd);
+  }
 
 private:
   stack_frame_t* stack_;

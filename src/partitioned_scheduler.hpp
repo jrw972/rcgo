@@ -10,6 +10,7 @@
 #include "instance_table.hpp"
 #include "runtime.hpp"
 #include <queue>
+#include <poll.h>
 
 class partitioned_scheduler_t
 {
@@ -426,6 +427,29 @@ private:
         return m;
       }
     };
+
+    bool get_task_and_message (task_t*& task, Message& message)
+    {
+      pthread_mutex_lock (&mutex_);
+      task = ready_head_;
+      if (task != NULL)
+        {
+          ready_head_ = task->next;
+          if (ready_head_ == NULL)
+            {
+              ready_tail_ = &ready_head_;
+            }
+        }
+      bool flag = false;
+      if (!message_queue_.empty ())
+        {
+          flag = true;
+          message = message_queue_.front ();
+          message_queue_.pop ();
+        }
+      pthread_mutex_unlock (&mutex_);
+      return flag;
+    }
 
     void send (Message m)
     {

@@ -759,6 +759,14 @@ namespace runtime
       doit<uint_type_t> (exec, node);
     }
 
+    void
+    operator() (executor_base_t& exec,
+                const ast_binary_expr_t& node,
+                const uint64_type_t&) const
+    {
+      doit<uint_type_t> (exec, node);
+    }
+
     template <typename T>
     void
     doit (executor_base_t& exec, const ast_binary_expr_t& node) const

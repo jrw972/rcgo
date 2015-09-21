@@ -240,6 +240,14 @@ void stack_frame_push_tv (stack_frame_t* stack_frame,
       , tv (t)
     { }
 
+    void visit (const bool_type_t& type) {
+      stack_frame_push (stack_frame, tv.value.ref (type));
+    }
+
+    void visit (const int_type_t& type) {
+      stack_frame_push (stack_frame, tv.value.ref (type));
+    }
+
     void visit (const int8_type_t& type) {
       stack_frame_push (stack_frame, tv.value.ref (type));
     }

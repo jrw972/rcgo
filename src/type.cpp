@@ -889,7 +889,27 @@ type_is_comparable (const type_t* type)
       flag = true;
     }
 
+    void visit (const int64_type_t& type)
+    {
+      flag = true;
+    }
+
     void visit (const uint_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const uint8_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const uint32_type_t& type)
+    {
+      flag = true;
+    }
+
+    void visit (const uint64_type_t& type)
     {
       flag = true;
     }

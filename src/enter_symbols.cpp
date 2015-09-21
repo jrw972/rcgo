@@ -10,9 +10,11 @@ enter_symbols (ast_t * node)
   symtab_t *symtab = symtab_get_root (node->symtab);
 
   /* Insert types. */
-  symtab->enter (new TypeSymbol ("bool", node, new named_type_t ("bool", bool_type_t::instance ())));
+  named_type_t* bool_type = new named_type_t ("bool", bool_type_t::instance ());
+  symtab->enter (new TypeSymbol ("bool", node, bool_type));
 
-  symtab->enter (new TypeSymbol ("int", node, new named_type_t ("int", int_type_t::instance ())));
+  named_type_t* int_type = new named_type_t ("int", int_type_t::instance ());
+  symtab->enter (new TypeSymbol ("int", node, int_type));
 
   symtab->enter (new TypeSymbol ("int8", node, new named_type_t ("int8", int8_type_t::instance ())));
 
@@ -22,7 +24,8 @@ enter_symbols (ast_t * node)
 
   symtab->enter (new TypeSymbol ("uint32", node, new named_type_t ("uint32", uint32_type_t::instance ())));
 
-  symtab->enter (new TypeSymbol ("uint64", node, new named_type_t ("uint64", uint64_type_t::instance ())));
+  named_type_t* uint64_type = new named_type_t ("uint64", uint64_type_t::instance ());
+  symtab->enter (new TypeSymbol ("uint64", node, uint64_type));
 
   symtab->enter (new TypeSymbol ("uint128", node, new named_type_t ("uint128", uint128_type_t::instance ())));
 
@@ -33,11 +36,9 @@ enter_symbols (ast_t * node)
   /* I/O facilities. */
   named_type_t* fd_type = new named_type_t ("FileDescriptor", FileDescriptor_type_t::instance ());
   symtab->enter (new TypeSymbol ("FileDescriptor", node, fd_type));
-
-  function_type_t* ft = new function_type_t (new signature_type_t (),
-                                             new parameter_t (node, "0return", typed_value_t::make_value (fd_type, typed_value_t::HEAP, MUTABLE, MUTABLE), false));
-
-  symtab->enter (new BuiltinFunctionSymbol ("timerfd_create", node, ft));
+  symtab->enter (new Readable (node, fd_type, bool_type));
+  symtab->enter (new TimerfdCreate (node, fd_type));
+  symtab->enter (new TimerfdSettime (node, fd_type, int_type, uint64_type));
 
   /* Insert zero constant. */
   symtab->enter (new TypedConstantSymbol ("nil",

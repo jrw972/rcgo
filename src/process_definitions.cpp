@@ -44,7 +44,7 @@ check_assignment (typed_value_t left_tv,
   if (left_tv.intrinsic_mutability != MUTABLE)
     {
       error_at_line (-1, 0, node.location.file, node.location.line,
-                     "target of assignment is not mutable");
+                     "E9: target of assignment is not mutable");
     }
 
   if (!(
@@ -209,7 +209,7 @@ type_check_expr (ast_t* ptr)
           not_reached;
         }
 
-        void visit (const BuiltinFunctionSymbol& symbol) {
+        void visit (const BuiltinFunction& symbol) {
           node.typed_value = symbol.value ();
         }
 

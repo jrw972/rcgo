@@ -62,6 +62,11 @@ value_t::print (std::ostream& out, const type_t* type) const
         {
           std::cout << " value=" << tv.ref (type);
         }
+
+        void visit (const function_type_t& type)
+        {
+          std::cout << " value=<function>";
+        }
       };
       visitor v (*this);
       type_strip (type)->accept (v);

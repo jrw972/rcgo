@@ -117,25 +117,9 @@ partitioned_scheduler_t::executor_t::run_i ()
   for (;;)
     {
       // Get a task from the ready list and/or a message.
-      pthread_mutex_lock (&mutex_);
-      task_t* task = ready_head_;
-      if (task != NULL)
-        {
-          ready_head_ = task->next;
-          if (ready_head_ == NULL)
-            {
-              ready_tail_ = &ready_head_;
-            }
-        }
-      bool flag = false;
+      task_t* task = NULL;
       Message message;
-      if (!message_queue_.empty ())
-        {
-          flag = true;
-          message = message_queue_.front ();
-          message_queue_.pop ();
-        }
-      pthread_mutex_unlock (&mutex_);
+      bool flag = get_task_and_message (task, message);
 
       if (task != NULL || flag)
         {

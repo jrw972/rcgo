@@ -438,8 +438,8 @@ public:
   const_iterator end () const { return parameters_.end (); }
   const parameter_t * find (const std::string& name) const;
 
-  void
-  append (const parameter_t* p) { parameters_.push_back (p); }
+  signature_type_t*
+  append (const parameter_t* p) { parameters_.push_back (p); return this; }
 
 private:
   ParametersType parameters_;

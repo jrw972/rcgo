@@ -35,21 +35,6 @@ private:
   ptrdiff_t offset_;
 };
 
-struct BuiltinFunctionSymbol : public Symbol {
-  BuiltinFunctionSymbol (const std::string& id, ast_t* dn, const function_type_t* t)
-    : Symbol (id, dn)
-    , value_ (typed_value_t::make_ref (t, typed_value_t::CONSTANT, IMMUTABLE, IMMUTABLE))
-  { }
-  virtual void accept (SymbolVisitor& visitor);
-  virtual void accept (ConstSymbolVisitor& visitor) const;
-  virtual const char* kindString () const { return "BuiltinFunction"; }
-
-  typed_value_t value () const { return value_; }
-
-private:
-  typed_value_t const value_;
-};
-
 struct InstanceSymbol : public Symbol {
   InstanceSymbol (const std::string& id, ast_t* dn)
     : Symbol (id, dn)
