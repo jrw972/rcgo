@@ -929,7 +929,9 @@ namespace runtime
     {
       executor_base_t& exec;
 
-      visitor (executor_base_t& e) : exec (e) { }
+      visitor (executor_base_t& e)
+        : exec (e)
+      { }
 
       void default_action (const ast_t& node)
       {
@@ -1744,7 +1746,7 @@ namespace runtime
     return v.retval;
   }
 
-  static bool
+  bool
   enabled (executor_base_t& exec,
            component_t* instance,
            const action_t* action,

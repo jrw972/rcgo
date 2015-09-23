@@ -4,6 +4,7 @@
 #include "heap.hpp"
 #include "runtime.hpp"
 #include <list>
+#include <errno.h>
 
 void
 partitioned_scheduler_t::initialize_task (task_t* t, size_t thread_count)
@@ -109,6 +110,7 @@ partitioned_scheduler_t::executor_t::run_i ()
     WAIT1,
     DOUBLE_CHECK,
     WAIT2,
+    POLL,
   };
 
   State state = NORMAL;
@@ -119,7 +121,7 @@ partitioned_scheduler_t::executor_t::run_i ()
       // Get a task from the ready list and/or a message.
       task_t* task = NULL;
       Message message;
-      bool flag = get_task_and_message (task, message);
+      bool flag = get_ready_task_and_message (task, message);
 
       if (task != NULL || flag)
         {
@@ -157,9 +159,10 @@ partitioned_scheduler_t::executor_t::run_i ()
                     case HIT:
                     case FIRST_HIT:
                       state = NORMAL;
+                      disableFileDescriptorTracking ();
                       ++generation;
                       points = 0;
-                      scheduler_.executors_[neighbor_id_]->send (Message::make_reset (id_));
+                      send (Message::make_reset (id_));
                       break;
                     }
                   break;
@@ -167,6 +170,9 @@ partitioned_scheduler_t::executor_t::run_i ()
                 case WAIT2:
                   // Straggler.
                   task->resume (generation);
+                  break;
+                case POLL:
+                  not_reached;
                   break;
                 }
             }
@@ -181,7 +187,7 @@ partitioned_scheduler_t::executor_t::run_i ()
                       state = SHOOT_DOWN;
                       ++generation;
                       points = 0;
-                      scheduler_.executors_[neighbor_id_]->send (message);
+                      send (message);
                     }
                   break;
                 case Message::START_WAITING1:
@@ -189,14 +195,15 @@ partitioned_scheduler_t::executor_t::run_i ()
                     {
                       if (message.id != id_)
                         {
-                          scheduler_.executors_[neighbor_id_]->send (message);
+                          send (message);
                         }
                       else
                         {
                           state = DOUBLE_CHECK;
+                          enableFileDescriptorTracking ();
                           ++generation;
                           points = 0;
-                          scheduler_.executors_[neighbor_id_]->send (Message::make_start_double_check (id_));
+                          send (Message::make_start_double_check (id_));
                         }
                     }
                   break;
@@ -204,9 +211,10 @@ partitioned_scheduler_t::executor_t::run_i ()
                   if (message.id != id_ && state == WAIT1)
                     {
                       state = DOUBLE_CHECK;
+                      enableFileDescriptorTracking ();
                       ++generation;
                       points = 0;
-                      scheduler_.executors_[neighbor_id_]->send (message);
+                      send (message);
                     }
                   break;
                 case Message::START_WAITING2:
@@ -214,26 +222,27 @@ partitioned_scheduler_t::executor_t::run_i ()
                     {
                       if (message.id != id_)
                         {
-                          scheduler_.executors_[neighbor_id_]->send (message);
+                          send (message);
                         }
                       else
                         {
-                          scheduler_.executors_[neighbor_id_]->send (Message::make_terminate ());
+                          send (Message::make_terminate ());
                           return;
                         }
                     }
                   break;
                 case Message::TERMINATE:
                   assert (state == WAIT2);
-                  scheduler_.executors_[neighbor_id_]->send (message);
+                  send (message);
                   return;
                 case Message::RESET:
                   if (message.id != id_)
                     {
                       state = NORMAL;
+                      disableFileDescriptorTracking ();
                       ++generation;
                       points = 0;
-                      scheduler_.executors_[neighbor_id_]->send (message);
+                      send (message);
                     }
                   break;
                 }
@@ -249,22 +258,42 @@ partitioned_scheduler_t::executor_t::run_i ()
               state = SHOOT_DOWN;
               ++generation;
               points = 0;
-              scheduler_.executors_[neighbor_id_]->send (Message::make_start_shoot_down (id_));
+              send (Message::make_start_shoot_down (id_));
               break;
             case SHOOT_DOWN:
               state = WAIT1;
-              scheduler_.executors_[neighbor_id_]->send (Message::make_start_waiting1 (id_));
+              send (Message::make_start_waiting1 (id_));
               break;
             case WAIT1:
               sleep ();
               break;
             case DOUBLE_CHECK:
-              state = WAIT2;
-              scheduler_.executors_[neighbor_id_]->send (Message::make_start_waiting2 (id_));
+              if (fileDescriptorMap_.empty ()) {
+                state = WAIT2;
+                send (Message::make_start_waiting2 (id_));
+              } else {
+                state = POLL;
+                pthread_mutex_lock (&mutex_);
+                using_eventfd_ = true;
+                pthread_mutex_unlock (&mutex_);
+              }
               break;
             case WAIT2:
               sleep ();
               break;
+            case POLL:
+              if (poll ()) {
+                state = NORMAL;
+                pthread_mutex_lock (&mutex_);
+                using_eventfd_ = false;
+                pthread_mutex_unlock (&mutex_);
+                disableFileDescriptorTracking ();
+                ++generation;
+                points = 0;
+                // Wakeup everyone.
+                // This is overkill and could be improved.
+                send (Message::make_reset (id_));
+              }
             }
 
           continue;
@@ -312,15 +341,18 @@ partitioned_scheduler_t::executor_t::run_i ()
                 case HIT:
                 case FIRST_HIT:
                   state = NORMAL;
+                  disableFileDescriptorTracking ();
                   ++generation;
                   points = 0;
-                  scheduler_.executors_[neighbor_id_]->send (Message::make_reset (id_));
+                  send (Message::make_reset (id_));
                   break;
                 }
               break;
             case WAIT1:
             case WAIT2:
-              bug ("illegal state");
+            case POLL:
+              not_reached;
+              break;
             }
           continue;
         }
@@ -329,6 +361,44 @@ partitioned_scheduler_t::executor_t::run_i ()
       // TODO:  Steal work from another executor.
       sleep ();
     }
+}
+
+bool
+partitioned_scheduler_t::executor_t::poll ()
+{
+  // Generate a list of fds to poll.
+  struct pollfd pfd;
+  std::vector<struct pollfd> pfds;
+  // Add the event fd so other executors can wake this executor.
+  pfd.fd = eventfd_;
+  pfd.events = POLLIN;
+  pfds.push_back (pfd);
+
+  for (FileDescriptorMapType::const_iterator pos = fileDescriptorMap_.begin (),
+         limit = fileDescriptorMap_.end ();
+       pos != limit;
+       ++pos) {
+    pfd.fd = pos->first->fd ();
+    pfd.events = pos->second;
+    pfds.push_back (pfd);
+  }
+
+  int r = ::poll (&pfds[0], pfds.size (), -1);
+
+  if (r < 1) {
+    error (EXIT_FAILURE, errno, "poll");
+  } else if (r > 1) {
+    // At least one fd besides the eventfd is ready.
+    return true;
+  } else {
+    // r == 1
+    if (pfds[0].revents == 0) {
+      // No events on eventfd so must be some other fd.
+      return true;
+    }
+  }
+
+  return false;
 }
 
 partitioned_scheduler_t::ExecutionResult

@@ -11,6 +11,8 @@
 #include "runtime.hpp"
 #include <queue>
 #include <poll.h>
+#include <sys/eventfd.h>
+#include <unistd.h>
 
 class partitioned_scheduler_t
 {
@@ -304,9 +306,12 @@ private:
       , ready_head_ (NULL)
       , ready_tail_ (&ready_head_)
       , task_count_ (0)
+      , trackFileDescriptors_ (false)
+      , using_eventfd_ (false)
     {
       pthread_mutex_init (&mutex_, NULL);
       pthread_cond_init (&cond_, NULL);
+      eventfd_ = eventfd (0, EFD_NONBLOCK);
     }
 
     void to_idle_list (task_t* task)
@@ -322,6 +327,10 @@ private:
       pthread_mutex_lock (&mutex_);
       if (ready_head_ == NULL)
         {
+          if (using_eventfd_) {
+            const uint64_t v = 1;
+            write (eventfd_, &v, sizeof (uint64_t));
+          }
           pthread_cond_signal (&cond_);
         }
       *ready_tail_ = task;
@@ -364,7 +373,30 @@ private:
 
     void add_task () { ++task_count_; }
 
+    virtual void
+    checkedForReadability (FileDescriptor* fd)
+    {
+      if (trackFileDescriptors_) {
+        std::pair<FileDescriptorMapType::iterator, bool> x =
+          fileDescriptorMap_.insert (std::make_pair (fd, 0));
+        x.first->second |= POLLIN;
+      }
+    }
+
   private:
+
+    void
+    disableFileDescriptorTracking ()
+    {
+      trackFileDescriptors_ = false;
+    }
+
+    void
+    enableFileDescriptorTracking ()
+    {
+      trackFileDescriptors_ = true;
+      fileDescriptorMap_.clear ();
+    }
 
     struct Message
     {
@@ -428,7 +460,7 @@ private:
       }
     };
 
-    bool get_task_and_message (task_t*& task, Message& message)
+    bool get_ready_task_and_message (task_t*& task, Message& message)
     {
       pthread_mutex_lock (&mutex_);
       task = ready_head_;
@@ -447,15 +479,31 @@ private:
           message = message_queue_.front ();
           message_queue_.pop ();
         }
+
+      if (using_eventfd_) {
+        uint64_t v;
+        read (eventfd_, &v, sizeof (uint64_t));
+      }
+
       pthread_mutex_unlock (&mutex_);
+
       return flag;
     }
 
-    void send (Message m)
+    void send (Message m) const
+    {
+      scheduler_.executors_[neighbor_id_]->receive (m);
+    }
+
+    void receive (Message m)
     {
       pthread_mutex_lock (&mutex_);
       if (message_queue_.empty ())
         {
+          if (using_eventfd_) {
+            const uint64_t v = 1;
+            write (eventfd_, &v, sizeof (uint64_t));
+          }
           pthread_cond_signal (&cond_);
         }
       message_queue_.push (m);
@@ -472,6 +520,8 @@ private:
       pthread_mutex_unlock (&mutex_);
     }
 
+    bool poll ();
+
     partitioned_scheduler_t& scheduler_;
     const size_t id_;
     const size_t neighbor_id_;
@@ -481,10 +531,15 @@ private:
     task_t** idle_tail_;
     pthread_mutex_t mutex_;
     pthread_cond_t cond_;
+    int eventfd_;
     task_t* ready_head_;
     task_t** ready_tail_;
     std::queue<Message> message_queue_;
     size_t task_count_;
+    bool trackFileDescriptors_;
+    typedef std::map<FileDescriptor*, short> FileDescriptorMapType;
+    FileDescriptorMapType fileDescriptorMap_;
+    bool using_eventfd_;
   };
 
   void

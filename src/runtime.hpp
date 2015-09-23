@@ -22,6 +22,9 @@ namespace runtime
   void
   initialize (executor_base_t& exec, instance_t* instance);
 
+  // Returns true if the action is enabled.
+  bool enabled (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota);
+
   // Returns true if the action was executed.
   bool exec (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota);
 

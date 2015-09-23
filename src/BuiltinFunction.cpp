@@ -46,6 +46,8 @@ Readable::call (executor_base_t& exec, const ast_call_expr_t& node) const
     error (EXIT_FAILURE, errno, "poll");
   }
 
+  exec.checkedForReadability (fd);
+
   stack_frame_push_tv (exec.stack (), typed_value_t (bool_type_t::instance (), pfd.revents & POLLIN));
 }
 
