@@ -20,7 +20,8 @@ enter_symbols (ast_t * node)
 
   symtab->enter (new TypeSymbol ("uint", node, new named_type_t ("uint", uint_type_t::instance ())));
 
-  symtab->enter (new TypeSymbol ("uint8", node, new named_type_t ("uint8", uint8_type_t::instance ())));
+  named_type_t* uint8_type = new named_type_t ("uint8", uint8_type_t::instance ());
+  symtab->enter (new TypeSymbol ("uint8", node, uint8_type));
 
   symtab->enter (new TypeSymbol ("uint32", node, new named_type_t ("uint32", uint32_type_t::instance ())));
 
@@ -37,6 +38,7 @@ enter_symbols (ast_t * node)
   named_type_t* fd_type = new named_type_t ("FileDescriptor", FileDescriptor_type_t::instance ());
   symtab->enter (new TypeSymbol ("FileDescriptor", node, fd_type));
   symtab->enter (new Readable (node, fd_type, bool_type));
+  symtab->enter (new Read (node, fd_type, uint8_type));
   symtab->enter (new TimerfdCreate (node, fd_type));
   symtab->enter (new TimerfdSettime (node, fd_type, int_type, uint64_type));
 

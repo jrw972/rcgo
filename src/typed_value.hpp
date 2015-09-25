@@ -272,6 +272,17 @@ struct typed_value_t
 
   explicit typed_value_t (reaction_t* r);
 
+  typed_value_t (const slice_type_t* t,
+                 slice_type_t::ValueType v)
+    : type (t)
+    , kind (VALUE)
+    , region (CONSTANT)
+    , intrinsic_mutability (IMMUTABLE)
+    , dereference_mutability (IMMUTABLE)
+    , value (t, v)
+    , has_offset (false)
+  { }
+
   const type_t *type;
   Kind kind;
   Region region;
@@ -295,12 +306,18 @@ struct typed_value_t
   static typed_value_t address_of (typed_value_t tv);
   static typed_value_t select (typed_value_t tv, const std::string& identifier);
   static typed_value_t index (const location_t& location, typed_value_t tv, typed_value_t index);
+  static typed_value_t slice (const location_t& location, typed_value_t tv, typed_value_t low, typed_value_t high);
+
   static typed_value_t logic_not (typed_value_t tv);
   static typed_value_t merge (typed_value_t tv);
   static typed_value_t move (typed_value_t tv);
   static typed_value_t binary (const location_t& location, BinaryArithmetic arithmetic, typed_value_t left, typed_value_t right);
   static typed_value_t cast (const location_t& location, const type_t* type, const typed_value_t tv);
   static typed_value_t cast_exec (const type_t* type, const typed_value_t tv);
+
+  bool isError() const { return type == NULL; }
+  bool isReference () const { return kind == REFERENCE; }
+  bool isValue () const { return kind == VALUE; }
 
   bool is_foreign_safe () const
   {
@@ -309,6 +326,24 @@ struct typed_value_t
   }
 
   void zero ();
+
+  int_type_t::ValueType integral_value () const
+  {
+    location_t loc;
+    return cast (loc, int_type_t::instance (), *this).value.ref (*int_type_t::instance ());
+  }
+
+  int_type_t::ValueType low_integral_value () const
+  {
+    location_t loc;
+    return cast (loc, int_type_t::instance (), *this).low_value.ref (*int_type_t::instance ());
+  }
+
+  int_type_t::ValueType high_integral_value () const
+  {
+    location_t loc;
+    return cast (loc, int_type_t::instance (), *this).high_value.ref (*int_type_t::instance ());
+  }
 
   std::ostream& print (std::ostream& o) const;
 };

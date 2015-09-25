@@ -345,7 +345,7 @@ instance_table_enumerate_bindings (instance_table_t& table)
 
             void visit (const ast_for_iota_statement_t& node)
             {
-              for (int_type_t::ValueType idx = 0, limit = node.limit.value.integral_value (node.limit.type);
+              for (int_type_t::ValueType idx = 0, limit = node.limit.integral_value ();
                    idx != limit;
                    ++idx)
                 {
@@ -643,7 +643,7 @@ transitive_closure (const instance_table_t& table,
 
     void default_action (const ast_t& node)
     {
-      not_reached;
+      ast_not_reached (node);
     }
 
     void visit (const ast_empty_statement_t& node)
@@ -764,12 +764,22 @@ transitive_closure (const instance_table_t& table,
       node.args ()->accept (*this);
     }
 
+    void visit (const ast_expression_statement_t& node)
+    {
+      node.visit_children (*this);
+    }
+
     void visit (const ast_println_statement_t& node)
     {
       node.visit_children (*this);
     }
 
     void visit (const ast_index_expr_t& node)
+    {
+      node.visit_children (*this);
+    }
+
+    void visit (const ast_slice_expr_t& node)
     {
       node.visit_children (*this);
     }
@@ -880,7 +890,7 @@ instance_table_analyze_composition (const instance_table_t& table)
           action_t* action = *action_pos;
           if (action->has_dimension ())
             {
-              for (int_type_t::ValueType iota = 0, limit = action->dimension ().value.integral_value(action->dimension ().type);
+              for (int_type_t::ValueType iota = 0, limit = action->dimension ().integral_value();
                    iota != limit;
                    ++iota)
                 {

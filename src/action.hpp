@@ -70,20 +70,20 @@ public:
       STATIC_FALSE,
     };
 
-  action_t (named_type_t* type, ast_t* node, ast_t* precondition_, ast_t* body_)
+  action_t (named_type_t* type, ast_t* node, ast_t* body_)
     : action_reaction_base_t (type, node, body_)
     , precondition_kind (DYNAMIC)
-    , precondition (precondition_)
+    , precondition (NULL)
   { }
 
-  action_t (named_type_t* type, ast_t* node, ast_t* precondition_, ast_t* body_, const typed_value_t& dimension)
+  action_t (named_type_t* type, ast_t* node, ast_t* body_, const typed_value_t& dimension)
     : action_reaction_base_t (type, node, body_, dimension)
     , precondition_kind (DYNAMIC)
-    , precondition (precondition_)
+    , precondition (NULL)
   { }
 
   PreconditionKind precondition_kind;
-  ast_t* const precondition;
+  ast_t* precondition;
 };
 
 class reaction_t : public action_reaction_base_t

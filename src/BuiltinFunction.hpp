@@ -36,6 +36,12 @@ struct Readable : public BuiltinFunction
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
 };
 
+struct Read : public BuiltinFunction
+{
+  Read (ast_t* dn, const type_t* fd_type, const type_t* uint8_type);
+  virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
+};
+
 struct TimerfdCreate : public BuiltinFunction
 {
   TimerfdCreate (ast_t* dn, const type_t* fd_type);

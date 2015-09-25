@@ -260,6 +260,10 @@ void stack_frame_push_tv (stack_frame_t* stack_frame,
       stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
+    void visit (const slice_type_t& type) {
+      stack_frame_push (stack_frame, tv.value.ref (type));
+    }
+
     void default_action (const type_t& type) {
       type_not_reached (type);
     }
@@ -289,6 +293,10 @@ struct PopVisitor : public const_type_visitor_t {
     doit (type);
   }
 
+  void visit (const uint_type_t& type) {
+    doit (type);
+  }
+
   void visit (const uint64_type_t& type) {
     doit (type);
   }
@@ -301,6 +309,15 @@ struct PopVisitor : public const_type_visitor_t {
 void stack_frame_pop_tv (stack_frame_t* stack_frame,
                          typed_value_t& tv)
 {
-  PopVisitor v (stack_frame, tv);
-  type_strip (tv.type)->accept (v);
+  switch (tv.kind) {
+  case typed_value_t::REFERENCE:
+    tv.value = value_t::make_reference (stack_frame_pop_pointer (stack_frame));
+    break;
+  case typed_value_t::VALUE:
+    {
+      PopVisitor v (stack_frame, tv);
+      type_strip (tv.type)->accept (v);
+    }
+    break;
+  }
 }

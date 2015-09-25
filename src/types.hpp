@@ -144,6 +144,11 @@ struct location_t
   const char * const file;
   unsigned int const line;
 
+  location_t ()
+    : file(NULL)
+    , line(0)
+  { }
+
   location_t (const char* f, unsigned int l)
     : file (f)
     , line (l)

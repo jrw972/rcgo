@@ -51,6 +51,42 @@ Readable::call (executor_base_t& exec, const ast_call_expr_t& node) const
   stack_frame_push_tv (exec.stack (), typed_value_t (bool_type_t::instance (), pfd.revents & POLLIN));
 }
 
+Read::Read (ast_t* dn, const type_t* fd_type, const type_t* uint8_type)
+  : BuiltinFunction ("read",
+                     dn,
+                     new function_type_t ((new signature_type_t ())
+                                          ->append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, typed_value_t::STACK, MUTABLE, IMMUTABLE), false))
+                                          ->append (new parameter_t (dn, "buf", typed_value_t::make_value (uint8_type->getSliceType (), typed_value_t::STACK, MUTABLE, IMMUTABLE), false)),
+                                          new parameter_t (dn, "0return", typed_value_t::make_value (void_type_t::instance (), typed_value_t::STACK, MUTABLE, MUTABLE), false)))
+{ }
+
+void
+Read::call (executor_base_t& exec, const ast_call_expr_t& node) const
+{
+  ast_t::const_iterator pos = node.args ()->begin ();
+  runtime::evaluate_expr (exec, *pos++);
+  FileDescriptor* fd = static_cast<FileDescriptor*> (stack_frame_pop_pointer (exec.stack ()));
+
+  runtime::evaluate_expr (exec, *pos++);
+
+  std::cout << "reading fd=" << fd->fd () << '\n';
+
+  // struct pollfd pfd;
+  // pfd.fd = fd->fd ();
+  // pfd.events = POLLIN;
+
+  // int r = poll (&pfd, 1, 0);
+
+  // if (r < 0) {
+  //   error (EXIT_FAILURE, errno, "poll");
+  // }
+
+  // exec.checkedForReadability (fd);
+
+  // stack_frame_push_tv (exec.stack (), typed_value_t (bool_type_t::instance (), pfd.revents & POLLIN));
+  unimplemented;
+}
+
 TimerfdCreate::TimerfdCreate (ast_t* dn, const type_t* fd_type)
   : BuiltinFunction ("timerfd_create",
                      dn,

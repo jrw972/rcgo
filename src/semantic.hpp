@@ -45,7 +45,7 @@ T* processAndLookup (ast_t * node, const std::string& identifier)
 Symbol * lookup_no_force (ast_t * node, const std::string& identifier);
 
 // Extract an array dimension or error.
-typed_value_t process_array_dimension (ast_t* ptr);
+typed_value_t process_array_dimension (ast_t*& ptr);
 
 // Check that port and reaction sigantures have appropriate foreign attributes.
 void check_port_reaction_signature (const signature_type_t* signature);
@@ -56,7 +56,12 @@ const type_t * process_type_spec (ast_t * node, bool force_identifiers, bool is_
 /* Process all declarations (non-code). */
 void process_declarations (ast_t * node);
 
-typed_value_t type_check_expr (ast_t* ptr);
+// Type check the expression and insert an implicit dereference.
+typed_value_t
+checkAndImplicitlyDereference (ast_t*& expr);
+
+typed_value_t
+type_check_expr (ast_t* ptr);
 
 void
 check_assignment (typed_value_t left_tv,

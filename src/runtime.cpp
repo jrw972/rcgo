@@ -921,6 +921,7 @@ namespace runtime
             }
             break;
           case typed_value_t::REFERENCE:
+            std::cout << *node;
             unimplemented;
           }
       }
@@ -985,6 +986,51 @@ namespace runtime
         };
         visitor v (exec, node);
         node.base ()->typed_value.type->accept (v);
+      }
+
+      void visit (const ast_slice_expr_t& node)
+      {
+        evaluate_expr (exec, node.base ());
+        typed_value_t base_tv = node.base ()->typed_value;
+        stack_frame_pop_tv (exec.stack (), base_tv);
+
+        typed_value_t low_tv = node.low ()->typed_value;
+        if (!low_tv.value.present) {
+          evaluate_expr (exec, node.low ());
+          stack_frame_pop_tv (exec.stack (), low_tv);
+        }
+        int_type_t::ValueType low = low_tv.integral_value ();
+
+        typed_value_t high_tv = node.high ()->typed_value;
+        if (!high_tv.value.present) {
+          evaluate_expr (exec, node.high ());
+          stack_frame_pop_tv (exec.stack (), high_tv);
+        }
+        int_type_t::ValueType high = high_tv.integral_value ();
+
+        const array_type_t* array_type = type_cast<array_type_t> (base_tv.type);
+        if (array_type) {
+          if (low < 0 || low >= array_type->dimension) {
+            error_at_line (EXIT_FAILURE, 0, node.location.file, node.location.line, "E43: lower limit of slice is out of bounds");
+          }
+          if (high < low || high > array_type->dimension) {
+            error_at_line (EXIT_FAILURE, 0, node.location.file, node.location.line, "E44: upper limit of slice is out of bounds");
+          }
+
+          slice_type_t::ValueType slice;
+          slice.ptr = NULL;
+          slice.length = high - low;
+          slice.capacity = high - low;
+          if (slice.length != 0) {
+            slice.ptr = static_cast<char*> (base_tv.value.reference_value ()) + low * array_type->element_size ();
+          }
+
+          const type_t* base_type = array_type->base_type ();
+
+          stack_frame_push_tv (exec.stack (), typed_value_t (base_type->getSliceType (), slice));
+        } else {
+          unimplemented;
+        }
       }
 
       void visit (const ast_merge_expr_t& node)
@@ -1451,7 +1497,7 @@ namespace runtime
 
       void visit (const ast_for_iota_statement_t& node)
       {
-        for (int_type_t::ValueType idx = 0, limit = node.limit.value.integral_value (node.limit.type);
+        for (int_type_t::ValueType idx = 0, limit = node.limit.integral_value ();
              idx != limit;
              ++idx)
           {

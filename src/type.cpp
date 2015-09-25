@@ -4,6 +4,12 @@
 #include "field.hpp"
 #include "Callable.hpp"
 
+const slice_type_t*
+type_t::getSliceType () const
+{
+  return new slice_type_t (this);
+}
+
 reaction_t *
 named_type_t::get_reaction (const std::string& identifier) const
 {
@@ -357,6 +363,7 @@ ACCEPT(float64_type_t)
 ACCEPT(void_type_t)
 ACCEPT(nil_type_t)
 ACCEPT(array_type_t)
+ACCEPT(slice_type_t)
 
 static bool
 structurally_equal (const type_t* x, const type_t* y)
@@ -455,6 +462,16 @@ structurally_equal (const type_t* x, const type_t* y)
     {
       const array_type_t* x = &type;
       const array_type_t* y = type_cast<array_type_t> (other);
+      if (y)
+        {
+          flag = x->dimension == y->dimension && type_is_equal (x->base_type (), y->base_type ());
+        }
+    }
+
+    void visit (const slice_type_t& type)
+    {
+      const slice_type_t* x = &type;
+      const slice_type_t* y = type_cast<slice_type_t> (other);
       if (y)
         {
           flag = type_is_equal (x->base_type (), y->base_type ());
@@ -682,6 +699,11 @@ type_contains_pointer (const type_t* type)
     void visit (const array_type_t& type)
     {
       type.base_type ()->accept (*this);
+    }
+
+    void visit (const slice_type_t& type)
+    {
+      flag = true;
     }
 
     void visit (const pointer_type_t& type)

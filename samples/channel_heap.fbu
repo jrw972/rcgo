@@ -20,7 +20,7 @@ func (this @Queue) Push (v @heap uint)
   var e @Element;
   e = new Element;
   e.value = v;
-  @this.tail = e;
+  *this.tail = e;
   this.tail = &e.next;
 }
 
@@ -83,7 +83,7 @@ action (this @System const) (this.send_count != 100u)
   x = new heap uint;
   change (x, y @uint)
   {
-    @y = this.send_count;
+    *y = this.send_count;
   };
   trigger send (x)
   {
@@ -96,7 +96,7 @@ reaction (this @System const) receive (message @heap uint foreign)
 {
   var x @uint;
   x = merge (message);
-  println `Received `, @x;
+  println `Received `, *x;
 }
 
 bind (this @System) {

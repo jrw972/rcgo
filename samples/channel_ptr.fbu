@@ -20,7 +20,7 @@ func (this @Queue) Push (v uint)
   var e @Element;
   e = new Element;
   e.value = v;
-  @this.tail = e;
+  *this.tail = e;
   this.tail = &e.next;
 }
 
@@ -52,7 +52,7 @@ type Channel component
 reaction (this @Channel const) send (message @uint foreign)
 {
   var x uint;
-  x = @message;
+  x = *message;
   trigger
   {
     this.queue.Push (x);
@@ -81,7 +81,7 @@ action (this @System const) (this.send_count != 100u)
 {
   var x @uint;
   x = new uint;
-  @x = this.send_count;
+  *x = this.send_count;
 
   trigger send (x)
   {

@@ -178,7 +178,9 @@ private:
 struct HiddenSymbol : public Symbol {
   HiddenSymbol (const Symbol* s, ast_t* dn)
     : Symbol (s->identifier, dn)
-  { }
+  {
+    std::cout << this << " " << (void*)identifier.c_str () << " hiding " << s->identifier << '\n';
+  }
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
   virtual const char* kindString () const { return "Hidden"; }

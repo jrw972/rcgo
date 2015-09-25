@@ -136,6 +136,7 @@ struct ast_array_type_spec_t : public ast_t
   }
 
   ast_t* dimension () const { return children[DIMENSION]; }
+  ast_t*& dimension_ref () { return children[DIMENSION]; }
   ast_t* base_type () const { return children[BASE_TYPE]; }
 
   void accept (ast_visitor_t& visitor);
@@ -158,7 +159,7 @@ struct ast_unary_t : public ast_t
   }
 
   ast_t* child () const { return children[CHILD]; }
-  iterator child_iter () { return begin () + CHILD; }
+  ast_t*& child_ref () { return children[CHILD]; }
 };
 
 struct ast_component_type_spec_t : public ast_unary_t
@@ -368,6 +369,7 @@ struct ast_cast_expr_t : public ast_expr_t
 
   ast_t* type_spec () const { return children[TYPE_SPEC]; }
   ast_t* child () const { return children[CHILD]; }
+  ast_t*& child_ref () { return children[CHILD]; }
 
   virtual void accept (ast_visitor_t& visitor);
   virtual void accept (ast_const_visitor_t& visitor) const;
@@ -389,7 +391,7 @@ struct ast_unary_expr_t : public ast_expr_t
   }
 
   ast_t* child () const { return children[CHILD]; }
-  iterator child_iter () { return begin () + CHILD; }
+  ast_t*& child_ref () { return children[CHILD]; }
 };
 
 struct ast_binary_expr_t : public ast_expr_t
@@ -408,10 +410,10 @@ struct ast_binary_expr_t : public ast_expr_t
     children[RIGHT] = right;
   }
 
+  ast_t*& left_ref () { return children[LEFT]; }
   ast_t* left () const { return children[LEFT]; }
-  iterator left_iter () { return begin () + LEFT; }
+  ast_t*& right_ref () { return children[RIGHT]; }
   ast_t* right () const { return children[RIGHT]; }
-  iterator right_iter () { return begin () + RIGHT; }
 };
 
 struct ast_binary_arithmetic_expr_t : public ast_binary_expr_t
@@ -459,7 +461,7 @@ struct ast_call_expr_t : public ast_expr_t
   }
 
   ast_t* expr () const { return children[EXPR]; }
-  iterator expr_iter () { return begin () + EXPR; }
+  ast_t*& expr_ref () { return children[EXPR]; }
   ast_t* args () const { return children[ARGS]; }
   iterator args_iterator () { return begin () + ARGS; }
 
@@ -531,13 +533,43 @@ struct ast_index_expr_t : public ast_expr_t
   }
 
   ast_t* base () const { return children[BASE]; }
-  iterator base_iter () { return begin () + BASE; }
+  ast_t*& base_ref () { return children[BASE]; }
   ast_t* index () const { return children[INDEX]; }
-  iterator index_iter () { return begin () + INDEX; }
+  ast_t*& index_ref () { return children[INDEX]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const { unimplemented; }
+  void print (std::ostream& out) const { out << "index"; }
+};
+
+struct ast_slice_expr_t : public ast_expr_t
+{
+  enum
+    {
+      BASE,
+      LOW,
+      HIGH,
+      COUNT,
+    };
+
+  ast_slice_expr_t (unsigned int line, ast_t* base, ast_t* low, ast_t* high)
+    : ast_expr_t (line, COUNT)
+  {
+    children[BASE] = base;
+    children[LOW] = low;
+    children[HIGH] = high;
+  }
+
+  ast_t* base () const { return children[BASE]; }
+  ast_t*& base_ref () { return children[BASE]; }
+  ast_t* low () const { return children[LOW]; }
+  ast_t*& low_ref () { return children[LOW]; }
+  ast_t* high () const { return children[HIGH]; }
+  ast_t*& high_ref () { return children[HIGH]; }
+
+  void accept (ast_visitor_t& visitor);
+  void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const { out << "slice"; }
 };
 
 struct ast_logic_not_expr_t : public ast_unary_expr_t
@@ -633,7 +665,7 @@ struct ast_indexed_port_call_expr_t : public ast_expr_t
 
   ast_t* identifier () const { return children[IDENTIFIER]; }
   ast_t* index () const { return children[INDEX]; }
-  iterator index_iter () { return children.begin () + INDEX; }
+  ast_t*& index_ref () { return children[INDEX]; }
   ast_t* args () const { return children[ARGS]; }
 
   void accept (ast_visitor_t& visitor);
@@ -661,7 +693,7 @@ struct ast_select_expr_t : public ast_expr_t
   }
 
   ast_t* base () const { return children[BASE]; }
-  iterator base_iter () { return begin () + BASE; }
+  ast_t*& base_ref () { return children[BASE]; }
   ast_t* identifier () const { return children[IDENTIFIER]; }
 
   void accept (ast_visitor_t& visitor);
@@ -699,9 +731,9 @@ struct ast_binary_t : public ast_t
   }
 
   ast_t* left () const { return children[LEFT]; }
-  iterator left_iter () { return begin () + LEFT; }
+  ast_t*& left_ref () { return children[LEFT]; }
   ast_t* right () const { return children[RIGHT]; }
-  iterator right_iter () { return begin () + RIGHT; }
+  ast_t*& right_ref () { return children[RIGHT]; }
 };
 
 struct ast_empty_statement_t : public ast_t
@@ -762,7 +794,7 @@ struct ast_change_statement_t : public ast_t
   }
 
   ast_t* expr () const { return children[EXPR]; }
-  iterator expr_iter () { return begin () + EXPR; }
+  ast_t*& expr_ref () { return children[EXPR]; }
   ast_t* identifier () const { return children[IDENTIFIER]; }
   ast_t* type () const { return children[TYPE]; }
   ast_t* body () const { return children[BODY]; }
@@ -804,7 +836,7 @@ struct ast_if_statement_t : public ast_t
   }
 
   ast_t* condition () const { return children[CONDITION]; }
-  iterator condition_iter () { return begin () + CONDITION; }
+  ast_t*& condition_ref () { return children[CONDITION]; }
   ast_t* true_branch () const { return children[TRUE_BRANCH]; }
   ast_t* false_branch () const { return children[FALSE_BRANCH]; }
 
@@ -830,7 +862,7 @@ struct ast_while_statement_t : public ast_t
   }
 
   ast_t* condition () const { return children[CONDITION]; }
-  iterator condition_iter () { return begin () + CONDITION; }
+  ast_t*& condition_ref () { return children[CONDITION]; }
   ast_t* body () const { return children[BODY]; }
 
   void accept (ast_visitor_t& visitor);
@@ -1020,9 +1052,9 @@ struct ast_bind_push_port_param_statement_t : public ast_t
   ast_t* left () const { return children[LEFT]; }
   iterator left_iter () { return begin () + LEFT; }
   ast_t* right () const { return children[RIGHT]; }
-  iterator right_iter () { return begin () + RIGHT; }
+  ast_t*& right_ref () { return children[RIGHT]; }
   ast_t* param () const { return children[PARAM]; }
-  iterator param_iter () { return begin () + PARAM; }
+  ast_t*& param_ref () { return children[PARAM]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -1060,6 +1092,7 @@ struct ast_for_iota_statement_t : public ast_t
 
   ast_t* identifier () const { return children[IDENTIFIER]; }
   ast_t* limit_node () const { return children[LIMIT]; }
+  ast_t*& limit_node_ref () { return children[LIMIT]; }
   ast_t* body () const { return children[BODY]; }
 
   void accept (ast_visitor_t& visitor);
@@ -1094,7 +1127,7 @@ struct ast_action_t : public ast_t
   ast_t* this_identifier () const { return children[THIS_IDENTIFIER]; }
   ast_t* type_identifier () const { return children[TYPE_IDENTIFIER]; }
   ast_t* precondition () const { return children[PRECONDITION]; }
-  iterator precondition_iter () { return children.begin () + PRECONDITION; }
+  ast_t*& precondition_ref () { return children[PRECONDITION]; }
   ast_t* body () const { return children[BODY]; }
 
   void accept (ast_visitor_t& visitor);
@@ -1129,11 +1162,11 @@ struct ast_dimensioned_action_t : public ast_t
   }
 
   ast_t* dimension () const { return children[DIMENSION]; }
-  iterator dimension_iter () { return children.begin () + DIMENSION; }
+  ast_t*& dimension_ref () { return children[DIMENSION]; }
   ast_t* this_identifier () const { return children[THIS_IDENTIFIER]; }
   ast_t* type_identifier () const { return children[TYPE_IDENTIFIER]; }
   ast_t* precondition () const { return children[PRECONDITION]; }
-  iterator precondition_iter () { return children.begin () + PRECONDITION; }
+  ast_t*& precondition_ref () { return children[PRECONDITION]; }
   ast_t* body () const { return children[BODY]; }
 
   void accept (ast_visitor_t& visitor);
@@ -1262,6 +1295,7 @@ struct ast_const_t : public ast_t
   ast_t* identifier () const { return children[IDENTIFIER]; }
   ast_t* type_spec () const { return children[TYPE_SPEC]; }
   ast_t* expr () const { return children[EXPR]; }
+  ast_t*& expr_ref () { return children[EXPR]; }
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
@@ -1470,6 +1504,7 @@ struct ast_dimensioned_reaction_t : public ast_t
   }
 
   ast_t* dimension () const { return children[DIMENSION]; }
+  ast_t*& dimension_ref () { return children[DIMENSION]; }
   iterator dimension_iter () { return children.begin () + DIMENSION; }
   ast_t* this_identifier () const { return children[THIS_IDENTIFIER]; }
   ast_t* type_identifier () const { return children[TYPE_IDENTIFIER]; }
@@ -1550,6 +1585,7 @@ struct ast_visitor_t
   virtual void visit (ast_implicit_dereference_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_identifier_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_index_expr_t& ast) { default_action (ast); }
+  virtual void visit (ast_slice_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_indexed_port_call_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_list_expr_t& ast) { default_action (ast); }
   virtual void visit (ast_literal_expr_t& ast) { default_action (ast); }
@@ -1627,6 +1663,7 @@ struct ast_const_visitor_t
   virtual void visit (const ast_implicit_dereference_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_identifier_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_index_expr_t& ast) { default_action (ast); }
+  virtual void visit (const ast_slice_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_indexed_port_call_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_list_expr_t& ast) { default_action (ast); }
   virtual void visit (const ast_literal_expr_t& ast) { default_action (ast); }

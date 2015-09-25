@@ -122,9 +122,16 @@ typed_value_t::print (std::ostream& out) const
       break;
     }
 
-  value.print (out, type);
-  low_value.print (out, type);
-  high_value.print (out, type);
+  out << ' ';
+  if (kind == REFERENCE) {
+    if (value.present) {
+      out << value.reference_value ();
+    }
+  } else {
+    value.print (out, type);
+    low_value.print (out, type);
+    high_value.print (out, type);
+  }
 
   if (has_offset)
     {
@@ -199,7 +206,6 @@ typed_value_t
 typed_value_t::implicit_dereference (typed_value_t tv)
 {
   assert (tv.type != NULL);
-  assert (tv.kind == REFERENCE);
   tv.kind = VALUE;
   return tv;
 }
@@ -312,19 +318,19 @@ typed_value_t::index (const location_t& location, typed_value_t in, typed_value_
                          "cannot index array by value of type %s", index.type->to_string ().c_str ());
         }
 
-      if (index.value.present && index.value.integral_value (index.type) >= type.dimension)
+      if (index.value.present && index.integral_value () >= type.dimension)
         {
           error_at_line (-1, 0, location.file, location.line,
                          "index out of bounds");
         }
 
-      if (index.low_value.present && index.low_value.integral_value (index.type) < 0)
+      if (index.low_value.present && index.low_integral_value () < 0)
         {
           error_at_line (-1, 0, location.file, location.line,
                          "index out of bounds");
         }
 
-      if (index.high_value.present && index.high_value.integral_value (index.type) > type.dimension)
+      if (index.high_value.present && index.high_integral_value () > type.dimension)
         {
           error_at_line (-1, 0, location.file, location.line,
                          "index out of bounds");
@@ -334,6 +340,86 @@ typed_value_t::index (const location_t& location, typed_value_t in, typed_value_
     }
   };
   visitor v (location, index);
+  in.type->accept (v);
+
+  in.type = v.result_type;
+  return in;
+}
+
+typed_value_t
+typed_value_t::slice (const location_t& location,
+                      typed_value_t in,
+                      typed_value_t low,
+                      typed_value_t high)
+{
+  assert (in.type != NULL);
+  assert (in.kind == REFERENCE);
+  assert (low.type != NULL);
+  assert (low.kind == VALUE);
+  assert (high.type != NULL);
+  assert (high.kind == VALUE);
+
+  struct visitor : public const_type_visitor_t
+  {
+    const location_t& location;
+    const typed_value_t& low;
+    const typed_value_t& high;
+    const type_t* result_type;
+
+    visitor (const location_t& loc,
+             const typed_value_t& l,
+             const typed_value_t& h)
+      : location (loc)
+      , low (l)
+      , high (h)
+      , result_type (NULL)
+    { }
+
+    void
+    default_action (const type_t& type)
+    {
+      error_at_line (-1, 0, location.file, location.line,
+                     "E10: cannot slice expression of type %s", type.to_string ().c_str ());
+    }
+
+    void
+    visit (const array_type_t& type)
+    {
+      if (!type_is_integral (low.type)) {
+          error_at_line (-1, 0, location.file, location.line,
+                         "E38: lower bound of slice expression is not integral");
+      }
+
+      if (!type_is_integral (high.type)) {
+          error_at_line (-1, 0, location.file, location.line,
+                         "E39: upper bound of slice expression is not integral");
+      }
+
+      if (low.value.present &&
+          (low.integral_value () < 0 ||
+           low.integral_value () >= type.dimension)) {
+        error_at_line (-1, 0, location.file, location.line,
+                       "E40: lower bound of slice expression is out of bounds");
+      }
+
+      if (high.value.present &&
+          (high.integral_value () < 0 ||
+           high.integral_value () > type.dimension)) {
+        error_at_line (-1, 0, location.file, location.line,
+                       "E41: upper bound of slice expression is out of bounds");
+      }
+
+      if (low.value.present &&
+          high.value.present &&
+          low.integral_value () > high.integral_value ()) {
+        error_at_line (-1, 0, location.file, location.line,
+                       "E42: lower bound of slice expression exceeds upper bound");
+      }
+
+      result_type = type.base_type ()->getSliceType ();
+    }
+  };
+  visitor v (location, low, high);
   in.type->accept (v);
 
   in.type = v.result_type;
@@ -916,7 +1002,7 @@ struct LeftShift : public location_t, public shift_arithmetic
               const typed_value_t& left,
               const typed_value_t& right) const
   {
-    result.value.ref (type) = left.value.ref (type) << right.value.integral_value (right.type);
+    result.value.ref (type) = left.value.ref (type) << right.integral_value ();
   }
 
   void
@@ -925,7 +1011,7 @@ struct LeftShift : public location_t, public shift_arithmetic
               const typed_value_t& left,
               const typed_value_t& right) const
   {
-    result.value.ref (type) = left.value.ref (type) << right.value.integral_value (right.type);
+    result.value.ref (type) = left.value.ref (type) << right.integral_value ();
   }
 
   void
@@ -950,7 +1036,7 @@ struct RightShift : public location_t, public shift_arithmetic
               const typed_value_t& left,
               const typed_value_t& right) const
   {
-    result.value.ref (type) = left.value.ref (type) >> right.value.integral_value (right.type);
+    result.value.ref (type) = left.value.ref (type) >> right.integral_value ();
   }
 
   void

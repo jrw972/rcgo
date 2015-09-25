@@ -19,6 +19,14 @@ struct value_t {
   value_t (const std::string& s) : present (true), string_value_ (s) { }
   value_t (Callable* c) : present (true), callable_value_ (c) { }
   value_t (reaction_t* r) : present (true), reaction_value_ (r) { }
+  value_t (const slice_type_t* t, slice_type_t::ValueType v) : present (true), slice_value_ (v) { }
+
+  static value_t make_reference (pointer_type_t::ValueType v) {
+    value_t r;
+    r.present = true;
+    r.reference_value_ = v;
+    return r;
+  }
 
   bool present;
 
@@ -64,10 +72,14 @@ struct value_t {
   { assert (present); return string_value_; }
   const enum_type_t::ValueType& ref (const enum_type_t&) const
   { assert (present); return enum_value_; }
+  slice_type_t::ValueType& ref (const slice_type_t&)
+  { assert (present); return slice_value_; }
+  const slice_type_t::ValueType& ref (const slice_type_t&) const
+  { assert (present); return slice_value_; }
 
-  int_type_t::ValueType integral_value (const type_t* type) const;
   Callable* callable_value () const { return callable_value_; }
   reaction_t* reaction_value () const { return reaction_value_; }
+  pointer_type_t::ValueType reference_value () const { return reference_value_; }
 
   void print (std::ostream& out, const type_t* type) const;
 
@@ -86,6 +98,8 @@ private:
     Callable* callable_value_;
     reaction_t* reaction_value_;
     enum_type_t::ValueType enum_value_;
+    pointer_type_t::ValueType reference_value_;
+    slice_type_t::ValueType slice_value_;
   };
   string_type_t::ValueType string_value_;
 };

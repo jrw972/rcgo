@@ -6,28 +6,21 @@
 #include "parameter.hpp"
 
 typed_value_t
-process_array_dimension (ast_t* ptr)
+process_array_dimension (ast_t*& ptr)
 {
-  typed_value_t tv = type_check_expr (ptr);
-
-  if (!type_is_integral (tv.type))
-    {
-      error_at_line (-1, 0, ptr->location.file, ptr->location.line,
-                     "array dimension is not integral");
-    }
-
-  if (!tv.value.present)
-    {
-      error_at_line (-1, 0, ptr->location.file, ptr->location.line,
-                     "array dimension is not constant");
-    }
-
-  if (tv.value.integral_value (tv.type) < 0)
-    {
-      error_at_line (-1, 0, ptr->location.file, ptr->location.line,
-                     "array dimension is negative");
-    }
-
+  typed_value_t tv = checkAndImplicitlyDereference (ptr);
+  if (!type_is_integral (tv.type)) {
+    error_at_line (-1, 0, ptr->location.file, ptr->location.line,
+                   "array dimension is not integral");
+  }
+  if (!tv.value.present) {
+    error_at_line (-1, 0, ptr->location.file, ptr->location.line,
+                   "array dimension is not constant");
+  }
+  if (tv.integral_value () < 0) {
+    error_at_line (-1, 0, ptr->location.file, ptr->location.line,
+                   "array dimension is negative");
+  }
   return tv;
 }
 
@@ -73,9 +66,9 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
 
     void visit (ast_array_type_spec_t& node)
     {
-      typed_value_t dimension = process_array_dimension (node.dimension ());
+      typed_value_t dimension = process_array_dimension (node.dimension_ref ());
       const type_t* base_type = process_type_spec (node.base_type (), true);
-      type = new array_type_t (dimension.value.integral_value (dimension.type), base_type);
+      type = new array_type_t (dimension.integral_value (), base_type);
     }
 
     void visit (ast_component_type_spec_t& node)

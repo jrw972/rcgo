@@ -31,6 +31,13 @@ std::ostream& symtab_t::print (std::ostream& o) const
           not_reached;
         }
 
+        void visit (const BuiltinFunction& symbol) {
+          typed_value_t tv = symbol.value ();
+          if (tv.type != NULL) {
+            type_str = tv.type->to_string ();
+          }
+        }
+
         void visit (const Function& symbol) {
           typed_value_t tv = symbol.value ();
           if (tv.type != NULL) {

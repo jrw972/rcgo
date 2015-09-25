@@ -19,7 +19,7 @@ process_declarations (ast_t * node)
 
     void visit (ast_const_t& node)
     {
-      typed_value_t right_tv = type_check_expr (node.expr ());
+      typed_value_t right_tv = checkAndImplicitlyDereference (node.expr_ref ());
 
       if (!right_tv.value.present)
         {
@@ -58,7 +58,7 @@ process_declarations (ast_t * node)
                          "%s does not refer to a component",
                          type_identifier.c_str ());
         }
-      action_t *action = new action_t (type, &node, node.precondition (), node.body ());
+      action_t *action = new action_t (type, &node, node.body ());
       type->add_action (action);
       node.action = action;
       symtab_set_current_action (node.symtab, action);
@@ -67,7 +67,7 @@ process_declarations (ast_t * node)
 
     void visit (ast_dimensioned_action_t& node)
     {
-      typed_value_t dimension = process_array_dimension (node.dimension ());
+      typed_value_t dimension = process_array_dimension (node.dimension_ref ());
       ast_t *type_identifier_node = node.type_identifier ();
       const std::string& type_identifier = ast_get_identifier (type_identifier_node);
       TypeSymbol* symbol = processAndLookup<TypeSymbol> (type_identifier_node, type_identifier);
@@ -84,7 +84,7 @@ process_declarations (ast_t * node)
                          "%s does not refer to a component",
                          type_identifier.c_str ());
         }
-      action_t *action = new action_t (type, &node, node.precondition (), node.body (), dimension);
+      action_t *action = new action_t (type, &node, node.body (), dimension);
       type->add_action (action);
       node.action = action;
       symtab_set_current_action (node.symtab, action);
@@ -428,7 +428,7 @@ process_declarations (ast_t * node)
 
     void visit (ast_dimensioned_reaction_t& node)
     {
-      typed_value_t dimension = process_array_dimension (node.dimension ());
+      typed_value_t dimension = process_array_dimension (node.dimension_ref ());
       ast_t *type_node = node.type_identifier ();
       ast_t *signature_node = node.signature ();
       ast_t *identifier_node = node.identifier ();

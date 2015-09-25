@@ -9,6 +9,7 @@
 #include <sstream>
 
 class const_type_visitor_t;
+class slice_type_t;
 
 struct type_t
 {
@@ -24,6 +25,8 @@ struct type_t
   virtual size_t size () const = 0;
   // When give the choice between two types, use the one with lower level.
   virtual TypeLevel level () const = 0;
+
+  const slice_type_t* getSliceType () const;
 };
 
 inline std::ostream&
@@ -420,6 +423,32 @@ public:
   const int_type_t::ValueType dimension;
 };
 
+class slice_type_t : public type_t, public base_type_t
+{
+public:
+  struct ValueType {
+    void* ptr;
+    size_t length;
+    size_t capacity;
+  };
+
+  slice_type_t (const type_t* base_type)
+    : base_type_t (base_type)
+  { }
+
+  virtual void accept (const_type_visitor_t& visitor) const;
+
+  virtual std::string to_string () const
+  {
+    std::stringstream str;
+    str << "[]" << *base_type_;
+    return str.str ();
+  }
+  virtual size_t alignment () const { return sizeof (void*); }
+  virtual size_t size () const { return sizeof (ValueType); }
+  virtual TypeLevel level () const { return CONVENTIONAL; }
+};
+
 class signature_type_t : public type_t
 {
 public:
@@ -651,6 +680,7 @@ struct const_type_visitor_t
 {
   virtual ~const_type_visitor_t () { }
   virtual void visit (const array_type_t& type) { default_action (type); }
+  virtual void visit (const slice_type_t& type) { default_action (type); }
   virtual void visit (const bool_type_t& type) { default_action (type); }
   virtual void visit (const component_type_t& type) { default_action (type); }
   virtual void visit (const enum_type_t& type) { default_action (type); }
