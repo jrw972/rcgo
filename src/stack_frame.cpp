@@ -289,21 +289,11 @@ struct PopVisitor : public const_type_visitor_t {
     tv.value = value_t (&type, value);
   }
 
-  void visit (const int8_type_t& type) {
-    doit (type);
-  }
-
-  void visit (const uint_type_t& type) {
-    doit (type);
-  }
-
-  void visit (const uint64_type_t& type) {
-    doit (type);
-  }
-
-  void default_action (const type_t& type) {
-    type_not_reached (type);
-  }
+  void visit (const int8_type_t& type) { doit (type); }
+  void visit (const uint_type_t& type) { doit (type); }
+  void visit (const uint64_type_t& type) { doit (type); }
+  void visit (const slice_type_t& type) { doit (type); }
+  void default_action (const type_t& type) { type_not_reached (type); }
 };
 
 void stack_frame_pop_tv (stack_frame_t* stack_frame,

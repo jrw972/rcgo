@@ -32,7 +32,7 @@ struct typed_value_t
     - a region
     - an intrinsic mutability
     - a dereference mutability
-    - an actual value (possibly)
+    - the value of the data to which this reference refers (possibly)
 
     A value has:
     - a type
@@ -41,7 +41,7 @@ struct typed_value_t
     - an actual value (possibly)
 
     The four operations that contributed to the "const correctness" of
-    the language are implicit dereference, dereference (@), address of
+    the language are implicit dereference, dereference (*), address of
     (&), and assignment (=).
 
     Implicit Dereference
@@ -57,7 +57,7 @@ struct typed_value_t
     Dereference Mutability |         B |     B |
 
 
-    Dereference (@)
+    Dereference (*)
     ---------------
 
     This operation converts a value to a reference and must be applied
@@ -343,6 +343,11 @@ struct typed_value_t
   {
     location_t loc;
     return cast (loc, int_type_t::instance (), *this).high_value.ref (*int_type_t::instance ());
+  }
+
+  slice_type_t::ValueType slice_value () const
+  {
+    return value.slice_value ();
   }
 
   std::ostream& print (std::ostream& o) const;

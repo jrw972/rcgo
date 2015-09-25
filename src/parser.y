@@ -279,7 +279,7 @@ Operand
 | PrimaryExpression '[' Expression ']'
 { $$ = new ast_index_expr_t (@1, $1, $3); }
 | PrimaryExpression '[' Expression ':' Expression ']'
-{ unimplemented; }
+{ $$ = new ast_slice_expr_t (@1, $1, $3, $5); }
 /* | PrimaryExpression TypeAssertion { unimplemented; } */
 | PrimaryExpression '(' optional_expr_list ')'
 { $$ = new ast_call_expr_t (@1, $1, $3); }
@@ -292,7 +292,7 @@ Operand
 
 Operand: LITERAL { $$ = $1; }
 | identifier { $$ = new ast_identifier_expr_t (@1, $1); }
-| '(' Expression ')' { unimplemented; }
+| '(' Expression ')' { $$ = $2; }
 
 /* PrimaryExpression: lvalue { $$ = new ast_implicit_dereference_expr_t (@1, $1); } */
 /* | PrimaryExpression '(' optional_expr_list ')' { $$ = new ast_call_expr_t (@1, $1, $3); } */

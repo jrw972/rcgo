@@ -362,17 +362,19 @@ typed_value_t::slice (const location_t& location,
   struct visitor : public const_type_visitor_t
   {
     const location_t& location;
+    const typed_value_t& in;
     const typed_value_t& low;
     const typed_value_t& high;
-    const type_t* result_type;
+    typed_value_t result;
 
     visitor (const location_t& loc,
+             const typed_value_t& i,
              const typed_value_t& l,
              const typed_value_t& h)
       : location (loc)
+      , in (i)
       , low (l)
       , high (h)
-      , result_type (NULL)
     { }
 
     void
@@ -416,14 +418,16 @@ typed_value_t::slice (const location_t& location,
                        "E42: lower bound of slice expression exceeds upper bound");
       }
 
-      result_type = type.base_type ()->getSliceType ();
+      result = typed_value_t::make_value (type.base_type ()->getSliceType (),
+                                          in.region,
+                                          in.intrinsic_mutability,
+                                          in.dereference_mutability);
     }
   };
-  visitor v (location, low, high);
+  visitor v (location, in, low, high);
   in.type->accept (v);
 
-  in.type = v.result_type;
-  return in;
+  return v.result;
 }
 
 typed_value_t

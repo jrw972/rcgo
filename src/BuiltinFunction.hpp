@@ -11,7 +11,7 @@ struct BuiltinFunction : public Callable, public Symbol
 {
   BuiltinFunction (const std::string& id,
                    ast_t* dn,
-                   const type_t* type)
+                   const function_type_t* type)
     : Symbol (id, dn)
     , type_ (type)
     , value_ (typed_value_t::make_ref (typed_value_t (this)))
@@ -25,8 +25,8 @@ struct BuiltinFunction : public Callable, public Symbol
   virtual const type_t* type () const { return type_; }
   virtual typed_value_t value () const { return value_; }
 
-private:
-  const type_t* const type_;
+protected:
+  const function_type_t* const type_;
   typed_value_t const value_;
 };
 

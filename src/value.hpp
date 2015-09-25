@@ -80,6 +80,7 @@ struct value_t {
   Callable* callable_value () const { return callable_value_; }
   reaction_t* reaction_value () const { return reaction_value_; }
   pointer_type_t::ValueType reference_value () const { return reference_value_; }
+  slice_type_t::ValueType slice_value () const { return slice_value_; }
 
   void print (std::ostream& out, const type_t* type) const;
 

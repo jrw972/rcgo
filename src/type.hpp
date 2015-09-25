@@ -490,6 +490,7 @@ public:
   virtual TypeLevel level () const { return CONVENTIONAL; }
 
   const signature_type_t* signature () const { return signature_; }
+  const parameter_t* getParameter (const std::string& name) const { return signature_->find (name); }
   const parameter_t* return_parameter () const { return return_parameter_; }
   const type_t* return_type () const;
 
