@@ -1,0 +1,27 @@
+type Timer component {
+     fd FileDescriptor;
+};
+
+init (this @Timer) Init (interval uint64) {
+     this.fd = timerfd_create();
+     if (interval != 0u64) {
+          timerfd_settime(this.fd, interval);
+     }
+}
+
+action (this @Timer const) (readable(this.fd)) {
+     var buf [8u]uint8;
+     var r int;
+     r = read(this.fd, buf[0u:8u]);
+     println `Bang `, r;
+}
+
+type System component {
+     timer Timer;
+};
+
+init (this @System) Init () {
+     this.timer.Init(1u64);
+}
+
+instance s System Init;
