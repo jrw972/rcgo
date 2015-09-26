@@ -2,7 +2,7 @@
 #define stack_frame_hpp
 
 #include "types.hpp"
-#include "memory_model.hpp"
+#include "MemoryModel.hpp"
 #include <string.h>
 #include "debug.hpp"
 #include "typed_value.hpp"
@@ -44,7 +44,7 @@ inline void
 stack_frame_push (stack_frame_t* stack_frame,
                   T b)
 {
-  size_t s = util::AlignUp (sizeof (T), memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
   assert (stack_frame->top + s <= stack_frame->limit);
   memcpy (stack_frame->top, &b, sizeof (T));
   stack_frame->top += s;
@@ -55,7 +55,7 @@ inline void
 stack_frame_pop (stack_frame_t* stack_frame,
                  T& retval)
 {
-  size_t s = util::AlignUp (sizeof (T), memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
   assert (stack_frame->top - s >= stack_frame->data);
   stack_frame->top -= s;
   memcpy (&retval, stack_frame->top, sizeof (T));

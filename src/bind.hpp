@@ -1,7 +1,7 @@
 #ifndef bind_hpp
 #define bind_hpp
 
-#include "memory_model.hpp"
+#include "MemoryModel.hpp"
 
 class bind_t
 {
@@ -12,7 +12,7 @@ public:
 
   ast_t* node () const { return node_; }
 
-  memory_model_t memory_model;
+  MemoryModel memory_model;
 
 private:
   ast_t* node_;

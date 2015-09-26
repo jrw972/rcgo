@@ -2,7 +2,7 @@
 #include "debug.hpp"
 #include "util.hpp"
 #include <string.h>
-#include "memory_model.hpp"
+#include "MemoryModel.hpp"
 #include "type.hpp"
 
 stack_frame_t* stack_frame_make (size_t capacity)
@@ -18,7 +18,7 @@ stack_frame_t* stack_frame_make (size_t capacity)
 void stack_frame_push_pointer (stack_frame_t* stack_frame,
                                void* pointer)
 {
-  size_t s = util::AlignUp (sizeof (void*), memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (sizeof (void*), MemoryModel::StackAlignment);
   assert (stack_frame->top + s <= stack_frame->limit);
   memcpy (stack_frame->top, &pointer, sizeof (void*));
   stack_frame->top += s;
@@ -27,7 +27,7 @@ void stack_frame_push_pointer (stack_frame_t* stack_frame,
 void* stack_frame_pop_pointer (stack_frame_t* stack_frame)
 {
   void* retval;
-  size_t s = util::AlignUp (sizeof (void*), memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (sizeof (void*), MemoryModel::StackAlignment);
   assert (stack_frame->top - s >= stack_frame->data);
   stack_frame->top -= s;
   memcpy (&retval, stack_frame->top, sizeof (void*));
@@ -37,7 +37,7 @@ void* stack_frame_pop_pointer (stack_frame_t* stack_frame)
 void* stack_frame_read_pointer (stack_frame_t* stack_frame)
 {
   void* retval;
-  size_t s = util::AlignUp (sizeof (void*), memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (sizeof (void*), MemoryModel::StackAlignment);
   assert (stack_frame->top - s >= stack_frame->data);
   memcpy (&retval, stack_frame->top - s, sizeof (void*));
   return retval;
@@ -46,7 +46,7 @@ void* stack_frame_read_pointer (stack_frame_t* stack_frame)
 void stack_frame_push_string (stack_frame_t* stack_frame,
                               rtstring_t b)
 {
-  size_t s = util::AlignUp (sizeof (rtstring_t), memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (sizeof (rtstring_t), MemoryModel::StackAlignment);
   assert (stack_frame->top + s <= stack_frame->limit);
   memcpy (stack_frame->top, &b, sizeof (rtstring_t));
   stack_frame->top += s;
@@ -55,7 +55,7 @@ void stack_frame_push_string (stack_frame_t* stack_frame,
 rtstring_t stack_frame_pop_string (stack_frame_t* stack_frame)
 {
   rtstring_t retval;
-  size_t s = util::AlignUp (sizeof (rtstring_t), memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (sizeof (rtstring_t), MemoryModel::StackAlignment);
   assert (stack_frame->top - s >= stack_frame->data);
   stack_frame->top -= s;
   memcpy (&retval, stack_frame->top, sizeof (rtstring_t));
@@ -71,7 +71,7 @@ void stack_frame_push_address (stack_frame_t* stack_frame,
 void stack_frame_equal (stack_frame_t* stack_frame,
                         size_t size)
 {
-  size_t s = util::AlignUp (size, memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (size, MemoryModel::StackAlignment);
   assert (stack_frame->top - 2 * s >= stack_frame->data);
   stack_frame->top -= s;
   char* y = stack_frame->top;
@@ -83,7 +83,7 @@ void stack_frame_equal (stack_frame_t* stack_frame,
 void stack_frame_not_equal (stack_frame_t* stack_frame,
                             size_t size)
 {
-  size_t s = util::AlignUp (size, memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (size, MemoryModel::StackAlignment);
   assert (stack_frame->top - 2 * s >= stack_frame->data);
   stack_frame->top -= s;
   char* y = stack_frame->top;
@@ -96,7 +96,7 @@ void stack_frame_push (stack_frame_t* stack_frame,
                        ptrdiff_t offset,
                        size_t size)
 {
-  size_t s = util::AlignUp (size, memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (size, MemoryModel::StackAlignment);
   char* source = stack_frame->base_pointer + offset;
   assert (source >= stack_frame->data && source + size <= stack_frame->top);
   assert (stack_frame->top + s <= stack_frame->limit);
@@ -107,7 +107,7 @@ void stack_frame_push (stack_frame_t* stack_frame,
 void stack_frame_reserve (stack_frame_t* stack_frame,
                           size_t size)
 {
-  size_t s = util::AlignUp (size, memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (size, MemoryModel::StackAlignment);
   assert (stack_frame->top + s <= stack_frame->limit);
   memset (stack_frame->top, 0, size);
   stack_frame->top += s;
@@ -117,7 +117,7 @@ void stack_frame_load (stack_frame_t* stack_frame,
                        void* ptr,
                        size_t size)
 {
-  size_t s = util::AlignUp (size, memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (size, MemoryModel::StackAlignment);
   assert (stack_frame->top + s <= stack_frame->limit);
   memcpy (stack_frame->top, ptr, size);
   stack_frame->top += s;
@@ -127,7 +127,7 @@ void stack_frame_store_heap (stack_frame_t* stack_frame,
                              void* ptr,
                              size_t size)
 {
-  size_t s = util::AlignUp (size, memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (size, MemoryModel::StackAlignment);
   assert (stack_frame->top - s >= stack_frame->data);
   stack_frame->top -= s;
   memcpy (ptr, stack_frame->top, size);
@@ -137,7 +137,7 @@ void stack_frame_store_stack (stack_frame_t* stack_frame,
                               ptrdiff_t offset,
                               size_t size)
 {
-  size_t s = util::AlignUp (size, memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (size, MemoryModel::StackAlignment);
   char* ptr = stack_frame->base_pointer + offset;
   assert (ptr >= stack_frame->data && ptr + size <= stack_frame->top);
   assert (stack_frame->top - s >= stack_frame->data);
@@ -149,7 +149,7 @@ void stack_frame_clear_stack (stack_frame_t* stack_frame,
                               ptrdiff_t offset,
                               size_t size)
 {
-  size_t s = util::AlignUp (size, memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (size, MemoryModel::StackAlignment);
   char* ptr = stack_frame->base_pointer + offset;
   assert (ptr >= stack_frame->data && ptr + size <= stack_frame->top);
   memset (ptr, 0, s);
@@ -194,7 +194,7 @@ void stack_frame_set_top (stack_frame_t* stack_frame,
 
 void stack_frame_popn (stack_frame_t* stack_frame, size_t size)
 {
-  size_t s = util::AlignUp (size, memory_model_t::stack_alignment);
+  size_t s = util::AlignUp (size, MemoryModel::StackAlignment);
   assert (stack_frame->top - s >= stack_frame->data);
   stack_frame->top -= s;
 }
@@ -212,7 +212,7 @@ bool stack_frame_empty (const stack_frame_t* stack_frame)
 void stack_frame_dump (const stack_frame_t* stack_frame)
 {
   printf ("size = %td base_pointer = %p\n", stack_frame->top - stack_frame->data, stack_frame->base_pointer);
-  size_t increment = memory_model_t::stack_alignment;
+  size_t increment = MemoryModel::StackAlignment;
   const char* ptr;
   for (ptr = stack_frame->data; ptr != stack_frame->top; ptr += increment)
     {

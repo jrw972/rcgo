@@ -51,7 +51,7 @@ void Function::call (executor_base_t& exec, const ast_call_expr_t& node) const
   char* top_after = stack_frame_top (exec.stack ());
 
   // Do the call.
-  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.locals_size ());
+  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
   runtime::evaluate_statement (exec, this->node.body ());
   stack_frame_pop_base_pointer (exec.stack ());
 
@@ -80,7 +80,7 @@ void Method::call (executor_base_t& exec, const ast_call_expr_t& node) const
   char* top_after = stack_frame_top (exec.stack ());
 
   // Do the call.
-  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.locals_size ());
+  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
   runtime::evaluate_statement (exec, this->node->body ());
   stack_frame_pop_base_pointer (exec.stack ());
 
@@ -107,7 +107,7 @@ void Initializer::call (executor_base_t& exec, const ast_call_expr_t& node) cons
   char* top_after = stack_frame_top (exec.stack ());
 
   // Do the call.
-  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.locals_size ());
+  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
   component_t* old_this = exec.current_instance (thisPtr);
   runtime::evaluate_statement (exec, this->node->body ());
   exec.current_instance (old_this);
@@ -135,7 +135,7 @@ void Initializer::call (executor_base_t& exec, const ast_call_expr_t& node, comp
   char* top_after = stack_frame_top (exec.stack ());
 
   // Do the call.
-  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.locals_size ());
+  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
   component_t* old_this = exec.current_instance (thisPtr);
   runtime::evaluate_statement (exec, this->node->body ());
   exec.current_instance (old_this);
@@ -167,7 +167,7 @@ void Getter::call (executor_base_t& exec, const ast_call_expr_t& node) const
   char* top_after = stack_frame_top (exec.stack ());
 
   // Do the call.
-  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.locals_size ());
+  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
   component_t* old_this = exec.current_instance (thisPtr);
   runtime::evaluate_statement (exec, this->node->body ());
   exec.current_instance (old_this);
@@ -198,7 +198,7 @@ void Getter::call (executor_base_t& exec, const ast_call_expr_t& node, component
   char* top_after = stack_frame_top (exec.stack ());
 
   // Do the call.
-  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.locals_size ());
+  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
   component_t* old_this = exec.current_instance (thisPtr);
   runtime::evaluate_statement (exec, this->node->body ());
   exec.current_instance (old_this);

@@ -3,7 +3,7 @@
 
 #include "types.hpp"
 #include "type.hpp"
-#include "memory_model.hpp"
+#include "MemoryModel.hpp"
 #include "typed_value.hpp"
 
 class action_reaction_base_t
@@ -39,7 +39,7 @@ public:
   TriggersType::const_iterator begin () const { return triggers_.begin (); }
   TriggersType::const_iterator end () const { return triggers_.end (); }
 
-  memory_model_t memory_model;
+  MemoryModel memory_model;
 
   bool has_dimension () const { return has_dimension_; }
 

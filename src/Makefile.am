@@ -26,7 +26,7 @@ heap.hpp heap.cpp \
 instance.hpp \
 instance_table.hpp instance_table.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
-memory_model.hpp memory_model.cpp \
+MemoryModel.hpp MemoryModel.cpp \
 parameter.hpp \
 parser.hpp parser.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \

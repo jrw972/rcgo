@@ -13,7 +13,7 @@
 #include "debug.hpp"
 #include "instance.hpp"
 #include "runtime.hpp"
-#include "memory_model.hpp"
+#include "MemoryModel.hpp"
 #include "instance_scheduler.hpp"
 #include "partitioned_scheduler.hpp"
 
@@ -123,7 +123,7 @@ main (int argc, char **argv)
 
   // Calculate the offsets of all stack variables.
   // Do this before checking composition so the receiver of binds has an offset.
-  memory_model_t::stack_alignment = sizeof (void*);
+  MemoryModel::StackAlignment = sizeof (void*);
   allocate_stack_variables (root);
 
   /* Check composition. */

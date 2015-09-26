@@ -1839,7 +1839,7 @@ namespace runtime
     // Set the current instance.
     exec.current_instance (instance);
 
-    stack_frame_push_base_pointer (exec.stack (), reaction->memory_model.locals_size ());
+    stack_frame_push_base_pointer (exec.stack (), reaction->memory_model.LocalsSize ());
 
     evaluate_statement (exec, reaction->body);
   }
@@ -1855,7 +1855,7 @@ namespace runtime
     // Reset the mutable phase base pointer.
     exec.mutable_phase_base_pointer (0);
 
-    stack_frame_push_base_pointer (exec.stack (), action->memory_model.locals_size ());
+    stack_frame_push_base_pointer (exec.stack (), action->memory_model.LocalsSize ());
 
     evaluate_statement (exec, action->body);
 

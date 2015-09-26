@@ -28,7 +28,6 @@ class Method;
 typedef struct heap_t heap_t;
 typedef struct instance_t instance_t;
 typedef struct instance_table_t instance_table_t;
-typedef struct memory_model_t memory_model_t;
 typedef struct parameter_t parameter_t;
 class port_t;
 class reaction_t;

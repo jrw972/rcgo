@@ -3,7 +3,7 @@
 
 #include "types.hpp"
 #include "type.hpp"
-#include "memory_model.hpp"
+#include "MemoryModel.hpp"
 #include "Symbol.hpp"
 
 /*
@@ -37,7 +37,7 @@ struct Function : public Callable, public Symbol
   virtual const char* kindString () const { return "Function"; }
 
   ast_function_t& node;
-  memory_model_t memoryModel;
+  MemoryModel memoryModel;
 
   void set (const function_type_t* functionType,
             const Symbol* returnSymbol);
@@ -73,7 +73,7 @@ struct Method : public Callable
   const method_type_t * const methodType;
   const Symbol* const returnSymbol;
   size_t const returnSize;
-  memory_model_t memoryModel;
+  MemoryModel memoryModel;
 };
 
 struct Initializer : public Callable
@@ -93,7 +93,7 @@ struct Initializer : public Callable
   ast_initializer_t* const node;
   std::string const name;
   const initializer_type_t * const initializerType;
-  memory_model_t memoryModel;
+  MemoryModel memoryModel;
 };
 
 struct Getter : public Callable
@@ -118,7 +118,7 @@ struct Getter : public Callable
   const getter_type_t * const getterType;
   const Symbol* const returnSymbol;
   size_t const returnSize;
-  memory_model_t memoryModel;
+  MemoryModel memoryModel;
 };
 
 #endif /* Callable_hpp */

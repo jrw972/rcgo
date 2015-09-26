@@ -10,20 +10,20 @@
 #include "trigger.hpp"
 #include "field.hpp"
 #include "Symbol.hpp"
-#include "memory_model.hpp"
+#include "MemoryModel.hpp"
 #include "bind.hpp"
 #include "Callable.hpp"
 
 // TODO:  Replace interacting with type_t* with typed_value_t.
 
 static void
-allocate_symbol (memory_model_t& memory_model,
+allocate_symbol (MemoryModel& memory_model,
                  Symbol* symbol)
 {
   struct visitor : public SymbolVisitor {
-    memory_model_t& memory_model;
+    MemoryModel& memory_model;
 
-    visitor (memory_model_t& mm) : memory_model (mm) { }
+    visitor (MemoryModel& mm) : memory_model (mm) { }
 
     void defineAction (Symbol& symbol) {
       not_reached;
@@ -37,8 +37,8 @@ allocate_symbol (memory_model_t& memory_model,
         case ParameterSymbol::Return:
           {
             const type_t* type = symbol.value.type;
-            memory_model.arguments_push (type->size ());
-            static_cast<Symbol&> (symbol).offset (memory_model.arguments_offset ());
+            memory_model.ArgumentsPush (type->size ());
+            static_cast<Symbol&> (symbol).offset (memory_model.ArgumentsOffset ());
           }
           break;
         case ParameterSymbol::ReceiverDuplicate:
@@ -53,8 +53,8 @@ allocate_symbol (memory_model_t& memory_model,
 
     void visit (VariableSymbol& symbol) {
       const type_t* type = symbol.value.type;
-      static_cast<Symbol&>(symbol).offset (memory_model.locals_offset ());
-      memory_model.locals_push (type->size ());
+      static_cast<Symbol&>(symbol).offset (memory_model.LocalsOffset ());
+      memory_model.LocalsPush (type->size ());
     }
 
     void visit (HiddenSymbol& symbol) {
@@ -67,7 +67,7 @@ allocate_symbol (memory_model_t& memory_model,
 }
 
 static void
-allocate_symtab (ast_t* node, memory_model_t& memory_model)
+allocate_symtab (ast_t* node, MemoryModel& memory_model)
 {
   // Allocate the parameters.
   for (symtab_t::SymbolsType::const_iterator pos = node->symtab->begin (), limit = node->symtab->end ();
@@ -79,13 +79,13 @@ allocate_symtab (ast_t* node, memory_model_t& memory_model)
 }
 
 static void
-allocate_statement_stack_variables (ast_t* node, memory_model_t& memory_model)
+allocate_statement_stack_variables (ast_t* node, MemoryModel& memory_model)
 {
   struct visitor : public ast_visitor_t
   {
-    memory_model_t& memory_model;
+    MemoryModel& memory_model;
 
-    visitor (memory_model_t& m) : memory_model (m) { }
+    visitor (MemoryModel& m) : memory_model (m) { }
 
     void default_action (ast_t& node)
     {
@@ -102,12 +102,12 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t& memory_model)
 
     void visit (ast_for_iota_statement_t& node)
     {
-      ptrdiff_t offset_before = memory_model.locals_offset ();
+      ptrdiff_t offset_before = memory_model.LocalsOffset ();
       allocate_symtab (&node, memory_model);
-      ptrdiff_t offset_after = memory_model.locals_offset ();
+      ptrdiff_t offset_after = memory_model.LocalsOffset ();
       allocate_statement_stack_variables (node.body (), memory_model);
-      memory_model.locals_pop (offset_after - offset_before);
-      assert (memory_model.locals_offset () == offset_before);
+      memory_model.LocalsPop (offset_after - offset_before);
+      assert (memory_model.LocalsOffset () == offset_before);
     }
 
     void visit (ast_bind_push_port_statement_t& node)
@@ -132,12 +132,12 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t& memory_model)
 
     void visit (ast_change_statement_t& node)
     {
-      ptrdiff_t offset_before = memory_model.locals_offset ();
+      ptrdiff_t offset_before = memory_model.LocalsOffset ();
       allocate_symtab (&node, memory_model);
-      ptrdiff_t offset_after = memory_model.locals_offset ();
+      ptrdiff_t offset_after = memory_model.LocalsOffset ();
       allocate_statement_stack_variables (node.body (), memory_model);
-      memory_model.locals_pop (offset_after - offset_before);
-      assert (memory_model.locals_offset () == offset_before);
+      memory_model.LocalsPop (offset_after - offset_before);
+      assert (memory_model.LocalsOffset () == offset_before);
     }
 
     void visit (ast_expression_statement_t& node)
@@ -168,17 +168,17 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t& memory_model)
 
     void visit (ast_list_statement_t& node)
     {
-      ptrdiff_t offset_before = memory_model.locals_offset ();
+      ptrdiff_t offset_before = memory_model.LocalsOffset ();
       allocate_symtab (&node, memory_model);
-      ptrdiff_t offset_after = memory_model.locals_offset ();
+      ptrdiff_t offset_after = memory_model.LocalsOffset ();
       for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
            pos != limit;
            ++pos)
         {
           allocate_statement_stack_variables (*pos, memory_model);
         }
-      memory_model.locals_pop (offset_after - offset_before);
-      assert (memory_model.locals_offset () == offset_before);
+      memory_model.LocalsPop (offset_after - offset_before);
+      assert (memory_model.LocalsOffset () == offset_before);
     }
 
     void visit (ast_return_statement_t& node)
@@ -193,12 +193,12 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t& memory_model)
 
     void visit (ast_trigger_statement_t& node)
     {
-      ptrdiff_t offset_before = memory_model.locals_offset ();
+      ptrdiff_t offset_before = memory_model.LocalsOffset ();
       allocate_symtab (&node, memory_model);
-      ptrdiff_t offset_after = memory_model.locals_offset ();
+      ptrdiff_t offset_after = memory_model.LocalsOffset ();
       allocate_statement_stack_variables (node.body (), memory_model);
-      memory_model.locals_pop (offset_after - offset_before);
-      assert (memory_model.locals_offset () == offset_before);
+      memory_model.LocalsPop (offset_after - offset_before);
+      assert (memory_model.LocalsOffset () == offset_before);
      }
 
     void visit (ast_var_statement_t& node)
@@ -221,7 +221,7 @@ allocate_statement_stack_variables (ast_t* node, memory_model_t& memory_model)
 }
 
 static void
-allocate_parameter (memory_model_t& memory_model,
+allocate_parameter (MemoryModel& memory_model,
                     symtab_t::SymbolsType::const_iterator pos,
                     symtab_t::SymbolsType::const_iterator limit)
 {
@@ -288,18 +288,18 @@ allocate_stack_variables (ast_t* node)
     }
 
     // Return the size of the locals.
-    memory_model_t
+    MemoryModel
     allocate_stack_variables_helper (ast_t* node,
                                      ast_t* child)
     {
-      memory_model_t memory_model;
+      MemoryModel memory_model;
       // Allocate the parameters.
       symtab_t::SymbolsType::const_iterator pos = node->symtab->begin ();
       symtab_t::SymbolsType::const_iterator limit = node->symtab->end ();
       allocate_parameter (memory_model, pos, limit);
       // Allocate the locals.
       allocate_statement_stack_variables (child, memory_model);
-      assert (memory_model.locals_empty ());
+      assert (memory_model.LocalsEmpty ());
       return memory_model;
     }
 
