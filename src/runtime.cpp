@@ -947,7 +947,7 @@ namespace runtime
         stack_frame_pop (exec.stack (), idx);
         if (idx < 0 || idx >= node.array_type->dimension)
           {
-            error_at_line (-1, 0, node.location.file, node.location.line,
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                            "array index is out of bounds");
           }
 
@@ -977,7 +977,7 @@ namespace runtime
             stack_frame_pop (exec.stack (), idx);
             if (idx < 0 || idx >= type.dimension)
               {
-                error_at_line (-1, 0, node.location.file, node.location.line,
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                                "array index is out of bounds");
               }
             stack_frame_push_pointer (exec.stack (),
@@ -1011,10 +1011,10 @@ namespace runtime
         const array_type_t* array_type = type_cast<array_type_t> (base_tv.type);
         if (array_type) {
           if (low < 0 || low >= array_type->dimension) {
-            error_at_line (EXIT_FAILURE, 0, node.location.file, node.location.line, "E43: lower limit of slice is out of bounds");
+            error_at_line (EXIT_FAILURE, 0, node.location.File.c_str (), node.location.Line, "E43: lower limit of slice is out of bounds");
           }
           if (high < low || high > array_type->dimension) {
-            error_at_line (EXIT_FAILURE, 0, node.location.file, node.location.line, "E44: upper limit of slice is out of bounds");
+            error_at_line (EXIT_FAILURE, 0, node.location.File.c_str (), node.location.Line, "E44: upper limit of slice is out of bounds");
           }
 
           slice_type_t::ValueType slice;

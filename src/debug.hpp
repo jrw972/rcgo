@@ -12,6 +12,4 @@
 
 #define not_reached bug("code designated unreachable has been reached")
 
-extern const char *in_file;
-
 #endif /* debug_hp */

@@ -265,6 +265,6 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 [ \t]+                 /* Discard whitespace */
 [\n]                   { ++yylloc; }
 . {
-error_at_line (-1, 0, in_file, yylloc,
+error_at_line (-1, 0, Location::StaticFile.c_str (), yylloc,
                    "unrecognized character: %s", yytext);
 }

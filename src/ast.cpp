@@ -31,7 +31,7 @@ operator<< (std::ostream& out, const ast_t& node)
         {
           out << ' ';
         }
-      out << node.location.line << ' ';
+      out << node.location.Line << ' ';
     }
 
     void print_children (const ast_t& node)

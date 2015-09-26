@@ -305,14 +305,14 @@ struct typed_value_t
   static typed_value_t dereference (typed_value_t tv);
   static typed_value_t address_of (typed_value_t tv);
   static typed_value_t select (typed_value_t tv, const std::string& identifier);
-  static typed_value_t index (const location_t& location, typed_value_t tv, typed_value_t index);
-  static typed_value_t slice (const location_t& location, typed_value_t tv, typed_value_t low, typed_value_t high);
+  static typed_value_t index (const Location& location, typed_value_t tv, typed_value_t index);
+  static typed_value_t slice (const Location& location, typed_value_t tv, typed_value_t low, typed_value_t high);
 
   static typed_value_t logic_not (typed_value_t tv);
   static typed_value_t merge (typed_value_t tv);
   static typed_value_t move (typed_value_t tv);
-  static typed_value_t binary (const location_t& location, BinaryArithmetic arithmetic, typed_value_t left, typed_value_t right);
-  static typed_value_t cast (const location_t& location, const type_t* type, const typed_value_t tv);
+  static typed_value_t binary (const Location& location, BinaryArithmetic arithmetic, typed_value_t left, typed_value_t right);
+  static typed_value_t cast (const Location& location, const type_t* type, const typed_value_t tv);
   static typed_value_t cast_exec (const type_t* type, const typed_value_t tv);
 
   bool isError() const { return type == NULL; }
@@ -329,19 +329,19 @@ struct typed_value_t
 
   int_type_t::ValueType integral_value () const
   {
-    location_t loc;
+    Location loc;
     return cast (loc, int_type_t::instance (), *this).value.ref (*int_type_t::instance ());
   }
 
   int_type_t::ValueType low_integral_value () const
   {
-    location_t loc;
+    Location loc;
     return cast (loc, int_type_t::instance (), *this).low_value.ref (*int_type_t::instance ());
   }
 
   int_type_t::ValueType high_integral_value () const
   {
-    location_t loc;
+    Location loc;
     return cast (loc, int_type_t::instance (), *this).high_value.ref (*int_type_t::instance ());
   }
 

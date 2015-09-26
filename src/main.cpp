@@ -98,13 +98,13 @@ main (int argc, char **argv)
       error (EXIT_FAILURE, 0, "Illegal thread count: %d", thread_count);
     }
 
-  in_file = argv[optind];
+  Location::StaticFile = argv[optind];
 
   // Open the input file.
-  yyin = fopen (in_file, "r");
+  yyin = fopen (Location::StaticFile.c_str (), "r");
   if (yyin == NULL)
     {
-      error (EXIT_FAILURE, errno, "Could not open '%s'", in_file);
+       error (EXIT_FAILURE, errno, "Could not open '%s'", Location::StaticFile.c_str ());
     }
 
   yylloc = 1;

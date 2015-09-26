@@ -22,7 +22,7 @@ enter_symbol (symtab_t* symtab, Symbol * symbol, symbol_holder& holder)
   else
     {
       const ast_t* node = symbol->definingNode;
-      error_at_line (-1, 0, node->location.file, node->location.line,
+      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
 		     "%s is already defined in this scope", identifier.c_str ());
     }
   return symbol;
@@ -43,7 +43,7 @@ check_assignment (typed_value_t left_tv,
 
   if (left_tv.intrinsic_mutability != MUTABLE)
     {
-      error_at_line (-1, 0, node.location.file, node.location.line,
+       error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                      "E9: target of assignment is not mutable");
     }
 
@@ -52,7 +52,7 @@ check_assignment (typed_value_t left_tv,
         (type_cast<pointer_type_t> (type_strip(left_tv.type)) && right_tv.type == nil_type_t::instance())
         ))
     {
-      error_at_line (-1, 0, node.location.file, node.location.line,
+       error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                      conversion_message, left_tv.type->to_string ().c_str (), right_tv.type->to_string ().c_str ());
     }
 
@@ -61,14 +61,14 @@ check_assignment (typed_value_t left_tv,
       if (left_tv.dereference_mutability < right_tv.intrinsic_mutability ||
           left_tv.dereference_mutability < right_tv.dereference_mutability)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "%s", leak_message);
         }
 
       if (right_tv.intrinsic_mutability == FOREIGN &&
           left_tv.region != typed_value_t::STACK)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "%s", store_foreign_message);
         }
     }
@@ -86,7 +86,7 @@ in_mutable_section (const ast_t* node)
 static typed_value_t
 insertImplicitDereference (ast_t*& expr, typed_value_t tv)
 {
-  expr = new ast_implicit_dereference_expr_t (expr->location.line, expr);
+  expr = new ast_implicit_dereference_expr_t (expr->location.Line, expr);
   tv = typed_value_t::implicit_dereference (tv);
   expr->typed_value = tv;
   return tv;
@@ -106,7 +106,7 @@ checkAndImplicitlyDereference (ast_t*& expr)
 static typed_value_t
 insertExplicitDerefence (ast_t*& expr, typed_value_t tv)
 {
-  expr = new ast_dereference_expr_t (expr->location.line, expr);
+  expr = new ast_dereference_expr_t (expr->location.Line, expr);
   tv = typed_value_t::dereference (tv);
   expr->typed_value = tv;
   return tv;
@@ -117,7 +117,7 @@ checkExpectReference (ast_t* expr)
 {
   typed_value_t tv = type_check_expr (expr);
   if (!tv.isReference ()) {
-    error_at_line (EXIT_FAILURE, 0, expr->location.file, expr->location.line, "E46: expected reference");
+    error_at_line (EXIT_FAILURE, 0, expr->location.File.c_str (), expr->location.Line, "E46: expected reference");
   }
   return tv;
 }
@@ -151,14 +151,14 @@ type_check_expr (ast_t* ptr)
 
       if (type == NULL)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "no port named %s", port_identifier.c_str ());
         }
 
       const array_type_t* array_type = type_cast<array_type_t> (type);
       if (!array_type)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "%s is not an array of ports", port_identifier.c_str ());
         }
 
@@ -166,7 +166,7 @@ type_check_expr (ast_t* ptr)
 
       if (!push_port_type)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "%s is not an array of ports", port_identifier.c_str ());
         }
 
@@ -192,7 +192,7 @@ type_check_expr (ast_t* ptr)
       typed_value_t out = typed_value_t::merge (in);
       if (out.type == NULL)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "cannot merge expression of type %s", in.type->to_string ().c_str ());
         }
       node.typed_value = out;
@@ -204,7 +204,7 @@ type_check_expr (ast_t* ptr)
       typed_value_t out = typed_value_t::move (in);
       if (out.type == NULL)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "cannot move expression of type %s", in.type->to_string ().c_str ());
         }
       node.typed_value = out;
@@ -225,8 +225,8 @@ type_check_expr (ast_t* ptr)
       Symbol *symbol = node.symtab->find (identifier);
       if (symbol == NULL)
         {
-          error_at_line (-1, 0, identifier_node->location.file,
-                         identifier_node->location.line, "%s is not defined",
+          error_at_line (-1, 0, identifier_node->location.File.c_str (),
+                         identifier_node->location.Line, "%s is not defined",
                          identifier.c_str ());
         }
 
@@ -254,8 +254,8 @@ type_check_expr (ast_t* ptr)
         }
 
         void visit (const TypeSymbol& symbol) {
-          error_at_line (-1, 0, node.location.file,
-                         node.location.line, "%s is a type (and not an expression)",
+          error_at_line (-1, 0, node.location.File.c_str (),
+                         node.location.Line, "%s is a type (and not an expression)",
                          symbol.identifier.c_str ());
         }
 
@@ -269,8 +269,8 @@ type_check_expr (ast_t* ptr)
 
         void visit (const HiddenSymbol& symbol) {
           std::cout << symbol.identifier << '\n';
-          error_at_line (-1, 0, node.location.file,
-                         node.location.line, "E47: %s is not accessible in this scope",
+          error_at_line (-1, 0, node.location.File.c_str (),
+                         node.location.Line, "E47: %s is not accessible in this scope",
                          symbol.identifier.c_str ());
         }
       };
@@ -301,7 +301,7 @@ type_check_expr (ast_t* ptr)
       if (in.isReference ()) {
         typed_value_t out = typed_value_t::select (in, identifier);
         if (out.isError ()) {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "E23: cannot select %s from expression of type %s",
                          identifier.c_str (), in.type->to_string ().c_str ());
         }
@@ -316,7 +316,7 @@ type_check_expr (ast_t* ptr)
       typed_value_t in = checkAndImplicitlyDereference (node.child_ref ());
       typed_value_t out = typed_value_t::dereference (in);
       if (out.isError ()) {
-        error_at_line (-1, 0, node.location.file, node.location.line,
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "E1: incompatible types: (%s)@", in.type->to_string ().c_str ());
       }
       node.typed_value = out;
@@ -334,7 +334,7 @@ type_check_expr (ast_t* ptr)
       typed_value_t out = typed_value_t::address_of (in);
       if (out.isError ())
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "E2: incompatible types: (%s)&", in.type->to_string ().c_str ());
         }
       node.typed_value = out;
@@ -345,7 +345,7 @@ type_check_expr (ast_t* ptr)
       typed_value_t in = checkExpectReference (node.child ());
       typed_value_t out = typed_value_t::address_of (in);
       if (out.isError ()) {
-        error_at_line (-1, 0, node.location.file, node.location.line,
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "E45: incompatible types: &(%s)", in.type->to_string ().c_str ());
       }
       node.typed_value = out;
@@ -356,7 +356,7 @@ type_check_expr (ast_t* ptr)
       typed_value_t in = checkAndImplicitlyDereference (node.child_ref ());
       typed_value_t out = typed_value_t::logic_not (in);
       if (out.isError ()) {
-        error_at_line (-1, 0, node.location.file, node.location.line,
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "E3: incompatible types (%s) !", in.type->to_string ().c_str ());
       }
       node.typed_value = out;
@@ -368,7 +368,7 @@ type_check_expr (ast_t* ptr)
       typed_value_t right = checkAndImplicitlyDereference (node.right_ref ());
       typed_value_t result = typed_value_t::binary (node.location, node.arithmetic, left, right);
       if (result.isError ()) {
-        error_at_line (-1, 0, node.location.file, node.location.line,
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "E4: incompatible types (%s) %s (%s)", left.type->to_string ().c_str (), binary_arithmetic_symbol (node.arithmetic), right.type->to_string ().c_str ());
       }
       node.typed_value = result;
@@ -380,7 +380,7 @@ type_check_expr (ast_t* ptr)
       size_t parameter_count = signature->arity ();
       if (argument_count != parameter_count)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "method call expects %zd arguments but given %zd",
                          parameter_count, argument_count);
         }
@@ -423,7 +423,7 @@ type_check_expr (ast_t* ptr)
 
         void default_action (const type_t& type)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "cannot call %s", type.to_string ().c_str ());
         }
 
@@ -443,7 +443,7 @@ type_check_expr (ast_t* ptr)
               // Method expects a pointer.  Insert address of.
               // Strip off implicit deref and select.
               ast_t* receiver_select_expr = node.expr ()->children[0]->children[0];
-              ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.line, receiver_select_expr);
+              ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.Line, receiver_select_expr);
               rvalue_visitor.check_address_of (*e);
               node.expr ()->children[0]->children[0] = e;
             }
@@ -462,7 +462,7 @@ type_check_expr (ast_t* ptr)
           Initializer* initializer = get_current_initializer (&node);
 
           if (initializer == NULL) {
-            error_at_line (-1, 0, node.location.file, node.location.line,
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                            "E25: initializers may only be called from initializeers");
           }
 
@@ -473,7 +473,7 @@ type_check_expr (ast_t* ptr)
           // Method expects a pointer.  Insert address of.
           // Strip off implicit deref and select.
           ast_t* receiver_select_expr = node.expr ()->children[0]->children[0];
-          ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.line, receiver_select_expr);
+          ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.Line, receiver_select_expr);
           rvalue_visitor.check_address_of (*e);
           node.expr ()->children[0]->children[0] = e;
 
@@ -491,14 +491,14 @@ type_check_expr (ast_t* ptr)
           if (get_current_getter (&node) == NULL &&
               get_current_action (&node) == NULL)
             {
-              error_at_line (-1, 0, node.location.file, node.location.line,
+              error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                              "E26: getters may only be called from a getter, an action, or a reaction");
             }
 
           rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
           if (in_mutable_section (&node))
             {
-              error_at_line (-1, 0, node.location.file, node.location.line,
+              error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                              "cannot call getter in mutable section");
             }
         }
@@ -509,14 +509,14 @@ type_check_expr (ast_t* ptr)
           if (get_current_getter (&node) == NULL &&
               get_current_action (&node) == NULL)
             {
-              error_at_line (-1, 0, node.location.file, node.location.line,
+              error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                              "E26: pull ports may only be called from a getter, an action, or a reaction");
             }
 
           rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args ());
           if (in_mutable_section (&node))
             {
-              error_at_line (-1, 0, node.location.file, node.location.line,
+              error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                              "cannot call pull port in mutable section");
             }
         }
@@ -536,7 +536,7 @@ type_check_expr (ast_t* ptr)
       const push_port_type_t *push_port_type = type_cast<push_port_type_t> (type_select (this_type, port_identifier));
       if (push_port_type == NULL)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "no port named %s", port_identifier.c_str ());
         }
       check_rvalue_list (args);
@@ -554,7 +554,7 @@ type_check_expr (ast_t* ptr)
       typed_value_t idx_tv = checkAndImplicitlyDereference (node.index_ref ());
       typed_value_t result = typed_value_t::index (node.location, base_tv, idx_tv);
       if (result.isError ()) {
-        error_at_line (-1, 0, node.location.file, node.location.line,
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "E6: incompatible types (%s)[%s]",
                        base_tv.type->to_string ().c_str (),
                        idx_tv.type->to_string ().c_str ());
@@ -569,7 +569,7 @@ type_check_expr (ast_t* ptr)
       typed_value_t high_tv = checkAndImplicitlyDereference (node.high_ref ());
       typed_value_t result = typed_value_t::slice (node.location, base_tv, low_tv, high_tv);
       if (result.isError ()) {
-        error_at_line (-1, 0, node.location.file, node.location.line,
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "E37: incompatible types (%s)[%s : %s]",
                        base_tv.type->to_string ().c_str (),
                        low_tv.type->to_string ().c_str (),
@@ -642,8 +642,8 @@ check_condition (ast_t*& condition_node)
   typed_value_t tv = checkAndImplicitlyDereference (condition_node);
   if (!type_is_boolean (tv.type))
     {
-      error_at_line (-1, 0, condition_node->location.file,
-                     condition_node->location.line,
+      error_at_line (-1, 0, condition_node->location.File.c_str (),
+                     condition_node->location.Line,
                      "cannot convert (%s) to boolean expression in condition", tv.type->to_string ().c_str ());
     }
   return tv;
@@ -679,20 +679,20 @@ type_check_statement (ast_t * node)
 
       if (push_port_type == NULL)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "E28: source of bind is not a port");
         }
 
       const reaction_type_t *reaction_type = type_cast<reaction_type_t> (reaction_tv.type);
       if (reaction_type == NULL)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "target of bind is not a reaction");
         }
 
       if (!type_is_equal (push_port_type->signature (), reaction_type->signature ()))
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "cannot bind %s to %s", push_port_type->to_string ().c_str (), reaction_type->to_string ().c_str ());
         }
 
@@ -712,7 +712,7 @@ type_check_statement (ast_t * node)
       reaction_t* reaction = reaction_tv.value.reaction_value ();
       if (!reaction->has_dimension ())
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "parameter specified for non-parameterized reaction");
         }
       typed_value_t dimension = reaction->dimension ();
@@ -728,7 +728,7 @@ type_check_statement (ast_t * node)
 
       if (pull_port_type == NULL)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "target of bind is not a pull port");
         }
 
@@ -736,13 +736,13 @@ type_check_statement (ast_t * node)
 
       if (getter_type == NULL)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "E29: source of bind is not a getter");
         }
 
       if (!type_is_equal (pull_port_type->bind_type (), getter_type->bind_type ))
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "cannot bind %s to %s", pull_port_type->to_string ().c_str (), getter_type->to_string ().c_str ());
         }
     }
@@ -765,7 +765,7 @@ type_check_statement (ast_t * node)
       typed_value_t tv = checkExpectReference (left);
       if (tv.intrinsic_mutability != MUTABLE)
         {
-          error_at_line (-1, 0, left->location.file, left->location.line,
+          error_at_line (-1, 0, left->location.File.c_str (), left->location.Line,
                          "cannot assign to read-only location of type %s", tv.type->to_string ().c_str ());
         }
 
@@ -778,7 +778,7 @@ type_check_statement (ast_t * node)
       typed_value_t right_tv = checkAndImplicitlyDereference (node->right_ref ());
       if (!type_is_equal (left_tv.type, right_tv.type))
         {
-          error_at_line (-1, 0, node->location.file, node->location.line,
+          error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
                          "E7: incompatible types (%s) %s (%s)", left_tv.type->to_string ().c_str (), symbol, right_tv.type->to_string ().c_str ());
         }
 
@@ -801,7 +801,7 @@ type_check_statement (ast_t * node)
 
         void default_action (const type_t& type)
         {
-          error_at_line (-1, 0, node->location.file, node->location.line,
+          error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
                          "E8: incompatible types (%s) %s (%s)", type.to_string ().c_str (), symbol, type.to_string ().c_str ());
         }
       };
@@ -831,7 +831,7 @@ type_check_statement (ast_t * node)
       const type_t* root_type = type_change (tv.type);
       if (root_type == NULL)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "cannot change expression of type %s", tv.type->to_string ().c_str ());
         }
 
@@ -840,7 +840,7 @@ type_check_statement (ast_t * node)
 
       if (!type_is_equal (proposed_root_type, root_type))
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "cannot convert %s to %s in change", root_type->to_string ().c_str (), proposed_root_type->to_string ().c_str ());
         }
 
@@ -920,7 +920,7 @@ type_check_statement (ast_t * node)
 
         void default_action (const type_t& type)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "cannot increment location of type %s", type.to_string ().c_str ());
         }
 
@@ -995,7 +995,7 @@ type_check_statement (ast_t * node)
 
       if (identifier_list->size () != initializer_list->size ())
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "wrong number of initializers");
         }
 
@@ -1080,13 +1080,13 @@ control_check_statement (ast_t * node)
 
       if (action == NULL)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "trigger outside of action or reaction");
         }
 
       if (in_trigger_statement)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "triggers within triggers are not allowed");
         }
 
@@ -1386,7 +1386,7 @@ enter_signature (ast_t * node, const signature_type_t * type)
         }
       else
         {
-          error_at_line (-1, 0, parameter->defining_node->location.file, parameter->defining_node->location.line,
+          error_at_line (-1, 0, parameter->defining_node->location.File.c_str (), parameter->defining_node->location.Line,
         		 "%s is already defined in this scope",
         		 identifier.c_str ());
         }
@@ -1557,15 +1557,15 @@ process_definitions (ast_t * node)
       Initializer* initializer = type->get_initializer (ast_get_identifier (initializer_node));
       if (initializer == NULL)
         {
-          error_at_line (-1, 0, initializer_node->location.file,
-                         initializer_node->location.line,
+          error_at_line (-1, 0, initializer_node->location.File.c_str (),
+                         initializer_node->location.Line,
                          "E21: no initializer named %s",
                          ast_get_identifier (initializer_node).c_str ());
         }
       if (initializer->initializerType->signature->arity () != 0)
         {
-          error_at_line (-1, 0, initializer_node->location.file,
-                         initializer_node->location.line,
+          error_at_line (-1, 0, initializer_node->location.File.c_str (),
+                         initializer_node->location.Line,
                          "named method is not null-ary");
         }
       SymbolCast<InstanceSymbol> (symbol)->initializer = initializer;

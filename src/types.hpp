@@ -139,20 +139,21 @@ inline const char* binary_arithmetic_symbol (BinaryArithmetic ba)
   not_reached;
 }
 
-struct location_t
+struct Location
 {
-  const char * const file;
-  unsigned int const line;
+   static std::string StaticFile;
+   std::string const File;
+   unsigned int const Line;
 
-  location_t ()
-    : file(NULL)
-    , line(0)
-  { }
+   Location ()
+      : File (StaticFile)
+      , Line (0)
+   { }
 
-  location_t (const char* f, unsigned int l)
-    : file (f)
-    , line (l)
-  { }
+   Location (unsigned int aLine)
+      : File (StaticFile)
+      , Line (aLine)
+   { }
 };
 
 #endif /* types_hpp */

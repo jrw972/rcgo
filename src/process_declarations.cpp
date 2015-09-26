@@ -23,7 +23,7 @@ process_declarations (ast_t * node)
 
       if (!right_tv.value.present)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "expression is not constant");
         }
 
@@ -47,14 +47,14 @@ process_declarations (ast_t * node)
       TypeSymbol* symbol = processAndLookup<TypeSymbol> (type_identifier_node, type_identifier);
       if (symbol == NULL)
         {
-          error_at_line (-1, 0, type_identifier_node->location.file, type_identifier_node->location.line,
+           error_at_line (-1, 0, type_identifier_node->location.File.c_str (), type_identifier_node->location.Line,
                          "%s does not refer to a type",
                          type_identifier.c_str ());
         }
       named_type_t *type = symbol->type;
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
-          error_at_line (-1, 0, type_identifier_node->location.file, type_identifier_node->location.line,
+           error_at_line (-1, 0, type_identifier_node->location.File.c_str (), type_identifier_node->location.Line,
                          "%s does not refer to a component",
                          type_identifier.c_str ());
         }
@@ -73,14 +73,14 @@ process_declarations (ast_t * node)
       TypeSymbol* symbol = processAndLookup<TypeSymbol> (type_identifier_node, type_identifier);
       if (symbol == NULL)
         {
-          error_at_line (-1, 0, type_identifier_node->location.file, type_identifier_node->location.line,
+           error_at_line (-1, 0, type_identifier_node->location.File.c_str (), type_identifier_node->location.Line,
                          "%s does not refer to a type",
                          type_identifier.c_str ());
         }
       named_type_t *type = symbol->type;
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
-          error_at_line (-1, 0, type_identifier_node->location.file, type_identifier_node->location.line,
+          error_at_line (-1, 0, type_identifier_node->location.File.c_str (), type_identifier_node->location.Line,
                          "%s does not refer to a component",
                          type_identifier.c_str ());
         }
@@ -98,14 +98,14 @@ process_declarations (ast_t * node)
       TypeSymbol* symbol = processAndLookup<TypeSymbol> (type_node, type_identifier);
       if (symbol == NULL)
         {
-          error_at_line (-1, 0, type_node->location.file, type_node->location.line,
+          error_at_line (-1, 0, type_node->location.File.c_str (), type_node->location.Line,
                          "%s does not refer to a type",
                          type_identifier.c_str ());
         }
       named_type_t *type = symbol->type;
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
-          error_at_line (-1, 0, type_node->location.file, type_node->location.line,
+          error_at_line (-1, 0, type_node->location.File.c_str (), type_node->location.Line,
                          "%s does not refer to a component",
                          type_identifier.c_str ());
         }
@@ -160,7 +160,7 @@ process_declarations (ast_t * node)
       TypeSymbol* symbol = processAndLookup<TypeSymbol> (type_node, type_identifier);
       if (symbol == NULL)
         {
-          error_at_line (-1, 0, type_node->location.file, type_node->location.line,
+          error_at_line (-1, 0, type_node->location.File.c_str (), type_node->location.Line,
                          "%s does not refer to a type",
                          type_identifier.c_str ());
         }
@@ -168,8 +168,8 @@ process_declarations (ast_t * node)
       const type_t *t = type_select (type, identifier);
       if (t != NULL)
         {
-          error_at_line (-1, 0, identifier_node->location.file,
-                         identifier_node->location.line,
+          error_at_line (-1, 0, identifier_node->location.File.c_str (),
+                         identifier_node->location.Line,
                          "component already contains a member named %s",
                          identifier.c_str ());
         }
@@ -181,8 +181,8 @@ process_declarations (ast_t * node)
           type_dereference (this_type) == NULL)
         {
           // Components must have pointer receivers.
-          error_at_line (-1, 0, node.location.file,
-                         node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (),
+                         node.location.Line,
                          "component methods must have pointer receiver");
         }
 
@@ -233,7 +233,7 @@ process_declarations (ast_t * node)
       TypeSymbol* symbol = processAndLookup<TypeSymbol> (type_node, type_identifier);
       if (symbol == NULL)
         {
-          error_at_line (-1, 0, type_node->location.file, type_node->location.line,
+          error_at_line (-1, 0, type_node->location.File.c_str (), type_node->location.Line,
                          "%s does not refer to a type",
                          type_identifier.c_str ());
         }
@@ -241,16 +241,16 @@ process_declarations (ast_t * node)
 
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
-          error_at_line (-1, 0, node.location.file,
-                         node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (),
+                         node.location.Line,
                          "E22: initializers must belong to a component");
         }
 
       const type_t *t = type_select (type, identifier);
       if (t != NULL)
         {
-          error_at_line (-1, 0, identifier_node->location.file,
-                         identifier_node->location.line,
+          error_at_line (-1, 0, identifier_node->location.File.c_str (),
+                         identifier_node->location.Line,
                          "component already contains a member named %s",
                          identifier.c_str ());
         }
@@ -302,7 +302,7 @@ process_declarations (ast_t * node)
       TypeSymbol *symbol = processAndLookup<TypeSymbol> (type_node, type_identifier);
       if (symbol == NULL)
         {
-          error_at_line (-1, 0, type_node->location.file, type_node->location.line,
+          error_at_line (-1, 0, type_node->location.File.c_str (), type_node->location.Line,
                          "%s does not refer to a type",
                          type_identifier.c_str ());
         }
@@ -310,16 +310,16 @@ process_declarations (ast_t * node)
 
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
-          error_at_line (-1, 0, node.location.file,
-                         node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (),
+                         node.location.Line,
                          "E22: getters must belong to a component");
         }
 
       const type_t *t = type_select (type, identifier);
       if (t != NULL)
         {
-          error_at_line (-1, 0, identifier_node->location.file,
-                         identifier_node->location.line,
+          error_at_line (-1, 0, identifier_node->location.File.c_str (),
+                         identifier_node->location.Line,
                          "component already contains a member named %s",
                          identifier.c_str ());
         }
@@ -369,16 +369,16 @@ process_declarations (ast_t * node)
       TypeSymbol *symbol = processAndLookup<TypeSymbol> (type_identifier_node, ast_get_identifier (type_identifier_node));
       if (symbol == NULL)
         {
-          error_at_line (-1, 0, type_identifier_node->location.file,
-                         type_identifier_node->location.line,
+          error_at_line (-1, 0, type_identifier_node->location.File.c_str (),
+                         type_identifier_node->location.Line,
                          "%s does not refer to a type",
                          type_identifier.c_str ());
         }
       named_type_t *type = symbol->type;
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
-          error_at_line (-1, 0, type_identifier_node->location.file,
-                         type_identifier_node->location.line,
+          error_at_line (-1, 0, type_identifier_node->location.File.c_str (),
+                         type_identifier_node->location.Line,
                          "%s does not refer to a component",
                          type_identifier.c_str ());
         }
@@ -395,22 +395,22 @@ process_declarations (ast_t * node)
       TypeSymbol* symbol = processAndLookup<TypeSymbol> (type_node, type_identifier);
       if (symbol == NULL)
         {
-          error_at_line (-1, 0, type_node->location.file, type_node->location.line,
+          error_at_line (-1, 0, type_node->location.File.c_str (), type_node->location.Line,
                          "%s does not refer to a type",
                          type_identifier.c_str ());
         }
       named_type_t *type = SymbolCast<TypeSymbol> (symbol)->type;
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
-          error_at_line (-1, 0, type_node->location.file, type_node->location.line,
+          error_at_line (-1, 0, type_node->location.File.c_str (), type_node->location.Line,
                          "%s does not refer to a component",
                          type_identifier.c_str ());
         }
       const type_t *t = type_select (type, identifier);
       if (t != NULL)
         {
-          error_at_line (-1, 0, identifier_node->location.file,
-                         identifier_node->location.line,
+          error_at_line (-1, 0, identifier_node->location.File.c_str (),
+                         identifier_node->location.Line,
                          "component already contains a member named %s",
                          identifier.c_str ());
         }
@@ -437,22 +437,22 @@ process_declarations (ast_t * node)
       TypeSymbol* symbol = processAndLookup<TypeSymbol> (type_node, type_identifier);
       if (symbol == NULL)
         {
-          error_at_line (-1, 0, type_node->location.file, type_node->location.line,
+          error_at_line (-1, 0, type_node->location.File.c_str (), type_node->location.Line,
                          "%s does not refer to a type",
                          type_identifier.c_str ());
         }
       named_type_t *type = SymbolCast<TypeSymbol> (symbol)->type;
       if (type_cast<component_type_t> (type_strip (type)) == NULL)
         {
-          error_at_line (-1, 0, type_node->location.file, type_node->location.line,
+          error_at_line (-1, 0, type_node->location.File.c_str (), type_node->location.Line,
                          "%s does not refer to a component",
                          type_identifier.c_str ());
         }
       const type_t *t = type_select (type, identifier);
       if (t != NULL)
         {
-          error_at_line (-1, 0, identifier_node->location.file,
-                         identifier_node->location.line,
+          error_at_line (-1, 0, identifier_node->location.File.c_str (),
+                         identifier_node->location.Line,
                          "component already contains a member named %s",
                          identifier.c_str ());
         }
@@ -488,7 +488,7 @@ process_declarations (ast_t * node)
 
       if (symbol->inProgress)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "%s is defined recursively", identifier.c_str ());
         }
 
@@ -510,7 +510,7 @@ lookup_no_force (ast_t * node, const std::string& identifier)
   Symbol *symbol = node->symtab->find (identifier);
   if (symbol == NULL)
     {
-      error_at_line (-1, 0, node->location.file, node->location.line,
+      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
                      "%s was not declared in this scope", identifier.c_str ());
     }
   return symbol;

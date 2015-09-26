@@ -10,15 +10,15 @@ process_array_dimension (ast_t*& ptr)
 {
   typed_value_t tv = checkAndImplicitlyDereference (ptr);
   if (!type_is_integral (tv.type)) {
-    error_at_line (-1, 0, ptr->location.file, ptr->location.line,
+    error_at_line (-1, 0, ptr->location.File.c_str (), ptr->location.Line,
                    "array dimension is not integral");
   }
   if (!tv.value.present) {
-    error_at_line (-1, 0, ptr->location.file, ptr->location.line,
+    error_at_line (-1, 0, ptr->location.File.c_str (), ptr->location.Line,
                    "array dimension is not constant");
   }
   if (tv.integral_value () < 0) {
-    error_at_line (-1, 0, ptr->location.file, ptr->location.line,
+    error_at_line (-1, 0, ptr->location.File.c_str (), ptr->location.Line,
                    "array dimension is negative");
   }
   return tv;
@@ -34,7 +34,7 @@ check_port_reaction_signature (const signature_type_t* signature)
       const parameter_t* parameter = *pos;
       if (!parameter->value.is_foreign_safe ())
         {
-          error_at_line (-1, 0, parameter->defining_node->location.file, parameter->defining_node->location.line,
+          error_at_line (-1, 0, parameter->defining_node->location.File.c_str (), parameter->defining_node->location.Line,
                          "signature leaks pointers");
         }
     }
@@ -94,7 +94,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
           std::string id = ast_get_identifier (*pos);
           if (node.symtab->find_current (id) != NULL)
             {
-              error_at_line (-1, 0, (*pos)->location.file, (*pos)->location.line,
+              error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
                              "%s is already defined in this scope", id.c_str ());
             }
 
@@ -130,7 +130,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
                 }
               else
                 {
-                  error_at_line (-1, 0, id->location.file, id->location.line,
+                  error_at_line (-1, 0, id->location.File.c_str (), id->location.Line,
                                  "duplicate field name %s", identifier.c_str ());
                 }
             }
@@ -159,7 +159,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
 
       if (symbol == NULL)
         {
-          error_at_line (-1, 0, child->location.file, child->location.line,
+          error_at_line (-1, 0, child->location.File.c_str (), child->location.Line,
                          "%s does not refer to a type", identifier.c_str ());
         }
       type = SymbolCast<TypeSymbol> (symbol)->type;
@@ -190,7 +190,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
 
       if (!return_value.is_foreign_safe ())
         {
-          error_at_line (-1, 0, node.return_type ()->location.file, node.return_type ()->location.line,
+          error_at_line (-1, 0, node.return_type ()->location.File.c_str (), node.return_type ()->location.Line,
                          "return type leaks pointers");
         }
       type = new pull_port_type_t (signature, return_parameter);
@@ -224,7 +224,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
                 }
               else
                 {
-                  error_at_line (-1, 0, id->location.file, id->location.line,
+                  error_at_line (-1, 0, id->location.File.c_str (), id->location.Line,
                                  "duplicate parameter name %s",
                                  identifier.c_str ());
                 }

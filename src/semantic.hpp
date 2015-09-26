@@ -24,12 +24,12 @@ T* processAndLookup (ast_t * node, const std::string& identifier)
   Symbol *symbol = node->symtab->find (identifier);
   if (symbol == NULL)
     {
-      error_at_line (-1, 0, node->location.file, node->location.line,
+       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
                      "%s was not declared in this scope", identifier.c_str ());
     }
   if (symbol->inProgress)
     {
-      error_at_line (-1, 0, node->location.file, node->location.line,
+      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
                      "%s is defined recursively", identifier.c_str ());
     }
   if (!symbol->defined ())

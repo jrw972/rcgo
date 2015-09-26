@@ -145,7 +145,7 @@ enumerate_instances (ast_t * node, instance_table_t& instance_table)
       Symbol *symbol = node.symbol.symbol ();
       const named_type_t *type = SymbolCast<InstanceSymbol> (symbol)->type;
       Initializer* initializer = SymbolCast<InstanceSymbol> (symbol)->initializer;
-      instantiate_contained_instances (type, instance_table, NULL, initializer, address, node.location.line);
+      instantiate_contained_instances (type, instance_table, NULL, initializer, address, node.location.Line);
       address += type->size ();
     }
 

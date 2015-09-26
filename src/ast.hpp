@@ -35,7 +35,7 @@ struct ast_t {
   typedef ChildrenType::const_iterator const_iterator;
 
   ChildrenType children;
-  location_t const location;
+  Location const location;
   symtab_t *symtab;
   typed_value_t typed_value;
 
@@ -82,10 +82,10 @@ struct ast_t {
 
 protected:
   ast_t (unsigned int line_, size_t children_count)
-    : location (in_file, line_)
+    : location (line_)
     , symtab (NULL)
   {
-    assert (location.line != 0);
+    assert (location.Line != 0);
     children.resize (children_count);
   }
 };

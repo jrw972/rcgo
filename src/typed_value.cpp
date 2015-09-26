@@ -289,7 +289,7 @@ typed_value_t::select (typed_value_t in, const std::string& identifier)
 }
 
 typed_value_t
-typed_value_t::index (const location_t& location, typed_value_t in, typed_value_t index)
+typed_value_t::index (const Location& location, typed_value_t in, typed_value_t index)
 {
   assert (in.type != NULL);
   assert (in.kind == REFERENCE);
@@ -298,15 +298,15 @@ typed_value_t::index (const location_t& location, typed_value_t in, typed_value_
 
   struct visitor : public const_type_visitor_t
   {
-    const location_t& location;
+    const Location& location;
     const typed_value_t& index;
     const type_t* result_type;
 
-    visitor (const location_t& loc, const typed_value_t& i) : location (loc), index (i), result_type (NULL) { }
+    visitor (const Location& loc, const typed_value_t& i) : location (loc), index (i), result_type (NULL) { }
 
     void default_action (const type_t& type)
     {
-      error_at_line (-1, 0, location.file, location.line,
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "cannot index expression of type %s", type.to_string ().c_str ());
     }
 
@@ -314,25 +314,25 @@ typed_value_t::index (const location_t& location, typed_value_t in, typed_value_
     {
       if (!type_is_integral (index.type))
         {
-          error_at_line (-1, 0, location.file, location.line,
+          error_at_line (-1, 0, location.File.c_str (), location.Line,
                          "cannot index array by value of type %s", index.type->to_string ().c_str ());
         }
 
       if (index.value.present && index.integral_value () >= type.dimension)
         {
-          error_at_line (-1, 0, location.file, location.line,
+          error_at_line (-1, 0, location.File.c_str (), location.Line,
                          "index out of bounds");
         }
 
       if (index.low_value.present && index.low_integral_value () < 0)
         {
-          error_at_line (-1, 0, location.file, location.line,
+          error_at_line (-1, 0, location.File.c_str (), location.Line,
                          "index out of bounds");
         }
 
       if (index.high_value.present && index.high_integral_value () > type.dimension)
         {
-          error_at_line (-1, 0, location.file, location.line,
+          error_at_line (-1, 0, location.File.c_str (), location.Line,
                          "index out of bounds");
         }
 
@@ -347,7 +347,7 @@ typed_value_t::index (const location_t& location, typed_value_t in, typed_value_
 }
 
 typed_value_t
-typed_value_t::slice (const location_t& location,
+typed_value_t::slice (const Location& location,
                       typed_value_t in,
                       typed_value_t low,
                       typed_value_t high)
@@ -361,13 +361,13 @@ typed_value_t::slice (const location_t& location,
 
   struct visitor : public const_type_visitor_t
   {
-    const location_t& location;
+    const Location& location;
     const typed_value_t& in;
     const typed_value_t& low;
     const typed_value_t& high;
     typed_value_t result;
 
-    visitor (const location_t& loc,
+    visitor (const Location& loc,
              const typed_value_t& i,
              const typed_value_t& l,
              const typed_value_t& h)
@@ -380,7 +380,7 @@ typed_value_t::slice (const location_t& location,
     void
     default_action (const type_t& type)
     {
-      error_at_line (-1, 0, location.file, location.line,
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "E10: cannot slice expression of type %s", type.to_string ().c_str ());
     }
 
@@ -388,33 +388,33 @@ typed_value_t::slice (const location_t& location,
     visit (const array_type_t& type)
     {
       if (!type_is_integral (low.type)) {
-          error_at_line (-1, 0, location.file, location.line,
+          error_at_line (-1, 0, location.File.c_str (), location.Line,
                          "E38: lower bound of slice expression is not integral");
       }
 
       if (!type_is_integral (high.type)) {
-          error_at_line (-1, 0, location.file, location.line,
+          error_at_line (-1, 0, location.File.c_str (), location.Line,
                          "E39: upper bound of slice expression is not integral");
       }
 
       if (low.value.present &&
           (low.integral_value () < 0 ||
            low.integral_value () >= type.dimension)) {
-        error_at_line (-1, 0, location.file, location.line,
+        error_at_line (-1, 0, location.File.c_str (), location.Line,
                        "E40: lower bound of slice expression is out of bounds");
       }
 
       if (high.value.present &&
           (high.integral_value () < 0 ||
            high.integral_value () > type.dimension)) {
-        error_at_line (-1, 0, location.file, location.line,
+        error_at_line (-1, 0, location.File.c_str (), location.Line,
                        "E41: upper bound of slice expression is out of bounds");
       }
 
       if (low.value.present &&
           high.value.present &&
           low.integral_value () > high.integral_value ()) {
-        error_at_line (-1, 0, location.file, location.line,
+        error_at_line (-1, 0, location.File.c_str (), location.Line,
                        "E42: lower bound of slice expression exceeds upper bound");
       }
 
@@ -688,7 +688,7 @@ struct needs_both
 struct symmetric_arithmetic : public needs_both
 {
   const type_t*
-  check (const location_t& location,
+  check (const Location& location,
          const char* operator_str,
          const type_t* left,
          const type_t* right) const
@@ -696,7 +696,7 @@ struct symmetric_arithmetic : public needs_both
     if (!((type_is_integral (left) || type_is_floating (left)) &&
           type_is_equal (left, right)))
       {
-        error_at_line (-1, 0, location.file, location.line,
+        error_at_line (-1, 0, location.File.c_str (), location.Line,
                        "E12: incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
       }
 
@@ -715,7 +715,7 @@ struct symmetric_arithmetic : public needs_both
 struct symmetric_integer_arithmetic : public needs_both
 {
   const type_t*
-  check (const location_t& location,
+  check (const Location& location,
          const char* operator_str,
          const type_t* left,
          const type_t* right) const
@@ -723,7 +723,7 @@ struct symmetric_integer_arithmetic : public needs_both
     if (!(type_is_integral (left) &&
           type_is_equal (left, right)))
       {
-        error_at_line (-1, 0, location.file, location.line,
+        error_at_line (-1, 0, location.File.c_str (), location.Line,
                        "E13: incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
       }
 
@@ -742,7 +742,7 @@ struct symmetric_integer_arithmetic : public needs_both
 struct shift_arithmetic : public needs_both
 {
   const type_t*
-  check (const location_t& location,
+  check (const Location& location,
          const char* operator_str,
          const type_t* left,
          const type_t* right) const
@@ -750,7 +750,7 @@ struct shift_arithmetic : public needs_both
     if (!(type_is_integral (left) &&
           type_is_unsigned_integral (right)))
       {
-        error_at_line (-1, 0, location.file, location.line,
+        error_at_line (-1, 0, location.File.c_str (), location.Line,
                        "E14: incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
       }
 
@@ -769,7 +769,7 @@ struct shift_arithmetic : public needs_both
 struct comparable : public needs_both
 {
   const type_t*
-  check (const location_t& location,
+  check (const Location& location,
          const char* operator_str,
          const type_t* left,
          const type_t* right) const
@@ -778,7 +778,7 @@ struct comparable : public needs_both
           (type_is_equal (left, right) ||
            type_is_pointer_compare (left, right))))
       {
-        error_at_line (-1, 0, location.file, location.line,
+        error_at_line (-1, 0, location.File.c_str (), location.Line,
                        "E15: incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
       }
 
@@ -797,7 +797,7 @@ struct comparable : public needs_both
 struct orderable : public needs_both
 {
   const type_t*
-  check (const location_t& location,
+  check (const Location& location,
          const char* operator_str,
          const type_t* left,
          const type_t* right) const
@@ -805,7 +805,7 @@ struct orderable : public needs_both
     if (!(type_is_orderable (left) &&
           type_is_equal (left, right)))
       {
-        error_at_line (-1, 0, location.file, location.line,
+        error_at_line (-1, 0, location.File.c_str (), location.Line,
                        "E16: incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
       }
 
@@ -824,7 +824,7 @@ struct orderable : public needs_both
 struct symmetric_boolean
 {
   const type_t*
-  check (const location_t& location,
+  check (const Location& location,
          const char* operator_str,
          const type_t* left,
          const type_t* right) const
@@ -832,7 +832,7 @@ struct symmetric_boolean
     if (!(type_is_boolean (left) &&
           type_is_equal (left, right)))
       {
-        error_at_line (-1, 0, location.file, location.line,
+        error_at_line (-1, 0, location.File.c_str (), location.Line,
                        "E17: incompatible types (%s) %s (%s)", left->to_string().c_str (), operator_str, right->to_string().c_str ());
       }
 
@@ -848,10 +848,10 @@ struct symmetric_boolean
   }
 };
 
-struct Multiply : public location_t, public symmetric_arithmetic
+struct Multiply : public Location, public symmetric_arithmetic
 {
-  Multiply (const location_t& loc)
-    : location_t (loc)
+  Multiply (const Location& loc)
+    : Location (loc)
   { }
 
   void
@@ -873,10 +873,10 @@ struct Multiply : public location_t, public symmetric_arithmetic
   }
 };
 
-struct Divide : public location_t, public symmetric_arithmetic
+struct Divide : public Location, public symmetric_arithmetic
 {
-  Divide (const location_t& loc)
-    : location_t (loc)
+  Divide (const Location& loc)
+    : Location (loc)
   { }
 
   void
@@ -887,7 +887,7 @@ struct Divide : public location_t, public symmetric_arithmetic
   {
     if (right.value.ref (type) == 0)
       {
-        error_at_line (-1, 0, file, line,
+         error_at_line (-1, 0, File.c_str (), Line,
                        "division by zero");
       }
 
@@ -904,10 +904,10 @@ struct Divide : public location_t, public symmetric_arithmetic
   }
 };
 
-struct Modulus : public location_t, public symmetric_integer_arithmetic
+struct Modulus : public Location, public symmetric_integer_arithmetic
 {
-  Modulus (const location_t& l)
-    : location_t (l)
+  Modulus (const Location& l)
+    : Location (l)
   { }
 
   void
@@ -918,7 +918,7 @@ struct Modulus : public location_t, public symmetric_integer_arithmetic
   {
     if (right.value.ref (type) == 0)
       {
-        error_at_line (-1, 0, file, line,
+         error_at_line (-1, 0, File.c_str (), Line,
                        "division by zero");
       }
 
@@ -935,10 +935,10 @@ struct Modulus : public location_t, public symmetric_integer_arithmetic
   }
 };
 
-struct Add : public location_t, public symmetric_arithmetic
+struct Add : public Location, public symmetric_arithmetic
 {
-  Add (const location_t& loc)
-    : location_t (loc)
+  Add (const Location& loc)
+    : Location (loc)
   { }
 
   void
@@ -960,10 +960,10 @@ struct Add : public location_t, public symmetric_arithmetic
   }
 };
 
-struct Subtract : public location_t, public symmetric_arithmetic
+struct Subtract : public Location, public symmetric_arithmetic
 {
-  Subtract (const location_t& loc)
-    : location_t (loc)
+  Subtract (const Location& loc)
+    : Location (loc)
   { }
 
   void
@@ -994,10 +994,10 @@ struct Subtract : public location_t, public symmetric_arithmetic
   }
 };
 
-struct LeftShift : public location_t, public shift_arithmetic
+struct LeftShift : public Location, public shift_arithmetic
 {
-  LeftShift (const location_t& l)
-    : location_t (l)
+  LeftShift (const Location& l)
+    : Location (l)
   { }
 
   void
@@ -1028,10 +1028,10 @@ struct LeftShift : public location_t, public shift_arithmetic
   }
 };
 
-struct RightShift : public location_t, public shift_arithmetic
+struct RightShift : public Location, public shift_arithmetic
 {
-  RightShift (const location_t& l)
-    : location_t (l)
+  RightShift (const Location& l)
+    : Location (l)
   { }
 
   void
@@ -1053,10 +1053,10 @@ struct RightShift : public location_t, public shift_arithmetic
   }
 };
 
-struct BitAnd : public location_t, public symmetric_integer_arithmetic
+struct BitAnd : public Location, public symmetric_integer_arithmetic
 {
-  BitAnd (const location_t& l)
-    : location_t (l)
+  BitAnd (const Location& l)
+    : Location (l)
   { }
 
   void
@@ -1078,10 +1078,10 @@ struct BitAnd : public location_t, public symmetric_integer_arithmetic
   }
 };
 
-struct BitAndNot : public location_t, public symmetric_integer_arithmetic
+struct BitAndNot : public Location, public symmetric_integer_arithmetic
 {
-  BitAndNot (const location_t& l)
-    : location_t (l)
+  BitAndNot (const Location& l)
+    : Location (l)
   { }
 
   void
@@ -1103,10 +1103,10 @@ struct BitAndNot : public location_t, public symmetric_integer_arithmetic
   }
 };
 
-struct BitOr : public location_t, public symmetric_integer_arithmetic
+struct BitOr : public Location, public symmetric_integer_arithmetic
 {
-  BitOr (const location_t& l)
-    : location_t (l)
+  BitOr (const Location& l)
+    : Location (l)
   { }
 
   void
@@ -1128,10 +1128,10 @@ struct BitOr : public location_t, public symmetric_integer_arithmetic
   }
 };
 
-struct BitXor : public location_t, public symmetric_integer_arithmetic
+struct BitXor : public Location, public symmetric_integer_arithmetic
 {
-  BitXor (const location_t& l)
-    : location_t (l)
+  BitXor (const Location& l)
+    : Location (l)
   { }
 
 
@@ -1154,10 +1154,10 @@ struct BitXor : public location_t, public symmetric_integer_arithmetic
   }
 };
 
-struct Equal : public location_t, public comparable
+struct Equal : public Location, public comparable
 {
-  Equal (const location_t& l)
-    : location_t (l)
+  Equal (const Location& l)
+    : Location (l)
   { }
 
 
@@ -1180,10 +1180,10 @@ struct Equal : public location_t, public comparable
   }
 };
 
-struct NotEqual : public location_t, public comparable
+struct NotEqual : public Location, public comparable
 {
-  NotEqual (const location_t& l)
-    : location_t (l)
+  NotEqual (const Location& l)
+    : Location (l)
   { }
 
 
@@ -1206,10 +1206,10 @@ struct NotEqual : public location_t, public comparable
   }
 };
 
-struct LessThan : public location_t, public orderable
+struct LessThan : public Location, public orderable
 {
-  LessThan (const location_t& l)
-    : location_t (l)
+  LessThan (const Location& l)
+    : Location (l)
   { }
 
 
@@ -1232,10 +1232,10 @@ struct LessThan : public location_t, public orderable
   }
 };
 
-struct LessEqual : public location_t, public orderable
+struct LessEqual : public Location, public orderable
 {
-  LessEqual (const location_t& l)
-    : location_t (l)
+  LessEqual (const Location& l)
+    : Location (l)
   { }
 
 
@@ -1258,10 +1258,10 @@ struct LessEqual : public location_t, public orderable
   }
 };
 
-struct MoreThan : public location_t, public orderable
+struct MoreThan : public Location, public orderable
 {
-  MoreThan (const location_t& l)
-    : location_t (l)
+  MoreThan (const Location& l)
+    : Location (l)
   { }
 
 
@@ -1284,10 +1284,10 @@ struct MoreThan : public location_t, public orderable
   }
 };
 
-struct MoreEqual : public location_t, public orderable
+struct MoreEqual : public Location, public orderable
 {
-  MoreEqual (const location_t& l)
-    : location_t (l)
+  MoreEqual (const Location& l)
+    : Location (l)
   { }
 
 
@@ -1310,10 +1310,10 @@ struct MoreEqual : public location_t, public orderable
   }
 };
 
-struct LogicOr : public location_t, public symmetric_boolean
+struct LogicOr : public Location, public symmetric_boolean
 {
-  LogicOr (const location_t& l)
-    : location_t (l)
+  LogicOr (const Location& l)
+    : Location (l)
   { }
 
   bool
@@ -1342,10 +1342,10 @@ struct LogicOr : public location_t, public symmetric_boolean
   }
 };
 
-struct LogicAnd : public location_t, public symmetric_boolean
+struct LogicAnd : public Location, public symmetric_boolean
 {
-  LogicAnd (const location_t& l)
-    : location_t (l)
+  LogicAnd (const Location& l)
+    : Location (l)
   { }
 
   bool
@@ -1375,7 +1375,7 @@ struct LogicAnd : public location_t, public symmetric_boolean
 };
 
 typed_value_t
-typed_value_t::binary (const location_t& location,
+typed_value_t::binary (const Location& location,
                        BinaryArithmetic arithmetic,
                        typed_value_t left,
                        typed_value_t right)
@@ -1528,11 +1528,11 @@ struct castor {
 };
 
 typed_value_t
-typed_value_t::cast (const location_t& location, const type_t* type, const typed_value_t tv)
+typed_value_t::cast (const Location& location, const type_t* type, const typed_value_t tv)
 {
   if (!type_is_castable (tv.type, type))
     {
-      error_at_line (-1, 0, location.file, location.line,
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "E20: cannot cast expression of type %s to type %s", tv.type->to_string().c_str(), type->to_string().c_str());
     }
 

@@ -103,8 +103,8 @@ enter_symbols (ast_t * node)
         }
       else
         {
-          error_at_line (-1, 0, s->definingNode->location.file,
-                         s->definingNode->location.line,
+           error_at_line (-1, 0, s->definingNode->location.File.c_str (),
+                         s->definingNode->location.Line,
                          "%s is already defined in this scope", identifier.c_str ());
         }
     }

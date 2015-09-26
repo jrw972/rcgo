@@ -17,7 +17,7 @@ bind.hpp \
 BuiltinFunction.hpp BuiltinFunction.cpp \
 Callable.hpp Callable.cpp \
 construct_symbol_table.cpp \
-debug.hpp debug.cpp \
+debug.hpp \
 enter_symbols.cpp \
 enumerate_instances.cpp \
 executor_base.hpp \
@@ -43,7 +43,7 @@ symtab.hpp symtab.cpp \
 trigger.hpp \
 type.hpp type.cpp \
 typed_value.hpp typed_value.cpp \
-types.hpp \
+types.hpp types.cpp \
 util.hpp util.cpp \
 value.hpp value.cpp \
 yyparse.hpp yyparse.cpp

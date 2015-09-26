@@ -512,7 +512,7 @@ transitive_closure (const instance_table_t& table,
           // Merge the sets.
           if (set.merge_no_upgrade (transitive_closure (table, inst, pos->reaction)))
             {
-              error_at_line (-1, 0, node.location.file, node.location.line,
+               error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                              "system is non-deterministic");
 
             }
@@ -526,20 +526,20 @@ transitive_closure (const instance_table_t& table,
 
       if (!have_port_index)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "port index is not constant");
 
         }
 
       if (port_index < 0)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "port index is negative");
         }
 
       if (port_index >= node.array_type->dimension)
         {
-          error_at_line (-1, 0, node.location.file, node.location.line,
+           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "port index out of bounds");
         }
 
@@ -557,7 +557,7 @@ transitive_closure (const instance_table_t& table,
           // Merge the sets.
           if (set.merge_no_upgrade (transitive_closure (table, inst, pos->reaction)))
             {
-              error_at_line (-1, 0, node.location.file, node.location.line,
+               error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                              "system is non-deterministic");
 
             }
@@ -923,7 +923,7 @@ std::ostream&
 operator<< (std::ostream& o,
             const instance_t::ConcreteAction& ca)
 {
-  o << '{' << ca.action->node->location.line << ',' << ca.iota;
+  o << '{' << ca.action->node->location.Line << ',' << ca.iota;
   for (instance_set_t::const_iterator pos = ca.set.begin (),
          limit = ca.set.end ();
        pos != limit;
