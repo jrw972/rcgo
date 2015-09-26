@@ -87,7 +87,7 @@ void
 field_list_type_t::append (const std::string& field_name, const type_t * field_type)
 {
   size_t alignment = field_type->alignment ();
-  offset_ = align_up (offset_, alignment);
+  offset_ = util::AlignUp (offset_, alignment);
 
   field_t *field = new field_t (field_name, field_type, offset_);
   fields_.push_back (field);

@@ -22,7 +22,7 @@ public:
 
   void arguments_push (size_t size)
   {
-    arguments_offset_ -= align_up (size, stack_alignment);
+    arguments_offset_ -= util::AlignUp (size, stack_alignment);
   }
 
   bool locals_empty () const
@@ -32,14 +32,14 @@ public:
 
   void locals_push (size_t size)
   {
-    size = align_up (size, stack_alignment);
+    size = util::AlignUp (size, stack_alignment);
     locals_offset_ += size;
     locals_size_ += size;
   }
 
   void locals_pop (size_t size)
   {
-    locals_offset_ -= align_up (size, stack_alignment);
+    locals_offset_ -= util::AlignUp (size, stack_alignment);
   }
 
   ptrdiff_t arguments_offset () const { return arguments_offset_; }

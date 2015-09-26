@@ -50,7 +50,7 @@ struct block_t {
 
 static block_t* block_make (size_t size)
 {
-  size = align_up (size, SLOT_SIZE);
+  size = util::AlignUp (size, SLOT_SIZE);
   size_t bits_bytes = (size / SLOT_SIZE * BITS_PER_SLOT + BITS_PER_SLOT) / 8;
   block_t* block = (block_t*)malloc (sizeof (block_t) + bits_bytes);
   memset (block, 0, sizeof (block_t) + bits_bytes);
@@ -455,7 +455,7 @@ void* heap_allocate (heap_t* heap, size_t size)
   pthread_mutex_lock (&heap->mutex);
 
   // Must be a multiple of the slot size.
-  size = align_up (size, SLOT_SIZE);
+  size = util::AlignUp (size, SLOT_SIZE);
 
   // Find a chunk.
   chunk_t** chunk;
@@ -558,7 +558,7 @@ static void scan (heap_t* heap, void* begin, void* end, block_t** work_list)
   char** b;
   char** e;
 
-  b = (char**)align_up ((size_t)begin, sizeof (void*));
+  b = (char**)util::AlignUp ((size_t)begin, sizeof (void*));
   e = (char**)end;
 
   for (; b < e; ++b)

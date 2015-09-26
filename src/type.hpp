@@ -417,7 +417,7 @@ public:
 
   size_t element_size () const
   {
-    return align_up (base_type_->size (), base_type_->alignment ());
+    return util::AlignUp (base_type_->size (), base_type_->alignment ());
   }
 
   const int_type_t::ValueType dimension;

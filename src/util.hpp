@@ -1,9 +1,11 @@
-#ifndef util_h
-#define util_h
+#ifndef util_hpp
+#define util_hpp
 
-#include <stddef.h>
-#include <stdlib.h>
+#include <cstddef>
+#include <cstdlib>
 
-ptrdiff_t align_up (ptrdiff_t value, size_t alignment);
+namespace util {
+ptrdiff_t AlignUp (ptrdiff_t value, size_t alignment);
+}
 
-#endif /* util_h */
+#endif /* util_hpp */
