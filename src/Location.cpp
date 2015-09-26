@@ -1,3 +1,3 @@
-#include "types.hpp"
+#include "Location.hpp"
 
 std::string Location::StaticFile;

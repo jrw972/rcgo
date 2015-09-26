@@ -2,6 +2,7 @@
 #define typed_value_h
 
 #include "types.hpp"
+#include "Location.hpp"
 #include "type.hpp"
 #include <ostream>
 #include "value.hpp"

@@ -26,6 +26,7 @@ heap.hpp heap.cpp \
 instance.hpp \
 instance_table.hpp instance_table.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
+Location.hpp Location.cpp \
 MemoryModel.hpp MemoryModel.cpp \
 parameter.hpp \
 parser.hpp parser.cpp \
@@ -43,7 +44,7 @@ symtab.hpp symtab.cpp \
 trigger.hpp \
 type.hpp type.cpp \
 typed_value.hpp typed_value.cpp \
-types.hpp types.cpp \
+types.hpp \
 util.hpp util.cpp \
 value.hpp value.cpp \
 yyparse.hpp yyparse.cpp
