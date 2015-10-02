@@ -27,7 +27,7 @@ short circuit &&
 short circuit ||
 EOF`
 
-actual=`$FBU $srcdir/boolean_operators.fbu 2>&1`
+actual=`$RC $srcdir/boolean_operators.fbu 2>&1`
 
 echo "Expected"
 echo "$expected"

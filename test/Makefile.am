@@ -1,4 +1,4 @@
-AM_TESTS_ENVIRONMENT = FBU='$(top_builddir)/src/fbu'; export FBU;
+AM_TESTS_ENVIRONMENT = RC='$(top_builddir)/src/rc'; export RC;
 LOG_COMPILER = $(SH)
 
 TESTS = read_immutable.sh \

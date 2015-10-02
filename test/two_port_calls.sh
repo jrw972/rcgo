@@ -7,7 +7,7 @@ Bang Mutable
 Bang Mutable
 EOF`
 
-actual=`$FBU $srcdir/two_port_calls.fbu 2>&1`
+actual=`$RC $srcdir/two_port_calls.fbu 2>&1`
 
 echo "Expected"
 echo "$expected"

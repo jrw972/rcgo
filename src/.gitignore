@@ -1,5 +1,5 @@
 .deps
-fbu
+rc
 parser.cpp
 parser.hpp
 parser.output

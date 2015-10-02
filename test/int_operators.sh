@@ -54,7 +54,7 @@ true true
 true true
 EOF`
 
-actual=`$FBU $srcdir/int_operators.fbu 2>&1`
+actual=`$RC $srcdir/int_operators.fbu 2>&1`
 
 echo "Expected"
 echo "$expected"

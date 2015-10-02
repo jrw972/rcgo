@@ -1,3 +1,3 @@
 #!/bin/bash
 
-$FBU $srcdir/read_foreign.fbu
+$RC $srcdir/read_foreign.fbu

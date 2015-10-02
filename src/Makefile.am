@@ -9,8 +9,8 @@ parser.hpp parser.cpp: parser.y
 
 #AM_LFLAGS = --header=$(addsuffix .hpp,$(basename $@))
 #AM_YFLAGS = -v -d
-bin_PROGRAMS = fbu
-fbu_SOURCES = main.cpp \
+bin_PROGRAMS = rc
+rc_SOURCES = main.cpp \
 action.hpp \
 ast.hpp ast.cpp \
 bind.hpp \
@@ -48,4 +48,4 @@ types.hpp \
 util.hpp util.cpp \
 value.hpp value.cpp \
 yyparse.hpp yyparse.cpp
-fbu_LDADD=-lpthread
+rc_LDADD=-lpthread

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-$FBU $srcdir/read_immutable.fbu
+$RC $srcdir/read_immutable.fbu
