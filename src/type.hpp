@@ -610,6 +610,39 @@ public:
     }
 };
 
+class pointer_foreign_type_t : public type_t, public base_type_t
+{
+public:
+    typedef void* ValueType;
+
+    pointer_foreign_type_t (const type_t* base_type) : base_type_t (base_type) { }
+
+    void accept (const_type_visitor_t& visitor) const;
+    std::string to_string () const
+    {
+        std::stringstream str;
+        str << "* foreign " << *base_type_;
+        return str.str ();
+    }
+    size_t alignment () const
+    {
+        return sizeof (void*);
+    }
+    size_t size () const
+    {
+        return sizeof (void*);
+    }
+    virtual TypeLevel level () const
+    {
+        return CONVENTIONAL;
+    }
+
+    const pointer_type_t * pointer_type () const
+    {
+        return pointer_type_t::make (base_type ());
+    }
+};
+
 struct heap_type_t : public type_t, public base_type_t
 {
     heap_type_t (const type_t* base_type) : base_type_t (base_type) { }
@@ -796,6 +829,78 @@ public:
     {
         std::stringstream str;
         str << "[]" << *base_type_;
+        return str.str ();
+    }
+    virtual size_t alignment () const
+    {
+        return sizeof (void*);
+    }
+    virtual size_t size () const
+    {
+        return sizeof (ValueType);
+    }
+    virtual TypeLevel level () const
+    {
+        return CONVENTIONAL;
+    }
+};
+
+class slice_const_type_t : public type_t, public base_type_t
+{
+public:
+    struct ValueType
+    {
+        void* ptr;
+        size_t length;
+        size_t capacity;
+    };
+
+    slice_const_type_t (const type_t* base_type)
+        : base_type_t (base_type)
+    { }
+
+    virtual void accept (const_type_visitor_t& visitor) const;
+
+    virtual std::string to_string () const
+    {
+        std::stringstream str;
+        str << "[] const " << *base_type_;
+        return str.str ();
+    }
+    virtual size_t alignment () const
+    {
+        return sizeof (void*);
+    }
+    virtual size_t size () const
+    {
+        return sizeof (ValueType);
+    }
+    virtual TypeLevel level () const
+    {
+        return CONVENTIONAL;
+    }
+};
+
+class slice_foreign_type_t : public type_t, public base_type_t
+{
+public:
+    struct ValueType
+    {
+        void* ptr;
+        size_t length;
+        size_t capacity;
+    };
+
+    slice_foreign_type_t (const type_t* base_type)
+        : base_type_t (base_type)
+    { }
+
+    virtual void accept (const_type_visitor_t& visitor) const;
+
+    virtual std::string to_string () const
+    {
+        std::stringstream str;
+        str << "[] const " << *base_type_;
         return str.str ();
     }
     virtual size_t alignment () const
@@ -1175,6 +1280,14 @@ struct const_type_visitor_t
     {
         default_action (type);
     }
+    virtual void visit (const slice_const_type_t& type)
+    {
+        default_action (type);
+    }
+    virtual void visit (const slice_foreign_type_t& type)
+    {
+        default_action (type);
+    }
     virtual void visit (const bool_type_t& type)
     {
         default_action (type);
@@ -1224,6 +1337,10 @@ struct const_type_visitor_t
         default_action (type);
     }
     virtual void visit (const pointer_const_type_t& type)
+    {
+        default_action (type);
+    }
+    virtual void visit (const pointer_foreign_type_t& type)
     {
         default_action (type);
     }

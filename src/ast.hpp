@@ -337,8 +337,9 @@ struct ast_identifier_list_type_spec_t : public ast_t
 
 struct ast_pointer_type_spec_t : public ast_unary_t
 {
-    ast_pointer_type_spec_t (unsigned int line, ast_t* child)
+    ast_pointer_type_spec_t (unsigned int line, Mutability m, ast_t* child)
         : ast_unary_t (line, child)
+        , mutability (m)
     { }
 
     void accept (ast_visitor_t& visitor);
@@ -347,12 +348,15 @@ struct ast_pointer_type_spec_t : public ast_unary_t
     {
         unimplemented;
     }
+
+    Mutability const mutability;
 };
 
 struct ast_slice_type_spec_t : public ast_unary_t
 {
-    ast_slice_type_spec_t (unsigned int line, ast_t* child)
+    ast_slice_type_spec_t (unsigned int line, Mutability m, ast_t* child)
         : ast_unary_t (line, child)
+        , mutability (m)
     { }
 
     void accept (ast_visitor_t& visitor);
@@ -361,6 +365,8 @@ struct ast_slice_type_spec_t : public ast_unary_t
     {
         out << "slice_type_spec";
     }
+
+    Mutability const mutability;
 };
 
 struct ast_push_port_type_spec_t : public ast_t

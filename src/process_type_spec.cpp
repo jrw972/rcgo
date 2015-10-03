@@ -77,7 +77,18 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
         void visit (ast_slice_type_spec_t& node)
         {
             const type_t* base_type = process_type_spec (node.child (), true);
-            type = base_type->getSliceType ();
+            switch (node.mutability)
+                {
+                case MUTABLE:
+                    type = new slice_type_t (base_type);
+                    break;
+                case IMMUTABLE:
+                    type = new slice_const_type_t (base_type);
+                    break;
+                case FOREIGN:
+                    type = new slice_foreign_type_t (base_type);
+                    break;
+                }
         }
 
         void visit (ast_component_type_spec_t& node)
@@ -176,7 +187,19 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
 
         void visit (ast_pointer_type_spec_t& node)
         {
-            type = pointer_type_t::make (process_type_spec (node.child (), false));
+            const type_t* base_type = process_type_spec (node.child (), false);
+            switch (node.mutability)
+                {
+                case MUTABLE:
+                    type = pointer_type_t::make (base_type);
+                    break;
+                case IMMUTABLE:
+                    type = new pointer_const_type_t (base_type);
+                    break;
+                case FOREIGN:
+                    type = new pointer_foreign_type_t (base_type);
+                    break;
+                }
         }
 
         void visit (ast_push_port_type_spec_t& node)

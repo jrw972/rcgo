@@ -240,10 +240,10 @@ type_spec: identifier { $$ = new ast_identifier_type_spec_t (@1, $1); }
 | STRUCT '{' field_list '}' { $$ = new ast_struct_type_spec_t (@1, $3); }
 | PUSH signature { $$ = new ast_push_port_type_spec_t (@1, $2); }
 | PULL signature type_spec { $$ = new ast_pull_port_type_spec_t (@1, $2, $3); }
-| '*' type_spec { $$ = new ast_pointer_type_spec_t (@1, $2); }
+| '*' OptionalMutability type_spec { $$ = new ast_pointer_type_spec_t (@1, $2, $3); }
 | HEAP type_spec { $$ = new ast_heap_type_spec_t (@1, $2); }
 | array_dimension type_spec { $$ = new ast_array_type_spec_t (@1, $1, $2); }
-| '[' ']' type_spec { $$ = new ast_slice_type_spec_t (@1, $3); }
+| '[' ']' OptionalMutability type_spec { $$ = new ast_slice_type_spec_t (@1, $3, $4); }
 | ENUM '{' identifier_list '}' { $$ = new ast_enum_type_spec_t (@1, $3); }
 
 array_dimension: '[' Expression ']' { $$ = $2; }
