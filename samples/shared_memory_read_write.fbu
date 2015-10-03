@@ -8,13 +8,13 @@ init (this *Variable) Init () {
     this.value = -1i;
 }
 
-[3u] reaction (this *Variable const) Set (v int) {
+[3u] reaction (this * const Variable) Set (v int) {
     trigger {
         this.value = v;
     }
 }
 
-getter (this *Variable const) Get () int const {
+getter (this * const Variable) Get () int {
     return this.value;
 }
 
@@ -41,7 +41,7 @@ init (this *Process) Init () {
     this.output = -1i;
 }
 
-reaction (this *Process const) initr (v int) {
+reaction (this * const Process) initr (v int) {
     trigger {
         this.input = v;
         if this.status == PROCESS_IDLE {
@@ -51,7 +51,7 @@ reaction (this *Process const) initr (v int) {
 }
 
 // Read
-action (this *Process const) (this.status == PROCESS_READ) {
+action (this * const Process) (this.status == PROCESS_READ) {
     var x int;
     x = this.get_x ();
     if x == -1i {
@@ -69,7 +69,7 @@ action (this *Process const) (this.status == PROCESS_READ) {
 }
 
 // Write
-action (this *Process const) (this.status == PROCESS_WRITE) {
+action (this * const Process) (this.status == PROCESS_WRITE) {
     trigger set_x (this.input) {
         println `x set to `, this.input;
         this.status = PROCESS_DECIDE;
@@ -77,7 +77,7 @@ action (this *Process const) (this.status == PROCESS_WRITE) {
 }
 
 // Decide
-action (this *Process const) (this.status == PROCESS_DECIDE) {
+action (this * const Process) (this.status == PROCESS_DECIDE) {
     trigger Decide (this.output) {
         this.status = PROCESS_DONE;
     }
@@ -105,7 +105,7 @@ init (this *User) Init (v int) {
 }
 
 // Init
-action (this *User const) (this.status == USER_REQUEST || this.error) {
+action (this * const User) (this.status == USER_REQUEST || this.error) {
     trigger initp (this.v) {
         if !this.error {
             this.status = USER_WAIT;
@@ -114,10 +114,10 @@ action (this *User const) (this.status == USER_REQUEST || this.error) {
 }
 
 // Dummy
-action (this *User const) (this.error) {
+action (this * const User) (this.error) {
 }
 
-reaction (this *User const) Decide (v int) {
+reaction (this * const User) Decide (v int) {
     println this, ` decided value is `, v;
     trigger {
         if !this.error {

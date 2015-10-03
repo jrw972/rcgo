@@ -33,12 +33,12 @@ func (this *Queue) Pop ()
     };
 }
 
-func (this *Queue const) Empty () bool
+func (this * const Queue) Empty () bool
 {
   return this.head == nil;
 }
 
-func (this *Queue const) Front () *heap uint const
+func (this * const Queue) Front () *heap uint const
 {
   return this.head.value;
 }
@@ -46,10 +46,10 @@ func (this *Queue const) Front () *heap uint const
 type Channel component
 {
   queue Queue;
-  receive push (message *heap uint foreign);
+  receive push (message foreign *heap uint);
 };
 
-reaction (this *Channel const) send (message *heap uint foreign)
+reaction (this * const Channel) send (message foreign *heap uint)
 {
   var x *heap uint;
   x = move (message);
@@ -59,7 +59,7 @@ reaction (this *Channel const) send (message *heap uint foreign)
   };
 }
 
-action (this *Channel const) (!this.queue.Empty ())
+action (this * const Channel) (!this.queue.Empty ())
 {
   trigger receive (this.queue.Front ())
     {
@@ -71,13 +71,13 @@ type System component
 {
   channel Channel;
   send_count uint;
-  send push (message *heap uint foreign);
+  send push (message foreign *heap uint);
 };
 
 init (this *System) Initially ()
 { }
 
-action (this *System const) (this.send_count != 100u)
+action (this * const System) (this.send_count != 100u)
 {
   var x *heap uint;
   x = new heap uint;
@@ -92,7 +92,7 @@ action (this *System const) (this.send_count != 100u)
   };
 }
 
-reaction (this *System const) receive (message *heap uint foreign)
+reaction (this * const System) receive (message foreign *heap uint)
 {
   var x *uint;
   x = merge (message);

@@ -2,6 +2,6 @@ type C component {
   flag bool;
 };
 
-reaction (this *C const) r (x *bool foreign) {
+reaction (this * const C) r (x foreign *bool) {
   *x = true;
 }

@@ -556,7 +556,7 @@ public:
     std::string to_string () const
     {
         std::stringstream str;
-        str << "@" << *base_type_;
+        str << "*" << *base_type_;
         return str.str ();
     }
     size_t alignment () const
@@ -572,9 +572,42 @@ public:
         return CONVENTIONAL;
     }
 
-    static const type_t* make (const type_t* base_type);
+    static const pointer_type_t* make (const type_t* base_type);
 private:
     pointer_type_t (const type_t* base_type) : base_type_t (base_type) { }
+};
+
+class pointer_const_type_t : public type_t, public base_type_t
+{
+public:
+    typedef void* ValueType;
+
+    pointer_const_type_t (const type_t* base_type) : base_type_t (base_type) { }
+
+    void accept (const_type_visitor_t& visitor) const;
+    std::string to_string () const
+    {
+        std::stringstream str;
+        str << "* const " << *base_type_;
+        return str.str ();
+    }
+    size_t alignment () const
+    {
+        return sizeof (void*);
+    }
+    size_t size () const
+    {
+        return sizeof (void*);
+    }
+    virtual TypeLevel level () const
+    {
+        return CONVENTIONAL;
+    }
+
+    const pointer_type_t * pointer_type () const
+    {
+        return pointer_type_t::make (base_type ());
+    }
 };
 
 struct heap_type_t : public type_t, public base_type_t
@@ -1187,6 +1220,10 @@ struct const_type_visitor_t
         default_action (type);
     }
     virtual void visit (const pointer_type_t& type)
+    {
+        default_action (type);
+    }
+    virtual void visit (const pointer_const_type_t& type)
     {
         default_action (type);
     }

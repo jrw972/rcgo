@@ -795,7 +795,7 @@ type_check_statement (ast_t * node)
             if (tv.intrinsic_mutability != MUTABLE)
                 {
                     error_at_line (-1, 0, left->location.File.c_str (), left->location.Line,
-                                   "cannot assign to read-only location of type %s", tv.type->to_string ().c_str ());
+                                   "E52: cannot assign to read-only location of type %s", tv.type->to_string ().c_str ());
                 }
 
             return tv;
@@ -1454,7 +1454,7 @@ process_definitions (ast_t * node)
             // TODO:  Unify with others as entering signature and return value.
             ast_t *this_identifier_node = node.this_identifier ();
             const std::string& this_identifier = ast_get_identifier (this_identifier_node);
-            typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make (get_current_receiver_type
+            typed_value_t this_value = typed_value_t::make_value (new pointer_const_type_t (get_current_receiver_type
                                        (&node)),
                                        typed_value_t::STACK,
                                        MUTABLE,
@@ -1494,7 +1494,7 @@ process_definitions (ast_t * node)
             /* Insert "this" into the symbol table. */
             ast_t *this_identifier_node = node.this_identifier ();
             const std::string& this_identifier = ast_get_identifier (this_identifier_node);
-            typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make (get_current_receiver_type
+            typed_value_t this_value = typed_value_t::make_value (new pointer_const_type_t (get_current_receiver_type
                                        (&node)),
                                        typed_value_t::STACK,
                                        MUTABLE,
@@ -1615,7 +1615,7 @@ process_definitions (ast_t * node)
             /* Insert "this" into the symbol table. */
             ast_t *this_identifier_node = node.this_identifier ();
             const std::string& this_identifier = ast_get_identifier (this_identifier_node);
-            typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make (reaction->component_type ()),
+            typed_value_t this_value = typed_value_t::make_value (new pointer_const_type_t (reaction->component_type ()),
                                        typed_value_t::STACK,
                                        MUTABLE,
                                        IMMUTABLE);
@@ -1643,7 +1643,7 @@ process_definitions (ast_t * node)
             /* Insert "this" into the symbol table. */
             ast_t *this_identifier_node = node.this_identifier ();
             const std::string& this_identifier = ast_get_identifier (this_identifier_node);
-            typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make (node.reaction->component_type ()),
+            typed_value_t this_value = typed_value_t::make_value (new pointer_const_type_t (node.reaction->component_type ()),
                                        typed_value_t::STACK,
                                        MUTABLE,
                                        IMMUTABLE);

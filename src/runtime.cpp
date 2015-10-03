@@ -1783,6 +1783,12 @@ evaluate_statement (executor_base_t& exec,
                             printf ("%p", ptr);
                         }
 
+                        void visit (const pointer_const_type_t& type)
+                        {
+                            void* ptr = stack_frame_pop_pointer (exec.stack ());
+                            printf ("%p", ptr);
+                        }
+
                         void visit (const string_type_t& type)
                         {
                             string_type_t::ValueType u;

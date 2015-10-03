@@ -102,6 +102,10 @@ struct ParameterSymbol : public Symbol
         switch (this->kind)
             {
             case Receiver:
+                if (type_cast<pointer_const_type_t> (s->value.type))
+                    {
+                        s->value.type = type_cast<pointer_const_type_t> (s->value.type)->pointer_type ();
+                    }
                 s->value.dereference_mutability = MUTABLE;
                 s->kind = ReceiverDuplicate;
                 break;

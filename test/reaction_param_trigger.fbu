@@ -1,6 +1,6 @@
 type C component { };
 
-reaction (this *C const) r (x *bool foreign) {
+reaction (this * const C) r (x foreign *bool) {
   trigger {
     println *x;
   }

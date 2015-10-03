@@ -348,6 +348,7 @@ ACCEPT(initializer_type_t)
 ACCEPT(heap_type_t)
 ACCEPT(FileDescriptor_type_t)
 ACCEPT(pointer_type_t)
+ACCEPT(pointer_const_type_t)
 ACCEPT(reaction_type_t)
 ACCEPT(signature_type_t)
 ACCEPT(string_type_t)
@@ -639,7 +640,7 @@ INSTANCE(string_type_t)
 INSTANCE(nil_type_t)
 INSTANCE(FileDescriptor_type_t)
 
-const type_t*
+const pointer_type_t*
 pointer_type_t::make (const type_t* base_type)
 {
     return new pointer_type_t (base_type);
@@ -663,6 +664,11 @@ const type_t* type_dereference (const type_t* type)
         visitor () : retval (NULL) { }
 
         void visit (const pointer_type_t& type)
+        {
+            retval = type.base_type ();
+        }
+
+        void visit (const pointer_const_type_t& type)
         {
             retval = type.base_type ();
         }
@@ -732,6 +738,11 @@ type_contains_pointer (const type_t* type)
         }
 
         void visit (const pointer_type_t& type)
+        {
+            flag = true;
+        }
+
+        void visit (const pointer_const_type_t& type)
         {
             flag = true;
         }

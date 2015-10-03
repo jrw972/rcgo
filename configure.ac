@@ -22,5 +22,4 @@ AC_PROG_YACC()
 
 AC_OUTPUT([Makefile
            src/Makefile
-           test/Makefile
-           samples/Makefile])
+           test/Makefile])

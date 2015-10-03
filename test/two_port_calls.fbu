@@ -4,7 +4,7 @@ type Actuator component {
   bang2 push ();
 };
 
-action (this *Actuator const) (!this.flag) {
+action (this const * const Actuator) (!this.flag) {
   trigger bang1 (), bang2 () {
     this.flag = true;
   }
@@ -12,7 +12,7 @@ action (this *Actuator const) (!this.flag) {
 
 type Detector component { };
 
-reaction (this *Detector const) bang () {
+reaction (this * const Detector) bang () {
   println `Bang Immutable`;
   trigger {
     println `Bang Mutable`;

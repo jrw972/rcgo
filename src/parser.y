@@ -4,7 +4,7 @@
 #include "debug.hpp"
 %}
 
-%union { ast_t* node; }
+%union { ast_t* node; Mutability mutability; }
 %token <node> IDENTIFIER
 %token <node> LITERAL
 
@@ -62,6 +62,8 @@
 %type <node> while_stmt
 %destructor { /* TODO:  Free the node. node_free ($$); */ } <node>
 
+%type <mutability> OptionalMutability
+
 %token ACTION BIND CAST CHANGE COMPONENT CONST COPY ELSE ENUM FOR FOREIGN_KW FUNC GETTER HEAP IF INIT INSTANCE MERGE MOVE NEW PRINTLN PULL PUSH REACTION RETURN_KW STRUCT TRIGGER TYPE VAR WHILE
 
 %token ADD_ASSIGN AND_NOT_TOKEN RIGHT_ARROW LEFT_ARROW DECREMENT DOTDOT EQUAL_TOKEN INCREMENT LESS_EQUAL_TOKEN LEFT_SHIFT_TOKEN LOGIC_AND_TOKEN LOGIC_OR_TOKEN MORE_EQUAL_TOKEN NOT_EQUAL_TOKEN RIGHT_SHIFT_TOKEN
@@ -90,29 +92,48 @@ instance_def: INSTANCE identifier identifier identifier ';' { $$ = new ast_insta
 
 type_def: TYPE identifier type_spec ';' { $$ = new ast_type_definition_t (@1, $2, $3); }
 
-action_def: ACTION '(' identifier '*' identifier CONST ')' '(' Expression ')' stmt_list { $$ = new ast_action_t (@1, $3, $5, $9, $11); }
-| array_dimension ACTION '(' identifier '*' identifier CONST ')' '(' Expression ')' stmt_list { $$ = new ast_dimensioned_action_t (@2, $1, $4, $6, $10, $12); }
+OptionalMutability:
+  /* Empty. */
+{ $$ = MUTABLE; }
+| CONST
+{ $$ = IMMUTABLE; }
+| FOREIGN_KW
+{ $$ = FOREIGN; }
+
+action_def:
+  ACTION '(' identifier OptionalMutability '*' CONST identifier ')' '(' Expression ')' stmt_list
+{ $$ = new ast_action_t (@1, $3, $7, $10, $12); }
+| array_dimension ACTION '(' identifier OptionalMutability '*' CONST identifier ')' '(' Expression ')' stmt_list
+{ $$ = new ast_dimensioned_action_t (@2, $1, $4, $8, $11, $13); }
 
 reaction_def:
-                  REACTION '(' identifier '*' identifier CONST ')' identifier signature stmt_list { $$ = new ast_reaction_t (@1, $3, $5, $8, $9, $10); }
-| array_dimension REACTION '(' identifier '*' identifier CONST ')' identifier signature stmt_list { $$ = new ast_dimensioned_reaction_t (@2, $1, $4, $6, $9, $10, $11); }
+  REACTION '(' identifier OptionalMutability '*' CONST identifier ')' identifier signature stmt_list
+{ $$ = new ast_reaction_t (@1, $3, $7, $9, $10, $11); }
+| array_dimension REACTION '(' identifier OptionalMutability '*' CONST identifier ')' identifier signature stmt_list
+{ $$ = new ast_dimensioned_reaction_t (@2, $1, $4, $8, $10, $11, $12); }
 
-bind_def: BIND '(' identifier '*' identifier ')' stmt_list { $$ = new ast_bind_t (@1, $3, $5, $7); }
+bind_def: BIND '(' identifier OptionalMutability '*' identifier ')' stmt_list { $$ = new ast_bind_t (@1, $3, $6, $8); }
 
 init_def:
-  INIT '(' identifier '*' identifier       ')' identifier signature stmt_list { $$ = new ast_initializer_t (@1, $3, $5, $7, $8, $9); }
+  INIT '(' identifier OptionalMutability '*' identifier       ')' identifier signature stmt_list { $$ = new ast_initializer_t (@1, $3, $6, $8, $9, $10); }
 
 getter_def:
-  GETTER '(' identifier '*' identifier CONST ')' identifier signature type_spec CONST stmt_list { $$ = new ast_getter_t (@1, $3, $5, $8, $9, $10, $12); }
+  GETTER '(' identifier OptionalMutability '*' CONST identifier ')' identifier signature type_spec stmt_list
+{ $$ = new ast_getter_t (@1, $3, $7, $9, $10, $11, $12); }
 
 method_def:
-  FUNC '(' identifier '*' identifier       ')' identifier signature type_spec stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, $9, MUTABLE, $10); }
-| FUNC '(' identifier '*' identifier CONST ')' identifier signature type_spec stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, $10, MUTABLE, $11); }
-| FUNC '(' identifier '*' identifier       ')' identifier signature type_spec CONST stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, $9, IMMUTABLE, $11); }
-| FUNC '(' identifier '*' identifier CONST ')' identifier signature type_spec CONST stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, $10, IMMUTABLE, $12); }
-| FUNC '(' identifier '*' identifier       ')' identifier signature           stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, new ast_empty_type_spec_t (@1), IMMUTABLE, $9); }
-| FUNC '(' identifier '*' identifier CONST ')' identifier signature           stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, new ast_empty_type_spec_t (@1), IMMUTABLE, $10); }
-
+  FUNC '(' identifier OptionalMutability '*' identifier       ')' identifier signature type_spec stmt_list
+{ $$ = new ast_method_t (@1, $3, $6, MUTABLE, $8, $9, $10, MUTABLE, $11); }
+| FUNC '(' identifier OptionalMutability '*' CONST identifier ')' identifier signature type_spec stmt_list
+{ $$ = new ast_method_t (@1, $3, $7, IMMUTABLE, $9, $10, $11, MUTABLE, $12); }
+| FUNC '(' identifier OptionalMutability '*' identifier       ')' identifier signature type_spec CONST stmt_list
+{ $$ = new ast_method_t (@1, $3, $6, MUTABLE, $8, $9, $10, IMMUTABLE, $12); }
+| FUNC '(' identifier OptionalMutability '*' CONST identifier ')' identifier signature type_spec CONST stmt_list
+{ $$ = new ast_method_t (@1, $3, $7, IMMUTABLE, $9, $10, $11, IMMUTABLE, $13); }
+| FUNC '(' identifier OptionalMutability '*' identifier       ')' identifier signature           stmt_list
+{ $$ = new ast_method_t (@1, $3, $6, MUTABLE, $8, $9, new ast_empty_type_spec_t (@1), IMMUTABLE, $10); }
+| FUNC '(' identifier OptionalMutability '*' CONST identifier ')' identifier signature           stmt_list
+{ $$ = new ast_method_t (@1, $3, $7, IMMUTABLE, $9, $10, new ast_empty_type_spec_t (@1), IMMUTABLE, $11); }
 
 func_def: FUNC identifier signature stmt_list { $$ = new ast_function_t (@1, $2, $3, new ast_empty_type_spec_t (@1), $4); }
 | FUNC identifier signature type_spec stmt_list { $$ = new ast_function_t (@1, $2, $3, $4, $5); }
@@ -123,10 +144,9 @@ signature: '(' ')' { $$ = new ast_signature_type_spec_t (yyloc); }
 parameter_list: parameter { $$ = (new ast_signature_type_spec_t (@1))->append ($1); }
 | parameter_list ';' parameter { $$ = $1->append ($3); }
 
-parameter: identifier_list type_spec { $$ = new ast_identifier_list_type_spec_t (@1, $1, $2, MUTABLE); }
-| identifier_list type_spec CONST { $$ = new ast_identifier_list_type_spec_t (@1, $1, $2, IMMUTABLE); }
-| identifier_list type_spec FOREIGN_KW { $$ = new ast_identifier_list_type_spec_t (@1, $1, $2, FOREIGN); }
-
+parameter:
+  identifier_list OptionalMutability type_spec
+{ $$ = new ast_identifier_list_type_spec_t (@1, $1, $3, $2); }
 
 optional_semicolon: /* Empty. */
 | ';'

@@ -2,6 +2,6 @@ type S struct {
     ptr *int;
 };
 
-func (this *S const) f () *int {
+func (this * const S) f () *int {
     return this.ptr;
 }

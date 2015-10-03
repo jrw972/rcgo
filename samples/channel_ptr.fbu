@@ -33,12 +33,12 @@ func (this *Queue) Pop ()
     };
 }
 
-func (this *Queue const) Empty () bool
+func (this * const Queue) Empty () bool
 {
   return this.head == nil;
 }
 
-func (this *Queue const) Front () uint
+func (this * const Queue) Front () uint
 {
   return this.head.value;
 }
@@ -49,7 +49,7 @@ type Channel component
   receive push (message uint);
 };
 
-reaction (this *Channel const) send (message *uint foreign)
+reaction (this * const Channel) send (message foreign *uint)
 {
   var x uint;
   x = *message;
@@ -59,7 +59,7 @@ reaction (this *Channel const) send (message *uint foreign)
   };
 }
 
-action (this *Channel const) (!this.queue.Empty ())
+action (this * const Channel) (!this.queue.Empty ())
 {
   trigger receive (this.queue.Front ())
     {
@@ -71,13 +71,13 @@ type System component
 {
   channel Channel;
   send_count uint;
-  send push (message *uint foreign);
+  send push (message foreign *uint);
 };
 
 init (this *System) Initially ()
 { }
 
-action (this *System const) (this.send_count != 100u)
+action (this * const System) (this.send_count != 100u)
 {
   var x *uint;
   x = new uint;
@@ -90,7 +90,7 @@ action (this *System const) (this.send_count != 100u)
   };
 }
 
-reaction (this *System const) receive (message uint)
+reaction (this * const System) receive (message uint)
 {
   println `Received `, message;
 }
