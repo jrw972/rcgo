@@ -10,54 +10,54 @@
 std::ostream&
 operator<< (std::ostream& out, const ast_t& node)
 {
-  struct visitor : public ast_const_visitor_t
-  {
-    std::ostream& out;
-    size_t indent;
-
-    visitor (std::ostream& o) : out (o), indent (0) { }
-
-    void default_action (const ast_t& node)
+    struct visitor : public ast_const_visitor_t
     {
-      print_indent (node);
-      node.print (out);
-      out << ' ' << node.typed_value << '\n';
-      print_children (node);
-    }
+        std::ostream& out;
+        size_t indent;
 
-    void print_indent (const ast_t& node)
-    {
-      for (size_t idx = 0; idx != indent; ++idx)
+        visitor (std::ostream& o) : out (o), indent (0) { }
+
+        void default_action (const ast_t& node)
         {
-          out << ' ';
+            print_indent (node);
+            node.print (out);
+            out << ' ' << node.typed_value << '\n';
+            print_children (node);
         }
-      out << node.location.Line << ' ';
-    }
 
-    void print_children (const ast_t& node)
-    {
-      size_t old_indent = indent;
-      indent += 2;
-      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
-           pos != limit;
-           ++pos)
+        void print_indent (const ast_t& node)
         {
-          (*pos)->accept (*this);
+            for (size_t idx = 0; idx != indent; ++idx)
+                {
+                    out << ' ';
+                }
+            out << node.location.Line << ' ';
         }
-      indent = old_indent;
-    }
-  };
 
-  visitor v (out);
-  node.accept (v);
-  return out;
+        void print_children (const ast_t& node)
+        {
+            size_t old_indent = indent;
+            indent += 2;
+            for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+                    pos != limit;
+                    ++pos)
+                {
+                    (*pos)->accept (*this);
+                }
+            indent = old_indent;
+        }
+    };
+
+    visitor v (out);
+    node.accept (v);
+    return out;
 }
 
 void
 ast_set_symtab (ast_t * node, symtab_t * symtab)
 {
-  assert (node->symtab == NULL);
-  node->symtab = symtab;
+    assert (node->symtab == NULL);
+    node->symtab = symtab;
 }
 
 #define ACCEPT(type) void \
@@ -74,6 +74,7 @@ type::accept (ast_const_visitor_t& visitor) const \
 ACCEPT (ast_identifier_t)
 ACCEPT (ast_identifier_list_t)
 ACCEPT (ast_array_type_spec_t)
+ACCEPT (ast_slice_type_spec_t)
 ACCEPT (ast_component_type_spec_t)
 ACCEPT (ast_empty_type_spec_t)
 ACCEPT (ast_enum_type_spec_t)
@@ -103,6 +104,7 @@ ACCEPT (ast_logic_not_expr_t)
 ACCEPT (ast_merge_expr_t)
 ACCEPT (ast_move_expr_t)
 ACCEPT (ast_new_expr_t)
+ACCEPT (ast_copy_expr_t)
 ACCEPT (ast_push_port_call_expr_t)
 ACCEPT (ast_select_expr_t)
 
@@ -143,91 +145,91 @@ ACCEPT (ast_top_level_list_t)
 
 std::string ast_get_identifier (const ast_t* ast)
 {
-  struct visitor : public ast_const_visitor_t
-  {
-    std::string retval;
-
-    void default_action (const ast_t* node)
+    struct visitor : public ast_const_visitor_t
     {
-      not_reached;
-    }
+        std::string retval;
 
-    void visit (const ast_identifier_t& ast)
-    {
-      retval = ast.identifier;
-    }
-  };
-  visitor v;
-  ast->accept (v);
-  return v.retval;
+        void default_action (const ast_t* node)
+        {
+            not_reached;
+        }
+
+        void visit (const ast_identifier_t& ast)
+        {
+            retval = ast.identifier;
+        }
+    };
+    visitor v;
+    ast->accept (v);
+    return v.retval;
 }
 
 named_type_t *
 get_current_receiver_type (const ast_t * node)
 {
-  return symtab_get_current_receiver_type (node->symtab);
+    return symtab_get_current_receiver_type (node->symtab);
 }
 
 trigger_t *
 get_current_trigger (const ast_t * node)
 {
-  return symtab_get_current_trigger (node->symtab);
+    return symtab_get_current_trigger (node->symtab);
 }
 
 action_reaction_base_t *
 get_current_action (const ast_t * node)
 {
-  return symtab_get_current_action (node->symtab);
+    return symtab_get_current_action (node->symtab);
 }
 
 Method*
 get_current_method (const ast_t * node)
 {
-  return symtab_get_current_method (node->symtab);
+    return symtab_get_current_method (node->symtab);
 }
 
 Getter*
 get_current_getter (const ast_t * node)
 {
-  return symtab_get_current_getter (node->symtab);
+    return symtab_get_current_getter (node->symtab);
 }
 
 Initializer*
 get_current_initializer (const ast_t * node)
 {
-  return symtab_get_current_initializer (node->symtab);
+    return symtab_get_current_initializer (node->symtab);
 }
 
 Function*
 get_current_function (const ast_t * node)
 {
-  return symtab_get_current_function (node->symtab);
+    return symtab_get_current_function (node->symtab);
 }
 
 const Symbol*
 get_current_return_symbol (const ast_t * node)
 {
-  {
-    Getter* g = get_current_getter (node);
-    if (g != NULL)
-      {
-        return g->returnSymbol;
-      }
-  }
-  {
-    Method* g = get_current_method (node);
-    if (g != NULL)
-      {
-        return g->returnSymbol;
-      }
-  }
-  {
-    Function* f = get_current_function (node);
-    if (f != NULL)
-      {
-        return f->returnSymbol ();
-      }
-  }
+    {
+        Getter* g = get_current_getter (node);
+        if (g != NULL)
+            {
+                return g->returnSymbol;
+            }
+    }
+    {
+        Method* g = get_current_method (node);
+        if (g != NULL)
+            {
+                return g->returnSymbol;
+            }
+    }
+    {
+        Function* f = get_current_function (node);
+        if (f != NULL)
+            {
+                return f->returnSymbol ();
+            }
+    }
 
-  return NULL;
+    return NULL;
 }

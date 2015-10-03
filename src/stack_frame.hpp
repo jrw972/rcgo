@@ -7,27 +7,12 @@
 #include "debug.hpp"
 #include "typed_value.hpp"
 
-struct rtstring_t
+struct stack_frame_t
 {
-  const char* bytes;
-  size_t size;
-
-  rtstring_t ()
-    : bytes (NULL)
-    , size (0)
-  { }
-
-  rtstring_t (const std::string& s)
-    : bytes (s.data ())
-    , size (s.size ())
-  { }
-};
-
-struct stack_frame_t {
-  char* base_pointer;
-  char* top;
-  char* limit;
-  char data[];
+    char* base_pointer;
+    char* top;
+    char* limit;
+    char data[];
 };
 
 stack_frame_t* stack_frame_make (size_t size);
@@ -44,10 +29,10 @@ inline void
 stack_frame_push (stack_frame_t* stack_frame,
                   T b)
 {
-  size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
-  assert (stack_frame->top + s <= stack_frame->limit);
-  memcpy (stack_frame->top, &b, sizeof (T));
-  stack_frame->top += s;
+    size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
+    assert (stack_frame->top + s <= stack_frame->limit);
+    memcpy (stack_frame->top, &b, sizeof (T));
+    stack_frame->top += s;
 }
 
 template <typename T>
@@ -55,10 +40,10 @@ inline void
 stack_frame_pop (stack_frame_t* stack_frame,
                  T& retval)
 {
-  size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
-  assert (stack_frame->top - s >= stack_frame->data);
-  stack_frame->top -= s;
-  memcpy (&retval, stack_frame->top, sizeof (T));
+    size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
+    assert (stack_frame->top - s >= stack_frame->data);
+    stack_frame->top -= s;
+    memcpy (&retval, stack_frame->top, sizeof (T));
 }
 
 void stack_frame_push_tv (stack_frame_t* stack_frame,
@@ -66,11 +51,6 @@ void stack_frame_push_tv (stack_frame_t* stack_frame,
 
 void stack_frame_pop_tv (stack_frame_t* stack_frame,
                          typed_value_t& tv);
-
-void stack_frame_push_string (stack_frame_t* stack_frame,
-                              rtstring_t b);
-
-rtstring_t stack_frame_pop_string (stack_frame_t* stack_frame);
 
 /* Push base_pointer + offset. */
 void stack_frame_push_address (stack_frame_t* stack_frame,

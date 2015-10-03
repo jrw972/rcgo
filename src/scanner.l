@@ -51,6 +51,7 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 "change"               { return CHANGE; }
 "component"            { return COMPONENT; }
 "const"                { return CONST; }
+"copy"                 { return COPY; }
 "else"                 { return ELSE; }
 "enum"                 { return ENUM; }
 "for"                  { return FOR; }
@@ -120,7 +121,7 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
                              ++pos;
                            }
 
-                         yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (std::string (begin, destination - begin)));
+                         yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (string_type_t::instance (), string_type_t::ValueType::make (begin, destination - begin)));
                          return LITERAL; }
 
 -?(0|([1-9][0-9]*)|(0x[0-9a-fA-F]+))i(8|16|32|64|128)? {
@@ -207,8 +208,7 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
     {
       yytext[yyleng - 3] = 0;
       yyleng -= 3;
-      //yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (uint16_type_t::instance (), strtol (yytext, NULL, base)));
-      unimplemented;
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (uint16_type_t::instance (), strtol (yytext, NULL, base)));
     }
   else if (strcmp (ptr, "u32") == 0)
     {

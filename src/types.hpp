@@ -5,7 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <map>
-#include <string>
 #include "debug.hpp"
 
 class action_reaction_base_t;
@@ -40,28 +39,29 @@ typedef struct type_t type_t;
 
 // A reference is either mutable, immutable, or foreign.
 enum Mutability
-  {
+{
     MUTABLE,
     IMMUTABLE,
     FOREIGN,
-  };
+};
 
 enum TriggerAction
-  {
+{
     /* TODO:  Add TRIGGER_NONE. */
     TRIGGER_READ,  /* Trigger reads. */
     TRIGGER_WRITE, /* Trigger writes (and reads). */
-  };
+};
 
 typedef std::map<instance_t*, TriggerAction> instance_set_t;
 
-struct pull_port_t {
-  component_t* instance;
-  Getter* getter;
+struct pull_port_t
+{
+    component_t* instance;
+    Getter* getter;
 };
 
 enum BinaryArithmetic
-  {
+{
     MULTIPLY,
     DIVIDE,
     MODULUS,
@@ -85,57 +85,57 @@ enum BinaryArithmetic
     LOGIC_OR,
 
     LOGIC_AND,
-  };
+};
 
 inline const char* binary_arithmetic_symbol (BinaryArithmetic ba)
 {
-  switch (ba)
-    {
-    case MULTIPLY:
-      return "*";
-    case DIVIDE:
-      return "/";
-    case MODULUS:
-      return "%";
-    case LEFT_SHIFT:
-      return "<<";
-    case RIGHT_SHIFT:
-      return ">>";
-    case BIT_AND:
-      return "&";
-    case BIT_AND_NOT:
-      return "&^";
+    switch (ba)
+        {
+        case MULTIPLY:
+            return "*";
+        case DIVIDE:
+            return "/";
+        case MODULUS:
+            return "%";
+        case LEFT_SHIFT:
+            return "<<";
+        case RIGHT_SHIFT:
+            return ">>";
+        case BIT_AND:
+            return "&";
+        case BIT_AND_NOT:
+            return "&^";
 
-    case ADD:
-      return "+";
-    case SUBTRACT:
-      return "-";
-    case BIT_OR:
-      return "|";
-    case BIT_XOR:
-      return "^";
+        case ADD:
+            return "+";
+        case SUBTRACT:
+            return "-";
+        case BIT_OR:
+            return "|";
+        case BIT_XOR:
+            return "^";
 
-    case EQUAL:
-      return "==";
-    case NOT_EQUAL:
-      return "!=";
-    case LESS_THAN:
-      return "<";
-    case LESS_EQUAL:
-      return "<=";
-    case MORE_THAN:
-      return ">";
-    case MORE_EQUAL:
-      return ">=";
+        case EQUAL:
+            return "==";
+        case NOT_EQUAL:
+            return "!=";
+        case LESS_THAN:
+            return "<";
+        case LESS_EQUAL:
+            return "<=";
+        case MORE_THAN:
+            return ">";
+        case MORE_EQUAL:
+            return ">=";
 
-    case LOGIC_OR:
-      return "||";
+        case LOGIC_OR:
+            return "||";
 
-    case LOGIC_AND:
-      return "&&";
-    }
+        case LOGIC_AND:
+            return "&&";
+        }
 
-  not_reached;
+    not_reached;
 }
 
 #endif /* types_hpp */

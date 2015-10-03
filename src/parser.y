@@ -62,7 +62,7 @@
 %type <node> while_stmt
 %destructor { /* TODO:  Free the node. node_free ($$); */ } <node>
 
-%token ACTION BIND CAST CHANGE COMPONENT CONST ELSE ENUM FOR FOREIGN_KW FUNC GETTER HEAP IF INIT INSTANCE MERGE MOVE NEW PRINTLN PULL PUSH REACTION RETURN_KW STRUCT TRIGGER TYPE VAR WHILE
+%token ACTION BIND CAST CHANGE COMPONENT CONST COPY ELSE ENUM FOR FOREIGN_KW FUNC GETTER HEAP IF INIT INSTANCE MERGE MOVE NEW PRINTLN PULL PUSH REACTION RETURN_KW STRUCT TRIGGER TYPE VAR WHILE
 
 %token ADD_ASSIGN AND_NOT_TOKEN RIGHT_ARROW LEFT_ARROW DECREMENT DOTDOT EQUAL_TOKEN INCREMENT LESS_EQUAL_TOKEN LEFT_SHIFT_TOKEN LOGIC_AND_TOKEN LOGIC_OR_TOKEN MORE_EQUAL_TOKEN NOT_EQUAL_TOKEN RIGHT_SHIFT_TOKEN
 
@@ -223,6 +223,7 @@ type_spec: identifier { $$ = new ast_identifier_type_spec_t (@1, $1); }
 | '@' type_spec { $$ = new ast_pointer_type_spec_t (@1, $2); }
 | HEAP type_spec { $$ = new ast_heap_type_spec_t (@1, $2); }
 | array_dimension type_spec { $$ = new ast_array_type_spec_t (@1, $1, $2); }
+| '[' ']' type_spec { $$ = new ast_slice_type_spec_t (@1, $3); }
 | ENUM '{' identifier_list '}' { $$ = new ast_enum_type_spec_t (@1, $3); }
 
 array_dimension: '[' Expression ']' { $$ = $2; }
@@ -289,6 +290,8 @@ Operand
 { $$ = new ast_move_expr_t (@1, $3); }
 | MERGE '(' Expression ')'
 { $$ = new ast_merge_expr_t (@1, $3); }
+| COPY '(' Expression ')'
+{ $$ = new ast_copy_expr_t (@1, $3); }
 
 Operand: LITERAL { $$ = $1; }
 | identifier { $$ = new ast_identifier_expr_t (@1, $1); }
