@@ -5,7 +5,7 @@ func not_evaluated () bool {
   return true;
 }
 
-init (this @Test) Main () {
+init (this *Test) Main () {
   {
     println `-10017 `, 189i * -53i;
     println `-3 `, 189i / -53i;

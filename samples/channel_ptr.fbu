@@ -1,30 +1,30 @@
 type Element struct
 {
   value uint;
-  next @Element;
+  next *Element;
 };
 
 type Queue struct
 {
-  head @Element;
-  tail @@Element;
+  head *Element;
+  tail **Element;
 };
 
-func (this @Queue) Push (v uint)
+func (this *Queue) Push (v uint)
 {
   if this.head == nil
     {
       this.tail = &this.head;
     };
 
-  var e @Element;
+  var e *Element;
   e = new Element;
   e.value = v;
   *this.tail = e;
   this.tail = &e.next;
 }
 
-func (this @Queue) Pop ()
+func (this *Queue) Pop ()
 {
   this.head = this.head.next;
   if this.head == nil
@@ -33,12 +33,12 @@ func (this @Queue) Pop ()
     };
 }
 
-func (this @Queue const) Empty () bool
+func (this *Queue const) Empty () bool
 {
   return this.head == nil;
 }
 
-func (this @Queue const) Front () uint
+func (this *Queue const) Front () uint
 {
   return this.head.value;
 }
@@ -49,7 +49,7 @@ type Channel component
   receive push (message uint);
 };
 
-reaction (this @Channel const) send (message @uint foreign)
+reaction (this *Channel const) send (message *uint foreign)
 {
   var x uint;
   x = *message;
@@ -59,7 +59,7 @@ reaction (this @Channel const) send (message @uint foreign)
   };
 }
 
-action (this @Channel const) (!this.queue.Empty ())
+action (this *Channel const) (!this.queue.Empty ())
 {
   trigger receive (this.queue.Front ())
     {
@@ -71,15 +71,15 @@ type System component
 {
   channel Channel;
   send_count uint;
-  send push (message @uint foreign);
+  send push (message *uint foreign);
 };
 
-init (this @System) Initially ()
+init (this *System) Initially ()
 { }
 
-action (this @System const) (this.send_count != 100u)
+action (this *System const) (this.send_count != 100u)
 {
-  var x @uint;
+  var x *uint;
   x = new uint;
   *x = this.send_count;
 
@@ -90,12 +90,12 @@ action (this @System const) (this.send_count != 100u)
   };
 }
 
-reaction (this @System const) receive (message uint)
+reaction (this *System const) receive (message uint)
 {
   println `Received `, message;
 }
 
-bind (this @System) {
+bind (this *System) {
   this.send -> this.channel.send;
   this.channel.receive -> this.receive;
 }

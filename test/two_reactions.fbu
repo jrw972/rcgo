@@ -3,7 +3,7 @@ type Actuator component {
   bang1 push ();
 };
 
-action (this @Actuator const) (!this.flag) {
+action (this *Actuator const) (!this.flag) {
   trigger bang1 () {
     this.flag = true;
   }
@@ -11,7 +11,7 @@ action (this @Actuator const) (!this.flag) {
 
 type Detector component { };
 
-reaction (this @Detector const) bang () {
+reaction (this *Detector const) bang () {
   println `Bang Immutable`;
   trigger {
     println `Bang Mutable`;
@@ -24,11 +24,11 @@ type System component {
   detector2 Detector;
 };
 
-bind (this @System) {
+bind (this *System) {
   this.actuator.bang1 -> this.detector1.bang;
   this.actuator.bang1 -> this.detector2.bang;
 }
 
-init (this @System) Init () { }
+init (this *System) Init () { }
 
 instance system System Init;

@@ -90,28 +90,28 @@ instance_def: INSTANCE identifier identifier identifier ';' { $$ = new ast_insta
 
 type_def: TYPE identifier type_spec ';' { $$ = new ast_type_definition_t (@1, $2, $3); }
 
-action_def: ACTION '(' identifier '@' identifier CONST ')' '(' Expression ')' stmt_list { $$ = new ast_action_t (@1, $3, $5, $9, $11); }
-| array_dimension ACTION '(' identifier '@' identifier CONST ')' '(' Expression ')' stmt_list { $$ = new ast_dimensioned_action_t (@2, $1, $4, $6, $10, $12); }
+action_def: ACTION '(' identifier '*' identifier CONST ')' '(' Expression ')' stmt_list { $$ = new ast_action_t (@1, $3, $5, $9, $11); }
+| array_dimension ACTION '(' identifier '*' identifier CONST ')' '(' Expression ')' stmt_list { $$ = new ast_dimensioned_action_t (@2, $1, $4, $6, $10, $12); }
 
 reaction_def:
-                  REACTION '(' identifier '@' identifier CONST ')' identifier signature stmt_list { $$ = new ast_reaction_t (@1, $3, $5, $8, $9, $10); }
-| array_dimension REACTION '(' identifier '@' identifier CONST ')' identifier signature stmt_list { $$ = new ast_dimensioned_reaction_t (@2, $1, $4, $6, $9, $10, $11); }
+                  REACTION '(' identifier '*' identifier CONST ')' identifier signature stmt_list { $$ = new ast_reaction_t (@1, $3, $5, $8, $9, $10); }
+| array_dimension REACTION '(' identifier '*' identifier CONST ')' identifier signature stmt_list { $$ = new ast_dimensioned_reaction_t (@2, $1, $4, $6, $9, $10, $11); }
 
-bind_def: BIND '(' identifier '@' identifier ')' stmt_list { $$ = new ast_bind_t (@1, $3, $5, $7); }
+bind_def: BIND '(' identifier '*' identifier ')' stmt_list { $$ = new ast_bind_t (@1, $3, $5, $7); }
 
 init_def:
-  INIT '(' identifier '@' identifier       ')' identifier signature stmt_list { $$ = new ast_initializer_t (@1, $3, $5, $7, $8, $9); }
+  INIT '(' identifier '*' identifier       ')' identifier signature stmt_list { $$ = new ast_initializer_t (@1, $3, $5, $7, $8, $9); }
 
 getter_def:
-  GETTER '(' identifier '@' identifier CONST ')' identifier signature type_spec CONST stmt_list { $$ = new ast_getter_t (@1, $3, $5, $8, $9, $10, $12); }
+  GETTER '(' identifier '*' identifier CONST ')' identifier signature type_spec CONST stmt_list { $$ = new ast_getter_t (@1, $3, $5, $8, $9, $10, $12); }
 
 method_def:
-  FUNC '(' identifier '@' identifier       ')' identifier signature type_spec stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, $9, MUTABLE, $10); }
-| FUNC '(' identifier '@' identifier CONST ')' identifier signature type_spec stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, $10, MUTABLE, $11); }
-| FUNC '(' identifier '@' identifier       ')' identifier signature type_spec CONST stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, $9, IMMUTABLE, $11); }
-| FUNC '(' identifier '@' identifier CONST ')' identifier signature type_spec CONST stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, $10, IMMUTABLE, $12); }
-| FUNC '(' identifier '@' identifier       ')' identifier signature           stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, new ast_empty_type_spec_t (@1), IMMUTABLE, $9); }
-| FUNC '(' identifier '@' identifier CONST ')' identifier signature           stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, new ast_empty_type_spec_t (@1), IMMUTABLE, $10); }
+  FUNC '(' identifier '*' identifier       ')' identifier signature type_spec stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, $9, MUTABLE, $10); }
+| FUNC '(' identifier '*' identifier CONST ')' identifier signature type_spec stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, $10, MUTABLE, $11); }
+| FUNC '(' identifier '*' identifier       ')' identifier signature type_spec CONST stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, $9, IMMUTABLE, $11); }
+| FUNC '(' identifier '*' identifier CONST ')' identifier signature type_spec CONST stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, $10, IMMUTABLE, $12); }
+| FUNC '(' identifier '*' identifier       ')' identifier signature           stmt_list { $$ = new ast_method_t (@1, $3, $5, MUTABLE, $7, $8, new ast_empty_type_spec_t (@1), IMMUTABLE, $9); }
+| FUNC '(' identifier '*' identifier CONST ')' identifier signature           stmt_list { $$ = new ast_method_t (@1, $3, $5, IMMUTABLE, $8, $9, new ast_empty_type_spec_t (@1), IMMUTABLE, $10); }
 
 
 func_def: FUNC identifier signature stmt_list { $$ = new ast_function_t (@1, $2, $3, new ast_empty_type_spec_t (@1), $4); }
@@ -220,7 +220,7 @@ type_spec: identifier { $$ = new ast_identifier_type_spec_t (@1, $1); }
 | STRUCT '{' field_list '}' { $$ = new ast_struct_type_spec_t (@1, $3); }
 | PUSH signature { $$ = new ast_push_port_type_spec_t (@1, $2); }
 | PULL signature type_spec { $$ = new ast_pull_port_type_spec_t (@1, $2, $3); }
-| '@' type_spec { $$ = new ast_pointer_type_spec_t (@1, $2); }
+| '*' type_spec { $$ = new ast_pointer_type_spec_t (@1, $2); }
 | HEAP type_spec { $$ = new ast_heap_type_spec_t (@1, $2); }
 | array_dimension type_spec { $$ = new ast_array_type_spec_t (@1, $1, $2); }
 | '[' ']' type_spec { $$ = new ast_slice_type_spec_t (@1, $3); }
@@ -296,34 +296,5 @@ Operand
 Operand: LITERAL { $$ = $1; }
 | identifier { $$ = new ast_identifier_expr_t (@1, $1); }
 | '(' Expression ')' { $$ = $2; }
-
-/* PrimaryExpression: lvalue { $$ = new ast_implicit_dereference_expr_t (@1, $1); } */
-/* | PrimaryExpression '(' optional_expr_list ')' { $$ = new ast_call_expr_t (@1, $1, $3); } */
-/* | LITERAL { $$ = $1; } */
-/* | NEW type_spec { $$ = new ast_new_expr_t (@1, $2); } */
-/* | MOVE '(' Expression ')' { $$ = new ast_move_expr_t (@1, $3); } */
-/* | MERGE '(' Expression ')' { $$ = new ast_merge_expr_t (@1, $3); } */
-/* | '(' Expression ')' { $$ = $2; } */
-/* | CAST '<' type_spec '>' '(' Expression ')' { $$ = new ast_cast_expr_t (@1, $3, $6); } */
-
-/* UnaryExpression_no_call: PrimaryExpression_no_call { $$ = $1; } */
-/* | '!' UnaryExpression_no_call { $$ = new ast_logic_not_expr_t (@1, $2); } */
-/* | '&' lvalue { $$ = new ast_address_of_expr_t (@1, $2); } */
-
-/* PrimaryExpression_no_call: lvalue { $$ = new ast_implicit_dereference_expr_t (@1, $1); } */
-/* | LITERAL { $$ = $1; } */
-/* | NEW type_spec { $$ = new ast_new_expr_t (@1, $2); } */
-/* | MOVE '(' Expression ')' { $$ = new ast_move_expr_t (@1, $3); } */
-/* | MERGE '(' Expression ')' { $$ = new ast_merge_expr_t (@1, $3); } */
-/* | '(' Expression ')' { $$ = $2; } */
-/* | CAST '<' type_spec '>' '(' Expression ')' { $$ = new ast_cast_expr_t (@1, $3, $6); } */
-
-/* lvalue: primary_lvalue { $$ = $1; } */
-/* | '@' UnaryExpression_no_call { $$ = new ast_dereference_expr_t (@1, $2); } */
-
-/* primary_lvalue: identifier      { $$ = new ast_identifier_expr_t (@1, $1); } */
-/* | primary_lvalue '.' identifier { $$ = new ast_select_expr_t (@1, $1, $3); } */
-/* | primary_lvalue '[' Expression ']' { $$ = new ast_index_expr_t (@1, $1, $3); } */
-/* | primary_lvalue '[' Expression ':' Expression ']'    { $$ = new ast_slice_expr_t (@1, $1, $3, $5); } */
 
 %%

@@ -3,14 +3,14 @@ type Timer component {
      Alarm push ();
 };
 
-init (this @Timer) Init (interval uint64) {
+init (this *Timer) Init (interval uint64) {
      this.fd = timerfd_create();
      if (interval != 0u64) {
           timerfd_settime(this.fd, interval);
      }
 }
 
-action (this @Timer const) (readable(this.fd)) {
+action (this *Timer const) (readable(this.fd)) {
      var buf [8u]uint8;
      var r int;
      r = read(this.fd, buf[0u:8u]);
@@ -26,30 +26,30 @@ type UdpMessage struct {
 type Element struct
 {
   value UdpMessage;
-  next @Element;
+  next *Element;
 };
 
 type Queue struct
 {
-  head @Element;
-  tail @@Element;
+  head *Element;
+  tail **Element;
 };
 
-func (this @Queue) Push (value UdpMessage)
+func (this *Queue) Push (value UdpMessage)
 {
   if this.head == nil
     {
       this.tail = &this.head;
     };
 
-  var e @Element;
+  var e *Element;
   e = new Element;
   e.value = value;
   *this.tail = e;
   this.tail = &e.next;
 }
 
-func (this @Queue) Pop ()
+func (this *Queue) Pop ()
 {
   this.head = this.head.next;
   if this.head == nil
@@ -58,12 +58,12 @@ func (this @Queue) Pop ()
     };
 }
 
-func (this @Queue const) Empty () bool
+func (this *Queue const) Empty () bool
 {
   return this.head == nil;
 }
 
-func (this @Queue) Front () UdpMessage
+func (this *Queue) Front () UdpMessage
 {
   return this.head.value;
 }
@@ -73,7 +73,7 @@ type UdpParticipant component {
      queue Queue;
 };
 
-reaction (this @UdpParticipant const) Send (host string foreign; port uint16; msg string foreign) {
+reaction (this *UdpParticipant const) Send (host string foreign; port uint16; msg string foreign) {
      var m UdpMessage;
      m.host = copy (host);
      m.port = port;
@@ -83,7 +83,7 @@ reaction (this @UdpParticipant const) Send (host string foreign; port uint16; ms
      };
 }
 
-action (this @UdpParticipant const) (!this.queue.Empty () && writable (this.fd)) {
+action (this *UdpParticipant const) (!this.queue.Empty () && writable (this.fd)) {
        trigger {
               var m UdpMessage = this.queue.Front ();
               var b []uint;
@@ -93,7 +93,7 @@ action (this @UdpParticipant const) (!this.queue.Empty () && writable (this.fd))
        }
 }
 
-init (this @UdpParticipant) Init () {
+init (this *UdpParticipant) Init () {
      this.fd = udp_socket();
 }
 
@@ -103,17 +103,17 @@ type System component {
      Send push (host string foreign; port uint16; msg string foreign);
 };
 
-bind (this @System) {
+bind (this *System) {
      this.timer.Alarm -> this.Alarm;
      this.Send -> this.udp.Send;
 }
 
-init (this @System) Init () {
+init (this *System) Init () {
      this.timer.Init(1u64);
      this.udp.Init();
 }
 
-reaction (this @System const) Alarm () {
+reaction (this *System const) Alarm () {
      trigger Send (`localhost`, 8345u16, `hello, world`) { };
 }
 

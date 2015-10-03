@@ -4,17 +4,17 @@ type Variable component {
     value int;
 };
 
-func (this @Variable) Init () {
+func (this *Variable) Init () {
     this.value = -1i;
 }
 
-[3u] reaction (this @Variable const) Set (v int) {
+[3u] reaction (this *Variable const) Set (v int) {
     trigger {
         this.value = v;
     }
 }
 
-getter (this @Variable const) Get () int const {
+getter (this *Variable const) Get () int const {
     return this.value;
 }
 
@@ -34,13 +34,13 @@ type Process component {
     Decide push (v int);
 };
 
-func (this @Process) Init () {
+func (this *Process) Init () {
     this.status = PROCESS_IDLE;
     this.input = -1i;
     this.output = -1i;
 }
 
-reaction (this @Process const) initr (v int) {
+reaction (this *Process const) initr (v int) {
     trigger {
         this.input = v;
         if this.status == PROCESS_IDLE {
@@ -50,7 +50,7 @@ reaction (this @Process const) initr (v int) {
 }
 
 // Access
-action (this @Process const) (this.status == PROCESS_ACCESS) {
+action (this *Process const) (this.status == PROCESS_ACCESS) {
     var x int;
     x = this.get_x ();
     if x == -1i {
@@ -69,7 +69,7 @@ action (this @Process const) (this.status == PROCESS_ACCESS) {
 }
 
 // Decide
-action (this @Process const) (this.status == PROCESS_DECIDE) {
+action (this *Process const) (this.status == PROCESS_DECIDE) {
     trigger Decide (this.output) {
         this.status = PROCESS_DONE;
     }
@@ -89,7 +89,7 @@ type User component {
     initp push (v int);
 };
 
-init (this @User) Init (v int) {
+init (this *User) Init (v int) {
     this.v = v;
     this.status = USER_REQUEST;
     this.decision = -1i;
@@ -97,7 +97,7 @@ init (this @User) Init (v int) {
 }
 
 // Init
-action (this @User const) (this.status == USER_REQUEST || this.error) {
+action (this *User const) (this.status == USER_REQUEST || this.error) {
     trigger initp (this.v) {
         if !this.error {
             this.status = USER_WAIT;
@@ -106,10 +106,10 @@ action (this @User const) (this.status == USER_REQUEST || this.error) {
 }
 
 // Dummy
-action (this @User const) (this.error) {
+action (this *User const) (this.error) {
 }
 
-reaction (this @User const) Decide (v int) {
+reaction (this *User const) Decide (v int) {
     println this, ` decided value is `, v;
     trigger {
         if !this.error {
@@ -129,7 +129,7 @@ type System component {
     user [3u]User;
 };
 
-init (this @System) Init () {
+init (this *System) Init () {
     this.x.Init ();
     for i .. 3i {
         this.process[i].Init ();
@@ -137,7 +137,7 @@ init (this @System) Init () {
     }
 }
 
-bind (this @System) {
+bind (this *System) {
     for i .. 3u {
         this.process[i].get_x <- this.x.Get;
         this.process[i].set_x -> this.x.Set .. i;

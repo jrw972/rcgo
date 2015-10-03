@@ -236,7 +236,7 @@ type Filter struct {
         disp    float64;         /* dispersion */
 };
 
-func (this @Filter) initialize () {
+func (this *Filter) initialize () {
      this.t = 0u64;
      this.offset = 0f64;
      this.delay = 0.f64;
@@ -250,7 +250,7 @@ type Random struct {
 
 };
 
-func (this @Random) next () uint {
+func (this *Random) next () uint {
   // TODO
   return 0u;
 }
@@ -260,7 +260,7 @@ func (this @Random) next () uint {
  * and poll process.
  */
 type Peer struct {
-        next     @Peer;
+        next     *Peer;
         random   Random;
 
         /*
@@ -311,7 +311,7 @@ type Peer struct {
 /*
  * initialize() - reinitialize for persistent association.  Based on clear().
  */
-func (this @Peer) initialize (kiss      int8          /* kiss code */;
+func (this *Peer) initialize (kiss      int8          /* kiss code */;
                               precision int8;
                               t         float64)
 {
@@ -361,7 +361,7 @@ func (this @Peer) initialize (kiss      int8          /* kiss code */;
  * Chime list.  This is used by the intersection algorithm.
  */
 type m struct {              /* m is for Marzullo */
-        p     @Peer;         /* peer structure pointer */
+        p     *Peer;         /* peer structure pointer */
         type_ int;           /* high +1, mid 0, low -1 */
         edge  float64;       /* correctness interval edge */
 };
@@ -370,7 +370,7 @@ type m struct {              /* m is for Marzullo */
  * Survivor list.  This is used by the clustering algorithm.
  */
 type v struct {
-        p       @Peer;         /* peer structure pointer */
+        p       *Peer;         /* peer structure pointer */
         metric  float64;       /* sort metric */
 };
 
@@ -389,14 +389,14 @@ type System struct {
         reftime      tstamp;    /* reference time */
         m            [NMAX]m;   /* chime list */
         v            [NMAX]v;   /* survivor list */
-        p            @Peer;     /* association ID */
+        p            *Peer;     /* association ID */
         offset       float64;   /* combined offset */
         jitter       float64;   /* combined jitter */
         flags        int;       /* option flags */
         n            int;       /* number of survivors */
 };
 
-func (this @System) rstclock (t tstamp /* new update time */)
+func (this *System) rstclock (t tstamp /* new update time */)
 {
   this.t = t;
 }
@@ -418,7 +418,7 @@ type LocalClock struct {
 /*
  * rstclock() - clock state machine
  */
-func (this @LocalClock) rstclock (state  int;     /* new state */
+func (this *LocalClock) rstclock (state  int;     /* new state */
                                   offset float64  /* new offset */)
 {
         /*
@@ -498,7 +498,7 @@ type NTP component {
   c LocalClock;         /* local clock */
 };
 
-func (this @NTP) Init ()
+func (this *NTP) Init ()
 {
   println `Initializing NTP`;
 
@@ -522,7 +522,7 @@ func (this @NTP) Init ()
   this.s.rstclock (0u64);
   this.c.jitter = LOG2D (this.s.precision);
 
-  var p @Peer;
+  var p *Peer;
   p = new Peer;
 }
 
@@ -560,7 +560,7 @@ func (this @NTP) Init ()
 /*
  * mobilize() - mobilize and initialize an association
  */
-func (this @System) mobilize (
+func (this *System) mobilize (
         srcaddr  ipaddr;     /* IP source address */
         dstaddr  ipaddr;     /* IP destination address */
         version  int8;       /* version */
@@ -568,9 +568,9 @@ func (this @System) mobilize (
         keyid    int;        /* key identifier */
         flags    int;        /* peer flags */
         t        float64;
-        ) @Peer
+        ) *Peer
 {
-        var p @Peer;            /* peer process pointer */
+        var p *Peer;            /* peer process pointer */
 
         /*
          * Allocate and initialize association memory

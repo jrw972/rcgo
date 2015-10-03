@@ -99,7 +99,7 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 "*"|"/"|"%"|"&"        { return *yytext; }
 "+"|"-"|"|"|"^"        { return *yytext; }
 "!"|";"|","|"="        { return *yytext; }
-"@"|"."|":"            { return *yytext; }
+"."|":"                { return *yytext; }
 
 [_a-zA-Z][_a-zA-Z0-9]* { yylval.node = new ast_identifier_t (yylloc, yytext);
                          return IDENTIFIER; }

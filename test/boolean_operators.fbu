@@ -5,7 +5,7 @@ func not_evaluated () bool {
   return true;
 }
 
-init (this @Test) Main () {
+init (this *Test) Main () {
   println `false: `, false;
   println `true: `, true;
 

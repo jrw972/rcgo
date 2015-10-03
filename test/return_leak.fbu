@@ -1,7 +1,7 @@
 type S struct {
-    ptr @int;
+    ptr *int;
 };
 
-func (this @S const) f () @int {
+func (this *S const) f () *int {
     return this.ptr;
 }
