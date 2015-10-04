@@ -235,11 +235,6 @@ typed_value_t::dereference (typed_value_t in)
         {
             out = typed_value_t::make_ref (type.base_type (), HEAP, in.dereference_mutability, in.dereference_mutability);
         }
-
-        void visit (const pointer_const_type_t& type)
-        {
-            out = typed_value_t::make_ref (type.base_type (), HEAP, IMMUTABLE, IMMUTABLE);
-        }
     };
     visitor v (in);
     in.type->accept (v);

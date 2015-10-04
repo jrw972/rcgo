@@ -348,8 +348,6 @@ ACCEPT(initializer_type_t)
 ACCEPT(heap_type_t)
 ACCEPT(FileDescriptor_type_t)
 ACCEPT(pointer_type_t)
-ACCEPT(pointer_const_type_t)
-ACCEPT(pointer_foreign_type_t)
 ACCEPT(reaction_type_t)
 ACCEPT(signature_type_t)
 ACCEPT(string_type_t)
@@ -367,8 +365,6 @@ ACCEPT(void_type_t)
 ACCEPT(nil_type_t)
 ACCEPT(array_type_t)
 ACCEPT(slice_type_t)
-ACCEPT(slice_const_type_t)
-ACCEPT(slice_foreign_type_t)
 
 static bool
 structurally_equal (const type_t* x, const type_t* y)
@@ -670,11 +666,6 @@ const type_t* type_dereference (const type_t* type)
         {
             retval = type.base_type ();
         }
-
-        void visit (const pointer_const_type_t& type)
-        {
-            retval = type.base_type ();
-        }
     };
     visitor v;
     type->accept (v);
@@ -741,11 +732,6 @@ type_contains_pointer (const type_t* type)
         }
 
         void visit (const pointer_type_t& type)
-        {
-            flag = true;
-        }
-
-        void visit (const pointer_const_type_t& type)
         {
             flag = true;
         }
@@ -1182,15 +1168,6 @@ pull_port_type_t::to_string () const
     return str.str ();
 }
 
-parameter_t*
-method_base::make_this_parameter (const std::string& this_name,
-                                  const type_t* receiver_type,
-                                  Mutability dereference_mutability)
-{
-    typed_value_t this_value = typed_value_t::make_value (receiver_type, typed_value_t::STACK, MUTABLE, dereference_mutability);
-    return new parameter_t (NULL, this_name, this_value, true);
-}
-
 function_type_t*
 method_base::make_function_type (const parameter_t* this_parameter,
                                  const signature_type_t* signature,
@@ -1218,5 +1195,17 @@ function_type_t::return_type () const
 const type_t*
 method_base::return_type () const
 {
-    return return_parameter->value.type;
+    return return_parameter ()->value.type;
+}
+
+method_base::method_base (const named_type_t* named_type_,
+                          const parameter_t* this_parameter_,
+                          const signature_type_t * signature_,
+                          const parameter_t* return_parameter_)
+    : named_type (named_type_)
+    , receiver_type (this_parameter_->value.type)
+    , this_parameter (this_parameter_)
+    , function_type (make_function_type (this_parameter_, signature_, return_parameter_))
+    , signature (signature_)
+{
 }

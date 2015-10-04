@@ -2,6 +2,6 @@ type C component {
   flag bool;
 };
 
-action (this const * const C) (true) {
+action (this +const * C) (true) {
   this.flag = true;
 }

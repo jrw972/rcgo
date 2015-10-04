@@ -38,7 +38,7 @@ check_port_reaction_signature (const signature_type_t* signature)
             if (!parameter->value.is_foreign_safe ())
                 {
                     error_at_line (-1, 0, parameter->defining_node->location.File.c_str (), parameter->defining_node->location.Line,
-                                   "signature leaks pointers");
+                                   "E56: signature leaks pointers");
                 }
         }
 }
@@ -77,18 +77,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
         void visit (ast_slice_type_spec_t& node)
         {
             const type_t* base_type = process_type_spec (node.child (), true);
-            switch (node.mutability)
-                {
-                case MUTABLE:
-                    type = new slice_type_t (base_type);
-                    break;
-                case IMMUTABLE:
-                    type = new slice_const_type_t (base_type);
-                    break;
-                case FOREIGN:
-                    type = new slice_foreign_type_t (base_type);
-                    break;
-                }
+            type = new slice_type_t (base_type);
         }
 
         void visit (ast_component_type_spec_t& node)
@@ -112,15 +101,15 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
                     ++pos, ++e)
                 {
                     std::string id = ast_get_identifier (*pos);
-                    if (node.symtab->find_current (id) != NULL)
+                    if (node.parent ()->parent ()->FindSymbolCurrent (id) != NULL)
                         {
                             error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
                                            "%s is already defined in this scope", id.c_str ());
                         }
 
-                    node.symtab->enter (new TypedConstantSymbol (id,
-                                        *pos,
-                                        typed_value_t (named_type, e)));
+                    node.parent ()->parent ()->EnterSymbol (new TypedConstantSymbol (id,
+                                                            *pos,
+                                                            typed_value_t (named_type, e)));
                 }
         }
 
@@ -188,18 +177,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
         void visit (ast_pointer_type_spec_t& node)
         {
             const type_t* base_type = process_type_spec (node.child (), false);
-            switch (node.mutability)
-                {
-                case MUTABLE:
-                    type = pointer_type_t::make (base_type);
-                    break;
-                case IMMUTABLE:
-                    type = new pointer_const_type_t (base_type);
-                    break;
-                case FOREIGN:
-                    type = new pointer_foreign_type_t (base_type);
-                    break;
-                }
+            type = pointer_type_t::make (base_type);
         }
 
         void visit (ast_push_port_type_spec_t& node)
@@ -250,8 +228,8 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
                                 {
                                     typed_value_t tv = typed_value_t::make_value (type,
                                                        typed_value_t::STACK,
-                                                       MUTABLE,
-                                                       child->dereference_mutability);
+                                                       child->mutability,
+                                                       child->dereferenceMutability);
                                     signature->append (new parameter_t (id, identifier, tv, false));
                                 }
                             else

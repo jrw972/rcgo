@@ -577,72 +577,6 @@ private:
     pointer_type_t (const type_t* base_type) : base_type_t (base_type) { }
 };
 
-class pointer_const_type_t : public type_t, public base_type_t
-{
-public:
-    typedef void* ValueType;
-
-    pointer_const_type_t (const type_t* base_type) : base_type_t (base_type) { }
-
-    void accept (const_type_visitor_t& visitor) const;
-    std::string to_string () const
-    {
-        std::stringstream str;
-        str << "* const " << *base_type_;
-        return str.str ();
-    }
-    size_t alignment () const
-    {
-        return sizeof (void*);
-    }
-    size_t size () const
-    {
-        return sizeof (void*);
-    }
-    virtual TypeLevel level () const
-    {
-        return CONVENTIONAL;
-    }
-
-    const pointer_type_t * pointer_type () const
-    {
-        return pointer_type_t::make (base_type ());
-    }
-};
-
-class pointer_foreign_type_t : public type_t, public base_type_t
-{
-public:
-    typedef void* ValueType;
-
-    pointer_foreign_type_t (const type_t* base_type) : base_type_t (base_type) { }
-
-    void accept (const_type_visitor_t& visitor) const;
-    std::string to_string () const
-    {
-        std::stringstream str;
-        str << "* foreign " << *base_type_;
-        return str.str ();
-    }
-    size_t alignment () const
-    {
-        return sizeof (void*);
-    }
-    size_t size () const
-    {
-        return sizeof (void*);
-    }
-    virtual TypeLevel level () const
-    {
-        return CONVENTIONAL;
-    }
-
-    const pointer_type_t * pointer_type () const
-    {
-        return pointer_type_t::make (base_type ());
-    }
-};
-
 struct heap_type_t : public type_t, public base_type_t
 {
     heap_type_t (const type_t* base_type) : base_type_t (base_type) { }
@@ -845,78 +779,6 @@ public:
     }
 };
 
-class slice_const_type_t : public type_t, public base_type_t
-{
-public:
-    struct ValueType
-    {
-        void* ptr;
-        size_t length;
-        size_t capacity;
-    };
-
-    slice_const_type_t (const type_t* base_type)
-        : base_type_t (base_type)
-    { }
-
-    virtual void accept (const_type_visitor_t& visitor) const;
-
-    virtual std::string to_string () const
-    {
-        std::stringstream str;
-        str << "[] const " << *base_type_;
-        return str.str ();
-    }
-    virtual size_t alignment () const
-    {
-        return sizeof (void*);
-    }
-    virtual size_t size () const
-    {
-        return sizeof (ValueType);
-    }
-    virtual TypeLevel level () const
-    {
-        return CONVENTIONAL;
-    }
-};
-
-class slice_foreign_type_t : public type_t, public base_type_t
-{
-public:
-    struct ValueType
-    {
-        void* ptr;
-        size_t length;
-        size_t capacity;
-    };
-
-    slice_foreign_type_t (const type_t* base_type)
-        : base_type_t (base_type)
-    { }
-
-    virtual void accept (const_type_visitor_t& visitor) const;
-
-    virtual std::string to_string () const
-    {
-        std::stringstream str;
-        str << "[] const " << *base_type_;
-        return str.str ();
-    }
-    virtual size_t alignment () const
-    {
-        return sizeof (void*);
-    }
-    virtual size_t size () const
-    {
-        return sizeof (ValueType);
-    }
-    virtual TypeLevel level () const
-    {
-        return CONVENTIONAL;
-    }
-};
-
 class signature_type_t : public type_t
 {
 public:
@@ -1014,19 +876,9 @@ class method_base : public type_t
 {
 public:
     method_base (const named_type_t* named_type_,
-                 const std::string& this_name,
-                 const type_t* receiver_type_,
-                 Mutability dereference_mutability,
+                 const parameter_t* this_parameter_,
                  const signature_type_t * signature_,
-                 const parameter_t* return_parameter)
-        : named_type (named_type_)
-        , receiver_type (receiver_type_)
-        , this_parameter (make_this_parameter (this_name, receiver_type_, dereference_mutability))
-        , function_type (make_function_type (this_parameter, signature_, return_parameter))
-        , signature (signature_)
-        , return_parameter (function_type->return_parameter ())
-    {
-    }
+                 const parameter_t* return_parameter_);
 
     const type_t* return_type () const;
 
@@ -1035,12 +887,12 @@ public:
     const parameter_t* const this_parameter;
     const function_type_t* const function_type;
     const signature_type_t* const signature;
-    const parameter_t* const return_parameter;
+    const parameter_t* return_parameter () const
+    {
+        return function_type->return_parameter ();
+    }
 
 private:
-    static parameter_t* make_this_parameter (const std::string& this_name,
-            const type_t* receiver_type,
-            Mutability dereference_mutability);
     static function_type_t* make_function_type (const parameter_t* this_parameter,
             const signature_type_t* signature,
             const parameter_t* return_parameter);
@@ -1050,12 +902,10 @@ class method_type_t : public method_base
 {
 public:
     method_type_t (const named_type_t* named_type_,
-                   const std::string& this_name,
-                   const type_t* receiver_type_,
-                   Mutability dereference_mutability,
+                   const parameter_t* this_parameter,
                    const signature_type_t * signature,
                    const parameter_t* return_parameter)
-        : method_base (named_type_, this_name, receiver_type_, dereference_mutability, signature, return_parameter)
+        : method_base (named_type_, this_parameter, signature, return_parameter)
     {
     }
 
@@ -1079,11 +929,10 @@ class getter_type_t : public method_base
 {
 public:
     getter_type_t (const named_type_t* named_type_,
-                   const std::string& this_name,
-                   const type_t* receiver_type_,
+                   const parameter_t* this_parameter,
                    const signature_type_t * signature,
                    const parameter_t* return_parameter)
-        : method_base (named_type_, this_name, receiver_type_, IMMUTABLE, signature, return_parameter)
+        : method_base (named_type_, this_parameter, signature, return_parameter)
         , bind_type (new function_type_t (signature, return_parameter))
     {
     }
@@ -1110,12 +959,10 @@ class initializer_type_t : public method_base
 {
 public:
     initializer_type_t (const named_type_t* named_type_,
-                        const std::string& this_name,
-                        const type_t* receiver_type_,
-                        Mutability dereference_mutability,
+                        const parameter_t* this_parameter,
                         const signature_type_t * signature,
                         const parameter_t* return_parameter)
-        : method_base (named_type_, this_name, receiver_type_, dereference_mutability, signature, return_parameter)
+        : method_base (named_type_, this_parameter, signature, return_parameter)
     {}
 
     void accept (const_type_visitor_t& visitor) const;
@@ -1280,14 +1127,6 @@ struct const_type_visitor_t
     {
         default_action (type);
     }
-    virtual void visit (const slice_const_type_t& type)
-    {
-        default_action (type);
-    }
-    virtual void visit (const slice_foreign_type_t& type)
-    {
-        default_action (type);
-    }
     virtual void visit (const bool_type_t& type)
     {
         default_action (type);
@@ -1333,14 +1172,6 @@ struct const_type_visitor_t
         default_action (type);
     }
     virtual void visit (const pointer_type_t& type)
-    {
-        default_action (type);
-    }
-    virtual void visit (const pointer_const_type_t& type)
-    {
-        default_action (type);
-    }
-    virtual void visit (const pointer_foreign_type_t& type)
     {
         default_action (type);
     }

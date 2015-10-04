@@ -6,55 +6,52 @@
 void
 enter_symbols (ast_t * node)
 {
-    /* Construct the top-level table. */
-    symtab_t *symtab = symtab_get_root (node->symtab);
-
     /* Insert types. */
     named_type_t* bool_type = new named_type_t ("bool", bool_type_t::instance ());
-    symtab->enter (new TypeSymbol ("bool", node, bool_type));
+    node->EnterSymbol (new TypeSymbol ("bool", node, bool_type));
 
     named_type_t* int_type = new named_type_t ("int", int_type_t::instance ());
-    symtab->enter (new TypeSymbol ("int", node, int_type));
-    symtab->enter (new TypeSymbol ("int8", node, new named_type_t ("int8", int8_type_t::instance ())));
+    node->EnterSymbol (new TypeSymbol ("int", node, int_type));
+    node->EnterSymbol (new TypeSymbol ("int8", node, new named_type_t ("int8", int8_type_t::instance ())));
 
-    symtab->enter (new TypeSymbol ("uint", node, new named_type_t ("uint", uint_type_t::instance ())));
+    node->EnterSymbol (new TypeSymbol ("uint", node, new named_type_t ("uint", uint_type_t::instance ())));
 
     named_type_t* uint8_type = new named_type_t ("uint8", uint8_type_t::instance ());
-    symtab->enter (new TypeSymbol ("uint8", node, uint8_type));
-    symtab->enter (new TypeSymbol ("uint16", node, new named_type_t ("uint16", uint16_type_t::instance ())));
-    symtab->enter (new TypeSymbol ("uint32", node, new named_type_t ("uint32", uint32_type_t::instance ())));
+    node->EnterSymbol (new TypeSymbol ("uint8", node, uint8_type));
+    node->EnterSymbol (new TypeSymbol ("uint16", node, new named_type_t ("uint16", uint16_type_t::instance ())));
+    node->EnterSymbol (new TypeSymbol ("uint32", node, new named_type_t ("uint32", uint32_type_t::instance ())));
 
     named_type_t* uint64_type = new named_type_t ("uint64", uint64_type_t::instance ());
-    symtab->enter (new TypeSymbol ("uint64", node, uint64_type));
+    node->EnterSymbol (new TypeSymbol ("uint64", node, uint64_type));
 
-    symtab->enter (new TypeSymbol ("uint128", node, new named_type_t ("uint128", uint128_type_t::instance ())));
+    node->EnterSymbol (new TypeSymbol ("uint128", node, new named_type_t ("uint128", uint128_type_t::instance ())));
 
-    symtab->enter (new TypeSymbol ("float64", node, new named_type_t ("float64", float64_type_t::instance ())));
+    node->EnterSymbol (new TypeSymbol ("float64", node, new named_type_t ("float64", float64_type_t::instance ())));
 
-    symtab->enter (new TypeSymbol ("string", node, new named_type_t ("string", string_type_t::instance ())));
+    node->EnterSymbol (new TypeSymbol ("string", node, new named_type_t ("string", string_type_t::instance ())));
 
     /* I/O facilities. */
     named_type_t* fd_type = new named_type_t ("FileDescriptor", FileDescriptor_type_t::instance ());
-    symtab->enter (new TypeSymbol ("FileDescriptor", node, fd_type));
-    symtab->enter (new Readable (node, fd_type, bool_type));
-    symtab->enter (new Read (node, fd_type, uint8_type));
-    symtab->enter (new Writable (node, fd_type, bool_type));
-    symtab->enter (new TimerfdCreate (node, fd_type));
-    symtab->enter (new TimerfdSettime (node, fd_type, int_type, uint64_type));
-    symtab->enter (new UdpSocket (node, fd_type));
+    node->EnterSymbol (new TypeSymbol ("FileDescriptor", node, fd_type));
+    node->EnterSymbol (new Readable (node, fd_type, bool_type));
+    node->EnterSymbol (new Read (node, fd_type, uint8_type));
+    node->EnterSymbol (new Writable (node, fd_type, bool_type));
+    node->EnterSymbol (new TimerfdCreate (node, fd_type));
+    node->EnterSymbol (new TimerfdSettime (node, fd_type, int_type, uint64_type));
+    node->EnterSymbol (new UdpSocket (node, fd_type));
 
     /* Insert zero constant. */
-    symtab->enter (new TypedConstantSymbol ("nil",
-                                            node,
-                                            typed_value_t::nil ()));
+    node->EnterSymbol (new TypedConstantSymbol ("nil",
+                       node,
+                       typed_value_t::nil ()));
 
     /* Insert untyped boolean constants. */
-    symtab->enter (new TypedConstantSymbol ("true",
-                                            node,
-                                            typed_value_t (bool_type_t::instance (), true)));
-    symtab->enter (new TypedConstantSymbol ("false",
-                                            node,
-                                            typed_value_t (bool_type_t::instance (), false)));
+    node->EnterSymbol (new TypedConstantSymbol ("true",
+                       node,
+                       typed_value_t (bool_type_t::instance (), true)));
+    node->EnterSymbol (new TypedConstantSymbol ("false",
+                       node,
+                       typed_value_t (bool_type_t::instance (), false)));
 
     struct visitor : public ast_visitor_t
     {
@@ -72,34 +69,35 @@ enter_symbols (ast_t * node)
         {
             enter_undefined_symbol (node.symbol,
                                     new InstanceSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),
-                                    node.symtab);
+                                    node);
         }
 
         void visit (ast_type_definition_t& node)
         {
             enter_undefined_symbol (node.symbol,
                                     new TypeSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),
-                                    node.symtab);
+                                    node);
         }
 
         void visit (ast_function_t& node)
         {
             enter_undefined_symbol (node.function_symbol,
                                     new Function (node),
-                                    symtab_parent (node.symtab));
+                                    node);
         }
 
         static void
         enter_undefined_symbol (symbol_holder& node,
                                 Symbol* s,
-                                symtab_t* symtab)
+                                ast_t& a)
         {
+            ast_t* symtab = a.parent ();
             const std::string& identifier = s->identifier;
-            Symbol *symbol = symtab->find_current (identifier);
+            Symbol *symbol = symtab->FindSymbolCurrent (identifier);
             if (symbol == NULL)
                 {
                     symbol = s;
-                    symtab->enter (symbol);
+                    symtab->EnterSymbol (symbol);
                     node.symbol (symbol);
                 }
             else

@@ -38,6 +38,7 @@
 %type <node> MultiplyExpression
 %type <node> optional_expr_list
 %type <node> index_expr
+%type <node> Receiver
 %type <node> Operand
 %type <node> optional_push_port_call_list
 %type <node> OrExpression
@@ -62,7 +63,8 @@
 %type <node> while_stmt
 %destructor { /* TODO:  Free the node. node_free ($$); */ } <node>
 
-%type <mutability> OptionalMutability
+%type <mutability> Mutability
+%type <mutability> DereferenceMutability
 
 %token ACTION BIND CAST CHANGE COMPONENT CONST COPY ELSE ENUM FOR FOREIGN_KW FUNC GETTER HEAP IF INIT INSTANCE MERGE MOVE NEW PRINTLN PULL PUSH REACTION RETURN_KW STRUCT TRIGGER TYPE VAR WHILE
 
@@ -92,51 +94,61 @@ instance_def: INSTANCE identifier identifier identifier ';' { $$ = new ast_insta
 
 type_def: TYPE identifier type_spec ';' { $$ = new ast_type_definition_t (@1, $2, $3); }
 
-OptionalMutability:
-  /* Empty. */
+Mutability:
+/* Empty. */
 { $$ = MUTABLE; }
 | CONST
 { $$ = IMMUTABLE; }
 | FOREIGN_KW
 { $$ = FOREIGN; }
 
+DereferenceMutability:
+/* Empty. */
+{ $$ = MUTABLE; }
+| '+' CONST
+{ $$ = IMMUTABLE; }
+| '+' FOREIGN_KW
+{ $$ = FOREIGN; }
+
+Receiver:
+'(' identifier Mutability DereferenceMutability '*' identifier ')'
+{ $$ = new ast_receiver_t (@1, $2, $3, $4, $6); }
+
 action_def:
-  ACTION '(' identifier OptionalMutability '*' CONST identifier ')' '(' Expression ')' stmt_list
-{ $$ = new ast_action_t (@1, $3, $7, $10, $12); }
-| array_dimension ACTION '(' identifier OptionalMutability '*' CONST identifier ')' '(' Expression ')' stmt_list
-{ $$ = new ast_dimensioned_action_t (@2, $1, $4, $8, $11, $13); }
+ACTION Receiver '(' Expression ')' stmt_list
+{ $$ = new ast_action_t (@1, $2, $4, $6); }
+| array_dimension ACTION Receiver '(' Expression ')' stmt_list
+{ $$ = new ast_dimensioned_action_t (@2, $1, $3, $5, $7); }
 
 reaction_def:
-  REACTION '(' identifier OptionalMutability '*' CONST identifier ')' identifier signature stmt_list
-{ $$ = new ast_reaction_t (@1, $3, $7, $9, $10, $11); }
-| array_dimension REACTION '(' identifier OptionalMutability '*' CONST identifier ')' identifier signature stmt_list
-{ $$ = new ast_dimensioned_reaction_t (@2, $1, $4, $8, $10, $11, $12); }
+REACTION Receiver identifier signature stmt_list
+{ $$ = new ast_reaction_t (@1, $2, $3, $4, $5); }
+| array_dimension REACTION Receiver identifier signature stmt_list
+{ $$ = new ast_dimensioned_reaction_t (@2, $1, $3, $4, $5, $6); }
 
-bind_def: BIND '(' identifier OptionalMutability '*' identifier ')' stmt_list { $$ = new ast_bind_t (@1, $3, $6, $8); }
+bind_def:
+BIND Receiver stmt_list
+{ $$ = new ast_bind_t (@1, $2, $3); }
 
 init_def:
-  INIT '(' identifier OptionalMutability '*' identifier       ')' identifier signature stmt_list { $$ = new ast_initializer_t (@1, $3, $6, $8, $9, $10); }
+INIT Receiver identifier signature stmt_list
+{ $$ = new ast_initializer_t (@1, $2, $3, $4, $5); }
 
 getter_def:
-  GETTER '(' identifier OptionalMutability '*' CONST identifier ')' identifier signature type_spec stmt_list
-{ $$ = new ast_getter_t (@1, $3, $7, $9, $10, $11, $12); }
+GETTER Receiver identifier signature DereferenceMutability type_spec stmt_list
+{ $$ = new ast_getter_t (@1, $2, $3, $4, $5, $6, $7); }
 
 method_def:
-  FUNC '(' identifier OptionalMutability '*' identifier       ')' identifier signature type_spec stmt_list
-{ $$ = new ast_method_t (@1, $3, $6, MUTABLE, $8, $9, $10, MUTABLE, $11); }
-| FUNC '(' identifier OptionalMutability '*' CONST identifier ')' identifier signature type_spec stmt_list
-{ $$ = new ast_method_t (@1, $3, $7, IMMUTABLE, $9, $10, $11, MUTABLE, $12); }
-| FUNC '(' identifier OptionalMutability '*' identifier       ')' identifier signature type_spec CONST stmt_list
-{ $$ = new ast_method_t (@1, $3, $6, MUTABLE, $8, $9, $10, IMMUTABLE, $12); }
-| FUNC '(' identifier OptionalMutability '*' CONST identifier ')' identifier signature type_spec CONST stmt_list
-{ $$ = new ast_method_t (@1, $3, $7, IMMUTABLE, $9, $10, $11, IMMUTABLE, $13); }
-| FUNC '(' identifier OptionalMutability '*' identifier       ')' identifier signature           stmt_list
-{ $$ = new ast_method_t (@1, $3, $6, MUTABLE, $8, $9, new ast_empty_type_spec_t (@1), IMMUTABLE, $10); }
-| FUNC '(' identifier OptionalMutability '*' CONST identifier ')' identifier signature           stmt_list
-{ $$ = new ast_method_t (@1, $3, $7, IMMUTABLE, $9, $10, new ast_empty_type_spec_t (@1), IMMUTABLE, $11); }
+FUNC Receiver identifier signature DereferenceMutability type_spec stmt_list
+{ $$ = new ast_method_t (@1, $2, $3, $4, $5, $6, $7); }
+| FUNC Receiver identifier signature           stmt_list
+{ $$ = new ast_method_t (@1, $2, $3, $4, IMMUTABLE, new ast_empty_type_spec_t (@1), $5); }
 
-func_def: FUNC identifier signature stmt_list { $$ = new ast_function_t (@1, $2, $3, new ast_empty_type_spec_t (@1), $4); }
-| FUNC identifier signature type_spec stmt_list { $$ = new ast_function_t (@1, $2, $3, $4, $5); }
+func_def:
+FUNC identifier signature stmt_list
+{ $$ = new ast_function_t (@1, $2, $3, IMMUTABLE, new ast_empty_type_spec_t (@1), $4); }
+| FUNC identifier signature DereferenceMutability type_spec stmt_list
+{ $$ = new ast_function_t (@1, $2, $3, $4, $5, $6); }
 
 signature: '(' ')' { $$ = new ast_signature_type_spec_t (yyloc); }
 | '(' parameter_list optional_semicolon ')' { $$ = $2; }
@@ -145,8 +157,8 @@ parameter_list: parameter { $$ = (new ast_signature_type_spec_t (@1))->append ($
 | parameter_list ';' parameter { $$ = $1->append ($3); }
 
 parameter:
-  identifier_list OptionalMutability type_spec
-{ $$ = new ast_identifier_list_type_spec_t (@1, $1, $3, $2); }
+  identifier_list Mutability DereferenceMutability type_spec
+{ $$ = new ast_identifier_list_type_spec_t (@1, $1, $2, $3, $4); }
 
 optional_semicolon: /* Empty. */
 | ';'
@@ -214,9 +226,9 @@ expr_stmt: Expression ';' {
   $$ = new ast_expression_statement_t (@1, $1);
  }
 
-var_stmt: VAR identifier_list type_spec ';' { $$ = new ast_var_statement_t (@1, $2, $3); }
-| VAR identifier_list type_spec '=' expr_list ';' { $$ = new ast_var_type_init_statement_t (@1, $2, $3, $5); }
-| VAR identifier_list '=' expr_list ';' { unimplemented; }
+var_stmt: VAR identifier_list Mutability DereferenceMutability type_spec ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, $5); }
+| VAR identifier_list Mutability DereferenceMutability type_spec '=' expr_list ';' { $$ = new ast_var_type_init_statement_t (@1, $2, $3, $4, $5, $7); }
+| VAR identifier_list Mutability DereferenceMutability '=' expr_list ';' { unimplemented; }
 
 assignment_stmt: Expression '=' Expression ';' { $$ = new ast_assign_statement_t (@1, $1, $3); } /* CHECK */
 | Expression ADD_ASSIGN Expression ';' { $$ = new ast_add_assign_statement_t (@1, $1, $3); } /* CHECK */
@@ -240,16 +252,16 @@ type_spec: identifier { $$ = new ast_identifier_type_spec_t (@1, $1); }
 | STRUCT '{' field_list '}' { $$ = new ast_struct_type_spec_t (@1, $3); }
 | PUSH signature { $$ = new ast_push_port_type_spec_t (@1, $2); }
 | PULL signature type_spec { $$ = new ast_pull_port_type_spec_t (@1, $2, $3); }
-| '*' OptionalMutability type_spec { $$ = new ast_pointer_type_spec_t (@1, $2, $3); }
+| '*' type_spec { $$ = new ast_pointer_type_spec_t (@1, $2); }
 | HEAP type_spec { $$ = new ast_heap_type_spec_t (@1, $2); }
 | array_dimension type_spec { $$ = new ast_array_type_spec_t (@1, $1, $2); }
-| '[' ']' OptionalMutability type_spec { $$ = new ast_slice_type_spec_t (@1, $3, $4); }
+| '[' ']' type_spec { $$ = new ast_slice_type_spec_t (@1, $3); }
 | ENUM '{' identifier_list '}' { $$ = new ast_enum_type_spec_t (@1, $3); }
 
 array_dimension: '[' Expression ']' { $$ = $2; }
 
 field_list: /* empty */ { $$ = new ast_field_list_type_spec_t (yyloc); }
-| field_list identifier_list type_spec ';' { $$ = $1->append (new ast_identifier_list_type_spec_t (@1, $2, $3, MUTABLE)); }
+| field_list identifier_list type_spec ';' { $$ = $1->append (new ast_identifier_list_type_spec_t (@1, $2, MUTABLE, MUTABLE, $3)); }
 
 Expression: OrExpression { $$ = $1; }
 

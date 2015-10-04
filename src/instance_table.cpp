@@ -357,15 +357,21 @@ instance_table_enumerate_bindings (instance_table_t& table)
 
                         void visit (const ast_bind_t& node)
                         {
-                            memory.set_value_at_offset (node.this_symbol.symbol ()->offset (), receiver_address);
+                            node.receiver ()->accept (*this);
+
                             node.body ()->accept (*this);
+                        }
+
+                        void visit (const ast_receiver_t& node)
+                        {
+                            memory.set_value_at_offset (node.this_symbol.symbol ()->offset (), receiver_address);
                         }
 
                         void bind (ast_t* left, ast_t* right, static_value_t param = static_value_t ())
                         {
                             static_value_t port = evaluate_static (left, memory);
                             // Strip off the implicit dereference and selecting of the reaction.
-                            static_value_t input = evaluate_static (right->children[0]->children[0], memory);
+                            static_value_t input = evaluate_static (right->at (0)->at (0), memory);
                             typed_value_t reaction = right->typed_value;
 
                             assert (port.kind == static_value_t::ABSOLUTE_ADDRESS);
@@ -396,7 +402,7 @@ instance_table_enumerate_bindings (instance_table_t& table)
                             const getter_type_t* getter_type = type_cast<getter_type_t> (tv.type);
                             assert (getter_type != NULL);
                             // Strip off the implicit dereference and selecting of the getter.
-                            static_value_t input = evaluate_static (node.right ()->children[0]->children[0], memory);
+                            static_value_t input = evaluate_static (node.right ()->at(0)->at(0), memory);
                             assert (input.kind == static_value_t::ABSOLUTE_ADDRESS);
                             instance_table_t::OutputType o (table.instances[input.address], dynamic_cast<Getter*> (tv.value.callable_value ()));
                             table.pull_ports[pull_port.address].outputs.insert (o);
@@ -809,7 +815,8 @@ transitive_closure (const instance_table_t& table,
             if (type_cast<getter_type_t> (t) != NULL)
                 {
                     offset_visitor v (receiver_address);
-                    node.expr ()->children[0]->children[0]->accept (v);
+                    unimplemented;
+                    //node.expr ()->children[0]->children[0]->accept (v);
                     instance_table_t::InstancesType::const_iterator pos = table.instances.find (v.computed_address);
                     assert (pos != table.instances.end ());
                     set.immutable_phase.insert (std::make_pair (pos->second, TRIGGER_READ));
@@ -817,7 +824,7 @@ transitive_closure (const instance_table_t& table,
             else if (type_cast<pull_port_type_t> (t) != NULL)
                 {
                     offset_visitor v (receiver_address);
-                    node.expr ()->children[0]->accept (v);
+                    node.expr ()->at (0)->accept (v);
                     instance_table_t::PullPortsType::const_iterator pos = table.pull_ports.find (v.computed_address);
                     assert (pos != table.pull_ports.end ());
                     instance_table_t::OutputType out = *pos->second.outputs.begin ();

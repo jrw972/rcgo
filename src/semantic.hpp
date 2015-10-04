@@ -12,33 +12,33 @@ void construct_symbol_table (ast_t * node);
 void enter_symbols (ast_t * node);
 
 // Enter a symbol.
-Symbol* enter_symbol (symtab_t* symtab, Symbol * symbol, symbol_holder& holder);
+Symbol* enter_symbol (ast_t& node, Symbol * symbol, symbol_holder& holder);
 
 // Enter a signature.
-void enter_signature (ast_t * node, const signature_type_t * type);
+void enter_signature (ast_t& node, const signature_type_t * type);
 
 // Look up a symbol.  If it is not defined, process its definition.
 template<typename T>
 T* processAndLookup (ast_t * node, const std::string& identifier)
 {
-  Symbol *symbol = node->symtab->find (identifier);
-  if (symbol == NULL)
-    {
-       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                     "%s was not declared in this scope", identifier.c_str ());
-    }
-  if (symbol->inProgress)
-    {
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                     "%s is defined recursively", identifier.c_str ());
-    }
-  if (!symbol->defined ())
-    {
-      // Process the definition.
-      unimplemented;
-    }
+    Symbol *symbol = node->FindSymbol (identifier);
+    if (symbol == NULL)
+        {
+            error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+                           "%s was not declared in this scope", identifier.c_str ());
+        }
+    if (symbol->inProgress)
+        {
+            error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+                           "%s is defined recursively", identifier.c_str ());
+        }
+    if (!symbol->defined ())
+        {
+            // Process the definition.
+            unimplemented;
+        }
 
-  return SymbolCast<T> (symbol);
+    return SymbolCast<T> (symbol);
 }
 
 // Look up a symbol.  Error if it is not defined.

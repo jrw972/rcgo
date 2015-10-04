@@ -9,14 +9,14 @@
 #include "Callable.hpp"
 
 Symbol*
-enter_symbol (symtab_t* symtab, Symbol * symbol, symbol_holder& holder)
+enter_symbol (ast_t& node, Symbol * symbol, symbol_holder& holder)
 {
     // Check if the symbol is defined locally.
     const std::string& identifier = symbol->identifier;
-    Symbol *s = symtab->find_current (identifier);
+    Symbol *s = node.FindSymbolCurrent (identifier);
     if (s == NULL)
         {
-            symtab->enter (symbol);
+            node.EnterSymbol (symbol);
             holder.symbol (symbol);
         }
     else
@@ -79,8 +79,8 @@ static void check_rvalue_list (ast_t * node);
 static bool
 in_mutable_section (const ast_t* node)
 {
-    return get_current_action (node) != NULL &&
-           get_current_trigger (node) != NULL;
+    return node->GetAction () != NULL &&
+           node->GetTrigger () != NULL;
 }
 
 static typed_value_t
@@ -148,7 +148,7 @@ type_check_expr (ast_t* ptr)
         void visit (ast_indexed_port_call_expr_t& node)
         {
             const std::string& port_identifier = ast_get_identifier (node.identifier ());
-            const type_t *this_type = get_current_receiver_type (&node);
+            const type_t *this_type = node.GetReceiverType ();
             const type_t *type = type_select (this_type, port_identifier);
 
             if (type == NULL)
@@ -229,11 +229,11 @@ type_check_expr (ast_t* ptr)
         {
             ast_t *identifier_node = node.child ();
             const std::string& identifier = ast_get_identifier (identifier_node);
-            Symbol *symbol = node.symtab->find (identifier);
+            Symbol *symbol = node.FindSymbol (identifier);
             if (symbol == NULL)
                 {
                     error_at_line (-1, 0, identifier_node->location.File.c_str (),
-                                   identifier_node->location.Line, "%s is not defined",
+                                   identifier_node->location.Line, "E57: %s is not defined",
                                    identifier.c_str ());
                 }
 
@@ -462,19 +462,19 @@ type_check_expr (ast_t* ptr)
                 void visit (const method_type_t& type)
                 {
                     // No restrictions on caller.
-                    rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
+                    rvalue_visitor.check_call (node, type.signature, type.return_parameter ()->value, node.args ());
 
                     if (type_dereference (type.receiver_type) != NULL)
                         {
                             // Method expects a pointer.  Insert address of.
                             // Strip off implicit deref and select.
-                            ast_t* receiver_select_expr = node.expr ()->children[0]->children[0];
+                            ast_t* receiver_select_expr = node.expr ()->at (0)->at (0);
                             ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.Line, receiver_select_expr);
                             rvalue_visitor.check_address_of (*e);
-                            node.expr ()->children[0]->children[0] = e;
+                            node.expr ()->at (0)->at(0) = e;
                         }
 
-                    typed_value_t argument_tv = node.expr ()->children[0]->children[0]->typed_value;
+                    typed_value_t argument_tv = node.expr ()->at (0)->at (0)->typed_value;
                     typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
                     check_assignment (parameter_tv, argument_tv, node,
                                       "E48: call expects %s but given %s",
@@ -485,26 +485,26 @@ type_check_expr (ast_t* ptr)
                 void visit (const initializer_type_t& type)
                 {
                     // Caller must be an initializer.
-                    Initializer* initializer = get_current_initializer (&node);
+                    Initializer* initializer = node.GetInitializer ();
 
                     if (initializer == NULL)
                         {
                             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                           "E25: initializers may only be called from initializeers");
+                                           "E25: initializers may only be called from initializers");
                         }
 
-                    rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
+                    rvalue_visitor.check_call (node, type.signature, type.return_parameter ()->value, node.args ());
 
                     assert (type_dereference (type.receiver_type) != NULL);
 
                     // Method expects a pointer.  Insert address of.
                     // Strip off implicit deref and select.
-                    ast_t* receiver_select_expr = node.expr ()->children[0]->children[0];
+                    ast_t* receiver_select_expr = node.expr ()->at (0)->at (0);
                     ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.Line, receiver_select_expr);
                     rvalue_visitor.check_address_of (*e);
-                    node.expr ()->children[0]->children[0] = e;
+                    node.expr ()->at (0)->at (0) = e;
 
-                    typed_value_t argument_tv = node.expr ()->children[0]->children[0]->typed_value;
+                    typed_value_t argument_tv = node.expr ()->at (0)->at (0)->typed_value;
                     typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
                     check_assignment (parameter_tv, argument_tv, node,
                                       "E49: call expects %s but given %s",
@@ -514,27 +514,28 @@ type_check_expr (ast_t* ptr)
 
                 void visit (const getter_type_t& type)
                 {
-                    // Must be called from either a getter, an action, or reaction.
-                    if (get_current_getter (&node) == NULL &&
-                            get_current_action (&node) == NULL)
-                        {
-                            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                           "E26: getters may only be called from a getter, an action, or a reaction");
-                        }
+                    unimplemented;
+                    // // Must be called from either a getter, an action, or reaction.
+                    // if (get_current_getter (&node) == NULL &&
+                    //         get_current_action (&node) == NULL)
+                    //     {
+                    //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                    //                        "E26: getters may only be called from a getter, an action, or a reaction");
+                    //     }
 
-                    rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
-                    if (in_mutable_section (&node))
-                        {
-                            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                           "cannot call getter in mutable section");
-                        }
+                    // rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
+                    // if (in_mutable_section (&node))
+                    //     {
+                    //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                    //                        "cannot call getter in mutable section");
+                    //     }
                 }
 
                 void visit (const pull_port_type_t& type)
                 {
                     // Must be called from either a getter, an action, or reaction.
-                    if (get_current_getter (&node) == NULL &&
-                            get_current_action (&node) == NULL)
+                    if (node.GetGetter () == NULL &&
+                            node.GetAction () == NULL)
                         {
                             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                                            "E26: pull ports may only be called from a getter, an action, or a reaction");
@@ -559,12 +560,12 @@ type_check_expr (ast_t* ptr)
             ast_t *expr = node.identifier ();
             ast_t *args = node.args ();
             const std::string& port_identifier = ast_get_identifier (expr);
-            const type_t *this_type = get_current_receiver_type (&node);
+            const type_t *this_type = node.GetReceiverType ();
             const push_port_type_t *push_port_type = type_cast<push_port_type_t> (type_select (this_type, port_identifier));
             if (push_port_type == NULL)
                 {
                     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "no port named %s", port_identifier.c_str ());
+                                   "E30: no port named %s", port_identifier.c_str ());
                 }
             check_rvalue_list (args);
             typed_value_t tv = typed_value_t::make_value (void_type_t::instance (),
@@ -783,7 +784,7 @@ type_check_statement (ast_t * node)
             typed_value_t zero = limit;
             zero.zero ();
             Symbol* symbol = new VariableSymbol (identifier, node.identifier (), typed_value_t::make_ref (typed_value_t::make_range (zero, limit, typed_value_t::STACK, IMMUTABLE, IMMUTABLE)));
-            enter_symbol (node.symtab, symbol, node.symbol);
+            enter_symbol (node, symbol, node.symbol);
             type_check_statement (node.body ());
             node.limit = limit;
         }
@@ -875,10 +876,10 @@ type_check_statement (ast_t * node)
 
             // Enter the new heap root.
             Symbol* symbol = new VariableSymbol (identifier, &node, typed_value_t::make_ref (root_type, typed_value_t::STACK, MUTABLE, MUTABLE));
-            enter_symbol (node.symtab, symbol, node.root_symbol);
+            enter_symbol (node, symbol, node.root_symbol);
 
             // Enter all parameters and variables in scope that are pointers as pointers to foreign.
-            node.symtab->change ();
+            node.Change ();
 
             // Check the body.
             type_check_statement (body);
@@ -928,7 +929,7 @@ type_check_statement (ast_t * node)
             typed_value_t expr_tv = checkAndImplicitlyDereference (node.child_ref ());
 
             // Check that it matches with the return type.
-            node.return_symbol = get_current_return_symbol (&node);
+            node.return_symbol = node.GetReturnSymbol ();
             assert (node.return_symbol != NULL);
 
             check_assignment (SymbolCast<ParameterSymbol> (node.return_symbol)->value, expr_tv, node,
@@ -974,22 +975,23 @@ type_check_statement (ast_t * node)
 
         void visit (ast_trigger_statement_t& node)
         {
-            action_reaction_base_t *action = get_current_action (&node);
+            action_reaction_base_t *action = node.GetAction ();
             ast_t *expression_list_node = node.expr_list ();
             ast_t *body_node = node.body ();
 
             trigger_t *trigger = new trigger_t (node);
             action->add_trigger (trigger);
-            symtab_set_current_trigger (body_node->symtab, trigger);
 
             /* Check the triggers. */
             check_rvalue_list (expression_list_node);
 
             /* Re-insert this as a pointer to mutable. */
-            node.symtab->trigger (node.this_symbol, &node);
+            node.Trigger (node.this_symbol);
 
             /* Check the body. */
             type_check_statement (body_node);
+
+            node.trigger = trigger;
         }
 
         void visit (ast_var_statement_t& node)
@@ -1007,9 +1009,9 @@ type_check_statement (ast_t * node)
                     ++pos)
                 {
                     const std::string& name = ast_get_identifier (*pos);
-                    Symbol* symbol = new VariableSymbol (name, *pos, typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE));
+                    Symbol* symbol = new VariableSymbol (name, *pos, typed_value_t::make_ref (type, typed_value_t::STACK, node.mutability, node.dereferenceMutability));
                     node.symbols.push_back (symbol_holder ());
-                    enter_symbol (node.symtab, symbol, node.symbols.back ());
+                    enter_symbol (*node.parent (), symbol, node.symbols.back ());
                 }
         }
 
@@ -1048,7 +1050,7 @@ type_check_statement (ast_t * node)
                     const std::string& name = ast_get_identifier (*id_pos);
                     Symbol* symbol = new VariableSymbol (name, *id_pos, typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE));
                     node.symbols.push_back (symbol_holder ());
-                    enter_symbol (node.symtab, symbol, node.symbols.back ());
+                    enter_symbol (*node.parent (), symbol, node.symbols.back ());
                 }
         }
 
@@ -1105,7 +1107,7 @@ control_check_statement (ast_t * node)
         void visit (ast_trigger_statement_t& node)
         {
             ast_t *body_node = node.body ();
-            action_reaction_base_t *action = get_current_action (&node);
+            action_reaction_base_t *action = node.GetAction ();
 
             if (action == NULL)
                 {
@@ -1226,7 +1228,7 @@ mutates_check_statement (ast_t * node)
             if (type_cast<method_type_t> (node.expr ()->typed_value.type) != NULL)
                 {
                     // Invoking a method.
-                    check_for_pointer_copy (node.expr ()->children[0]->children[0]);
+                    check_for_pointer_copy (node.expr ()->at (0)->at (0));
                 }
 
             for (ast_t::iterator pos = node.args ()->begin (), limit = node.args ()->end ();
@@ -1387,8 +1389,7 @@ mutates_check_statement (ast_t * node)
             node.body ()->accept (v);
             if (v.mutates_receiver)
                 {
-                    trigger_t *trigger = get_current_trigger (node.body ());
-                    trigger->action = TRIGGER_WRITE;
+                    node.trigger->action = TRIGGER_WRITE;
                 }
         }
     };
@@ -1399,7 +1400,7 @@ mutates_check_statement (ast_t * node)
 
 // TODO: Replace node with its symbol table.
 void
-enter_signature (ast_t * node, const signature_type_t * type)
+enter_signature (ast_t& node, const signature_type_t * type)
 {
     for (signature_type_t::ParametersType::const_iterator pos = type->begin (), limit = type->end ();
             pos != limit; ++pos)
@@ -1407,7 +1408,7 @@ enter_signature (ast_t * node, const signature_type_t * type)
             const parameter_t* parameter = *pos;
             // Check if the symbol is defined locally.
             const std::string& identifier = parameter->name;
-            Symbol *s = node->symtab->find_current (identifier);
+            Symbol *s = node.FindSymbolCurrent (identifier);
             if (s == NULL)
                 {
                     if (parameter->is_receiver)
@@ -1418,12 +1419,12 @@ enter_signature (ast_t * node, const signature_type_t * type)
                         {
                             s = ParameterSymbol::make (parameter);
                         }
-                    node->symtab->enter (s);
+                    node.EnterSymbol (s);
                 }
             else
                 {
                     error_at_line (-1, 0, parameter->defining_node->location.File.c_str (), parameter->defining_node->location.Line,
-                                   "%s is already defined in this scope",
+                                   "E58: %s is already defined in this scope",
                                    identifier.c_str ());
                 }
         }
@@ -1448,28 +1449,9 @@ process_definitions (ast_t * node)
 
         void visit (ast_action_t& node)
         {
-            ast_t *body_node = node.body ();
-
-            /* Insert "this" into the symbol table. */
-            // TODO:  Unify with others as entering signature and return value.
-            ast_t *this_identifier_node = node.this_identifier ();
-            const std::string& this_identifier = ast_get_identifier (this_identifier_node);
-            typed_value_t this_value = typed_value_t::make_value (new pointer_const_type_t (get_current_receiver_type
-                                       (&node)),
-                                       typed_value_t::STACK,
-                                       MUTABLE,
-                                       IMMUTABLE);
-            parameter_t* this_parameter = new parameter_t (this_identifier_node,
-                    this_identifier,
-                    this_value,
-                    true);
-
-            enter_symbol (node.symtab,
-                          ParameterSymbol::makeReceiver (this_parameter),
-                          node.this_symbol);
-
             typed_value_t tv = check_condition (node.precondition_ref ());
             node.action->precondition = node.precondition ();
+            ast_t *body_node = node.body ();
             type_check_statement (body_node);
             control_check_statement (body_node);
             mutates_check_statement (body_node);
@@ -1489,42 +1471,9 @@ process_definitions (ast_t * node)
 
         void visit (ast_dimensioned_action_t& node)
         {
-            ast_t *body_node = node.body ();
-
-            /* Insert "this" into the symbol table. */
-            ast_t *this_identifier_node = node.this_identifier ();
-            const std::string& this_identifier = ast_get_identifier (this_identifier_node);
-            typed_value_t this_value = typed_value_t::make_value (new pointer_const_type_t (get_current_receiver_type
-                                       (&node)),
-                                       typed_value_t::STACK,
-                                       MUTABLE,
-                                       IMMUTABLE);
-            parameter_t* this_parameter = new parameter_t (this_identifier_node,
-                    this_identifier,
-                    this_value,
-                    true);
-
-            enter_symbol (node.symtab,
-                          ParameterSymbol::makeReceiver (this_parameter),
-                          node.this_symbol);
-
-            /* Insert "iota" into the symbol table. */
-            typed_value_t dimension = node.action->dimension ();
-            typed_value_t zero = dimension;
-            zero.zero ();
-
-            typed_value_t iota_value = typed_value_t::make_range (zero, dimension, typed_value_t::STACK, IMMUTABLE, IMMUTABLE);
-
-            parameter_t* iota_parameter = new parameter_t (node.dimension (),
-                    "IOTA",
-                    iota_value,
-                    false);
-            enter_symbol (node.symtab,
-                          ParameterSymbol::make (iota_parameter),
-                          node.iota_symbol);
-
             check_condition (node.precondition_ref ());
             node.action->precondition = node.precondition ();
+            ast_t *body_node = node.body ();
             type_check_statement (body_node);
             control_check_statement (body_node);
             mutates_check_statement (body_node);
@@ -1533,25 +1482,6 @@ process_definitions (ast_t * node)
         void visit (ast_bind_t& node)
         {
             ast_t *body_node = node.body ();
-            /* Insert "this" into the symbol table. */
-            ast_t *this_node = node.this_identifier ();
-            const std::string& this_identifier = ast_get_identifier (this_node);
-            typed_value_t this_value = typed_value_t::make_value (pointer_type_t::make
-                                       (get_current_receiver_type
-                                        (&node)),
-                                       typed_value_t::STACK,
-                                       MUTABLE,
-                                       MUTABLE);
-            parameter_t* this_parameter = new parameter_t (this_node,
-                    this_identifier,
-                    this_value,
-                    true);
-
-            enter_symbol (node.symtab,
-                          ParameterSymbol::makeReceiver (this_parameter),
-                          node.this_symbol);
-
-            /* Check the body. */
             type_check_statement (body_node);
             control_check_statement (body_node);
         }
@@ -1609,26 +1539,7 @@ process_definitions (ast_t * node)
 
         void visit (ast_reaction_t& node)
         {
-            ast_t *signature_node = node.signature ();
             ast_t *body_node = node.body ();
-            reaction_t *reaction = node.reaction;
-            /* Insert "this" into the symbol table. */
-            ast_t *this_identifier_node = node.this_identifier ();
-            const std::string& this_identifier = ast_get_identifier (this_identifier_node);
-            typed_value_t this_value = typed_value_t::make_value (new pointer_const_type_t (reaction->component_type ()),
-                                       typed_value_t::STACK,
-                                       MUTABLE,
-                                       IMMUTABLE);
-            parameter_t* this_parameter = new parameter_t (this_identifier_node,
-                    this_identifier,
-                    this_value,
-                    true);
-            enter_symbol (node.symtab,
-                          ParameterSymbol::makeReceiver (this_parameter),
-                          node.this_symbol);
-            /* Enter the signature into the symbol table. */
-            enter_signature (signature_node, reaction->reaction_type->signature ());
-
             type_check_statement (body_node);
             control_check_statement (body_node);
             mutates_check_statement (body_node);
@@ -1636,44 +1547,7 @@ process_definitions (ast_t * node)
 
         void visit (ast_dimensioned_reaction_t& node)
         {
-            ast_t *dimension_node = node.dimension ();
-            ast_t *signature_node = node.signature ();
             ast_t *body_node = node.body ();
-
-            /* Insert "this" into the symbol table. */
-            ast_t *this_identifier_node = node.this_identifier ();
-            const std::string& this_identifier = ast_get_identifier (this_identifier_node);
-            typed_value_t this_value = typed_value_t::make_value (new pointer_const_type_t (node.reaction->component_type ()),
-                                       typed_value_t::STACK,
-                                       MUTABLE,
-                                       IMMUTABLE);
-            parameter_t* this_parameter = new parameter_t (this_identifier_node,
-                    this_identifier,
-                    this_value,
-                    true);
-            enter_symbol (node.symtab,
-                          ParameterSymbol::makeReceiver (this_parameter),
-                          node.this_symbol);
-
-            /* Insert "iota" into the symbol table. */
-            typed_value_t dimension = node.reaction->dimension ();
-            typed_value_t zero = dimension;
-            zero.zero ();
-
-            typed_value_t iota_value = typed_value_t::make_range (zero, dimension, typed_value_t::STACK, IMMUTABLE, IMMUTABLE);
-
-            parameter_t* iota_parameter = new parameter_t (dimension_node,
-                    "IOTA",
-                    iota_value,
-                    false);
-
-            enter_symbol (node.symtab,
-                          ParameterSymbol::make (iota_parameter),
-                          node.iota_symbol);
-
-            /* Enter the signature into the symbol table. */
-            enter_signature (signature_node, node.reaction->reaction_type->signature ());
-
             type_check_statement (body_node);
             control_check_statement (body_node);
             mutates_check_statement (body_node);

@@ -1221,7 +1221,7 @@ evaluate_expr (executor_base_t& exec,
             ptrdiff_t arguments_size = top_after - top_before; // Assumes stack grows up.
 
             // Find the port to trigger.
-            Symbol* this_ = node.symtab->get_this ();
+            Symbol* this_ = node.GetReceiverSymbol ();
             stack_frame_push (exec.stack (), this_-> offset (), SymbolCast<ParameterSymbol> (this_)->value.type->size ());
             port_t* port = *((port_t**)((char*)stack_frame_pop_pointer (exec.stack ()) + field->offset + offset));
 
@@ -1306,6 +1306,10 @@ evaluate_expr (executor_base_t& exec,
         {
             evaluate_expr (exec, node.child ());
             void* ptr = stack_frame_pop_pointer (exec.stack ());
+            if (ptr == NULL)
+                {
+                    std::cout << node;
+                }
             typed_value_t tv = node.typed_value;
             stack_frame_load (exec.stack (), ptr, tv.type->size ());
         }
@@ -1733,7 +1737,7 @@ evaluate_statement (executor_base_t& exec,
                     ptrdiff_t offset = symbol->offset ();
                     stack_frame_push_address (exec.stack (), offset);
                     void* ptr = stack_frame_pop_pointer (exec.stack ());
-                    ast_t* initializer = initializer_list->children.at (idx);
+                    ast_t* initializer = initializer_list->at (idx);
                     size_t size = initializer->typed_value.type->size ();
                     // Evaluate the value.
                     evaluate_expr (exec, initializer);
@@ -1778,12 +1782,6 @@ evaluate_statement (executor_base_t& exec,
                         }
 
                         void visit (const pointer_type_t& type)
-                        {
-                            void* ptr = stack_frame_pop_pointer (exec.stack ());
-                            printf ("%p", ptr);
-                        }
-
-                        void visit (const pointer_const_type_t& type)
                         {
                             void* ptr = stack_frame_pop_pointer (exec.stack ());
                             printf ("%p", ptr);
@@ -1942,11 +1940,11 @@ execute (executor_base_t& exec,
             ast_t* b = *(ast_t**)stack_frame_ip (exec.stack ());
 
             // Get the trigger.
-            trigger_t *trigger = symtab_get_current_trigger (b->symtab);
+            trigger_t *trigger = b->GetTrigger ();
             assert (trigger != NULL);
 
             // Set the current record.
-            Symbol* this_ = b->symtab->get_this ();
+            Symbol* this_ = b->GetReceiverSymbol ();
             stack_frame_push (exec.stack (), this_->offset (), SymbolCast<ParameterSymbol> (this_)->value.type->size ());
             exec.current_instance (static_cast<component_t*> (stack_frame_pop_pointer (exec.stack ())));
 

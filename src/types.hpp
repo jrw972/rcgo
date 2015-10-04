@@ -38,6 +38,7 @@ typedef struct trigger_t trigger_t;
 typedef struct type_t type_t;
 
 // A reference is either mutable, immutable, or foreign.
+// Ordered by strictness for <.
 enum Mutability
 {
     MUTABLE,

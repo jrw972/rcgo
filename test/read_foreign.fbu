@@ -2,7 +2,7 @@ type C component {
   flag bool;
 };
 
-reaction (this * const C) r (x foreign * bool) {
+reaction (this +const * C) r (x +foreign * bool) {
   var y bool;
   y = *x;
 }

@@ -5,14 +5,14 @@ type Counter component {
   counter uint;
 };
 
-action (this * const Counter) (true) {
+action (this +const * Counter) (true) {
   trigger {
     this.counter++;
     println `Counter is now `, this.counter;
   };
 }
 
-func (this * const Counter) Counter () uint {
+func (this +const * Counter) Counter () uint {
   return this.counter;
 }
 
@@ -22,13 +22,13 @@ type Clock component {
   response push (t uint);
 };
 
-reaction (this * const Clock) request () {
+reaction (this +const * Clock) request () {
   trigger {
     this.flag = true;
   };
 }
 
-action (this * const Clock) (this.flag) {
+action (this +const * Clock) (this.flag) {
   trigger response (this.counter.Counter()) {
     this.flag = false;
   };
@@ -39,13 +39,13 @@ type Sampler component {
   request push ();
 };
 
-action (this * const Sampler) (!this.flag) {
+action (this +const * Sampler) (!this.flag) {
   trigger request () {
     this.flag = true;
   };
 }
 
-reaction (this * const Sampler) response (t uint) {
+reaction (this +const * Sampler) response (t uint) {
   println `Received `, t;
   trigger {
     this.flag = false;

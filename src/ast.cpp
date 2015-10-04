@@ -53,13 +53,6 @@ operator<< (std::ostream& out, const ast_t& node)
     return out;
 }
 
-void
-ast_set_symtab (ast_t * node, symtab_t * symtab)
-{
-    assert (node->symtab == NULL);
-    node->symtab = symtab;
-}
-
 #define ACCEPT(type) void \
 type::accept (ast_visitor_t& visitor) \
 { \
@@ -73,6 +66,7 @@ type::accept (ast_const_visitor_t& visitor) const \
 
 ACCEPT (ast_identifier_t)
 ACCEPT (ast_identifier_list_t)
+ACCEPT (ast_receiver_t)
 ACCEPT (ast_array_type_spec_t)
 ACCEPT (ast_slice_type_spec_t)
 ACCEPT (ast_component_type_spec_t)
@@ -164,72 +158,129 @@ std::string ast_get_identifier (const ast_t* ast)
     return v.retval;
 }
 
-named_type_t *
-get_current_receiver_type (const ast_t * node)
-{
-    return symtab_get_current_receiver_type (node->symtab);
-}
-
-trigger_t *
-get_current_trigger (const ast_t * node)
-{
-    return symtab_get_current_trigger (node->symtab);
-}
-
-action_reaction_base_t *
-get_current_action (const ast_t * node)
-{
-    return symtab_get_current_action (node->symtab);
-}
-
 Method*
 get_current_method (const ast_t * node)
 {
-    return symtab_get_current_method (node->symtab);
-}
-
-Getter*
-get_current_getter (const ast_t * node)
-{
-    return symtab_get_current_getter (node->symtab);
-}
-
-Initializer*
-get_current_initializer (const ast_t * node)
-{
-    return symtab_get_current_initializer (node->symtab);
+    unimplemented;
+    //return symtab_get_current_method (node->symtab);
 }
 
 Function*
 get_current_function (const ast_t * node)
 {
-    return symtab_get_current_function (node->symtab);
+    unimplemented;
+    //return symtab_get_current_function (node->symtab);
 }
 
-const Symbol*
-get_current_return_symbol (const ast_t * node)
+void
+ast_t::Trigger (symbol_holder& holder)
 {
-    {
-        Getter* g = get_current_getter (node);
-        if (g != NULL)
-            {
-                return g->returnSymbol;
-            }
-    }
-    {
-        Method* g = get_current_method (node);
-        if (g != NULL)
-            {
-                return g->returnSymbol;
-            }
-    }
-    {
-        Function* f = get_current_function (node);
-        if (f != NULL)
-            {
-                return f->returnSymbol ();
-            }
-    }
+    Symbol *this_symbol = GetReceiverSymbol ();
+    Symbol *new_this_symbol = SymbolCast<ParameterSymbol> (this_symbol)->duplicate ();
+    EnterSymbol (new_this_symbol);
+    holder.symbol (new_this_symbol);
 
-    return NULL;
+    // Remove all parameters containing pointers to avoid a leak.
+    ast_t* s;
+    for (s = parent_; s != NULL; s = s->parent_)
+        {
+            for (SymbolsType::const_iterator ptr = s->symbols.begin (),
+                    limit = s->symbols.end ();
+                    ptr != limit;
+                    ++ptr)
+                {
+                    {
+                        const ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (*ptr);
+                        if (symbol != NULL && symbol != this_symbol)
+                            {
+                                typed_value_t tv = symbol->value;
+                                if (type_contains_pointer (tv.type) && tv.dereference_mutability == FOREIGN)
+                                    {
+                                        // Hide this parameter.
+                                        EnterSymbol (new HiddenSymbol (symbol, this));
+                                    }
+                            }
+                    }
+
+                    {
+                        const VariableSymbol* symbol = SymbolCast<VariableSymbol> (*ptr);
+                        if (symbol != NULL)
+                            {
+                                typed_value_t tv = symbol->value;
+                                if (type_contains_pointer (tv.type) && tv.dereference_mutability == FOREIGN)
+                                    {
+                                        // Hide this variable.
+                                        EnterSymbol (new HiddenSymbol (symbol, this));
+                                    }
+                            }
+                    }
+
+                }
+        }
+}
+
+void
+ast_t::Change ()
+{
+    ast_t* s;
+    for (s = parent_; s != NULL; s = s->parent_)
+        {
+            for (SymbolsType::const_iterator ptr = s->symbols.begin (),
+                    limit = s->symbols.end ();
+                    ptr != limit;
+                    ++ptr)
+                {
+                    {
+                        ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (*ptr);
+                        if (symbol != NULL)
+                            {
+                                typed_value_t tv = SymbolCast<ParameterSymbol> (symbol)->value;
+                                if (type_contains_pointer (tv.type))
+                                    {
+                                        // Enter as a duplicate.
+                                        Symbol* dup = SymbolCast<ParameterSymbol> (symbol)->duplicate ();
+                                        EnterSymbol (dup);
+                                    }
+                            }
+                    }
+
+                    {
+                        VariableSymbol* symbol = SymbolCast<VariableSymbol> (*ptr);
+                        if (symbol != NULL)
+                            {
+                                typed_value_t tv = SymbolCast<VariableSymbol> (symbol)->value;
+                                if (type_contains_pointer (tv.type))
+                                    {
+                                        // Enter as a duplicate.
+                                        Symbol* dup = SymbolCast<VariableSymbol> (symbol)->duplicate ();
+                                        EnterSymbol (dup);
+                                    }
+                            }
+                    }
+                }
+        }
+}
+
+Symbol *
+ast_action_t::GetReceiverSymbol () const
+{
+    return ast_cast<ast_receiver_t> (receiver ())->this_symbol.symbol ();
+}
+
+Symbol *
+ast_dimensioned_action_t::GetReceiverSymbol () const
+{
+    return ast_cast<ast_receiver_t> (receiver ())->this_symbol.symbol ();
+}
+
+Symbol *
+ast_reaction_t::GetReceiverSymbol () const
+{
+    return ast_cast<ast_receiver_t> (receiver ())->this_symbol.symbol ();
+}
+
+Symbol *
+ast_dimensioned_reaction_t::GetReceiverSymbol () const
+{
+    return ast_cast<ast_receiver_t> (receiver ())->this_symbol.symbol ();
 }
