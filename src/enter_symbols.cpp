@@ -29,8 +29,6 @@ enter_symbols (ast_t * node)
 
     node->EnterSymbol (new TypeSymbol ("float64", node, new named_type_t ("float64", float64_type_t::instance ())));
 
-    node->EnterSymbol (new TypeSymbol ("string", node, new named_type_t ("string", string_type_t::instance ())));
-
     /* I/O facilities. */
     named_type_t* fd_type = new named_type_t ("FileDescriptor", FileDescriptor_type_t::instance ());
     node->EnterSymbol (new TypeSymbol ("FileDescriptor", node, fd_type));

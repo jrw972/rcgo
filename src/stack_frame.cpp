@@ -237,7 +237,27 @@ void stack_frame_push_tv (stack_frame_t* stack_frame,
             stack_frame_push (stack_frame, tv.value.ref (type));
         }
 
+        void visit (const uint_type_t& type)
+        {
+            stack_frame_push (stack_frame, tv.value.ref (type));
+        }
+
         void visit (const uint8_type_t& type)
+        {
+            stack_frame_push (stack_frame, tv.value.ref (type));
+        }
+
+        void visit (const uint16_type_t& type)
+        {
+            stack_frame_push (stack_frame, tv.value.ref (type));
+        }
+
+        void visit (const uint32_type_t& type)
+        {
+            stack_frame_push (stack_frame, tv.value.ref (type));
+        }
+
+        void visit (const uint64_type_t& type)
         {
             stack_frame_push (stack_frame, tv.value.ref (type));
         }
@@ -252,7 +272,12 @@ void stack_frame_push_tv (stack_frame_t* stack_frame,
             stack_frame_push (stack_frame, tv.value.ref (type));
         }
 
-        void visit (const string_type_t& type)
+        void visit (const nil_type_t& type)
+        {
+            stack_frame_push_pointer (stack_frame, 0);
+        }
+
+        void visit (const enum_type_t& type)
         {
             stack_frame_push (stack_frame, tv.value.ref (type));
         }
@@ -298,10 +323,6 @@ struct PopVisitor : public const_type_visitor_t
         doit (type);
     }
     void visit (const slice_type_t& type)
-    {
-        doit (type);
-    }
-    void visit (const string_type_t& type)
     {
         doit (type);
     }

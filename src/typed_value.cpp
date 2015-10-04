@@ -261,11 +261,6 @@ typed_value_t::select (typed_value_t in, const std::string& identifier)
             out.type = f->type;
             out.has_offset = true;
             out.offset = f->offset;
-            // If selecting a string, the dereference should be at least immutable.
-            if (type_strip_cast<string_type_t> (out.type))
-                {
-                    out.dereference_mutability = std::max (out.dereference_mutability, IMMUTABLE);
-                }
             return out;
         }
 
@@ -1602,24 +1597,25 @@ typed_value_t::cast_exec (const type_t* type, const typed_value_t tv)
 typed_value_t
 typed_value_t::copy (const Location& location, typed_value_t tv)
 {
+    // TODO:  This function may no longer be necessary.
     if (type_strip_cast<component_type_t> (tv.type) != NULL)
         {
             error_at_line (-1, 0, location.File.c_str (), location.Line,
                            "E50: cannot copy components");
         }
 
-    if (type_strip_cast<string_type_t> (tv.type) != NULL)
+    const slice_type_t* st = type_strip_cast<slice_type_t> (tv.type);
+    if (st != NULL)
         {
-            // Drop immutable/foreign.
-            tv.intrinsic_mutability = MUTABLE;
-            tv.dereference_mutability = IMMUTABLE;
-            return tv;
-        }
+            if (type_contains_pointer (st->base_type ()))
+                {
+                    error_at_line (-1, 0, location.File.c_str (), location.Line,
+                                   "E24: copy leaks pointers");
 
-    if (type_strip_cast<slice_type_t> (tv.type) != NULL)
-        {
-            // Check that pointers aren't leaked.
-            unimplemented;
+                }
+            // We will copy so a dereference can mutate the data.
+            tv.intrinsic_mutability = MUTABLE;
+            tv.dereference_mutability = MUTABLE;
         }
 
     return tv;
@@ -1628,19 +1624,14 @@ typed_value_t::copy (const Location& location, typed_value_t tv)
 typed_value_t
 typed_value_t::copy_exec (typed_value_t tv)
 {
-    if (type_strip_cast<string_type_t> (tv.type) != NULL)
+    const slice_type_t* st = type_strip_cast<slice_type_t> (tv.type);
+    if (st!= NULL)
         {
-            string_type_t::ValueType& vt = tv.value.ref (*string_type_t::instance ());
-            char* ptr = static_cast<char*> (malloc (vt.length));
-            memcpy (ptr, vt.ptr, vt.length);
-            vt.ptr = ptr;
-            return tv;
-        }
-
-    if (type_strip_cast<slice_type_t> (tv.type) != NULL)
-        {
-            // Check that pointers aren't leaked.
-            unimplemented;
+            slice_type_t::ValueType& slice = tv.value.ref (*st);
+            size_t sz = st->base_type ()->size () * slice.length;
+            void* ptr = malloc (sz);
+            memcpy (ptr, slice.ptr, sz);
+            slice.ptr = ptr;
         }
 
     return tv;

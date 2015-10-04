@@ -121,7 +121,15 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
                              ++pos;
                            }
 
-                         yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (string_type_t::instance (), string_type_t::ValueType::make (begin, destination - begin)));
+                         size_t size = destination - begin;
+                         const slice_type_t* type = new slice_type_t (uint8_type_t::instance ());
+                         slice_type_t::ValueType v;
+                         v.ptr = malloc (size);
+                         memcpy (v.ptr, begin, size);
+                         v.length = size;
+                         v.capacity = size;
+
+                         yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (type, v));
                          return LITERAL; }
 
 -?(0|([1-9][0-9]*)|(0x[0-9a-fA-F]+))i(8|16|32|64|128)? {

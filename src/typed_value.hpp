@@ -270,17 +270,6 @@ struct typed_value_t
         , has_offset (false)
     { }
 
-    explicit typed_value_t (const string_type_t* t,
-                            string_type_t::ValueType v)
-        : type (t)
-        , kind (VALUE)
-        , region (CONSTANT)
-        , intrinsic_mutability (IMMUTABLE)
-        , dereference_mutability (IMMUTABLE)
-        , value (t, v)
-        , has_offset (false)
-    { }
-
     explicit typed_value_t (Callable* c);
 
     explicit typed_value_t (reaction_t* r);

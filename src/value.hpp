@@ -18,7 +18,6 @@ struct value_t
     value_t (const uint128_type_t* t, uint128_type_t::ValueType v) : present (true), uint128_value_ (v) { }
     value_t (const named_type_t* t, enum_type_t::ValueType v) : present (true), enum_value_ (v) { }
     value_t (const float64_type_t* t, float64_type_t::ValueType v) : present (true), float64_value_ (v) { }
-    value_t (const string_type_t* t, string_type_t::ValueType v) : present (true), string_value_ (v) { }
     value_t (Callable* c) : present (true), callable_value_ (c) { }
     value_t (reaction_t* r) : present (true), reaction_value_ (r) { }
     value_t (const slice_type_t* t, slice_type_t::ValueType v) : present (true), slice_value_ (v) { }
@@ -133,16 +132,6 @@ struct value_t
         assert (present);
         return float64_value_;
     }
-    const string_type_t::ValueType& ref (const string_type_t&) const
-    {
-        assert (present);
-        return string_value_;
-    }
-    string_type_t::ValueType& ref (const string_type_t&)
-    {
-        assert (present);
-        return string_value_;
-    }
     const enum_type_t::ValueType& ref (const enum_type_t&) const
     {
         assert (present);
@@ -197,7 +186,6 @@ private:
         enum_type_t::ValueType enum_value_;
         pointer_type_t::ValueType reference_value_;
         slice_type_t::ValueType slice_value_;
-        string_type_t::ValueType string_value_;
     };
 };
 

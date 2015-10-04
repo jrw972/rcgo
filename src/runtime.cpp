@@ -129,99 +129,6 @@ initialize (executor_base_t& exec, instance_t* instance)
         }
 }
 
-struct const_visitor : public const_type_visitor_t
-{
-    executor_base_t& exec;
-    const typed_value_t& tv;
-
-    const_visitor (executor_base_t& e,
-                   const typed_value_t& t) : exec (e), tv (t) { }
-
-    void visit (const named_type_t& type)
-    {
-        type.subtype ()->accept (*this);
-    }
-
-    template <typename T>
-    void push (const T& t)
-    {
-        stack_frame_push<typename T::ValueType> (exec.stack (), tv.value.ref (t));
-    }
-
-    void visit (const bool_type_t& t)
-    {
-        push (t);
-    }
-    void visit (const int_type_t& t)
-    {
-        push (t);
-    }
-    void visit (const int8_type_t& t)
-    {
-        push (t);
-    }
-    void visit (const uint_type_t& t)
-    {
-        push (t);
-    }
-    void visit (const uint8_type_t& t)
-    {
-        push (t);
-    }
-    void visit (const uint16_type_t& t)
-    {
-        push (t);
-    }
-    void visit (const uint32_type_t& t)
-    {
-        push (t);
-    }
-    void visit (const uint64_type_t& t)
-    {
-        push (t);
-    }
-    void visit (const float64_type_t& t)
-    {
-        push (t);
-    }
-    void visit (const string_type_t& t)
-    {
-        push (t);
-    }
-
-    void visit (const pointer_type_t&)
-    {
-        stack_frame_push_pointer (exec.stack (), NULL);
-    }
-
-    void visit (const nil_type_t&)
-    {
-        stack_frame_push_pointer (exec.stack (), NULL);
-    }
-
-    void visit (const function_type_t&)
-    {
-        unimplemented;
-        //stack_frame_push_pointer (exec.stack (), tv.function_value->node);
-    }
-
-    void visit (const method_type_t&)
-    {
-        unimplemented;
-        //stack_frame_push_pointer (exec.stack (), tv.method_value->node);
-    }
-
-    void visit (const enum_type_t& t)
-    {
-        push (t);
-    }
-
-    void default_action (const type_t& type)
-    {
-        type_not_reached (type);
-    }
-};
-
 template <typename T>
 static void
 evaluate (executor_base_t& exec, const ast_binary_expr_t& node, const T& op)
@@ -947,9 +854,7 @@ evaluate_expr (executor_base_t& exec,
                 {
                 case typed_value_t::VALUE:
                 {
-                    const_visitor v (exec, tv);
-                    tv.type->accept (v);
-
+                    stack_frame_push_tv (exec.stack (), tv);
                     return;
                 }
                 break;
@@ -1788,13 +1693,6 @@ evaluate_statement (executor_base_t& exec,
                             printf ("%p", ptr);
                         }
 
-                        void visit (const string_type_t& type)
-                        {
-                            string_type_t::ValueType u;
-                            stack_frame_pop (exec.stack (), u);
-                            fwrite (u.ptr, 1, u.length, stdout);
-                        }
-
                         void visit (const uint_type_t& type)
                         {
                             uint_type_t::ValueType u;
@@ -1842,6 +1740,20 @@ evaluate_statement (executor_base_t& exec,
                             float64_type_t::ValueType u;
                             stack_frame_pop (exec.stack (), u);
                             printf ("%g", u);
+                        }
+
+                        void visit (const slice_type_t& type)
+                        {
+                            slice_type_t::ValueType u;
+                            stack_frame_pop (exec.stack (), u);
+                            if (type_strip_cast<uint8_type_t> (type.base_type ()))
+                                {
+                                    fwrite (u.ptr, 1, u.length, stdout);
+                                }
+                            else
+                                {
+                                    printf ("slice");
+                                }
                         }
                     };
                     visitor v (exec);

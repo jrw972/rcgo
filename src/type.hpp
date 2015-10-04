@@ -494,46 +494,6 @@ private:
     float64_type_t () { }
 };
 
-class string_type_t : public type_t
-{
-public:
-    struct ValueType
-    {
-        char* ptr;
-        size_t length;
-
-        static ValueType make (char* p, size_t l)
-        {
-            ValueType vt;
-            vt.ptr = strndup (p, l);
-            vt.length = l;
-            return vt;
-        }
-    };
-
-    void accept (const_type_visitor_t& visitor) const;
-    std::string to_string () const
-    {
-        return "<string>";
-    }
-    size_t alignment () const
-    {
-        return sizeof (void*);
-    }
-    size_t size () const
-    {
-        return sizeof (ValueType);
-    }
-    virtual TypeLevel level () const
-    {
-        return CONVENTIONAL;
-    }
-
-    static const string_type_t* instance ();
-private:
-    string_type_t () { }
-};
-
 // Helper class for types that have a base type.
 class base_type_t
 {
@@ -1188,10 +1148,6 @@ struct const_type_visitor_t
         default_action (type);
     }
     virtual void visit (const signature_type_t& type)
-    {
-        default_action (type);
-    }
-    virtual void visit (const string_type_t& type)
     {
         default_action (type);
     }

@@ -350,7 +350,6 @@ ACCEPT(FileDescriptor_type_t)
 ACCEPT(pointer_type_t)
 ACCEPT(reaction_type_t)
 ACCEPT(signature_type_t)
-ACCEPT(string_type_t)
 ACCEPT(int_type_t)
 ACCEPT(int8_type_t)
 ACCEPT(int64_type_t)
@@ -494,11 +493,6 @@ structurally_equal (const type_t* x, const type_t* y)
                 }
         }
 
-        void visit (const string_type_t& type)
-        {
-            flag = &type == other;
-        }
-
         void visit (const function_type_t& type)
         {
             const function_type_t* x = &type;
@@ -635,7 +629,6 @@ INSTANCE(uint32_type_t)
 INSTANCE(uint64_type_t)
 INSTANCE(uint128_type_t)
 INSTANCE(float64_type_t)
-INSTANCE(string_type_t)
 INSTANCE(nil_type_t)
 INSTANCE(FileDescriptor_type_t)
 
@@ -732,11 +725,6 @@ type_contains_pointer (const type_t* type)
         }
 
         void visit (const pointer_type_t& type)
-        {
-            flag = true;
-        }
-
-        void visit (const string_type_t& type)
         {
             flag = true;
         }

@@ -18,9 +18,9 @@ action (this +const * Timer) (readable(this.fd)) {
 }
 
 type UdpMessage struct {
-  host string;
+  host []uint8;
   port uint16;
-  msg string;
+  msg  []uint8;
 };
 
 func (this +foreign *UdpMessage) Copy () UdpMessage {
@@ -119,7 +119,7 @@ init (this *System) Init () {
 }
 
 reaction (this +const * System) Alarm () {
-     var msg UdpMessage;
+     var msg +foreign UdpMessage;
      msg.host = `localhost`;
      msg.port = 8345u16;
      msg.msg = `hello, world`;

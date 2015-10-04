@@ -65,12 +65,6 @@ value_t::print (std::ostream& out, const type_t* type) const
                     out << " value=" << (void*)NULL;
                 }
 
-                void visit (const string_type_t& type)
-                {
-                    const string_type_t::ValueType& r = tv.ref (type);
-                    out << " value=" << std::string (r.ptr, r.length);
-                }
-
                 void visit (const function_type_t& type)
                 {
                     out << " value=<function>";
