@@ -52,9 +52,8 @@ static named_type_t* process_receiver (ast_t* n, parameter_t*& this_parameter, b
                                       this_value,
                                       true);
 
-    enter_symbol (*node->parent (),
-                  ParameterSymbol::makeReceiver (this_parameter),
-                  node->this_symbol);
+    node->this_symbol = enter_symbol (*node->parent (),
+                                      ParameterSymbol::makeReceiver (this_parameter));
 
     return type;
 }
@@ -87,9 +86,8 @@ process_declarations (ast_t * node)
                               "argument leaks mutable pointers",
                               "argument may store foreign pointer");
 
-            enter_symbol (*node.parent (),
-                          new TypedConstantSymbol (ast_get_identifier (node.identifier ()), &node, right_tv),
-                          node.symbol);
+            node.symbol = enter_symbol (*node.parent (),
+                                        new TypedConstantSymbol (ast_get_identifier (node.identifier ()), &node, right_tv));
         }
 
         void visit (ast_action_t& node)
@@ -117,9 +115,8 @@ process_declarations (ast_t * node)
                     "IOTA",
                     iota_value,
                     false);
-            enter_symbol (node,
-                          ParameterSymbol::make (iota_parameter),
-                          node.iota_symbol);
+            node.iota_symbol = enter_symbol (node,
+                                             ParameterSymbol::make (iota_parameter));
 
             action_t *action = new action_t (type, &node, node.body (), dimension);
             type->add_action (action);
@@ -139,7 +136,7 @@ process_declarations (ast_t * node)
         {
             ast_t *signature_node = node.signature ();
             ast_t *return_type_node = node.return_type ();
-            Function* function = SymbolCast<Function> (node.function_symbol.symbol ());
+            Function* function = SymbolCast<Function> (node.function_symbol);
 
             /* Process the signature. */
             const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
@@ -161,7 +158,7 @@ process_declarations (ast_t * node)
             function->set (new function_type_t (signature, return_parameter), return_symbol);
 
             // Enter the return first as it is deeper on the stack.
-            enter_symbol (node, return_symbol, node.return_symbol);
+            node.return_symbol = enter_symbol (node, return_symbol);
             enter_signature (node, signature);
 
             node.function = function;
@@ -181,7 +178,7 @@ process_declarations (ast_t * node)
                     return_value,
                     false);
             Symbol* return_symbol = ParameterSymbol::makeReturn (return_parameter);
-            enter_symbol (node, return_symbol, node.return_symbol);
+            node.return_symbol = enter_symbol (node, return_symbol);
 
             // Process the receiver.
             parameter_t* this_parameter;
@@ -279,7 +276,7 @@ process_declarations (ast_t * node)
                     return_value,
                     false);
             Symbol* return_symbol = ParameterSymbol::makeReturn (return_parameter);
-            enter_symbol (node, return_symbol, node.return_symbol);
+            node.return_symbol = enter_symbol (node, return_symbol);
 
             // Process the receiver.
             parameter_t* this_parameter;
@@ -331,7 +328,7 @@ process_declarations (ast_t * node)
                                    "%s does not refer to a component",
                                    type_identifier.c_str ());
                 }
-            SymbolCast<InstanceSymbol> (node.symbol.symbol ())->type = type;
+            SymbolCast<InstanceSymbol> (node.symbol)->type = type;
         }
 
         void visit (ast_reaction_t& node)
@@ -388,9 +385,8 @@ process_declarations (ast_t * node)
                     iota_value,
                     false);
 
-            enter_symbol (node,
-                          ParameterSymbol::make (iota_parameter),
-                          node.iota_symbol);
+            node.iota_symbol = enter_symbol (node,
+                                             ParameterSymbol::make (iota_parameter));
 
             /* Process the signature. */
             const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
@@ -414,7 +410,7 @@ process_declarations (ast_t * node)
 
         void visit (ast_type_definition_t& node)
         {
-            Symbol *symbol = node.symbol.symbol ();
+            Symbol *symbol = node.symbol;
             const std::string& identifier = symbol->identifier;
             named_type_t *type = SymbolCast<TypeSymbol> (symbol)->type;
 

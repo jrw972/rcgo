@@ -1,6 +1,5 @@
 #include "semantic.hpp"
 #include "debug.hpp"
-#include "symtab.hpp"
 #include "ast.hpp"
 #include <error.h>
 #include "action.hpp"

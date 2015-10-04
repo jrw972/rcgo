@@ -1,10 +1,10 @@
 #ifndef ast_hpp
 #define ast_hpp
 
-#include "symtab.hpp"
 #include "debug.hpp"
 #include <vector>
 #include "action.hpp"
+#include "Symbol.hpp"
 
 class ast_visitor_t;
 class ast_const_visitor_t;
@@ -180,7 +180,7 @@ public:
         return parent_->GetReturnSymbol ();
     }
 
-    void Trigger (symbol_holder& holder);
+    Symbol* Trigger ();
     void Change ();
 
     virtual const type_t*
@@ -319,7 +319,7 @@ struct ast_receiver_t : public ast_t
 
     Mutability const mutability;
     Mutability const dereferenceMutability;
-    symbol_holder this_symbol;
+    Symbol* this_symbol;
 };
 
 struct ast_array_type_spec_t : public ast_t
@@ -866,7 +866,7 @@ struct ast_identifier_expr_t : public ast_unary_expr_t
         out << "identifier_expr";
     }
 
-    symbol_holder symbol;
+    Symbol* symbol;
 };
 
 struct ast_index_expr_t : public ast_expr_t
@@ -1296,7 +1296,7 @@ struct ast_change_statement_t : public ast_t
         unimplemented;
     }
 
-    symbol_holder root_symbol;
+    Symbol* root_symbol;
 };
 
 struct ast_expression_statement_t : public ast_unary_t
@@ -1513,7 +1513,7 @@ struct ast_trigger_statement_t : public ast_t
         unimplemented;
     }
 
-    symbol_holder this_symbol;
+    Symbol* this_symbol;
     trigger_t* trigger;
 
     virtual trigger_t*
@@ -1560,7 +1560,7 @@ struct ast_var_statement_t : public ast_t
 
     Mutability const mutability;
     Mutability const dereferenceMutability;
-    std::vector<symbol_holder> symbols;
+    std::vector<Symbol*> symbols;
 };
 
 struct ast_var_type_init_statement_t : public ast_t
@@ -1607,7 +1607,7 @@ struct ast_var_type_init_statement_t : public ast_t
 
     Mutability const mutability;
     Mutability const dereferenceMutability;
-    std::vector<symbol_holder> symbols;
+    std::vector<Symbol*> symbols;
 };
 
 struct ast_bind_push_port_statement_t : public ast_binary_t
@@ -1731,7 +1731,7 @@ struct ast_for_iota_statement_t : public ast_t
         unimplemented;
     }
 
-    symbol_holder symbol;
+    Symbol* symbol;
     typed_value_t limit;
 };
 
@@ -1853,8 +1853,8 @@ struct ast_dimensioned_action_t : public ast_t
         unimplemented;
     }
 
-    symbol_holder this_symbol;
-    symbol_holder iota_symbol;
+    Symbol* this_symbol;
+    Symbol* iota_symbol;
     action_t* action;
 
     virtual Symbol *
@@ -1960,12 +1960,12 @@ struct ast_function_t : public ast_t
     virtual Symbol *
     GetReturnSymbol () const
     {
-        return return_symbol.symbol ();
+        return return_symbol;
     }
 
     // TODO:  Eliminate redundancy.
-    symbol_holder function_symbol;
-    symbol_holder return_symbol;
+    Symbol* function_symbol;
+    Symbol* return_symbol;
     Function* function;
     Mutability const dereferenceMutability;
 };
@@ -2008,7 +2008,7 @@ struct ast_instance_t : public ast_t
         unimplemented;
     }
 
-    symbol_holder symbol;
+    Symbol* symbol;
 };
 
 struct ast_const_t : public ast_t
@@ -2053,7 +2053,7 @@ struct ast_const_t : public ast_t
         out << "ast_const_t";
     }
 
-    symbol_holder symbol;
+    Symbol* symbol;
 };
 
 struct ast_method_t : public ast_t
@@ -2116,12 +2116,12 @@ struct ast_method_t : public ast_t
 
     Method* method;
     Mutability const return_dereference_mutability;
-    symbol_holder return_symbol;
+    Symbol* return_symbol;
 
     virtual Symbol *
     GetReturnSymbol () const
     {
-        return return_symbol.symbol ();
+        return return_symbol;
     }
 
 };
@@ -2186,12 +2186,12 @@ struct ast_getter_t : public ast_t
 
     Getter* getter;
     Mutability const dereferenceMutability;
-    symbol_holder return_symbol;
+    Symbol* return_symbol;
 
     virtual Symbol *
     GetReturnSymbol () const
     {
-        return return_symbol.symbol ();
+        return return_symbol;
     }
 
     virtual Getter*
@@ -2251,7 +2251,7 @@ struct ast_initializer_t : public ast_t
     }
 
     Initializer* initializer;
-    symbol_holder return_symbol;
+    Symbol* return_symbol;
 
     virtual const type_t*
     GetReceiverType () const
@@ -2389,8 +2389,8 @@ struct ast_dimensioned_reaction_t : public ast_t
         unimplemented;
     }
 
-    symbol_holder this_symbol;
-    symbol_holder iota_symbol;
+    Symbol* this_symbol;
+    Symbol* iota_symbol;
     reaction_t* reaction;
 
     virtual Symbol *
@@ -2441,7 +2441,7 @@ struct ast_type_definition_t : public ast_t
         unimplemented;
     }
 
-    symbol_holder symbol;
+    Symbol* symbol;
 };
 
 struct ast_top_level_list_t : public ast_t

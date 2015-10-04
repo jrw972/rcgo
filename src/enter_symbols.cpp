@@ -2,6 +2,7 @@
 #include "Symbol.hpp"
 #include <error.h>
 #include "parameter.hpp"
+#include "BuiltinFunction.hpp"
 
 void
 enter_symbols (ast_t * node)
@@ -67,28 +68,26 @@ enter_symbols (ast_t * node)
 
         void visit (ast_instance_t& node)
         {
-            enter_undefined_symbol (node.symbol,
-                                    new InstanceSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),
-                                    node);
+            node.symbol =
+                enter_undefined_symbol (new InstanceSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),
+                                        node);
         }
 
         void visit (ast_type_definition_t& node)
         {
-            enter_undefined_symbol (node.symbol,
-                                    new TypeSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),
-                                    node);
+            node.symbol =
+                enter_undefined_symbol (new TypeSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),
+                                        node);
         }
 
         void visit (ast_function_t& node)
         {
-            enter_undefined_symbol (node.function_symbol,
-                                    new Function (node),
-                                    node);
+            node.function_symbol = enter_undefined_symbol (new Function (node),
+                                   node);
         }
 
-        static void
-        enter_undefined_symbol (symbol_holder& node,
-                                Symbol* s,
+        static Symbol*
+        enter_undefined_symbol (Symbol* s,
                                 ast_t& a)
         {
             ast_t* symtab = a.parent ();
@@ -96,9 +95,7 @@ enter_symbols (ast_t * node)
             Symbol *symbol = symtab->FindSymbolCurrent (identifier);
             if (symbol == NULL)
                 {
-                    symbol = s;
-                    symtab->EnterSymbol (symbol);
-                    node.symbol (symbol);
+                    symtab->EnterSymbol (s);
                 }
             else
                 {
@@ -106,6 +103,7 @@ enter_symbols (ast_t * node)
                                    s->definingNode->location.Line,
                                    "%s is already defined in this scope", identifier.c_str ());
                 }
+            return s;
         }
     };
 

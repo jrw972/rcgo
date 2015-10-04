@@ -4,12 +4,13 @@
 #include "types.hpp"
 #include "ast.hpp"
 #include <error.h>
+#include "SymbolVisitor.hpp"
 
 /* Enter all symbols except vars and parameters. */
 void enter_symbols (ast_t * node);
 
 // Enter a symbol.
-Symbol* enter_symbol (ast_t& node, Symbol * symbol, symbol_holder& holder);
+Symbol* enter_symbol (ast_t& node, Symbol * symbol);
 
 // Enter a signature.
 void enter_signature (ast_t& node, const signature_type_t * type);

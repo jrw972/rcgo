@@ -6,6 +6,7 @@
 #include "trigger.hpp"
 #include "action.hpp"
 #include "Callable.hpp"
+#include "SymbolVisitor.hpp"
 
 instance_table_t::ActionsType
 instance_table_t::actions () const
@@ -287,7 +288,7 @@ evaluate_static (const ast_t* node, const static_memory_t& memory)
 
         void visit (const ast_identifier_expr_t& node)
         {
-            ptrdiff_t offset = node.symbol.symbol ()->offset ();
+            ptrdiff_t offset = node.symbol->offset ();
             result = static_value_t::make_stack_offset (offset);
         }
     };
@@ -350,7 +351,7 @@ instance_table_enumerate_bindings (instance_table_t& table)
                                     idx != limit;
                                     ++idx)
                                 {
-                                    memory.set_value_at_offset (node.symbol.symbol ()->offset (), idx);
+                                    memory.set_value_at_offset (node.symbol->offset (), idx);
                                     node.body ()->accept (*this);
                                 }
                         }
@@ -364,7 +365,7 @@ instance_table_enumerate_bindings (instance_table_t& table)
 
                         void visit (const ast_receiver_t& node)
                         {
-                            memory.set_value_at_offset (node.this_symbol.symbol ()->offset (), receiver_address);
+                            memory.set_value_at_offset (node.this_symbol->offset (), receiver_address);
                         }
 
                         void bind (ast_t* left, ast_t* right, static_value_t param = static_value_t ())
@@ -601,7 +602,7 @@ transitive_closure (const instance_table_t& table,
 
         void visit (const ast_identifier_expr_t& node)
         {
-            ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (node.symbol.symbol ());
+            ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (node.symbol);
             if (symbol != NULL &&
                     symbol->kind == ParameterSymbol::Receiver)
                 {

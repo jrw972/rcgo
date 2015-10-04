@@ -2,6 +2,7 @@
 #include "executor_base.hpp"
 #include "ast.hpp"
 #include "runtime.hpp"
+#include "SymbolVisitor.hpp"
 
 Function::Function (ast_function_t& node_)
     : Symbol (ast_get_identifier (node_.identifier ()), node_.identifier ())

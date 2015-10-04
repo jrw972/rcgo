@@ -6,6 +6,7 @@
 #include "type.hpp"
 #include <vector>
 #include "Callable.hpp"
+#include "SymbolVisitor.hpp"
 
 std::ostream&
 operator<< (std::ostream& out, const ast_t& node)
@@ -172,13 +173,12 @@ get_current_function (const ast_t * node)
     //return symtab_get_current_function (node->symtab);
 }
 
-void
-ast_t::Trigger (symbol_holder& holder)
+Symbol*
+ast_t::Trigger ()
 {
     Symbol *this_symbol = GetReceiverSymbol ();
     Symbol *new_this_symbol = SymbolCast<ParameterSymbol> (this_symbol)->duplicate ();
     EnterSymbol (new_this_symbol);
-    holder.symbol (new_this_symbol);
 
     // Remove all parameters containing pointers to avoid a leak.
     ast_t* s;
@@ -217,6 +217,8 @@ ast_t::Trigger (symbol_holder& holder)
 
                 }
         }
+
+    return new_this_symbol;
 }
 
 void
@@ -264,23 +266,23 @@ ast_t::Change ()
 Symbol *
 ast_action_t::GetReceiverSymbol () const
 {
-    return ast_cast<ast_receiver_t> (receiver ())->this_symbol.symbol ();
+    return ast_cast<ast_receiver_t> (receiver ())->this_symbol;
 }
 
 Symbol *
 ast_dimensioned_action_t::GetReceiverSymbol () const
 {
-    return ast_cast<ast_receiver_t> (receiver ())->this_symbol.symbol ();
+    return ast_cast<ast_receiver_t> (receiver ())->this_symbol;
 }
 
 Symbol *
 ast_reaction_t::GetReceiverSymbol () const
 {
-    return ast_cast<ast_receiver_t> (receiver ())->this_symbol.symbol ();
+    return ast_cast<ast_receiver_t> (receiver ())->this_symbol;
 }
 
 Symbol *
 ast_dimensioned_reaction_t::GetReceiverSymbol () const
 {
-    return ast_cast<ast_receiver_t> (receiver ())->this_symbol.symbol ();
+    return ast_cast<ast_receiver_t> (receiver ())->this_symbol;
 }

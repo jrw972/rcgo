@@ -39,7 +39,6 @@ runtime.hpp runtime.cpp \
 stack_frame.hpp stack_frame.cpp \
 Symbol.hpp Symbol.cpp \
 SymbolVisitor.hpp \
-symtab.hpp \
 trigger.hpp \
 type.hpp type.cpp \
 typed_value.hpp typed_value.cpp \

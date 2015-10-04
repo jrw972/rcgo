@@ -1,5 +1,6 @@
 #include "runtime.hpp"
 #include "Callable.hpp"
+#include "SymbolVisitor.hpp"
 
 namespace runtime
 {
@@ -1289,7 +1290,7 @@ evaluate_expr (executor_base_t& exec,
         void visit (const ast_identifier_expr_t& node)
         {
             // Get the address of the identifier.
-            Symbol* symbol = node.symbol.symbol ();
+            Symbol* symbol = node.symbol;
             ptrdiff_t offset = symbol->offset ();
             stack_frame_push_address (exec.stack (), offset);
         }
@@ -1475,7 +1476,7 @@ evaluate_statement (executor_base_t& exec,
 
             {
                 // Evaluate the address of the heap root.
-                Symbol* symbol = node.root_symbol.symbol ();
+                Symbol* symbol = node.root_symbol;
                 assert (symbol != NULL);
                 ptrdiff_t offset = symbol->offset ();
                 stack_frame_push_address (exec.stack (), offset);
@@ -1557,7 +1558,7 @@ evaluate_statement (executor_base_t& exec,
                     idx != limit;
                     ++idx)
                 {
-                    size_t* ptr = static_cast<size_t*> (stack_frame_address_for_offset (exec.stack (), node.symbol.symbol ()->offset ()));
+                    size_t* ptr = static_cast<size_t*> (stack_frame_address_for_offset (exec.stack (), node.symbol->offset ()));
                     *ptr = idx;
                     if (evaluate_statement (exec, node.body ()) == RETURN)
                         {
@@ -1721,7 +1722,7 @@ evaluate_statement (executor_base_t& exec,
             // Zero out the variable.
             for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
                 {
-                    Symbol* symbol = node.symbols[idx].symbol ();
+                    Symbol* symbol = node.symbols[idx];
                     stack_frame_clear_stack (exec.stack (), symbol->offset (), SymbolCast<VariableSymbol> (symbol)->value.type->size ());
                 }
         }
@@ -1733,7 +1734,7 @@ evaluate_statement (executor_base_t& exec,
             for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
                 {
                     // Evaluate the address.
-                    Symbol* symbol = node.symbols[idx].symbol ();
+                    Symbol* symbol = node.symbols[idx];
                     ptrdiff_t offset = symbol->offset ();
                     stack_frame_push_address (exec.stack (), offset);
                     void* ptr = stack_frame_pop_pointer (exec.stack ());

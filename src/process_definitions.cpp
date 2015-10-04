@@ -9,7 +9,7 @@
 #include "Callable.hpp"
 
 Symbol*
-enter_symbol (ast_t& node, Symbol * symbol, symbol_holder& holder)
+enter_symbol (ast_t& node, Symbol * symbol)
 {
     // Check if the symbol is defined locally.
     const std::string& identifier = symbol->identifier;
@@ -17,7 +17,6 @@ enter_symbol (ast_t& node, Symbol * symbol, symbol_holder& holder)
     if (s == NULL)
         {
             node.EnterSymbol (symbol);
-            holder.symbol (symbol);
         }
     else
         {
@@ -293,7 +292,7 @@ type_check_expr (ast_t* ptr)
             visitor v (node);
             symbol->accept (v);
 
-            node.symbol.symbol (symbol);
+            node.symbol = symbol;
         }
 
         void visit (ast_select_expr_t& node)
@@ -784,7 +783,7 @@ type_check_statement (ast_t * node)
             typed_value_t zero = limit;
             zero.zero ();
             Symbol* symbol = new VariableSymbol (identifier, node.identifier (), typed_value_t::make_ref (typed_value_t::make_range (zero, limit, typed_value_t::STACK, IMMUTABLE, IMMUTABLE)));
-            enter_symbol (node, symbol, node.symbol);
+            node.symbol = enter_symbol (node, symbol);
             type_check_statement (node.body ());
             node.limit = limit;
         }
@@ -876,7 +875,7 @@ type_check_statement (ast_t * node)
 
             // Enter the new heap root.
             Symbol* symbol = new VariableSymbol (identifier, &node, typed_value_t::make_ref (root_type, typed_value_t::STACK, MUTABLE, MUTABLE));
-            enter_symbol (node, symbol, node.root_symbol);
+            node.root_symbol = enter_symbol (node, symbol);
 
             // Enter all parameters and variables in scope that are pointers as pointers to foreign.
             node.Change ();
@@ -986,7 +985,7 @@ type_check_statement (ast_t * node)
             check_rvalue_list (expression_list_node);
 
             /* Re-insert this as a pointer to mutable. */
-            node.Trigger (node.this_symbol);
+            node.this_symbol = node.Trigger ();
 
             /* Check the body. */
             type_check_statement (body_node);
@@ -1010,8 +1009,7 @@ type_check_statement (ast_t * node)
                 {
                     const std::string& name = ast_get_identifier (*pos);
                     Symbol* symbol = new VariableSymbol (name, *pos, typed_value_t::make_ref (type, typed_value_t::STACK, node.mutability, node.dereferenceMutability));
-                    node.symbols.push_back (symbol_holder ());
-                    enter_symbol (*node.parent (), symbol, node.symbols.back ());
+                    node.symbols.push_back (enter_symbol (*node.parent (), symbol));
                 }
         }
 
@@ -1030,7 +1028,7 @@ type_check_statement (ast_t * node)
                                    "wrong number of initializers");
                 }
 
-            typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE);
+            typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, node.mutability, node.dereferenceMutability);
 
             // Enter each symbol.
             for (ast_t::iterator id_pos = identifier_list->begin (),
@@ -1048,9 +1046,8 @@ type_check_statement (ast_t * node)
                                       "E36: assignment may store foreign pointer");
 
                     const std::string& name = ast_get_identifier (*id_pos);
-                    Symbol* symbol = new VariableSymbol (name, *id_pos, typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE));
-                    node.symbols.push_back (symbol_holder ());
-                    enter_symbol (*node.parent (), symbol, node.symbols.back ());
+                    Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
+                    node.symbols.push_back (enter_symbol (*node.parent (), symbol));
                 }
         }
 
@@ -1185,7 +1182,7 @@ mutates_check_statement (ast_t * node)
 
         void visit (ast_identifier_expr_t& node)
         {
-            ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (node.symbol.symbol ());
+            ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (node.symbol);
             if (symbol != NULL)
                 {
                     assert (symbol->kind != ParameterSymbol::Receiver);
@@ -1517,7 +1514,7 @@ process_definitions (ast_t * node)
         void visit (ast_instance_t& node)
         {
             // Check the initialization function.
-            Symbol* symbol = node.symbol.symbol ();
+            Symbol* symbol = node.symbol;
             const named_type_t* type = SymbolCast<InstanceSymbol> (symbol)->type;
             ast_t* initializer_node = node.initializer ();
             Initializer* initializer = type->get_initializer (ast_get_identifier (initializer_node));

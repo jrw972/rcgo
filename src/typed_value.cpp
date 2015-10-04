@@ -1,7 +1,6 @@
 #include "typed_value.hpp"
 #include <stdlib.h>
 #include "debug.hpp"
-#include "symtab.hpp"
 #include "type.hpp"
 #include "action.hpp"
 #include "field.hpp"
