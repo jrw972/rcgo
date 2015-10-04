@@ -261,6 +261,11 @@ typed_value_t::select (typed_value_t in, const std::string& identifier)
             out.type = f->type;
             out.has_offset = true;
             out.offset = f->offset;
+            // If selecting a string, the dereference should be at least immutable.
+            if (type_strip_cast<string_type_t> (out.type))
+                {
+                    out.dereference_mutability = std::max (out.dereference_mutability, IMMUTABLE);
+                }
             return out;
         }
 
@@ -1606,7 +1611,8 @@ typed_value_t::copy (const Location& location, typed_value_t tv)
     if (type_strip_cast<string_type_t> (tv.type) != NULL)
         {
             // Drop immutable/foreign.
-            tv.dereference_mutability = MUTABLE;
+            tv.intrinsic_mutability = MUTABLE;
+            tv.dereference_mutability = IMMUTABLE;
             return tv;
         }
 
