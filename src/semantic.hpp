@@ -5,9 +5,6 @@
 #include "ast.hpp"
 #include <error.h>
 
-/* Associate a symbol table with each node in the tree. */
-void construct_symbol_table (ast_t * node);
-
 /* Enter all symbols except vars and parameters. */
 void enter_symbols (ast_t * node);
 

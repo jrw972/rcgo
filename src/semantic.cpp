@@ -76,7 +76,7 @@ static void
 allocate_symtab (ast_t* node, MemoryModel& memory_model)
 {
     // Allocate the parameters.
-    for (symtab_t::SymbolsType::const_iterator pos = node->symbols.begin (), limit = node->symbols.end ();
+    for (ast_t::SymbolsType::const_iterator pos = node->symbols.begin (), limit = node->symbols.end ();
             pos != limit;
             ++pos)
         {
@@ -228,8 +228,8 @@ allocate_statement_stack_variables (ast_t* node, MemoryModel& memory_model)
 
 static void
 allocate_parameter (MemoryModel& memory_model,
-                    symtab_t::SymbolsType::const_iterator pos,
-                    symtab_t::SymbolsType::const_iterator limit)
+                    ast_t::SymbolsType::const_iterator pos,
+                    ast_t::SymbolsType::const_iterator limit)
 {
     if (pos != limit)
         {
@@ -300,8 +300,8 @@ allocate_stack_variables (ast_t* node)
         {
             MemoryModel memory_model;
             // Allocate the parameters.
-            symtab_t::SymbolsType::const_iterator pos = node->symbols.begin ();
-            symtab_t::SymbolsType::const_iterator limit = node->symbols.end ();
+            ast_t::SymbolsType::const_iterator pos = node->symbols.begin ();
+            ast_t::SymbolsType::const_iterator limit = node->symbols.end ();
             allocate_parameter (memory_model, pos, limit);
             // Allocate the locals.
             allocate_statement_stack_variables (child, memory_model);

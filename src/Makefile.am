@@ -16,7 +16,6 @@ ast.hpp ast.cpp \
 bind.hpp \
 BuiltinFunction.hpp BuiltinFunction.cpp \
 Callable.hpp Callable.cpp \
-construct_symbol_table.cpp \
 debug.hpp \
 enter_symbols.cpp \
 enumerate_instances.cpp \
@@ -40,7 +39,7 @@ runtime.hpp runtime.cpp \
 stack_frame.hpp stack_frame.cpp \
 Symbol.hpp Symbol.cpp \
 SymbolVisitor.hpp \
-symtab.hpp symtab.cpp \
+symtab.hpp \
 trigger.hpp \
 type.hpp type.cpp \
 typed_value.hpp typed_value.cpp \
