@@ -10,7 +10,7 @@ init (this *Timer) Init (interval uint64) {
      }
 }
 
-action (this *Timer const) (readable(this.fd)) {
+action (this +const * Timer) (readable(this.fd)) {
      var buf [8u]uint8;
      var r int;
      r = read(this.fd, buf[0u:8u]);
@@ -22,6 +22,14 @@ type UdpMessage struct {
   port uint16;
   msg string;
 };
+
+func (this +foreign *UdpMessage) Copy () UdpMessage {
+     var m UdpMessage;
+     m.host = copy (this.host);
+     m.port = this.port;
+     m.msg = copy (this.msg);
+     return m;
+}
 
 type Element struct
 {
@@ -58,7 +66,7 @@ func (this *Queue) Pop ()
     };
 }
 
-func (this *Queue const) Empty () bool
+func (this +const * Queue) Empty () bool
 {
   return this.head == nil;
 }
@@ -73,17 +81,14 @@ type UdpParticipant component {
      queue Queue;
 };
 
-reaction (this *UdpParticipant const) Send (host string foreign; port uint16; msg string foreign) {
-     var m UdpMessage;
-     m.host = copy (host);
-     m.port = port;
-     m.msg = copy (msg);
+reaction (this +const * UdpParticipant) Send (msg +foreign UdpMessage) {
+     var m UdpMessage = msg.Copy ();
      trigger {
           this.queue.Push (m);
      };
 }
 
-action (this *UdpParticipant const) (!this.queue.Empty () && writable (this.fd)) {
+action (this +const * UdpParticipant) (!this.queue.Empty () && writable (this.fd)) {
        trigger {
               var m UdpMessage = this.queue.Front ();
               var b []uint;
@@ -100,7 +105,7 @@ init (this *UdpParticipant) Init () {
 type System component {
      timer Timer;
      udp UdpParticipant;
-     Send push (host string foreign; port uint16; msg string foreign);
+     Send push (msg +foreign UdpMessage);
 };
 
 bind (this *System) {
@@ -113,8 +118,12 @@ init (this *System) Init () {
      this.udp.Init();
 }
 
-reaction (this *System const) Alarm () {
-     trigger Send (`localhost`, 8345u16, `hello, world`) { };
+reaction (this +const * System) Alarm () {
+     var msg UdpMessage;
+     msg.host = `localhost`;
+     msg.port = 8345u16;
+     msg.msg = `hello, world`;
+     trigger Send (msg) { };
 }
 
 instance s System Init;
