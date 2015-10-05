@@ -96,6 +96,14 @@ action (this +const * UdpParticipant) (!this.queue.Empty () && writable (this.fd
        }
 }
 
+action (this +const * UdpParticipant) (readable (this.fd)) {
+       trigger {
+          var buf [128u]uint8;
+          var r int = read(this.fd, buf[0u:128u]);
+          println buf[0u:r];
+       }
+}
+
 init (this *UdpParticipant) Init () {
      this.fd = udp_socket();
 }
@@ -119,7 +127,7 @@ init (this *System) Init () {
 reaction (this +const * System) Alarm () {
      var msg +foreign UdpMessage;
      msg.host = `localhost`;
-     msg.port = 8345u16;
+     msg.port = 7u16;
      msg.msg = `hello, world`;
      trigger Send (msg) { };
 }

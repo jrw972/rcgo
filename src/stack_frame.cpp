@@ -310,6 +310,10 @@ struct PopVisitor : public const_type_visitor_t
     tv.value = value_t (&type, value);
   }
 
+  void visit (const int_type_t& type)
+  {
+    doit (type);
+  }
   void visit (const int8_type_t& type)
   {
     doit (type);
