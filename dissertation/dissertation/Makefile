@@ -1,13 +1,10 @@
 all : paper.pdf
 
-paper.pdf : paper.dvi
-	dvipdf $^ $@
-
-LATEX=latex
+LATEX=pdflatex
 LATEX_ARGS=-file-line-error -halt-on-error
 
 
-paper.dvi : paper.tex introduction.tex background.tex model.tex implementation.tex advanced.tex evaluation.tex conclusion.tex paper.bib clock_automaton.tex clocksys.tex clocksys_alpha.tex webserver.tex workflow.tex ethernet.tex reactive_component.eps web_server.eps
+paper.pdf : paper.tex introduction.tex background.tex model.tex implementation.tex advanced.tex evaluation.tex conclusion.tex paper.bib clock_automaton.tex clocksys.tex clocksys_alpha.tex webserver.tex workflow.tex ethernet.tex reactive_component.png web_server.png
 	$(LATEX) $(LATEX_ARGS) paper
 	bibtex paper
 	$(LATEX) $(LATEX_ARGS) paper
@@ -18,4 +15,4 @@ paper.dvi : paper.tex introduction.tex background.tex model.tex implementation.t
 
 .PHONY : clean
 clean :
-	-rm -f paper.aux paper.dvi paper.pdf
+	-rm -f paper.aux paper.pdf
