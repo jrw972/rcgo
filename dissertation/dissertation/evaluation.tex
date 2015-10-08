@@ -27,13 +27,13 @@ Web servers also have some ``obvious'' parallelism since requests are largely in
 An embedded web server requires the development of a network protocol stack starting at the driver level.
 This provides an opportunity to touch on a number of areas in reactive systems such as hardware, networking, and remote interactivity.
 
-\begin{figure}
-{
-\input webserver.tex
-\centerline{\box\graph}
-}
-\caption{The architecture of an embedded web server\label{webserver}}
-\end{figure}
+%% \begin{figure}
+%% {
+%% \input webserver.tex
+%% \centerline{\box\graph}
+%% }
+%% \caption{The architecture of an embedded web server\label{webserver}}
+%% \end{figure}
 
 Figure~\ref{webserver} shows one possible architecture for an embedded web server.
 We argue that an architecture like the one shown in figure~\ref{webserver} is the beginning of a design based on principled decomposition.
@@ -44,13 +44,13 @@ On the x86 architecture, for example, this includes memory mapped I/O, port I/O,
 Using the primitive I/O mechanisms, one can construct a driver for an Ethernet network interface card.
 The development of device drivers is common to reactive systems such as embedded systems and operating systems and the corresponding development of a device driver will test the model's suitability for abstracting and interacting with hardware.
 
-\begin{figure}
-{
-\input ethernet.tex
-\centerline{\box\graph}
-}
-\caption{A block diagram of the Ethernet driver and a generic client\label{ethernet}}
-\end{figure}
+%% \begin{figure}
+%% {
+%% \input ethernet.tex
+%% \centerline{\box\graph}
+%% }
+%% \caption{A block diagram of the Ethernet driver and a generic client\label{ethernet}}
+%% \end{figure}
 
 As with existing Ethernet drivers, e.g., network device drivers in Linux~\cite{corbet2005linux}, the Ethernet driver will be built around two queues for sending and receiving Ethernet frames, respectively.
 However, we expect to see two major differences with the reactive component approach.

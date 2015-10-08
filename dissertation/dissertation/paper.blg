@@ -3,6 +3,7 @@ Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
 The top-level auxiliary file: paper.aux
 The style file: plain.bst
 Database file #1: paper.bib
+Warning--I didn't find a database entry for "go"
 Warning--to sort, need author, editor, or key in 1983proceedings
 Warning--to sort, need author or key in cxx11
 Warning--to sort, need author or key in ioatoolkit
@@ -11,7 +12,7 @@ Warning--empty journal in armstrong1996concurrent
 Warning--can't use both volume and number fields in blumofe1995cilk
 You've used 55 entries,
             2118 wiz_defined-function locations,
-            804 strings with 11341 characters,
+            805 strings with 11343 characters,
 and the built_in function-call counts, 16815 in all, are:
 = -- 1671
 > -- 680
@@ -50,4 +51,4 @@ warning$ -- 6
 while$ -- 168
 width$ -- 57
 write$ -- 592
-(There were 6 warnings)
+(There were 7 warnings)
