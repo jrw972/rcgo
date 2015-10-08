@@ -171,8 +171,41 @@ struct typed_value_t
         , has_offset (false)
     { }
 
+    typed_value_t (const int16_type_t* t,
+                   int16_type_t::ValueType v)
+        : type (t)
+        , kind (VALUE)
+        , region (CONSTANT)
+        , intrinsic_mutability (IMMUTABLE)
+        , dereference_mutability (IMMUTABLE)
+        , value (t, v)
+        , has_offset (false)
+    { }
+
+    typed_value_t (const int32_type_t* t,
+                   int32_type_t::ValueType v)
+        : type (t)
+        , kind (VALUE)
+        , region (CONSTANT)
+        , intrinsic_mutability (IMMUTABLE)
+        , dereference_mutability (IMMUTABLE)
+        , value (t, v)
+        , has_offset (false)
+    { }
+
     typed_value_t (const int64_type_t* t,
                    int64_type_t::ValueType v)
+        : type (t)
+        , kind (VALUE)
+        , region (CONSTANT)
+        , intrinsic_mutability (IMMUTABLE)
+        , dereference_mutability (IMMUTABLE)
+        , value (t, v)
+        , has_offset (false)
+    { }
+
+    typed_value_t (const int128_type_t* t,
+                   int128_type_t::ValueType v)
         : type (t)
         , kind (VALUE)
         , region (CONSTANT)
@@ -256,6 +289,17 @@ struct typed_value_t
         , intrinsic_mutability (IMMUTABLE)
         , dereference_mutability (IMMUTABLE)
         , value (type, e)
+        , has_offset (false)
+    { }
+
+    typed_value_t (const float32_type_t* t,
+                   float32_type_t::ValueType v)
+        : type (t)
+        , kind (VALUE)
+        , region (CONSTANT)
+        , intrinsic_mutability (IMMUTABLE)
+        , dereference_mutability (IMMUTABLE)
+        , value (t, v)
         , has_offset (false)
     { }
 
