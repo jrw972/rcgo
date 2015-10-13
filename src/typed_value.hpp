@@ -111,7 +111,7 @@ struct typed_value_t
       FOREIGN     |   OK    |     OK    |    OK
       (REFERENCE)
 
-      If the value has FOREIGN intrinsic mutability then we require that
+      If the value has FOREIGN dereference mutability then we require that
       the reference refer to the STACK.
 
       (This check is currently checked externally.)

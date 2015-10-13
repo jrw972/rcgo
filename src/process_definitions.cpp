@@ -64,7 +64,7 @@ check_assignment (typed_value_t left_tv,
                          "%s", leak_message);
         }
 
-      if (right_tv.intrinsic_mutability == FOREIGN &&
+      if (right_tv.dereference_mutability == FOREIGN &&
           left_tv.region != typed_value_t::STACK)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
