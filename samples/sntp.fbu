@@ -11,7 +11,7 @@ init (this *Timer) Init (interval uint64) {
 }
 
 action (this +const * Timer) (readable(this.fd)) {
-     trigger Alarm () {
+     activate Alarm () {
           var buf [8u]uint8;
           var r int = read(this.fd, buf[0u:8u]);
      }
@@ -83,13 +83,13 @@ type UdpParticipant component {
 
 reaction (this +const * UdpParticipant) Send (msg +foreign UdpMessage) {
      var m UdpMessage = msg.Copy ();
-     trigger {
+     activate {
           this.queue.Push (m);
      };
 }
 
 action (this +const * UdpParticipant) (!this.queue.Empty () && writable (this.fd)) {
-       trigger {
+       activate {
               var m UdpMessage = this.queue.Front ();
               sendto (this.fd, m.host, m.port, m.msg);
               this.queue.Pop ();
@@ -97,7 +97,7 @@ action (this +const * UdpParticipant) (!this.queue.Empty () && writable (this.fd
 }
 
 action (this +const * UdpParticipant) (readable (this.fd)) {
-       trigger {
+       activate {
           var buf [128u]uint8;
           var r int = read(this.fd, buf[0u:128u]);
           println buf[0u:r];
@@ -129,7 +129,7 @@ reaction (this +const * System) Alarm () {
      msg.host = `localhost`;
      msg.port = 7u16;
      msg.msg = `hello, world`;
-     trigger Send (msg) { };
+     activate Send (msg) { };
 }
 
 instance s System Init;

@@ -2,7 +2,7 @@
 #include "Symbol.hpp"
 #include <error.h>
 #include "semantic.hpp"
-#include "trigger.hpp"
+#include "Activation.hpp"
 #include "action.hpp"
 #include "field.hpp"
 #include "parameter.hpp"
@@ -79,7 +79,7 @@ static bool
 in_mutable_section (const ast_t* node)
 {
   return node->GetAction () != NULL &&
-         node->GetTrigger () != NULL;
+         node->GetActivation () != NULL;
 }
 
 static typed_value_t
@@ -972,25 +972,25 @@ type_check_statement (ast_t * node)
       unimplemented;
     }
 
-    void visit (ast_trigger_statement_t& node)
+    void visit (ast_activate_statement_t& node)
     {
       action_reaction_base_t *action = node.GetAction ();
       ast_t *expression_list_node = node.expr_list ();
       ast_t *body_node = node.body ();
 
-      trigger_t *trigger = new trigger_t (node);
-      action->add_trigger (trigger);
+      Activation *activation = new Activation (node);
+      action->add_activation (activation);
 
-      /* Check the triggers. */
+      /* Check the activations. */
       check_rvalue_list (expression_list_node);
 
       /* Re-insert this as a pointer to mutable. */
-      node.this_symbol = node.Trigger ();
+      node.this_symbol = node.Activate ();
 
       /* Check the body. */
       type_check_statement (body_node);
 
-      node.trigger = trigger;
+      node.activation = activation;
     }
 
     void visit (ast_var_statement_t& node)
@@ -1066,9 +1066,9 @@ control_check_statement (ast_t * node)
 {
   struct visitor : public ast_visitor_t
   {
-    bool in_trigger_statement;
+    bool in_activation_statement;
 
-    visitor () : in_trigger_statement (false) { }
+    visitor () : in_activation_statement (false) { }
 
     void visit (ast_change_statement_t& node)
     {
@@ -1101,7 +1101,7 @@ control_check_statement (ast_t * node)
       // TODO: Maybe.
     }
 
-    void visit (ast_trigger_statement_t& node)
+    void visit (ast_activate_statement_t& node)
     {
       ast_t *body_node = node.body ();
       action_reaction_base_t *action = node.GetAction ();
@@ -1109,18 +1109,18 @@ control_check_statement (ast_t * node)
       if (action == NULL)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "trigger outside of action or reaction");
+                         "activation outside of action or reaction");
         }
 
-      if (in_trigger_statement)
+      if (in_activation_statement)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "triggers within triggers are not allowed");
+                         "activations within activations are not allowed");
         }
 
-      in_trigger_statement = true;
+      in_activation_statement = true;
       body_node->accept (*this);
-      in_trigger_statement = false;
+      in_activation_statement = false;
     }
   };
 
@@ -1129,11 +1129,11 @@ control_check_statement (ast_t * node)
 }
 
 /*
-  Determine if each trigger mutates the state of a component.
+  Determine if each activation mutates the state of a component.
   This requires pointer analysis and could be improved.
   However, pointer analysis solves the halting problem so we must draw the line somewhere.
 
-  The state of a component is only mutable in the body of a trigger statement so we can exclude all other activity.
+  The state of a component is only mutable in the body of a activation statement so we can exclude all other activity.
   The cases to check:
   1.  Assignment to an lvalue derived from the receiver.
   2.  Copying a pointer (to mutable) whose value is derived from the receiver.
@@ -1390,13 +1390,13 @@ mutates_check_statement (ast_t * node)
       node.visit_children (*this);
     }
 
-    void visit (ast_trigger_statement_t& node)
+    void visit (ast_activate_statement_t& node)
     {
       check_visitor v;
       node.body ()->accept (v);
       if (v.mutates_receiver)
         {
-          node.trigger->action = TRIGGER_WRITE;
+          node.activation->mode = ACTIVATION_WRITE;
         }
     }
   };

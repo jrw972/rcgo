@@ -4,7 +4,7 @@ type Actuator component {
 };
 
 action (this +const * Actuator) (!this.flag) {
-  trigger bang1 () {
+  activate bang1 () {
     this.flag = true;
   }
 }
@@ -13,7 +13,7 @@ type Detector component { };
 
 reaction (this +const * Detector) bang () {
   println `Bang Immutable`;
-  trigger {
+  activate {
     println `Bang Mutable`;
   }
 }

@@ -53,7 +53,7 @@ reaction (this +const * Channel) send (message +foreign *heap uint)
 {
   var x *heap uint;
   x = move (message);
-  trigger
+  activate
   {
     this.queue.Push (x);
   };
@@ -61,7 +61,7 @@ reaction (this +const * Channel) send (message +foreign *heap uint)
 
 action (this +const * Channel) (!this.queue.Empty ())
 {
-  trigger receive (this.queue.Front ())
+  activate receive (this.queue.Front ())
     {
       this.queue.Pop ();
     };
@@ -85,7 +85,7 @@ action (this +const * System) (this.send_count != 100u)
   {
     *y = this.send_count;
   };
-  trigger send (x)
+  activate send (x)
   {
     println `Sent `, this.send_count;
     this.send_count++;

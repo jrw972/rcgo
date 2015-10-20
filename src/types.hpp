@@ -33,7 +33,7 @@ class reaction_t;
 class scheduler_t;
 typedef struct stack_frame_t stack_frame_t;
 class Symbol;
-typedef struct trigger_t trigger_t;
+class Activation;
 typedef struct type_t type_t;
 
 // A reference is either mutable, immutable, or foreign.
@@ -45,14 +45,13 @@ enum Mutability
     FOREIGN,
 };
 
-enum TriggerAction
+enum ActivationMode
 {
-    /* TODO:  Add TRIGGER_NONE. */
-    TRIGGER_READ,  /* Trigger reads. */
-    TRIGGER_WRITE, /* Trigger writes (and reads). */
+    ACTIVATION_READ,  /* Activation reads. */
+    ACTIVATION_WRITE, /* Activation writes (and reads). */
 };
 
-typedef std::map<instance_t*, TriggerAction> instance_set_t;
+typedef std::map<instance_t*, ActivationMode> instance_set_t;
 
 struct pull_port_t
 {

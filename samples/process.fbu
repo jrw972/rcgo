@@ -53,7 +53,7 @@ type Channel component
 
 reaction (this +const * Channel) send (message uint)
 {
-  trigger
+  activate
   {
     this.queue.Push (message);
   };
@@ -61,7 +61,7 @@ reaction (this +const * Channel) send (message uint)
 
 action (this +const * Channel) (!this.queue.Empty ())
 {
-  trigger receive (this.queue.Front ())
+  activate receive (this.queue.Front ())
     {
       this.queue.Pop ();
     };
@@ -85,7 +85,7 @@ init (this *Process) Init (i uint)
 
 reaction (this +const * Process) Initr (v uint)
 {
-  trigger
+  activate
   {
     this.val[this.i] = v;
     println `Process `, this.i, ` initialized with value `, v;
@@ -96,14 +96,14 @@ reaction (this +const * Process) Initr (v uint)
 {
   // send
   println `Process `, this.i, ` sending `, this.val[this.i], ` to process `, IOTA;
-  trigger send[IOTA] (this.val[this.i])
+  activate send[IOTA] (this.val[this.i])
   { };
 }
 
 [3u] reaction (this +const * Process) receive (v uint)
 {
   println `Process `, this.i, ` received `, v, ` from process `, IOTA;
-  trigger
+  activate
   {
     this.val[IOTA] = v;
   };
@@ -140,7 +140,7 @@ action (this +const * Process) (p (this.val))
   var v uint;
   v = f (this.val);
   println `Process `, this.i, ` decided the value is `, v;
-  trigger decide (v)
+  activate decide (v)
   { };
 }
 
@@ -164,7 +164,7 @@ init (this *System) Init ()
 [3u] action (this +const * System) (true)
 {
   // send
-  trigger initp[IOTA] (100u + IOTA)
+  activate initp[IOTA] (100u + IOTA)
   { };
 }
 

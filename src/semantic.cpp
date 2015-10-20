@@ -6,7 +6,7 @@
 #include "type.hpp"
 #include "parameter.hpp"
 #include "instance.hpp"
-#include "trigger.hpp"
+#include "Activation.hpp"
 #include "field.hpp"
 #include "Symbol.hpp"
 #include "MemoryModel.hpp"
@@ -196,7 +196,7 @@ allocate_statement_stack_variables (ast_t* node, MemoryModel& memory_model)
             // Do nothing.
         }
 
-        void visit (ast_trigger_statement_t& node)
+        void visit (ast_activate_statement_t& node)
         {
             ptrdiff_t offset_before = memory_model.LocalsOffset ();
             allocate_symtab (&node, memory_model);

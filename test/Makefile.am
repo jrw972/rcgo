@@ -15,7 +15,7 @@ boolean_operators.sh \
 int_operators.sh \
 variable_zero.sh \
 two_port_calls.sh \
-reaction_param_trigger.sh \
+reaction_param_activation.sh \
 return_leak.sh \
 two_reactions.sh \
 same_port.sh
@@ -35,7 +35,7 @@ boolean_operators.fbu \
 int_operators.fbu \
 variable_zero.fbu \
 two_port_calls.fbu \
-reaction_param_trigger.fbu \
+reaction_param_activation.fbu \
 return_leak.fbu \
 two_reactions.fbu \
 same_port.fbu

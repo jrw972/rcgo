@@ -116,7 +116,7 @@ ACCEPT (ast_return_statement_t)
 ACCEPT (ast_increment_statement_t)
 ACCEPT (ast_decrement_statement_t)
 ACCEPT (ast_subtract_assign_statement_t)
-ACCEPT (ast_trigger_statement_t)
+ACCEPT (ast_activate_statement_t)
 ACCEPT (ast_var_statement_t)
 ACCEPT (ast_var_type_init_statement_t)
 ACCEPT (ast_bind_push_port_statement_t)
@@ -174,7 +174,7 @@ get_current_function (const ast_t * node)
 }
 
 Symbol*
-ast_t::Trigger ()
+ast_t::Activate ()
 {
     Symbol *this_symbol = GetReceiverSymbol ();
     Symbol *new_this_symbol = SymbolCast<ParameterSymbol> (this_symbol)->duplicate ();

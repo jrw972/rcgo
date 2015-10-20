@@ -53,7 +53,7 @@ type Channel component
 
 reaction (this +const * Channel) send (message uint)
 {
-  trigger
+  activate
   {
     this.queue.Push (message);
   };
@@ -61,7 +61,7 @@ reaction (this +const * Channel) send (message uint)
 
 action (this +const * Channel) (!this.queue.Empty ())
 {
-  trigger receive (this.queue.Front ())
+  activate receive (this.queue.Front ())
     {
       this.queue.Pop ();
     };
@@ -79,7 +79,7 @@ init (this *System) Initially ()
 
 action (this +const * System) (this.send_count != 100u)
 {
-  trigger send (this.send_count)
+  activate send (this.send_count)
   {
     println `Sent `, this.send_count;
     this.send_count++;

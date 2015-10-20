@@ -6,7 +6,7 @@
 #include "heap.hpp"
 #include "field.hpp"
 #include <error.h>
-#include "trigger.hpp"
+#include "Activation.hpp"
 #include <string.h>
 #include "instance_table.hpp"
 #include "executor_base.hpp"

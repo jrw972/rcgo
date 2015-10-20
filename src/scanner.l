@@ -48,6 +48,7 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 }
 
 "action"               { return ACTION; }
+"activate"             { return ACTIVATE; }
 "bind"                 { return BIND; }
 "cast"                 { return CAST; }
 "change"               { return CHANGE; }
@@ -73,7 +74,6 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 "reaction"             { return REACTION; }
 "return"               { return RETURN_KW; }
 "struct"               { return STRUCT; }
-"trigger"              { return TRIGGER; }
 "type"                 { return TYPE; }
 "var"                  { return VAR; }
 "while"                { return WHILE; }
