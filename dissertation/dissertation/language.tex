@@ -1,11 +1,13 @@
-\chapter{Implementation \label{implementation}}
+\chapter{Reactive Component Language\label{language}}
 
 \begin{quote}
 In theory, there is no difference between theory and practice. \linebreak
 But, in practice, there is.  \emph{Anonymous}
 \end{quote}
 
-TODO:  Write a short introduction.
+In this chapter, we present a programming language for reactive components.
+We state the motivation for the language, our assumptions for tractability, and the features that guided our design.
+We then show how reactive components are expressed in the language and we conclude with illustrative examples.
 
 \section{Motivation}
 
@@ -27,28 +29,22 @@ Third, an implementation is necessary to demonstrate that the model can be appli
 That is, given a platform for reactive components, we can design, construct, and evaluate systems based on the reactive component paradigm.
 Furthermore, we can evaluate critically the design and implementation processes that the model and platform encourage.
 By comparing implementations of similar systems in two different models, we can gain insight into the strengths and weaknesses of the model.
-These ideas will be explored further in section~\ref{evaluation}.
+These ideas will be explored further in chapter~\ref{evaluation}.
 
 \section{Approach}
 Our approach to implementing reactive components is to define a programming language for reactive components and implement that language in an interpreter.
-The choice to implement an interpreter instead of a byte-code interpretation, i.e., a virtual machine, or a compiler was a matter of convenience as it avoids the code generation step.
-However, this choice revealed something.
-The programming language provides the syntax necessary to express all of the reactive component concepts:  state variables, actions, reactions, bindings, push ports, pull ports, and activation.
+The Go programming language~\cite{go} was adopted as the \emph{transformational basis} of the language due to its simplicity.
+That is, we will defer to Go's syntax and semantics for types,declarations, statements, and expressions when they are not in conflict with the semantics of reactive components.
+Go is an imperative programming language that supports methods but places no emphasis on an inheritance hierarchy.
+In the same vein, Go does not have constructors, destructors, function overloading, and operator overloading.
+Go's type system is straightforward and the syntax of expressions and statements resemble C.
+This combination, in our opinion, makes Go an attractive transformational basis in terms of being tractable in implementation and approachable by a general audience.
+We will not discuss the syntax and semantics of Go except when they interact with the semantics of reactive components.
+Our implementation of Go is intentionally incomplete as a full implementation is beyond the scope of this project.
 
-The development workflow, then, consists of three steps.
-First, the developer defines a reactive system as a set of components in source files using a high-level language similar to the one used in the listings of section~\ref{model}.
-Then the developer designates a top-level component that represents the system and compiles the source files to produce an $\alpha$-machine image.
-Finally, the developer runs the system by loading an $\alpha$-machine with the image created in the previous step.
-
-This approach has two desirable characteristics.
-First, the virtual machine facilitates a separation of concerns between syntax and operational semantics.
-The issues of compilation and execution can be divided by the interface provided by the virtual machine.
-Thus, we can focus on implementing an $\alpha$-machine without considering the high-level language used to encode component definitions.
-Similarly, we can focus on the translation of a high-level language for component definitions to the language of the virtual machine without considering the details of how the virtual machine is implemented.
-Second, writing a compiler for a virtual machine is often easier than writing a compiler for a physical machine.
-The target provided by a virtual machine is often at a higher-level of abstraction than a physical machine and can contain features and instructions that simplify or optimize certain tasks.
-%% For example, the Java virtual machine contains an instruction for creating new objects.
-A design based on a virtual machine will allow us to focus on the semantics of reactive programs instead of the complexities of processor architecture.
+The choice to implement an interpreter instead of a byte-code interpretation, i.e., a virtual machine, or a compiler made the task tractable as it avoids code generation, linking, and loading.
+However, in moving from the interpreter to a compiler, the processes of code generation, linking, and loading must provide certain guarantees.
+We describe the challenges of moving from interpreter to compiler in chapter~\ref{future_work}.
 
 \paragraph{Static system assumption.}
 To make implementation tractable, we will assume that the systems to be implemented have a static topology meaning that all reactive components are statically allocated.
@@ -59,11 +55,421 @@ We also believe these assumptions are common in less constrained environments as
 Thus, even with the static system assumption, an implementation of the model is still applicable to many systems of interest.
 We leave implementation of extensions that facilitate the dynamic creation and binding of reactive components for future work.
 
+\paragraph{Efficient communication.}
+One of the goals of the implementation was to allow components to communicate efficiently.
+There are three modes by which a component (sender) can share information with another component (receiver) as they interact through push ports and pull ports.
+First, the sender may use \emph{value semantics} where it provides a complete copy of the value to be communicated.
+This approach is reasonable for values like numbers and small records.
+Second, a sender may use \emph{reference semantics} where it provides a pointer (reference) to the data to be communicated.
+The approach is reasonable when the sender offers up a large data structure.
+The receiver is responsible for copying any data that needs to be retained.
+When using reference semantics, receivers may read the data structure represented by the pointer but may not alter or remember the original data structure in any way.
+Third, a sender may use \emph{move semantics} where it provides a pointer to a data structure that the receiver may adopt as its own.
+In this case, the sender promises to ``forget'' the data structure as the receiver is the new owner of the data structure.
+Move semantics are appropriate when the size of the data to be communicated is large, there is a single receiver, and the sender does not need to retain the data.
+These conditions arise is situations like network stacks and pipelines.
+
+\paragraph{Memory model.}
+A value is allocated in either the constant segment, a stack, the component segment, or a heap.
+The constant segment is used to store aggregate literals like string constants.
+Function parameters and local variables are allocated on a call stack as they are in C or C++.
+The component segment contains statically allocated components.
+The set of addresses $A$ containing the state of a component is the transitive closure of a points-to relation starting from the pointer to the component $c$.
+Assuming statically allocated components, the set of addresses $pointsto(c)$ all reside in component space.
+The set of addresses $H = A \setminus pointsto(c)$ constitute a heap or a set of dynamically allocated blocks of memory.
+Based on the semantics of reactive components, the heaps of two different components must be disjoint.
+Logically, then, each component has its own heap from which it can allocate memory.
+The component segment and the heaps contain all of the mutable state in the system.
+Mutable state outside of a component, e.g., a global variable, is prohibited as it may introduce a data race.
+
 \section{Programming Language}
-Describe the reactive/transformational split and dismiss the transformational.
-Assignment.
-Describe how actions, reactions, etc. appear in the language.
-Enforcing the immutable/mutable phase split.
+
+\paragraph{Components.}
+A component resembles a \verb+struct+ in Go since it is a group of named state variables.
+A component, then, is defined with the following syntax:
+\begin{verbatim}
+type identifier component { field list };
+\end{verbatim}
+For example,
+\begin{verbatim}
+type Clock component {
+  flag bool;
+  counter uint;
+};
+\end{verbatim}
+introduces a type named \verb+Clock+ that is a reactive component with two fields (state variables).
+The type of a field may be another component type to support recursive encapsulation.
+
+\paragraph{Receivers.}
+A method in Go has one of the following two forms:
+\begin{verbatim}
+func (identifier typeName) methodName signature body
+func (identifier *typeName) methodName signature body
+\end{verbatim}
+The first form operates on a copy of a value of type \verb+typeName+.
+The second form operates on a pointer to a value of type \verb+typeName+.
+The parameter \verb+identifier+ performs the same function as the \verb+this+ keyword in C++ and Java.
+The syntax \verb+(identifier typeName)+ is called a receiver and the syntax \verb+(identifier *typeName)+ is called a pointer receiver.
+Many of the syntactic elements introduced for reactive components use a pointer receiver.
+
+\paragraph{Intrinsic and dereference mutability.}
+Variables and parameters may be declared with an \emph{intrinsic mutability} and a \emph{dereference mutability}.
+Intrinsic mutability limits the operations that can be performed on an lvalue of the variable or parameter while dereference mutability limits the operations that can be performed on lvalues derived from the rvalue of the variable or parameter.
+By default, variables and parameters have mutable intrinsic and dereference mutability.
+The following code is legal and sets \verb+z+ to 6.
+\begin{verbatim}
+var x uint = 3u;
+var y *uint = &x;
+var z = x + *y;
+\end{verbatim}
+
+Declaring a variable or parameter to have immutable intrinsic mutability (\verb+const+) prevents the variable or parameter from being changed after it is initialized.
+The following code is illegal:
+\begin{verbatim}
+var x const uint = 3u;
+x = 4u; // Illegal
+\end{verbatim}
+Immutable intrinsic mutability is enforced when taking the address of a variable or parameter:
+\begin{verbatim}
+var x const uint = 3u;
+var y *uint = &x;        // Illegal
+var z +const *uint = &x; // Legal
+var a uint = *z;         // Legal
+*z = 5u;                 // Illegal
+\end{verbatim}
+The second line is illegal because \verb+x+ could change through a statement like \verb+*y = 5u;+.
+The third line causes \verb+z+ to have immutable dereference mutability (\verb|+const|).
+The expression \verb+*z+ can serve as an rvalue (line 4) but it cannot serve as an lvalue (line 5).
+
+Dereference mutability is ``sticky.''
+For example:
+\begin{verbatim}
+var x +const **uint = ...;
+var y +const *uint = *x; // Legal
+var z *uint = *x;        // Illegal
+\end{verbatim}
+The second line honors the guarantee that all of the memory accessible through \verb+x+ is immutable.
+Dereference mutability is checked in assignment and calls such as normal function call, method call, port activation, and bindings.
+Dereference mutability affects type from which lvalues can be derived, namely, pointers and slices (indexable pointers).
+Immutable dereference mutability is one of the techniques that is used to enforce the immutable phase of state transitions.
+
+The second kind of mutability is called \emph{foreign} mutability.
+Foreign mutability is like immutable mutability with the added condition that an address with foreign mutability cannot be stored in the heap.
+The primary application of foreign mutability is declaring the parameters of push ports and reactions with foreign dereference mutability.
+This supports the goal of using reference semantics for communication while enforcing the isolation of heaps.
+\begin{verbatim}
+var x +foreign *uint = ...;
+var y +foreign **uint = new *uint;
+*x = 3;                            // Illegal
+*y = x;                            // Illegal
+\end{verbatim}
+The fourth line is illegal because the lvalue given by \verb+*x+ is immutable.
+The fifth line is illegal because \verb+*y+ refers to a location that is on the heap.
+\begin{verbatim}
+var x +foreign *uint = ...;
+var y +foreign *uint;
+var z +foreign **uint = &y;
+*z = x;                     // Conceptually Legal
+\end{verbatim}
+The previous example is legal because \verb+*z+ refers to \verb+y+ which is allocated on the stack.
+Thus, \verb+x+ (as stored in \verb+y+) will be forgotten after after the current reaction/function/method returns.
+In general, determining whether a pointer refers to a location on the stack or a heap is undecidable.
+The interpreter may reject legal programs due to this limitation.
+Table~\ref{mutability} describes how the intrinsic and dereference mutability is computed for various expressions.
+The operation of interest is the dereference operation which shows how dereference mutability is ``sticky'' and conservatively assumes that all pointers refer to an address on the heap.
+
+The following checks are applied to assignment statements:
+\begin{enumerate}
+\item The lvalue and rvalue must be type compatible.
+\item The lvalue must have mutable intrinsic mutability.
+\item If the type involved contains a pointer or slice:
+  \begin{enumerate}
+    \item Check for compatible dereference mutability in table~\ref{assignmut}.
+      Essentially, the dereference mutability of the lvalue must be at least as ``weak'' as the dereference mutability of the rvalue\label{Rule1}.
+    \item If the rvalue has foreign dereference mutability then the lvalue must refer to a location on the stack\label{Rule2}.
+  \end{enumerate}
+\end{enumerate}
+The checks for assignment also enforce the ``stickiness'' of dereference mutability (\ref{Rule1}) and force all foreign pointers to be forgotten as they can only be stored on the stack (\ref{Rule2}).
+
+\begin{table}
+  \centering
+  \begin{tabular}{ccccp{1.75cm}cccc}
+    Kind & Seg & Intrin & Deref & Op & Kind & Seg & Intrin & Deref \\
+    \hline
+    lvalue & S & A & B & load              & rvalue & S    & A & B \\
+    rvalue & S & A & B & deref (\verb+*+)  & lvalue & heap & B & B \\
+    lvalue & S & A & B & ref (\verb+&+)    & rvalue & S    & A & B \\
+    lvalue & S & A & B & select (\verb+.+) & lvalue & S    & A & B \\
+    lvalue & S & A & B & index (\verb+[]+) & lvalue & S    & A & B \\
+  \end{tabular}
+  \caption{Intrinsic and dereference mutability for various operations\label{mutability}.  The possible choices for segment are constant, stack or heap (includes the component segment).  The possible choices for the intrinsic and dereference mutability are mutable, immutable, and foreign.}
+\end{table}
+
+\begin{table}
+  \centering
+  \begin{tabular}{cccc}
+              & Mutable & Immutable & Foreign \\
+    Mutable   & Yes     & No        & No      \\
+    Immutable & Yes     & Yes       & No      \\
+    Foreign   & Yes     & Yes       & Yes     \\
+    \end{tabular}
+  \caption{Dereference mutability compatibility for assignment.\label{assignmut}.  The rows represent the dereference mutability of the lvalue and the columns represent the dereference mutability of the rvalue.}
+\end{table}
+
+A parameter is \emph{foreign safe} if (1) the type of the parameter does not contain pointers or slices or (2) the parameter is declared with foreign dereference immutability.
+A parameter list is foreign safe if all parameters in the list are foreign safe.
+A signature (a parameter list with a return parameter) is foreign safe if the parameter list and return parameter are both foreign safe.
+
+\paragraph{Initializers.}
+A initializer is used to initialize the fields of a reactive component.
+This allows one to initialize components before the scheduler starts.
+This is necessary for establishing invariants as is commonly done in formal models, e.g., the \verb+initially+ section of UNITY~\cite{chandy1989parallel}.
+An initializer has the form:
+\begin{verbatim}
+init (id *typeName) initializerName signature body
+\end{verbatim}
+An initializer is similar to a method but has additional semantics:
+\begin{itemize}
+\item An initializer must have a pointer receiver to a component type.
+\item An initializer may only be invoked by another initializer.
+\item An initializer sets the heap on entry and resets the heap on exit so that all allocated memory is attributed to the receiver.
+\end{itemize}
+
+\paragraph{Instances.}
+An instance is a top-level component.
+An instance is declared with the following syntax:
+\begin{verbatim}
+instance identifier typeIdentifier initializerIdentifier (expressionList);
+\end{verbatim}
+For example, \verb+instance c Clock Init ();+ declares as instance named \verb+c+ of type \verb+Clock+ and will call the initializer \verb+Init+ with an empty list of arguments.
+The instance identifier must be unique, the type identifier must refer to a component, and the initializer must be declared for the component type.
+
+\paragraph{Actions.}
+An action has the form:
+\begin{verbatim}
+action (id +const *typeName) (booleanExpression) body
+\end{verbatim}
+The immutable dereference mutability of the receiver enforces the immutable phase of transactions.
+Actions may only be defined for component types.
+The Boolean expression is the precondition of the action.
+The receiver variable is in scope for the evaluation of the precondition.
+The body contains the state transitions associated with the action.
+
+\paragraph{Reactions.}
+A reaction has the form:
+\begin{verbatim}
+reaction (id +const *typeName) identifier (parameterList) body
+\end{verbatim}
+As with actions, the immutable dereference mutability of the receiver enforces the immutable phase of transactions.
+Reaction may only be defined for component types.
+The name of a reaction is used when binding.
+The parameter list declares the parameters that are passed to the reaction.
+The parameter list must be foreign safe.
+This prevents the reaction from storing memory addresses from the component that activated the reaction.
+The body contains the state transitions associated with the reaction.
+
+\paragraph{Push ports.}
+A push port is declared as a field of a component with push port type.
+A push port type has the form:
+\begin{verbatim}
+push (parameterList)
+\end{verbatim}
+The parameter list declares the parameters that are passed to any bound reaction.
+The parameter list must be foreign safe.
+The following example declares a push port named \verb+response+ in the \verb+Clock+ component:
+\begin{verbatim}
+type Clock component {
+  ...
+  response push (t uint);
+};
+\end{verbatim}
+
+\paragraph{Getters.}
+A getter has the form:
+\begin{verbatim}
+getter (id +const *typeName) identifier signature body
+\end{verbatim}
+A getter is similar to a method but has additional semantics:
+\begin{itemize}
+\item A getter must have a pointer receiver to a component type declared with immutable dereference mutability.
+\item The signature must be foreign safe.
+\item A getter may only be invoked by another getter or an action or reaction in the immutable phase.
+\item An getter sets the heap on entry and resets the heap on exit so that all allocated memory is attributed to the receiver.
+\end{itemize}
+
+\paragraph{Pull ports.}
+A pull port is declared as a field of a component with pull port type.
+A pull port type has the form:
+\begin{verbatim}
+pull (parameterList) returnParameter
+\end{verbatim}
+The parameter list declares the parameters that are passed to the bound getter.
+The parameter list and return parameter must be foreign safe.
+Pull ports are called like getters and place the same restriction on the caller, that is, a pull port may only be invoked by a getter or an action or reaction in the immutable phase.
+The following example declares a pull port named \verb+isBufferFull+ in the \verb+Producer+ component:
+\begin{verbatim}
+type Producer component {
+  ...
+  isOutputBufferFull pull () bool;
+};
+\end{verbatim}
+In this example, the intent of the pull port is to allow a \verb+Producer+ to interrogate the status of a down stream buffer to implement flow control.
+
+\paragraph{Bindings.}
+Bindings allow reactions to be associated with push ports and getters to be associated with pull ports.
+Binding and recursive encapsulation are the two mechanisms for composing reactive components.
+A binding has the form:
+\begin{verbatim}
+bind (id *typeName) {
+  bindStatement
+  ...
+}
+\end{verbatim}
+For example:
+\begin{verbatim}
+bind (this *System) {
+  this.producer.Out -> this.consumer.In;
+  this.producer.isOutputBufferFull <- this.consumer.isInputBufferFull;
+}
+\end{verbatim}
+The first statement of the example binds the \verb+Out+ push port of the \verb+System+'s \verb+producer+ to the \verb+In+ reaction of the \verb+System+'s \verb+consumer+\footnote{The select operator(\texttt{.}) acts automatically dereferences a pointer.}.
+The second statement of the example binds the \verb+isOutputBufferFull+ pull port of the \verb+System+'s \verb+producer+ to the \verb+isInputBufferFull+ getter of the \verb+System+'s \verb+consumer+.
+The left side of a bind statement always refers to a port while the right side refers to a getter or action.
+The direction of the arrow indicates the logical flow of information.
+Thus, information flows from the push port to a reaction (\verb+->+) and information flows from the getter to a pull port (\verb+<-+).
+A pull port must be bound to exactly one getter.
+A reaction may be bound to at most one push port.
+Bindings are associated with a component type and created for each instance of that component type.
+
+\paragraph{Activations.}
+Activations are the mechanism by which transactions extend to other components via push port/reaction bindings.
+Activations also serve as the boundary between the immutable and mutable phases of a transaction.
+An activation statement has the form:
+\begin{verbatim}
+activate portName (arguments) ... {
+  statements
+};
+\end{verbatim}
+Activation statements can only occur in the body of an action or a reaction.
+Assume that the receiver of the action or reaction is named \verb+this+.
+The expression \verb+this.portName+ must refer to a push port and the arguments passed to the push port must agree with its signature.
+The list of push ports in an activate statement is optional.
+When an activation statement is executed, the named push ports are activated meaning that the reactions bound to those push ports are activated with the given arguments.
+This chaining of activations forms a transaction that resembles a tree where the root of the tree is a component/action pair, the other nodes are component/reaction pairs, and the links represent port activations.
+Once all of the actions and reactions in the transaction have activated their last push port, they proceed to execute the body of the activate statements.
+Recall that \verb+this+ has immutable dereference mutability.
+Thus, all computation up to and including the last port activation constitutes the immutable phase of the transaction since the state of the components is not allowed to change.
+Within the scope of the body, \verb+this+ changes to mutable dereference mutability which allows the state of a component to be changed.
+Thus, the bodies of activation statements form the mutable phase of the transaction.
+Actions and reactions return, i.e., the flow of control is halted, after the execution of the body of a activation statement.
+Activate statements guarded by \verb+if+ statements facilitate \emph{conditional activation}.
+An activate statement may not appear in another activate statement.
+
+\paragraph{Arrays.}
+A homogeneous group of sub-components may be declared using array syntax.
+For example,
+\begin{verbatim}
+type System component {
+  clock [5]Clock;
+  ...
+};
+\end{verbatim}
+declares 5 \verb+Clock+ sub-components.
+To request the time from each \verb+Clock+, the \verb+System+ declares as array of 5 push ports and a \emph{dimensioned} action:
+\begin{verbatim}
+type System component {
+  clock [5]Clock;
+  push [5]request ();
+  ...
+};
+
+[5u] action (this +const *System) (...) {
+  ...
+  activate clock[IOTA] {
+    ...
+  };
+}
+\end{verbatim}
+A dimensioned action is parameterized with an integral constant in the range $[0,dimension)$.
+This constant is accessed through the \verb+IOTA+ symbol.
+A push port in an array is activated by supplying an index.
+The index expression must be constant to facilitate the check for sound composition.
+Reactions may be dimensioned as well:
+\begin{verbatim}
+[5u] reaction (this +const *System) clock (t int) { ... }
+\end{verbatim}
+A \verb+for+-loop over an integral range may be used to generate bindings without explicitly listing each binding.
+For example:
+\begin{verbatim}
+bind (this *System) {
+  for i .. 5u {
+    this.request[i] -> this.clock[i].request;
+  };
+}
+\end{verbatim}
+
+\paragraph{Transferrable heaps.}
+A key requirement for implementing reactive components is that the state of each component remain disjoint.
+Foreign dereference mutability allows components to safely communicate with pointers because it ensures that those pointers are forgotten after the transaction.
+For efficient communication, we also desire the ability to transfer a data structure (the heap) from one component (the sender) to another component (the receiver).
+The sender offers the heap to its receivers and one of the receivers may claim the heap.
+If the heap is accepted, the sender must forget all references to the heap.
+
+A heap is a type so named because it resembles a heap used for dynamic memory allocation.
+A heap has a distinguished root that contains the data structure that will be transferred.
+A heap is entirely self-contained, that is, any pointer found in the heap may only point to an address in the heap.
+This ensures that the receiver may not access state in the sender after a transfer.
+Heaps may form hierarchies.
+
+A heap is created with the \verb+new+ operator.
+For example:
+\begin{verbatim}
+var x *heap int = new heap int;
+\end{verbatim}
+creates new heap with an integer root.
+
+A \verb+change+ statement allows one to access the root of the heap.
+For example:
+\begin{verbatim}
+change (x, y *int) {
+  *y = 3;
+};
+\end{verbatim}
+In the example, \verb+x+ is a pointer to a heap and \verb+y+ is a variable that points to the root of the heap.
+The type of \verb+y+ must agree with the type of \verb+x+.
+The root variable is valid for the scope introduced by the \verb+change+ statement.
+The root variable will be set to \verb+nil+ if the heap is no longer valid.
+Within the scope of the \verb+change+ statement, all other variables and parameters are re-entered with foreign dereference immutability.
+This enforces the isolation of heaps by preventing the heap from storing a pointer that refers to a location in another heap.
+
+Heaps are treated like a stack.
+On entering an action or reaction, the stack of heaps contains a single heap:  the heap associated with the component.
+A \verb+change+ statement pushes a new heap on the stack.
+All memory allocations are performed using the current heap.
+
+A \verb+move+ expression allows a receiver to take ownership of a heap being offered by a sender.
+For example:
+\begin{verbatim}
+var z *heap int = move (x);
+\end{verbatim}
+If \verb+x+ refers to a heap that has already been moved, i.e., claimed by this component or another component, then the result of the \verb+move+ is a \verb+nil+ pointer.
+A \verb+change+ statement can be used to access the data in the heap after a successful \verb+move+.
+
+A \verb+merge+ expression allows one to merge a heap into the current heap.
+For example:
+\begin{verbatim}
+var x *uint = merge (z);
+\end{verbatim}
+A \verb+merge+ expression performs an implicit \verb+move+, that is, the heap given to \verb+merge+ need not be owned by the current component.
+Similarly, a \verb+merge+ will return \verb+nil+ if the heap has already been claimed.
+
+Operations on heaps, specifically, \verb+change+, \verb+move+, and \verb+merge+ are atomic within a transaction.
+The reactive component model requires a clear distinction between the mutable phase and immutable phase and some causality in the immutable phase.
+However, an implementation is free to execute immutable phases concurrently and/or mutable phases concurrently.
+Consequently, different components may be performing heap operations on the same heap at the same time.
+Thus, \verb+change+, \verb+move+, and \verb+merge+ are atomic with respect to each other.
+These operations return \verb+nil+ indicating a failure.
+For example, if two components attempt to \verb+move+ the same heap, one will succeed and the other will fail.
 
 \section{Semantic Checking}
 Describe the algorithms used to enforce the semantics of reactive components.
