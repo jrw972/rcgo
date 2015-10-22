@@ -3,7 +3,7 @@
 #include "bind.hpp"
 #include "field.hpp"
 #include <error.h>
-#include "trigger.hpp"
+#include "Activation.hpp"
 #include "action.hpp"
 #include "Callable.hpp"
 #include "SymbolVisitor.hpp"
@@ -419,10 +419,10 @@ instance_table_enumerate_bindings (instance_table_t& table)
 struct action_set_t
 {
     // Instances implied by the immutable phase.
-    // The TriggerAction should always be READ.
+    // The ActivationMode should always be READ.
     instance_set_t immutable_phase;
     // Instances implied by the mutable phase.
-    // The TriggerAction may be READ or WRITE.
+    // The ActivationMode may be READ or WRITE.
     instance_set_t mutable_phase;
 
     void merge_with_upgrade (const action_set_t& other)
@@ -455,7 +455,7 @@ struct action_set_t
                 ++pos)
             {
                 std::pair<instance_set_t::iterator, bool> x = mutable_phase.insert (*pos);
-                if (!x.second && (pos->second == TRIGGER_WRITE || x.first->second == TRIGGER_WRITE))
+                if (!x.second && (pos->second == ACTIVATION_WRITE || x.first->second == ACTIVATION_WRITE))
                     {
                         // Two writers for same instance.
                         return true;
@@ -494,7 +494,7 @@ transitive_closure (const instance_table_t& table,
             not_reached;
         }
 
-        void visit (const ast_trigger_statement_t& node)
+        void visit (const ast_activate_statement_t& node)
         {
             node.expr_list ()->accept (*this);
         }
@@ -697,7 +697,7 @@ transitive_closure (const instance_table_t& table,
             node.false_branch ()->accept (*this);
         }
 
-        void visit (const ast_trigger_statement_t& node)
+        void visit (const ast_activate_statement_t& node)
         {
             node.expr_list ()->accept (*this);
         }
@@ -820,7 +820,7 @@ transitive_closure (const instance_table_t& table,
                     //node.expr ()->children[0]->children[0]->accept (v);
                     instance_table_t::InstancesType::const_iterator pos = table.instances.find (v.computed_address);
                     assert (pos != table.instances.end ());
-                    set.immutable_phase.insert (std::make_pair (pos->second, TRIGGER_READ));
+                    set.immutable_phase.insert (std::make_pair (pos->second, ACTIVATION_READ));
                 }
             else if (type_cast<pull_port_type_t> (t) != NULL)
                 {
@@ -829,33 +829,33 @@ transitive_closure (const instance_table_t& table,
                     instance_table_t::PullPortsType::const_iterator pos = table.pull_ports.find (v.computed_address);
                     assert (pos != table.pull_ports.end ());
                     instance_table_t::OutputType out = *pos->second.outputs.begin ();
-                    set.immutable_phase.insert (std::make_pair (out.instance, TRIGGER_READ));
+                    set.immutable_phase.insert (std::make_pair (out.instance, ACTIVATION_READ));
                 }
         }
     };
 
     action_set_t set;
-    TriggerAction local_action = TRIGGER_READ;
+    ActivationMode local_action = ACTIVATION_READ;
 
-    // For each trigger in the action.
-    for (action_reaction_base_t::TriggersType::const_iterator pos = action->begin (),
+    // For each activation in the action.
+    for (action_reaction_base_t::ActivationsType::const_iterator pos = action->begin (),
             limit = action->end ();
             pos != limit;
             ++pos)
         {
-            // Determine the set for this trigger.
+            // Determine the set for this activation.
             port_call_visitor v (table, instance->address (), iota);
             (*pos)->node.accept (v);
-            // Merge the sets from this trigger.
+            // Merge the sets from this activation.
             set.merge_with_upgrade (v.set);
             // Determine if this action mutates the receiver.
-            local_action = std::max (local_action, (*pos)->action);
+            local_action = std::max (local_action, (*pos)->mode);
         }
 
     // Add this action.
     if (!set.mutable_phase.insert (std::make_pair (instance, local_action)).second)
         {
-            if (local_action == TRIGGER_WRITE)
+            if (local_action == ACTIVATION_WRITE)
                 {
                     // We are not the first writer of this instance.
                     error (-1, 0, "system is non-deterministic");
@@ -955,10 +955,10 @@ operator<< (std::ostream& o,
             o << ',' << '(' << *pos->first << ',';
             switch (pos->second)
                 {
-                case TRIGGER_READ:
+                case ACTIVATION_READ:
                     o << "READ";
                     break;
-                case TRIGGER_WRITE:
+                case ACTIVATION_WRITE:
                     o << "WRITE";
                     break;
                 }

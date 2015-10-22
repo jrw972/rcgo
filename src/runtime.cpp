@@ -879,7 +879,7 @@ evaluate_expr (executor_base_t& exec,
 
         void visit (const ast_indexed_port_call_expr_t& node)
         {
-            // Determine the trigger index.
+            // Determine the push port index.
             evaluate_expr (exec, node.index ());
             int_type_t::ValueType idx;
             stack_frame_pop (exec.stack (), idx);
@@ -1126,7 +1126,7 @@ evaluate_expr (executor_base_t& exec,
             char* top_after = stack_frame_top (exec.stack ());
             ptrdiff_t arguments_size = top_after - top_before; // Assumes stack grows up.
 
-            // Find the port to trigger.
+            // Find the port to activate.
             Symbol* this_ = node.GetReceiverSymbol ();
             stack_frame_push (exec.stack (), this_-> offset (), SymbolCast<ParameterSymbol> (this_)->value.type->size ());
             port_t* port = *((port_t**)((char*)stack_frame_pop_pointer (exec.stack ()) + field->offset + offset));
@@ -1134,7 +1134,7 @@ evaluate_expr (executor_base_t& exec,
             char* base_pointer = stack_frame_base_pointer (exec.stack ());
             component_t* instance = exec.current_instance ();
 
-            // Trigger all the reactions bound to the port.
+            // Activate all the reactions bound to the port.
             while (port != NULL)
                 {
                     // Set up a frame.
@@ -1601,7 +1601,7 @@ evaluate_statement (executor_base_t& exec,
             node.child ()->typed_value.type->accept (v);
         }
 
-        void visit (const ast_trigger_statement_t& node)
+        void visit (const ast_activate_statement_t& node)
         {
             // Need to keep track of the largest base pointer so we can process the mutable section.
             char* base_pointer = stack_frame_base_pointer (exec.stack ());
@@ -1838,12 +1838,12 @@ execute (executor_base_t& exec,
 
     if (exec.mutable_phase_base_pointer () == 0)
         {
-            // No triggers.  Pop the base pointer and finish.
+            // No activations.  Pop the base pointer and finish.
             stack_frame_pop_base_pointer (exec.stack ());
             return;
         }
 
-    // Process all of the deferred trigger bodies.
+    // Process all of the deferred activation bodies.
     // First, go to the last frame.
     stack_frame_set_base_pointer (exec.stack (), exec.mutable_phase_base_pointer ());
 
@@ -1852,9 +1852,9 @@ execute (executor_base_t& exec,
             // Get the deferred body.
             ast_t* b = *(ast_t**)stack_frame_ip (exec.stack ());
 
-            // Get the trigger.
-            trigger_t *trigger = b->GetTrigger ();
-            assert (trigger != NULL);
+            // Get the activation.
+            Activation *activation = b->GetActivation ();
+            assert (activation != NULL);
 
             // Set the current record.
             Symbol* this_ = b->GetReceiverSymbol ();
@@ -1865,7 +1865,7 @@ execute (executor_base_t& exec,
             evaluate_statement (exec, b);
 
             // Add to the schedule.
-            if (trigger->action == TRIGGER_WRITE)
+            if (activation->mode == ACTIVATION_WRITE)
                 {
                     exec.push ();
                 }

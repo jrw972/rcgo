@@ -124,7 +124,7 @@ independent (XIterator x_begin, XIterator x_end,
         }
       else
         {
-          if (x_begin->second == TRIGGER_WRITE || y_begin->second == TRIGGER_WRITE)
+          if (x_begin->second == ACTIVATION_WRITE || y_begin->second == ACTIVATION_WRITE)
             {
               return false;
             }

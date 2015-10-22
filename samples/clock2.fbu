@@ -6,7 +6,7 @@ type Counter component {
 };
 
 action (this +const * Counter) (true) {
-  trigger {
+  activate {
     this.counter++;
     println `Counter is now `, this.counter;
   };
@@ -23,13 +23,13 @@ type Clock component {
 };
 
 reaction (this +const * Clock) request () {
-  trigger {
+  activate {
     this.flag = true;
   };
 }
 
 action (this +const * Clock) (this.flag) {
-  trigger response (this.counter.Counter()) {
+  activate response (this.counter.Counter()) {
     this.flag = false;
   };
 }
@@ -40,14 +40,14 @@ type Sampler component {
 };
 
 action (this +const * Sampler) (!this.flag) {
-  trigger request () {
+  activate request () {
     this.flag = true;
   };
 }
 
 reaction (this +const * Sampler) response (t uint) {
   println `Received `, t;
-  trigger {
+  activate {
     this.flag = false;
   };
 }

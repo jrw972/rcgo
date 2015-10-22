@@ -12,6 +12,7 @@ parser.hpp parser.cpp: parser.y
 bin_PROGRAMS = rc
 rc_SOURCES = main.cpp \
 action.hpp \
+Activation.hpp \
 ast.hpp ast.cpp \
 bind.hpp \
 BuiltinFunction.hpp BuiltinFunction.cpp \
@@ -39,7 +40,6 @@ runtime.hpp runtime.cpp \
 stack_frame.hpp stack_frame.cpp \
 Symbol.hpp Symbol.cpp \
 SymbolVisitor.hpp \
-trigger.hpp \
 type.hpp type.cpp \
 typed_value.hpp typed_value.cpp \
 types.hpp \

@@ -9,7 +9,7 @@
 class action_reaction_base_t
 {
 public:
-    typedef std::vector<trigger_t*> TriggersType;
+    typedef std::vector<Activation*> ActivationsType;
 
     action_reaction_base_t (named_type_t* type, ast_t* node_, ast_t* body_)
         : type_ (type)
@@ -34,18 +34,18 @@ public:
     }
 
     void
-    add_trigger (trigger_t * trigger)
+    add_activation (Activation * activation)
     {
-        triggers_.push_back (trigger);
+        activations_.push_back (activation);
     }
 
-    TriggersType::const_iterator begin () const
+    ActivationsType::const_iterator begin () const
     {
-        return triggers_.begin ();
+        return activations_.begin ();
     }
-    TriggersType::const_iterator end () const
+    ActivationsType::const_iterator end () const
     {
-        return triggers_.end ();
+        return activations_.end ();
     }
 
     MemoryModel memory_model;
@@ -67,7 +67,7 @@ public:
     ast_t* const node;
     ast_t* const body;
 private:
-    TriggersType triggers_;
+    ActivationsType activations_;
     bool has_dimension_;
     typed_value_t dimension_;
 };

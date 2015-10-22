@@ -9,7 +9,7 @@ init (this *Variable) Init () {
 }
 
 [3u] reaction (this +const * Variable) Set (v int) {
-    trigger {
+    activate {
         this.value = v;
     }
 }
@@ -42,7 +42,7 @@ init (this *Process) Init () {
 }
 
 reaction (this +const * Process) initr (v int) {
-    trigger {
+    activate {
         this.input = v;
         if this.status == PROCESS_IDLE {
             this.status = PROCESS_READ;
@@ -55,13 +55,13 @@ action (this +const * Process) (this.status == PROCESS_READ) {
     var x int;
     x = this.get_x ();
     if x == -1i {
-        trigger {
+        activate {
             this.output = this.input;
             this.status = PROCESS_WRITE;
         }
     }
     else {
-        trigger {
+        activate {
             this.output = x;
             this.status = PROCESS_DECIDE;
         }
@@ -70,7 +70,7 @@ action (this +const * Process) (this.status == PROCESS_READ) {
 
 // Write
 action (this +const * Process) (this.status == PROCESS_WRITE) {
-    trigger set_x (this.input) {
+    activate set_x (this.input) {
         println `x set to `, this.input;
         this.status = PROCESS_DECIDE;
     }
@@ -78,7 +78,7 @@ action (this +const * Process) (this.status == PROCESS_WRITE) {
 
 // Decide
 action (this +const * Process) (this.status == PROCESS_DECIDE) {
-    trigger Decide (this.output) {
+    activate Decide (this.output) {
         this.status = PROCESS_DONE;
     }
 }
@@ -106,7 +106,7 @@ init (this *User) Init (v int) {
 
 // Init
 action (this +const * User) (this.status == USER_REQUEST || this.error) {
-    trigger initp (this.v) {
+    activate initp (this.v) {
         if !this.error {
             this.status = USER_WAIT;
         }
@@ -119,7 +119,7 @@ action (this +const * User) (this.error) {
 
 reaction (this +const * User) Decide (v int) {
     println this, ` decided value is `, v;
-    trigger {
+    activate {
         if !this.error {
             if this.status == USER_WAIT {
                 this.decision = v;

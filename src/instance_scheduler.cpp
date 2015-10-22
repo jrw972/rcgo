@@ -17,10 +17,10 @@ instance_scheduler_t::lock (const instance_set_t& set)
       instance_info_t* record = info_map_[pos->first];
       switch (pos->second)
         {
-        case TRIGGER_READ:
+        case ACTIVATION_READ:
           pthread_rwlock_rdlock (&record->lock);
           break;
-        case TRIGGER_WRITE:
+        case ACTIVATION_WRITE:
           pthread_rwlock_wrlock (&record->lock);
           break;
         }
@@ -37,8 +37,8 @@ instance_scheduler_t::unlock (const instance_set_t& set)
       instance_info_t* record = info_map_[pos->first];
       switch (pos->second)
         {
-        case TRIGGER_READ:
-        case TRIGGER_WRITE:
+        case ACTIVATION_READ:
+        case ACTIVATION_WRITE:
           pthread_rwlock_unlock (&record->lock);
           break;
         }

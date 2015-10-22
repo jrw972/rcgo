@@ -281,7 +281,7 @@ private:
         gc_task_t (instance_t* i)
             : instance (i)
         {
-            set_[i] = TRIGGER_WRITE;
+            set_[i] = ACTIVATION_WRITE;
         }
 
         instance_t* instance;

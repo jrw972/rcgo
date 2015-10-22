@@ -246,6 +246,62 @@ private:
     int8_type_t () { }
 };
 
+class int16_type_t : public type_t
+{
+public:
+    typedef int16_t ValueType;
+
+    void accept (const_type_visitor_t& visitor) const;
+    std::string to_string () const
+    {
+        return "<int16>";
+    }
+    size_t alignment () const
+    {
+        return 2;
+    }
+    size_t size () const
+    {
+        return 2;
+    }
+    virtual TypeLevel level () const
+    {
+        return CONVENTIONAL;
+    }
+
+    static const int16_type_t* instance ();
+private:
+    int16_type_t () { }
+};
+
+class int32_type_t : public type_t
+{
+public:
+    typedef int32_t ValueType;
+
+    void accept (const_type_visitor_t& visitor) const;
+    std::string to_string () const
+    {
+        return "<int32>";
+    }
+    size_t alignment () const
+    {
+        return 4;
+    }
+    size_t size () const
+    {
+        return 4;
+    }
+    virtual TypeLevel level () const
+    {
+        return CONVENTIONAL;
+    }
+
+    static const int32_type_t* instance ();
+private:
+    int32_type_t () { }
+};
+
 class int64_type_t : public type_t
 {
 public:
@@ -258,11 +314,11 @@ public:
     }
     size_t alignment () const
     {
-        return 1;
+        return 8;
     }
     size_t size () const
     {
-        return 1;
+        return 8;
     }
     virtual TypeLevel level () const
     {
@@ -272,6 +328,34 @@ public:
     static const int64_type_t* instance ();
 private:
     int64_type_t () { }
+};
+
+class int128_type_t : public type_t
+{
+public:
+    typedef long long ValueType;
+
+    void accept (const_type_visitor_t& visitor) const;
+    std::string to_string () const
+    {
+        return "<int128>";
+    }
+    size_t alignment () const
+    {
+        return 16;
+    }
+    size_t size () const
+    {
+        return 16;
+    }
+    virtual TypeLevel level () const
+    {
+        return CONVENTIONAL;
+    }
+
+    static const int128_type_t* instance ();
+private:
+    int128_type_t () { }
 };
 
 class uint_type_t : public type_t
@@ -464,6 +548,34 @@ public:
     {
         return CONVENTIONAL;
     }
+};
+
+class float32_type_t : public type_t
+{
+public:
+    typedef float ValueType;
+
+    void accept (const_type_visitor_t& visitor) const;
+    std::string to_string () const
+    {
+        return "<float32>";
+    }
+    size_t alignment () const
+    {
+        return 4;
+    }
+    size_t size () const
+    {
+        return 4;
+    }
+    virtual TypeLevel level () const
+    {
+        return CONVENTIONAL;
+    }
+
+    static const float32_type_t* instance ();
+private:
+    float32_type_t () { }
 };
 
 class float64_type_t : public type_t
@@ -1163,7 +1275,19 @@ struct const_type_visitor_t
     {
         default_action (type);
     }
+    virtual void visit (const int16_type_t& type)
+    {
+        default_action (type);
+    }
+    virtual void visit (const int32_type_t& type)
+    {
+        default_action (type);
+    }
     virtual void visit (const int64_type_t& type)
+    {
+        default_action (type);
+    }
+    virtual void visit (const int128_type_t& type)
     {
         default_action (type);
     }
@@ -1188,6 +1312,10 @@ struct const_type_visitor_t
         default_action (type);
     }
     virtual void visit (const uint128_type_t& type)
+    {
+        default_action (type);
+    }
+    virtual void visit (const float32_type_t& type)
     {
         default_action (type);
     }

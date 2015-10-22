@@ -5,10 +5,15 @@ In theory, there is no difference between theory and practice. \linebreak
 But, in practice, there is.  \emph{Anonymous}
 \end{quote}
 
-An implementation of the model described in section~\ref{model} is necessary for at least three reasons.
+TODO:  Write a short introduction.
+
+\section{Motivation}
+
+An implementation of reactive components is necessary for at least three reasons.
 First and foremost, an implementation tests the practicality of the model.
 The act of implementing the model will reveal whether the assumptions upon which the model is founded can be realized using existing techniques.
 Conversely, an implementation can suggest restrictions to the model that are necessary to produce an effective implementation.
+An example of this was seen in chapter~\ref{model} where the component instance was used as proxy for its state variables for the purpose of determining which variables were involved in a transaction.
 Implementation forces one to supply and consider details that can either qualify or disqualify a model as a practical engineering tool.
 This is consistent with the emerging attitude in systems research that all new ideas and techniques must be accompanied by relevant tools and evaluations to show their feasibility.
 
@@ -24,8 +29,12 @@ Furthermore, we can evaluate critically the design and implementation processes 
 By comparing implementations of similar systems in two different models, we can gain insight into the strengths and weaknesses of the model.
 These ideas will be explored further in section~\ref{evaluation}.
 
-\paragraph{Approach.}
-Our approach to implementing the model in section~\ref{model} is based on a virtual machine called an $\alpha$-machine that is designed to execute $\alpha$-statements.
+\section{Approach}
+Our approach to implementing reactive components is to define a programming language for reactive components and implement that language in an interpreter.
+The choice to implement an interpreter instead of a byte-code interpretation, i.e., a virtual machine, or a compiler was a matter of convenience as it avoids the code generation step.
+However, this choice revealed something.
+The programming language provides the syntax necessary to express all of the reactive component concepts:  state variables, actions, reactions, bindings, push ports, pull ports, and activation.
+
 The development workflow, then, consists of three steps.
 First, the developer defines a reactive system as a set of components in source files using a high-level language similar to the one used in the listings of section~\ref{model}.
 Then the developer designates a top-level component that represents the system and compiles the source files to produce an $\alpha$-machine image.
@@ -49,6 +58,31 @@ These assumptions are common in embedded and real-time systems due the combinati
 We also believe these assumptions are common in less constrained environments as the number of threads is often fixed by the design, e.g., only a fixed number of concurrent activities is needed, or the number of threads is limited by the number of available physical cores.
 Thus, even with the static system assumption, an implementation of the model is still applicable to many systems of interest.
 We leave implementation of extensions that facilitate the dynamic creation and binding of reactive components for future work.
+
+\section{Programming Language}
+Describe the reactive/transformational split and dismiss the transformational.
+Assignment.
+Describe how actions, reactions, etc. appear in the language.
+Enforcing the immutable/mutable phase split.
+
+\section{Semantic Checking}
+Describe the algorithms used to enforce the semantics of reactive components.
+\begin{enumerate}
+\item Enumerate instances
+\item Enumerate bindings
+\item Enumerate concrete actions
+\item Check for non-determinism
+\item Check that all pull ports are satisfied
+\end{enumerate}
+
+\section{Runtime}
+Activations
+Scheduler
+Garbage collector should be deferred to advance features
+
+
+
+\section{BEGINNING OF UNADOPTED MATERIAL FROM PROPOSAL}
 
 \paragraph{Compilation.}
 To facilitate a design and development process based on composition and decomposition, we require a high-level language that resembles the model and examples presented in section~\ref{model}.

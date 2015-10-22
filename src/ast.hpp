@@ -180,7 +180,7 @@ public:
     return parent_->GetReturnSymbol ();
   }
 
-  Symbol* Trigger ();
+  Symbol* Activate ();
   void Change ();
 
   virtual const type_t*
@@ -193,14 +193,14 @@ public:
     return parent_->GetReceiverType ();
   }
 
-  virtual trigger_t*
-  GetTrigger () const
+  virtual Activation*
+  GetActivation () const
   {
     if (parent_ == NULL)
       {
         return NULL;
       }
-    return parent_->GetTrigger ();
+    return parent_->GetActivation ();
   }
 
   virtual action_reaction_base_t*
@@ -1258,9 +1258,13 @@ struct ast_change_statement_t : public ast_t
   ast_change_statement_t (unsigned int line,
                           ast_t * expr,
                           ast_t * identifier,
+                          Mutability m,
+                          Mutability dm,
                           ast_t * type,
                           ast_t * body)
     : ast_t (line, COUNT)
+    , mutability (m)
+    , dereferenceMutability (dm)
   {
     set (EXPR, expr);
     set (IDENTIFIER, identifier);
@@ -1296,6 +1300,8 @@ struct ast_change_statement_t : public ast_t
     unimplemented;
   }
 
+  Mutability const mutability;
+  Mutability const dereferenceMutability;
   Symbol* root_symbol;
 };
 
@@ -1480,7 +1486,7 @@ struct ast_subtract_assign_statement_t : public ast_binary_t
   }
 };
 
-struct ast_trigger_statement_t : public ast_t
+struct ast_activate_statement_t : public ast_t
 {
   enum
   {
@@ -1489,9 +1495,9 @@ struct ast_trigger_statement_t : public ast_t
     COUNT
   };
 
-  ast_trigger_statement_t (unsigned int line, ast_t * expr_list, ast_t * body)
+  ast_activate_statement_t (unsigned int line, ast_t * expr_list, ast_t * body)
     : ast_t (line, COUNT)
-    , trigger (NULL)
+    , activation (NULL)
   {
     set (EXPR_LIST, expr_list);
     set (BODY, body);
@@ -1514,12 +1520,12 @@ struct ast_trigger_statement_t : public ast_t
   }
 
   Symbol* this_symbol;
-  trigger_t* trigger;
+  Activation* activation;
 
-  virtual trigger_t*
-  GetTrigger () const
+  virtual Activation*
+  GetActivation () const
   {
-    return trigger;
+    return activation;
   }
 
 };
@@ -2659,7 +2665,7 @@ struct ast_visitor_t
   {
     default_action (ast);
   }
-  virtual void visit (ast_trigger_statement_t& ast)
+  virtual void visit (ast_activate_statement_t& ast)
   {
     default_action (ast);
   }
@@ -2947,7 +2953,7 @@ struct ast_const_visitor_t
   {
     default_action (ast);
   }
-  virtual void visit (const ast_trigger_statement_t& ast)
+  virtual void visit (const ast_activate_statement_t& ast)
   {
     default_action (ast);
   }

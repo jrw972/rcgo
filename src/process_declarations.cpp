@@ -295,6 +295,7 @@ process_declarations (ast_t * node)
             // Process the signature.
             ast_t *signature_node = node.signature ();
             const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
+            check_port_reaction_signature (signature);
             enter_signature (node, signature);
 
             getter_type_t* getter_type = new getter_type_t (type,

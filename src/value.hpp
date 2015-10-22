@@ -9,7 +9,10 @@ struct value_t
     value_t (const bool_type_t*  t, bool_type_t::ValueType v)  : present (true), bool_value_ (v) { }
     value_t (const int_type_t*   t, int_type_t::ValueType  v)  : present (true), int_value_ (v)  { }
     value_t (const int8_type_t*  t, int8_type_t::ValueType v)  : present (true), int8_value_ (v) { }
+    value_t (const int16_type_t*  t, int16_type_t::ValueType v)  : present (true), int16_value_ (v) { }
+    value_t (const int32_type_t*  t, int32_type_t::ValueType v)  : present (true), int32_value_ (v) { }
     value_t (const int64_type_t*  t, int64_type_t::ValueType v)  : present (true), int64_value_ (v) { }
+    value_t (const int128_type_t*  t, int128_type_t::ValueType v)  : present (true), int128_value_ (v) { }
     value_t (const uint_type_t*  t, uint_type_t::ValueType v)  : present (true), uint_value_ (v) { }
     value_t (const uint8_type_t* t, uint8_type_t::ValueType v) : present (true), uint8_value_ (v) { }
     value_t (const uint16_type_t* t, uint16_type_t::ValueType v) : present (true), uint16_value_ (v) { }
@@ -17,6 +20,7 @@ struct value_t
     value_t (const uint64_type_t* t, uint64_type_t::ValueType v) : present (true), uint64_value_ (v) { }
     value_t (const uint128_type_t* t, uint128_type_t::ValueType v) : present (true), uint128_value_ (v) { }
     value_t (const named_type_t* t, enum_type_t::ValueType v) : present (true), enum_value_ (v) { }
+    value_t (const float32_type_t* t, float32_type_t::ValueType v) : present (true), float32_value_ (v) { }
     value_t (const float64_type_t* t, float64_type_t::ValueType v) : present (true), float64_value_ (v) { }
     value_t (Callable* c) : present (true), callable_value_ (c) { }
     value_t (reaction_t* r) : present (true), reaction_value_ (r) { }
@@ -173,13 +177,17 @@ private:
         bool_type_t::ValueType bool_value_;
         int_type_t::ValueType int_value_;
         int8_type_t::ValueType int8_value_;
+        int16_type_t::ValueType int16_value_;
+        int32_type_t::ValueType int32_value_;
         int64_type_t::ValueType int64_value_;
+        int128_type_t::ValueType int128_value_;
         uint_type_t::ValueType uint_value_;
         uint8_type_t::ValueType uint8_value_;
         uint16_type_t::ValueType uint16_value_;
         uint32_type_t::ValueType uint32_value_;
         uint64_type_t::ValueType uint64_value_;
         uint128_type_t::ValueType uint128_value_;
+        float32_type_t::ValueType float32_value_;
         float64_type_t::ValueType float64_value_;
         Callable* callable_value_;
         reaction_t* reaction_value_;

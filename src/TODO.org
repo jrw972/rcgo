@@ -3,9 +3,8 @@
 - TODO Get rid of reinterpret cast (10).
 
 * General
-- TODO Refactor symbol. OO.
 - TODO Implement data-aware scheduling.  For example, a component that
-  routes messages needs to trigger a reaction based on an id in the
+  routes messages needs to activate a push port based on an id in the
   message.
 - TODO Add reactions that pick a parameter automatically.
 * Garbage Collector
@@ -65,8 +64,6 @@ Assumption of fixed-point?
 * Semantic Analysis
 - TODO Move type visitors to typed_value.
 - TODO Move any remaining checking from process_definitions et al. to typed_value.
-* Composition Analysis
-- TODO Add support for TRIGGER_NONE.
 * IO
 - TODO Investigate how to implement timers.
 - TODO Investigate how to incorporate POSIX IO.

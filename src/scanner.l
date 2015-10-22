@@ -8,6 +8,8 @@
 #include "debug.hpp"
 #include "type.hpp"
 #include <error.h>
+
+  static char* ParseInterprettedString (unsigned int line, char* pos, char* limit, char* out);
 %}
 
 %s IN_COMMENT
@@ -46,6 +48,7 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 }
 
 "action"               { return ACTION; }
+"activate"             { return ACTIVATE; }
 "bind"                 { return BIND; }
 "cast"                 { return CAST; }
 "change"               { return CHANGE; }
@@ -71,7 +74,6 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 "reaction"             { return REACTION; }
 "return"               { return RETURN_KW; }
 "struct"               { return STRUCT; }
-"trigger"              { return TRIGGER; }
 "type"                 { return TYPE; }
 "var"                  { return VAR; }
 "while"                { return WHILE; }
@@ -108,7 +110,7 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
                          // Skip over the first and last `
                          char* pos = begin;
                          char* limit = yytext + yyleng - 1;
-                         // Set the desintation.
+                         // Set the destination.
                          char* destination = pos;
                          // Replace carriage returns.
                          while (pos != limit)
@@ -131,6 +133,23 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 
                          yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (type, v));
                          return LITERAL; }
+
+\"(\\.|[^\"])*\" {
+  char* begin = yytext + 1;
+  char* pos = begin;
+  char* limit = yytext + yyleng - 1;
+  char* end = ParseInterprettedString (yylloc, pos, limit, pos);
+  size_t size = end - begin;
+  const slice_type_t* type = new slice_type_t (uint8_type_t::instance ());
+  slice_type_t::ValueType v;
+  v.ptr = malloc (size);
+  memcpy (v.ptr, begin, size);
+  v.length = size;
+  v.capacity = size;
+
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (type, v));
+  return LITERAL;
+}
 
 -?(0|([1-9][0-9]*)|(0x[0-9a-fA-F]+))i(8|16|32|64|128)? {
   int base = 10;
@@ -158,15 +177,13 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
     {
       yytext[yyleng - 3] = 0;
       yyleng -= 3;
-      //yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int16_type_t::instance (), strtol (yytext, NULL, base)));
-      unimplemented;
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int16_type_t::instance (), strtol (yytext, NULL, base)));
     }
   else if (strcmp (ptr, "i32") == 0)
     {
       yytext[yyleng - 3] = 0;
       yyleng -= 3;
-      //yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int32_type_t::instance (), strtol (yytext, NULL, base)));
-      unimplemented;
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int32_type_t::instance (), strtol (yytext, NULL, base)));
     }
   else if (strcmp (ptr, "i64") == 0)
     {
@@ -178,8 +195,7 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
     {
       yytext[yyleng - 4] = 0;
       yyleng -= 4;
-      //yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int128_type_t::instance (), strtol (yytext, NULL, base)));
-      unimplemented;
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int128_type_t::instance (), strtol (yytext, NULL, base)));
     }
   else
     {
@@ -254,8 +270,7 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
     {
       yytext[yyleng - 2] = 0;
       yyleng -= 3;
-      //yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (float32_type_t::instance (), strtod (yytext, NULL)));
-      unimplemented;
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (float32_type_t::instance (), strtof (yytext, NULL)));
     }
   else if (strcmp (ptr, "f64") == 0)
     {
@@ -275,4 +290,203 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 . {
 error_at_line (-1, 0, Location::StaticFile.c_str (), yylloc,
                    "unrecognized character: %s", yytext);
+}
+
+%%
+
+static char* ParseInterprettedString (unsigned int line, char* pos, char* limit, char* out)
+{
+  enum Mode {
+    Normal,
+    Escaped,
+    Octal,
+    Hex
+  };
+
+  Mode mode = Normal;
+  int value;
+  int remainingDigits;
+
+  while (true) {
+    switch (mode) {
+    case Normal:
+      {
+        if (pos == limit) {
+          return out;
+        }
+        char c = *pos;
+        if (c == '\n')
+          {
+            error_at_line (-1, 0, Location::StaticFile.c_str (), line,
+                           "E59: newline in interpretted string literal");
+          }
+        else if (c == '\\')
+          {
+            ++pos;
+            mode = Escaped;
+          }
+        else
+          {
+            *out++ = *pos++;
+          }
+      }
+      break;
+    case Escaped:
+      {
+        if (pos == limit) {
+          bug ("No character after escape character in interpretted string");
+        }
+
+        char c = *pos++;
+        switch (c)
+          {
+          case '0':
+          case '1':
+          case '2':
+          case '3':
+          case '4':
+          case '5':
+          case '6':
+          case '7':
+            // Octal
+            value = c - '0';
+            remainingDigits = 3;
+            mode = Octal;
+            break;
+          case 'x':
+            // Hex
+            value = 0;
+            remainingDigits = 1;
+            mode = Hex;
+            break;
+          case 'a':
+            *out++ = '\a';
+            mode = Normal;
+            break;
+          case 'b':
+            *out++ = '\b';
+            mode = Normal;
+            break;
+          case 'f':
+            *out++ = '\f';
+            mode = Normal;
+            break;
+          case 'n':
+            *out++ = '\n';
+            mode = Normal;
+            break;
+          case 'r':
+            *out++ = '\r';
+            mode = Normal;
+            break;
+          case 't':
+            *out++ = '\t';
+            mode = Normal;
+            break;
+          case 'v':
+            *out++ = '\v';
+            mode = Normal;
+            break;
+          case '\\':
+            *out++ = '\\';
+            mode = Normal;
+            break;
+          case '"':
+            *out++ = '\"';
+            mode = Normal;
+            break;
+          default:
+            error_at_line (-1, 0, Location::StaticFile.c_str (), line,
+                           "E60: illegal escape sequence '%c'", c);
+          }
+      }
+      break;
+    case Octal:
+      {
+        if (pos == limit) {
+          error_at_line (-1, 0, Location::StaticFile.c_str (), line,
+                         "E61: end of string while parsing octal escape sequence");
+        }
+
+        char c = *pos++;
+        switch (c)
+          {
+          case '0':
+          case '1':
+          case '2':
+          case '3':
+          case '4':
+          case '5':
+          case '6':
+          case '7':
+            value = (value << 3) | (c - '0');
+            --remainingDigits;
+            break;
+          default:
+            error_at_line (-1, 0, Location::StaticFile.c_str (), line,
+                           "E62: unexpected character in octal escape sequence '%c'", c);
+          }
+
+        if (remainingDigits == 0) {
+          *out++ = value;
+          mode = Normal;
+        }
+      }
+      break;
+    case Hex:
+      {
+        if (pos == limit) {
+          error_at_line (-1, 0, Location::StaticFile.c_str (), line,
+                         "E63: end of string while parsing hex escape sequence");
+        }
+
+        char c = *pos;
+        switch (c)
+          {
+          case '0':
+          case '1':
+          case '2':
+          case '3':
+          case '4':
+          case '5':
+          case '6':
+          case '7':
+          case '8':
+          case '9':
+            value = (value << 4) | (c - '0');
+            --remainingDigits;
+            break;
+          case 'a':
+          case 'b':
+          case 'c':
+          case 'd':
+          case 'e':
+          case 'f':
+            value = (value << 4) | (c - 'a' + 10);
+            --remainingDigits;
+            break;
+          case 'A':
+          case 'B':
+          case 'C':
+          case 'D':
+          case 'E':
+          case 'F':
+            value = (value << 4) | (c - 'A' + 10);
+            --remainingDigits;
+            break;
+          default:
+            error_at_line (-1, 0, Location::StaticFile.c_str (), line,
+                           "E64: unexpected character in hex escape sequence '%c'", c);
+          }
+
+        if (remainingDigits == 0) {
+          *out++ = value;
+          mode = Normal;
+        }
+      }
+      break;
+    }
+  }
+
+  not_reached;
 }

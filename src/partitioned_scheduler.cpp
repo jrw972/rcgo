@@ -418,14 +418,14 @@ partitioned_scheduler_t::task_t::resume (size_t generation)
       info_t* info = *reinterpret_cast<info_t**> (pos_->first->ptr ());
       switch (pos_->second)
         {
-        case TRIGGER_READ:
+        case ACTIVATION_READ:
           if (info->read_lock (this))
             {
               ++pos_;
               return NONE;
             }
           break;
-        case TRIGGER_WRITE:
+        case ACTIVATION_WRITE:
           if (info->write_lock (this))
             {
               ++pos_;
@@ -480,10 +480,10 @@ partitioned_scheduler_t::task_t::resume (size_t generation)
       info_t* info = *reinterpret_cast<info_t**> (pos_->first->ptr ());
       switch (pos_->second)
         {
-        case TRIGGER_READ:
+        case ACTIVATION_READ:
           info->read_unlock ();
           break;
-        case TRIGGER_WRITE:
+        case ACTIVATION_WRITE:
           info->write_unlock ();
           break;
         }

@@ -23,21 +23,114 @@ Consequently, the model favors utility, practicality, flexibility, and ease of i
 
 \section{Features of the Model}
 
-\begin{tikzpicture}
-\node (sv) at (0,0) {state variables};
-\begin{scope}
-\clip (-1,-2.25) rectangle (1, -2);
-\draw (0,-2) ellipse (1 and .25);
-\end{scope}
+%% left active pull port
+%% x, y, width, height, label
+\def\lapull[#1,#2,#3,#4,#5,#6]#7{
+  \draw [fill=lightgray] (#1,#2) -- ++(${#4*.5}*(-1,0) + {#4*.5}*(0,-1)$) -- ++($#3*(1,0)$) -- ++($#4*(0,1)$) -- ++($#3*(-1,0)$) -- cycle;
+  \node (#5) at (#1,#2) {};
+  \node (#6) at ($(#1,#2) + {#3 - .5 * #4}*(1,0)$) {};
+  \node [right, align=left] at (#1,#2) {#7};
+}
 
-\draw (0,0) ellipse (1 and .25);
-\draw (-1,0) -- (-1,-2);
-\draw (1,0) -- (1,-2);
-\end{tikzpicture}
+%% left passive pull port
+%% x, y, width, height, label
+\def\lppull[#1,#2,#3,#4,#5,#6]#7{
+  \draw [fill=lightgray] (#1,#2) -- ++(${#4*.5}*(-1,0) + {#4*.5}*(0,-1)$) -- ++($#3*(1,0)$) -- ++($#4*(0,1)$) -- ++($#3*(-1,0)$) -- cycle;
+  \node (#5) at (#1,#2) {};
+  \node [left] (#6) at ($(#1,#2) + {#3 - .5*#4}*(1,0)$) {};
+  \node [right, align=left] at (#1,#2) {#7};
+}
+
+%% left active push port
+%% x, y, width, height, label
+\def\lapush[#1,#2,#3,#4,#5,#6]#7{
+  \draw [fill=white] ($(#1,#2) + {#4*.5}*(-1,0)$) -- ++(${#4*.5}*(1,0) + {#4*.5}*(0,-1)$) -- ++($#3*(1,0)$) -- ++($#4*(0,1)$) -- ++($#3*(-1,0)$) -- cycle;
+  \node (#5) at ($(#1,#2) - .5*#4*(1,0)$) {};
+  \node (#6) at ($(#1,#2) + {#3}*(1,0)$) {};
+  \node [right, align=left] at (#1,#2) {#7};
+}
+
+%% left passive push port
+%% x, y, width, height, label
+\def\lppush[#1,#2,#3,#4,#5,#6]#7{
+  \draw [fill=white] (#1,#2) -- ++(${#4*.5}*(-1,0) + {#4*.5}*(0,-1)$) -- ++($#3*(1,0)$) -- ++($#4*(0,1)$) -- ++($#3*(-1,0)$) -- cycle;
+  \node (#5) at (#1,#2) {};
+  \node (#6) at ($(#1,#2) + {#3 - .5*#4}*(1,0)$) {};
+  \node [right, align=left] at (#1,#2) {#7};
+}
+
+%% right passive pull port
+%% x, y, width, height, label
+\def\rppull[#1,#2,#3,#4,#5,#6]#7{
+  \draw [fill=lightgray] ($(#1,#2) + {#4*.5}*(1,0)$) -- ++(${#4*.5}*(-1,0) + {#4*.5}*(0,-1)$) -- ++($#3*(-1,0)$) -- ++($#4*(0,1)$) -- ++($#3*(1,0)$) -- cycle;
+  \node (#5) at ($(#1,#2) + {#4*.5}*(1,0)$) {};
+  \node (#6) at ($(#1,#2) + {#3}*(-1,0)$) {};
+  \node [left] at (#1,#2) {#7};
+}
+
+%% right active push port
+%% x, y, width, height, label
+\def\rapush[#1,#2,#3,#4,#5,#6]#7{
+  \draw [fill=white] ($(#1,#2) + {#4*.5}*(1,0)$) -- ++(${#4*.5}*(-1,0) + {#4*.5}*(0,-1)$) -- ++($#3*(-1,0)$) -- ++($#4*(0,1)$) -- ++($#3*(1,0)$) -- cycle;
+  \node (#5) at ($(#1,#2) + {#4*.5}*(1,0)$) {};
+  \node (#6) at ($(#1,#2) + {#3}*(-1,0)$) {};
+  \node [left] at (#1,#2) {#7};
+}
+
+%% right passive push port
+%% x, y, width, height, label
+\def\rppush[#1,#2,#3,#4,#5,#6]#7{
+  \draw [fill=white] (#1,#2) -- ++(${#4*.5}*(1,0) + {#4*.5}*(0,-1)$) -- ++($#3*(-1,0)$) -- ++($#4*(0,1)$) -- ++($#3*(1,0)$) -- cycle;
+  \node (#5) at (#1,#2) {};
+  \node (#6) at ($(#1,#2) + {#3 - .5*#4}*(-1,0)$) {};
+  \node [left] at (#1,#2) {#7};
+}
 
 \begin{figure}[H]
 \centering
-\includegraphics{reactive_component.png}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}
+%% component boundary
+\draw (0,0) rectangle (10,8.25);
+%% active pull ports
+\lapull[0,1.5,1,.5,apullex1,apullin1]{}
+\node[align=center] at (-1,1.5) {active\\pull port};
+\lapull[0,.5,1,.5,apullex2,apullin2]{}
+%% passive pull ports
+\rppull[10,1.5,1,.5,ppullex1,ppullin1]{}
+\node[align=center] at (11,1.5) {passive\\pull port};
+\rppull[10,.5,1,.5,ppullex2,ppullin2]{}
+\draw[thick] (apullin2.center) -- (ppullin2.center);
+%% actions and rections
+\node[draw, diamond, minimum height=15, minimum width=20] (pre) at (2.5,3) {};
+\node at (2.5,2.5) {precondition};
+\node[draw, minimum height=15, minimum width=50, rounded corners=5] (trans1) at (5,3) {};
+\draw[dashed] (3.5,3) ellipse (3 and 1);
+\node at (3.5,3.5) {\textbf{\emph{action}}};
+\node[draw, minimum height=15, minimum width=50, rounded corners=5] (trans2) at (5,5) {};
+\node at (5,4.5) {transition};
+\draw[thick,->] (pre) -- (trans1);
+\draw[thick] (apullin1.center) -| (trans1) node[pos=.5,right] {\textbf{call}};
+%% active push ports
+\rapush[10,3,1,.5,apushex1,apushin1]{}
+\rapush[10,4,1,.5,apushex2,apushin2]{}
+\rapush[10,5,1,.5,apushex3,apushin3]{}
+\node[align=center] at (11.1,5) {active\\push port};
+\draw[thick,->,dashed] (trans1) -- (apushin1.center);
+\draw[thick,->,dashed] (trans1) -- (apushin2.center);
+\node at(7.5,4) {\textbf{activate}};
+\draw[thick,->,dashed] (trans2) -- (apushin2.center);
+\draw[thick,->,dashed] (trans2) -- (apushin3.center);
+%% passive push ports
+\lppush[0,5,1,.5,ppushex1,ppushin1]{}
+\draw[thick,->] (ppushin1.center) -- (trans2);
+\node[align=center] at (-1.1,5) {passive\\push port};
+\draw[dashed] (2,5) ellipse (5 and 1);
+\node at (2,5.5) {\textbf{\emph{reaction}}};
+\node[draw, cylinder, shape border rotate=90, minimum height=40, minimum width=40] (sv1) at (5,7.25) {};
+\node[align=center] at (5,6.25) {state variables};
+\end{tikzpicture}
+}%
 \caption{Diagram depicting the features of a reactive component\label{reactive_component}}
 \end{figure}
 
@@ -70,7 +163,43 @@ The ability to publicize behavior and state and the ability to assemble well-def
 
 \begin{figure}
 \centering
-\includegraphics{web_server.png}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}
+\draw (0,6.5) rectangle (5,10);
+\node[below] at (2.5,10) {Web Server};
+\rppull[5,9,3.2,.5,ex1a,ignore]{verify(HttpHeader)};
+\rapush[5,8,3.6,.5,ex2a,ignore]{request(HttpRequest)};
+\rppush[5,7,4.2,.5,ex3a,ignore]{respond(HttpResponse)};
+
+\draw(6,2.5) rectangle (11,10);
+\node[below] at (8.5,10) {Application Logic};
+\lapull[6,9,3.4,.5,ex1b,ignore]{verify(HttpHeader)};
+\lppush[6,8,3.8,.5,ex2b,ignore]{request(HttpRequest)};
+\lapush[6,7,3.9,.5,ex3b,ignore]{respond(HttpResponse)};
+
+\rapush[11,6,3.5,.5,ex4a,ignore]{request(DBRequest)};
+\rppush[11,5,4.1,.5,ex5a,ignore]{respond(DBResponse)};
+
+\rapush[11,3,2.4,.5,ex6a,ignore]{log(Message)};
+
+\draw (12,4.5) rectangle (17,7);
+\node[below] at (14.5,7) {Database};
+\lppush[12,6,3.7,.5,ex4b,ignore]{request(DBRequest)};
+\lapush[12,5,3.8,.5,ex5b,ignore]{respond(DBResponse)};
+
+\draw (12,2.5) rectangle (17,4);
+\node[below] at (14.5,4) {Logging Service};
+\lppush[12,3,2.5,.5,ex6b,ignore]{log(Message)};
+
+\draw (ex1a.center) -- (ex1b.center);
+\draw (ex2a.center) -- (ex2b.center);
+\draw (ex3a.center) -- (ex3b.center);
+\draw (ex4a.center) -- (ex4b.center);
+\draw (ex5a.center) -- (ex5b.center);
+\draw (ex6a.center) -- (ex6b.center);
+
+\end{tikzpicture}
+}%
 \caption{Diagram of a web application built using reactive components\label{web_server}}
 \end{figure}
 
@@ -110,7 +239,8 @@ The reactive component model does not prescribe a specific language for encoding
 The language used depends on the goals and tastes of the one developing or analyzing the model.
 For example, expressing transitions using the programming language of UNITY~\cite{chandy1989parallel} may allow the modeler to extract proofs from the text, a major goal of UNITY.
 The approach used by I/O Automata~\cite{nancy1996distributed} is to specify the condition established by each transition.
-The approach used by the implementation presented in this dissertation uses a C-like language augmented for port activations to encode the state transitions.
+The approach used by the implementation presented in this dissertation uses a Go~\cite{go}-like language augmented for port activations to encode the state transitions.
+This furthers our goal of making reactive components approachable by a general software engineering audience.
 %% from Dr. Gill
 %% which aims to allow models to be incorporated directly into standard software environments.
 %% This isn't accurate.  Compatibility with existing software is not the goal nor should it be a goal as existing software is based on threads which cannot reasonably be integrated with reactive components.
@@ -136,9 +266,7 @@ Selection is also \emph{non-deterministic}, meaning that the scheduler is free t
 This falls in line with the common practice of modeling concurrency with non-deterministically scheduled atomic actions as is done in UNITY~\cite{chandy1989parallel}, I/O Automata~\cite{nancy1996distributed}, and the Actor Model~\cite{agha1985actors}.
 
 A \emph{trace} is the sequence of instance/action pairs executed by the scheduler.
-Weak fairness says that all instance/action pairs are selected an infinite number of times in an infinite run of the system.
-Finite runs, indicated by a finite trace, occur when a system reaches \emph{fixed-point}, a state where all preconditions are false.
-In this state, further selection is unnecessary.
+Weak fairness says that all instance/action pairs are selected an infinite number of times in any infinite run of the system.
 
 The key point to understanding weak fairness is the difference between selections and execution.
 To illustrate, consider a component consisting of a single Boolean flag $b$ that is initially false and three actions labeled $A$, $B_0$, and $B_1$.

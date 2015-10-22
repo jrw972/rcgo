@@ -55,7 +55,7 @@
 %type <node> simple_stmt
 %type <node> stmt
 %type <node> stmt_list
-%type <node> trigger_stmt
+%type <node> activate_stmt
 %type <node> type_def
 %type <node> type_spec
 %type <node> UnaryExpression
@@ -66,7 +66,7 @@
 %type <mutability> Mutability
 %type <mutability> DereferenceMutability
 
-%token ACTION BIND CAST CHANGE COMPONENT CONST COPY ELSE ENUM FOR FOREIGN_KW FUNC GETTER HEAP IF INIT INSTANCE MERGE MOVE NEW PRINTLN PULL PUSH REACTION RETURN_KW STRUCT TRIGGER TYPE VAR WHILE
+%token ACTION ACTIVATE BIND CAST CHANGE COMPONENT CONST COPY ELSE ENUM FOR FOREIGN_KW FUNC GETTER HEAP IF INIT INSTANCE MERGE MOVE NEW PRINTLN PULL PUSH REACTION RETURN_KW STRUCT TYPE VAR WHILE
 
 %token ADD_ASSIGN AND_NOT_TOKEN RIGHT_ARROW LEFT_ARROW DECREMENT DOTDOT EQUAL_TOKEN INCREMENT LESS_EQUAL_TOKEN LEFT_SHIFT_TOKEN LOGIC_AND_TOKEN LOGIC_OR_TOKEN MORE_EQUAL_TOKEN NOT_EQUAL_TOKEN RIGHT_SHIFT_TOKEN
 
@@ -174,7 +174,7 @@ inner_stmt_list: /* empty */ { $$ = new ast_list_statement_t (yyloc); }
 
 stmt: simple_stmt { $$ = $1; }
 | var_stmt { $$ = $1; }
-| trigger_stmt { $$ = $1; }
+| activate_stmt { $$ = $1; }
 | stmt_list { $$ = $1; }
 | println_stmt { $$ = $1; }
 | return_stmt { $$ = $1; }
@@ -192,9 +192,9 @@ simple_stmt: empty_stmt { $$ = $1; }
 
 empty_stmt: /* empty */ ';' { $$ = new ast_empty_statement_t (yyloc); }
 
-trigger_stmt: TRIGGER optional_push_port_call_list stmt_list { $$ = new ast_trigger_statement_t (@1, $2, $3); }
+activate_stmt: ACTIVATE optional_push_port_call_list stmt_list { $$ = new ast_activate_statement_t (@1, $2, $3); }
 
-change_stmt: CHANGE '(' Expression ',' identifier type_spec ')' stmt_list { $$ = new ast_change_statement_t (@1, $3, $5, $6, $8); }
+change_stmt: CHANGE '(' Expression ',' identifier Mutability DereferenceMutability type_spec ')' stmt_list { $$ = new ast_change_statement_t (@1, $3, $5, $6, $7, $8, $10); }
 
 for_iota_stmt: FOR identifier DOTDOT Expression stmt_list { $$ = new ast_for_iota_statement_t (@1, $2, $4, $5); }
 
