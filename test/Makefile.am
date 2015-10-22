@@ -18,7 +18,9 @@ two_port_calls.sh \
 reaction_param_activation.sh \
 return_leak.sh \
 two_reactions.sh \
-same_port.sh
+same_port.sh \
+change_root-1.sh \
+change_root-2.sh
 
 EXTRA_DIST = $(TESTS) \
 read_immutable.fbu \
@@ -38,4 +40,6 @@ two_port_calls.fbu \
 reaction_param_activation.fbu \
 return_leak.fbu \
 two_reactions.fbu \
-same_port.fbu
+same_port.fbu \
+change_root-1.fbu \
+change_root-2.fbu

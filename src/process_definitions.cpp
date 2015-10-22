@@ -850,38 +850,37 @@ type_check_statement (ast_t * node)
 
     void visit (ast_change_statement_t& node)
     {
-      const std::string& identifier = ast_get_identifier (node.identifier ());
-      ast_t* type = node.type ();
-      ast_t* body = node.body ();
-
       // Process the expression.
       typed_value_t tv = checkAndImplicitlyDereference (node.expr_ref ());
-
-      const type_t* root_type = type_change (tv.type);
-      if (root_type == NULL)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "cannot change expression of type %s", tv.type->to_string ().c_str ());
-        }
+      tv = typed_value_t::change (node.location, tv);
 
       // Process the root variable.
-      const type_t* proposed_root_type = process_type_spec (type, false);
+      const type_t* proposed_root_type = process_type_spec (node.type (), false);
 
-      if (!type_is_equal (proposed_root_type, root_type))
+      if (!type_is_equal (proposed_root_type, tv.type))
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "cannot convert %s to %s in change", root_type->to_string ().c_str (), proposed_root_type->to_string ().c_str ());
+                         "cannot convert %s to %s in change", tv.type->to_string ().c_str (), proposed_root_type->to_string ().c_str ());
         }
 
+      if (node.dereferenceMutability < tv.dereference_mutability)
+        {
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                         "E66: change leaks mutable pointers");
+        }
+      tv.intrinsic_mutability = node.mutability;
+      tv.dereference_mutability = node.dereferenceMutability;
+
       // Enter the new heap root.
-      Symbol* symbol = new VariableSymbol (identifier, &node, typed_value_t::make_ref (root_type, typed_value_t::STACK, MUTABLE, MUTABLE));
+      const std::string& identifier = ast_get_identifier (node.identifier ());
+      Symbol* symbol = new VariableSymbol (identifier, &node, typed_value_t::make_ref (tv));
       node.root_symbol = enter_symbol (node, symbol);
 
       // Enter all parameters and variables in scope that are pointers as pointers to foreign.
       node.Change ();
 
       // Check the body.
-      type_check_statement (body);
+      type_check_statement (node.body ());
     }
 
     void visit (ast_expression_statement_t& node)

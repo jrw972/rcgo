@@ -1258,9 +1258,13 @@ struct ast_change_statement_t : public ast_t
   ast_change_statement_t (unsigned int line,
                           ast_t * expr,
                           ast_t * identifier,
+                          Mutability m,
+                          Mutability dm,
                           ast_t * type,
                           ast_t * body)
     : ast_t (line, COUNT)
+    , mutability (m)
+    , dereferenceMutability (dm)
   {
     set (EXPR, expr);
     set (IDENTIFIER, identifier);
@@ -1296,6 +1300,8 @@ struct ast_change_statement_t : public ast_t
     unimplemented;
   }
 
+  Mutability const mutability;
+  Mutability const dereferenceMutability;
   Symbol* root_symbol;
 };
 

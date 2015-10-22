@@ -194,7 +194,7 @@ empty_stmt: /* empty */ ';' { $$ = new ast_empty_statement_t (yyloc); }
 
 activate_stmt: ACTIVATE optional_push_port_call_list stmt_list { $$ = new ast_activate_statement_t (@1, $2, $3); }
 
-change_stmt: CHANGE '(' Expression ',' identifier type_spec ')' stmt_list { $$ = new ast_change_statement_t (@1, $3, $5, $6, $8); }
+change_stmt: CHANGE '(' Expression ',' identifier Mutability DereferenceMutability type_spec ')' stmt_list { $$ = new ast_change_statement_t (@1, $3, $5, $6, $7, $8, $10); }
 
 for_iota_stmt: FOR identifier DOTDOT Expression stmt_list { $$ = new ast_for_iota_statement_t (@1, $2, $4, $5); }
 
