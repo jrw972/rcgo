@@ -1,7 +1,7 @@
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
              $(top_srcdir)/build-aux/tap-driver.sh
 
-AM_TESTS_ENVIRONMENT = RC='$(top_builddir)/src/rc'; export RC;
+AM_TESTS_ENVIRONMENT = RC='$(top_builddir)/src/rc'; export RC; PATH="$(top_builddir)/src:$$PATH"; export PATH;
 #LOG_COMPILER = $(SH)
 
 TESTS = read_immutable.sh \
