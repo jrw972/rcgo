@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo 1..1
+
 expected=`cat <<EOF
 false: false
 true: true
@@ -27,7 +29,7 @@ short circuit &&
 short circuit ||
 EOF`
 
-actual=`$RC $srcdir/boolean_operators.fbu 2>&1`
+actual=`$RC $srcdir/boolean_operators.rc 2>&1`
 
 echo "Expected"
 echo "$expected"
@@ -35,4 +37,9 @@ echo "$expected"
 echo "Actual"
 echo "$actual"
 
-test "$actual" == "$expected"
+if test "$actual" == "$expected"
+then
+    echo 'ok 1 - boolean_operators'
+else
+    echo 'not ok 1 - boolean_operators'
+fi

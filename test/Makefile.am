@@ -1,5 +1,8 @@
+LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
+             $(top_srcdir)/build-aux/tap-driver.sh
+
 AM_TESTS_ENVIRONMENT = RC='$(top_builddir)/src/rc'; export RC;
-LOG_COMPILER = $(SH)
+#LOG_COMPILER = $(SH)
 
 TESTS = read_immutable.sh \
 write_immutable.sh \
@@ -23,23 +26,23 @@ change_root-1.sh \
 change_root-2.sh
 
 EXTRA_DIST = $(TESTS) \
-read_immutable.fbu \
-write_immutable.fbu \
-immutable_leak.fbu \
-immutable_leak2.fbu \
-immutable_leak3.fbu \
-port_leak.fbu \
-reaction_leak.fbu \
-read_foreign.fbu \
-write_foreign.fbu \
-save_foreign.fbu \
-boolean_operators.fbu \
-int_operators.fbu \
-variable_zero.fbu \
-two_port_calls.fbu \
-reaction_param_activation.fbu \
-return_leak.fbu \
-two_reactions.fbu \
-same_port.fbu \
-change_root-1.fbu \
-change_root-2.fbu
+read_immutable.rc \
+write_immutable.rc \
+immutable_leak.rc \
+immutable_leak2.rc \
+immutable_leak3.rc \
+port_leak.rc \
+reaction_leak.rc \
+read_foreign.rc \
+write_foreign.rc \
+save_foreign.rc \
+boolean_operators.rc \
+int_operators.rc \
+variable_zero.rc \
+two_port_calls.rc \
+reaction_param_activation.rc \
+return_leak.rc \
+two_reactions.rc \
+same_port.rc \
+change_root-1.rc \
+change_root-2.rc

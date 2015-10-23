@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo 1..1
+
 expected=`cat <<EOF
 -10017 -10017
 -3 -3
@@ -54,7 +56,7 @@ true true
 true true
 EOF`
 
-actual=`$RC $srcdir/int_operators.fbu 2>&1`
+actual=`$RC $srcdir/int_operators.rc 2>&1`
 
 echo "Expected"
 echo "$expected"
@@ -62,4 +64,9 @@ echo "$expected"
 echo "Actual"
 echo "$actual"
 
-test "$actual" == "$expected"
+if test "$actual" == "$expected"
+then
+    echo 'ok 1 - int_operators.sh'
+else
+    echo 'not ok 1 - int_operators.sh'
+fi

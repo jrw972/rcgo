@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo 1..1
+
 expected=`cat <<EOF
 Bang Immutable
 Bang Immutable
@@ -7,7 +9,7 @@ Bang Mutable
 Bang Mutable
 EOF`
 
-actual=`$RC $srcdir/two_reactions.fbu 2>&1`
+actual=`$RC $srcdir/two_reactions.rc 2>&1`
 
 echo "Expected"
 echo "$expected"
@@ -15,4 +17,9 @@ echo "$expected"
 echo "Actual"
 echo "$actual"
 
-test "$actual" == "$expected"
+if test "$actual" == "$expected"
+then
+    echo 'ok 1 - two_reactions'
+else
+    echo 'not ok 1 - two_reactions'
+fi
