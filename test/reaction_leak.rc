@@ -1,6 +1,0 @@
-type C component {
-  flag bool;
-};
-
-reaction (this +const * C) r (x *bool) {
-}

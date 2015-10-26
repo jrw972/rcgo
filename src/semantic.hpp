@@ -45,8 +45,8 @@ Symbol * lookup_no_force (ast_t * node, const std::string& identifier);
 // Extract an array dimension or error.
 typed_value_t process_array_dimension (ast_t*& ptr);
 
-// Check that port and reaction sigantures have appropriate foreign attributes.
-void check_port_reaction_signature (const signature_type_t* signature);
+// Check that a signature has +foreign where needed.
+void CheckForForeignSafe (const signature_type_t* signature, const parameter_t* return_parameter = NULL);
 
 // Process a type specification.
 const type_t * process_type_spec (ast_t * node, bool force_identifiers, bool is_component = false, named_type_t* named_type = NULL);

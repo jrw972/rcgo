@@ -5,10 +5,7 @@ AM_TESTS_ENVIRONMENT = RC='$(top_builddir)/src/rc'; export RC; PATH="$(top_build
 #LOG_COMPILER = $(SH)
 
 TESTS = mutability.sh \
-port_leak.sh \
-reaction_leak.sh \
-read_foreign.sh \
-write_foreign.sh \
+foreign_safe.sh \
 save_foreign.sh \
 boolean_operators.sh \
 int_operators.sh \
@@ -22,6 +19,7 @@ change_root-1.sh \
 change_root-2.sh
 
 EXTRA_DIST = $(TESTS) \
+helpers.sh \
 mutability_a_dmf.rc \
 mutability_a_dmi.rc \
 mutability_a_dmm.rc \
@@ -106,10 +104,13 @@ mutability_mm_a_mms.rc \
 mutability_mmi_a.rc \
 mutability_mms_a.rc \
 mutability_pis.rc \
-port_leak.rc \
-reaction_leak.rc \
-read_foreign.rc \
-write_foreign.rc \
+foreign_safe_getter.rc \
+foreign_safe_getter_return.rc \
+foreign_safe_initializer.rc \
+foreign_safe_pull_port.rc \
+foreign_safe_pull_port_return.rc \
+foreign_safe_push_port.rc \
+foreign_safe_reaction.rc \
 save_foreign.rc \
 boolean_operators.rc \
 int_operators.rc \

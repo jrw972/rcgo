@@ -584,8 +584,9 @@ struct ast_pull_port_type_spec_t : public ast_t
     COUNT,
   };
 
-  ast_pull_port_type_spec_t (unsigned int line, ast_t* signature, ast_t* return_type)
+  ast_pull_port_type_spec_t (unsigned int line, ast_t* signature, Mutability dm, ast_t* return_type)
     : ast_t (line, COUNT)
+    , dereferenceMutability (dm)
   {
     set (SIGNATURE, signature);
     set (RETURN_TYPE, return_type);
@@ -606,6 +607,8 @@ struct ast_pull_port_type_spec_t : public ast_t
   {
     out << "pull_port_type_spec";
   }
+
+  Mutability const dereferenceMutability;
 };
 
 struct ast_signature_type_spec_t : public ast_t

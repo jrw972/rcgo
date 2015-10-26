@@ -248,6 +248,9 @@ process_declarations (ast_t * node)
                     return_value,
                     false);
 
+            CheckForForeignSafe (signature, return_parameter);
+            enter_signature (node, signature);
+
             initializer_type_t* initializer_type =
                 new initializer_type_t (type,
                                         this_parameter,
@@ -255,8 +258,6 @@ process_declarations (ast_t * node)
                                         return_parameter);
 
             Initializer* initializer = new Initializer (&node, identifier, initializer_type);
-
-            enter_signature (node, signature);
 
             type->add_initializer (initializer);
             node.initializer = initializer;
@@ -295,7 +296,7 @@ process_declarations (ast_t * node)
             // Process the signature.
             ast_t *signature_node = node.signature ();
             const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
-            check_port_reaction_signature (signature);
+            CheckForForeignSafe (signature, return_parameter);
             enter_signature (node, signature);
 
             getter_type_t* getter_type = new getter_type_t (type,
@@ -350,7 +351,7 @@ process_declarations (ast_t * node)
 
             /* Process the signature. */
             const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
-            check_port_reaction_signature (signature);
+            CheckForForeignSafe (signature);
             enter_signature (node, signature);
 
             reaction_t* reaction = new reaction_t (type, &node, node.body (), identifier, signature);
@@ -391,7 +392,7 @@ process_declarations (ast_t * node)
 
             /* Process the signature. */
             const signature_type_t *signature = type_cast<signature_type_t> (process_type_spec (signature_node, true));
-            check_port_reaction_signature (signature);
+            CheckForForeignSafe (signature);
             enter_signature (node, signature);
 
             reaction_t* reaction = new reaction_t (type, &node, node.body (), identifier, signature, dimension);

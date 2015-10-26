@@ -28,7 +28,7 @@ process_array_dimension (ast_t*& ptr)
 }
 
 void
-check_port_reaction_signature (const signature_type_t* signature)
+CheckForForeignSafe (const signature_type_t* signature, const parameter_t* return_parameter)
 {
     for (signature_type_t::const_iterator pos = signature->begin (), limit = signature->end ();
             pos != limit;
@@ -38,9 +38,14 @@ check_port_reaction_signature (const signature_type_t* signature)
             if (!parameter->value.is_foreign_safe ())
                 {
                     error_at_line (-1, 0, parameter->defining_node->location.File.c_str (), parameter->defining_node->location.Line,
-                                   "E56: signature leaks pointers");
+                                   "E56: parameter is not foreign safe");
                 }
         }
+    if (return_parameter != NULL && !return_parameter->value.is_foreign_safe ())
+      {
+        error_at_line (-1, 0, return_parameter->defining_node->location.File.c_str (), return_parameter->defining_node->location.Line,
+                       "E68: return parameter is not foreign safe");
+      }
 }
 
 const type_t *
@@ -183,26 +188,20 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, name
         void visit (ast_push_port_type_spec_t& node)
         {
             const signature_type_t* signature = type_cast<signature_type_t> (process_type_spec (node.signature (), true));
-            check_port_reaction_signature (signature);
+            CheckForForeignSafe (signature);
             type = new push_port_type_t (signature);
         }
 
         void visit (ast_pull_port_type_spec_t& node)
         {
             const signature_type_t* signature = type_cast<signature_type_t> (process_type_spec (node.signature (), true));
-            check_port_reaction_signature (signature);
             const type_t* return_type = process_type_spec (node.return_type (), true);
-            typed_value_t return_value = typed_value_t::make_value (return_type, typed_value_t::STACK, IMMUTABLE, FOREIGN);
+            typed_value_t return_value = typed_value_t::make_value (return_type, typed_value_t::STACK, MUTABLE, node.dereferenceMutability);
             parameter_t* return_parameter = new parameter_t (node.return_type (),
                     "0return",
                     return_value,
                     false);
-
-            if (!return_value.is_foreign_safe ())
-                {
-                    error_at_line (-1, 0, node.return_type ()->location.File.c_str (), node.return_type ()->location.Line,
-                                   "return type leaks pointers");
-                }
+            CheckForForeignSafe (signature, return_parameter);
             type = new pull_port_type_t (signature, return_parameter);
         }
 

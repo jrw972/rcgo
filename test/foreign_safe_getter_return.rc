@@ -1,0 +1,5 @@
+type C component { };
+
+getter (this +const *C) Getter (x int) *int {
+  return nil;
+}

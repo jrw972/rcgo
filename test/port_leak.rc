@@ -1,3 +1,0 @@
-type C component {
-  p push (x *bool);
-};
