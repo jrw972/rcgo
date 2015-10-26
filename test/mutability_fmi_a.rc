@@ -1,0 +1,4 @@
+func f () {
+  var x foreign [3u]int;
+  x[0u] = 4i;
+}

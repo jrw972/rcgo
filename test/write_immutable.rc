@@ -1,7 +1,0 @@
-type C component {
-  flag bool;
-};
-
-action (this +const * C) (true) {
-  this.flag = true;
-}

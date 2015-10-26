@@ -1,0 +1,4 @@
+func f () {
+  var x const [3u]int;
+  x[0u] = 4i;
+}

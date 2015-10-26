@@ -57,8 +57,7 @@ check_assignment (typed_value_t left_tv,
 
   if (type_contains_pointer (left_tv.type))
     {
-      if (left_tv.dereference_mutability < right_tv.intrinsic_mutability ||
-          left_tv.dereference_mutability < right_tv.dereference_mutability)
+      if (left_tv.dereference_mutability < right_tv.dereference_mutability)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "%s", leak_message);

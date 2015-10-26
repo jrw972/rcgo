@@ -1,0 +1,5 @@
+func f () {
+  var x foreign int;
+  var y int;
+  x = y;
+}

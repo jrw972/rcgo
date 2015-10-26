@@ -1,0 +1,8 @@
+type T struct {
+  s int;
+};
+
+func f () {
+  var x T;
+  x.s = 4i;
+}

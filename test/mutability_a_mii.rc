@@ -1,0 +1,5 @@
+func f () {
+  var x *int;
+  var y +const [3u]*int;
+  x = y[0u];
+}

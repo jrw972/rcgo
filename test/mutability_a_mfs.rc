@@ -1,0 +1,9 @@
+type T struct {
+  s *int;
+};
+
+func f () {
+  var x *int;
+  var y +foreign T;
+  x = y.s;
+}

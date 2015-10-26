@@ -247,6 +247,7 @@ typed_value_t::address_of (typed_value_t in)
   typed_value_t out = in;
   out.kind = VALUE;
   out.type = pointer_type_t::make (in.type);
+  out.dereference_mutability = std::max (in.intrinsic_mutability, in.dereference_mutability);
   return out;
 }
 

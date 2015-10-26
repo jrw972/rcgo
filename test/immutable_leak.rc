@@ -1,9 +1,0 @@
-type C component {
-  ptr *bool;
-};
-
-action (this +const * C) (true) {
-  // Try to cast away immutability of ptr.
-  var x *bool = this.ptr;
-  *x = true;
-}

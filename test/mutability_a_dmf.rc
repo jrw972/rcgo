@@ -1,0 +1,5 @@
+func f () {
+  var x * int;
+  var y +foreign ** int;
+  x = *y;
+}

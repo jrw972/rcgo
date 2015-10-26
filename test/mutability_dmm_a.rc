@@ -1,0 +1,4 @@
+func f () {
+  var x * int;
+  *x = 1i;
+}
