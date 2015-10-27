@@ -8,6 +8,7 @@ TESTS = mutability.sh \
 foreign_safe.sh \
 boolean_type.rc \
 int_type.rc \
+heap_type.rc \
 variable_zero.sh \
 two_port_calls.sh \
 reaction_param_activation.sh \

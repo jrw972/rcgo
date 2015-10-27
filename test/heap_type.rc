@@ -1,0 +1,49 @@
+#!/usr/bin/env rc
+
+func test (num uint; desc +const []uint8; status bool) {
+  if status {
+    println `ok `, num, ` - `, desc;
+  } else {
+    println `not ok `, num, ` - `, desc;
+  }
+}
+
+type Test component { };
+
+init (this *Test) Init () {
+  println `1..3`;
+
+  {
+    // Attempt to move an active heap.
+    var x *heap int = new heap int;
+     change (x, y *int) {
+       var z *heap int = move (x);
+       test (1u, `move active heap`, z == nil);
+     }
+  }
+
+  {
+    // Attempt to merge an active heap.
+    var x *heap int = new heap int;
+     change (x, y *int) {
+       var z *int = merge (x);
+       test (2u, `merge active heap`, z == nil);
+     }
+  }
+
+  {
+    // Attempt to stack heaps.
+    var x *heap int = new heap int;
+    var y *heap int = new heap int;
+     change (x, xr *int) {
+       *xr = 100i;
+       change (y, yr +foreign *int) {
+         change (x, xr2 +foreign *int) {
+           test (3u, `stack heaps`, xr2 != nil && *xr2 == 100i);
+         }
+       }
+     }
+  }
+}
+
+instance t Test Init;
