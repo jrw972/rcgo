@@ -1,0 +1,64 @@
+#!/usr/bin/env rc
+
+type Test component { };
+
+func not_evaluated (flag *bool) bool {
+  *flag = true;
+  return true;
+}
+
+func test (num uint; desc +const []uint8; status bool) {
+  if status {
+    println `ok `, num, ` - `, desc;
+  } else {
+    println `not ok `, num, ` - `, desc;
+  }
+}
+
+init (this *Test) Main () {
+  println `1..24`;
+
+  test (1u, `false`, false == false);
+  test (2u, `true`, true == true);
+
+  test (3u, `const false!: `, !false == true);
+  test (4u, `const true!: `, !true == false);
+
+  test (5u, `const false || false: `, (false || false) == false);
+  test (6u, `const false || true: `, (false || true) == true);
+  test (7u, `const true || false: `, (true || false) == true);
+  test (8u, `const true || true: `, (true || true) == true);
+
+  test (9u, `const false && false: `, (false && false) == false);
+  test (10u, `const false && true: `, (false && true) == false);
+  test (11u, `const true && false: `, (true && false) == false);
+  test (12u, `const true && true: `, (true && true) == true);
+
+  var f, t bool;
+  f = false;
+  t = true;
+
+  test (13u, `var false!: `, !f == true);
+  test (14u, `var true!: `, !t == false);
+
+  test (15u, `var false || false: `, (f || f) == false);
+  test (16u, `var false || true: `, (f || t) == true);
+  test (17u, `var true || false: `, (t || f) == true);
+  test (18u, `var true || true: `, (t || t) == true);
+
+  test (19u, `var false && false: `, (f && f) == false);
+  test (20u, `var false && true: `, (f && t) == false);
+  test (21u, `var true && false: `, (t && f) == false);
+  test (22u, `var true && true: `, (t && t) == true);
+
+  var flag bool;
+  flag = false;
+  t && f && not_evaluated (&flag);
+  test (23u, `short circuit &&`, flag == false);
+
+  flag = false;
+  f || t || not_evaluated (&flag);
+  test (24u, `short circuit ||`, flag == false);
+}
+
+instance t Test Main;

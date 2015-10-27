@@ -6,7 +6,7 @@ AM_TESTS_ENVIRONMENT = RC='$(top_builddir)/src/rc'; export RC; PATH="$(top_build
 
 TESTS = mutability.sh \
 foreign_safe.sh \
-boolean_operators.sh \
+boolean_type.rc \
 int_operators.sh \
 variable_zero.sh \
 two_port_calls.sh \
@@ -110,7 +110,6 @@ foreign_safe_pull_port.rc \
 foreign_safe_pull_port_return.rc \
 foreign_safe_push_port.rc \
 foreign_safe_reaction.rc \
-boolean_operators.rc \
 int_operators.rc \
 variable_zero.rc \
 two_port_calls.rc \

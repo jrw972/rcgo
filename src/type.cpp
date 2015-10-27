@@ -931,6 +931,11 @@ type_is_comparable (const type_t* type)
       type.subtype ()->accept (*this);
     }
 
+    void visit (const bool_type_t& type)
+    {
+      flag = true;
+    }
+
     void visit (const int_type_t& type)
     {
       flag = true;
