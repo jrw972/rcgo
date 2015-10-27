@@ -1,0 +1,88 @@
+#!/usr/bin/env rc
+
+func test (num uint; desc +const []uint8; status bool) {
+  if status {
+    println `ok `, num, ` - `, desc;
+  } else {
+    println `not ok `, num, ` - `, desc;
+  }
+}
+
+type Test component { };
+
+init (this *Test) Main () {
+  println `1..51`;
+  {
+    test (1u, `literal *`,  -10017i == 189i *  -53i);
+    test (2u, `literal /`,      -3i == 189i /  -53i);
+    test (3u, `literal %`,      30i == 189i %  -53i);
+    test (4u, `literal <<`,    378i == 189i << 1u);
+    test (5u, `literal >>`,     94i == 189i >> 1u);
+    test (6u, `literal &`,     137i == 189i &  -53i);
+    test (7u, `literal &^`,     52i == 189i &^ -53i);
+
+    test (8u,  `literal +`,    136i == 189i +  -53i);
+    test (9u,  `literal -`,    242i == 189i -  -53i);
+    test (10u, `literal |`,     -1i == 189i |  -53i);
+    test (11u, `literal ^`,   -138i == 189i ^  -53i);
+
+    test (12u, `literal ==`, (189i == -53i) == false);
+    test (13u, `literal !=`, (189i != -53i) == true);
+    test (14u, `literal <`,  (189i <  -53i) == false);
+    test (15u, `literal <=`, (189i <= -53i) == false);
+    test (16u, `literal >`,  (189i >  -53i) == true);
+    test (17u, `literal >=`, (189i >= -53i) == true);
+  }
+
+  {
+    const x int = 189i;
+    const y int = -53i;
+
+    test (18u, `const *`,  -10017i == x *  y);
+    test (19u, `const /`,      -3i == x /  y);
+    test (20u, `const %`,      30i == x %  y);
+    test (21u, `const <<`,    378i == x << 1u);
+    test (22u, `const >>`,     94i == x >> 1u);
+    test (23u, `const &`,     137i == x &  y);
+    test (24u, `const &^`,     52i == x &^ y);
+
+    test (25u,  `const +`,    136i == x +  y);
+    test (26u,  `const -`,    242i == x -  y);
+    test (27u, `const |`,     -1i == x |  y);
+    test (28u, `const ^`,   -138i == x ^  y);
+
+    test (29u, `const ==`, (x == y) == false);
+    test (30u, `const !=`, (x != y) == true);
+    test (31u, `const <`,  (x <  y) == false);
+    test (32u, `const <=`, (x <= y) == false);
+    test (33u, `const >`,  (x >  y) == true);
+    test (34u, `const >=`, (x >= y) == true);
+  }
+
+  {
+    var x int = 189i;
+    var y int = -53i;
+
+    test (35u, `*`,  -10017i == x *  y);
+    test (36u, `/`,      -3i == x /  y);
+    test (37u, `%`,      30i == x %  y);
+    test (38u, `<<`,    378i == x << 1u);
+    test (39u, `>>`,     94i == x >> 1u);
+    test (40u, `&`,     137i == x &  y);
+    test (41u, `&^`,     52i == x &^ y);
+
+    test (42u,  `+`,    136i == x +  y);
+    test (43u,  `-`,    242i == x -  y);
+    test (44u, `|`,     -1i == x |  y);
+    test (45u, `^`,   -138i == x ^  y);
+
+    test (46u, `==`, (x == y) == false);
+    test (47u, `!=`, (x != y) == true);
+    test (48u, `<`,  (x <  y) == false);
+    test (49u, `<=`, (x <= y) == false);
+    test (50u, `>`,  (x >  y) == true);
+    test (51u, `>=`, (x >= y) == true);
+  }
+}
+
+instance t Test Main;
