@@ -83,8 +83,7 @@ process_declarations (ast_t * node)
 
             check_assignment (left_tv, right_tv, node,
                               "E11: incompatible types (%s) = (%s)",
-                              "argument leaks mutable pointers",
-                              "argument may store foreign pointer");
+                              "argument leaks mutable pointers");
 
             node.symbol = enter_symbol (*node.parent (),
                                         new TypedConstantSymbol (ast_get_identifier (node.identifier ()), &node, right_tv));

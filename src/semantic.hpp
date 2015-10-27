@@ -66,8 +66,7 @@ check_assignment (typed_value_t left_tv,
                   typed_value_t right_tv,
                   const ast_t& node,
                   const char* conversion_message,
-                  const char* leak_message,
-                  const char* store_foreign_message);
+                  const char* leak_message);
 
 /* Process all definitions (code). */
 void process_definitions (ast_t * node);

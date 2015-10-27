@@ -32,8 +32,7 @@ check_assignment (typed_value_t left_tv,
                   typed_value_t right_tv,
                   const ast_t& node,
                   const char* conversion_message,
-                  const char* leak_message,
-                  const char* store_foreign_message)
+                  const char* leak_message)
 {
   assert (left_tv.type != NULL);
   assert (left_tv.kind == typed_value_t::REFERENCE);
@@ -61,13 +60,6 @@ check_assignment (typed_value_t left_tv,
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "%s", leak_message);
-        }
-
-      if (right_tv.dereference_mutability == FOREIGN &&
-          left_tv.region != typed_value_t::STACK)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "%s", store_foreign_message);
         }
     }
 }
@@ -174,7 +166,6 @@ type_check_expr (ast_t* ptr)
 
       typed_value_t::index (node.index ()->location, typed_value_t::make_ref (array_type, typed_value_t::HEAP, IMMUTABLE, IMMUTABLE), index_tv);
 
-
       ast_t *args = node.args ();
       check_rvalue_list (args);
       typed_value_t tv = typed_value_t::make_value (void_type_t::instance (),
@@ -215,7 +206,7 @@ type_check_expr (ast_t* ptr)
       ast_t* type_spec = node.child ();
       const type_t* t = process_type_spec (type_spec, false);
       const type_t* type = pointer_type_t::make (t);
-      node.typed_value = typed_value_t::make_value (type, typed_value_t::HEAP, MUTABLE, MUTABLE);
+      node.typed_value = typed_value_t::make_value (type, typed_value_t::STACK, MUTABLE, MUTABLE);
     }
 
     void visit (ast_copy_expr_t& node)
@@ -420,8 +411,7 @@ type_check_expr (ast_t* ptr)
           typed_value_t parameter_tv = typed_value_t::make_ref ((*pos)->value);
           check_assignment (parameter_tv, argument_tv, *arg,
                             "E5: incompatible types (%s) = (%s)",
-                            "E19: argument leaks mutable pointers",
-                            "argument may store foreign pointer");
+                            "E19: argument leaks mutable pointers");
         }
 
       // Set the return type.
@@ -476,8 +466,7 @@ type_check_expr (ast_t* ptr)
           typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
           check_assignment (parameter_tv, argument_tv, node,
                             "E48: call expects %s but given %s",
-                            "E18: argument leaks mutable pointers",
-                            "argument may store foreign pointer");
+                            "E18: argument leaks mutable pointers");
         }
 
         void visit (const initializer_type_t& type)
@@ -506,8 +495,7 @@ type_check_expr (ast_t* ptr)
           typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
           check_assignment (parameter_tv, argument_tv, node,
                             "E49: call expects %s but given %s",
-                            "E18: argument leaks mutable pointers",
-                            "argument may store foreign pointer");
+                            "E18: argument leaks mutable pointers");
         }
 
         void visit (const getter_type_t& type)
@@ -843,8 +831,7 @@ type_check_statement (ast_t * node)
       typed_value_t right_tv = checkAndImplicitlyDereference (node.right_ref ());
       check_assignment (left_tv, right_tv, node,
                         "E31: incompatible types (%s) = (%s)",
-                        "E32: assignment leaks mutable pointers",
-                        "E33:assignment may store foreign pointer");
+                        "E32: assignment leaks mutable pointers");
     }
 
     void visit (ast_change_statement_t& node)
@@ -931,8 +918,7 @@ type_check_statement (ast_t * node)
 
       check_assignment (SymbolCast<ParameterSymbol> (node.return_symbol)->value, expr_tv, node,
                         "cannot convert to (%s) from (%s) in return",
-                        "return leaks mutable pointers",
-                        "return may store foreign pointer");
+                        "return leaks mutable pointers");
     }
 
     void visit (ast_increment_statement_t& node)
@@ -1040,8 +1026,7 @@ type_check_statement (ast_t * node)
 
           check_assignment (left_tv, right_tv, node,
                             "E34: incompatible types (%s) = (%s)",
-                            "E35: assignment leaks mutable pointers",
-                            "E36: assignment may store foreign pointer");
+                            "E35: assignment leaks mutable pointers");
 
           const std::string& name = ast_get_identifier (*id_pos);
           Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
