@@ -1204,6 +1204,14 @@ struct NotEqual : public Location, public comparable
     : Location (l)
   { }
 
+  void
+  operator() (typed_value_t& result,
+              const bool_type_t& type,
+              const typed_value_t& left,
+              const typed_value_t& right) const
+  {
+    result.value.ref (*bool_type_t::instance ()) = left.value.ref (type) != right.value.ref (type);
+  }
 
   void
   operator() (typed_value_t& result,

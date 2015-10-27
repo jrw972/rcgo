@@ -694,6 +694,14 @@ struct NotEqual : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const ast_binary_expr_t& node,
+              const bool_type_t&) const
+  {
+    doit<bool_type_t> (exec, node);
+  }
+
+  void
+  operator() (executor_base_t& exec,
+              const ast_binary_expr_t& node,
               const int_type_t&) const
   {
     doit<int_type_t> (exec, node);

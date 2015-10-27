@@ -16,49 +16,66 @@ func test (num uint; desc +const []uint8; status bool) {
 }
 
 init (this *Test) Main () {
-  println `1..24`;
+  println `1..38`;
 
-  test (1u, `literal false`, false == false);
-  test (2u, `literal true`, true == true);
+  test (1u, `literal false!: `, !false == true);
+  test (2u, `literal true!: `, !true == false);
 
-  test (3u, `literal false!: `, !false == true);
-  test (4u, `literal true!: `, !true == false);
+  test (3u, `literal false || false: `, (false || false) == false);
+  test (4u, `literal false || true: `, (false || true) == true);
+  test (5u, `literal true || false: `, (true || false) == true);
+  test (6u, `literal true || true: `, (true || true) == true);
 
-  test (5u, `literal false || false: `, (false || false) == false);
-  test (6u, `literal false || true: `, (false || true) == true);
-  test (7u, `literal true || false: `, (true || false) == true);
-  test (8u, `literal true || true: `, (true || true) == true);
+  test (7u, `literal false && false: `, (false && false) == false);
+  test (8u, `literal false && true: `, (false && true) == false);
+  test (9u, `literal true && false: `, (true && false) == false);
+  test (10u, `literal true && true: `, (true && true) == true);
 
-  test (9u, `literal false && false: `, (false && false) == false);
-  test (10u, `literal false && true: `, (false && true) == false);
-  test (11u, `literal true && false: `, (true && false) == false);
-  test (12u, `literal true && true: `, (true && true) == true);
+  test (11u, `literal false == false`, (false == false) == true);
+  test (12u, `literal false == true`, (false == true) == false);
+  test (13u, `literal true == false`, (true == false) == false);
+  test (14u, `literal true == true`, (true == true) == true);
+
+  test (15u, `literal false != false`, (false != false) == false);
+  test (16u, `literal false != true`, (false != true) == true);
+  test (17u, `literal true != false`, (true != false) == true);
+  test (18u, `literal true != true`, (true != true) == false);
 
   var f, t bool;
   f = false;
   t = true;
 
-  test (13u, `false!: `, !f == true);
-  test (14u, `true!: `, !t == false);
+  test (19u, `false!: `, !f == true);
+  test (20u, `true!: `, !t == false);
 
-  test (15u, `false || false: `, (f || f) == false);
-  test (16u, `false || true: `, (f || t) == true);
-  test (17u, `true || false: `, (t || f) == true);
-  test (18u, `true || true: `, (t || t) == true);
+  test (21u, `false || false: `, (f || f) == false);
+  test (22u, `false || true: `, (f || t) == true);
+  test (23u, `true || false: `, (t || f) == true);
+  test (24u, `true || true: `, (t || t) == true);
 
-  test (19u, `false && false: `, (f && f) == false);
-  test (20u, `false && true: `, (f && t) == false);
-  test (21u, `true && false: `, (t && f) == false);
-  test (22u, `true && true: `, (t && t) == true);
+  test (25u, `false && false: `, (f && f) == false);
+  test (26u, `false && true: `, (f && t) == false);
+  test (27u, `true && false: `, (t && f) == false);
+  test (28u, `true && true: `, (t && t) == true);
+
+  test (29u, `literal false == false`, (f == f) == true);
+  test (30u, `literal false == true`, (f == t) == false);
+  test (31u, `literal true == false`, (t == f) == false);
+  test (32u, `literal true == true`, (t == t) == true);
+
+  test (33u, `literal false != false`, (f != f) == false);
+  test (34u, `literal false != true`, (f != t) == true);
+  test (35u, `literal true != false`, (t != f) == true);
+  test (36u, `literal true != true`, (t != t) == false);
 
   var flag bool;
   flag = false;
   t && f && not_evaluated (&flag);
-  test (23u, `short circuit &&`, flag == false);
+  test (37u, `short circuit &&`, flag == false);
 
   flag = false;
   f || t || not_evaluated (&flag);
-  test (24u, `short circuit ||`, flag == false);
+  test (38u, `short circuit ||`, flag == false);
 }
 
 instance t Test Main;
