@@ -4,6 +4,7 @@
 #include "parameter.hpp"
 #include "BuiltinFunction.hpp"
 #include "Template.hpp"
+#include "runtime.hpp"
 
 void
 enter_symbols (ast_t * node)
@@ -32,7 +33,8 @@ enter_symbols (ast_t * node)
   node->EnterSymbol (new TypeSymbol ("float64", node, new named_type_t ("float64", float64_type_t::instance ())));
 
   // Insert builtin-in functions.
-  node->EnterSymbol (new New (node));
+  node->EnterSymbol (new runtime::New (node));
+  node->EnterSymbol (new runtime::Move (node));
 
   /* I/O facilities. */
   named_type_t* fd_type = new named_type_t ("FileDescriptor", FileDescriptor_type_t::instance ());

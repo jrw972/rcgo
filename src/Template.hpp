@@ -9,11 +9,11 @@
 struct Template : public Symbol
 {
   Template (const std::string& id,
-                    ast_t* dn,
-                    const type_t* type)
+            ast_t* dn,
+            const type_t* type)
     : Symbol (id, dn)
     , type_ (type)
-      // type () is called here
+    // type () is called here
     , typed_value_ (typed_value_t::make_ref (typed_value_t (this)))
   { }
 
@@ -40,12 +40,6 @@ struct Template : public Symbol
 private:
   const type_t* const type_;
   typed_value_t const typed_value_;
-};
-
-struct New : public Template
-{
-  New (ast_t* dn);
-  virtual typed_value_t instantiate (TypedValueListType& tvlist);
 };
 
 #endif /* Template_hpp */
