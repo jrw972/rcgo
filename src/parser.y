@@ -8,59 +8,59 @@
 %token <node> IDENTIFIER
 %token <node> LITERAL
 
-%type <node> action_def
+%type <node> Action
+%type <node> ActivateStatement
 %type <node> AddExpression
 %type <node> AndExpression
-%type <node> array_dimension
-%type <node> assignment_stmt
-%type <node> bind_def
-%type <node> bind_stmt
-%type <node> change_stmt
+%type <node> ArrayDimension
+%type <node> AssignmentStatement
+%type <node> Bind
+%type <node> BindStatement
+%type <node> Block
+%type <node> ChangeStatement
 %type <node> CompareExpression
-%type <node> const_def
-%type <node> def
-%type <node> def_list
-%type <node> empty_stmt
-%type <node> expr_list
-%type <node> expr_stmt
-%type <node> field_list
-%type <node> for_iota_stmt
-%type <node> func_def
-%type <node> getter_def
-%type <node> identifier
-%type <node> identifier_list
-%type <node> if_stmt
-%type <node> increment_stmt
-%type <node> init_def
-%type <node> inner_stmt_list
-%type <node> instance_def
-%type <node> method_def
-%type <node> MultiplyExpression
-%type <node> optional_expr_list
-%type <node> index_expr
-%type <node> Receiver
-%type <node> Operand
-%type <node> optional_push_port_call_list
-%type <node> OrExpression
-%type <node> parameter
-%type <node> parameter_list
-%type <node> push_port_call
-%type <node> push_port_call_list
-%type <node> PrimaryExpression
-%type <node> println_stmt
-%type <node> reaction_def
-%type <node> return_stmt
+%type <node> Const
+%type <node> Definition
+%type <node> DefinitionList
+%type <node> EmptyStatement
 %type <node> Expression
-%type <node> signature
-%type <node> simple_stmt
-%type <node> stmt
-%type <node> stmt_list
-%type <node> activate_stmt
-%type <node> type_def
-%type <node> type_spec
+%type <node> ExpressionList
+%type <node> ExpressionStatement
+%type <node> FieldList
+%type <node> ForIotaStatement
+%type <node> Func
+%type <node> Getter
+%type <node> IdentifierList
+%type <node> IfStatement
+%type <node> IncrementStatement
+%type <node> IndexExpression
+%type <node> Init
+%type <node> Instance
+%type <node> Method
+%type <node> MultiplyExpression
+%type <node> Operand
+%type <node> OptionalExpressionList
+%type <node> OptionalPushPortCallList
+%type <node> OrExpression
+%type <node> Parameter
+%type <node> ParameterList
+%type <node> PrimaryExpression
+%type <node> PrintlnStatement
+%type <node> PushPortCall
+%type <node> PushPortCallList
+%type <node> Reaction
+%type <node> Receiver
+%type <node> ReturnStatement
+%type <node> Signature
+%type <node> SimpleStatement
+%type <node> Statement
+%type <node> StatementList
+%type <node> Type
+%type <node> TypeSpec
 %type <node> UnaryExpression
-%type <node> var_stmt
-%type <node> while_stmt
+%type <node> VarStatement
+%type <node> WhileStatement
+
 %destructor { /* TODO:  Free the node. node_free ($$); */ } <node>
 
 %type <mutability> Mutability
@@ -72,27 +72,27 @@
 
 %%
 
-top: def_list { root = $1; }
+top: DefinitionList { root = $1; }
 
-def_list: /* empty */ { $$ = new ast_top_level_list_t (); }
-| def_list def { $$ = $1->append ($2); }
+DefinitionList: /* empty */ { $$ = new ast_top_level_list_t (); }
+| DefinitionList Definition { $$ = $1->append ($2); }
 
-def: type_def { $$ = $1; }
-| init_def { $$ = $1; }
-| getter_def { $$ = $1; }
-| action_def { $$ = $1; }
-| reaction_def { $$ = $1; }
-| bind_def { $$ = $1; }
-| instance_def { $$ = $1; }
-| method_def { $$ = $1; }
-| func_def { $$ = $1; }
-| const_def { $$ = $1; }
+Definition: Type { $$ = $1; }
+| Init { $$ = $1; }
+| Getter { $$ = $1; }
+| Action { $$ = $1; }
+| Reaction { $$ = $1; }
+| Bind { $$ = $1; }
+| Instance { $$ = $1; }
+| Method { $$ = $1; }
+| Func { $$ = $1; }
+| Const { $$ = $1; }
 
-const_def: CONST identifier type_spec '=' Expression ';' { $$ = new ast_const_t (@1, $2, $3, $5); }
+Const: CONST IDENTIFIER TypeSpec '=' Expression ';' { $$ = new ast_const_t (@1, $2, $3, $5); }
 
-instance_def: INSTANCE identifier identifier identifier ';' { $$ = new ast_instance_t (@1, $2, $3, $4); }
+Instance: INSTANCE IDENTIFIER IDENTIFIER IDENTIFIER ';' { $$ = new ast_instance_t (@1, $2, $3, $4); }
 
-type_def: TYPE identifier type_spec ';' { $$ = new ast_type_definition_t (@1, $2, $3); }
+Type: TYPE IDENTIFIER TypeSpec ';' { $$ = new ast_type_definition_t (@1, $2, $3); }
 
 Mutability:
 /* Empty. */
@@ -111,157 +111,155 @@ DereferenceMutability:
 { $$ = FOREIGN; }
 
 Receiver:
-'(' identifier Mutability DereferenceMutability '*' identifier ')'
+'(' IDENTIFIER Mutability DereferenceMutability '*' IDENTIFIER ')'
 { $$ = new ast_receiver_t (@1, $2, $3, $4, $6); }
 
-action_def:
-ACTION Receiver '(' Expression ')' stmt_list
+Action:
+ACTION Receiver '(' Expression ')' Block
 { $$ = new ast_action_t (@1, $2, $4, $6); }
-| array_dimension ACTION Receiver '(' Expression ')' stmt_list
+| ArrayDimension ACTION Receiver '(' Expression ')' Block
 { $$ = new ast_dimensioned_action_t (@2, $1, $3, $5, $7); }
 
-reaction_def:
-REACTION Receiver identifier signature stmt_list
+Reaction:
+REACTION Receiver IDENTIFIER Signature Block
 { $$ = new ast_reaction_t (@1, $2, $3, $4, $5); }
-| array_dimension REACTION Receiver identifier signature stmt_list
+| ArrayDimension REACTION Receiver IDENTIFIER Signature Block
 { $$ = new ast_dimensioned_reaction_t (@2, $1, $3, $4, $5, $6); }
 
-bind_def:
-BIND Receiver stmt_list
+Bind:
+BIND Receiver Block
 { $$ = new ast_bind_t (@1, $2, $3); }
 
-init_def:
-INIT Receiver identifier signature stmt_list
+Init:
+INIT Receiver IDENTIFIER Signature Block
 { $$ = new ast_initializer_t (@1, $2, $3, $4, $5); }
 
-getter_def:
-GETTER Receiver identifier signature DereferenceMutability type_spec stmt_list
+Getter:
+GETTER Receiver IDENTIFIER Signature DereferenceMutability TypeSpec Block
 { $$ = new ast_getter_t (@1, $2, $3, $4, $5, $6, $7); }
 
-method_def:
-FUNC Receiver identifier signature DereferenceMutability type_spec stmt_list
+Method:
+FUNC Receiver IDENTIFIER Signature DereferenceMutability TypeSpec Block
 { $$ = new ast_method_t (@1, $2, $3, $4, $5, $6, $7); }
-| FUNC Receiver identifier signature           stmt_list
+| FUNC Receiver IDENTIFIER Signature           Block
 { $$ = new ast_method_t (@1, $2, $3, $4, IMMUTABLE, new ast_empty_type_spec_t (@1), $5); }
 
-func_def:
-FUNC identifier signature stmt_list
+Func:
+FUNC IDENTIFIER Signature Block
 { $$ = new ast_function_t (@1, $2, $3, IMMUTABLE, new ast_empty_type_spec_t (@1), $4); }
-| FUNC identifier signature DereferenceMutability type_spec stmt_list
+| FUNC IDENTIFIER Signature DereferenceMutability TypeSpec Block
 { $$ = new ast_function_t (@1, $2, $3, $4, $5, $6); }
 
-signature: '(' ')' { $$ = new ast_signature_type_spec_t (yyloc); }
-| '(' parameter_list optional_semicolon ')' { $$ = $2; }
+Signature: '(' ')' { $$ = new ast_signature_type_spec_t (yyloc); }
+| '(' ParameterList optional_semicolon ')' { $$ = $2; }
 
-parameter_list: parameter { $$ = (new ast_signature_type_spec_t (@1))->append ($1); }
-| parameter_list ';' parameter { $$ = $1->append ($3); }
+ParameterList: Parameter { $$ = (new ast_signature_type_spec_t (@1))->append ($1); }
+| ParameterList ';' Parameter { $$ = $1->append ($3); }
 
-parameter:
-  identifier_list Mutability DereferenceMutability type_spec
+Parameter:
+  IdentifierList Mutability DereferenceMutability TypeSpec
 { $$ = new ast_identifier_list_type_spec_t (@1, $1, $2, $3, $4); }
 
 optional_semicolon: /* Empty. */
 | ';'
 
-bind_stmt: Expression RIGHT_ARROW Expression ';' { $$ = new ast_bind_push_port_statement_t (@1, $1, $3); } /* CHECK */
+BindStatement: Expression RIGHT_ARROW Expression ';' { $$ = new ast_bind_push_port_statement_t (@1, $1, $3); } /* CHECK */
 | Expression RIGHT_ARROW Expression DOTDOT Expression';' { $$ = new ast_bind_push_port_param_statement_t (@1, $1, $3, $5); } /* CHECK */
 | Expression LEFT_ARROW Expression ';' { $$ = new ast_bind_pull_port_statement_t (@1, $1, $3); } /* CHECK */
 
-stmt_list: '{' inner_stmt_list '}' { $$ = $2; }
+Block: '{' StatementList '}' { $$ = $2; }
 
-inner_stmt_list: /* empty */ { $$ = new ast_list_statement_t (yyloc); }
-| inner_stmt_list stmt { $$ = $1->append ($2); }
+StatementList: /* empty */ { $$ = new ast_list_statement_t (yyloc); }
+| StatementList Statement { $$ = $1->append ($2); }
 
-stmt: simple_stmt { $$ = $1; }
-| var_stmt { $$ = $1; }
-| activate_stmt { $$ = $1; }
-| stmt_list { $$ = $1; }
-| println_stmt { $$ = $1; }
-| return_stmt { $$ = $1; }
-| if_stmt { $$ = $1; }
-| while_stmt { $$ = $1; }
-| change_stmt { $$ = $1; }
-| for_iota_stmt { $$ = $1; }
-| bind_stmt { $$ = $1; }
-| const_def { $$ = $1; }
+Statement: SimpleStatement { $$ = $1; }
+| VarStatement { $$ = $1; }
+| ActivateStatement { $$ = $1; }
+| Block { $$ = $1; }
+| PrintlnStatement { $$ = $1; }
+| ReturnStatement { $$ = $1; }
+| IfStatement { $$ = $1; }
+| WhileStatement { $$ = $1; }
+| ChangeStatement { $$ = $1; }
+| ForIotaStatement { $$ = $1; }
+| BindStatement { $$ = $1; }
+| Const { $$ = $1; }
 
-simple_stmt: empty_stmt { $$ = $1; }
-| expr_stmt { $$ = $1; }
-| increment_stmt { $$ = $1; }
-| assignment_stmt { $$ = $1; }
+SimpleStatement: EmptyStatement { $$ = $1; }
+| ExpressionStatement { $$ = $1; }
+| IncrementStatement { $$ = $1; }
+| AssignmentStatement { $$ = $1; }
 
-empty_stmt: /* empty */ ';' { $$ = new ast_empty_statement_t (yyloc); }
+EmptyStatement: /* empty */ ';' { $$ = new ast_empty_statement_t (yyloc); }
 
-activate_stmt: ACTIVATE optional_push_port_call_list stmt_list { $$ = new ast_activate_statement_t (@1, $2, $3); }
+ActivateStatement: ACTIVATE OptionalPushPortCallList Block { $$ = new ast_activate_statement_t (@1, $2, $3); }
 
-change_stmt: CHANGE '(' Expression ',' identifier Mutability DereferenceMutability type_spec ')' stmt_list { $$ = new ast_change_statement_t (@1, $3, $5, $6, $7, $8, $10); }
+ChangeStatement: CHANGE '(' Expression ',' IDENTIFIER Mutability DereferenceMutability TypeSpec ')' Block { $$ = new ast_change_statement_t (@1, $3, $5, $6, $7, $8, $10); }
 
-for_iota_stmt: FOR identifier DOTDOT Expression stmt_list { $$ = new ast_for_iota_statement_t (@1, $2, $4, $5); }
+ForIotaStatement: FOR IDENTIFIER DOTDOT Expression Block { $$ = new ast_for_iota_statement_t (@1, $2, $4, $5); }
 
-println_stmt: PRINTLN expr_list ';' { $$ = new ast_println_statement_t (@1, $2); }
+PrintlnStatement: PRINTLN ExpressionList ';' { $$ = new ast_println_statement_t (@1, $2); }
 
-return_stmt: RETURN_KW Expression ';' { $$ = new ast_return_statement_t (@1, $2); }
+ReturnStatement: RETURN_KW Expression ';' { $$ = new ast_return_statement_t (@1, $2); }
 
-increment_stmt: Expression INCREMENT ';' { $$ = new ast_increment_statement_t (@1, $1); } /* CHECK */
+IncrementStatement: Expression INCREMENT ';' { $$ = new ast_increment_statement_t (@1, $1); } /* CHECK */
 | Expression DECREMENT ';' { $$ = new ast_decrement_statement_t (@1, $1); } /* CHECK */
 
-optional_push_port_call_list: /* Empty. */ { $$ = new ast_list_expr_t (yyloc); }
-| push_port_call_list { $$ = $1; }
+OptionalPushPortCallList: /* Empty. */ { $$ = new ast_list_expr_t (yyloc); }
+| PushPortCallList { $$ = $1; }
 
-push_port_call_list: push_port_call { $$ = (new ast_list_expr_t (@1))->append ($1); }
-| push_port_call_list ',' push_port_call { $$ = $1->append ($3); }
+PushPortCallList: PushPortCall { $$ = (new ast_list_expr_t (@1))->append ($1); }
+| PushPortCallList ',' PushPortCall { $$ = $1->append ($3); }
 
-push_port_call: identifier index_expr '(' optional_expr_list ')' { $$ = new ast_indexed_port_call_expr_t (@1, $1, $2, $4); }
-| identifier '(' optional_expr_list ')' { $$ = new ast_push_port_call_expr_t (@1, $1, $3); }
+PushPortCall: IDENTIFIER IndexExpression '(' OptionalExpressionList ')' { $$ = new ast_indexed_port_call_expr_t (@1, $1, $2, $4); }
+| IDENTIFIER '(' OptionalExpressionList ')' { $$ = new ast_push_port_call_expr_t (@1, $1, $3); }
 
-index_expr: '[' Expression ']' { $$ = $2; }
+IndexExpression: '[' Expression ']' { $$ = $2; }
 
-optional_expr_list: /* Empty. */ { $$ = new ast_list_expr_t (yyloc); }
-| expr_list { $$ = $1; }
+OptionalExpressionList: /* Empty. */ { $$ = new ast_list_expr_t (yyloc); }
+| ExpressionList { $$ = $1; }
 
-expr_list: Expression { $$ = (new ast_list_expr_t (@1))->append ($1); }
-| expr_list ',' Expression { $$ = $1->append ($3); }
+ExpressionList: Expression { $$ = (new ast_list_expr_t (@1))->append ($1); }
+| ExpressionList ',' Expression { $$ = $1->append ($3); }
 
-expr_stmt: Expression ';' {
+ExpressionStatement: Expression ';' {
   $$ = new ast_expression_statement_t (@1, $1);
  }
 
-var_stmt: VAR identifier_list Mutability DereferenceMutability type_spec ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, $5); }
-| VAR identifier_list Mutability DereferenceMutability type_spec '=' expr_list ';' { $$ = new ast_var_type_init_statement_t (@1, $2, $3, $4, $5, $7); }
-| VAR identifier_list Mutability DereferenceMutability '=' expr_list ';' { unimplemented; }
+VarStatement: VAR IdentifierList Mutability DereferenceMutability TypeSpec ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, $5); }
+| VAR IdentifierList Mutability DereferenceMutability TypeSpec '=' ExpressionList ';' { $$ = new ast_var_type_init_statement_t (@1, $2, $3, $4, $5, $7); }
+| VAR IdentifierList Mutability DereferenceMutability '=' ExpressionList ';' { unimplemented; }
 
-assignment_stmt: Expression '=' Expression ';' { $$ = new ast_assign_statement_t (@1, $1, $3); } /* CHECK */
+AssignmentStatement: Expression '=' Expression ';' { $$ = new ast_assign_statement_t (@1, $1, $3); } /* CHECK */
 | Expression ADD_ASSIGN Expression ';' { $$ = new ast_add_assign_statement_t (@1, $1, $3); } /* CHECK */
 
-if_stmt: IF Expression stmt_list { $$ = new ast_if_statement_t (@1, $2, $3, new ast_list_statement_t (@1)); }
-| IF Expression stmt_list ELSE if_stmt { unimplemented; }
-| IF Expression stmt_list ELSE stmt_list { $$ = new ast_if_statement_t (@1, $2, $3, $5); }
-| IF simple_stmt ';' Expression stmt_list { unimplemented; }
-| IF simple_stmt ';' Expression stmt_list ELSE if_stmt { unimplemented; }
-| IF simple_stmt ';' Expression stmt_list ELSE stmt_list { unimplemented; }
+IfStatement: IF Expression Block { $$ = new ast_if_statement_t (@1, $2, $3, new ast_list_statement_t (@1)); }
+| IF Expression Block ELSE IfStatement { unimplemented; }
+| IF Expression Block ELSE Block { $$ = new ast_if_statement_t (@1, $2, $3, $5); }
+| IF SimpleStatement ';' Expression Block { unimplemented; }
+| IF SimpleStatement ';' Expression Block ELSE IfStatement { unimplemented; }
+| IF SimpleStatement ';' Expression Block ELSE Block { unimplemented; }
 
-while_stmt: WHILE Expression stmt_list { $$ = new ast_while_statement_t (@1, $2, $3); }
+WhileStatement: WHILE Expression Block { $$ = new ast_while_statement_t (@1, $2, $3); }
 
-identifier_list: identifier { $$ = (new ast_identifier_list_t (@1))->append ($1); }
-| identifier_list ',' identifier { $$ = $1->append ($3); }
+IdentifierList: IDENTIFIER { $$ = (new ast_identifier_list_t (@1))->append ($1); }
+| IdentifierList ',' IDENTIFIER { $$ = $1->append ($3); }
 
-identifier: IDENTIFIER { $$ = $1; }
+TypeSpec: IDENTIFIER { $$ = new ast_identifier_type_spec_t (@1, $1); }
+| COMPONENT '{' FieldList '}' { $$ = new ast_component_type_spec_t (@1, $3); }
+| STRUCT '{' FieldList '}' { $$ = new ast_struct_type_spec_t (@1, $3); }
+| PUSH Signature { $$ = new ast_push_port_type_spec_t (@1, $2); }
+| PULL Signature DereferenceMutability TypeSpec { $$ = new ast_pull_port_type_spec_t (@1, $2, $3, $4); }
+| '*' TypeSpec { $$ = new ast_pointer_type_spec_t (@1, $2); }
+| HEAP TypeSpec { $$ = new ast_heap_type_spec_t (@1, $2); }
+| ArrayDimension TypeSpec { $$ = new ast_array_type_spec_t (@1, $1, $2); }
+| '[' ']' TypeSpec { $$ = new ast_slice_type_spec_t (@1, $3); }
+| ENUM '{' IdentifierList '}' { $$ = new ast_enum_type_spec_t (@1, $3); }
 
-type_spec: identifier { $$ = new ast_identifier_type_spec_t (@1, $1); }
-| COMPONENT '{' field_list '}' { $$ = new ast_component_type_spec_t (@1, $3); }
-| STRUCT '{' field_list '}' { $$ = new ast_struct_type_spec_t (@1, $3); }
-| PUSH signature { $$ = new ast_push_port_type_spec_t (@1, $2); }
-| PULL signature DereferenceMutability type_spec { $$ = new ast_pull_port_type_spec_t (@1, $2, $3, $4); }
-| '*' type_spec { $$ = new ast_pointer_type_spec_t (@1, $2); }
-| HEAP type_spec { $$ = new ast_heap_type_spec_t (@1, $2); }
-| array_dimension type_spec { $$ = new ast_array_type_spec_t (@1, $1, $2); }
-| '[' ']' type_spec { $$ = new ast_slice_type_spec_t (@1, $3); }
-| ENUM '{' identifier_list '}' { $$ = new ast_enum_type_spec_t (@1, $3); }
+ArrayDimension: '[' Expression ']' { $$ = $2; }
 
-array_dimension: '[' Expression ']' { $$ = $2; }
-
-field_list: /* empty */ { $$ = new ast_field_list_type_spec_t (yyloc); }
-| field_list identifier_list type_spec ';' { $$ = $1->append (new ast_identifier_list_type_spec_t (@1, $2, MUTABLE, MUTABLE, $3)); }
+FieldList: /* empty */ { $$ = new ast_field_list_type_spec_t (yyloc); }
+| FieldList IdentifierList TypeSpec ';' { $$ = $1->append (new ast_identifier_list_type_spec_t (@1, $2, MUTABLE, MUTABLE, $3)); }
 
 Expression: OrExpression { $$ = $1; }
 
@@ -305,18 +303,18 @@ UnaryExpression: PrimaryExpression { $$ = $1; }
 PrimaryExpression:
 Operand
 { $$ = $1; }
-| CAST '<' type_spec '>' '(' Expression ')'
+| CAST '<' TypeSpec '>' '(' Expression ')'
 { $$ = new ast_cast_expr_t (@1, $3, $6); }
-| PrimaryExpression '.' identifier
+| PrimaryExpression '.' IDENTIFIER
 { $$ = new ast_select_expr_t (@1, $1, $3); }
 | PrimaryExpression '[' Expression ']'
 { $$ = new ast_index_expr_t (@1, $1, $3); }
 | PrimaryExpression '[' Expression ':' Expression ']'
 { $$ = new ast_slice_expr_t (@1, $1, $3, $5); }
 /* | PrimaryExpression TypeAssertion { unimplemented; } */
-| PrimaryExpression '(' optional_expr_list ')'
+| PrimaryExpression '(' OptionalExpressionList ')'
 { $$ = new ast_call_expr_t (@1, $1, $3); }
-| NEW type_spec
+| NEW TypeSpec
 { $$ = new ast_new_expr_t (@1, $2); }
 | MOVE '(' Expression ')'
 { $$ = new ast_move_expr_t (@1, $3); }
@@ -326,7 +324,7 @@ Operand
 { $$ = new ast_copy_expr_t (@1, $3); }
 
 Operand: LITERAL { $$ = $1; }
-| identifier { $$ = new ast_identifier_expr_t (@1, $1); }
+| IDENTIFIER { $$ = new ast_identifier_expr_t (@1, $1); }
 | '(' Expression ')' { $$ = $2; }
 
 %%
