@@ -6,6 +6,7 @@
 #include "type.hpp"
 #include <ostream>
 #include "value.hpp"
+#include <vector>
 
 /*
   A typed value represents an actual value described by the type system.
@@ -17,6 +18,7 @@ struct typed_value_t
   {
     REFERENCE,
     VALUE,
+    TYPE,
   };
 
   // A reference refers to a location in a constant area, on the stack, or in the heap.
@@ -316,6 +318,8 @@ struct typed_value_t
 
   explicit typed_value_t (Callable* c);
 
+  explicit typed_value_t (Template* t);
+
   explicit typed_value_t (reaction_t* r);
 
   typed_value_t (const slice_type_t* t,
@@ -326,6 +330,15 @@ struct typed_value_t
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
     , value (t, v)
+    , has_offset (false)
+  { }
+
+  explicit typed_value_t (const type_t* t)
+    : type (t)
+    , kind (TYPE)
+    , region (CONSTANT)
+    , intrinsic_mutability (FOREIGN)
+    , dereference_mutability (FOREIGN)
     , has_offset (false)
   { }
 
@@ -417,6 +430,6 @@ operator<< (std::ostream& out, const typed_value_t& tv)
   return tv.print (out);
 }
 
-
+typedef std::vector<typed_value_t> TypedValueListType;
 
 #endif /* typed_value_h */

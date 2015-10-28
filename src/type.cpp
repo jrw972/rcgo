@@ -368,6 +368,7 @@ ACCEPT(void_type_t)
 ACCEPT(nil_type_t)
 ACCEPT(array_type_t)
 ACCEPT(slice_type_t)
+ACCEPT(template_type_t)
 
 static bool
 structurally_equal (const type_t* x, const type_t* y)

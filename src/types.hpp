@@ -17,6 +17,7 @@ class ast_initializer_t;
 class ast_method_t;
 class bind_t;
 class Callable;
+class Template;
 class component_t;
 class executor_base_t;
 class field_t;
@@ -40,101 +41,101 @@ typedef struct type_t type_t;
 // Ordered by strictness for <.
 enum Mutability
 {
-    MUTABLE,
-    IMMUTABLE,
-    FOREIGN,
+  MUTABLE,
+  IMMUTABLE,
+  FOREIGN,
 };
 
 enum ActivationMode
 {
-    ACTIVATION_READ,  /* Activation reads. */
-    ACTIVATION_WRITE, /* Activation writes (and reads). */
+  ACTIVATION_READ,  /* Activation reads. */
+  ACTIVATION_WRITE, /* Activation writes (and reads). */
 };
 
 typedef std::map<instance_t*, ActivationMode> instance_set_t;
 
 struct pull_port_t
 {
-    component_t* instance;
-    Getter* getter;
+  component_t* instance;
+  Getter* getter;
 };
 
 enum BinaryArithmetic
 {
-    MULTIPLY,
-    DIVIDE,
-    MODULUS,
-    LEFT_SHIFT,
-    RIGHT_SHIFT,
-    BIT_AND,
-    BIT_AND_NOT,
+  MULTIPLY,
+  DIVIDE,
+  MODULUS,
+  LEFT_SHIFT,
+  RIGHT_SHIFT,
+  BIT_AND,
+  BIT_AND_NOT,
 
-    ADD,
-    SUBTRACT,
-    BIT_OR,
-    BIT_XOR,
+  ADD,
+  SUBTRACT,
+  BIT_OR,
+  BIT_XOR,
 
-    EQUAL,
-    NOT_EQUAL,
-    LESS_THAN,
-    LESS_EQUAL,
-    MORE_THAN,
-    MORE_EQUAL,
+  EQUAL,
+  NOT_EQUAL,
+  LESS_THAN,
+  LESS_EQUAL,
+  MORE_THAN,
+  MORE_EQUAL,
 
-    LOGIC_OR,
+  LOGIC_OR,
 
-    LOGIC_AND,
+  LOGIC_AND,
 };
 
 inline const char* binary_arithmetic_symbol (BinaryArithmetic ba)
 {
-    switch (ba)
-        {
-        case MULTIPLY:
-            return "*";
-        case DIVIDE:
-            return "/";
-        case MODULUS:
-            return "%";
-        case LEFT_SHIFT:
-            return "<<";
-        case RIGHT_SHIFT:
-            return ">>";
-        case BIT_AND:
-            return "&";
-        case BIT_AND_NOT:
-            return "&^";
+  switch (ba)
+    {
+    case MULTIPLY:
+      return "*";
+    case DIVIDE:
+      return "/";
+    case MODULUS:
+      return "%";
+    case LEFT_SHIFT:
+      return "<<";
+    case RIGHT_SHIFT:
+      return ">>";
+    case BIT_AND:
+      return "&";
+    case BIT_AND_NOT:
+      return "&^";
 
-        case ADD:
-            return "+";
-        case SUBTRACT:
-            return "-";
-        case BIT_OR:
-            return "|";
-        case BIT_XOR:
-            return "^";
+    case ADD:
+      return "+";
+    case SUBTRACT:
+      return "-";
+    case BIT_OR:
+      return "|";
+    case BIT_XOR:
+      return "^";
 
-        case EQUAL:
-            return "==";
-        case NOT_EQUAL:
-            return "!=";
-        case LESS_THAN:
-            return "<";
-        case LESS_EQUAL:
-            return "<=";
-        case MORE_THAN:
-            return ">";
-        case MORE_EQUAL:
-            return ">=";
+    case EQUAL:
+      return "==";
+    case NOT_EQUAL:
+      return "!=";
+    case LESS_THAN:
+      return "<";
+    case LESS_EQUAL:
+      return "<=";
+    case MORE_THAN:
+      return ">";
+    case MORE_EQUAL:
+      return ">=";
 
-        case LOGIC_OR:
-            return "||";
+    case LOGIC_OR:
+      return "||";
 
-        case LOGIC_AND:
-            return "&&";
-        }
+    case LOGIC_AND:
+      return "&&";
+    }
 
-    not_reached;
+  not_reached;
 }
 
 #endif /* types_hpp */

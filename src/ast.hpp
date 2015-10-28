@@ -462,7 +462,7 @@ struct ast_heap_type_spec_t : public ast_unary_t
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const
   {
-    unimplemented;
+    out << "heap_type_spec";
   }
 };
 
@@ -1023,20 +1023,6 @@ struct ast_merge_expr_t : public ast_unary_expr_t
 struct ast_move_expr_t : public ast_unary_expr_t
 {
   ast_move_expr_t (unsigned int line, ast_t* child)
-    : ast_unary_expr_t (line, child)
-  { }
-
-  void accept (ast_visitor_t& visitor);
-  void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const
-  {
-    unimplemented;
-  }
-};
-
-struct ast_new_expr_t : public ast_unary_expr_t
-{
-  ast_new_expr_t (unsigned int line, ast_t* child)
     : ast_unary_expr_t (line, child)
   { }
 
@@ -2631,10 +2617,6 @@ struct ast_visitor_t
   {
     default_action (ast);
   }
-  virtual void visit (ast_new_expr_t& ast)
-  {
-    default_action (ast);
-  }
   virtual void visit (ast_copy_expr_t& ast)
   {
     default_action (ast);
@@ -2920,10 +2902,6 @@ struct ast_const_visitor_t
     default_action (ast);
   }
   virtual void visit (const ast_move_expr_t& ast)
-  {
-    default_action (ast);
-  }
-  virtual void visit (const ast_new_expr_t& ast)
   {
     default_action (ast);
   }

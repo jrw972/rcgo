@@ -1081,33 +1081,6 @@ evaluate_expr (executor_base_t& exec,
         }
     }
 
-    void visit (const ast_new_expr_t& node)
-    {
-      // Allocate a new instance of the type.
-      typed_value_t tv = node.typed_value;
-      const type_t* type = type_dereference (tv.type);
-      const heap_type_t* heap_type = type_cast<heap_type_t> (type);
-      if (heap_type == NULL)
-        {
-          void* ptr = heap_allocate (exec.heap (), type->size ());
-          // Return the instance.
-          stack_frame_push_pointer (exec.stack (), ptr);
-        }
-      else
-        {
-          const type_t* t = heap_type->base_type ();
-          // Allocate a new heap and root object.
-          heap_t* h = heap_make_size (t->size ());
-          // Insert it into its parent.
-          heap_t* h2 = exec.heap ();
-          heap_insert_child (h2, h);
-          // Allocate a new heap link in the parent.
-          heap_link_t* hl = make_heap_link (h, h2);
-          // Return the heap link.
-          stack_frame_push_pointer (exec.stack (), hl);
-        }
-    }
-
     void visit (const ast_copy_expr_t& node)
     {
       evaluate_expr (exec, node.child ());
@@ -1941,6 +1914,44 @@ bool exec_no_check (executor_base_t& exec, component_t* instance, const action_t
   return true;
 }
 
+NewImpl::NewImpl (const type_t* t, ast_t* definingNode)
+  : type_ (t)
+  , function_type_ (makeFunctionType (t, definingNode))
+{ }
+
+void
+NewImpl::call (executor_base_t& exec, const ast_call_expr_t& node) const
+{
+  // Allocate a new instance of the type.
+  const heap_type_t* heap_type = type_cast<heap_type_t> (type_);
+  if (heap_type == NULL)
+    {
+      void* ptr = heap_allocate (exec.heap (), type_->size ());
+      // Return the instance.
+      stack_frame_push_pointer (exec.stack (), ptr);
+    }
+  else
+    {
+      const type_t* t = heap_type->base_type ();
+      // Allocate a new heap and root object.
+      heap_t* h = heap_make_size (t->size ());
+      // Insert it into its parent.
+      heap_t* h2 = exec.heap ();
+      heap_insert_child (h2, h);
+      // Allocate a new heap link in the parent.
+      heap_link_t* hl = make_heap_link (h, h2);
+      // Return the heap link.
+      stack_frame_push_pointer (exec.stack (), hl);
+    }
+}
+
+const type_t*
+NewImpl::makeFunctionType (const type_t* type, ast_t* definingNode)
+{
+  const type_t* return_type = pointer_type_t::make (type);
+  return new function_type_t ((new signature_type_t ()),
+                              new parameter_t (definingNode, "0return", typed_value_t::make_value (return_type, typed_value_t::STACK, MUTABLE, MUTABLE), false));
+}
 }
 
 // void

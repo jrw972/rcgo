@@ -64,7 +64,7 @@ check_assignment (typed_value_t left_tv,
     }
 }
 
-static void check_rvalue_list (ast_t * node);
+static void check_rvalue_list (ast_t * node, TypedValueListType& tvlist);
 
 static bool
 in_mutable_section (const ast_t* node)
@@ -128,6 +128,12 @@ type_check_expr (ast_t* ptr)
       ast_not_reached(node);
     }
 
+    void visit (ast_type_expr_t& node)
+    {
+      const type_t* type = process_type_spec (node.type_spec (), true);
+      node.typed_value = typed_value_t (type);
+    }
+
     void visit (ast_cast_expr_t& node)
     {
       const type_t* type = process_type_spec (node.type_spec (), true);
@@ -167,12 +173,13 @@ type_check_expr (ast_t* ptr)
       typed_value_t::index (node.index ()->location, typed_value_t::make_ref (array_type, typed_value_t::HEAP, IMMUTABLE, IMMUTABLE), index_tv);
 
       ast_t *args = node.args ();
-      check_rvalue_list (args);
+      TypedValueListType tvlist;
+      check_rvalue_list (args, tvlist);
       typed_value_t tv = typed_value_t::make_value (void_type_t::instance (),
                          typed_value_t::STACK,
                          IMMUTABLE,
                          IMMUTABLE);
-      check_call (node, push_port_type->signature (), tv, args);
+      check_call (node, push_port_type->signature (), tv, args, tvlist);
       node.field = type_select_field (this_type, port_identifier);
       node.array_type = array_type;
     }
@@ -199,14 +206,6 @@ type_check_expr (ast_t* ptr)
                          "cannot move expression of type %s", in.type->to_string ().c_str ());
         }
       node.typed_value = out;
-    }
-
-    void visit (ast_new_expr_t& node)
-    {
-      ast_t* type_spec = node.child ();
-      const type_t* t = process_type_spec (type_spec, false);
-      const type_t* type = pointer_type_t::make (t);
-      node.typed_value = typed_value_t::make_value (type, typed_value_t::STACK, MUTABLE, MUTABLE);
     }
 
     void visit (ast_copy_expr_t& node)
@@ -240,6 +239,11 @@ type_check_expr (ast_t* ptr)
         }
 
         void visit (const BuiltinFunction& symbol)
+        {
+          node.typed_value = symbol.value ();
+        }
+
+        void visit (const Template& symbol)
         {
           node.typed_value = symbol.value ();
         }
@@ -389,9 +393,13 @@ type_check_expr (ast_t* ptr)
       node.typed_value = result;
     }
 
-    void check_call (ast_expr_t& node, const signature_type_t* signature, typed_value_t return_value, ast_t* args)
+    void check_call (ast_expr_t& node,
+                     const signature_type_t* signature,
+                     typed_value_t return_value,
+                     ast_t* argsnode,
+                     const TypedValueListType& args)
     {
-      size_t argument_count = args->size ();
+      size_t argument_count = args.size ();
       size_t parameter_count = signature->arity ();
       if (argument_count != parameter_count)
         {
@@ -406,10 +414,9 @@ type_check_expr (ast_t* ptr)
            pos != limit;
            ++pos, ++idx)
         {
-          ast_t *arg = args->at (idx);
-          typed_value_t argument_tv  = arg->typed_value;
+          typed_value_t argument_tv  = args[idx];
           typed_value_t parameter_tv = typed_value_t::make_ref ((*pos)->value);
-          check_assignment (parameter_tv, argument_tv, *arg,
+          check_assignment (parameter_tv, argument_tv, *argsnode->at (idx),
                             "E5: incompatible types (%s) = (%s)",
                             "E19: argument leaks mutable pointers");
         }
@@ -421,36 +428,51 @@ type_check_expr (ast_t* ptr)
     void visit (ast_call_expr_t& node)
     {
       // Analyze the args.
-      check_rvalue_list (node.args ());
+      TypedValueListType tvlist;
+      check_rvalue_list (node.args (), tvlist);
 
       // Analyze the callee.
       // Expecting a value.
       typed_value_t expr_tv = checkAndImplicitlyDereference (node.expr_ref ());
 
+      const template_type_t* tt = type_strip_cast <template_type_t> (expr_tv.type);
+      if (tt != NULL)
+        {
+          Template* t = expr_tv.value.template_value ();
+          expr_tv = t->instantiate (tvlist);
+          node.expr ()->typed_value = expr_tv;
+        }
+
       struct visitor : public const_type_visitor_t
       {
         check_visitor& rvalue_visitor;
         ast_call_expr_t& node;
+        const TypedValueListType& tvlist;
 
         visitor (check_visitor& rv,
-                 ast_call_expr_t& n) : rvalue_visitor (rv), node (n) { }
+                 ast_call_expr_t& n,
+                 const TypedValueListType& tvl)
+          : rvalue_visitor (rv)
+          , node (n)
+          , tvlist (tvl)
+        { }
 
         void default_action (const type_t& type)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "cannot call %s", type.to_string ().c_str ());
+                         "E33: cannot call %s", type.to_string ().c_str ());
         }
 
         void visit (const function_type_t& type)
         {
           // No restrictions on caller.
-          rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args ());
+          rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args (), tvlist);
         }
 
         void visit (const method_type_t& type)
         {
           // No restrictions on caller.
-          rvalue_visitor.check_call (node, type.signature, type.return_parameter ()->value, node.args ());
+          rvalue_visitor.check_call (node, type.signature, type.return_parameter ()->value, node.args (), tvlist);
 
           if (type_dereference (type.receiver_type) != NULL)
             {
@@ -480,7 +502,7 @@ type_check_expr (ast_t* ptr)
                              "E25: initializers may only be called from initializers");
             }
 
-          rvalue_visitor.check_call (node, type.signature, type.return_parameter ()->value, node.args ());
+          rvalue_visitor.check_call (node, type.signature, type.return_parameter ()->value, node.args (), tvlist);
 
           assert (type_dereference (type.receiver_type) != NULL);
 
@@ -527,7 +549,7 @@ type_check_expr (ast_t* ptr)
                              "E26: pull ports may only be called from a getter, an action, or a reaction");
             }
 
-          rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args ());
+          rvalue_visitor.check_call (node, type.signature (), type.return_parameter ()->value, node.args (), tvlist);
           if (in_mutable_section (&node))
             {
               error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -536,9 +558,8 @@ type_check_expr (ast_t* ptr)
         }
       };
 
-      visitor v (*this, node);
+      visitor v (*this, node, tvlist);
       expr_tv.type->accept (v);
-      assert (expr_tv.type != NULL);
     }
 
     void visit (ast_push_port_call_expr_t& node)
@@ -553,12 +574,13 @@ type_check_expr (ast_t* ptr)
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "E30: no port named %s", port_identifier.c_str ());
         }
-      check_rvalue_list (args);
+      TypedValueListType tvlist;
+      check_rvalue_list (args, tvlist);
       typed_value_t tv = typed_value_t::make_value (void_type_t::instance (),
                          typed_value_t::STACK,
                          IMMUTABLE,
                          IMMUTABLE);
-      check_call (node, push_port_type->signature (), tv, args);
+      check_call (node, push_port_type->signature (), tv, args, tvlist);
       node.field = type_select_field (this_type, port_identifier);
     }
 
@@ -628,10 +650,13 @@ type_check_expr (ast_t* ptr)
 
 // TODO:  Fold into check_rvalue.
 static void
-check_rvalue_list (ast_t * node)
+check_rvalue_list (ast_t * node, TypedValueListType& tvlist)
 {
   struct check_rvalue_list_visitor_t : public ast_visitor_t
   {
+    TypedValueListType& tvlist;
+    check_rvalue_list_visitor_t (TypedValueListType& tvl) : tvlist (tvl) { }
+
     void default_action (ast_t& node)
     {
       not_reached;
@@ -643,12 +668,12 @@ check_rvalue_list (ast_t * node)
            child != limit;
            ++child)
         {
-          checkAndImplicitlyDereference (*child);
+          tvlist.push_back (checkAndImplicitlyDereference (*child));
         }
     }
   };
 
-  check_rvalue_list_visitor_t check_rvalue_list_visitor;
+  check_rvalue_list_visitor_t check_rvalue_list_visitor (tvlist);
   node->accept (check_rvalue_list_visitor);
 }
 
@@ -966,7 +991,8 @@ type_check_statement (ast_t * node)
       action->add_activation (activation);
 
       /* Check the activations. */
-      check_rvalue_list (expression_list_node);
+      TypedValueListType tvlist;
+      check_rvalue_list (expression_list_node, tvlist);
 
       /* Re-insert this as a pointer to mutable. */
       node.this_symbol = node.Activate ();
@@ -1036,7 +1062,8 @@ type_check_statement (ast_t * node)
 
     void visit (ast_println_statement_t& node)
     {
-      check_rvalue_list (node.child ());
+      TypedValueListType tvlist;
+      check_rvalue_list (node.child (), tvlist);
     }
   };
 

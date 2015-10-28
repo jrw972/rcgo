@@ -67,7 +67,6 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 "instance"             { return INSTANCE; }
 "merge"                { return MERGE; }
 "move"                 { return MOVE; }
-"new"                  { return NEW; }
 "println"              { return PRINTLN; }
 "pull"                 { return PULL; }
 "push"                 { return PUSH; }

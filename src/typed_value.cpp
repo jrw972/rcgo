@@ -6,6 +6,7 @@
 #include "field.hpp"
 #include <error.h>
 #include "Callable.hpp"
+#include "Template.hpp"
 
 typed_value_t::typed_value_t (Callable* c)
   : type (c->type ())
@@ -14,6 +15,16 @@ typed_value_t::typed_value_t (Callable* c)
   , intrinsic_mutability (IMMUTABLE)
   , dereference_mutability (IMMUTABLE)
   , value (c)
+  , has_offset (false)
+{ }
+
+typed_value_t::typed_value_t (Template* t)
+  : type (t->type ())
+  , kind (VALUE)
+  , region (CONSTANT)
+  , intrinsic_mutability (IMMUTABLE)
+  , dereference_mutability (IMMUTABLE)
+  , value (t)
   , has_offset (false)
 { }
 
