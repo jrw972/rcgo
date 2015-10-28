@@ -647,6 +647,34 @@ public:
   { }
 };
 
+struct ast_type_expr_t : public ast_expr_t
+{
+  enum
+  {
+    TYPE_SPEC,
+    COUNT
+  };
+
+  ast_type_expr_t (unsigned int line, ast_t* type_spec)
+    : ast_expr_t (line, COUNT)
+  {
+    set (TYPE_SPEC, type_spec);
+  }
+
+  ast_t* type_spec () const
+  {
+    return at (TYPE_SPEC);
+  }
+
+  virtual void accept (ast_visitor_t& visitor);
+  virtual void accept (ast_const_visitor_t& visitor) const;
+  virtual void print (std::ostream& out) const
+  {
+    out << "type";
+  }
+};
+
+// TODO:  This class can be removed.
 struct ast_cast_expr_t : public ast_expr_t
 {
   enum
@@ -2543,6 +2571,10 @@ struct ast_visitor_t
   {
     default_action (ast);
   }
+  virtual void visit (ast_type_expr_t& ast)
+  {
+    default_action (ast);
+  }
   virtual void visit (ast_binary_arithmetic_expr_t& ast)
   {
     default_action (ast);
@@ -2828,6 +2860,10 @@ struct ast_const_visitor_t
   }
 
   virtual void visit (const ast_cast_expr_t& ast)
+  {
+    default_action (ast);
+  }
+  virtual void visit (const ast_type_expr_t& ast)
   {
     default_action (ast);
   }

@@ -84,6 +84,7 @@ ACCEPT (ast_signature_type_spec_t)
 ACCEPT (ast_struct_type_spec_t)
 
 ACCEPT (ast_cast_expr_t)
+ACCEPT (ast_type_expr_t)
 ACCEPT (ast_binary_arithmetic_expr_t)
 ACCEPT (ast_address_of_expr_t)
 ACCEPT (ast_call_expr_t)

@@ -51,7 +51,6 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 "action"               { return ACTION; }
 "activate"             { return ACTIVATE; }
 "bind"                 { return BIND; }
-"cast"                 { return CAST; }
 "change"               { return CHANGE; }
 "component"            { return COMPONENT; }
 "const"                { return CONST; }

@@ -57,6 +57,7 @@
 %type <node> StatementList
 %type <node> Type
 %type <node> TypeSpec
+%type <node> TypeSpecExpression
 %type <node> UnaryExpression
 %type <node> VarStatement
 %type <node> WhileStatement
@@ -66,7 +67,7 @@
 %type <mutability> Mutability
 %type <mutability> DereferenceMutability
 
-%token ACTION ACTIVATE BIND CAST CHANGE COMPONENT CONST COPY ELSE ENUM FOR FOREIGN_KW FUNC GETTER HEAP IF INIT INSTANCE MERGE MOVE NEW PRINTLN PULL PUSH REACTION RETURN_KW STRUCT TYPE VAR WHILE
+%token ACTION ACTIVATE BIND CHANGE COMPONENT CONST COPY ELSE ENUM FOR FOREIGN_KW FUNC GETTER HEAP IF INIT INSTANCE MERGE MOVE NEW PRINTLN PULL PUSH REACTION RETURN_KW STRUCT TYPE VAR WHILE
 
 %token ADD_ASSIGN AND_NOT_TOKEN RIGHT_ARROW LEFT_ARROW DECREMENT DOTDOT EQUAL_TOKEN INCREMENT LESS_EQUAL_TOKEN LEFT_SHIFT_TOKEN LOGIC_AND_TOKEN LOGIC_OR_TOKEN MORE_EQUAL_TOKEN NOT_EQUAL_TOKEN RIGHT_SHIFT_TOKEN
 
@@ -245,16 +246,19 @@ WhileStatement: WHILE Expression Block { $$ = new ast_while_statement_t (@1, $2,
 IdentifierList: IDENTIFIER { $$ = (new ast_identifier_list_t (@1))->append ($1); }
 | IdentifierList ',' IDENTIFIER { $$ = $1->append ($3); }
 
-TypeSpec: IDENTIFIER { $$ = new ast_identifier_type_spec_t (@1, $1); }
-| COMPONENT '{' FieldList '}' { $$ = new ast_component_type_spec_t (@1, $3); }
+TypeSpecExpression:
+COMPONENT '{' FieldList '}' { $$ = new ast_component_type_spec_t (@1, $3); }
 | STRUCT '{' FieldList '}' { $$ = new ast_struct_type_spec_t (@1, $3); }
 | PUSH Signature { $$ = new ast_push_port_type_spec_t (@1, $2); }
 | PULL Signature DereferenceMutability TypeSpec { $$ = new ast_pull_port_type_spec_t (@1, $2, $3, $4); }
-| '*' TypeSpec { $$ = new ast_pointer_type_spec_t (@1, $2); }
 | HEAP TypeSpec { $$ = new ast_heap_type_spec_t (@1, $2); }
 | ArrayDimension TypeSpec { $$ = new ast_array_type_spec_t (@1, $1, $2); }
 | '[' ']' TypeSpec { $$ = new ast_slice_type_spec_t (@1, $3); }
 | ENUM '{' IdentifierList '}' { $$ = new ast_enum_type_spec_t (@1, $3); }
+
+TypeSpec: IDENTIFIER { $$ = new ast_identifier_type_spec_t (@1, $1); }
+| '*' TypeSpec { $$ = new ast_pointer_type_spec_t (@1, $2); }
+| TypeSpecExpression { $$ = $1; }
 
 ArrayDimension: '[' Expression ']' { $$ = $2; }
 
@@ -303,8 +307,8 @@ UnaryExpression: PrimaryExpression { $$ = $1; }
 PrimaryExpression:
 Operand
 { $$ = $1; }
-| CAST '<' TypeSpec '>' '(' Expression ')'
-{ $$ = new ast_cast_expr_t (@1, $3, $6); }
+| TypeSpecExpression
+{ $$ = new ast_type_expr_t (@1, $1); }
 | PrimaryExpression '.' IDENTIFIER
 { $$ = new ast_select_expr_t (@1, $1, $3); }
 | PrimaryExpression '[' Expression ']'
