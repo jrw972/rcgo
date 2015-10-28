@@ -1003,45 +1003,6 @@ namespace runtime
           }
       }
 
-      void visit (const ast_merge_expr_t& node)
-      {
-        ast_t* child = node.child ();
-        evaluate_expr (exec, child);
-        heap_link_t* hl = (heap_link_t*)stack_frame_pop_pointer (exec.stack ());
-        if (hl != NULL)
-          {
-            pthread_mutex_lock (&hl->mutex);
-            if (hl->heap != NULL && hl->change_count == 0)
-              {
-                // Break the link.
-                heap_t* h = hl->heap;
-                hl->heap = NULL;
-                pthread_mutex_unlock (&hl->mutex);
-
-                // Get the heap root.
-                void* root = heap_instance (h);
-
-                // Remove from parent.
-                heap_remove_from_parent (h);
-
-                // Merge into the new parent.
-                heap_merge (exec.heap (), h);
-
-                // Return the root.
-                stack_frame_push_pointer (exec.stack (), root);
-              }
-            else
-              {
-                pthread_mutex_unlock (&hl->mutex);
-                stack_frame_push_pointer (exec.stack (), NULL);
-              }
-          }
-        else
-          {
-            stack_frame_push_pointer (exec.stack (), NULL);
-          }
-      }
-
       void visit (const ast_copy_expr_t& node)
       {
         evaluate_expr (exec, node.child ());
@@ -2033,6 +1994,91 @@ namespace runtime
       }
 
     return typed_value_t (new runtime::MoveImpl (in, out, definingNode));
+  }
+
+  struct MergeImpl : public Callable
+  {
+    MergeImpl (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
+      : function_type_ (makeFunctionType (in, out, definingNode))
+    { }
+
+    virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const
+    {
+      evaluate_expr (exec, node.args ());
+      heap_link_t* hl = (heap_link_t*)stack_frame_pop_pointer (exec.stack ());
+      if (hl != NULL)
+        {
+          pthread_mutex_lock (&hl->mutex);
+          if (hl->heap != NULL && hl->change_count == 0)
+            {
+              // Break the link.
+              heap_t* h = hl->heap;
+              hl->heap = NULL;
+              pthread_mutex_unlock (&hl->mutex);
+
+              // Get the heap root.
+              void* root = heap_instance (h);
+
+              // Remove from parent.
+              heap_remove_from_parent (h);
+
+              // Merge into the new parent.
+              heap_merge (exec.heap (), h);
+
+              // Return the root.
+              stack_frame_push_pointer (exec.stack (), root);
+            }
+          else
+            {
+              pthread_mutex_unlock (&hl->mutex);
+              stack_frame_push_pointer (exec.stack (), NULL);
+            }
+        }
+      else
+        {
+          stack_frame_push_pointer (exec.stack (), NULL);
+        }
+    }
+
+    virtual const type_t* type () const
+    {
+      return function_type_;
+    }
+    const type_t* const function_type_;
+    static const type_t* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
+    {
+      typed_value_t in2 = in;
+      in2.intrinsic_mutability = MUTABLE;
+      return new function_type_t ((new signature_type_t ())
+                                  ->append (new parameter_t (definingNode, "h", in2, false)),
+                                  new parameter_t (definingNode, "0return", out, false));
+    }
+  };
+
+  Merge::Merge (ast_t* dn)
+    : Template ("merge",
+                dn,
+                new template_type_t ())
+  { }
+
+  typed_value_t
+  Merge::instantiate (TypedValueListType& tvlist)
+  {
+    if (tvlist.size () != 1)
+      {
+        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+                       "E71: merge expects one argument");
+      }
+
+    typed_value_t in = tvlist[0];
+    typed_value_t out = typed_value_t::merge (in);
+    if (out.type == NULL)
+      {
+        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+                       "E72: cannot merge expression of type %s", in.type->to_string ().c_str ());
+      }
+
+    return typed_value_t (new runtime::MergeImpl (in, out, definingNode));
   }
 
 }

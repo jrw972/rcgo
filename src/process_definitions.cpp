@@ -184,18 +184,6 @@ type_check_expr (ast_t* ptr)
       node.array_type = array_type;
     }
 
-    void visit (ast_merge_expr_t& node)
-    {
-      typed_value_t in = checkAndImplicitlyDereference (node.child_ref ());
-      typed_value_t out = typed_value_t::merge (in);
-      if (out.type == NULL)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "cannot merge expression of type %s", in.type->to_string ().c_str ());
-        }
-      node.typed_value = out;
-    }
-
     void visit (ast_copy_expr_t& node)
     {
       node.typed_value = typed_value_t::copy (node.location, checkAndImplicitlyDereference (node.child_ref ()));

@@ -59,6 +59,12 @@ namespace runtime
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
+  struct Merge : public Template
+  {
+    Merge (ast_t* dn);
+    virtual typed_value_t instantiate (TypedValueListType& tvlist);
+  };
+
 }
 
 #endif /* runtime_hpp */

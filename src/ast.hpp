@@ -1006,20 +1006,6 @@ struct ast_logic_not_expr_t : public ast_unary_expr_t
   }
 };
 
-struct ast_merge_expr_t : public ast_unary_expr_t
-{
-  ast_merge_expr_t (unsigned int line, ast_t* child)
-    : ast_unary_expr_t (line, child)
-  { }
-
-  void accept (ast_visitor_t& visitor);
-  void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const
-  {
-    unimplemented;
-  }
-};
-
 struct ast_copy_expr_t : public ast_unary_expr_t
 {
   ast_copy_expr_t (unsigned int line, ast_t* child)
@@ -2595,10 +2581,6 @@ struct ast_visitor_t
   {
     default_action (ast);
   }
-  virtual void visit (ast_merge_expr_t& ast)
-  {
-    default_action (ast);
-  }
   virtual void visit (ast_copy_expr_t& ast)
   {
     default_action (ast);
@@ -2876,10 +2858,6 @@ struct ast_const_visitor_t
     default_action (ast);
   }
   virtual void visit (const ast_logic_not_expr_t& ast)
-  {
-    default_action (ast);
-  }
-  virtual void visit (const ast_merge_expr_t& ast)
   {
     default_action (ast);
   }
