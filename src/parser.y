@@ -45,7 +45,6 @@
 %type <node> Parameter
 %type <node> ParameterList
 %type <node> PrimaryExpression
-%type <node> PrintlnStatement
 %type <node> PushPortCall
 %type <node> PushPortCallList
 %type <node> Reaction
@@ -67,7 +66,7 @@
 %type <mutability> Mutability
 %type <mutability> DereferenceMutability
 
-%token ACTION ACTIVATE BIND CHANGE COMPONENT CONST ELSE ENUM FOR FOREIGN_KW FUNC GETTER HEAP IF INIT INSTANCE PRINTLN PULL PUSH REACTION RETURN_KW STRUCT TYPE VAR WHILE
+%token ACTION ACTIVATE BIND CHANGE COMPONENT CONST ELSE ENUM FOR FOREIGN_KW FUNC GETTER HEAP IF INIT INSTANCE PULL PUSH REACTION RETURN_KW STRUCT TYPE VAR WHILE
 
 %token ADD_ASSIGN AND_NOT_TOKEN RIGHT_ARROW LEFT_ARROW DECREMENT DOTDOT EQUAL_TOKEN INCREMENT LESS_EQUAL_TOKEN LEFT_SHIFT_TOKEN LOGIC_AND_TOKEN LOGIC_OR_TOKEN MORE_EQUAL_TOKEN NOT_EQUAL_TOKEN RIGHT_SHIFT_TOKEN
 
@@ -177,7 +176,6 @@ Statement: SimpleStatement { $$ = $1; }
 | VarStatement { $$ = $1; }
 | ActivateStatement { $$ = $1; }
 | Block { $$ = $1; }
-| PrintlnStatement { $$ = $1; }
 | ReturnStatement { $$ = $1; }
 | IfStatement { $$ = $1; }
 | WhileStatement { $$ = $1; }
@@ -198,8 +196,6 @@ ActivateStatement: ACTIVATE OptionalPushPortCallList Block { $$ = new ast_activa
 ChangeStatement: CHANGE '(' Expression ',' IDENTIFIER Mutability DereferenceMutability TypeSpec ')' Block { $$ = new ast_change_statement_t (@1, $3, $5, $6, $7, $8, $10); }
 
 ForIotaStatement: FOR IDENTIFIER DOTDOT Expression Block { $$ = new ast_for_iota_statement_t (@1, $2, $4, $5); }
-
-PrintlnStatement: PRINTLN ExpressionList ';' { $$ = new ast_println_statement_t (@1, $2); }
 
 ReturnStatement: RETURN_KW Expression ';' { $$ = new ast_return_statement_t (@1, $2); }
 

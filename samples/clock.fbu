@@ -8,7 +8,7 @@ type Clock component {
 action (this +const * Clock) (true) {
   activate {
     this.counter++;
-    println `Counter is now `, this.counter;
+    println (`Counter is now `, this.counter);
   };
 }
 
@@ -36,7 +36,7 @@ action (this +const * Sampler) (!this.flag) {
 }
 
 reaction (this +const * Sampler) response (t uint) {
-  println `Received `, t;
+  println (`Received `, t);
   activate {
     this.flag = false;
   };

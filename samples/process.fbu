@@ -79,7 +79,7 @@ type Process component
 
 init (this *Process) Init (i uint)
 {
-  println `I am process `, i;
+  println (`I am process `, i);
   this.i = i;
 }
 
@@ -88,21 +88,21 @@ reaction (this +const * Process) Initr (v uint)
   activate
   {
     this.val[this.i] = v;
-    println `Process `, this.i, ` initialized with value `, v;
+    println (`Process `, this.i, ` initialized with value `, v);
   };
 }
 
 [3u] action (this +const * Process) (this.val[this.i] != 0u && this.i != IOTA)
 {
   // send
-  println `Process `, this.i, ` sending `, this.val[this.i], ` to process `, IOTA;
+  println (`Process `, this.i, ` sending `, this.val[this.i], ` to process `, IOTA);
   activate send[IOTA] (this.val[this.i])
   { };
 }
 
 [3u] reaction (this +const * Process) receive (v uint)
 {
-  println `Process `, this.i, ` received `, v, ` from process `, IOTA;
+  println (`Process `, this.i, ` received `, v, ` from process `, IOTA);
   activate
   {
     this.val[IOTA] = v;
@@ -139,7 +139,7 @@ action (this +const * Process) (p (this.val))
   // decide
   var v uint;
   v = f (this.val);
-  println `Process `, this.i, ` decided the value is `, v;
+  println (`Process `, this.i, ` decided the value is `, v);
   activate decide (v)
   { };
 }
@@ -170,7 +170,7 @@ init (this *System) Init ()
 
 [3u] reaction (this +const * System) decide (v uint)
 {
-  println `Process `, IOTA, ` decided the value is `, v;
+  println (`Process `, IOTA, ` decided the value is `, v);
 }
 
 bind (this *System) {

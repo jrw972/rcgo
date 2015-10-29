@@ -55,7 +55,7 @@ action (this +const * Process) (this.status == PROCESS_ACCESS) {
     x = this.get_x ();
     if x == -1i {
         activate set_x (this.input) {
-            println `x set to `, this.input;
+            println (`x set to `, this.input);
             this.output = this.input;
             this.status = PROCESS_DECIDE;
         }
@@ -110,7 +110,7 @@ action (this +const * User) (this.error) {
 }
 
 reaction (this +const * User) Decide (v int) {
-    println this, ` decided value is `, v;
+    println (this, ` decided value is `, v);
     activate {
         if !this.error {
             if this.status == USER_WAIT {

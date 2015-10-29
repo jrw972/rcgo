@@ -7,7 +7,7 @@ init (this *HelloWorld) print () {
   }
   {
     var x int;
-    println x;
+    println (x);
   }
 }
 

@@ -500,7 +500,7 @@ type NTP component {
 
 func (this *NTP) Init ()
 {
-  println `Initializing NTP`;
+  println (`Initializing NTP`);
 
   /*
    * Read command line options and initialize system variables.

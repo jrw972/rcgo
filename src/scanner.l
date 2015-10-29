@@ -64,7 +64,6 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 "if"                   { return IF; }
 "init"                 { return INIT; }
 "instance"             { return INSTANCE; }
-"println"              { return PRINTLN; }
 "pull"                 { return PULL; }
 "push"                 { return PUSH; }
 "reaction"             { return REACTION; }

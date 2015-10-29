@@ -215,11 +215,6 @@ allocate_statement_stack_variables (ast_t* node, MemoryModel& memory_model)
         {
             // Do nothing.  The variables are allocated in the StmtList containing this.
         }
-
-        void visit (ast_println_statement_t& node)
-        {
-            // Do nothing.
-        }
     };
     visitor v (memory_model);
     node->accept (v);

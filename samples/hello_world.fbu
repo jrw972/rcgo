@@ -1,7 +1,7 @@
 type HelloWorld component { };
 
 init (this *HelloWorld) print () {
-  println `Hello, world!`;
+  println (`Hello, world!`);
 }
 
 instance h HelloWorld print;

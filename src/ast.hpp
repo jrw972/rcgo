@@ -1374,20 +1374,6 @@ struct ast_while_statement_t : public ast_t
   }
 };
 
-struct ast_println_statement_t : public ast_unary_t
-{
-  ast_println_statement_t (unsigned int line, ast_t* child)
-    : ast_unary_t (line, child)
-  { }
-
-  void accept (ast_visitor_t& visitor);
-  void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const
-  {
-    out << "println_statement";
-  }
-};
-
 struct ast_return_statement_t : public ast_unary_t
 {
   ast_return_statement_t (unsigned int line, ast_t* child)
@@ -2604,10 +2590,6 @@ struct ast_visitor_t
   {
     default_action (ast);
   }
-  virtual void visit (ast_println_statement_t& ast)
-  {
-    default_action (ast);
-  }
   virtual void visit (ast_list_statement_t& ast)
   {
     default_action (ast);
@@ -2877,10 +2859,6 @@ struct ast_const_visitor_t
     default_action (ast);
   }
   virtual void visit (const ast_while_statement_t& ast)
-  {
-    default_action (ast);
-  }
-  virtual void visit (const ast_println_statement_t& ast)
   {
     default_action (ast);
   }

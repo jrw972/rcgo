@@ -37,6 +37,7 @@ enter_symbols (ast_t * node)
   node->EnterSymbol (new runtime::Move (node));
   node->EnterSymbol (new runtime::Merge (node));
   node->EnterSymbol (new runtime::Copy (node));
+  node->EnterSymbol (new runtime::Println (node));
 
   /* I/O facilities. */
   named_type_t* fd_type = new named_type_t ("FileDescriptor", FileDescriptor_type_t::instance ());

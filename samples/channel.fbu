@@ -81,14 +81,14 @@ action (this +const * System) (this.send_count != 100u)
 {
   activate send (this.send_count)
   {
-    println `Sent `, this.send_count;
+    println (`Sent `, this.send_count);
     this.send_count++;
   };
 }
 
 reaction (this +const * System) receive (message uint)
 {
-  println `Received `, message;
+  println (`Received `, message);
 }
 
 bind (this *System) {

@@ -2,16 +2,16 @@
 
 func test (num uint; desc +const []uint8; status bool) {
   if status {
-    println `ok `, num, ` - `, desc;
+    println (`ok `, num, ` - `, desc);
   } else {
-    println `not ok `, num, ` - `, desc;
+    println (`not ok `, num, ` - `, desc);
   }
 }
 
 type Test component { };
 
 init (this *Test) Init () {
-  println `1..3`;
+  println (`1..3`);
 
   {
     // Attempt to move an active heap.

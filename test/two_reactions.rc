@@ -12,9 +12,9 @@ action (this +const * Actuator) (!this.flag) {
 type Detector component { };
 
 reaction (this +const * Detector) bang () {
-  println `Bang Immutable`;
+  println (`Bang Immutable`);
   activate {
-    println `Bang Mutable`;
+    println (`Bang Mutable`);
   }
 }
 

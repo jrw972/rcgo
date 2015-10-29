@@ -1027,12 +1027,6 @@ type_check_statement (ast_t * node)
           node.symbols.push_back (enter_symbol (*node.parent (), symbol));
         }
     }
-
-    void visit (ast_println_statement_t& node)
-    {
-      TypedValueListType tvlist;
-      check_rvalue_list (node.child (), tvlist);
-    }
   };
 
   visitor v;
@@ -1337,11 +1331,6 @@ mutates_check_statement (ast_t * node)
               break;
             }
         }
-    }
-
-    void visit (ast_println_statement_t& node)
-    {
-      node.child ()->accept (*this);
     }
   };
 

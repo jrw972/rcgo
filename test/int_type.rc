@@ -2,16 +2,16 @@
 
 func test (num uint; desc +const []uint8; status bool) {
   if status {
-    println `ok `, num, ` - `, desc;
+    println (`ok `, num, ` - `, desc);
   } else {
-    println `not ok `, num, ` - `, desc;
+    println (`not ok `, num, ` - `, desc);
   }
 }
 
 type Test component { };
 
 init (this *Test) Main () {
-  println `1..51`;
+  println (`1..51`);
   {
     test (1u, `literal *`,  -10017i == 189i *  -53i);
     test (2u, `literal /`,      -3i == 189i /  -53i);

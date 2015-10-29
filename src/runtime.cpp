@@ -1561,117 +1561,6 @@ namespace runtime
             stack_frame_store_heap (exec.stack (), ptr, size);
           }
       }
-
-      void visit (const ast_println_statement_t& node)
-      {
-        exec.lock_stdout ();
-        ast_t* expr_list = node.child ();
-        for (ast_t::const_iterator pos = expr_list->begin (),
-             limit = expr_list->end ();
-             pos != limit;
-             ++pos)
-          {
-            ast_t* child = *pos;
-            evaluate_expr (exec, child);
-            struct visitor : public const_type_visitor_t
-            {
-              executor_base_t& exec;
-              visitor (executor_base_t& e) : exec (e) { }
-
-              void default_action (const type_t& type)
-              {
-                type_not_reached (type);
-              }
-
-              void visit (const bool_type_t& type)
-              {
-                bool_type_t::ValueType b;
-                stack_frame_pop (exec.stack (), b);
-                if (b)
-                  {
-                    printf ("true");
-                  }
-                else
-                  {
-                    printf ("false");
-                  }
-              }
-
-              void visit (const pointer_type_t& type)
-              {
-                void* ptr = stack_frame_pop_pointer (exec.stack ());
-                printf ("%p", ptr);
-              }
-
-              void visit (const uint_type_t& type)
-              {
-                uint_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                printf ("%lu", u);
-              }
-
-              void visit (const uint8_type_t& type)
-              {
-                uint8_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                printf ("%u", u);
-              }
-
-              void visit (const uint16_type_t& type)
-              {
-                uint16_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                printf ("%u", u);
-              }
-
-              void visit (const uint64_type_t& type)
-              {
-                uint64_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                printf ("%lu", u);
-              }
-
-              void visit (const int_type_t& type)
-              {
-                int_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                printf ("%ld", u);
-              }
-
-              void visit (const int8_type_t& type)
-              {
-                int8_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                printf ("%d", u);
-              }
-
-              void visit (const float64_type_t& type)
-              {
-                float64_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                printf ("%g", u);
-              }
-
-              void visit (const slice_type_t& type)
-              {
-                slice_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                if (type_strip_cast<uint8_type_t> (type.base_type ()))
-                  {
-                    fwrite (u.ptr, 1, u.length, stdout);
-                  }
-                else
-                  {
-                    printf ("slice");
-                  }
-              }
-            };
-            visitor v (exec);
-            type_strip (child->typed_value.type)->accept (v);
-          }
-        printf ("\n");
-        exec.unlock_stdout ();
-      }
     };
     visitor v (exec);
     node->accept (v);
@@ -1898,7 +1787,7 @@ namespace runtime
                        "E67: new expects a type");
       }
 
-    return typed_value_t (new runtime::NewImpl (tv.type, definingNode));
+    return typed_value_t (new NewImpl (tv.type, definingNode));
   }
 
   struct MoveImpl : public Callable
@@ -1984,7 +1873,7 @@ namespace runtime
                        "E70: cannot move expression of type %s", in.type->to_string ().c_str ());
       }
 
-    return typed_value_t (new runtime::MoveImpl (in, out, definingNode));
+    return typed_value_t (new MoveImpl (in, out, definingNode));
   }
 
   struct MergeImpl : public Callable
@@ -2069,7 +1958,7 @@ namespace runtime
                        "E72: cannot merge expression of type %s", in.type->to_string ().c_str ());
       }
 
-    return typed_value_t (new runtime::MergeImpl (in, out, definingNode));
+    return typed_value_t (new MergeImpl (in, out, definingNode));
   }
 
   struct CopyImpl : public Callable
@@ -2127,9 +2016,160 @@ namespace runtime
                        "E76: cannot copy expression of type %s", in.type->to_string ().c_str ());
       }
 
-    return typed_value_t (new runtime::CopyImpl (in, out, definingNode));
+    return typed_value_t (new CopyImpl (in, out, definingNode));
   }
 
+  struct PrintlnImpl : public Callable
+  {
+    PrintlnImpl (const TypedValueListType& tvlist, ast_t* definingNode)
+      : function_type_ (makeFunctionType (tvlist, definingNode))
+    { }
+
+    virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const
+    {
+        exec.lock_stdout ();
+        ast_t* expr_list = node.args ();
+        for (ast_t::const_iterator pos = expr_list->begin (),
+             limit = expr_list->end ();
+             pos != limit;
+             ++pos)
+          {
+            ast_t* child = *pos;
+            evaluate_expr (exec, child);
+            struct visitor : public const_type_visitor_t
+            {
+              executor_base_t& exec;
+              visitor (executor_base_t& e) : exec (e) { }
+
+              void default_action (const type_t& type)
+              {
+                type_not_reached (type);
+              }
+
+              void visit (const bool_type_t& type)
+              {
+                bool_type_t::ValueType b;
+                stack_frame_pop (exec.stack (), b);
+                if (b)
+                  {
+                    printf ("true");
+                  }
+                else
+                  {
+                    printf ("false");
+                  }
+              }
+
+              void visit (const pointer_type_t& type)
+              {
+                void* ptr = stack_frame_pop_pointer (exec.stack ());
+                printf ("%p", ptr);
+              }
+
+              void visit (const uint_type_t& type)
+              {
+                uint_type_t::ValueType u;
+                stack_frame_pop (exec.stack (), u);
+                printf ("%lu", u);
+              }
+
+              void visit (const uint8_type_t& type)
+              {
+                uint8_type_t::ValueType u;
+                stack_frame_pop (exec.stack (), u);
+                printf ("%u", u);
+              }
+
+              void visit (const uint16_type_t& type)
+              {
+                uint16_type_t::ValueType u;
+                stack_frame_pop (exec.stack (), u);
+                printf ("%u", u);
+              }
+
+              void visit (const uint64_type_t& type)
+              {
+                uint64_type_t::ValueType u;
+                stack_frame_pop (exec.stack (), u);
+                printf ("%lu", u);
+              }
+
+              void visit (const int_type_t& type)
+              {
+                int_type_t::ValueType u;
+                stack_frame_pop (exec.stack (), u);
+                printf ("%ld", u);
+              }
+
+              void visit (const int8_type_t& type)
+              {
+                int8_type_t::ValueType u;
+                stack_frame_pop (exec.stack (), u);
+                printf ("%d", u);
+              }
+
+              void visit (const float64_type_t& type)
+              {
+                float64_type_t::ValueType u;
+                stack_frame_pop (exec.stack (), u);
+                printf ("%g", u);
+              }
+
+              void visit (const slice_type_t& type)
+              {
+                slice_type_t::ValueType u;
+                stack_frame_pop (exec.stack (), u);
+                if (type_strip_cast<uint8_type_t> (type.base_type ()))
+                  {
+                    fwrite (u.ptr, 1, u.length, stdout);
+                  }
+                else
+                  {
+                    printf ("slice");
+                  }
+              }
+            };
+            visitor v (exec);
+            type_strip (child->typed_value.type)->accept (v);
+          }
+        printf ("\n");
+        exec.unlock_stdout ();
+    }
+
+    virtual const type_t* type () const
+    {
+      return function_type_;
+    }
+    const typed_value_t in_;
+    const type_t* const function_type_;
+    static const type_t* makeFunctionType (const TypedValueListType& tvlist, ast_t* definingNode)
+    {
+      signature_type_t* sig = new signature_type_t ();
+      for (TypedValueListType::const_iterator pos = tvlist.begin (),
+             limit = tvlist.end ();
+           pos != limit;
+           ++pos) {
+        typed_value_t in = *pos;
+        in.intrinsic_mutability = MUTABLE;
+        sig->append (new parameter_t (definingNode, "", in, false));
+      }
+
+      return new function_type_t (sig,
+                                  new parameter_t (definingNode, "0return", typed_value_t::make_value (void_type_t::instance (), typed_value_t::STACK, IMMUTABLE, IMMUTABLE), false));
+    }
+  };
+
+  Println::Println (ast_t* dn)
+    : Template ("println",
+                dn,
+                new template_type_t ())
+  { }
+
+  typed_value_t
+  Println::instantiate (TypedValueListType& tvlist)
+  {
+    return typed_value_t (new PrintlnImpl (tvlist, definingNode));
+  }
 }
 
 // void

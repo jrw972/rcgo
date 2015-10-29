@@ -9,14 +9,14 @@ func not_evaluated (flag *bool) bool {
 
 func test (num uint; desc +const []uint8; status bool) {
   if status {
-    println `ok `, num, ` - `, desc;
+    println (`ok `, num, ` - `, desc);
   } else {
-    println `not ok `, num, ` - `, desc;
+    println (`not ok `, num, ` - `, desc);
   }
 }
 
 init (this *Test) Main () {
-  println `1..38`;
+  println (`1..38`);
 
   test (1u, `literal false!: `, !false == true);
   test (2u, `literal true!: `, !true == false);
