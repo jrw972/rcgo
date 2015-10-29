@@ -8,25 +8,6 @@
 #include "parameter.hpp"
 #include "Callable.hpp"
 
-Symbol*
-enter_symbol (ast_t& node, Symbol * symbol)
-{
-  // Check if the symbol is defined locally.
-  const std::string& identifier = symbol->identifier;
-  Symbol *s = node.FindSymbolCurrent (identifier);
-  if (s == NULL)
-    {
-      node.EnterSymbol (symbol);
-    }
-  else
-    {
-      const ast_t* node = symbol->definingNode;
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                     "%s is already defined in this scope", identifier.c_str ());
-    }
-  return symbol;
-}
-
 void
 check_assignment (typed_value_t left_tv,
                   typed_value_t right_tv,
@@ -670,7 +651,7 @@ type_check_statement (ast_t * node)
 
     void visit (ast_const_t& node)
     {
-      process_declarations (&node);
+      ProcessDeclarations (&node);
     }
 
     void visit (ast_empty_statement_t& node)
@@ -987,62 +968,65 @@ type_check_statement (ast_t * node)
       // Process the type spec.
       const type_t* type = process_type_spec (type_spec, true);
 
-      if (expression_list->size () == 0) {
-        // Type, no expressions.
+      if (expression_list->size () == 0)
+        {
+          // Type, no expressions.
 
-        if (type_cast<void_type_t> (type) != NULL) {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E74: missing type");
+          if (type_cast<void_type_t> (type) != NULL)
+            {
+              error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                             "E74: missing type");
 
+            }
+
+          // Enter each symbol.
+          typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, node.mutability, node.dereferenceMutability);
+          for (ast_t::iterator id_pos = identifier_list->begin (),
+               id_limit = identifier_list->end ();
+               id_pos != id_limit;
+               ++id_pos)
+            {
+              const std::string& name = ast_get_identifier (*id_pos);
+              Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
+              node.symbols.push_back (enter_symbol (*node.parent (), symbol));
+            }
+
+          return;
         }
 
-        // Enter each symbol.
-        typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, node.mutability, node.dereferenceMutability);
-        for (ast_t::iterator id_pos = identifier_list->begin (),
-               id_limit = identifier_list->end ();
-             id_pos != id_limit;
-             ++id_pos)
-          {
-            const std::string& name = ast_get_identifier (*id_pos);
-            Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
-            node.symbols.push_back (enter_symbol (*node.parent (), symbol));
-          }
+      if (type_cast<void_type_t> (type) == NULL)
+        {
+          // Type, expressions.
 
-        return;
-      }
-
-      if (type_cast<void_type_t> (type) == NULL) {
-        // Type, expressions.
-
-        // Enter each symbol.
-        for (ast_t::iterator id_pos = identifier_list->begin (),
+          // Enter each symbol.
+          for (ast_t::iterator id_pos = identifier_list->begin (),
                id_limit = identifier_list->end (),
                init_pos = expression_list->begin ();
-             id_pos != id_limit;
-             ++id_pos, ++init_pos)
-          {
-            // Assume left is mutable.
-            typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, node.dereferenceMutability);
-            typed_value_t right_tv = checkAndImplicitlyDereference (*init_pos);
-            check_assignment (left_tv, right_tv, node,
-                              "E34: incompatible types (%s) = (%s)",
-                              "E35: assignment leaks mutable pointers");
-            // Convert to specified mutability.
-            left_tv.intrinsic_mutability = node.mutability;
-            const std::string& name = ast_get_identifier (*id_pos);
-            Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
-            node.symbols.push_back (enter_symbol (*node.parent (), symbol));
-          }
+               id_pos != id_limit;
+               ++id_pos, ++init_pos)
+            {
+              // Assume left is mutable.
+              typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, node.dereferenceMutability);
+              typed_value_t right_tv = checkAndImplicitlyDereference (*init_pos);
+              check_assignment (left_tv, right_tv, node,
+                                "E34: incompatible types (%s) = (%s)",
+                                "E35: assignment leaks mutable pointers");
+              // Convert to specified mutability.
+              left_tv.intrinsic_mutability = node.mutability;
+              const std::string& name = ast_get_identifier (*id_pos);
+              Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
+              node.symbols.push_back (enter_symbol (*node.parent (), symbol));
+            }
 
-        return;
-      }
+          return;
+        }
 
       // No type, expressions.
 
       // Enter each symbol.
       for (ast_t::iterator id_pos = identifier_list->begin (),
-             id_limit = identifier_list->end (),
-             init_pos = expression_list->begin ();
+           id_limit = identifier_list->end (),
+           init_pos = expression_list->begin ();
            id_pos != id_limit;
            ++id_pos, ++init_pos)
         {
@@ -1052,8 +1036,8 @@ type_check_statement (ast_t * node)
           left_tv.intrinsic_mutability = MUTABLE;
           left_tv.dereference_mutability = node.dereferenceMutability;
           check_assignment (left_tv, right_tv, node,
-                              "E77: incompatible types (%s) = (%s)",
-                              "E78: assignment leaks mutable pointers");
+                            "E77: incompatible types (%s) = (%s)",
+                            "E78: assignment leaks mutable pointers");
           // Convert to specified mutability.
           left_tv.intrinsic_mutability = node.mutability;
           const std::string& name = ast_get_identifier (*id_pos);

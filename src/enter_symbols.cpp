@@ -6,6 +6,27 @@
 #include "Template.hpp"
 #include "runtime.hpp"
 
+template <typename T>
+static T*
+enter_undefined_symbol (T* s,
+                        ast_t& a)
+{
+  ast_t* symtab = a.parent ();
+  const std::string& identifier = s->identifier;
+  Symbol *symbol = symtab->FindSymbolCurrent (identifier);
+  if (symbol == NULL)
+    {
+      symtab->EnterSymbol (s);
+    }
+  else
+    {
+      error_at_line (-1, 0, s->definingNode->location.File.c_str (),
+                     s->definingNode->location.Line,
+                     "%s is already defined in this scope", identifier.c_str ());
+    }
+  return s;
+}
+
 void
 enter_symbols (ast_t * node)
 {
@@ -91,28 +112,8 @@ enter_symbols (ast_t * node)
 
     void visit (ast_function_t& node)
     {
-      node.function_symbol = enter_undefined_symbol (new Function (node),
-                             node);
-    }
-
-    static Symbol*
-    enter_undefined_symbol (Symbol* s,
-                            ast_t& a)
-    {
-      ast_t* symtab = a.parent ();
-      const std::string& identifier = s->identifier;
-      Symbol *symbol = symtab->FindSymbolCurrent (identifier);
-      if (symbol == NULL)
-        {
-          symtab->EnterSymbol (s);
-        }
-      else
-        {
-          error_at_line (-1, 0, s->definingNode->location.File.c_str (),
-                         s->definingNode->location.Line,
-                         "%s is already defined in this scope", identifier.c_str ());
-        }
-      return s;
+      node.function = enter_undefined_symbol (new Function (node),
+                                              node);
     }
   };
 

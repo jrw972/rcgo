@@ -31,7 +31,7 @@ MemoryModel.hpp MemoryModel.cpp \
 parameter.hpp \
 parser.hpp parser.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
-process_declarations.cpp \
+ProcessDeclarations.cpp \
 process_definitions.cpp \
 process_type_spec.cpp \
 scanner.hpp scanner.cpp \

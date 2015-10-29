@@ -292,10 +292,11 @@ struct ast_receiver_t : public ast_t
     COUNT,
   };
 
-  ast_receiver_t (unsigned int line, ast_t* this_identifier, Mutability m, Mutability dm, ast_t* type_identifier)
+  ast_receiver_t (unsigned int line, ast_t* this_identifier, Mutability m, Mutability dm, bool isP, ast_t* type_identifier)
     : ast_t (line, COUNT)
     , mutability (m)
     , dereferenceMutability (dm)
+    , isPointer (isP)
   {
     set (THIS_IDENTIFIER, this_identifier);
     set (TYPE_IDENTIFIER, type_identifier);
@@ -319,6 +320,7 @@ struct ast_receiver_t : public ast_t
 
   Mutability const mutability;
   Mutability const dereferenceMutability;
+  bool const isPointer;
   Symbol* this_symbol;
 };
 
@@ -1666,6 +1668,7 @@ struct ast_action_t : public ast_t
   enum
   {
     RECEIVER,
+    IDENTIFIER,
     PRECONDITION,
     BODY,
     COUNT
@@ -1677,6 +1680,7 @@ struct ast_action_t : public ast_t
     , action (NULL)
   {
     set (RECEIVER, receiver);
+    set (IDENTIFIER, new ast_identifier_t (line, ""));
     set (PRECONDITION, precondition);
     set (BODY, body);
   }
@@ -1685,7 +1689,10 @@ struct ast_action_t : public ast_t
   {
     return at (RECEIVER);
   }
-
+  ast_t* identifier () const
+  {
+    return at (IDENTIFIER);
+  }
   ast_t* precondition () const
   {
     return at (PRECONDITION);
@@ -1731,6 +1738,7 @@ struct ast_dimensioned_action_t : public ast_t
   {
     DIMENSION,
     RECEIVER,
+    IDENTIFIER,
     PRECONDITION,
     BODY,
     COUNT
@@ -1743,6 +1751,7 @@ struct ast_dimensioned_action_t : public ast_t
   {
     set (DIMENSION, dimension);
     set (RECEIVER, receiver);
+    set (IDENTIFIER, new ast_identifier_t (line, ""));
     set (PRECONDITION, precondition);
     set (BODY, body);
   }
@@ -1758,6 +1767,10 @@ struct ast_dimensioned_action_t : public ast_t
   ast_t* receiver () const
   {
     return at (RECEIVER);
+  }
+  ast_t* identifier () const
+  {
+    return at (IDENTIFIER);
   }
   ast_t* precondition () const
   {
@@ -1780,7 +1793,7 @@ struct ast_dimensioned_action_t : public ast_t
   }
 
   Symbol* this_symbol;
-  Symbol* iota_symbol;
+  ParameterSymbol* iota_symbol;
   action_t* action;
 
   virtual Symbol *
@@ -1804,6 +1817,7 @@ struct ast_bind_t : public ast_t
   enum
   {
     RECEIVER,
+    IDENTIFIER,
     BODY,
     COUNT,
   };
@@ -1813,6 +1827,7 @@ struct ast_bind_t : public ast_t
     , bind (NULL)
   {
     set (RECEIVER, receiver);
+    set (IDENTIFIER, new ast_identifier_t (line, ""));
     set (BODY, body);
   }
 
@@ -1820,7 +1835,10 @@ struct ast_bind_t : public ast_t
   {
     return at (RECEIVER);
   }
-
+  ast_t* identifier () const
+  {
+    return at (IDENTIFIER);
+  }
   ast_t* body () const
   {
     return at (BODY);
@@ -1890,9 +1908,8 @@ struct ast_function_t : public ast_t
   }
 
   // TODO:  Eliminate redundancy.
-  Symbol* function_symbol;
-  Symbol* return_symbol;
   Function* function;
+  ParameterSymbol* return_symbol;
   Mutability const dereferenceMutability;
 };
 
@@ -1934,7 +1951,7 @@ struct ast_instance_t : public ast_t
     unimplemented;
   }
 
-  Symbol* symbol;
+  InstanceSymbol* symbol;
 };
 
 struct ast_const_t : public ast_t
@@ -1979,7 +1996,7 @@ struct ast_const_t : public ast_t
     out << "ast_const_t";
   }
 
-  Symbol* symbol;
+  TypedConstantSymbol* symbol;
 };
 
 struct ast_method_t : public ast_t
@@ -2134,6 +2151,7 @@ struct ast_initializer_t : public ast_t
     RECEIVER,
     IDENTIFIER,
     SIGNATURE,
+    RETURN_TYPE,
     BODY,
     COUNT
   };
@@ -2142,13 +2160,17 @@ struct ast_initializer_t : public ast_t
                      ast_t* receiver,
                      ast_t * identifier,
                      ast_t * signature,
+                     Mutability return_dm,
+                     ast_t* return_type,
                      ast_t* body)
     : ast_t (line, COUNT)
     , initializer (NULL)
+    , return_dereference_mutability (return_dm)
   {
     set (RECEIVER, receiver);
     set (IDENTIFIER, identifier);
     set (SIGNATURE, signature);
+    set (RETURN_TYPE, return_type);
     set (BODY, body);
   }
 
@@ -2164,6 +2186,10 @@ struct ast_initializer_t : public ast_t
   {
     return at (SIGNATURE);
   }
+  ast_t* return_type () const
+  {
+    return at (RETURN_TYPE);
+  }
   ast_t* body () const
   {
     return at (BODY);
@@ -2176,6 +2202,7 @@ struct ast_initializer_t : public ast_t
     out << "initializer";
   }
 
+  Mutability const return_dereference_mutability;
   Initializer* initializer;
   Symbol* return_symbol;
 
@@ -2199,6 +2226,7 @@ struct ast_reaction_t : public ast_t
     RECEIVER,
     IDENTIFIER,
     SIGNATURE,
+    RETURN_TYPE,
     BODY,
     COUNT,
   };
@@ -2210,6 +2238,7 @@ struct ast_reaction_t : public ast_t
     set (RECEIVER, receiver);
     set (IDENTIFIER, identifier);
     set (SIGNATURE, signature);
+    set (RETURN_TYPE, new ast_empty_type_spec_t (line));
     set (BODY, body);
   }
 
@@ -2224,6 +2253,10 @@ struct ast_reaction_t : public ast_t
   ast_t* signature () const
   {
     return at (SIGNATURE);
+  }
+  ast_t* return_type () const
+  {
+    return at (RETURN_TYPE);
   }
   ast_t* body () const
   {
@@ -2263,6 +2296,7 @@ struct ast_dimensioned_reaction_t : public ast_t
     RECEIVER,
     IDENTIFIER,
     SIGNATURE,
+    RETURN_TYPE,
     BODY,
     COUNT,
   };
@@ -2280,6 +2314,7 @@ struct ast_dimensioned_reaction_t : public ast_t
     set (RECEIVER, receiver);
     set (IDENTIFIER, identifier);
     set (SIGNATURE, signature);
+    set (RETURN_TYPE, new ast_empty_type_spec_t (line));
     set (BODY, body);
   }
 
@@ -2303,6 +2338,10 @@ struct ast_dimensioned_reaction_t : public ast_t
   {
     return at (SIGNATURE);
   }
+  ast_t* return_type () const
+  {
+    return at (RETURN_TYPE);
+  }
   ast_t* body () const
   {
     return at (BODY);
@@ -2316,7 +2355,7 @@ struct ast_dimensioned_reaction_t : public ast_t
   }
 
   Symbol* this_symbol;
-  Symbol* iota_symbol;
+  ParameterSymbol* iota_symbol;
   reaction_t* reaction;
 
   virtual Symbol *
@@ -2367,7 +2406,7 @@ struct ast_type_definition_t : public ast_t
     unimplemented;
   }
 
-  Symbol* symbol;
+  TypeSymbol* symbol;
 };
 
 struct ast_top_level_list_t : public ast_t

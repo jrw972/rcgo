@@ -112,7 +112,7 @@ DereferenceMutability:
 
 Receiver:
 '(' IDENTIFIER Mutability DereferenceMutability '*' IDENTIFIER ')'
-{ $$ = new ast_receiver_t (@1, $2, $3, $4, $6); }
+{ $$ = new ast_receiver_t (@1, $2, $3, $4, true, $6); }
 
 Action:
 ACTION Receiver '(' Expression ')' Block
@@ -131,8 +131,10 @@ BIND Receiver Block
 { $$ = new ast_bind_t (@1, $2, $3); }
 
 Init:
-INIT Receiver IDENTIFIER Signature Block
-{ $$ = new ast_initializer_t (@1, $2, $3, $4, $5); }
+INIT Receiver IDENTIFIER Signature DereferenceMutability TypeSpec Block
+{ $$ = new ast_initializer_t (@1, $2, $3, $4, $5, $6, $7); }
+| INIT Receiver IDENTIFIER Signature           Block
+{ $$ = new ast_initializer_t (@1, $2, $3, $4, IMMUTABLE, new ast_empty_type_spec_t (@1), $5); }
 
 Getter:
 GETTER Receiver IDENTIFIER Signature DereferenceMutability TypeSpec Block

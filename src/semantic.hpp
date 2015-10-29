@@ -10,7 +10,25 @@
 void enter_symbols (ast_t * node);
 
 // Enter a symbol.
-Symbol* enter_symbol (ast_t& node, Symbol * symbol);
+template <typename T>
+T*
+enter_symbol (ast_t& node, T* symbol)
+{
+  // Check if the symbol is defined locally.
+  const std::string& identifier = symbol->identifier;
+  Symbol *s = node.FindSymbolCurrent (identifier);
+  if (s == NULL)
+    {
+      node.EnterSymbol (symbol);
+    }
+  else
+    {
+      const ast_t* node = symbol->definingNode;
+      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+                     "%s is already defined in this scope", identifier.c_str ());
+    }
+  return symbol;
+}
 
 // Enter a signature.
 void enter_signature (ast_t& node, const signature_type_t * type);
@@ -19,28 +37,25 @@ void enter_signature (ast_t& node, const signature_type_t * type);
 template<typename T>
 T* processAndLookup (ast_t * node, const std::string& identifier)
 {
-    Symbol *symbol = node->FindSymbol (identifier);
-    if (symbol == NULL)
-        {
-            error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                           "%s was not declared in this scope", identifier.c_str ());
-        }
-    if (symbol->inProgress)
-        {
-            error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                           "%s is defined recursively", identifier.c_str ());
-        }
-    if (!symbol->defined ())
-        {
-            // Process the definition.
-            unimplemented;
-        }
+  Symbol *symbol = node->FindSymbol (identifier);
+  if (symbol == NULL)
+    {
+      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+                     "%s was not declared in this scope", identifier.c_str ());
+    }
+  if (symbol->inProgress)
+    {
+      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+                     "%s is defined recursively", identifier.c_str ());
+    }
+  if (!symbol->defined ())
+    {
+      // Process the definition.
+      unimplemented;
+    }
 
-    return SymbolCast<T> (symbol);
+  return SymbolCast<T> (symbol);
 }
-
-// Look up a symbol.  Error if it is not defined.
-Symbol * lookup_no_force (ast_t * node, const std::string& identifier);
 
 // Extract an array dimension or error.
 typed_value_t process_array_dimension (ast_t*& ptr);
@@ -52,7 +67,7 @@ void CheckForForeignSafe (const signature_type_t* signature, const parameter_t* 
 const type_t * process_type_spec (ast_t * node, bool force_identifiers, bool is_component = false, named_type_t* named_type = NULL);
 
 /* Process all declarations (non-code). */
-void process_declarations (ast_t * node);
+void ProcessDeclarations (ast_t * node);
 
 // Type check the expression and insert an implicit dereference.
 typed_value_t
