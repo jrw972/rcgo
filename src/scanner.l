@@ -54,7 +54,6 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 "change"               { return CHANGE; }
 "component"            { return COMPONENT; }
 "const"                { return CONST; }
-"copy"                 { return COPY; }
 "else"                 { return ELSE; }
 "enum"                 { return ENUM; }
 "for"                  { return FOR; }

@@ -20,7 +20,7 @@ func (this *Queue) Push (v uint)
     };
 
   var e *Element;
-  e = new Element;
+  e = new (Element);
   e.value = v;
   *this.tail = e;
   this.tail = &e.next;

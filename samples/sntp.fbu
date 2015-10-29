@@ -51,7 +51,7 @@ func (this *Queue) Push (value UdpMessage)
     };
 
   var e *Element;
-  e = new Element;
+  e = new (Element);
   e.value = value;
   *this.tail = e;
   this.tail = &e.next;

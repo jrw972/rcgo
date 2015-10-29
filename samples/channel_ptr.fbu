@@ -18,7 +18,7 @@ func (this *Queue) Push (v uint)
     };
 
   var e *Element;
-  e = new Element;
+  e = new (Element);
   e.value = v;
   *this.tail = e;
   this.tail = &e.next;
@@ -80,7 +80,7 @@ init (this *System) Initially ()
 action (this +const * System) (this.send_count != 100u)
 {
   var x *uint;
-  x = new uint;
+  x = new (uint);
   *x = this.send_count;
 
   activate send (x)

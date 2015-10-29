@@ -1003,15 +1003,6 @@ namespace runtime
           }
       }
 
-      void visit (const ast_copy_expr_t& node)
-      {
-        evaluate_expr (exec, node.child ());
-        typed_value_t tv = node.child ()->typed_value;
-        stack_frame_pop_tv (exec.stack (), tv);
-        tv = typed_value_t::copy_exec (tv);
-        stack_frame_push_tv (exec.stack (), tv);
-      }
-
       void visit (const ast_address_of_expr_t& node)
       {
         evaluate_expr (exec, node.child ());
@@ -2079,6 +2070,64 @@ namespace runtime
       }
 
     return typed_value_t (new runtime::MergeImpl (in, out, definingNode));
+  }
+
+  struct CopyImpl : public Callable
+  {
+    CopyImpl (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
+      : in_ (in)
+      , function_type_ (makeFunctionType (in, out, definingNode))
+    { }
+
+    virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const
+    {
+        evaluate_expr (exec, node.args ());
+        typed_value_t tv = in_;
+        stack_frame_pop_tv (exec.stack (), tv);
+        tv = typed_value_t::copy_exec (tv);
+        stack_frame_push_tv (exec.stack (), tv);
+    }
+
+    virtual const type_t* type () const
+    {
+      return function_type_;
+    }
+    const typed_value_t in_;
+    const type_t* const function_type_;
+    static const type_t* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
+    {
+      typed_value_t in2 = in;
+      in2.intrinsic_mutability = MUTABLE;
+      return new function_type_t ((new signature_type_t ())
+                                  ->append (new parameter_t (definingNode, "h", in2, false)),
+                                  new parameter_t (definingNode, "0return", out, false));
+    }
+  };
+
+  Copy::Copy (ast_t* dn)
+    : Template ("copy",
+                dn,
+                new template_type_t ())
+  { }
+
+  typed_value_t
+  Copy::instantiate (TypedValueListType& tvlist)
+  {
+    if (tvlist.size () != 1)
+      {
+        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+                       "E75: copy expects one argument");
+      }
+
+    typed_value_t in = tvlist[0];
+    typed_value_t out = typed_value_t::copy (definingNode->location, in);
+    if (out.type == NULL)
+      {
+        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+                       "E76: cannot copy expression of type %s", in.type->to_string ().c_str ());
+      }
+
+    return typed_value_t (new runtime::CopyImpl (in, out, definingNode));
   }
 
 }

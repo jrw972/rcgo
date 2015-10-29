@@ -184,11 +184,6 @@ type_check_expr (ast_t* ptr)
       node.array_type = array_type;
     }
 
-    void visit (ast_copy_expr_t& node)
-    {
-      node.typed_value = typed_value_t::copy (node.location, checkAndImplicitlyDereference (node.child_ref ()));
-    }
-
     void visit (ast_identifier_expr_t& node)
     {
       ast_t *identifier_node = node.child ();
@@ -236,9 +231,7 @@ type_check_expr (ast_t* ptr)
 
         void visit (const TypeSymbol& symbol)
         {
-          error_at_line (-1, 0, node.location.File.c_str (),
-                         node.location.Line, "%s is a type (and not an expression)",
-                         symbol.identifier.c_str ());
+          node.typed_value = typed_value_t (symbol.type);
         }
 
         void visit (const TypedConstantSymbol& symbol)
@@ -253,7 +246,6 @@ type_check_expr (ast_t* ptr)
 
         void visit (const HiddenSymbol& symbol)
         {
-          std::cout << symbol.identifier << '\n';
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line, "E47: %s is not accessible in this scope",
                          symbol.identifier.c_str ());

@@ -655,6 +655,8 @@ transitive_closure (const instance_table_t& table,
       ast_not_reached (node);
     }
 
+    void visit (const ast_type_expr_t& node) { }
+
     void visit (const ast_empty_statement_t& node)
     { }
 
@@ -720,11 +722,6 @@ transitive_closure (const instance_table_t& table,
     {
       node.expr ()->accept (*this);
       node.body ()->accept (*this);
-    }
-
-    void visit (const ast_copy_expr_t& node)
-    {
-      node.visit_children (*this);
     }
 
     void visit (const ast_list_expr_t& node)
