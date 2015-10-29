@@ -1534,32 +1534,32 @@ namespace runtime
 
       void visit (const ast_var_statement_t& node)
       {
-        // Zero out the variable.
-        for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
-          {
-            Symbol* symbol = node.symbols[idx];
-            stack_frame_clear_stack (exec.stack (), symbol->offset (), SymbolCast<VariableSymbol> (symbol)->value.type->size ());
-          }
-      }
+        ast_t* expression_list = node.expression_list ();
 
-      void visit (const ast_var_type_init_statement_t& node)
-      {
-        ast_t* initializer_list = node.initializer_list ();
-        // Initialize the variables.
-        for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
-          {
-            // Evaluate the address.
-            Symbol* symbol = node.symbols[idx];
-            ptrdiff_t offset = symbol->offset ();
-            stack_frame_push_address (exec.stack (), offset);
-            void* ptr = stack_frame_pop_pointer (exec.stack ());
-            ast_t* initializer = initializer_list->at (idx);
-            size_t size = initializer->typed_value.type->size ();
-            // Evaluate the value.
-            evaluate_expr (exec, initializer);
-            // Store.
-            stack_frame_store_heap (exec.stack (), ptr, size);
-          }
+        if (expression_list->size () == 0) {
+          // Zero out the variable.
+          for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
+            {
+              Symbol* symbol = node.symbols[idx];
+              stack_frame_clear_stack (exec.stack (), symbol->offset (), SymbolCast<VariableSymbol> (symbol)->value.type->size ());
+            }
+        } else {
+          // Initialize the variables.
+          for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
+            {
+              // Evaluate the address.
+              Symbol* symbol = node.symbols[idx];
+              ptrdiff_t offset = symbol->offset ();
+              stack_frame_push_address (exec.stack (), offset);
+              void* ptr = stack_frame_pop_pointer (exec.stack ());
+              ast_t* initializer = expression_list->at (idx);
+              size_t size = initializer->typed_value.type->size ();
+              // Evaluate the value.
+              evaluate_expr (exec, initializer);
+              // Store.
+              stack_frame_store_heap (exec.stack (), ptr, size);
+            }
+        }
       }
     };
     visitor v (exec);

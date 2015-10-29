@@ -706,11 +706,7 @@ transitive_closure (const instance_table_t& table,
 
     void visit (const ast_var_statement_t& node)
     {
-    }
-
-    void visit (const ast_var_type_init_statement_t& node)
-    {
-      node.initializer_list ()->accept (*this);
+      node.expression_list ()->accept (*this);
     }
 
     void visit (const ast_assign_statement_t& node)

@@ -1497,16 +1497,18 @@ struct ast_var_statement_t : public ast_t
   {
     IDENTIFIER_LIST,
     TYPE_SPEC,
+    EXPRESSION_LIST,
     COUNT
   };
 
-  ast_var_statement_t (unsigned int line, ast_t* identifier_list, Mutability m, Mutability dm, ast_t* type_spec)
+  ast_var_statement_t (unsigned int line, ast_t* identifier_list, Mutability m, Mutability dm, ast_t* type_spec, ast_t* expression_list)
     : ast_t (line, COUNT)
     , mutability (m)
     , dereferenceMutability (dm)
   {
     set (IDENTIFIER_LIST, identifier_list);
     set (TYPE_SPEC, type_spec);
+    set (EXPRESSION_LIST, expression_list);
   }
 
   ast_t* identifier_list () const
@@ -1516,6 +1518,10 @@ struct ast_var_statement_t : public ast_t
   ast_t* type_spec () const
   {
     return at (TYPE_SPEC);
+  }
+  ast_t* expression_list () const
+  {
+    return at (EXPRESSION_LIST);
   }
 
   void accept (ast_visitor_t& visitor);
@@ -1523,53 +1529,6 @@ struct ast_var_statement_t : public ast_t
   void print (std::ostream& out) const
   {
     out << "var_statement";
-  }
-
-  Mutability const mutability;
-  Mutability const dereferenceMutability;
-  std::vector<Symbol*> symbols;
-};
-
-struct ast_var_type_init_statement_t : public ast_t
-{
-  enum
-  {
-    IDENTIFIER_LIST,
-    TYPE_SPEC,
-    INITIALIZER_LIST,
-    COUNT
-  };
-
-  ast_var_type_init_statement_t (unsigned int line, ast_t* identifier_list,
-                                 Mutability m, Mutability dm,
-                                 ast_t* type_spec, ast_t* initializer_list)
-    : ast_t (line, COUNT)
-    , mutability (m)
-    , dereferenceMutability (dm)
-  {
-    set (IDENTIFIER_LIST, identifier_list);
-    set (TYPE_SPEC, type_spec);
-    set (INITIALIZER_LIST, initializer_list);
-  }
-
-  ast_t* identifier_list () const
-  {
-    return at (IDENTIFIER_LIST);
-  }
-  ast_t* type_spec () const
-  {
-    return at (TYPE_SPEC);
-  }
-  ast_t* initializer_list () const
-  {
-    return at (INITIALIZER_LIST);
-  }
-
-  void accept (ast_visitor_t& visitor);
-  void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const
-  {
-    out << "var_type_init_statement";
   }
 
   Mutability const mutability;
@@ -2618,10 +2577,6 @@ struct ast_visitor_t
   {
     default_action (ast);
   }
-  virtual void visit (ast_var_type_init_statement_t& ast)
-  {
-    default_action (ast);
-  }
 
   virtual void visit (ast_bind_push_port_statement_t& ast)
   {
@@ -2904,10 +2859,6 @@ struct ast_const_visitor_t
     default_action (ast);
   }
   virtual void visit (const ast_var_statement_t& ast)
-  {
-    default_action (ast);
-  }
-  virtual void visit (const ast_var_type_init_statement_t& ast)
   {
     default_action (ast);
   }

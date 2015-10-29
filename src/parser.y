@@ -223,9 +223,9 @@ ExpressionStatement: Expression ';' {
   $$ = new ast_expression_statement_t (@1, $1);
  }
 
-VarStatement: VAR IdentifierList Mutability DereferenceMutability TypeSpec ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, $5); }
-| VAR IdentifierList Mutability DereferenceMutability TypeSpec '=' ExpressionList ';' { $$ = new ast_var_type_init_statement_t (@1, $2, $3, $4, $5, $7); }
-| VAR IdentifierList Mutability DereferenceMutability '=' ExpressionList ';' { unimplemented; }
+VarStatement: VAR IdentifierList Mutability DereferenceMutability TypeSpec '=' ExpressionList ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, $5, $7); }
+| VAR IdentifierList Mutability DereferenceMutability TypeSpec ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, $5, new ast_list_expr_t (@1)); }
+| VAR IdentifierList Mutability DereferenceMutability '=' ExpressionList ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, new ast_empty_type_spec_t (@1), $6); }
 
 AssignmentStatement: Expression '=' Expression ';' { $$ = new ast_assign_statement_t (@1, $1, $3); } /* CHECK */
 | Expression ADD_ASSIGN Expression ';' { $$ = new ast_add_assign_statement_t (@1, $1, $3); } /* CHECK */

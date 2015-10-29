@@ -975,53 +975,87 @@ type_check_statement (ast_t * node)
     {
       ast_t* identifier_list = node.identifier_list ();
       ast_t* type_spec = node.type_spec ();
+      ast_t* expression_list = node.expression_list ();
 
-      // Process the type spec.
-      const type_t* type = process_type_spec (type_spec, true);
-
-      // Enter each symbol.
-      for (ast_t::const_iterator pos = identifier_list->begin (),
-           limit = identifier_list->end ();
-           pos != limit;
-           ++pos)
-        {
-          const std::string& name = ast_get_identifier (*pos);
-          Symbol* symbol = new VariableSymbol (name, *pos, typed_value_t::make_ref (type, typed_value_t::STACK, node.mutability, node.dereferenceMutability));
-          node.symbols.push_back (enter_symbol (*node.parent (), symbol));
-        }
-    }
-
-    void visit (ast_var_type_init_statement_t& node)
-    {
-      ast_t* identifier_list = node.identifier_list ();
-      ast_t* type_spec = node.type_spec ();
-      ast_t* initializer_list = node.initializer_list ();
-
-      // Process the type spec.
-      const type_t* type = process_type_spec (type_spec, true);
-
-      if (identifier_list->size () != initializer_list->size ())
+      if (expression_list->size () != 0 &&
+          identifier_list->size () != expression_list->size ())
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "wrong number of initializers");
+                         "E73: wrong number of initializers");
         }
 
-      typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, node.mutability, node.dereferenceMutability);
+      // Process the type spec.
+      const type_t* type = process_type_spec (type_spec, true);
+
+      if (expression_list->size () == 0) {
+        // Type, no expressions.
+
+        if (type_cast<void_type_t> (type) != NULL) {
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                         "E74: missing type");
+
+        }
+
+        // Enter each symbol.
+        typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, node.mutability, node.dereferenceMutability);
+        for (ast_t::iterator id_pos = identifier_list->begin (),
+               id_limit = identifier_list->end ();
+             id_pos != id_limit;
+             ++id_pos)
+          {
+            const std::string& name = ast_get_identifier (*id_pos);
+            Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
+            node.symbols.push_back (enter_symbol (*node.parent (), symbol));
+          }
+
+        return;
+      }
+
+      if (type_cast<void_type_t> (type) == NULL) {
+        // Type, expressions.
+
+        // Enter each symbol.
+        for (ast_t::iterator id_pos = identifier_list->begin (),
+               id_limit = identifier_list->end (),
+               init_pos = expression_list->begin ();
+             id_pos != id_limit;
+             ++id_pos, ++init_pos)
+          {
+            // Assume left is mutable.
+            typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, node.dereferenceMutability);
+            typed_value_t right_tv = checkAndImplicitlyDereference (*init_pos);
+            check_assignment (left_tv, right_tv, node,
+                              "E34: incompatible types (%s) = (%s)",
+                              "E35: assignment leaks mutable pointers");
+            // Convert to specified mutability.
+            left_tv.intrinsic_mutability = node.mutability;
+            const std::string& name = ast_get_identifier (*id_pos);
+            Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
+            node.symbols.push_back (enter_symbol (*node.parent (), symbol));
+          }
+
+        return;
+      }
+
+      // No type, expressions.
 
       // Enter each symbol.
       for (ast_t::iterator id_pos = identifier_list->begin (),
-           id_limit = identifier_list->end (),
-           init_pos = initializer_list->begin ();
+             id_limit = identifier_list->end (),
+             init_pos = expression_list->begin ();
            id_pos != id_limit;
            ++id_pos, ++init_pos)
         {
           // Process the initializer.
           typed_value_t right_tv = checkAndImplicitlyDereference (*init_pos);
-
+          typed_value_t left_tv = typed_value_t::make_ref (right_tv);
+          left_tv.intrinsic_mutability = MUTABLE;
+          left_tv.dereference_mutability = node.dereferenceMutability;
           check_assignment (left_tv, right_tv, node,
-                            "E34: incompatible types (%s) = (%s)",
-                            "E35: assignment leaks mutable pointers");
-
+                              "E77: incompatible types (%s) = (%s)",
+                              "E78: assignment leaks mutable pointers");
+          // Convert to specified mutability.
+          left_tv.intrinsic_mutability = node.mutability;
           const std::string& name = ast_get_identifier (*id_pos);
           Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
           node.symbols.push_back (enter_symbol (*node.parent (), symbol));
@@ -1187,12 +1221,7 @@ mutates_check_statement (ast_t * node)
 
     void visit (ast_var_statement_t& node)
     {
-      // Do nothing.
-    }
-
-    void visit (ast_var_type_init_statement_t& node)
-    {
-      node.initializer_list ()->accept (*this);
+      node.expression_list ()->accept (*this);
     }
 
     void visit (ast_slice_expr_t& node)
