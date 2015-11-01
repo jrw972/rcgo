@@ -3,7 +3,9 @@
 #include "util.hpp"
 #include <string.h>
 #include "MemoryModel.hpp"
-#include "type.hpp"
+#include "Type.hpp"
+
+using namespace Type;
 
 stack_frame_t* stack_frame_make (size_t capacity)
 {
@@ -58,7 +60,7 @@ void stack_frame_equal (stack_frame_t* stack_frame,
   char* y = stack_frame->top;
   stack_frame->top -= s;
   char* x = stack_frame->top;
-  stack_frame_push<bool_type_t::ValueType> (stack_frame, memcmp (x, y, size) == 0);
+  stack_frame_push<Bool::ValueType> (stack_frame, memcmp (x, y, size) == 0);
 }
 
 void stack_frame_not_equal (stack_frame_t* stack_frame,
@@ -70,7 +72,7 @@ void stack_frame_not_equal (stack_frame_t* stack_frame,
   char* y = stack_frame->top;
   stack_frame->top -= s;
   char* x = stack_frame->top;
-  stack_frame_push<bool_type_t::ValueType> (stack_frame, memcmp (x, y, size) != 0);
+  stack_frame_push<Bool::ValueType> (stack_frame, memcmp (x, y, size) != 0);
 }
 
 void stack_frame_push (stack_frame_t* stack_frame,
@@ -212,7 +214,7 @@ void* stack_frame_address_for_offset (const stack_frame_t* stack_frame,
 void stack_frame_push_tv (stack_frame_t* stack_frame,
                           const typed_value_t& tv)
 {
-  struct visitor : public const_type_visitor_t
+  struct visitor : public Visitor
   {
     stack_frame_t* stack_frame;
     const typed_value_t& tv;
@@ -222,77 +224,77 @@ void stack_frame_push_tv (stack_frame_t* stack_frame,
       , tv (t)
     { }
 
-    void visit (const bool_type_t& type)
+    void visit (const Bool& type)
     {
       stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
-    void visit (const int_type_t& type)
+    void visit (const Int& type)
     {
       stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
-    void visit (const int8_type_t& type)
+    void visit (const Int8& type)
     {
       stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
-    void visit (const uint_type_t& type)
+    void visit (const Uint& type)
     {
       stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
-    void visit (const uint8_type_t& type)
+    void visit (const Uint8& type)
     {
       stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
-    void visit (const uint16_type_t& type)
+    void visit (const Uint16& type)
     {
       stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
-    void visit (const uint32_type_t& type)
+    void visit (const Uint32& type)
     {
       stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
-    void visit (const uint64_type_t& type)
+    void visit (const Uint64& type)
     {
       stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
-    void visit (const float64_type_t& type)
+    void visit (const Float64& type)
     {
       stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
-    void visit (const slice_type_t& type)
+    void visit (const Slice& type)
     {
       stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
-    void visit (const nil_type_t& type)
+    void visit (const Nil& type)
     {
       stack_frame_push_pointer (stack_frame, 0);
     }
 
-    void visit (const enum_type_t& type)
+    void visit (const Enum& type)
     {
       stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
-    void default_action (const type_t& type)
+    void default_action (const Type::Type& type)
     {
       type_not_reached (type);
     }
   };
 
   visitor v (stack_frame, tv);
-  type_strip (tv.type)->accept (v);
+  type_strip (tv.type)->Accept (v);
 }
 
-struct PopVisitor : public const_type_visitor_t
+struct PopVisitor : public Visitor
 {
   stack_frame_t* stack_frame;
   typed_value_t& tv;
@@ -310,39 +312,39 @@ struct PopVisitor : public const_type_visitor_t
     tv.value = value_t (&type, value);
   }
 
-  void visit (const int_type_t& type)
+  void visit (const Int& type)
   {
     doit (type);
   }
-  void visit (const int8_type_t& type)
+  void visit (const Int8& type)
   {
     doit (type);
   }
-  void visit (const uint_type_t& type)
+  void visit (const Uint& type)
   {
     doit (type);
   }
-  void visit (const uint8_type_t& type)
+  void visit (const Uint8& type)
   {
     doit (type);
   }
-  void visit (const uint16_type_t& type)
+  void visit (const Uint16& type)
   {
     doit (type);
   }
-  void visit (const uint32_type_t& type)
+  void visit (const Uint32& type)
   {
     doit (type);
   }
-  void visit (const uint64_type_t& type)
+  void visit (const Uint64& type)
   {
     doit (type);
   }
-  void visit (const slice_type_t& type)
+  void visit (const Slice& type)
   {
     doit (type);
   }
-  void default_action (const type_t& type)
+  void default_action (const Type::Type& type)
   {
     type_not_reached (type);
   }
@@ -359,8 +361,11 @@ void stack_frame_pop_tv (stack_frame_t* stack_frame,
     case typed_value_t::VALUE:
     {
       PopVisitor v (stack_frame, tv);
-      type_strip (tv.type)->accept (v);
+      type_strip (tv.type)->Accept (v);
     }
     break;
+    case typed_value_t::TYPE:
+      unimplemented;
+      break;
     }
 }

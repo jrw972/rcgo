@@ -6,8 +6,10 @@
 #include "yyparse.hpp"
 #include "parser.hpp"
 #include "debug.hpp"
-#include "type.hpp"
+#include "Type.hpp"
 #include <error.h>
+
+using namespace Type;
 
   static char* ParseInterprettedString (unsigned int line, char* pos, char* limit, char* out);
 %}
@@ -119,8 +121,8 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
                            }
 
                          size_t size = destination - begin;
-                         const slice_type_t* type = new slice_type_t (uint8_type_t::instance ());
-                         slice_type_t::ValueType v;
+                         const Slice* type = Uint8::Instance ()->GetSlice ();
+                         Slice::ValueType v;
                          v.ptr = malloc (size);
                          memcpy (v.ptr, begin, size);
                          v.length = size;
@@ -135,8 +137,8 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
   char* limit = yytext + yyleng - 1;
   char* end = ParseInterprettedString (yylloc, pos, limit, pos);
   size_t size = end - begin;
-  const slice_type_t* type = new slice_type_t (uint8_type_t::instance ());
-  slice_type_t::ValueType v;
+  const Slice* type = Uint8::Instance ()->GetSlice ();
+  Slice::ValueType v;
   v.ptr = malloc (size);
   memcpy (v.ptr, begin, size);
   v.length = size;
@@ -160,37 +162,37 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
     {
       yytext[yyleng - 1] = 0;
       yyleng -= 1;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int_type_t::instance (), strtol (yytext, NULL, base)));
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Int::Instance (), strtol (yytext, NULL, base)));
     }
   else if (strcmp (ptr, "i8") == 0)
     {
       yytext[yyleng - 2] = 0;
       yyleng -= 2;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int8_type_t::instance (), strtol (yytext, NULL, base)));
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Int8::Instance (), strtol (yytext, NULL, base)));
     }
   else if (strcmp (ptr, "i16") == 0)
     {
       yytext[yyleng - 3] = 0;
       yyleng -= 3;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int16_type_t::instance (), strtol (yytext, NULL, base)));
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Int16::Instance (), strtol (yytext, NULL, base)));
     }
   else if (strcmp (ptr, "i32") == 0)
     {
       yytext[yyleng - 3] = 0;
       yyleng -= 3;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int32_type_t::instance (), strtol (yytext, NULL, base)));
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Int32::Instance (), strtol (yytext, NULL, base)));
     }
   else if (strcmp (ptr, "i64") == 0)
     {
       yytext[yyleng - 3] = 0;
       yyleng -= 3;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int64_type_t::instance (), strtol (yytext, NULL, base)));
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Int64::Instance (), strtol (yytext, NULL, base)));
     }
   else if (strcmp (ptr, "i128") == 0)
     {
       yytext[yyleng - 4] = 0;
       yyleng -= 4;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (int128_type_t::instance (), strtol (yytext, NULL, base)));
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Int128::Instance (), strtol (yytext, NULL, base)));
     }
   else
     {
@@ -215,37 +217,37 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
     {
       yytext[yyleng - 1] = 0;
       yyleng -= 1;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (uint_type_t::instance (), strtol (yytext, NULL, base)));
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Uint::Instance (), strtol (yytext, NULL, base)));
     }
   else if (strcmp (ptr, "u8") == 0)
     {
       yytext[yyleng - 2] = 0;
       yyleng -= 2;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (uint8_type_t::instance (), strtol (yytext, NULL, base)));
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Uint8::Instance (), strtol (yytext, NULL, base)));
     }
   else if (strcmp (ptr, "u16") == 0)
     {
       yytext[yyleng - 3] = 0;
       yyleng -= 3;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (uint16_type_t::instance (), strtol (yytext, NULL, base)));
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Uint16::Instance (), strtol (yytext, NULL, base)));
     }
   else if (strcmp (ptr, "u32") == 0)
     {
       yytext[yyleng - 3] = 0;
       yyleng -= 3;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (uint32_type_t::instance (), strtol (yytext, NULL, base)));
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Uint32::Instance (), strtol (yytext, NULL, base)));
     }
   else if (strcmp (ptr, "u64") == 0)
     {
       yytext[yyleng - 3] = 0;
       yyleng -= 3;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (uint64_type_t::instance (), strtol (yytext, NULL, base)));
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Uint64::Instance (), strtol (yytext, NULL, base)));
     }
   else if (strcmp (ptr, "u128") == 0)
     {
       yytext[yyleng - 4] = 0;
       yyleng -= 4;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (uint128_type_t::instance (), strtoll (yytext, NULL, base)));
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Uint128::Instance (), strtoll (yytext, NULL, base)));
     }
   else
     {
@@ -265,13 +267,13 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
     {
       yytext[yyleng - 2] = 0;
       yyleng -= 3;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (float32_type_t::instance (), strtof (yytext, NULL)));
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Float32::Instance (), strtof (yytext, NULL)));
     }
   else if (strcmp (ptr, "f64") == 0)
     {
       yytext[yyleng - 3] = 0;
       yyleng -= 3;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (float64_type_t::instance (), strtod (yytext, NULL)));
+      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Float64::Instance (), strtod (yytext, NULL)));
     }
   else
     {

@@ -3,7 +3,7 @@
 
 #include "types.hpp"
 #include "Location.hpp"
-#include "type.hpp"
+#include "Type.hpp"
 #include <ostream>
 #include "value.hpp"
 #include <vector>
@@ -140,8 +140,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const bool_type_t* t,
-                 bool_type_t::ValueType v)
+  typed_value_t (const Type::Bool* t,
+                 Type::Bool::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -151,8 +151,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const int_type_t* t,
-                 int_type_t::ValueType v)
+  typed_value_t (const Type::Int* t,
+                 Type::Int::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -162,8 +162,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const int8_type_t* t,
-                 int8_type_t::ValueType v)
+  typed_value_t (const Type::Int8* t,
+                 Type::Int8::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -173,8 +173,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const int16_type_t* t,
-                 int16_type_t::ValueType v)
+  typed_value_t (const Type::Int16* t,
+                 Type::Int16::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -184,8 +184,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const int32_type_t* t,
-                 int32_type_t::ValueType v)
+  typed_value_t (const Type::Int32* t,
+                 Type::Int32::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -195,8 +195,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const int64_type_t* t,
-                 int64_type_t::ValueType v)
+  typed_value_t (const Type::Int64* t,
+                 Type::Int64::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -206,8 +206,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const int128_type_t* t,
-                 int128_type_t::ValueType v)
+  typed_value_t (const Type::Int128* t,
+                 Type::Int128::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -217,8 +217,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const uint_type_t* t,
-                 uint_type_t::ValueType v)
+  typed_value_t (const Type::Uint* t,
+                 Type::Uint::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -228,8 +228,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const uint8_type_t* t,
-                 uint8_type_t::ValueType v)
+  typed_value_t (const Type::Uint8* t,
+                 Type::Uint8::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -239,8 +239,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const uint16_type_t* t,
-                 uint16_type_t::ValueType v)
+  typed_value_t (const Type::Uint16* t,
+                 Type::Uint16::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -250,8 +250,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const uint32_type_t* t,
-                 uint32_type_t::ValueType v)
+  typed_value_t (const Type::Uint32* t,
+                 Type::Uint32::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -261,8 +261,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const uint64_type_t* t,
-                 uint64_type_t::ValueType v)
+  typed_value_t (const Type::Uint64* t,
+                 Type::Uint64::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -272,8 +272,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const uint128_type_t* t,
-                 uint128_type_t::ValueType v)
+  typed_value_t (const Type::Uint128* t,
+                 Type::Uint128::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -283,7 +283,7 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const named_type_t* type,
+  typed_value_t (const Type::NamedType* type,
                  size_t e)
     : type (type)
     , kind (VALUE)
@@ -294,8 +294,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const float32_type_t* t,
-                 float32_type_t::ValueType v)
+  typed_value_t (const Type::Float32* t,
+                 Type::Float32::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -305,8 +305,8 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const float64_type_t* t,
-                 float64_type_t::ValueType v)
+  typed_value_t (const Type::Float64* t,
+                 Type::Float64::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -322,8 +322,8 @@ struct typed_value_t
 
   explicit typed_value_t (reaction_t* r);
 
-  typed_value_t (const slice_type_t* t,
-                 slice_type_t::ValueType v)
+  typed_value_t (const Type::Slice* t,
+                 Type::Slice::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -333,7 +333,7 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  explicit typed_value_t (const type_t* t)
+  explicit typed_value_t (const Type::Type* t)
     : type (t)
     , kind (TYPE)
     , region (CONSTANT)
@@ -342,7 +342,7 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  const type_t *type;
+  const Type::Type *type;
   Kind kind;
   Region region;
   Mutability intrinsic_mutability;
@@ -353,9 +353,9 @@ struct typed_value_t
   bool has_offset;
   ptrdiff_t offset;
 
-  static typed_value_t make_value (const type_t* type, Region region, Mutability intrinsic, Mutability dereference);
+  static typed_value_t make_value (const Type::Type* type, Region region, Mutability intrinsic, Mutability dereference);
   static typed_value_t make_range (const typed_value_t& low, const typed_value_t& high, Region region, Mutability intrinsic, Mutability dereference);
-  static typed_value_t make_ref (const type_t* type, Region region, Mutability intrinsic, Mutability dereference);
+  static typed_value_t make_ref (const Type::Type* type, Region region, Mutability intrinsic, Mutability dereference);
   static typed_value_t make_ref (typed_value_t tv);
 
   static typed_value_t nil ();
@@ -371,8 +371,8 @@ struct typed_value_t
   static typed_value_t merge (typed_value_t tv);
   static typed_value_t move (typed_value_t tv);
   static typed_value_t binary (const Location& location, BinaryArithmetic arithmetic, typed_value_t left, typed_value_t right);
-  static typed_value_t cast (const Location& location, const type_t* type, const typed_value_t tv);
-  static typed_value_t cast_exec (const type_t* type, const typed_value_t tv);
+  static typed_value_t cast (const Location& location, const Type::Type* type, const typed_value_t tv);
+  static typed_value_t cast_exec (const Type::Type* type, const typed_value_t tv);
   static typed_value_t copy (const Location& location, const typed_value_t tv);
   static typed_value_t copy_exec (const typed_value_t tv);
   static typed_value_t change (const Location& location, typed_value_t tv);
@@ -398,25 +398,25 @@ struct typed_value_t
 
   void zero ();
 
-  int_type_t::ValueType integral_value () const
+  Type::Int::ValueType integral_value () const
   {
     Location loc;
-    return cast (loc, int_type_t::instance (), *this).value.ref (*int_type_t::instance ());
+    return cast (loc, Type::Int::Instance (), *this).value.ref (*Type::Int::Instance ());
   }
 
-  int_type_t::ValueType low_integral_value () const
+  Type::Int::ValueType low_integral_value () const
   {
     Location loc;
-    return cast (loc, int_type_t::instance (), *this).low_value.ref (*int_type_t::instance ());
+    return cast (loc, Type::Int::Instance (), *this).low_value.ref (*Type::Int::Instance ());
   }
 
-  int_type_t::ValueType high_integral_value () const
+  Type::Int::ValueType high_integral_value () const
   {
     Location loc;
-    return cast (loc, int_type_t::instance (), *this).high_value.ref (*int_type_t::instance ());
+    return cast (loc, Type::Int::Instance (), *this).high_value.ref (*Type::Int::Instance ());
   }
 
-  slice_type_t::ValueType slice_value () const
+  Type::Slice::ValueType slice_value () const
   {
     return value.slice_value ();
   }

@@ -245,8 +245,11 @@ IdentifierList: IDENTIFIER { $$ = (new ast_identifier_list_t (@1))->append ($1);
 | IdentifierList ',' IDENTIFIER { $$ = $1->append ($3); }
 
 TypeSpecExpression:
-COMPONENT '{' FieldList '}' { $$ = new ast_component_type_spec_t (@1, $3); }
-| STRUCT '{' FieldList '}' { $$ = new ast_struct_type_spec_t (@1, $3); }
+COMPONENT '{' FieldList '}' {
+  $$ = $3;
+  static_cast<ast_field_list_type_spec_t*> ($3)->IsComponent = true;
+}
+| STRUCT '{' FieldList '}' { $$ = $3; }
 | PUSH Signature { $$ = new ast_push_port_type_spec_t (@1, $2); }
 | PULL Signature DereferenceMutability TypeSpec { $$ = new ast_pull_port_type_spec_t (@1, $2, $3, $4); }
 | HEAP TypeSpec { $$ = new ast_heap_type_spec_t (@1, $2); }

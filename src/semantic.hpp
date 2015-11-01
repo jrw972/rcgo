@@ -31,7 +31,7 @@ enter_symbol (ast_t& node, T* symbol)
 }
 
 // Enter a signature.
-void enter_signature (ast_t& node, const signature_type_t * type);
+void enter_signature (ast_t& node, const Type::Signature * type);
 
 // Look up a symbol.  If it is not defined, process its definition.
 template<typename T>
@@ -61,10 +61,10 @@ T* processAndLookup (ast_t * node, const std::string& identifier)
 typed_value_t process_array_dimension (ast_t*& ptr);
 
 // Check that a signature has +foreign where needed.
-void CheckForForeignSafe (const signature_type_t* signature, const parameter_t* return_parameter = NULL);
+void CheckForForeignSafe (const Type::Signature* signature, const parameter_t* return_parameter);
 
 // Process a type specification.
-const type_t * process_type_spec (ast_t * node, bool force_identifiers, bool is_component = false, named_type_t* named_type = NULL);
+const Type::Type * process_type_spec (ast_t * node, bool force_identifiers, bool is_component = false, Type::NamedType* named_type = NULL);
 
 /* Process all declarations (non-code). */
 void ProcessDeclarations (ast_t * node);

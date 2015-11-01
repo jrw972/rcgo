@@ -2,7 +2,7 @@
 #define instance_hpp
 
 #include "types.hpp"
-#include "type.hpp"
+#include "Type.hpp"
 #include <set>
 
 class instance_t
@@ -10,7 +10,7 @@ class instance_t
 public:
   instance_t (instance_t* parent,
               size_t address,
-              const named_type_t* type,
+              const Type::NamedType* type,
               Initializer* initializer,
               unsigned int line)
     : parent_ (parent)
@@ -21,18 +21,42 @@ public:
     , line_ (line)
   { }
 
-  instance_t* parent () const { return parent_; }
-  size_t address () const { return address_; }
-  const named_type_t* type () const { return type_; }
+  instance_t* parent () const
+  {
+    return parent_;
+  }
+  size_t address () const
+  {
+    return address_;
+  }
+  const Type::NamedType* type () const
+  {
+    return type_;
+  }
 
-  void ptr (component_t* p) { ptr_ = p; }
-  component_t* ptr () const { return ptr_; }
+  void ptr (component_t* p)
+  {
+    ptr_ = p;
+  }
+  component_t* ptr () const
+  {
+    return ptr_;
+  }
 
-  Initializer* initializer () const { return initializer_; }
+  Initializer* initializer () const
+  {
+    return initializer_;
+  }
 
-  unsigned int line () const { return line_; }
+  unsigned int line () const
+  {
+    return line_;
+  }
 
-  bool is_top_level () const { return parent_ == NULL; }
+  bool is_top_level () const
+  {
+    return parent_ == NULL;
+  }
   size_t offset () const
   {
     if (parent_ == NULL)
@@ -48,7 +72,7 @@ public:
 private:
   instance_t* parent_;
   size_t address_;
-  const named_type_t *type_;
+  const Type::NamedType *type_;
   component_t* ptr_;
   Initializer* initializer_;
   unsigned int line_;

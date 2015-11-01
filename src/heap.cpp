@@ -1,6 +1,6 @@
 #include "heap.hpp"
 #include "util.hpp"
-#include "type.hpp"
+#include "Type.hpp"
 #include "debug.hpp"
 #include <string.h>
 #include <pthread.h>
@@ -27,13 +27,15 @@
 
 // Element in the free list.
 typedef struct chunk_t chunk_t;
-struct chunk_t {
+struct chunk_t
+{
   chunk_t* next;
   size_t size;
 };
 
 typedef struct block_t block_t;
-struct block_t {
+struct block_t
+{
   // Blocks are organized into a tree sorted by begin.
   block_t* left;
   block_t* right;
@@ -356,7 +358,8 @@ static size_t block_sweep (block_t** b, chunk_t** head)
   return retval;
 }
 
-struct heap_t {
+struct heap_t
+{
   // The root block of this heap.
   block_t* block;
   // Lock for this heap.

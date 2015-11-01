@@ -102,6 +102,7 @@ reaction (this +const * Process) Initr (v uint)
 
 [3u] reaction (this +const * Process) receive (v uint)
 {
+  println (`In receive`, this);
   println (`Process `, this.i, ` received `, v, ` from process `, IOTA);
   activate
   {

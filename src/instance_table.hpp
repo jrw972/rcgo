@@ -13,10 +13,10 @@ struct instance_table_t
   {
     instance_t* instance;
     reaction_t* reaction;
-    int_type_t::ValueType parameter;
+    Type::Int::ValueType parameter;
 
     InputType () { }
-    InputType (instance_t* i, reaction_t* r, int_type_t::ValueType p) : instance (i), reaction (r), parameter (p) { }
+    InputType (instance_t* i, reaction_t* r, Type::Int::ValueType p) : instance (i), reaction (r), parameter (p) { }
 
     bool operator< (const InputType& other) const
     {
@@ -26,17 +26,20 @@ struct instance_table_t
     }
   };
   typedef std::set<InputType> InputsType;
-  struct PortValueType
+  struct PushPortValueType
   {
-    PortValueType () { }
-    PortValueType (size_t a, instance_t* oi, field_t* of) : address (a), output_instance (oi), output_field (of) { }
+    PushPortValueType () { }
+    PushPortValueType (size_t a, instance_t* oi, field_t* of) : address (a), output_instance (oi), output_field (of)
+    {
+      assert (output_instance != NULL);
+    }
     size_t address;
     instance_t* output_instance;
     field_t* output_field;
     InputsType inputs;
   };
-  typedef std::map<size_t, PortValueType> PortsType;
-  PortsType push_ports;
+  typedef std::map<size_t, PushPortValueType> PushPortsType;
+  PushPortsType push_ports;
 
   typedef std::map<InputType, std::set<size_t> > ReversePortsType;
   ReversePortsType reverse_ports;
@@ -85,7 +88,7 @@ struct instance_table_t
                     instance_t* output_instance,
                     field_t* output_field)
   {
-    push_ports[address] = PortValueType (address, output_instance, output_field);
+    push_ports[address] = PushPortValueType (address, output_instance, output_field);
   }
 
   void
@@ -99,7 +102,7 @@ struct instance_table_t
 
 std::ostream&
 operator<< (std::ostream&,
-            const instance_table_t::PortValueType&);
+            const instance_table_t::PushPortValueType&);
 
 void instance_table_enumerate_bindings (instance_table_t& table);
 

@@ -40,7 +40,7 @@ private:
 
     instance_info_t (instance_t* instance)
       : instance (instance)
-      , heap (heap_make (instance->ptr (), instance->type ()->size ()))
+      , heap (heap_make (instance->ptr (), instance->type ()->Size ()))
       , next (NULL)
     {
       pthread_rwlock_init (&lock, NULL);

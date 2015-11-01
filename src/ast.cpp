@@ -3,7 +3,7 @@
 #include <string.h>
 #include "debug.hpp"
 #include "util.hpp"
-#include "type.hpp"
+#include "Type.hpp"
 #include <vector>
 #include "Callable.hpp"
 #include "SymbolVisitor.hpp"
@@ -70,7 +70,6 @@ ACCEPT (ast_identifier_list_t)
 ACCEPT (ast_receiver_t)
 ACCEPT (ast_array_type_spec_t)
 ACCEPT (ast_slice_type_spec_t)
-ACCEPT (ast_component_type_spec_t)
 ACCEPT (ast_empty_type_spec_t)
 ACCEPT (ast_enum_type_spec_t)
 ACCEPT (ast_field_list_type_spec_t)
@@ -81,7 +80,6 @@ ACCEPT (ast_pointer_type_spec_t)
 ACCEPT (ast_push_port_type_spec_t)
 ACCEPT (ast_pull_port_type_spec_t)
 ACCEPT (ast_signature_type_spec_t)
-ACCEPT (ast_struct_type_spec_t)
 
 ACCEPT (ast_cast_expr_t)
 ACCEPT (ast_type_expr_t)

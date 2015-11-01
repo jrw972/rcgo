@@ -6,10 +6,10 @@
 struct field_t
 {
   std::string const name;
-  const type_t* const type;
+  const Type::Type* const type;
   ptrdiff_t const offset;
 
-  field_t (const std::string& n, const type_t* t, ptrdiff_t o)
+  field_t (const std::string& n, const Type::Type* t, ptrdiff_t o)
     : name (n)
     , type (t)
     , offset (o)

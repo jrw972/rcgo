@@ -4,14 +4,16 @@
 
 namespace runtime
 {
+  using namespace Type;
+
   struct port_t
   {
     component_t* instance;
     const reaction_t* reaction;
-    int_type_t::ValueType parameter;
+    Int::ValueType parameter;
     port_t* next;
 
-    port_t (component_t* i, const reaction_t* r, int_type_t::ValueType p) : instance (i), reaction (r), parameter (p), next (NULL) { }
+    port_t (component_t* i, const reaction_t* r, Int::ValueType p) : instance (i), reaction (r), parameter (p), next (NULL) { }
   };
 
   struct heap_link_t
@@ -42,8 +44,8 @@ namespace runtime
         component_t* ptr;
         if (instance->is_top_level ())
           {
-            const type_t* type = instance->type ();
-            size_t size = type->size ();
+            const Type::Type* type = instance->type ();
+            size_t size = type->Size ();
             ptr = static_cast<component_t*> (malloc (size));
             memset (ptr, 0, size);
           }
@@ -56,7 +58,7 @@ namespace runtime
   }
 
   static void
-  bind (port_t** output_port, component_t* input_instance, const reaction_t* reaction, int_type_t::ValueType parameter)
+  bind (port_t** output_port, component_t* input_instance, const reaction_t* reaction, Int::ValueType parameter)
   {
     port_t* port = new port_t (input_instance, reaction, parameter);
     port->next = *output_port;
@@ -78,7 +80,7 @@ namespace runtime
   void
   create_bindings (instance_table_t& instance_table)
   {
-    for (instance_table_t::PortsType::const_iterator output_pos = instance_table.push_ports.begin (),
+    for (instance_table_t::PushPortsType::const_iterator output_pos = instance_table.push_ports.begin (),
          output_limit = instance_table.push_ports.end ();
          output_pos != output_limit;
          ++output_pos)
@@ -133,7 +135,7 @@ namespace runtime
   static void
   evaluate (executor_base_t& exec, const ast_binary_expr_t& node, const T& op)
   {
-    struct visitor : public const_type_visitor_t
+    struct visitor : public Visitor
     {
       executor_base_t& exec;
       const ast_binary_expr_t& node;
@@ -143,64 +145,64 @@ namespace runtime
                const ast_binary_expr_t& n,
                const T& o) : exec (e), node (n), op (o) { }
 
-      void default_action (const type_t& t)
+      void default_action (const Type::Type& t)
       {
         type_not_reached (t);
       }
 
-      void visit (const named_type_t& t)
+      void visit (const NamedType& t)
       {
-        t.subtype ()->accept (*this);
+        t.UnderlyingType ()->Accept (*this);
       }
 
-      void visit (const bool_type_t& t)
-      {
-        op (exec, node, t);
-      }
-
-      void visit (const int_type_t& t)
+      void visit (const Bool& t)
       {
         op (exec, node, t);
       }
 
-      void visit (const int8_type_t& t)
+      void visit (const Int& t)
       {
         op (exec, node, t);
       }
 
-      void visit (const uint_type_t& t)
+      void visit (const Int8& t)
       {
         op (exec, node, t);
       }
 
-      void visit (const uint64_type_t& t)
+      void visit (const Uint& t)
       {
         op (exec, node, t);
       }
 
-      void visit (const float64_type_t& t)
+      void visit (const Uint64& t)
       {
         op (exec, node, t);
       }
 
-      void visit (const pointer_type_t& t)
+      void visit (const Float64& t)
       {
         op (exec, node, t);
       }
 
-      void visit (const enum_type_t& t)
+      void visit (const Pointer& t)
+      {
+        op (exec, node, t);
+      }
+
+      void visit (const Enum& t)
       {
         op (exec, node, t);
       }
     };
 
     visitor v (exec, node, op);
-    op.dispatch_type (node)->accept (v);
+    op.dispatch_type (node)->Accept (v);
   }
 
   struct RetvalDispatch
   {
-    const type_t*
+    const Type::Type*
     dispatch_type (const ast_binary_expr_t& node) const
     {
       return node.typed_value.type;
@@ -209,7 +211,7 @@ namespace runtime
 
   struct LeftDispatch
   {
-    const type_t*
+    const Type::Type*
     dispatch_type (const ast_binary_expr_t& node) const
     {
       return node.left ()->typed_value.type;
@@ -236,7 +238,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t& t) const
+                const Int& t) const
     {
       doit (exec, node, t);
     }
@@ -244,7 +246,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int8_type_t& t) const
+                const Int8& t) const
     {
       doit (exec, node, t);
     }
@@ -252,7 +254,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -263,13 +265,13 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const Int&) const
     {
       evaluate_expr (exec, node.left ());
-      int_type_t::ValueType left;
+      Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
       evaluate_expr (exec, node.right ());
-      int_type_t::ValueType right;
+      Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left / right);
     }
@@ -277,13 +279,13 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const float64_type_t&) const
+                const Float64&) const
     {
       evaluate_expr (exec, node.left ());
-      float64_type_t::ValueType left;
+      Float64::ValueType left;
       stack_frame_pop (exec.stack (), left);
       evaluate_expr (exec, node.right ());
-      float64_type_t::ValueType right;
+      Float64::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left / right);
     }
@@ -291,7 +293,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -302,13 +304,13 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const Int&) const
     {
       evaluate_expr (exec, node.left ());
-      int_type_t::ValueType left;
+      Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
       evaluate_expr (exec, node.right ());
-      int_type_t::ValueType right;
+      Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left % right);
     }
@@ -316,14 +318,14 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
   };
 
   template <typename T>
-  struct LeftShiftVisitor : public const_type_visitor_t
+  struct LeftShiftVisitor : public Visitor
   {
     executor_base_t& exec;
     const ast_binary_expr_t& node;
@@ -334,22 +336,22 @@ namespace runtime
       , node (n)
     { }
 
-    void default_action (const type_t& t)
+    void default_action (const Type::Type& t)
     {
       type_not_reached (t);
     }
 
-    void visit (const named_type_t& t)
+    void visit (const NamedType& t)
     {
-      t.subtype ()->accept (*this);
+      t.UnderlyingType ()->Accept (*this);
     }
 
-    void visit (const uint_type_t& t)
+    void visit (const Uint& t)
     {
       doit (t);
     }
 
-    void visit (const uint8_type_t& t)
+    void visit (const Uint8& t)
     {
       doit (t);
     }
@@ -376,13 +378,13 @@ namespace runtime
           const T&) const
     {
       LeftShiftVisitor<T> v (exec, node);
-      node.right ()->typed_value.type->accept (v);
+      node.right ()->typed_value.type->Accept (v);
     }
 
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t& t) const
+                const Int& t) const
     {
       doit (exec, node, t);
     }
@@ -390,7 +392,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const uint64_type_t& t) const
+                const Uint64& t) const
     {
       doit (exec, node, t);
     }
@@ -398,7 +400,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -409,9 +411,9 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const Int&) const
     {
-      struct visitor : public const_type_visitor_t
+      struct visitor : public Visitor
       {
         executor_base_t& exec;
         const ast_binary_expr_t& node;
@@ -422,36 +424,36 @@ namespace runtime
           , node (n)
         { }
 
-        void default_action (const type_t& t)
+        void default_action (const Type::Type& t)
         {
           type_not_reached (t);
         }
 
-        void visit (const named_type_t& t)
+        void visit (const NamedType& t)
         {
-          t.subtype ()->accept (*this);
+          t.UnderlyingType ()->Accept (*this);
         }
 
-        void visit (const uint_type_t&)
+        void visit (const Uint&)
         {
           evaluate_expr (exec, node.left ());
-          int_type_t::ValueType left;
+          Int::ValueType left;
           stack_frame_pop (exec.stack (), left);
           evaluate_expr (exec, node.right ());
-          uint_type_t::ValueType right;
+          Uint::ValueType right;
           stack_frame_pop (exec.stack (), right);
           stack_frame_push (exec.stack (), left >> right);
         }
       };
 
       visitor v (exec, node);
-      node.right ()->typed_value.type->accept (v);
+      node.right ()->typed_value.type->Accept (v);
     }
 
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -462,13 +464,13 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const Int&) const
     {
       evaluate_expr (exec, node.left ());
-      int_type_t::ValueType left;
+      Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
       evaluate_expr (exec, node.right ());
-      int_type_t::ValueType right;
+      Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left & right);
     }
@@ -476,7 +478,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -487,13 +489,13 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const Int&) const
     {
       evaluate_expr (exec, node.left ());
-      int_type_t::ValueType left;
+      Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
       evaluate_expr (exec, node.right ());
-      int_type_t::ValueType right;
+      Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left & (~right));
     }
@@ -501,7 +503,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -512,7 +514,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t& type) const
+                const Int& type) const
     {
       doit (exec, node, type);
     }
@@ -520,7 +522,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const uint_type_t& type) const
+                const Uint& type) const
     {
       doit (exec, node, type);
     }
@@ -543,7 +545,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -554,13 +556,13 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const Int&) const
     {
       evaluate_expr (exec, node.left ());
-      int_type_t::ValueType left;
+      Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
       evaluate_expr (exec, node.right ());
-      int_type_t::ValueType right;
+      Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left - right);
     }
@@ -568,7 +570,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -579,13 +581,13 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const Int&) const
     {
       evaluate_expr (exec, node.left ());
-      int_type_t::ValueType left;
+      Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
       evaluate_expr (exec, node.right ());
-      int_type_t::ValueType right;
+      Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left | right);
     }
@@ -593,7 +595,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -604,13 +606,13 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const Int&) const
     {
       evaluate_expr (exec, node.left ());
-      int_type_t::ValueType left;
+      Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
       evaluate_expr (exec, node.right ());
-      int_type_t::ValueType right;
+      Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left ^ right);
     }
@@ -618,7 +620,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -629,7 +631,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const bool_type_t& type) const
+                const Bool& type) const
     {
       doit (exec, node, type);
     }
@@ -637,7 +639,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t& type) const
+                const Int& type) const
     {
       doit (exec, node, type);
     }
@@ -645,7 +647,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const uint_type_t& type) const
+                const Uint& type) const
     {
       doit (exec, node, type);
     }
@@ -653,7 +655,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const pointer_type_t& type) const
+                const Pointer& type) const
     {
       doit (exec, node, type);
     }
@@ -661,7 +663,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const enum_type_t& type) const
+                const Enum& type) const
     {
       doit (exec, node, type);
     }
@@ -683,7 +685,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -694,41 +696,41 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const bool_type_t&) const
+                const Bool&) const
     {
-      doit<bool_type_t> (exec, node);
+      doit<Bool> (exec, node);
     }
 
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const Int&) const
     {
-      doit<int_type_t> (exec, node);
+      doit<Int> (exec, node);
     }
 
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const uint_type_t&) const
+                const Uint&) const
     {
-      doit<uint_type_t> (exec, node);
+      doit<Uint> (exec, node);
     }
 
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const uint64_type_t&) const
+                const Uint64&) const
     {
-      doit<uint_type_t> (exec, node);
+      doit<Uint64> (exec, node);
     }
 
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const pointer_type_t&) const
+                const Pointer&) const
     {
-      doit<pointer_type_t> (exec, node);
+      doit<Pointer> (exec, node);
     }
 
     template <typename T>
@@ -747,7 +749,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -758,13 +760,13 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const Int&) const
     {
       evaluate_expr (exec, node.left ());
-      int_type_t::ValueType left;
+      Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
       evaluate_expr (exec, node.right ());
-      int_type_t::ValueType right;
+      Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left < right);
     }
@@ -772,13 +774,13 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int8_type_t&) const
+                const Int8&) const
     {
       evaluate_expr (exec, node.left ());
-      int8_type_t::ValueType left;
+      Int8::ValueType left;
       stack_frame_pop (exec.stack (), left);
       evaluate_expr (exec, node.right ());
-      int8_type_t::ValueType right;
+      Int8::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left < right);
     }
@@ -786,7 +788,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -797,13 +799,13 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const Int&) const
     {
       evaluate_expr (exec, node.left ());
-      int_type_t::ValueType left;
+      Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
       evaluate_expr (exec, node.right ());
-      int_type_t::ValueType right;
+      Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left <= right);
     }
@@ -811,7 +813,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -822,13 +824,13 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const Int&) const
     {
       evaluate_expr (exec, node.left ());
-      int_type_t::ValueType left;
+      Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
       evaluate_expr (exec, node.right ());
-      int_type_t::ValueType right;
+      Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left > right);
     }
@@ -836,7 +838,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -847,13 +849,13 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const int_type_t&) const
+                const Int&) const
     {
       evaluate_expr (exec, node.left ());
-      int_type_t::ValueType left;
+      Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
       evaluate_expr (exec, node.right ());
-      int_type_t::ValueType right;
+      Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left >= right);
     }
@@ -861,7 +863,7 @@ namespace runtime
     void
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
-                const type_t& t) const
+                const Type::Type& t) const
     {
       type_not_reached (t);
     }
@@ -885,6 +887,9 @@ namespace runtime
           case typed_value_t::REFERENCE:
             std::cout << *node;
             unimplemented;
+          case typed_value_t::TYPE:
+            std::cout << *node;
+            unimplemented;
           }
       }
 
@@ -905,7 +910,7 @@ namespace runtime
       {
         // Determine the push port index.
         evaluate_expr (exec, node.index ());
-        int_type_t::ValueType idx;
+        Int::ValueType idx;
         stack_frame_pop (exec.stack (), idx);
         if (idx < 0 || idx >= node.array_type->dimension)
           {
@@ -913,29 +918,29 @@ namespace runtime
                            "array index is out of bounds");
           }
 
-        push_port_call (node, node.args (), node.field, idx * node.array_type->element_size ());
+        push_port_call (node, node.args (), node.field, idx * node.array_type->ElementSize ());
       }
 
       void visit (const ast_index_expr_t& node)
       {
-        struct visitor : public const_type_visitor_t
+        struct visitor : public Visitor
         {
           executor_base_t& exec;
           const ast_index_expr_t& node;
 
           visitor (executor_base_t& e, const ast_index_expr_t& n) : exec (e), node (n) { }
 
-          void default_action (const type_t& type)
+          void default_action (const Type::Type& type)
           {
             not_reached;
           }
 
-          void visit (const array_type_t& type)
+          void visit (const Array& type)
           {
             evaluate_expr (exec, node.base ());
             void* ptr = stack_frame_pop_pointer (exec.stack ());
             evaluate_expr (exec, node.index ());
-            int_type_t::ValueType idx;
+            Int::ValueType idx;
             stack_frame_pop (exec.stack (), idx);
             if (idx < 0 || idx >= type.dimension)
               {
@@ -943,11 +948,11 @@ namespace runtime
                                "array index is out of bounds");
               }
             stack_frame_push_pointer (exec.stack (),
-                                      static_cast<char*> (ptr) + idx * type.element_size ());
+                                      static_cast<char*> (ptr) + idx * type.ElementSize ());
           }
         };
         visitor v (exec, node);
-        node.base ()->typed_value.type->accept (v);
+        node.base ()->typed_value.type->Accept (v);
       }
 
       void visit (const ast_slice_expr_t& node)
@@ -962,7 +967,7 @@ namespace runtime
             evaluate_expr (exec, node.low ());
             stack_frame_pop_tv (exec.stack (), low_tv);
           }
-        int_type_t::ValueType low = low_tv.integral_value ();
+        Int::ValueType low = low_tv.integral_value ();
 
         typed_value_t high_tv = node.high ()->typed_value;
         if (!high_tv.value.present)
@@ -970,9 +975,9 @@ namespace runtime
             evaluate_expr (exec, node.high ());
             stack_frame_pop_tv (exec.stack (), high_tv);
           }
-        int_type_t::ValueType high = high_tv.integral_value ();
+        Int::ValueType high = high_tv.integral_value ();
 
-        const array_type_t* array_type = type_cast<array_type_t> (base_tv.type);
+        const Array* array_type = type_cast<Array> (base_tv.type);
         if (array_type)
           {
             if (low < 0 || low >= array_type->dimension)
@@ -984,18 +989,18 @@ namespace runtime
                 error_at_line (EXIT_FAILURE, 0, node.location.File.c_str (), node.location.Line, "E44: upper limit of slice is out of bounds");
               }
 
-            slice_type_t::ValueType slice;
+            Slice::ValueType slice;
             slice.ptr = NULL;
             slice.length = high - low;
             slice.capacity = high - low;
             if (slice.length != 0)
               {
-                slice.ptr = static_cast<char*> (base_tv.value.reference_value ()) + low * array_type->element_size ();
+                slice.ptr = static_cast<char*> (base_tv.value.reference_value ()) + low * array_type->ElementSize ();
               }
 
-            const type_t* base_type = array_type->base_type ();
+            const Type::Type* base_type = array_type->Base ();
 
-            stack_frame_push_tv (exec.stack (), typed_value_t (base_type->getSliceType (), slice));
+            stack_frame_push_tv (exec.stack (), typed_value_t (base_type->GetSlice (), slice));
           }
         else
           {
@@ -1010,7 +1015,8 @@ namespace runtime
 
       void visit (const ast_call_expr_t& node)
       {
-        if (type_cast<pull_port_type_t> (node.expr ()->typed_value.type) == NULL)
+        const Type::Function* f = type_cast<Type::Function> (node.expr ()->typed_value.type);
+        if (f == NULL || f->kind != Type::Function::PULL_PORT)
           {
             node.expr ()->typed_value.value.callable_value ()->call (exec, node);
           }
@@ -1038,7 +1044,7 @@ namespace runtime
 
         // Find the port to activate.
         Symbol* this_ = node.GetReceiverSymbol ();
-        stack_frame_push (exec.stack (), this_-> offset (), SymbolCast<ParameterSymbol> (this_)->value.type->size ());
+        stack_frame_push (exec.stack (), this_-> offset (), SymbolCast<ParameterSymbol> (this_)->value.type->Size ());
         port_t* port = *((port_t**)((char*)stack_frame_pop_pointer (exec.stack ()) + field->offset + offset));
 
         char* base_pointer = stack_frame_base_pointer (exec.stack ());
@@ -1053,7 +1059,7 @@ namespace runtime
             // Push the parameter.
             if (port->reaction->has_dimension ())
               {
-                stack_frame_push<int_type_t::ValueType> (exec.stack (), port->parameter);
+                stack_frame_push<Int::ValueType> (exec.stack (), port->parameter);
               }
             // Push the arguments.
             stack_frame_load (exec.stack (), top_before, arguments_size);
@@ -1113,9 +1119,9 @@ namespace runtime
       void visit (const ast_logic_not_expr_t& node)
       {
         evaluate_expr (exec, node.child ());
-        bool_type_t::ValueType b;
+        Bool::ValueType b;
         stack_frame_pop (exec.stack (), b);
-        stack_frame_push<bool_type_t::ValueType> (exec.stack (), !b);
+        stack_frame_push<Bool::ValueType> (exec.stack (), !b);
       }
 
       void visit (const ast_implicit_dereference_expr_t& node)
@@ -1125,9 +1131,10 @@ namespace runtime
         if (ptr == NULL)
           {
             std::cout << node;
+            unimplemented;
           }
         typed_value_t tv = node.typed_value;
-        stack_frame_load (exec.stack (), ptr, tv.type->size ());
+        stack_frame_load (exec.stack (), ptr, tv.type->Size ());
       }
 
       void visit (const ast_cast_expr_t& node)
@@ -1197,7 +1204,7 @@ namespace runtime
           case LOGIC_AND:
           {
             evaluate_expr (exec, node.left ());
-            bool_type_t::ValueType b;
+            Bool::ValueType b;
             stack_frame_pop (exec.stack (), b);
             if (b)
               {
@@ -1205,18 +1212,18 @@ namespace runtime
               }
             else
               {
-                stack_frame_push<bool_type_t::ValueType> (exec.stack (), false);
+                stack_frame_push<Bool::ValueType> (exec.stack (), false);
               }
           }
           break;
           case LOGIC_OR:
           {
             evaluate_expr (exec, node.left ());
-            bool_type_t::ValueType b;
+            Bool::ValueType b;
             stack_frame_pop (exec.stack (), b);
             if (b)
               {
-                stack_frame_push<bool_type_t::ValueType> (exec.stack (), true);
+                stack_frame_push<Bool::ValueType> (exec.stack (), true);
               }
             else
               {
@@ -1258,7 +1265,7 @@ namespace runtime
         ast_t* left = node.left ();
         ast_t* right = node.right ();
         // Determine the size of the value being assigned.
-        size_t size = right->typed_value.type->size ();
+        size_t size = right->typed_value.type->Size ();
         // Evaluate the address.
         evaluate_expr (exec, left);
         void* ptr = stack_frame_pop_pointer (exec.stack ());
@@ -1315,7 +1322,7 @@ namespace runtime
       {
         ast_t* child = node.child ();
         // Determine the size of the value being generated.
-        size_t size = child->typed_value.type->size ();
+        size_t size = child->typed_value.type->Size ();
         // Evaluate.
         evaluate_expr (exec, child);
         // Remove value.
@@ -1325,7 +1332,7 @@ namespace runtime
       void visit (const ast_if_statement_t& node)
       {
         evaluate_expr (exec, node.condition ());
-        bool_type_t::ValueType c;
+        Bool::ValueType c;
         stack_frame_pop (exec.stack (), c);
         if (c)
           {
@@ -1350,7 +1357,7 @@ namespace runtime
         for (;;)
           {
             evaluate_expr (exec, node.condition ());
-            bool_type_t::ValueType c;
+            Bool::ValueType c;
             stack_frame_pop (exec.stack (), c);
             if (c)
               {
@@ -1369,7 +1376,7 @@ namespace runtime
 
       void visit (const ast_for_iota_statement_t& node)
       {
-        for (int_type_t::ValueType idx = 0, limit = node.limit.integral_value ();
+        for (Int::ValueType idx = 0, limit = node.limit.integral_value ();
              idx != limit;
              ++idx)
           {
@@ -1386,75 +1393,75 @@ namespace runtime
       void visit (const ast_add_assign_statement_t& node)
       {
         // Determine the size of the value being assigned.
-        const type_t* type = node.right ()->typed_value.type;
+        const Type::Type* type = node.right ()->typed_value.type;
         // Evaluate the address.
         evaluate_expr (exec, node.left ());
         void* ptr = stack_frame_pop_pointer (exec.stack ());
         // Evaluate the value.
         evaluate_expr (exec, node.right ());
 
-        struct visitor : public const_type_visitor_t
+        struct visitor : public Visitor
         {
           executor_base_t& exec;
           void* ptr;
           visitor (executor_base_t& e, void* p) : exec (e), ptr (p) { }
 
-          void visit (const named_type_t& type)
+          void visit (const NamedType& type)
           {
-            type.subtype ()->accept (*this);
+            type.UnderlyingType ()->Accept (*this);
           }
 
-          void visit (const uint_type_t& type)
+          void visit (const Uint& type)
           {
-            uint_type_t::ValueType x;
+            Uint::ValueType x;
             stack_frame_pop (exec.stack (), x);
-            *((uint_type_t::ValueType*)ptr) += x;
+            *((Uint::ValueType*)ptr) += x;
           }
 
-          void default_action (const type_t& type)
+          void default_action (const Type::Type& type)
           {
             unimplemented;
           }
         };
         visitor v (exec, ptr);
-        type->accept (v);
+        type->Accept (v);
       }
 
       void visit (const ast_subtract_assign_statement_t& node)
       {
         // Determine the size of the value being assigned.
-        const type_t* type = node.right ()->typed_value.type;
+        const Type::Type* type = node.right ()->typed_value.type;
         // Evaluate the address.
         evaluate_expr (exec, node.left ());
         void* ptr = stack_frame_pop_pointer (exec.stack ());
         // Evaluate the value.
         evaluate_expr (exec, node.right ());
 
-        struct visitor : public const_type_visitor_t
+        struct visitor : public Visitor
         {
           executor_base_t& exec;
           void* ptr;
           visitor (executor_base_t& e, void* p) : exec (e), ptr (p) { }
 
-          void visit (const named_type_t& type)
+          void visit (const NamedType& type)
           {
-            type.subtype ()->accept (*this);
+            type.UnderlyingType ()->Accept (*this);
           }
 
-          void visit (const uint_type_t& type)
+          void visit (const Uint& type)
           {
-            uint_type_t::ValueType x;
+            Uint::ValueType x;
             stack_frame_pop (exec.stack (), x);
-            *((uint_type_t::ValueType*)ptr) -= x;
+            *((Uint::ValueType*)ptr) -= x;
           }
 
-          void default_action (const type_t& type)
+          void default_action (const Type::Type& type)
           {
             unimplemented;
           }
         };
         visitor v (exec, ptr);
-        type->accept (v);
+        type->Accept (v);
       }
 
       void visit (const ast_list_statement_t& node)
@@ -1476,7 +1483,7 @@ namespace runtime
         // Evaluate the expression.
         evaluate_expr (exec, node.child ());
         // Store in the return parameter.
-        stack_frame_store_stack (exec.stack (), node.return_symbol->offset (), SymbolCast<ParameterSymbol> (node.return_symbol)->value.type->size ());
+        stack_frame_store_stack (exec.stack (), node.return_symbol->offset (), SymbolCast<ParameterSymbol> (node.return_symbol)->value.type->Size ());
         retval = RETURN;
         return;
       }
@@ -1486,29 +1493,29 @@ namespace runtime
         evaluate_expr (exec, node.child ());
         void* ptr = stack_frame_pop_pointer (exec.stack ());
 
-        struct visitor : public const_type_visitor_t
+        struct visitor : public Visitor
         {
           void* ptr;
 
           visitor (void* p) : ptr (p) { }
 
-          void default_action (const type_t& type)
+          void default_action (const Type::Type& type)
           {
             not_reached;
           }
 
-          void visit (const named_type_t& type)
+          void visit (const NamedType& type)
           {
-            type.subtype ()->accept (*this);
+            type.UnderlyingType ()->Accept (*this);
           }
 
-          void visit (const uint_type_t& type)
+          void visit (const Uint& type)
           {
-            ++(*static_cast<uint_type_t::ValueType*> (ptr));
+            ++(*static_cast<Uint::ValueType*> (ptr));
           }
         };
         visitor v (ptr);
-        node.child ()->typed_value.type->accept (v);
+        node.child ()->typed_value.type->Accept (v);
       }
 
       void visit (const ast_activate_statement_t& node)
@@ -1536,30 +1543,33 @@ namespace runtime
       {
         ast_t* expression_list = node.expression_list ();
 
-        if (expression_list->size () == 0) {
-          // Zero out the variable.
-          for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
-            {
-              Symbol* symbol = node.symbols[idx];
-              stack_frame_clear_stack (exec.stack (), symbol->offset (), SymbolCast<VariableSymbol> (symbol)->value.type->size ());
-            }
-        } else {
-          // Initialize the variables.
-          for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
-            {
-              // Evaluate the address.
-              Symbol* symbol = node.symbols[idx];
-              ptrdiff_t offset = symbol->offset ();
-              stack_frame_push_address (exec.stack (), offset);
-              void* ptr = stack_frame_pop_pointer (exec.stack ());
-              ast_t* initializer = expression_list->at (idx);
-              size_t size = initializer->typed_value.type->size ();
-              // Evaluate the value.
-              evaluate_expr (exec, initializer);
-              // Store.
-              stack_frame_store_heap (exec.stack (), ptr, size);
-            }
-        }
+        if (expression_list->size () == 0)
+          {
+            // Zero out the variable.
+            for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
+              {
+                Symbol* symbol = node.symbols[idx];
+                stack_frame_clear_stack (exec.stack (), symbol->offset (), SymbolCast<VariableSymbol> (symbol)->value.type->Size ());
+              }
+          }
+        else
+          {
+            // Initialize the variables.
+            for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
+              {
+                // Evaluate the address.
+                Symbol* symbol = node.symbols[idx];
+                ptrdiff_t offset = symbol->offset ();
+                stack_frame_push_address (exec.stack (), offset);
+                void* ptr = stack_frame_pop_pointer (exec.stack ());
+                ast_t* initializer = expression_list->at (idx);
+                size_t size = initializer->typed_value.type->Size ();
+                // Evaluate the value.
+                evaluate_expr (exec, initializer);
+                // Store.
+                stack_frame_store_heap (exec.stack (), ptr, size);
+              }
+          }
       }
     };
     visitor v (exec);
@@ -1584,13 +1594,13 @@ namespace runtime
     // Push iota.
     if (action->has_dimension ())
       {
-        stack_frame_push<uint_type_t::ValueType> (exec.stack (), iota);
+        stack_frame_push<Uint::ValueType> (exec.stack (), iota);
       }
     // Push an instruction pointer.
     stack_frame_push_pointer (exec.stack (), NULL);
     stack_frame_push_base_pointer (exec.stack (), 0 /* No locals. */);
     evaluate_expr (exec, action->precondition);
-    bool_type_t::ValueType retval;
+    Bool::ValueType retval;
     stack_frame_pop (exec.stack (), retval);
     stack_frame_pop_base_pointer (exec.stack ());
     // Pop the instruction pointer.
@@ -1598,7 +1608,7 @@ namespace runtime
     // Pop iota.
     if (action->has_dimension ())
       {
-        uint_type_t::ValueType x;
+        Uint::ValueType x;
         stack_frame_pop (exec.stack (), x);
       }
     // Pop this.
@@ -1657,7 +1667,7 @@ namespace runtime
 
         // Set the current record.
         Symbol* this_ = b->GetReceiverSymbol ();
-        stack_frame_push (exec.stack (), this_->offset (), SymbolCast<ParameterSymbol> (this_)->value.type->size ());
+        stack_frame_push (exec.stack (), this_->offset (), SymbolCast<ParameterSymbol> (this_)->value.type->Size ());
         exec.current_instance (static_cast<component_t*> (stack_frame_pop_pointer (exec.stack ())));
 
         // Execute it.
@@ -1695,7 +1705,7 @@ namespace runtime
     // Push iota.
     if (action->has_dimension ())
       {
-        stack_frame_push<uint_type_t::ValueType> (exec.stack (), iota);
+        stack_frame_push<Uint::ValueType> (exec.stack (), iota);
       }
     // Push the instruction pointer.
     stack_frame_push_pointer (exec.stack (), NULL);
@@ -1706,7 +1716,7 @@ namespace runtime
     // Pop iota.
     if (action->has_dimension ())
       {
-        uint_type_t::ValueType x;
+        Uint::ValueType x;
         stack_frame_pop (exec.stack (), x);
       }
     // Pop the instance.
@@ -1718,7 +1728,7 @@ namespace runtime
 
   struct NewImpl : public Callable
   {
-    NewImpl (const type_t* t, ast_t* definingNode)
+    NewImpl (const Type::Type* t, ast_t* definingNode)
       : type_ (t)
       , function_type_ (makeFunctionType (t, definingNode))
     { }
@@ -1726,18 +1736,18 @@ namespace runtime
     virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const
     {
       // Allocate a new instance of the type.
-      const heap_type_t* heap_type = type_cast<heap_type_t> (type_);
+      const Heap* heap_type = type_cast<Heap> (type_);
       if (heap_type == NULL)
         {
-          void* ptr = heap_allocate (exec.heap (), type_->size ());
+          void* ptr = heap_allocate (exec.heap (), type_->Size ());
           // Return the instance.
           stack_frame_push_pointer (exec.stack (), ptr);
         }
       else
         {
-          const type_t* t = heap_type->base_type ();
+          const Type::Type* t = heap_type->Base ();
           // Allocate a new heap and root object.
-          heap_t* h = heap_make_size (t->size ());
+          heap_t* h = heap_make_size (t->Size ());
           // Insert it into its parent.
           heap_t* h2 = exec.heap ();
           heap_insert_child (h2, h);
@@ -1748,17 +1758,17 @@ namespace runtime
         }
     }
 
-    virtual const type_t* type () const
+    virtual const Type::Type* type () const
     {
       return function_type_;
     }
-    const type_t* const type_;
-    const type_t* const function_type_;
-    static const type_t* makeFunctionType (const type_t* type, ast_t* definingNode)
+    const Type::Type* const type_;
+    const Type::Type* const function_type_;
+    static const Type::Type* makeFunctionType (const Type::Type* type, ast_t* definingNode)
     {
-      const type_t* return_type = pointer_type_t::make (type);
-      return new function_type_t ((new signature_type_t ()),
-                                  new parameter_t (definingNode, "0return", typed_value_t::make_value (return_type, typed_value_t::STACK, MUTABLE, MUTABLE), false));
+      const Type::Type* return_type = type->GetPointer ();
+      return new Type::Function (Type::Function::FUNCTION, (new Signature ()),
+                                 new parameter_t (definingNode, "0return", typed_value_t::make_value (return_type, typed_value_t::STACK, MUTABLE, MUTABLE), false));
     }
 
   };
@@ -1766,7 +1776,7 @@ namespace runtime
   New::New (ast_t* dn)
     : Template ("new",
                 dn,
-                new template_type_t ())
+                new Type::Template ())
   { }
 
   typed_value_t
@@ -1834,18 +1844,18 @@ namespace runtime
         }
     }
 
-    virtual const type_t* type () const
+    virtual const Type::Type* type () const
     {
       return function_type_;
     }
-    const type_t* const function_type_;
-    static const type_t* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
+    const Type::Type* const function_type_;
+    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
     {
       typed_value_t in2 = in;
       in2.intrinsic_mutability = MUTABLE;
-      return new function_type_t ((new signature_type_t ())
-                                  ->append (new parameter_t (definingNode, "h", in2, false)),
-                                  new parameter_t (definingNode, "0return", out, false));
+      return new Type::Function (Type::Function::FUNCTION, (new Signature ())
+                                 ->Append (new parameter_t (definingNode, "h", in2, false)),
+                                 new parameter_t (definingNode, "0return", out, false));
     }
 
   };
@@ -1853,7 +1863,7 @@ namespace runtime
   Move::Move (ast_t* dn)
     : Template ("move",
                 dn,
-                new template_type_t ())
+                new Type::Template ())
   { }
 
   typed_value_t
@@ -1870,7 +1880,7 @@ namespace runtime
     if (out.type == NULL)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "E70: cannot move expression of type %s", in.type->to_string ().c_str ());
+                       "E70: cannot move expression of type %s", in.type->ToString ().c_str ());
       }
 
     return typed_value_t (new MoveImpl (in, out, definingNode));
@@ -1920,25 +1930,25 @@ namespace runtime
         }
     }
 
-    virtual const type_t* type () const
+    virtual const Type::Type* type () const
     {
       return function_type_;
     }
-    const type_t* const function_type_;
-    static const type_t* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
+    const Type::Type* const function_type_;
+    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
     {
       typed_value_t in2 = in;
       in2.intrinsic_mutability = MUTABLE;
-      return new function_type_t ((new signature_type_t ())
-                                  ->append (new parameter_t (definingNode, "h", in2, false)),
-                                  new parameter_t (definingNode, "0return", out, false));
+      return new Type::Function (Type::Function::FUNCTION, (new Signature ())
+                                 ->Append (new parameter_t (definingNode, "h", in2, false)),
+                                 new parameter_t (definingNode, "0return", out, false));
     }
   };
 
   Merge::Merge (ast_t* dn)
     : Template ("merge",
                 dn,
-                new template_type_t ())
+                new Type::Template ())
   { }
 
   typed_value_t
@@ -1955,7 +1965,7 @@ namespace runtime
     if (out.type == NULL)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "E72: cannot merge expression of type %s", in.type->to_string ().c_str ());
+                       "E72: cannot merge expression of type %s", in.type->ToString ().c_str ());
       }
 
     return typed_value_t (new MergeImpl (in, out, definingNode));
@@ -1970,33 +1980,33 @@ namespace runtime
 
     virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const
     {
-        evaluate_expr (exec, node.args ());
-        typed_value_t tv = in_;
-        stack_frame_pop_tv (exec.stack (), tv);
-        tv = typed_value_t::copy_exec (tv);
-        stack_frame_push_tv (exec.stack (), tv);
+      evaluate_expr (exec, node.args ());
+      typed_value_t tv = in_;
+      stack_frame_pop_tv (exec.stack (), tv);
+      tv = typed_value_t::copy_exec (tv);
+      stack_frame_push_tv (exec.stack (), tv);
     }
 
-    virtual const type_t* type () const
+    virtual const Type::Type* type () const
     {
       return function_type_;
     }
     const typed_value_t in_;
-    const type_t* const function_type_;
-    static const type_t* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
+    const Type::Type* const function_type_;
+    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
     {
       typed_value_t in2 = in;
       in2.intrinsic_mutability = MUTABLE;
-      return new function_type_t ((new signature_type_t ())
-                                  ->append (new parameter_t (definingNode, "h", in2, false)),
-                                  new parameter_t (definingNode, "0return", out, false));
+      return new Type::Function (Type::Function::FUNCTION, (new Signature ())
+                                 ->Append (new parameter_t (definingNode, "h", in2, false)),
+                                 new parameter_t (definingNode, "0return", out, false));
     }
   };
 
   Copy::Copy (ast_t* dn)
     : Template ("copy",
                 dn,
-                new template_type_t ())
+                new Type::Template ())
   { }
 
   typed_value_t
@@ -2013,7 +2023,7 @@ namespace runtime
     if (out.type == NULL)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "E76: cannot copy expression of type %s", in.type->to_string ().c_str ());
+                       "E76: cannot copy expression of type %s", in.type->ToString ().c_str ());
       }
 
     return typed_value_t (new CopyImpl (in, out, definingNode));
@@ -2027,142 +2037,143 @@ namespace runtime
 
     virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const
     {
-        exec.lock_stdout ();
-        ast_t* expr_list = node.args ();
-        for (ast_t::const_iterator pos = expr_list->begin (),
-             limit = expr_list->end ();
-             pos != limit;
-             ++pos)
+      exec.lock_stdout ();
+      ast_t* expr_list = node.args ();
+      for (ast_t::const_iterator pos = expr_list->begin (),
+           limit = expr_list->end ();
+           pos != limit;
+           ++pos)
+        {
+          ast_t* child = *pos;
+          evaluate_expr (exec, child);
+          struct visitor : public Visitor
           {
-            ast_t* child = *pos;
-            evaluate_expr (exec, child);
-            struct visitor : public const_type_visitor_t
+            executor_base_t& exec;
+            visitor (executor_base_t& e) : exec (e) { }
+
+            void default_action (const Type::Type& type)
             {
-              executor_base_t& exec;
-              visitor (executor_base_t& e) : exec (e) { }
+              type_not_reached (type);
+            }
 
-              void default_action (const type_t& type)
-              {
-                type_not_reached (type);
-              }
+            void visit (const Bool& type)
+            {
+              Bool::ValueType b;
+              stack_frame_pop (exec.stack (), b);
+              if (b)
+                {
+                  printf ("true");
+                }
+              else
+                {
+                  printf ("false");
+                }
+            }
 
-              void visit (const bool_type_t& type)
-              {
-                bool_type_t::ValueType b;
-                stack_frame_pop (exec.stack (), b);
-                if (b)
-                  {
-                    printf ("true");
-                  }
-                else
-                  {
-                    printf ("false");
-                  }
-              }
+            void visit (const Pointer& type)
+            {
+              void* ptr = stack_frame_pop_pointer (exec.stack ());
+              printf ("%p", ptr);
+            }
 
-              void visit (const pointer_type_t& type)
-              {
-                void* ptr = stack_frame_pop_pointer (exec.stack ());
-                printf ("%p", ptr);
-              }
+            void visit (const Uint& type)
+            {
+              Uint::ValueType u;
+              stack_frame_pop (exec.stack (), u);
+              printf ("%lu", u);
+            }
 
-              void visit (const uint_type_t& type)
-              {
-                uint_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                printf ("%lu", u);
-              }
+            void visit (const Uint8& type)
+            {
+              Uint8::ValueType u;
+              stack_frame_pop (exec.stack (), u);
+              printf ("%u", u);
+            }
 
-              void visit (const uint8_type_t& type)
-              {
-                uint8_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                printf ("%u", u);
-              }
+            void visit (const Uint16& type)
+            {
+              Uint16::ValueType u;
+              stack_frame_pop (exec.stack (), u);
+              printf ("%u", u);
+            }
 
-              void visit (const uint16_type_t& type)
-              {
-                uint16_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                printf ("%u", u);
-              }
+            void visit (const Uint64& type)
+            {
+              Uint64::ValueType u;
+              stack_frame_pop (exec.stack (), u);
+              printf ("%lu", u);
+            }
 
-              void visit (const uint64_type_t& type)
-              {
-                uint64_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                printf ("%lu", u);
-              }
+            void visit (const Int& type)
+            {
+              Int::ValueType u;
+              stack_frame_pop (exec.stack (), u);
+              printf ("%ld", u);
+            }
 
-              void visit (const int_type_t& type)
-              {
-                int_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                printf ("%ld", u);
-              }
+            void visit (const Int8& type)
+            {
+              Int8::ValueType u;
+              stack_frame_pop (exec.stack (), u);
+              printf ("%d", u);
+            }
 
-              void visit (const int8_type_t& type)
-              {
-                int8_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                printf ("%d", u);
-              }
+            void visit (const Float64& type)
+            {
+              Float64::ValueType u;
+              stack_frame_pop (exec.stack (), u);
+              printf ("%g", u);
+            }
 
-              void visit (const float64_type_t& type)
-              {
-                float64_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                printf ("%g", u);
-              }
-
-              void visit (const slice_type_t& type)
-              {
-                slice_type_t::ValueType u;
-                stack_frame_pop (exec.stack (), u);
-                if (type_strip_cast<uint8_type_t> (type.base_type ()))
-                  {
-                    fwrite (u.ptr, 1, u.length, stdout);
-                  }
-                else
-                  {
-                    printf ("slice");
-                  }
-              }
-            };
-            visitor v (exec);
-            type_strip (child->typed_value.type)->accept (v);
-          }
-        printf ("\n");
-        exec.unlock_stdout ();
+            void visit (const Slice& type)
+            {
+              Slice::ValueType u;
+              stack_frame_pop (exec.stack (), u);
+              if (type_strip_cast<Uint8> (type.Base ()))
+                {
+                  fwrite (u.ptr, 1, u.length, stdout);
+                }
+              else
+                {
+                  printf ("slice");
+                }
+            }
+          };
+          visitor v (exec);
+          type_strip (child->typed_value.type)->Accept (v);
+        }
+      printf ("\n");
+      exec.unlock_stdout ();
     }
 
-    virtual const type_t* type () const
+    virtual const Type::Type* type () const
     {
       return function_type_;
     }
     const typed_value_t in_;
-    const type_t* const function_type_;
-    static const type_t* makeFunctionType (const TypedValueListType& tvlist, ast_t* definingNode)
+    const Type::Type* const function_type_;
+    static const Type::Type* makeFunctionType (const TypedValueListType& tvlist, ast_t* definingNode)
     {
-      signature_type_t* sig = new signature_type_t ();
+      Signature* sig = new Signature ();
       for (TypedValueListType::const_iterator pos = tvlist.begin (),
-             limit = tvlist.end ();
+           limit = tvlist.end ();
            pos != limit;
-           ++pos) {
-        typed_value_t in = *pos;
-        in.intrinsic_mutability = MUTABLE;
-        sig->append (new parameter_t (definingNode, "", in, false));
-      }
+           ++pos)
+        {
+          typed_value_t in = *pos;
+          in.intrinsic_mutability = MUTABLE;
+          sig->Append (new parameter_t (definingNode, "", in, false));
+        }
 
-      return new function_type_t (sig,
-                                  new parameter_t (definingNode, "0return", typed_value_t::make_value (void_type_t::instance (), typed_value_t::STACK, IMMUTABLE, IMMUTABLE), false));
+      return new Type::Function (Type::Function::FUNCTION, sig,
+                                 new parameter_t (definingNode, "0return", typed_value_t::make_value (Void::Instance (), typed_value_t::STACK, IMMUTABLE, IMMUTABLE), false));
     }
   };
 
   Println::Println (ast_t* dn)
     : Template ("println",
                 dn,
-                new template_type_t ())
+                new Type::Template ())
   { }
 
   typed_value_t

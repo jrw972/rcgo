@@ -31,27 +31,27 @@ void
 enter_symbols (ast_t * node)
 {
   /* Insert types. */
-  named_type_t* bool_type = new named_type_t ("bool", bool_type_t::instance ());
+  Type::NamedType* bool_type = new Type::NamedType ("bool", Type::Bool::Instance ());
   node->EnterSymbol (new TypeSymbol ("bool", node, bool_type));
 
-  named_type_t* int_type = new named_type_t ("int", int_type_t::instance ());
+  Type::NamedType* int_type = new Type::NamedType ("int", Type::Int::Instance ());
   node->EnterSymbol (new TypeSymbol ("int", node, int_type));
-  node->EnterSymbol (new TypeSymbol ("int8", node, new named_type_t ("int8", int8_type_t::instance ())));
+  node->EnterSymbol (new TypeSymbol ("int8", node, new Type::NamedType ("int8", Type::Int8::Instance ())));
 
-  node->EnterSymbol (new TypeSymbol ("uint", node, new named_type_t ("uint", uint_type_t::instance ())));
+  node->EnterSymbol (new TypeSymbol ("uint", node, new Type::NamedType ("uint", Type::Uint::Instance ())));
 
-  named_type_t* uint8_type = new named_type_t ("uint8", uint8_type_t::instance ());
+  Type::NamedType* uint8_type = new Type::NamedType ("uint8", Type::Uint8::Instance ());
   node->EnterSymbol (new TypeSymbol ("uint8", node, uint8_type));
-  named_type_t* uint16_type = new named_type_t ("uint16", uint16_type_t::instance ());
+  Type::NamedType* uint16_type = new Type::NamedType ("uint16", Type::Uint16::Instance ());
   node->EnterSymbol (new TypeSymbol ("uint16", node, uint16_type));
-  node->EnterSymbol (new TypeSymbol ("uint32", node, new named_type_t ("uint32", uint32_type_t::instance ())));
+  node->EnterSymbol (new TypeSymbol ("uint32", node, new Type::NamedType ("uint32", Type::Uint32::Instance ())));
 
-  named_type_t* uint64_type = new named_type_t ("uint64", uint64_type_t::instance ());
+  Type::NamedType* uint64_type = new Type::NamedType ("uint64", Type::Uint64::Instance ());
   node->EnterSymbol (new TypeSymbol ("uint64", node, uint64_type));
 
-  node->EnterSymbol (new TypeSymbol ("uint128", node, new named_type_t ("uint128", uint128_type_t::instance ())));
+  node->EnterSymbol (new TypeSymbol ("uint128", node, new Type::NamedType ("uint128", Type::Uint128::Instance ())));
 
-  node->EnterSymbol (new TypeSymbol ("float64", node, new named_type_t ("float64", float64_type_t::instance ())));
+  node->EnterSymbol (new TypeSymbol ("float64", node, new Type::NamedType ("float64", Type::Float64::Instance ())));
 
   // Insert builtin-in functions.
   node->EnterSymbol (new runtime::New (node));
@@ -61,7 +61,7 @@ enter_symbols (ast_t * node)
   node->EnterSymbol (new runtime::Println (node));
 
   /* I/O facilities. */
-  named_type_t* fd_type = new named_type_t ("FileDescriptor", FileDescriptor_type_t::instance ());
+  Type::NamedType* fd_type = new Type::NamedType ("FileDescriptor", Type::FileDescriptor::Instance ());
   node->EnterSymbol (new TypeSymbol ("FileDescriptor", node, fd_type));
   node->EnterSymbol (new Readable (node, fd_type, bool_type));
   node->EnterSymbol (new Read (node, fd_type, uint8_type));
@@ -79,10 +79,10 @@ enter_symbols (ast_t * node)
   /* Insert untyped boolean constants. */
   node->EnterSymbol (new TypedConstantSymbol ("true",
                      node,
-                     typed_value_t (bool_type_t::instance (), true)));
+                     typed_value_t (Type::Bool::Instance (), true)));
   node->EnterSymbol (new TypedConstantSymbol ("false",
                      node,
-                     typed_value_t (bool_type_t::instance (), false)));
+                     typed_value_t (Type::Bool::Instance (), false)));
 
   struct visitor : public ast_visitor_t
   {

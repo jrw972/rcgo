@@ -2,7 +2,7 @@
 #define Callable_hpp
 
 #include "types.hpp"
-#include "type.hpp"
+#include "Type.hpp"
 #include "MemoryModel.hpp"
 #include "Symbol.hpp"
 
@@ -15,7 +15,7 @@ class Callable
 public:
   virtual ~Callable () { }
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const = 0;
-  virtual const type_t* type () const = 0;
+  virtual const Type::Type* type () const = 0;
 };
 
 /*
@@ -29,24 +29,36 @@ struct Function : public Callable, public Symbol
 
   // Callable
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
-  virtual const type_t* type () const { return functionType_; }
+  virtual const Type::Type* type () const
+  {
+    return functionType_;
+  }
 
   // Symbol
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-  virtual const char* kindString () const { return "Function"; }
+  virtual const char* kindString () const
+  {
+    return "Function";
+  }
 
   ast_function_t& node;
   MemoryModel memoryModel;
 
-  void set (const function_type_t* functionType,
+  void set (const Type::Function* functionType,
             const Symbol* returnSymbol);
 
-  const Symbol* returnSymbol () const { return returnSymbol_; }
-  typed_value_t value () const { return value_; }
+  const Symbol* returnSymbol () const
+  {
+    return returnSymbol_;
+  }
+  typed_value_t value () const
+  {
+    return value_;
+  }
 
 private:
-  const function_type_t* functionType_;
+  const Type::Function* functionType_;
   const Symbol* returnSymbol_;
   size_t returnSize_;
   typed_value_t value_;
@@ -56,21 +68,24 @@ struct Method : public Callable
 {
   Method (ast_method_t* n,
           const std::string& na,
-          const method_type_t* method_type_,
+          const Type::Method* method_type_,
           const Symbol* return_symbol_)
     : node (n)
     , name (na)
     , methodType (method_type_)
     , returnSymbol (return_symbol_)
-    , returnSize (method_type_->return_type ()->size ())
+    , returnSize (method_type_->return_type ()->Size ())
   { }
 
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
-  virtual const type_t* type () const { return methodType; }
+  virtual const Type::Type* type () const
+  {
+    return methodType;
+  }
 
   ast_method_t* const node;
   std::string const name;
-  const method_type_t * const methodType;
+  const Type::Method * const methodType;
   const Symbol* const returnSymbol;
   size_t const returnSize;
   MemoryModel memoryModel;
@@ -80,7 +95,7 @@ struct Initializer : public Callable
 {
   Initializer (ast_initializer_t* n,
                const std::string& na,
-               const initializer_type_t* initializer_type_)
+               const Type::Method* initializer_type_)
     : node (n)
     , name (na)
     , initializerType (initializer_type_)
@@ -88,11 +103,14 @@ struct Initializer : public Callable
 
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
   void call (executor_base_t& exec, const ast_call_expr_t& node, component_t* thisPtr) const;
-  virtual const type_t* type () const { return initializerType; }
+  virtual const Type::Type* type () const
+  {
+    return initializerType;
+  }
 
   ast_initializer_t* const node;
   std::string const name;
-  const initializer_type_t * const initializerType;
+  const Type::Method * const initializerType;
   MemoryModel memoryModel;
 };
 
@@ -100,22 +118,25 @@ struct Getter : public Callable
 {
   Getter (ast_getter_t* n,
           const std::string& na,
-          const getter_type_t* getter_type_,
+          const Type::Method* getter_type_,
           const Symbol* return_symbol_)
     : node (n)
     , name (na)
     , getterType (getter_type_)
     , returnSymbol (return_symbol_)
-    , returnSize (getter_type_->return_type ()->size ())
+    , returnSize (getter_type_->return_type ()->Size ())
   { }
 
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
   void call (executor_base_t& exec, const ast_call_expr_t& node, component_t* thisPtr) const;
-  virtual const type_t* type () const { return getterType; }
+  virtual const Type::Type* type () const
+  {
+    return getterType;
+  }
 
   ast_getter_t* const node;
   std::string const name;
-  const getter_type_t * const getterType;
+  const Type::Method * const getterType;
   const Symbol* const returnSymbol;
   size_t const returnSize;
   MemoryModel memoryModel;

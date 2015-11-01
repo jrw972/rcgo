@@ -10,7 +10,7 @@ struct Template : public Symbol
 {
   Template (const std::string& id,
             ast_t* dn,
-            const type_t* type)
+            const Type::Type* type)
     : Symbol (id, dn)
     , type_ (type)
     // type () is called here
@@ -27,7 +27,7 @@ struct Template : public Symbol
     return "Template";
   }
 
-  const type_t* type () const
+  const Type::Type* type () const
   {
     return type_;
   }
@@ -38,7 +38,7 @@ struct Template : public Symbol
   }
 
 private:
-  const type_t* const type_;
+  const Type::Type* const type_;
   typed_value_t const typed_value_;
 };
 

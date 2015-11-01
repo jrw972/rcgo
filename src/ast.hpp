@@ -183,7 +183,7 @@ public:
   Symbol* Activate ();
   void Change ();
 
-  virtual const type_t*
+  virtual const Type::Type*
   GetReceiverType () const
   {
     if (parent_ == NULL)
@@ -385,20 +385,6 @@ struct ast_unary_t : public ast_t
   }
 };
 
-struct ast_component_type_spec_t : public ast_unary_t
-{
-  ast_component_type_spec_t (unsigned int line, ast_t* child)
-    : ast_unary_t (line, child)
-  { }
-
-  void accept (ast_visitor_t& visitor);
-  void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const
-  {
-    unimplemented;
-  }
-};
-
 struct ast_empty_type_spec_t : public ast_t
 {
   ast_empty_type_spec_t (unsigned int line)
@@ -444,6 +430,7 @@ struct ast_field_list_type_spec_t : public ast_t
 {
   ast_field_list_type_spec_t (unsigned int line)
     : ast_t (line, 0)
+    , IsComponent (false)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -452,6 +439,8 @@ struct ast_field_list_type_spec_t : public ast_t
   {
     unimplemented;
   }
+
+  bool IsComponent;
 };
 
 struct ast_heap_type_spec_t : public ast_unary_t
@@ -624,20 +613,6 @@ struct ast_signature_type_spec_t : public ast_t
   void print (std::ostream& out) const
   {
     out << "signature_type_spec";
-  }
-};
-
-struct ast_struct_type_spec_t : public ast_unary_t
-{
-  ast_struct_type_spec_t (unsigned int line, ast_t* child)
-    : ast_unary_t (line, child)
-  { }
-
-  void accept (ast_visitor_t& visitor);
-  void accept (ast_const_visitor_t& visitor) const;
-  void print (std::ostream& out) const
-  {
-    unimplemented;
   }
 };
 
@@ -1089,7 +1064,7 @@ struct ast_indexed_port_call_expr_t : public ast_expr_t
   }
 
   field_t* field;
-  const array_type_t* array_type;
+  const Type::Array* array_type;
 };
 
 struct ast_select_expr_t : public ast_expr_t
@@ -1725,7 +1700,7 @@ struct ast_action_t : public ast_t
     return action;
   }
 
-  virtual const type_t*
+  virtual const Type::Type*
   GetReceiverType () const
   {
     return action->type ();
@@ -1792,8 +1767,6 @@ struct ast_dimensioned_action_t : public ast_t
     unimplemented;
   }
 
-  Symbol* this_symbol;
-  ParameterSymbol* iota_symbol;
   action_t* action;
 
   virtual Symbol *
@@ -1805,7 +1778,7 @@ struct ast_dimensioned_action_t : public ast_t
     return action;
   }
 
-  virtual const type_t*
+  virtual const Type::Type*
   GetReceiverType () const
   {
     return action->type ();
@@ -2164,8 +2137,8 @@ struct ast_initializer_t : public ast_t
                      ast_t* return_type,
                      ast_t* body)
     : ast_t (line, COUNT)
-    , initializer (NULL)
     , return_dereference_mutability (return_dm)
+    , initializer (NULL)
   {
     set (RECEIVER, receiver);
     set (IDENTIFIER, identifier);
@@ -2206,7 +2179,7 @@ struct ast_initializer_t : public ast_t
   Initializer* initializer;
   Symbol* return_symbol;
 
-  virtual const type_t*
+  virtual const Type::Type*
   GetReceiverType () const
   {
     unimplemented;
@@ -2281,7 +2254,7 @@ struct ast_reaction_t : public ast_t
     return reaction;
   }
 
-  virtual const type_t*
+  virtual const Type::Type*
   GetReceiverType () const
   {
     return reaction->type ();
@@ -2354,8 +2327,6 @@ struct ast_dimensioned_reaction_t : public ast_t
     unimplemented;
   }
 
-  Symbol* this_symbol;
-  ParameterSymbol* iota_symbol;
   reaction_t* reaction;
 
   virtual Symbol *
@@ -2367,7 +2338,7 @@ struct ast_dimensioned_reaction_t : public ast_t
     return reaction;
   }
 
-  virtual const type_t*
+  virtual const Type::Type*
   GetReceiverType () const
   {
     unimplemented;
@@ -2446,10 +2417,6 @@ struct ast_visitor_t
   {
     default_action (ast);
   }
-  virtual void visit (ast_component_type_spec_t& ast)
-  {
-    default_action (ast);
-  }
   virtual void visit (ast_empty_type_spec_t& ast)
   {
     default_action (ast);
@@ -2487,10 +2454,6 @@ struct ast_visitor_t
     default_action (ast);
   }
   virtual void visit (ast_signature_type_spec_t& ast)
-  {
-    default_action (ast);
-  }
-  virtual void visit (ast_struct_type_spec_t& ast)
   {
     default_action (ast);
   }
@@ -2714,10 +2677,6 @@ struct ast_const_visitor_t
   {
     default_action (ast);
   }
-  virtual void visit (const ast_component_type_spec_t& ast)
-  {
-    default_action (ast);
-  }
   virtual void visit (const ast_empty_type_spec_t& ast)
   {
     default_action (ast);
@@ -2755,10 +2714,6 @@ struct ast_const_visitor_t
     default_action (ast);
   }
   virtual void visit (const ast_signature_type_spec_t& ast)
-  {
-    default_action (ast);
-  }
-  virtual void visit (const ast_struct_type_spec_t& ast)
   {
     default_action (ast);
   }
@@ -2985,9 +2940,9 @@ ast_cast (ast_t* node)
 
 std::string ast_get_identifier (const ast_t* ast);
 
-void ast_instance_set_type (ast_t * ast, type_t * type);
+void ast_instance_set_type (ast_t * ast, Type::Type * type);
 
-type_t *ast_instance_get_type (ast_t * ast);
+Type::Type *ast_instance_get_type (ast_t * ast);
 
 Method*
 get_current_method (const ast_t * node);

@@ -1,33 +1,33 @@
 #ifndef value_hpp
 #define value_hpp
 
-#include "type.hpp"
+#include "Type.hpp"
 
 struct value_t
 {
   value_t () : present (false) { }
-  value_t (const bool_type_t*  t, bool_type_t::ValueType v)  : present (true), bool_value_ (v) { }
-  value_t (const int_type_t*   t, int_type_t::ValueType  v)  : present (true), int_value_ (v)  { }
-  value_t (const int8_type_t*  t, int8_type_t::ValueType v)  : present (true), int8_value_ (v) { }
-  value_t (const int16_type_t*  t, int16_type_t::ValueType v)  : present (true), int16_value_ (v) { }
-  value_t (const int32_type_t*  t, int32_type_t::ValueType v)  : present (true), int32_value_ (v) { }
-  value_t (const int64_type_t*  t, int64_type_t::ValueType v)  : present (true), int64_value_ (v) { }
-  value_t (const int128_type_t*  t, int128_type_t::ValueType v)  : present (true), int128_value_ (v) { }
-  value_t (const uint_type_t*  t, uint_type_t::ValueType v)  : present (true), uint_value_ (v) { }
-  value_t (const uint8_type_t* t, uint8_type_t::ValueType v) : present (true), uint8_value_ (v) { }
-  value_t (const uint16_type_t* t, uint16_type_t::ValueType v) : present (true), uint16_value_ (v) { }
-  value_t (const uint32_type_t* t, uint32_type_t::ValueType v) : present (true), uint32_value_ (v) { }
-  value_t (const uint64_type_t* t, uint64_type_t::ValueType v) : present (true), uint64_value_ (v) { }
-  value_t (const uint128_type_t* t, uint128_type_t::ValueType v) : present (true), uint128_value_ (v) { }
-  value_t (const named_type_t* t, enum_type_t::ValueType v) : present (true), enum_value_ (v) { }
-  value_t (const float32_type_t* t, float32_type_t::ValueType v) : present (true), float32_value_ (v) { }
-  value_t (const float64_type_t* t, float64_type_t::ValueType v) : present (true), float64_value_ (v) { }
+  value_t (const Type::Bool*  t, Type::Bool::ValueType v)  : present (true), bool_value_ (v) { }
+  value_t (const Type::Int*   t, Type::Int::ValueType  v)  : present (true), int_value_ (v)  { }
+  value_t (const Type::Int8*  t, Type::Int8::ValueType v)  : present (true), int8_value_ (v) { }
+  value_t (const Type::Int16*  t, Type::Int16::ValueType v)  : present (true), int16_value_ (v) { }
+  value_t (const Type::Int32*  t, Type::Int32::ValueType v)  : present (true), int32_value_ (v) { }
+  value_t (const Type::Int64*  t, Type::Int64::ValueType v)  : present (true), int64_value_ (v) { }
+  value_t (const Type::Int128*  t, Type::Int128::ValueType v)  : present (true), int128_value_ (v) { }
+  value_t (const Type::Uint*  t, Type::Uint::ValueType v)  : present (true), uint_value_ (v) { }
+  value_t (const Type::Uint8* t, Type::Uint8::ValueType v) : present (true), uint8_value_ (v) { }
+  value_t (const Type::Uint16* t, Type::Uint16::ValueType v) : present (true), uint16_value_ (v) { }
+  value_t (const Type::Uint32* t, Type::Uint32::ValueType v) : present (true), uint32_value_ (v) { }
+  value_t (const Type::Uint64* t, Type::Uint64::ValueType v) : present (true), uint64_value_ (v) { }
+  value_t (const Type::Uint128* t, Type::Uint128::ValueType v) : present (true), uint128_value_ (v) { }
+  value_t (const Type::NamedType* t, Type::Enum::ValueType v) : present (true), enum_value_ (v) { }
+  value_t (const Type::Float32* t, Type::Float32::ValueType v) : present (true), float32_value_ (v) { }
+  value_t (const Type::Float64* t, Type::Float64::ValueType v) : present (true), float64_value_ (v) { }
   value_t (Callable* c) : present (true), callable_value_ (c) { }
   value_t (Template* t) : present (true), template_value_ (t) { }
   value_t (reaction_t* r) : present (true), reaction_value_ (r) { }
-  value_t (const slice_type_t* t, slice_type_t::ValueType v) : present (true), slice_value_ (v) { }
+  value_t (const Type::Slice* t, Type::Slice::ValueType v) : present (true), slice_value_ (v) { }
 
-  static value_t make_reference (pointer_type_t::ValueType v)
+  static value_t make_reference (Type::Pointer::ValueType v)
   {
     value_t r;
     r.present = true;
@@ -37,117 +37,117 @@ struct value_t
 
   bool present;
 
-  const bool_type_t::ValueType& ref (const bool_type_t&) const
+  const Type::Bool::ValueType& ref (const Type::Bool&) const
   {
     assert (present);
     return bool_value_;
   }
-  bool_type_t::ValueType& ref (const bool_type_t&)
+  Type::Bool::ValueType& ref (const Type::Bool&)
   {
     assert (present);
     return bool_value_;
   }
-  const int_type_t::ValueType& ref (const int_type_t&) const
+  const Type::Int::ValueType& ref (const Type::Int&) const
   {
     assert (present);
     return int_value_;
   }
-  int_type_t::ValueType& ref (const int_type_t&)
+  Type::Int::ValueType& ref (const Type::Int&)
   {
     assert (present);
     return int_value_;
   }
-  const int8_type_t::ValueType& ref (const int8_type_t&) const
+  const Type::Int8::ValueType& ref (const Type::Int8&) const
   {
     assert (present);
     return int8_value_;
   }
-  int8_type_t::ValueType& ref (const int8_type_t&)
+  Type::Int8::ValueType& ref (const Type::Int8&)
   {
     assert (present);
     return int8_value_;
   }
-  const uint_type_t::ValueType& ref (const uint_type_t&) const
+  const Type::Uint::ValueType& ref (const Type::Uint&) const
   {
     assert (present);
     return uint_value_;
   }
-  uint_type_t::ValueType& ref (const uint_type_t&)
+  Type::Uint::ValueType& ref (const Type::Uint&)
   {
     assert (present);
     return uint_value_;
   }
-  const uint8_type_t::ValueType& ref (const uint8_type_t&) const
+  const Type::Uint8::ValueType& ref (const Type::Uint8&) const
   {
     assert (present);
     return uint8_value_;
   }
-  uint8_type_t::ValueType& ref (const uint8_type_t&)
+  Type::Uint8::ValueType& ref (const Type::Uint8&)
   {
     assert (present);
     return uint8_value_;
   }
-  const uint16_type_t::ValueType& ref (const uint16_type_t&) const
+  const Type::Uint16::ValueType& ref (const Type::Uint16&) const
   {
     assert (present);
     return uint16_value_;
   }
-  uint16_type_t::ValueType& ref (const uint16_type_t&)
+  Type::Uint16::ValueType& ref (const Type::Uint16&)
   {
     assert (present);
     return uint16_value_;
   }
-  const uint32_type_t::ValueType& ref (const uint32_type_t&) const
+  const Type::Uint32::ValueType& ref (const Type::Uint32&) const
   {
     assert (present);
     return uint32_value_;
   }
-  uint32_type_t::ValueType& ref (const uint32_type_t&)
+  Type::Uint32::ValueType& ref (const Type::Uint32&)
   {
     assert (present);
     return uint32_value_;
   }
-  const uint64_type_t::ValueType& ref (const uint64_type_t&) const
+  const Type::Uint64::ValueType& ref (const Type::Uint64&) const
   {
     assert (present);
     return uint64_value_;
   }
-  uint64_type_t::ValueType& ref (const uint64_type_t&)
+  Type::Uint64::ValueType& ref (const Type::Uint64&)
   {
     assert (present);
     return uint64_value_;
   }
-  const uint128_type_t::ValueType& ref (const uint128_type_t&) const
+  const Type::Uint128::ValueType& ref (const Type::Uint128&) const
   {
     assert (present);
     return uint128_value_;
   }
-  uint128_type_t::ValueType& ref (const uint128_type_t&)
+  Type::Uint128::ValueType& ref (const Type::Uint128&)
   {
     assert (present);
     return uint128_value_;
   }
-  const float64_type_t::ValueType& ref (const float64_type_t&) const
+  const Type::Float64::ValueType& ref (const Type::Float64&) const
   {
     assert (present);
     return float64_value_;
   }
-  float64_type_t::ValueType& ref (const float64_type_t&)
+  Type::Float64::ValueType& ref (const Type::Float64&)
   {
     assert (present);
     return float64_value_;
   }
-  const enum_type_t::ValueType& ref (const enum_type_t&) const
+  const Type::Enum::ValueType& ref (const Type::Enum&) const
   {
     assert (present);
     return enum_value_;
   }
-  slice_type_t::ValueType& ref (const slice_type_t&)
+  Type::Slice::ValueType& ref (const Type::Slice&)
   {
     assert (present);
     return slice_value_;
   }
-  const slice_type_t::ValueType& ref (const slice_type_t&) const
+  const Type::Slice::ValueType& ref (const Type::Slice&) const
   {
     assert (present);
     return slice_value_;
@@ -165,41 +165,41 @@ struct value_t
   {
     return reaction_value_;
   }
-  pointer_type_t::ValueType reference_value () const
+  Type::Pointer::ValueType reference_value () const
   {
     return reference_value_;
   }
-  slice_type_t::ValueType slice_value () const
+  Type::Slice::ValueType slice_value () const
   {
     return slice_value_;
   }
 
-  void print (std::ostream& out, const type_t* type) const;
+  void print (std::ostream& out, const Type::Type* type) const;
 
 private:
   union
   {
-    bool_type_t::ValueType bool_value_;
-    int_type_t::ValueType int_value_;
-    int8_type_t::ValueType int8_value_;
-    int16_type_t::ValueType int16_value_;
-    int32_type_t::ValueType int32_value_;
-    int64_type_t::ValueType int64_value_;
-    int128_type_t::ValueType int128_value_;
-    uint_type_t::ValueType uint_value_;
-    uint8_type_t::ValueType uint8_value_;
-    uint16_type_t::ValueType uint16_value_;
-    uint32_type_t::ValueType uint32_value_;
-    uint64_type_t::ValueType uint64_value_;
-    uint128_type_t::ValueType uint128_value_;
-    float32_type_t::ValueType float32_value_;
-    float64_type_t::ValueType float64_value_;
+    Type::Enum::ValueType enum_value_;
+    Type::Bool::ValueType bool_value_;
+    Type::Int::ValueType int_value_;
+    Type::Int8::ValueType int8_value_;
+    Type::Int16::ValueType int16_value_;
+    Type::Int32::ValueType int32_value_;
+    Type::Int64::ValueType int64_value_;
+    Type::Int128::ValueType int128_value_;
+    Type::Uint::ValueType uint_value_;
+    Type::Uint8::ValueType uint8_value_;
+    Type::Uint16::ValueType uint16_value_;
+    Type::Uint32::ValueType uint32_value_;
+    Type::Uint64::ValueType uint64_value_;
+    Type::Uint128::ValueType uint128_value_;
+    Type::Float32::ValueType float32_value_;
+    Type::Float64::ValueType float64_value_;
     Callable* callable_value_;
     Template* template_value_;
     reaction_t* reaction_value_;
-    enum_type_t::ValueType enum_value_;
-    pointer_type_t::ValueType reference_value_;
-    slice_type_t::ValueType slice_value_;
+    Type::Pointer::ValueType reference_value_;
+    Type::Slice::ValueType slice_value_;
   };
 };
 

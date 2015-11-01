@@ -3,7 +3,7 @@
 
 #include "types.hpp"
 #include "typed_value.hpp"
-#include "type.hpp"
+#include "Type.hpp"
 #include "parameter.hpp"
 
 class SymbolVisitor;
@@ -59,7 +59,7 @@ struct InstanceSymbol : public Symbol
     return "Instance";
   }
 
-  const named_type_t *type;
+  const Type::NamedType *type;
   Initializer* initializer;
 };
 
@@ -147,28 +147,28 @@ private:
 
 struct TypeSymbol : public Symbol
 {
-  TypeSymbol (const std::string& id, ast_t* dn, named_type_t* t)
+  TypeSymbol (const std::string& id, ast_t* dn, Type::NamedType* t)
     : Symbol (id, dn)
     , type (t)
   { }
 
   TypeSymbol (const std::string& id, ast_t* dn)
     : Symbol (id, dn)
-    , type (new named_type_t (id))
+    , type (new Type::NamedType (id))
   { }
 
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
   virtual bool defined () const
   {
-    return type->subtype () != NULL;
+    return type->UnderlyingType () != NULL;
   }
   virtual const char* kindString () const
   {
     return "Type";
   }
 
-  named_type_t* const type;
+  Type::NamedType* const type;
 };
 
 struct TypedConstantSymbol : public Symbol

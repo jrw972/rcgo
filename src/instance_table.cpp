@@ -8,6 +8,8 @@
 #include "Callable.hpp"
 #include "SymbolVisitor.hpp"
 
+using namespace Type;
+
 instance_table_t::ActionsType
 instance_table_t::actions () const
 {
@@ -137,18 +139,18 @@ struct static_value_t
     return out;
   }
 
-  static static_value_t index (static_value_t in, const array_type_t* type, static_value_t idx)
+  static static_value_t index (static_value_t in, const Array* type, static_value_t idx)
   {
     static_value_t out;
     switch (in.kind)
       {
       case STACK_ADDRESS:
         out = in;
-        out.offset += type->element_size () * idx.value;
+        out.offset += type->ElementSize () * idx.value;
         break;
       case ABSOLUTE_ADDRESS:
         out = in;
-        out.address += type->element_size () * idx.value;
+        out.address += type->ElementSize () * idx.value;
         break;
       case VALUE:
         not_reached;
@@ -234,26 +236,26 @@ evaluate_static (const ast_t* node, const static_memory_t& memory)
     void visit (const ast_literal_expr_t& node)
     {
       typed_value_t tv = node.typed_value;
-      struct visitor : public const_type_visitor_t
+      struct visitor : public Visitor
       {
         typed_value_t tv;
         static_value_t result;
 
         visitor (typed_value_t t) : tv (t) { }
 
-        void default_action (const type_t& type)
+        void default_action (const Type::Type& type)
         {
           not_reached;
         }
 
-        void visit (const int_type_t& type)
+        void visit (const Int& type)
         {
           unimplemented;
           //result = static_value_t::make_value (tv.int_value);
         }
       };
       visitor v (tv);
-      tv.type->accept (v);
+      tv.type->Accept (v);
       result = v.result;
     }
 
@@ -262,7 +264,7 @@ evaluate_static (const ast_t* node, const static_memory_t& memory)
       static_value_t base = evaluate_static (node.base (), memory);
       static_value_t index = evaluate_static (node.index (), memory);
       typed_value_t base_tv = node.base ()->typed_value;
-      const array_type_t* array_type = type_cast<array_type_t> (base_tv.type);
+      const Array* array_type = type_cast<Array> (base_tv.type);
       result = static_value_t::index (base, array_type, index);
     }
 
@@ -307,10 +309,10 @@ instance_table_enumerate_bindings (instance_table_t& table)
        ++instance_pos)
     {
       instance_t *instance = instance_pos->second;
-      const named_type_t *type = instance->type ();
+      const NamedType *type = instance->type ();
       // Enumerate the bindings.
-      for (named_type_t::BindsType::const_iterator bind_pos = type->binds_begin (),
-           bind_limit = type->binds_end ();
+      for (NamedType::BindsType::const_iterator bind_pos = type->BindsBegin (),
+           bind_limit = type->BindsEnd ();
            bind_pos != bind_limit;
            ++bind_pos)
         {
@@ -347,7 +349,7 @@ instance_table_enumerate_bindings (instance_table_t& table)
 
             void visit (const ast_for_iota_statement_t& node)
             {
-              for (int_type_t::ValueType idx = 0, limit = node.limit.integral_value ();
+              for (Int::ValueType idx = 0, limit = node.limit.integral_value ();
                    idx != limit;
                    ++idx)
                 {
@@ -400,7 +402,7 @@ instance_table_enumerate_bindings (instance_table_t& table)
               static_value_t pull_port = evaluate_static (node.left (), memory);
               assert (pull_port.kind == static_value_t::ABSOLUTE_ADDRESS);
               typed_value_t tv = node.right ()->typed_value;
-              const getter_type_t* getter_type = type_cast<getter_type_t> (tv.type);
+              const Type::Method* getter_type = type_cast<Type::Method> (tv.type);
               assert (getter_type != NULL);
               // Strip off the implicit dereference and selecting of the getter.
               static_value_t input = evaluate_static (node.right ()->at(0)->at(0), memory);
@@ -508,7 +510,7 @@ transitive_closure (const instance_table_t& table,
     {
       size_t port = address + node.field->offset;
       // Find what is bound to this port.
-      instance_table_t::PortsType::const_iterator port_pos = table.push_ports.find (port);
+      instance_table_t::PushPortsType::const_iterator port_pos = table.push_ports.find (port);
       assert (port_pos != table.push_ports.end ());
 
       for (instance_table_t::InputsType::const_iterator pos = port_pos->second.inputs.begin (),
@@ -551,10 +553,10 @@ transitive_closure (const instance_table_t& table,
                          "port index out of bounds");
         }
 
-      size_t port = address + node.field->offset + port_index * node.array_type->element_size ();
+      size_t port = address + node.field->offset + port_index * node.array_type->ElementSize ();
 
       // Find what is bound to this port.
-      instance_table_t::PortsType::const_iterator port_pos = table.push_ports.find (port);
+      instance_table_t::PushPortsType::const_iterator port_pos = table.push_ports.find (port);
       assert (port_pos != table.push_ports.end ());
 
       instance_table_t::InputsType::const_iterator pos = port_pos->second.inputs.begin ();
@@ -786,24 +788,30 @@ transitive_closure (const instance_table_t& table,
     {
       node.visit_children (*this);
 
-      const type_t* t = node.expr ()->typed_value.type;
-      if (type_cast<getter_type_t> (t) != NULL)
+      const Type::Type* t = node.expr ()->typed_value.type;
+      if (type_cast<Type::Method> (t) != NULL)
         {
-          offset_visitor v (receiver_address);
-          unimplemented;
-          //node.expr ()->children[0]->children[0]->accept (v);
-          instance_table_t::InstancesType::const_iterator pos = table.instances.find (v.computed_address);
-          assert (pos != table.instances.end ());
-          set.immutable_phase.insert (std::make_pair (pos->second, ACTIVATION_READ));
+          if (type_cast<Type::Method> (t)->kind == Type::Method::GETTER)
+            {
+              offset_visitor v (receiver_address);
+              unimplemented;
+              //node.expr ()->children[0]->children[0]->accept (v);
+              instance_table_t::InstancesType::const_iterator pos = table.instances.find (v.computed_address);
+              assert (pos != table.instances.end ());
+              set.immutable_phase.insert (std::make_pair (pos->second, ACTIVATION_READ));
+            }
         }
-      else if (type_cast<pull_port_type_t> (t) != NULL)
+      else if (type_cast<Type::Function> (t) != NULL)
         {
-          offset_visitor v (receiver_address);
-          node.expr ()->at (0)->accept (v);
-          instance_table_t::PullPortsType::const_iterator pos = table.pull_ports.find (v.computed_address);
-          assert (pos != table.pull_ports.end ());
-          instance_table_t::OutputType out = *pos->second.outputs.begin ();
-          set.immutable_phase.insert (std::make_pair (out.instance, ACTIVATION_READ));
+          if (type_cast<Type::Function> (t)->kind == Type::Function::PULL_PORT)
+            {
+              offset_visitor v (receiver_address);
+              node.expr ()->at (0)->accept (v);
+              instance_table_t::PullPortsType::const_iterator pos = table.pull_ports.find (v.computed_address);
+              assert (pos != table.pull_ports.end ());
+              instance_table_t::OutputType out = *pos->second.outputs.begin ();
+              set.immutable_phase.insert (std::make_pair (out.instance, ACTIVATION_READ));
+            }
         }
     }
   };
@@ -877,17 +885,17 @@ instance_table_analyze_composition (const instance_table_t& table)
        ++instance_pos)
     {
       instance_t *instance = instance_pos->second;
-      const named_type_t *type = instance->type ();
+      const NamedType *type = instance->type ();
       // For each action in the type.
-      for (named_type_t::ActionsType::const_iterator action_pos = type->actions_begin (),
-           action_end = type->actions_end ();
+      for (NamedType::ActionsType::const_iterator action_pos = type->ActionsBegin (),
+           action_end = type->ActionsEnd ();
            action_pos != action_end;
            ++action_pos)
         {
           action_t* action = *action_pos;
           if (action->has_dimension ())
             {
-              for (int_type_t::ValueType iota = 0, limit = action->dimension ().integral_value();
+              for (Int::ValueType iota = 0, limit = action->dimension ().integral_value();
                    iota != limit;
                    ++iota)
                 {
@@ -944,7 +952,7 @@ operator<< (std::ostream& o,
 
 std::ostream&
 operator<< (std::ostream& o,
-            const instance_table_t::PortValueType& pv)
+            const instance_table_t::PushPortValueType& pv)
 {
   o << '[' << *pv.output_instance << ',' << pv.output_field->name << ',' << pv.address << ']' << " ->";
 
@@ -973,7 +981,7 @@ instance_table_dump (const instance_table_t& table)
   std::cout << '\n';
 
   std::cout << "ports\n";
-  for (instance_table_t::PortsType::const_iterator pos = table.push_ports.begin (),
+  for (instance_table_t::PushPortsType::const_iterator pos = table.push_ports.begin (),
        limit = table.push_ports.end ();
        pos != limit;
        ++pos)

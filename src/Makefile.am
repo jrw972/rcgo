@@ -41,7 +41,7 @@ stack_frame.hpp stack_frame.cpp \
 Symbol.hpp Symbol.cpp \
 SymbolVisitor.hpp \
 Template.hpp Template.cpp \
-type.hpp type.cpp \
+Type.hpp Type.cpp \
 typed_value.hpp typed_value.cpp \
 types.hpp \
 util.hpp util.cpp \

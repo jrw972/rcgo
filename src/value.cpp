@@ -1,11 +1,13 @@
 #include "value.hpp"
 
+using namespace Type;
+
 void
-value_t::print (std::ostream& out, const type_t* type) const
+value_t::print (std::ostream& out, const Type::Type* type) const
 {
   if (present)
     {
-      struct visitor : public const_type_visitor_t
+      struct visitor : public Type::Visitor
       {
         const value_t& tv;
         std::ostream& out;
@@ -15,78 +17,78 @@ value_t::print (std::ostream& out, const type_t* type) const
           , out (o)
         { }
 
-        void default_action (const type_t& type)
+        void default_action (const Type::Type& type)
         {
           type_not_reached(type);
         }
 
-        void visit (const bool_type_t& type)
+        void visit (const Bool& type)
         {
           out << " value=" << tv.ref (type);
         }
 
-        void visit (const int_type_t& type)
+        void visit (const Int& type)
         {
           out << " value=" << tv.ref (type);
         }
 
-        void visit (const uint_type_t& type)
-        {
-          out << " value=" << tv.ref (type);
-        }
-
-        void visit (const int8_type_t& type)
+        void visit (const Int8& type)
         {
           out << " value=" << (int)tv.ref (type);
         }
 
-        void visit (const uint8_type_t& type)
+        void visit (const Uint& type)
+        {
+          out << " value=" << tv.ref (type);
+        }
+
+        void visit (const Uint8& type)
         {
           out << " value=" << (int)tv.ref (type);
         }
 
-        void visit (const uint16_type_t& type)
+        void visit (const Uint16& type)
         {
           out << " value=" << (int)tv.ref (type);
         }
 
-        void visit (const uint32_type_t& type)
+        void visit (const Uint32& type)
         {
           out << " value=" << tv.ref (type);
         }
 
-        void visit (const uint64_type_t& type)
+        void visit (const Uint64& type)
         {
           out << " value=" << tv.ref (type);
         }
 
-        void visit (const float64_type_t& type)
+        void visit (const Float64& type)
         {
           out << " value=" << tv.ref (type);
         }
 
-        void visit (const nil_type_t& type)
+        void visit (const Nil& type)
         {
           out << " value=" << (void*)NULL;
         }
 
-        void visit (const function_type_t& type)
+        void visit (const Type::Function& type)
         {
           out << " value=<function>";
         }
 
-        void visit (const method_type_t& type)
+        void visit (const Type::Method& type)
         {
           out << " value=<method>";
         }
 
-        void visit (const slice_type_t& type)
+        void visit (const Slice& type)
         {
-          const slice_type_t::ValueType& s = tv.ref (type);
+          const Slice::ValueType& s = tv.ref (type);
           out << " value={" << s.ptr << ',' << s.length << ',' << s.capacity << '}';
         }
       };
       visitor v (*this, out);
-      type_strip (type)->accept (v);
+      type_strip (type)->Accept (v);
     }
 }
