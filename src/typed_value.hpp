@@ -140,140 +140,9 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const Type::Bool* t,
-                 Type::Bool::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
-
-  typed_value_t (const Type::Int* t,
-                 Type::Int::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
-
-  typed_value_t (const Type::Int8* t,
-                 Type::Int8::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
-
-  typed_value_t (const Type::Int16* t,
-                 Type::Int16::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
-
-  typed_value_t (const Type::Int32* t,
-                 Type::Int32::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
-
-  typed_value_t (const Type::Int64* t,
-                 Type::Int64::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
-
-  typed_value_t (const Type::Int128* t,
-                 Type::Int128::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
-
-  typed_value_t (const Type::Uint* t,
-                 Type::Uint::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
-
-  typed_value_t (const Type::Uint8* t,
-                 Type::Uint8::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
-
-  typed_value_t (const Type::Uint16* t,
-                 Type::Uint16::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
-
-  typed_value_t (const Type::Uint32* t,
-                 Type::Uint32::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
-
-  typed_value_t (const Type::Uint64* t,
-                 Type::Uint64::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
-
-  typed_value_t (const Type::Uint128* t,
-                 Type::Uint128::ValueType v)
+  template <typename T>
+  typed_value_t (const T* t,
+                 typename T::ValueType v)
     : type (t)
     , kind (VALUE)
     , region (CONSTANT)
@@ -294,44 +163,11 @@ struct typed_value_t
     , has_offset (false)
   { }
 
-  typed_value_t (const Type::Float32* t,
-                 Type::Float32::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
-
-  typed_value_t (const Type::Float64* t,
-                 Type::Float64::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
-
   explicit typed_value_t (Callable* c);
 
   explicit typed_value_t (Template* t);
 
   explicit typed_value_t (reaction_t* r);
-
-  typed_value_t (const Type::Slice* t,
-                 Type::Slice::ValueType v)
-    : type (t)
-    , kind (VALUE)
-    , region (CONSTANT)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , value (t, v)
-    , has_offset (false)
-  { }
 
   explicit typed_value_t (const Type::Type* t)
     : type (t)
