@@ -1,0 +1,19 @@
+#!/usr/bin/env rc
+
+func test (num uint; desc +const []uint8; status bool) {
+  if status {
+    println (`ok `, num, ` - `, desc);
+  } else {
+    println (`not ok `, num, ` - `, desc);
+  }
+}
+
+type Test component { };
+
+init (this *Test) Init () {
+  println (`1..1`);
+  var x const uint = 3u;
+  test (1u, `var x const = ...`, x == 3u);
+}
+
+instance system Test Init ();
