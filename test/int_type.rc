@@ -85,4 +85,4 @@ init (this *Test) Main () {
   }
 }
 
-instance t Test Main;
+instance t Test Main ();

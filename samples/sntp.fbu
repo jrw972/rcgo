@@ -132,4 +132,4 @@ reaction (this +const * System) Alarm () {
      activate Send (msg) { };
 }
 
-instance s System Init;
+instance s System Init ();

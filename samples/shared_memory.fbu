@@ -146,4 +146,4 @@ bind (this *System) {
     }
 }
 
-instance s System Init;
+instance s System Init ();

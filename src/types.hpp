@@ -14,6 +14,7 @@ class ast_call_expr_t;
 class ast_function_t;
 class ast_getter_t;
 class ast_initializer_t;
+class ast_instance_t;
 class ast_method_t;
 class bind_t;
 class Callable;

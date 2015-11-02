@@ -13,7 +13,8 @@ instantiate_contained_instances (const Type::Type * type,
                                  instance_t* parent,
                                  Initializer* initializer,
                                  size_t address,
-                                 unsigned int line)
+                                 unsigned int line,
+                                 ast_instance_t* node)
 {
   struct visitor : public Visitor
   {
@@ -23,17 +24,18 @@ instantiate_contained_instances (const Type::Type * type,
     size_t const address;
     field_t* const field;
     unsigned int const line;
+    ast_instance_t* const node;
 
     const NamedType* named_type;
 
-    visitor (instance_table_t& it, instance_t* p, Initializer* i, size_t a, field_t* f, unsigned int l)
+    visitor (instance_table_t& it, instance_t* p, Initializer* i, size_t a, field_t* f, unsigned int l, ast_instance_t* n)
       : instance_table (it)
       , parent (p)
       , initializer (i)
       , address (a)
       , field (f)
       , line (l)
-
+      , node (n)
       , named_type (NULL)
     { }
 
@@ -53,11 +55,11 @@ instantiate_contained_instances (const Type::Type * type,
     {
       assert (named_type != NULL);
 
-      instance_t* instance = new instance_t (parent, address, named_type, initializer, line);
+      instance_t* instance = new instance_t (parent, address, named_type, initializer, line, node);
       instance_table.insert (instance);
 
       // Recur changing instance.
-      visitor v (instance_table, instance, NULL, address, NULL, line);
+      visitor v (instance_table, instance, NULL, address, NULL, line, NULL);
       v.visit (static_cast<const Struct&> (type));
     }
 
@@ -69,7 +71,7 @@ instantiate_contained_instances (const Type::Type * type,
            ++pos)
         {
           // Recur changing address (and field).
-          visitor v (instance_table, parent, NULL, address + (*pos)->offset, *pos, line);
+          visitor v (instance_table, parent, NULL, address + (*pos)->offset, *pos, line, NULL);
           (*pos)->type->Accept (v);
         }
     }
@@ -79,7 +81,7 @@ instantiate_contained_instances (const Type::Type * type,
       for (Int::ValueType idx = 0; idx != type.dimension; ++idx)
         {
           // Recur changing address.
-          visitor v (instance_table, parent, NULL, address + idx * type.ElementSize (), field, line);
+          visitor v (instance_table, parent, NULL, address + idx * type.ElementSize (), field, line, NULL);
           type.Base ()->Accept (v);
         }
     }
@@ -124,7 +126,7 @@ instantiate_contained_instances (const Type::Type * type,
 
     void visit (const Type::FileDescriptor& type) { }
   };
-  visitor v (instance_table, parent, initializer, address, NULL, line);
+  visitor v (instance_table, parent, initializer, address, NULL, line, node);
   type->Accept (v);
 }
 
@@ -149,7 +151,7 @@ enumerate_instances (ast_t * node, instance_table_t& instance_table)
       Symbol *symbol = node.symbol;
       const NamedType *type = SymbolCast<InstanceSymbol> (symbol)->type;
       Initializer* initializer = SymbolCast<InstanceSymbol> (symbol)->initializer;
-      instantiate_contained_instances (type, instance_table, NULL, initializer, address, node.location.Line);
+      instantiate_contained_instances (type, instance_table, NULL, initializer, address, node.location.Line, &node);
       address += type->Size ();
     }
 

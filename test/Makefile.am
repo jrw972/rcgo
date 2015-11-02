@@ -16,7 +16,8 @@ return_leak.sh \
 two_reactions.sh \
 same_port.sh \
 change_root-1.sh \
-change_root-2.sh
+change_root-2.sh \
+initializer_args.rc
 
 EXTRA_DIST = $(TESTS) \
 helpers.sh \

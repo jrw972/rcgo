@@ -97,362 +97,355 @@ checkExpectReference (ast_t* expr)
   return tv;
 }
 
-typed_value_t
-type_check_expr (ast_t* ptr)
+struct check_visitor : public ast_visitor_t
 {
-  struct check_visitor : public ast_visitor_t
+  ast_t* ptr;
+
+  check_visitor (ast_t* p) : ptr (p) { }
+
+  void default_action (ast_t& node)
   {
-    ast_t* ptr;
+    ast_not_reached(node);
+  }
 
-    check_visitor (ast_t* p) : ptr (p) { }
+  void visit (ast_type_expr_t& node)
+  {
+    const Type::Type* type = process_type_spec (node.type_spec (), true);
+    node.typed_value = typed_value_t (type);
+  }
 
-    void default_action (ast_t& node)
-    {
-      ast_not_reached(node);
-    }
+  void visit (ast_cast_expr_t& node)
+  {
+    const Type::Type* type = process_type_spec (node.type_spec (), true);
+    typed_value_t tv = checkAndImplicitlyDereference (node.child_ref ());
+    node.typed_value = typed_value_t::cast (node.location, type, tv);
+  }
 
-    void visit (ast_type_expr_t& node)
-    {
-      const Type::Type* type = process_type_spec (node.type_spec (), true);
-      node.typed_value = typed_value_t (type);
-    }
+  void visit (ast_indexed_port_call_expr_t& node)
+  {
+    const std::string& port_identifier = ast_get_identifier (node.identifier ());
+    const Type::Type *this_type = node.GetReceiverType ();
+    const Type::Type *type = type_select (this_type, port_identifier);
 
-    void visit (ast_cast_expr_t& node)
-    {
-      const Type::Type* type = process_type_spec (node.type_spec (), true);
-      typed_value_t tv = checkAndImplicitlyDereference (node.child_ref ());
-      node.typed_value = typed_value_t::cast (node.location, type, tv);
-    }
-
-    void visit (ast_indexed_port_call_expr_t& node)
-    {
-      const std::string& port_identifier = ast_get_identifier (node.identifier ());
-      const Type::Type *this_type = node.GetReceiverType ();
-      const Type::Type *type = type_select (this_type, port_identifier);
-
-      if (type == NULL)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "no port named %s", port_identifier.c_str ());
-        }
-
-      const Type::Array* array_type = Type::type_cast<Type::Array> (type);
-      if (!array_type)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "%s is not an array of ports", port_identifier.c_str ());
-        }
-
-      const Type::Function* push_port_type = Type::type_cast<Type::Function> (array_type->Base ());
-
-      if (push_port_type == NULL || push_port_type->kind != Type::Function::PUSH_PORT)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "%s is not an array of ports", port_identifier.c_str ());
-        }
-
-      typed_value_t index_tv = checkAndImplicitlyDereference (node.index_ref ());
-
-      typed_value_t::index (node.index ()->location, typed_value_t::make_ref (array_type, typed_value_t::HEAP, IMMUTABLE, IMMUTABLE), index_tv);
-
-      ast_t *args = node.args ();
-      TypedValueListType tvlist;
-      check_rvalue_list (args, tvlist);
-      typed_value_t tv = typed_value_t::make_value (Type::Void::Instance (),
-                         typed_value_t::STACK,
-                         IMMUTABLE,
-                         IMMUTABLE);
-      check_call (node, push_port_type->GetSignature (), tv, args, tvlist);
-      node.field = type_select_field (this_type, port_identifier);
-      node.array_type = array_type;
-    }
-
-    void visit (ast_identifier_expr_t& node)
-    {
-      ast_t *identifier_node = node.child ();
-      const std::string& identifier = ast_get_identifier (identifier_node);
-      Symbol *symbol = node.FindSymbol (identifier);
-      if (symbol == NULL)
-        {
-          error_at_line (-1, 0, identifier_node->location.File.c_str (),
-                         identifier_node->location.Line, "E57: %s is not defined",
-                         identifier.c_str ());
-        }
-
-      struct visitor : public ConstSymbolVisitor
+    if (type == NULL)
       {
-        ast_identifier_expr_t& node;
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "no port named %s", port_identifier.c_str ());
+      }
 
-        visitor (ast_identifier_expr_t& n)
-          : node (n)
-        { }
+    const Type::Array* array_type = Type::type_cast<Type::Array> (type);
+    if (!array_type)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "%s is not an array of ports", port_identifier.c_str ());
+      }
 
-        void defaultAction (const Symbol& symbol)
-        {
-          not_reached;
-        }
+    const Type::Function* push_port_type = Type::type_cast<Type::Function> (array_type->Base ());
 
-        void visit (const BuiltinFunction& symbol)
-        {
-          node.typed_value = symbol.value ();
-        }
+    if (push_port_type == NULL || push_port_type->kind != Type::Function::PUSH_PORT)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "%s is not an array of ports", port_identifier.c_str ());
+      }
 
-        void visit (const ::Template& symbol)
-        {
-          node.typed_value = symbol.value ();
-        }
+    typed_value_t index_tv = checkAndImplicitlyDereference (node.index_ref ());
 
-        void visit (const ::Function& symbol)
-        {
-          node.typed_value = symbol.value ();
-        }
+    typed_value_t::index (node.index ()->location, typed_value_t::make_ref (array_type, typed_value_t::HEAP, IMMUTABLE, IMMUTABLE), index_tv);
 
-        void visit (const ParameterSymbol& symbol)
-        {
-          node.typed_value = symbol.value;
-        }
+    ast_t *args = node.args ();
+    TypedValueListType tvlist;
+    check_rvalue_list (args, tvlist);
+    check_call (node, push_port_type->GetSignature (), push_port_type->GetReturnParameter ()->value, args, tvlist);
+    node.field = type_select_field (this_type, port_identifier);
+    node.array_type = array_type;
+  }
 
-        void visit (const TypeSymbol& symbol)
-        {
-          node.typed_value = typed_value_t (symbol.type);
-        }
+  void visit (ast_identifier_expr_t& node)
+  {
+    ast_t *identifier_node = node.child ();
+    const std::string& identifier = ast_get_identifier (identifier_node);
+    Symbol *symbol = node.FindSymbol (identifier);
+    if (symbol == NULL)
+      {
+        error_at_line (-1, 0, identifier_node->location.File.c_str (),
+                       identifier_node->location.Line, "E57: %s is not defined",
+                       identifier.c_str ());
+      }
 
-        void visit (const TypedConstantSymbol& symbol)
-        {
-          node.typed_value = symbol.value;
-        }
-
-        void visit (const VariableSymbol& symbol)
-        {
-          node.typed_value = symbol.value;
-        }
-
-        void visit (const HiddenSymbol& symbol)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (),
-                         node.location.Line, "E47: %s is not accessible in this scope",
-                         symbol.identifier.c_str ());
-        }
-      };
-      visitor v (node);
-      symbol->accept (v);
-
-      node.symbol = symbol;
-    }
-
-    void visit (ast_select_expr_t& node)
+    struct visitor : public ConstSymbolVisitor
     {
-      const std::string& identifier = ast_get_identifier (node.identifier ());
-      typed_value_t in = type_check_expr (node.base ());
-      assert (in.type != NULL);
+      ast_identifier_expr_t& node;
 
-      if (in.isReference () && type_dereference (in.type))
-        {
-          // Pointer reference.
-          // Insert an implicit dereference.
-          in = insertImplicitDereference (node.base_ref (), in);
-        }
+      visitor (ast_identifier_expr_t& n)
+        : node (n)
+      { }
 
-      if (in.isValue () && type_dereference (in.type))
-        {
-          // Pointer value.
-          // Insert an explicit dereference.
-          in = insertExplicitDerefence (node.base_ref (), in);
-        }
+      void defaultAction (const Symbol& symbol)
+      {
+        not_reached;
+      }
 
-      if (in.isReference ())
-        {
-          typed_value_t out = typed_value_t::select (in, identifier);
-          if (out.isError ())
-            {
-              error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                             "E23: cannot select %s from expression of type %s",
-                             identifier.c_str (), in.type->ToString ().c_str ());
-            }
-          node.typed_value = out;
-        }
-      else if (in.isValue ())
-        {
-          unimplemented;
-        }
-    }
+      void visit (const BuiltinFunction& symbol)
+      {
+        node.typed_value = symbol.value ();
+      }
 
-    void visit (ast_dereference_expr_t& node)
-    {
-      typed_value_t in = checkAndImplicitlyDereference (node.child_ref ());
-      typed_value_t out = typed_value_t::dereference (in);
-      if (out.isError ())
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E1: incompatible types: (%s)@", in.type->ToString ().c_str ());
-        }
-      node.typed_value = out;
-    }
+      void visit (const ::Template& symbol)
+      {
+        node.typed_value = symbol.value ();
+      }
 
-    void visit (ast_literal_expr_t& node)
-    {
-      // Do nothing.
-    }
+      void visit (const ::Function& symbol)
+      {
+        node.typed_value = symbol.value ();
+      }
 
-    void check_address_of (ast_address_of_expr_t& node)
-    {
-      ast_t* expr = node.child ();
-      typed_value_t in = expr->typed_value;
-      typed_value_t out = typed_value_t::address_of (in);
-      if (out.isError ())
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E2: incompatible types: (%s)&", in.type->ToString ().c_str ());
-        }
-      node.typed_value = out;
-    }
+      void visit (const ParameterSymbol& symbol)
+      {
+        node.typed_value = symbol.value;
+      }
 
-    void visit (ast_address_of_expr_t& node)
-    {
-      typed_value_t in = checkExpectReference (node.child ());
-      typed_value_t out = typed_value_t::address_of (in);
-      if (out.isError ())
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E45: incompatible types: &(%s)", in.type->ToString ().c_str ());
-        }
-      node.typed_value = out;
-    }
+      void visit (const TypeSymbol& symbol)
+      {
+        node.typed_value = typed_value_t (symbol.type);
+      }
 
-    void visit (ast_logic_not_expr_t& node)
-    {
-      typed_value_t in = checkAndImplicitlyDereference (node.child_ref ());
-      typed_value_t out = typed_value_t::logic_not (in);
-      if (out.isError ())
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E3: incompatible types (%s) !", in.type->ToString ().c_str ());
-        }
-      node.typed_value = out;
-    }
+      void visit (const TypedConstantSymbol& symbol)
+      {
+        node.typed_value = symbol.value;
+      }
 
-    void visit (ast_binary_arithmetic_expr_t& node)
-    {
-      typed_value_t left = checkAndImplicitlyDereference (node.left_ref ());
-      typed_value_t right = checkAndImplicitlyDereference (node.right_ref ());
-      typed_value_t result = typed_value_t::binary (node.location, node.arithmetic, left, right);
-      if (result.isError ())
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E4: incompatible types (%s) %s (%s)", left.type->ToString ().c_str (), binary_arithmetic_symbol (node.arithmetic), right.type->ToString ().c_str ());
-        }
-      node.typed_value = result;
-    }
+      void visit (const VariableSymbol& symbol)
+      {
+        node.typed_value = symbol.value;
+      }
 
-    void check_call (ast_expr_t& node,
-                     const Type::Signature* signature,
-                     typed_value_t return_value,
-                     ast_t* argsnode,
-                     const TypedValueListType& args)
-    {
-      size_t argument_count = args.size ();
-      size_t parameter_count = signature->Arity ();
-      if (argument_count != parameter_count)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E51: call expects %zd arguments but given %zd",
-                         parameter_count, argument_count);
-        }
+      void visit (const HiddenSymbol& symbol)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (),
+                       node.location.Line, "E47: %s is not accessible in this scope",
+                       symbol.identifier.c_str ());
+      }
+    };
+    visitor v (node);
+    symbol->accept (v);
 
-      size_t idx = 0;
-      for (Type::Signature::const_iterator pos = signature->Begin (),
+    node.symbol = symbol;
+  }
+
+  void visit (ast_select_expr_t& node)
+  {
+    const std::string& identifier = ast_get_identifier (node.identifier ());
+    typed_value_t in = type_check_expr (node.base ());
+    assert (in.type != NULL);
+
+    if (in.isReference () && type_dereference (in.type))
+      {
+        // Pointer reference.
+        // Insert an implicit dereference.
+        in = insertImplicitDereference (node.base_ref (), in);
+      }
+
+    if (in.isValue () && type_dereference (in.type))
+      {
+        // Pointer value.
+        // Insert an explicit dereference.
+        in = insertExplicitDerefence (node.base_ref (), in);
+      }
+
+    if (in.isReference ())
+      {
+        typed_value_t out = typed_value_t::select (in, identifier);
+        if (out.isError ())
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "E23: cannot select %s from expression of type %s",
+                           identifier.c_str (), in.type->ToString ().c_str ());
+          }
+        node.typed_value = out;
+      }
+    else if (in.isValue ())
+      {
+        unimplemented;
+      }
+  }
+
+  void visit (ast_dereference_expr_t& node)
+  {
+    typed_value_t in = checkAndImplicitlyDereference (node.child_ref ());
+    typed_value_t out = typed_value_t::dereference (in);
+    if (out.isError ())
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "E1: incompatible types: (%s)@", in.type->ToString ().c_str ());
+      }
+    node.typed_value = out;
+  }
+
+  void visit (ast_literal_expr_t& node)
+  {
+    // Do nothing.
+  }
+
+  void check_address_of (ast_address_of_expr_t& node)
+  {
+    ast_t* expr = node.child ();
+    typed_value_t in = expr->typed_value;
+    typed_value_t out = typed_value_t::address_of (in);
+    if (out.isError ())
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "E2: incompatible types: (%s)&", in.type->ToString ().c_str ());
+      }
+    node.typed_value = out;
+  }
+
+  void visit (ast_address_of_expr_t& node)
+  {
+    typed_value_t in = checkExpectReference (node.child ());
+    typed_value_t out = typed_value_t::address_of (in);
+    if (out.isError ())
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "E45: incompatible types: &(%s)", in.type->ToString ().c_str ());
+      }
+    node.typed_value = out;
+  }
+
+  void visit (ast_logic_not_expr_t& node)
+  {
+    typed_value_t in = checkAndImplicitlyDereference (node.child_ref ());
+    typed_value_t out = typed_value_t::logic_not (in);
+    if (out.isError ())
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "E3: incompatible types (%s) !", in.type->ToString ().c_str ());
+      }
+    node.typed_value = out;
+  }
+
+  void visit (ast_binary_arithmetic_expr_t& node)
+  {
+    typed_value_t left = checkAndImplicitlyDereference (node.left_ref ());
+    typed_value_t right = checkAndImplicitlyDereference (node.right_ref ());
+    typed_value_t result = typed_value_t::binary (node.location, node.arithmetic, left, right);
+    if (result.isError ())
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "E4: incompatible types (%s) %s (%s)", left.type->ToString ().c_str (), binary_arithmetic_symbol (node.arithmetic), right.type->ToString ().c_str ());
+      }
+    node.typed_value = result;
+  }
+
+  static void check_call (ast_t& node,
+                   const Type::Signature* signature,
+                   typed_value_t return_value,
+                   ast_t* argsnode,
+                   const TypedValueListType& args)
+  {
+    size_t argument_count = args.size ();
+    size_t parameter_count = signature->Arity ();
+    if (argument_count != parameter_count)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "E51: call expects %zd arguments but given %zd",
+                       parameter_count, argument_count);
+      }
+
+    size_t idx = 0;
+    for (Type::Signature::const_iterator pos = signature->Begin (),
            limit = signature->End ();
-           pos != limit;
-           ++pos, ++idx)
-        {
-          typed_value_t argument_tv  = args[idx];
-          typed_value_t parameter_tv = typed_value_t::make_ref ((*pos)->value);
-          check_assignment (parameter_tv, argument_tv, *argsnode->at (idx),
-                            "E5: incompatible types (%s) = (%s)",
-                            "E19: argument leaks mutable pointers");
-        }
-
-      // Set the return type.
-      node.typed_value = return_value;
-    }
-
-    void visit (ast_call_expr_t& node)
-    {
-      // Analyze the args.
-      TypedValueListType tvlist;
-      check_rvalue_list (node.args (), tvlist);
-
-      // Analyze the callee.
-      // Expecting a value.
-      typed_value_t expr_tv = checkAndImplicitlyDereference (node.expr_ref ());
-
-      const Type::Template* tt = Type::type_strip_cast <Type::Template> (expr_tv.type);
-      if (tt != NULL)
-        {
-          ::Template* t = expr_tv.value.template_value ();
-          expr_tv = t->instantiate (tvlist);
-          node.expr ()->typed_value = expr_tv;
-        }
-
-      struct visitor : public Type::Visitor
+         pos != limit;
+         ++pos, ++idx)
       {
-        check_visitor& rvalue_visitor;
-        ast_call_expr_t& node;
-        const TypedValueListType& tvlist;
+        typed_value_t argument_tv  = args[idx];
+        typed_value_t parameter_tv = typed_value_t::make_ref ((*pos)->value);
+        check_assignment (parameter_tv, argument_tv, *argsnode->at (idx),
+                          "E5: incompatible types (%s) = (%s)",
+                          "E19: argument leaks mutable pointers");
+      }
 
-        visitor (check_visitor& rv,
-                 ast_call_expr_t& n,
-                 const TypedValueListType& tvl)
-          : rvalue_visitor (rv)
-          , node (n)
-          , tvlist (tvl)
-        { }
+    // Set the return type.
+    node.typed_value = return_value;
+  }
 
-        void default_action (const Type::Type& type)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E33: cannot call %s", type.ToString ().c_str ());
-        }
+  void visit (ast_call_expr_t& node)
+  {
+    // Analyze the args.
+    TypedValueListType tvlist;
+    check_rvalue_list (node.args (), tvlist);
 
-        void visit (const Type::Function& type)
-        {
-          switch (type.kind)
-            {
-            case Type::Function::FUNCTION:
-              // No restrictions on caller.
-              rvalue_visitor.check_call (node, type.GetSignature (), type.GetReturnParameter ()->value, node.args (), tvlist);
-              break;
+    // Analyze the callee.
+    // Expecting a value.
+    typed_value_t expr_tv = checkAndImplicitlyDereference (node.expr_ref ());
 
-            case Type::Function::PUSH_PORT:
-              error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                             "E79: push ports cannot be called");
+    const Type::Template* tt = Type::type_strip_cast <Type::Template> (expr_tv.type);
+    if (tt != NULL)
+      {
+        ::Template* t = expr_tv.value.template_value ();
+        expr_tv = t->instantiate (tvlist);
+        node.expr ()->typed_value = expr_tv;
+      }
 
-              break;
+    struct visitor : public Type::Visitor
+    {
+      check_visitor& rvalue_visitor;
+      ast_call_expr_t& node;
+      const TypedValueListType& tvlist;
 
-            case Type::Function::PULL_PORT:
-              // Must be called from either a getter, an action, or reaction.
-              if (node.GetGetter () == NULL &&
-                  node.GetAction () == NULL)
-                {
-                  error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                 "E26: pull ports may only be called from a getter, an action, or a reaction");
-                }
+      visitor (check_visitor& rv,
+               ast_call_expr_t& n,
+               const TypedValueListType& tvl)
+        : rvalue_visitor (rv)
+        , node (n)
+        , tvlist (tvl)
+      { }
 
-              rvalue_visitor.check_call (node, type.GetSignature (), type.GetReturnParameter ()->value, node.args (), tvlist);
-              if (in_mutable_section (&node))
-                {
-                  error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                 "cannot call pull port in mutable section");
-                }
-              break;
-            }
-        }
+      void default_action (const Type::Type& type)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "E33: cannot call %s", type.ToString ().c_str ());
+      }
 
-        void visit (const Type::Method& type)
-        {
-          switch (type.kind)
-            {
-            case Type::Method::METHOD:
+      void visit (const Type::Function& type)
+      {
+        switch (type.kind)
+          {
+          case Type::Function::FUNCTION:
+            // No restrictions on caller.
+            rvalue_visitor.check_call (node, type.GetSignature (), type.GetReturnParameter ()->value, node.args (), tvlist);
+            break;
+
+          case Type::Function::PUSH_PORT:
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "E79: push ports cannot be called");
+
+            break;
+
+          case Type::Function::PULL_PORT:
+            // Must be called from either a getter, an action, or reaction.
+            if (node.GetGetter () == NULL &&
+                node.GetAction () == NULL)
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "E26: pull ports may only be called from a getter, an action, or a reaction");
+              }
+
+            rvalue_visitor.check_call (node, type.GetSignature (), type.GetReturnParameter ()->value, node.args (), tvlist);
+            if (in_mutable_section (&node))
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "cannot call pull port in mutable section");
+              }
+            break;
+          }
+      }
+
+      void visit (const Type::Method& type)
+      {
+        switch (type.kind)
+          {
+          case Type::Method::METHOD:
             {
               // No restrictions on caller.
               rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args (), tvlist);
@@ -474,7 +467,7 @@ type_check_expr (ast_t* ptr)
                                 "E18: argument leaks mutable pointers");
             }
             break;
-            case Type::Method::INITIALIZER:
+          case Type::Method::INITIALIZER:
             {
               // Caller must be an initializer.
               Initializer* initializer = node.GetInitializer ();
@@ -504,7 +497,7 @@ type_check_expr (ast_t* ptr)
             }
             break;
 
-            case Type::Method::GETTER:
+          case Type::Method::GETTER:
             {
               unimplemented;
               // // Must be called from either a getter, an action, or reaction.
@@ -523,104 +516,77 @@ type_check_expr (ast_t* ptr)
               //     }
             }
             break;
-            case Type::Method::REACTION:
+          case Type::Method::REACTION:
             {
               unimplemented;
             }
             break;
-            }
-        }
-      };
+          }
+      }
+    };
 
-      visitor v (*this, node, tvlist);
-      expr_tv.type->Accept (v);
-    }
+    visitor v (*this, node, tvlist);
+    expr_tv.type->Accept (v);
+  }
 
-    void visit (ast_push_port_call_expr_t& node)
-    {
-      ast_t *expr = node.identifier ();
-      ast_t *args = node.args ();
-      const std::string& port_identifier = ast_get_identifier (expr);
-      const Type::Type *this_type = node.GetReceiverType ();
-      const Type::Function *push_port_type = Type::type_cast<Type::Function> (type_select (this_type, port_identifier));
-      if (push_port_type == NULL || push_port_type->kind != Type::Function::PUSH_PORT)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E30: no port named %s", port_identifier.c_str ());
-        }
-      TypedValueListType tvlist;
-      check_rvalue_list (args, tvlist);
-      typed_value_t tv = typed_value_t::make_value (Type::Void::Instance (),
-                         typed_value_t::STACK,
-                         IMMUTABLE,
-                         IMMUTABLE);
-      check_call (node, push_port_type->GetSignature (), tv, args, tvlist);
-      node.field = type_select_field (this_type, port_identifier);
-    }
+  void visit (ast_push_port_call_expr_t& node)
+  {
+    ast_t *expr = node.identifier ();
+    ast_t *args = node.args ();
+    const std::string& port_identifier = ast_get_identifier (expr);
+    const Type::Type *this_type = node.GetReceiverType ();
+    const Type::Function *push_port_type = Type::type_cast<Type::Function> (type_select (this_type, port_identifier));
+    if (push_port_type == NULL || push_port_type->kind != Type::Function::PUSH_PORT)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "E30: no port named %s", port_identifier.c_str ());
+      }
+    TypedValueListType tvlist;
+    check_rvalue_list (args, tvlist);
+    check_call (node, push_port_type->GetSignature (), push_port_type->GetReturnParameter ()->value, args, tvlist);
+    node.field = type_select_field (this_type, port_identifier);
+  }
 
-    void visit (ast_index_expr_t& node)
-    {
-      typed_value_t base_tv = checkExpectReference (node.base_ref ());
-      typed_value_t idx_tv = checkAndImplicitlyDereference (node.index_ref ());
-      typed_value_t result = typed_value_t::index (node.location, base_tv, idx_tv);
-      if (result.isError ())
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E6: incompatible types (%s)[%s]",
-                         base_tv.type->ToString ().c_str (),
-                         idx_tv.type->ToString ().c_str ());
-        }
-      node.typed_value = result;
-    }
+  void visit (ast_index_expr_t& node)
+  {
+    typed_value_t base_tv = checkExpectReference (node.base_ref ());
+    typed_value_t idx_tv = checkAndImplicitlyDereference (node.index_ref ());
+    typed_value_t result = typed_value_t::index (node.location, base_tv, idx_tv);
+    if (result.isError ())
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "E6: incompatible types (%s)[%s]",
+                       base_tv.type->ToString ().c_str (),
+                       idx_tv.type->ToString ().c_str ());
+      }
+    node.typed_value = result;
+  }
 
-    void visit (ast_slice_expr_t& node)
-    {
-      typed_value_t base_tv = checkExpectReference (node.base_ref ());
-      typed_value_t low_tv = checkAndImplicitlyDereference (node.low_ref ());
-      typed_value_t high_tv = checkAndImplicitlyDereference (node.high_ref ());
-      typed_value_t result = typed_value_t::slice (node.location, base_tv, low_tv, high_tv);
-      if (result.isError ())
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E37: incompatible types (%s)[%s : %s]",
-                         base_tv.type->ToString ().c_str (),
-                         low_tv.type->ToString ().c_str (),
-                         high_tv.type->ToString ().c_str ());
-        }
-      node.typed_value = result;
-    }
-  };
+  void visit (ast_slice_expr_t& node)
+  {
+    typed_value_t base_tv = checkExpectReference (node.base_ref ());
+    typed_value_t low_tv = checkAndImplicitlyDereference (node.low_ref ());
+    typed_value_t high_tv = checkAndImplicitlyDereference (node.high_ref ());
+    typed_value_t result = typed_value_t::slice (node.location, base_tv, low_tv, high_tv);
+    if (result.isError ())
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "E37: incompatible types (%s)[%s : %s]",
+                       base_tv.type->ToString ().c_str (),
+                       low_tv.type->ToString ().c_str (),
+                       high_tv.type->ToString ().c_str ());
+      }
+    node.typed_value = result;
+  }
+};
+
+typed_value_t
+type_check_expr (ast_t* ptr)
+{
   check_visitor check_lvalue_visitor (ptr);
   ptr->accept (check_lvalue_visitor);
   return ptr->typed_value;
 }
-
-// void
-// type_check_rvalue (ast_t::iterator ptr)
-// {
-//   struct check_rvalue_visitor_t : public ast_visitor_t
-//   {
-
-//     void
-//     binary_arithmetic (ast_binary_expr_t& node, const char* operator_str)
-//     {
-//       type_check_rvalue (node.left_iter ());
-//       type_check_rvalue (node.right_iter ());
-//       typed_value_t left_tv = ast_get_typed_value (node.left ());
-//       typed_value_t right_tv = ast_get_typed_value (node.right ());
-//       typed_value_t tv = typed_value_binary_arithmetic (left_tv, right_tv);
-//       if (!tv.type)
-//         {
-//           error_at_line (-1, 0, node.file, node.line,
-//                          "incompatible types (%s) %s (%s)", left_tv.type->ToString ().c_str (), operator_str, right_tv.type->ToString ().c_str ());
-//         }
-//       node.set_type (tv);
-//     }
-
-//   };
-//   check_rvalue_visitor_t check_rvalue_visitor (ptr);
-//   (*ptr)->accept (check_rvalue_visitor);
-// }
 
 // TODO:  Fold into check_rvalue.
 static void
@@ -1529,9 +1495,9 @@ process_definitions (ast_t * node)
 
     void visit (ast_instance_t& node)
     {
-      // Check the initialization function.
-      Symbol* symbol = node.symbol;
-      const NamedType* type = SymbolCast<InstanceSymbol> (symbol)->type;
+      // Lookup the initialization function.
+      InstanceSymbol* symbol = node.symbol;
+      const NamedType* type = symbol->type;
       ast_t* initializer_node = node.initializer ();
       Initializer* initializer = type->GetInitializer (ast_get_identifier (initializer_node));
       if (initializer == NULL)
@@ -1541,13 +1507,12 @@ process_definitions (ast_t * node)
                          "E21: no initializer named %s",
                          ast_get_identifier (initializer_node).c_str ());
         }
-      if (initializer->initializerType->signature->Arity () != 0)
-        {
-          error_at_line (-1, 0, initializer_node->location.File.c_str (),
-                         initializer_node->location.Line,
-                         "named method is not null-ary");
-        }
-      SymbolCast<InstanceSymbol> (symbol)->initializer = initializer;
+
+      // Check the call.
+      TypedValueListType tvlist;
+      check_rvalue_list (node.expression_list (), tvlist);
+      check_visitor::check_call (node, initializer->initializerType->signature, initializer->initializerType->return_parameter->value, node.expression_list (), tvlist);
+      symbol->initializer = initializer;
     }
 
     void visit (ast_reaction_t& node)

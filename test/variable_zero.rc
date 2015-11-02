@@ -11,4 +11,4 @@ init (this *HelloWorld) print () {
   }
 }
 
-instance h HelloWorld print;
+instance h HelloWorld print ();

@@ -90,7 +90,7 @@ Definition: Type { $$ = $1; }
 
 Const: CONST IDENTIFIER TypeSpec '=' Expression ';' { $$ = new ast_const_t (@1, $2, $3, $5); }
 
-Instance: INSTANCE IDENTIFIER IDENTIFIER IDENTIFIER ';' { $$ = new ast_instance_t (@1, $2, $3, $4); }
+Instance: INSTANCE IDENTIFIER IDENTIFIER IDENTIFIER '(' OptionalExpressionList ')' ';' { $$ = new ast_instance_t (@1, $2, $3, $4, $6); }
 
 Type: TYPE IDENTIFIER TypeSpec ';' { $$ = new ast_type_definition_t (@1, $2, $3); }
 

@@ -55,4 +55,4 @@ bind (this *System) {
   this.clock.response -> this.sampler.response;
 }
 
-instance s System Initially;
+instance s System Initially ();

@@ -78,4 +78,4 @@ init (this *Test) Main () {
   test (38u, `short circuit ||`, flag == false);
 }
 
-instance t Test Main;
+instance t Test Main ();

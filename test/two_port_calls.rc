@@ -32,4 +32,4 @@ bind (this *System) {
 
 init (this *System) Init () { }
 
-instance system System Init;
+instance system System Init ();

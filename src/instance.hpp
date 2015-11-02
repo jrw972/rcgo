@@ -12,13 +12,15 @@ public:
               size_t address,
               const Type::NamedType* type,
               Initializer* initializer,
-              unsigned int line)
+              unsigned int line,
+              ast_instance_t* node)
     : parent_ (parent)
     , address_ (address)
     , type_ (type)
     , ptr_ (NULL)
     , initializer_ (initializer)
     , line_ (line)
+    , node_ (node)
   { }
 
   instance_t* parent () const
@@ -53,6 +55,11 @@ public:
     return line_;
   }
 
+  ast_instance_t* node () const
+  {
+    return node_;
+  }
+
   bool is_top_level () const
   {
     return parent_ == NULL;
@@ -76,6 +83,7 @@ private:
   component_t* ptr_;
   Initializer* initializer_;
   unsigned int line_;
+  ast_instance_t* node_;
 
 public:
   struct ConcreteAction

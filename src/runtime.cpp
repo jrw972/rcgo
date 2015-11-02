@@ -120,12 +120,13 @@ namespace runtime
   {
     if (instance->is_top_level ())
       {
+        // Set up the heap.
+        exec.current_instance (instance->ptr ());
         // Set up a call expression.
         const unsigned int line = instance->line ();
         ast_identifier_t id (line, "");
         ast_identifier_expr_t expr (line, &id);
-        ast_list_expr_t args (line);
-        ast_call_expr_t node (line, &expr, &args);
+        ast_call_expr_t node (line, &expr, instance->node ()->expression_list ());
         // Call the initializer.
         instance->initializer ()->call (exec, node, instance->ptr ());
       }

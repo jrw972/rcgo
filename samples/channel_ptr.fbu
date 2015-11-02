@@ -100,4 +100,4 @@ bind (this *System) {
   this.channel.receive -> this.receive;
 }
 
-instance s System Initially;
+instance s System Initially ();

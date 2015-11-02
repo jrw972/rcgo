@@ -1893,15 +1893,17 @@ struct ast_instance_t : public ast_t
     IDENTIFIER,
     TYPE_IDENTIFIER,
     INITIALIZER,
+    EXPRESSION_LIST,
     COUNT
   };
 
-  ast_instance_t (unsigned int line, ast_t* identifier, ast_t* type_identifier, ast_t* initializer)
+  ast_instance_t (unsigned int line, ast_t* identifier, ast_t* type_identifier, ast_t* initializer, ast_t* expression_list)
     : ast_t (line, COUNT)
   {
     set (IDENTIFIER, identifier);
     set (TYPE_IDENTIFIER, type_identifier);
     set (INITIALIZER, initializer);
+    set (EXPRESSION_LIST, expression_list);
   }
 
   ast_t* identifier () const
@@ -1915,6 +1917,10 @@ struct ast_instance_t : public ast_t
   ast_t* initializer () const
   {
     return at (INITIALIZER);
+  }
+  ast_t* expression_list () const
+  {
+    return at (EXPRESSION_LIST);
   }
 
   void accept (ast_visitor_t& visitor);
