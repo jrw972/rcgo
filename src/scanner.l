@@ -286,7 +286,7 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 [\n]                   { ++yylloc; }
 . {
 error_at_line (-1, 0, Location::StaticFile.c_str (), yylloc,
-                   "unrecognized character: %s", yytext);
+                   "unrecognized character '%s' (E66)", yytext);
 }
 
 %%
@@ -315,7 +315,7 @@ static char* ParseInterprettedString (unsigned int line, char* pos, char* limit,
         if (c == '\n')
           {
             error_at_line (-1, 0, Location::StaticFile.c_str (), line,
-                           "E59: newline in interpretted string literal");
+                           "newline in interpretted string literal (E67)");
           }
         else if (c == '\\')
           {
@@ -394,7 +394,7 @@ static char* ParseInterprettedString (unsigned int line, char* pos, char* limit,
             break;
           default:
             error_at_line (-1, 0, Location::StaticFile.c_str (), line,
-                           "E60: illegal escape sequence '%c'", c);
+                           "illegal escape sequence '%c' (E68)", c);
           }
       }
       break;
@@ -402,7 +402,7 @@ static char* ParseInterprettedString (unsigned int line, char* pos, char* limit,
       {
         if (pos == limit) {
           error_at_line (-1, 0, Location::StaticFile.c_str (), line,
-                         "E61: end of string while parsing octal escape sequence");
+                         "end of string while parsing octal escape sequence (E69)");
         }
 
         char c = *pos++;
@@ -421,7 +421,7 @@ static char* ParseInterprettedString (unsigned int line, char* pos, char* limit,
             break;
           default:
             error_at_line (-1, 0, Location::StaticFile.c_str (), line,
-                           "E62: unexpected character in octal escape sequence '%c'", c);
+                           "unexpected character in octal escape sequence '%c' (E70)", c);
           }
 
         if (remainingDigits == 0) {
@@ -434,7 +434,7 @@ static char* ParseInterprettedString (unsigned int line, char* pos, char* limit,
       {
         if (pos == limit) {
           error_at_line (-1, 0, Location::StaticFile.c_str (), line,
-                         "E63: end of string while parsing hex escape sequence");
+                         "end of string while parsing hex escape sequence (E71)");
         }
 
         char c = *pos;
@@ -473,7 +473,7 @@ static char* ParseInterprettedString (unsigned int line, char* pos, char* limit,
             break;
           default:
             error_at_line (-1, 0, Location::StaticFile.c_str (), line,
-                           "E64: unexpected character in hex escape sequence '%c'", c);
+                           "unexpected character in hex escape sequence '%c' (E72)", c);
           }
 
         if (remainingDigits == 0) {

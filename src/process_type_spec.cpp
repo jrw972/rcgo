@@ -15,7 +15,7 @@ lookup_no_force (ast_t * node, const std::string& identifier)
   if (symbol == NULL)
     {
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                     "%s was not declared in this scope", identifier.c_str ());
+                     "%s was not declared in this scope (E102)", identifier.c_str ());
     }
   return symbol;
 }
@@ -27,17 +27,17 @@ process_array_dimension (ast_t*& ptr)
   if (!type_is_integral (tv.type))
     {
       error_at_line (-1, 0, ptr->location.File.c_str (), ptr->location.Line,
-                     "array dimension is not integral");
+                     "array dimension is not integral (E103)");
     }
   if (!tv.value.present)
     {
       error_at_line (-1, 0, ptr->location.File.c_str (), ptr->location.Line,
-                     "array dimension is not constant");
+                     "array dimension is not constant (E104)");
     }
   if (tv.integral_value () < 0)
     {
       error_at_line (-1, 0, ptr->location.File.c_str (), ptr->location.Line,
-                     "array dimension is negative");
+                     "array dimension is negative (E105)");
     }
   return tv;
 }
@@ -53,13 +53,13 @@ CheckForForeignSafe (const Signature* signature, const parameter_t* return_param
       if (!parameter->value.is_foreign_safe ())
         {
           error_at_line (-1, 0, parameter->defining_node->location.File.c_str (), parameter->defining_node->location.Line,
-                         "E56: parameter is not foreign safe");
+                         "parameter is not foreign safe (E106)");
         }
     }
   if (return_parameter != NULL && !return_parameter->value.is_foreign_safe ())
     {
       error_at_line (-1, 0, return_parameter->defining_node->location.File.c_str (), return_parameter->defining_node->location.Line,
-                     "E68: return parameter is not foreign safe");
+                     "return parameter is not foreign safe (E107)");
     }
 }
 
@@ -119,7 +119,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
           if (node.parent ()->parent ()->FindSymbolCurrent (id) != NULL)
             {
               error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
-                             "%s is already defined in this scope", id.c_str ());
+                             "%s is already defined in this scope (E108)", id.c_str ());
             }
 
           node.parent ()->parent ()->EnterSymbol (new TypedConstantSymbol (id,
@@ -164,7 +164,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
               else
                 {
                   error_at_line (-1, 0, id->location.File.c_str (), id->location.Line,
-                                 "duplicate field name %s", identifier.c_str ());
+                                 "duplicate field name %s (E109)", identifier.c_str ());
                 }
             }
         }
@@ -193,7 +193,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
       if (symbol == NULL)
         {
           error_at_line (-1, 0, child->location.File.c_str (), child->location.Line,
-                         "%s does not refer to a type", identifier.c_str ());
+                         "%s does not refer to a type (E110)", identifier.c_str ());
         }
       type = SymbolCast<TypeSymbol> (symbol)->type;
     }
@@ -259,7 +259,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
               else
                 {
                   error_at_line (-1, 0, id->location.File.c_str (), id->location.Line,
-                                 "duplicate parameter name %s",
+                                 "duplicate parameter name %s (E111)",
                                  identifier.c_str ());
                 }
             }

@@ -25,7 +25,7 @@ check_assignment (typed_value_t left_tv,
   if (left_tv.intrinsic_mutability != MUTABLE)
     {
       error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                     "E9: target of assignment is not mutable");
+                     "target of assignment is not mutable (E13)");
     }
 
   if (!(
@@ -92,7 +92,7 @@ checkExpectReference (ast_t* expr)
   typed_value_t tv = type_check_expr (expr);
   if (!tv.isReference ())
     {
-      error_at_line (EXIT_FAILURE, 0, expr->location.File.c_str (), expr->location.Line, "E46: expected reference");
+      error_at_line (EXIT_FAILURE, 0, expr->location.File.c_str (), expr->location.Line, "expected reference (E14)");
     }
   return tv;
 }
@@ -130,14 +130,14 @@ struct check_visitor : public ast_visitor_t
     if (type == NULL)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "no port named %s", port_identifier.c_str ());
+                       "no port named %s (E15)", port_identifier.c_str ());
       }
 
     const Type::Array* array_type = Type::type_cast<Type::Array> (type);
     if (!array_type)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "%s is not an array of ports", port_identifier.c_str ());
+                       "%s is not an array of ports (E16)", port_identifier.c_str ());
       }
 
     const Type::Function* push_port_type = Type::type_cast<Type::Function> (array_type->Base ());
@@ -145,7 +145,7 @@ struct check_visitor : public ast_visitor_t
     if (push_port_type == NULL || push_port_type->kind != Type::Function::PUSH_PORT)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "%s is not an array of ports", port_identifier.c_str ());
+                       "%s is not an array of ports (E17)", port_identifier.c_str ());
       }
 
     typed_value_t index_tv = checkAndImplicitlyDereference (node.index_ref ());
@@ -168,7 +168,7 @@ struct check_visitor : public ast_visitor_t
     if (symbol == NULL)
       {
         error_at_line (-1, 0, identifier_node->location.File.c_str (),
-                       identifier_node->location.Line, "E57: %s is not defined",
+                       identifier_node->location.Line, "%s is not defined (E18)",
                        identifier.c_str ());
       }
 
@@ -223,7 +223,7 @@ struct check_visitor : public ast_visitor_t
       void visit (const HiddenSymbol& symbol)
       {
         error_at_line (-1, 0, node.location.File.c_str (),
-                       node.location.Line, "E47: %s is not accessible in this scope",
+                       node.location.Line, "%s is not accessible in this scope (E19)",
                        symbol.identifier.c_str ());
       }
     };
@@ -259,7 +259,7 @@ struct check_visitor : public ast_visitor_t
         if (out.isError ())
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "E23: cannot select %s from expression of type %s",
+                           "cannot select %s from expression of type %s (E20)",
                            identifier.c_str (), in.type->ToString ().c_str ());
           }
         node.typed_value = out;
@@ -277,7 +277,7 @@ struct check_visitor : public ast_visitor_t
     if (out.isError ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "E1: incompatible types: (%s)@", in.type->ToString ().c_str ());
+                       "incompatible types: %s (E21)", in.type->ToString ().c_str ());
       }
     node.typed_value = out;
   }
@@ -295,7 +295,7 @@ struct check_visitor : public ast_visitor_t
     if (out.isError ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "E2: incompatible types: (%s)&", in.type->ToString ().c_str ());
+                       "incompatible types: %s (E22)", in.type->ToString ().c_str ());
       }
     node.typed_value = out;
   }
@@ -307,7 +307,7 @@ struct check_visitor : public ast_visitor_t
     if (out.isError ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "E45: incompatible types: &(%s)", in.type->ToString ().c_str ());
+                       "E45: incompatible types: %s (E23)", in.type->ToString ().c_str ());
       }
     node.typed_value = out;
   }
@@ -319,7 +319,7 @@ struct check_visitor : public ast_visitor_t
     if (out.isError ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "E3: incompatible types (%s) !", in.type->ToString ().c_str ());
+                       "incompatible types !(%s) (E24)", in.type->ToString ().c_str ());
       }
     node.typed_value = out;
   }
@@ -332,37 +332,37 @@ struct check_visitor : public ast_visitor_t
     if (result.isError ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "E4: incompatible types (%s) %s (%s)", left.type->ToString ().c_str (), binary_arithmetic_symbol (node.arithmetic), right.type->ToString ().c_str ());
+                       "incompatible types (%s) %s (%s) (E25)", left.type->ToString ().c_str (), binary_arithmetic_symbol (node.arithmetic), right.type->ToString ().c_str ());
       }
     node.typed_value = result;
   }
 
   static void check_call (ast_t& node,
-                   const Type::Signature* signature,
-                   typed_value_t return_value,
-                   ast_t* argsnode,
-                   const TypedValueListType& args)
+                          const Type::Signature* signature,
+                          typed_value_t return_value,
+                          ast_t* argsnode,
+                          const TypedValueListType& args)
   {
     size_t argument_count = args.size ();
     size_t parameter_count = signature->Arity ();
     if (argument_count != parameter_count)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "E51: call expects %zd arguments but given %zd",
+                       "call expects %zd arguments but given %zd (E26)",
                        parameter_count, argument_count);
       }
 
     size_t idx = 0;
     for (Type::Signature::const_iterator pos = signature->Begin (),
-           limit = signature->End ();
+         limit = signature->End ();
          pos != limit;
          ++pos, ++idx)
       {
         typed_value_t argument_tv  = args[idx];
         typed_value_t parameter_tv = typed_value_t::make_ref ((*pos)->value);
         check_assignment (parameter_tv, argument_tv, *argsnode->at (idx),
-                          "E5: incompatible types (%s) = (%s)",
-                          "E19: argument leaks mutable pointers");
+                          "incompatible types (%s) = (%s) (E116)",
+                          "argument leaks mutable pointers (E117)");
       }
 
     // Set the return type.
@@ -404,7 +404,7 @@ struct check_visitor : public ast_visitor_t
       void default_action (const Type::Type& type)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "E33: cannot call %s", type.ToString ().c_str ());
+                       "cannot call %s (E27)", type.ToString ().c_str ());
       }
 
       void visit (const Type::Function& type)
@@ -418,7 +418,7 @@ struct check_visitor : public ast_visitor_t
 
           case Type::Function::PUSH_PORT:
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "E79: push ports cannot be called");
+                           "push ports cannot be called (E28)");
 
             break;
 
@@ -428,14 +428,14 @@ struct check_visitor : public ast_visitor_t
                 node.GetAction () == NULL)
               {
                 error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "E26: pull ports may only be called from a getter, an action, or a reaction");
+                               "pull ports may only be called from a getter, an action, or a reaction (E29)");
               }
 
             rvalue_visitor.check_call (node, type.GetSignature (), type.GetReturnParameter ()->value, node.args (), tvlist);
             if (in_mutable_section (&node))
               {
                 error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "cannot call pull port in mutable section");
+                               "cannot call pull port in mutable section (E30)");
               }
             break;
           }
@@ -446,81 +446,81 @@ struct check_visitor : public ast_visitor_t
         switch (type.kind)
           {
           case Type::Method::METHOD:
-            {
-              // No restrictions on caller.
-              rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args (), tvlist);
+          {
+            // No restrictions on caller.
+            rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args (), tvlist);
 
-              if (type_dereference (type.receiver_type) != NULL)
-                {
-                  // Method expects a pointer.  Insert address of.
-                  // Strip off implicit deref and select.
-                  ast_t* receiver_select_expr = node.expr ()->at (0)->at (0);
-                  ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.Line, receiver_select_expr);
-                  rvalue_visitor.check_address_of (*e);
-                  node.expr ()->at (0)->at(0) = e;
-                }
+            if (type_dereference (type.receiver_type) != NULL)
+              {
+                // Method expects a pointer.  Insert address of.
+                // Strip off implicit deref and select.
+                ast_t* receiver_select_expr = node.expr ()->at (0)->at (0);
+                ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.Line, receiver_select_expr);
+                rvalue_visitor.check_address_of (*e);
+                node.expr ()->at (0)->at(0) = e;
+              }
 
-              typed_value_t argument_tv = node.expr ()->at (0)->at (0)->typed_value;
-              typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
-              check_assignment (parameter_tv, argument_tv, node,
-                                "E48: call expects %s but given %s",
-                                "E18: argument leaks mutable pointers");
-            }
-            break;
+            typed_value_t argument_tv = node.expr ()->at (0)->at (0)->typed_value;
+            typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
+            check_assignment (parameter_tv, argument_tv, node,
+                              "call expects %s but given %s (E118)",
+                              "argument leaks mutable pointers (E119)");
+          }
+          break;
           case Type::Method::INITIALIZER:
-            {
-              // Caller must be an initializer.
-              Initializer* initializer = node.GetInitializer ();
+          {
+            // Caller must be an initializer.
+            Initializer* initializer = node.GetInitializer ();
 
-              if (initializer == NULL)
-                {
-                  error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                 "E25: initializers may only be called from initializers");
-                }
+            if (initializer == NULL)
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "initializers may only be called from initializers (E31)");
+              }
 
-              rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args (), tvlist);
+            rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args (), tvlist);
 
-              assert (type_dereference (type.receiver_type) != NULL);
+            assert (type_dereference (type.receiver_type) != NULL);
 
-              // Method expects a pointer.  Insert address of.
-              // Strip off implicit deref and select.
-              ast_t* receiver_select_expr = node.expr ()->at (0)->at (0);
-              ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.Line, receiver_select_expr);
-              rvalue_visitor.check_address_of (*e);
-              node.expr ()->at (0)->at (0) = e;
+            // Method expects a pointer.  Insert address of.
+            // Strip off implicit deref and select.
+            ast_t* receiver_select_expr = node.expr ()->at (0)->at (0);
+            ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.Line, receiver_select_expr);
+            rvalue_visitor.check_address_of (*e);
+            node.expr ()->at (0)->at (0) = e;
 
-              typed_value_t argument_tv = node.expr ()->at (0)->at (0)->typed_value;
-              typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
-              check_assignment (parameter_tv, argument_tv, node,
-                                "E49: call expects %s but given %s",
-                                "E18: argument leaks mutable pointers");
-            }
-            break;
+            typed_value_t argument_tv = node.expr ()->at (0)->at (0)->typed_value;
+            typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
+            check_assignment (parameter_tv, argument_tv, node,
+                              "call expects %s but given %s (E120)",
+                              "argument leaks mutable pointers (E121)");
+          }
+          break;
 
           case Type::Method::GETTER:
-            {
-              unimplemented;
-              // // Must be called from either a getter, an action, or reaction.
-              // if (get_current_getter (&node) == NULL &&
-              //         get_current_action (&node) == NULL)
-              //     {
-              //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-              //                        "E26: getters may only be called from a getter, an action, or a reaction");
-              //     }
+          {
+            unimplemented;
+            // // Must be called from either a getter, an action, or reaction.
+            // if (get_current_getter (&node) == NULL &&
+            //         get_current_action (&node) == NULL)
+            //     {
+            //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+            //                        "getters may only be called from a getter, an action, or a reaction (E32)");
+            //     }
 
-              // rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
-              // if (in_mutable_section (&node))
-              //     {
-              //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-              //                        "cannot call getter in mutable section");
-              //     }
-            }
-            break;
+            // rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
+            // if (in_mutable_section (&node))
+            //     {
+            //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+            //                        "cannot call getter in mutable section (E33)");
+            //     }
+          }
+          break;
           case Type::Method::REACTION:
-            {
-              unimplemented;
-            }
-            break;
+          {
+            unimplemented;
+          }
+          break;
           }
       }
     };
@@ -539,7 +539,7 @@ struct check_visitor : public ast_visitor_t
     if (push_port_type == NULL || push_port_type->kind != Type::Function::PUSH_PORT)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "E30: no port named %s", port_identifier.c_str ());
+                       "no port named %s (E34)", port_identifier.c_str ());
       }
     TypedValueListType tvlist;
     check_rvalue_list (args, tvlist);
@@ -555,7 +555,7 @@ struct check_visitor : public ast_visitor_t
     if (result.isError ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "E6: incompatible types (%s)[%s]",
+                       "incompatible types (%s)[%s] (E35)",
                        base_tv.type->ToString ().c_str (),
                        idx_tv.type->ToString ().c_str ());
       }
@@ -571,7 +571,7 @@ struct check_visitor : public ast_visitor_t
     if (result.isError ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "E37: incompatible types (%s)[%s : %s]",
+                       "incompatible types (%s)[%s : %s] (E36)",
                        base_tv.type->ToString ().c_str (),
                        low_tv.type->ToString ().c_str (),
                        high_tv.type->ToString ().c_str ());
@@ -625,7 +625,7 @@ check_condition (ast_t*& condition_node)
     {
       error_at_line (-1, 0, condition_node->location.File.c_str (),
                      condition_node->location.Line,
-                     "cannot convert (%s) to boolean expression in condition", tv.type->ToString ().c_str ());
+                     "cannot convert (%s) to boolean expression in condition (E37)", tv.type->ToString ().c_str ());
     }
   return tv;
 }
@@ -661,20 +661,20 @@ type_check_statement (ast_t * node)
       if (push_port_type == NULL || push_port_type->kind != Type::Function::PUSH_PORT)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E28: source of bind is not a port");
+                         "source of bind is not a port (E38)");
         }
 
       const Type::Method* reaction_type = Type::type_cast<Type::Method> (reaction_tv.type);
       if (reaction_type == NULL || reaction_type->kind != Type::Method::REACTION)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "target of bind is not a reaction");
+                         "target of bind is not a reaction (E39)");
         }
 
       if (!type_is_equal (push_port_type->GetSignature (), reaction_type->signature))
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "cannot bind %s to %s", push_port_type->ToString ().c_str (), reaction_type->ToString ().c_str ());
+                         "cannot bind %s to %s (E40)", push_port_type->ToString ().c_str (), reaction_type->ToString ().c_str ());
         }
 
       return reaction_tv;
@@ -694,7 +694,7 @@ type_check_statement (ast_t * node)
       if (!reaction->has_dimension ())
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "parameter specified for non-parameterized reaction");
+                         "parameter specified for non-parameterized reaction (E41)");
         }
       typed_value_t dimension = reaction->dimension ();
       typed_value_t::index (node.location, typed_value_t::make_ref (reaction->reaction_type->GetArray (dimension.integral_value ()), typed_value_t::CONSTANT, IMMUTABLE, IMMUTABLE), param_tv);
@@ -710,7 +710,7 @@ type_check_statement (ast_t * node)
       if (pull_port_type == NULL || pull_port_type->kind != Type::Function::PULL_PORT)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "target of bind is not a pull port");
+                         "target of bind is not a pull port (E42)");
         }
 
       const Type::Method* getter_type = type_cast<Type::Method> (getter_tv.type);
@@ -718,14 +718,14 @@ type_check_statement (ast_t * node)
       if (getter_type == NULL)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E29: source of bind is not a getter");
+                         "source of bind is not a getter (E43)");
         }
 
       Type::Function g (Type::Function::FUNCTION, getter_type->signature, getter_type->return_parameter);
       if (!type_is_equal (pull_port_type, &g))
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "cannot bind %s to %s", pull_port_type->ToString ().c_str (), getter_type->ToString ().c_str ());
+                         "cannot bind %s to %s (E44)", pull_port_type->ToString ().c_str (), getter_type->ToString ().c_str ());
         }
     }
 
@@ -748,7 +748,7 @@ type_check_statement (ast_t * node)
       if (tv.intrinsic_mutability != MUTABLE)
         {
           error_at_line (-1, 0, left->location.File.c_str (), left->location.Line,
-                         "E52: cannot assign to read-only location of type %s", tv.type->ToString ().c_str ());
+                         "cannot assign to read-only location of type %s (E45)", tv.type->ToString ().c_str ());
         }
 
       return tv;
@@ -761,7 +761,7 @@ type_check_statement (ast_t * node)
       if (!type_is_equal (left_tv.type, right_tv.type))
         {
           error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                         "E7: incompatible types (%s) %s (%s)", left_tv.type->ToString ().c_str (), symbol, right_tv.type->ToString ().c_str ());
+                         "incompatible types (%s) %s (%s) (E46)", left_tv.type->ToString ().c_str (), symbol, right_tv.type->ToString ().c_str ());
         }
 
       struct visitor : public Visitor
@@ -784,7 +784,7 @@ type_check_statement (ast_t * node)
         void default_action (const Type::Type& type)
         {
           error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                         "E8: incompatible types (%s) %s (%s)", type.ToString ().c_str (), symbol, type.ToString ().c_str ());
+                         "incompatible types (%s) %s (%s) (E47)", type.ToString ().c_str (), symbol, type.ToString ().c_str ());
         }
       };
       visitor v (node, symbol);
@@ -796,8 +796,8 @@ type_check_statement (ast_t * node)
       typed_value_t left_tv = check_assignment_target (node.left ());
       typed_value_t right_tv = checkAndImplicitlyDereference (node.right_ref ());
       check_assignment (left_tv, right_tv, node,
-                        "E31: incompatible types (%s) = (%s)",
-                        "E32: assignment leaks mutable pointers");
+                        "incompatible types (%s) = (%s) (E122)",
+                        "assignment leaks mutable pointers (E123)");
     }
 
     void visit (ast_change_statement_t& node)
@@ -812,13 +812,13 @@ type_check_statement (ast_t * node)
       if (!type_is_equal (proposed_root_type, tv.type))
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "cannot convert %s to %s in change", tv.type->ToString ().c_str (), proposed_root_type->ToString ().c_str ());
+                         "cannot convert %s to %s in change (E48)", tv.type->ToString ().c_str (), proposed_root_type->ToString ().c_str ());
         }
 
       if (node.dereferenceMutability < tv.dereference_mutability)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E66: change leaks mutable pointers");
+                         "change leaks mutable pointers (E49)");
         }
       tv.intrinsic_mutability = node.mutability;
       tv.dereference_mutability = node.dereferenceMutability;
@@ -883,8 +883,8 @@ type_check_statement (ast_t * node)
       assert (node.return_symbol != NULL);
 
       check_assignment (SymbolCast<ParameterSymbol> (node.return_symbol)->value, expr_tv, node,
-                        "cannot convert to (%s) from (%s) in return",
-                        "return leaks mutable pointers");
+                        "cannot convert to (%s) from (%s) in return (E124)",
+                        "return leaks mutable pointers (E125)");
     }
 
     void visit (ast_increment_statement_t& node)
@@ -900,7 +900,7 @@ type_check_statement (ast_t * node)
         void default_action (const Type::Type& type)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "cannot increment location of type %s", type.ToString ().c_str ());
+                         "cannot increment location of type %s (E50)", type.ToString ().c_str ());
         }
 
         void visit (const NamedType& type)
@@ -954,7 +954,7 @@ type_check_statement (ast_t * node)
           identifier_list->size () != expression_list->size ())
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "E73: wrong number of initializers");
+                         "wrong number of initializers (E51)");
         }
 
       // Process the type spec.
@@ -967,7 +967,7 @@ type_check_statement (ast_t * node)
           if (type_cast<Void> (type) != NULL)
             {
               error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                             "E74: missing type");
+                             "missing type (E52)");
 
             }
 
@@ -1001,8 +1001,8 @@ type_check_statement (ast_t * node)
               typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, node.dereferenceMutability);
               typed_value_t right_tv = checkAndImplicitlyDereference (*init_pos);
               check_assignment (left_tv, right_tv, node,
-                                "E34: incompatible types (%s) = (%s)",
-                                "E35: assignment leaks mutable pointers");
+                                "incompatible types (%s) = (%s) (E126)",
+                                "assignment leaks mutable pointers (E127)");
               // Convert to specified mutability.
               left_tv.intrinsic_mutability = node.mutability;
               const std::string& name = ast_get_identifier (*id_pos);
@@ -1028,8 +1028,8 @@ type_check_statement (ast_t * node)
           left_tv.intrinsic_mutability = MUTABLE;
           left_tv.dereference_mutability = node.dereferenceMutability;
           check_assignment (left_tv, right_tv, node,
-                            "E77: incompatible types (%s) = (%s)",
-                            "E78: assignment leaks mutable pointers");
+                            "incompatible types (%s) = (%s) (E128)",
+                            "assignment leaks mutable pointers (E129)");
           // Convert to specified mutability.
           left_tv.intrinsic_mutability = node.mutability;
           const std::string& name = ast_get_identifier (*id_pos);
@@ -1091,13 +1091,13 @@ control_check_statement (ast_t * node)
       if (action == NULL)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "activation outside of action or reaction");
+                         "activation outside of action or reaction (E53)");
         }
 
       if (in_activation_statement)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "activations within activations are not allowed");
+                         "activations within activations are not allowed (E54)");
         }
 
       in_activation_statement = true;
@@ -1403,7 +1403,7 @@ enter_signature (ast_t& node, const Signature * type)
       else
         {
           error_at_line (-1, 0, parameter->defining_node->location.File.c_str (), parameter->defining_node->location.Line,
-                         "E58: %s is already defined in this scope",
+                         "%s is already defined in this scope (E55)",
                          identifier.c_str ());
         }
     }
@@ -1504,7 +1504,7 @@ process_definitions (ast_t * node)
         {
           error_at_line (-1, 0, initializer_node->location.File.c_str (),
                          initializer_node->location.Line,
-                         "E21: no initializer named %s",
+                         "no initializer named %s (E56)",
                          ast_get_identifier (initializer_node).c_str ());
         }
 

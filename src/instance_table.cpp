@@ -523,7 +523,7 @@ transitive_closure (const instance_table_t& table,
           if (set.merge_no_upgrade (transitive_closure (table, inst, pos->reaction)))
             {
               error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                             "system is non-deterministic");
+                             "system is non-deterministic (E97)");
 
             }
         }
@@ -537,20 +537,20 @@ transitive_closure (const instance_table_t& table,
       if (!have_port_index)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "port index is not constant");
+                         "port index is not constant (E98)");
 
         }
 
       if (port_index < 0)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "port index is negative");
+                         "port index is negative (E99)");
         }
 
       if (port_index >= node.array_type->dimension)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "port index out of bounds");
+                         "port index out of bounds (E100)");
         }
 
       size_t port = address + node.field->offset + port_index * node.array_type->ElementSize ();
@@ -568,7 +568,7 @@ transitive_closure (const instance_table_t& table,
           if (set.merge_no_upgrade (transitive_closure (table, inst, pos->reaction)))
             {
               error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                             "system is non-deterministic");
+                             "system is non-deterministic (E101)");
 
             }
         }

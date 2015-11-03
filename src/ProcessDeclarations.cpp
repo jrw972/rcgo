@@ -22,7 +22,7 @@ processReceiver (ast_t* n, ast_t* identifierNode, parameter_t*& this_parameter, 
   if (symbol == NULL)
     {
       error_at_line (-1, 0, type_identifier_node->location.File.c_str (), type_identifier_node->location.Line,
-                     "E53: %s does not refer to a type",
+                     "%s does not refer to a type (E57)",
                      type_identifier.c_str ());
     }
 
@@ -31,7 +31,7 @@ processReceiver (ast_t* n, ast_t* identifierNode, parameter_t*& this_parameter, 
   if (requireComponent && type_strip_cast<Component> (type) == NULL)
     {
       error_at_line (-1, 0, type_identifier_node->location.File.c_str (), type_identifier_node->location.Line,
-                     "E54: %s does not refer to a component",
+                     "%s does not refer to a component (E58)",
                      type_identifier.c_str ());
     }
 
@@ -40,13 +40,13 @@ processReceiver (ast_t* n, ast_t* identifierNode, parameter_t*& this_parameter, 
       // Components must have pointer receivers.
       error_at_line (-1, 0, node->location.File.c_str (),
                      node->location.Line,
-                     "component receivers must be pointers");
+                     "component receivers must be pointers (E59)");
     }
 
   if (requireImmutableDereferenceMutability && node->dereferenceMutability < IMMUTABLE)
     {
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                     "E55: receiver must be declared +const or +foreign");
+                     "receiver must be declared +const or +foreign (E60)");
 
     }
 
@@ -57,7 +57,7 @@ processReceiver (ast_t* n, ast_t* identifierNode, parameter_t*& this_parameter, 
       {
         error_at_line (-1, 0, identifierNode->location.File.c_str (),
                        identifierNode->location.Line,
-                       "type already contains a member named %s",
+                       "type already contains a member named %s (E61)",
                        identifier.c_str ());
       }
   }
@@ -143,13 +143,13 @@ ProcessDeclarations (ast_t * node)
       if (!right_tv.value.present)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "expression is not constant");
+                         "expression is not constant (E62)");
         }
       const Type::Type* type = process_type_spec (node.type_spec (), true);
       typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, IMMUTABLE);
       check_assignment (left_tv, right_tv, node,
-                        "E11: incompatible types (%s) = (%s)",
-                        "argument leaks mutable pointers");
+                        "incompatible types (%s) = (%s) (E130)",
+                        "argument leaks mutable pointers (E131)");
       node.symbol = enter_symbol (*node.parent (),
                                   new TypedConstantSymbol (ast_get_identifier (node.identifier ()), &node, right_tv));
     }
@@ -293,7 +293,7 @@ ProcessDeclarations (ast_t * node)
         {
           error_at_line (-1, 0, type_identifier_node->location.File.c_str (),
                          type_identifier_node->location.Line,
-                         "%s does not refer to a type",
+                         "%s does not refer to a type (E63)",
                          type_identifier.c_str ());
         }
       NamedType *type = symbol->type;
@@ -301,7 +301,7 @@ ProcessDeclarations (ast_t * node)
         {
           error_at_line (-1, 0, type_identifier_node->location.File.c_str (),
                          type_identifier_node->location.Line,
-                         "%s does not refer to a component",
+                         "%s does not refer to a component (E64)",
                          type_identifier.c_str ());
         }
       node.symbol->type = type;
@@ -378,7 +378,7 @@ ProcessDeclarations (ast_t * node)
       if (symbol->inProgress)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "%s is defined recursively", symbol->identifier.c_str ());
+                         "%s is defined recursively (E65)", symbol->identifier.c_str ());
         }
       symbol->inProgress = true;
       NamedType* type = SymbolCast<TypeSymbol> (symbol)->type;

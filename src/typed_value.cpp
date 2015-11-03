@@ -327,7 +327,7 @@ typed_value_t::index (const Location& location, typed_value_t in, typed_value_t 
     void default_action (const Type::Type& type)
     {
       error_at_line (-1, 0, location.File.c_str (), location.Line,
-                     "cannot index expression of type %s", type.ToString ().c_str ());
+                     "cannot index expression of type %s (E74)", type.ToString ().c_str ());
     }
 
     void visit (const Array& type)
@@ -335,25 +335,25 @@ typed_value_t::index (const Location& location, typed_value_t in, typed_value_t 
       if (!type_is_integral (index.type))
         {
           error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "cannot index array by value of type %s", index.type->ToString ().c_str ());
+                         "cannot index array by value of type %s (E75)", index.type->ToString ().c_str ());
         }
 
       if (index.value.present && index.integral_value () >= type.dimension)
         {
           error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "index out of bounds");
+                         "index out of bounds (E76)");
         }
 
       if (index.low_value.present && index.low_integral_value () < 0)
         {
           error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "index out of bounds");
+                         "index out of bounds (E77)");
         }
 
       if (index.high_value.present && index.high_integral_value () > type.dimension)
         {
           error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "index out of bounds");
+                         "index out of bounds (E78)");
         }
 
       result_type = type.Base ();
@@ -401,7 +401,7 @@ typed_value_t::slice (const Location& location,
     default_action (const Type::Type& type)
     {
       error_at_line (-1, 0, location.File.c_str (), location.Line,
-                     "E10: cannot slice expression of type %s", type.ToString ().c_str ());
+                     "cannot slice expression of type %s (E79)", type.ToString ().c_str ());
     }
 
     void
@@ -410,13 +410,13 @@ typed_value_t::slice (const Location& location,
       if (!type_is_integral (low.type))
         {
           error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "E38: lower bound of slice expression is not integral");
+                         "lower bound of slice expression is not integral (E80)");
         }
 
       if (!type_is_integral (high.type))
         {
           error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "E39: upper bound of slice expression is not integral");
+                         "upper bound of slice expression is not integral (E81)");
         }
 
       if (low.value.present &&
@@ -424,7 +424,7 @@ typed_value_t::slice (const Location& location,
            low.integral_value () >= type.dimension))
         {
           error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "E40: lower bound of slice expression is out of bounds");
+                         "lower bound of slice expression is out of bounds (E82)");
         }
 
       if (high.value.present &&
@@ -432,7 +432,7 @@ typed_value_t::slice (const Location& location,
            high.integral_value () > type.dimension))
         {
           error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "E41: upper bound of slice expression is out of bounds");
+                         "upper bound of slice expression is out of bounds (E83)");
         }
 
       if (low.value.present &&
@@ -440,7 +440,7 @@ typed_value_t::slice (const Location& location,
           low.integral_value () > high.integral_value ())
         {
           error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "E42: lower bound of slice expression exceeds upper bound");
+                         "lower bound of slice expression exceeds upper bound (E84)");
         }
 
       result = typed_value_t::make_value (type.Base ()->GetSlice (),
@@ -722,7 +722,7 @@ struct symmetric_arithmetic : public needs_both
           type_is_equal (left, right)))
       {
         error_at_line (-1, 0, location.File.c_str (), location.Line,
-                       "E12: incompatible types (%s) %s (%s)", left->ToString().c_str (), operator_str, right->ToString().c_str ());
+                       "incompatible types (%s) %s (%s) (E85)", left->ToString().c_str (), operator_str, right->ToString().c_str ());
       }
 
     return type_choose (left, right);
@@ -749,7 +749,7 @@ struct symmetric_integer_arithmetic : public needs_both
           type_is_equal (left, right)))
       {
         error_at_line (-1, 0, location.File.c_str (), location.Line,
-                       "E13: incompatible types (%s) %s (%s)", left->ToString().c_str (), operator_str, right->ToString().c_str ());
+                       "incompatible types (%s) %s (%s) (E86)", left->ToString().c_str (), operator_str, right->ToString().c_str ());
       }
 
     return type_choose (left, right);
@@ -776,7 +776,7 @@ struct shift_arithmetic : public needs_both
           type_is_unsigned_integral (right)))
       {
         error_at_line (-1, 0, location.File.c_str (), location.Line,
-                       "E14: incompatible types (%s) %s (%s)", left->ToString().c_str (), operator_str, right->ToString().c_str ());
+                       "incompatible types (%s) %s (%s) (E87)", left->ToString().c_str (), operator_str, right->ToString().c_str ());
       }
 
     return left;
@@ -804,7 +804,7 @@ struct comparable : public needs_both
            type_is_pointer_compare (left, right))))
       {
         error_at_line (-1, 0, location.File.c_str (), location.Line,
-                       "E15: incompatible types (%s) %s (%s)", left->ToString().c_str (), operator_str, right->ToString().c_str ());
+                       "incompatible types (%s) %s (%s) (E88)", left->ToString().c_str (), operator_str, right->ToString().c_str ());
       }
 
     return Bool::Instance ();
@@ -831,7 +831,7 @@ struct orderable : public needs_both
           type_is_equal (left, right)))
       {
         error_at_line (-1, 0, location.File.c_str (), location.Line,
-                       "E16: incompatible types (%s) %s (%s)", left->ToString().c_str (), operator_str, right->ToString().c_str ());
+                       "incompatible types (%s) %s (%s) (E89)", left->ToString().c_str (), operator_str, right->ToString().c_str ());
       }
 
     return Bool::Instance ();
@@ -858,7 +858,7 @@ struct symmetric_boolean
           type_is_equal (left, right)))
       {
         error_at_line (-1, 0, location.File.c_str (), location.Line,
-                       "E17: incompatible types (%s) %s (%s)", left->ToString().c_str (), operator_str, right->ToString().c_str ());
+                       "incompatible types (%s) %s (%s) (E90)", left->ToString().c_str (), operator_str, right->ToString().c_str ());
       }
 
     return Bool::Instance ();
@@ -913,7 +913,7 @@ struct Divide : public Location, public symmetric_arithmetic
     if (right.value.ref (type) == 0)
       {
         error_at_line (-1, 0, File.c_str (), Line,
-                       "division by zero");
+                       "division by zero (E91)");
       }
 
     result.value.ref (type) = left.value.ref (type) / right.value.ref (type);
@@ -944,7 +944,7 @@ struct Modulus : public Location, public symmetric_integer_arithmetic
     if (right.value.ref (type) == 0)
       {
         error_at_line (-1, 0, File.c_str (), Line,
-                       "division by zero");
+                       "division by zero (E92)");
       }
 
     result.value.ref (type) = left.value.ref (type) % right.value.ref (type);
@@ -1608,7 +1608,7 @@ typed_value_t::cast (const Location& location, const Type::Type* type, const typ
   if (!type_is_castable (tv.type, type))
     {
       error_at_line (-1, 0, location.File.c_str (), location.Line,
-                     "E20: cannot cast expression of type %s to type %s", tv.type->ToString().c_str(), type->ToString().c_str());
+                     "cannot cast expression of type %s to type %s (E93)", tv.type->ToString().c_str(), type->ToString().c_str());
     }
 
   return cast_exec (type, tv);
@@ -1635,7 +1635,7 @@ typed_value_t::copy (const Location& location, typed_value_t tv)
   if (type_strip_cast<Component> (tv.type) != NULL)
     {
       error_at_line (-1, 0, location.File.c_str (), location.Line,
-                     "E50: cannot copy components");
+                     "cannot copy components (E94)");
     }
 
   const Slice* st = type_strip_cast<Slice> (tv.type);
@@ -1644,7 +1644,7 @@ typed_value_t::copy (const Location& location, typed_value_t tv)
       if (type_contains_pointer (st->Base ()))
         {
           error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "E24: copy leaks pointers");
+                         "copy leaks pointers (E95)");
 
         }
       // We will copy so a dereference can mutate the data.
@@ -1678,7 +1678,7 @@ typed_value_t::change (const Location& location, typed_value_t tv)
   if (root_type == NULL)
     {
       error_at_line (-1, 0, location.File.c_str (), location.Line,
-                     "E65: cannot change expression of type %s", tv.type->ToString ().c_str ());
+                     "cannot change expression of type %s (E96)", tv.type->ToString ().c_str ());
     }
 
   tv.type = root_type;

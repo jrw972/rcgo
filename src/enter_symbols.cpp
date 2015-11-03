@@ -22,7 +22,7 @@ enter_undefined_symbol (T* s,
     {
       error_at_line (-1, 0, s->definingNode->location.File.c_str (),
                      s->definingNode->location.Line,
-                     "%s is already defined in this scope", identifier.c_str ());
+                     "%s is already defined in this scope (E73)", identifier.c_str ());
     }
   return s;
 }

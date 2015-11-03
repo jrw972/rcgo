@@ -916,7 +916,7 @@ namespace runtime
         if (idx < 0 || idx >= node.array_type->dimension)
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "array index is out of bounds");
+                           "array index is out of bounds (E1)");
           }
 
         push_port_call (node, node.args (), node.field, idx * node.array_type->ElementSize ());
@@ -946,7 +946,7 @@ namespace runtime
             if (idx < 0 || idx >= type.dimension)
               {
                 error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "array index is out of bounds");
+                               "array index is out of bounds (E2)");
               }
             stack_frame_push_pointer (exec.stack (),
                                       static_cast<char*> (ptr) + idx * type.ElementSize ());
@@ -983,11 +983,11 @@ namespace runtime
           {
             if (low < 0 || low >= array_type->dimension)
               {
-                error_at_line (EXIT_FAILURE, 0, node.location.File.c_str (), node.location.Line, "E43: lower limit of slice is out of bounds");
+                error_at_line (EXIT_FAILURE, 0, node.location.File.c_str (), node.location.Line, "lower limit of slice is out of bounds (E3)");
               }
             if (high < low || high > array_type->dimension)
               {
-                error_at_line (EXIT_FAILURE, 0, node.location.File.c_str (), node.location.Line, "E44: upper limit of slice is out of bounds");
+                error_at_line (EXIT_FAILURE, 0, node.location.File.c_str (), node.location.Line, "upper limit of slice is out of bounds (E4)");
               }
 
             Slice::ValueType slice;
@@ -1786,7 +1786,7 @@ namespace runtime
     if (tvlist.size () != 1)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "E36: new expects one argument");
+                       "new expects one argument (E5)");
       }
 
     typed_value_t tv = tvlist[0];
@@ -1795,7 +1795,7 @@ namespace runtime
     if (tv.kind != typed_value_t::TYPE)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "E67: new expects a type");
+                       "new expects a type (E6)");
       }
 
     return typed_value_t (new NewImpl (tv.type, definingNode));
@@ -1873,7 +1873,7 @@ namespace runtime
     if (tvlist.size () != 1)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "E69: move expects one argument");
+                       "move expects one argument (E7)");
       }
 
     typed_value_t in = tvlist[0];
@@ -1881,7 +1881,7 @@ namespace runtime
     if (out.type == NULL)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "E70: cannot move expression of type %s", in.type->ToString ().c_str ());
+                       "cannot move expression of type %s (E8)", in.type->ToString ().c_str ());
       }
 
     return typed_value_t (new MoveImpl (in, out, definingNode));
@@ -1958,7 +1958,7 @@ namespace runtime
     if (tvlist.size () != 1)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "E71: merge expects one argument");
+                       "merge expects one argument (E9)");
       }
 
     typed_value_t in = tvlist[0];
@@ -1966,7 +1966,7 @@ namespace runtime
     if (out.type == NULL)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "E72: cannot merge expression of type %s", in.type->ToString ().c_str ());
+                       "cannot merge expression of type %s (E10)", in.type->ToString ().c_str ());
       }
 
     return typed_value_t (new MergeImpl (in, out, definingNode));
@@ -2016,7 +2016,7 @@ namespace runtime
     if (tvlist.size () != 1)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "E75: copy expects one argument");
+                       "copy expects one argument (E11)");
       }
 
     typed_value_t in = tvlist[0];
@@ -2024,7 +2024,7 @@ namespace runtime
     if (out.type == NULL)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "E76: cannot copy expression of type %s", in.type->ToString ().c_str ());
+                       "cannot copy expression of type %s (E12)", in.type->ToString ().c_str ());
       }
 
     return typed_value_t (new CopyImpl (in, out, definingNode));

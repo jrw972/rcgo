@@ -8,7 +8,7 @@ function expect_success() {
 }
 
 function expect_error() {
-    pattern="E$4:"
+    pattern="($4)"
     if rc $srcdir/$3 2>&1 | grep -q -F "$pattern"
     then
         echo "ok $1 - $2"
