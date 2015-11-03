@@ -1,4 +1,0 @@
-func f () {
-  var x +foreign *heap int;
-  change (x, y *int) { }
-}

@@ -1202,7 +1202,6 @@ struct ast_change_statement_t : public ast_t
   {
     EXPR,
     IDENTIFIER,
-    TYPE,
     BODY,
     COUNT
   };
@@ -1210,17 +1209,11 @@ struct ast_change_statement_t : public ast_t
   ast_change_statement_t (unsigned int line,
                           ast_t * expr,
                           ast_t * identifier,
-                          Mutability m,
-                          Mutability dm,
-                          ast_t * type,
                           ast_t * body)
     : ast_t (line, COUNT)
-    , mutability (m)
-    , dereferenceMutability (dm)
   {
     set (EXPR, expr);
     set (IDENTIFIER, identifier);
-    set (TYPE, type);
     set (BODY, body);
   }
 
@@ -1236,10 +1229,6 @@ struct ast_change_statement_t : public ast_t
   {
     return at (IDENTIFIER);
   }
-  ast_t* type () const
-  {
-    return at (TYPE);
-  }
   ast_t* body () const
   {
     return at (BODY);
@@ -1252,8 +1241,6 @@ struct ast_change_statement_t : public ast_t
     unimplemented;
   }
 
-  Mutability const mutability;
-  Mutability const dereferenceMutability;
   Symbol* root_symbol;
 };
 

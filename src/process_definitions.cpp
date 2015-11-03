@@ -806,23 +806,6 @@ type_check_statement (ast_t * node)
       typed_value_t tv = checkAndImplicitlyDereference (node.expr_ref ());
       tv = typed_value_t::change (node.location, tv);
 
-      // Process the root variable.
-      const Type::Type* proposed_root_type = process_type_spec (node.type (), false);
-
-      if (!type_is_equal (proposed_root_type, tv.type))
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "cannot convert %s to %s in change (E48)", tv.type->ToString ().c_str (), proposed_root_type->ToString ().c_str ());
-        }
-
-      if (node.dereferenceMutability < tv.dereference_mutability)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "change leaks mutable pointers (E49)");
-        }
-      tv.intrinsic_mutability = node.mutability;
-      tv.dereference_mutability = node.dereferenceMutability;
-
       // Enter the new heap root.
       const std::string& identifier = ast_get_identifier (node.identifier ());
       Symbol* symbol = new VariableSymbol (identifier, &node, typed_value_t::make_ref (tv));

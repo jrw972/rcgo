@@ -15,8 +15,6 @@ reaction_param_activation.sh \
 return_leak.sh \
 two_reactions.sh \
 same_port.sh \
-change_root-1.sh \
-change_root-2.sh \
 initializer_args.rc \
 var.rc
 
@@ -118,6 +116,4 @@ two_port_calls.rc \
 reaction_param_activation.rc \
 return_leak.rc \
 two_reactions.rc \
-same_port.rc \
-change_root-1.rc \
-change_root-2.rc
+same_port.rc

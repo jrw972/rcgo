@@ -81,7 +81,7 @@ action (this +const * System) (this.send_count != 100u)
 {
   var x *heap uint;
   x = new (heap uint);
-  change (x, y *uint)
+  change (x, y)
   {
     *y = this.send_count;
   };

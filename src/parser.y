@@ -195,7 +195,7 @@ EmptyStatement: /* empty */ ';' { $$ = new ast_empty_statement_t (yyloc); }
 
 ActivateStatement: ACTIVATE OptionalPushPortCallList Block { $$ = new ast_activate_statement_t (@1, $2, $3); }
 
-ChangeStatement: CHANGE '(' Expression ',' IDENTIFIER Mutability DereferenceMutability TypeSpec ')' Block { $$ = new ast_change_statement_t (@1, $3, $5, $6, $7, $8, $10); }
+ChangeStatement: CHANGE '(' Expression ',' IDENTIFIER ')' Block { $$ = new ast_change_statement_t (@1, $3, $5, $7); }
 
 ForIotaStatement: FOR IDENTIFIER DOTDOT Expression Block { $$ = new ast_for_iota_statement_t (@1, $2, $4, $5); }
 
