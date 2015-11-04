@@ -18,7 +18,7 @@ init (this *Test) Init () {
     var x *heap int = new (heap int);
      change (x, y) {
        var z *heap int = move (x);
-       test (1u, `move active heap`, z == nil);
+       test (1, `move active heap`, z == nil);
      }
   }
 
@@ -27,7 +27,7 @@ init (this *Test) Init () {
     var x *heap int = new (heap int);
      change (x, y) {
        var z *int = merge (x);
-       test (2u, `merge active heap`, z == nil);
+       test (2, `merge active heap`, z == nil);
      }
   }
 
@@ -36,10 +36,10 @@ init (this *Test) Init () {
     var x *heap int = new (heap int);
     var y *heap int = new (heap int);
      change (x, xr) {
-       *xr = 100i;
+       *xr = 100;
        change (y, yr) {
          change (x, xr2) {
-           test (3u, `stack heaps`, xr2 != nil && *xr2 == 100i);
+           test (3, `stack heaps`, xr2 != nil && *xr2 == 100);
          }
        }
      }

@@ -23,22 +23,8 @@ lookup_no_force (ast_t * node, const std::string& identifier)
 typed_value_t
 process_array_dimension (ast_t*& ptr)
 {
-  typed_value_t tv = checkAndImplicitlyDereference (ptr);
-  if (!type_is_integral (tv.type))
-    {
-      error_at_line (-1, 0, ptr->location.File.c_str (), ptr->location.Line,
-                     "array dimension is not integral (E103)");
-    }
-  if (!tv.value.present)
-    {
-      error_at_line (-1, 0, ptr->location.File.c_str (), ptr->location.Line,
-                     "array dimension is not constant (E104)");
-    }
-  if (tv.integral_value () < 0)
-    {
-      error_at_line (-1, 0, ptr->location.File.c_str (), ptr->location.Line,
-                     "array dimension is negative (E105)");
-    }
+  typed_value_t tv = CheckAndImplicitlyDereference (ptr);
+  tv.ArrayDimension (ptr->location);
   return tv;
 }
 

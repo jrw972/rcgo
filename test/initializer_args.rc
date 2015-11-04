@@ -17,14 +17,14 @@ func test (num uint; desc +const []uint8; status bool) {
 
 func Two () *uint {
   var x *uint = new (uint);
-  *x = 2u;
+  *x = 2;
   return x;
 }
 
 init (this *Test) Main (x uint; y +foreign *uint) {
   println (`1..1`);
 
-  test (1u, `initializer args`, x == 1u && y != nil && *y == 2u);
+  test (1, `initializer args`, x == 1 && y != nil && *y == 2);
 }
 
-instance t Test Main (1u, Two ());
+instance t Test Main (1, Two ());

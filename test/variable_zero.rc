@@ -3,7 +3,7 @@ type HelloWorld component { };
 init (this *HelloWorld) print () {
   {
     var x int;
-    x = 3i;
+    x = 3;
   }
   {
     var x int;

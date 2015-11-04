@@ -26,9 +26,9 @@ namespace Type
   {
     enum TypeLevel
     {
-      NAMED_TYPE,
-      CONVENTIONAL,
-      UNTYPED,
+      UNTYPED, // Represent untyped literals.
+      UNNAMED, // Types constructed through type literals and the "builtin" types.
+      NAMED,   // Types named with a type declaration.
     };
     Type () : pointer_ (NULL), slice_ (NULL), heap_ (NULL) { }
     virtual void Accept (Visitor& visitor) const = 0;
@@ -37,6 +37,14 @@ namespace Type
     virtual size_t Size () const = 0;
     // When give the choice between two types, use the one with lower level.
     virtual TypeLevel Level () const = 0;
+    virtual const Type* UnderlyingType () const
+    {
+      return this;
+    }
+    virtual const Type* DefaultType () const
+    {
+      return NULL;
+    }
     const Pointer* GetPointer () const;
     const Slice* GetSlice () const;
     const Array* GetArray (IntValueType dimension) const;
@@ -80,6 +88,10 @@ namespace Type
     {
       return underlyingType_;
     }
+    virtual const Type* DefaultType () const
+    {
+      return this;
+    }
     virtual size_t Alignment () const
     {
       return underlyingType_->Alignment ();
@@ -90,7 +102,7 @@ namespace Type
     }
     virtual TypeLevel Level () const
     {
-      return NAMED_TYPE;
+      return NAMED;
     }
     void Add (Method* method)
     {
@@ -166,7 +178,7 @@ namespace Type
     }
     virtual TypeLevel Level () const
     {
-      return CONVENTIONAL;
+      return UNNAMED;
     }
     static const Void* Instance ();
   private:
@@ -193,7 +205,7 @@ namespace Type
     }
     virtual TypeLevel Level () const
     {
-      return CONVENTIONAL;
+      return UNNAMED;
     }
     static const Scalar<T, S>* Instance ()
     {
@@ -287,7 +299,7 @@ namespace Type
     }
     virtual TypeLevel Level () const
     {
-      return CONVENTIONAL;
+      return UNNAMED;
     }
   private:
     friend class Type;
@@ -318,7 +330,7 @@ namespace Type
     }
     virtual TypeLevel Level () const
     {
-      return CONVENTIONAL;
+      return UNNAMED;
     }
   private:
     friend class Type;
@@ -340,7 +352,7 @@ namespace Type
     }
     virtual TypeLevel Level () const
     {
-      return CONVENTIONAL;
+      return UNNAMED;
     }
     size_t ElementSize () const
     {
@@ -369,7 +381,7 @@ namespace Type
     }
     virtual TypeLevel Level () const
     {
-      return CONVENTIONAL;
+      return UNNAMED;
     }
   private:
     friend class Type;
@@ -397,7 +409,7 @@ namespace Type
     }
     virtual TypeLevel Level () const
     {
-      return CONVENTIONAL;
+      return UNNAMED;
     }
     const_iterator Begin () const
     {
@@ -442,7 +454,7 @@ namespace Type
     }
     virtual TypeLevel Level () const
     {
-      return CONVENTIONAL;
+      return UNNAMED;
     }
     size_t Arity () const
     {
@@ -498,7 +510,7 @@ namespace Type
     }
     virtual TypeLevel Level () const
     {
-      return CONVENTIONAL;
+      return UNNAMED;
     }
     const Signature* GetSignature () const
     {
@@ -546,7 +558,7 @@ namespace Type
     }
     virtual TypeLevel Level () const
     {
-      return CONVENTIONAL;
+      return UNNAMED;
     }
     Kind const kind;
     const NamedType* const named_type;
@@ -562,29 +574,64 @@ namespace Type
                                          const parameter_t* return_parameter);
   };
 
-  class Nil : public Type
+  class Untyped : public Type
   {
   public:
-    void Accept (Visitor& visitor) const;
-    std::string ToString () const
-    {
-      return "<nil>";
-    }
     size_t Alignment () const
     {
       not_reached;
     }
     size_t Size () const
     {
-      return sizeof (void*);
+      not_reached;
     }
     virtual TypeLevel Level () const
     {
       return UNTYPED;
     }
+  };
+
+  class Nil : public Untyped
+  {
+  public:
+    void Accept (Visitor& visitor) const;
+    std::string ToString () const
+    {
+      return "<<nil>>";
+    }
     static const Nil* Instance ();
   private:
     Nil () { }
+  };
+
+  class Boolean : public Untyped
+  {
+  public:
+    typedef bool ValueType;
+    virtual const Type* DefaultType () const;
+    void Accept (Visitor& visitor) const;
+    std::string ToString () const
+    {
+      return "<<boolean>>";
+    }
+    static const Boolean* Instance ();
+  private:
+    Boolean () { }
+  };
+
+  class Integer : public Untyped
+  {
+  public:
+    typedef long int ValueType;
+    virtual const Type* DefaultType () const;
+    void Accept (Visitor& visitor) const;
+    std::string ToString () const
+    {
+      return "<<integer>>";
+    }
+    static const Integer* Instance ();
+  private:
+    Integer () { }
   };
 
   class Template : public Type
@@ -593,7 +640,7 @@ namespace Type
     void Accept (Visitor& visitor) const;
     virtual std::string ToString () const
     {
-      return "template";
+      return "<<template>>";
     }
     virtual size_t Alignment () const
     {
@@ -626,7 +673,7 @@ namespace Type
     }
     virtual TypeLevel Level () const
     {
-      return CONVENTIONAL;
+      return UNNAMED;
     }
     static const FileDescriptor* Instance ();
   private:
@@ -748,6 +795,14 @@ namespace Type
     {
       default_action (type);
     }
+    virtual void visit (const Boolean& type)
+    {
+      default_action (type);
+    }
+    virtual void visit (const Integer& type)
+    {
+      default_action (type);
+    }
     virtual void visit (const Void& type)
     {
       default_action (type);
@@ -803,6 +858,9 @@ namespace Type
   bool
   type_is_equal (const Type* x, const Type* y);
 
+  bool
+  Identitical (const Type* x, const Type* y);
+
   // True if any pointer is accessible.
   bool
   type_contains_pointer (const Type* type);
@@ -857,7 +915,7 @@ namespace Type
   inline const Type*
   type_choose (const Type* x, const Type* y)
   {
-    if (y->Level () < x->Level ())
+    if (y->Level () > x->Level ())
       {
         return y;
       }
@@ -895,6 +953,8 @@ namespace Type
     return type_cast<T> (type_strip (type));
   }
 
+  extern NamedType NamedBool;
+  extern NamedType NamedInt;
 }
 
 #define type_not_reached(type) do { std::cerr << type << std::endl; not_reached; } while (0);

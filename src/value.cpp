@@ -87,6 +87,15 @@ value_t::print (std::ostream& out, const Type::Type* type) const
           const Slice::ValueType& s = tv.ref (type);
           out << " value={" << s.ptr << ',' << s.length << ',' << s.capacity << '}';
         }
+
+        void visit (const Boolean& type)
+        {
+          out << " value=" << tv.ref (type);
+        }
+        void visit (const Integer& type)
+        {
+          out << " value=" << tv.ref (type);
+        }
       };
       visitor v (*this, out);
       type_strip (type)->Accept (v);

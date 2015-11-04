@@ -139,14 +139,14 @@ ProcessDeclarations (ast_t * node)
 
     void visit (ast_const_t& node)
     {
-      typed_value_t right_tv = checkAndImplicitlyDereference (node.expr_ref ());
+      const Type::Type* type = process_type_spec (node.type_spec (), true);
+      typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, IMMUTABLE);
+      typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvert (node.expr_ref (), type);
       if (!right_tv.value.present)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "expression is not constant (E62)");
         }
-      const Type::Type* type = process_type_spec (node.type_spec (), true);
-      typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, IMMUTABLE);
       check_assignment (left_tv, right_tv, node,
                         "incompatible types (%s) = (%s) (E130)",
                         "argument leaks mutable pointers (E131)");

@@ -170,7 +170,7 @@ public:
     return parent_->GetReceiverSymbol ();
   }
 
-  virtual Symbol *
+  virtual ParameterSymbol *
   GetReturnSymbol () const
   {
     if (parent_ == NULL)
@@ -764,6 +764,20 @@ struct ast_binary_arithmetic_expr_t : public ast_binary_expr_t
   }
 };
 
+struct ast_implicit_conversion_expr_t : public ast_unary_expr_t
+{
+  ast_implicit_conversion_expr_t (unsigned int line, ast_t* child)
+    : ast_unary_expr_t (line, child)
+  { }
+
+  void accept (ast_visitor_t& visitor);
+  void accept (ast_const_visitor_t& visitor) const;
+  void print (std::ostream& out) const
+  {
+    out << "implicit_conversion";
+  }
+};
+
 struct ast_address_of_expr_t : public ast_unary_expr_t
 {
   ast_address_of_expr_t (unsigned int line, ast_t* child)
@@ -1352,7 +1366,7 @@ struct ast_return_statement_t : public ast_unary_t
     out << "return_statement";
   }
 
-  const Symbol* return_symbol;
+  const ParameterSymbol* return_symbol;
 };
 
 struct ast_increment_statement_t : public ast_unary_t
@@ -1861,7 +1875,7 @@ struct ast_function_t : public ast_t
     unimplemented;
   }
 
-  virtual Symbol *
+  virtual ParameterSymbol *
   GetReturnSymbol () const
   {
     return return_symbol;
@@ -2025,9 +2039,9 @@ struct ast_method_t : public ast_t
 
   Method* method;
   Mutability const return_dereference_mutability;
-  Symbol* return_symbol;
+  ParameterSymbol* return_symbol;
 
-  virtual Symbol *
+  virtual ParameterSymbol *
   GetReturnSymbol () const
   {
     return return_symbol;
@@ -2095,9 +2109,9 @@ struct ast_getter_t : public ast_t
 
   Getter* getter;
   Mutability const dereferenceMutability;
-  Symbol* return_symbol;
+  ParameterSymbol* return_symbol;
 
-  virtual Symbol *
+  virtual ParameterSymbol *
   GetReturnSymbol () const
   {
     return return_symbol;
@@ -2455,6 +2469,10 @@ struct ast_visitor_t
   {
     default_action (ast);
   }
+  virtual void visit (ast_implicit_conversion_expr_t& ast)
+  {
+    default_action (ast);
+  }
   virtual void visit (ast_type_expr_t& ast)
   {
     default_action (ast);
@@ -2712,6 +2730,10 @@ struct ast_const_visitor_t
   }
 
   virtual void visit (const ast_cast_expr_t& ast)
+  {
+    default_action (ast);
+  }
+  virtual void visit (const ast_implicit_conversion_expr_t& ast)
   {
     default_action (ast);
   }

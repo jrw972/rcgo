@@ -202,18 +202,42 @@ struct typed_value_t
   static typed_value_t select (typed_value_t tv, const std::string& identifier);
   static typed_value_t index (const Location& location, typed_value_t tv, typed_value_t index);
   static typed_value_t slice (const Location& location, typed_value_t tv, typed_value_t low, typed_value_t high);
-
-  static typed_value_t logic_not (typed_value_t tv);
   static typed_value_t merge (typed_value_t tv);
   static typed_value_t move (typed_value_t tv);
-  static typed_value_t binary (const Location& location, BinaryArithmetic arithmetic, typed_value_t left, typed_value_t right);
-  static typed_value_t cast (const Location& location, const Type::Type* type, const typed_value_t tv);
-  static typed_value_t cast_exec (const Type::Type* type, const typed_value_t tv);
   static typed_value_t copy (const Location& location, const typed_value_t tv);
   static typed_value_t copy_exec (const typed_value_t tv);
   static typed_value_t change (const Location& location, typed_value_t tv);
 
-  bool isError() const
+  typed_value_t Convert (const Location& location, const Type::Type* type) const;
+
+  static typed_value_t Equal (const Location& location, const typed_value_t& left, const typed_value_t& right);
+  static typed_value_t NotEqual (const Location& location, const typed_value_t& left, const typed_value_t& right);
+
+  static typed_value_t LessThan (const Location& location, const typed_value_t& left, const typed_value_t& right);
+  static typed_value_t LessEqual (const Location& location, const typed_value_t& left, const typed_value_t& right);
+  static typed_value_t MoreThan (const Location& location, const typed_value_t& left, const typed_value_t& right);
+  static typed_value_t MoreEqual (const Location& location, const typed_value_t& left, const typed_value_t& right);
+
+  typed_value_t LogicNot (const Location& location) const;
+  static typed_value_t LogicOr (const Location& location, const typed_value_t& left, const typed_value_t& right);
+  static typed_value_t LogicAnd (const Location& location, const typed_value_t& left, const typed_value_t& right);
+
+  static typed_value_t Multiply (const Location& location, const typed_value_t& left, const typed_value_t& right);
+  static typed_value_t Divide (const Location& location, const typed_value_t& left, const typed_value_t& right);
+  static typed_value_t Modulus (const Location& location, const typed_value_t& left, const typed_value_t& right);
+  static typed_value_t Add (const Location& location, const typed_value_t& left, const typed_value_t& right);
+  static typed_value_t Subtract (const Location& location, const typed_value_t& left, const typed_value_t& right);
+
+  static typed_value_t LeftShift (const Location& location, const typed_value_t& left, const typed_value_t& right);
+  static typed_value_t RightShift (const Location& location, const typed_value_t& left, const typed_value_t& right);
+  static typed_value_t BitAnd (const Location& location, const typed_value_t& left, const typed_value_t& right);
+  static typed_value_t BitAndNot (const Location& location, const typed_value_t& left, const typed_value_t& right);
+  static typed_value_t BitOr (const Location& location, const typed_value_t& left, const typed_value_t& right);
+  static typed_value_t BitXor (const Location& location, const typed_value_t& left, const typed_value_t& right);
+
+  void ArrayDimension (const Location& locatin) const;
+
+  bool IsError() const
   {
     return type == NULL;
   }
@@ -221,7 +245,7 @@ struct typed_value_t
   {
     return kind == REFERENCE;
   }
-  bool isValue () const
+  bool IsValue () const
   {
     return kind == VALUE;
   }
@@ -234,28 +258,28 @@ struct typed_value_t
 
   void zero ();
 
-  Type::Int::ValueType integral_value () const
-  {
-    Location loc;
-    return cast (loc, Type::Int::Instance (), *this).value.ref (*Type::Int::Instance ());
-  }
+  Type::Int::ValueType integral_value () const;
 
   Type::Int::ValueType low_integral_value () const
   {
     Location loc;
-    return cast (loc, Type::Int::Instance (), *this).low_value.ref (*Type::Int::Instance ());
+    unimplemented;
+    //return cast (loc, Type::Int::Instance (), *this).low_value.ref (*Type::Int::Instance ());
   }
 
   Type::Int::ValueType high_integral_value () const
   {
     Location loc;
-    return cast (loc, Type::Int::Instance (), *this).high_value.ref (*Type::Int::Instance ());
+    unimplemented;
+    //return cast (loc, Type::Int::Instance (), *this).high_value.ref (*Type::Int::Instance ());
   }
 
   Type::Slice::ValueType slice_value () const
   {
     return value.slice_value ();
   }
+
+  void RequireValue (const Location loc) const;
 
   std::ostream& print (std::ostream& o) const;
 };

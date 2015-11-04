@@ -18,14 +18,24 @@ check_assignment (typed_value_t left_tv,
                   const char* leak_message)
 {
   assert (left_tv.type != NULL);
-  assert (left_tv.kind == typed_value_t::REFERENCE);
   assert (right_tv.type != NULL);
-  assert (right_tv.kind == typed_value_t::VALUE);
+
+  if (left_tv.kind != typed_value_t::REFERENCE)
+    {
+      error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                     "target of assignment is not an lvalue (E48)");
+    }
 
   if (left_tv.intrinsic_mutability != MUTABLE)
     {
       error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                      "target of assignment is not mutable (E13)");
+    }
+
+  if (right_tv.kind != typed_value_t::VALUE)
+    {
+      error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                     "source of assignment is not an rvalue (E132)");
     }
 
   if (!(
@@ -66,7 +76,7 @@ insertImplicitDereference (ast_t*& expr, typed_value_t tv)
 }
 
 typed_value_t
-checkAndImplicitlyDereference (ast_t*& expr)
+CheckAndImplicitlyDereference (ast_t*& expr)
 {
   typed_value_t tv = type_check_expr (expr);
   if (tv.isReference ())
@@ -77,8 +87,42 @@ checkAndImplicitlyDereference (ast_t*& expr)
   return tv;
 }
 
+typed_value_t
+ImplicitlyConvert (ast_t*& expr, const Type::Type* type)
+{
+  typed_value_t tv = expr->typed_value;
+  if (tv.type->Level () == Type::Type::UNTYPED && type->Level () > tv.type->Level ())
+    {
+      tv = tv.Convert (expr->location, type);
+      expr = new ast_implicit_conversion_expr_t (expr->location.Line, expr);
+      expr->typed_value = tv;
+    }
+  return tv;
+}
+
+typed_value_t
+ImplicitlyConvertToDefault (ast_t*& expr)
+{
+  typed_value_t tv = expr->typed_value;
+  if (tv.type->Level () == Type::Type::UNTYPED)
+    {
+      tv = tv.Convert (expr->location, tv.type->DefaultType ());
+      expr = new ast_implicit_conversion_expr_t (expr->location.Line, expr);
+      expr->typed_value = tv;
+    }
+  return tv;
+}
+
+typed_value_t
+CheckAndImplicitlyDereferenceAndConvert (ast_t*& expr, const Type::Type* type)
+{
+  CheckAndImplicitlyDereference (expr);
+  ImplicitlyConvert (expr, type);
+  return expr->typed_value;
+}
+
 static typed_value_t
-insertExplicitDerefence (ast_t*& expr, typed_value_t tv)
+insertExplicitDereference (ast_t*& expr, typed_value_t tv)
 {
   expr = new ast_dereference_expr_t (expr->location.Line, expr);
   tv = typed_value_t::dereference (tv);
@@ -86,8 +130,8 @@ insertExplicitDerefence (ast_t*& expr, typed_value_t tv)
   return tv;
 }
 
-static typed_value_t
-checkExpectReference (ast_t* expr)
+typed_value_t
+CheckExpectReference (ast_t* expr)
 {
   typed_value_t tv = type_check_expr (expr);
   if (!tv.isReference ())
@@ -112,13 +156,6 @@ struct check_visitor : public ast_visitor_t
   {
     const Type::Type* type = process_type_spec (node.type_spec (), true);
     node.typed_value = typed_value_t (type);
-  }
-
-  void visit (ast_cast_expr_t& node)
-  {
-    const Type::Type* type = process_type_spec (node.type_spec (), true);
-    typed_value_t tv = checkAndImplicitlyDereference (node.child_ref ());
-    node.typed_value = typed_value_t::cast (node.location, type, tv);
   }
 
   void visit (ast_indexed_port_call_expr_t& node)
@@ -148,7 +185,7 @@ struct check_visitor : public ast_visitor_t
                        "%s is not an array of ports (E17)", port_identifier.c_str ());
       }
 
-    typed_value_t index_tv = checkAndImplicitlyDereference (node.index_ref ());
+    typed_value_t index_tv = CheckAndImplicitlyDereference (node.index_ref ());
 
     typed_value_t::index (node.index ()->location, typed_value_t::make_ref (array_type, typed_value_t::HEAP, IMMUTABLE, IMMUTABLE), index_tv);
 
@@ -246,17 +283,17 @@ struct check_visitor : public ast_visitor_t
         in = insertImplicitDereference (node.base_ref (), in);
       }
 
-    if (in.isValue () && type_dereference (in.type))
+    if (in.IsValue () && type_dereference (in.type))
       {
         // Pointer value.
         // Insert an explicit dereference.
-        in = insertExplicitDerefence (node.base_ref (), in);
+        in = insertExplicitDereference (node.base_ref (), in);
       }
 
     if (in.isReference ())
       {
         typed_value_t out = typed_value_t::select (in, identifier);
-        if (out.isError ())
+        if (out.IsError ())
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                            "cannot select %s from expression of type %s (E20)",
@@ -264,7 +301,7 @@ struct check_visitor : public ast_visitor_t
           }
         node.typed_value = out;
       }
-    else if (in.isValue ())
+    else if (in.IsValue ())
       {
         unimplemented;
       }
@@ -272,9 +309,9 @@ struct check_visitor : public ast_visitor_t
 
   void visit (ast_dereference_expr_t& node)
   {
-    typed_value_t in = checkAndImplicitlyDereference (node.child_ref ());
+    typed_value_t in = CheckAndImplicitlyDereference (node.child_ref ());
     typed_value_t out = typed_value_t::dereference (in);
-    if (out.isError ())
+    if (out.IsError ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "incompatible types: %s (E21)", in.type->ToString ().c_str ());
@@ -292,7 +329,7 @@ struct check_visitor : public ast_visitor_t
     ast_t* expr = node.child ();
     typed_value_t in = expr->typed_value;
     typed_value_t out = typed_value_t::address_of (in);
-    if (out.isError ())
+    if (out.IsError ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "incompatible types: %s (E22)", in.type->ToString ().c_str ());
@@ -302,9 +339,9 @@ struct check_visitor : public ast_visitor_t
 
   void visit (ast_address_of_expr_t& node)
   {
-    typed_value_t in = checkExpectReference (node.child ());
+    typed_value_t in = CheckExpectReference (node.child ());
     typed_value_t out = typed_value_t::address_of (in);
-    if (out.isError ())
+    if (out.IsError ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "E45: incompatible types: %s (E23)", in.type->ToString ().c_str ());
@@ -314,27 +351,122 @@ struct check_visitor : public ast_visitor_t
 
   void visit (ast_logic_not_expr_t& node)
   {
-    typed_value_t in = checkAndImplicitlyDereference (node.child_ref ());
-    typed_value_t out = typed_value_t::logic_not (in);
-    if (out.isError ())
-      {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "incompatible types !(%s) (E24)", in.type->ToString ().c_str ());
-      }
-    node.typed_value = out;
+    typed_value_t in = CheckAndImplicitlyDereference (node.child_ref ());
+    node.typed_value = in.LogicNot (node.location);
   }
 
   void visit (ast_binary_arithmetic_expr_t& node)
   {
-    typed_value_t left = checkAndImplicitlyDereference (node.left_ref ());
-    typed_value_t right = checkAndImplicitlyDereference (node.right_ref ());
-    typed_value_t result = typed_value_t::binary (node.location, node.arithmetic, left, right);
-    if (result.isError ())
+    typed_value_t left = CheckAndImplicitlyDereference (node.left_ref ());
+    typed_value_t right = CheckAndImplicitlyDereference (node.right_ref ());
+    switch (node.arithmetic)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "incompatible types (%s) %s (%s) (E25)", left.type->ToString ().c_str (), binary_arithmetic_symbol (node.arithmetic), right.type->ToString ().c_str ());
+      case MULTIPLY:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::Multiply (node.location, left, right);
+        return;
+      case DIVIDE:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::Divide (node.location, left, right);
+        return;
+      case MODULUS:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::Modulus (node.location, left, right);
+        return;
+      case LEFT_SHIFT:
+        if (left.value.present && !right.value.present) {
+          left = ImplicitlyConvertToDefault (node.left_ref ());
+        }
+        if (right.value.present && !left.value.present) {
+          right = ImplicitlyConvertToDefault (node.right_ref ());
+        }
+        node.typed_value = typed_value_t::LeftShift (node.location, left, right);
+        return;
+      case RIGHT_SHIFT:
+        if (left.value.present && !right.value.present) {
+          left = ImplicitlyConvertToDefault (node.left_ref ());
+        }
+        if (right.value.present && !left.value.present) {
+          right = ImplicitlyConvertToDefault (node.right_ref ());
+        }
+        node.typed_value = typed_value_t::RightShift (node.location, left, right);
+        return;
+      case BIT_AND:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::BitAnd (node.location, left, right);
+        return;
+      case BIT_AND_NOT:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::BitAndNot (node.location, left, right);
+        return;
+      case ADD:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::Add (node.location, left, right);
+        return;
+      case SUBTRACT:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::Subtract (node.location, left, right);
+        return;
+      case BIT_OR:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::BitOr (node.location, left, right);
+        return;
+      case BIT_XOR:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::BitXor (node.location, left, right);
+        return;
+      case EQUAL:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::Equal (node.location, left, right);
+        return;
+      case NOT_EQUAL:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::NotEqual (node.location, left, right);
+        return;
+      case LESS_THAN:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::LessThan (node.location, left, right);
+        return;
+      case LESS_EQUAL:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::LessEqual (node.location, left, right);
+        return;
+      case MORE_THAN:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::MoreThan (node.location, left, right);
+        return;
+      case MORE_EQUAL:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::MoreEqual (node.location, left, right);
+        return;
+      case LOGIC_OR:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::LogicOr (node.location, left, right);
+        return;
+      case LOGIC_AND:
+        left = ImplicitlyConvert (node.left_ref (), right.type);
+        right = ImplicitlyConvert (node.right_ref (), left.type);
+        node.typed_value = typed_value_t::LogicAnd (node.location, left, right);
+        return;
       }
-    node.typed_value = result;
+
+    not_reached;
   }
 
   static void check_call (ast_t& node,
@@ -358,8 +490,8 @@ struct check_visitor : public ast_visitor_t
          pos != limit;
          ++pos, ++idx)
       {
-        typed_value_t argument_tv  = args[idx];
         typed_value_t parameter_tv = typed_value_t::make_ref ((*pos)->value);
+        typed_value_t argument_tv  = ImplicitlyConvert (argsnode->at (idx), parameter_tv.type);
         check_assignment (parameter_tv, argument_tv, *argsnode->at (idx),
                           "incompatible types (%s) = (%s) (E116)",
                           "argument leaks mutable pointers (E117)");
@@ -377,7 +509,7 @@ struct check_visitor : public ast_visitor_t
 
     // Analyze the callee.
     // Expecting a value.
-    typed_value_t expr_tv = checkAndImplicitlyDereference (node.expr_ref ());
+    typed_value_t expr_tv = CheckAndImplicitlyDereference (node.expr_ref ());
 
     const Type::Template* tt = Type::type_strip_cast <Type::Template> (expr_tv.type);
     if (tt != NULL)
@@ -549,10 +681,10 @@ struct check_visitor : public ast_visitor_t
 
   void visit (ast_index_expr_t& node)
   {
-    typed_value_t base_tv = checkExpectReference (node.base_ref ());
-    typed_value_t idx_tv = checkAndImplicitlyDereference (node.index_ref ());
+    typed_value_t base_tv = CheckExpectReference (node.base_ref ());
+    typed_value_t idx_tv = CheckAndImplicitlyDereference (node.index_ref ());
     typed_value_t result = typed_value_t::index (node.location, base_tv, idx_tv);
-    if (result.isError ())
+    if (result.IsError ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "incompatible types (%s)[%s] (E35)",
@@ -564,11 +696,11 @@ struct check_visitor : public ast_visitor_t
 
   void visit (ast_slice_expr_t& node)
   {
-    typed_value_t base_tv = checkExpectReference (node.base_ref ());
-    typed_value_t low_tv = checkAndImplicitlyDereference (node.low_ref ());
-    typed_value_t high_tv = checkAndImplicitlyDereference (node.high_ref ());
+    typed_value_t base_tv = CheckExpectReference (node.base_ref ());
+    typed_value_t low_tv = CheckAndImplicitlyDereference (node.low_ref ());
+    typed_value_t high_tv = CheckAndImplicitlyDereference (node.high_ref ());
     typed_value_t result = typed_value_t::slice (node.location, base_tv, low_tv, high_tv);
-    if (result.isError ())
+    if (result.IsError ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "incompatible types (%s)[%s : %s] (E36)",
@@ -608,7 +740,7 @@ check_rvalue_list (ast_t * node, TypedValueListType& tvlist)
            child != limit;
            ++child)
         {
-          tvlist.push_back (checkAndImplicitlyDereference (*child));
+          tvlist.push_back (CheckAndImplicitlyDereference (*child));
         }
     }
   };
@@ -620,7 +752,7 @@ check_rvalue_list (ast_t * node, TypedValueListType& tvlist)
 static typed_value_t
 check_condition (ast_t*& condition_node)
 {
-  typed_value_t tv = checkAndImplicitlyDereference (condition_node);
+  typed_value_t tv = CheckAndImplicitlyDereference (condition_node);
   if (!type_is_boolean (tv.type))
     {
       error_at_line (-1, 0, condition_node->location.File.c_str (),
@@ -650,8 +782,8 @@ type_check_statement (ast_t * node)
 
     typed_value_t bind (ast_t& node, ast_t* port_node, ast_t*& reaction_node)
     {
-      checkExpectReference (port_node);
-      checkAndImplicitlyDereference (reaction_node);
+      CheckExpectReference (port_node);
+      CheckAndImplicitlyDereference (reaction_node);
 
       typed_value_t port_tv = port_node->typed_value;
       typed_value_t reaction_tv = reaction_node->typed_value;
@@ -688,7 +820,7 @@ type_check_statement (ast_t * node)
     void visit (ast_bind_push_port_param_statement_t& node)
     {
       typed_value_t reaction_tv = bind (node, node.left (), node.right_ref ());
-      typed_value_t param_tv = checkAndImplicitlyDereference (node.param_ref ());
+      typed_value_t param_tv = CheckAndImplicitlyDereference (node.param_ref ());
       assert (reaction_tv.value.present);
       reaction_t* reaction = reaction_tv.value.reaction_value ();
       if (!reaction->has_dimension ())
@@ -702,8 +834,8 @@ type_check_statement (ast_t * node)
 
     void visit (ast_bind_pull_port_statement_t& node)
     {
-      typed_value_t pull_port_tv = checkExpectReference (node.left ());
-      typed_value_t getter_tv = checkAndImplicitlyDereference (node.right_ref ());
+      typed_value_t pull_port_tv = CheckExpectReference (node.left ());
+      typed_value_t getter_tv = CheckAndImplicitlyDereference (node.right_ref ());
 
       const Type::Function* pull_port_type = type_cast<Type::Function> (pull_port_tv.type);
 
@@ -744,7 +876,7 @@ type_check_statement (ast_t * node)
     static typed_value_t
     check_assignment_target (ast_t* left)
     {
-      typed_value_t tv = checkExpectReference (left);
+      typed_value_t tv = CheckExpectReference (left);
       if (tv.intrinsic_mutability != MUTABLE)
         {
           error_at_line (-1, 0, left->location.File.c_str (), left->location.Line,
@@ -757,7 +889,7 @@ type_check_statement (ast_t * node)
     static void arithmetic_assign (ast_binary_t* node, const char* symbol)
     {
       typed_value_t left_tv = check_assignment_target (node->left ());
-      typed_value_t right_tv = checkAndImplicitlyDereference (node->right_ref ());
+      typed_value_t right_tv = CheckAndImplicitlyDereference (node->right_ref ());
       if (!type_is_equal (left_tv.type, right_tv.type))
         {
           error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
@@ -794,7 +926,7 @@ type_check_statement (ast_t * node)
     void visit (ast_assign_statement_t& node)
     {
       typed_value_t left_tv = check_assignment_target (node.left ());
-      typed_value_t right_tv = checkAndImplicitlyDereference (node.right_ref ());
+      typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvert (node.right_ref (), left_tv.type);
       check_assignment (left_tv, right_tv, node,
                         "incompatible types (%s) = (%s) (E122)",
                         "assignment leaks mutable pointers (E123)");
@@ -803,7 +935,7 @@ type_check_statement (ast_t * node)
     void visit (ast_change_statement_t& node)
     {
       // Process the expression.
-      typed_value_t tv = checkAndImplicitlyDereference (node.expr_ref ());
+      typed_value_t tv = CheckAndImplicitlyDereference (node.expr_ref ());
       tv = typed_value_t::change (node.location, tv);
 
       // Enter the new heap root.
@@ -820,7 +952,7 @@ type_check_statement (ast_t * node)
 
     void visit (ast_expression_statement_t& node)
     {
-      checkAndImplicitlyDereference (node.child_ref ());
+      CheckAndImplicitlyDereference (node.child_ref ());
     }
 
     void visit (ast_if_statement_t& node)
@@ -858,14 +990,15 @@ type_check_statement (ast_t * node)
 
     void visit (ast_return_statement_t& node)
     {
-      // Check the expression.
-      typed_value_t expr_tv = checkAndImplicitlyDereference (node.child_ref ());
-
-      // Check that it matches with the return type.
+      // Get the return symbol.
       node.return_symbol = node.GetReturnSymbol ();
       assert (node.return_symbol != NULL);
 
-      check_assignment (SymbolCast<ParameterSymbol> (node.return_symbol)->value, expr_tv, node,
+      // Check the expression.
+      typed_value_t expr_tv = CheckAndImplicitlyDereferenceAndConvert (node.child_ref (), node.return_symbol->value.type);
+
+      // Check that it matches with the return type.
+      check_assignment (node.return_symbol->value, expr_tv, node,
                         "cannot convert to (%s) from (%s) in return (E124)",
                         "return leaks mutable pointers (E125)");
     }
@@ -982,7 +1115,7 @@ type_check_statement (ast_t * node)
             {
               // Assume left is mutable.
               typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, node.dereferenceMutability);
-              typed_value_t right_tv = checkAndImplicitlyDereference (*init_pos);
+              typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvert (*init_pos, left_tv.type);
               check_assignment (left_tv, right_tv, node,
                                 "incompatible types (%s) = (%s) (E126)",
                                 "assignment leaks mutable pointers (E127)");
@@ -1006,7 +1139,7 @@ type_check_statement (ast_t * node)
            ++id_pos, ++init_pos)
         {
           // Process the initializer.
-          typed_value_t right_tv = checkAndImplicitlyDereference (*init_pos);
+          typed_value_t right_tv = CheckAndImplicitlyDereference (*init_pos);
           typed_value_t left_tv = typed_value_t::make_ref (right_tv);
           left_tv.intrinsic_mutability = MUTABLE;
           left_tv.dereference_mutability = node.dereferenceMutability;
@@ -1249,6 +1382,11 @@ mutates_check_statement (ast_t * node)
     }
 
     void visit (ast_binary_arithmetic_expr_t& node)
+    {
+      node.visit_children (*this);
+    }
+
+    void visit (ast_implicit_conversion_expr_t& node)
     {
       node.visit_children (*this);
     }

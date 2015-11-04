@@ -26,6 +26,8 @@ struct value_t
   value_t (Template* t) : present (true), template_value_ (t) { }
   value_t (reaction_t* r) : present (true), reaction_value_ (r) { }
   value_t (const Type::Slice* t, Type::Slice::ValueType v) : present (true), slice_value_ (v) { }
+  value_t (const Type::Boolean*  t, Type::Boolean::ValueType v)  : present (true), boolean_value_ (v) { }
+  value_t (const Type::Integer*  t, Type::Integer::ValueType v)  : present (true), integer_value_ (v) { }
 
   static value_t make_reference (Type::Pointer::ValueType v)
   {
@@ -39,118 +41,119 @@ struct value_t
 
   const Type::Bool::ValueType& ref (const Type::Bool&) const
   {
-    assert (present);
     return bool_value_;
   }
   Type::Bool::ValueType& ref (const Type::Bool&)
   {
-    assert (present);
     return bool_value_;
   }
   const Type::Int::ValueType& ref (const Type::Int&) const
   {
-    assert (present);
     return int_value_;
   }
   Type::Int::ValueType& ref (const Type::Int&)
   {
-    assert (present);
     return int_value_;
   }
   const Type::Int8::ValueType& ref (const Type::Int8&) const
   {
-    assert (present);
     return int8_value_;
   }
   Type::Int8::ValueType& ref (const Type::Int8&)
   {
-    assert (present);
     return int8_value_;
   }
   const Type::Uint::ValueType& ref (const Type::Uint&) const
   {
-    assert (present);
     return uint_value_;
   }
   Type::Uint::ValueType& ref (const Type::Uint&)
   {
-    assert (present);
     return uint_value_;
   }
   const Type::Uint8::ValueType& ref (const Type::Uint8&) const
   {
-    assert (present);
     return uint8_value_;
   }
   Type::Uint8::ValueType& ref (const Type::Uint8&)
   {
-    assert (present);
     return uint8_value_;
   }
   const Type::Uint16::ValueType& ref (const Type::Uint16&) const
   {
-    assert (present);
     return uint16_value_;
   }
   Type::Uint16::ValueType& ref (const Type::Uint16&)
   {
-    assert (present);
     return uint16_value_;
   }
   const Type::Uint32::ValueType& ref (const Type::Uint32&) const
   {
-    assert (present);
     return uint32_value_;
   }
   Type::Uint32::ValueType& ref (const Type::Uint32&)
   {
-    assert (present);
     return uint32_value_;
   }
   const Type::Uint64::ValueType& ref (const Type::Uint64&) const
   {
-    assert (present);
     return uint64_value_;
   }
   Type::Uint64::ValueType& ref (const Type::Uint64&)
   {
-    assert (present);
     return uint64_value_;
   }
   const Type::Uint128::ValueType& ref (const Type::Uint128&) const
   {
-    assert (present);
     return uint128_value_;
   }
   Type::Uint128::ValueType& ref (const Type::Uint128&)
   {
-    assert (present);
     return uint128_value_;
   }
   const Type::Float64::ValueType& ref (const Type::Float64&) const
   {
-    assert (present);
     return float64_value_;
   }
   Type::Float64::ValueType& ref (const Type::Float64&)
   {
-    assert (present);
     return float64_value_;
   }
   const Type::Enum::ValueType& ref (const Type::Enum&) const
   {
-    assert (present);
     return enum_value_;
+  }
+  Type::Pointer::ValueType& ref (const Type::Pointer&)
+  {
+    return pointer_value_;
+  }
+  const Type::Pointer::ValueType& ref (const Type::Pointer&) const
+  {
+    return pointer_value_;
   }
   Type::Slice::ValueType& ref (const Type::Slice&)
   {
-    assert (present);
     return slice_value_;
   }
   const Type::Slice::ValueType& ref (const Type::Slice&) const
   {
-    assert (present);
     return slice_value_;
+  }
+  const Type::Boolean::ValueType& ref (const Type::Boolean&) const
+  {
+    return boolean_value_;
+  }
+  Type::Boolean::ValueType& ref (const Type::Boolean&)
+  {
+    return boolean_value_;
+  }
+  const Type::Integer::ValueType& ref (const Type::Integer&) const
+  {
+    return integer_value_;
+  }
+  Type::Integer::ValueType& ref (const Type::Integer&)
+  {
+    return integer_value_;
   }
 
   Callable* callable_value () const
@@ -195,11 +198,15 @@ private:
     Type::Uint128::ValueType uint128_value_;
     Type::Float32::ValueType float32_value_;
     Type::Float64::ValueType float64_value_;
+    Type::Pointer::ValueType pointer_value_;
     Callable* callable_value_;
     Template* template_value_;
     reaction_t* reaction_value_;
     Type::Pointer::ValueType reference_value_;
     Type::Slice::ValueType slice_value_;
+
+    Type::Boolean::ValueType boolean_value_;
+    Type::Integer::ValueType integer_value_;
   };
 };
 

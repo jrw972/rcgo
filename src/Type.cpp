@@ -416,6 +416,8 @@ type::Accept (Visitor& visitor) const \
   T_ACCEPT(Float64)
   ACCEPT(Void)
   ACCEPT(Nil)
+  ACCEPT(Boolean)
+  ACCEPT(Integer)
   ACCEPT(Array)
   ACCEPT(Slice)
   ACCEPT(Template)
@@ -586,61 +588,26 @@ type::Accept (Visitor& visitor) const \
     return structurally_equal (type_strip (x), type_strip (y));
   }
 
-// bool
-// type_is_convertible (const Type* to, const Type* from)
-// {
-//   if (to == from)
-//     {
-//       return true;
-//     }
+  bool
+  Identitical (const Type* x, const Type* y)
+  {
+    if (x == y)
+      {
+        return true;
+      }
 
-//   if (type_cast<NamedType> (from))
-//     {
-//       // Named types must be exactly the same.
-//       return false;
-//     }
+    if (x->Level () != y->Level ())
+      {
+        return false;
+      }
 
-//   // Strip a named type on to.
-//   const NamedType* nt = type_cast<NamedType> (to);
-//   if (nt)
-//     {
-//       to = nt->subtype ();
-//     }
+    if (x->Level () == Type::NAMED)
+      {
+        return false;
+      }
 
-//   if (type_is_equal (to, from))
-//     {
-//       return true;
-//     }
-
-//   // to and from are not equal and neither refer to a named type.
-
-//   struct visitor : public Visitor
-//   {
-//     bool flag;
-//     const Type* from;
-
-//     visitor (const Type* o) : flag (false), from (o) { }
-
-//     void visit (const Pointer& type)
-//     {
-//       flag = (type_cast<Nil> (from) != NULL);
-//     }
-
-//     void visit (const uint_type_t& type)
-//     {
-//       flag = (type_cast<iota_type_t> (from) != NULL);
-//     }
-
-//     void visit (const Int& type)
-//     {
-//       flag = (type_cast<iota_type_t> (from) != NULL);
-//     }
-//   };
-
-//   visitor v (from);
-//   to->accept (v);
-//   return v.flag;
-// }
+    unimplemented;
+  }
 
   std::string
   Signature::ToString () const
@@ -673,8 +640,10 @@ type::Instance () \
 }
 
   INSTANCE(Void)
-  INSTANCE(Nil)
   INSTANCE(FileDescriptor)
+  INSTANCE(Nil)
+  INSTANCE(Boolean)
+  INSTANCE(Integer)
 
   Struct::Struct (bool insert_runtime) : offset_ (0), alignment_ (0)
   {
@@ -793,17 +762,9 @@ type::Instance () \
   NamedType::NamedType (const std::string& name,
                         const Type* subtype)
     : name_ (name)
+    , underlyingType_ (subtype->UnderlyingType ())
   {
-    // Don't chain named types.
-    const NamedType* t = type_cast<NamedType> (subtype);
-    if (t)
-      {
-        underlyingType_ = t->UnderlyingType ();
-      }
-    else
-      {
-        underlyingType_ = subtype;
-      }
+    assert (underlyingType_->Level () == UNNAMED);
   }
 
   bool
@@ -878,6 +839,11 @@ type::Instance () \
       }
 
       void visit (const Uint128& type)
+      {
+        flag = true;
+      }
+
+      void visit (const Integer& type)
       {
         flag = true;
       }
@@ -1242,4 +1208,19 @@ type::Instance () \
   {
   }
 
+  const Type*
+  Boolean::DefaultType () const
+  {
+    return &NamedBool;
+  }
+
+  const Type*
+  Integer::DefaultType () const
+  {
+    return &NamedInt;
+  }
+
+
+  NamedType NamedBool ("bool", Bool::Instance ());
+  NamedType NamedInt ("int", Int::Instance ());
 }

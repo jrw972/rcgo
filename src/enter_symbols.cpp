@@ -31,11 +31,9 @@ void
 enter_symbols (ast_t * node)
 {
   /* Insert types. */
-  Type::NamedType* bool_type = new Type::NamedType ("bool", Type::Bool::Instance ());
-  node->EnterSymbol (new TypeSymbol ("bool", node, bool_type));
+  node->EnterSymbol (new TypeSymbol ("bool", node, &Type::NamedBool));
 
-  Type::NamedType* int_type = new Type::NamedType ("int", Type::Int::Instance ());
-  node->EnterSymbol (new TypeSymbol ("int", node, int_type));
+  node->EnterSymbol (new TypeSymbol ("int", node, &Type::NamedInt));
   node->EnterSymbol (new TypeSymbol ("int8", node, new Type::NamedType ("int8", Type::Int8::Instance ())));
 
   node->EnterSymbol (new TypeSymbol ("uint", node, new Type::NamedType ("uint", Type::Uint::Instance ())));
@@ -63,11 +61,11 @@ enter_symbols (ast_t * node)
   /* I/O facilities. */
   Type::NamedType* fd_type = new Type::NamedType ("FileDescriptor", Type::FileDescriptor::Instance ());
   node->EnterSymbol (new TypeSymbol ("FileDescriptor", node, fd_type));
-  node->EnterSymbol (new Readable (node, fd_type, bool_type));
+  node->EnterSymbol (new Readable (node, fd_type, &Type::NamedBool));
   node->EnterSymbol (new Read (node, fd_type, uint8_type));
-  node->EnterSymbol (new Writable (node, fd_type, bool_type));
+  node->EnterSymbol (new Writable (node, fd_type, &Type::NamedBool));
   node->EnterSymbol (new TimerfdCreate (node, fd_type));
-  node->EnterSymbol (new TimerfdSettime (node, fd_type, int_type, uint64_type));
+  node->EnterSymbol (new TimerfdSettime (node, fd_type, &Type::NamedInt, uint64_type));
   node->EnterSymbol (new UdpSocket (node, fd_type));
   node->EnterSymbol (new Sendto (node, fd_type, uint8_type, uint16_type));
 
@@ -79,10 +77,10 @@ enter_symbols (ast_t * node)
   /* Insert untyped boolean constants. */
   node->EnterSymbol (new TypedConstantSymbol ("true",
                      node,
-                     typed_value_t (Type::Bool::Instance (), true)));
+                     typed_value_t (Type::Boolean::Instance (), true)));
   node->EnterSymbol (new TypedConstantSymbol ("false",
                      node,
-                     typed_value_t (Type::Bool::Instance (), false)));
+                     typed_value_t (Type::Boolean::Instance (), false)));
 
   struct visitor : public ast_visitor_t
   {

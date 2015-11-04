@@ -69,9 +69,17 @@ const Type::Type * process_type_spec (ast_t * node, bool force_identifiers, bool
 /* Process all declarations (non-code). */
 void ProcessDeclarations (ast_t * node);
 
-// Type check the expression and insert an implicit dereference.
+// Type check the expression and insert an implicit dereference if necessary.
 typed_value_t
-checkAndImplicitlyDereference (ast_t*& expr);
+CheckAndImplicitlyDereference (ast_t*& expr);
+
+// Type check the expression, insert an implicit dereference if necessary, and convert to the given type if necessary.
+typed_value_t
+CheckAndImplicitlyDereferenceAndConvert (ast_t*& expr, const Type::Type* type);
+
+// Type check the expression expecting a reference.
+typed_value_t CheckExpectReference (ast_t* expr);
+
 
 typed_value_t
 type_check_expr (ast_t* ptr);

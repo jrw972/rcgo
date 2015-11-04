@@ -1,4 +1,4 @@
 func f () {
-  var x [3u]int;
-  x[0u] = 4i;
+  var x [3]int;
+  x[0] = 4;
 }

@@ -229,6 +229,11 @@ void stack_frame_push_tv (stack_frame_t* stack_frame,
       stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
+    void visit (const Boolean& type)
+    {
+      stack_frame_push (stack_frame, tv.value.ref (type));
+    }
+
     void visit (const Int& type)
     {
       stack_frame_push (stack_frame, tv.value.ref (type));
@@ -277,6 +282,16 @@ void stack_frame_push_tv (stack_frame_t* stack_frame,
     void visit (const Nil& type)
     {
       stack_frame_push_pointer (stack_frame, 0);
+    }
+
+    void visit (const Pointer& type)
+    {
+      stack_frame_push (stack_frame, tv.value.ref (type));
+    }
+
+    void visit (const Integer& type)
+    {
+      stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
     void visit (const Enum& type)

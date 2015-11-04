@@ -161,6 +161,11 @@ namespace runtime
         op (exec, node, t);
       }
 
+      void visit (const Boolean& t)
+      {
+        op (exec, node, t);
+      }
+
       void visit (const Int& t)
       {
         op (exec, node, t);
@@ -347,6 +352,11 @@ namespace runtime
       t.UnderlyingType ()->Accept (*this);
     }
 
+    void visit (const Int& t)
+    {
+      doit (t);
+    }
+
     void visit (const Uint& t)
     {
       doit (t);
@@ -435,10 +445,21 @@ namespace runtime
           t.UnderlyingType ()->Accept (*this);
         }
 
-        void visit (const Uint&)
+        void visit (const Int&)
         {
           evaluate_expr (exec, node.left ());
           Int::ValueType left;
+          stack_frame_pop (exec.stack (), left);
+          evaluate_expr (exec, node.right ());
+          Uint::ValueType right;
+          stack_frame_pop (exec.stack (), right);
+          stack_frame_push (exec.stack (), left >> right);
+        }
+
+        void visit (const Uint&)
+        {
+          evaluate_expr (exec, node.left ());
+          Uint::ValueType left;
           stack_frame_pop (exec.stack (), left);
           evaluate_expr (exec, node.right ());
           Uint::ValueType right;
@@ -633,6 +654,14 @@ namespace runtime
     operator() (executor_base_t& exec,
                 const ast_binary_expr_t& node,
                 const Bool& type) const
+    {
+      doit (exec, node, type);
+    }
+
+    void
+    operator() (executor_base_t& exec,
+                const ast_binary_expr_t& node,
+                const Boolean& type) const
     {
       doit (exec, node, type);
     }
@@ -1138,13 +1167,9 @@ namespace runtime
         stack_frame_load (exec.stack (), ptr, tv.type->Size ());
       }
 
-      void visit (const ast_cast_expr_t& node)
+      void visit (const ast_implicit_conversion_expr_t& node)
       {
         evaluate_expr (exec, node.child ());
-        typed_value_t tv = node.child ()->typed_value;
-        stack_frame_pop_tv (exec.stack (), tv);
-        tv = typed_value_t::cast_exec (node.typed_value.type, tv);
-        stack_frame_push_tv (exec.stack (), tv);
       }
 
       void visit (const ast_binary_arithmetic_expr_t& node)

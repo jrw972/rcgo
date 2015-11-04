@@ -4,5 +4,5 @@ type T struct {
 
 func f () {
   var x foreign T;
-  x.s = 4i;
+  x.s = 4;
 }
