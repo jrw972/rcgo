@@ -196,7 +196,7 @@ struct check_visitor : public ast_visitor_t
 
     typed_value_t index_tv = CheckAndImplicitlyDereference (node.index_ref ());
 
-    typed_value_t::index (node.index ()->location, typed_value_t::make_ref (array_type, typed_value_t::HEAP, IMMUTABLE, IMMUTABLE), index_tv);
+    typed_value_t::index (node.index ()->location, typed_value_t::make_ref (array_type, IMMUTABLE, IMMUTABLE), index_tv);
 
     ast_t *args = node.args ();
     TypedValueListType tvlist;
@@ -842,7 +842,7 @@ type_check_statement (ast_t * node)
                          "parameter specified for non-parameterized reaction (E41)");
         }
       typed_value_t dimension = reaction->dimension ();
-      typed_value_t::index (node.location, typed_value_t::make_ref (reaction->reaction_type->GetArray (dimension.integral_value ()), typed_value_t::CONSTANT, IMMUTABLE, IMMUTABLE), param_tv);
+      typed_value_t::index (node.location, typed_value_t::make_ref (reaction->reaction_type->GetArray (dimension.integral_value ()), IMMUTABLE, IMMUTABLE), param_tv);
     }
 
     void visit (ast_bind_pull_port_statement_t& node)
@@ -880,7 +880,7 @@ type_check_statement (ast_t * node)
       typed_value_t limit = process_array_dimension (node.limit_node_ref ());
       typed_value_t zero = limit;
       zero.zero ();
-      Symbol* symbol = new VariableSymbol (identifier, node.identifier (), typed_value_t::make_ref (typed_value_t::make_range (zero, limit, typed_value_t::STACK, IMMUTABLE, IMMUTABLE)));
+      Symbol* symbol = new VariableSymbol (identifier, node.identifier (), typed_value_t::make_ref (typed_value_t::make_range (zero, limit, IMMUTABLE, IMMUTABLE)));
       node.symbol = enter_symbol (node, symbol);
       type_check_statement (node.body ());
       node.limit = limit;
@@ -1101,7 +1101,7 @@ type_check_statement (ast_t * node)
             }
 
           // Enter each symbol.
-          typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, node.mutability, node.dereferenceMutability);
+          typed_value_t left_tv = typed_value_t::make_ref (type, node.mutability, node.dereferenceMutability);
           for (ast_t::iterator id_pos = identifier_list->begin (),
                id_limit = identifier_list->end ();
                id_pos != id_limit;
@@ -1127,7 +1127,7 @@ type_check_statement (ast_t * node)
                ++id_pos, ++init_pos)
             {
               // Assume left is mutable.
-              typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, node.dereferenceMutability);
+              typed_value_t left_tv = typed_value_t::make_ref (type, MUTABLE, node.dereferenceMutability);
               typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvert (*init_pos, left_tv.type);
               check_assignment (left_tv, right_tv, node,
                                 "incompatible types (%s) = (%s) (E126)",

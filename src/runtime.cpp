@@ -1794,7 +1794,7 @@ namespace runtime
     {
       const Type::Type* return_type = type->GetPointer ();
       return new Type::Function (Type::Function::FUNCTION, (new Signature ()),
-                                 new parameter_t (definingNode, "0return", typed_value_t::make_value (return_type, typed_value_t::STACK, MUTABLE, MUTABLE), false));
+                                 new parameter_t (definingNode, "0return", typed_value_t::make_value (return_type, MUTABLE, MUTABLE), false));
     }
 
   };
@@ -2192,7 +2192,7 @@ namespace runtime
         }
 
       return new Type::Function (Type::Function::FUNCTION, sig,
-                                 new parameter_t (definingNode, "0return", typed_value_t::make_value (Void::Instance (), typed_value_t::STACK, IMMUTABLE, IMMUTABLE), false));
+                                 new parameter_t (definingNode, "0return", typed_value_t::make_value (Void::Instance (), IMMUTABLE, IMMUTABLE), false));
     }
   };
 

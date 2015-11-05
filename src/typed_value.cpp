@@ -23,7 +23,6 @@ RequireIdentical (const Location& location, const char* op, const Type::Type* le
 typed_value_t::typed_value_t (Callable* c)
   : type (c->type ())
   , kind (VALUE)
-  , region (CONSTANT)
   , intrinsic_mutability (IMMUTABLE)
   , dereference_mutability (IMMUTABLE)
   , value (c)
@@ -33,7 +32,6 @@ typed_value_t::typed_value_t (Callable* c)
 typed_value_t::typed_value_t (::Template* t)
   : type (t->type ())
   , kind (VALUE)
-  , region (CONSTANT)
   , intrinsic_mutability (IMMUTABLE)
   , dereference_mutability (IMMUTABLE)
   , value (t)
@@ -43,7 +41,6 @@ typed_value_t::typed_value_t (::Template* t)
 typed_value_t::typed_value_t (reaction_t* r)
   : type (r->reaction_type)
   , kind (VALUE)
-  , region (CONSTANT)
   , intrinsic_mutability (IMMUTABLE)
   , dereference_mutability (IMMUTABLE)
   , value (r)
@@ -108,19 +105,6 @@ typed_value_t::print (std::ostream& out) const
       break;
     }
 
-  switch (region)
-    {
-    case CONSTANT:
-      out << " constant";
-      break;
-    case STACK:
-      out << " stack";
-      break;
-    case HEAP:
-      out << " heap";
-      break;
-    }
-
   switch (intrinsic_mutability)
     {
     case MUTABLE:
@@ -171,19 +155,18 @@ typed_value_t::print (std::ostream& out) const
 }
 
 typed_value_t
-typed_value_t::make_value (const Type::Type* type, Region region, Mutability intrinsic, Mutability dereference)
+typed_value_t::make_value (const Type::Type* type, Mutability intrinsic, Mutability dereference)
 {
   typed_value_t tv;
   tv.type = type;
   tv.kind = VALUE;
-  tv.region = region;
   tv.intrinsic_mutability = intrinsic;
   tv.dereference_mutability = dereference;
   return tv;
 }
 
 typed_value_t
-typed_value_t::make_range (const typed_value_t& low, const typed_value_t& high, Region region, Mutability intrinsic, Mutability dereference)
+typed_value_t::make_range (const typed_value_t& low, const typed_value_t& high, Mutability intrinsic, Mutability dereference)
 {
   assert (low.type == high.type);
   assert (low.kind == VALUE);
@@ -194,7 +177,6 @@ typed_value_t::make_range (const typed_value_t& low, const typed_value_t& high, 
   typed_value_t tv;
   tv.type = low.type;
   tv.kind = VALUE;
-  tv.region = region;
   tv.intrinsic_mutability = intrinsic;
   tv.dereference_mutability = dereference;
   tv.low_value = low.value;
@@ -203,12 +185,11 @@ typed_value_t::make_range (const typed_value_t& low, const typed_value_t& high, 
 }
 
 typed_value_t
-typed_value_t::make_ref (const Type::Type* type, Region region, Mutability intrinsic, Mutability dereference)
+typed_value_t::make_ref (const Type::Type* type, Mutability intrinsic, Mutability dereference)
 {
   typed_value_t tv;
   tv.type = type;
   tv.kind = REFERENCE;
-  tv.region = region;
   tv.intrinsic_mutability = intrinsic;
   tv.dereference_mutability = dereference;
   return tv;
@@ -226,7 +207,7 @@ typed_value_t::make_ref (typed_value_t tv)
 typed_value_t
 typed_value_t::nil (void)
 {
-  typed_value_t retval = make_value (Nil::Instance (), CONSTANT, MUTABLE, MUTABLE);
+  typed_value_t retval = make_value (Nil::Instance (), IMMUTABLE, MUTABLE);
   retval.value.present = true;
   return retval;
 }
@@ -258,7 +239,7 @@ typed_value_t::dereference (typed_value_t in)
 
     void visit (const Pointer& type)
     {
-      out = typed_value_t::make_ref (type.Base (), HEAP, in.dereference_mutability, in.dereference_mutability);
+      out = typed_value_t::make_ref (type.Base (), in.dereference_mutability, in.dereference_mutability);
     }
   };
   visitor v (in);
@@ -454,7 +435,6 @@ typed_value_t::slice (const Location& location,
         }
 
       result = typed_value_t::make_value (type.Base ()->GetSlice (),
-                                          in.region,
                                           in.intrinsic_mutability,
                                           in.dereference_mutability);
     }
@@ -768,7 +748,7 @@ comparison (const Location& location, const typed_value_t& left, const typed_val
   assert (!right.IsError());
   left.RequireValue (location);
   right.RequireValue (location);
-  typed_value_t out = typed_value_t::make_value (Type::Boolean::Instance (), typed_value_t::STACK, IMMUTABLE, IMMUTABLE);
+  typed_value_t out = typed_value_t::make_value (Type::Boolean::Instance (), IMMUTABLE, IMMUTABLE);
   T c (location, out, left, right);
   RequireIdentical (location, c.Op (), left.type, right.type);
   singleDispatch (left.type->UnderlyingType (), c);
@@ -829,7 +809,8 @@ struct Compare
   }
 };
 
-struct EqualOp {
+struct EqualOp
+{
   static const char* Op ()
   {
     return "==";
@@ -848,7 +829,8 @@ typed_value_t::Equal (const Location& location, const typed_value_t& left, const
   return comparison<Compare <EqualOp> > (location, left, right);
 }
 
-struct NotEqualOp {
+struct NotEqualOp
+{
   static const char* Op ()
   {
     return "!=";
@@ -906,7 +888,8 @@ struct Order
   }
 };
 
-struct LessThanOp {
+struct LessThanOp
+{
   static const char* Op ()
   {
     return "<";
@@ -925,7 +908,8 @@ typed_value_t::LessThan (const Location& location, const typed_value_t& left, co
   return comparison<Order<LessThanOp> > (location, left, right);
 }
 
-struct LessEqualOp {
+struct LessEqualOp
+{
   static const char* Op ()
   {
     return "<=";
@@ -944,7 +928,8 @@ typed_value_t::LessEqual (const Location& location, const typed_value_t& left, c
   return comparison<Order<LessEqualOp> > (location, left, right);
 }
 
-struct MoreThanOp {
+struct MoreThanOp
+{
   static const char* Op ()
   {
     return ">";
@@ -963,7 +948,8 @@ typed_value_t::MoreThan (const Location& location, const typed_value_t& left, co
   return comparison<Order <MoreThanOp> > (location, left, right);
 }
 
-struct MoreEqualOp {
+struct MoreEqualOp
+{
   static const char* Op ()
   {
     return ">=";
@@ -1152,7 +1138,8 @@ struct SymmetricBinary
   }
 };
 
-struct MultiplyOp {
+struct MultiplyOp
+{
   static const char* Op ()
   {
     return "*";
@@ -1171,7 +1158,8 @@ typed_value_t::Multiply (const Location& location, const typed_value_t& left, co
   return symmetricBinary<SymmetricBinary <MultiplyOp> > (location, left, right);
 }
 
-struct DivideOp {
+struct DivideOp
+{
   static const char* Op ()
   {
     return "/";
@@ -1190,7 +1178,8 @@ typed_value_t::Divide (const Location& location, const typed_value_t& left, cons
   return symmetricBinary<SymmetricBinary <DivideOp> > (location, left, right);
 }
 
-struct ModulusOp {
+struct ModulusOp
+{
   static const char* Op ()
   {
     return "%";
@@ -1209,7 +1198,8 @@ typed_value_t::Modulus (const Location& location, const typed_value_t& left, con
   return symmetricBinary<SymmetricBinary <ModulusOp> > (location, left, right);
 }
 
-struct AddOp {
+struct AddOp
+{
   static const char* Op ()
   {
     return "+";
@@ -1228,7 +1218,8 @@ typed_value_t::Add (const Location& location, const typed_value_t& left, const t
   return symmetricBinary<SymmetricBinary <AddOp> > (location, left, right);
 }
 
-struct SubtractOp {
+struct SubtractOp
+{
   static const char* Op ()
   {
     return "-";
@@ -1361,7 +1352,8 @@ typed_value_t::RightShift (const Location& location, const typed_value_t& left, 
   return out;
 }
 
-struct BitAndOp {
+struct BitAndOp
+{
   static const char* Op ()
   {
     return "&";
@@ -1380,7 +1372,8 @@ typed_value_t::BitAnd (const Location& location, const typed_value_t& left, cons
   return symmetricBinary<SymmetricBinary<BitAndOp> > (location, left, right);
 }
 
-struct BitAndNotOp {
+struct BitAndNotOp
+{
   static const char* Op ()
   {
     return "&^";
@@ -1399,7 +1392,8 @@ typed_value_t::BitAndNot (const Location& location, const typed_value_t& left, c
   return symmetricBinary<SymmetricBinary<BitAndNotOp> > (location, left, right);
 }
 
-struct BitOrOp {
+struct BitOrOp
+{
   static const char* Op ()
   {
     return "|";
@@ -1418,7 +1412,8 @@ typed_value_t::BitOr (const Location& location, const typed_value_t& left, const
   return symmetricBinary<SymmetricBinary<BitOrOp> > (location, left, right);
 }
 
-struct BitXorOp {
+struct BitXorOp
+{
   static const char* Op ()
   {
     return "^";

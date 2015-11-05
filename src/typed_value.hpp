@@ -21,14 +21,6 @@ struct typed_value_t
     TYPE,
   };
 
-  // A reference refers to a location in a constant area, on the stack, or in the heap.
-  enum Region
-  {
-    CONSTANT,
-    STACK,
-    HEAP,
-  };
-
   /*
     A reference has:
     - a type
@@ -134,7 +126,6 @@ struct typed_value_t
   typed_value_t ()
     : type (NULL)
     , kind (VALUE)
-    , region (CONSTANT)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
     , has_offset (false)
@@ -145,7 +136,6 @@ struct typed_value_t
                  typename T::ValueType v)
     : type (t)
     , kind (VALUE)
-    , region (CONSTANT)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
     , value (t, v)
@@ -156,7 +146,6 @@ struct typed_value_t
                  size_t e)
     : type (type)
     , kind (VALUE)
-    , region (CONSTANT)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
     , value (type, e)
@@ -172,7 +161,6 @@ struct typed_value_t
   explicit typed_value_t (const Type::Type* t)
     : type (t)
     , kind (TYPE)
-    , region (CONSTANT)
     , intrinsic_mutability (FOREIGN)
     , dereference_mutability (FOREIGN)
     , has_offset (false)
@@ -180,7 +168,6 @@ struct typed_value_t
 
   const Type::Type *type;
   Kind kind;
-  Region region;
   Mutability intrinsic_mutability;
   Mutability dereference_mutability;
   value_t value;
@@ -189,9 +176,9 @@ struct typed_value_t
   bool has_offset;
   ptrdiff_t offset;
 
-  static typed_value_t make_value (const Type::Type* type, Region region, Mutability intrinsic, Mutability dereference);
-  static typed_value_t make_range (const typed_value_t& low, const typed_value_t& high, Region region, Mutability intrinsic, Mutability dereference);
-  static typed_value_t make_ref (const Type::Type* type, Region region, Mutability intrinsic, Mutability dereference);
+  static typed_value_t make_value (const Type::Type* type, Mutability intrinsic, Mutability dereference);
+  static typed_value_t make_range (const typed_value_t& low, const typed_value_t& high, Mutability intrinsic, Mutability dereference);
+  static typed_value_t make_ref (const Type::Type* type, Mutability intrinsic, Mutability dereference);
   static typed_value_t make_ref (typed_value_t tv);
 
   static typed_value_t nil ();

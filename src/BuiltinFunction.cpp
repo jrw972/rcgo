@@ -34,8 +34,8 @@ Readable::Readable (ast_t* dn, const Type::Type* fd_type, const Type::Type* bool
   : BuiltinFunction ("readable",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, typed_value_t::STACK, MUTABLE, IMMUTABLE), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (bool_type, typed_value_t::STACK, MUTABLE, MUTABLE), false)))
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, MUTABLE, IMMUTABLE), false)),
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (bool_type, MUTABLE, MUTABLE), false)))
 { }
 
 void
@@ -65,9 +65,9 @@ Read::Read (ast_t* dn, const Type::Type* fd_type, const Type::Type* uint8_type)
   : BuiltinFunction ("read",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, typed_value_t::STACK, MUTABLE, MUTABLE), false))
-                                         ->Append (new parameter_t (dn, "buf", typed_value_t::make_value (uint8_type->GetSlice (), typed_value_t::STACK, MUTABLE, MUTABLE), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (Int::Instance (), typed_value_t::STACK, MUTABLE, MUTABLE), false)))
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, MUTABLE, MUTABLE), false))
+                                         ->Append (new parameter_t (dn, "buf", typed_value_t::make_value (uint8_type->GetSlice (), MUTABLE, MUTABLE), false)),
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (Int::Instance (), MUTABLE, MUTABLE), false)))
 { }
 
 void
@@ -90,8 +90,8 @@ Writable::Writable (ast_t* dn, const Type::Type* fd_type, const Type::Type* bool
   : BuiltinFunction ("writable",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, typed_value_t::STACK, MUTABLE, IMMUTABLE), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (bool_type, typed_value_t::STACK, MUTABLE, MUTABLE), false)))
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, MUTABLE, IMMUTABLE), false)),
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (bool_type, MUTABLE, MUTABLE), false)))
 { }
 
 void
@@ -121,7 +121,7 @@ TimerfdCreate::TimerfdCreate (ast_t* dn, const Type::Type* fd_type)
   : BuiltinFunction ("timerfd_create",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, new Signature (),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (fd_type, typed_value_t::STACK, MUTABLE, MUTABLE), false)))
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (fd_type, MUTABLE, MUTABLE), false)))
 { }
 
 void
@@ -143,9 +143,9 @@ TimerfdSettime::TimerfdSettime (ast_t* dn, const Type::Type* fd_type, const Type
   : BuiltinFunction ("timerfd_settime",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, typed_value_t::STACK, MUTABLE, MUTABLE), false))
-                                         ->Append (new parameter_t (dn, "s", typed_value_t::make_value (uint64_type, typed_value_t::STACK, MUTABLE, MUTABLE), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (int_type, typed_value_t::STACK, MUTABLE, MUTABLE), false)))
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, MUTABLE, MUTABLE), false))
+                                         ->Append (new parameter_t (dn, "s", typed_value_t::make_value (uint64_type, MUTABLE, MUTABLE), false)),
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (int_type, MUTABLE, MUTABLE), false)))
 { }
 
 void
@@ -173,7 +173,7 @@ UdpSocket::UdpSocket (ast_t* dn, const Type::Type* fd_type)
   : BuiltinFunction ("udp_socket",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, new Signature (),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (fd_type, typed_value_t::STACK, MUTABLE, MUTABLE), false)))
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (fd_type, MUTABLE, MUTABLE), false)))
 { }
 
 void
@@ -201,11 +201,11 @@ Sendto::Sendto (ast_t* dn, const Type::Type* fd_type, const Type::Type* uint8_ty
   : BuiltinFunction ("sendto",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, typed_value_t::STACK, MUTABLE, MUTABLE), false))
-                                         ->Append (new parameter_t (dn, "host", typed_value_t::make_value (uint8_type->GetSlice (), typed_value_t::STACK, MUTABLE, IMMUTABLE), false))
-                                         ->Append (new parameter_t (dn, "port", typed_value_t::make_value (uint16_type, typed_value_t::STACK, MUTABLE, IMMUTABLE), false))
-                                         ->Append (new parameter_t (dn, "buf", typed_value_t::make_value (uint8_type->GetSlice (), typed_value_t::STACK, MUTABLE, IMMUTABLE), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (Int::Instance (), typed_value_t::STACK, MUTABLE, MUTABLE), false)))
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, MUTABLE, MUTABLE), false))
+                                         ->Append (new parameter_t (dn, "host", typed_value_t::make_value (uint8_type->GetSlice (), MUTABLE, IMMUTABLE), false))
+                                         ->Append (new parameter_t (dn, "port", typed_value_t::make_value (uint16_type, MUTABLE, IMMUTABLE), false))
+                                         ->Append (new parameter_t (dn, "buf", typed_value_t::make_value (uint8_type->GetSlice (), MUTABLE, IMMUTABLE), false)),
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (Int::Instance (), MUTABLE, MUTABLE), false)))
 { }
 
 void

@@ -66,7 +66,6 @@ processReceiver (ast_t* n, ast_t* identifierNode, parameter_t*& this_parameter, 
   const std::string& this_identifier = ast_get_identifier (this_identifier_node);
   typed_value_t this_value =
     typed_value_t::make_value (type->GetPointer (),
-                               typed_value_t::STACK,
                                node->mutability,
                                node->dereferenceMutability);
 
@@ -89,7 +88,7 @@ processIota (ast_t& node, ast_t*& dimensionNode, ParameterSymbol*& parameterSymb
   typed_value_t zero = dimension;
   zero.zero ();
 
-  typed_value_t iota_value = typed_value_t::make_range (zero, dimension, typed_value_t::STACK, IMMUTABLE, IMMUTABLE);
+  typed_value_t iota_value = typed_value_t::make_range (zero, dimension, IMMUTABLE, IMMUTABLE);
 
   parameter_t* iota_parameter = new parameter_t (dimensionNode,
       "IOTA",
@@ -110,7 +109,6 @@ processSignatureReturn (ast_t* signatureNode, ast_t* returnTypeNode, Mutability 
   /* Process the return type. */
   const Type::Type* return_type = process_type_spec (returnTypeNode, true);
   typed_value_t return_value = typed_value_t::make_value (return_type,
-                               typed_value_t::STACK,
                                MUTABLE,
                                dereferenceMutability);
 
@@ -165,7 +163,7 @@ ProcessDeclarations (ast_t * node)
                ++id_pos, ++init_pos)
             {
               // Assume left is mutable.
-              typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE);
+              typed_value_t left_tv = typed_value_t::make_ref (type, MUTABLE, MUTABLE);
               typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvert (*init_pos, left_tv.type);
               if (!right_tv.value.present)
                 {
