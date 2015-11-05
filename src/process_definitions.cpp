@@ -121,6 +121,15 @@ CheckAndImplicitlyDereferenceAndConvert (ast_t*& expr, const Type::Type* type)
   return expr->typed_value;
 }
 
+typed_value_t
+CheckAndImplicitlyDereferenceAndConvertToDefault (ast_t*& expr)
+{
+  CheckAndImplicitlyDereference (expr);
+  ImplicitlyConvertToDefault (expr);
+  return expr->typed_value;
+}
+
+
 static typed_value_t
 insertExplicitDereference (ast_t*& expr, typed_value_t tv)
 {
@@ -377,21 +386,25 @@ struct check_visitor : public ast_visitor_t
         node.typed_value = typed_value_t::Modulus (node.location, left, right);
         return;
       case LEFT_SHIFT:
-        if (left.value.present && !right.value.present) {
-          left = ImplicitlyConvertToDefault (node.left_ref ());
-        }
-        if (right.value.present && !left.value.present) {
-          right = ImplicitlyConvertToDefault (node.right_ref ());
-        }
+        if (left.value.present && !right.value.present)
+          {
+            left = ImplicitlyConvertToDefault (node.left_ref ());
+          }
+        if (right.value.present && !left.value.present)
+          {
+            right = ImplicitlyConvertToDefault (node.right_ref ());
+          }
         node.typed_value = typed_value_t::LeftShift (node.location, left, right);
         return;
       case RIGHT_SHIFT:
-        if (left.value.present && !right.value.present) {
-          left = ImplicitlyConvertToDefault (node.left_ref ());
-        }
-        if (right.value.present && !left.value.present) {
-          right = ImplicitlyConvertToDefault (node.right_ref ());
-        }
+        if (left.value.present && !right.value.present)
+          {
+            left = ImplicitlyConvertToDefault (node.left_ref ());
+          }
+        if (right.value.present && !left.value.present)
+          {
+            right = ImplicitlyConvertToDefault (node.right_ref ());
+          }
         node.typed_value = typed_value_t::RightShift (node.location, left, right);
         return;
       case BIT_AND:
@@ -1139,7 +1152,7 @@ type_check_statement (ast_t * node)
            ++id_pos, ++init_pos)
         {
           // Process the initializer.
-          typed_value_t right_tv = CheckAndImplicitlyDereference (*init_pos);
+          typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvertToDefault (*init_pos);
           typed_value_t left_tv = typed_value_t::make_ref (right_tv);
           left_tv.intrinsic_mutability = MUTABLE;
           left_tv.dereference_mutability = node.dereferenceMutability;

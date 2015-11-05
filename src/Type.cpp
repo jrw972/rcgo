@@ -753,6 +753,9 @@ type::Instance () \
             (*pos)->type->Accept (*this);
           }
       }
+
+      void visit (const Boolean& type) { }
+      void visit (const Integer& type) { }
     };
     visitor v;
     type->Accept (v);

@@ -77,6 +77,9 @@ CheckAndImplicitlyDereference (ast_t*& expr);
 typed_value_t
 CheckAndImplicitlyDereferenceAndConvert (ast_t*& expr, const Type::Type* type);
 
+typed_value_t
+CheckAndImplicitlyDereferenceAndConvertToDefault (ast_t*& expr);
+
 // Type check the expression expecting a reference.
 typed_value_t CheckExpectReference (ast_t* expr);
 

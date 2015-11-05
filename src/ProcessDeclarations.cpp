@@ -139,19 +139,80 @@ ProcessDeclarations (ast_t * node)
 
     void visit (ast_const_t& node)
     {
-      const Type::Type* type = process_type_spec (node.type_spec (), true);
-      typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, IMMUTABLE);
-      typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvert (node.expr_ref (), type);
-      if (!right_tv.value.present)
+      ast_t* identifier_list = node.identifier_list ();
+      ast_t* type_spec = node.type_spec ();
+      ast_t* expression_list = node.expression_list ();
+
+      if (expression_list->size () != 0 &&
+          identifier_list->size () != expression_list->size ())
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "expression is not constant (E62)");
+                         "wrong number of initializers (E88)");
         }
-      check_assignment (left_tv, right_tv, node,
-                        "incompatible types (%s) = (%s) (E130)",
-                        "argument leaks mutable pointers (E131)");
-      node.symbol = enter_symbol (*node.parent (),
-                                  new TypedConstantSymbol (ast_get_identifier (node.identifier ()), &node, right_tv));
+
+      // Process the type spec.
+      const Type::Type* type = process_type_spec (type_spec, true);
+
+      if (type_cast<Void> (type) == NULL)
+        {
+          // Type, expressions.
+
+          // Enter each symbol.
+          for (ast_t::iterator id_pos = identifier_list->begin (),
+               id_limit = identifier_list->end (),
+               init_pos = expression_list->begin ();
+               id_pos != id_limit;
+               ++id_pos, ++init_pos)
+            {
+              // Assume left is mutable.
+              typed_value_t left_tv = typed_value_t::make_ref (type, typed_value_t::STACK, MUTABLE, MUTABLE);
+              typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvert (*init_pos, left_tv.type);
+              if (!right_tv.value.present)
+                {
+                  error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                                 "expression is not constant (E62)");
+                }
+              check_assignment (left_tv, right_tv, node,
+                                "incompatible types (%s) = (%s) (E90)",
+                                "assignment leaks mutable pointers (E92)");
+              // Convert to specified mutability.
+              right_tv.intrinsic_mutability = IMMUTABLE;
+              const std::string& name = ast_get_identifier (*id_pos);
+              Symbol* symbol = new TypedConstantSymbol (name, *id_pos, right_tv);
+              node.symbols.push_back (enter_symbol (*node.parent (), symbol));
+            }
+
+          return;
+        }
+
+      // No type, expressions.
+
+      // Enter each symbol.
+      for (ast_t::iterator id_pos = identifier_list->begin (),
+           id_limit = identifier_list->end (),
+           init_pos = expression_list->begin ();
+           id_pos != id_limit;
+           ++id_pos, ++init_pos)
+        {
+          // Process the initializer.
+          typed_value_t right_tv = CheckAndImplicitlyDereference (*init_pos);
+          if (!right_tv.value.present)
+            {
+              error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                             "expression is not constant (E89)");
+            }
+          typed_value_t left_tv = typed_value_t::make_ref (right_tv);
+          left_tv.intrinsic_mutability = MUTABLE;
+          left_tv.dereference_mutability = MUTABLE;
+          check_assignment (left_tv, right_tv, node,
+                            "incompatible types (%s) = (%s) (E130)",
+                            "assignment leaks mutable pointers (E131)");
+          // Convert to specified mutability.
+          right_tv.intrinsic_mutability = IMMUTABLE;
+          const std::string& name = ast_get_identifier (*id_pos);
+          Symbol* symbol = new TypedConstantSymbol (name, *id_pos, right_tv);
+          node.symbols.push_back (enter_symbol (*node.parent (), symbol));
+        }
     }
 
     void visit (ast_action_t& node)

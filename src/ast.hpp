@@ -1938,35 +1938,31 @@ struct ast_const_t : public ast_t
 {
   enum
   {
-    IDENTIFIER,
+    IDENTIFIER_LIST,
     TYPE_SPEC,
-    EXPR,
+    EXPRESSION_LIST,
     COUNT
   };
 
-  ast_const_t (unsigned int line, ast_t* identifier, ast_t* type_spec, ast_t* expr)
+  ast_const_t (unsigned int line, ast_t* identifier_list, ast_t* type_spec, ast_t* expression_list)
     : ast_t (line, COUNT)
   {
-    set (IDENTIFIER, identifier);
+    set (IDENTIFIER_LIST, identifier_list);
     set (TYPE_SPEC, type_spec);
-    set (EXPR, expr);
+    set (EXPRESSION_LIST, expression_list);
   }
 
-  ast_t* identifier () const
+  ast_t* identifier_list () const
   {
-    return at (IDENTIFIER);
+    return at (IDENTIFIER_LIST);
   }
   ast_t* type_spec () const
   {
     return at (TYPE_SPEC);
   }
-  ast_t* expr () const
+  ast_t* expression_list () const
   {
-    return at (EXPR);
-  }
-  ast_t*& expr_ref ()
-  {
-    return at (EXPR);
+    return at (EXPRESSION_LIST);
   }
 
   void accept (ast_visitor_t& visitor);

@@ -1,0 +1,82 @@
+#!/usr/bin/env rc
+
+func not_evaluated (flag *bool) bool {
+  *flag = true;
+  return true;
+}
+
+func test (num uint; desc +const []uint8; status bool) {
+  if status {
+    println (`ok `, num, ` - `, desc);
+  } else {
+    println (`not ok `, num, ` - `, desc);
+  }
+}
+
+type Test component { };
+
+init (this *Test) Main () {
+  println (`1..22`);
+
+  {
+    const a = false || false;
+    test (1, `literal false || false`, a == false);
+    const b = false || true;
+    test (2, `literal false || true`, b == true);
+    const c = true || false;
+    test (3, `literal true || false`, c == true);
+    const d = true || true;
+    test (4, `literal true || true`, d == true);
+  }
+
+  {
+    var t, f const = true, false;
+    test (5, `var false || false`, (f || f) == false);
+    test (6, `var false || true`, (f || t) == true);
+    test (7, `var true || false`, (t || f) == true);
+    test (8, `var true || true`, (t || t) == true);
+
+    var flag = false;
+    f || t || not_evaluated (&flag);
+    test (9, `short circuit ||`, flag == false);
+  }
+
+  {
+    const a = false && false;
+    test (10, `literal false && false`, a == false);
+    const b = false && true;
+    test (11, `literal false && true`, b == false);
+    const c = true && false;
+    test (12, `literal true && false`, c == false);
+    const d = true && true;
+    test (13, `literal true && true`, d == true);
+  }
+
+  {
+    var t, f const = true, false;
+    test (14, `var false && false`, (f && f) == false);
+    test (15, `var false && true`, (f && t) == false);
+    test (16, `var true && false`, (t && f) == false);
+    test (17, `var true && true`, (t && t) == true);
+
+    var flag = false;
+    t && f && not_evaluated (&flag);
+    test (18, `short circuit &&`, flag == false);
+  }
+
+  {
+    const a = !false;
+    test (19, `literal !false`, a == true);
+    const b = !true;
+    test (20, `literal !true`, b == false);
+  }
+
+  {
+    var t, f const = true, false;
+    test (21, `var !true`, !t == false);
+    test (22, `var !false`, !f == true);
+  }
+
+}
+
+instance t Test Main ();

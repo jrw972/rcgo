@@ -37,7 +37,7 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
 %%
 
 \/\/.*                 /* Discard line comments. */
-^#.*                   /* Discard line comments. */
+#.*                   /* Discard line comments. */
 
 <INITIAL>{
   "/*"              BEGIN(IN_COMMENT);

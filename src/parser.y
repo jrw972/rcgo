@@ -88,7 +88,11 @@ Definition: Type { $$ = $1; }
 | Func { $$ = $1; }
 | Const { $$ = $1; }
 
-Const: CONST IDENTIFIER TypeSpec '=' Expression ';' { $$ = new ast_const_t (@1, $2, $3, $5); }
+Const:
+  CONST IdentifierList TypeSpec '=' ExpressionList ';'
+  { $$ = new ast_const_t (@1, $2, $3, $5); }
+| CONST IdentifierList          '=' ExpressionList ';'
+  { $$ = new ast_const_t (@1, $2, new ast_empty_type_spec_t (@1), $4); }
 
 Instance: INSTANCE IDENTIFIER IDENTIFIER IDENTIFIER '(' OptionalExpressionList ')' ';' { $$ = new ast_instance_t (@1, $2, $3, $4, $6); }
 

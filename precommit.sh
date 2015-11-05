@@ -7,11 +7,11 @@ find src -name "*.hpp" -o -name "*.cpp" | xargs grep unimplemented | grep -v '#d
 
 grep -o -h -E '\(E[0-9]+\)' src/*.hpp src/*.cpp | tr -d '()E' | sort -n | uniq -c | awk '$1 > 1 { print "Error " $2 " appears twice in the codebase"; }'
 
-grep -o -h -E '\(E[0-9]+\)' src/*.hpp src/*.cpp | tr -d '()' | sort -u > error_list
+grep -o -h -E '\(E[0-9]+\)' src/*.hpp src/*.cpp | tr -d '()E' | sort -n -u | sort > error_list
 
-grep -o -h -E 'E[0-9]+' test/*.sh | sort -u > tested_errors
+grep -o -h -E 'E[0-9]+' test/*.sh | tr -d 'E' | sort -n -u | sort > tested_errors
 
 echo "The following errors are not tested:"
-join -v 1 error_list tested_errors
+join -v 1 error_list tested_errors | sort -n
 
 echo "Errors tested: $(awk 'END { print NR; }' tested_errors) / $(awk 'END { print NR; }' error_list)"
