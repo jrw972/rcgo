@@ -119,10 +119,10 @@ Receiver:
 { $$ = new ast_receiver_t (@1, $2, $3, $4, true, $6); }
 
 Action:
-ACTION Receiver '(' Expression ')' Block
-{ $$ = new ast_action_t (@1, $2, $4, $6); }
-| ArrayDimension ACTION Receiver '(' Expression ')' Block
-{ $$ = new ast_dimensioned_action_t (@2, $1, $3, $5, $7); }
+  ACTION Receiver IDENTIFIER                '(' Expression ')' Block
+{ $$ = new ast_action_t (@1, $2, $3, $5, $7); }
+| ACTION Receiver IDENTIFIER ArrayDimension '(' Expression ')' Block
+{ $$ = new ast_dimensioned_action_t (@1, $2, $3, $4, $6, $8); }
 
 Reaction:
 REACTION Receiver IDENTIFIER Signature Block
@@ -131,8 +131,8 @@ REACTION Receiver IDENTIFIER Signature Block
 { $$ = new ast_dimensioned_reaction_t (@2, $1, $3, $4, $5, $6); }
 
 Bind:
-BIND Receiver Block
-{ $$ = new ast_bind_t (@1, $2, $3); }
+BIND Receiver IDENTIFIER Block
+{ $$ = new ast_bind_t (@1, $2, $3, $4); }
 
 Init:
 INIT Receiver IDENTIFIER Signature DereferenceMutability TypeSpec Block

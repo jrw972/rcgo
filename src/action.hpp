@@ -11,17 +11,19 @@ class action_reaction_base_t
 public:
   typedef std::vector<Activation*> ActivationsType;
 
-  action_reaction_base_t (Type::NamedType* type, ast_t* node_, ast_t* body_)
+  action_reaction_base_t (Type::NamedType* type, ast_t* node_, ast_t* body_, const std::string& name_)
     : type_ (type)
     , node (node_)
     , body (body_)
+    , name (name_)
     , has_dimension_ (false)
   { }
 
-  action_reaction_base_t (Type::NamedType* type, ast_t* node_, ast_t* body_, const typed_value_t& dimension)
+  action_reaction_base_t (Type::NamedType* type, ast_t* node_, ast_t* body_, const std::string& name_, const typed_value_t& dimension)
     : type_ (type)
     , node (node_)
     , body (body_)
+    , name (name_)
     , has_dimension_ (true)
     , dimension_ (dimension)
   { }
@@ -66,6 +68,7 @@ private:
 public:
   ast_t* const node;
   ast_t* const body;
+  std::string const name;
 private:
   ActivationsType activations_;
   bool has_dimension_;
@@ -82,14 +85,14 @@ public:
     STATIC_FALSE,
   };
 
-  action_t (Type::NamedType* type, ast_t* node, ast_t* body_)
-    : action_reaction_base_t (type, node, body_)
+  action_t (Type::NamedType* type, ast_t* node, ast_t* body_, const std::string& name_)
+    : action_reaction_base_t (type, node, body_, name_)
     , precondition_kind (DYNAMIC)
     , precondition (NULL)
   { }
 
-  action_t (Type::NamedType* type, ast_t* node, ast_t* body_, const typed_value_t& dimension)
-    : action_reaction_base_t (type, node, body_, dimension)
+  action_t (Type::NamedType* type, ast_t* node, ast_t* body_, const std::string& name, const typed_value_t& dimension)
+    : action_reaction_base_t (type, node, body_, name, dimension)
     , precondition_kind (DYNAMIC)
     , precondition (NULL)
   { }
@@ -102,18 +105,15 @@ class reaction_t : public action_reaction_base_t
 {
 public:
   reaction_t (Type::NamedType* type, ast_t* node, ast_t* body_, const std::string& name_, const Type::Method* rt)
-    : action_reaction_base_t (type, node, body_)
-    , name (name_)
+    : action_reaction_base_t (type, node, body_, name_)
     , reaction_type (rt)
   { }
 
   reaction_t (Type::NamedType* type, ast_t* node, ast_t* body_, const std::string& name_, const Type::Method* rt, const typed_value_t& dimension)
-    : action_reaction_base_t (type, node, body_, dimension)
-    , name (name_)
+    : action_reaction_base_t (type, node, body_, name_, dimension)
     , reaction_type (rt)
   { }
 
-  std::string const name;
   const Type::Method* const reaction_type;
 };
 

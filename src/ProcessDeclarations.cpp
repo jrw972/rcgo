@@ -221,7 +221,7 @@ ProcessDeclarations (ast_t * node)
       ParameterSymbol* thisSymbol;
       NamedType* type = processReceiver (node.receiver (), node.identifier (), this_parameter, thisSymbol, true, true);
       enter_symbol (node, thisSymbol);
-      action_t *action = new action_t (type, &node, node.body ());
+      action_t *action = new action_t (type, &node, node.body (), ast_get_identifier (node.identifier ()));
       type->Add (action);
       node.action = action;
     }
@@ -235,7 +235,7 @@ ProcessDeclarations (ast_t * node)
       ParameterSymbol* iotaSymbol;
       typed_value_t dimension = processIota (node, node.dimension_ref (), iotaSymbol);
       enter_symbol (node, iotaSymbol);
-      action_t *action = new action_t (type, &node, node.body (), dimension);
+      action_t *action = new action_t (type, &node, node.body (), ast_get_identifier (node.identifier ()), dimension);
       type->Add (action);
       node.action = action;
     }
@@ -246,7 +246,7 @@ ProcessDeclarations (ast_t * node)
       ParameterSymbol* thisSymbol;
       NamedType* type = processReceiver (node.receiver (), node.identifier (), this_parameter, thisSymbol, true, false);
       enter_symbol (node, thisSymbol);
-      bind_t* bind = new bind_t (&node);
+      bind_t* bind = new bind_t (&node, ast_get_identifier (node.identifier ()));
       type->Add (bind);
       node.bind = bind;
     }

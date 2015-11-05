@@ -3,7 +3,7 @@ type Actuator component {
   bang1 push ();
 };
 
-action (this +const * Actuator) (!this.flag) {
+action (this +const * Actuator) bang (!this.flag) {
   activate bang1 (), bang1 () {
     this.flag = true;
   }
@@ -26,7 +26,7 @@ type System component {
   detector1 Detector;
 };
 
-bind (this *System) {
+bind (this *System) Bind {
   this.actuator.bang1 -> this.detector1.bang;
 }
 

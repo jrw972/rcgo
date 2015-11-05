@@ -123,6 +123,7 @@ namespace Type
     {
       actions_.push_back (action);
     }
+    action_t* GetAction (const std::string& identifier) const;
     ActionsType::const_iterator ActionsBegin () const
     {
       return actions_.begin ();
@@ -140,6 +141,7 @@ namespace Type
     {
       binds_.push_back (bind);
     }
+    bind_t* GetBind (const std::string& identifier) const;
     BindsType::const_iterator BindsBegin () const
     {
       return binds_.begin ();
@@ -829,6 +831,12 @@ namespace Type
 
   reaction_t*
   type_select_reaction (const Type* type, const std::string& identifier);
+
+  action_t*
+  type_select_action (const Type* type, const std::string& identifier);
+
+  bind_t*
+  type_select_bind (const Type* type, const std::string& identifier);
 
   // Return type of selected field, method, or reaction.
   const Type*

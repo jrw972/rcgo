@@ -3,6 +3,7 @@
 #include "parameter.hpp"
 #include "field.hpp"
 #include "Callable.hpp"
+#include "bind.hpp"
 
 namespace Type
 {
@@ -141,6 +142,41 @@ namespace Type
     return NULL;
   }
 
+  action_t*
+  NamedType::GetAction (const std::string& identifier) const
+  {
+    for (ActionsType::const_iterator pos = this->actions_.begin (),
+         limit = this->actions_.end ();
+         pos != limit;
+         ++pos)
+      {
+        action_t* a = *pos;
+        if (a->name == identifier)
+          {
+            return a;
+          }
+      }
+
+    return NULL;
+  }
+
+  bind_t*
+  NamedType::GetBind (const std::string& identifier) const
+  {
+    for (BindsType::const_iterator pos = this->binds_.begin (),
+         limit = this->binds_.end ();
+         pos != limit;
+         ++pos)
+      {
+        bind_t* a = *pos;
+        if (a->name == identifier)
+          {
+            return a;
+          }
+      }
+
+    return NULL;
+  }
 
   void
   Struct::Append (const std::string& field_name, const Type* field_type)
@@ -280,6 +316,44 @@ namespace Type
     return v.retval;
   }
 
+  action_t *
+  type_select_action (const Type* type, const std::string& identifier)
+  {
+    struct visitor : public Visitor
+    {
+      action_t* retval;
+      const std::string& identifier;
+      visitor (const std::string& id) : retval (NULL), identifier (id) { }
+
+      void visit (const NamedType& type)
+      {
+        retval = type.GetAction (identifier);
+      }
+    };
+    visitor v (identifier);
+    type->Accept (v);
+    return v.retval;
+  }
+
+  bind_t *
+  type_select_bind (const Type* type, const std::string& identifier)
+  {
+    struct visitor : public Visitor
+    {
+      bind_t* retval;
+      const std::string& identifier;
+      visitor (const std::string& id) : retval (NULL), identifier (id) { }
+
+      void visit (const NamedType& type)
+      {
+        retval = type.GetBind (identifier);
+      }
+    };
+    visitor v (identifier);
+    type->Accept (v);
+    return v.retval;
+  }
+
   const Type*
   type_select (const Type* type, const std::string& identifier)
   {
@@ -311,6 +385,18 @@ namespace Type
     if (r)
       {
         return r->reaction_type;
+      }
+
+    action_t* a = type_select_action (type, identifier);
+    if (a)
+      {
+        return Void::Instance ();
+      }
+
+    bind_t* b = type_select_bind (type, identifier);
+    if (b)
+      {
+        return Void::Instance ();
       }
 
     return NULL;

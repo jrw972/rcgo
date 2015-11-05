@@ -1651,12 +1651,13 @@ struct ast_action_t : public ast_t
   };
 
   ast_action_t (unsigned int line, ast_t* receiver,
+                ast_t* identifier,
                 ast_t* precondition, ast_t* body)
     : ast_t (line, COUNT)
     , action (NULL)
   {
     set (RECEIVER, receiver);
-    set (IDENTIFIER, new ast_identifier_t (line, ""));
+    set (IDENTIFIER, identifier);
     set (PRECONDITION, precondition);
     set (BODY, body);
   }
@@ -1720,14 +1721,15 @@ struct ast_dimensioned_action_t : public ast_t
     COUNT
   };
 
-  ast_dimensioned_action_t (unsigned int line, ast_t* dimension,
-                            ast_t* receiver, ast_t* precondition, ast_t* body)
+  ast_dimensioned_action_t (unsigned int line, ast_t* receiver,
+                            ast_t* identifier, ast_t* dimension,
+                            ast_t* precondition, ast_t* body)
     : ast_t (line, COUNT)
     , action (NULL)
   {
     set (DIMENSION, dimension);
     set (RECEIVER, receiver);
-    set (IDENTIFIER, new ast_identifier_t (line, ""));
+    set (IDENTIFIER, identifier);
     set (PRECONDITION, precondition);
     set (BODY, body);
   }
@@ -1796,12 +1798,12 @@ struct ast_bind_t : public ast_t
     COUNT,
   };
 
-  ast_bind_t (unsigned int line, ast_t * receiver, ast_t * body)
+  ast_bind_t (unsigned int line, ast_t * receiver, ast_t* identifier, ast_t * body)
     : ast_t (line, COUNT)
     , bind (NULL)
   {
     set (RECEIVER, receiver);
-    set (IDENTIFIER, new ast_identifier_t (line, ""));
+    set (IDENTIFIER, identifier);
     set (BODY, body);
   }
 
