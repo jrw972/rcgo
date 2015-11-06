@@ -17,7 +17,8 @@ two_reactions.sh \
 same_port.sh \
 initializer_args.rc \
 var.rc \
-logical_operators.rc
+logical_operators.rc \
+integer_literals.rc
 
 EXTRA_DIST = $(TESTS) \
 helpers.sh \

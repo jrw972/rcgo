@@ -181,15 +181,18 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
   return LITERAL;
 }
 
--?(0|([1-9][0-9]*)|(0x[0-9a-fA-F]+)) {
-  int base = 10;
-  if (yyleng >= 2 && yytext[0] == '0' && yytext[1] == 'x')
-    {
-      base = 16;
-    }
+[1-9][0-9]* {
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), strtol (yytext, NULL, 10)));
+  return LITERAL;
+}
 
-    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), strtol (yytext, NULL, base)));
+0[0-7]* {
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), strtol (yytext, NULL, 8)));
+  return LITERAL;
+}
 
+0[xX][0-9a-fA-F]+ {
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), strtol (yytext, NULL, 16)));
   return LITERAL;
 }
 
