@@ -1,0 +1,54 @@
+#!/usr/bin/env rc
+
+func test (num uint; desc +const []uint8; status bool) {
+  if status {
+    println (`ok `, num, ` - `, desc);
+  } else {
+    println (`not ok `, num, ` - `, desc);
+  }
+}
+
+type Test component { };
+
+init (this *Test) Main () {
+  println (`1..12`);
+
+  {
+    test (1, `'a'`, 'a' == 0x61);
+  }
+  {
+    test (2, `'ä' # TODO`, false);
+  }
+  {
+    test (3, `'本' # TODO`, false);
+  }
+  {
+    test (4, `'\t'`, '\t' == 0x09);
+  }
+  {
+    test (5, `'\000'`, '\000' == 0);
+  }
+  {
+    test (6, `'\007'`, '\007' == 007);
+  }
+  {
+    test (7, `'\377'`, '\377' == 0377);
+  }
+  {
+    test (8, `'\x07'`, '\x07' == 0x07);
+  }
+  {
+    test (9, `'\xff'`, '\xff' == 0xff);
+  }
+  {
+    test (10, `'\u12e4'`, '\u12e4' == 0x12e4);
+  }
+  {
+    test (11, `'\U00101234'`, '\U00101234' == 0x00101234);
+  }
+  {
+    test (12, `'\''`, '\'' == 0x27);
+  }
+}
+
+instance t Test Main ();

@@ -20,7 +20,9 @@ var.rc \
 logical_operators.rc \
 integer_literals.rc \
 float_literals.rc \
-imaginary_literals.rc
+imaginary_literals.rc \
+rune_literals.rc \
+illegal_rune_literals.sh
 
 EXTRA_DIST = $(TESTS) \
 helpers.sh \
@@ -120,4 +122,10 @@ two_port_calls.rc \
 reaction_param_activation.rc \
 return_leak.rc \
 two_reactions.rc \
-same_port.rc
+same_port.rc \
+too_many_characters.rc \
+too_few_hexadecimal_digits.rc \
+too_few_octal_digits.rc \
+surrogate_half.rc \
+invalid_unicode_code_point.rc \
+illegal_octal.rc

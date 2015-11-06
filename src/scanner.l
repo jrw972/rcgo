@@ -11,10 +11,42 @@
 
 using namespace Type;
 
-  static char* ParseInterprettedString (unsigned int line, char* pos, char* limit, char* out);
+ int octalvalue (char c) {
+   return c - '0';
+ }
+
+ int hexvalue (char c) {
+   if (c >= '0' && c <= '9') {
+     return c - '0';
+   }
+   if (c >= 'a' && c <= 'f') {
+     return c - 'a' + 10;
+   }
+   if (c >= 'A' && c <= 'F') {
+     return c - 'A' + 10;
+   }
+   not_reached;
+ }
+
+ void validUnicode (unsigned int line, int u) {
+   if (u > 0x10FFFF) {
+     error_at_line (-1, 0, Location::StaticFile.c_str (), line,
+                    "Unicode value is out of range (E135)");
+   }
+
+   if (u >= 0xD800 && u <= 0xDFFF) {
+     error_at_line (-1, 0, Location::StaticFile.c_str (), line,
+                    "illegal surrogate pair (E136)");
+   }
+ }
+
+ static char* ParseInterprettedString (unsigned int line, char* pos, char* limit, char* out);
 %}
 
 %s IN_COMMENT
+
+OCTAL [0-7]
+HEXADECIMAL [0-9a-fA-F]
 
 DECIMALS [0-9]+
 EXPONENT [eE][+-]?{DECIMALS}
@@ -173,12 +205,12 @@ FLOAT {DECIMALS}"."{DECIMALS}?{EXPONENT}?|{DECIMALS}{EXPONENT}|"."{DECIMALS}{EXP
   return LITERAL;
 }
 
-0[0-7]* {
+0{OCTAL}* {
   yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), strtol (yytext, NULL, 8)));
   return LITERAL;
 }
 
-0[xX][0-9a-fA-F]+ {
+0[xX]{HEXADECIMAL}+ {
   yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), strtol (yytext, NULL, 16)));
   return LITERAL;
 }
@@ -190,6 +222,94 @@ FLOAT {DECIMALS}"."{DECIMALS}?{EXPONENT}?|{DECIMALS}{EXPONENT}|"."{DECIMALS}{EXP
 
 ({DECIMALS}|{FLOAT})i {
   yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Complex::Instance (), Complex::ValueType::make (0, strtod (yytext, NULL))));
+  return LITERAL;
+}
+
+'[^'\n]' {
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), yytext[1]));
+  return LITERAL;
+}
+
+'\\[abfnrtv\\']' {
+  switch (yytext[2]) {
+  case 'a':
+    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), '\a'));
+    break;
+  case 'b':
+    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), '\b'));
+    break;
+  case 'f':
+    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), '\f'));
+    break;
+  case 'n':
+    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), '\n'));
+    break;
+  case 'r':
+    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), '\r'));
+    break;
+  case 't':
+    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), '\t'));
+    break;
+  case 'v':
+    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), '\v'));
+    break;
+  case '\\':
+    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), '\\'));
+    break;
+  case '\'':
+    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), '\''));
+    break;
+  default:
+    not_reached;
+  }
+
+  return LITERAL;
+}
+
+'\\{OCTAL}{3}' {
+  int x =
+    (octalvalue (yytext[2]) << 6) |
+    (octalvalue (yytext[3]) << 3) |
+    (octalvalue (yytext[4]) << 0);
+  if (x > 255) {
+    error_at_line (-1, 0, Location::StaticFile.c_str (), yylloc,
+                   "octal escape is out of range (E134)");
+  }
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), x));
+  return LITERAL;
+}
+
+'\\x{HEXADECIMAL}{2}' {
+  int x =
+    (hexvalue (yytext[3]) << 4) |
+    (hexvalue (yytext[4]) << 0);
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), x));
+  return LITERAL;
+}
+
+'\\u{HEXADECIMAL}{4}' {
+  int x =
+    (hexvalue (yytext[3]) << 12) |
+    (hexvalue (yytext[4]) << 8) |
+    (hexvalue (yytext[5]) << 4) |
+    (hexvalue (yytext[6]) << 0);
+  validUnicode (yylloc, x);
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), x));
+  return LITERAL;
+}
+
+'\\U{HEXADECIMAL}{8}' {
+  int x =
+    (hexvalue (yytext[3]) << 28) |
+    (hexvalue (yytext[4]) << 24) |
+    (hexvalue (yytext[5]) << 20) |
+    (hexvalue (yytext[6]) << 16) |
+    (hexvalue (yytext[7]) << 12) |
+    (hexvalue (yytext[8]) << 8) |
+    (hexvalue (yytext[9]) << 4) |
+    (hexvalue (yytext[10]) << 0);
+  validUnicode (yylloc, x);
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), x));
   return LITERAL;
 }
 
