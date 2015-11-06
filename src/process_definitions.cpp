@@ -370,22 +370,22 @@ struct check_visitor : public ast_visitor_t
     typed_value_t right = CheckAndImplicitlyDereference (node.right_ref ());
     switch (node.arithmetic)
       {
-      case MULTIPLY:
+      case Multiply:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::Multiply (node.location, left, right);
         return;
-      case DIVIDE:
+      case Divide:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::Divide (node.location, left, right);
         return;
-      case MODULUS:
+      case Modulus:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::Modulus (node.location, left, right);
         return;
-      case LEFT_SHIFT:
+      case LeftShift:
         if (left.value.present && !right.value.present)
           {
             left = ImplicitlyConvertToDefault (node.left_ref ());
@@ -396,7 +396,7 @@ struct check_visitor : public ast_visitor_t
           }
         node.typed_value = typed_value_t::LeftShift (node.location, left, right);
         return;
-      case RIGHT_SHIFT:
+      case RightShift:
         if (left.value.present && !right.value.present)
           {
             left = ImplicitlyConvertToDefault (node.left_ref ());
@@ -407,72 +407,72 @@ struct check_visitor : public ast_visitor_t
           }
         node.typed_value = typed_value_t::RightShift (node.location, left, right);
         return;
-      case BIT_AND:
+      case BitAnd:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::BitAnd (node.location, left, right);
         return;
-      case BIT_AND_NOT:
+      case BitAndNot:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::BitAndNot (node.location, left, right);
         return;
-      case ADD:
+      case Add:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::Add (node.location, left, right);
         return;
-      case SUBTRACT:
+      case Subtract:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::Subtract (node.location, left, right);
         return;
-      case BIT_OR:
+      case BitOr:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::BitOr (node.location, left, right);
         return;
-      case BIT_XOR:
+      case BitXor:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::BitXor (node.location, left, right);
         return;
-      case EQUAL:
+      case Equal:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::Equal (node.location, left, right);
         return;
-      case NOT_EQUAL:
+      case NotEqual:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::NotEqual (node.location, left, right);
         return;
-      case LESS_THAN:
+      case LessThan:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::LessThan (node.location, left, right);
         return;
-      case LESS_EQUAL:
+      case LessEqual:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::LessEqual (node.location, left, right);
         return;
-      case MORE_THAN:
+      case MoreThan:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::MoreThan (node.location, left, right);
         return;
-      case MORE_EQUAL:
+      case MoreEqual:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::MoreEqual (node.location, left, right);
         return;
-      case LOGIC_OR:
+      case LogicOr:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::LogicOr (node.location, left, right);
         return;
-      case LOGIC_AND:
+      case LogicAnd:
         left = ImplicitlyConvert (node.left_ref (), right.type);
         right = ImplicitlyConvert (node.right_ref (), left.type);
         node.typed_value = typed_value_t::LogicAnd (node.location, left, right);

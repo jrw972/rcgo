@@ -1,6 +1,7 @@
 #include "runtime.hpp"
 #include "Callable.hpp"
 #include "SymbolVisitor.hpp"
+#include "types.hpp"
 
 namespace runtime
 {
@@ -1176,58 +1177,58 @@ namespace runtime
       {
         switch (node.arithmetic)
           {
-          case MULTIPLY:
+          case ::Multiply:
             evaluate (exec, node, Multiply ());
             break;
-          case DIVIDE:
+          case ::Divide:
             evaluate (exec, node, Divide ());
             break;
-          case MODULUS:
+          case ::Modulus:
             evaluate (exec, node, Modulus ());
             break;
-          case LEFT_SHIFT:
+          case ::LeftShift:
             evaluate (exec, node, LeftShift ());
             break;
-          case RIGHT_SHIFT:
+          case ::RightShift:
             evaluate (exec, node, RightShift ());
             break;
-          case BIT_AND:
+          case ::BitAnd:
             evaluate (exec, node, BitAnd ());
             break;
-          case BIT_AND_NOT:
+          case ::BitAndNot:
             evaluate (exec, node, BitAndNot ());
             break;
-          case ADD:
+          case ::Add:
             evaluate (exec, node, Add ());
             break;
-          case SUBTRACT:
+          case ::Subtract:
             evaluate (exec, node, Subtract ());
             break;
-          case BIT_OR:
+          case ::BitOr:
             evaluate (exec, node, BitOr ());
             break;
-          case BIT_XOR:
+          case ::BitXor:
             evaluate (exec, node, BitXor ());
             break;
-          case EQUAL:
+          case ::Equal:
             evaluate (exec, node, Equal ());
             break;
-          case NOT_EQUAL:
+          case ::NotEqual:
             evaluate (exec, node, NotEqual ());
             break;
-          case LESS_THAN:
+          case ::LessThan:
             evaluate (exec, node, LessThan ());
             break;
-          case LESS_EQUAL:
+          case ::LessEqual:
             evaluate (exec, node, LessEqual ());
             break;
-          case MORE_THAN:
+          case ::MoreThan:
             evaluate (exec, node, MoreThan ());
             break;
-          case MORE_EQUAL:
+          case ::MoreEqual:
             evaluate (exec, node, MoreEqual ());
             break;
-          case LOGIC_AND:
+          case ::LogicAnd:
           {
             evaluate_expr (exec, node.left ());
             Bool::ValueType b;
@@ -1242,7 +1243,7 @@ namespace runtime
               }
           }
           break;
-          case LOGIC_OR:
+          case ::LogicOr:
           {
             evaluate_expr (exec, node.left ());
             Bool::ValueType b;

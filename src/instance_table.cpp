@@ -197,38 +197,38 @@ evaluate_static (const ast_t* node, const static_memory_t& memory)
     {
       switch (node.arithmetic)
         {
-        case MULTIPLY:
-        case DIVIDE:
-        case MODULUS:
-        case LEFT_SHIFT:
-        case RIGHT_SHIFT:
-        case BIT_AND:
-        case BIT_AND_NOT:
+        case Multiply:
+        case Divide:
+        case Modulus:
+        case LeftShift:
+        case RightShift:
+        case BitAnd:
+        case BitAndNot:
           unimplemented;
 
-        case ADD:
-        case SUBTRACT:
-        case BIT_OR:
-        case BIT_XOR:
+        case Add:
+        case Subtract:
+        case BitOr:
+        case BitXor:
           unimplemented;
 
-        case EQUAL:
+        case Equal:
           unimplemented;
-        case NOT_EQUAL:
+        case NotEqual:
         {
           static_value_t left = evaluate_static (node.left (), memory);
           static_value_t right = evaluate_static (node.right (), memory);
           result = static_value_t::make_value (left.value != right.value);
         }
         break;
-        case LESS_THAN:
-        case LESS_EQUAL:
-        case MORE_THAN:
-        case MORE_EQUAL:
+        case LessThan:
+        case LessEqual:
+        case MoreThan:
+        case MoreEqual:
           unimplemented;
-        case LOGIC_AND:
+        case LogicAnd:
           unimplemented;
-        case LOGIC_OR:
+        case LogicOr:
           unimplemented;
         }
     }

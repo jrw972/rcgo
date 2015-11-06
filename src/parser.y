@@ -68,7 +68,7 @@
 
 %token ACTION ACTIVATE BIND BREAK CASE CHANGE COMPONENT CONST CONTINUE DEFAULT ELSE ENUM FALLTHROUGH FOR FOREIGN_KW FUNC GETTER GOTO HEAP IF INIT INSTANCE INTERFACE MAP PULL PUSH RANGE REACTION RETURN_KW STRUCT SWITCH TYPE VAR
 
-%token ADD_ASSIGN AND_NOT_TOKEN RIGHT_ARROW LEFT_ARROW DECREMENT DOTDOT EQUAL_TOKEN INCREMENT LESS_EQUAL_TOKEN LEFT_SHIFT_TOKEN LOGIC_AND_TOKEN LOGIC_OR_TOKEN MORE_EQUAL_TOKEN NOT_EQUAL_TOKEN RIGHT_SHIFT_TOKEN
+%token LEFT_SHIFT RIGHT_SHIFT AND_NOT ADD_ASSIGN SUBTRACT_ASSIGN MULTIPLY_ASSIGN DIVIDE_ASSIGN MODULUS_ASSIGN AND_ASSIGN OR_ASSIGN XOR_ASSIGN LEFT_SHIFT_ASSIGN RIGHT_SHIFT_ASSIGN AND_NOT_ASSIGN LOGIC_AND LOGIC_OR LEFT_ARROW RIGHT_ARROW INCREMENT DECREMENT EQUAL NOT_EQUAL LESS_EQUAL MORE_EQUAL SHORT_ASSIGN DOTDOTDOT
 
 %%
 
@@ -170,7 +170,7 @@ optional_semicolon: /* Empty. */
 | ';'
 
 BindStatement: Expression RIGHT_ARROW Expression ';' { $$ = new ast_bind_push_port_statement_t (@1, $1, $3); } /* CHECK */
-| Expression RIGHT_ARROW Expression DOTDOT Expression';' { $$ = new ast_bind_push_port_param_statement_t (@1, $1, $3, $5); } /* CHECK */
+| Expression RIGHT_ARROW Expression DOTDOTDOT Expression';' { $$ = new ast_bind_push_port_param_statement_t (@1, $1, $3, $5); } /* CHECK */
 | Expression LEFT_ARROW Expression ';' { $$ = new ast_bind_pull_port_statement_t (@1, $1, $3); } /* CHECK */
 
 Block: '{' StatementList '}' { $$ = $2; }
@@ -201,7 +201,7 @@ ActivateStatement: ACTIVATE OptionalPushPortCallList Block { $$ = new ast_activa
 
 ChangeStatement: CHANGE '(' Expression ',' IDENTIFIER ')' Block { $$ = new ast_change_statement_t (@1, $3, $5, $7); }
 
-ForIotaStatement: FOR IDENTIFIER DOTDOT Expression Block { $$ = new ast_for_iota_statement_t (@1, $2, $4, $5); }
+ForIotaStatement: FOR IDENTIFIER DOTDOTDOT Expression Block { $$ = new ast_for_iota_statement_t (@1, $2, $4, $5); }
 
 ReturnStatement: RETURN_KW Expression ';' { $$ = new ast_return_statement_t (@1, $2); }
 
@@ -273,33 +273,33 @@ FieldList: /* empty */ { $$ = new ast_field_list_type_spec_t (yyloc); }
 Expression: OrExpression { $$ = $1; }
 
 OrExpression: AndExpression { $$ = $1; }
-| AndExpression LOGIC_OR_TOKEN OrExpression { $$ = new ast_binary_arithmetic_expr_t (@1, LOGIC_OR, $1, $3); }
+| AndExpression LOGIC_OR OrExpression { $$ = new ast_binary_arithmetic_expr_t (@1, LogicOr, $1, $3); }
 
 AndExpression: CompareExpression { $$ = $1; }
-| CompareExpression LOGIC_AND_TOKEN AndExpression { $$ = new ast_binary_arithmetic_expr_t (@1, LOGIC_AND, $1, $3); }
+| CompareExpression LOGIC_AND AndExpression { $$ = new ast_binary_arithmetic_expr_t (@1, LogicAnd, $1, $3); }
 
 CompareExpression: AddExpression { $$ = $1; }
-| AddExpression EQUAL_TOKEN CompareExpression { $$ = new ast_binary_arithmetic_expr_t (@1, EQUAL, $1, $3); }
-| AddExpression NOT_EQUAL_TOKEN CompareExpression { $$ = new ast_binary_arithmetic_expr_t (@1, NOT_EQUAL, $1, $3); }
-| AddExpression '<' CompareExpression { $$ = new ast_binary_arithmetic_expr_t (@1, LESS_THAN, $1, $3); }
-| AddExpression LESS_EQUAL_TOKEN CompareExpression { $$ = new ast_binary_arithmetic_expr_t (@1, LESS_EQUAL, $1, $3); }
-| AddExpression '>' CompareExpression { $$ = new ast_binary_arithmetic_expr_t (@1, MORE_THAN, $1, $3); }
-| AddExpression MORE_EQUAL_TOKEN CompareExpression { $$ = new ast_binary_arithmetic_expr_t (@1, MORE_EQUAL, $1, $3); }
+| AddExpression EQUAL CompareExpression { $$ = new ast_binary_arithmetic_expr_t (@1, Equal, $1, $3); }
+| AddExpression NOT_EQUAL CompareExpression { $$ = new ast_binary_arithmetic_expr_t (@1, NotEqual, $1, $3); }
+| AddExpression '<' CompareExpression { $$ = new ast_binary_arithmetic_expr_t (@1, LessThan, $1, $3); }
+| AddExpression LESS_EQUAL CompareExpression { $$ = new ast_binary_arithmetic_expr_t (@1, LessEqual, $1, $3); }
+| AddExpression '>' CompareExpression { $$ = new ast_binary_arithmetic_expr_t (@1, MoreThan, $1, $3); }
+| AddExpression MORE_EQUAL CompareExpression { $$ = new ast_binary_arithmetic_expr_t (@1, MoreEqual, $1, $3); }
 
 AddExpression: MultiplyExpression { $$ = $1; }
-| MultiplyExpression '+' AddExpression { $$ = new ast_binary_arithmetic_expr_t (@1, ADD, $1, $3); }
-| MultiplyExpression '-' AddExpression { $$ = new ast_binary_arithmetic_expr_t (@1, SUBTRACT, $1, $3); }
-| MultiplyExpression '|' AddExpression { $$ = new ast_binary_arithmetic_expr_t (@1, BIT_OR, $1, $3); }
-| MultiplyExpression '^' AddExpression { $$ = new ast_binary_arithmetic_expr_t (@1, BIT_XOR, $1, $3); }
+| MultiplyExpression '+' AddExpression { $$ = new ast_binary_arithmetic_expr_t (@1, Add, $1, $3); }
+| MultiplyExpression '-' AddExpression { $$ = new ast_binary_arithmetic_expr_t (@1, Subtract, $1, $3); }
+| MultiplyExpression '|' AddExpression { $$ = new ast_binary_arithmetic_expr_t (@1, BitOr, $1, $3); }
+| MultiplyExpression '^' AddExpression { $$ = new ast_binary_arithmetic_expr_t (@1, BitXor, $1, $3); }
 
 MultiplyExpression: UnaryExpression { $$ = $1; }
-| UnaryExpression '*' MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, MULTIPLY, $1, $3); }
-| UnaryExpression '/' MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, DIVIDE, $1, $3); }
-| UnaryExpression '%' MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, MODULUS, $1, $3); }
-| UnaryExpression LEFT_SHIFT_TOKEN MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, LEFT_SHIFT, $1, $3); }
-| UnaryExpression RIGHT_SHIFT_TOKEN MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, RIGHT_SHIFT, $1, $3); }
-| UnaryExpression '&' MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, BIT_AND, $1, $3); }
-| UnaryExpression AND_NOT_TOKEN MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, BIT_AND_NOT, $1, $3); }
+| UnaryExpression '*' MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, Multiply, $1, $3); }
+| UnaryExpression '/' MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, Divide, $1, $3); }
+| UnaryExpression '%' MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, Modulus, $1, $3); }
+| UnaryExpression LEFT_SHIFT MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, LeftShift, $1, $3); }
+| UnaryExpression RIGHT_SHIFT MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, RightShift, $1, $3); }
+| UnaryExpression '&' MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, BitAnd, $1, $3); }
+| UnaryExpression AND_NOT MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, BitAndNot, $1, $3); }
 
 UnaryExpression: PrimaryExpression { $$ = $1; }
 | '+' UnaryExpression { unimplemented; }

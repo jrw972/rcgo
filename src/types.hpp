@@ -62,76 +62,76 @@ struct pull_port_t
 
 enum BinaryArithmetic
 {
-  MULTIPLY,
-  DIVIDE,
-  MODULUS,
-  LEFT_SHIFT,
-  RIGHT_SHIFT,
-  BIT_AND,
-  BIT_AND_NOT,
+  Multiply,
+  Divide,
+  Modulus,
+  LeftShift,
+  RightShift,
+  BitAnd,
+  BitAndNot,
 
-  ADD,
-  SUBTRACT,
-  BIT_OR,
-  BIT_XOR,
+  Add,
+  Subtract,
+  BitOr,
+  BitXor,
 
-  EQUAL,
-  NOT_EQUAL,
-  LESS_THAN,
-  LESS_EQUAL,
-  MORE_THAN,
-  MORE_EQUAL,
+  Equal,
+  NotEqual,
+  LessThan,
+  LessEqual,
+  MoreThan,
+  MoreEqual,
 
-  LOGIC_OR,
+  LogicOr,
 
-  LOGIC_AND,
+  LogicAnd,
 };
 
 inline const char* binary_arithmetic_symbol (BinaryArithmetic ba)
 {
   switch (ba)
     {
-    case MULTIPLY:
+    case Multiply:
       return "*";
-    case DIVIDE:
+    case Divide:
       return "/";
-    case MODULUS:
+    case Modulus:
       return "%";
-    case LEFT_SHIFT:
+    case LeftShift:
       return "<<";
-    case RIGHT_SHIFT:
+    case RightShift:
       return ">>";
-    case BIT_AND:
+    case BitAnd:
       return "&";
-    case BIT_AND_NOT:
+    case BitAndNot:
       return "&^";
 
-    case ADD:
+    case Add:
       return "+";
-    case SUBTRACT:
+    case Subtract:
       return "-";
-    case BIT_OR:
+    case BitOr:
       return "|";
-    case BIT_XOR:
+    case BitXor:
       return "^";
 
-    case EQUAL:
+    case Equal:
       return "==";
-    case NOT_EQUAL:
+    case NotEqual:
       return "!=";
-    case LESS_THAN:
+    case LessThan:
       return "<";
-    case LESS_EQUAL:
+    case LessEqual:
       return "<=";
-    case MORE_THAN:
+    case MoreThan:
       return ">";
-    case MORE_EQUAL:
+    case MoreEqual:
       return ">=";
 
-    case LOGIC_OR:
+    case LogicOr:
       return "||";
 
-    case LOGIC_AND:
+    case LogicAnd:
       return "&&";
     }
 
