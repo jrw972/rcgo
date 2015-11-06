@@ -358,10 +358,19 @@ struct check_visitor : public ast_visitor_t
     node.typed_value = out;
   }
 
-  void visit (ast_logic_not_expr_t& node)
+  void visit (ast_unary_arithmetic_expr_t& node)
   {
     typed_value_t in = CheckAndImplicitlyDereference (node.child_ref ());
-    node.typed_value = in.LogicNot (node.location);
+    switch (node.arithmetic)
+      {
+      case LogicNot:
+        node.typed_value = in.LogicNot (node.location);
+        return;
+      case Negate:
+        node.typed_value = in.Negate (node.location);
+        return;
+      }
+    not_reached;
   }
 
   void visit (ast_binary_arithmetic_expr_t& node)
@@ -478,7 +487,6 @@ struct check_visitor : public ast_visitor_t
         node.typed_value = typed_value_t::LogicAnd (node.location, left, right);
         return;
       }
-
     not_reached;
   }
 
@@ -1389,7 +1397,7 @@ mutates_check_statement (ast_t * node)
       node.base ()->accept (*this);
     }
 
-    void visit (ast_logic_not_expr_t& node)
+    void visit (ast_unary_arithmetic_expr_t& node)
     {
       node.visit_children (*this);
     }

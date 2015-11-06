@@ -1003,7 +1003,7 @@ struct LogicNotImpl
   void operator() (const T& type)
   {
     error_at_line (-1, 0, location.File.c_str (), location.Line,
-                   "! cannot be applied to %s (E87)", type.ToString ().c_str ());
+                   "! cannot be applied to %s (E87)", in.type->ToString ().c_str ());
 
   }
 };
@@ -1137,6 +1137,38 @@ struct SymmetricBinary
                    "%s cannot be applied to %s (E133)", Op (), type.ToString ().c_str ());
   }
 };
+
+struct NegateImpl
+{
+  const Location& location;
+  typed_value_t& out;
+  const typed_value_t& in;
+  NegateImpl (const Location& loc, typed_value_t& o, const typed_value_t& i) : location (loc), out (o), in (i) { }
+
+  void operator() (const Type::Integer& type)
+  {
+    out.value.ref (type) = -in.value.ref (type);
+  }
+
+  template <typename T>
+  void operator() (const T& type)
+  {
+    error_at_line (-1, 0, location.File.c_str (), location.Line,
+                   "- cannot be applied to %s (E87)", in.type->ToString ().c_str ());
+
+  }
+};
+
+typed_value_t
+typed_value_t::Negate (const Location& location) const
+{
+  assert (!IsError ());
+  RequireValue (location);
+  typed_value_t out = *this;
+  NegateImpl c (location, out, *this);
+  singleDispatch (this->type->UnderlyingType (), c);
+  return out;
+}
 
 struct MultiplyOp
 {

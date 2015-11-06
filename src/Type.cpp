@@ -504,6 +504,7 @@ type::Accept (Visitor& visitor) const \
   ACCEPT(Nil)
   ACCEPT(Boolean)
   ACCEPT(Integer)
+  ACCEPT(Float)
   ACCEPT(Array)
   ACCEPT(Slice)
   ACCEPT(Template)
@@ -721,8 +722,8 @@ type::Accept (Visitor& visitor) const \
 #define INSTANCE(type) const type* \
 type::Instance () \
 { \
-  static type i; \
-  return &i; \
+  static type* i = new type ();                 \
+  return i; \
 }
 
   INSTANCE(Void)
@@ -730,6 +731,7 @@ type::Instance () \
   INSTANCE(Nil)
   INSTANCE(Boolean)
   INSTANCE(Integer)
+  INSTANCE(Float)
 
   Struct::Struct (bool insert_runtime) : offset_ (0), alignment_ (0)
   {
@@ -842,6 +844,7 @@ type::Instance () \
 
       void visit (const Boolean& type) { }
       void visit (const Integer& type) { }
+      void visit (const Float& type) { }
     };
     visitor v;
     type->Accept (v);
@@ -1309,7 +1312,13 @@ type::Instance () \
     return &NamedInt;
   }
 
+  const Type*
+  Float::DefaultType () const
+  {
+    return &NamedFloat64;
+  }
 
   NamedType NamedBool ("bool", Bool::Instance ());
   NamedType NamedInt ("int", Int::Instance ());
+  NamedType NamedFloat64 ("float64", Float64::Instance ());
 }

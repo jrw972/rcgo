@@ -983,17 +983,20 @@ struct ast_slice_expr_t : public ast_expr_t
   }
 };
 
-struct ast_logic_not_expr_t : public ast_unary_expr_t
+struct ast_unary_arithmetic_expr_t : public ast_unary_expr_t
 {
-  ast_logic_not_expr_t (unsigned int line, ast_t* child)
+  ast_unary_arithmetic_expr_t (unsigned int line, UnaryArithmetic a, ast_t* child)
     : ast_unary_expr_t (line, child)
+    , arithmetic (a)
   { }
+
+  const UnaryArithmetic arithmetic;
 
   void accept (ast_visitor_t& visitor);
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const
   {
-    out << "logic_not_expr";
+    out << unary_arithmetic_symbol (arithmetic);
   }
 };
 
@@ -2519,7 +2522,7 @@ struct ast_visitor_t
   {
     default_action (ast);
   }
-  virtual void visit (ast_logic_not_expr_t& ast)
+  virtual void visit (ast_unary_arithmetic_expr_t& ast)
   {
     default_action (ast);
   }
@@ -2783,7 +2786,7 @@ struct ast_const_visitor_t
   {
     default_action (ast);
   }
-  virtual void visit (const ast_logic_not_expr_t& ast)
+  virtual void visit (const ast_unary_arithmetic_expr_t& ast)
   {
     default_action (ast);
   }

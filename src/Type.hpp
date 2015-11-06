@@ -31,6 +31,7 @@ namespace Type
       NAMED,   // Types named with a type declaration.
     };
     Type () : pointer_ (NULL), slice_ (NULL), heap_ (NULL) { }
+    virtual ~Type () { }
     virtual void Accept (Visitor& visitor) const = 0;
     virtual std::string ToString () const = 0;
     virtual size_t Alignment () const = 0;
@@ -211,15 +212,15 @@ namespace Type
     }
     static const Scalar<T, S>* Instance ()
     {
-      return &instance_;
+      static Scalar<T, S>* instance_ = new Scalar<T, S> ();
+      return instance_;
     }
   private:
     Scalar<T, S> () { }
-    static Scalar<T, S> instance_;
   };
 
-  template <typename T, typename S>
-  Scalar<T,S> Scalar<T,S>::instance_;
+  // template <typename T, typename S>
+  // Scalar<T,S> Scalar<T,S>::instance_;
 
   StringReturner(EnumString, "<enum>");
   typedef Scalar<size_t, EnumString> Enum;
@@ -267,7 +268,7 @@ namespace Type
   typedef Scalar<float, Float32String> Float32;
 
   StringReturner(Float64String, "<float64>");
-  typedef Scalar<float, Float64String> Float64;
+  typedef Scalar<double, Float64String> Float64;
 
   // Helper class for types that have a base type.
   class BaseType
@@ -636,6 +637,21 @@ namespace Type
     Integer () { }
   };
 
+  class Float : public Untyped
+  {
+  public:
+    typedef double ValueType;
+    virtual const Type* DefaultType () const;
+    void Accept (Visitor& visitor) const;
+    std::string ToString () const
+    {
+      return "<<float>>";
+    }
+    static const Float* Instance ();
+  private:
+    Float () { }
+  };
+
   class Template : public Type
   {
   public:
@@ -805,6 +821,10 @@ namespace Type
     {
       default_action (type);
     }
+    virtual void visit (const Float& type)
+    {
+      default_action (type);
+    }
     virtual void visit (const Void& type)
     {
       default_action (type);
@@ -963,6 +983,7 @@ namespace Type
 
   extern NamedType NamedBool;
   extern NamedType NamedInt;
+  extern NamedType NamedFloat64;
 }
 
 #define type_not_reached(type) do { std::cerr << type << std::endl; not_reached; } while (0);

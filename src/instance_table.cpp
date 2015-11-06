@@ -727,7 +727,7 @@ transitive_closure (const instance_table_t& table,
       node.visit_children (*this);
     }
 
-    void visit (const ast_logic_not_expr_t& node)
+    void visit (const ast_unary_arithmetic_expr_t& node)
     {
       node.visit_children (*this);
     }

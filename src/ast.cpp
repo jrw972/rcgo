@@ -95,7 +95,7 @@ ACCEPT (ast_slice_expr_t)
 ACCEPT (ast_indexed_port_call_expr_t)
 ACCEPT (ast_list_expr_t)
 ACCEPT (ast_literal_expr_t)
-ACCEPT (ast_logic_not_expr_t)
+ACCEPT (ast_unary_arithmetic_expr_t)
 ACCEPT (ast_push_port_call_expr_t)
 ACCEPT (ast_select_expr_t)
 

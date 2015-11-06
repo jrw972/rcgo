@@ -1,0 +1,54 @@
+#!/usr/bin/env rc
+
+func test (num uint; desc +const []uint8; status bool) {
+  if status {
+    println (`ok `, num, ` - `, desc);
+  } else {
+    println (`not ok `, num, ` - `, desc);
+  }
+}
+
+type Test component { };
+
+init (this *Test) Main () {
+  println (`1..9`);
+
+  {
+    const x = 0.;
+    test (1, `0. # TODO`, false);
+  }
+  {
+    const x = 72.40;
+    test (2, `72.40 # TODO`, false);
+  }
+  {
+    const x = 072.40;
+    test (3, `072.40 # TODO`, false);
+  }
+  {
+    const x = 2.71828;
+    test (4, `2.71828 # TODO`, false);
+  }
+  {
+    const x = 1.e+0;
+    test (5, `1.e+0 # TODO`, false);
+  }
+  {
+    const x = 6.67428e-11;
+    test (6, `6.67428e-11 # TODO`, false);
+  }
+  {
+    const x = 1E6;
+    test (7, `1E6 # TODO`, false);
+  }
+  {
+    const x = .25;
+    test (8, `.25 # TODO`, false);
+  }
+  {
+    const x = .12345E+5;
+    test (9, `.12345E+5 # TODO`, false);
+  }
+}
+
+instance t Test Main ();

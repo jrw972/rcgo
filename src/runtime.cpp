@@ -1147,12 +1147,22 @@ namespace runtime
         stack_frame_push_address (exec.stack (), offset);
       }
 
-      void visit (const ast_logic_not_expr_t& node)
+      void visit (const ast_unary_arithmetic_expr_t& node)
       {
         evaluate_expr (exec, node.child ());
-        Bool::ValueType b;
-        stack_frame_pop (exec.stack (), b);
-        stack_frame_push<Bool::ValueType> (exec.stack (), !b);
+        switch (node.arithmetic)
+          {
+          case LogicNot:
+          {
+            Bool::ValueType b;
+            stack_frame_pop (exec.stack (), b);
+            stack_frame_push<Bool::ValueType> (exec.stack (), !b);
+          }
+          return;
+          case Negate:
+            unimplemented;
+          }
+        not_reached;
       }
 
       void visit (const ast_implicit_dereference_expr_t& node)

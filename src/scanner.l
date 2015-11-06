@@ -16,23 +16,8 @@ using namespace Type;
 
 %s IN_COMMENT
 
-DECIMAL_DIGIT [0-9]
-HEX_DIGIT [0-9a-fA-F]
-
-DECIMAL1 {DECIMAL_DIGIT}+("."{DECIMAL_DIGIT}*)?
-DECIMAL2 {DECIMAL_DIGIT}*"."{DECIMAL_DIGIT}+
-DECIMAL_EXPONENT [Ee][+-]?{DECIMAL_DIGIT}+
-DECIMAL_NUMBER ({DECIMAL1}|{DECIMAL2}){DECIMAL_EXPONENT}?
-
-HEX1 {HEX_DIGIT}+("."{HEX_DIGIT}*)?
-HEX2 {HEX_DIGIT}*"."{HEX_DIGIT}+
-BINARY_EXPONENT [Pp][+-]?{DECIMAL_DIGIT}+
-HEXADECIMAL_NUMBER (0x|0X)({HEX1}{BINARY_EXPONENT}|{HEX2}{BINARY_EXPONENT}?)
-
-INFINITY ([Ii][Nn][Ff])|([Ii][Nn][Ff][Ii][Nn][Ii][Tt][Yy])
-NAN [Nn][Aa][Nn]
-
-FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
+DECIMALS [0-9]+
+EXPONENT [eE][+-]?{DECIMALS}
 
 %%
 
@@ -196,28 +181,18 @@ FLOAT [+-]?({DECIMAL_NUMBER}|{HEXADECIMAL_NUMBER}|{INFINITY}|{NAN})
   return LITERAL;
 }
 
-{FLOAT}f(32|64) {
-  // TODO:  Fix format to match strtod.
+{DECIMALS}"."{DECIMALS}?{EXPONENT}? {
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Float::Instance (), strtod (yytext, NULL)));
+  return LITERAL;
+}
 
-  const char* ptr = yytext + yyleng;
-  for (; *ptr != 'f'; --ptr) ;;
+{DECIMALS}{EXPONENT} {
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Float::Instance (), strtod (yytext, NULL)));
+  return LITERAL;
+}
 
-  if (strcmp (ptr, "f32") == 0)
-    {
-      yytext[yyleng - 2] = 0;
-      yyleng -= 3;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Float32::Instance (), strtof (yytext, NULL)));
-    }
-  else if (strcmp (ptr, "f64") == 0)
-    {
-      yytext[yyleng - 3] = 0;
-      yyleng -= 3;
-      yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Float64::Instance (), strtod (yytext, NULL)));
-    }
-  else
-    {
-      not_reached;
-    }
+"."{DECIMALS}{EXPONENT}? {
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Float::Instance (), strtod (yytext, NULL)));
   return LITERAL;
 }
 

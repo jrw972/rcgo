@@ -303,8 +303,8 @@ MultiplyExpression: UnaryExpression { $$ = $1; }
 
 UnaryExpression: PrimaryExpression { $$ = $1; }
 | '+' UnaryExpression { unimplemented; }
-| '-' UnaryExpression { unimplemented; }
-| '!' UnaryExpression { $$ = new ast_logic_not_expr_t (@1, $2); }
+| '-' UnaryExpression { $$ = new ast_unary_arithmetic_expr_t (@1, Negate, $2); }
+| '!' UnaryExpression { $$ = new ast_unary_arithmetic_expr_t (@1, LogicNot, $2); }
 | '^' UnaryExpression { unimplemented; }
 | '*' UnaryExpression { $$ = new ast_dereference_expr_t (@1, $2); }
 | '&' UnaryExpression { $$ = new ast_address_of_expr_t (@1, $2); }

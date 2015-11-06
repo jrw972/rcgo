@@ -60,6 +60,25 @@ struct pull_port_t
   Getter* getter;
 };
 
+enum UnaryArithmetic
+{
+  LogicNot,
+  Negate,
+};
+
+inline const char* unary_arithmetic_symbol (UnaryArithmetic ua)
+{
+  switch (ua)
+    {
+    case LogicNot:
+      return "!";
+    case Negate:
+      return "-";
+    }
+
+  not_reached;
+}
+
 enum BinaryArithmetic
 {
   Multiply,
