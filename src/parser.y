@@ -66,7 +66,7 @@
 %type <mutability> Mutability
 %type <mutability> DereferenceMutability
 
-%token ACTION ACTIVATE BIND CHANGE COMPONENT CONST ELSE ENUM FOR FOREIGN_KW FUNC GETTER HEAP IF INIT INSTANCE PULL PUSH REACTION RETURN_KW STRUCT TYPE VAR WHILE
+%token ACTION ACTIVATE BIND BREAK CASE CHANGE COMPONENT CONST CONTINUE DEFAULT ELSE ENUM FALLTHROUGH FOR FOREIGN_KW FUNC GETTER GOTO HEAP IF INIT INSTANCE INTERFACE MAP PULL PUSH RANGE REACTION RETURN_KW STRUCT SWITCH TYPE VAR
 
 %token ADD_ASSIGN AND_NOT_TOKEN RIGHT_ARROW LEFT_ARROW DECREMENT DOTDOT EQUAL_TOKEN INCREMENT LESS_EQUAL_TOKEN LEFT_SHIFT_TOKEN LOGIC_AND_TOKEN LOGIC_OR_TOKEN MORE_EQUAL_TOKEN NOT_EQUAL_TOKEN RIGHT_SHIFT_TOKEN
 
@@ -243,7 +243,7 @@ IfStatement: IF Expression Block { $$ = new ast_if_statement_t (@1, $2, $3, new 
 | IF SimpleStatement ';' Expression Block ELSE IfStatement { unimplemented; }
 | IF SimpleStatement ';' Expression Block ELSE Block { unimplemented; }
 
-WhileStatement: WHILE Expression Block { $$ = new ast_while_statement_t (@1, $2, $3); }
+WhileStatement: FOR Expression Block { $$ = new ast_while_statement_t (@1, $2, $3); }
 
 IdentifierList: IDENTIFIER { $$ = (new ast_identifier_list_t (@1))->append ($1); }
 | IdentifierList ',' IDENTIFIER { $$ = $1->append ($3); }
