@@ -19,7 +19,8 @@ initializer_args.rc \
 var.rc \
 logical_operators.rc \
 integer_literals.rc \
-float_literals.rc
+float_literals.rc \
+imaginary_literals.rc
 
 EXTRA_DIST = $(TESTS) \
 helpers.sh \

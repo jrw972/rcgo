@@ -19,6 +19,8 @@ using namespace Type;
 DECIMALS [0-9]+
 EXPONENT [eE][+-]?{DECIMALS}
 
+FLOAT {DECIMALS}"."{DECIMALS}?{EXPONENT}?|{DECIMALS}{EXPONENT}|"."{DECIMALS}{EXPONENT}?
+
 %%
 
 \/\/.*                 /* Discard line comments. */
@@ -181,18 +183,13 @@ EXPONENT [eE][+-]?{DECIMALS}
   return LITERAL;
 }
 
-{DECIMALS}"."{DECIMALS}?{EXPONENT}? {
+{FLOAT} {
   yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Float::Instance (), strtod (yytext, NULL)));
   return LITERAL;
 }
 
-{DECIMALS}{EXPONENT} {
-  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Float::Instance (), strtod (yytext, NULL)));
-  return LITERAL;
-}
-
-"."{DECIMALS}{EXPONENT}? {
-  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Float::Instance (), strtod (yytext, NULL)));
+({DECIMALS}|{FLOAT})i {
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Complex::Instance (), Complex::ValueType::make (0, strtod (yytext, NULL))));
   return LITERAL;
 }
 

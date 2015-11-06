@@ -29,6 +29,7 @@ struct value_t
   value_t (const Type::Boolean*  t, Type::Boolean::ValueType v)  : present (true), boolean_value_ (v) { }
   value_t (const Type::Integer*  t, Type::Integer::ValueType v)  : present (true), integer_value_ (v) { }
   value_t (const Type::Float*  t, Type::Float::ValueType v)  : present (true), float_value_ (v) { }
+  value_t (const Type::Complex*  t, Type::Complex::ValueType v)  : present (true), complex_value_ (v) { }
 
   static value_t make_reference (Type::Pointer::ValueType v)
   {
@@ -209,6 +210,7 @@ private:
     Type::Boolean::ValueType boolean_value_;
     Type::Integer::ValueType integer_value_;
     Type::Float::ValueType float_value_;
+    Type::Complex::ValueType complex_value_;
   };
 };
 

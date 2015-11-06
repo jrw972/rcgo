@@ -270,6 +270,22 @@ namespace Type
   StringReturner(Float64String, "<float64>");
   typedef Scalar<double, Float64String> Float64;
 
+  StringReturner(Complex64String, "<complex64>");
+  struct C64
+  {
+    float real;
+    float imag;
+  };
+  typedef Scalar<C64, Complex64String> Complex64;
+
+  StringReturner(Complex128String, "<complex128>");
+  struct C128
+  {
+    double real;
+    double imag;
+  };
+  typedef Scalar<C128, Complex128String> Complex128;
+
   // Helper class for types that have a base type.
   class BaseType
   {
@@ -652,6 +668,32 @@ namespace Type
     Float () { }
   };
 
+  class Complex : public Untyped
+  {
+  public:
+    struct ValueType
+    {
+      double real;
+      double imag;
+      static ValueType make (double r, double i)
+      {
+        ValueType retval;
+        retval.real = r;
+        retval.imag = i;
+        return retval;
+      }
+    };
+    virtual const Type* DefaultType () const;
+    void Accept (Visitor& visitor) const;
+    std::string ToString () const
+    {
+      return "<<complex>>";
+    }
+    static const Complex* Instance ();
+  private:
+    Complex () { }
+  };
+
   class Template : public Type
   {
   public:
@@ -809,6 +851,14 @@ namespace Type
     {
       default_action (type);
     }
+    virtual void visit (const Complex64& type)
+    {
+      default_action (type);
+    }
+    virtual void visit (const Complex128& type)
+    {
+      default_action (type);
+    }
     virtual void visit (const Nil& type)
     {
       default_action (type);
@@ -822,6 +872,10 @@ namespace Type
       default_action (type);
     }
     virtual void visit (const Float& type)
+    {
+      default_action (type);
+    }
+    virtual void visit (const Complex& type)
     {
       default_action (type);
     }
@@ -984,6 +1038,7 @@ namespace Type
   extern NamedType NamedBool;
   extern NamedType NamedInt;
   extern NamedType NamedFloat64;
+  extern NamedType NamedComplex128;;
 }
 
 #define type_not_reached(type) do { std::cerr << type << std::endl; not_reached; } while (0);
