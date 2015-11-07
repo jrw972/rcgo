@@ -244,7 +244,7 @@ namespace Type
   typedef Scalar<int64_t, Int64String> Int64;
 
   StringReturner(Int128String, "<int128>");
-  typedef Scalar<long long, Int128String> Int128;
+  typedef Scalar<__int128_t, Int128String> Int128;
 
   StringReturner(UintString, "<uint>");
   typedef Scalar<uint64_t, UintString> Uint;
@@ -262,7 +262,7 @@ namespace Type
   typedef Scalar<uint64_t, Uint64String> Uint64;
 
   StringReturner(Uint128String, "<uint128>");
-  typedef Scalar<unsigned long long, Uint128String> Uint128;
+  typedef Scalar<__uint128_t, Uint128String> Uint128;
 
   StringReturner(Float32String, "<float32>");
   typedef Scalar<float, Float32String> Float32;
@@ -665,7 +665,7 @@ namespace Type
   class Integer : public Untyped
   {
   public:
-    typedef long int ValueType;
+    typedef long long ValueType;
     virtual const Type* DefaultType () const;
     void Accept (Visitor& visitor) const;
     std::string ToString () const
