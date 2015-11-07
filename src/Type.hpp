@@ -286,6 +286,30 @@ namespace Type
   };
   typedef Scalar<C128, Complex128String> Complex128;
 
+  StringReturner(StringUString, "<string>");
+  struct StringRep
+  {
+    void* ptr;
+    size_t length;
+
+    bool operator== (const StringRep& other) const
+    {
+      if (this->ptr == other.ptr &&
+          this->length == other.length)
+        {
+          return true;
+        }
+
+      if (this->length != other.length)
+        {
+          return false;
+        }
+
+      return memcmp (this->ptr, other.ptr, this->length) == 0;
+    }
+  };
+  typedef Scalar<StringRep, StringUString> StringU;
+
   // Helper class for types that have a base type.
   class BaseType
   {
@@ -694,6 +718,21 @@ namespace Type
     Complex () { }
   };
 
+  class String : public Untyped
+  {
+  public:
+    typedef StringRep ValueType;
+    virtual const Type* DefaultType () const;
+    void Accept (Visitor& visitor) const;
+    std::string ToString () const
+    {
+      return "<<string>>";
+    }
+    static const String* Instance ();
+  private:
+    String () { }
+  };
+
   class Template : public Type
   {
   public:
@@ -859,6 +898,10 @@ namespace Type
     {
       default_action (type);
     }
+    virtual void visit (const StringU& type)
+    {
+      default_action (type);
+    }
     virtual void visit (const Nil& type)
     {
       default_action (type);
@@ -876,6 +919,10 @@ namespace Type
       default_action (type);
     }
     virtual void visit (const Complex& type)
+    {
+      default_action (type);
+    }
+    virtual void visit (const String& type)
     {
       default_action (type);
     }
@@ -1038,9 +1085,10 @@ namespace Type
   extern NamedType NamedBool;
   extern NamedType NamedInt;
   extern NamedType NamedFloat64;
-  extern NamedType NamedComplex128;;
+  extern NamedType NamedComplex128;
+  extern NamedType NamedString;
 }
 
-#define type_not_reached(type) do { std::cerr << type << std::endl; not_reached; } while (0);
+#define type_not_reached(type) do { std::cerr << '\n' << type << std::endl; not_reached; } while (0);
 
 #endif /* Type_hpp */

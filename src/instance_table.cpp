@@ -742,6 +742,11 @@ transitive_closure (const instance_table_t& table,
       node.visit_children (*this);
     }
 
+    void visit (const ast_implicit_conversion_expr_t& node)
+    {
+      node.visit_children (*this);
+    }
+
     void visit (const ast_implicit_dereference_expr_t& node)
     {
       node.visit_children (*this);

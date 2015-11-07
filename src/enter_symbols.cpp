@@ -51,6 +51,8 @@ enter_symbols (ast_t * node)
 
   node->EnterSymbol (new TypeSymbol ("float64", node, &Type::NamedFloat64));
 
+  node->EnterSymbol (new TypeSymbol ("string", node, &Type::NamedString));
+
   // Insert builtin-in functions.
   node->EnterSymbol (new runtime::New (node));
   node->EnterSymbol (new runtime::Move (node));

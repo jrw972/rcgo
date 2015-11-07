@@ -2,13 +2,14 @@
 #include <stdlib.h>
 #include "debug.hpp"
 #include "Type.hpp"
+using namespace Type;
 #include "action.hpp"
 #include "field.hpp"
 #include <error.h>
 #include "Callable.hpp"
 #include "Template.hpp"
-
-using namespace Type;
+#include <utility>
+using namespace std::rel_ops;
 
 static void
 RequireIdentical (const Location& location, const char* op, const Type::Type* left, const Type::Type* right)
@@ -27,7 +28,9 @@ typed_value_t::typed_value_t (Callable* c)
   , dereference_mutability (IMMUTABLE)
   , value (c)
   , has_offset (false)
-{ }
+{
+  fix ();
+}
 
 typed_value_t::typed_value_t (::Template* t)
   : type (t->type ())
@@ -36,7 +39,9 @@ typed_value_t::typed_value_t (::Template* t)
   , dereference_mutability (IMMUTABLE)
   , value (t)
   , has_offset (false)
-{ }
+{
+  fix ();
+}
 
 typed_value_t::typed_value_t (reaction_t* r)
   : type (r->reaction_type)
@@ -45,7 +50,9 @@ typed_value_t::typed_value_t (reaction_t* r)
   , dereference_mutability (IMMUTABLE)
   , value (r)
   , has_offset (false)
-{ }
+{
+  fix ();
+}
 
 void
 typed_value_t::zero ()
@@ -162,6 +169,7 @@ typed_value_t::make_value (const Type::Type* type, Mutability intrinsic, Mutabil
   tv.kind = VALUE;
   tv.intrinsic_mutability = intrinsic;
   tv.dereference_mutability = dereference;
+  tv.fix ();
   return tv;
 }
 
@@ -192,6 +200,7 @@ typed_value_t::make_ref (const Type::Type* type, Mutability intrinsic, Mutabilit
   tv.kind = REFERENCE;
   tv.intrinsic_mutability = intrinsic;
   tv.dereference_mutability = dereference;
+  tv.fix ();
   return tv;
 }
 
@@ -486,6 +495,11 @@ struct SingleDispatchVisitor : public Type::Visitor
   {
     t (type);
   }
+
+  void visit (const Type::String& type)
+  {
+    t (type);
+  }
 };
 
 template <typename T>
@@ -636,6 +650,11 @@ struct visitor2 : public Type::Visitor
     t (type1, type2);
   }
 
+  void visit (const Type::String& type2)
+  {
+    t (type1, type2);
+  }
+
   void visit (const Type::Nil& type2)
   {
     t (type1, type2);
@@ -681,6 +700,11 @@ struct visitor1 : public Type::Visitor
     doubleDispatchHelper (type, type2, t);
   }
 
+  void visit (const Type::StringU& type)
+  {
+    doubleDispatchHelper (type, type2, t);
+  }
+
   void visit (const Type::Integer& type)
   {
     doubleDispatchHelper (type, type2, t);
@@ -717,6 +741,10 @@ struct ConvertImpl
   void operator() (const Type::Pointer& type1, const Type::Nil& type2)
   {
     out.value.ref (type1) = NULL;
+  }
+  void operator() (const Type::StringU& type1, const Type::String& type2)
+  {
+    out.value.ref (type1) = in.value.ref (type2);
   }
 
   template <typename T1, typename T2>
@@ -797,6 +825,10 @@ struct Compare
     doit (type);
   }
   void operator() (const Type::Integer& type)
+  {
+    doit (type);
+  }
+  void operator() (const Type::String& type)
   {
     doit (type);
   }
@@ -1154,7 +1186,7 @@ struct NegateImpl
   void operator() (const T& type)
   {
     error_at_line (-1, 0, location.File.c_str (), location.Line,
-                   "- cannot be applied to %s (E87)", in.type->ToString ().c_str ());
+                   "- cannot be applied to %s (E67)", in.type->ToString ().c_str ());
 
   }
 };

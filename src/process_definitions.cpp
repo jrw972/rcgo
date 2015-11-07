@@ -10,6 +10,19 @@
 
 using namespace Type;
 
+typed_value_t
+ImplicitlyConvert (ast_t*& expr, const Type::Type* type)
+{
+  typed_value_t tv = expr->typed_value;
+  if (tv.type->Level () == Type::Type::UNTYPED && type->Level () > tv.type->Level ())
+    {
+      tv = tv.Convert (expr->location, type);
+      expr = new ast_implicit_conversion_expr_t (expr->location.Line, expr);
+      expr->typed_value = tv;
+    }
+  return tv;
+}
+
 void
 check_assignment (typed_value_t left_tv,
                   typed_value_t right_tv,
@@ -57,7 +70,39 @@ check_assignment (typed_value_t left_tv,
     }
 }
 
-static void check_rvalue_list (ast_t * node, TypedValueListType& tvlist);
+static void checkArgs (ast_t * node, TypedValueListType& tvlist);
+
+static void checkCall (ast_t& node,
+                       const Type::Signature* signature,
+                       typed_value_t return_value,
+                       ast_t* argsnode,
+                       const TypedValueListType& args)
+{
+  size_t argument_count = args.size ();
+  size_t parameter_count = signature->Arity ();
+  if (argument_count != parameter_count)
+    {
+      error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                     "call expects %zd arguments but given %zd (E26)",
+                     parameter_count, argument_count);
+    }
+
+  size_t idx = 0;
+  for (Type::Signature::const_iterator pos = signature->Begin (),
+       limit = signature->End ();
+       pos != limit;
+       ++pos, ++idx)
+    {
+      typed_value_t parameter_tv = typed_value_t::make_ref ((*pos)->value);
+      typed_value_t argument_tv  = ImplicitlyConvert (argsnode->at (idx), parameter_tv.type);
+      check_assignment (parameter_tv, argument_tv, *argsnode->at (idx),
+                        "incompatible types (%s) = (%s) (E116)",
+                        "argument leaks mutable pointers (E117)");
+    }
+
+  // Set the return type.
+  node.typed_value = return_value;
+}
 
 static bool
 in_mutable_section (const ast_t* node)
@@ -83,19 +128,6 @@ CheckAndImplicitlyDereference (ast_t*& expr)
     {
       // Insert a dereference node.
       tv = insertImplicitDereference (expr, tv);
-    }
-  return tv;
-}
-
-typed_value_t
-ImplicitlyConvert (ast_t*& expr, const Type::Type* type)
-{
-  typed_value_t tv = expr->typed_value;
-  if (tv.type->Level () == Type::Type::UNTYPED && type->Level () > tv.type->Level ())
-    {
-      tv = tv.Convert (expr->location, type);
-      expr = new ast_implicit_conversion_expr_t (expr->location.Line, expr);
-      expr->typed_value = tv;
     }
   return tv;
 }
@@ -200,8 +232,8 @@ struct check_visitor : public ast_visitor_t
 
     ast_t *args = node.args ();
     TypedValueListType tvlist;
-    check_rvalue_list (args, tvlist);
-    check_call (node, push_port_type->GetSignature (), push_port_type->GetReturnParameter ()->value, args, tvlist);
+    checkArgs (args, tvlist);
+    checkCall (node, push_port_type->GetSignature (), push_port_type->GetReturnParameter ()->value, args, tvlist);
     node.field = type_select_field (this_type, port_identifier);
     node.array_type = array_type;
   }
@@ -490,43 +522,11 @@ struct check_visitor : public ast_visitor_t
     not_reached;
   }
 
-  static void check_call (ast_t& node,
-                          const Type::Signature* signature,
-                          typed_value_t return_value,
-                          ast_t* argsnode,
-                          const TypedValueListType& args)
-  {
-    size_t argument_count = args.size ();
-    size_t parameter_count = signature->Arity ();
-    if (argument_count != parameter_count)
-      {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "call expects %zd arguments but given %zd (E26)",
-                       parameter_count, argument_count);
-      }
-
-    size_t idx = 0;
-    for (Type::Signature::const_iterator pos = signature->Begin (),
-         limit = signature->End ();
-         pos != limit;
-         ++pos, ++idx)
-      {
-        typed_value_t parameter_tv = typed_value_t::make_ref ((*pos)->value);
-        typed_value_t argument_tv  = ImplicitlyConvert (argsnode->at (idx), parameter_tv.type);
-        check_assignment (parameter_tv, argument_tv, *argsnode->at (idx),
-                          "incompatible types (%s) = (%s) (E116)",
-                          "argument leaks mutable pointers (E117)");
-      }
-
-    // Set the return type.
-    node.typed_value = return_value;
-  }
-
   void visit (ast_call_expr_t& node)
   {
     // Analyze the args.
     TypedValueListType tvlist;
-    check_rvalue_list (node.args (), tvlist);
+    checkArgs (node.args (), tvlist);
 
     // Analyze the callee.
     // Expecting a value.
@@ -566,7 +566,7 @@ struct check_visitor : public ast_visitor_t
           {
           case Type::Function::FUNCTION:
             // No restrictions on caller.
-            rvalue_visitor.check_call (node, type.GetSignature (), type.GetReturnParameter ()->value, node.args (), tvlist);
+            checkCall (node, type.GetSignature (), type.GetReturnParameter ()->value, node.args (), tvlist);
             break;
 
           case Type::Function::PUSH_PORT:
@@ -584,7 +584,7 @@ struct check_visitor : public ast_visitor_t
                                "pull ports may only be called from a getter, an action, or a reaction (E29)");
               }
 
-            rvalue_visitor.check_call (node, type.GetSignature (), type.GetReturnParameter ()->value, node.args (), tvlist);
+            checkCall (node, type.GetSignature (), type.GetReturnParameter ()->value, node.args (), tvlist);
             if (in_mutable_section (&node))
               {
                 error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -601,7 +601,7 @@ struct check_visitor : public ast_visitor_t
           case Type::Method::METHOD:
           {
             // No restrictions on caller.
-            rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args (), tvlist);
+            checkCall (node, type.signature, type.return_parameter->value, node.args (), tvlist);
 
             if (type_dereference (type.receiver_type) != NULL)
               {
@@ -631,7 +631,7 @@ struct check_visitor : public ast_visitor_t
                                "initializers may only be called from initializers (E31)");
               }
 
-            rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args (), tvlist);
+            checkCall (node, type.signature, type.return_parameter->value, node.args (), tvlist);
 
             assert (type_dereference (type.receiver_type) != NULL);
 
@@ -661,7 +661,7 @@ struct check_visitor : public ast_visitor_t
             //                        "getters may only be called from a getter, an action, or a reaction (E32)");
             //     }
 
-            // rvalue_visitor.check_call (node, type.signature, type.return_parameter->value, node.args ());
+            // rvalue_visitor.checkCall (node, type.signature, type.return_parameter->value, node.args ());
             // if (in_mutable_section (&node))
             //     {
             //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -695,8 +695,8 @@ struct check_visitor : public ast_visitor_t
                        "no port named %s (E34)", port_identifier.c_str ());
       }
     TypedValueListType tvlist;
-    check_rvalue_list (args, tvlist);
-    check_call (node, push_port_type->GetSignature (), push_port_type->GetReturnParameter ()->value, args, tvlist);
+    checkArgs (args, tvlist);
+    checkCall (node, push_port_type->GetSignature (), push_port_type->GetReturnParameter ()->value, args, tvlist);
     node.field = type_select_field (this_type, port_identifier);
   }
 
@@ -741,33 +741,15 @@ type_check_expr (ast_t* ptr)
   return ptr->typed_value;
 }
 
-// TODO:  Fold into check_rvalue.
 static void
-check_rvalue_list (ast_t * node, TypedValueListType& tvlist)
+checkArgs (ast_t * node, TypedValueListType& tvlist)
 {
-  struct check_rvalue_list_visitor_t : public ast_visitor_t
-  {
-    TypedValueListType& tvlist;
-    check_rvalue_list_visitor_t (TypedValueListType& tvl) : tvlist (tvl) { }
-
-    void default_action (ast_t& node)
+  for (ast_t::iterator child = node->begin (), limit = node->end ();
+       child != limit;
+       ++child)
     {
-      not_reached;
+      tvlist.push_back (CheckAndImplicitlyDereference (*child));
     }
-
-    void visit (ast_list_expr_t& node)
-    {
-      for (ast_t::iterator child = node.begin (), limit = node.end ();
-           child != limit;
-           ++child)
-        {
-          tvlist.push_back (CheckAndImplicitlyDereference (*child));
-        }
-    }
-  };
-
-  check_rvalue_list_visitor_t check_rvalue_list_visitor (tvlist);
-  node->accept (check_rvalue_list_visitor);
 }
 
 static typed_value_t
@@ -1070,7 +1052,7 @@ type_check_statement (ast_t * node)
 
       /* Check the activations. */
       TypedValueListType tvlist;
-      check_rvalue_list (expression_list_node, tvlist);
+      checkArgs (expression_list_node, tvlist);
 
       /* Re-insert this as a pointer to mutable. */
       node.this_symbol = node.Activate ();
@@ -1652,8 +1634,8 @@ process_definitions (ast_t * node)
 
       // Check the call.
       TypedValueListType tvlist;
-      check_rvalue_list (node.expression_list (), tvlist);
-      check_visitor::check_call (node, initializer->initializerType->signature, initializer->initializerType->return_parameter->value, node.expression_list (), tvlist);
+      checkArgs (node.expression_list (), tvlist);
+      checkCall (node, initializer->initializerType->signature, initializer->initializerType->return_parameter->value, node.expression_list (), tvlist);
       symbol->initializer = initializer;
     }
 

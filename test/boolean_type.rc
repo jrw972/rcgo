@@ -7,7 +7,7 @@ func not_evaluated (flag *bool) bool {
   return true;
 }
 
-func test (num uint; desc +const []uint8; status bool) {
+func test (num uint; desc string; status bool) {
   if status {
     println (`ok `, num, ` - `, desc);
   } else {

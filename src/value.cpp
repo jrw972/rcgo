@@ -87,6 +87,11 @@ value_t::print (std::ostream& out, const Type::Type* type) const
           const Slice::ValueType& s = tv.ref (type);
           out << " value={" << s.ptr << ',' << s.length << ',' << s.capacity << '}';
         }
+        void visit (const StringU& type)
+        {
+          const StringU::ValueType& s = tv.ref (type);
+          out << " value={" << s.ptr << ',' << s.length << '}';
+        }
 
         void visit (const Boolean& type)
         {
@@ -95,6 +100,11 @@ value_t::print (std::ostream& out, const Type::Type* type) const
         void visit (const Integer& type)
         {
           out << " value=" << tv.ref (type);
+        }
+        void visit (const String& type)
+        {
+          const String::ValueType& s = tv.ref (type);
+          out << " value={" << s.ptr << ',' << s.length << '}';
         }
       };
       visitor v (*this, out);

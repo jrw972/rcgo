@@ -502,12 +502,14 @@ type::Accept (Visitor& visitor) const \
   T_ACCEPT(Float64)
   T_ACCEPT(Complex64)
   T_ACCEPT(Complex128)
+  T_ACCEPT(StringU)
   ACCEPT(Void)
   ACCEPT(Nil)
   ACCEPT(Boolean)
   ACCEPT(Integer)
   ACCEPT(Float)
   ACCEPT(Complex)
+  ACCEPT(String)
   ACCEPT(Array)
   ACCEPT(Slice)
   ACCEPT(Template)
@@ -736,6 +738,7 @@ type::Instance () \
   INSTANCE(Integer)
   INSTANCE(Float)
   INSTANCE(Complex)
+  INSTANCE(String)
 
   Struct::Struct (bool insert_runtime) : offset_ (0), alignment_ (0)
   {
@@ -821,12 +824,17 @@ type::Instance () \
         type.Base ()->Accept (*this);
       }
 
+      void visit (const Pointer& type)
+      {
+        flag = true;
+      }
+
       void visit (const Slice& type)
       {
         flag = true;
       }
 
-      void visit (const Pointer& type)
+      void visit (const StringU& type)
       {
         flag = true;
       }
@@ -850,6 +858,10 @@ type::Instance () \
       void visit (const Integer& type) { }
       void visit (const Float& type) { }
       void visit (const Complex& type) { }
+      void visit (const String& type)
+      {
+        flag = true;
+      }
     };
     visitor v;
     type->Accept (v);
@@ -1329,8 +1341,15 @@ type::Instance () \
     return &NamedComplex128;
   }
 
+  const Type*
+  String::DefaultType () const
+  {
+    return &NamedString;
+  }
+
   NamedType NamedBool ("bool", Bool::Instance ());
   NamedType NamedInt ("int", Int::Instance ());
   NamedType NamedFloat64 ("float64", Float64::Instance ());
   NamedType NamedComplex128 ("complex128", Complex128::Instance ());
+  NamedType NamedString ("string", StringU::Instance ());
 }

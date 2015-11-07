@@ -2109,8 +2109,16 @@ namespace runtime
 
             void visit (const Pointer& type)
             {
-              void* ptr = stack_frame_pop_pointer (exec.stack ());
-              printf ("%p", ptr);
+              Pointer::ValueType u;
+              stack_frame_pop (exec.stack (), u);
+              printf ("%p", u);
+            }
+
+            void visit (const StringU& type)
+            {
+              StringU::ValueType u;
+              stack_frame_pop (exec.stack (), u);
+              fwrite (u.ptr, 1, u.length, stdout);
             }
 
             void visit (const Uint& type)
@@ -2198,6 +2206,7 @@ namespace runtime
            ++pos)
         {
           typed_value_t in = *pos;
+          in.type = in.type->DefaultType ();
           in.intrinsic_mutability = MUTABLE;
           sig->Append (new parameter_t (definingNode, "", in, false));
         }

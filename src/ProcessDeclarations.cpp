@@ -201,7 +201,7 @@ ProcessDeclarations (ast_t * node)
             }
           typed_value_t left_tv = typed_value_t::make_ref (right_tv);
           left_tv.intrinsic_mutability = MUTABLE;
-          left_tv.dereference_mutability = MUTABLE;
+          left_tv.dereference_mutability = IMMUTABLE;
           check_assignment (left_tv, right_tv, node,
                             "incompatible types (%s) = (%s) (E130)",
                             "assignment leaks mutable pointers (E131)");

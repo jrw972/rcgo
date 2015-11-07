@@ -9,49 +9,132 @@
 #include "Type.hpp"
 #include <error.h>
 
-using namespace Type;
+  using namespace Type;
 
- int octalvalue (char c) {
-   return c - '0';
+  static int octalvalue (char c) {
+    return c - '0';
+  }
+
+  static int hexvalue (char c) {
+    if (c >= '0' && c <= '9') {
+      return c - '0';
+    }
+    if (c >= 'a' && c <= 'f') {
+      return c - 'a' + 10;
+    }
+    if (c >= 'A' && c <= 'F') {
+      return c - 'A' + 10;
+    }
+    not_reached;
+  }
+
+  static void validUnicode (unsigned int line, int u) {
+    if (u > 0x10FFFF) {
+      error_at_line (-1, 0, Location::StaticFile.c_str (), line,
+                     "Unicode value is out of range (E135)");
+    }
+
+    if (u >= 0xD800 && u <= 0xDFFF) {
+      error_at_line (-1, 0, Location::StaticFile.c_str (), line,
+                     "illegal surrogate pair (E136)");
+    }
+  }
+
+  static int parseOctal (unsigned int line, const char* s) {
+    int x =
+      (octalvalue (s[0]) << 6) |
+      (octalvalue (s[1]) << 3) |
+      (octalvalue (s[2]) << 0);
+    if (x > 255) {
+      error_at_line (-1, 0, Location::StaticFile.c_str (), line,
+                     "octal escape is out of range (E134)");
+    }
+    return x;
+  }
+
+  static int parseHex (unsigned int line, const char* s) {
+    return
+      (hexvalue (s[0]) << 4) |
+      (hexvalue (s[1]) << 0);
+  }
+
+  static int parseU4 (unsigned int line, const char* s) {
+    int x =
+      (hexvalue (s[0]) << 12) |
+      (hexvalue (s[1]) << 8) |
+      (hexvalue (s[2]) << 4) |
+      (hexvalue (s[3]) << 0);
+    validUnicode (line, x);
+    return x;
+  }
+
+  static int parseU8 (unsigned int line, const char* s) {
+    int x =
+      (hexvalue (s[0]) << 28) |
+      (hexvalue (s[1]) << 24) |
+      (hexvalue (s[2]) << 20) |
+      (hexvalue (s[3]) << 16) |
+      (hexvalue (s[4]) << 12) |
+      (hexvalue (s[5]) << 8) |
+      (hexvalue (s[6]) << 4) |
+      (hexvalue (s[7]) << 0);
+    validUnicode (line, x);
+    return x;
+  }
+
+ static char* parseInterprettedString (unsigned int line, char* pos, char* limit, char* out);
+
+ static char* writeUtf8 (int x, char* out) {
+   if (x < 128) {
+     *out++ = x;
+   } else {
+     char u[6];
+     size_t idx = 0;
+     while (x != 0) {
+       u[idx++] = 0x80 | (x & 0x3F);
+       x >>= 6;
+     }
+     switch (idx) {
+     case 2:
+       u[1] |= 0xC0;
+       break;
+     case 3:
+       u[2] |= 0xE0;
+       break;
+     case 4:
+       u[3] |= 0xF0;
+       break;
+     case 5:
+       u[4] |= 0xF8;
+       break;
+     case 6:
+       u[5] |= 0xFC;
+       break;
+     }
+     while (idx != 0) {
+       *out++ = u[idx-- - 1];
+     }
+   }
+   return out;
  }
 
- int hexvalue (char c) {
-   if (c >= '0' && c <= '9') {
-     return c - '0';
-   }
-   if (c >= 'a' && c <= 'f') {
-     return c - 'a' + 10;
-   }
-   if (c >= 'A' && c <= 'F') {
-     return c - 'A' + 10;
-   }
-   not_reached;
- }
-
- void validUnicode (unsigned int line, int u) {
-   if (u > 0x10FFFF) {
-     error_at_line (-1, 0, Location::StaticFile.c_str (), line,
-                    "Unicode value is out of range (E135)");
-   }
-
-   if (u >= 0xD800 && u <= 0xDFFF) {
-     error_at_line (-1, 0, Location::StaticFile.c_str (), line,
-                    "illegal surrogate pair (E136)");
-   }
- }
-
- static char* ParseInterprettedString (unsigned int line, char* pos, char* limit, char* out);
 %}
 
 %s IN_COMMENT
 
-OCTAL [0-7]
-HEXADECIMAL [0-9a-fA-F]
+OCTAL_DIGIT [0-7]
+HEXADECIMAL_DIGIT [0-9a-fA-F]
 
 DECIMALS [0-9]+
 EXPONENT [eE][+-]?{DECIMALS}
 
 FLOAT {DECIMALS}"."{DECIMALS}?{EXPONENT}?|{DECIMALS}{EXPONENT}|"."{DECIMALS}{EXPONENT}?
+
+OCTAL   \\{OCTAL_DIGIT}{3}
+HEX     \\x{HEXADECIMAL_DIGIT}{2}
+LITTLEU \\u{HEXADECIMAL_DIGIT}{4}
+BIGU    \\U{HEXADECIMAL_DIGIT}{8}
+ESCAPED \\[abfnrtv\\\"]
 
 %%
 
@@ -173,30 +256,26 @@ FLOAT {DECIMALS}"."{DECIMALS}?{EXPONENT}?|{DECIMALS}{EXPONENT}|"."{DECIMALS}{EXP
                            }
 
                          size_t size = destination - begin;
-                         const Slice* type = Uint8::Instance ()->GetSlice ();
-                         Slice::ValueType v;
+                         String::ValueType v;
                          v.ptr = malloc (size);
                          memcpy (v.ptr, begin, size);
                          v.length = size;
-                         v.capacity = size;
 
-                         yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (type, v));
+                         yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (String::Instance (), v));
                          return LITERAL; }
 
-\"(\\.|[^\"])*\" {
+\"([^\"]|{OCTAL}|{HEX}|{LITTLEU}|{BIGU}|{ESCAPED})*\" {
   char* begin = yytext + 1;
   char* pos = begin;
   char* limit = yytext + yyleng - 1;
-  char* end = ParseInterprettedString (yylloc, pos, limit, pos);
+  char* end = parseInterprettedString (yylloc, pos, limit, pos);
   size_t size = end - begin;
-  const Slice* type = Uint8::Instance ()->GetSlice ();
-  Slice::ValueType v;
+  String::ValueType v;
   v.ptr = malloc (size);
   memcpy (v.ptr, begin, size);
   v.length = size;
-  v.capacity = size;
 
-  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (type, v));
+  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (String::Instance (), v));
   return LITERAL;
 }
 
@@ -205,12 +284,12 @@ FLOAT {DECIMALS}"."{DECIMALS}?{EXPONENT}?|{DECIMALS}{EXPONENT}|"."{DECIMALS}{EXP
   return LITERAL;
 }
 
-0{OCTAL}* {
+0{OCTAL_DIGIT}* {
   yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), strtol (yytext, NULL, 8)));
   return LITERAL;
 }
 
-0[xX]{HEXADECIMAL}+ {
+0[xX]{HEXADECIMAL_DIGIT}+ {
   yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), strtol (yytext, NULL, 16)));
   return LITERAL;
 }
@@ -266,49 +345,26 @@ FLOAT {DECIMALS}"."{DECIMALS}?{EXPONENT}?|{DECIMALS}{EXPONENT}|"."{DECIMALS}{EXP
   return LITERAL;
 }
 
-'\\{OCTAL}{3}' {
-  int x =
-    (octalvalue (yytext[2]) << 6) |
-    (octalvalue (yytext[3]) << 3) |
-    (octalvalue (yytext[4]) << 0);
-  if (x > 255) {
-    error_at_line (-1, 0, Location::StaticFile.c_str (), yylloc,
-                   "octal escape is out of range (E134)");
-  }
+'\\{OCTAL_DIGIT}{3}' {
+  int x = parseOctal (yylloc, yytext + 2);
   yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), x));
   return LITERAL;
 }
 
-'\\x{HEXADECIMAL}{2}' {
-  int x =
-    (hexvalue (yytext[3]) << 4) |
-    (hexvalue (yytext[4]) << 0);
+'\\x{HEXADECIMAL_DIGIT}{2}' {
+  int x = parseHex (yylloc, yytext + 3);
   yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), x));
   return LITERAL;
 }
 
-'\\u{HEXADECIMAL}{4}' {
-  int x =
-    (hexvalue (yytext[3]) << 12) |
-    (hexvalue (yytext[4]) << 8) |
-    (hexvalue (yytext[5]) << 4) |
-    (hexvalue (yytext[6]) << 0);
-  validUnicode (yylloc, x);
+'\\u{HEXADECIMAL_DIGIT}{4}' {
+  int x = parseU4 (yylloc, yytext + 3);
   yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), x));
   return LITERAL;
 }
 
-'\\U{HEXADECIMAL}{8}' {
-  int x =
-    (hexvalue (yytext[3]) << 28) |
-    (hexvalue (yytext[4]) << 24) |
-    (hexvalue (yytext[5]) << 20) |
-    (hexvalue (yytext[6]) << 16) |
-    (hexvalue (yytext[7]) << 12) |
-    (hexvalue (yytext[8]) << 8) |
-    (hexvalue (yytext[9]) << 4) |
-    (hexvalue (yytext[10]) << 0);
-  validUnicode (yylloc, x);
+'\\U{HEXADECIMAL_DIGIT}{8}' {
+  int x = parseU8 (yylloc, yytext + 3);
   yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), x));
   return LITERAL;
 }
@@ -322,199 +378,92 @@ error_at_line (-1, 0, Location::StaticFile.c_str (), yylloc,
 
 %%
 
-static char* ParseInterprettedString (unsigned int line, char* pos, char* limit, char* out)
+static char* parseInterprettedString (unsigned int line, char* pos, char* limit, char* out)
 {
-  enum Mode {
-    Normal,
-    Escaped,
-    Octal,
-    Hex
-  };
-
-  Mode mode = Normal;
-  int value;
-  int remainingDigits;
-
-  while (true) {
-    switch (mode) {
-    case Normal:
-      {
-        if (pos == limit) {
-          return out;
+  while (pos != limit) {
+    char c = *pos;
+    if (c != '\\') {
+      *out++ = *pos++;
+    } else {
+      ++pos;
+      switch (*pos) {
+      case '0':
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+        {
+          int x = parseOctal (line, pos);
+          pos += 3;
+          *out++ = x;
         }
-        char c = *pos;
-        if (c == '\n')
-          {
-            error_at_line (-1, 0, Location::StaticFile.c_str (), line,
-                           "newline in interpretted string literal (E67)");
-          }
-        else if (c == '\\')
-          {
-            ++pos;
-            mode = Escaped;
-          }
-        else
-          {
-            *out++ = *pos++;
-          }
+        break;
+      case 'x':
+        {
+          ++pos;
+          int x = parseHex (line, pos);
+          pos += 2;
+          *out++ = x;
+        }
+        break;
+      case 'u':
+        {
+          ++pos;
+          int x = parseU4 (line, pos);
+          pos += 4;
+          out = writeUtf8 (x, out);
+        }
+        break;
+      case 'U':
+        {
+          ++pos;
+          int x = parseU8 (line, pos);
+          pos += 8;
+          out = writeUtf8 (x, out);
+        }
+        break;
+      case 'a':
+        *out++ = '\a';
+        ++pos;
+        break;
+      case 'b':
+        *out++ = '\b';
+        ++pos;
+        break;
+      case 'f':
+        *out++ = '\f';
+        ++pos;
+        break;
+      case 'n':
+        *out++ = '\n';
+        ++pos;
+        break;
+      case 'r':
+        *out++ = '\r';
+        ++pos;
+        break;
+      case 't':
+        *out++ = '\t';
+        ++pos;
+        break;
+      case 'v':
+        *out++ = '\v';
+        ++pos;
+        break;
+      case '\\':
+        *out++ = '\\';
+        ++pos;
+        break;
+      case '"':
+        *out++ = '"';
+        ++pos;
+        break;
       }
-      break;
-    case Escaped:
-      {
-        if (pos == limit) {
-          bug ("No character after escape character in interpretted string");
-        }
-
-        char c = *pos++;
-        switch (c)
-          {
-          case '0':
-          case '1':
-          case '2':
-          case '3':
-          case '4':
-          case '5':
-          case '6':
-          case '7':
-            // Octal
-            value = c - '0';
-            remainingDigits = 3;
-            mode = Octal;
-            break;
-          case 'x':
-            // Hex
-            value = 0;
-            remainingDigits = 1;
-            mode = Hex;
-            break;
-          case 'a':
-            *out++ = '\a';
-            mode = Normal;
-            break;
-          case 'b':
-            *out++ = '\b';
-            mode = Normal;
-            break;
-          case 'f':
-            *out++ = '\f';
-            mode = Normal;
-            break;
-          case 'n':
-            *out++ = '\n';
-            mode = Normal;
-            break;
-          case 'r':
-            *out++ = '\r';
-            mode = Normal;
-            break;
-          case 't':
-            *out++ = '\t';
-            mode = Normal;
-            break;
-          case 'v':
-            *out++ = '\v';
-            mode = Normal;
-            break;
-          case '\\':
-            *out++ = '\\';
-            mode = Normal;
-            break;
-          case '"':
-            *out++ = '\"';
-            mode = Normal;
-            break;
-          default:
-            error_at_line (-1, 0, Location::StaticFile.c_str (), line,
-                           "illegal escape sequence '%c' (E68)", c);
-          }
-      }
-      break;
-    case Octal:
-      {
-        if (pos == limit) {
-          error_at_line (-1, 0, Location::StaticFile.c_str (), line,
-                         "end of string while parsing octal escape sequence (E69)");
-        }
-
-        char c = *pos++;
-        switch (c)
-          {
-          case '0':
-          case '1':
-          case '2':
-          case '3':
-          case '4':
-          case '5':
-          case '6':
-          case '7':
-            value = (value << 3) | (c - '0');
-            --remainingDigits;
-            break;
-          default:
-            error_at_line (-1, 0, Location::StaticFile.c_str (), line,
-                           "unexpected character in octal escape sequence '%c' (E70)", c);
-          }
-
-        if (remainingDigits == 0) {
-          *out++ = value;
-          mode = Normal;
-        }
-      }
-      break;
-    case Hex:
-      {
-        if (pos == limit) {
-          error_at_line (-1, 0, Location::StaticFile.c_str (), line,
-                         "end of string while parsing hex escape sequence (E71)");
-        }
-
-        char c = *pos;
-        switch (c)
-          {
-          case '0':
-          case '1':
-          case '2':
-          case '3':
-          case '4':
-          case '5':
-          case '6':
-          case '7':
-          case '8':
-          case '9':
-            value = (value << 4) | (c - '0');
-            --remainingDigits;
-            break;
-          case 'a':
-          case 'b':
-          case 'c':
-          case 'd':
-          case 'e':
-          case 'f':
-            value = (value << 4) | (c - 'a' + 10);
-            --remainingDigits;
-            break;
-          case 'A':
-          case 'B':
-          case 'C':
-          case 'D':
-          case 'E':
-          case 'F':
-            value = (value << 4) | (c - 'A' + 10);
-            --remainingDigits;
-            break;
-          default:
-            error_at_line (-1, 0, Location::StaticFile.c_str (), line,
-                           "unexpected character in hex escape sequence '%c' (E72)", c);
-          }
-
-        if (remainingDigits == 0) {
-          *out++ = value;
-          mode = Normal;
-        }
-      }
-      break;
     }
   }
 
-  not_reached;
+  return out;
 }

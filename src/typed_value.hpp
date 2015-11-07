@@ -140,7 +140,9 @@ struct typed_value_t
     , dereference_mutability (IMMUTABLE)
     , value (t, v)
     , has_offset (false)
-  { }
+  {
+    fix ();
+  }
 
   typed_value_t (const Type::NamedType* type,
                  size_t e)
@@ -150,7 +152,9 @@ struct typed_value_t
     , dereference_mutability (IMMUTABLE)
     , value (type, e)
     , has_offset (false)
-  { }
+  {
+    fix ();
+  }
 
   explicit typed_value_t (Callable* c);
 
@@ -270,6 +274,16 @@ struct typed_value_t
   void RequireValue (const Location loc) const;
 
   std::ostream& print (std::ostream& o) const;
+
+  void fix ()
+  {
+    if (type != NULL &&
+        (type->UnderlyingType () == Type::StringU::Instance () ||
+         type->UnderlyingType () == Type::String::Instance ()))
+      {
+        dereference_mutability = std::max (IMMUTABLE, dereference_mutability);
+      }
+  }
 };
 
 inline std::ostream&

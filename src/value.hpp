@@ -30,6 +30,7 @@ struct value_t
   value_t (const Type::Integer*  t, Type::Integer::ValueType v)  : present (true), integer_value_ (v) { }
   value_t (const Type::Float*  t, Type::Float::ValueType v)  : present (true), float_value_ (v) { }
   value_t (const Type::Complex*  t, Type::Complex::ValueType v)  : present (true), complex_value_ (v) { }
+  value_t (const Type::String*  t, Type::String::ValueType v)  : present (true), string_value_ (v) { }
 
   static value_t make_reference (Type::Pointer::ValueType v)
   {
@@ -133,6 +134,15 @@ struct value_t
   {
     return pointer_value_;
   }
+  Type::StringU::ValueType& ref (const Type::StringU&)
+  {
+    return stringu_value_;
+  }
+  const Type::StringU::ValueType& ref (const Type::StringU&) const
+  {
+    return stringu_value_;
+  }
+
   Type::Slice::ValueType& ref (const Type::Slice&)
   {
     return slice_value_;
@@ -156,6 +166,15 @@ struct value_t
   Type::Integer::ValueType& ref (const Type::Integer&)
   {
     return integer_value_;
+  }
+
+  const Type::String::ValueType& ref (const Type::String&) const
+  {
+    return string_value_;
+  }
+  Type::String::ValueType& ref (const Type::String&)
+  {
+    return string_value_;
   }
 
   Callable* callable_value () const
@@ -201,16 +220,18 @@ private:
     Type::Float32::ValueType float32_value_;
     Type::Float64::ValueType float64_value_;
     Type::Pointer::ValueType pointer_value_;
+    Type::Slice::ValueType slice_value_;
+    Type::StringU::ValueType stringu_value_;
     Callable* callable_value_;
     Template* template_value_;
     reaction_t* reaction_value_;
     Type::Pointer::ValueType reference_value_;
-    Type::Slice::ValueType slice_value_;
 
     Type::Boolean::ValueType boolean_value_;
     Type::Integer::ValueType integer_value_;
     Type::Float::ValueType float_value_;
     Type::Complex::ValueType complex_value_;
+    Type::String::ValueType string_value_;
   };
 };
 

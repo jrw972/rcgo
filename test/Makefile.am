@@ -22,7 +22,9 @@ integer_literals.rc \
 float_literals.rc \
 imaginary_literals.rc \
 rune_literals.rc \
-illegal_rune_literals.sh
+illegal_rune_literals.sh \
+string_literals.rc \
+illegal_string_literals.sh
 
 EXTRA_DIST = $(TESTS) \
 helpers.sh \
@@ -126,6 +128,8 @@ same_port.rc \
 too_many_characters.rc \
 too_few_hexadecimal_digits.rc \
 too_few_octal_digits.rc \
-surrogate_half.rc \
-invalid_unicode_code_point.rc \
-illegal_octal.rc
+rune_surrogate_half.rc \
+rune_invalid_unicode_code_point.rc \
+illegal_octal.rc \
+string_surrogate_half.rc \
+string_invalid_unicode_code_point.rc
