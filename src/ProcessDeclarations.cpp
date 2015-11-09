@@ -84,6 +84,7 @@ static typed_value_t
 processIota (ast_t& node, ast_t*& dimensionNode, ParameterSymbol*& parameterSymbol)
 {
   typed_value_t dimension = process_array_dimension (dimensionNode);
+
   /* Insert "iota" into the symbol table. */
   typed_value_t zero = dimension;
   zero.zero ();

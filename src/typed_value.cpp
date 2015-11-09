@@ -80,10 +80,15 @@ typed_value_t::zero ()
     {
       value.value.ref (type) = 0;
     }
+
+    void visit (const Integer& type)
+    {
+      value.value.ref (type) = 0;
+    }
   };
 
   visitor v (*this);
-  type->Accept (v);
+  type->UnderlyingType ()->Accept (v);
 }
 
 std::ostream&
@@ -278,6 +283,7 @@ typed_value_t::select (typed_value_t in, const std::string& identifier)
       out.type = f->type;
       out.has_offset = true;
       out.offset = f->offset;
+      out.fix ();
       return out;
     }
 
@@ -481,6 +487,16 @@ struct SingleDispatchVisitor : public Type::Visitor
     t (type);
   }
 
+  void visit (const Type::Uint64& type)
+  {
+    t (type);
+  }
+
+  void visit (const Type::Enum& type)
+  {
+    t (type);
+  }
+
   void visit (const Type::Pointer& type)
   {
     t (type);
@@ -560,19 +576,33 @@ typed_value_t::copy (const Location& location, typed_value_t tv)
                      "cannot copy components (E94)");
     }
 
-  const Slice* st = type_strip_cast<Slice> (tv.type);
-  if (st != NULL)
-    {
-      if (type_contains_pointer (st->Base ()))
-        {
-          error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "copy leaks pointers (E95)");
+  {
+    const Slice* st = type_strip_cast<Slice> (tv.type);
+    if (st != NULL)
+      {
+        if (type_contains_pointer (st->Base ()))
+          {
+            error_at_line (-1, 0, location.File.c_str (), location.Line,
+                           "copy leaks pointers (E95)");
 
-        }
-      // We will copy so a dereference can mutate the data.
-      tv.intrinsic_mutability = MUTABLE;
-      tv.dereference_mutability = MUTABLE;
-    }
+          }
+        // We will copy so a dereference can mutate the data.
+        tv.intrinsic_mutability = MUTABLE;
+        tv.dereference_mutability = MUTABLE;
+      }
+  }
+
+  {
+    const StringU* st = type_strip_cast<StringU> (tv.type);
+    if (st != NULL)
+      {
+        // We will copy so a dereference can mutate the data.
+        tv.intrinsic_mutability = MUTABLE;
+        tv.dereference_mutability = IMMUTABLE;
+      }
+  }
+
+  tv.fix ();
 
   return tv;
 }
@@ -617,105 +647,117 @@ typed_value_t::RequireValue (const Location location) const
     }
 }
 
-template <typename T, typename T1>
-struct visitor2 : public Type::Visitor
+struct RepresentableImpl
 {
-  const T1& type1;
-  T& t;
+  const typed_value_t& in;
+  bool retval;
 
-  visitor2 (const T1& t1, T& t_) : type1 (t1), t (t_) { }
+  RepresentableImpl (const typed_value_t& i) : in (i), retval (false) { }
 
-  void default_action (const Type::Type& type)
+  void operator() (const Type::Bool& type1, const Type::Boolean& type2)
   {
-    type_not_reached (type);
+    retval = true;
   }
 
-  void visit (const Type::Int& type2)
+  template <typename T1, typename T2>
+  void ToAndBack (const T1& type1, const T2& type2)
   {
-    t (type1, type2);
+    // Convert to and back and check for equality.
+    value_t v;
+    v.ref (type1) = in.value.ref (type2);
+    v.ref (type2) = v.ref (type1);
+    retval = (v.ref (type2) == in.value.ref (type2));
   }
 
-  void visit (const Type::Uint& type2)
+  void operator() (const Type::Int& type1, const Type::Integer& type2)
   {
-    t (type1, type2);
+    ToAndBack (type1, type2);
+  }
+  void operator() (const Type::Uint& type1, const Type::Integer& type2)
+  {
+    ToAndBack (type1, type2);
+  }
+  void operator() (const Type::Uint8& type1, const Type::Integer& type2)
+  {
+    ToAndBack (type1, type2);
+  }
+  void operator() (const Type::Uint16& type1, const Type::Integer& type2)
+  {
+    ToAndBack (type1, type2);
+  }
+  void operator() (const Type::Uint32& type1, const Type::Integer& type2)
+  {
+    ToAndBack (type1, type2);
+  }
+  void operator() (const Type::Uint64& type1, const Type::Integer& type2)
+  {
+    ToAndBack (type1, type2);
+  }
+  void operator() (const Type::Uint128& type1, const Type::Integer& type2)
+  {
+    ToAndBack (type1, type2);
   }
 
-  void visit (const Type::Boolean& type2)
+  void operator() (const Type::Pointer& type1, const Type::Nil& type2)
   {
-    t (type1, type2);
+    unimplemented;
+  }
+  void operator() (const Type::StringU& type1, const Type::String& type2)
+  {
+    retval = true;
+  }
+  void operator () (const Integer& type1, const Rune& type2)
+  {
+    retval = true;
   }
 
-  void visit (const Type::Integer& type2)
+  template <typename T1, typename T2>
+  void operator() (const T1& type1, const T2& type2)
   {
-    t (type1, type2);
-  }
-
-  void visit (const Type::String& type2)
-  {
-    t (type1, type2);
-  }
-
-  void visit (const Type::Nil& type2)
-  {
-    t (type1, type2);
+    retval = false;
   }
 };
 
-template <typename T, typename T1>
-static void doubleDispatchHelper (const T1& type1, const Type::Type* type2, T& t)
+bool
+typed_value_t::AssignableTo (const Type::Type* target) const
 {
-  visitor2<T, T1> v (type1, t);
-  type2->Accept (v);
-}
+  const Type::Type* source = this->type;
 
-template <typename T>
-struct visitor1 : public Type::Visitor
-{
-  const Type::Type* type2;
-  T& t;
-  visitor1 (const Type::Type* t2, T& t_) : type2 (t2), t (t_) { }
+  if (Identitical (source, target))
+    {
+      return true;
+    }
 
-  void default_action (const Type::Type& type)
-  {
-    type_not_reached (type);
-  }
+  if (Identitical (source->UnderlyingType (), target->UnderlyingType ()) &&
+      (type_cast<NamedType> (source) == NULL ||
+       type_cast<NamedType> (target) == NULL))
+    {
+      return true;
+    }
 
-  void visit (const Type::Bool& type)
-  {
-    doubleDispatchHelper (type, type2, t);
-  }
+  // TODO: target is interface and source implements it
 
-  void visit (const Type::Int& type)
-  {
-    doubleDispatchHelper (type, type2, t);
-  }
+  if (type_cast<Nil> (source))
+    {
+      if (type_cast<Pointer> (target->UnderlyingType ()) != NULL ||
+          type_cast<Type::Function> (target->UnderlyingType ()) != NULL ||
+          type_cast<Slice> (target->UnderlyingType ()) != NULL
+          //type_cast<Map> (target->UnderlyingType ()) != NULL ||
+          //type_cast<Interface> (target->UnderlyingType ()) != NULL ||
+         )
+        {
+          return true;
+        }
+    }
 
-  void visit (const Type::Uint& type)
-  {
-    doubleDispatchHelper (type, type2, t);
-  }
+  if (source->IsUntyped ())
+    {
+      RepresentableImpl ri (*this);
+      DoubleDispatch (target->UnderlyingType (), source, ri);
+      return ri.retval;
+    }
 
-  void visit (const Type::Pointer& type)
-  {
-    doubleDispatchHelper (type, type2, t);
-  }
-
-  void visit (const Type::StringU& type)
-  {
-    doubleDispatchHelper (type, type2, t);
-  }
-
-  void visit (const Type::Integer& type)
-  {
-    doubleDispatchHelper (type, type2, t);
-  }
-};
-
-template <typename T>
-static void doubleDispatch (const Type::Type* type1, const Type::Type* type2, T& t)
-{
-  visitor1<T> v (type2, t);
-  type1->Accept (v);
+  return false;
 }
 
 struct ConvertImpl
@@ -726,7 +768,17 @@ struct ConvertImpl
 
   ConvertImpl (const Location& loc, typed_value_t& o, const typed_value_t& i) : location (loc), out (o), in (i) { }
 
+  // Caused by untyped bool being convert to named bool.
+  // The untyped bool comes from comparison operators.
+  void operator() (const Type::Bool& type1, const Type::Bool& type2)
+  {
+    out.value.ref (type1) = in.value.ref (type2);
+  }
   void operator() (const Type::Bool& type1, const Type::Boolean& type2)
+  {
+    out.value.ref (type1) = in.value.ref (type2);
+  }
+  void operator() (const Type::Int& type1, const Type::Int& type2)
   {
     out.value.ref (type1) = in.value.ref (type2);
   }
@@ -734,10 +786,32 @@ struct ConvertImpl
   {
     out.value.ref (type1) = in.value.ref (type2);
   }
+
   void operator() (const Type::Uint& type1, const Type::Integer& type2)
   {
     out.value.ref (type1) = in.value.ref (type2);
   }
+  void operator() (const Type::Uint8& type1, const Type::Integer& type2)
+  {
+    out.value.ref (type1) = in.value.ref (type2);
+  }
+  void operator() (const Type::Uint16& type1, const Type::Integer& type2)
+  {
+    out.value.ref (type1) = in.value.ref (type2);
+  }
+  void operator() (const Type::Uint32& type1, const Type::Integer& type2)
+  {
+    out.value.ref (type1) = in.value.ref (type2);
+  }
+  void operator() (const Type::Uint64& type1, const Type::Integer& type2)
+  {
+    out.value.ref (type1) = in.value.ref (type2);
+  }
+  void operator() (const Type::Uint128& type1, const Type::Integer& type2)
+  {
+    out.value.ref (type1) = in.value.ref (type2);
+  }
+
   void operator() (const Type::Pointer& type1, const Type::Nil& type2)
   {
     out.value.ref (type1) = NULL;
@@ -746,9 +820,33 @@ struct ConvertImpl
   {
     out.value.ref (type1) = in.value.ref (type2);
   }
+  void operator() (const Type::Slice& type1, const Type::String& type2)
+  {
+    if (type1.Base () == &NamedByte)
+      {
+        out.value.ref (type1).ptr = in.value.ref (type2).ptr;
+        out.value.ref (type1).length = in.value.ref (type2).length;
+        out.value.ref (type1).capacity = in.value.ref (type2).length;
+      }
+    else
+      {
+        error (type1, type2);
+      }
+  }
+
+  void operator () (const Integer& type1, const Rune& type2)
+  {
+    out.value.ref (type1) = in.value.ref (type2);
+  }
 
   template <typename T1, typename T2>
   void operator() (const T1& type1, const T2& type2)
+  {
+    error (type1, type2);
+  }
+
+  template <typename T1, typename T2>
+  void error (const T1& type1, const T2& type2)
   {
     error_at_line (-1, 0, location.File.c_str (), location.Line,
                    "cannot convert %s to %s (E49)", in.type->ToString ().c_str (), out.type->ToString ().c_str ());
@@ -764,7 +862,7 @@ typed_value_t::Convert (const Location& location, const Type::Type* type) const
   typed_value_t out = *this;
   out.type = type;
   ConvertImpl c (location, out, *this);
-  doubleDispatch (type->UnderlyingType (), this->type, c);
+  DoubleDispatch (type->UnderlyingType (), this->type, c);
   return out;
 }
 
@@ -776,10 +874,27 @@ comparison (const Location& location, const typed_value_t& left, const typed_val
   assert (!right.IsError());
   left.RequireValue (location);
   right.RequireValue (location);
-  typed_value_t out = typed_value_t::make_value (Type::Boolean::Instance (), IMMUTABLE, IMMUTABLE);
-  T c (location, out, left, right);
+  typed_value_t out;
+  if (left.value.present && right.value.present)
+    {
+      out = typed_value_t::make_value (Type::Boolean::Instance (), IMMUTABLE, IMMUTABLE);
+    }
+  else
+    {
+      out = typed_value_t::make_value (Type::Bool::Instance (), IMMUTABLE, IMMUTABLE);
+    }
+  T c (location, left, right);
   RequireIdentical (location, c.Op (), left.type, right.type);
   singleDispatch (left.type->UnderlyingType (), c);
+  if (left.value.present && right.value.present)
+    {
+      out.value.ref (*Type::Boolean::Instance ()) = c.retval;
+    }
+  else
+    {
+      out.value.ref (*Type::Bool::Instance ()) = c.retval;
+    }
+  out.value.present = left.value.present && right.value.present;
   return out;
 }
 
@@ -787,10 +902,10 @@ template <typename O>
 struct Compare
 {
   const Location& location;
-  typed_value_t& out;
+  bool retval;
   const typed_value_t& left;
   const typed_value_t& right;
-  Compare (const Location& loc, typed_value_t& o, const typed_value_t& l, const typed_value_t& r) : location (loc), out (o), left (l), right (r) { }
+  Compare (const Location& loc, const typed_value_t& l, const typed_value_t& r) : location (loc), retval (false), left (l), right (r) { }
 
   const char* Op () const
   {
@@ -800,8 +915,7 @@ struct Compare
   template<typename T>
   void doit (const T& type)
   {
-    out.value.ref (*Type::Boolean::Instance ()) = O () (left.value.ref (type), right.value.ref (type));
-    out.value.present = left.value.present && right.value.present;
+    retval = O () (left.value.ref (type), right.value.ref (type));
   }
 
   void operator() (const Type::Bool& type)
@@ -813,6 +927,14 @@ struct Compare
     doit (type);
   }
   void operator() (const Type::Uint& type)
+  {
+    doit (type);
+  }
+  void operator() (const Type::Uint64& type)
+  {
+    doit (type);
+  }
+  void operator() (const Type::Enum& type)
   {
     doit (type);
   }
@@ -885,10 +1007,10 @@ template <typename O>
 struct Order
 {
   const Location& location;
-  typed_value_t& out;
+  bool retval;
   const typed_value_t& left;
   const typed_value_t& right;
-  Order (const Location& loc, typed_value_t& o, const typed_value_t& l, const typed_value_t& r) : location (loc), out (o), left (l), right (r) { }
+  Order (const Location& loc, const typed_value_t& l, const typed_value_t& r) : location (loc), retval (false), left (l), right (r) { }
 
   const char* Op () const
   {
@@ -898,8 +1020,7 @@ struct Order
   template<typename T>
   void doit (const T& type)
   {
-    out.value.ref (*Type::Boolean::Instance ()) = O () (left.value.ref (type), right.value.ref (type));
-    out.value.present = left.value.present && right.value.present;
+    retval = O () (left.value.ref (type), right.value.ref (type));
   }
 
   void operator() (const Type::Int& type)
@@ -1355,7 +1476,7 @@ typed_value_t::LeftShift (const Location& location, const typed_value_t& left, c
   right.RequireValue (location);
   typed_value_t out = left;
   LeftShiftImpl c (location, out, left, right);
-  doubleDispatch (left.type->UnderlyingType (), right.type->UnderlyingType (), c);
+  DoubleDispatch (left.type->UnderlyingType (), right.type->UnderlyingType (), c);
   return out;
 }
 
@@ -1412,7 +1533,7 @@ typed_value_t::RightShift (const Location& location, const typed_value_t& left, 
   right.RequireValue (location);
   typed_value_t out = left;
   RightShiftImpl c (location, out, left, right);
-  doubleDispatch (left.type->UnderlyingType (), right.type->UnderlyingType (), c);
+  DoubleDispatch (left.type->UnderlyingType (), right.type->UnderlyingType (), c);
   return out;
 }
 
@@ -1499,18 +1620,23 @@ typed_value_t::BitXor (const Location& location, const typed_value_t& left, cons
 struct IntegralValueImpl
 {
   Type::Int::ValueType retval;
-  const typed_value_t& in;
+  const value_t& in;
 
-  IntegralValueImpl (const typed_value_t& i) : in (i) { }
+  IntegralValueImpl (const value_t& i) : in (i) { }
+
+  void operator() (const Type::Int& type)
+  {
+    retval = in.ref (type);
+  }
 
   void operator() (const Type::Uint& type)
   {
-    retval = in.value.ref (type);
+    retval = in.ref (type);
   }
 
   void operator() (const Type::Integer& type)
   {
-    retval = in.value.ref (type);
+    retval = in.ref (type);
   }
 
   template <typename T>
@@ -1524,7 +1650,25 @@ Type::Int::ValueType
 typed_value_t::integral_value () const
 {
   Location loc;
-  IntegralValueImpl c (*this);
+  IntegralValueImpl c (this->value);
+  singleDispatch (this->type->UnderlyingType (), c);
+  return c.retval;
+}
+
+Type::Int::ValueType
+typed_value_t::low_integral_value () const
+{
+  Location loc;
+  IntegralValueImpl c (this->low_value);
+  singleDispatch (this->type->UnderlyingType (), c);
+  return c.retval;
+}
+
+Type::Int::ValueType
+typed_value_t::high_integral_value () const
+{
+  Location loc;
+  IntegralValueImpl c (this->high_value);
   singleDispatch (this->type->UnderlyingType (), c);
   return c.retval;
 }
@@ -1544,6 +1688,11 @@ struct ArrayDimensionImpl
         error_at_line (-1, 0, location.File.c_str (), location.Line,
                        "array dimension is negative (E105)");
       }
+  }
+
+  void operator() (const Type::Int& type)
+  {
+    doit (type);
   }
 
   void operator() (const Type::Uint& type)

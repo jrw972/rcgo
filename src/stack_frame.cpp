@@ -359,6 +359,10 @@ struct PopVisitor : public Visitor
   {
     doit (type);
   }
+  void visit (const StringU& type)
+  {
+    doit (type);
+  }
   void default_action (const Type::Type& type)
   {
     type_not_reached (type);

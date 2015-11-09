@@ -34,23 +34,23 @@ enter_symbols (ast_t * node)
   node->EnterSymbol (new TypeSymbol ("bool", node, &Type::NamedBool));
 
   node->EnterSymbol (new TypeSymbol ("int", node, &Type::NamedInt));
-  node->EnterSymbol (new TypeSymbol ("int8", node, new Type::NamedType ("int8", Type::Int8::Instance ())));
+  node->EnterSymbol (new TypeSymbol ("int8", node, &Type::NamedInt8));
+  node->EnterSymbol (new TypeSymbol ("int16", node, &Type::NamedInt16));
+  node->EnterSymbol (new TypeSymbol ("int32", node, &Type::NamedInt32));
+  node->EnterSymbol (new TypeSymbol ("int64", node, &Type::NamedInt64));
+  node->EnterSymbol (new TypeSymbol ("int128", node, &Type::NamedInt128));
 
-  node->EnterSymbol (new TypeSymbol ("uint", node, new Type::NamedType ("uint", Type::Uint::Instance ())));
-
-  Type::NamedType* uint8_type = new Type::NamedType ("uint8", Type::Uint8::Instance ());
-  node->EnterSymbol (new TypeSymbol ("uint8", node, uint8_type));
-  Type::NamedType* uint16_type = new Type::NamedType ("uint16", Type::Uint16::Instance ());
-  node->EnterSymbol (new TypeSymbol ("uint16", node, uint16_type));
-  node->EnterSymbol (new TypeSymbol ("uint32", node, new Type::NamedType ("uint32", Type::Uint32::Instance ())));
-
-  Type::NamedType* uint64_type = new Type::NamedType ("uint64", Type::Uint64::Instance ());
-  node->EnterSymbol (new TypeSymbol ("uint64", node, uint64_type));
-
-  node->EnterSymbol (new TypeSymbol ("uint128", node, new Type::NamedType ("uint128", Type::Uint128::Instance ())));
+  node->EnterSymbol (new TypeSymbol ("uint", node, &Type::NamedUint));
+  node->EnterSymbol (new TypeSymbol ("uint8", node, &Type::NamedUint8));
+  node->EnterSymbol (new TypeSymbol ("uint16", node, &Type::NamedUint16));
+  node->EnterSymbol (new TypeSymbol ("uint32", node, &Type::NamedUint32));
+  node->EnterSymbol (new TypeSymbol ("uint64", node, &Type::NamedUint64));
+  node->EnterSymbol (new TypeSymbol ("uint128", node, &Type::NamedUint128));
 
   node->EnterSymbol (new TypeSymbol ("float64", node, &Type::NamedFloat64));
 
+  node->EnterSymbol (new TypeSymbol ("rune", node, &Type::NamedRune));
+  node->EnterSymbol (new TypeSymbol ("byte", node, &Type::NamedByte));
   node->EnterSymbol (new TypeSymbol ("string", node, &Type::NamedString));
 
   // Insert builtin-in functions.
@@ -61,15 +61,14 @@ enter_symbols (ast_t * node)
   node->EnterSymbol (new runtime::Println (node));
 
   /* I/O facilities. */
-  Type::NamedType* fd_type = new Type::NamedType ("FileDescriptor", Type::FileDescriptor::Instance ());
-  node->EnterSymbol (new TypeSymbol ("FileDescriptor", node, fd_type));
-  node->EnterSymbol (new Readable (node, fd_type, &Type::NamedBool));
-  node->EnterSymbol (new Read (node, fd_type, uint8_type));
-  node->EnterSymbol (new Writable (node, fd_type, &Type::NamedBool));
-  node->EnterSymbol (new TimerfdCreate (node, fd_type));
-  node->EnterSymbol (new TimerfdSettime (node, fd_type, &Type::NamedInt, uint64_type));
-  node->EnterSymbol (new UdpSocket (node, fd_type));
-  node->EnterSymbol (new Sendto (node, fd_type, uint8_type, uint16_type));
+  node->EnterSymbol (new TypeSymbol ("FileDescriptor", node, &Type::NamedFileDescriptor));
+  node->EnterSymbol (new Readable (node));
+  node->EnterSymbol (new Read (node));
+  node->EnterSymbol (new Writable (node));
+  node->EnterSymbol (new TimerfdCreate (node));
+  node->EnterSymbol (new TimerfdSettime (node));
+  node->EnterSymbol (new UdpSocket (node));
+  node->EnterSymbol (new Sendto (node));
 
   /* Insert zero constant. */
   node->EnterSymbol (new TypedConstantSymbol ("nil",

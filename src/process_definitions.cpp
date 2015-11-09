@@ -11,12 +11,31 @@
 using namespace Type;
 
 typed_value_t
-ImplicitlyConvert (ast_t*& expr, const Type::Type* type)
+ImplicitlyConvert (ast_t*& expr, const Type::Type* target)
 {
   typed_value_t tv = expr->typed_value;
-  if (tv.type->Level () == Type::Type::UNTYPED && type->Level () > tv.type->Level ())
+  if (!Type::Identitical (target, tv.type) && tv.AssignableTo (target))
     {
-      tv = tv.Convert (expr->location, type);
+      tv = tv.Convert (expr->location, target);
+      expr = new ast_implicit_conversion_expr_t (expr->location.Line, expr);
+      expr->typed_value = tv;
+    }
+  return tv;
+}
+
+typed_value_t
+ImplicitlyConvertToDefault (ast_t*& expr)
+{
+  typed_value_t tv = expr->typed_value;
+  const Type::Type* target = tv.type->DefaultType ();
+  if (!Type::Identitical (target, tv.type))
+    {
+      if (!tv.AssignableTo (target))
+        {
+          error_at_line (-1, 0, expr->location.File.c_str (), expr->location.Line,
+                         "cannot convert to real type (E68)");
+        }
+      tv = tv.Convert (expr->location, target);
       expr = new ast_implicit_conversion_expr_t (expr->location.Line, expr);
       expr->typed_value = tv;
     }
@@ -128,19 +147,6 @@ CheckAndImplicitlyDereference (ast_t*& expr)
     {
       // Insert a dereference node.
       tv = insertImplicitDereference (expr, tv);
-    }
-  return tv;
-}
-
-typed_value_t
-ImplicitlyConvertToDefault (ast_t*& expr)
-{
-  typed_value_t tv = expr->typed_value;
-  if (tv.type->Level () == Type::Type::UNTYPED)
-    {
-      tv = tv.Convert (expr->location, tv.type->DefaultType ());
-      expr = new ast_implicit_conversion_expr_t (expr->location.Line, expr);
-      expr->typed_value = tv;
     }
   return tv;
 }
@@ -532,6 +538,22 @@ struct check_visitor : public ast_visitor_t
     // Expecting a value.
     typed_value_t expr_tv = CheckAndImplicitlyDereference (node.expr_ref ());
 
+    if (expr_tv.kind == typed_value_t::TYPE)
+      {
+        // Conversion.
+        if (tvlist.size () != 1)
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "conversion requires exactly one argument (E69)");
+          }
+
+        node.typed_value = tvlist[0].Convert (node.location, expr_tv.type);
+        node.IsCall = false;
+        return;
+      }
+
+    node.IsCall = true;
+
     const Type::Template* tt = Type::type_strip_cast <Type::Template> (expr_tv.type);
     if (tt != NULL)
       {
@@ -755,7 +777,7 @@ checkArgs (ast_t * node, TypedValueListType& tvlist)
 static typed_value_t
 check_condition (ast_t*& condition_node)
 {
-  typed_value_t tv = CheckAndImplicitlyDereference (condition_node);
+  typed_value_t tv = CheckAndImplicitlyDereferenceAndConvertToDefault (condition_node);
   if (!type_is_boolean (tv.type))
     {
       error_at_line (-1, 0, condition_node->location.File.c_str (),
@@ -911,6 +933,11 @@ type_check_statement (ast_t * node)
           type.UnderlyingType ()->Accept (*this);
         }
 
+        void visit (const Int& type)
+        {
+          // Okay.
+        }
+
         void visit (const Uint& type)
         {
           // Okay.
@@ -1025,6 +1052,11 @@ type_check_statement (ast_t * node)
         void visit (const NamedType& type)
         {
           type.UnderlyingType ()->Accept (*this);
+        }
+
+        void visit (const Int& type)
+        {
+          // Okay.
         }
 
         void visit (const Uint& type)

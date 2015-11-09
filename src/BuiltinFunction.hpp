@@ -41,43 +41,43 @@ protected:
 
 struct Readable : public BuiltinFunction
 {
-  Readable (ast_t* dn, const Type::Type* fd_type, const Type::Type* bool_type);
+  Readable (ast_t* dn);
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
 };
 
 struct Read : public BuiltinFunction
 {
-  Read (ast_t* dn, const Type::Type* fd_type, const Type::Type* uint8_type);
+  Read (ast_t* dn);
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
 };
 
 struct Writable : public BuiltinFunction
 {
-  Writable (ast_t* dn, const Type::Type* fd_type, const Type::Type* bool_type);
+  Writable (ast_t* dn);
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
 };
 
 struct TimerfdCreate : public BuiltinFunction
 {
-  TimerfdCreate (ast_t* dn, const Type::Type* fd_type);
+  TimerfdCreate (ast_t* dn);
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
 };
 
 struct TimerfdSettime : public BuiltinFunction
 {
-  TimerfdSettime (ast_t* dn, const Type::Type* fd_type, const Type::Type* int_type, const Type::Type* uint64_type);
+  TimerfdSettime (ast_t* dn);
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
 };
 
 struct UdpSocket : public BuiltinFunction
 {
-  UdpSocket (ast_t* dn, const Type::Type* fd_type);
+  UdpSocket (ast_t* dn);
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
 };
 
 struct Sendto : public BuiltinFunction
 {
-  Sendto (ast_t* dn, const Type::Type* fd_type, const Type::Type* uint8_type, const Type::Type* uint16_type);
+  Sendto (ast_t* dn);
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
 };
 

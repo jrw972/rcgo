@@ -23,7 +23,7 @@ lookup_no_force (ast_t * node, const std::string& identifier)
 typed_value_t
 process_array_dimension (ast_t*& ptr)
 {
-  typed_value_t tv = CheckAndImplicitlyDereference (ptr);
+  typed_value_t tv = CheckAndImplicitlyDereferenceAndConvertToDefault (ptr);
   tv.ArrayDimension (ptr->location);
   return tv;
 }

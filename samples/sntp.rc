@@ -5,22 +5,22 @@ type Timer component {
 
 init (this *Timer) Init (interval uint64) {
      this.fd = timerfd_create();
-     if (interval != 0u64) {
+     if (interval != 0) {
           timerfd_settime(this.fd, interval);
      }
 }
 
-action (this +const * Timer) (readable(this.fd)) {
+action (this +const * Timer) _alarm (readable(this.fd)) {
      activate Alarm () {
-          var buf [8u]uint8;
-          var r int = read(this.fd, buf[0u:8u]);
+          var buf [8]byte;
+          var r int = read(this.fd, buf[0:8]);
      }
 }
 
 type UdpMessage struct {
-  host []uint8;
+  host string;
   port uint16;
-  msg  []uint8;
+  msg  []byte;
 };
 
 func (this +foreign *UdpMessage) Copy () UdpMessage {
@@ -88,7 +88,7 @@ reaction (this +const * UdpParticipant) Send (msg +foreign UdpMessage) {
      };
 }
 
-action (this +const * UdpParticipant) (!this.queue.Empty () && writable (this.fd)) {
+action (this +const * UdpParticipant) _send (!this.queue.Empty () && writable (this.fd)) {
        activate {
               var m UdpMessage = this.queue.Front ();
               sendto (this.fd, m.host, m.port, m.msg);
@@ -96,11 +96,11 @@ action (this +const * UdpParticipant) (!this.queue.Empty () && writable (this.fd
        }
 }
 
-action (this +const * UdpParticipant) (readable (this.fd)) {
+action (this +const * UdpParticipant) _receive (readable (this.fd)) {
        activate {
-          var buf [128u]uint8;
-          var r int = read(this.fd, buf[0u:128u]);
-          println (buf[0u:r]);
+          var buf [128]byte;
+          var r int = read(this.fd, buf[0:128]);
+          println (buf[0:r]);
        }
 }
 
@@ -114,21 +114,21 @@ type System component {
      Send push (msg +foreign UdpMessage);
 };
 
-bind (this *System) {
+bind (this *System) _bind {
      this.timer.Alarm -> this.Alarm;
      this.Send -> this.udp.Send;
 }
 
 init (this *System) Init () {
-     this.timer.Init(1u64);
+     this.timer.Init(1);
      this.udp.Init();
 }
 
 reaction (this +const * System) Alarm () {
      var msg +foreign UdpMessage;
      msg.host = `localhost`;
-     msg.port = 7u16;
-     msg.msg = `hello, world`;
+     msg.port = 7;
+     msg.msg = []byte(`hello, world`);
      activate Send (msg) { };
 }
 

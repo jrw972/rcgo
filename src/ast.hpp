@@ -831,6 +831,8 @@ struct ast_call_expr_t : public ast_expr_t
   {
     out << "call_expr";
   }
+
+  bool IsCall;
 };
 
 struct ast_dereference_expr_t : public ast_unary_expr_t
@@ -1724,9 +1726,12 @@ struct ast_dimensioned_action_t : public ast_t
     COUNT
   };
 
-  ast_dimensioned_action_t (unsigned int line, ast_t* receiver,
-                            ast_t* identifier, ast_t* dimension,
-                            ast_t* precondition, ast_t* body)
+  ast_dimensioned_action_t (unsigned int line,
+                            ast_t* dimension,
+                            ast_t* receiver,
+                            ast_t* identifier,
+                            ast_t* precondition,
+                            ast_t* body)
     : ast_t (line, COUNT)
     , action (NULL)
   {

@@ -5,10 +5,10 @@ type Variable component {
 };
 
 func (this *Variable) Init () {
-    this.value = -1i;
+    this.value = -1;
 }
 
-[3u] reaction (this +const * Variable) Set (v int) {
+[3] reaction (this +const * Variable) Set (v int) {
     activate {
         this.value = v;
     }
@@ -36,8 +36,8 @@ type Process component {
 
 func (this *Process) Init () {
     this.status = PROCESS_IDLE;
-    this.input = -1i;
-    this.output = -1i;
+    this.input = -1;
+    this.output = -1;
 }
 
 reaction (this +const * Process) initr (v int) {
@@ -50,10 +50,10 @@ reaction (this +const * Process) initr (v int) {
 }
 
 // Access
-action (this +const * Process) (this.status == PROCESS_ACCESS) {
+action (this +const * Process) _access (this.status == PROCESS_ACCESS) {
     var x int;
     x = this.get_x ();
-    if x == -1i {
+    if x == -1 {
         activate set_x (this.input) {
             println (`x set to `, this.input);
             this.output = this.input;
@@ -69,7 +69,7 @@ action (this +const * Process) (this.status == PROCESS_ACCESS) {
 }
 
 // Decide
-action (this +const * Process) (this.status == PROCESS_DECIDE) {
+action (this +const * Process) _decide (this.status == PROCESS_DECIDE) {
     activate Decide (this.output) {
         this.status = PROCESS_DONE;
     }
@@ -92,12 +92,12 @@ type User component {
 init (this *User) Init (v int) {
     this.v = v;
     this.status = USER_REQUEST;
-    this.decision = -1i;
+    this.decision = -1;
     this.error = false;
 }
 
 // Init
-action (this +const * User) (this.status == USER_REQUEST || this.error) {
+action (this +const * User) _init (this.status == USER_REQUEST || this.error) {
     activate initp (this.v) {
         if !this.error {
             this.status = USER_WAIT;
@@ -106,7 +106,7 @@ action (this +const * User) (this.status == USER_REQUEST || this.error) {
 }
 
 // Dummy
-action (this +const * User) (this.error) {
+action (this +const * User) _dummy (this.error) {
 }
 
 reaction (this +const * User) Decide (v int) {
@@ -125,22 +125,22 @@ reaction (this +const * User) Decide (v int) {
 
 type System component {
     x Variable;
-    process [3u]Process;
-    user [3u]User;
+    process [3]Process;
+    user [3]User;
 };
 
 init (this *System) Init () {
     this.x.Init ();
-    for i .. 3i {
+    for i ... 3 {
         this.process[i].Init ();
-        this.user[i].Init (i + 100i);
+        this.user[i].Init (i + 100);
     }
 }
 
-bind (this *System) {
-    for i .. 3u {
+bind (this *System) _bind {
+    for i ... 3 {
         this.process[i].get_x <- this.x.Get;
-        this.process[i].set_x -> this.x.Set .. i;
+        this.process[i].set_x -> this.x.Set ... i;
         this.user[i].initp -> this.process[i].initr;
         this.process[i].Decide -> this.user[i].Decide;
     }

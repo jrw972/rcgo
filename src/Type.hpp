@@ -9,6 +9,8 @@
 #include <sstream>
 #include <cstring>
 
+#define type_not_reached(type) do { std::cerr << '\n' << type << std::endl; not_reached; } while (0);
+
 #define StringReturner(name, string) struct name { const char* operator() () const { return string; } }
 
 namespace Type
@@ -44,7 +46,11 @@ namespace Type
     }
     virtual const Type* DefaultType () const
     {
-      return NULL;
+      return this;
+    }
+    bool IsUntyped () const
+    {
+      return Level () == UNTYPED;
     }
     const Pointer* GetPointer () const;
     const Slice* GetSlice () const;
@@ -88,10 +94,6 @@ namespace Type
     const Type* UnderlyingType () const
     {
       return underlyingType_;
-    }
-    virtual const Type* DefaultType () const
-    {
-      return this;
     }
     virtual size_t Alignment () const
     {
@@ -662,6 +664,21 @@ namespace Type
     Boolean () { }
   };
 
+  class Rune : public Untyped
+  {
+  public:
+    typedef int32_t ValueType;
+    virtual const Type* DefaultType () const;
+    void Accept (Visitor& visitor) const;
+    std::string ToString () const
+    {
+      return "<<rune>>";
+    }
+    static const Rune* Instance ();
+  private:
+    Rune () { }
+  };
+
   class Integer : public Untyped
   {
   public:
@@ -910,6 +927,10 @@ namespace Type
     {
       default_action (type);
     }
+    virtual void visit (const Rune& type)
+    {
+      default_action (type);
+    }
     virtual void visit (const Integer& type)
     {
       default_action (type);
@@ -936,6 +957,197 @@ namespace Type
     }
     virtual void default_action (const Type& type) { }
   };
+
+  template <typename T, typename T1>
+  struct visitor2 : public Visitor
+  {
+    const T1& type1;
+    T& t;
+
+    visitor2 (const T1& t1, T& t_) : type1 (t1), t (t_) { }
+
+    void default_action (const Type& type)
+    {
+      type_not_reached (type);
+    }
+
+    void visit (const Bool& type2)
+    {
+      t (type1, type2);
+    }
+
+    void visit (const Int& type2)
+    {
+      t (type1, type2);
+    }
+
+    void visit (const Uint& type2)
+    {
+      t (type1, type2);
+    }
+    void visit (const Uint8& type2)
+    {
+      t (type1, type2);
+    }
+    void visit (const Uint16& type2)
+    {
+      t (type1, type2);
+    }
+    void visit (const Uint32& type2)
+    {
+      t (type1, type2);
+    }
+    void visit (const Uint64& type2)
+    {
+      t (type1, type2);
+    }
+    void visit (const Uint128& type2)
+    {
+      t (type1, type2);
+    }
+
+    void visit (const Pointer& type2)
+    {
+      t (type1, type2);
+    }
+
+    void visit (const Slice& type2)
+    {
+      t (type1, type2);
+    }
+
+    void visit (const StringU& type2)
+    {
+      t (type1, type2);
+    }
+
+    void visit (const Boolean& type2)
+    {
+      t (type1, type2);
+    }
+
+    void visit (const Rune& type2)
+    {
+      t (type1, type2);
+    }
+
+    void visit (const Integer& type2)
+    {
+      t (type1, type2);
+    }
+
+    void visit (const String& type2)
+    {
+      t (type1, type2);
+    }
+
+    void visit (const Nil& type2)
+    {
+      t (type1, type2);
+    }
+  };
+
+  template <typename T, typename T1>
+  static void doubleDispatchHelper (const T1& type1, const Type* type2, T& t)
+  {
+    visitor2<T, T1> v (type1, t);
+    type2->Accept (v);
+  }
+
+  template <typename T>
+  struct visitor1 : public Visitor
+  {
+    const Type* type2;
+    T& t;
+    visitor1 (const Type* t2, T& t_) : type2 (t2), t (t_) { }
+
+    void default_action (const Type& type)
+    {
+      type_not_reached (type);
+    }
+
+    void visit (const Bool& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+
+    void visit (const Int& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+
+    void visit (const Uint& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+    void visit (const Uint8& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+    void visit (const Uint16& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+    void visit (const Uint32& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+    void visit (const Uint64& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+    void visit (const Uint128& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+
+    void visit (const Pointer& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+
+    void visit (const StringU& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+
+    void visit (const Slice& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+
+    void visit (const Boolean& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+
+    void visit (const Rune& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+
+    void visit (const Integer& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+
+    void visit (const String& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+
+    void visit (const Nil& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+  };
+
+  template <typename T>
+  static void DoubleDispatch (const Type* type1, const Type* type2, T& t)
+  {
+    visitor1<T> v (type2, t);
+    type1->Accept (v);
+  }
 
   // Select the appropriate object.
   field_t*
@@ -1040,17 +1252,6 @@ namespace Type
   const Type*
   type_strip (const Type* type);
 
-  // Choose between equivalent types.
-  inline const Type*
-  type_choose (const Type* x, const Type* y)
-  {
-    if (y->Level () > x->Level ())
-      {
-        return y;
-      }
-    return x;
-  }
-
   // Cast a type to a specific type.
   template<typename T>
   const T*
@@ -1084,11 +1285,24 @@ namespace Type
 
   extern NamedType NamedBool;
   extern NamedType NamedInt;
+  extern NamedType NamedInt8;
+  extern NamedType NamedInt16;
+  extern NamedType NamedInt32;
+  extern NamedType NamedInt64;
+  extern NamedType NamedInt128;
+  extern NamedType NamedUint;
+  extern NamedType NamedUint8;
+  extern NamedType NamedUint16;
+  extern NamedType NamedUint32;
+  extern NamedType NamedUint64;
+  extern NamedType NamedUint128;
   extern NamedType NamedFloat64;
   extern NamedType NamedComplex128;
+  extern NamedType NamedRune;
+  extern NamedType NamedByte;
   extern NamedType NamedString;
-}
 
-#define type_not_reached(type) do { std::cerr << '\n' << type << std::endl; not_reached; } while (0);
+  extern NamedType NamedFileDescriptor;
+}
 
 #endif /* Type_hpp */

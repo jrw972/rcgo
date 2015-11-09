@@ -506,6 +506,7 @@ type::Accept (Visitor& visitor) const \
   ACCEPT(Void)
   ACCEPT(Nil)
   ACCEPT(Boolean)
+  ACCEPT(Rune)
   ACCEPT(Integer)
   ACCEPT(Float)
   ACCEPT(Complex)
@@ -680,6 +681,54 @@ type::Accept (Visitor& visitor) const \
     return structurally_equal (type_strip (x), type_strip (y));
   }
 
+  struct IdentiticalImpl
+  {
+    bool retval;
+
+    IdentiticalImpl () : retval (false) { }
+
+    void operator() (const Array& type1, const Array& type2)
+    {
+      unimplemented;
+    }
+
+    void operator() (const Slice& type1, const Slice& type2)
+    {
+      retval = Identitical (type1.Base (), type2.Base ());
+    }
+
+    void operator() (const Struct& type1, const Struct& type2)
+    {
+      unimplemented;
+    }
+
+    void operator() (const Pointer& type1, const Pointer& type2)
+    {
+      unimplemented;
+    }
+
+    void operator() (const Function& type1, const Function& type2)
+    {
+      unimplemented;
+    }
+
+    // TODO:  Interfaces
+    // void operator() (const Function& type1, const Function& type2) {
+    //   unimplemented;
+    // }
+
+    // TODO:  Maps
+    // void operator() (const Function& type1, const Function& type2) {
+    //   unimplemented;
+    // }
+
+    template <typename T1, typename T2>
+    void operator() (const T1& type1, const T2& type2)
+    {
+      retval = static_cast<const Type*> (&type1) == static_cast<const Type*> (&type2);
+    }
+  };
+
   bool
   Identitical (const Type* x, const Type* y)
   {
@@ -688,17 +737,15 @@ type::Accept (Visitor& visitor) const \
         return true;
       }
 
-    if (x->Level () != y->Level ())
+    if (type_cast<NamedType> (x) != NULL ||
+        type_cast<NamedType> (y) != NULL)
       {
-        return false;
+        return x == y;
       }
 
-    if (x->Level () == Type::NAMED)
-      {
-        return false;
-      }
-
-    unimplemented;
+    IdentiticalImpl i;
+    DoubleDispatch (x, y, i);
+    return i.retval;
   }
 
   std::string
@@ -735,6 +782,7 @@ type::Instance () \
   INSTANCE(FileDescriptor)
   INSTANCE(Nil)
   INSTANCE(Boolean)
+  INSTANCE(Rune)
   INSTANCE(Integer)
   INSTANCE(Float)
   INSTANCE(Complex)
@@ -1324,6 +1372,12 @@ type::Instance () \
   }
 
   const Type*
+  Rune::DefaultType () const
+  {
+    return &NamedRune;
+  }
+
+  const Type*
   Integer::DefaultType () const
   {
     return &NamedInt;
@@ -1349,7 +1403,23 @@ type::Instance () \
 
   NamedType NamedBool ("bool", Bool::Instance ());
   NamedType NamedInt ("int", Int::Instance ());
+  NamedType NamedInt8 ("int8", Int8::Instance ());
+  NamedType NamedInt16 ("int16", Int16::Instance ());
+  NamedType NamedInt32 ("int32", Int32::Instance ());
+  NamedType NamedInt64 ("int64", Int64::Instance ());
+  NamedType NamedInt128 ("int128", Int128::Instance ());
+  NamedType NamedUint ("uint", Uint::Instance ());
+  NamedType NamedUint8 ("uint8", Uint8::Instance ());
+  NamedType NamedUint16 ("uint16", Uint16::Instance ());
+  NamedType NamedUint32 ("uint32", Uint32::Instance ());
+  NamedType NamedUint64 ("uint64", Uint64::Instance ());
+  NamedType NamedUint128 ("uint128", Uint128::Instance ());
   NamedType NamedFloat64 ("float64", Float64::Instance ());
   NamedType NamedComplex128 ("complex128", Complex128::Instance ());
+
+  NamedType NamedRune ("rune", Int::Instance ());
+  NamedType NamedByte ("byte", Uint8::Instance ());
   NamedType NamedString ("string", StringU::Instance ());
+
+  NamedType NamedFileDescriptor ("FileDescriptor", FileDescriptor::Instance ());
 }

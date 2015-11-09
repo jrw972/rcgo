@@ -59,7 +59,7 @@ reaction (this +const * Channel) send (message +foreign *uint)
   };
 }
 
-action (this +const * Channel) (!this.queue.Empty ())
+action (this +const * Channel) _receive (!this.queue.Empty ())
 {
   activate receive (this.queue.Front ())
     {
@@ -77,7 +77,7 @@ type System component
 init (this *System) Initially ()
 { }
 
-action (this +const * System) (this.send_count != 100u)
+action (this +const * System) _send (this.send_count != 100)
 {
   var x *uint;
   x = new (uint);
@@ -95,7 +95,7 @@ reaction (this +const * System) receive (message uint)
   println (`Received `, message);
 }
 
-bind (this *System) {
+bind (this *System) _bind {
   this.send -> this.channel.send;
   this.channel.receive -> this.receive;
 }

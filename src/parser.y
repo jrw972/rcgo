@@ -121,8 +121,8 @@ Receiver:
 Action:
   ACTION Receiver IDENTIFIER                '(' Expression ')' Block
 { $$ = new ast_action_t (@1, $2, $3, $5, $7); }
-| ACTION Receiver IDENTIFIER ArrayDimension '(' Expression ')' Block
-{ $$ = new ast_dimensioned_action_t (@1, $2, $3, $4, $6, $8); }
+| ArrayDimension ACTION Receiver IDENTIFIER '(' Expression ')' Block
+{ $$ = new ast_dimensioned_action_t (@1, $1, $3, $4, $6, $8); }
 
 Reaction:
 REACTION Receiver IDENTIFIER Signature Block

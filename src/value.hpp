@@ -26,7 +26,9 @@ struct value_t
   value_t (Template* t) : present (true), template_value_ (t) { }
   value_t (reaction_t* r) : present (true), reaction_value_ (r) { }
   value_t (const Type::Slice* t, Type::Slice::ValueType v) : present (true), slice_value_ (v) { }
+  value_t (const Type::StringU* t, Type::StringU::ValueType v) : present (true), stringu_value_ (v) { }
   value_t (const Type::Boolean*  t, Type::Boolean::ValueType v)  : present (true), boolean_value_ (v) { }
+  value_t (const Type::Rune*  t, Type::Rune::ValueType v)  : present (true), rune_value_ (v) { }
   value_t (const Type::Integer*  t, Type::Integer::ValueType v)  : present (true), integer_value_ (v) { }
   value_t (const Type::Float*  t, Type::Float::ValueType v)  : present (true), float_value_ (v) { }
   value_t (const Type::Complex*  t, Type::Complex::ValueType v)  : present (true), complex_value_ (v) { }
@@ -159,6 +161,14 @@ struct value_t
   {
     return boolean_value_;
   }
+  const Type::Rune::ValueType& ref (const Type::Rune&) const
+  {
+    return rune_value_;
+  }
+  Type::Rune::ValueType& ref (const Type::Rune&)
+  {
+    return rune_value_;
+  }
   const Type::Integer::ValueType& ref (const Type::Integer&) const
   {
     return integer_value_;
@@ -203,31 +213,37 @@ struct value_t
 private:
   union
   {
-    Type::Enum::ValueType enum_value_;
     Type::Bool::ValueType bool_value_;
+    Type::Enum::ValueType enum_value_;
+
     Type::Int::ValueType int_value_;
     Type::Int8::ValueType int8_value_;
     Type::Int16::ValueType int16_value_;
     Type::Int32::ValueType int32_value_;
     Type::Int64::ValueType int64_value_;
     Type::Int128::ValueType int128_value_;
+
     Type::Uint::ValueType uint_value_;
     Type::Uint8::ValueType uint8_value_;
     Type::Uint16::ValueType uint16_value_;
     Type::Uint32::ValueType uint32_value_;
     Type::Uint64::ValueType uint64_value_;
     Type::Uint128::ValueType uint128_value_;
+
     Type::Float32::ValueType float32_value_;
     Type::Float64::ValueType float64_value_;
+
     Type::Pointer::ValueType pointer_value_;
     Type::Slice::ValueType slice_value_;
     Type::StringU::ValueType stringu_value_;
+
     Callable* callable_value_;
     Template* template_value_;
     reaction_t* reaction_value_;
     Type::Pointer::ValueType reference_value_;
 
     Type::Boolean::ValueType boolean_value_;
+    Type::Rune::ValueType rune_value_;
     Type::Integer::ValueType integer_value_;
     Type::Float::ValueType float_value_;
     Type::Complex::ValueType complex_value_;

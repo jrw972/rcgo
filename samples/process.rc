@@ -2,7 +2,7 @@
 
 type Element struct
 {
-  value uint;
+  value int;
   next *Element;
 };
 
@@ -12,7 +12,7 @@ type Queue struct
   tail **Element;
 };
 
-func (this *Queue) Push (v uint)
+func (this *Queue) Push (v int)
 {
   if this.head == nil
     {
@@ -40,7 +40,7 @@ func (this +const * Queue) Empty () bool
   return this.head == nil;
 }
 
-func (this +const * Queue) Front () uint
+func (this +const * Queue) Front () int
 {
   return this.head.value;
 }
@@ -48,10 +48,10 @@ func (this +const * Queue) Front () uint
 type Channel component
 {
   queue Queue;
-  receive push (message uint);
+  receive push (message int);
 };
 
-reaction (this +const * Channel) send (message uint)
+reaction (this +const * Channel) send (message int)
 {
   activate
   {
@@ -59,7 +59,7 @@ reaction (this +const * Channel) send (message uint)
   };
 }
 
-action (this +const * Channel) (!this.queue.Empty ())
+action (this +const * Channel) _receive (!this.queue.Empty ())
 {
   activate receive (this.queue.Front ())
     {
@@ -71,19 +71,19 @@ action (this +const * Channel) (!this.queue.Empty ())
 
 type Process component
 {
-  i uint;
-  val [3u]uint;
-  send [3u] push (v uint);
-  decide push (v uint);
+  i int;
+  val [3]int;
+  send [3] push (v int);
+  decide push (v int);
 };
 
-init (this *Process) Init (i uint)
+init (this *Process) Init (i int)
 {
   println (`I am process `, i);
   this.i = i;
 }
 
-reaction (this +const * Process) Initr (v uint)
+reaction (this +const * Process) Initr (v int)
 {
   activate
   {
@@ -92,7 +92,7 @@ reaction (this +const * Process) Initr (v uint)
   };
 }
 
-[3u] action (this +const * Process) (this.val[this.i] != 0u && this.i != IOTA)
+[3] action (this +const * Process) _send (this.val[this.i] != 0 && this.i != IOTA)
 {
   // send
   println (`Process `, this.i, ` sending `, this.val[this.i], ` to process `, IOTA);
@@ -100,9 +100,9 @@ reaction (this +const * Process) Initr (v uint)
   { };
 }
 
-[3u] reaction (this +const * Process) receive (v uint)
+[3] reaction (this +const * Process) receive (v int)
 {
-  println (`In receive`, this);
+  println (`In receive `, this);
   println (`Process `, this.i, ` received `, v, ` from process `, IOTA);
   activate
   {
@@ -110,11 +110,11 @@ reaction (this +const * Process) Initr (v uint)
   };
 }
 
-func p (val [3u]uint) bool {
-  var i uint;
-  i = 0u;
-  while i != 3u {
-    if val[i] == 0u {
+func p (val [3]int) bool {
+  var i int;
+  i = 0;
+  for i != 3 {
+    if val[i] == 0 {
       return false;
     };
     i++;
@@ -123,22 +123,22 @@ func p (val [3u]uint) bool {
   return true;
 }
 
-func f (val [3u]uint) uint
+func f (val [3]int) int
 {
-  var i, sum uint;
-  i = 0u;
-  sum = 0u;
-  while i != 3u {
+  var i, sum int;
+  i = 0;
+  sum = 0;
+  for i != 3 {
     sum += val[i];
     i++;
   };
   return sum;
 }
 
-action (this +const * Process) (p (this.val))
+action (this +const * Process) _decide (p (this.val))
 {
   // decide
-  var v uint;
+  var v int;
   v = f (this.val);
   println (`Process `, this.i, ` decided the value is `, v);
   activate decide (v)
@@ -147,42 +147,42 @@ action (this +const * Process) (p (this.val))
 
 type System component
 {
-  process [3u]Process;
-  channel [3u][3u]Channel;
-  initp [3u] push (v uint);
+  process [3]Process;
+  channel [3][3]Channel;
+  initp [3] push (v int);
 };
 
 init (this *System) Init ()
 {
-  var i uint;
-  i = 0u;
-  while i != 3u {
+  var i int;
+  i = 0;
+  for i != 3 {
     this.process[i].Init (i);
     i++;
   };
 }
 
-[3u] action (this +const * System) (true)
+[3] action (this +const * System) _send (true)
 {
   // send
-  activate initp[IOTA] (100u + IOTA)
+  activate initp[IOTA] (100 + IOTA)
   { };
 }
 
-[3u] reaction (this +const * System) decide (v uint)
+[3] reaction (this +const * System) decide (v int)
 {
   println (`Process `, IOTA, ` decided the value is `, v);
 }
 
-bind (this *System) {
-  for i .. 3u {
+bind (this *System) _bind {
+  for i ... 3 {
     this.initp[i] -> this.process[i].Initr;
-    this.process[i].decide -> this.decide .. i;
+    this.process[i].decide -> this.decide ... i;
 
-    for j .. 3u {
+    for j ... 3 {
       if i != j {
         this.process[i].send[j] -> this.channel[i][j].send;
-        this.channel[i][j].receive -> this.process[j].receive .. i;
+        this.channel[i][j].receive -> this.process[j].receive ... i;
       }
     }
   }

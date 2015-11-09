@@ -1448,6 +1448,13 @@ namespace runtime
             type.UnderlyingType ()->Accept (*this);
           }
 
+          void visit (const Int& type)
+          {
+            Int::ValueType x;
+            stack_frame_pop (exec.stack (), x);
+            *((Int::ValueType*)ptr) += x;
+          }
+
           void visit (const Uint& type)
           {
             Uint::ValueType x;
@@ -1544,6 +1551,11 @@ namespace runtime
           void visit (const NamedType& type)
           {
             type.UnderlyingType ()->Accept (*this);
+          }
+
+          void visit (const Int& type)
+          {
+            ++(*static_cast<Int::ValueType*> (ptr));
           }
 
           void visit (const Uint& type)

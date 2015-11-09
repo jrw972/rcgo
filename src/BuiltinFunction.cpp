@@ -30,12 +30,12 @@ BuiltinFunction::accept (ConstSymbolVisitor& visitor) const
   visitor.visit (*this);
 }
 
-Readable::Readable (ast_t* dn, const Type::Type* fd_type, const Type::Type* bool_type)
+Readable::Readable (ast_t* dn)
   : BuiltinFunction ("readable",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, MUTABLE, IMMUTABLE), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (bool_type, MUTABLE, MUTABLE), false)))
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, IMMUTABLE), false)),
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedBool, MUTABLE, MUTABLE), false)))
 { }
 
 void
@@ -61,12 +61,12 @@ Readable::call (executor_base_t& exec, const ast_call_expr_t& node) const
   stack_frame_push_tv (exec.stack (), typed_value_t (Bool::Instance (), pfd.revents & POLLIN));
 }
 
-Read::Read (ast_t* dn, const Type::Type* fd_type, const Type::Type* uint8_type)
+Read::Read (ast_t* dn)
   : BuiltinFunction ("read",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, MUTABLE, MUTABLE), false))
-                                         ->Append (new parameter_t (dn, "buf", typed_value_t::make_value (uint8_type->GetSlice (), MUTABLE, MUTABLE), false)),
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE), false))
+                                         ->Append (new parameter_t (dn, "buf", typed_value_t::make_value (Type::NamedByte.GetSlice (), MUTABLE, MUTABLE), false)),
                                          new parameter_t (dn, "0return", typed_value_t::make_value (Int::Instance (), MUTABLE, MUTABLE), false)))
 { }
 
@@ -86,12 +86,12 @@ Read::call (executor_base_t& exec, const ast_call_expr_t& node) const
   stack_frame_push_tv (exec.stack (), retval);
 }
 
-Writable::Writable (ast_t* dn, const Type::Type* fd_type, const Type::Type* bool_type)
+Writable::Writable (ast_t* dn)
   : BuiltinFunction ("writable",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, MUTABLE, IMMUTABLE), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (bool_type, MUTABLE, MUTABLE), false)))
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, IMMUTABLE), false)),
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedBool, MUTABLE, MUTABLE), false)))
 { }
 
 void
@@ -117,11 +117,11 @@ Writable::call (executor_base_t& exec, const ast_call_expr_t& node) const
   stack_frame_push_tv (exec.stack (), typed_value_t (Bool::Instance (), pfd.revents & POLLOUT));
 }
 
-TimerfdCreate::TimerfdCreate (ast_t* dn, const Type::Type* fd_type)
+TimerfdCreate::TimerfdCreate (ast_t* dn)
   : BuiltinFunction ("timerfd_create",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, new Signature (),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (fd_type, MUTABLE, MUTABLE), false)))
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE), false)))
 { }
 
 void
@@ -139,13 +139,13 @@ TimerfdCreate::call (executor_base_t& exec, const ast_call_expr_t& node) const
     }
 }
 
-TimerfdSettime::TimerfdSettime (ast_t* dn, const Type::Type* fd_type, const Type::Type* int_type, const Type::Type* uint64_type)
+TimerfdSettime::TimerfdSettime (ast_t* dn)
   : BuiltinFunction ("timerfd_settime",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, MUTABLE, MUTABLE), false))
-                                         ->Append (new parameter_t (dn, "s", typed_value_t::make_value (uint64_type, MUTABLE, MUTABLE), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (int_type, MUTABLE, MUTABLE), false)))
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE), false))
+                                         ->Append (new parameter_t (dn, "s", typed_value_t::make_value (&Type::NamedUint64, MUTABLE, MUTABLE), false)),
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedInt, MUTABLE, MUTABLE), false)))
 { }
 
 void
@@ -169,11 +169,11 @@ TimerfdSettime::call (executor_base_t& exec, const ast_call_expr_t& node) const
   stack_frame_push_tv (exec.stack (), typed_value_t (Int::Instance (), retval));
 }
 
-UdpSocket::UdpSocket (ast_t* dn, const Type::Type* fd_type)
+UdpSocket::UdpSocket (ast_t* dn)
   : BuiltinFunction ("udp_socket",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, new Signature (),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (fd_type, MUTABLE, MUTABLE), false)))
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE), false)))
 { }
 
 void
@@ -197,14 +197,14 @@ UdpSocket::call (executor_base_t& exec, const ast_call_expr_t& node) const
   stack_frame_push_pointer (exec.stack (), thefd);
 }
 
-Sendto::Sendto (ast_t* dn, const Type::Type* fd_type, const Type::Type* uint8_type, const Type::Type* uint16_type)
+Sendto::Sendto (ast_t* dn)
   : BuiltinFunction ("sendto",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (fd_type, MUTABLE, MUTABLE), false))
-                                         ->Append (new parameter_t (dn, "host", typed_value_t::make_value (uint8_type->GetSlice (), MUTABLE, IMMUTABLE), false))
-                                         ->Append (new parameter_t (dn, "port", typed_value_t::make_value (uint16_type, MUTABLE, IMMUTABLE), false))
-                                         ->Append (new parameter_t (dn, "buf", typed_value_t::make_value (uint8_type->GetSlice (), MUTABLE, IMMUTABLE), false)),
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE), false))
+                                         ->Append (new parameter_t (dn, "host", typed_value_t::make_value (&Type::NamedString, MUTABLE, IMMUTABLE), false))
+                                         ->Append (new parameter_t (dn, "port", typed_value_t::make_value (&Type::NamedUint16, MUTABLE, IMMUTABLE), false))
+                                         ->Append (new parameter_t (dn, "buf", typed_value_t::make_value (Type::NamedByte.GetSlice (), MUTABLE, IMMUTABLE), false)),
                                          new parameter_t (dn, "0return", typed_value_t::make_value (Int::Instance (), MUTABLE, MUTABLE), false)))
 { }
 

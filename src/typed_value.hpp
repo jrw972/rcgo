@@ -199,6 +199,8 @@ struct typed_value_t
   static typed_value_t copy_exec (const typed_value_t tv);
   static typed_value_t change (const Location& location, typed_value_t tv);
 
+  bool AssignableTo (const Type::Type* type) const;
+
   typed_value_t Convert (const Location& location, const Type::Type* type) const;
 
   static typed_value_t Equal (const Location& location, const typed_value_t& left, const typed_value_t& right);
@@ -252,19 +254,9 @@ struct typed_value_t
 
   Type::Int::ValueType integral_value () const;
 
-  Type::Int::ValueType low_integral_value () const
-  {
-    Location loc;
-    unimplemented;
-    //return cast (loc, Type::Int::Instance (), *this).low_value.ref (*Type::Int::Instance ());
-  }
+  Type::Int::ValueType low_integral_value () const;
 
-  Type::Int::ValueType high_integral_value () const
-  {
-    Location loc;
-    unimplemented;
-    //return cast (loc, Type::Int::Instance (), *this).high_value.ref (*Type::Int::Instance ());
-  }
+  Type::Int::ValueType high_integral_value () const;
 
   Type::Slice::ValueType slice_value () const
   {
