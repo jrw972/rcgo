@@ -33,19 +33,15 @@ enter_symbols (ast_t * node)
   /* Insert types. */
   node->EnterSymbol (new TypeSymbol ("bool", node, &Type::NamedBool));
 
-  node->EnterSymbol (new TypeSymbol ("int", node, &Type::NamedInt));
-  node->EnterSymbol (new TypeSymbol ("int8", node, &Type::NamedInt8));
-  node->EnterSymbol (new TypeSymbol ("int16", node, &Type::NamedInt16));
-  node->EnterSymbol (new TypeSymbol ("int32", node, &Type::NamedInt32));
-  node->EnterSymbol (new TypeSymbol ("int64", node, &Type::NamedInt64));
-  node->EnterSymbol (new TypeSymbol ("int128", node, &Type::NamedInt128));
-
-  node->EnterSymbol (new TypeSymbol ("uint", node, &Type::NamedUint));
   node->EnterSymbol (new TypeSymbol ("uint8", node, &Type::NamedUint8));
   node->EnterSymbol (new TypeSymbol ("uint16", node, &Type::NamedUint16));
   node->EnterSymbol (new TypeSymbol ("uint32", node, &Type::NamedUint32));
   node->EnterSymbol (new TypeSymbol ("uint64", node, &Type::NamedUint64));
-  node->EnterSymbol (new TypeSymbol ("uint128", node, &Type::NamedUint128));
+
+  node->EnterSymbol (new TypeSymbol ("int8", node, &Type::NamedInt8));
+  node->EnterSymbol (new TypeSymbol ("int16", node, &Type::NamedInt16));
+  node->EnterSymbol (new TypeSymbol ("int32", node, &Type::NamedInt32));
+  node->EnterSymbol (new TypeSymbol ("int64", node, &Type::NamedInt64));
 
   node->EnterSymbol (new TypeSymbol ("float32", node, &Type::NamedFloat32));
   node->EnterSymbol (new TypeSymbol ("float64", node, &Type::NamedFloat64));
@@ -53,8 +49,13 @@ enter_symbols (ast_t * node)
   node->EnterSymbol (new TypeSymbol ("complex64", node, &Type::NamedComplex64));
   node->EnterSymbol (new TypeSymbol ("complex128", node, &Type::NamedComplex128));
 
-  node->EnterSymbol (new TypeSymbol ("rune", node, &Type::NamedRune));
   node->EnterSymbol (new TypeSymbol ("byte", node, &Type::NamedByte));
+  node->EnterSymbol (new TypeSymbol ("rune", node, &Type::NamedRune));
+
+  node->EnterSymbol (new TypeSymbol ("uint", node, &Type::NamedUint));
+  node->EnterSymbol (new TypeSymbol ("int", node, &Type::NamedInt));
+  node->EnterSymbol (new TypeSymbol ("uintptr", node, &Type::NamedUintptr));
+
   node->EnterSymbol (new TypeSymbol ("string", node, &Type::NamedString));
 
   // Insert builtin-in functions.

@@ -12,13 +12,11 @@ struct value_t
   value_t (const Type::Int16*  t, Type::Int16::ValueType v)  : present (true), int16_value_ (v) { }
   value_t (const Type::Int32*  t, Type::Int32::ValueType v)  : present (true), int32_value_ (v) { }
   value_t (const Type::Int64*  t, Type::Int64::ValueType v)  : present (true), int64_value_ (v) { }
-  value_t (const Type::Int128*  t, Type::Int128::ValueType v)  : present (true), int128_value_ (v) { }
   value_t (const Type::Uint*  t, Type::Uint::ValueType v)  : present (true), uint_value_ (v) { }
   value_t (const Type::Uint8* t, Type::Uint8::ValueType v) : present (true), uint8_value_ (v) { }
   value_t (const Type::Uint16* t, Type::Uint16::ValueType v) : present (true), uint16_value_ (v) { }
   value_t (const Type::Uint32* t, Type::Uint32::ValueType v) : present (true), uint32_value_ (v) { }
   value_t (const Type::Uint64* t, Type::Uint64::ValueType v) : present (true), uint64_value_ (v) { }
-  value_t (const Type::Uint128* t, Type::Uint128::ValueType v) : present (true), uint128_value_ (v) { }
   value_t (const Type::NamedType* t, Type::Enum::ValueType v) : present (true), enum_value_ (v) { }
   value_t (const Type::Float32* t, Type::Float32::ValueType v) : present (true), float32_value_ (v) { }
   value_t (const Type::Float64* t, Type::Float64::ValueType v) : present (true), float64_value_ (v) { }
@@ -93,13 +91,14 @@ struct value_t
   {
     return int64_value_;
   }
-  const Type::Int128::ValueType& ref (const Type::Int128&) const
+
+  const Type::Uintptr::ValueType& ref (const Type::Uintptr&) const
   {
-    return int128_value_;
+    return uintptr_value_;
   }
-  Type::Int128::ValueType& ref (const Type::Int128&)
+  Type::Uintptr::ValueType& ref (const Type::Uintptr&)
   {
-    return int128_value_;
+    return uintptr_value_;
   }
 
   const Type::Uint::ValueType& ref (const Type::Uint&) const
@@ -141,14 +140,6 @@ struct value_t
   Type::Uint64::ValueType& ref (const Type::Uint64&)
   {
     return uint64_value_;
-  }
-  const Type::Uint128::ValueType& ref (const Type::Uint128&) const
-  {
-    return uint128_value_;
-  }
-  Type::Uint128::ValueType& ref (const Type::Uint128&)
-  {
-    return uint128_value_;
   }
 
   const Type::Float32::ValueType& ref (const Type::Float32&) const
@@ -294,25 +285,25 @@ private:
     Type::Bool::ValueType bool_value_;
     Type::Enum::ValueType enum_value_;
 
-    Type::Int::ValueType int_value_;
-    Type::Int8::ValueType int8_value_;
-    Type::Int16::ValueType int16_value_;
-    Type::Int32::ValueType int32_value_;
-    Type::Int64::ValueType int64_value_;
-    Type::Int128::ValueType int128_value_;
-
-    Type::Uint::ValueType uint_value_;
     Type::Uint8::ValueType uint8_value_;
     Type::Uint16::ValueType uint16_value_;
     Type::Uint32::ValueType uint32_value_;
     Type::Uint64::ValueType uint64_value_;
-    Type::Uint128::ValueType uint128_value_;
+
+    Type::Int8::ValueType int8_value_;
+    Type::Int16::ValueType int16_value_;
+    Type::Int32::ValueType int32_value_;
+    Type::Int64::ValueType int64_value_;
 
     Type::Float32::ValueType float32_value_;
     Type::Float64::ValueType float64_value_;
 
     Type::Complex64::ValueType complex64_value_;
     Type::Complex128::ValueType complex128_value_;
+
+    Type::Uint::ValueType uint_value_;
+    Type::Int::ValueType int_value_;
+    Type::Uintptr::ValueType uintptr_value_;
 
     Type::Pointer::ValueType pointer_value_;
     Type::Slice::ValueType slice_value_;

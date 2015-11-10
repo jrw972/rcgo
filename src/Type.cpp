@@ -508,18 +508,17 @@ type::Accept (Visitor& visitor) const \
   T_ACCEPT(Int16)
   T_ACCEPT(Int32)
   T_ACCEPT(Int64)
-  T_ACCEPT(Int128)
   T_ACCEPT(Uint)
   T_ACCEPT(Uint8)
   T_ACCEPT(Uint16)
   T_ACCEPT(Uint32)
   T_ACCEPT(Uint64)
-  T_ACCEPT(Uint128)
   T_ACCEPT(Float32)
   T_ACCEPT(Float64)
   T_ACCEPT(Complex64)
   T_ACCEPT(Complex128)
   T_ACCEPT(StringU)
+  T_ACCEPT(Uintptr)
   ACCEPT(Void)
   ACCEPT(Nil)
   ACCEPT(Boolean)
@@ -872,9 +871,6 @@ type::Instance () \
       void visit (const Int64& type)
       { }
 
-      void visit (const Int128& type)
-      { }
-
       void visit (const Uint& type)
       { }
 
@@ -888,9 +884,6 @@ type::Instance () \
       { }
 
       void visit (const Uint64& type)
-      { }
-
-      void visit (const Uint128& type)
       { }
 
       void visit (const Float32& type)
@@ -1032,11 +1025,6 @@ type::Instance () \
       }
 
       void visit (const Uint64& type)
-      {
-        flag = true;
-      }
-
-      void visit (const Uint128& type)
       {
         flag = true;
       }
@@ -1443,25 +1431,30 @@ type::Instance () \
   }
 
   NamedType NamedBool ("bool", Bool::Instance ());
-  NamedType NamedInt ("int", Int::Instance ());
-  NamedType NamedInt8 ("int8", Int8::Instance ());
-  NamedType NamedInt16 ("int16", Int16::Instance ());
-  NamedType NamedInt32 ("int32", Int32::Instance ());
-  NamedType NamedInt64 ("int64", Int64::Instance ());
-  NamedType NamedInt128 ("int128", Int128::Instance ());
-  NamedType NamedUint ("uint", Uint::Instance ());
+
   NamedType NamedUint8 ("uint8", Uint8::Instance ());
   NamedType NamedUint16 ("uint16", Uint16::Instance ());
   NamedType NamedUint32 ("uint32", Uint32::Instance ());
   NamedType NamedUint64 ("uint64", Uint64::Instance ());
-  NamedType NamedUint128 ("uint128", Uint128::Instance ());
+
+  NamedType NamedInt8 ("int8", Int8::Instance ());
+  NamedType NamedInt16 ("int16", Int16::Instance ());
+  NamedType NamedInt32 ("int32", Int32::Instance ());
+  NamedType NamedInt64 ("int64", Int64::Instance ());
+
   NamedType NamedFloat32 ("float32", Float32::Instance ());
   NamedType NamedFloat64 ("float64", Float64::Instance ());
+
   NamedType NamedComplex64 ("complex64", Complex64::Instance ());
   NamedType NamedComplex128 ("complex128", Complex128::Instance ());
 
-  NamedType NamedRune ("rune", Int::Instance ());
   NamedType NamedByte ("byte", Uint8::Instance ());
+  NamedType NamedRune ("rune", Int::Instance ());
+
+  NamedType NamedUint ("uint", Uint::Instance ());
+  NamedType NamedInt ("int", Int::Instance ());
+  NamedType NamedUintptr ("uintptr", Uintptr::Instance ());
+
   NamedType NamedString ("string", StringU::Instance ());
 
   NamedType NamedFileDescriptor ("FileDescriptor", FileDescriptor::Instance ());

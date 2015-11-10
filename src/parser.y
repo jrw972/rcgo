@@ -301,7 +301,7 @@ EnumType:
   ENUM '{' IdentifierList '}' { $$ = new ast_enum_type_spec_t (@1, $3); }
 
 PointerType:
-  '*' TypeLit { $$ = new ast_pointer_type_spec_t (@1, $2); }
+  '*' Type { $$ = new ast_pointer_type_spec_t (@1, $2); }
 
 TypeLit:
   PointerType       { $$ = $1; }

@@ -100,8 +100,6 @@ instantiate_contained_instances (const Type::Type * type,
 
     void visit (const Uint64& type) { }
 
-    void visit (const Uint128& type) { }
-
     void visit (const Float64& type) { }
 
     void visit (const Enum& type) { }

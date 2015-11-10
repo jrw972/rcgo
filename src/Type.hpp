@@ -271,27 +271,6 @@ namespace Type
   StringReturner(BoolString, "<bool>");
   typedef Scalar<bool, BoolString, false, false, false> Bool;
 
-  StringReturner(IntString, "<int>");
-  typedef Scalar<IntValueType, IntString, true, false, true> Int;
-
-  StringReturner(Int8String, "<int8>");
-  typedef Scalar<int8_t, Int8String, true, false, true> Int8;
-
-  StringReturner(Int16String, "<int16>");
-  typedef Scalar<int16_t, Int16String, true, false, true> Int16;
-
-  StringReturner(Int32String, "<int32>");
-  typedef Scalar<int32_t, Int32String, true, false, true> Int32;
-
-  StringReturner(Int64String, "<int64>");
-  typedef Scalar<int64_t, Int64String, true, false, true> Int64;
-
-  StringReturner(Int128String, "<int128>");
-  typedef Scalar<__int128_t, Int128String, true, false, true> Int128;
-
-  StringReturner(UintString, "<uint>");
-  typedef Scalar<uint64_t, UintString, true, false, true> Uint;
-
   StringReturner(Uint8String, "<uint8>");
   typedef Scalar<uint8_t, Uint8String, true, false, true> Uint8;
 
@@ -304,8 +283,17 @@ namespace Type
   StringReturner(Uint64String, "<uint64>");
   typedef Scalar<uint64_t, Uint64String, true, false, true> Uint64;
 
-  StringReturner(Uint128String, "<uint128>");
-  typedef Scalar<__uint128_t, Uint128String, true, false, true> Uint128;
+  StringReturner(Int8String, "<int8>");
+  typedef Scalar<int8_t, Int8String, true, false, true> Int8;
+
+  StringReturner(Int16String, "<int16>");
+  typedef Scalar<int16_t, Int16String, true, false, true> Int16;
+
+  StringReturner(Int32String, "<int32>");
+  typedef Scalar<int32_t, Int32String, true, false, true> Int32;
+
+  StringReturner(Int64String, "<int64>");
+  typedef Scalar<int64_t, Int64String, true, false, true> Int64;
 
   StringReturner(Float32String, "<float32>");
   typedef Scalar<float, Float32String, true, true, false> Float32;
@@ -329,7 +317,7 @@ namespace Type
       unimplemented;
     }
 
-    C64& operator= (const Int::ValueType& x)
+    C64& operator= (const Int64::ValueType& x)
     {
       this->real = x;
       this->imag = 0;
@@ -354,7 +342,7 @@ namespace Type
       unimplemented;
     }
 
-    C128& operator= (const Int::ValueType& x)
+    C128& operator= (const Int64::ValueType& x)
     {
       this->real = x;
       this->imag = 0;
@@ -362,6 +350,15 @@ namespace Type
     }
   };
   typedef Scalar<C128, Complex128String, true, false, false> Complex128;
+
+  StringReturner(UintString, "<uint>");
+  typedef Scalar<uint64_t, UintString, true, false, true> Uint;
+
+  StringReturner(IntString, "<int>");
+  typedef Scalar<IntValueType, IntString, true, false, true> Int;
+
+  StringReturner(UintptrString, "<uintptr>");
+  typedef Scalar<ptrdiff_t, UintptrString, true, false, true> Uintptr;
 
   StringReturner(StringUString, "<string>");
   struct StringRep
@@ -968,13 +965,11 @@ namespace Type
     virtual void visit (const Int16& type) = 0;
     virtual void visit (const Int32& type) = 0;
     virtual void visit (const Int64& type) = 0;
-    virtual void visit (const Int128& type) = 0;
     virtual void visit (const Uint& type) = 0;
     virtual void visit (const Uint8& type) = 0;
     virtual void visit (const Uint16& type) = 0;
     virtual void visit (const Uint32& type) = 0;
     virtual void visit (const Uint64& type) = 0;
-    virtual void visit (const Uint128& type) = 0;
     virtual void visit (const Float32& type) = 0;
     virtual void visit (const Float64& type) = 0;
     virtual void visit (const Complex64& type) = 0;
@@ -989,6 +984,7 @@ namespace Type
     virtual void visit (const String& type) = 0;
     virtual void visit (const Void& type) = 0;
     virtual void visit (const Template& type) = 0;
+    virtual void visit (const Uintptr& type) = 0;
   };
 
   template <typename T>
@@ -1071,10 +1067,6 @@ namespace Type
     {
       t (type);
     }
-    virtual void visit (const Int128& type)
-    {
-      t (type);
-    }
     virtual void visit (const Uint& type)
     {
       t (type);
@@ -1092,10 +1084,6 @@ namespace Type
       t (type);
     }
     virtual void visit (const Uint64& type)
-    {
-      t (type);
-    }
-    virtual void visit (const Uint128& type)
     {
       t (type);
     }
@@ -1155,7 +1143,11 @@ namespace Type
     {
       t.NotComparable (type);
     }
-  };
+    virtual void visit (const Uintptr& type)
+    {
+      t (type);
+    }
+   };
 
   template <typename T>
   struct OrderableVisitor : public Visitor
@@ -1237,10 +1229,6 @@ namespace Type
     {
       t (type);
     }
-    virtual void visit (const Int128& type)
-    {
-      t (type);
-    }
     virtual void visit (const Uint& type)
     {
       t (type);
@@ -1258,10 +1246,6 @@ namespace Type
       t (type);
     }
     virtual void visit (const Uint64& type)
-    {
-      t (type);
-    }
-    virtual void visit (const Uint128& type)
     {
       t (type);
     }
@@ -1320,6 +1304,10 @@ namespace Type
     virtual void visit (const Template& type)
     {
       t.NotOrderable (type);
+    }
+    virtual void visit (const Uintptr& type)
+    {
+      t (type);
     }
   };
 
@@ -1403,10 +1391,6 @@ namespace Type
     {
       t (type);
     }
-    virtual void visit (const Int128& type)
-    {
-      t (type);
-    }
     virtual void visit (const Uint& type)
     {
       t (type);
@@ -1424,10 +1408,6 @@ namespace Type
       t (type);
     }
     virtual void visit (const Uint64& type)
-    {
-      t (type);
-    }
-    virtual void visit (const Uint128& type)
     {
       t (type);
     }
@@ -1486,6 +1466,10 @@ namespace Type
     virtual void visit (const Template& type)
     {
       t.NotArithmetic (type);
+    }
+    virtual void visit (const Uintptr& type)
+    {
+      t (type);
     }
   };
 
@@ -1569,10 +1553,6 @@ namespace Type
     {
       t (type);
     }
-    virtual void visit (const Int128& type)
-    {
-      t (type);
-    }
     virtual void visit (const Uint& type)
     {
       t (type);
@@ -1590,10 +1570,6 @@ namespace Type
       t (type);
     }
     virtual void visit (const Uint64& type)
-    {
-      t (type);
-    }
-    virtual void visit (const Uint128& type)
     {
       t (type);
     }
@@ -1652,6 +1628,10 @@ namespace Type
     virtual void visit (const Template& type)
     {
       t.NotIntegral (type);
+    }
+    virtual void visit (const Uintptr& type)
+    {
+      t (type);
     }
   };
 
@@ -1735,10 +1715,6 @@ namespace Type
     {
       t.NotLogical (type);
     }
-    virtual void visit (const Int128& type)
-    {
-      t.NotLogical (type);
-    }
     virtual void visit (const Uint& type)
     {
       t.NotLogical (type);
@@ -1756,10 +1732,6 @@ namespace Type
       t.NotLogical (type);
     }
     virtual void visit (const Uint64& type)
-    {
-      t.NotLogical (type);
-    }
-    virtual void visit (const Uint128& type)
     {
       t.NotLogical (type);
     }
@@ -1816,6 +1788,10 @@ namespace Type
       t.NotLogical (type);
     }
     virtual void visit (const Template& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Uintptr& type)
     {
       t.NotLogical (type);
     }
@@ -1895,10 +1871,6 @@ namespace Type
     {
       default_action (type);
     }
-    virtual void visit (const Int128& type)
-    {
-      default_action (type);
-    }
     virtual void visit (const Uint& type)
     {
       default_action (type);
@@ -1916,10 +1888,6 @@ namespace Type
       default_action (type);
     }
     virtual void visit (const Uint64& type)
-    {
-      default_action (type);
-    }
-    virtual void visit (const Uint128& type)
     {
       default_action (type);
     }
@@ -1979,6 +1947,11 @@ namespace Type
     {
       default_action (type);
     }
+    virtual void visit (const Uintptr& type)
+    {
+      default_action (type);
+    }
+
     virtual void default_action (const Type& type) { }
   };
 
@@ -2020,10 +1993,6 @@ namespace Type
     {
       t (type1, type2);
     }
-    void visit (const Int128& type2)
-    {
-      t (type1, type2);
-    }
 
     void visit (const Uint& type2)
     {
@@ -2042,10 +2011,6 @@ namespace Type
       t (type1, type2);
     }
     void visit (const Uint64& type2)
-    {
-      t (type1, type2);
-    }
-    void visit (const Uint128& type2)
     {
       t (type1, type2);
     }
@@ -2155,10 +2120,6 @@ namespace Type
     {
       doubleDispatchHelper (type, type2, t);
     }
-    void visit (const Int128& type)
-    {
-      doubleDispatchHelper (type, type2, t);
-    }
 
     void visit (const Uint& type)
     {
@@ -2177,10 +2138,6 @@ namespace Type
       doubleDispatchHelper (type, type2, t);
     }
     void visit (const Uint64& type)
-    {
-      doubleDispatchHelper (type, type2, t);
-    }
-    void visit (const Uint128& type)
     {
       doubleDispatchHelper (type, type2, t);
     }
@@ -2387,22 +2344,27 @@ namespace Type
   }
 
   extern NamedType NamedBool;
-  extern NamedType NamedInt;
-  extern NamedType NamedInt8;
-  extern NamedType NamedInt16;
-  extern NamedType NamedInt32;
-  extern NamedType NamedInt64;
-  extern NamedType NamedInt128;
-  extern NamedType NamedUint;
+
   extern NamedType NamedUint8;
   extern NamedType NamedUint16;
   extern NamedType NamedUint32;
   extern NamedType NamedUint64;
-  extern NamedType NamedUint128;
+
+  extern NamedType NamedInt8;
+  extern NamedType NamedInt16;
+  extern NamedType NamedInt32;
+  extern NamedType NamedInt64;
+
   extern NamedType NamedFloat32;
   extern NamedType NamedFloat64;
+
   extern NamedType NamedComplex64;
   extern NamedType NamedComplex128;
+
+  extern NamedType NamedUint;
+  extern NamedType NamedInt;
+  extern NamedType NamedUintptr;
+
   extern NamedType NamedRune;
   extern NamedType NamedByte;
   extern NamedType NamedString;
