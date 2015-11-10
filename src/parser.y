@@ -13,16 +13,19 @@
 %type <node> AddExpression
 %type <node> AndExpression
 %type <node> ArrayDimension
+%type <node> ArrayType
 %type <node> AssignmentStatement
 %type <node> Bind
 %type <node> BindStatement
 %type <node> Block
 %type <node> ChangeStatement
 %type <node> CompareExpression
+%type <node> ComponentType
 %type <node> Const
 %type <node> Definition
 %type <node> DefinitionList
 %type <node> EmptyStatement
+%type <node> EnumType
 %type <node> Expression
 %type <node> ExpressionList
 %type <node> ExpressionStatement
@@ -30,6 +33,7 @@
 %type <node> ForIotaStatement
 %type <node> Func
 %type <node> Getter
+%type <node> HeapType
 %type <node> IdentifierList
 %type <node> IfStatement
 %type <node> IncrementStatement
@@ -44,19 +48,26 @@
 %type <node> OrExpression
 %type <node> Parameter
 %type <node> ParameterList
+%type <node> PointerType
 %type <node> PrimaryExpression
+%type <node> PullPortType
 %type <node> PushPortCall
 %type <node> PushPortCallList
+%type <node> PushPortType
 %type <node> Reaction
 %type <node> Receiver
 %type <node> ReturnStatement
 %type <node> Signature
 %type <node> SimpleStatement
+%type <node> SliceType
 %type <node> Statement
 %type <node> StatementList
+%type <node> StructType
 %type <node> Type
-%type <node> TypeSpec
-%type <node> TypeSpecExpression
+%type <node> TypeDecl
+%type <node> TypeLit
+%type <node> TypeName
+%type <node> TypeLitExpression
 %type <node> UnaryExpression
 %type <node> VarStatement
 %type <node> WhileStatement
@@ -77,7 +88,7 @@ top: DefinitionList { root = $1; }
 DefinitionList: /* empty */ { $$ = new ast_top_level_list_t (); }
 | DefinitionList Definition { $$ = $1->append ($2); }
 
-Definition: Type { $$ = $1; }
+Definition: TypeDecl { $$ = $1; }
 | Init { $$ = $1; }
 | Getter { $$ = $1; }
 | Action { $$ = $1; }
@@ -89,14 +100,14 @@ Definition: Type { $$ = $1; }
 | Const { $$ = $1; }
 
 Const:
-  CONST IdentifierList TypeSpec '=' ExpressionList ';'
+  CONST IdentifierList Type '=' ExpressionList ';'
   { $$ = new ast_const_t (@1, $2, $3, $5); }
 | CONST IdentifierList          '=' ExpressionList ';'
   { $$ = new ast_const_t (@1, $2, new ast_empty_type_spec_t (@1), $4); }
 
 Instance: INSTANCE IDENTIFIER IDENTIFIER IDENTIFIER '(' OptionalExpressionList ')' ';' { $$ = new ast_instance_t (@1, $2, $3, $4, $6); }
 
-Type: TYPE IDENTIFIER TypeSpec ';' { $$ = new ast_type_definition_t (@1, $2, $3); }
+TypeDecl: TYPE IDENTIFIER Type ';' { $$ = new ast_type_definition_t (@1, $2, $3); }
 
 Mutability:
 /* Empty. */
@@ -135,17 +146,17 @@ BIND Receiver IDENTIFIER Block
 { $$ = new ast_bind_t (@1, $2, $3, $4); }
 
 Init:
-INIT Receiver IDENTIFIER Signature DereferenceMutability TypeSpec Block
+INIT Receiver IDENTIFIER Signature DereferenceMutability Type Block
 { $$ = new ast_initializer_t (@1, $2, $3, $4, $5, $6, $7); }
 | INIT Receiver IDENTIFIER Signature           Block
 { $$ = new ast_initializer_t (@1, $2, $3, $4, IMMUTABLE, new ast_empty_type_spec_t (@1), $5); }
 
 Getter:
-GETTER Receiver IDENTIFIER Signature DereferenceMutability TypeSpec Block
+GETTER Receiver IDENTIFIER Signature DereferenceMutability Type Block
 { $$ = new ast_getter_t (@1, $2, $3, $4, $5, $6, $7); }
 
 Method:
-FUNC Receiver IDENTIFIER Signature DereferenceMutability TypeSpec Block
+FUNC Receiver IDENTIFIER Signature DereferenceMutability Type Block
 { $$ = new ast_method_t (@1, $2, $3, $4, $5, $6, $7); }
 | FUNC Receiver IDENTIFIER Signature           Block
 { $$ = new ast_method_t (@1, $2, $3, $4, IMMUTABLE, new ast_empty_type_spec_t (@1), $5); }
@@ -153,7 +164,7 @@ FUNC Receiver IDENTIFIER Signature DereferenceMutability TypeSpec Block
 Func:
 FUNC IDENTIFIER Signature Block
 { $$ = new ast_function_t (@1, $2, $3, IMMUTABLE, new ast_empty_type_spec_t (@1), $4); }
-| FUNC IDENTIFIER Signature DereferenceMutability TypeSpec Block
+| FUNC IDENTIFIER Signature DereferenceMutability Type Block
 { $$ = new ast_function_t (@1, $2, $3, $4, $5, $6); }
 
 Signature: '(' ')' { $$ = new ast_signature_type_spec_t (yyloc); }
@@ -163,7 +174,7 @@ ParameterList: Parameter { $$ = (new ast_signature_type_spec_t (@1))->append ($1
 | ParameterList ';' Parameter { $$ = $1->append ($3); }
 
 Parameter:
-  IdentifierList Mutability DereferenceMutability TypeSpec
+  IdentifierList Mutability DereferenceMutability Type
 { $$ = new ast_identifier_list_type_spec_t (@1, $1, $2, $3, $4); }
 
 optional_semicolon: /* Empty. */
@@ -229,8 +240,8 @@ ExpressionStatement: Expression ';' {
   $$ = new ast_expression_statement_t (@1, $1);
  }
 
-VarStatement: VAR IdentifierList Mutability DereferenceMutability TypeSpec '=' ExpressionList ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, $5, $7); }
-| VAR IdentifierList Mutability DereferenceMutability TypeSpec ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, $5, new ast_list_expr_t (@1)); }
+VarStatement: VAR IdentifierList Mutability DereferenceMutability Type '=' ExpressionList ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, $5, $7); }
+| VAR IdentifierList Mutability DereferenceMutability Type ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, $5, new ast_list_expr_t (@1)); }
 | VAR IdentifierList Mutability DereferenceMutability '=' ExpressionList ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, new ast_empty_type_spec_t (@1), $6); }
 
 AssignmentStatement: Expression '=' Expression ';' { $$ = new ast_assign_statement_t (@1, $1, $3); } /* CHECK */
@@ -248,27 +259,66 @@ WhileStatement: FOR Expression Block { $$ = new ast_while_statement_t (@1, $2, $
 IdentifierList: IDENTIFIER { $$ = (new ast_identifier_list_t (@1))->append ($1); }
 | IdentifierList ',' IDENTIFIER { $$ = $1->append ($3); }
 
-TypeSpecExpression:
-COMPONENT '{' FieldList '}' {
-  $$ = $3;
-  static_cast<ast_field_list_type_spec_t*> ($3)->IsComponent = true;
-}
-| STRUCT '{' FieldList '}' { $$ = $3; }
-| PUSH Signature { $$ = new ast_push_port_type_spec_t (@1, $2); }
-| PULL Signature DereferenceMutability TypeSpec { $$ = new ast_pull_port_type_spec_t (@1, $2, $3, $4); }
-| HEAP TypeSpec { $$ = new ast_heap_type_spec_t (@1, $2); }
-| ArrayDimension TypeSpec { $$ = new ast_array_type_spec_t (@1, $1, $2); }
-| '[' ']' TypeSpec { $$ = new ast_slice_type_spec_t (@1, $3); }
-| ENUM '{' IdentifierList '}' { $$ = new ast_enum_type_spec_t (@1, $3); }
+// Type literals that can appear in expressions.
+TypeLitExpression:
+  ArrayType     { $$ = $1; }
+| StructType    { $$ = $1; }
+//| FunctionType  { $$ = $1; }
+//| InterfaceType { $$ = $1; }
+| SliceType     { $$ = $1; }
+//| MapType       { $$ = $1; }
+| ComponentType { $$ = $1; }
+| PushPortType  { $$ = $1; }
+| PullPortType  { $$ = $1; }
+| HeapType      { $$ = $1; }
+| EnumType      { $$ = $1; }
 
-TypeSpec: IDENTIFIER { $$ = new ast_identifier_type_spec_t (@1, $1); }
-| '*' TypeSpec { $$ = new ast_pointer_type_spec_t (@1, $2); }
-| TypeSpecExpression { $$ = $1; }
+ArrayType:
+  ArrayDimension Type { $$ = new ast_array_type_spec_t (@1, $1, $2); }
+
+StructType:
+  STRUCT '{' FieldList '}' { $$ = $3; }
+
+SliceType:
+  '[' ']' Type { $$ = new ast_slice_type_spec_t (@1, $3); }
+
+ComponentType:
+  COMPONENT '{' FieldList '}' {
+    $$ = $3;
+    static_cast<ast_field_list_type_spec_t*> ($3)->IsComponent = true;
+  }
+
+PushPortType:
+  PUSH Signature { $$ = new ast_push_port_type_spec_t (@1, $2); }
+
+PullPortType:
+  PULL Signature DereferenceMutability Type { $$ = new ast_pull_port_type_spec_t (@1, $2, $3, $4); }
+
+HeapType:
+  HEAP Type { $$ = new ast_heap_type_spec_t (@1, $2); }
+
+EnumType:
+  ENUM '{' IdentifierList '}' { $$ = new ast_enum_type_spec_t (@1, $3); }
+
+PointerType:
+  '*' TypeLit { $$ = new ast_pointer_type_spec_t (@1, $2); }
+
+TypeLit:
+  PointerType       { $$ = $1; }
+| TypeLitExpression { $$ = $1; }
+
+TypeName:
+  IDENTIFIER { $$ = new ast_identifier_type_spec_t (@1, $1); }
+
+Type:
+  TypeName     { $$ = $1; }
+| TypeLit      { $$ = $1; }
+| '(' Type ')' { $$ = $2; }
 
 ArrayDimension: '[' Expression ']' { $$ = $2; }
 
 FieldList: /* empty */ { $$ = new ast_field_list_type_spec_t (yyloc); }
-| FieldList IdentifierList TypeSpec ';' { $$ = $1->append (new ast_identifier_list_type_spec_t (@1, $2, MUTABLE, MUTABLE, $3)); }
+| FieldList IdentifierList Type ';' { $$ = $1->append (new ast_identifier_list_type_spec_t (@1, $2, MUTABLE, MUTABLE, $3)); }
 
 Expression: OrExpression { $$ = $1; }
 
@@ -312,7 +362,7 @@ UnaryExpression: PrimaryExpression { $$ = $1; }
 PrimaryExpression:
 Operand
 { $$ = $1; }
-| TypeSpecExpression
+| TypeLitExpression
 { $$ = new ast_type_expr_t (@1, $1); }
 | PrimaryExpression '.' IDENTIFIER
 { $$ = new ast_select_expr_t (@1, $1, $3); }
