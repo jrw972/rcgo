@@ -236,7 +236,7 @@ evaluate_static (const ast_t* node, const static_memory_t& memory)
     void visit (const ast_literal_expr_t& node)
     {
       typed_value_t tv = node.typed_value;
-      struct visitor : public Visitor
+      struct visitor : public DefaultVisitor
       {
         typed_value_t tv;
         static_value_t result;

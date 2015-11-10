@@ -52,6 +52,22 @@ namespace Type
     {
       return Level () == UNTYPED;
     }
+    virtual bool IsNumeric () const
+    {
+      return false;
+    }
+    virtual bool IsFloatingPoint () const
+    {
+      return false;
+    }
+    virtual bool IsInteger () const
+    {
+      return false;
+    }
+    virtual bool IsString () const;
+    virtual bool IsComplex () const;
+    virtual bool IsSliceOfBytes () const;
+    virtual bool IsSliceOfRunes () const;
     const Pointer* GetPointer () const;
     const Slice* GetSlice () const;
     const Array* GetArray (IntValueType dimension) const;
@@ -106,6 +122,22 @@ namespace Type
     virtual TypeLevel Level () const
     {
       return NAMED;
+    }
+    virtual bool IsNumeric () const
+    {
+      return underlyingType_->IsNumeric ();
+    }
+    virtual bool IsFloatingPoint () const
+    {
+      return underlyingType_->IsFloatingPoint ();
+    }
+    virtual bool IsInteger () const
+    {
+      return underlyingType_->IsInteger ();
+    }
+    virtual bool IsString () const
+    {
+      return underlyingType_->IsString ();
     }
     void Add (Method* method)
     {
@@ -190,7 +222,7 @@ namespace Type
     Void () { }
   };
 
-  template <typename T, typename S>
+  template <typename T, typename S, bool Numeric, bool FloatingPoint, bool Integer>
   class Scalar : public Type
   {
   public:
@@ -212,81 +244,124 @@ namespace Type
     {
       return UNNAMED;
     }
-    static const Scalar<T, S>* Instance ()
+    virtual bool IsNumeric () const
     {
-      static Scalar<T, S>* instance_ = new Scalar<T, S> ();
+      return Numeric;
+    }
+    virtual bool IsFloatingPoint () const
+    {
+      return FloatingPoint;
+    }
+    virtual bool IsInteger () const
+    {
+      return Integer;
+    }
+    static const Scalar<T, S, Numeric, FloatingPoint, Integer>* Instance ()
+    {
+      static Scalar<T, S, Numeric, FloatingPoint, Integer>* instance_ = new Scalar<T, S, Numeric, FloatingPoint, Integer> ();
       return instance_;
     }
   private:
-    Scalar<T, S> () { }
+    Scalar<T, S, Numeric, FloatingPoint, Integer> () { }
   };
 
-  // template <typename T, typename S>
-  // Scalar<T,S> Scalar<T,S>::instance_;
-
   StringReturner(EnumString, "<enum>");
-  typedef Scalar<size_t, EnumString> Enum;
+  typedef Scalar<size_t, EnumString, false, false, false> Enum;
 
   StringReturner(BoolString, "<bool>");
-  typedef Scalar<bool, BoolString> Bool;
+  typedef Scalar<bool, BoolString, false, false, false> Bool;
 
   StringReturner(IntString, "<int>");
-  typedef Scalar<IntValueType, IntString> Int;
+  typedef Scalar<IntValueType, IntString, true, false, true> Int;
 
   StringReturner(Int8String, "<int8>");
-  typedef Scalar<int8_t, Int8String> Int8;
+  typedef Scalar<int8_t, Int8String, true, false, true> Int8;
 
   StringReturner(Int16String, "<int16>");
-  typedef Scalar<int16_t, Int16String> Int16;
+  typedef Scalar<int16_t, Int16String, true, false, true> Int16;
 
   StringReturner(Int32String, "<int32>");
-  typedef Scalar<int32_t, Int32String> Int32;
+  typedef Scalar<int32_t, Int32String, true, false, true> Int32;
 
   StringReturner(Int64String, "<int64>");
-  typedef Scalar<int64_t, Int64String> Int64;
+  typedef Scalar<int64_t, Int64String, true, false, true> Int64;
 
   StringReturner(Int128String, "<int128>");
-  typedef Scalar<__int128_t, Int128String> Int128;
+  typedef Scalar<__int128_t, Int128String, true, false, true> Int128;
 
   StringReturner(UintString, "<uint>");
-  typedef Scalar<uint64_t, UintString> Uint;
+  typedef Scalar<uint64_t, UintString, true, false, true> Uint;
 
   StringReturner(Uint8String, "<uint8>");
-  typedef Scalar<uint8_t, Uint8String> Uint8;
+  typedef Scalar<uint8_t, Uint8String, true, false, true> Uint8;
 
   StringReturner(Uint16String, "<uint16>");
-  typedef Scalar<uint16_t, Uint16String> Uint16;
+  typedef Scalar<uint16_t, Uint16String, true, false, true> Uint16;
 
   StringReturner(Uint32String, "<uint32>");
-  typedef Scalar<uint32_t, Uint32String> Uint32;
+  typedef Scalar<uint32_t, Uint32String, true, false, true> Uint32;
 
   StringReturner(Uint64String, "<uint64>");
-  typedef Scalar<uint64_t, Uint64String> Uint64;
+  typedef Scalar<uint64_t, Uint64String, true, false, true> Uint64;
 
   StringReturner(Uint128String, "<uint128>");
-  typedef Scalar<__uint128_t, Uint128String> Uint128;
+  typedef Scalar<__uint128_t, Uint128String, true, false, true> Uint128;
 
   StringReturner(Float32String, "<float32>");
-  typedef Scalar<float, Float32String> Float32;
+  typedef Scalar<float, Float32String, true, true, false> Float32;
 
   StringReturner(Float64String, "<float64>");
-  typedef Scalar<double, Float64String> Float64;
+  typedef Scalar<double, Float64String, true, true, false> Float64;
 
   StringReturner(Complex64String, "<complex64>");
   struct C64
   {
     float real;
     float imag;
+
+    bool operator== (const C64& other) const
+    {
+      return this->real == other.real && this->imag == other.imag;
+    }
+
+    operator double() const
+    {
+      unimplemented;
+    }
+
+    C64& operator= (const Int::ValueType& x)
+    {
+      this->real = x;
+      this->imag = 0;
+      return *this;
+    }
   };
-  typedef Scalar<C64, Complex64String> Complex64;
+  typedef Scalar<C64, Complex64String, true, false, false> Complex64;
 
   StringReturner(Complex128String, "<complex128>");
   struct C128
   {
     double real;
     double imag;
+
+    bool operator== (const C128& other) const
+    {
+      return this->real == other.real && this->imag == other.imag;
+    }
+
+    operator double() const
+    {
+      unimplemented;
+    }
+
+    C128& operator= (const Int::ValueType& x)
+    {
+      this->real = x;
+      this->imag = 0;
+      return *this;
+    }
   };
-  typedef Scalar<C128, Complex128String> Complex128;
+  typedef Scalar<C128, Complex128String, true, false, false> Complex128;
 
   StringReturner(StringUString, "<string>");
   struct StringRep
@@ -309,8 +384,25 @@ namespace Type
 
       return memcmp (this->ptr, other.ptr, this->length) == 0;
     }
+
+    bool operator< (const StringRep& other) const
+    {
+      int x = memcmp (this->ptr, other.ptr, std::min (this->length, other.length));
+      if (x < 0)
+        {
+          return true;
+        }
+      else if (x > 0)
+        {
+          return false;
+        }
+      else
+        {
+          return this->length < other.length;
+        }
+    }
   };
-  typedef Scalar<StringRep, StringUString> StringU;
+  typedef Scalar<StringRep, StringUString, false, false, false> StringU;
 
   // Helper class for types that have a base type.
   class BaseType
@@ -669,6 +761,14 @@ namespace Type
   public:
     typedef int32_t ValueType;
     virtual const Type* DefaultType () const;
+    virtual bool IsNumeric () const
+    {
+      return true;
+    }
+    virtual bool IsInteger () const
+    {
+      return true;
+    }
     void Accept (Visitor& visitor) const;
     std::string ToString () const
     {
@@ -684,6 +784,14 @@ namespace Type
   public:
     typedef long long ValueType;
     virtual const Type* DefaultType () const;
+    virtual bool IsNumeric () const
+    {
+      return true;
+    }
+    virtual bool IsInteger () const
+    {
+      return true;
+    }
     void Accept (Visitor& visitor) const;
     std::string ToString () const
     {
@@ -699,6 +807,14 @@ namespace Type
   public:
     typedef double ValueType;
     virtual const Type* DefaultType () const;
+    virtual bool IsNumeric () const
+    {
+      return true;
+    }
+    virtual bool IsFloatingPoint () const
+    {
+      return true;
+    }
     void Accept (Visitor& visitor) const;
     std::string ToString () const
     {
@@ -723,8 +839,43 @@ namespace Type
         retval.imag = i;
         return retval;
       }
+
+      bool operator== (const ValueType& other) const
+      {
+        return this->real == other.real && this->imag == other.imag;
+      }
+
+      ValueType& operator= (const Int::ValueType& x)
+      {
+        this->real = x;
+        this->imag = 0;
+        return *this;
+      }
+
+      ValueType& operator= (const Complex64::ValueType& x)
+      {
+        this->real = x.real;
+        this->imag = x.imag;
+        return *this;
+      }
+
+      ValueType& operator= (const Complex128::ValueType& x)
+      {
+        this->real = x.real;
+        this->imag = x.imag;
+        return *this;
+      }
+
+      operator double() const
+      {
+        return this->real;
+      }
     };
     virtual const Type* DefaultType () const;
+    virtual bool IsNumeric () const
+    {
+      return true;
+    }
     void Accept (Visitor& visitor) const;
     std::string ToString () const
     {
@@ -799,6 +950,879 @@ namespace Type
   struct Visitor
   {
     virtual ~Visitor () { }
+    virtual void visit (const Array& type) = 0;
+    virtual void visit (const Slice& type) = 0;
+    virtual void visit (const Bool& type) = 0;
+    virtual void visit (const Component& type) = 0;
+    virtual void visit (const Enum& type) = 0;
+    virtual void visit (const Function& type) = 0;
+    virtual void visit (const Method& type) = 0;
+    virtual void visit (const Heap& type) = 0;
+    virtual void visit (const FileDescriptor& type) = 0;
+    virtual void visit (const NamedType& type) = 0;
+    virtual void visit (const Pointer& type) = 0;
+    virtual void visit (const Signature& type) = 0;
+    virtual void visit (const Struct& type) = 0;
+    virtual void visit (const Int& type) = 0;
+    virtual void visit (const Int8& type) = 0;
+    virtual void visit (const Int16& type) = 0;
+    virtual void visit (const Int32& type) = 0;
+    virtual void visit (const Int64& type) = 0;
+    virtual void visit (const Int128& type) = 0;
+    virtual void visit (const Uint& type) = 0;
+    virtual void visit (const Uint8& type) = 0;
+    virtual void visit (const Uint16& type) = 0;
+    virtual void visit (const Uint32& type) = 0;
+    virtual void visit (const Uint64& type) = 0;
+    virtual void visit (const Uint128& type) = 0;
+    virtual void visit (const Float32& type) = 0;
+    virtual void visit (const Float64& type) = 0;
+    virtual void visit (const Complex64& type) = 0;
+    virtual void visit (const Complex128& type) = 0;
+    virtual void visit (const StringU& type) = 0;
+    virtual void visit (const Nil& type) = 0;
+    virtual void visit (const Boolean& type) = 0;
+    virtual void visit (const Rune& type) = 0;
+    virtual void visit (const Integer& type) = 0;
+    virtual void visit (const Float& type) = 0;
+    virtual void visit (const Complex& type) = 0;
+    virtual void visit (const String& type) = 0;
+    virtual void visit (const Void& type) = 0;
+    virtual void visit (const Template& type) = 0;
+  };
+
+  template <typename T>
+  struct ComparableVisitor : public Visitor
+  {
+    typedef T DispatchType;
+
+    T& t;
+    ComparableVisitor (T& t_) : t (t_) { }
+
+    virtual void visit (const Array& type)
+    {
+      t.NotComparable (type);
+    }
+    virtual void visit (const Slice& type)
+    {
+      t.NotComparable (type);
+    }
+    virtual void visit (const Bool& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Component& type)
+    {
+      t.NotComparable (type);
+    }
+    virtual void visit (const Enum& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Function& type)
+    {
+      t.NotComparable (type);
+    }
+    virtual void visit (const Method& type)
+    {
+      t.NotComparable (type);
+    }
+    virtual void visit (const Heap& type)
+    {
+      t.NotComparable (type);
+    }
+    virtual void visit (const FileDescriptor& type)
+    {
+      t.NotComparable (type);
+    }
+    virtual void visit (const NamedType& type)
+    {
+      type.UnderlyingType ()->Accept (*this);
+    }
+    virtual void visit (const Pointer& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Signature& type)
+    {
+      t.NotComparable (type);
+    }
+    virtual void visit (const Struct& type)
+    {
+      t.NotComparable (type);
+    }
+    virtual void visit (const Int& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int8& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int16& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int32& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int64& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int128& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint8& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint16& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint32& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint64& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint128& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Float32& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Float64& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Complex64& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Complex128& type)
+    {
+      t (type);
+    }
+    virtual void visit (const StringU& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Nil& type)
+    {
+      t.NotComparable (type);
+    }
+    virtual void visit (const Boolean& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Rune& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Integer& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Float& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Complex& type)
+    {
+      t (type);
+    }
+    virtual void visit (const String& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Void& type)
+    {
+      t.NotComparable (type);
+    }
+    virtual void visit (const Template& type)
+    {
+      t.NotComparable (type);
+    }
+  };
+
+  template <typename T>
+  struct OrderableVisitor : public Visitor
+  {
+    typedef T DispatchType;
+
+    T& t;
+    OrderableVisitor (T& t_) : t (t_) { }
+
+    virtual void visit (const Array& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const Slice& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const Bool& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const Component& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const Enum& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const Function& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const Method& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const Heap& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const FileDescriptor& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const NamedType& type)
+    {
+      type.UnderlyingType ()->Accept (*this);
+    }
+    virtual void visit (const Pointer& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const Signature& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const Struct& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const Int& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int8& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int16& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int32& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int64& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int128& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint8& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint16& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint32& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint64& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint128& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Float32& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Float64& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Complex64& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const Complex128& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const StringU& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Nil& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const Boolean& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const Rune& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Integer& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Float& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Complex& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const String& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Void& type)
+    {
+      t.NotOrderable (type);
+    }
+    virtual void visit (const Template& type)
+    {
+      t.NotOrderable (type);
+    }
+  };
+
+  template <typename T>
+  struct ArithmeticVisitor : public Visitor
+  {
+    typedef T DispatchType;
+
+    T& t;
+    ArithmeticVisitor (T& t_) : t (t_) { }
+
+    virtual void visit (const Array& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Slice& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Bool& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Component& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Enum& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Function& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Method& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Heap& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const FileDescriptor& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const NamedType& type)
+    {
+      type.UnderlyingType ()->Accept (*this);
+    }
+    virtual void visit (const Pointer& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Signature& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Struct& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Int& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int8& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int16& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int32& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int64& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int128& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint8& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint16& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint32& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint64& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint128& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Float32& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Float64& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Complex64& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Complex128& type)
+    {
+      t (type);
+    }
+    virtual void visit (const StringU& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Nil& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Boolean& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Rune& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Integer& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Float& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Complex& type)
+    {
+      t (type);
+    }
+    virtual void visit (const String& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Void& type)
+    {
+      t.NotArithmetic (type);
+    }
+    virtual void visit (const Template& type)
+    {
+      t.NotArithmetic (type);
+    }
+  };
+
+  template <typename T>
+  struct IntegralVisitor : public Visitor
+  {
+    typedef T DispatchType;
+
+    T& t;
+    IntegralVisitor (T& t_) : t (t_) { }
+
+    virtual void visit (const Array& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Slice& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Bool& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Component& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Enum& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Function& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Method& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Heap& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const FileDescriptor& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const NamedType& type)
+    {
+      type.UnderlyingType ()->Accept (*this);
+    }
+    virtual void visit (const Pointer& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Signature& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Struct& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Int& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int8& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int16& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int32& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int64& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Int128& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint8& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint16& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint32& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint64& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Uint128& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Float32& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Float64& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Complex64& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Complex128& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const StringU& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Nil& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Boolean& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Rune& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Integer& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Float& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Complex& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const String& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Void& type)
+    {
+      t.NotIntegral (type);
+    }
+    virtual void visit (const Template& type)
+    {
+      t.NotIntegral (type);
+    }
+  };
+
+  template <typename T>
+  struct LogicalVisitor : public Visitor
+  {
+    typedef T DispatchType;
+
+    T& t;
+    LogicalVisitor (T& t_) : t (t_) { }
+
+    virtual void visit (const Array& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Slice& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Bool& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Component& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Enum& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Function& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Method& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Heap& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const FileDescriptor& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const NamedType& type)
+    {
+      type.UnderlyingType ()->Accept (*this);
+    }
+    virtual void visit (const Pointer& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Signature& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Struct& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Int& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Int8& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Int16& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Int32& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Int64& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Int128& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Uint& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Uint8& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Uint16& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Uint32& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Uint64& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Uint128& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Float32& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Float64& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Complex64& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Complex128& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const StringU& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Nil& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Boolean& type)
+    {
+      t (type);
+    }
+    virtual void visit (const Rune& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Integer& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Float& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Complex& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const String& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Void& type)
+    {
+      t.NotLogical (type);
+    }
+    virtual void visit (const Template& type)
+    {
+      t.NotLogical (type);
+    }
+  };
+
+  struct DefaultVisitor : public Visitor
+  {
     virtual void visit (const Array& type)
     {
       default_action (type);
@@ -959,7 +1983,7 @@ namespace Type
   };
 
   template <typename T, typename T1>
-  struct visitor2 : public Visitor
+  struct visitor2 : public DefaultVisitor
   {
     const T1& type1;
     T& t;
@@ -977,6 +2001,26 @@ namespace Type
     }
 
     void visit (const Int& type2)
+    {
+      t (type1, type2);
+    }
+    void visit (const Int8& type2)
+    {
+      t (type1, type2);
+    }
+    void visit (const Int16& type2)
+    {
+      t (type1, type2);
+    }
+    void visit (const Int32& type2)
+    {
+      t (type1, type2);
+    }
+    void visit (const Int64& type2)
+    {
+      t (type1, type2);
+    }
+    void visit (const Int128& type2)
     {
       t (type1, type2);
     }
@@ -1006,6 +2050,24 @@ namespace Type
       t (type1, type2);
     }
 
+    void visit (const Float32& type2)
+    {
+      t (type1, type2);
+    }
+    void visit (const Float64& type2)
+    {
+      t (type1, type2);
+    }
+
+    void visit (const Complex64& type2)
+    {
+      t (type1, type2);
+    }
+    void visit (const Complex128& type2)
+    {
+      t (type1, type2);
+    }
+
     void visit (const Pointer& type2)
     {
       t (type1, type2);
@@ -1025,13 +2087,15 @@ namespace Type
     {
       t (type1, type2);
     }
-
     void visit (const Rune& type2)
     {
       t (type1, type2);
     }
-
     void visit (const Integer& type2)
+    {
+      t (type1, type2);
+    }
+    void visit (const Float& type2)
     {
       t (type1, type2);
     }
@@ -1055,7 +2119,7 @@ namespace Type
   }
 
   template <typename T>
-  struct visitor1 : public Visitor
+  struct visitor1 : public DefaultVisitor
   {
     const Type* type2;
     T& t;
@@ -1072,6 +2136,26 @@ namespace Type
     }
 
     void visit (const Int& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+    void visit (const Int8& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+    void visit (const Int16& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+    void visit (const Int32& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+    void visit (const Int64& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+    void visit (const Int128& type)
     {
       doubleDispatchHelper (type, type2, t);
     }
@@ -1100,6 +2184,22 @@ namespace Type
     {
       doubleDispatchHelper (type, type2, t);
     }
+    void visit (const Float32& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+    void visit (const Float64& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+    void visit (const Complex64& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+    void visit (const Complex128& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
 
     void visit (const Pointer& type)
     {
@@ -1125,8 +2225,11 @@ namespace Type
     {
       doubleDispatchHelper (type, type2, t);
     }
-
     void visit (const Integer& type)
+    {
+      doubleDispatchHelper (type, type2, t);
+    }
+    void visit (const Float& type)
     {
       doubleDispatchHelper (type, type2, t);
     }
@@ -1259,7 +2362,7 @@ namespace Type
   {
     if (type == NULL) return NULL;
 
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       const T* retval;
 
@@ -1296,7 +2399,9 @@ namespace Type
   extern NamedType NamedUint32;
   extern NamedType NamedUint64;
   extern NamedType NamedUint128;
+  extern NamedType NamedFloat32;
   extern NamedType NamedFloat64;
+  extern NamedType NamedComplex64;
   extern NamedType NamedComplex128;
   extern NamedType NamedRune;
   extern NamedType NamedByte;

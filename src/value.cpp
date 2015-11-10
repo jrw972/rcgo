@@ -7,7 +7,7 @@ value_t::print (std::ostream& out, const Type::Type* type) const
 {
   if (present)
     {
-      struct visitor : public Type::Visitor
+      struct visitor : public Type::DefaultVisitor
       {
         const value_t& tv;
         std::ostream& out;
@@ -98,6 +98,10 @@ value_t::print (std::ostream& out, const Type::Type* type) const
           out << " value=" << tv.ref (type);
         }
         void visit (const Integer& type)
+        {
+          out << " value=" << tv.ref (type);
+        }
+        void visit (const Float& type)
         {
           out << " value=" << tv.ref (type);
         }

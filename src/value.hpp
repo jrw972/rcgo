@@ -52,6 +52,7 @@ struct value_t
   {
     return bool_value_;
   }
+
   const Type::Int::ValueType& ref (const Type::Int&) const
   {
     return int_value_;
@@ -68,6 +69,39 @@ struct value_t
   {
     return int8_value_;
   }
+  const Type::Int16::ValueType& ref (const Type::Int16&) const
+  {
+    return int16_value_;
+  }
+  Type::Int16::ValueType& ref (const Type::Int16&)
+  {
+    return int16_value_;
+  }
+  const Type::Int32::ValueType& ref (const Type::Int32&) const
+  {
+    return int32_value_;
+  }
+  Type::Int32::ValueType& ref (const Type::Int32&)
+  {
+    return int32_value_;
+  }
+  const Type::Int64::ValueType& ref (const Type::Int64&) const
+  {
+    return int64_value_;
+  }
+  Type::Int64::ValueType& ref (const Type::Int64&)
+  {
+    return int64_value_;
+  }
+  const Type::Int128::ValueType& ref (const Type::Int128&) const
+  {
+    return int128_value_;
+  }
+  Type::Int128::ValueType& ref (const Type::Int128&)
+  {
+    return int128_value_;
+  }
+
   const Type::Uint::ValueType& ref (const Type::Uint&) const
   {
     return uint_value_;
@@ -116,6 +150,15 @@ struct value_t
   {
     return uint128_value_;
   }
+
+  const Type::Float32::ValueType& ref (const Type::Float32&) const
+  {
+    return float32_value_;
+  }
+  Type::Float32::ValueType& ref (const Type::Float32&)
+  {
+    return float32_value_;
+  }
   const Type::Float64::ValueType& ref (const Type::Float64&) const
   {
     return float64_value_;
@@ -124,6 +167,25 @@ struct value_t
   {
     return float64_value_;
   }
+
+  const Type::Complex64::ValueType& ref (const Type::Complex64&) const
+  {
+    return complex64_value_;
+  }
+  Type::Complex64::ValueType& ref (const Type::Complex64&)
+  {
+    return complex64_value_;
+  }
+  const Type::Complex128::ValueType& ref (const Type::Complex128&) const
+  {
+    return complex128_value_;
+  }
+  Type::Complex128::ValueType& ref (const Type::Complex128&)
+  {
+    return complex128_value_;
+  }
+
+
   const Type::Enum::ValueType& ref (const Type::Enum&) const
   {
     return enum_value_;
@@ -176,6 +238,22 @@ struct value_t
   Type::Integer::ValueType& ref (const Type::Integer&)
   {
     return integer_value_;
+  }
+  const Type::Float::ValueType& ref (const Type::Float&) const
+  {
+    return float_value_;
+  }
+  Type::Float::ValueType& ref (const Type::Float&)
+  {
+    return float_value_;
+  }
+  const Type::Complex::ValueType& ref (const Type::Complex&) const
+  {
+    return complex_value_;
+  }
+  Type::Complex::ValueType& ref (const Type::Complex&)
+  {
+    return complex_value_;
   }
 
   const Type::String::ValueType& ref (const Type::String&) const
@@ -232,6 +310,9 @@ private:
 
     Type::Float32::ValueType float32_value_;
     Type::Float64::ValueType float64_value_;
+
+    Type::Complex64::ValueType complex64_value_;
+    Type::Complex128::ValueType complex128_value_;
 
     Type::Pointer::ValueType pointer_value_;
     Type::Slice::ValueType slice_value_;

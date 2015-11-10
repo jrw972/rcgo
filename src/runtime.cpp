@@ -137,7 +137,7 @@ namespace runtime
   static void
   evaluate (executor_base_t& exec, const ast_binary_expr_t& node, const T& op)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       executor_base_t& exec;
       const ast_binary_expr_t& node;
@@ -332,7 +332,7 @@ namespace runtime
   };
 
   template <typename T>
-  struct LeftShiftVisitor : public Visitor
+  struct LeftShiftVisitor : public DefaultVisitor
   {
     executor_base_t& exec;
     const ast_binary_expr_t& node;
@@ -425,7 +425,7 @@ namespace runtime
                 const ast_binary_expr_t& node,
                 const Int&) const
     {
-      struct visitor : public Visitor
+      struct visitor : public DefaultVisitor
       {
         executor_base_t& exec;
         const ast_binary_expr_t& node;
@@ -954,7 +954,7 @@ namespace runtime
 
       void visit (const ast_index_expr_t& node)
       {
-        struct visitor : public Visitor
+        struct visitor : public DefaultVisitor
         {
           executor_base_t& exec;
           const ast_index_expr_t& node;
@@ -1437,7 +1437,7 @@ namespace runtime
         // Evaluate the value.
         evaluate_expr (exec, node.right ());
 
-        struct visitor : public Visitor
+        struct visitor : public DefaultVisitor
         {
           executor_base_t& exec;
           void* ptr;
@@ -1481,7 +1481,7 @@ namespace runtime
         // Evaluate the value.
         evaluate_expr (exec, node.right ());
 
-        struct visitor : public Visitor
+        struct visitor : public DefaultVisitor
         {
           executor_base_t& exec;
           void* ptr;
@@ -1537,7 +1537,7 @@ namespace runtime
         evaluate_expr (exec, node.child ());
         void* ptr = stack_frame_pop_pointer (exec.stack ());
 
-        struct visitor : public Visitor
+        struct visitor : public DefaultVisitor
         {
           void* ptr;
 
@@ -2095,7 +2095,7 @@ namespace runtime
         {
           ast_t* child = *pos;
           evaluate_expr (exec, child);
-          struct visitor : public Visitor
+          struct visitor : public DefaultVisitor
           {
             executor_base_t& exec;
             visitor (executor_base_t& e) : exec (e) { }

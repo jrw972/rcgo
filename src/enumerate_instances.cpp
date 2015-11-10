@@ -16,7 +16,7 @@ instantiate_contained_instances (const Type::Type * type,
                                  unsigned int line,
                                  ast_instance_t* node)
 {
-  struct visitor : public Visitor
+  struct visitor : public DefaultVisitor
   {
     instance_table_t& instance_table;
     instance_t* const parent;

@@ -11,6 +11,126 @@ using namespace Type;
 #include <utility>
 using namespace std::rel_ops;
 
+static Type::C64 operator* (const Type::C64&, const Type::C64&)
+{
+  unimplemented;
+}
+static Type::C64 operator/ (const Type::C64&, const Type::C64&)
+{
+  unimplemented;
+}
+static Type::C64 operator+ (const Type::C64&, const Type::C64&)
+{
+  unimplemented;
+}
+static Type::C64 operator- (const Type::C64&, const Type::C64&)
+{
+  unimplemented;
+}
+static Type::C64 operator- (const Type::C64&)
+{
+  unimplemented;
+}
+
+static Type::C128 operator* (const Type::C128&, const Type::C128&)
+{
+  unimplemented;
+}
+static Type::C128 operator/ (const Type::C128&, const Type::C128&)
+{
+  unimplemented;
+}
+static Type::C128 operator+ (const Type::C128&, const Type::C128&)
+{
+  unimplemented;
+}
+static Type::C128 operator- (const Type::C128&, const Type::C128&)
+{
+  unimplemented;
+}
+static Type::C128 operator- (const Type::C128&)
+{
+  unimplemented;
+}
+
+static Type::Complex::ValueType operator* (const Type::Complex::ValueType&, const Type::Complex::ValueType&)
+{
+  unimplemented;
+}
+static Type::Complex::ValueType operator/ (const Type::Complex::ValueType&, const Type::Complex::ValueType&)
+{
+  unimplemented;
+}
+static Type::Complex::ValueType operator+ (const Type::Complex::ValueType&, const Type::Complex::ValueType&)
+{
+  unimplemented;
+}
+static Type::Complex::ValueType operator- (const Type::Complex::ValueType&, const Type::Complex::ValueType&)
+{
+  unimplemented;
+}
+static Type::Complex::ValueType operator- (const Type::Complex::ValueType&)
+{
+  unimplemented;
+}
+
+template <typename TargetType>
+struct Helper2
+{
+  const TargetType& target;
+  const typed_value_t& in;
+  typed_value_t& out;
+
+  Helper2 (const TargetType& t, const typed_value_t& i, typed_value_t& o) : target (t), in (i), out (o) { }
+
+  template<typename T>
+  void operator() (const T& t)
+  {
+    out.value.ref (target) = in.value.ref (t);
+  }
+
+  template<typename T>
+  void NotArithmetic (const T& t)
+  {
+    type_not_reached (t);
+  }
+};
+
+struct Helper
+{
+  const typed_value_t& in;
+  typed_value_t& out;
+
+  Helper (const typed_value_t& i, typed_value_t& o) : in (i), out (o) { }
+
+  template<typename T>
+  void operator() (const T& t)
+  {
+    Helper2<T> helper2 (t, in, out);
+    Type::ArithmeticVisitor<Helper2<T> > visitor (helper2);
+    in.type->Accept (visitor);
+  }
+
+  template<typename T>
+  void NotArithmetic (const T& t)
+  {
+    type_not_reached (t);
+  }
+};
+
+static typed_value_t
+numericConvert (const typed_value_t tv, const Type::Type* type)
+{
+  assert (tv.type->IsNumeric ());
+  assert (type->IsNumeric ());
+  typed_value_t out = tv;
+  out.type = type;
+  Helper h (tv, out);
+  Type::ArithmeticVisitor<Helper> visitor (h);
+  type->Accept (visitor);
+  return out;
+}
+
 static void
 RequireIdentical (const Location& location, const char* op, const Type::Type* left, const Type::Type* right)
 {
@@ -60,7 +180,7 @@ typed_value_t::zero ()
   assert (kind == VALUE);
   assert (value.present);
 
-  struct visitor : public Visitor
+  struct visitor : public DefaultVisitor
   {
     typed_value_t& value;
 
@@ -239,7 +359,7 @@ typed_value_t::dereference (typed_value_t in)
 {
   assert (in.kind == VALUE);
 
-  struct visitor : public Visitor
+  struct visitor : public DefaultVisitor
   {
     const typed_value_t& in;
     typed_value_t out;
@@ -322,7 +442,7 @@ typed_value_t::index (const Location& location, typed_value_t in, typed_value_t 
   assert (index.type != NULL);
   assert (index.kind == VALUE);
 
-  struct visitor : public Visitor
+  struct visitor : public DefaultVisitor
   {
     const Location& location;
     const typed_value_t& index;
@@ -385,7 +505,7 @@ typed_value_t::slice (const Location& location,
   assert (high.type != NULL);
   assert (high.kind == VALUE);
 
-  struct visitor : public Visitor
+  struct visitor : public DefaultVisitor
   {
     const Location& location;
     const typed_value_t& in;
@@ -461,7 +581,7 @@ typed_value_t::slice (const Location& location,
 }
 
 template <typename T>
-struct SingleDispatchVisitor : public Type::Visitor
+struct SingleDispatchVisitor : public Type::DefaultVisitor
 {
   T& t;
 
@@ -658,55 +778,11 @@ struct RepresentableImpl
   {
     retval = true;
   }
-
-  template <typename T1, typename T2>
-  void ToAndBack (const T1& type1, const T2& type2)
-  {
-    // Convert to and back and check for equality.
-    value_t v;
-    v.ref (type1) = in.value.ref (type2);
-    v.ref (type2) = v.ref (type1);
-    retval = (v.ref (type2) == in.value.ref (type2));
-  }
-
-  void operator() (const Type::Int& type1, const Type::Integer& type2)
-  {
-    ToAndBack (type1, type2);
-  }
-  void operator() (const Type::Uint& type1, const Type::Integer& type2)
-  {
-    ToAndBack (type1, type2);
-  }
-  void operator() (const Type::Uint8& type1, const Type::Integer& type2)
-  {
-    ToAndBack (type1, type2);
-  }
-  void operator() (const Type::Uint16& type1, const Type::Integer& type2)
-  {
-    ToAndBack (type1, type2);
-  }
-  void operator() (const Type::Uint32& type1, const Type::Integer& type2)
-  {
-    ToAndBack (type1, type2);
-  }
-  void operator() (const Type::Uint64& type1, const Type::Integer& type2)
-  {
-    ToAndBack (type1, type2);
-  }
-  void operator() (const Type::Uint128& type1, const Type::Integer& type2)
-  {
-    ToAndBack (type1, type2);
-  }
-
   void operator() (const Type::Pointer& type1, const Type::Nil& type2)
-  {
-    unimplemented;
-  }
-  void operator() (const Type::StringU& type1, const Type::String& type2)
   {
     retval = true;
   }
-  void operator () (const Integer& type1, const Rune& type2)
+  void operator() (const Type::StringU& type1, const Type::String& type2)
   {
     retval = true;
   }
@@ -717,6 +793,31 @@ struct RepresentableImpl
     retval = false;
   }
 };
+
+bool
+typed_value_t::RepresentableBy (const Type::Type* target) const
+{
+  assert (this->value.present);
+  const Type::Type* source = this->type;
+  if (source->IsNumeric () && target->IsNumeric ())
+    {
+      // Assume that Complex can represent any number.
+      // Convert to a Complex.
+      typed_value_t c1 = numericConvert (*this, Type::Complex::Instance ());
+      // Convert to the target type.
+      typed_value_t v = numericConvert (c1, target->UnderlyingType ());
+      // Convert back to Complex.
+      typed_value_t c2 = numericConvert (v, Type::Complex::Instance ());
+      // Compare.
+      return c1.value.ref (*Type::Complex::Instance ()) == c2.value.ref (*Type::Complex::Instance ());
+    }
+  else
+    {
+      RepresentableImpl ri (*this);
+      DoubleDispatch (target->UnderlyingType (), source, ri);
+      return ri.retval;
+    }
+}
 
 bool
 typed_value_t::AssignableTo (const Type::Type* target) const
@@ -750,11 +851,9 @@ typed_value_t::AssignableTo (const Type::Type* target) const
         }
     }
 
-  if (source->IsUntyped ())
+  if (source->IsUntyped () && this->RepresentableBy (target))
     {
-      RepresentableImpl ri (*this);
-      DoubleDispatch (target->UnderlyingType (), source, ri);
-      return ri.retval;
+      return true;
     }
 
   return false;
@@ -775,39 +874,6 @@ struct ConvertImpl
     out.value.ref (type1) = in.value.ref (type2);
   }
   void operator() (const Type::Bool& type1, const Type::Boolean& type2)
-  {
-    out.value.ref (type1) = in.value.ref (type2);
-  }
-  void operator() (const Type::Int& type1, const Type::Int& type2)
-  {
-    out.value.ref (type1) = in.value.ref (type2);
-  }
-  void operator() (const Type::Int& type1, const Type::Integer& type2)
-  {
-    out.value.ref (type1) = in.value.ref (type2);
-  }
-
-  void operator() (const Type::Uint& type1, const Type::Integer& type2)
-  {
-    out.value.ref (type1) = in.value.ref (type2);
-  }
-  void operator() (const Type::Uint8& type1, const Type::Integer& type2)
-  {
-    out.value.ref (type1) = in.value.ref (type2);
-  }
-  void operator() (const Type::Uint16& type1, const Type::Integer& type2)
-  {
-    out.value.ref (type1) = in.value.ref (type2);
-  }
-  void operator() (const Type::Uint32& type1, const Type::Integer& type2)
-  {
-    out.value.ref (type1) = in.value.ref (type2);
-  }
-  void operator() (const Type::Uint64& type1, const Type::Integer& type2)
-  {
-    out.value.ref (type1) = in.value.ref (type2);
-  }
-  void operator() (const Type::Uint128& type1, const Type::Integer& type2)
   {
     out.value.ref (type1) = in.value.ref (type2);
   }
@@ -834,11 +900,6 @@ struct ConvertImpl
       }
   }
 
-  void operator () (const Integer& type1, const Rune& type2)
-  {
-    out.value.ref (type1) = in.value.ref (type2);
-  }
-
   template <typename T1, typename T2>
   void operator() (const T1& type1, const T2& type2)
   {
@@ -854,11 +915,98 @@ struct ConvertImpl
 
 };
 
+static bool
+pointerConversion (const Type::Type* x, const Type::Type* t)
+{
+  unimplemented;
+}
+
 typed_value_t
 typed_value_t::Convert (const Location& location, const Type::Type* type) const
 {
   assert (!IsError ());
   RequireValue (location);
+  if (this->value.present)
+    {
+      if (this->RepresentableBy (type))
+        {
+          if (this->type->IsNumeric ())
+            {
+              return numericConvert (*this, type);
+            }
+          else
+            {
+              typed_value_t out = *this;
+              out.type = type;
+              ConvertImpl c (location, out, *this);
+              DoubleDispatch (type->UnderlyingType (), this->type, c);
+              out.fix ();
+              return out;
+            }
+        }
+      else if (this->type->IsFloatingPoint () && type->IsFloatingPoint ())
+        {
+          unimplemented;
+        }
+      else if (this->type->IsInteger () && type->IsString ())
+        {
+          unimplemented;
+        }
+      else
+        {
+          // Error.
+          unimplemented;
+        }
+    }
+  else
+    {
+      if (this->AssignableTo (type))
+        {
+          typed_value_t out = *this;
+          out.type = type;
+          out.fix ();
+          return out;
+        }
+      else if (Type::Identitical (this->type->UnderlyingType (), type->UnderlyingType ()))
+        {
+          unimplemented;
+        }
+      else if (pointerConversion (this->type, type))
+        {
+          unimplemented;
+        }
+      else if ((this->type->IsInteger () || this->type->IsInteger ()) &&
+               (type->IsInteger () || type->IsFloatingPoint ()))
+        {
+          unimplemented;
+        }
+      else if (this->type->IsComplex () && type->IsComplex ())
+        {
+          unimplemented;
+        }
+      else if (this->type->IsInteger () && type->IsString ())
+        {
+          unimplemented;
+        }
+      else if (this->type->IsSliceOfBytes () && type->IsString ())
+        {
+          unimplemented;
+        }
+      else if (this->type->IsSliceOfRunes () && type->IsString ())
+        {
+          unimplemented;
+        }
+      else if (this->type->IsString () && (type->IsSliceOfBytes () || type->IsSliceOfRunes ()))
+        {
+          unimplemented;
+        }
+      else
+        {
+          // Error
+          unimplemented;
+        }
+    }
+
   typed_value_t out = *this;
   out.type = type;
   ConvertImpl c (location, out, *this);
@@ -866,7 +1014,7 @@ typed_value_t::Convert (const Location& location, const Type::Type* type) const
   return out;
 }
 
-template <typename T>
+template <typename VisitorType>
 typed_value_t
 comparison (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
@@ -883,9 +1031,10 @@ comparison (const Location& location, const typed_value_t& left, const typed_val
     {
       out = typed_value_t::make_value (Type::Bool::Instance (), IMMUTABLE, IMMUTABLE);
     }
-  T c (location, left, right);
+  typename VisitorType::DispatchType c (location, left, right);
   RequireIdentical (location, c.Op (), left.type, right.type);
-  singleDispatch (left.type->UnderlyingType (), c);
+  VisitorType visitor (c);
+  left.type->UnderlyingType ()->Accept (visitor);
   if (left.value.present && right.value.present)
     {
       out.value.ref (*Type::Boolean::Instance ()) = c.retval;
@@ -899,13 +1048,13 @@ comparison (const Location& location, const typed_value_t& left, const typed_val
 }
 
 template <typename O>
-struct Compare
+struct BooleanApply
 {
   const Location& location;
   bool retval;
   const typed_value_t& left;
   const typed_value_t& right;
-  Compare (const Location& loc, const typed_value_t& l, const typed_value_t& r) : location (loc), retval (false), left (l), right (r) { }
+  BooleanApply (const Location& loc, const typed_value_t& l, const typed_value_t& r) : location (loc), retval (false), left (l), right (r) { }
 
   const char* Op () const
   {
@@ -913,53 +1062,24 @@ struct Compare
   }
 
   template<typename T>
-  void doit (const T& type)
+  void operator() (const T& type)
   {
     retval = O () (left.value.ref (type), right.value.ref (type));
   }
 
-  void operator() (const Type::Bool& type)
-  {
-    doit (type);
-  }
-  void operator() (const Type::Int& type)
-  {
-    doit (type);
-  }
-  void operator() (const Type::Uint& type)
-  {
-    doit (type);
-  }
-  void operator() (const Type::Uint64& type)
-  {
-    doit (type);
-  }
-  void operator() (const Type::Enum& type)
-  {
-    doit (type);
-  }
-  void operator() (const Type::Pointer& type)
-  {
-    doit (type);
-  }
-  void operator() (const Type::Boolean& type)
-  {
-    doit (type);
-  }
-  void operator() (const Type::Integer& type)
-  {
-    doit (type);
-  }
-  void operator() (const Type::String& type)
-  {
-    doit (type);
-  }
-
   template <typename T>
-  void operator() (const T& type)
+  void NotComparable (const T& type)
   {
     error_at_line (-1, 0, location.File.c_str (), location.Line,
                    "%s cannot be applied to %s (E25)", Op (), type.ToString ().c_str ());
+  }
+
+  template <typename T>
+  void NotOrderable (const T& type)
+  {
+    error_at_line (-1, 0, location.File.c_str (), location.Line,
+                   "%s cannot be applied to %s (E91)", Op (), type.ToString ().c_str ());
+
   }
 };
 
@@ -980,7 +1100,7 @@ struct EqualOp
 typed_value_t
 typed_value_t::Equal (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return comparison<Compare <EqualOp> > (location, left, right);
+  return comparison<Type::ComparableVisitor<BooleanApply <EqualOp> > > (location, left, right);
 }
 
 struct NotEqualOp
@@ -1000,46 +1120,8 @@ struct NotEqualOp
 typed_value_t
 typed_value_t::NotEqual (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return comparison<Compare <NotEqualOp> > (location, left, right);
+  return comparison<Type::ComparableVisitor<BooleanApply <NotEqualOp> > > (location, left, right);
 }
-
-template <typename O>
-struct Order
-{
-  const Location& location;
-  bool retval;
-  const typed_value_t& left;
-  const typed_value_t& right;
-  Order (const Location& loc, const typed_value_t& l, const typed_value_t& r) : location (loc), retval (false), left (l), right (r) { }
-
-  const char* Op () const
-  {
-    return O::Op ();
-  }
-
-  template<typename T>
-  void doit (const T& type)
-  {
-    retval = O () (left.value.ref (type), right.value.ref (type));
-  }
-
-  void operator() (const Type::Int& type)
-  {
-    doit (type);
-  }
-  void operator() (const Type::Integer& type)
-  {
-    doit (type);
-  }
-
-  template <typename T>
-  void operator() (const T& type)
-  {
-    error_at_line (-1, 0, location.File.c_str (), location.Line,
-                   "%s cannot be applied to %s (E91)", Op (), type.ToString ().c_str ());
-
-  }
-};
 
 struct LessThanOp
 {
@@ -1058,7 +1140,7 @@ struct LessThanOp
 typed_value_t
 typed_value_t::LessThan (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return comparison<Order<LessThanOp> > (location, left, right);
+  return comparison<Type::OrderableVisitor<BooleanApply<LessThanOp> > > (location, left, right);
 }
 
 struct LessEqualOp
@@ -1078,7 +1160,7 @@ struct LessEqualOp
 typed_value_t
 typed_value_t::LessEqual (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return comparison<Order<LessEqualOp> > (location, left, right);
+  return comparison<Type::OrderableVisitor<BooleanApply<LessEqualOp> > > (location, left, right);
 }
 
 struct MoreThanOp
@@ -1098,7 +1180,7 @@ struct MoreThanOp
 typed_value_t
 typed_value_t::MoreThan (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return comparison<Order <MoreThanOp> > (location, left, right);
+  return comparison<Type::OrderableVisitor<BooleanApply <MoreThanOp> > > (location, left, right);
 }
 
 struct MoreEqualOp
@@ -1118,10 +1200,10 @@ struct MoreEqualOp
 typed_value_t
 typed_value_t::MoreEqual (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return comparison<Order <MoreEqualOp> > (location, left, right);
+  return comparison<Type::OrderableVisitor<BooleanApply <MoreEqualOp> > > (location, left, right);
 }
 
-template <typename T>
+template <typename VisitorType>
 typed_value_t
 symmetricBinary (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
@@ -1130,9 +1212,10 @@ symmetricBinary (const Location& location, const typed_value_t& left, const type
   left.RequireValue (location);
   right.RequireValue (location);
   typed_value_t out = left;
-  T c (location, out, left, right);
+  typename VisitorType::DispatchType c (location, out, left, right);
   RequireIdentical (location, c.Op (), left.type, right.type);
-  singleDispatch (left.type->UnderlyingType (), c);
+  VisitorType visitor (c);
+  left.type->UnderlyingType ()->Accept (visitor);
   return out;
 }
 
@@ -1143,17 +1226,14 @@ struct LogicNotImpl
   const typed_value_t& in;
   LogicNotImpl (const Location& loc, typed_value_t& o, const typed_value_t& i) : location (loc), out (o), in (i) { }
 
-  void operator() (const Type::Bool& type)
-  {
-    out.value.ref (type) = !in.value.ref (type);
-  }
-  void operator() (const Type::Boolean& type)
+  template <typename T>
+  void operator() (const T& type)
   {
     out.value.ref (type) = !in.value.ref (type);
   }
 
   template <typename T>
-  void operator() (const T& type)
+  void NotLogical (const T& type)
   {
     error_at_line (-1, 0, location.File.c_str (), location.Line,
                    "! cannot be applied to %s (E87)", in.type->ToString ().c_str ());
@@ -1168,7 +1248,8 @@ typed_value_t::LogicNot (const Location& location) const
   RequireValue (location);
   typed_value_t out = *this;
   LogicNotImpl c (location, out, *this);
-  singleDispatch (this->type->UnderlyingType (), c);
+  Type::LogicalVisitor<LogicNotImpl> visitor (c);
+  this->type->UnderlyingType ()->Accept (visitor);
   return out;
 }
 
@@ -1198,7 +1279,7 @@ struct LogicOrImpl
   }
 
   template <typename T>
-  void operator() (const T& type)
+  void NotLogical (const T& type)
   {
     error_at_line (-1, 0, location.File.c_str (), location.Line,
                    "|| cannot be applied to %s (E86)", type.ToString ().c_str ());
@@ -1209,7 +1290,7 @@ struct LogicOrImpl
 typed_value_t
 typed_value_t::LogicOr (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return symmetricBinary<LogicOrImpl> (location, left, right);
+  return symmetricBinary<Type::LogicalVisitor<LogicOrImpl> > (location, left, right);
 }
 
 struct LogicAndImpl
@@ -1238,7 +1319,7 @@ struct LogicAndImpl
   }
 
   template <typename T>
-  void operator() (const T& type)
+  void NotLogical (const T& type)
   {
     error_at_line (-1, 0, location.File.c_str (), location.Line,
                    "&& cannot be applied to %s (E85)", type.ToString ().c_str ());
@@ -1249,7 +1330,7 @@ struct LogicAndImpl
 typed_value_t
 typed_value_t::LogicAnd (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return symmetricBinary<LogicAndImpl> (location, left, right);
+  return symmetricBinary<Type::LogicalVisitor <LogicAndImpl> > (location, left, right);
 }
 
 template <typename O>
@@ -1267,27 +1348,26 @@ struct SymmetricBinary
   }
 
   template <typename T>
-  void doit (const T& type)
+  void operator() (const T& type)
   {
-    out.value.ref (type) = O () (left.value.ref (type), right.value.ref (type));
     out.value.present = left.value.present && right.value.present;
-  }
-
-  void operator() (const Type::Int& type)
-  {
-    doit (type);
-  }
-
-  void operator() (const Type::Integer& type)
-  {
-    doit (type);
+    if (out.value.present) {
+      out.value.ref (type) = O () (left.value.ref (type), right.value.ref (type));
+    }
   }
 
   template <typename T>
-  void operator() (const T& type)
+  void NotArithmetic (const T& type)
   {
     error_at_line (-1, 0, location.File.c_str (), location.Line,
                    "%s cannot be applied to %s (E133)", Op (), type.ToString ().c_str ());
+  }
+
+  template <typename T>
+  void NotIntegral (const T& type)
+  {
+    error_at_line (-1, 0, location.File.c_str (), location.Line,
+                   "%s cannot be applied to %s (E70)", Op (), type.ToString ().c_str ());
   }
 };
 
@@ -1298,13 +1378,14 @@ struct NegateImpl
   const typed_value_t& in;
   NegateImpl (const Location& loc, typed_value_t& o, const typed_value_t& i) : location (loc), out (o), in (i) { }
 
-  void operator() (const Type::Integer& type)
+  template <typename T>
+  void operator() (const T& type)
   {
     out.value.ref (type) = -in.value.ref (type);
   }
 
   template <typename T>
-  void operator() (const T& type)
+  void NotArithmetic (const T& type)
   {
     error_at_line (-1, 0, location.File.c_str (), location.Line,
                    "- cannot be applied to %s (E67)", in.type->ToString ().c_str ());
@@ -1319,7 +1400,8 @@ typed_value_t::Negate (const Location& location) const
   RequireValue (location);
   typed_value_t out = *this;
   NegateImpl c (location, out, *this);
-  singleDispatch (this->type->UnderlyingType (), c);
+  Type::ArithmeticVisitor<NegateImpl> visitor (c);
+  this->type->UnderlyingType ()->Accept (visitor);
   return out;
 }
 
@@ -1340,7 +1422,7 @@ struct MultiplyOp
 typed_value_t
 typed_value_t::Multiply (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return symmetricBinary<SymmetricBinary <MultiplyOp> > (location, left, right);
+  return symmetricBinary<Type::ArithmeticVisitor<SymmetricBinary <MultiplyOp> > > (location, left, right);
 }
 
 struct DivideOp
@@ -1360,7 +1442,7 @@ struct DivideOp
 typed_value_t
 typed_value_t::Divide (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return symmetricBinary<SymmetricBinary <DivideOp> > (location, left, right);
+  return symmetricBinary<Type::ArithmeticVisitor<SymmetricBinary <DivideOp> > > (location, left, right);
 }
 
 struct ModulusOp
@@ -1380,7 +1462,7 @@ struct ModulusOp
 typed_value_t
 typed_value_t::Modulus (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return symmetricBinary<SymmetricBinary <ModulusOp> > (location, left, right);
+  return symmetricBinary<Type::IntegralVisitor<SymmetricBinary <ModulusOp> > > (location, left, right);
 }
 
 struct AddOp
@@ -1400,7 +1482,7 @@ struct AddOp
 typed_value_t
 typed_value_t::Add (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return symmetricBinary<SymmetricBinary <AddOp> > (location, left, right);
+  return symmetricBinary<Type::ArithmeticVisitor<SymmetricBinary <AddOp> > > (location, left, right);
 }
 
 struct SubtractOp
@@ -1420,7 +1502,7 @@ struct SubtractOp
 typed_value_t
 typed_value_t::Subtract (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return symmetricBinary<SymmetricBinary <SubtractOp> > (location, left, right);
+  return symmetricBinary<Type::ArithmeticVisitor<SymmetricBinary <SubtractOp> > > (location, left, right);
 }
 
 struct LeftShiftImpl
@@ -1554,7 +1636,7 @@ struct BitAndOp
 typed_value_t
 typed_value_t::BitAnd (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return symmetricBinary<SymmetricBinary<BitAndOp> > (location, left, right);
+  return symmetricBinary<Type::IntegralVisitor<SymmetricBinary<BitAndOp> > > (location, left, right);
 }
 
 struct BitAndNotOp
@@ -1574,7 +1656,7 @@ struct BitAndNotOp
 typed_value_t
 typed_value_t::BitAndNot (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return symmetricBinary<SymmetricBinary<BitAndNotOp> > (location, left, right);
+  return symmetricBinary<Type::IntegralVisitor<SymmetricBinary<BitAndNotOp> > > (location, left, right);
 }
 
 struct BitOrOp
@@ -1594,7 +1676,7 @@ struct BitOrOp
 typed_value_t
 typed_value_t::BitOr (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return symmetricBinary<SymmetricBinary<BitOrOp> > (location, left, right);
+  return symmetricBinary<Type::IntegralVisitor<SymmetricBinary<BitOrOp> > > (location, left, right);
 }
 
 struct BitXorOp
@@ -1614,7 +1696,7 @@ struct BitXorOp
 typed_value_t
 typed_value_t::BitXor (const Location& location, const typed_value_t& left, const typed_value_t& right)
 {
-  return symmetricBinary<SymmetricBinary<BitXorOp> > (location, left, right);
+  return symmetricBinary<Type::IntegralVisitor<SymmetricBinary<BitXorOp> > > (location, left, right);
 }
 
 struct IntegralValueImpl

@@ -14,6 +14,23 @@ namespace Type
     return o << type.ToString ();
   }
 
+  bool Type::IsString () const
+  {
+    unimplemented;
+  }
+  bool Type::IsComplex () const
+  {
+    unimplemented;
+  }
+  bool Type::IsSliceOfBytes () const
+  {
+    unimplemented;
+  }
+  bool Type::IsSliceOfRunes () const
+  {
+    unimplemented;
+  }
+
   const Pointer*
   Type::GetPointer () const
   {
@@ -213,7 +230,7 @@ namespace Type
   field_t *
   type_select_field (const Type* type, const std::string& identifier)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       field_t* retval;
       const std::string& identifier;
@@ -243,7 +260,7 @@ namespace Type
   ::Method*
   type_select_method (const Type* type, const std::string& identifier)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       ::Method* retval;
       const std::string& identifier;
@@ -262,7 +279,7 @@ namespace Type
   Initializer*
   type_select_initializer (const Type* type, const std::string& identifier)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       Initializer* retval;
       const std::string& identifier;
@@ -281,7 +298,7 @@ namespace Type
   Getter*
   type_select_getter (const Type* type, const std::string& identifier)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       Getter* retval;
       const std::string& identifier;
@@ -300,7 +317,7 @@ namespace Type
   reaction_t *
   type_select_reaction (const Type* type, const std::string& identifier)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       reaction_t* retval;
       const std::string& identifier;
@@ -319,7 +336,7 @@ namespace Type
   action_t *
   type_select_action (const Type* type, const std::string& identifier)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       action_t* retval;
       const std::string& identifier;
@@ -338,7 +355,7 @@ namespace Type
   bind_t *
   type_select_bind (const Type* type, const std::string& identifier)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       bind_t* retval;
       const std::string& identifier;
@@ -518,7 +535,7 @@ type::Accept (Visitor& visitor) const \
   static bool
   structurally_equal (const Type* x, const Type* y)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       bool flag;
       const Type* other;
@@ -799,7 +816,7 @@ type::Instance () \
 
   const Type* type_dereference (const Type* type)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       const Type* retval;
 
@@ -818,7 +835,7 @@ type::Instance () \
   bool
   type_contains_pointer (const Type* type)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       bool flag;
 
@@ -846,6 +863,18 @@ type::Instance () \
       void visit (const Int8& type)
       { }
 
+      void visit (const Int16& type)
+      { }
+
+      void visit (const Int32& type)
+      { }
+
+      void visit (const Int64& type)
+      { }
+
+      void visit (const Int128& type)
+      { }
+
       void visit (const Uint& type)
       { }
 
@@ -861,7 +890,19 @@ type::Instance () \
       void visit (const Uint64& type)
       { }
 
+      void visit (const Uint128& type)
+      { }
+
+      void visit (const Float32& type)
+      { }
+
       void visit (const Float64& type)
+      { }
+
+      void visit (const Complex64& type)
+      { }
+
+      void visit (const Complex128& type)
       { }
 
       void visit (const Enum& type)
@@ -927,7 +968,7 @@ type::Instance () \
   bool
   type_is_boolean (const Type* type)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       bool flag;
       visitor () : flag (false) { }
@@ -950,7 +991,7 @@ type::Instance () \
   bool
   type_is_integral (const Type* type)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       bool flag;
       visitor () : flag (false) { }
@@ -1013,7 +1054,7 @@ type::Instance () \
   bool
   type_is_unsigned_integral (const Type* type)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       bool flag;
       visitor () : flag (false) { }
@@ -1041,7 +1082,7 @@ type::Instance () \
   bool
   type_is_floating (const Type* type)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       bool flag;
       visitor () : flag (false) { }
@@ -1064,7 +1105,7 @@ type::Instance () \
   bool
   type_is_comparable (const Type* type)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       bool flag;
       visitor () : flag (false) { }
@@ -1133,7 +1174,7 @@ type::Instance () \
   bool
   type_is_orderable (const Type* type)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       bool flag;
       visitor () : flag (false) { }
@@ -1188,7 +1229,7 @@ type::Instance () \
   const Type*
   type_strip (const Type* type)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       const Type* retval;
       visitor (const Type* t) : retval (t) { }
@@ -1213,7 +1254,7 @@ type::Instance () \
   const Type*
   type_index (const Type* base, const Type* index)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       const Type* index;
       const Type* result;
@@ -1222,7 +1263,7 @@ type::Instance () \
 
       void visit (const Array& type)
       {
-        struct visitor : public Visitor
+        struct visitor : public DefaultVisitor
         {
           const Array& array_type;
           const Type* result;
@@ -1258,7 +1299,7 @@ type::Instance () \
   bool
   type_is_index (const Type* type, Int::ValueType index)
   {
-    struct visitor : public Visitor
+    struct visitor : public DefaultVisitor
     {
       Int::ValueType index;
       bool flag;
@@ -1414,7 +1455,9 @@ type::Instance () \
   NamedType NamedUint32 ("uint32", Uint32::Instance ());
   NamedType NamedUint64 ("uint64", Uint64::Instance ());
   NamedType NamedUint128 ("uint128", Uint128::Instance ());
+  NamedType NamedFloat32 ("float32", Float32::Instance ());
   NamedType NamedFloat64 ("float64", Float64::Instance ());
+  NamedType NamedComplex64 ("complex64", Complex64::Instance ());
   NamedType NamedComplex128 ("complex128", Complex128::Instance ());
 
   NamedType NamedRune ("rune", Int::Instance ());

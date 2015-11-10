@@ -214,7 +214,7 @@ void* stack_frame_address_for_offset (const stack_frame_t* stack_frame,
 void stack_frame_push_tv (stack_frame_t* stack_frame,
                           const typed_value_t& tv)
 {
-  struct visitor : public Visitor
+  struct visitor : public DefaultVisitor
   {
     stack_frame_t* stack_frame;
     const typed_value_t& tv;
@@ -309,7 +309,7 @@ void stack_frame_push_tv (stack_frame_t* stack_frame,
   type_strip (tv.type)->Accept (v);
 }
 
-struct PopVisitor : public Visitor
+struct PopVisitor : public DefaultVisitor
 {
   stack_frame_t* stack_frame;
   typed_value_t& tv;

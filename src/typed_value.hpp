@@ -199,8 +199,11 @@ struct typed_value_t
   static typed_value_t copy_exec (const typed_value_t tv);
   static typed_value_t change (const Location& location, typed_value_t tv);
 
+  // Check if value can be represented by the given type.
+  bool RepresentableBy (const Type::Type* type) const;
   bool AssignableTo (const Type::Type* type) const;
 
+  // Does not check for errors.
   typed_value_t Convert (const Location& location, const Type::Type* type) const;
 
   static typed_value_t Equal (const Location& location, const typed_value_t& left, const typed_value_t& right);

@@ -71,7 +71,7 @@ check_assignment (typed_value_t left_tv,
     }
 
   if (!(
-        type_is_equal (left_tv.type, right_tv.type) ||
+        Identitical (left_tv.type, right_tv.type) ||
         (Type::type_cast<Type::Pointer> (type_strip(left_tv.type)) && right_tv.type == Type::Nil::Instance ())
       ))
     {
@@ -562,7 +562,7 @@ struct check_visitor : public ast_visitor_t
         node.expr ()->typed_value = expr_tv;
       }
 
-    struct visitor : public Type::Visitor
+    struct visitor : public Type::DefaultVisitor
     {
       check_visitor& rvalue_visitor;
       ast_call_expr_t& node;
@@ -921,7 +921,7 @@ type_check_statement (ast_t * node)
                          "incompatible types (%s) %s (%s) (E46)", left_tv.type->ToString ().c_str (), symbol, right_tv.type->ToString ().c_str ());
         }
 
-      struct visitor : public Visitor
+      struct visitor : public DefaultVisitor
       {
         ast_t* node;
         const char* symbol;
@@ -1037,7 +1037,7 @@ type_check_statement (ast_t * node)
     {
       ast_t* expr = node.child ();
       check_assignment_target (expr);
-      struct visitor : public Visitor
+      struct visitor : public DefaultVisitor
       {
         ast_t& node;
 

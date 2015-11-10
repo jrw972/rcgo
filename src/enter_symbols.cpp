@@ -47,7 +47,11 @@ enter_symbols (ast_t * node)
   node->EnterSymbol (new TypeSymbol ("uint64", node, &Type::NamedUint64));
   node->EnterSymbol (new TypeSymbol ("uint128", node, &Type::NamedUint128));
 
+  node->EnterSymbol (new TypeSymbol ("float32", node, &Type::NamedFloat32));
   node->EnterSymbol (new TypeSymbol ("float64", node, &Type::NamedFloat64));
+
+  node->EnterSymbol (new TypeSymbol ("complex64", node, &Type::NamedComplex64));
+  node->EnterSymbol (new TypeSymbol ("complex128", node, &Type::NamedComplex128));
 
   node->EnterSymbol (new TypeSymbol ("rune", node, &Type::NamedRune));
   node->EnterSymbol (new TypeSymbol ("byte", node, &Type::NamedByte));

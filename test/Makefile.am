@@ -24,7 +24,9 @@ imaginary_literals.rc \
 rune_literals.rc \
 illegal_rune_literals.sh \
 string_literals.rc \
-illegal_string_literals.sh
+illegal_string_literals.sh \
+conversion.rc \
+illegal_conversion.sh
 
 EXTRA_DIST = $(TESTS) \
 helpers.sh \
@@ -132,4 +134,8 @@ rune_surrogate_half.rc \
 rune_invalid_unicode_code_point.rc \
 illegal_octal.rc \
 string_surrogate_half.rc \
-string_invalid_unicode_code_point.rc
+string_invalid_unicode_code_point.rc \
+illegal_conversion1.rc \
+illegal_conversion2.rc \
+illegal_conversion3.rc \
+illegal_conversion4.rc
