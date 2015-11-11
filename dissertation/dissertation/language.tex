@@ -50,7 +50,7 @@ We describe the challenges of moving from interpreter to compiler in chapter~\re
 To make implementation tractable, we will assume that the systems to be implemented have a static topology meaning that all reactive components are statically allocated.
 Both finite state and infinite state (subject to system resource limits) reactive components are permitted, but both the number and configurations of reactive components in a system are fixed.
 This is equivalent to systems that assume a fixed number of actors and is roughly equivalent to systems that assume a fixed number of threads.
-These assumptions are common in embedded and real-time systems due the combination of limited resources and a need for predictability.
+These assumptions are common in embedded and real-time systems due to the combination of limited resources and a need for predictability.
 We also believe these assumptions are common in less constrained environments as the number of threads is often fixed by the design, e.g., only a fixed number of concurrent activities is needed, or the number of threads is limited by the number of available physical cores.
 Thus, even with the static system assumption, an implementation of the model is still applicable to many systems of interest.
 We leave implementation of extensions that facilitate the dynamic creation and binding of reactive components for future work.
@@ -118,7 +118,7 @@ Intrinsic mutability limits the operations that can be performed on an lvalue of
 By default, variables and parameters have mutable intrinsic and dereference mutability.
 The following code is legal and sets \verb+z+ to 6.
 \begin{verbatim}
-var x uint = 3u;
+var x uint = 3;
 var y *uint = &x;
 var z = x + *y;
 \end{verbatim}
@@ -126,18 +126,18 @@ var z = x + *y;
 Declaring a variable or parameter to have immutable intrinsic mutability (\verb+const+) prevents the variable or parameter from being changed after it is initialized.
 The following code is illegal:
 \begin{verbatim}
-var x const uint = 3u;
-x = 4u; // Illegal
+var x const uint = 3;
+x = 4; // Illegal
 \end{verbatim}
 Immutable intrinsic mutability is enforced when taking the address of a variable or parameter:
 \begin{verbatim}
-var x const uint = 3u;
+var x const uint = 3;
 var y *uint = &x;        // Illegal
 var z +const *uint = &x; // Legal
 var a uint = *z;         // Legal
-*z = 5u;                 // Illegal
+*z = 5;                  // Illegal
 \end{verbatim}
-The second line is illegal because \verb+x+ could change through a statement like \verb+*y = 5u;+.
+The second line is illegal because \verb+x+ could change through a statement like \verb+*y = 5;+.
 The third line causes \verb+z+ to have immutable dereference mutability (\verb|+const|).
 The expression \verb+*z+ can serve as an rvalue (line 4) but it cannot serve as an lvalue (line 5).
 
@@ -159,51 +159,42 @@ The primary application of foreign mutability is declaring the parameters of pus
 This supports the goal of using reference semantics for communication while enforcing the isolation of heaps.
 \begin{verbatim}
 var x +foreign *uint = ...;
-var y +foreign **uint = new *uint;
+var y **uint = new *uint;
 *x = 3;                            // Illegal
 *y = x;                            // Illegal
+var z +foreign *uint = x;          // Legal
 \end{verbatim}
-The fourth line is illegal because the lvalue given by \verb+*x+ is immutable.
-The fifth line is illegal because \verb+*y+ refers to a location that is on the heap.
-\begin{verbatim}
-var x +foreign *uint = ...;
-var y +foreign *uint;
-var z +foreign **uint = &y;
-*z = x;                     // Conceptually Legal
-\end{verbatim}
-The previous example is legal because \verb+*z+ refers to \verb+y+ which is allocated on the stack.
-Thus, \verb+x+ (as stored in \verb+y+) will be forgotten after after the current reaction/function/method returns.
-In general, determining whether a pointer refers to a location on the stack or a heap is undecidable.
-The interpreter may reject legal programs due to this limitation.
-Table~\ref{mutability} describes how the intrinsic and dereference mutability is computed for various expressions.
-The operation of interest is the dereference operation which shows how dereference mutability is ``sticky'' and conservatively assumes that all pointers refer to an address on the heap.
+The third line is illegal because the lvalue given by \verb+*x+ is immutable.
+The fourth line is illegal because it casts away the \verb|+foreign| of \verb+x+.
+(Notice that declaring \verb+y+ with \verb|+foreign| would cause the lvalue to be immutable.)
+The fifth line is legal because the lvalue is mutable and the \verb|+foreign| is preserved.
+The consequence of these semantics is that variables that contain pointers that are declared \verb|+foreign| may only be stored on the stack.
+
+%% Table~\ref{mutability} describes how the intrinsic and dereference mutability is computed for various expressions.
+%% The operation of interest is the dereference operation which shows how dereference mutability is ``sticky'' and conservatively assumes that all pointers refer to an address on the heap.
 
 The following checks are applied to assignment statements:
 \begin{enumerate}
 \item The lvalue and rvalue must be type compatible.
 \item The lvalue must have mutable intrinsic mutability.
-\item If the type involved contains a pointer or slice:
-  \begin{enumerate}
-    \item Check for compatible dereference mutability in table~\ref{assignmut}.
-      Essentially, the dereference mutability of the lvalue must be at least as ``weak'' as the dereference mutability of the rvalue\label{Rule1}.
-    \item If the rvalue has foreign dereference mutability then the lvalue must refer to a location on the stack\label{Rule2}.
-  \end{enumerate}
+\item If the type involved contains a pointer or slice, check for compatible dereference mutability in table~\ref{assignmut}.
+  Essentially, the dereference mutability of the lvalue must be at least as ``weak'' as the dereference mutability of the rvalue.
+  This enforces the ``stickiness'' of dereference mutability.
 \end{enumerate}
-The checks for assignment also enforce the ``stickiness'' of dereference mutability (\ref{Rule1}) and force all foreign pointers to be forgotten as they can only be stored on the stack (\ref{Rule2}).
 
-\begin{table}
-  \centering
-  \begin{tabular}{ccccp{1.75cm}cccc}
-    Kind & Seg & Intrin & Deref & Op & Kind & Seg & Intrin & Deref \\
-    \hline
-    lvalue & S & A & B & load              & rvalue & S    & A & B \\
-    rvalue & S & A & B & deref (\verb+*+)  & lvalue & heap & B & B \\
-    lvalue & S & A & B & ref (\verb+&+)    & rvalue & S    & A & B \\
-    lvalue & S & A & B & select (\verb+.+) & lvalue & S    & A & B \\
-    lvalue & S & A & B & index (\verb+[]+) & lvalue & S    & A & B \\
-  \end{tabular}
-  \caption{Intrinsic and dereference mutability for various operations\label{mutability}.  The possible choices for segment are constant, stack or heap (includes the component segment).  The possible choices for the intrinsic and dereference mutability are mutable, immutable, and foreign.}
-\end{table}
+%% \begin{table}
+%%   \centering
+%%   \begin{tabular}{ccccp{1.75cm}cccc}
+%%     Kind & Seg & Intrin & Deref & Op & Kind & Seg & Intrin & Deref \\
+%%     \hline
+%%     lvalue & S & A & B & load              & rvalue & S    & A & B \\
+%%     rvalue & S & A & B & deref (\verb+*+)  & lvalue & heap & B & B \\
+%%     lvalue & S & A & B & ref (\verb+&+)    & rvalue & S    & A & B \\
+%%     lvalue & S & A & B & select (\verb+.+) & lvalue & S    & A & B \\
+%%     lvalue & S & A & B & index (\verb+[]+) & lvalue & S    & A & B \\
+%%   \end{tabular}
+%%   \caption{Intrinsic and dereference mutability for various operations\label{mutability}.  The possible choices for segment are constant, stack or heap (includes the component segment).  The possible choices for the intrinsic and dereference mutability are mutable, immutable, and foreign.}
+%% \end{table}
 
 \begin{table}
   \centering
@@ -231,6 +222,7 @@ init (id *typeName) initializerName signature body
 An initializer is similar to a method but has additional semantics:
 \begin{itemize}
 \item An initializer must have a pointer receiver to a component type.
+\item The signature must be foreign safe.
 \item An initializer may only be invoked by another initializer.
 \item An initializer sets the heap on entry and resets the heap on exit so that all allocated memory is attributed to the receiver.
 \end{itemize}
@@ -247,7 +239,7 @@ The instance identifier must be unique, the type identifier must refer to a comp
 \paragraph{Actions.}
 An action has the form:
 \begin{verbatim}
-action (id +const *typeName) (booleanExpression) body
+action (id +const *typeName) identifier (booleanExpression) body
 \end{verbatim}
 The immutable dereference mutability of the receiver enforces the immutable phase of transactions.
 Actions may only be defined for component types.
@@ -315,19 +307,19 @@ type Producer component {
 \end{verbatim}
 In this example, the intent of the pull port is to allow a \verb+Producer+ to interrogate the status of a down stream buffer to implement flow control.
 
-\paragraph{Bindings.}
-Bindings allow reactions to be associated with push ports and getters to be associated with pull ports.
+\paragraph{Binders.}
+Binders allow reactions to be associated with push ports and getters to be associated with pull ports.
 Binding and recursive encapsulation are the two mechanisms for composing reactive components.
-A binding has the form:
+A binder has the form:
 \begin{verbatim}
-bind (id *typeName) {
+bind (id *typeName) identifier {
   bindStatement
   ...
 }
 \end{verbatim}
 For example:
 \begin{verbatim}
-bind (this *System) {
+bind (this *System) TheBinder {
   this.producer.Out -> this.consumer.In;
   this.producer.isOutputBufferFull <- this.consumer.isInputBufferFull;
 }
@@ -339,7 +331,7 @@ The direction of the arrow indicates the logical flow of information.
 Thus, information flows from the push port to a reaction (\verb+->+) and information flows from the getter to a pull port (\verb+<-+).
 A pull port must be bound to exactly one getter.
 A reaction may be bound to at most one push port.
-Bindings are associated with a component type and created for each instance of that component type.
+Binders are associated with a component type and created for each instance of that component type.
 
 \paragraph{Activations.}
 Activations are the mechanism by which transactions extend to other components via push port/reaction bindings.
@@ -383,7 +375,7 @@ type System component {
   ...
 };
 
-[5u] action (this +const *System) (...) {
+[5] action (this +const *System) (...) {
   ...
   activate clock[IOTA] {
     ...
@@ -396,13 +388,13 @@ A push port in an array is activated by supplying an index.
 The index expression must be constant to facilitate the check for sound composition.
 Reactions may be dimensioned as well:
 \begin{verbatim}
-[5u] reaction (this +const *System) clock (t int) { ... }
+[5] reaction (this +const *System) clock (t int) { ... }
 \end{verbatim}
 A \verb+for+-loop over an integral range may be used to generate bindings without explicitly listing each binding.
 For example:
 \begin{verbatim}
 bind (this *System) {
-  for i .. 5u {
+  for i ... 5 {
     this.request[i] -> this.clock[i].request;
   };
 }
@@ -431,12 +423,11 @@ creates new heap with an integer root.
 A \verb+change+ statement allows one to access the root of the heap.
 For example:
 \begin{verbatim}
-change (x, y *int) {
+change (x, y) {
   *y = 3;
 };
 \end{verbatim}
 In the example, \verb+x+ is a pointer to a heap and \verb+y+ is a variable that points to the root of the heap.
-The type of \verb+y+ must agree with the type of \verb+x+.
 The root variable is valid for the scope introduced by the \verb+change+ statement.
 The root variable will be set to \verb+nil+ if the heap is no longer valid.
 Within the scope of the \verb+change+ statement, all other variables and parameters are re-entered with foreign dereference immutability.
@@ -471,22 +462,203 @@ Thus, \verb+change+, \verb+move+, and \verb+merge+ are atomic with respect to ea
 These operations return \verb+nil+ indicating a failure.
 For example, if two components attempt to \verb+move+ the same heap, one will succeed and the other will fail.
 
-\section{Semantic Checking}
-Describe the algorithms used to enforce the semantics of reactive components.
+\section{Enforcing Sound Composition}
+
+In this section, we outline the algorithm for checking the composition semantics of reactive components.
+The algorithm leverages the static system assumption.
+
+\paragraph{Enumerate instances and ports.}
+The first step to analyzing composition is to enumerate the components in the system.
+The top-level components are given by the declared instances.
+Sub-components are enumerated by recursively instantiating fields that are also components.
+Fields that are ports are also enumerated.
+
+\paragraph{Enumerate bindings.}
+Let $I$ be a component instance of type $T$.
+Associated with $T$ is a set of binders $B$.
+Each binder $b \in B$ is evaluated for $I$ to create a set of bindings.
+A binding either binds a push port to a reaction or a getter to a pull port.
+The result of this calculation is two functions.
+The function $reactions: (I,Push) \to \{(I,Reaction)\}$ maps an instance/push port pair to a set of instance/reaction pairs.
+The function $getter: (I,Pull) \to \{(I,Getter)\}$ map an instance/pull port pair to a set of instance/getter pairs.
+
+\paragraph{Check bindings.}
+Inverting $reactions$ yields a function that maps an instance/reaction pair to a set of instance/push port pairs $reactions^{-1}: (I,Reaction) \to \{(I,Push)\}$.
+A reaction can be bound to at most one push port:
+\begin{displaymath}
+\forall (I,Reaction) : |reactions^{-1} (I,Reaction)| \leq 1
+\end{displaymath}
+A pull port must be bound to exactly one getter:
+\begin{displaymath}
+\forall (I,Pull) : |getters (I,Pull)| = 1
+\end{displaymath}
+
+\begin{figure}[H]
+\centering
+%%\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    reaction/.style={rectangle, draw, rounded corners=1mm, text width=2cm,
+        text centered, anchor=north},
+    activation/.style={rectangle, draw, rounded corners=1mm, dashed, text width=2cm,
+        text centered, anchor=north},
+    push/.style={rectangle, draw, rounded corners=1mm, dotted, text width=2cm,
+        text centered, anchor=north},
+    level 1/.style={sibling distance=7.0cm},
+    level 2/.style={sibling distance=4.0cm},
+    level 3/.style={sibling distance=3.0cm},
+    level distance=0.5cm, growth parent anchor=south
+]
+\node (Action) [reaction] {Instance1 Action}
+  child {
+    node (Activation01) [activation] {Instance1* Activation1}
+    child {
+      node (Push01) [push] {Instance1 Push1}
+      child {
+        node (Rection01) [reaction] {Instance2 Reaction1}
+        child {
+          node (Activation03) [activation] {Instance2* Activation3}
+        }
+      }
+    }
+    child {
+      node (Push02) [push] {Instance1 Push2}
+    }
+  }
+  child {
+    node (Activation02) [activation] {Instance1 Activation2}
+    child {
+      node (Push04) [push] {Instance1 Push1}
+      child {
+        node (Rection08) [reaction] {Instance2 Reaction1}
+        child {
+          node (Activation08) [activation] {Instance2* Activation3}
+        }
+      }
+    }
+    child {
+      node (Push03) [push] {Instance1 Push3}
+      child {
+        node (Rection02) [reaction] {Instance2 Reaction2}
+        child {
+          node (Activation04) [activation] {Instance2* Activation5}
+        }
+      }
+      child {
+        node (Rection03) [reaction] {Instance3 Reaction3}
+        child {
+          node (Activation05) [activation] {Instance3 Activation6}
+        }
+      }
+    }
+  }
+;
+
+\end{tikzpicture}
+%%}%
+\caption{Example concrete action\label{concrete_action}}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+%%\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    reaction/.style={rectangle, draw, rounded corners=1mm, text width=2cm,
+        text centered, anchor=north},
+    activation/.style={rectangle, draw, rounded corners=1mm, dashed, text width=2cm,
+        text centered, anchor=north},
+    push/.style={rectangle, draw, rounded corners=1mm, dotted, text width=2cm,
+        text centered, anchor=north},
+    level 1/.style={sibling distance=7.0cm},
+    level 2/.style={sibling distance=4.0cm},
+    level 3/.style={sibling distance=3.0cm},
+    level distance=0.5cm, growth parent anchor=south
+]
+\node (Action) [reaction] {Instance1 Instance1* Instance2* Instance3}
+  child {
+    node (Activation01) [activation] {Instance1* Instance2*}
+    child {
+      node (Push01) [push] {Instance2*}
+      child {
+        node (Rection01) [reaction] {Instance2*}
+        child {
+          node (Activation03) [activation] {Instance2*}
+        }
+      }
+    }
+    child {
+      node (Push02) [push] {}
+    }
+  }
+  child {
+    node (Activation02) [activation] {Instance1 Instance2* Instance3}
+    child {
+      node (Push04) [push] {Instance2*}
+      child {
+        node (Rection08) [reaction] {Instance2*}
+        child {
+          node (Activation08) [activation] {Instance2*}
+        }
+      }
+    }
+    child {
+      node (Push03) [push] {Instance2* Instance3}
+      child {
+        node (Rection02) [reaction] {Instance2*}
+        child {
+          node (Activation04) [activation] {Instance2*}
+        }
+      }
+      child {
+        node (Rection03) [reaction] {Instance3}
+        child {
+          node (Activation05) [activation] {Instance3}
+        }
+      }
+    }
+  }
+;
+
+\end{tikzpicture}
+%%}%
+\caption{Example instance set calculation\label{instance_sets}}
+\end{figure}
+
+\paragraph{Enumerate concrete actions.}
+Let $I$ be a component instance of type $T$.
+Associated with $T$ is a set of actions $A$.
+Each action $a \in A$ is evaluated for $I$ to create a concrete action.
+A concrete action is a directed graph constructed as follows:
 \begin{enumerate}
-\item Enumerate instances
-\item Enumerate bindings
-\item Enumerate concrete actions
-\item Check for non-determinism
-\item Check that all pull ports are satisfied
+\item The root is $(I,a)$.
+\item The descendants of the root are the activations in $a$.
+\item The descendants of the activations are the push ports named in each activation.
+\item The descendants of the push ports are the reactions bound to the push ports given by $reactions$.
+\item This process is the repeated for each instance/reaction leaf.
 \end{enumerate}
+Figure~\ref{concrete_action} shows an example concrete action depicted as a tree.
 
-\section{Runtime}
-Activations
-Scheduler
-Garbage collector should be deferred to advance features
+The first step in analyzing a concrete action is to ensure that the directed graph is acyclic.
+A cycle forms when a reaction activates itself through the set of concrete bindings.
+Once the concrete action is proven free of cycles, it may be considered and represented as a tree as shown in figure~\ref{concrete_action}.
+In the example, the Instance1/Push1 is activated by both Activation1 and Activation2.
+It is replicated to convert the directed graph to a tree.
 
+The second step in analyzing a concrete action is to determine which activations mutate the state of a component.
+The current implementation uses a conservative static analysis of the body of an activate statement to determine if the activation mutates the state of the component.
+These activations are marked with an asterisk (*) in figure~\ref{concrete_action}.
 
+The third step is to compute a set of instances for each node in the concrete action.
+If the node is not an activation, the set of instances is the union of the instances of its children.
+If the node is an activation, the set of instances is the union of the instances of its children and the instance implied by the activation.
+Figure~\ref{instance_sets} shows the instance set calculation for the concrete action in figure~\ref{concrete_action}.
+The root shows that Instance1 does not change in at least one activation and may change in at least one activation, that Instance2 may change in every activation, and that Instance3 is ``read-only'' in this concrete action.
+
+The fourth step is to check that a mutated instance appears in at most one child node instance set for the activation and push port nodes.
+This check succeeds everywhere but Activation2 in figures~\ref{concrete_action}~and~\ref{instance_sets} as Instance2* appears in both children.
+The activation and push port nodes represent activities that will be performed together.
+That is, once control passes to an activation statement, all push ports and their bound reactions are activated.
+In contrast, activations, as children of action and reaction nodes, represent mutually exclusive alternatives, i.e., at most one activation statement is executed per action/reaction body.
+Thus, a mutated instance appearing in two or more children of an activation node or push port node indicates that the state of a component may be mutated in disparate ways leading to a non-deterministic state transition.
 
 \section{BEGINNING OF UNADOPTED MATERIAL FROM PROPOSAL}
 
