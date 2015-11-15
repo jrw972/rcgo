@@ -5,6 +5,7 @@
 #include "ast.hpp"
 #include <error.h>
 #include "SymbolVisitor.hpp"
+#include "Composition.hpp"
 
 /* Enter all symbols except vars and parameters. */
 void enter_symbols (ast_t * node);
@@ -98,12 +99,14 @@ check_assignment (typed_value_t left_tv,
 void process_definitions (ast_t * node);
 
 void
-enumerate_instances (ast_t* node, instance_table_t& instance_table);
+enumerate_instances (ast_t* node, Composition::Composer& instance_table);
 
 void
 allocate_stack_variables (ast_t* node);
 
 Method*
 get_current_method (const ast_t * node);
+
+ReceiverAccess ComputeReceiverAccess (const ast_t* node);
 
 #endif /* semantic_hpp */

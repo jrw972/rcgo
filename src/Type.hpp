@@ -22,6 +22,7 @@ namespace Type
   class Array;
   class Heap;
 
+  typedef uint64_t UintValueType;
   typedef int64_t IntValueType;
 
   struct Type
@@ -70,12 +71,12 @@ namespace Type
     virtual bool IsSliceOfRunes () const;
     const Pointer* GetPointer () const;
     const Slice* GetSlice () const;
-    const Array* GetArray (IntValueType dimension) const;
+    const Array* GetArray (UintValueType dimension) const;
     const Heap* GetHeap () const;
   private:
     const Pointer* pointer_;
     const Slice* slice_;
-    typedef std::map<IntValueType, const Array*> ArraysType;
+    typedef std::map<UintValueType, const Array*> ArraysType;
     ArraysType arrays_;
     const Heap* heap_;
   };
@@ -86,6 +87,7 @@ namespace Type
   class NamedType : public Type
   {
   public:
+    typedef std::vector<Getter*> GettersType;
     typedef std::vector<action_t*> ActionsType;
     typedef std::vector<reaction_t*> ReactionsType;
     typedef std::vector<bind_t*> BindsType;
@@ -154,6 +156,14 @@ namespace Type
       getters_.push_back (getter);
     }
     Getter* GetGetter (const std::string& identifier) const;
+    GettersType::const_iterator GettersBegin () const
+    {
+      return getters_.begin ();
+    }
+    GettersType::const_iterator GettersEnd () const
+    {
+      return getters_.end ();
+    }
     void Add (action_t* action)
     {
       actions_.push_back (action);
@@ -172,6 +182,14 @@ namespace Type
       reactions_.push_back (reaction);
     }
     reaction_t* GetReaction (const std::string& identifier) const;
+    ReactionsType::const_iterator ReactionsBegin () const
+    {
+      return reactions_.begin ();
+    }
+    ReactionsType::const_iterator ReactionsEnd () const
+    {
+      return reactions_.end ();
+    }
     void Add (bind_t* bind)
     {
       binds_.push_back (bind);
@@ -191,7 +209,7 @@ namespace Type
     const Type* underlyingType_;
     std::vector<Method*> methods_;
     std::vector<Initializer*> initializers_;
-    std::vector<Getter*> getters_;
+    GettersType getters_;
     ActionsType actions_;
     ReactionsType reactions_;
     BindsType binds_;
@@ -352,7 +370,7 @@ namespace Type
   typedef Scalar<C128, Complex128String, true, false, false> Complex128;
 
   StringReturner(UintString, "<uint>");
-  typedef Scalar<uint64_t, UintString, true, false, true> Uint;
+  typedef Scalar<UintValueType, UintString, true, false, true> Uint;
 
   StringReturner(IntString, "<int>");
   typedef Scalar<IntValueType, IntString, true, false, true> Int;
@@ -1147,7 +1165,7 @@ namespace Type
     {
       t (type);
     }
-   };
+  };
 
   template <typename T>
   struct OrderableVisitor : public Visitor

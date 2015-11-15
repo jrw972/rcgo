@@ -2,46 +2,47 @@
 #include "runtime.hpp"
 #include <stdlib.h>
 #include <string.h>
-#include "instance.hpp"
 #include "heap.hpp"
 #include "stack_frame.hpp"
 #include "action.hpp"
 
 void
-instance_scheduler_t::lock (const instance_set_t& set)
+instance_scheduler_t::lock (const Composition::InstanceSet& set)
 {
-  for (instance_set_t::const_iterator pos = set.begin (), limit = set.end ();
+  for (Composition::InstanceSet::const_iterator pos = set.begin (), limit = set.end ();
        pos != limit;
        ++pos)
     {
       instance_info_t* record = info_map_[pos->first];
-      switch (pos->second)
-        {
-        case ACTIVATION_READ:
-          pthread_rwlock_rdlock (&record->lock);
-          break;
-        case ACTIVATION_WRITE:
-          pthread_rwlock_wrlock (&record->lock);
-          break;
-        }
+      unimplemented;
+      // switch (pos->second)
+      //   {
+      //   case ACTIVATION_READ:
+      //     pthread_rwlock_rdlock (&record->lock);
+      //     break;
+      //   case ACTIVATION_WRITE:
+      //     pthread_rwlock_wrlock (&record->lock);
+      //     break;
+      //   }
     }
 }
 
 void
-instance_scheduler_t::unlock (const instance_set_t& set)
+instance_scheduler_t::unlock (const Composition::InstanceSet& set)
 {
-  for (instance_set_t::const_iterator pos = set.begin (), limit = set.end ();
+  for (Composition::InstanceSet::const_iterator pos = set.begin (), limit = set.end ();
        pos != limit;
        ++pos)
     {
       instance_info_t* record = info_map_[pos->first];
-      switch (pos->second)
-        {
-        case ACTIVATION_READ:
-        case ACTIVATION_WRITE:
-          pthread_rwlock_unlock (&record->lock);
-          break;
-        }
+      unimplemented;
+      // switch (pos->second)
+      //   {
+      //   case ACTIVATION_READ:
+      //   case ACTIVATION_WRITE:
+      //     pthread_rwlock_unlock (&record->lock);
+      //     break;
+      //   }
     }
 }
 
@@ -74,7 +75,7 @@ instance_scheduler_t::dump_schedule () const
       instance_info_t* record = head_;
       while (record != (instance_info_t*)1)
         {
-          printf ("%p instance=%p type=%p\n", record, heap_instance (record->heap), record->instance->type ());
+          printf ("%p instance=%p type=%p\n", record, heap_instance (record->heap), record->instance->type);
           record = record->next;
         }
     }
@@ -135,44 +136,45 @@ instance_scheduler_t::instance_executor_t::run_i ()
       /* printf ("END schedule after pop\n"); */
 
       // Try all the actions.
-      for (instance_t::InstanceSetsType::const_iterator pos = record->instance->instance_sets.begin (),
-             limit = record->instance->instance_sets.end ();
-           pos != limit;
-           ++pos)
-        {
-          /* printf ("BEGIN instances before enabled\n"); */
-          /* dump_instances (runtime); */
-          /* printf ("END instances before enabled\n"); */
+      unimplemented;
+      // for (instance_t::InstanceSetsType::const_iterator pos = record->instance->instance_sets.begin (),
+      //        limit = record->instance->instance_sets.end ();
+      //      pos != limit;
+      //      ++pos)
+      //   {
+      //     /* printf ("BEGIN instances before enabled\n"); */
+      //     /* dump_instances (runtime); */
+      //     /* printf ("END instances before enabled\n"); */
 
-          const action_t* action = pos->action;
+      //     const action_t* action = pos->action;
 
-          scheduler_.lock (pos->set);
-          runtime::exec (*this, record->instance->ptr (), action, pos->iota);
-          scheduler_.unlock (pos->set);
+      //     scheduler_.lock (pos->set);
+      //     runtime::exec (*this, record->instance->ptr (), action, pos->iota);
+      //     scheduler_.unlock (pos->set);
 
-          /* // TODO: Comment this out. */
-          /* { */
-          /*   instance_t** pos; */
-          /*   instance_t** limit; */
-          /*   for (pos = instance_table_begin (scheduler.instance_table), limit = instance_table_end (scheduler.instance_table); */
-          /*        pos != limit; */
-          /*        pos = instance_table_next (pos)) */
-          /*     { */
-          /*       instance_t* instance = *pos; */
-          /*       printf ("BEFORE FIRST\n"); */
-          /*       heap_dump (instance_get_record (instance)->heap); */
-          /*       printf ("BEFORE LAST\n"); */
-          /*       instance_record_collect_garbage (instance_get_record (instance)); */
-          /*       printf ("AFTER FIRST\n"); */
-          /*       heap_dump (instance_get_record (instance)->heap); */
-          /*       printf ("AFTER LAST\n"); */
-          /*     } */
-          /* } */
+      //     /* // TODO: Comment this out. */
+      //     /* { */
+      //     /*   instance_t** pos; */
+      //     /*   instance_t** limit; */
+      //     /*   for (pos = instance_table_begin (scheduler.instance_table), limit = instance_table_end (scheduler.instance_table); */
+      //     /*        pos != limit; */
+      //     /*        pos = instance_table_next (pos)) */
+      //     /*     { */
+      //     /*       instance_t* instance = *pos; */
+      //     /*       printf ("BEFORE FIRST\n"); */
+      //     /*       heap_dump (instance_get_record (instance)->heap); */
+      //     /*       printf ("BEFORE LAST\n"); */
+      //     /*       instance_record_collect_garbage (instance_get_record (instance)); */
+      //     /*       printf ("AFTER FIRST\n"); */
+      //     /*       heap_dump (instance_get_record (instance)->heap); */
+      //     /*       printf ("AFTER LAST\n"); */
+      //     /*     } */
+      //     /* } */
 
-          /* printf ("BEGIN instances after enabled\n"); */
-          /* dump_instances (runtime); */
-          /* printf ("END instances after enabled\n"); */
-        }
+      //     /* printf ("BEGIN instances after enabled\n"); */
+      //     /* dump_instances (runtime); */
+      //     /* printf ("END instances after enabled\n"); */
+      //   }
 
       // Collect garbage.
       record->collect_garbage ();
@@ -186,36 +188,37 @@ instance_scheduler_t::instance_executor_t::run_i ()
 }
 
 void
-instance_scheduler_t::run (instance_table_t& instance_table,
+instance_scheduler_t::run (Composition::Composer& instance_table,
                            size_t stack_size,
                            size_t thread_count)
 {
-  // Set up data structures.
-  for (instance_table_t::InstancesType::const_iterator pos = instance_table.instances.begin (),
-         limit = instance_table.instances.end ();
-       pos != limit;
-       ++pos)
-    {
-      instance_t* instance = pos->second;
-      // Set up the scheduling data structure.
-      instance_info_t* info = new instance_info_t (instance);
-      info_map_[instance] = info;
-      // Add the instance to the schedule.
-      push (info);
-    }
+  unimplemented;
+  // // Set up data structures.
+  // for (Composer::InstancesType::const_iterator pos = instance_table.instances.begin (),
+  //        limit = instance_table.instances.end ();
+  //      pos != limit;
+  //      ++pos)
+  //   {
+  //     instance_t* instance = pos->second;
+  //     // Set up the scheduling data structure.
+  //     instance_info_t* info = new instance_info_t (instance);
+  //     info_map_[instance] = info;
+  //     // Add the instance to the schedule.
+  //     push (info);
+  //   }
 
-  {
-    // Initialize.
-    instance_executor_t exec (*this, stack_size);
-    for (instance_table_t::InstancesType::const_iterator pos = instance_table.instances.begin (),
-           limit = instance_table.instances.end ();
-         pos != limit;
-         ++pos)
-      {
-        instance_t* instance = pos->second;
-        runtime::initialize (exec, instance);
-      }
-  }
+  // {
+  //   // Initialize.
+  //   instance_executor_t exec (*this, stack_size);
+  //   for (Composer::InstancesType::const_iterator pos = instance_table.instances.begin (),
+  //          limit = instance_table.instances.end ();
+  //        pos != limit;
+  //        ++pos)
+  //     {
+  //       instance_t* instance = pos->second;
+  //       runtime::initialize (exec, instance);
+  //     }
+  // }
 
   std::vector<instance_executor_t*> executors;
   for (size_t idx = 0; idx != thread_count; ++idx)

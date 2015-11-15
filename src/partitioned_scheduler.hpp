@@ -3,11 +3,10 @@
 
 #include "types.hpp"
 #include <pthread.h>
-#include "instance.hpp"
 #include "heap.hpp"
 #include "stack_frame.hpp"
 #include "executor_base.hpp"
-#include "instance_table.hpp"
+#include "Composition.hpp"
 #include "runtime.hpp"
 #include <queue>
 #include <poll.h>
@@ -22,7 +21,7 @@ public:
     pthread_mutex_init (&stdout_mutex_, NULL);
   }
 
-  void run (instance_table_t& instance_table,
+  void run (Composition::Composer& instance_table,
             size_t stack_size,
             size_t thread_count);
 
@@ -32,21 +31,21 @@ private:
   class info_t
   {
   public:
-    info_t (instance_t* instance)
+    info_t (Composition::Instance* instance)
       : instance_ (instance)
-      , heap_ (heap_make (instance->ptr (), instance->type ()->Size ()))
+      , heap_ (heap_make (instance->component, instance->type->Size ()))
       , lock_ (0)
       , count_ (0)
       , head_ (NULL)
       , tail_ (&head_)
     {
       // Link the instance to its scheduling information.
-      *((info_t**)instance->ptr ()) = this;
+      *((info_t**)instance->component) = this;
     }
 
     component_t* ptr () const
     {
-      return instance_->ptr ();
+      return instance_->component;
     }
 
     heap_t* heap () const
@@ -173,7 +172,7 @@ private:
         }
     }
 
-    instance_t* instance_;
+    Composition::Instance* instance_;
     heap_t* heap_;
     volatile size_t lock_;
     ssize_t count_;
@@ -209,7 +208,7 @@ private:
       , generation_ (0)
     { }
 
-    virtual const instance_set_t& set () const = 0;
+    virtual const Composition::InstanceSet& set () const = 0;
 
     ExecutionResult execute (size_t generation);
     ExecutionResult resume (size_t generation);
@@ -230,70 +229,66 @@ private:
   private:
     // Return true if the precondition was true.
     virtual bool execute_i () const = 0;
-    instance_set_t::const_iterator pos_;
-    instance_set_t::const_iterator limit_;
+    Composition::InstanceSet::const_iterator pos_;
+    Composition::InstanceSet::const_iterator limit_;
     ExecutionKind last_execution_kind_;
     size_t generation_;
   };
 
   struct action_task_t : public task_t
   {
-    action_task_t (instance_t* i, const instance_t::ConcreteAction& a)
-      : instance (i)
-      , action (a)
+    action_task_t (const Composition::Action* a)
+      : action (a)
     { }
 
-    instance_t* instance;
-    instance_t::ConcreteAction action;
+    const Composition::Action* const action;
 
-    const instance_set_t& set () const
+    const Composition::InstanceSet& set () const
     {
-      return action.set;
+      return action->GetInstanceSet ();
     }
     virtual bool execute_i () const
     {
-      return runtime::exec (*executor, instance->ptr (), action.action, action.iota);
+      return runtime::exec (*executor, action->instance->component, action->action, action->iota);
     }
   };
 
   struct always_task_t : public task_t
   {
-    always_task_t (instance_t* i, const instance_t::ConcreteAction& a)
-      : instance (i)
-      , action (a)
+    always_task_t (const Composition::Action* a)
+      : action (a)
     { }
 
-    instance_t* instance;
-    instance_t::ConcreteAction action;
+    const Composition::Action* const action;
 
-    const instance_set_t& set () const
+    const Composition::InstanceSet& set () const
     {
-      return action.set;
+      return action->GetInstanceSet ();
     }
     virtual bool execute_i () const
     {
-      return runtime::exec_no_check (*executor, instance->ptr (), action.action, action.iota);
+      return runtime::exec_no_check (*executor, action->instance->component, action->action, action->iota);
     }
   };
 
   struct gc_task_t : public task_t
   {
-    gc_task_t (instance_t* i)
+    gc_task_t (Composition::Instance* i)
       : instance (i)
     {
-      set_[i] = ACTIVATION_WRITE;
+      set_.insert (std::make_pair (instance, AccessWrite));
     }
 
-    instance_t* instance;
-    instance_set_t set_;
+    Composition::Instance* instance;
+    Composition::InstanceSet set_;
 
-    const instance_set_t& set () const
+    const Composition::InstanceSet& set () const
     {
       return set_;
     }
     virtual bool execute_i () const
     {
-      executor->current_instance (instance->ptr ());
+      executor->current_instance (instance->component);
       return heap_collect_garbage (executor->heap ());
     }
   };

@@ -6,22 +6,21 @@
 #include "heap.hpp"
 #include "field.hpp"
 #include <error.h>
-#include "Activation.hpp"
 #include <string.h>
-#include "instance_table.hpp"
+#include "Composition.hpp"
 #include "executor_base.hpp"
 #include "Template.hpp"
 
 namespace runtime
 {
   void
-  allocate_instances (instance_table_t& instance_table);
+  allocate_instances (Composition::Composer& instance_table);
 
   void
-  create_bindings (instance_table_t& instance_table);
+  create_bindings (Composition::Composer& instance_table);
 
   void
-  initialize (executor_base_t& exec, instance_t* instance);
+  initialize (executor_base_t& exec, Composition::Instance* instance);
 
 // Returns true if the action is enabled.
   bool enabled (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota);
@@ -45,7 +44,7 @@ namespace runtime
 
   void
   evaluate_expr (executor_base_t& exec,
-                 ast_t* node);
+                 const ast_t* node);
 
   struct New : public Template
   {

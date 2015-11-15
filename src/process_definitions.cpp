@@ -2,7 +2,6 @@
 #include "Symbol.hpp"
 #include <error.h>
 #include "semantic.hpp"
-#include "Activation.hpp"
 #include "action.hpp"
 #include "field.hpp"
 #include "parameter.hpp"
@@ -106,6 +105,7 @@ static void checkCall (ast_t& node,
                      parameter_count, argument_count);
     }
 
+  bool component_state = false;
   size_t idx = 0;
   for (Type::Signature::const_iterator pos = signature->Begin (),
        limit = signature->End ();
@@ -114,6 +114,10 @@ static void checkCall (ast_t& node,
     {
       typed_value_t parameter_tv = typed_value_t::make_ref ((*pos)->value);
       typed_value_t argument_tv  = ImplicitlyConvert (argsnode->at (idx), parameter_tv.type);
+      if (argument_tv.component_state && type_contains_pointer (parameter_tv.type) && parameter_tv.dereference_mutability == MUTABLE)
+        {
+          component_state = true;
+        }
       check_assignment (parameter_tv, argument_tv, *argsnode->at (idx),
                         "incompatible types (%s) = (%s) (E116)",
                         "argument leaks mutable pointers (E117)");
@@ -121,18 +125,13 @@ static void checkCall (ast_t& node,
 
   // Set the return type.
   node.typed_value = return_value;
-}
-
-static bool
-in_mutable_section (const ast_t* node)
-{
-  return node->GetAction () != NULL &&
-         node->GetActivation () != NULL;
+  node.typed_value.component_state = component_state && type_contains_pointer (return_value.type);
 }
 
 static typed_value_t
-insertImplicitDereference (ast_t*& expr, typed_value_t tv)
+insertImplicitDereference (ast_t*& expr)
 {
+  typed_value_t tv = expr->typed_value;
   expr = new ast_implicit_dereference_expr_t (expr->location.Line, expr);
   tv = typed_value_t::implicit_dereference (tv);
   expr->typed_value = tv;
@@ -146,7 +145,7 @@ CheckAndImplicitlyDereference (ast_t*& expr)
   if (tv.isReference ())
     {
       // Insert a dereference node.
-      tv = insertImplicitDereference (expr, tv);
+      tv = insertImplicitDereference (expr);
     }
   return tv;
 }
@@ -234,7 +233,7 @@ struct check_visitor : public ast_visitor_t
 
     typed_value_t index_tv = CheckAndImplicitlyDereference (node.index_ref ());
 
-    typed_value_t::index (node.index ()->location, typed_value_t::make_ref (array_type, IMMUTABLE, IMMUTABLE), index_tv);
+    typed_value_t::index (node.index ()->location, typed_value_t::make_ref (array_type, IMMUTABLE, IMMUTABLE, false), index_tv);
 
     ast_t *args = node.args ();
     TypedValueListType tvlist;
@@ -327,7 +326,7 @@ struct check_visitor : public ast_visitor_t
       {
         // Pointer reference.
         // Insert an implicit dereference.
-        in = insertImplicitDereference (node.base_ref (), in);
+        in = insertImplicitDereference (node.base_ref ());
       }
 
     if (in.IsValue () && type_dereference (in.type))
@@ -382,6 +381,7 @@ struct check_visitor : public ast_visitor_t
                        "incompatible types: %s (E22)", in.type->ToString ().c_str ());
       }
     node.typed_value = out;
+    node.address_of_dereference = ast_cast<ast_dereference_expr_t> (expr) != NULL;
   }
 
   void visit (ast_address_of_expr_t& node)
@@ -538,6 +538,8 @@ struct check_visitor : public ast_visitor_t
     // Expecting a value.
     typed_value_t expr_tv = CheckAndImplicitlyDereference (node.expr_ref ());
 
+    node.original_expr_tv = expr_tv;
+
     if (expr_tv.kind == typed_value_t::TYPE)
       {
         // Conversion.
@@ -566,11 +568,11 @@ struct check_visitor : public ast_visitor_t
     {
       check_visitor& rvalue_visitor;
       ast_call_expr_t& node;
-      const TypedValueListType& tvlist;
+      TypedValueListType& tvlist;
 
       visitor (check_visitor& rv,
                ast_call_expr_t& n,
-               const TypedValueListType& tvl)
+               TypedValueListType& tvl)
         : rvalue_visitor (rv)
         , node (n)
         , tvlist (tvl)
@@ -607,7 +609,7 @@ struct check_visitor : public ast_visitor_t
               }
 
             checkCall (node, type.GetSignature (), type.GetReturnParameter ()->value, node.args (), tvlist);
-            if (in_mutable_section (&node))
+            if (node.InMutableSection ())
               {
                 error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                                "cannot call pull port in mutable section (E30)");
@@ -618,77 +620,58 @@ struct check_visitor : public ast_visitor_t
 
       void visit (const Type::Method& type)
       {
+        // Convert to a function call.
+        // Move the receiver to the args.
+        ast_t* receiver = node.expr ()->at (0)->at (0);
+        if (type_dereference (type.receiver_type) != NULL)
+          {
+            // Method expects a pointer.  Insert address of.
+            ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.Line, receiver);
+            rvalue_visitor.check_address_of (*e);
+            receiver = e;
+          }
+        else
+          {
+            insertImplicitDereference (receiver);
+          }
+        node.args ()->prepend (receiver);
+        tvlist.insert (tvlist.begin (), receiver->typed_value);
+        // Reset the expression to a literal.
+        typed_value_t method_tv = node.expr ()->typed_value;
+        method_tv.type = type.function_type;
+        node.expr_ref () = new ast_literal_expr_t (node.location.Line, method_tv);
+
+        checkCall (node, type.function_type->GetSignature (), type.return_parameter->value, node.args (), tvlist);
+
         switch (type.kind)
           {
           case Type::Method::METHOD:
-          {
             // No restrictions on caller.
-            checkCall (node, type.signature, type.return_parameter->value, node.args (), tvlist);
-
-            if (type_dereference (type.receiver_type) != NULL)
-              {
-                // Method expects a pointer.  Insert address of.
-                // Strip off implicit deref and select.
-                ast_t* receiver_select_expr = node.expr ()->at (0)->at (0);
-                ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.Line, receiver_select_expr);
-                rvalue_visitor.check_address_of (*e);
-                node.expr ()->at (0)->at(0) = e;
-              }
-
-            typed_value_t argument_tv = node.expr ()->at (0)->at (0)->typed_value;
-            typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
-            check_assignment (parameter_tv, argument_tv, node,
-                              "call expects %s but given %s (E118)",
-                              "argument leaks mutable pointers (E119)");
-          }
-          break;
+            break;
           case Type::Method::INITIALIZER:
-          {
             // Caller must be an initializer.
-            Initializer* initializer = node.GetInitializer ();
-
-            if (initializer == NULL)
+            if (NULL == node.GetInitializer ())
               {
                 error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                                "initializers may only be called from initializers (E31)");
               }
-
-            checkCall (node, type.signature, type.return_parameter->value, node.args (), tvlist);
-
-            assert (type_dereference (type.receiver_type) != NULL);
-
-            // Method expects a pointer.  Insert address of.
-            // Strip off implicit deref and select.
-            ast_t* receiver_select_expr = node.expr ()->at (0)->at (0);
-            ast_address_of_expr_t* e = new ast_address_of_expr_t (node.location.Line, receiver_select_expr);
-            rvalue_visitor.check_address_of (*e);
-            node.expr ()->at (0)->at (0) = e;
-
-            typed_value_t argument_tv = node.expr ()->at (0)->at (0)->typed_value;
-            typed_value_t parameter_tv = typed_value_t::make_ref (type.this_parameter->value);
-            check_assignment (parameter_tv, argument_tv, node,
-                              "call expects %s but given %s (E120)",
-                              "argument leaks mutable pointers (E121)");
-          }
-          break;
-
+            break;
           case Type::Method::GETTER:
           {
-            unimplemented;
-            // // Must be called from either a getter, an action, or reaction.
-            // if (get_current_getter (&node) == NULL &&
-            //         get_current_action (&node) == NULL)
-            //     {
-            //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-            //                        "getters may only be called from a getter, an action, or a reaction (E32)");
-            //     }
+            // Must be called from either a getter, action, reaction, or initializer.
+            if (node.GetGetter () == NULL &&
+                node.GetAction () == NULL &&
+                node.GetInitializer () == NULL)
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "getters may only be called from a getter, an action, a reaction, or an initializer (E32)");
+              }
 
-            // rvalue_visitor.checkCall (node, type.signature, type.return_parameter->value, node.args ());
-            // if (in_mutable_section (&node))
-            //     {
-            //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-            //                        "cannot call getter in mutable section (E33)");
-            //     }
+            if (node.InMutableSection ())
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "cannot call getter in mutable section (E33)");
+              }
           }
           break;
           case Type::Method::REACTION:
@@ -853,8 +836,8 @@ type_check_statement (ast_t * node)
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "parameter specified for non-parameterized reaction (E41)");
         }
-      typed_value_t dimension = reaction->dimension ();
-      typed_value_t::index (node.location, typed_value_t::make_ref (reaction->reaction_type->GetArray (dimension.integral_value ()), IMMUTABLE, IMMUTABLE), param_tv);
+      Type::Uint::ValueType dimension = reaction->dimension ();
+      typed_value_t::index (node.location, typed_value_t::make_ref (reaction->reaction_type->GetArray (dimension), IMMUTABLE, IMMUTABLE, false), param_tv);
     }
 
     void visit (ast_bind_pull_port_statement_t& node)
@@ -1075,12 +1058,8 @@ type_check_statement (ast_t * node)
 
     void visit (ast_activate_statement_t& node)
     {
-      action_reaction_base_t *action = node.GetAction ();
       ast_t *expression_list_node = node.expr_list ();
       ast_t *body_node = node.body ();
-
-      Activation *activation = new Activation (node);
-      action->add_activation (activation);
 
       /* Check the activations. */
       TypedValueListType tvlist;
@@ -1091,8 +1070,7 @@ type_check_statement (ast_t * node)
 
       /* Check the body. */
       type_check_statement (body_node);
-
-      node.activation = activation;
+      node.mutable_phase_access = ComputeReceiverAccess (body_node);
     }
 
     void visit (ast_var_statement_t& node)
@@ -1123,7 +1101,7 @@ type_check_statement (ast_t * node)
             }
 
           // Enter each symbol.
-          typed_value_t left_tv = typed_value_t::make_ref (type, node.mutability, node.dereferenceMutability);
+          typed_value_t left_tv = typed_value_t::make_ref (type, node.mutability, node.dereferenceMutability, false);
           for (ast_t::iterator id_pos = identifier_list->begin (),
                id_limit = identifier_list->end ();
                id_pos != id_limit;
@@ -1149,7 +1127,7 @@ type_check_statement (ast_t * node)
                ++id_pos, ++init_pos)
             {
               // Assume left is mutable.
-              typed_value_t left_tv = typed_value_t::make_ref (type, MUTABLE, node.dereferenceMutability);
+              typed_value_t left_tv = typed_value_t::make_ref (type, MUTABLE, node.dereferenceMutability, false);
               typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvert (*init_pos, left_tv.type);
               check_assignment (left_tv, right_tv, node,
                                 "incompatible types (%s) = (%s) (E126)",
@@ -1261,278 +1239,6 @@ control_check_statement (ast_t * node)
   node->accept (v);
 }
 
-/*
-  Determine if each activation mutates the state of a component.
-  This requires pointer analysis and could be improved.
-  However, pointer analysis solves the halting problem so we must draw the line somewhere.
-
-  The state of a component is only mutable in the body of a activation statement so we can exclude all other activity.
-  The cases to check:
-  1.  Assignment to an lvalue derived from the receiver.
-  2.  Copying a pointer (to mutable) whose value is derived from the receiver.
-      a.  In assignment
-      a.  In a call
-
- */
-static void
-mutates_check_statement (ast_t * node)
-{
-  struct derived_visitor : public ast_visitor_t
-  {
-    bool derived_from_receiver;
-
-    derived_visitor () : derived_from_receiver (false) { }
-
-    void default_action (ast_t& node)
-    {
-      not_reached;
-    }
-
-    void visit (ast_implicit_dereference_expr_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_address_of_expr_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_index_expr_t& node)
-    {
-      node.base ()->accept (*this);
-    }
-
-    void visit (ast_select_expr_t& node)
-    {
-      node.base ()->accept (*this);
-    }
-
-    void visit (ast_dereference_expr_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_identifier_expr_t& node)
-    {
-      ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (node.symbol);
-      if (symbol != NULL)
-        {
-          assert (symbol->kind != ParameterSymbol::Receiver);
-          derived_from_receiver = symbol->kind == ParameterSymbol::ReceiverDuplicate;
-        }
-    }
-  };
-
-  struct check_visitor : public ast_visitor_t
-  {
-    bool mutates_receiver;
-
-    check_visitor () : mutates_receiver (false) { }
-
-    void default_action (ast_t& node)
-    {
-      ast_not_reached (node);
-    }
-
-    void check_for_pointer_copy (ast_t* node)
-    {
-      typed_value_t tv = node->typed_value;
-      if (type_cast<Pointer> (tv.type))
-        {
-          derived_visitor v;
-          node->accept (v);
-          mutates_receiver = mutates_receiver || v.derived_from_receiver;
-        }
-    }
-
-    void visit (ast_var_statement_t& node)
-    {
-      node.expression_list ()->accept (*this);
-    }
-
-    void visit (ast_slice_expr_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_call_expr_t& node)
-    {
-      node.expr ()->accept (*this);
-
-      if (type_cast<Type::Method> (node.expr ()->typed_value.type) != NULL)
-        {
-          // Invoking a method.
-          check_for_pointer_copy (node.expr ()->at (0)->at (0));
-        }
-
-      for (ast_t::iterator pos = node.args ()->begin (), limit = node.args ()->end ();
-           pos != limit;
-           ++pos)
-        {
-          check_for_pointer_copy (*pos);
-          (*pos)->accept (*this);
-        }
-    }
-
-    void visit (ast_literal_expr_t& node)
-    { }
-
-    void visit (ast_identifier_expr_t& node)
-    { }
-
-    void visit (ast_implicit_dereference_expr_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_address_of_expr_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_dereference_expr_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_index_expr_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_list_expr_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_select_expr_t& node)
-    {
-      node.base ()->accept (*this);
-    }
-
-    void visit (ast_unary_arithmetic_expr_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_binary_arithmetic_expr_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_implicit_conversion_expr_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_assign_statement_t& node)
-    {
-      {
-        derived_visitor v;
-        node.left ()->accept (v);
-        mutates_receiver = mutates_receiver || v.derived_from_receiver;
-      }
-
-      check_for_pointer_copy (node.right ());
-
-      node.left ()->accept (*this);
-      node.right ()->accept (*this);
-    }
-
-    void visit (ast_add_assign_statement_t& node)
-    {
-      derived_visitor v;
-      node.left ()->accept (v);
-      mutates_receiver = mutates_receiver || v.derived_from_receiver;
-
-      node.left ()->accept (*this);
-      node.right ()->accept (*this);
-    }
-
-    void visit (ast_increment_statement_t& node)
-    {
-      derived_visitor v;
-      node.child ()->accept (v);
-      mutates_receiver = mutates_receiver || v.derived_from_receiver;
-
-      node.child ()->accept (*this);
-    }
-
-    void visit (ast_change_statement_t& node)
-    {
-      node.expr ()->accept (*this);
-      node.body ()->accept (*this);
-    }
-
-    void visit (ast_expression_statement_t& node)
-    {
-      node.child ()->accept (*this);
-    }
-
-    void visit (ast_if_statement_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_while_statement_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_list_statement_t& node)
-    {
-      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
-           pos != limit;
-           ++pos)
-        {
-          (*pos)->accept (*this);
-          if (mutates_receiver)
-            {
-              break;
-            }
-        }
-    }
-  };
-
-  struct visitor : public ast_visitor_t
-  {
-    void visit (ast_change_statement_t& node)
-    {
-      node.body ()->accept (*this);
-    }
-
-    void visit (ast_if_statement_t& node)
-    {
-      node.true_branch ()->accept (*this);
-      node.false_branch ()->accept (*this);
-    }
-
-    void visit (ast_while_statement_t& node)
-    {
-      node.body ()->accept (*this);
-    }
-
-    void visit (ast_list_statement_t& node)
-    {
-      node.visit_children (*this);
-    }
-
-    void visit (ast_activate_statement_t& node)
-    {
-      check_visitor v;
-      node.body ()->accept (v);
-      if (v.mutates_receiver)
-        {
-          node.activation->mode = ACTIVATION_WRITE;
-        }
-    }
-  };
-
-  visitor v;
-  node->accept (v);
-}
-
 // TODO: Replace node with its symbol table.
 void
 enter_signature (ast_t& node, const Signature * type)
@@ -1589,7 +1295,8 @@ process_definitions (ast_t * node)
       ast_t *body_node = node.body ();
       type_check_statement (body_node);
       control_check_statement (body_node);
-      mutates_check_statement (body_node);
+      node.action->precondition_access = ComputeReceiverAccess (node.precondition ());
+      node.action->immutable_phase_access = ComputeReceiverAccess (node.body ());
 
       if (tv.value.present)
         {
@@ -1606,12 +1313,25 @@ process_definitions (ast_t * node)
 
     void visit (ast_dimensioned_action_t& node)
     {
-      check_condition (node.precondition_ref ());
+      typed_value_t tv = check_condition (node.precondition_ref ());
       node.action->precondition = node.precondition ();
       ast_t *body_node = node.body ();
       type_check_statement (body_node);
       control_check_statement (body_node);
-      mutates_check_statement (body_node);
+      node.action->precondition_access = ComputeReceiverAccess (node.precondition ());
+      node.action->immutable_phase_access = ComputeReceiverAccess (node.body ());
+
+      if (tv.value.present)
+        {
+          if (tv.value.ref (*Bool::Instance ()))
+            {
+              node.action->precondition_kind = action_t::STATIC_TRUE;
+            }
+          else
+            {
+              node.action->precondition_kind = action_t::STATIC_FALSE;
+            }
+        }
     }
 
     void visit (ast_bind_t& node)
@@ -1647,6 +1367,7 @@ process_definitions (ast_t * node)
       ast_t *body_node = node.body ();
       type_check_statement (body_node);
       control_check_statement (body_node);
+      node.getter->immutable_phase_access = ComputeReceiverAccess (body_node);
     }
 
     void visit (ast_instance_t& node)
@@ -1676,7 +1397,7 @@ process_definitions (ast_t * node)
       ast_t *body_node = node.body ();
       type_check_statement (body_node);
       control_check_statement (body_node);
-      mutates_check_statement (body_node);
+      node.reaction->immutable_phase_access = ComputeReceiverAccess (body_node);
     }
 
     void visit (ast_dimensioned_reaction_t& node)
@@ -1684,7 +1405,7 @@ process_definitions (ast_t * node)
       ast_t *body_node = node.body ();
       type_check_statement (body_node);
       control_check_statement (body_node);
-      mutates_check_statement (body_node);
+      node.reaction->immutable_phase_access = ComputeReceiverAccess (body_node);
     }
 
     void visit (ast_top_level_list_t& node)

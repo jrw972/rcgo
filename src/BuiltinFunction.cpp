@@ -34,8 +34,8 @@ Readable::Readable (ast_t* dn)
   : BuiltinFunction ("readable",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, IMMUTABLE), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedBool, MUTABLE, MUTABLE), false)))
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, IMMUTABLE, false), false)),
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedBool, MUTABLE, MUTABLE, false), false)))
 { }
 
 void
@@ -65,9 +65,9 @@ Read::Read (ast_t* dn)
   : BuiltinFunction ("read",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE), false))
-                                         ->Append (new parameter_t (dn, "buf", typed_value_t::make_value (Type::NamedByte.GetSlice (), MUTABLE, MUTABLE), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (Int::Instance (), MUTABLE, MUTABLE), false)))
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE, false), false))
+                                         ->Append (new parameter_t (dn, "buf", typed_value_t::make_value (Type::NamedByte.GetSlice (), MUTABLE, MUTABLE, false), false)),
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (Int::Instance (), MUTABLE, MUTABLE, false), false)))
 { }
 
 void
@@ -90,8 +90,8 @@ Writable::Writable (ast_t* dn)
   : BuiltinFunction ("writable",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, IMMUTABLE), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedBool, MUTABLE, MUTABLE), false)))
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, IMMUTABLE, false), false)),
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedBool, MUTABLE, MUTABLE, false), false)))
 { }
 
 void
@@ -121,7 +121,7 @@ TimerfdCreate::TimerfdCreate (ast_t* dn)
   : BuiltinFunction ("timerfd_create",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, new Signature (),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE), false)))
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE, false), false)))
 { }
 
 void
@@ -143,9 +143,9 @@ TimerfdSettime::TimerfdSettime (ast_t* dn)
   : BuiltinFunction ("timerfd_settime",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE), false))
-                                         ->Append (new parameter_t (dn, "s", typed_value_t::make_value (&Type::NamedUint64, MUTABLE, MUTABLE), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedInt, MUTABLE, MUTABLE), false)))
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE, false), false))
+                                         ->Append (new parameter_t (dn, "s", typed_value_t::make_value (&Type::NamedUint64, MUTABLE, MUTABLE, false), false)),
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedInt, MUTABLE, MUTABLE, false), false)))
 { }
 
 void
@@ -173,7 +173,7 @@ UdpSocket::UdpSocket (ast_t* dn)
   : BuiltinFunction ("udp_socket",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, new Signature (),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE), false)))
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE, false), false)))
 { }
 
 void
@@ -201,11 +201,11 @@ Sendto::Sendto (ast_t* dn)
   : BuiltinFunction ("sendto",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
-                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE), false))
-                                         ->Append (new parameter_t (dn, "host", typed_value_t::make_value (&Type::NamedString, MUTABLE, IMMUTABLE), false))
-                                         ->Append (new parameter_t (dn, "port", typed_value_t::make_value (&Type::NamedUint16, MUTABLE, IMMUTABLE), false))
-                                         ->Append (new parameter_t (dn, "buf", typed_value_t::make_value (Type::NamedByte.GetSlice (), MUTABLE, IMMUTABLE), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (Int::Instance (), MUTABLE, MUTABLE), false)))
+                                         ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE, false), false))
+                                         ->Append (new parameter_t (dn, "host", typed_value_t::make_value (&Type::NamedString, MUTABLE, IMMUTABLE, false), false))
+                                         ->Append (new parameter_t (dn, "port", typed_value_t::make_value (&Type::NamedUint16, MUTABLE, IMMUTABLE, false), false))
+                                         ->Append (new parameter_t (dn, "buf", typed_value_t::make_value (Type::NamedByte.GetSlice (), MUTABLE, IMMUTABLE, false), false)),
+                                         new parameter_t (dn, "0return", typed_value_t::make_value (Int::Instance (), MUTABLE, MUTABLE, false), false)))
 { }
 
 void

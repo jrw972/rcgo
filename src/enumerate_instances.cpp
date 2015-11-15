@@ -1,5 +1,5 @@
 #include "Type.hpp"
-#include "instance_table.hpp"
+#include "Composition.hpp"
 #include "field.hpp"
 #include "ast.hpp"
 #include "Symbol.hpp"
@@ -9,26 +9,28 @@ using namespace Type;
 
 static void
 instantiate_contained_instances (const Type::Type * type,
-                                 instance_table_t& instance_table,
-                                 instance_t* parent,
+                                 Composition::Composer& instance_table,
+                                 Composition::Instance* parent,
                                  Initializer* initializer,
                                  size_t address,
                                  unsigned int line,
-                                 ast_instance_t* node)
+                                 ast_instance_t* node,
+                                 const std::string& name)
 {
   struct visitor : public DefaultVisitor
   {
-    instance_table_t& instance_table;
-    instance_t* const parent;
+    Composition::Composer& instance_table;
+    Composition::Instance* const parent;
     Initializer* const initializer;
     size_t const address;
     field_t* const field;
     unsigned int const line;
     ast_instance_t* const node;
+    std::string const name;
 
     const NamedType* named_type;
 
-    visitor (instance_table_t& it, instance_t* p, Initializer* i, size_t a, field_t* f, unsigned int l, ast_instance_t* n)
+    visitor (Composition::Composer& it, Composition::Instance* p, Initializer* i, size_t a, field_t* f, unsigned int l, ast_instance_t* n, const std::string& aName)
       : instance_table (it)
       , parent (p)
       , initializer (i)
@@ -36,6 +38,7 @@ instantiate_contained_instances (const Type::Type * type,
       , field (f)
       , line (l)
       , node (n)
+      , name (aName)
       , named_type (NULL)
     { }
 
@@ -55,11 +58,11 @@ instantiate_contained_instances (const Type::Type * type,
     {
       assert (named_type != NULL);
 
-      instance_t* instance = new instance_t (parent, address, named_type, initializer, line, node);
-      instance_table.insert (instance);
+      Composition::Instance* instance = new Composition::Instance (parent, address, named_type, initializer, node, name);
+      instance_table.AddInstance (instance);
 
       // Recur changing instance.
-      visitor v (instance_table, instance, NULL, address, NULL, line, NULL);
+      visitor v (instance_table, instance, NULL, address, NULL, line, NULL, name);
       v.visit (static_cast<const Struct&> (type));
     }
 
@@ -71,7 +74,7 @@ instantiate_contained_instances (const Type::Type * type,
            ++pos)
         {
           // Recur changing address (and field).
-          visitor v (instance_table, parent, NULL, address + (*pos)->offset, *pos, line, NULL);
+          visitor v (instance_table, parent, NULL, address + (*pos)->offset, *pos, line, NULL, name + "." + (*pos)->name);
           (*pos)->type->Accept (v);
         }
     }
@@ -81,7 +84,9 @@ instantiate_contained_instances (const Type::Type * type,
       for (Int::ValueType idx = 0; idx != type.dimension; ++idx)
         {
           // Recur changing address.
-          visitor v (instance_table, parent, NULL, address + idx * type.ElementSize (), field, line, NULL);
+          std::stringstream newname;
+          newname << name << '[' << idx << ']';
+          visitor v (instance_table, parent, NULL, address + idx * type.ElementSize (), field, line, NULL, newname.str ());
           type.Base ()->Accept (v);
         }
     }
@@ -114,17 +119,17 @@ instantiate_contained_instances (const Type::Type * type,
           // Do nothing.
           break;
         case Type::Function::PUSH_PORT:
-          instance_table.insert_push_port (address, parent, field);
+          instance_table.AddPushPort (address, parent, field, name);
           break;
         case Type::Function::PULL_PORT:
-          instance_table.insert_pull_port (address, parent, field);
+          instance_table.AddPullPort (address, parent, field, name);
           break;
         }
     }
 
     void visit (const Type::FileDescriptor& type) { }
   };
-  visitor v (instance_table, parent, initializer, address, NULL, line, node);
+  visitor v (instance_table, parent, initializer, address, NULL, line, node, name);
   type->Accept (v);
 }
 
@@ -135,21 +140,20 @@ instantiate_contained_instances (const Type::Type * type,
   2.  (instance, field) -> instance
 */
 void
-enumerate_instances (ast_t * node, instance_table_t& instance_table)
+enumerate_instances (ast_t * node, Composition::Composer& instance_table)
 {
   struct visitor : public ast_visitor_t
   {
-    instance_table_t& instance_table;
+    Composition::Composer& instance_table;
     size_t address;
 
-    visitor (instance_table_t& it) : instance_table (it), address (0) { }
+    visitor (Composition::Composer& it) : instance_table (it), address (0) { }
 
     void visit (ast_instance_t& node)
     {
-      Symbol *symbol = node.symbol;
-      const NamedType *type = SymbolCast<InstanceSymbol> (symbol)->type;
-      Initializer* initializer = SymbolCast<InstanceSymbol> (symbol)->initializer;
-      instantiate_contained_instances (type, instance_table, NULL, initializer, address, node.location.Line, &node);
+      const NamedType *type = node.symbol->type;
+      Initializer* initializer = node.symbol->initializer;
+      instantiate_contained_instances (type, instance_table, NULL, initializer, address, node.location.Line, &node, ast_get_identifier (node.identifier ()));
       address += type->Size ();
     }
 

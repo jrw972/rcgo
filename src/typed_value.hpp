@@ -128,6 +128,7 @@ struct typed_value_t
     , kind (VALUE)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
+    , component_state (false)
     , has_offset (false)
   { }
 
@@ -138,6 +139,7 @@ struct typed_value_t
     , kind (VALUE)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
+    , component_state (false)
     , value (t, v)
     , has_offset (false)
   {
@@ -150,6 +152,7 @@ struct typed_value_t
     , kind (VALUE)
     , intrinsic_mutability (IMMUTABLE)
     , dereference_mutability (IMMUTABLE)
+    , component_state (false)
     , value (type, e)
     , has_offset (false)
   {
@@ -167,22 +170,25 @@ struct typed_value_t
     , kind (TYPE)
     , intrinsic_mutability (FOREIGN)
     , dereference_mutability (FOREIGN)
+    , component_state (false)
     , has_offset (false)
   { }
 
-  const Type::Type *type;
+  const Type::Type* type;
   Kind kind;
   Mutability intrinsic_mutability;
   Mutability dereference_mutability;
+  // True if value or reference contains an address which refers to component state.
+  bool component_state;
   value_t value;
   value_t low_value;
   value_t high_value;
   bool has_offset;
   ptrdiff_t offset;
 
-  static typed_value_t make_value (const Type::Type* type, Mutability intrinsic, Mutability dereference);
+  static typed_value_t make_value (const Type::Type* type, Mutability intrinsic, Mutability dereference, bool component_state);
   static typed_value_t make_range (const typed_value_t& low, const typed_value_t& high, Mutability intrinsic, Mutability dereference);
-  static typed_value_t make_ref (const Type::Type* type, Mutability intrinsic, Mutability dereference);
+  static typed_value_t make_ref (const Type::Type* type, Mutability intrinsic, Mutability dereference, bool component_state);
   static typed_value_t make_ref (typed_value_t tv);
 
   static typed_value_t nil ();

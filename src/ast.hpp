@@ -42,6 +42,7 @@ private:
   ChildrenType children;
 public:
   Location const location;
+  bool in_mutable_section;
   SymbolsType symbols;
   typed_value_t typed_value;
 
@@ -193,16 +194,6 @@ public:
     return parent_->GetReceiverType ();
   }
 
-  virtual Activation*
-  GetActivation () const
-  {
-    if (parent_ == NULL)
-      {
-        return NULL;
-      }
-    return parent_->GetActivation ();
-  }
-
   virtual action_reaction_base_t*
   GetAction () const
   {
@@ -233,6 +224,21 @@ public:
     return parent_->GetGetter ();
   }
 
+  virtual bool
+  InMutableSection () const
+  {
+    if (in_mutable_section)
+      {
+        return true;
+      }
+
+    if (parent_ == NULL)
+      {
+        return false;
+      }
+    return parent_->InMutableSection ();
+  }
+
   ast_t* parent () const
   {
     return parent_;
@@ -242,6 +248,7 @@ protected:
   ast_t (unsigned int line_, size_t children_count)
     : parent_ (NULL)
     , location (line_)
+    , in_mutable_section (false)
   {
     assert (location.Line != 0);
     children.resize (children_count);
@@ -521,7 +528,7 @@ struct ast_pointer_type_spec_t : public ast_unary_t
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const
   {
-    unimplemented;
+    out << "pointer_type_spec";
   }
 };
 
@@ -647,7 +654,7 @@ struct ast_type_expr_t : public ast_expr_t
   virtual void accept (ast_const_visitor_t& visitor) const;
   virtual void print (std::ostream& out) const
   {
-    out << "type";
+    out << "type_expr";
   }
 };
 
@@ -782,6 +789,7 @@ struct ast_address_of_expr_t : public ast_unary_expr_t
 {
   ast_address_of_expr_t (unsigned int line, ast_t* child)
     : ast_unary_expr_t (line, child)
+    , address_of_dereference (false)
   { }
 
   void accept (ast_visitor_t& visitor);
@@ -790,6 +798,8 @@ struct ast_address_of_expr_t : public ast_unary_expr_t
   {
     out << "address_of";
   }
+
+  bool address_of_dereference;
 };
 
 struct ast_call_expr_t : public ast_expr_t
@@ -832,6 +842,7 @@ struct ast_call_expr_t : public ast_expr_t
     out << "call_expr";
   }
 
+  typed_value_t original_expr_tv;
   bool IsCall;
 };
 
@@ -1031,7 +1042,7 @@ struct ast_push_port_call_expr_t : public ast_expr_t
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const
   {
-    unimplemented;
+    out << "push_port_call";
   }
 
   field_t* field;
@@ -1079,7 +1090,7 @@ struct ast_indexed_port_call_expr_t : public ast_expr_t
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const
   {
-    unimplemented;
+    out << "indexed_port_call_expr";
   }
 
   field_t* field;
@@ -1183,7 +1194,7 @@ struct ast_empty_statement_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const
   {
-    unimplemented;
+    out << "empty_statement";
   }
 };
 
@@ -1257,7 +1268,7 @@ struct ast_change_statement_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const
   {
-    unimplemented;
+    out << "change_statement";
   }
 
   Symbol* root_symbol;
@@ -1316,7 +1327,7 @@ struct ast_if_statement_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const
   {
-    unimplemented;
+    out << "if_statement";
   }
 };
 
@@ -1384,7 +1395,7 @@ struct ast_increment_statement_t : public ast_unary_t
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const
   {
-    unimplemented;
+    out << "increment_statement";
   }
 };
 
@@ -1441,10 +1452,10 @@ struct ast_activate_statement_t : public ast_t
 
   ast_activate_statement_t (unsigned int line, ast_t * expr_list, ast_t * body)
     : ast_t (line, COUNT)
-    , activation (NULL)
   {
     set (EXPR_LIST, expr_list);
     set (BODY, body);
+    body->in_mutable_section = true;
   }
 
   ast_t* expr_list () const
@@ -1460,18 +1471,11 @@ struct ast_activate_statement_t : public ast_t
   void accept (ast_const_visitor_t& visitor) const;
   void print (std::ostream& out) const
   {
-    unimplemented;
+    out << "activate statement";
   }
 
   Symbol* this_symbol;
-  Activation* activation;
-
-  virtual Activation*
-  GetActivation () const
-  {
-    return activation;
-  }
-
+  ReceiverAccess mutable_phase_access;
 };
 
 struct ast_var_statement_t : public ast_t
@@ -1696,7 +1700,6 @@ struct ast_action_t : public ast_t
   }
 
   action_t* action;
-
 
   virtual Symbol *
   GetReceiverSymbol () const;
@@ -2190,7 +2193,7 @@ struct ast_initializer_t : public ast_t
 
   Mutability const return_dereference_mutability;
   Initializer* initializer;
-  Symbol* return_symbol;
+  ParameterSymbol* return_symbol;
 
   virtual const Type::Type*
   GetReceiverType () const
@@ -2202,6 +2205,12 @@ struct ast_initializer_t : public ast_t
   GetInitializer () const
   {
     return initializer;
+  }
+
+  virtual ParameterSymbol *
+  GetReturnSymbol () const
+  {
+    return return_symbol;
   }
 };
 

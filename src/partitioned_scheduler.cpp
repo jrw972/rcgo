@@ -1,6 +1,5 @@
 #include "partitioned_scheduler.hpp"
 #include "debug.hpp"
-#include "instance.hpp"
 #include "heap.hpp"
 #include "runtime.hpp"
 #include <list>
@@ -17,29 +16,29 @@ partitioned_scheduler_t::initialize_task (task_t* t, size_t thread_count)
 }
 
 void
-partitioned_scheduler_t::run (instance_table_t& instance_table,
+partitioned_scheduler_t::run (Composition::Composer& instance_table,
                               size_t stack_size,
                               size_t thread_count)
 {
   // Set up data structures.
-  for (instance_table_t::InstancesType::const_iterator pos = instance_table.instances.begin (),
-         limit = instance_table.instances.end ();
+  for (Composition::Composer::InstancesType::const_iterator pos = instance_table.InstancesBegin (),
+       limit = instance_table.InstancesEnd ();
        pos != limit;
        ++pos)
     {
-      instance_t* instance = pos->second;
+      Composition::Instance* instance = pos->second;
       new info_t (instance);
     }
 
   {
     // Initialize.
     executor_t exec (*this, 0, 0, stack_size, &stdout_mutex_);
-    for (instance_table_t::InstancesType::const_iterator pos = instance_table.instances.begin (),
-           limit = instance_table.instances.end ();
+    for (Composition::Composer::InstancesType::const_iterator pos = instance_table.InstancesBegin (),
+         limit = instance_table.InstancesEnd ();
          pos != limit;
          ++pos)
       {
-        instance_t* instance = pos->second;
+        Composition::Instance* instance = pos->second;
         runtime::initialize (exec, instance);
       }
   }
@@ -50,26 +49,26 @@ partitioned_scheduler_t::run (instance_table_t& instance_table,
     }
 
   // Create tasks.
-  for (instance_table_t::InstancesType::const_iterator instance_pos = instance_table.instances.begin (),
-         instance_limit = instance_table.instances.end ();
+  for (Composition::Composer::InstancesType::const_iterator instance_pos = instance_table.InstancesBegin (),
+       instance_limit = instance_table.InstancesEnd ();
        instance_pos != instance_limit;
        ++instance_pos)
     {
-      instance_t* instance = instance_pos->second;
+      Composition::Instance* instance = instance_pos->second;
 
-      for (instance_t::InstanceSetsType::const_iterator action_pos = instance_pos->second->instance_sets.begin (),
-             action_limit = instance_pos->second->instance_sets.end ();
+      for (Composition::ActionsType::const_iterator action_pos = instance->actions.begin (),
+           action_limit = instance->actions.end ();
            action_pos != action_limit;
            ++action_pos)
         {
-          instance_t::ConcreteAction action = *action_pos;
-          switch (action.action->precondition_kind)
+          Composition::Action* action = *action_pos;
+          switch (action->action->precondition_kind)
             {
             case action_t::DYNAMIC:
-              initialize_task (new action_task_t (instance, action), thread_count);
+              initialize_task (new action_task_t (action), thread_count);
               break;
             case action_t::STATIC_TRUE:
-              initialize_task (new always_task_t (instance, action), thread_count);
+              initialize_task (new always_task_t (action), thread_count);
               break;
             case action_t::STATIC_FALSE:
               // Do nothing.
@@ -79,8 +78,6 @@ partitioned_scheduler_t::run (instance_table_t& instance_table,
 
       initialize_task (new gc_task_t (instance), thread_count);
     }
-
-  //dirty_count_ = thread_count;
 
   for (size_t i = 0; i != thread_count; ++i)
     {
@@ -268,32 +265,36 @@ partitioned_scheduler_t::executor_t::run_i ()
               sleep ();
               break;
             case DOUBLE_CHECK:
-              if (fileDescriptorMap_.empty ()) {
-                state = WAIT2;
-                send (Message::make_start_waiting2 (id_));
-              } else {
-                state = POLL;
-                pthread_mutex_lock (&mutex_);
-                using_eventfd_ = true;
-                pthread_mutex_unlock (&mutex_);
-              }
+              if (fileDescriptorMap_.empty ())
+                {
+                  state = WAIT2;
+                  send (Message::make_start_waiting2 (id_));
+                }
+              else
+                {
+                  state = POLL;
+                  pthread_mutex_lock (&mutex_);
+                  using_eventfd_ = true;
+                  pthread_mutex_unlock (&mutex_);
+                }
               break;
             case WAIT2:
               sleep ();
               break;
             case POLL:
-              if (poll ()) {
-                state = NORMAL;
-                pthread_mutex_lock (&mutex_);
-                using_eventfd_ = false;
-                pthread_mutex_unlock (&mutex_);
-                disableFileDescriptorTracking ();
-                ++generation;
-                points = 0;
-                // Wakeup everyone.
-                // This is overkill and could be improved.
-                send (Message::make_reset (id_));
-              }
+              if (poll ())
+                {
+                  state = NORMAL;
+                  pthread_mutex_lock (&mutex_);
+                  using_eventfd_ = false;
+                  pthread_mutex_unlock (&mutex_);
+                  disableFileDescriptorTracking ();
+                  ++generation;
+                  points = 0;
+                  // Wakeup everyone.
+                  // This is overkill and could be improved.
+                  send (Message::make_reset (id_));
+                }
             }
 
           continue;
@@ -375,28 +376,35 @@ partitioned_scheduler_t::executor_t::poll ()
   pfds.push_back (pfd);
 
   for (FileDescriptorMapType::const_iterator pos = fileDescriptorMap_.begin (),
-         limit = fileDescriptorMap_.end ();
+       limit = fileDescriptorMap_.end ();
        pos != limit;
-       ++pos) {
-    pfd.fd = pos->first->fd ();
-    pfd.events = pos->second;
-    pfds.push_back (pfd);
-  }
+       ++pos)
+    {
+      pfd.fd = pos->first->fd ();
+      pfd.events = pos->second;
+      pfds.push_back (pfd);
+    }
 
   int r = ::poll (&pfds[0], pfds.size (), -1);
 
-  if (r < 1) {
-    error (EXIT_FAILURE, errno, "poll");
-  } else if (r > 1) {
-    // At least one fd besides the eventfd is ready.
-    return true;
-  } else {
-    // r == 1
-    if (pfds[0].revents == 0) {
-      // No events on eventfd so must be some other fd.
+  if (r < 1)
+    {
+      error (EXIT_FAILURE, errno, "poll");
+    }
+  else if (r > 1)
+    {
+      // At least one fd besides the eventfd is ready.
       return true;
     }
-  }
+  else
+    {
+      // r == 1
+      if (pfds[0].revents == 0)
+        {
+          // No events on eventfd so must be some other fd.
+          return true;
+        }
+    }
 
   return false;
 }
@@ -415,17 +423,18 @@ partitioned_scheduler_t::task_t::resume (size_t generation)
 {
   for (; pos_ != limit_; ++pos_)
     {
-      info_t* info = *reinterpret_cast<info_t**> (pos_->first->ptr ());
+      info_t* info = *reinterpret_cast<info_t**> (pos_->first->component);
       switch (pos_->second)
         {
-        case ACTIVATION_READ:
+        case AccessNone:
+        case AccessRead:
           if (info->read_lock (this))
             {
               ++pos_;
               return NONE;
             }
           break;
-        case ACTIVATION_WRITE:
+        case AccessWrite:
           if (info->write_lock (this))
             {
               ++pos_;
@@ -477,13 +486,14 @@ partitioned_scheduler_t::task_t::resume (size_t generation)
   limit_ = set ().end ();
   for (; pos_ != limit_; ++pos_)
     {
-      info_t* info = *reinterpret_cast<info_t**> (pos_->first->ptr ());
+      info_t* info = *reinterpret_cast<info_t**> (pos_->first->component);
       switch (pos_->second)
         {
-        case ACTIVATION_READ:
+        case AccessNone:
+        case AccessRead:
           info->read_unlock ();
           break;
-        case ACTIVATION_WRITE:
+        case AccessWrite:
           info->write_unlock ();
           break;
         }

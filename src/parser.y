@@ -126,8 +126,10 @@ DereferenceMutability:
 { $$ = FOREIGN; }
 
 Receiver:
-'(' IDENTIFIER Mutability DereferenceMutability '*' IDENTIFIER ')'
+  '(' IDENTIFIER Mutability DereferenceMutability '*' IDENTIFIER ')'
 { $$ = new ast_receiver_t (@1, $2, $3, $4, true, $6); }
+| '(' IDENTIFIER Mutability DereferenceMutability IDENTIFIER ')'
+{ $$ = new ast_receiver_t (@1, $2, $3, $4, false, $5); }
 
 Action:
   ACTION Receiver IDENTIFIER                '(' Expression ')' Block

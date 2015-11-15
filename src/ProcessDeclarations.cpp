@@ -64,10 +64,21 @@ processReceiver (ast_t* n, ast_t* identifierNode, parameter_t*& this_parameter, 
 
   ast_t *this_identifier_node = node->this_identifier ();
   const std::string& this_identifier = ast_get_identifier (this_identifier_node);
+
+  const Type::Type* receiver_type;
+  if (node->isPointer)
+    {
+      receiver_type = type->GetPointer ();
+    }
+  else
+    {
+      receiver_type = type;
+    }
+
   typed_value_t this_value =
-    typed_value_t::make_value (type->GetPointer (),
+    typed_value_t::make_value (receiver_type,
                                node->mutability,
-                               node->dereferenceMutability);
+                               node->dereferenceMutability, true);
 
   this_parameter = new parameter_t (this_identifier_node,
                                     this_identifier,
@@ -80,7 +91,7 @@ processReceiver (ast_t* n, ast_t* identifierNode, parameter_t*& this_parameter, 
   return type;
 }
 
-static typed_value_t
+static Type::Uint::ValueType
 processIota (ast_t& node, ast_t*& dimensionNode, ParameterSymbol*& parameterSymbol)
 {
   typed_value_t dimension = process_array_dimension (dimensionNode);
@@ -97,7 +108,7 @@ processIota (ast_t& node, ast_t*& dimensionNode, ParameterSymbol*& parameterSymb
       false);
   parameterSymbol = ParameterSymbol::make (iota_parameter);
 
-  return dimension;
+  return dimension.Convert (dimensionNode->location, Type::Uint::Instance ()).value.ref (*Type::Uint::Instance ());
 }
 
 static void
@@ -111,7 +122,8 @@ processSignatureReturn (ast_t* signatureNode, ast_t* returnTypeNode, Mutability 
   const Type::Type* return_type = process_type_spec (returnTypeNode, true);
   typed_value_t return_value = typed_value_t::make_value (return_type,
                                MUTABLE,
-                               dereferenceMutability);
+                               dereferenceMutability,
+                               false);
 
   returnParameter = new parameter_t (returnTypeNode,
                                      "0return",
@@ -164,7 +176,7 @@ ProcessDeclarations (ast_t * node)
                ++id_pos, ++init_pos)
             {
               // Assume left is mutable.
-              typed_value_t left_tv = typed_value_t::make_ref (type, MUTABLE, MUTABLE);
+              typed_value_t left_tv = typed_value_t::make_ref (type, MUTABLE, MUTABLE, false);
               typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvert (*init_pos, left_tv.type);
               if (!right_tv.value.present)
                 {
@@ -220,7 +232,7 @@ ProcessDeclarations (ast_t * node)
       ParameterSymbol* thisSymbol;
       NamedType* type = processReceiver (node.receiver (), node.identifier (), this_parameter, thisSymbol, true, true);
       enter_symbol (node, thisSymbol);
-      action_t *action = new action_t (type, &node, node.body (), ast_get_identifier (node.identifier ()));
+      action_t *action = new action_t (type, &node, thisSymbol, node.body (), ast_get_identifier (node.identifier ()));
       type->Add (action);
       node.action = action;
     }
@@ -232,9 +244,9 @@ ProcessDeclarations (ast_t * node)
       NamedType* type = processReceiver (node.receiver (), node.identifier (), this_parameter, thisSymbol, true, true);
       enter_symbol (node, thisSymbol);
       ParameterSymbol* iotaSymbol;
-      typed_value_t dimension = processIota (node, node.dimension_ref (), iotaSymbol);
+      Type::Uint::ValueType dimension = processIota (node, node.dimension_ref (), iotaSymbol);
       enter_symbol (node, iotaSymbol);
-      action_t *action = new action_t (type, &node, node.body (), ast_get_identifier (node.identifier ()), dimension);
+      action_t *action = new action_t (type, &node, thisSymbol, node.body (), ast_get_identifier (node.identifier ()), iotaSymbol, dimension);
       type->Add (action);
       node.action = action;
     }
@@ -311,7 +323,7 @@ ProcessDeclarations (ast_t * node)
                           signature,
                           return_parameter);
 
-      Initializer* initializer = new Initializer (&node, ast_get_identifier (node.identifier ()), initializer_type);
+      Initializer* initializer = new Initializer (&node, ast_get_identifier (node.identifier ()), initializer_type, return_symbol);
 
       type->Add (initializer);
       node.initializer = initializer;
@@ -388,7 +400,7 @@ ProcessDeclarations (ast_t * node)
           signature,
           return_parameter);
 
-      reaction_t* reaction = new reaction_t (type, &node, node.body (), ast_get_identifier (node.identifier ()), reaction_type);
+      reaction_t* reaction = new reaction_t (type, &node, thisSymbol, node.body (), ast_get_identifier (node.identifier ()), reaction_type);
 
       type->Add (reaction);
       node.reaction = reaction;
@@ -407,7 +419,7 @@ ProcessDeclarations (ast_t * node)
                               signature, return_parameter, return_symbol);
 
       ParameterSymbol* iotaSymbol;
-      typed_value_t dimension = processIota (node, node.dimension_ref (), iotaSymbol);
+      Type::Uint::ValueType dimension = processIota (node, node.dimension_ref (), iotaSymbol);
 
       // No return type.
       enter_symbol (node, thisSymbol);
@@ -419,7 +431,7 @@ ProcessDeclarations (ast_t * node)
           signature,
           return_parameter);
 
-      reaction_t* reaction = new reaction_t (type, &node, node.body (), ast_get_identifier (node.identifier ()), reaction_type, dimension);
+      reaction_t* reaction = new reaction_t (type, &node, thisSymbol, node.body (), ast_get_identifier (node.identifier ()), reaction_type, iotaSymbol, dimension);
 
       type->Add (reaction);
       node.reaction = reaction;

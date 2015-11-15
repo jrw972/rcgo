@@ -7,6 +7,8 @@
 #include <map>
 #include "debug.hpp"
 
+class ast_receiver_t;
+struct ast_activate_statement_t;
 class action_reaction_base_t;
 class action_t;
 class ast_t;
@@ -27,15 +29,12 @@ class Getter;
 class Initializer;
 class Method;
 typedef struct heap_t heap_t;
-typedef struct instance_t instance_t;
-typedef struct instance_table_t instance_table_t;
 typedef struct parameter_t parameter_t;
 class port_t;
 class reaction_t;
 class scheduler_t;
 typedef struct stack_frame_t stack_frame_t;
 class Symbol;
-class Activation;
 
 // A reference is either mutable, immutable, or foreign.
 // Ordered by strictness for <.
@@ -46,13 +45,12 @@ enum Mutability
   FOREIGN,
 };
 
-enum ActivationMode
+enum ReceiverAccess
 {
-  ACTIVATION_READ,  /* Activation reads. */
-  ACTIVATION_WRITE, /* Activation writes (and reads). */
+  AccessNone,
+  AccessRead,
+  AccessWrite,
 };
-
-typedef std::map<instance_t*, ActivationMode> instance_set_t;
 
 struct pull_port_t
 {

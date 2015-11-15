@@ -216,7 +216,10 @@ struct VariableSymbol : public Symbol
 
   VariableSymbol* duplicate()
   {
-    VariableSymbol* s = new VariableSymbol (this->identifier, this->definingNode, typed_value_t::make_ref (this->value.type, FOREIGN, FOREIGN));
+    typed_value_t tv = value;
+    tv.intrinsic_mutability = FOREIGN;
+    tv.dereference_mutability = FOREIGN;
+    VariableSymbol* s = new VariableSymbol (this->identifier, this->definingNode, tv);
     s->original_ = this;
     return s;
   }

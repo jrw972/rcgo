@@ -194,7 +194,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
     {
       const Signature* signature = type_cast<Signature> (process_type_spec (node.signature (), true));
       const Type::Type* return_type = Type::Void::Instance ();
-      typed_value_t return_value = typed_value_t::make_value (return_type, IMMUTABLE, IMMUTABLE);
+      typed_value_t return_value = typed_value_t::make_value (return_type, IMMUTABLE, IMMUTABLE, false);
       parameter_t* return_parameter = new parameter_t (&node,
           "0return",
           return_value,
@@ -207,7 +207,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
     {
       const Signature* signature = type_cast<Signature> (process_type_spec (node.signature (), true));
       const Type::Type* return_type = process_type_spec (node.return_type (), true);
-      typed_value_t return_value = typed_value_t::make_value (return_type, MUTABLE, node.dereferenceMutability);
+      typed_value_t return_value = typed_value_t::make_value (return_type, MUTABLE, node.dereferenceMutability, false);
       parameter_t* return_parameter = new parameter_t (node.return_type (),
           "0return",
           return_value,
@@ -238,7 +238,8 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
                 {
                   typed_value_t tv = typed_value_t::make_value (type,
                                      child->mutability,
-                                     child->dereferenceMutability);
+                                     child->dereferenceMutability,
+                                     false);
                   signature->Append (new parameter_t (id, identifier, tv, false));
                 }
               else

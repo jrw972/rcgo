@@ -95,14 +95,17 @@ struct Initializer : public Callable
 {
   Initializer (ast_initializer_t* n,
                const std::string& na,
-               const Type::Method* initializer_type_)
+               const Type::Method* initializer_type_,
+               const Symbol* return_symbol_)
     : node (n)
     , name (na)
     , initializerType (initializer_type_)
+    , returnSymbol (return_symbol_)
+    , returnSize (initializer_type_->return_type ()->Size ())
   { }
 
   virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
-  void call (executor_base_t& exec, const ast_call_expr_t& node, component_t* thisPtr) const;
+  void call (executor_base_t& exec, component_t* thisPtr, const ast_t* args) const;
   virtual const Type::Type* type () const
   {
     return initializerType;
@@ -111,6 +114,8 @@ struct Initializer : public Callable
   ast_initializer_t* const node;
   std::string const name;
   const Type::Method * const initializerType;
+  const Symbol* const returnSymbol;
+  size_t const returnSize;
   MemoryModel memoryModel;
 };
 
@@ -139,6 +144,7 @@ struct Getter : public Callable
   const Type::Method * const getterType;
   const Symbol* const returnSymbol;
   size_t const returnSize;
+  ReceiverAccess immutable_phase_access;
   MemoryModel memoryModel;
 };
 

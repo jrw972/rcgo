@@ -146,6 +146,7 @@ typed_value_t::typed_value_t (Callable* c)
   , kind (VALUE)
   , intrinsic_mutability (IMMUTABLE)
   , dereference_mutability (IMMUTABLE)
+  , component_state (false)
   , value (c)
   , has_offset (false)
 {
@@ -157,6 +158,7 @@ typed_value_t::typed_value_t (::Template* t)
   , kind (VALUE)
   , intrinsic_mutability (IMMUTABLE)
   , dereference_mutability (IMMUTABLE)
+  , component_state (false)
   , value (t)
   , has_offset (false)
 {
@@ -168,6 +170,7 @@ typed_value_t::typed_value_t (reaction_t* r)
   , kind (VALUE)
   , intrinsic_mutability (IMMUTABLE)
   , dereference_mutability (IMMUTABLE)
+  , component_state (false)
   , value (r)
   , has_offset (false)
 {
@@ -263,6 +266,8 @@ typed_value_t::print (std::ostream& out) const
       break;
     }
 
+  out << " comp " << component_state;
+
   out << ' ';
   if (kind == REFERENCE)
     {
@@ -287,13 +292,14 @@ typed_value_t::print (std::ostream& out) const
 }
 
 typed_value_t
-typed_value_t::make_value (const Type::Type* type, Mutability intrinsic, Mutability dereference)
+typed_value_t::make_value (const Type::Type* type, Mutability intrinsic, Mutability dereference, bool component_state)
 {
   typed_value_t tv;
   tv.type = type;
   tv.kind = VALUE;
   tv.intrinsic_mutability = intrinsic;
   tv.dereference_mutability = dereference;
+  tv.component_state = component_state;
   tv.fix ();
   return tv;
 }
@@ -318,13 +324,14 @@ typed_value_t::make_range (const typed_value_t& low, const typed_value_t& high, 
 }
 
 typed_value_t
-typed_value_t::make_ref (const Type::Type* type, Mutability intrinsic, Mutability dereference)
+typed_value_t::make_ref (const Type::Type* type, Mutability intrinsic, Mutability dereference, bool component_state)
 {
   typed_value_t tv;
   tv.type = type;
   tv.kind = REFERENCE;
   tv.intrinsic_mutability = intrinsic;
   tv.dereference_mutability = dereference;
+  tv.component_state = component_state;
   tv.fix ();
   return tv;
 }
@@ -341,7 +348,7 @@ typed_value_t::make_ref (typed_value_t tv)
 typed_value_t
 typed_value_t::nil (void)
 {
-  typed_value_t retval = make_value (Nil::Instance (), IMMUTABLE, MUTABLE);
+  typed_value_t retval = make_value (Nil::Instance (), IMMUTABLE, MUTABLE, false);
   retval.value.present = true;
   return retval;
 }
@@ -350,7 +357,9 @@ typed_value_t
 typed_value_t::implicit_dereference (typed_value_t tv)
 {
   assert (tv.type != NULL);
+  assert (tv.kind == REFERENCE);
   tv.kind = VALUE;
+  tv.component_state = tv.component_state && type_contains_pointer (tv.type);
   return tv;
 }
 
@@ -373,7 +382,7 @@ typed_value_t::dereference (typed_value_t in)
 
     void visit (const Pointer& type)
     {
-      out = typed_value_t::make_ref (type.Base (), in.dereference_mutability, in.dereference_mutability);
+      out = typed_value_t::make_ref (type.Base (), in.dereference_mutability, in.dereference_mutability, in.component_state);
     }
   };
   visitor v (in);
@@ -571,7 +580,8 @@ typed_value_t::slice (const Location& location,
 
       result = typed_value_t::make_value (type.Base ()->GetSlice (),
                                           in.intrinsic_mutability,
-                                          in.dereference_mutability);
+                                          in.dereference_mutability,
+                                          in.component_state);
     }
   };
   visitor v (location, in, low, high);
@@ -785,6 +795,17 @@ struct RepresentableImpl
   void operator() (const Type::StringU& type1, const Type::String& type2)
   {
     retval = true;
+  }
+  void operator() (const Type::Slice& type1, const Type::String& type2)
+  {
+    if (type1.Base () == &NamedByte)
+      {
+        retval = true;
+      }
+    else
+      {
+        retval = false;
+      }
   }
 
   template <typename T1, typename T2>
@@ -1025,11 +1046,11 @@ comparison (const Location& location, const typed_value_t& left, const typed_val
   typed_value_t out;
   if (left.value.present && right.value.present)
     {
-      out = typed_value_t::make_value (Type::Boolean::Instance (), IMMUTABLE, IMMUTABLE);
+      out = typed_value_t::make_value (Type::Boolean::Instance (), IMMUTABLE, IMMUTABLE, false);
     }
   else
     {
-      out = typed_value_t::make_value (Type::Bool::Instance (), IMMUTABLE, IMMUTABLE);
+      out = typed_value_t::make_value (Type::Bool::Instance (), IMMUTABLE, IMMUTABLE, false);
     }
   typename VisitorType::DispatchType c (location, left, right);
   RequireIdentical (location, c.Op (), left.type, right.type);
@@ -1351,9 +1372,10 @@ struct SymmetricBinary
   void operator() (const T& type)
   {
     out.value.present = left.value.present && right.value.present;
-    if (out.value.present) {
-      out.value.ref (type) = O () (left.value.ref (type), right.value.ref (type));
-    }
+    if (out.value.present)
+      {
+        out.value.ref (type) = O () (left.value.ref (type), right.value.ref (type));
+      }
   }
 
   template <typename T>

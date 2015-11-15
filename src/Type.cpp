@@ -52,7 +52,7 @@ namespace Type
   }
 
   const Array*
-  Type::GetArray (IntValueType dimension) const
+  Type::GetArray (UintValueType dimension) const
   {
     const Array* a;
     ArraysType::const_iterator pos = arrays_.find (dimension);
@@ -924,6 +924,11 @@ type::Instance () \
       void visit (const FileDescriptor& type)
       {
         flag = true;
+      }
+
+      void visit (const Function& type)
+      {
+        // Do nothing.
       }
 
       void visit (const Struct& type)

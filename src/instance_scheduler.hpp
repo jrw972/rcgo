@@ -4,9 +4,9 @@
 #include "types.hpp"
 #include <pthread.h>
 #include "heap.hpp"
-#include "instance.hpp"
 #include "stack_frame.hpp"
 #include "executor_base.hpp"
+#include "Composition.hpp"
 
 class instance_scheduler_t
 {
@@ -21,7 +21,7 @@ public:
     pthread_mutex_init (&stdout_mutex_, NULL);
   }
 
-  void run (instance_table_t& instance_table, size_t stack_size, size_t thread_count);
+  void run (Composition::Composer& instance_table, size_t stack_size, size_t thread_count);
   void dump_schedule () const;
 
 private:
@@ -30,7 +30,7 @@ private:
   {
     // Scheduling lock.
     pthread_rwlock_t lock;
-    instance_t* instance;
+    Composition::Instance* instance;
     heap_t* heap;
     // Next instance on the schedule.
     // 0 means this instance is not on the schedule.
@@ -38,14 +38,14 @@ private:
     // ? means this instance is on the schedule.
     instance_info_t* next;
 
-    instance_info_t (instance_t* instance)
+    instance_info_t (Composition::Instance* instance)
       : instance (instance)
-      , heap (heap_make (instance->ptr (), instance->type ()->Size ()))
+      , heap (heap_make (instance->component, instance->type->Size ()))
       , next (NULL)
     {
       pthread_rwlock_init (&lock, NULL);
       // Link the instance to its scheduling information.
-      *((instance_info_t**)instance->ptr ()) = this;
+      *((instance_info_t**)instance->component) = this;
     }
 
     char* get_ptr () const
@@ -111,8 +111,8 @@ private:
   };
 
   void push (instance_info_t* info);
-  void lock (const instance_set_t& set);
-  void unlock (const instance_set_t& set);
+  void lock (const Composition::InstanceSet& set);
+  void unlock (const Composition::InstanceSet& set);
 
   instance_info_t* head_;
   instance_info_t** tail_;
@@ -121,7 +121,7 @@ private:
   pthread_cond_t list_cond_;
   pthread_mutex_t stdout_mutex_;
   // TODO:  Replace this datastructure by translating once.
-  std::map<instance_t*, instance_info_t*> info_map_;
+  std::map<Composition::Instance*, instance_info_t*> info_map_;
 };
 
 #endif /* instance_scheduler_hpp */

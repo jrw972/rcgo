@@ -1,0 +1,114 @@
+#!/usr/bin/env rc
+
+func test (num uint; desc string; status bool) {
+  if status {
+    println (`ok `, num, ` - `, desc);
+  } else {
+    println (`not ok `, num, ` - `, desc);
+  }
+}
+
+func AFunc (x int; y int) bool {
+  return x < y;
+}
+
+type Point struct {
+  x, y int;
+};
+
+func (this Point) CopyMethod (x int; y int) bool {
+  this.x = x;
+  this.y = y;
+  return x < y;
+}
+
+func (this *Point) PointerMethod (x int; y int) bool {
+  this.x = x;
+  this.y = y;
+  return x < y;
+}
+
+type Sub component { };
+
+init (this *Sub) Init (x int; y int) bool {
+  return x < y;
+}
+
+reaction (this +const *Sub) AReaction (x int; y int) {
+  {
+    test (9, `call a push/reaction`, x == 1 && y == 2);
+  }
+  {
+    test (10, `call a getter in a reaction`, this.Getter (x, y) == true);
+  }
+}
+
+getter (this +const *Sub) Getter (x int; y int) bool {
+  return x < y;
+}
+
+type Test component {
+  flag bool;
+  bang push (x int; y int);
+  Pull pull (x int; y int) bool;
+  sub Sub;
+};
+
+init (this *Test) Main () {
+  println (`1..10`);
+  {
+    test (1, `call an initializer`, this.sub.Init (1,2) == true);
+  }
+  {
+    test (2, `call a function`, AFunc (1,2) == true);
+  }
+  {
+    var p Point;
+    p.x = 5;
+    p.y = 1;
+    var r = p.CopyMethod (1,2);
+    test (3, `call a method (ref -> copy receiver)`, p.x == 5 && p.y == 1 && r == true);
+  }
+  {
+    var p Point;
+    p.x = 5;
+    p.y = 1;
+    var r = p.PointerMethod (1,2);
+    test (4, `call a method (ref -> pointer receiver)`, p.x == 1 && p.y == 2 && r == true);
+  }
+  {
+    var p *Point = new(Point);
+    p.x = 5;
+    p.y = 1;
+    var r = p.CopyMethod (1,2);
+    test (5, `call a method (pointer -> copy receiver)`, p.x == 5 && p.y == 1 && r == true);
+  }
+  {
+    var p *Point = new(Point);
+    p.x = 5;
+    p.y = 1;
+    var r = p.PointerMethod (1,2);
+    test (6, `call a method (pointer -> pointer receiver)`, p.x == 1 && p.y == 2 && r == true);
+  }
+}
+
+action (this +const *Test) AnAction (!this.flag) {
+  {
+    test (7, `call a getter`, this.sub.Getter (1,2) == true);
+  }
+
+  {
+    test (8, `call a pull/getter`, this.Pull (1,2) == true);
+  }
+
+  activate bang (1, 2) {
+    this.flag = true;
+  }
+}
+
+bind (this *Test) ABind {
+  this.bang -> this.sub.AReaction;
+  this.Pull <- this.sub.Getter;
+}
+
+instance t Test Main ();

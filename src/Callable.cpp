@@ -68,9 +68,6 @@ void Method::call (executor_base_t& exec, const ast_call_expr_t& node) const
   // Sample the top of the stack.
   char* top_before = stack_frame_top (exec.stack ());
 
-  // Push this.
-  runtime::evaluate_expr (exec, node.expr ()->at (0)->at (0));
-
   // Push the arguments.
   runtime::evaluate_expr (exec, node.args ());
 
@@ -91,15 +88,21 @@ void Method::call (executor_base_t& exec, const ast_call_expr_t& node) const
 
 void Initializer::call (executor_base_t& exec, const ast_call_expr_t& node) const
 {
+  // Create space for the return.
+  stack_frame_reserve (exec.stack (), this->returnSize);
+
   // Sample the top of the stack.
   char* top_before = stack_frame_top (exec.stack ());
 
   // Push this.
-  runtime::evaluate_expr (exec, node.expr ()->at (0)->at (0));
+  runtime::evaluate_expr (exec, node.args ()->at (0));
   component_t* thisPtr = static_cast<component_t*> (stack_frame_read_pointer (exec.stack ()));
 
   // Push the arguments.
-  runtime::evaluate_expr (exec, node.args ());
+  for (size_t idx = 1; idx != node.args ()->size (); ++idx)
+    {
+      runtime::evaluate_expr (exec, node.args ()->at (idx));
+    }
 
   // Push a fake instruction pointer.
   stack_frame_push_pointer (exec.stack (), NULL);
@@ -118,8 +121,11 @@ void Initializer::call (executor_base_t& exec, const ast_call_expr_t& node) cons
   stack_frame_popn (exec.stack (), top_after - top_before);
 }
 
-void Initializer::call (executor_base_t& exec, const ast_call_expr_t& node, component_t* thisPtr) const
+void Initializer::call (executor_base_t& exec, component_t* thisPtr, const ast_t* args) const
 {
+  // Create space for the return.
+  stack_frame_reserve (exec.stack (), this->returnSize);
+
   // Sample the top of the stack.
   char* top_before = stack_frame_top (exec.stack ());
 
@@ -127,7 +133,7 @@ void Initializer::call (executor_base_t& exec, const ast_call_expr_t& node, comp
   stack_frame_push_pointer (exec.stack (), thisPtr);
 
   // Push the arguments.
-  runtime::evaluate_expr (exec, node.args ());
+  runtime::evaluate_expr (exec, args);
 
   // Push a fake instruction pointer.
   stack_frame_push_pointer (exec.stack (), NULL);
@@ -155,12 +161,14 @@ void Getter::call (executor_base_t& exec, const ast_call_expr_t& node) const
   char* top_before = stack_frame_top (exec.stack ());
 
   // Push this.
-  unimplemented;
-  //runtime::evaluate_expr (exec, node.expr ()->children[0]->children[0]);
+  runtime::evaluate_expr (exec, node.args ()->at (0));
   component_t* thisPtr = static_cast<component_t*> (stack_frame_read_pointer (exec.stack ()));
 
   // Push the arguments.
-  runtime::evaluate_expr (exec, node.args ());
+  for (size_t idx = 1; idx != node.args ()->size (); ++idx)
+    {
+      runtime::evaluate_expr (exec, node.args ()->at (idx));
+    }
 
   // Push a fake instruction pointer.
   stack_frame_push_pointer (exec.stack (), NULL);

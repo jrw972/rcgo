@@ -14,7 +14,6 @@ two_port_calls.sh \
 reaction_param_activation.sh \
 return_leak.sh \
 two_reactions.sh \
-same_port.sh \
 initializer_args.rc \
 var.rc \
 logical_operators.rc \
@@ -26,7 +25,9 @@ illegal_rune_literals.sh \
 string_literals.rc \
 illegal_string_literals.sh \
 conversion.rc \
-illegal_conversion.sh
+illegal_conversion.sh \
+illegal_composition.sh \
+call.rc
 
 EXTRA_DIST = $(TESTS) \
 helpers.sh \
@@ -121,12 +122,14 @@ foreign_safe_pull_port.rc \
 foreign_safe_pull_port_return.rc \
 foreign_safe_push_port.rc \
 foreign_safe_reaction.rc \
-variable_zero.rc \
 two_port_calls.rc \
 reaction_param_activation.rc \
 return_leak.rc \
 two_reactions.rc \
+recursive_composition.rc \
 same_port.rc \
+incompatible_reactions.rc \
+write_in_method.rc \
 too_many_characters.rc \
 too_few_hexadecimal_digits.rc \
 too_few_octal_digits.rc \

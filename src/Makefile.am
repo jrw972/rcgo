@@ -12,19 +12,19 @@ parser.hpp parser.cpp: parser.y
 bin_PROGRAMS = rc
 rc_SOURCES = main.cpp \
 action.hpp \
-Activation.hpp \
 ast.hpp ast.cpp \
 bind.hpp \
 BuiltinFunction.hpp BuiltinFunction.cpp \
 Callable.hpp Callable.cpp \
+Composition.hpp Composition.cpp \
+ComputeReceiverAccess.cpp \
 debug.hpp \
 enter_symbols.cpp \
 enumerate_instances.cpp \
+EvaluateStatic.hpp EvaluateStatic.cpp \
 executor_base.hpp \
 field.hpp \
 heap.hpp heap.cpp \
-instance.hpp \
-instance_table.hpp instance_table.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
 Location.hpp Location.cpp \
 MemoryModel.hpp MemoryModel.cpp \

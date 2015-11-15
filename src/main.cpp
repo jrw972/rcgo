@@ -11,7 +11,6 @@
 #include "parser.hpp"
 #include "semantic.hpp"
 #include "debug.hpp"
-#include "instance.hpp"
 #include "runtime.hpp"
 #include "MemoryModel.hpp"
 #include "instance_scheduler.hpp"
@@ -126,17 +125,17 @@ main (int argc, char **argv)
   MemoryModel::StackAlignment = sizeof (void*);
   allocate_stack_variables (root);
 
-  /* Check composition. */
-  instance_table_t instance_table;
+  // Check composition.
+  Composition::Composer instance_table;
   enumerate_instances (root, instance_table);
-  instance_table_enumerate_bindings (instance_table);
-  instance_table_analyze_composition (instance_table);
-
+  instance_table.ElaborateComposition ();
   if (show_composition)
     {
-      instance_table_dump (instance_table);
+      instance_table.DumpGraphviz ();
       return 0;
     }
+
+  instance_table.AnalyzeComposition ();
 
   //typedef instance_scheduler_t SchedulerType;
   typedef partitioned_scheduler_t SchedulerType;

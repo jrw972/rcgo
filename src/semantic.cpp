@@ -5,8 +5,6 @@
 #include "action.hpp"
 #include "Type.hpp"
 #include "parameter.hpp"
-#include "instance.hpp"
-#include "Activation.hpp"
 #include "field.hpp"
 #include "Symbol.hpp"
 #include "MemoryModel.hpp"

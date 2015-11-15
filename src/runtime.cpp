@@ -34,27 +34,27 @@ namespace runtime
            component_t* instance);
 
   void
-  allocate_instances (instance_table_t& instance_table)
+  allocate_instances (Composition::Composer& instance_table)
   {
-    for (instance_table_t::InstancesType::const_iterator pos = instance_table.instances.begin (),
-         limit = instance_table.instances.end ();
+    for (Composition::Composer::InstancesType::const_iterator pos = instance_table.InstancesBegin (),
+         limit = instance_table.InstancesEnd ();
          pos != limit;
          ++pos)
       {
-        instance_t* instance = pos->second;
+        Composition::Instance* instance = pos->second;
         component_t* ptr;
-        if (instance->is_top_level ())
+        if (instance->IsTopLevel ())
           {
-            const Type::Type* type = instance->type ();
+            const Type::Type* type = instance->type;
             size_t size = type->Size ();
             ptr = static_cast<component_t*> (malloc (size));
             memset (ptr, 0, size);
           }
         else
           {
-            ptr = reinterpret_cast<component_t*> (reinterpret_cast<char*> (instance->parent ()->ptr ()) + instance->offset ());
+            ptr = reinterpret_cast<component_t*> (reinterpret_cast<char*> (instance->parent->component) + instance->Offset ());
           }
-        instance->ptr (ptr);
+        instance->component = ptr;
       }
   }
 
@@ -79,57 +79,54 @@ namespace runtime
   }
 
   void
-  create_bindings (instance_table_t& instance_table)
+  create_bindings (Composition::Composer& instance_table)
   {
-    for (instance_table_t::PushPortsType::const_iterator output_pos = instance_table.push_ports.begin (),
-         output_limit = instance_table.push_ports.end ();
-         output_pos != output_limit;
-         ++output_pos)
+    for (Composition::Composer::PushPortsType::const_iterator pp_pos = instance_table.PushPortsBegin (),
+         pp_limit = instance_table.PushPortsEnd ();
+         pp_pos != pp_limit;
+         ++pp_pos)
       {
-        instance_t* output_instance = output_pos->second.output_instance;
-        size_t output_port = output_pos->first - output_instance->address ();
+        Composition::PushPort* pp = pp_pos->second;
+        Composition::Instance* output_instance = pp->instance;
+        size_t output_port = pp->address - output_instance->address;
 
-        for (instance_table_t::InputsType::const_iterator input_pos = output_pos->second.inputs.begin (),
-             input_limit = output_pos->second.inputs.end ();
-             input_pos != input_limit;
-             ++input_pos)
+        for (Composition::ReactionsType::const_iterator reaction_pos = pp->reactions.begin (),
+             reaction_limit = pp->reactions.end ();
+             reaction_pos != reaction_limit;
+             ++reaction_pos)
           {
-            bind (reinterpret_cast<port_t**> (reinterpret_cast<char*> (output_instance->ptr ()) + output_port),
-                  input_pos->instance->ptr (),
-                  input_pos->reaction,
-                  input_pos->parameter);
+            Composition::Reaction* r = *reaction_pos;
+            bind (reinterpret_cast<port_t**> (reinterpret_cast<char*> (output_instance->component) + output_port),
+                  r->instance->component,
+                  r->reaction,
+                  r->iota);
           }
       }
 
-    for (instance_table_t::PullPortsType::const_iterator input_pos = instance_table.pull_ports.begin (),
-         input_limit = instance_table.pull_ports.end ();
-         input_pos != input_limit;
-         ++input_pos)
+    for (Composition::Composer::PullPortsType::const_iterator pp_pos = instance_table.PullPortsBegin (),
+         pp_limit = instance_table.PullPortsEnd ();
+         pp_pos != pp_limit;
+         ++pp_pos)
       {
-        instance_t* input_instance = input_pos->second.input_instance;
-        size_t input_pull_port = input_pos->first - input_instance->address ();
-        instance_table_t::OutputType output = *input_pos->second.outputs.begin ();
-        pull_port_t* pull_port = reinterpret_cast<pull_port_t*> (reinterpret_cast<char*> (input_instance->ptr ()) + input_pull_port);
-        assert (output.instance != NULL);
-        pull_port->instance = output.instance->ptr ();
-        pull_port->getter = output.getter;
+        Composition::Instance* pull_port_instance = pp_pos->second->instance;
+        size_t pull_port_address = pp_pos->first - pull_port_instance->address;
+        Composition::Getter* getter = *pp_pos->second->getters.begin ();
+        pull_port_t* pull_port = reinterpret_cast<pull_port_t*> (reinterpret_cast<char*> (pull_port_instance->component) + pull_port_address);
+        assert (getter->instance != NULL);
+        pull_port->instance = getter->instance->component;
+        pull_port->getter = getter->getter;
       }
   }
 
   void
-  initialize (executor_base_t& exec, instance_t* instance)
+  initialize (executor_base_t& exec, Composition::Instance* instance)
   {
-    if (instance->is_top_level ())
+    if (instance->IsTopLevel ())
       {
         // Set up the heap.
-        exec.current_instance (instance->ptr ());
-        // Set up a call expression.
-        const unsigned int line = instance->line ();
-        ast_identifier_t id (line, "");
-        ast_identifier_expr_t expr (line, &id);
-        ast_call_expr_t node (line, &expr, instance->node ()->expression_list ());
+        exec.current_instance (instance->component);
         // Call the initializer.
-        instance->initializer ()->call (exec, node, instance->ptr ());
+        instance->initializer->call (exec, instance->component, instance->node->expression_list ());
       }
   }
 
@@ -902,7 +899,7 @@ namespace runtime
 
   void
   evaluate_expr (executor_base_t& exec,
-                 ast_t* node)
+                 const ast_t* node)
   {
     typed_value_t tv = node->typed_value;
     if (tv.value.present)
@@ -1041,13 +1038,21 @@ namespace runtime
 
       void visit (const ast_address_of_expr_t& node)
       {
-        evaluate_expr (exec, node.child ());
+        if (!node.address_of_dereference)
+          {
+            evaluate_expr (exec, node.child ());
+          }
+        else
+          {
+            evaluate_expr (exec, node.child ()->at (0));
+          }
       }
 
       void visit (const ast_call_expr_t& node)
       {
         const Type::Function* f = type_cast<Type::Function> (node.expr ()->typed_value.type);
-        if (f == NULL || f->kind != Type::Function::PULL_PORT)
+        assert (f != NULL);
+        if (f->kind != Type::Function::PULL_PORT)
           {
             node.expr ()->typed_value.value.callable_value ()->call (exec, node);
           }
@@ -1578,8 +1583,8 @@ namespace runtime
 
         // The caller pushed an instruction pointer which is just
         // before the base pointer.  Overwrite it with the body.
-        ast_t* body = node.body ();
-        memcpy (stack_frame_ip (exec.stack ()), &body, sizeof (void*));
+        const ast_t* p = &node;
+        memcpy (stack_frame_ip (exec.stack ()), &p, sizeof (void*));
         // Execute the expression list.
         evaluate_expr (exec, node.expr_list ());
 
@@ -1708,22 +1713,18 @@ namespace runtime
     while (stack_frame_base_pointer (exec.stack ()) != NULL)
       {
         // Get the deferred body.
-        ast_t* b = *(ast_t**)stack_frame_ip (exec.stack ());
-
-        // Get the activation.
-        Activation *activation = b->GetActivation ();
-        assert (activation != NULL);
+        ast_activate_statement_t* as = *(ast_activate_statement_t**)stack_frame_ip (exec.stack ());
 
         // Set the current record.
-        Symbol* this_ = b->GetReceiverSymbol ();
+        Symbol* this_ = as->GetReceiverSymbol ();
         stack_frame_push (exec.stack (), this_->offset (), SymbolCast<ParameterSymbol> (this_)->value.type->Size ());
         exec.current_instance (static_cast<component_t*> (stack_frame_pop_pointer (exec.stack ())));
 
         // Execute it.
-        evaluate_statement (exec, b);
+        evaluate_statement (exec, as->body ());
 
         // Add to the schedule.
-        if (activation->mode == ACTIVATION_WRITE)
+        if (as->mutable_phase_access == AccessWrite)
           {
             exec.push ();
           }
@@ -1817,7 +1818,7 @@ namespace runtime
     {
       const Type::Type* return_type = type->GetPointer ();
       return new Type::Function (Type::Function::FUNCTION, (new Signature ()),
-                                 new parameter_t (definingNode, "0return", typed_value_t::make_value (return_type, MUTABLE, MUTABLE), false));
+                                 new parameter_t (definingNode, "0return", typed_value_t::make_value (return_type, MUTABLE, MUTABLE, false), false));
     }
 
   };
@@ -2224,7 +2225,7 @@ namespace runtime
         }
 
       return new Type::Function (Type::Function::FUNCTION, sig,
-                                 new parameter_t (definingNode, "0return", typed_value_t::make_value (Void::Instance (), IMMUTABLE, IMMUTABLE), false));
+                                 new parameter_t (definingNode, "0return", typed_value_t::make_value (Void::Instance (), IMMUTABLE, IMMUTABLE, false), false));
     }
   };
 
@@ -2244,12 +2245,12 @@ namespace runtime
 // void
 // dump_instances (const runtime_t* runtime)
 // {
-//   for (instance_table_t::InstancesType::const_iterator pos = runtime->instance_table.instances.begin (),
+//   for (Composer::InstancesType::const_iterator pos = runtime->instance_table.instances.begin (),
 //          limit = runtime->instance_table.instances.end ();
 //        pos != limit;
 //        ++pos)
 //     {
-//       instance_t* instance = pos->second;
+//       Instance* instance = pos->second;
 //       if (instance->is_top_level ())
 //         {
 //           unimplemented;

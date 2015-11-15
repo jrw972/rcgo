@@ -22,6 +22,11 @@ value_t::print (std::ostream& out, const Type::Type* type) const
           type_not_reached(type);
         }
 
+        void visit (const Enum& type)
+        {
+          out << " value=" << tv.ref (type);
+        }
+
         void visit (const Bool& type)
         {
           out << " value=" << tv.ref (type);
@@ -109,6 +114,10 @@ value_t::print (std::ostream& out, const Type::Type* type) const
         {
           const String::ValueType& s = tv.ref (type);
           out << " value={" << s.ptr << ',' << s.length << '}';
+        }
+        void visit (const Type::Template& type)
+        {
+          out << " value=<template>";
         }
       };
       visitor v (*this, out);
