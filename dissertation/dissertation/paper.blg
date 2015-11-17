@@ -3,52 +3,52 @@ Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
 The top-level auxiliary file: paper.aux
 The style file: plain.bst
 Database file #1: paper.bib
-Warning--I didn't find a database entry for "go"
 Warning--to sort, need author, editor, or key in 1983proceedings
 Warning--to sort, need author or key in cxx11
 Warning--to sort, need author or key in ioatoolkit
+Warning--to sort, need author or key in go
 Warning--empty author and editor in 1983proceedings
 Warning--empty journal in armstrong1996concurrent
 Warning--can't use both volume and number fields in blumofe1995cilk
-You've used 55 entries,
+You've used 61 entries,
             2118 wiz_defined-function locations,
-            805 strings with 11343 characters,
-and the built_in function-call counts, 16815 in all, are:
-= -- 1671
-> -- 680
+            841 strings with 12027 characters,
+and the built_in function-call counts, 18398 in all, are:
+= -- 1836
+> -- 716
 < -- 15
-+ -- 287
-- -- 219
-* -- 1065
-:= -- 2759
-add.period$ -- 171
-call.type$ -- 55
-change.case$ -- 258
++ -- 304
+- -- 229
+* -- 1169
+:= -- 3014
+add.period$ -- 189
+call.type$ -- 61
+change.case$ -- 280
 chr.to.int$ -- 0
-cite$ -- 61
-duplicate$ -- 699
-empty$ -- 1426
-format.name$ -- 219
-if$ -- 3572
+cite$ -- 68
+duplicate$ -- 762
+empty$ -- 1580
+format.name$ -- 229
+if$ -- 3909
 int.to.chr$ -- 0
-int.to.str$ -- 55
-missing$ -- 60
-newline$ -- 274
-num.names$ -- 106
-pop$ -- 341
+int.to.str$ -- 61
+missing$ -- 66
+newline$ -- 303
+num.names$ -- 116
+pop$ -- 363
 preamble$ -- 1
-purify$ -- 218
+purify$ -- 235
 quote$ -- 0
-skip$ -- 469
+skip$ -- 511
 stack$ -- 0
-substring$ -- 963
-swap$ -- 143
+substring$ -- 1096
+swap$ -- 149
 text.length$ -- 15
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 190
-warning$ -- 6
-while$ -- 168
-width$ -- 57
-write$ -- 592
+type$ -- 212
+warning$ -- 7
+while$ -- 185
+width$ -- 63
+write$ -- 654
 (There were 7 warnings)

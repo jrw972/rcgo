@@ -1,5 +1,9 @@
 \begin{thebibliography}{10}
 
+\bibitem{go}
+Go.
+\newblock \url{https://golang.org/}.
+
 \bibitem{ioatoolkit}
 Ioa language and toolset.
 \newblock \url{http://groups.csail.mit.edu/tds/ioa/}.
@@ -96,6 +100,11 @@ D.E. Culler, A.~Dusseau, S.C. Goldstein, A.~Krishnamurthy, S.~Lumetta,
 O.J. Dahl, E.W. Dijkstra, and C.A.R. Hoare.
 \newblock {\em Structured programming}.
 \newblock Academic Press Ltd., 1972.
+
+\bibitem{davis1958computability}
+M.~Davis.
+\newblock {\em Computability \& Unsolvability}.
+\newblock Dover Books on Computer Science Series. Dover, 1958.
 
 \bibitem{deroure1991parallel}
 D.C. DeRoure.
@@ -197,6 +206,11 @@ Tom Knight.
 \newblock In {\em Proceedings of the 1986 ACM conference on LISP and functional
   programming}, LFP '86, pages 105--112, New York, NY, USA, 1986. ACM.
 
+\bibitem{Landi:1992:USA:161494.161501}
+William Landi.
+\newblock Undecidability of static analysis.
+\newblock {\em ACM Lett. Program. Lang. Syst.}, 1(4):323--337, December 1992.
+
 \bibitem{lea2000concurrent}
 D.~Lea.
 \newblock {\em Concurrent programming in Java: design principles and patterns}.
@@ -249,12 +263,23 @@ S.~Radha and C.R. Muthukrishnan.
 \newblock A portable implementation of unity on von neumann machines.
 \newblock {\em Computer Languages}, 18(1):17--30, 1993.
 
+\bibitem{Ramalingam:1994:UA:186025.186041}
+G.~Ramalingam.
+\newblock The undecidability of aliasing.
+\newblock {\em ACM Trans. Program. Lang. Syst.}, 16(5):1467--1471, September
+  1994.
+
 \bibitem{haswell}
 James Reinders.
 \newblock Transactional synchronization in haswell.
 \newblock
   \url{http://software.intel.com/en-us/blogs/2012/02/07/transactional-synchronization-in-haswell},
   February 2012.
+
+\bibitem{Rice:53}
+H.~G. Rice.
+\newblock Classes of recursively enumerable sets and their decision problems.
+\newblock {\em Trans. Amer. Math. Soc.}, 74:358--366, 1953.
 
 \bibitem{ryzhyk2009dingo}
 L.~Ryzhyk, P.~Chubb, I.~Kuz, and G.~Heiser.
@@ -289,6 +314,13 @@ A.~Turing.
   entscheidungsproblem.
 \newblock {\em Proceedings of the London Mathematical Society}, 2(42):230--265,
   1936.
+
+\bibitem{Turing01011937}
+A.~M. Turing.
+\newblock On computable numbers, with an application to the
+  entscheidungsproblem.
+\newblock {\em Proceedings of the London Mathematical Society},
+  s2-42(1):230--265, 1937.
 
 \bibitem{wadler1990comprehending}
 P.~Wadler.

@@ -3,6 +3,8 @@
 In this chapter, we present a model for composing and decomposing reactive programs via \emph{reactive components}.
 The model is biased toward practical software development even as it enforces properties based in formal methods.
 Consequently, the model favors utility, practicality, flexibility, and ease of implementation.
+Unlike UNITY in which composition is not property-preserving, the composition of reactive components is property-preserving which facilitates hierarchical and modular reasoning.
+Unlike I/O Automata in which transactions have limited depth, a transaction among reactive components may access and cascade to an arbitrary number of other components which permits decomposition to an arbitrary depth and degree.
 
 %% \paragraph{Formal models and software engineering.}
 %% I claim that most of the software that is ``put into production'' will never be proved formally correct.
@@ -90,6 +92,14 @@ Consequently, the model favors utility, practicality, flexibility, and ease of i
 \centering
 \resizebox{\textwidth}{!}{%
 \begin{tikzpicture}
+[
+arrowstyle/.style={
+  decoration={markings,mark=at position 1 with {\arrow[scale=2,]{stealth}}},
+  postaction={decorate},
+  shorten >=0.4pt
+}
+]
+
 %% component boundary
 \draw (0,0) rectangle (10,8.25);
 %% active pull ports
@@ -109,21 +119,21 @@ Consequently, the model favors utility, practicality, flexibility, and ease of i
 \node at (3.5,3.5) {\textbf{\emph{action}}};
 \node[draw, minimum height=15, minimum width=50, rounded corners=5] (trans2) at (5,5) {};
 \node at (5,4.5) {transition};
-\draw[thick,->] (pre) -- (trans1);
+\draw[thick,arrowstyle] (pre) -- (trans1);
 \draw[thick] (apullin1.center) -| (trans1) node[pos=.5,right] {\textbf{call}};
 %% active push ports
 \rapush[10,3,1,.5,apushex1,apushin1]{}
 \rapush[10,4,1,.5,apushex2,apushin2]{}
 \rapush[10,5,1,.5,apushex3,apushin3]{}
 \node[align=center] at (11.1,5) {active\\push port};
-\draw[thick,->,dashed] (trans1) -- (apushin1.center);
-\draw[thick,->,dashed] (trans1) -- (apushin2.center);
+\draw[thick,dashed,arrowstyle] (trans1) -- (apushin1.center);
+\draw[thick,dashed,arrowstyle] (trans1) -- (apushin2.center);
 \node at(7.5,4) {\textbf{activate}};
-\draw[thick,->,dashed] (trans2) -- (apushin2.center);
-\draw[thick,->,dashed] (trans2) -- (apushin3.center);
+\draw[thick,dashed,arrowstyle] (trans2) -- (apushin2.center);
+\draw[thick,dashed,arrowstyle] (trans2) -- (apushin3.center);
 %% passive push ports
 \lppush[0,5,1,.5,ppushex1,ppushin1]{}
-\draw[thick,->] (ppushin1.center) -- (trans2);
+\draw[thick,arrowstyle] (ppushin1.center) -- (trans2);
 \node[align=center] at (-1.1,5) {passive\\push port};
 \draw[dashed] (2,5) ellipse (5 and 1);
 \node at (2,5.5) {\textbf{\emph{reaction}}};
@@ -131,14 +141,16 @@ Consequently, the model favors utility, practicality, flexibility, and ease of i
 \node[align=center] at (5,6.25) {state variables};
 \end{tikzpicture}
 }%
-\caption{Diagram depicting the features of a reactive component\label{reactive_component}}
+\caption{Features of a reactive component\label{reactive_component}}
 \end{figure}
 
 Figure~\ref{reactive_component} shows the major features of a reactive component.
 As in other state-based formal models like UNITY~\cite{chandy1989parallel} and I/O Automata~\cite{nancy1996distributed}, the core of a reactive component in this model is a set of \emph{state variables} and a set of atomic \emph{transitions} that manipulate those state variables.
 When reasoning about a system, behavior is expressed as propositions over the state variables where the propositions are derived from the transitions.
-The contribution that this work makes to existing state-based formal models of reactive systems is a combination of interface elements and composition semantics that allow reactive programs to be composed in a principled way.
 
+%% The contribution that this work makes to existing state-based formal models of reactive systems is a combination of interface elements and composition semantics that allow reactive programs to be composed in a principled way.
+
+The reactive component model defines interface elements and composition semantics that allow reactive programs to be composed in a principled way.
 For example, an \emph{active push port} allows a transition in one component to be linked to a transition in another component such that the resulting combined transaction is atomic.
 Active push ports allow reactive components to publicize their behavior.
 An active push port may be \emph{bound} to and conditionally \emph{activate} zero or more \emph{passive push ports}.
@@ -203,7 +215,7 @@ The ability to publicize behavior and state and the ability to assemble well-def
 \caption{Diagram of a web application built using reactive components\label{web_server}}
 \end{figure}
 
-To illustrate the utility of component interfaces and composition, we now present a design for a web application or web server using reactive components in figure~\ref{web_server}.
+To demonstrate the utility of component interfaces and explicit support for property-preserving composition, we now present an illustrative design for a web application using reactive components, as is shown in figure~\ref{web_server}.
 The web application consists of five reactive components.
 The first is an unnamed top-level component representing the complete application.
 This component has four sub-components representing a web server, the application logic, a database, and a logging service.
@@ -211,7 +223,7 @@ The ports of the application logic component have been bound to the correspondin
 The interface of a component, which consists of its ports, provides insight into the behavior of a component.
 For example, based on the interface of the web server component we may expect it to 1) verify incoming HTTP requests\footnote{A production web server may verify that the requested HTTP method can be applied to the given URI, that content length limits are respected, that content types are supported, etc.}, 2) pass on valid HTTP requests to the application, and 3) send HTTP responses to the web client.
 
-Figure~\ref{web_server} also demonstrates how reactive programs can be constructed by composing reactive components, so that a developer may focus on the application logic and use already developed components for the web server, database, and logging service.
+Figure~\ref{web_server} also demonstrates how reactive programs can be constructed by composing reactive components, so that a developer may focus on the application logic and use existing components for the web server, database, and logging service.
 Furthermore, one can imagine developing three stateless components surrounding the application logic that do nothing but translate messages to and from application specific message types to the generic types required by the web server, database, and logging service.
 The application logic, then, is completely isolated from the surrounding libraries and may be tested by providing mock components for the web server, database, and logging service.
 The application logic itself has a well-defined interface and could be reused, say, by implementing a graphical front-end to drive the application instead of a web service.
@@ -229,13 +241,13 @@ As a practical concession, however, we will introduce pointers for building arbi
 
 \paragraph{Atomic state transitions.}
 The rest of the internal core of a reactive component is a set of atomic state transitions that manipulate the state variables.
-A precise definition of the atomicity of state transitions will be deferred to the discussion on composition and execution.
+A precise definition of the atomicity of state transitions will be deferred to the discussion of composition and execution.
 State variables and state transitions are private, meaning that transitions can only refer to the state variables of the associated reactive component and a transition in one reactive component can only be linked to a transition in another component through the composition mechanisms.
 Thus, all initialization and updates to state variables can be determined by examining the transitions of the corresponding component.
 Thus, composition is \emph{compositional}, meaning that a property established for a reactive component independent of context can never be violated since the set of transitions from which the properties were derived is fixed.
 State transitions must be deterministic meaning that the next value of every state variable is uniquely and well defined.
 
-The reactive component model does not prescribe a specific language for encoding state transitions.
+The reactive component model presented here does not prescribe a specific language for encoding state transitions.
 The language used depends on the goals and tastes of the one developing or analyzing the model.
 For example, expressing transitions using the programming language of UNITY~\cite{chandy1989parallel} may allow the modeler to extract proofs from the text, a major goal of UNITY.
 The approach used by I/O Automata~\cite{nancy1996distributed} is to specify the condition established by each transition.
@@ -272,7 +284,7 @@ The key point to understanding weak fairness is the difference between selection
 To illustrate, consider a component consisting of a single Boolean flag $b$ that is initially false and three actions labeled $A$, $B_0$, and $B_1$.
 Action $A$ is enabled when $b = false$ and sets $b$ to true.
 Actions $B_0$ and $B_1$ are enabled when $b = true$ and set $b$ to false.
-A trace for this component resembles $ABAB \ldots$ where $B$ represents either $B_0$ or $B_1$.
+A trace for this is a string from the regular expression $(A(B_0|B_1))^*$.
 Thus, an infinite trace will contain an infinite number of $A$s.
 However, the same trace may contain an infinite number of $B_0$s with no $B_1$s, an infinite number of $B_1$s with no $B_0$s, or some combination of $B_0$s and $B_1$s.
 These extreme cases illustrate weak fairness.
@@ -366,9 +378,9 @@ component System {
 \section{Properties of Composition}
 In this section, we examine various features related to reactive components and composition.
 Substitutional equivalence for reactive components is demonstrated by outlining a procedure for in-lining sub-components.
-Hazards of composition, namely, non-deterministic state transitions resulting from conflicting and recursive composition, are identified and a means of detecting is proposed.
+Hazards of composition, namely, non-deterministic state transitions resulting from conflicting and recursive composition, are identified and a means of detecting them is proposed.
 The issue of decomposition is considered and \emph{pull ports} are introduced as a mechanism for decomposition.
-Finally, the points of principled composition presented in chapter~\ref{introduction} are evaluated against reactive components.
+Finally, the points of principled composition presented in chapter~\ref{introduction} are evaluated for reactive components.
 
 \paragraph{Substitutional equivalence.}
 Substitutional equivalence means that an instance of a component can be replaced with its definition and the result is a well-defined entity in the model.
@@ -443,12 +455,18 @@ One of the passive push port is linked to a transition that sets a flag to false
 Suppose that the two push ports of $A$ are activated by the same action.
 This may happen directly, i.e., the action activates a push port that is bound to both push ports in $A$, or indirectly, i.e., an arbitrary but bounded number of reactions and port activations are placed between the action and ports of $A$ through composition.
 The resulting system is non-deterministic because the value of the flag after the action may either be true or false.
-If the underlying transformational language admits pointers, then the problem of determining if two transitions operate on the same state variable is undecidable in general.
+If the underlying transformational language admits pointers, dynamic memory, if statements, and loops, i.e., is Turing-complete, then the problem of determining if two transitions operate on the same state variable is undecidable in general~\cite{Landi:1992:USA:161494.161501, Ramalingam:1994:UA:186025.186041}.
 A necessary (but not sufficient) condition for non-deterministic assignment from composition is summarized by the following predicate $NDA(G): \exists (i_1, t_1), (i_2, t_2) \in G.N, i_1 = i_2, t_1 \ne t_2$ which says that the graph must have two different transitions involving the same instance.
 
 A recursively activated transition occurs when the transaction graph has a cycle.
 The execution of such a transaction may result in well-defined next values for all state variables assuming that 1)~the recursion is bounded and 2)~the parameters passed to every reaction result in identical computations.
-Both of these problems are undecidable in general.
+A transaction may be analyzed like a traditional transformational program since it has finite input, a finite output, and must finish in a finite number of steps.
+The first problem, then, is a thinly disguised version of the halting problem since it asks if a computation (the transaction) expressed in a Turing-complete language terminates (has bounded recursion)~\cite{Turing01011937, davis1958computability}.
+A bounded recursion means that the execution of the transaction will generate a bounded number of activations $A$.
+For each activation $a \in A$, we must determine what state is updated by $a$.
+If the language is Turing-complete, then this problem is undecidable in general~\cite{Landi:1992:USA:161494.161501, Ramalingam:1994:UA:186025.186041}.
+For state variables that are updated by more than one activation, we must then show that each activation sets the state variable to the exact same next state.
+If we treat each activation as a program, then we require a function that determine if two (arbitrary) programs compute the same function, which is again, undecidable in general~\cite{Rice:53}.
 
 The difficulty of detecting composition that results in non-deterministic assignments suggests that these problems are best checked by a machine.
 That is, an implementation of reactive components may require that $NDA(G)$ be false for all transaction graphs in the system.
@@ -456,13 +474,13 @@ Similarly, an implementation may restrict composition to prevent the formation o
 Both of these approaches are used by the implementation described in chapter~\ref{implementation}.
 
 \paragraph{Decomposition, getters, and pull ports.}
-Substitutional equivalence implies that the process may be reversed and that sub-components may be ``factored out'' of an existing component, e.g., for reuse with other components.
+Substitutional equivalence implies that the process of composition may be reversed and that sub-components may be ``factored out'' of an existing component, e.g., for reuse with other components.
 %% One motivation for extracting sub-components is to support the software engineering practice of refactoring where common code is extracted so that it can be reused in various places.
 
-Another motivation is increased performance through parallelism.
+Another motivation is potentially increased performance through parallelism.
 Recall that true concurrency in reactive components is modeled as the non-deterministic selection and serial execution of actions.
 Two actions can be safely executed concurrently if it can be shown that the state variables involved in each action are disjoint.
-As previously mentioned, making this determination is undecidable in the general case.
+As was previously mentioned, making this determination is undecidable for Turing-complete languages in the general case.
 However, the problem becomes decidable if the component instance is used as a proxy for its constituent state variables.
 Let $RW: t \to \{ READ, WRITE \}$ be a function that maps a transition to value indicating that variables are read-only during the transition or written in some way.
 Two instance/transition pairs are independent if either the instances are different or at most one of the transition writes the variables of the instance
