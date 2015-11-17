@@ -27,11 +27,11 @@ private:
 struct static_value_t
 {
   enum Kind
-    {
-      STACK_ADDRESS,
-      ABSOLUTE_ADDRESS,
-      VALUE,
-    };
+  {
+    STACK_ADDRESS,
+    ABSOLUTE_ADDRESS,
+    VALUE,
+  };
 
   Kind kind;
   union
@@ -133,20 +133,22 @@ struct static_value_t
     return out;
   }
 
-  static static_value_t address_of (static_value_t in) {
+  static static_value_t address_of (static_value_t in)
+  {
     static_value_t out;
     out.kind = VALUE;
 
-    switch (in.kind) {
-    case STACK_ADDRESS:
-      unimplemented;
-    case ABSOLUTE_ADDRESS:
-      out.value = in.address;
-      break;
-      unimplemented;
-    case VALUE:
-      unimplemented;
-    }
+    switch (in.kind)
+      {
+      case STACK_ADDRESS:
+        unimplemented;
+      case ABSOLUTE_ADDRESS:
+        out.value = in.address;
+        break;
+        unimplemented;
+      case VALUE:
+        unimplemented;
+      }
 
     return out;
   }
@@ -157,6 +159,6 @@ operator<< (std::ostream& o,
             const static_value_t& v);
 
 static_value_t
-EvaluateStatic (const ast_t* node, const static_memory_t& memory);
+EvaluateStatic (const Ast::Node* node, const static_memory_t& memory);
 
 #endif /* EvaluateStatic_hpp */

@@ -161,7 +161,7 @@ struct typed_value_t
 
   explicit typed_value_t (Callable* c);
 
-  explicit typed_value_t (Template* t);
+  explicit typed_value_t (::Template* t);
 
   explicit typed_value_t (reaction_t* r);
 

@@ -14,7 +14,7 @@ class Callable
 {
 public:
   virtual ~Callable () { }
-  virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const = 0;
+  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const Ast::ast_call_expr_t& node) const = 0;
   virtual const Type::Type* type () const = 0;
 };
 
@@ -25,10 +25,10 @@ public:
 struct Function : public Callable, public Symbol
 {
   // TODO:  Remove duplication with Symbol.
-  Function (ast_function_t& node);
+  Function (Ast::ast_function_t& node);
 
   // Callable
-  virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
+  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const Ast::ast_call_expr_t& node) const;
   virtual const Type::Type* type () const
   {
     return functionType_;
@@ -42,7 +42,7 @@ struct Function : public Callable, public Symbol
     return "Function";
   }
 
-  ast_function_t& node;
+  Ast::ast_function_t& node;
   MemoryModel memoryModel;
 
   void set (const Type::Function* functionType,
@@ -66,7 +66,7 @@ private:
 
 struct Method : public Callable
 {
-  Method (ast_method_t* n,
+  Method (Ast::ast_method_t* n,
           const std::string& na,
           const Type::Method* method_type_,
           const Symbol* return_symbol_)
@@ -77,13 +77,13 @@ struct Method : public Callable
     , returnSize (method_type_->return_type ()->Size ())
   { }
 
-  virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
+  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const Ast::ast_call_expr_t& node) const;
   virtual const Type::Type* type () const
   {
     return methodType;
   }
 
-  ast_method_t* const node;
+  Ast::ast_method_t* const node;
   std::string const name;
   const Type::Method * const methodType;
   const Symbol* const returnSymbol;
@@ -93,7 +93,7 @@ struct Method : public Callable
 
 struct Initializer : public Callable
 {
-  Initializer (ast_initializer_t* n,
+  Initializer (Ast::ast_initializer_t* n,
                const std::string& na,
                const Type::Method* initializer_type_,
                const Symbol* return_symbol_)
@@ -104,14 +104,14 @@ struct Initializer : public Callable
     , returnSize (initializer_type_->return_type ()->Size ())
   { }
 
-  virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
-  void call (executor_base_t& exec, component_t* thisPtr, const ast_t* args) const;
+  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const Ast::ast_call_expr_t& node) const;
+  void call (executor_base_t& exec, component_t* thisPtr, const Ast::Node* args) const;
   virtual const Type::Type* type () const
   {
     return initializerType;
   }
 
-  ast_initializer_t* const node;
+  Ast::ast_initializer_t* const node;
   std::string const name;
   const Type::Method * const initializerType;
   const Symbol* const returnSymbol;
@@ -121,7 +121,7 @@ struct Initializer : public Callable
 
 struct Getter : public Callable
 {
-  Getter (ast_getter_t* n,
+  Getter (Ast::ast_getter_t* n,
           const std::string& na,
           const Type::Method* getter_type_,
           const Symbol* return_symbol_)
@@ -132,14 +132,14 @@ struct Getter : public Callable
     , returnSize (getter_type_->return_type ()->Size ())
   { }
 
-  virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const;
-  void call (executor_base_t& exec, const ast_call_expr_t& node, component_t* thisPtr) const;
+  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const Ast::ast_call_expr_t& node) const;
+  void call (executor_base_t& exec, const Ast::ast_call_expr_t& node, component_t* thisPtr) const;
   virtual const Type::Type* type () const
   {
     return getterType;
   }
 
-  ast_getter_t* const node;
+  Ast::ast_getter_t* const node;
   std::string const name;
   const Type::Method * const getterType;
   const Symbol* const returnSymbol;

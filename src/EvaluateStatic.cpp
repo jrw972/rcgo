@@ -1,7 +1,10 @@
 #include "EvaluateStatic.hpp"
-#include "ast.hpp"
-
+#include "Type.hpp"
 using namespace Type;
+#include "Ast.hpp"
+#include "AstVisitor.hpp"
+using namespace Ast;
+#include "Symbol.hpp"
 
 std::ostream&
 operator<< (std::ostream& o,
@@ -23,16 +26,16 @@ operator<< (std::ostream& o,
 }
 
 static_value_t
-EvaluateStatic (const ast_t* node, const static_memory_t& memory)
+EvaluateStatic (const Ast::Node* node, const static_memory_t& memory)
 {
-  struct visitor : public ast_const_visitor_t
+  struct visitor : public ConstVisitor
   {
     const static_memory_t& memory;
     static_value_t result;
 
     visitor (const static_memory_t& m) : memory (m) { }
 
-    void default_action (const ast_t& node)
+    void default_action (const Node& node)
     {
       ast_not_reached (node);
     }
@@ -59,12 +62,12 @@ EvaluateStatic (const ast_t* node, const static_memory_t& memory)
         case Equal:
           unimplemented;
         case NotEqual:
-          {
-            static_value_t left = EvaluateStatic (node.left (), memory);
-            static_value_t right = EvaluateStatic (node.right (), memory);
-            result = static_value_t::make_value (left.value != right.value);
-          }
-          break;
+        {
+          static_value_t left = EvaluateStatic (node.left (), memory);
+          static_value_t right = EvaluateStatic (node.right (), memory);
+          result = static_value_t::make_value (left.value != right.value);
+        }
+        break;
         case LessThan:
         case LessEqual:
         case MoreThan:
@@ -145,6 +148,6 @@ EvaluateStatic (const ast_t* node, const static_memory_t& memory)
     }
   };
   visitor v (memory);
-  node->accept (v);
+  node->Accept (v);
   return v.result;
 }

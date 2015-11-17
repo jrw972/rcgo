@@ -1,6 +1,7 @@
 #ifndef value_hpp
 #define value_hpp
 
+#include "types.hpp"
 #include "Type.hpp"
 
 struct value_t
@@ -21,7 +22,7 @@ struct value_t
   value_t (const Type::Float32* t, Type::Float32::ValueType v) : present (true), float32_value_ (v) { }
   value_t (const Type::Float64* t, Type::Float64::ValueType v) : present (true), float64_value_ (v) { }
   value_t (Callable* c) : present (true), callable_value_ (c) { }
-  value_t (Template* t) : present (true), template_value_ (t) { }
+  value_t (::Template* t) : present (true), template_value_ (t) { }
   value_t (reaction_t* r) : present (true), reaction_value_ (r) { }
   value_t (const Type::Slice* t, Type::Slice::ValueType v) : present (true), slice_value_ (v) { }
   value_t (const Type::StringU* t, Type::StringU::ValueType v) : present (true), stringu_value_ (v) { }
@@ -260,7 +261,7 @@ struct value_t
   {
     return callable_value_;
   }
-  Template* template_value () const
+  ::Template* template_value () const
   {
     return template_value_;
   }
@@ -310,7 +311,7 @@ private:
     Type::StringU::ValueType stringu_value_;
 
     Callable* callable_value_;
-    Template* template_value_;
+    ::Template* template_value_;
     reaction_t* reaction_value_;
     Type::Pointer::ValueType reference_value_;
 

@@ -2,9 +2,11 @@
 #include "scanner.hpp"
 #include "yyparse.hpp"
 #include "debug.hpp"
+
+using namespace Ast;
 %}
 
-%union { ast_t* node; Mutability mutability; }
+%union { Ast::Node* node; Mutability mutability; }
 %token <node> IDENTIFIER
 %token <node> LITERAL
 
@@ -85,8 +87,8 @@
 
 top: DefinitionList { root = $1; }
 
-DefinitionList: /* empty */ { $$ = new ast_top_level_list_t (); }
-| DefinitionList Definition { $$ = $1->append ($2); }
+DefinitionList: /* empty */ { $$ = new SourceFile (); }
+| DefinitionList Definition { $$ = $1->Append ($2); }
 
 Definition: TypeDecl { $$ = $1; }
 | Init { $$ = $1; }
@@ -107,7 +109,7 @@ Const:
 
 Instance: INSTANCE IDENTIFIER IDENTIFIER IDENTIFIER '(' OptionalExpressionList ')' ';' { $$ = new ast_instance_t (@1, $2, $3, $4, $6); }
 
-TypeDecl: TYPE IDENTIFIER Type ';' { $$ = new ast_type_definition_t (@1, $2, $3); }
+TypeDecl: TYPE IDENTIFIER Type ';' { $$ = new Ast::Type (@1, $2, $3); }
 
 Mutability:
 /* Empty. */
@@ -172,8 +174,8 @@ FUNC IDENTIFIER Signature Block
 Signature: '(' ')' { $$ = new ast_signature_type_spec_t (yyloc); }
 | '(' ParameterList optional_semicolon ')' { $$ = $2; }
 
-ParameterList: Parameter { $$ = (new ast_signature_type_spec_t (@1))->append ($1); }
-| ParameterList ';' Parameter { $$ = $1->append ($3); }
+ParameterList: Parameter { $$ = (new ast_signature_type_spec_t (@1))->Append ($1); }
+| ParameterList ';' Parameter { $$ = $1->Append ($3); }
 
 Parameter:
   IdentifierList Mutability DereferenceMutability Type
@@ -189,7 +191,7 @@ BindStatement: Expression RIGHT_ARROW Expression ';' { $$ = new ast_bind_push_po
 Block: '{' StatementList '}' { $$ = $2; }
 
 StatementList: /* empty */ { $$ = new ast_list_statement_t (yyloc); }
-| StatementList Statement { $$ = $1->append ($2); }
+| StatementList Statement { $$ = $1->Append ($2); }
 
 Statement: SimpleStatement { $$ = $1; }
 | VarStatement { $$ = $1; }
@@ -224,8 +226,8 @@ IncrementStatement: Expression INCREMENT ';' { $$ = new ast_increment_statement_
 OptionalPushPortCallList: /* Empty. */ { $$ = new ast_list_expr_t (yyloc); }
 | PushPortCallList { $$ = $1; }
 
-PushPortCallList: PushPortCall { $$ = (new ast_list_expr_t (@1))->append ($1); }
-| PushPortCallList ',' PushPortCall { $$ = $1->append ($3); }
+PushPortCallList: PushPortCall { $$ = (new ast_list_expr_t (@1))->Append ($1); }
+| PushPortCallList ',' PushPortCall { $$ = $1->Append ($3); }
 
 PushPortCall: IDENTIFIER IndexExpression '(' OptionalExpressionList ')' { $$ = new ast_indexed_port_call_expr_t (@1, $1, $2, $4); }
 | IDENTIFIER '(' OptionalExpressionList ')' { $$ = new ast_push_port_call_expr_t (@1, $1, $3); }
@@ -235,8 +237,8 @@ IndexExpression: '[' Expression ']' { $$ = $2; }
 OptionalExpressionList: /* Empty. */ { $$ = new ast_list_expr_t (yyloc); }
 | ExpressionList { $$ = $1; }
 
-ExpressionList: Expression { $$ = (new ast_list_expr_t (@1))->append ($1); }
-| ExpressionList ',' Expression { $$ = $1->append ($3); }
+ExpressionList: Expression { $$ = (new ast_list_expr_t (@1))->Append ($1); }
+| ExpressionList ',' Expression { $$ = $1->Append ($3); }
 
 ExpressionStatement: Expression ';' {
   $$ = new ast_expression_statement_t (@1, $1);
@@ -258,8 +260,8 @@ IfStatement: IF Expression Block { $$ = new ast_if_statement_t (@1, $2, $3, new 
 
 WhileStatement: FOR Expression Block { $$ = new ast_while_statement_t (@1, $2, $3); }
 
-IdentifierList: IDENTIFIER { $$ = (new ast_identifier_list_t (@1))->append ($1); }
-| IdentifierList ',' IDENTIFIER { $$ = $1->append ($3); }
+IdentifierList: IDENTIFIER { $$ = (new ast_identifier_list_t (@1))->Append ($1); }
+| IdentifierList ',' IDENTIFIER { $$ = $1->Append ($3); }
 
 // Type literals that can appear in expressions.
 TypeLitExpression:
@@ -320,7 +322,7 @@ Type:
 ArrayDimension: '[' Expression ']' { $$ = $2; }
 
 FieldList: /* empty */ { $$ = new ast_field_list_type_spec_t (yyloc); }
-| FieldList IdentifierList Type ';' { $$ = $1->append (new ast_identifier_list_type_spec_t (@1, $2, MUTABLE, MUTABLE, $3)); }
+| FieldList IdentifierList Type ';' { $$ = $1->Append (new ast_identifier_list_type_spec_t (@1, $2, MUTABLE, MUTABLE, $3)); }
 
 Expression: OrExpression { $$ = $1; }
 
@@ -365,7 +367,7 @@ PrimaryExpression:
 Operand
 { $$ = $1; }
 | TypeLitExpression
-{ $$ = new ast_type_expr_t (@1, $1); }
+{ $$ = new TypeExpression (@1, $1); }
 | PrimaryExpression '.' IDENTIFIER
 { $$ = new ast_select_expr_t (@1, $1, $3); }
 | PrimaryExpression '[' Expression ']'

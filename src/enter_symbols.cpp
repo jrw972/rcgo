@@ -1,19 +1,21 @@
-#include "ast.hpp"
+#include "Ast.hpp"
+#include "AstVisitor.hpp"
 #include "Symbol.hpp"
 #include <error.h>
 #include "parameter.hpp"
 #include "BuiltinFunction.hpp"
 #include "Template.hpp"
 #include "runtime.hpp"
+using namespace Ast;
 
 template <typename T>
 static T*
 enter_undefined_symbol (T* s,
-                        ast_t& a)
+                        Node& a)
 {
-  ast_t* symtab = a.parent ();
+  Ast::Node* symtab = a.GetParent ();
   const std::string& identifier = s->identifier;
-  Symbol *symbol = symtab->FindSymbolCurrent (identifier);
+  Symbol *symbol = symtab->FindLocalSymbol (identifier);
   if (symbol == NULL)
     {
       symtab->EnterSymbol (s);
@@ -28,7 +30,7 @@ enter_undefined_symbol (T* s,
 }
 
 void
-enter_symbols (ast_t * node)
+enter_symbols (Node * node)
 {
   /* Insert types. */
   node->EnterSymbol (new TypeSymbol ("bool", node, &Type::NamedBool));
@@ -88,15 +90,15 @@ enter_symbols (ast_t * node)
                      node,
                      typed_value_t (Type::Boolean::Instance (), false)));
 
-  struct visitor : public ast_visitor_t
+  struct visitor : public Visitor
   {
-    void default_action (ast_t& node)
+    void default_action (Node& node)
     {
-      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+      for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
            pos != limit;
            ++pos)
         {
-          (*pos)->accept (*this);
+          (*pos)->Accept (*this);
         }
     }
 
@@ -107,7 +109,7 @@ enter_symbols (ast_t * node)
                                 node);
     }
 
-    void visit (ast_type_definition_t& node)
+    void visit (Ast::Type& node)
     {
       node.symbol =
         enter_undefined_symbol (new TypeSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),
@@ -122,5 +124,5 @@ enter_symbols (ast_t * node)
   };
 
   visitor v;
-  node->accept (v);
+  node->Accept (v);
 }

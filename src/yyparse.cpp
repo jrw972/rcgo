@@ -3,7 +3,7 @@
 #include <error.h>
 #include "debug.hpp"
 
-ast_t *root = NULL;
+Ast::Node *root = NULL;
 
 void
 yyerror (char const *message)

@@ -1,6 +1,9 @@
 #include "semantic.hpp"
 #include "debug.hpp"
-#include "ast.hpp"
+#include "Ast.hpp"
+#include "AstVisitor.hpp"
+
+using namespace Ast;
 
 #define QUICK_CHECK do {                        \
       if (node.typed_value.component_state) {\
@@ -10,15 +13,15 @@
       } while (0);
 
 ReceiverAccess
-ComputeReceiverAccess (const ast_t* node)
+ComputeReceiverAccess (const Ast::Node* node)
 {
-  struct visitor : public ast_const_visitor_t
+  struct visitor : public ConstVisitor
   {
     ReceiverAccess access;
 
     visitor () : access (AccessNone) { }
 
-    void default_action (const ast_t& node)
+    void default_action (const Node& node)
     {
       ast_not_reached (node);
     }
@@ -26,31 +29,31 @@ ComputeReceiverAccess (const ast_t* node)
     void visit (const ast_implicit_dereference_expr_t& node)
     {
       QUICK_CHECK;
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_address_of_expr_t& node)
     {
       QUICK_CHECK;
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_index_expr_t& node)
     {
       QUICK_CHECK;
-      node.base ()->accept (*this);
+      node.base ()->Accept (*this);
     }
 
     void visit (const ast_select_expr_t& node)
     {
       QUICK_CHECK;
-      node.base ()->accept (*this);
+      node.base ()->Accept (*this);
     }
 
     void visit (const ast_dereference_expr_t& node)
     {
       QUICK_CHECK;
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_identifier_expr_t& node)
@@ -60,138 +63,145 @@ ComputeReceiverAccess (const ast_t* node)
 
     void visit (const ast_list_statement_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_expression_statement_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_call_expr_t& node)
     {
       QUICK_CHECK;
-      if (node.IsCall) {
-        // Check if a mutable pointer escapes.
-        for (ast_t::const_iterator pos = node.args ()->begin (),
-               limit = node.args ()->end ();
-             pos != limit;
-             ++pos) {
-          const typed_value_t& tv = (*pos)->typed_value;
-          if (tv.component_state && type_contains_pointer (tv.type) && tv.dereference_mutability == MUTABLE) {
-            access = AccessWrite;
-            return;
-          }
+      if (node.IsCall)
+        {
+          // Check if a mutable pointer escapes.
+          for (Node::ConstIterator pos = node.args ()->Begin (),
+               limit = node.args ()->End ();
+               pos != limit;
+               ++pos)
+            {
+              const typed_value_t& tv = (*pos)->typed_value;
+              if (tv.component_state && type_contains_pointer (tv.type) && tv.dereference_mutability == MUTABLE)
+                {
+                  access = AccessWrite;
+                  return;
+                }
+            }
+          node.VisitChildren (*this);
         }
-        node.visit_children (*this);
-      } else {
-        node.args ()->accept (*this);
-      }
+      else
+        {
+          node.args ()->Accept (*this);
+        }
     }
 
     void visit (const ast_list_expr_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_implicit_conversion_expr_t& node)
     {
       QUICK_CHECK;
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_literal_expr_t& node)
     {
       QUICK_CHECK;
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_assign_statement_t& node)
     {
-      if (node.left ()->typed_value.component_state) {
-        access = AccessWrite;
-        return;
-      }
+      if (node.left ()->typed_value.component_state)
+        {
+          access = AccessWrite;
+          return;
+        }
       // Check if a mutable pointer escapes.
       if (node.right ()->typed_value.component_state &&
           type_contains_pointer (node.right ()->typed_value.type) &&
-          node.right ()->typed_value.dereference_mutability == MUTABLE) {
-        access = AccessWrite;
-        return;
-      }
-      node.left ()->accept (*this);
-      node.right ()->accept (*this);
+          node.right ()->typed_value.dereference_mutability == MUTABLE)
+        {
+          access = AccessWrite;
+          return;
+        }
+      node.left ()->Accept (*this);
+      node.right ()->Accept (*this);
     }
 
     void visit (const ast_activate_statement_t& node)
     {
-      node.expr_list ()->accept (*this);
+      node.expr_list ()->Accept (*this);
       // Don't do the body.  It should be analyzed separately.
     }
 
     void visit (const ast_unary_arithmetic_expr_t& node)
     {
       QUICK_CHECK;
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_push_port_call_expr_t& node)
     {
       QUICK_CHECK;
-      node.args ()->accept (*this);
+      node.args ()->Accept (*this);
     }
 
     void visit (const ast_binary_arithmetic_expr_t& node)
     {
       QUICK_CHECK;
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_return_statement_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_var_statement_t& node)
     {
-      node.expression_list ()->accept (*this);
+      node.expression_list ()->Accept (*this);
     }
 
     void visit (const ast_empty_statement_t& node)
     { }
 
-    void visit (const ast_type_expr_t& node)
+    void visit (const TypeExpression& node)
     { }
 
     void visit (const ast_increment_statement_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_change_statement_t& node)
     {
-      node.expr ()->accept (*this);
-      node.body ()->accept (*this);
+      node.expr ()->Accept (*this);
+      node.body ()->Accept (*this);
     }
 
     void visit (const ast_indexed_port_call_expr_t& node)
     {
-      node.args ()->accept (*this);
+      node.args ()->Accept (*this);
     }
 
     void visit (const ast_if_statement_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_slice_expr_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
   };
 
   visitor v;
-  node->accept (v);
+  node->Accept (v);
   return v.access;
 }
 
@@ -209,42 +219,42 @@ ComputeReceiverAccess (const ast_t* node)
 
  */
 // static void
-// mutates_check_statement (ast_t * node)
+// mutates_check_statement (Node * node)
 // {
-//   struct derived_visitor : public ast_visitor_t
+//   struct derived_visitor : public Visitor
 //   {
 //     bool derived_from_receiver;
 
 //     derived_visitor () : derived_from_receiver (false) { }
 
-//     void default_action (ast_t& node)
+//     void default_action (Node& node)
 //     {
 //       not_reached;
 //     }
 
 //     void visit (ast_implicit_dereference_expr_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_address_of_expr_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_index_expr_t& node)
 //     {
-//       node.base ()->accept (*this);
+//       node.base ()->Accept (*this);
 //     }
 
 //     void visit (ast_select_expr_t& node)
 //     {
-//       node.base ()->accept (*this);
+//       node.base ()->Accept (*this);
 //     }
 
 //     void visit (ast_dereference_expr_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_identifier_expr_t& node)
@@ -258,41 +268,41 @@ ComputeReceiverAccess (const ast_t* node)
 //     }
 //   };
 
-//   struct check_visitor : public ast_visitor_t
+//   struct check_visitor : public Visitor
 //   {
 //     bool mutates_receiver;
 
 //     check_visitor () : mutates_receiver (false) { }
 
-//     void default_action (ast_t& node)
+//     void default_action (Node& node)
 //     {
 //       ast_not_reached (node);
 //     }
 
-//     void check_for_pointer_copy (ast_t* node)
+//     void check_for_pointer_copy (Ast::Node* node)
 //     {
 //       typed_value_t tv = node->typed_value;
 //       if (type_cast<Pointer> (tv.type))
 //         {
 //           derived_visitor v;
-//           node->accept (v);
+//           node->Accept (v);
 //           mutates_receiver = mutates_receiver || v.derived_from_receiver;
 //         }
 //     }
 
 //     void visit (ast_var_statement_t& node)
 //     {
-//       node.expression_list ()->accept (*this);
+//       node.expression_list ()->Accept (*this);
 //     }
 
 //     void visit (ast_slice_expr_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_call_expr_t& node)
 //     {
-//       node.expr ()->accept (*this);
+//       node.expr ()->Accept (*this);
 
 //       if (type_cast<Type::Method> (node.expr ()->typed_value.type) != NULL)
 //         {
@@ -300,12 +310,12 @@ ComputeReceiverAccess (const ast_t* node)
 //           check_for_pointer_copy (node.expr ()->at (0)->at (0));
 //         }
 
-//       for (ast_t::iterator pos = node.args ()->begin (), limit = node.args ()->end ();
+//       for (Node::iterator pos = node.args ()->begin (), limit = node.args ()->end ();
 //            pos != limit;
 //            ++pos)
 //         {
 //           check_for_pointer_copy (*pos);
-//           (*pos)->accept (*this);
+//           (*pos)->Accept (*this);
 //         }
 //     }
 
@@ -317,110 +327,110 @@ ComputeReceiverAccess (const ast_t* node)
 
 //     void visit (ast_implicit_dereference_expr_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_address_of_expr_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_dereference_expr_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_index_expr_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_list_expr_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_select_expr_t& node)
 //     {
-//       node.base ()->accept (*this);
+//       node.base ()->Accept (*this);
 //     }
 
 //     void visit (ast_unary_arithmetic_expr_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_binary_arithmetic_expr_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_implicit_conversion_expr_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_assign_statement_t& node)
 //     {
 //       {
 //         derived_visitor v;
-//         node.left ()->accept (v);
+//         node.left ()->Accept (v);
 //         mutates_receiver = mutates_receiver || v.derived_from_receiver;
 //       }
 
 //       check_for_pointer_copy (node.right ());
 
-//       node.left ()->accept (*this);
-//       node.right ()->accept (*this);
+//       node.left ()->Accept (*this);
+//       node.right ()->Accept (*this);
 //     }
 
 //     void visit (ast_add_assign_statement_t& node)
 //     {
 //       derived_visitor v;
-//       node.left ()->accept (v);
+//       node.left ()->Accept (v);
 //       mutates_receiver = mutates_receiver || v.derived_from_receiver;
 
-//       node.left ()->accept (*this);
-//       node.right ()->accept (*this);
+//       node.left ()->Accept (*this);
+//       node.right ()->Accept (*this);
 //     }
 
 //     void visit (ast_increment_statement_t& node)
 //     {
 //       derived_visitor v;
-//       node.child ()->accept (v);
+//       node.child ()->Accept (v);
 //       mutates_receiver = mutates_receiver || v.derived_from_receiver;
 
-//       node.child ()->accept (*this);
+//       node.child ()->Accept (*this);
 //     }
 
 //     void visit (ast_change_statement_t& node)
 //     {
-//       node.expr ()->accept (*this);
-//       node.body ()->accept (*this);
+//       node.expr ()->Accept (*this);
+//       node.body ()->Accept (*this);
 //     }
 
 //     void visit (ast_expression_statement_t& node)
 //     {
-//       node.child ()->accept (*this);
+//       node.child ()->Accept (*this);
 //     }
 
 //     void visit (ast_if_statement_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_while_statement_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_list_statement_t& node)
 //     {
-//       for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+//       for (Node::const_iterator pos = node.begin (), limit = node.end ();
 //            pos != limit;
 //            ++pos)
 //         {
-//           (*pos)->accept (*this);
+//           (*pos)->Accept (*this);
 //           if (mutates_receiver)
 //             {
 //               break;
@@ -429,33 +439,33 @@ ComputeReceiverAccess (const ast_t* node)
 //     }
 //   };
 
-//   struct visitor : public ast_visitor_t
+//   struct visitor : public Visitor
 //   {
 //     void visit (ast_change_statement_t& node)
 //     {
-//       node.body ()->accept (*this);
+//       node.body ()->Accept (*this);
 //     }
 
 //     void visit (ast_if_statement_t& node)
 //     {
-//       node.true_branch ()->accept (*this);
-//       node.false_branch ()->accept (*this);
+//       node.true_branch ()->Accept (*this);
+//       node.false_branch ()->Accept (*this);
 //     }
 
 //     void visit (ast_while_statement_t& node)
 //     {
-//       node.body ()->accept (*this);
+//       node.body ()->Accept (*this);
 //     }
 
 //     void visit (ast_list_statement_t& node)
 //     {
-//       node.visit_children (*this);
+//       node.VisitChildren (*this);
 //     }
 
 //     void visit (ast_activate_statement_t& node)
 //     {
 //       check_visitor v;
-//       node.body ()->accept (v);
+//       node.body ()->Accept (v);
 //       if (v.mutates_receiver)
 //         {
 //           node.activation->mode = ACTIVATION_WRITE;
@@ -464,5 +474,5 @@ ComputeReceiverAccess (const ast_t* node)
 //   };
 
 //   visitor v;
-//   node->accept (v);
+//   node->Accept (v);
 // }

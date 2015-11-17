@@ -1,17 +1,19 @@
 #include "semantic.hpp"
 #include "Type.hpp"
-#include "ast.hpp"
+#include "Ast.hpp"
 #include <error.h>
 #include "Symbol.hpp"
 #include "parameter.hpp"
+#include "AstVisitor.hpp"
 
 using namespace Type;
+using namespace Ast;
 
 // Look up a symbol.  Error if it is not defined.
 static Symbol *
-lookup_no_force (ast_t * node, const std::string& identifier)
+lookup_no_force (Node * node, const std::string& identifier)
 {
-  Symbol *symbol = node->FindSymbol (identifier);
+  Symbol *symbol = node->FindGlobalSymbol (identifier);
   if (symbol == NULL)
     {
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
@@ -21,7 +23,7 @@ lookup_no_force (ast_t * node, const std::string& identifier)
 }
 
 typed_value_t
-process_array_dimension (ast_t*& ptr)
+process_array_dimension (Ast::Node*& ptr)
 {
   typed_value_t tv = CheckAndImplicitlyDereferenceAndConvertToDefault (ptr);
   tv.ArrayDimension (ptr->location);
@@ -50,9 +52,9 @@ CheckForForeignSafe (const Signature* signature, const parameter_t* return_param
 }
 
 const Type::Type *
-process_type_spec (ast_t * node, bool force_identifiers, bool is_component, NamedType* named_type)
+process_type_spec (Node * node, bool force_identifiers, bool is_component, NamedType* named_type)
 {
-  struct type_spec_visitor_t : public ast_visitor_t
+  struct type_spec_visitor_t : public Ast::Visitor
   {
     const Type::Type* type;
     bool force_identifiers;
@@ -68,7 +70,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
       , named_type (nt)
     { }
 
-    void default_action (ast_t& node)
+    void default_action (Node& node)
     {
       ast_not_reached (node);
     }
@@ -95,22 +97,22 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
     {
       type = Enum::Instance ();
 
-      ast_t* value = node.values ();
+      Ast::Node* value = node.values ();
       size_t e = 0;
-      for (ast_t::const_iterator pos = value->begin (), limit = value->end ();
+      for (Node::ConstIterator pos = value->Begin (), limit = value->End ();
            pos != limit;
            ++pos, ++e)
         {
           std::string id = ast_get_identifier (*pos);
-          if (node.parent ()->parent ()->FindSymbolCurrent (id) != NULL)
+          if (node.GetParent ()->GetParent ()->FindLocalSymbol (id) != NULL)
             {
               error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
                              "%s is already defined in this scope (E108)", id.c_str ());
             }
 
-          node.parent ()->parent ()->EnterSymbol (new TypedConstantSymbol (id,
-                                                  *pos,
-                                                  typed_value_t (named_type, e)));
+          node.GetParent ()->GetParent ()->EnterSymbol (new TypedConstantSymbol (id,
+              *pos,
+              typed_value_t (named_type, e)));
         }
     }
 
@@ -126,21 +128,21 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
           field_list = new Struct ();
         }
 
-      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+      for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
            pos != limit;
            ++pos)
         {
-          ast_t* child = *pos;
+          Ast::Node* child = *pos;
           ast_identifier_list_type_spec_t* c = static_cast<ast_identifier_list_type_spec_t*> (child);
-          ast_t *identifier_list = c->identifier_list ();
-          ast_t *type_spec = c->type_spec ();
+          Node *identifier_list = c->identifier_list ();
+          Node *type_spec = c->type_spec ();
           const Type::Type *type = process_type_spec (type_spec, true);
-          for (ast_t::const_iterator pos2 = identifier_list->begin (),
-               limit2 = identifier_list->end ();
+          for (Node::ConstIterator pos2 = identifier_list->Begin (),
+               limit2 = identifier_list->End ();
                pos2 != limit2;
                ++pos2)
             {
-              ast_t* id = *pos2;
+              Ast::Node* id = *pos2;
               const std::string& identifier = ast_get_identifier (id);
               const Type::Type *field = type_select (field_list, identifier);
               if (field == NULL)
@@ -164,7 +166,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
 
     void visit (ast_identifier_type_spec_t& node)
     {
-      ast_t *child = node.child ();
+      Node *child = node.child ();
       const std::string& identifier = ast_get_identifier (child);
       TypeSymbol* symbol;
       if (force_identifiers)
@@ -196,7 +198,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
       const Type::Type* return_type = Type::Void::Instance ();
       typed_value_t return_value = typed_value_t::make_value (return_type, IMMUTABLE, IMMUTABLE, false);
       parameter_t* return_parameter = new parameter_t (&node,
-          "0return",
+          ReturnSymbol,
           return_value,
           false);
       CheckForForeignSafe (signature, return_parameter);
@@ -209,7 +211,7 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
       const Type::Type* return_type = process_type_spec (node.return_type (), true);
       typed_value_t return_value = typed_value_t::make_value (return_type, MUTABLE, node.dereferenceMutability, false);
       parameter_t* return_parameter = new parameter_t (node.return_type (),
-          "0return",
+          ReturnSymbol,
           return_value,
           false);
       CheckForForeignSafe (signature, return_parameter);
@@ -219,19 +221,19 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
     void visit (ast_signature_type_spec_t& node)
     {
       Signature *signature = new Signature ();
-      for (ast_t::iterator pos1 = node.begin (), limit1 = node.end ();
+      for (Node::Iterator pos1 = node.Begin (), limit1 = node.End ();
            pos1 != limit1;
            ++pos1)
         {
           ast_identifier_list_type_spec_t* child = static_cast<ast_identifier_list_type_spec_t*> (*pos1);
-          ast_t *identifier_list = child->identifier_list ();
-          ast_t *type_spec = child->type_spec ();
+          Node *identifier_list = child->identifier_list ();
+          Node *type_spec = child->type_spec ();
           const Type::Type* type = process_type_spec (type_spec, true);
-          for (ast_t::iterator pos2 = identifier_list->begin (), limit2 = identifier_list->end ();
+          for (Node::Iterator pos2 = identifier_list->Begin (), limit2 = identifier_list->End ();
                pos2 != limit2;
                ++pos2)
             {
-              ast_t* id = *pos2;
+              Ast::Node* id = *pos2;
               const std::string& identifier = ast_get_identifier (id);
               const parameter_t *parameter = signature->Find (identifier);
               if (parameter == NULL)
@@ -255,6 +257,6 @@ process_type_spec (ast_t * node, bool force_identifiers, bool is_component, Name
 
   };
   type_spec_visitor_t type_spec_visitor (force_identifiers, is_component, named_type);
-  node->accept (type_spec_visitor);
+  node->Accept (type_spec_visitor);
   return type_spec_visitor.type;
 }

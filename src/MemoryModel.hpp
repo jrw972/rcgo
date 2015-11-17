@@ -13,60 +13,75 @@
  * the arguments and local variables and the size to allocate for local
  * variables at run-time.
  */
-class MemoryModel {
+class MemoryModel
+{
 public:
-    // Alignment of the stack in bytes.  Typically 4 (32-bits) or 8 (64-bits).
-    static size_t StackAlignment;
+  // Alignment of the stack in bytes.  Typically 4 (32-bits) or 8 (64-bits).
+  static size_t StackAlignment;
 
-    MemoryModel ()
-        : argumentsOffset (-(ptrdiff_t)sizeof (void*))
-        , localsOffset (sizeof (void*))
-        , localsSize (0)
-    { }
+  MemoryModel ()
+    : argumentsOffset (-(ptrdiff_t)sizeof (void*))
+    , localsOffset (sizeof (void*))
+    , localsSize (0)
+  { }
 
-    bool ArgumentsEmpty () const
-    {
-        return argumentsOffset == -(ptrdiff_t)sizeof (void*);
-    }
+  bool ArgumentsEmpty () const
+  {
+    return argumentsOffset == -(ptrdiff_t)sizeof (void*);
+  }
 
-    void ArgumentsPush (size_t size)
-    {
-        argumentsOffset -= util::AlignUp (size, StackAlignment);
-    }
+  void ArgumentsPush (size_t size)
+  {
+    argumentsOffset -= util::AlignUp (size, StackAlignment);
+  }
 
-    bool LocalsEmpty () const
-    {
-        return localsOffset == sizeof (void*);
-    }
+  bool LocalsEmpty () const
+  {
+    return localsOffset == sizeof (void*);
+  }
 
-    void LocalsPush (size_t size)
-    {
-        size = util::AlignUp (size, StackAlignment);
-        localsOffset += size;
-        localsSize += size;
-    }
+  void LocalsPush (size_t size)
+  {
+    size = util::AlignUp (size, StackAlignment);
+    localsOffset += size;
+    localsSize += size;
+  }
 
-    void LocalsPop (size_t size)
-    {
-        localsOffset -= util::AlignUp (size, StackAlignment);
-    }
+  void LocalsPop (size_t size)
+  {
+    localsOffset -= util::AlignUp (size, StackAlignment);
+  }
 
-    ptrdiff_t ArgumentsOffset () const {
-        return argumentsOffset;
-    }
+  ptrdiff_t ArgumentsOffset () const
+  {
+    return argumentsOffset;
+  }
 
-    ptrdiff_t LocalsOffset () const {
-        return localsOffset;
-    }
+  ptrdiff_t LocalsOffset () const
+  {
+    return localsOffset;
+  }
 
-    size_t LocalsSize () const {
-        return localsSize;
-    }
+  size_t LocalsSize () const
+  {
+    return localsSize;
+  }
+
+  void SetReceiverOffset ()
+  {
+    receiverOffset = ArgumentsOffset ();
+  }
+
+  ptrdiff_t ReceiverOffset () const
+  {
+    return receiverOffset;
+  }
 
 private:
-    ptrdiff_t argumentsOffset;
-    ptrdiff_t localsOffset;
-    size_t localsSize;
+  ptrdiff_t argumentsOffset;
+  ptrdiff_t localsOffset;
+  size_t localsSize;
+  ptrdiff_t receiverOffset;
 };
 
 #endif /* MemoryModel_hpp */

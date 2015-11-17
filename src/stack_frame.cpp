@@ -87,6 +87,19 @@ void stack_frame_push (stack_frame_t* stack_frame,
   stack_frame->top += s;
 }
 
+void* stack_frame_read_pointer_at_offset (stack_frame_t* stack_frame,
+    ptrdiff_t offset)
+{
+  void* retval;
+  const size_t size = sizeof (void*);
+  size_t s = util::AlignUp (size, MemoryModel::StackAlignment);
+  char* source = stack_frame->base_pointer + offset;
+  assert (source >= stack_frame->data && source + size <= stack_frame->top);
+  assert (stack_frame->top + s <= stack_frame->limit);
+  memcpy (&retval, source, size);
+  return retval;
+}
+
 void stack_frame_reserve (stack_frame_t* stack_frame,
                           size_t size)
 {

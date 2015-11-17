@@ -1,4 +1,4 @@
-#include "ast.hpp"
+#include "Ast.hpp"
 #include "semantic.hpp"
 #include <error.h>
 #include "Symbol.hpp"
@@ -6,17 +6,19 @@
 #include "bind.hpp"
 #include "parameter.hpp"
 #include "Callable.hpp"
+#include "AstVisitor.hpp"
 
 using namespace Type;
+using namespace Ast;
 
 static NamedType*
-processReceiver (ast_t* n, ast_t* identifierNode, parameter_t*& this_parameter, ParameterSymbol*& thisSymbol,
+processReceiver (Ast::Node* n, Ast::Node* identifierNode, parameter_t*& this_parameter, ParameterSymbol*& thisSymbol,
                  bool requireComponent, bool requireImmutableDereferenceMutability)
 {
   ast_receiver_t* node = ast_cast<ast_receiver_t> (n);
   assert (node != NULL);
 
-  ast_t *type_identifier_node = node->type_identifier ();
+  Node *type_identifier_node = node->type_identifier ();
   const std::string& type_identifier = ast_get_identifier (type_identifier_node);
   TypeSymbol* symbol = processAndLookup<TypeSymbol> (type_identifier_node, type_identifier);
   if (symbol == NULL)
@@ -62,7 +64,7 @@ processReceiver (ast_t* n, ast_t* identifierNode, parameter_t*& this_parameter, 
       }
   }
 
-  ast_t *this_identifier_node = node->this_identifier ();
+  Node *this_identifier_node = node->this_identifier ();
   const std::string& this_identifier = ast_get_identifier (this_identifier_node);
 
   const Type::Type* receiver_type;
@@ -92,7 +94,7 @@ processReceiver (ast_t* n, ast_t* identifierNode, parameter_t*& this_parameter, 
 }
 
 static Type::Uint::ValueType
-processIota (ast_t& node, ast_t*& dimensionNode, ParameterSymbol*& parameterSymbol)
+processIota (Node& node, Ast::Node*& dimensionNode, ParameterSymbol*& parameterSymbol)
 {
   typed_value_t dimension = process_array_dimension (dimensionNode);
 
@@ -112,21 +114,21 @@ processIota (ast_t& node, ast_t*& dimensionNode, ParameterSymbol*& parameterSymb
 }
 
 static void
-processSignatureReturn (ast_t* signatureNode, ast_t* returnTypeNode, Mutability dereferenceMutability, bool requireForeignSafe,
+processSignatureReturn (Ast::Node* signatureNode, Ast::Node* returnType, Mutability dereferenceMutability, bool requireForeignSafe,
                         const Signature*& signature, parameter_t*& returnParameter, ParameterSymbol*& returnSymbol)
 {
   /* Process the signature. */
   signature = type_cast<Signature> (process_type_spec (signatureNode, true));
 
   /* Process the return type. */
-  const Type::Type* return_type = process_type_spec (returnTypeNode, true);
+  const Type::Type* return_type = process_type_spec (returnType, true);
   typed_value_t return_value = typed_value_t::make_value (return_type,
                                MUTABLE,
                                dereferenceMutability,
                                false);
 
-  returnParameter = new parameter_t (returnTypeNode,
-                                     "0return",
+  returnParameter = new parameter_t (returnType,
+                                     ReturnSymbol,
                                      return_value,
                                      false);
 
@@ -139,23 +141,23 @@ processSignatureReturn (ast_t* signatureNode, ast_t* returnTypeNode, Mutability 
 }
 
 void
-ProcessDeclarations (ast_t * node)
+ProcessDeclarations (Node * node)
 {
-  struct visitor : public ast_visitor_t
+  struct visitor : public Ast::Visitor
   {
-    void default_action (ast_t& node)
+    void default_action (Node& node)
     {
       ast_not_reached (node);
     }
 
     void visit (ast_const_t& node)
     {
-      ast_t* identifier_list = node.identifier_list ();
-      ast_t* type_spec = node.type_spec ();
-      ast_t* expression_list = node.expression_list ();
+      Ast::Node* identifier_list = node.identifier_list ();
+      Ast::Node* type_spec = node.type_spec ();
+      Ast::Node* expression_list = node.expression_list ();
 
-      if (expression_list->size () != 0 &&
-          identifier_list->size () != expression_list->size ())
+      if (expression_list->Size () != 0 &&
+          identifier_list->Size () != expression_list->Size ())
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "wrong number of initializers (E88)");
@@ -169,9 +171,9 @@ ProcessDeclarations (ast_t * node)
           // Type, expressions.
 
           // Enter each symbol.
-          for (ast_t::iterator id_pos = identifier_list->begin (),
-               id_limit = identifier_list->end (),
-               init_pos = expression_list->begin ();
+          for (Node::Iterator id_pos = identifier_list->Begin (),
+               id_limit = identifier_list->End (),
+               init_pos = expression_list->Begin ();
                id_pos != id_limit;
                ++id_pos, ++init_pos)
             {
@@ -190,7 +192,8 @@ ProcessDeclarations (ast_t * node)
               right_tv.intrinsic_mutability = IMMUTABLE;
               const std::string& name = ast_get_identifier (*id_pos);
               Symbol* symbol = new TypedConstantSymbol (name, *id_pos, right_tv);
-              node.symbols.push_back (enter_symbol (*node.parent (), symbol));
+              enter_symbol (*node.GetParent (), symbol);
+              //node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
             }
 
           return;
@@ -199,9 +202,9 @@ ProcessDeclarations (ast_t * node)
       // No type, expressions.
 
       // Enter each symbol.
-      for (ast_t::iterator id_pos = identifier_list->begin (),
-           id_limit = identifier_list->end (),
-           init_pos = expression_list->begin ();
+      for (Node::Iterator id_pos = identifier_list->Begin (),
+           id_limit = identifier_list->End (),
+           init_pos = expression_list->Begin ();
            id_pos != id_limit;
            ++id_pos, ++init_pos)
         {
@@ -222,7 +225,8 @@ ProcessDeclarations (ast_t * node)
           right_tv.intrinsic_mutability = IMMUTABLE;
           const std::string& name = ast_get_identifier (*id_pos);
           Symbol* symbol = new TypedConstantSymbol (name, *id_pos, right_tv);
-          node.symbols.push_back (enter_symbol (*node.parent (), symbol));
+          enter_symbol (*node.GetParent (), symbol);
+          //node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
         }
     }
 
@@ -271,7 +275,7 @@ ProcessDeclarations (ast_t * node)
                               signature, return_parameter, return_symbol);
       node.function->set (new Type::Function (Type::Function::FUNCTION, signature, return_parameter), return_symbol);
       // Enter the return first as it is deeper on the stack.
-      node.return_symbol = enter_symbol (node, return_symbol);
+      enter_symbol (node, return_symbol);
       enter_signature (node, signature);
     }
 
@@ -287,7 +291,7 @@ ProcessDeclarations (ast_t * node)
       processSignatureReturn (node.signature (), node.return_type (), node.return_dereference_mutability, false,
                               signature, return_parameter, return_symbol);
 
-      node.return_symbol = enter_symbol (node, return_symbol);
+      enter_symbol (node, return_symbol);
       enter_symbol (node, thisSymbol);
       enter_signature (node, signature);
 
@@ -313,7 +317,7 @@ ProcessDeclarations (ast_t * node)
       processSignatureReturn (node.signature (), node.return_type (), node.return_dereference_mutability, true,
                               signature, return_parameter, return_symbol);
 
-      node.return_symbol = enter_symbol (node, return_symbol);
+      enter_symbol (node, return_symbol);
       enter_symbol (node, thisSymbol);
       enter_signature (node, signature);
 
@@ -341,7 +345,7 @@ ProcessDeclarations (ast_t * node)
       processSignatureReturn (node.signature (), node.return_type (), node.dereferenceMutability, true,
                               signature, return_parameter, return_symbol);
 
-      node.return_symbol = enter_symbol (node, return_symbol);
+      enter_symbol (node, return_symbol);
       enter_symbol (node, thisSymbol);
       enter_signature (node, signature);
 
@@ -358,7 +362,7 @@ ProcessDeclarations (ast_t * node)
 
     void visit (ast_instance_t& node)
     {
-      ast_t *type_identifier_node = node.type_identifier ();
+      Node *type_identifier_node = node.type_identifier ();
       const std::string& type_identifier = ast_get_identifier (type_identifier_node);
       TypeSymbol *symbol = processAndLookup<TypeSymbol> (type_identifier_node, ast_get_identifier (type_identifier_node));
       if (symbol == NULL)
@@ -437,12 +441,12 @@ ProcessDeclarations (ast_t * node)
       node.reaction = reaction;
     }
 
-    void visit (ast_top_level_list_t& node)
+    void visit (SourceFile& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
-    void visit (ast_type_definition_t& node)
+    void visit (Ast::Type& node)
     {
       TypeSymbol* symbol = node.symbol;
       if (symbol->defined ())
@@ -460,5 +464,5 @@ ProcessDeclarations (ast_t * node)
   };
 
   visitor v;
-  node->accept (v);
+  node->Accept (v);
 }

@@ -12,7 +12,8 @@ parser.hpp parser.cpp: parser.y
 bin_PROGRAMS = rc
 rc_SOURCES = main.cpp \
 action.hpp \
-ast.hpp ast.cpp \
+Ast.hpp Ast.cpp \
+AstVisitor.hpp \
 bind.hpp \
 BuiltinFunction.hpp BuiltinFunction.cpp \
 Callable.hpp Callable.cpp \

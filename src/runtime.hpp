@@ -2,7 +2,7 @@
 #define runtime_hpp
 
 #include "types.hpp"
-#include "ast.hpp"
+#include "Ast.hpp"
 #include "heap.hpp"
 #include "field.hpp"
 #include <error.h>
@@ -40,39 +40,41 @@ namespace runtime
 
   ControlAction
   evaluate_statement (executor_base_t& exec,
-                      ast_t* node);
+                      const MemoryModel& memoryModel,
+                      Ast::Node* node);
 
   void
   evaluate_expr (executor_base_t& exec,
-                 const ast_t* node);
+                 const MemoryModel& memoryModel,
+                 const Ast::Node* node);
 
   struct New : public Template
   {
-    New (ast_t* dn);
+    New (Ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
   struct Move : public Template
   {
-    Move (ast_t* dn);
+    Move (Ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
   struct Merge : public Template
   {
-    Merge (ast_t* dn);
+    Merge (Ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
   struct Copy : public Template
   {
-    Copy (ast_t* dn);
+    Copy (Ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
   struct Println : public Template
   {
-    Println (ast_t* dn);
+    Println (Ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 

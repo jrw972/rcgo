@@ -9,12 +9,14 @@
 class SymbolVisitor;
 class ConstSymbolVisitor;
 
+extern std::string const ReturnSymbol;
+
 /*
  * Base class for symbols.
  */
 struct Symbol
 {
-  Symbol (const std::string& id, ast_t* dn)
+  Symbol (const std::string& id, Ast::Node* dn)
     : identifier (id)
     , definingNode (dn)
     , inProgress (false)
@@ -38,7 +40,7 @@ struct Symbol
   }
 
   std::string const identifier;
-  ast_t* const definingNode;
+  Ast::Node* const definingNode;
   bool inProgress;
 
 private:
@@ -47,7 +49,7 @@ private:
 
 struct InstanceSymbol : public Symbol
 {
-  InstanceSymbol (const std::string& id, ast_t* dn)
+  InstanceSymbol (const std::string& id, Ast::Node* dn)
     : Symbol (id, dn)
     , type (NULL)
     , initializer (NULL)
@@ -74,7 +76,7 @@ struct ParameterSymbol : public Symbol
     Return,
   };
 
-  ParameterSymbol (const std::string& id, ast_t* dn, const typed_value_t& v, Kind k)
+  ParameterSymbol (const std::string& id, Ast::Node* dn, const typed_value_t& v, Kind k)
     : Symbol (id, dn)
     , value (v)
     , kind (k)
@@ -147,12 +149,12 @@ private:
 
 struct TypeSymbol : public Symbol
 {
-  TypeSymbol (const std::string& id, ast_t* dn, Type::NamedType* t)
+  TypeSymbol (const std::string& id, Ast::Node* dn, Type::NamedType* t)
     : Symbol (id, dn)
     , type (t)
   { }
 
-  TypeSymbol (const std::string& id, ast_t* dn)
+  TypeSymbol (const std::string& id, Ast::Node* dn)
     : Symbol (id, dn)
     , type (new Type::NamedType (id))
   { }
@@ -173,7 +175,7 @@ struct TypeSymbol : public Symbol
 
 struct TypedConstantSymbol : public Symbol
 {
-  TypedConstantSymbol (const std::string& id, ast_t* dn, const typed_value_t& v)
+  TypedConstantSymbol (const std::string& id, Ast::Node* dn, const typed_value_t& v)
     : Symbol (id, dn)
     , value (typed_value_t::make_ref (v))
   { }
@@ -189,7 +191,7 @@ struct TypedConstantSymbol : public Symbol
 
 struct VariableSymbol : public Symbol
 {
-  VariableSymbol (const std::string& id, ast_t* dn, const typed_value_t& v)
+  VariableSymbol (const std::string& id, Ast::Node* dn, const typed_value_t& v)
     : Symbol (id, dn)
     , value (v)
     , original_ (NULL)
@@ -231,7 +233,7 @@ private:
 
 struct HiddenSymbol : public Symbol
 {
-  HiddenSymbol (const Symbol* s, ast_t* dn)
+  HiddenSymbol (const Symbol* s, Ast::Node* dn)
     : Symbol (s->identifier, dn)
   { }
   virtual void accept (SymbolVisitor& visitor);

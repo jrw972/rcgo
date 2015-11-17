@@ -1,11 +1,13 @@
 #include "Type.hpp"
 #include "Composition.hpp"
 #include "field.hpp"
-#include "ast.hpp"
+#include "Ast.hpp"
 #include "Symbol.hpp"
 #include "SymbolVisitor.hpp"
+#include "AstVisitor.hpp"
 
 using namespace Type;
+using namespace Ast;
 
 static void
 instantiate_contained_instances (const Type::Type * type,
@@ -140,9 +142,9 @@ instantiate_contained_instances (const Type::Type * type,
   2.  (instance, field) -> instance
 */
 void
-enumerate_instances (ast_t * node, Composition::Composer& instance_table)
+enumerate_instances (Node * node, Composition::Composer& instance_table)
 {
-  struct visitor : public ast_visitor_t
+  struct visitor : public Ast::Visitor
   {
     Composition::Composer& instance_table;
     size_t address;
@@ -157,17 +159,17 @@ enumerate_instances (ast_t * node, Composition::Composer& instance_table)
       address += type->Size ();
     }
 
-    void visit (ast_top_level_list_t& node)
+    void visit (SourceFile& node)
     {
-      for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+      for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
            pos != limit;
            ++pos)
         {
-          (*pos)->accept (*this);
+          (*pos)->Accept (*this);
         }
     }
   };
 
   visitor v (instance_table);
-  node->accept (v);
+  node->Accept (v);
 }

@@ -2,29 +2,29 @@
 #define semantic_hpp
 
 #include "types.hpp"
-#include "ast.hpp"
+#include "Ast.hpp"
 #include <error.h>
 #include "SymbolVisitor.hpp"
 #include "Composition.hpp"
 
 /* Enter all symbols except vars and parameters. */
-void enter_symbols (ast_t * node);
+void enter_symbols (Ast::Node* node);
 
 // Enter a symbol.
 template <typename T>
 T*
-enter_symbol (ast_t& node, T* symbol)
+enter_symbol (Ast::Node& node, T* symbol)
 {
   // Check if the symbol is defined locally.
   const std::string& identifier = symbol->identifier;
-  Symbol *s = node.FindSymbolCurrent (identifier);
+  Symbol *s = node.FindLocalSymbol (identifier);
   if (s == NULL)
     {
       node.EnterSymbol (symbol);
     }
   else
     {
-      const ast_t* node = symbol->definingNode;
+      const Ast::Node* node = symbol->definingNode;
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
                      "%s is already defined in this scope (E113)", identifier.c_str ());
     }
@@ -32,13 +32,13 @@ enter_symbol (ast_t& node, T* symbol)
 }
 
 // Enter a signature.
-void enter_signature (ast_t& node, const Type::Signature * type);
+void enter_signature (Ast::Node& node, const Type::Signature * type);
 
 // Look up a symbol.  If it is not defined, process its definition.
 template<typename T>
-T* processAndLookup (ast_t * node, const std::string& identifier)
+T* processAndLookup (Ast::Node * node, const std::string& identifier)
 {
-  Symbol *symbol = node->FindSymbol (identifier);
+  Symbol *symbol = node->FindGlobalSymbol (identifier);
   if (symbol == NULL)
     {
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
@@ -59,54 +59,54 @@ T* processAndLookup (ast_t * node, const std::string& identifier)
 }
 
 // Extract an array dimension or error.
-typed_value_t process_array_dimension (ast_t*& ptr);
+typed_value_t process_array_dimension (Ast::Node*& ptr);
 
 // Check that a signature has +foreign where needed.
 void CheckForForeignSafe (const Type::Signature* signature, const parameter_t* return_parameter);
 
 // Process a type specification.
-const Type::Type * process_type_spec (ast_t * node, bool force_identifiers, bool is_component = false, Type::NamedType* named_type = NULL);
+const Type::Type * process_type_spec (Ast::Node* node, bool force_identifiers, bool is_component = false, Type::NamedType* named_type = NULL);
 
 /* Process all declarations (non-code). */
-void ProcessDeclarations (ast_t * node);
+void ProcessDeclarations (Ast::Node* node);
 
 // Type check the expression and insert an implicit dereference if necessary.
 typed_value_t
-CheckAndImplicitlyDereference (ast_t*& expr);
+CheckAndImplicitlyDereference (Ast::Node*& expr);
 
 // Type check the expression, insert an implicit dereference if necessary, and convert to the given type if necessary.
 typed_value_t
-CheckAndImplicitlyDereferenceAndConvert (ast_t*& expr, const Type::Type* type);
+CheckAndImplicitlyDereferenceAndConvert (Ast::Node*& expr, const Type::Type* type);
 
 typed_value_t
-CheckAndImplicitlyDereferenceAndConvertToDefault (ast_t*& expr);
+CheckAndImplicitlyDereferenceAndConvertToDefault (Ast::Node*& expr);
 
 // Type check the expression expecting a reference.
-typed_value_t CheckExpectReference (ast_t* expr);
+typed_value_t CheckExpectReference (Ast::Node* expr);
 
 
 typed_value_t
-type_check_expr (ast_t* ptr);
+type_check_expr (Ast::Node* ptr);
 
 void
 check_assignment (typed_value_t left_tv,
                   typed_value_t right_tv,
-                  const ast_t& node,
+                  const Ast::Node& node,
                   const char* conversion_message,
                   const char* leak_message);
 
 /* Process all definitions (code). */
-void process_definitions (ast_t * node);
+void process_definitions (Ast::Node* node);
 
 void
-enumerate_instances (ast_t* node, Composition::Composer& instance_table);
+enumerate_instances (Ast::Node* node, Composition::Composer& instance_table);
 
 void
-allocate_stack_variables (ast_t* node);
+allocate_stack_variables (Ast::Node* node);
 
 Method*
-get_current_method (const ast_t * node);
+get_current_method (const Ast::Node * node);
 
-ReceiverAccess ComputeReceiverAccess (const ast_t* node);
+ReceiverAccess ComputeReceiverAccess (const Ast::Node* node);
 
 #endif /* semantic_hpp */

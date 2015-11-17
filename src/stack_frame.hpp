@@ -9,10 +9,10 @@
 
 struct stack_frame_t
 {
-    char* base_pointer;
-    char* top;
-    char* limit;
-    char data[];
+  char* base_pointer;
+  char* top;
+  char* limit;
+  char data[];
 };
 
 stack_frame_t* stack_frame_make (size_t size);
@@ -29,10 +29,10 @@ inline void
 stack_frame_push (stack_frame_t* stack_frame,
                   T b)
 {
-    size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
-    assert (stack_frame->top + s <= stack_frame->limit);
-    memcpy (stack_frame->top, &b, sizeof (T));
-    stack_frame->top += s;
+  size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
+  assert (stack_frame->top + s <= stack_frame->limit);
+  memcpy (stack_frame->top, &b, sizeof (T));
+  stack_frame->top += s;
 }
 
 template <typename T>
@@ -40,10 +40,10 @@ inline void
 stack_frame_pop (stack_frame_t* stack_frame,
                  T& retval)
 {
-    size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
-    assert (stack_frame->top - s >= stack_frame->data);
-    stack_frame->top -= s;
-    memcpy (&retval, stack_frame->top, sizeof (T));
+  size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
+  assert (stack_frame->top - s >= stack_frame->data);
+  stack_frame->top -= s;
+  memcpy (&retval, stack_frame->top, sizeof (T));
 }
 
 void stack_frame_push_tv (stack_frame_t* stack_frame,
@@ -77,6 +77,9 @@ void stack_frame_reserve (stack_frame_t* stack_frame,
 void stack_frame_load (stack_frame_t* stack_frame,
                        void* ptr,
                        size_t size);
+
+void* stack_frame_read_pointer_at_offset (stack_frame_t* stack_frame,
+    ptrdiff_t offset);
 
 /* Copy size bytes from the top of the stack to ptr and remove that many bytes from the stack. */
 void stack_frame_store_heap (stack_frame_t* stack_frame,

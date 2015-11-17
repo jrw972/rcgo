@@ -8,7 +8,7 @@
 class action_reaction_base_t
 {
 public:
-  action_reaction_base_t (Type::NamedType* type, ast_t* node_, Symbol* receiver_, ast_t* body_, const std::string& name_)
+  action_reaction_base_t (Type::NamedType* type, Ast::Node* node_, Symbol* receiver_, Ast::Node* body_, const std::string& name_)
     : type_ (type)
     , node (node_)
     , receiver (receiver_)
@@ -18,7 +18,7 @@ public:
     , iota (NULL)
   { }
 
-  action_reaction_base_t (Type::NamedType* type, ast_t* node_, Symbol* receiver_, ast_t* body_, const std::string& name_, Symbol* iota_, Type::Uint::ValueType dimension)
+  action_reaction_base_t (Type::NamedType* type, Ast::Node* node_, Symbol* receiver_, Ast::Node* body_, const std::string& name_, Symbol* iota_, Type::Uint::ValueType dimension)
     : type_ (type)
     , node (node_)
     , receiver (receiver_)
@@ -52,9 +52,9 @@ public:
 private:
   Type::NamedType* type_;
 public:
-  ast_t* const node;
+  Ast::Node* const node;
   Symbol* const receiver;
-  ast_t* const body;
+  Ast::Node* const body;
   std::string const name;
   ReceiverAccess immutable_phase_access;
 private:
@@ -75,32 +75,32 @@ public:
     STATIC_FALSE,
   };
 
-  action_t (Type::NamedType* type, ast_t* node, Symbol* receiver, ast_t* body_, const std::string& name_)
+  action_t (Type::NamedType* type, Ast::Node* node, Symbol* receiver, Ast::Node* body_, const std::string& name_)
     : action_reaction_base_t (type, node, receiver, body_, name_)
     , precondition_kind (DYNAMIC)
     , precondition (NULL)
   { }
 
-  action_t (Type::NamedType* type, ast_t* node, Symbol* receiver, ast_t* body_, const std::string& name, Symbol* iota, Type::Uint::ValueType dimension)
+  action_t (Type::NamedType* type, Ast::Node* node, Symbol* receiver, Ast::Node* body_, const std::string& name, Symbol* iota, Type::Uint::ValueType dimension)
     : action_reaction_base_t (type, node, receiver, body_, name, iota, dimension)
     , precondition_kind (DYNAMIC)
     , precondition (NULL)
   { }
 
   PreconditionKind precondition_kind;
-  ast_t* precondition;
+  Ast::Node* precondition;
   ReceiverAccess precondition_access;
 };
 
 class reaction_t : public action_reaction_base_t
 {
 public:
-  reaction_t (Type::NamedType* type, ast_t* node, Symbol* receiver, ast_t* body_, const std::string& name_, const Type::Method* rt)
+  reaction_t (Type::NamedType* type, Ast::Node* node, Symbol* receiver, Ast::Node* body_, const std::string& name_, const Type::Method* rt)
     : action_reaction_base_t (type, node, receiver, body_, name_)
     , reaction_type (rt)
   { }
 
-  reaction_t (Type::NamedType* type, ast_t* node, Symbol* receiver, ast_t* body_, const std::string& name_, const Type::Method* rt, Symbol* iota, Type::Uint::ValueType dimension)
+  reaction_t (Type::NamedType* type, Ast::Node* node, Symbol* receiver, Ast::Node* body_, const std::string& name_, const Type::Method* rt, Symbol* iota, Type::Uint::ValueType dimension)
     : action_reaction_base_t (type, node, receiver, body_, name_, iota, dimension)
     , reaction_type (rt)
   { }

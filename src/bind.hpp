@@ -6,12 +6,12 @@
 class bind_t
 {
 public:
-  bind_t (ast_t* node, const std::string& name_)
+  bind_t (Ast::Node* node, const std::string& name_)
     : node_ (node)
     , name (name_)
   { }
 
-  ast_t* node () const
+  Ast::Node* node () const
   {
     return node_;
   }
@@ -19,7 +19,7 @@ public:
   MemoryModel memory_model;
 
 private:
-  ast_t* node_;
+  Ast::Node* node_;
 public:
   const std::string& name;
 };

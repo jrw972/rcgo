@@ -1,5 +1,6 @@
 #include "Composition.hpp"
-#include "ast.hpp"
+#include "Ast.hpp"
+#include "AstVisitor.hpp"
 #include "bind.hpp"
 #include "field.hpp"
 #include <error.h>
@@ -11,8 +12,8 @@
 
 namespace Composition
 {
-
   using namespace Type;
+  using namespace Ast;
 
   Instance::Instance (Instance* p,
                       size_t a,
@@ -476,7 +477,7 @@ namespace Composition
              bind_pos != bind_limit;
              ++bind_pos)
           {
-            struct visitor : public ast_const_visitor_t
+            struct visitor : public ConstVisitor
             {
               Composer& table;
               const size_t receiver_address;
@@ -484,7 +485,7 @@ namespace Composition
 
               visitor (Composer& t, size_t ra) : table (t), receiver_address (ra) { }
 
-              void default_action (const ast_t& node)
+              void default_action (const Node& node)
               {
                 not_reached;
               }
@@ -494,17 +495,17 @@ namespace Composition
                 static_value_t c = EvaluateStatic (node.condition (), memory);
                 if (c.value != 0)
                   {
-                    node.true_branch ()->accept (*this);
+                    node.true_branch ()->Accept (*this);
                   }
                 else
                   {
-                    node.false_branch ()->accept (*this);
+                    node.false_branch ()->Accept (*this);
                   }
               }
 
               void visit (const ast_list_statement_t& node)
               {
-                node.visit_children (*this);
+                node.VisitChildren (*this);
               }
 
               void visit (const ast_for_iota_statement_t& node)
@@ -514,15 +515,15 @@ namespace Composition
                      ++idx)
                   {
                     memory.set_value_at_offset (node.symbol->offset (), idx);
-                    node.body ()->accept (*this);
+                    node.body ()->Accept (*this);
                   }
               }
 
               void visit (const ast_bind_t& node)
               {
-                node.receiver ()->accept (*this);
+                node.receiver ()->Accept (*this);
 
-                node.body ()->accept (*this);
+                node.body ()->Accept (*this);
               }
 
               void visit (const ast_receiver_t& node)
@@ -530,11 +531,11 @@ namespace Composition
                 memory.set_value_at_offset (node.this_symbol->offset (), receiver_address);
               }
 
-              void bind (ast_t* left, ast_t* right, static_value_t param = static_value_t ())
+              void bind (Ast::Node* left, Ast::Node* right, static_value_t param = static_value_t ())
               {
                 static_value_t port = EvaluateStatic (left, memory);
                 // Strip off the implicit dereference and selecting of the reaction.
-                static_value_t input = EvaluateStatic (right->at (0)->at (0), memory);
+                static_value_t input = EvaluateStatic (right->At (0)->At (0), memory);
                 typed_value_t reaction = right->typed_value;
 
                 assert (port.kind == static_value_t::ABSOLUTE_ADDRESS);
@@ -566,7 +567,7 @@ namespace Composition
                 const Type::Method* getter_type = type_cast<Type::Method> (tv.type);
                 assert (getter_type != NULL);
                 // Strip off the implicit dereference and selecting of the getter.
-                static_value_t getter = EvaluateStatic (node.right ()->at(0)->at(0), memory);
+                static_value_t getter = EvaluateStatic (node.right ()->At(0)->At(0), memory);
                 assert (getter.kind == static_value_t::ABSOLUTE_ADDRESS);
 
                 PullPort* pp = table.pull_ports[pull_port.address];
@@ -575,7 +576,7 @@ namespace Composition
               }
             };
             visitor v (*this, instance_pos->first);
-            (*bind_pos)->node ()->accept (v);
+            (*bind_pos)->node ()->Accept (v);
           }
       }
   }
@@ -636,7 +637,7 @@ namespace Composition
   // Determine what relationship the given entity has with other entities.
   // These relationships are created through activate statements and calls to
   // getters and pull ports.
-  struct Composer::ElaborationVisitor : public ast_const_visitor_t
+  struct Composer::ElaborationVisitor : public ConstVisitor
   {
     Composer& table;
     Action* action;
@@ -712,24 +713,24 @@ namespace Composition
         }
     }
 
-    void default_action (const ast_t& node)
+    void default_action (const Ast::Node& node)
     {
       ast_not_reached (node);
     }
 
     void visit (const ast_list_statement_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_expression_statement_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_return_statement_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_activate_statement_t& node)
@@ -748,12 +749,12 @@ namespace Composition
         {
           not_reached;
         }
-      node.expr_list ()->accept (*this);
+      node.expr_list ()->Accept (*this);
     }
 
     void visit (const ast_list_expr_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_push_port_call_expr_t& node)
@@ -763,7 +764,7 @@ namespace Composition
       Composer::PushPortsType::const_iterator port_pos = table.push_ports.find (port);
       assert (port_pos != table.push_ports.end ());
       activation->nodes.push_back (port_pos->second);
-      node.args ()->accept (*this);
+      node.args ()->Accept (*this);
     }
 
     void visit (const ast_indexed_port_call_expr_t& node)
@@ -785,7 +786,7 @@ namespace Composition
       Composer::PushPortsType::const_iterator port_pos = table.push_ports.find (port);
       assert (port_pos != table.push_ports.end ());
       activation->nodes.push_back (port_pos->second);
-      node.args ()->accept (*this);
+      node.args ()->Accept (*this);
     }
 
     void visit (const ast_call_expr_t& node)
@@ -796,7 +797,7 @@ namespace Composition
         {
           static_memory_t memory;
           populateMemory (memory);
-          Instance* i = table.instances[EvaluateStatic (node.args ()->at (0), memory).value];
+          Instance* i = table.instances[EvaluateStatic (node.args ()->At (0), memory).value];
           Callable* g = node.original_expr_tv.value.callable_value ();
           Getter* getter = table.getters[GetterKey (i, g)];
           addCall (getter);
@@ -807,16 +808,16 @@ namespace Composition
         {
           static_memory_t memory;
           populateMemory (memory);
-          PullPort* pp = table.pull_ports[EvaluateStatic (node.expr ()->at (0), memory).value];
+          PullPort* pp = table.pull_ports[EvaluateStatic (node.expr ()->At (0), memory).value];
           addCall (pp);
         }
 
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_implicit_dereference_expr_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_identifier_expr_t& node)
@@ -826,7 +827,7 @@ namespace Composition
 
     void visit (const ast_implicit_conversion_expr_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_literal_expr_t& node)
@@ -836,47 +837,47 @@ namespace Composition
 
     void visit (const ast_binary_arithmetic_expr_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_unary_arithmetic_expr_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_address_of_expr_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_select_expr_t& node)
     {
-      node.base ()->accept (*this);
+      node.base ()->Accept (*this);
     }
 
     void visit (const ast_dereference_expr_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_var_statement_t& node)
     {
-      node.expression_list ()->accept (*this);
+      node.expression_list ()->Accept (*this);
     }
 
     void visit (const ast_assign_statement_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
-    void visit (const ast_type_expr_t& node)
+    void visit (const TypeExpression& node)
     {
     }
 
     void visit (const ast_change_statement_t& node)
     {
-      node.expr ()->accept (*this);
-      node.body ()->accept (*this);
+      node.expr ()->Accept (*this);
+      node.body ()->Accept (*this);
     }
 
     void visit (const ast_empty_statement_t& node)
@@ -885,12 +886,12 @@ namespace Composition
 
     void visit (const ast_index_expr_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
 
     void visit (const ast_if_statement_t& node)
     {
-      node.visit_children (*this);
+      node.VisitChildren (*this);
     }
   };
 
@@ -909,7 +910,7 @@ namespace Composition
           {
             Action* action = *pos;
             ElaborationVisitor v (*this, action);
-            action->action->body->accept (v);
+            action->action->body->Accept (v);
           }
       }
   }
@@ -955,7 +956,7 @@ namespace Composition
       {
         Reaction* reaction = pos->second;
         ElaborationVisitor v (*this, reaction);
-        reaction->reaction->body->accept (v);
+        reaction->reaction->body->Accept (v);
       }
   }
 
@@ -990,7 +991,7 @@ namespace Composition
       {
         Getter* getter = pos->second;
         ElaborationVisitor v (*this, getter);
-        getter->getter->node->body ()->accept (v);
+        getter->getter->node->body ()->Accept (v);
       }
   }
 

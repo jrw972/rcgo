@@ -2,10 +2,12 @@
 #include "Callable.hpp"
 #include "SymbolVisitor.hpp"
 #include "types.hpp"
+#include "AstVisitor.hpp"
 
 namespace runtime
 {
   using namespace Type;
+  using namespace Ast;
 
   struct port_t
   {
@@ -26,7 +28,8 @@ namespace runtime
 
   ControlAction
   evaluate_statement (executor_base_t& exec,
-                      ast_t* node);
+                      const MemoryModel& memoryModel,
+                      Ast::Node* node);
 
   static void
   execute (executor_base_t& exec,
@@ -132,17 +135,19 @@ namespace runtime
 
   template <typename T>
   static void
-  evaluate (executor_base_t& exec, const ast_binary_expr_t& node, const T& op)
+  evaluate (executor_base_t& exec, const MemoryModel& memoryModel, const ast_binary_expr_t& node, const T& op)
   {
     struct visitor : public DefaultVisitor
     {
       executor_base_t& exec;
+      const MemoryModel& memoryModel;
       const ast_binary_expr_t& node;
       const T& op;
 
       visitor (executor_base_t& e,
+               const MemoryModel& mm,
                const ast_binary_expr_t& n,
-               const T& o) : exec (e), node (n), op (o) { }
+               const T& o) : exec (e), memoryModel (mm), node (n), op (o) { }
 
       void default_action (const Type::Type& t)
       {
@@ -156,51 +161,51 @@ namespace runtime
 
       void visit (const Bool& t)
       {
-        op (exec, node, t);
+        op (exec, memoryModel, node, t);
       }
 
       void visit (const Boolean& t)
       {
-        op (exec, node, t);
+        op (exec, memoryModel, node, t);
       }
 
       void visit (const Int& t)
       {
-        op (exec, node, t);
+        op (exec, memoryModel, node, t);
       }
 
       void visit (const Int8& t)
       {
-        op (exec, node, t);
+        op (exec, memoryModel, node, t);
       }
 
       void visit (const Uint& t)
       {
-        op (exec, node, t);
+        op (exec, memoryModel, node, t);
       }
 
       void visit (const Uint64& t)
       {
-        op (exec, node, t);
+        op (exec, memoryModel, node, t);
       }
 
       void visit (const Float64& t)
       {
-        op (exec, node, t);
+        op (exec, memoryModel, node, t);
       }
 
       void visit (const Pointer& t)
       {
-        op (exec, node, t);
+        op (exec, memoryModel, node, t);
       }
 
       void visit (const Enum& t)
       {
-        op (exec, node, t);
+        op (exec, memoryModel, node, t);
       }
     };
 
-    visitor v (exec, node, op);
+    visitor v (exec, memoryModel, node, op);
     op.dispatch_type (node)->Accept (v);
   }
 
@@ -227,13 +232,14 @@ namespace runtime
     template <typename T>
     void
     doit (executor_base_t& exec,
+          const MemoryModel& memoryModel,
           const ast_binary_expr_t& node,
           const T&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       typename T::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       typename T::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left * right);
@@ -241,22 +247,25 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int& t) const
     {
-      doit (exec, node, t);
+      doit (exec, memoryModel, node, t);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int8& t) const
     {
-      doit (exec, node, t);
+      doit (exec, memoryModel, node, t);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -268,13 +277,14 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left / right);
@@ -282,13 +292,14 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Float64&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       Float64::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       Float64::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left / right);
@@ -296,6 +307,7 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -307,13 +319,14 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left % right);
@@ -321,6 +334,7 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -332,11 +346,14 @@ namespace runtime
   struct LeftShiftVisitor : public DefaultVisitor
   {
     executor_base_t& exec;
+    const MemoryModel& memoryModel;
     const ast_binary_expr_t& node;
 
     LeftShiftVisitor (executor_base_t& e,
+                      const MemoryModel& mm,
                       const ast_binary_expr_t& n)
       : exec (e)
+      , memoryModel (mm)
       , node (n)
     { }
 
@@ -368,10 +385,10 @@ namespace runtime
     template <typename U>
     void doit (const U&)
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       typename T::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       typename U::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left << right);
@@ -383,31 +400,35 @@ namespace runtime
     template <typename T>
     void
     doit (executor_base_t& exec,
+          const MemoryModel& memoryModel,
           const ast_binary_expr_t& node,
           const T&) const
     {
-      LeftShiftVisitor<T> v (exec, node);
+      LeftShiftVisitor<T> v (exec, memoryModel, node);
       node.right ()->typed_value.type->Accept (v);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int& t) const
     {
-      doit (exec, node, t);
+      doit (exec, memoryModel, node, t);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Uint64& t) const
     {
-      doit (exec, node, t);
+      doit (exec, memoryModel, node, t);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -419,17 +440,21 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int&) const
     {
       struct visitor : public DefaultVisitor
       {
         executor_base_t& exec;
+        const MemoryModel& memoryModel;
         const ast_binary_expr_t& node;
 
         visitor (executor_base_t& e,
+                 const MemoryModel& mm,
                  const ast_binary_expr_t& n)
           : exec (e)
+          , memoryModel (mm)
           , node (n)
         { }
 
@@ -445,10 +470,10 @@ namespace runtime
 
         void visit (const Int&)
         {
-          evaluate_expr (exec, node.left ());
+          evaluate_expr (exec, memoryModel, node.left ());
           Int::ValueType left;
           stack_frame_pop (exec.stack (), left);
-          evaluate_expr (exec, node.right ());
+          evaluate_expr (exec, memoryModel, node.right ());
           Uint::ValueType right;
           stack_frame_pop (exec.stack (), right);
           stack_frame_push (exec.stack (), left >> right);
@@ -456,22 +481,23 @@ namespace runtime
 
         void visit (const Uint&)
         {
-          evaluate_expr (exec, node.left ());
+          evaluate_expr (exec, memoryModel, node.left ());
           Uint::ValueType left;
           stack_frame_pop (exec.stack (), left);
-          evaluate_expr (exec, node.right ());
+          evaluate_expr (exec, memoryModel, node.right ());
           Uint::ValueType right;
           stack_frame_pop (exec.stack (), right);
           stack_frame_push (exec.stack (), left >> right);
         }
       };
 
-      visitor v (exec, node);
+      visitor v (exec, memoryModel, node);
       node.right ()->typed_value.type->Accept (v);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -483,13 +509,14 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left & right);
@@ -497,6 +524,7 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -508,13 +536,14 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left & (~right));
@@ -522,6 +551,7 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -533,30 +563,33 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int& type) const
     {
-      doit (exec, node, type);
+      doit (exec, memoryModel, node, type);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Uint& type) const
     {
-      doit (exec, node, type);
+      doit (exec, memoryModel, node, type);
     }
 
     template <typename T>
     void
     doit (executor_base_t& exec,
+          const MemoryModel& memoryModel,
           const ast_binary_expr_t& node,
           const T&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       typename T::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       typename T::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left + right);
@@ -564,6 +597,7 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -575,13 +609,14 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left - right);
@@ -589,6 +624,7 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -600,13 +636,14 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left | right);
@@ -614,6 +651,7 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -625,13 +663,14 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left ^ right);
@@ -639,6 +678,7 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -650,61 +690,68 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Bool& type) const
     {
-      doit (exec, node, type);
+      doit (exec, memoryModel, node, type);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Boolean& type) const
     {
-      doit (exec, node, type);
+      doit (exec, memoryModel, node, type);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int& type) const
     {
-      doit (exec, node, type);
+      doit (exec, memoryModel, node, type);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Uint& type) const
     {
-      doit (exec, node, type);
+      doit (exec, memoryModel, node, type);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Pointer& type) const
     {
-      doit (exec, node, type);
+      doit (exec, memoryModel, node, type);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Enum& type) const
     {
-      doit (exec, node, type);
+      doit (exec, memoryModel, node, type);
     }
 
     template <typename T>
     void doit (executor_base_t& exec,
+               const MemoryModel& memoryModel,
                const ast_binary_expr_t& node,
                const T&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       typename T::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       typename T::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left == right);
@@ -712,6 +759,7 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -723,52 +771,57 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Bool&) const
     {
-      doit<Bool> (exec, node);
+      doit<Bool> (exec, memoryModel, node);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int&) const
     {
-      doit<Int> (exec, node);
+      doit<Int> (exec, memoryModel, node);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Uint&) const
     {
-      doit<Uint> (exec, node);
+      doit<Uint> (exec, memoryModel, node);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Uint64&) const
     {
-      doit<Uint64> (exec, node);
+      doit<Uint64> (exec, memoryModel, node);
     }
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Pointer&) const
     {
-      doit<Pointer> (exec, node);
+      doit<Pointer> (exec, memoryModel, node);
     }
 
     template <typename T>
     void
-    doit (executor_base_t& exec, const ast_binary_expr_t& node) const
+    doit (executor_base_t& exec, const MemoryModel& memoryModel, const ast_binary_expr_t& node) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       typename T::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       typename T::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left != right);
@@ -776,6 +829,7 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -787,13 +841,14 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left < right);
@@ -801,13 +856,14 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int8&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       Int8::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       Int8::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left < right);
@@ -815,6 +871,7 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -826,13 +883,14 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left <= right);
@@ -840,6 +898,7 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -851,13 +910,14 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left > right);
@@ -865,6 +925,7 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -876,13 +937,14 @@ namespace runtime
   {
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Int&) const
     {
-      evaluate_expr (exec, node.left ());
+      evaluate_expr (exec, memoryModel, node.left ());
       Int::ValueType left;
       stack_frame_pop (exec.stack (), left);
-      evaluate_expr (exec, node.right ());
+      evaluate_expr (exec, memoryModel, node.right ());
       Int::ValueType right;
       stack_frame_pop (exec.stack (), right);
       stack_frame_push (exec.stack (), left >= right);
@@ -890,6 +952,7 @@ namespace runtime
 
     void
     operator() (executor_base_t& exec,
+                const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Type::Type& t) const
     {
@@ -899,7 +962,8 @@ namespace runtime
 
   void
   evaluate_expr (executor_base_t& exec,
-                 const ast_t* node)
+                 const MemoryModel& memoryModel,
+                 const Ast::Node* node)
   {
     typed_value_t tv = node->typed_value;
     if (tv.value.present)
@@ -921,15 +985,18 @@ namespace runtime
           }
       }
 
-    struct visitor : public ast_const_visitor_t
+    struct visitor : public ConstVisitor
     {
       executor_base_t& exec;
+      const MemoryModel& memoryModel;
 
-      visitor (executor_base_t& e)
+      visitor (executor_base_t& e,
+               const MemoryModel& mm)
         : exec (e)
+        , memoryModel (mm)
       { }
 
-      void default_action (const ast_t& node)
+      void default_action (const Node& node)
       {
         ast_not_reached (node);
       }
@@ -937,7 +1004,7 @@ namespace runtime
       void visit (const ast_indexed_port_call_expr_t& node)
       {
         // Determine the push port index.
-        evaluate_expr (exec, node.index ());
+        evaluate_expr (exec, memoryModel, node.index ());
         Int::ValueType idx;
         stack_frame_pop (exec.stack (), idx);
         if (idx < 0 || idx >= node.array_type->dimension)
@@ -946,7 +1013,7 @@ namespace runtime
                            "array index is out of bounds (E1)");
           }
 
-        push_port_call (node, node.args (), node.field, idx * node.array_type->ElementSize ());
+        push_port_call (node, node.args (), memoryModel, node.field, idx * node.array_type->ElementSize ());
       }
 
       void visit (const ast_index_expr_t& node)
@@ -954,9 +1021,10 @@ namespace runtime
         struct visitor : public DefaultVisitor
         {
           executor_base_t& exec;
+          const MemoryModel& memoryModel;
           const ast_index_expr_t& node;
 
-          visitor (executor_base_t& e, const ast_index_expr_t& n) : exec (e), node (n) { }
+          visitor (executor_base_t& e, const MemoryModel& mm, const ast_index_expr_t& n) : exec (e), memoryModel (mm), node (n) { }
 
           void default_action (const Type::Type& type)
           {
@@ -965,9 +1033,9 @@ namespace runtime
 
           void visit (const Array& type)
           {
-            evaluate_expr (exec, node.base ());
+            evaluate_expr (exec, memoryModel, node.base ());
             void* ptr = stack_frame_pop_pointer (exec.stack ());
-            evaluate_expr (exec, node.index ());
+            evaluate_expr (exec, memoryModel, node.index ());
             Int::ValueType idx;
             stack_frame_pop (exec.stack (), idx);
             if (idx < 0 || idx >= type.dimension)
@@ -979,20 +1047,20 @@ namespace runtime
                                       static_cast<char*> (ptr) + idx * type.ElementSize ());
           }
         };
-        visitor v (exec, node);
+        visitor v (exec, memoryModel, node);
         node.base ()->typed_value.type->Accept (v);
       }
 
       void visit (const ast_slice_expr_t& node)
       {
-        evaluate_expr (exec, node.base ());
+        evaluate_expr (exec, memoryModel, node.base ());
         typed_value_t base_tv = node.base ()->typed_value;
         stack_frame_pop_tv (exec.stack (), base_tv);
 
         typed_value_t low_tv = node.low ()->typed_value;
         if (!low_tv.value.present)
           {
-            evaluate_expr (exec, node.low ());
+            evaluate_expr (exec, memoryModel, node.low ());
             stack_frame_pop_tv (exec.stack (), low_tv);
           }
         Int::ValueType low = low_tv.integral_value ();
@@ -1000,7 +1068,7 @@ namespace runtime
         typed_value_t high_tv = node.high ()->typed_value;
         if (!high_tv.value.present)
           {
-            evaluate_expr (exec, node.high ());
+            evaluate_expr (exec, memoryModel, node.high ());
             stack_frame_pop_tv (exec.stack (), high_tv);
           }
         Int::ValueType high = high_tv.integral_value ();
@@ -1040,11 +1108,11 @@ namespace runtime
       {
         if (!node.address_of_dereference)
           {
-            evaluate_expr (exec, node.child ());
+            evaluate_expr (exec, memoryModel, node.child ());
           }
         else
           {
-            evaluate_expr (exec, node.child ()->at (0));
+            evaluate_expr (exec, memoryModel, node.child ()->At (0));
           }
       }
 
@@ -1054,34 +1122,34 @@ namespace runtime
         assert (f != NULL);
         if (f->kind != Type::Function::PULL_PORT)
           {
-            node.expr ()->typed_value.value.callable_value ()->call (exec, node);
+            node.expr ()->typed_value.value.callable_value ()->call (exec, memoryModel, node);
           }
         else
           {
             // Evaluate the pull port.
             pull_port_t pull_port;
-            evaluate_expr (exec, node.expr ());
+            evaluate_expr (exec, memoryModel, node.expr ());
             stack_frame_store_heap (exec.stack (), &pull_port, sizeof (pull_port_t));
             // Execute the call.
             pull_port.getter->call (exec, node, pull_port.instance);
           }
       }
 
-      void push_port_call (const ast_t& node,
-                           ast_t* args,
+      void push_port_call (const Node& node,
+                           Ast::Node* args,
+                           const MemoryModel& memoryModel,
                            const field_t* field,
                            size_t offset = 0)
       {
         // Push all of the arguments first and measure their size.
         char* top_before = stack_frame_top (exec.stack ());
-        evaluate_expr (exec, args);
+        evaluate_expr (exec, memoryModel, args);
         char* top_after = stack_frame_top (exec.stack ());
         ptrdiff_t arguments_size = top_after - top_before; // Assumes stack grows up.
 
         // Find the port to activate.
-        Symbol* this_ = node.GetReceiverSymbol ();
-        stack_frame_push (exec.stack (), this_-> offset (), SymbolCast<ParameterSymbol> (this_)->value.type->Size ());
-        port_t* port = *((port_t**)((char*)stack_frame_pop_pointer (exec.stack ()) + field->offset + offset));
+        void* receiverPtr = stack_frame_read_pointer_at_offset (exec.stack (), memoryModel.ReceiverOffset ());
+        port_t* port = *((port_t**)((char*)receiverPtr + field->offset + offset));
 
         char* base_pointer = stack_frame_base_pointer (exec.stack ());
         component_t* instance = exec.current_instance ();
@@ -1117,22 +1185,22 @@ namespace runtime
 
       void visit (const ast_push_port_call_expr_t& node)
       {
-        push_port_call (node, node.args (), node.field);
+        push_port_call (node, node.args (), memoryModel, node.field);
       }
 
       void visit (const ast_list_expr_t& node)
       {
-        for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+        for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
              pos != limit;
              ++pos)
           {
-            evaluate_expr (exec, *pos);
+            evaluate_expr (exec, memoryModel, *pos);
           }
       }
 
       void visit (const ast_select_expr_t& node)
       {
-        evaluate_expr (exec, node.base ());
+        evaluate_expr (exec, memoryModel, node.base ());
         char* ptr = static_cast<char*> (stack_frame_pop_pointer (exec.stack ()));
         typed_value_t tv = node.typed_value;
         assert (tv.has_offset);
@@ -1141,7 +1209,7 @@ namespace runtime
 
       void visit (const ast_dereference_expr_t& node)
       {
-        evaluate_expr (exec, node.child ());
+        evaluate_expr (exec, memoryModel, node.child ());
       }
 
       void visit (const ast_identifier_expr_t& node)
@@ -1154,7 +1222,7 @@ namespace runtime
 
       void visit (const ast_unary_arithmetic_expr_t& node)
       {
-        evaluate_expr (exec, node.child ());
+        evaluate_expr (exec, memoryModel, node.child ());
         switch (node.arithmetic)
           {
           case LogicNot:
@@ -1172,7 +1240,7 @@ namespace runtime
 
       void visit (const ast_implicit_dereference_expr_t& node)
       {
-        evaluate_expr (exec, node.child ());
+        evaluate_expr (exec, memoryModel, node.child ());
         void* ptr = stack_frame_pop_pointer (exec.stack ());
         if (ptr == NULL)
           {
@@ -1185,7 +1253,7 @@ namespace runtime
 
       void visit (const ast_implicit_conversion_expr_t& node)
       {
-        evaluate_expr (exec, node.child ());
+        evaluate_expr (exec, memoryModel, node.child ());
       }
 
       void visit (const ast_binary_arithmetic_expr_t& node)
@@ -1193,64 +1261,64 @@ namespace runtime
         switch (node.arithmetic)
           {
           case ::Multiply:
-            evaluate (exec, node, Multiply ());
+            evaluate (exec, memoryModel, node, Multiply ());
             break;
           case ::Divide:
-            evaluate (exec, node, Divide ());
+            evaluate (exec, memoryModel, node, Divide ());
             break;
           case ::Modulus:
-            evaluate (exec, node, Modulus ());
+            evaluate (exec, memoryModel, node, Modulus ());
             break;
           case ::LeftShift:
-            evaluate (exec, node, LeftShift ());
+            evaluate (exec, memoryModel, node, LeftShift ());
             break;
           case ::RightShift:
-            evaluate (exec, node, RightShift ());
+            evaluate (exec, memoryModel, node, RightShift ());
             break;
           case ::BitAnd:
-            evaluate (exec, node, BitAnd ());
+            evaluate (exec, memoryModel, node, BitAnd ());
             break;
           case ::BitAndNot:
-            evaluate (exec, node, BitAndNot ());
+            evaluate (exec, memoryModel, node, BitAndNot ());
             break;
           case ::Add:
-            evaluate (exec, node, Add ());
+            evaluate (exec, memoryModel, node, Add ());
             break;
           case ::Subtract:
-            evaluate (exec, node, Subtract ());
+            evaluate (exec, memoryModel, node, Subtract ());
             break;
           case ::BitOr:
-            evaluate (exec, node, BitOr ());
+            evaluate (exec, memoryModel, node, BitOr ());
             break;
           case ::BitXor:
-            evaluate (exec, node, BitXor ());
+            evaluate (exec, memoryModel, node, BitXor ());
             break;
           case ::Equal:
-            evaluate (exec, node, Equal ());
+            evaluate (exec, memoryModel, node, Equal ());
             break;
           case ::NotEqual:
-            evaluate (exec, node, NotEqual ());
+            evaluate (exec, memoryModel, node, NotEqual ());
             break;
           case ::LessThan:
-            evaluate (exec, node, LessThan ());
+            evaluate (exec, memoryModel, node, LessThan ());
             break;
           case ::LessEqual:
-            evaluate (exec, node, LessEqual ());
+            evaluate (exec, memoryModel, node, LessEqual ());
             break;
           case ::MoreThan:
-            evaluate (exec, node, MoreThan ());
+            evaluate (exec, memoryModel, node, MoreThan ());
             break;
           case ::MoreEqual:
-            evaluate (exec, node, MoreEqual ());
+            evaluate (exec, memoryModel, node, MoreEqual ());
             break;
           case ::LogicAnd:
           {
-            evaluate_expr (exec, node.left ());
+            evaluate_expr (exec, memoryModel, node.left ());
             Bool::ValueType b;
             stack_frame_pop (exec.stack (), b);
             if (b)
               {
-                evaluate_expr (exec, node.right ());
+                evaluate_expr (exec, memoryModel, node.right ());
               }
             else
               {
@@ -1260,7 +1328,7 @@ namespace runtime
           break;
           case ::LogicOr:
           {
-            evaluate_expr (exec, node.left ());
+            evaluate_expr (exec, memoryModel, node.left ());
             Bool::ValueType b;
             stack_frame_pop (exec.stack (), b);
             if (b)
@@ -1269,29 +1337,31 @@ namespace runtime
               }
             else
               {
-                evaluate_expr (exec, node.right ());
+                evaluate_expr (exec, memoryModel, node.right ());
               }
           }
           break;
           }
       }
     };
-    visitor v (exec);
-    node->accept (v);
+    visitor v (exec, memoryModel);
+    node->Accept (v);
   }
 
   ControlAction
   evaluate_statement (executor_base_t& exec,
-                      ast_t* node)
+                      const MemoryModel& memoryModel,
+                      Ast::Node* node)
   {
-    struct visitor : public ast_const_visitor_t
+    struct visitor : public ConstVisitor
     {
       ControlAction retval;
       executor_base_t& exec;
+      const MemoryModel& memoryModel;
 
-      visitor (executor_base_t& e) : retval (CONTINUE), exec (e) { }
+      visitor (executor_base_t& e, const MemoryModel& mm) : retval (CONTINUE), exec (e), memoryModel (mm) { }
 
-      void default_action (const ast_t& node)
+      void default_action (const Node& node)
       {
         ast_not_reached (node);
       }
@@ -1304,25 +1374,25 @@ namespace runtime
 
       void visit (const ast_assign_statement_t& node)
       {
-        ast_t* left = node.left ();
-        ast_t* right = node.right ();
+        Ast::Node* left = node.left ();
+        Ast::Node* right = node.right ();
         // Determine the size of the value being assigned.
         size_t size = right->typed_value.type->Size ();
         // Evaluate the address.
-        evaluate_expr (exec, left);
+        evaluate_expr (exec, memoryModel, left);
         void* ptr = stack_frame_pop_pointer (exec.stack ());
         // Evaluate the value.
-        evaluate_expr (exec, right);
+        evaluate_expr (exec, memoryModel, right);
         // Store.
         stack_frame_store_heap (exec.stack (), ptr, size);
       }
 
       void visit (const ast_change_statement_t& node)
       {
-        ast_t* expr = node.expr ();
-        ast_t* body = node.body ();
+        Ast::Node* expr = node.expr ();
+        Ast::Node* body = node.body ();
         // Evaluate the pointer to the heap link.
-        evaluate_expr (exec, expr);
+        evaluate_expr (exec, memoryModel, expr);
         heap_link_t* hl = (heap_link_t*)stack_frame_pop_pointer (exec.stack ());
         if (hl == NULL)
           {
@@ -1350,7 +1420,7 @@ namespace runtime
         // Push a pointer to the root object.
         *root_value = static_cast<char*> (heap_instance (hl->heap));
 
-        evaluate_statement (exec, body);
+        evaluate_statement (exec, memoryModel, body);
 
         // Restore the old heap.
         exec.heap (old_heap);
@@ -1362,23 +1432,23 @@ namespace runtime
 
       void visit (const ast_expression_statement_t& node)
       {
-        ast_t* child = node.child ();
+        Ast::Node* child = node.child ();
         // Determine the size of the value being generated.
         size_t size = child->typed_value.type->Size ();
         // Evaluate.
-        evaluate_expr (exec, child);
+        evaluate_expr (exec, memoryModel, child);
         // Remove value.
         stack_frame_popn (exec.stack (), size);
       }
 
       void visit (const ast_if_statement_t& node)
       {
-        evaluate_expr (exec, node.condition ());
+        evaluate_expr (exec, memoryModel, node.condition ());
         Bool::ValueType c;
         stack_frame_pop (exec.stack (), c);
         if (c)
           {
-            if (evaluate_statement (exec, node.true_branch ()) == RETURN)
+            if (evaluate_statement (exec, memoryModel, node.true_branch ()) == RETURN)
               {
                 retval = RETURN;
                 return;
@@ -1386,7 +1456,7 @@ namespace runtime
           }
         else
           {
-            if (evaluate_statement (exec, node.false_branch ()) == RETURN)
+            if (evaluate_statement (exec, memoryModel, node.false_branch ()) == RETURN)
               {
                 retval = RETURN;
                 return;
@@ -1398,12 +1468,12 @@ namespace runtime
       {
         for (;;)
           {
-            evaluate_expr (exec, node.condition ());
+            evaluate_expr (exec, memoryModel, node.condition ());
             Bool::ValueType c;
             stack_frame_pop (exec.stack (), c);
             if (c)
               {
-                if (evaluate_statement (exec, node.body ()) == RETURN)
+                if (evaluate_statement (exec, memoryModel, node.body ()) == RETURN)
                   {
                     retval = RETURN;
                     return;
@@ -1424,7 +1494,7 @@ namespace runtime
           {
             size_t* ptr = static_cast<size_t*> (stack_frame_address_for_offset (exec.stack (), node.symbol->offset ()));
             *ptr = idx;
-            if (evaluate_statement (exec, node.body ()) == RETURN)
+            if (evaluate_statement (exec, memoryModel, node.body ()) == RETURN)
               {
                 retval = RETURN;
                 return;
@@ -1437,10 +1507,10 @@ namespace runtime
         // Determine the size of the value being assigned.
         const Type::Type* type = node.right ()->typed_value.type;
         // Evaluate the address.
-        evaluate_expr (exec, node.left ());
+        evaluate_expr (exec, memoryModel, node.left ());
         void* ptr = stack_frame_pop_pointer (exec.stack ());
         // Evaluate the value.
-        evaluate_expr (exec, node.right ());
+        evaluate_expr (exec, memoryModel, node.right ());
 
         struct visitor : public DefaultVisitor
         {
@@ -1481,10 +1551,10 @@ namespace runtime
         // Determine the size of the value being assigned.
         const Type::Type* type = node.right ()->typed_value.type;
         // Evaluate the address.
-        evaluate_expr (exec, node.left ());
+        evaluate_expr (exec, memoryModel, node.left ());
         void* ptr = stack_frame_pop_pointer (exec.stack ());
         // Evaluate the value.
-        evaluate_expr (exec, node.right ());
+        evaluate_expr (exec, memoryModel, node.right ());
 
         struct visitor : public DefaultVisitor
         {
@@ -1515,11 +1585,11 @@ namespace runtime
 
       void visit (const ast_list_statement_t& node)
       {
-        for (ast_t::const_iterator pos = node.begin (), limit = node.end ();
+        for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
              pos != limit;
              ++pos)
           {
-            if (evaluate_statement (exec, *pos) == RETURN)
+            if (evaluate_statement (exec, memoryModel, *pos) == RETURN)
               {
                 retval = RETURN;
                 return;
@@ -1530,7 +1600,7 @@ namespace runtime
       void visit (const ast_return_statement_t& node)
       {
         // Evaluate the expression.
-        evaluate_expr (exec, node.child ());
+        evaluate_expr (exec, memoryModel, node.child ());
         // Store in the return parameter.
         stack_frame_store_stack (exec.stack (), node.return_symbol->offset (), SymbolCast<ParameterSymbol> (node.return_symbol)->value.type->Size ());
         retval = RETURN;
@@ -1539,7 +1609,7 @@ namespace runtime
 
       void visit (const ast_increment_statement_t& node)
       {
-        evaluate_expr (exec, node.child ());
+        evaluate_expr (exec, memoryModel, node.child ());
         void* ptr = stack_frame_pop_pointer (exec.stack ());
 
         struct visitor : public DefaultVisitor
@@ -1583,10 +1653,10 @@ namespace runtime
 
         // The caller pushed an instruction pointer which is just
         // before the base pointer.  Overwrite it with the body.
-        const ast_t* p = &node;
+        const Ast::Node* p = &node;
         memcpy (stack_frame_ip (exec.stack ()), &p, sizeof (void*));
         // Execute the expression list.
-        evaluate_expr (exec, node.expr_list ());
+        evaluate_expr (exec, memoryModel, node.expr_list ());
 
         // Stop execution.
         retval = RETURN;
@@ -1595,9 +1665,9 @@ namespace runtime
 
       void visit (const ast_var_statement_t& node)
       {
-        ast_t* expression_list = node.expression_list ();
+        Ast::Node* expression_list = node.expression_list ();
 
-        if (expression_list->size () == 0)
+        if (expression_list->Size () == 0)
           {
             // Zero out the variable.
             for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
@@ -1616,18 +1686,18 @@ namespace runtime
                 ptrdiff_t offset = symbol->offset ();
                 stack_frame_push_address (exec.stack (), offset);
                 void* ptr = stack_frame_pop_pointer (exec.stack ());
-                ast_t* initializer = expression_list->at (idx);
+                Ast::Node* initializer = expression_list->At (idx);
                 size_t size = initializer->typed_value.type->Size ();
                 // Evaluate the value.
-                evaluate_expr (exec, initializer);
+                evaluate_expr (exec, memoryModel, initializer);
                 // Store.
                 stack_frame_store_heap (exec.stack (), ptr, size);
               }
           }
       }
     };
-    visitor v (exec);
-    node->accept (v);
+    visitor v (exec, memoryModel);
+    node->Accept (v);
 
     return v.retval;
   }
@@ -1653,7 +1723,7 @@ namespace runtime
     // Push an instruction pointer.
     stack_frame_push_pointer (exec.stack (), NULL);
     stack_frame_push_base_pointer (exec.stack (), 0 /* No locals. */);
-    evaluate_expr (exec, action->precondition);
+    evaluate_expr (exec, action->memory_model, action->precondition);
     Bool::ValueType retval;
     stack_frame_pop (exec.stack (), retval);
     stack_frame_pop_base_pointer (exec.stack ());
@@ -1681,7 +1751,7 @@ namespace runtime
 
     stack_frame_push_base_pointer (exec.stack (), reaction->memory_model.LocalsSize ());
 
-    evaluate_statement (exec, reaction->body);
+    evaluate_statement (exec, reaction->memory_model, reaction->body);
   }
 
   static void
@@ -1697,7 +1767,7 @@ namespace runtime
 
     stack_frame_push_base_pointer (exec.stack (), action->memory_model.LocalsSize ());
 
-    evaluate_statement (exec, action->body);
+    evaluate_statement (exec, action->memory_model, action->body);
 
     if (exec.mutable_phase_base_pointer () == 0)
       {
@@ -1716,12 +1786,11 @@ namespace runtime
         ast_activate_statement_t* as = *(ast_activate_statement_t**)stack_frame_ip (exec.stack ());
 
         // Set the current record.
-        Symbol* this_ = as->GetReceiverSymbol ();
-        stack_frame_push (exec.stack (), this_->offset (), SymbolCast<ParameterSymbol> (this_)->value.type->Size ());
-        exec.current_instance (static_cast<component_t*> (stack_frame_pop_pointer (exec.stack ())));
+        void* receiverPtr = stack_frame_read_pointer_at_offset (exec.stack (), as->memoryModel->ReceiverOffset ());
+        exec.current_instance (static_cast<component_t*> (receiverPtr));
 
         // Execute it.
-        evaluate_statement (exec, as->body ());
+        evaluate_statement (exec, *as->memoryModel, as->body ());
 
         // Add to the schedule.
         if (as->mutable_phase_access == AccessWrite)
@@ -1778,12 +1847,12 @@ namespace runtime
 
   struct NewImpl : public Callable
   {
-    NewImpl (const Type::Type* t, ast_t* definingNode)
+    NewImpl (const Type::Type* t, Ast::Node* definingNode)
       : type_ (t)
       , function_type_ (makeFunctionType (t, definingNode))
     { }
 
-    virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const
+    virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
     {
       // Allocate a new instance of the type.
       const Heap* heap_type = type_cast<Heap> (type_);
@@ -1814,16 +1883,16 @@ namespace runtime
     }
     const Type::Type* const type_;
     const Type::Type* const function_type_;
-    static const Type::Type* makeFunctionType (const Type::Type* type, ast_t* definingNode)
+    static const Type::Type* makeFunctionType (const Type::Type* type, Ast::Node* definingNode)
     {
       const Type::Type* return_type = type->GetPointer ();
       return new Type::Function (Type::Function::FUNCTION, (new Signature ()),
-                                 new parameter_t (definingNode, "0return", typed_value_t::make_value (return_type, MUTABLE, MUTABLE, false), false));
+                                 new parameter_t (definingNode, ReturnSymbol, typed_value_t::make_value (return_type, MUTABLE, MUTABLE, false), false));
     }
 
   };
 
-  New::New (ast_t* dn)
+  New::New (Ast::Node* dn)
     : Template ("new",
                 dn,
                 new Type::Template ())
@@ -1852,13 +1921,13 @@ namespace runtime
 
   struct MoveImpl : public Callable
   {
-    MoveImpl (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
+    MoveImpl (const typed_value_t& in, const typed_value_t& out, Ast::Node* definingNode)
       : function_type_ (makeFunctionType (in, out, definingNode))
     { }
 
-    virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const
+    virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
     {
-      evaluate_expr (exec, node.args ());
+      evaluate_expr (exec, memoryModel, node.args ());
       heap_link_t* hl = (heap_link_t*)stack_frame_pop_pointer (exec.stack ());
       if (hl != NULL)
         {
@@ -1899,18 +1968,18 @@ namespace runtime
       return function_type_;
     }
     const Type::Type* const function_type_;
-    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
+    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, Ast::Node* definingNode)
     {
       typed_value_t in2 = in;
       in2.intrinsic_mutability = MUTABLE;
       return new Type::Function (Type::Function::FUNCTION, (new Signature ())
                                  ->Append (new parameter_t (definingNode, "h", in2, false)),
-                                 new parameter_t (definingNode, "0return", out, false));
+                                 new parameter_t (definingNode, ReturnSymbol, out, false));
     }
 
   };
 
-  Move::Move (ast_t* dn)
+  Move::Move (Ast::Node* dn)
     : Template ("move",
                 dn,
                 new Type::Template ())
@@ -1938,13 +2007,13 @@ namespace runtime
 
   struct MergeImpl : public Callable
   {
-    MergeImpl (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
+    MergeImpl (const typed_value_t& in, const typed_value_t& out, Ast::Node* definingNode)
       : function_type_ (makeFunctionType (in, out, definingNode))
     { }
 
-    virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const
+    virtual void call (executor_base_t& exec, const MemoryModel& memoryModel,const ast_call_expr_t& node) const
     {
-      evaluate_expr (exec, node.args ());
+      evaluate_expr (exec, memoryModel, node.args ());
       heap_link_t* hl = (heap_link_t*)stack_frame_pop_pointer (exec.stack ());
       if (hl != NULL)
         {
@@ -1985,17 +2054,17 @@ namespace runtime
       return function_type_;
     }
     const Type::Type* const function_type_;
-    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
+    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, Ast::Node* definingNode)
     {
       typed_value_t in2 = in;
       in2.intrinsic_mutability = MUTABLE;
       return new Type::Function (Type::Function::FUNCTION, (new Signature ())
                                  ->Append (new parameter_t (definingNode, "h", in2, false)),
-                                 new parameter_t (definingNode, "0return", out, false));
+                                 new parameter_t (definingNode, ReturnSymbol, out, false));
     }
   };
 
-  Merge::Merge (ast_t* dn)
+  Merge::Merge (Ast::Node* dn)
     : Template ("merge",
                 dn,
                 new Type::Template ())
@@ -2023,14 +2092,14 @@ namespace runtime
 
   struct CopyImpl : public Callable
   {
-    CopyImpl (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
+    CopyImpl (const typed_value_t& in, const typed_value_t& out, Ast::Node* definingNode)
       : in_ (in)
       , function_type_ (makeFunctionType (in, out, definingNode))
     { }
 
-    virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const
+    virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
     {
-      evaluate_expr (exec, node.args ());
+      evaluate_expr (exec, memoryModel, node.args ());
       typed_value_t tv = in_;
       stack_frame_pop_tv (exec.stack (), tv);
       tv = typed_value_t::copy_exec (tv);
@@ -2043,17 +2112,17 @@ namespace runtime
     }
     const typed_value_t in_;
     const Type::Type* const function_type_;
-    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast_t* definingNode)
+    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, Ast::Node* definingNode)
     {
       typed_value_t in2 = in;
       in2.intrinsic_mutability = MUTABLE;
       return new Type::Function (Type::Function::FUNCTION, (new Signature ())
                                  ->Append (new parameter_t (definingNode, "h", in2, false)),
-                                 new parameter_t (definingNode, "0return", out, false));
+                                 new parameter_t (definingNode, ReturnSymbol, out, false));
     }
   };
 
-  Copy::Copy (ast_t* dn)
+  Copy::Copy (Ast::Node* dn)
     : Template ("copy",
                 dn,
                 new Type::Template ())
@@ -2081,21 +2150,21 @@ namespace runtime
 
   struct PrintlnImpl : public Callable
   {
-    PrintlnImpl (const TypedValueListType& tvlist, ast_t* definingNode)
+    PrintlnImpl (const TypedValueListType& tvlist, Ast::Node* definingNode)
       : function_type_ (makeFunctionType (tvlist, definingNode))
     { }
 
-    virtual void call (executor_base_t& exec, const ast_call_expr_t& node) const
+    virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
     {
       exec.lock_stdout ();
-      ast_t* expr_list = node.args ();
-      for (ast_t::const_iterator pos = expr_list->begin (),
-           limit = expr_list->end ();
+      Ast::Node* expr_list = node.args ();
+      for (Node::ConstIterator pos = expr_list->Begin (),
+           limit = expr_list->End ();
            pos != limit;
            ++pos)
         {
-          ast_t* child = *pos;
-          evaluate_expr (exec, child);
+          Ast::Node* child = *pos;
+          evaluate_expr (exec, memoryModel, child);
           struct visitor : public DefaultVisitor
           {
             executor_base_t& exec;
@@ -2210,7 +2279,7 @@ namespace runtime
     }
     const typed_value_t in_;
     const Type::Type* const function_type_;
-    static const Type::Type* makeFunctionType (const TypedValueListType& tvlist, ast_t* definingNode)
+    static const Type::Type* makeFunctionType (const TypedValueListType& tvlist, Ast::Node* definingNode)
     {
       Signature* sig = new Signature ();
       for (TypedValueListType::const_iterator pos = tvlist.begin (),
@@ -2225,11 +2294,11 @@ namespace runtime
         }
 
       return new Type::Function (Type::Function::FUNCTION, sig,
-                                 new parameter_t (definingNode, "0return", typed_value_t::make_value (Void::Instance (), IMMUTABLE, IMMUTABLE, false), false));
+                                 new parameter_t (definingNode, ReturnSymbol, typed_value_t::make_value (Void::Instance (), IMMUTABLE, IMMUTABLE, false), false));
     }
   };
 
-  Println::Println (ast_t* dn)
+  Println::Println (Ast::Node* dn)
     : Template ("println",
                 dn,
                 new Type::Template ())

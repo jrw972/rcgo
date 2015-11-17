@@ -1,8 +1,10 @@
 #include "Callable.hpp"
 #include "executor_base.hpp"
-#include "ast.hpp"
+#include "Ast.hpp"
 #include "runtime.hpp"
 #include "SymbolVisitor.hpp"
+
+using namespace Ast;
 
 Function::Function (ast_function_t& node_)
   : Symbol (ast_get_identifier (node_.identifier ()), node_.identifier ())
@@ -34,7 +36,7 @@ Function::set (const Type::Function* functionType,
   value_ = typed_value_t::make_ref (typed_value_t (this));
 }
 
-void Function::call (executor_base_t& exec, const ast_call_expr_t& node) const
+void Function::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   // Create space for the return.
   stack_frame_reserve (exec.stack (), this->returnSize_);
@@ -43,7 +45,7 @@ void Function::call (executor_base_t& exec, const ast_call_expr_t& node) const
   char* top_before = stack_frame_top (exec.stack ());
 
   // Push the arguments.
-  runtime::evaluate_expr (exec, node.args ());
+  runtime::evaluate_expr (exec, memoryModel, node.args ());
 
   // Push a fake instruction pointer.
   stack_frame_push_pointer (exec.stack (), NULL);
@@ -53,14 +55,14 @@ void Function::call (executor_base_t& exec, const ast_call_expr_t& node) const
 
   // Do the call.
   stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
-  runtime::evaluate_statement (exec, this->node.body ());
+  runtime::evaluate_statement (exec, this->memoryModel, this->node.body ());
   stack_frame_pop_base_pointer (exec.stack ());
 
   // Pop the arguments.
   stack_frame_popn (exec.stack (), top_after - top_before);
 }
 
-void Method::call (executor_base_t& exec, const ast_call_expr_t& node) const
+void Method::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   // Create space for the return.
   stack_frame_reserve (exec.stack (), this->returnSize);
@@ -69,7 +71,7 @@ void Method::call (executor_base_t& exec, const ast_call_expr_t& node) const
   char* top_before = stack_frame_top (exec.stack ());
 
   // Push the arguments.
-  runtime::evaluate_expr (exec, node.args ());
+  runtime::evaluate_expr (exec, memoryModel, node.args ());
 
   // Push a fake instruction pointer.
   stack_frame_push_pointer (exec.stack (), NULL);
@@ -79,14 +81,14 @@ void Method::call (executor_base_t& exec, const ast_call_expr_t& node) const
 
   // Do the call.
   stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
-  runtime::evaluate_statement (exec, this->node->body ());
+  runtime::evaluate_statement (exec, this->memoryModel, this->node->body ());
   stack_frame_pop_base_pointer (exec.stack ());
 
   // Pop the arguments.
   stack_frame_popn (exec.stack (), top_after - top_before);
 }
 
-void Initializer::call (executor_base_t& exec, const ast_call_expr_t& node) const
+void Initializer::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   // Create space for the return.
   stack_frame_reserve (exec.stack (), this->returnSize);
@@ -95,13 +97,13 @@ void Initializer::call (executor_base_t& exec, const ast_call_expr_t& node) cons
   char* top_before = stack_frame_top (exec.stack ());
 
   // Push this.
-  runtime::evaluate_expr (exec, node.args ()->at (0));
+  runtime::evaluate_expr (exec, memoryModel, node.args ()->At (0));
   component_t* thisPtr = static_cast<component_t*> (stack_frame_read_pointer (exec.stack ()));
 
   // Push the arguments.
-  for (size_t idx = 1; idx != node.args ()->size (); ++idx)
+  for (size_t idx = 1; idx != node.args ()->Size (); ++idx)
     {
-      runtime::evaluate_expr (exec, node.args ()->at (idx));
+      runtime::evaluate_expr (exec, memoryModel, node.args ()->At (idx));
     }
 
   // Push a fake instruction pointer.
@@ -113,7 +115,7 @@ void Initializer::call (executor_base_t& exec, const ast_call_expr_t& node) cons
   // Do the call.
   stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
   component_t* old_this = exec.current_instance (thisPtr);
-  runtime::evaluate_statement (exec, this->node->body ());
+  runtime::evaluate_statement (exec, this->memoryModel, this->node->body ());
   exec.current_instance (old_this);
   stack_frame_pop_base_pointer (exec.stack ());
 
@@ -121,7 +123,7 @@ void Initializer::call (executor_base_t& exec, const ast_call_expr_t& node) cons
   stack_frame_popn (exec.stack (), top_after - top_before);
 }
 
-void Initializer::call (executor_base_t& exec, component_t* thisPtr, const ast_t* args) const
+void Initializer::call (executor_base_t& exec, component_t* thisPtr, const Ast::Node* args) const
 {
   // Create space for the return.
   stack_frame_reserve (exec.stack (), this->returnSize);
@@ -133,7 +135,7 @@ void Initializer::call (executor_base_t& exec, component_t* thisPtr, const ast_t
   stack_frame_push_pointer (exec.stack (), thisPtr);
 
   // Push the arguments.
-  runtime::evaluate_expr (exec, args);
+  runtime::evaluate_expr (exec, memoryModel, args);
 
   // Push a fake instruction pointer.
   stack_frame_push_pointer (exec.stack (), NULL);
@@ -144,7 +146,7 @@ void Initializer::call (executor_base_t& exec, component_t* thisPtr, const ast_t
   // Do the call.
   stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
   component_t* old_this = exec.current_instance (thisPtr);
-  runtime::evaluate_statement (exec, this->node->body ());
+  runtime::evaluate_statement (exec, this->memoryModel, this->node->body ());
   exec.current_instance (old_this);
   stack_frame_pop_base_pointer (exec.stack ());
 
@@ -152,7 +154,7 @@ void Initializer::call (executor_base_t& exec, component_t* thisPtr, const ast_t
   stack_frame_popn (exec.stack (), top_after - top_before);
 }
 
-void Getter::call (executor_base_t& exec, const ast_call_expr_t& node) const
+void Getter::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   // Create space for the return.
   stack_frame_reserve (exec.stack (), this->returnSize);
@@ -161,13 +163,13 @@ void Getter::call (executor_base_t& exec, const ast_call_expr_t& node) const
   char* top_before = stack_frame_top (exec.stack ());
 
   // Push this.
-  runtime::evaluate_expr (exec, node.args ()->at (0));
+  runtime::evaluate_expr (exec, memoryModel, node.args ()->At (0));
   component_t* thisPtr = static_cast<component_t*> (stack_frame_read_pointer (exec.stack ()));
 
   // Push the arguments.
-  for (size_t idx = 1; idx != node.args ()->size (); ++idx)
+  for (size_t idx = 1; idx != node.args ()->Size (); ++idx)
     {
-      runtime::evaluate_expr (exec, node.args ()->at (idx));
+      runtime::evaluate_expr (exec, memoryModel, node.args ()->At (idx));
     }
 
   // Push a fake instruction pointer.
@@ -179,7 +181,7 @@ void Getter::call (executor_base_t& exec, const ast_call_expr_t& node) const
   // Do the call.
   stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
   component_t* old_this = exec.current_instance (thisPtr);
-  runtime::evaluate_statement (exec, this->node->body ());
+  runtime::evaluate_statement (exec, this->memoryModel, this->node->body ());
   exec.current_instance (old_this);
   stack_frame_pop_base_pointer (exec.stack ());
 
@@ -199,7 +201,7 @@ void Getter::call (executor_base_t& exec, const ast_call_expr_t& node, component
   stack_frame_push_pointer (exec.stack (), thisPtr);
 
   // Push the arguments.
-  runtime::evaluate_expr (exec, node.args ());
+  runtime::evaluate_expr (exec, memoryModel, node.args ());
 
   // Push a fake instruction pointer.
   stack_frame_push_pointer (exec.stack (), NULL);
@@ -210,7 +212,7 @@ void Getter::call (executor_base_t& exec, const ast_call_expr_t& node, component
   // Do the call.
   stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
   component_t* old_this = exec.current_instance (thisPtr);
-  runtime::evaluate_statement (exec, this->node->body ());
+  runtime::evaluate_statement (exec, this->memoryModel, this->node->body ());
   exec.current_instance (old_this);
   stack_frame_pop_base_pointer (exec.stack ());
 

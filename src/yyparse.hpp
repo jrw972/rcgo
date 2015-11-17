@@ -1,7 +1,7 @@
 #ifndef yyparse_h
 #define yyparse_h
 
-#include "ast.hpp"
+#include "Ast.hpp"
 #include "Type.hpp"
 
 #define YYLTYPE size_t
@@ -18,7 +18,7 @@
         }                                                               \
     while (0)
 
-extern ast_t *root;
+extern Ast::Node* root;
 
 int yyparse (void);
 void yyerror (char const *);

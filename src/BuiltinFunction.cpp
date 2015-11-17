@@ -2,7 +2,7 @@
 #include "SymbolVisitor.hpp"
 #include "executor_base.hpp"
 #include "heap.hpp"
-#include "ast.hpp"
+#include "Ast.hpp"
 #include "runtime.hpp"
 
 #include <errno.h>
@@ -17,6 +17,7 @@
 #include <netdb.h>
 
 using namespace Type;
+using namespace Ast;
 
 void
 BuiltinFunction::accept (SymbolVisitor& visitor)
@@ -30,19 +31,19 @@ BuiltinFunction::accept (ConstSymbolVisitor& visitor) const
   visitor.visit (*this);
 }
 
-Readable::Readable (ast_t* dn)
+Readable::Readable (Ast::Node* dn)
   : BuiltinFunction ("readable",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
                                          ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, IMMUTABLE, false), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedBool, MUTABLE, MUTABLE, false), false)))
+                                         new parameter_t (dn, ReturnSymbol, typed_value_t::make_value (&Type::NamedBool, MUTABLE, MUTABLE, false), false)))
 { }
 
 void
-Readable::call (executor_base_t& exec, const ast_call_expr_t& node) const
+Readable::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
-  ast_t::const_iterator pos = node.args ()->begin ();
-  runtime::evaluate_expr (exec, *pos);
+  Node::ConstIterator pos = node.args ()->Begin ();
+  runtime::evaluate_expr (exec, memoryModel, *pos);
   ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (stack_frame_pop_pointer (exec.stack ()));
 
   struct pollfd pfd;
@@ -61,24 +62,24 @@ Readable::call (executor_base_t& exec, const ast_call_expr_t& node) const
   stack_frame_push_tv (exec.stack (), typed_value_t (Bool::Instance (), pfd.revents & POLLIN));
 }
 
-Read::Read (ast_t* dn)
+Read::Read (Ast::Node* dn)
   : BuiltinFunction ("read",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
                                          ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE, false), false))
                                          ->Append (new parameter_t (dn, "buf", typed_value_t::make_value (Type::NamedByte.GetSlice (), MUTABLE, MUTABLE, false), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (Int::Instance (), MUTABLE, MUTABLE, false), false)))
+                                         new parameter_t (dn, ReturnSymbol, typed_value_t::make_value (Int::Instance (), MUTABLE, MUTABLE, false), false)))
 { }
 
 void
-Read::call (executor_base_t& exec, const ast_call_expr_t& node) const
+Read::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   typed_value_t buf_tv = type_->GetParameter ("buf")->value;
 
-  ast_t::const_iterator pos = node.args ()->begin ();
-  runtime::evaluate_expr (exec, *pos++);
+  Node::ConstIterator pos = node.args ()->Begin ();
+  runtime::evaluate_expr (exec, memoryModel, *pos++);
   ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (stack_frame_pop_pointer (exec.stack ()));
-  runtime::evaluate_expr (exec, *pos++);
+  runtime::evaluate_expr (exec, memoryModel, *pos++);
   stack_frame_pop_tv (exec.stack (), buf_tv);
   Slice::ValueType slice = buf_tv.slice_value ();
   int r = read (fd->fd (), slice.ptr, slice.length);
@@ -86,19 +87,19 @@ Read::call (executor_base_t& exec, const ast_call_expr_t& node) const
   stack_frame_push_tv (exec.stack (), retval);
 }
 
-Writable::Writable (ast_t* dn)
+Writable::Writable (Ast::Node* dn)
   : BuiltinFunction ("writable",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
                                          ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, IMMUTABLE, false), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedBool, MUTABLE, MUTABLE, false), false)))
+                                         new parameter_t (dn, ReturnSymbol, typed_value_t::make_value (&Type::NamedBool, MUTABLE, MUTABLE, false), false)))
 { }
 
 void
-Writable::call (executor_base_t& exec, const ast_call_expr_t& node) const
+Writable::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
-  ast_t::const_iterator pos = node.args ()->begin ();
-  runtime::evaluate_expr (exec, *pos);
+  Node::ConstIterator pos = node.args ()->Begin ();
+  runtime::evaluate_expr (exec, memoryModel, *pos);
   ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (stack_frame_pop_pointer (exec.stack ()));
 
   struct pollfd pfd;
@@ -117,15 +118,15 @@ Writable::call (executor_base_t& exec, const ast_call_expr_t& node) const
   stack_frame_push_tv (exec.stack (), typed_value_t (Bool::Instance (), pfd.revents & POLLOUT));
 }
 
-TimerfdCreate::TimerfdCreate (ast_t* dn)
+TimerfdCreate::TimerfdCreate (Ast::Node* dn)
   : BuiltinFunction ("timerfd_create",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, new Signature (),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE, false), false)))
+                                         new parameter_t (dn, ReturnSymbol, typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE, false), false)))
 { }
 
 void
-TimerfdCreate::call (executor_base_t& exec, const ast_call_expr_t& node) const
+TimerfdCreate::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   int fd = timerfd_create (CLOCK_MONOTONIC, TFD_NONBLOCK);
   if (fd != -1)
@@ -139,23 +140,23 @@ TimerfdCreate::call (executor_base_t& exec, const ast_call_expr_t& node) const
     }
 }
 
-TimerfdSettime::TimerfdSettime (ast_t* dn)
+TimerfdSettime::TimerfdSettime (Ast::Node* dn)
   : BuiltinFunction ("timerfd_settime",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
                                          ->Append (new parameter_t (dn, "fd", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE, false), false))
                                          ->Append (new parameter_t (dn, "s", typed_value_t::make_value (&Type::NamedUint64, MUTABLE, MUTABLE, false), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedInt, MUTABLE, MUTABLE, false), false)))
+                                         new parameter_t (dn, ReturnSymbol, typed_value_t::make_value (&Type::NamedInt, MUTABLE, MUTABLE, false), false)))
 { }
 
 void
-TimerfdSettime::call (executor_base_t& exec, const ast_call_expr_t& node) const
+TimerfdSettime::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
-  ast_t::const_iterator pos = node.args ()->begin ();
-  runtime::evaluate_expr (exec, *pos);
+  Node::ConstIterator pos = node.args ()->Begin ();
+  runtime::evaluate_expr (exec, memoryModel, *pos);
   ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (stack_frame_pop_pointer (exec.stack ()));
   ++pos;
-  runtime::evaluate_expr (exec, *pos);
+  runtime::evaluate_expr (exec, memoryModel, *pos);
   typed_value_t tv (Uint64::Instance (), 0);
   stack_frame_pop_tv (exec.stack (), tv);
 
@@ -169,15 +170,15 @@ TimerfdSettime::call (executor_base_t& exec, const ast_call_expr_t& node) const
   stack_frame_push_tv (exec.stack (), typed_value_t (Int::Instance (), retval));
 }
 
-UdpSocket::UdpSocket (ast_t* dn)
+UdpSocket::UdpSocket (Ast::Node* dn)
   : BuiltinFunction ("udp_socket",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, new Signature (),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE, false), false)))
+                                         new parameter_t (dn, ReturnSymbol, typed_value_t::make_value (&Type::NamedFileDescriptor, MUTABLE, MUTABLE, false), false)))
 { }
 
 void
-UdpSocket::call (executor_base_t& exec, const ast_call_expr_t& node) const
+UdpSocket::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   int fd = socket (AF_INET, SOCK_DGRAM, 0);
   if (fd == -1)
@@ -197,7 +198,7 @@ UdpSocket::call (executor_base_t& exec, const ast_call_expr_t& node) const
   stack_frame_push_pointer (exec.stack (), thefd);
 }
 
-Sendto::Sendto (ast_t* dn)
+Sendto::Sendto (Ast::Node* dn)
   : BuiltinFunction ("sendto",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
@@ -205,24 +206,24 @@ Sendto::Sendto (ast_t* dn)
                                          ->Append (new parameter_t (dn, "host", typed_value_t::make_value (&Type::NamedString, MUTABLE, IMMUTABLE, false), false))
                                          ->Append (new parameter_t (dn, "port", typed_value_t::make_value (&Type::NamedUint16, MUTABLE, IMMUTABLE, false), false))
                                          ->Append (new parameter_t (dn, "buf", typed_value_t::make_value (Type::NamedByte.GetSlice (), MUTABLE, IMMUTABLE, false), false)),
-                                         new parameter_t (dn, "0return", typed_value_t::make_value (Int::Instance (), MUTABLE, MUTABLE, false), false)))
+                                         new parameter_t (dn, ReturnSymbol, typed_value_t::make_value (Int::Instance (), MUTABLE, MUTABLE, false), false)))
 { }
 
 void
-Sendto::call (executor_base_t& exec, const ast_call_expr_t& node) const
+Sendto::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   typed_value_t host_tv = type_->GetParameter ("host")->value;
   typed_value_t port_tv = type_->GetParameter ("port")->value;
   typed_value_t buf_tv = type_->GetParameter ("buf")->value;
 
-  ast_t::const_iterator pos = node.args ()->begin ();
-  runtime::evaluate_expr (exec, *pos++);
+  Node::ConstIterator pos = node.args ()->Begin ();
+  runtime::evaluate_expr (exec, memoryModel, *pos++);
   ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (stack_frame_pop_pointer (exec.stack ()));
-  runtime::evaluate_expr (exec, *pos++);
+  runtime::evaluate_expr (exec, memoryModel, *pos++);
   stack_frame_pop_tv (exec.stack (), host_tv);
-  runtime::evaluate_expr (exec, *pos++);
+  runtime::evaluate_expr (exec, memoryModel, *pos++);
   stack_frame_pop_tv (exec.stack (), port_tv);
-  runtime::evaluate_expr (exec, *pos++);
+  runtime::evaluate_expr (exec, memoryModel, *pos++);
   stack_frame_pop_tv (exec.stack (), buf_tv);
 
   Slice::ValueType host_slice = host_tv.slice_value ();

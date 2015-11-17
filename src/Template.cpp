@@ -1,6 +1,6 @@
 #include "Template.hpp"
 #include "SymbolVisitor.hpp"
-#include "ast.hpp"
+#include "Ast.hpp"
 #include <error.h>
 #include "runtime.hpp"
 
