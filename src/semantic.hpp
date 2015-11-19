@@ -84,9 +84,19 @@ CheckAndImplicitlyDereferenceAndConvertToDefault (Ast::Node*& expr);
 // Type check the expression expecting a reference.
 typed_value_t CheckExpectReference (Ast::Node* expr);
 
-
 typed_value_t
-type_check_expr (Ast::Node* ptr);
+TypeCheckExpression (Ast::Node* ptr);
+
+// TODO:  Move this into TypeCheckCall.
+void
+TypeCheckArgs (Ast::Node * node, TypedValueListType& tvlist);
+
+void
+TypeCheckCall (Ast::Node& node,
+               const Type::Signature* signature,
+               typed_value_t return_value,
+               Ast::Node* argsnode,
+               const TypedValueListType& args);
 
 void
 check_assignment (typed_value_t left_tv,

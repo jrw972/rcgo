@@ -312,6 +312,11 @@ void stack_frame_push_tv (stack_frame_t* stack_frame,
       stack_frame_push (stack_frame, tv.value.ref (type));
     }
 
+    void visit (const String& type)
+    {
+      stack_frame_push (stack_frame, tv.value.ref (type));
+    }
+
     void default_action (const Type::Type& type)
     {
       type_not_reached (type);

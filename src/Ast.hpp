@@ -92,6 +92,7 @@ namespace Ast
     bool inMutableSection;
     Location const location;
     typed_value_t typed_value;
+    runtime::Operation* operation;
 
   private:
     Node* m_parent;
@@ -819,6 +820,7 @@ namespace Ast
 
     field_t* field;
     const Type::Array* array_type;
+    runtime::Operation* index_op;
   };
 
   struct ast_select_expr_t : public ast_expr_t

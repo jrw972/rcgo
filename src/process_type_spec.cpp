@@ -54,7 +54,7 @@ CheckForForeignSafe (const Signature* signature, const parameter_t* return_param
 const Type::Type *
 process_type_spec (Node * node, bool force_identifiers, bool is_component, NamedType* named_type)
 {
-  struct type_spec_visitor_t : public Ast::Visitor
+  struct type_spec_visitor_t : public Ast::DefaultVisitor
   {
     const Type::Type* type;
     bool force_identifiers;

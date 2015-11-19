@@ -19,7 +19,7 @@ instantiate_contained_instances (const Type::Type * type,
                                  ast_instance_t* node,
                                  const std::string& name)
 {
-  struct visitor : public DefaultVisitor
+  struct visitor : public ::Type::DefaultVisitor
   {
     Composition::Composer& instance_table;
     Composition::Instance* const parent;
@@ -88,7 +88,7 @@ instantiate_contained_instances (const Type::Type * type,
           // Recur changing address.
           std::stringstream newname;
           newname << name << '[' << idx << ']';
-          visitor v (instance_table, parent, NULL, address + idx * type.ElementSize (), field, line, NULL, newname.str ());
+          visitor v (instance_table, parent, NULL, address + idx * type.UnitSize (), field, line, NULL, newname.str ());
           type.Base ()->Accept (v);
         }
     }
@@ -144,7 +144,7 @@ instantiate_contained_instances (const Type::Type * type,
 void
 enumerate_instances (Node * node, Composition::Composer& instance_table)
 {
-  struct visitor : public Ast::Visitor
+  struct visitor : public Ast::DefaultVisitor
   {
     Composition::Composer& instance_table;
     size_t address;

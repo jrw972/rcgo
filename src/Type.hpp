@@ -464,8 +464,8 @@ namespace Type
     struct ValueType
     {
       void* ptr;
-      size_t length;
-      size_t capacity;
+      Uint::ValueType length;
+      Uint::ValueType capacity;
     };
     virtual void Accept (Visitor& visitor) const;
     virtual std::string ToString () const
@@ -484,6 +484,10 @@ namespace Type
     {
       return UNNAMED;
     }
+    size_t UnitSize () const
+    {
+      return util::AlignUp (base_->Size (), base_->Alignment ());
+    }
   private:
     friend class Type;
     Slice (const Type* base) : BaseType (base) { }
@@ -500,17 +504,17 @@ namespace Type
     }
     size_t Size () const
     {
-      return ElementSize () * dimension;
+      return UnitSize () * dimension;
     }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
     }
-    size_t ElementSize () const
+    const Int::ValueType dimension;
+    size_t UnitSize () const
     {
       return util::AlignUp (base_->Size (), base_->Alignment ());
     }
-    const Int::ValueType dimension;
   private:
     friend class Type;
     Array (Int::ValueType d, const Type* base) : BaseType (base), dimension (d) { }

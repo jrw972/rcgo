@@ -23,6 +23,11 @@ namespace Ast
   class ConstVisitor;
 }
 
+namespace runtime
+{
+  class Operation;
+}
+
 class MemoryModel;
 class Template;
 class ParameterSymbol;

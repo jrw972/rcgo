@@ -48,36 +48,105 @@ namespace runtime
                  const MemoryModel& memoryModel,
                  const Ast::Node* node);
 
-  struct New : public Template
+  struct New : public ::Template
   {
     New (Ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
-  struct Move : public Template
+  struct Move : public ::Template
   {
     Move (Ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
-  struct Merge : public Template
+  struct Merge : public ::Template
   {
     Merge (Ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
-  struct Copy : public Template
+  struct Copy : public ::Template
   {
     Copy (Ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
-  struct Println : public Template
+  struct Println : public ::Template
   {
     Println (Ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
+  // Operations
+  struct Operation
+  {
+    virtual ~Operation() { }
+    virtual void execute (executor_base_t& exec, const MemoryModel& memoryModel) const = 0;
+  };
+
+  struct ConvertStringToSliceOfBytes : public Operation
+  {
+    static ConvertStringToSliceOfBytes instance;
+    virtual void execute (executor_base_t& exec, const MemoryModel& memoryModel) const;
+  private:
+    ConvertStringToSliceOfBytes () { }
+  };
+
+  // This is a transitional type.
+  // It should be removed in the future.
+  struct EvaluateNode : public Operation
+  {
+    EvaluateNode (const Ast::Node* n) : node (n) { }
+    virtual void execute (executor_base_t& exec, const MemoryModel& memoryModel) const;
+    const Ast::Node* const node;
+  };
+
+  struct LoadSlice : public Operation
+  {
+    LoadSlice (const Operation* c) : child (c) { }
+    virtual void execute (executor_base_t& exec, const MemoryModel& memoryModel) const;
+    const Operation* const child;
+  };
+
+  struct IndexArrayReference : public Operation
+  {
+    IndexArrayReference (const Location& l, const Operation* b, const Operation* i, const Type::Array& t) : location (l), base (b), index (i), type (t) { }
+    virtual void execute (executor_base_t& exec, const MemoryModel& memoryModel) const;
+    Location const location;
+    const Operation* const base;
+    const Operation* const index;
+    const Type::Array& type;
+  };
+
+  struct IndexArrayValue : public Operation
+  {
+    IndexArrayValue (const Location& l, const Operation* b, const Operation* i, const Type::Array& t) : location (l), base (b), index (i), type (t) { }
+    virtual void execute (executor_base_t& exec, const MemoryModel& memoryModel) const;
+    Location const location;
+    const Operation* const base;
+    const Operation* const index;
+    const Type::Array& type;
+  };
+
+  struct IndexSlice : public Operation
+  {
+    IndexSlice (const Location& l, const Operation* b, const Operation* i, const Type::Slice& t) : location (l), base (b), index (i), type (t) { }
+    virtual void execute (executor_base_t& exec, const MemoryModel& memoryModel) const;
+    Location const location;
+    const Operation* const base;
+    const Operation* const index;
+    const Type::Slice& type;
+  };
+
+  Operation* MakeConvertToInt (const Operation* c, const Type::Type* type);
+
+  struct Int : public Operation
+  {
+    Int (Type::Int::ValueType v) : value (v) { }
+    virtual void execute (executor_base_t& exec, const MemoryModel& memoryModel) const;
+    Type::Int::ValueType const value;
+  };
 }
 
 #endif /* runtime_hpp */

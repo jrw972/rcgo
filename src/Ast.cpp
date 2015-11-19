@@ -23,15 +23,6 @@ namespace Ast
 
       visitor (std::ostream& o) : out (o), indent (0) { }
 
-      void default_action (const Node& node)
-      {
-        not_reached;
-        // print_indent (node);
-        // node.print (out);
-        // out << ' ' << node.typed_value << '\n';
-        // print_children (node);
-      }
-
       void print_indent (const Node& node)
       {
         for (size_t idx = 0; idx != indent; ++idx)
@@ -52,6 +43,275 @@ namespace Ast
             (*pos)->Accept (*this);
           }
         indent = old_indent;
+      }
+
+      // void default_action (const Node& node)
+      // {
+      //   print_indent (node);
+      //   node.print (out);
+      //   out << ' ' << node.typed_value << '\n';
+      //   print_children (node);
+      // }
+
+      void visit (const ast_identifier_t& node)
+      {
+        print_indent (node);
+        out << "identifier " << node.identifier << '\n';
+        print_children (node);
+      }
+      void visit (const ast_identifier_list_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_receiver_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_array_type_spec_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_slice_type_spec_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_empty_type_spec_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_enum_type_spec_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_field_list_type_spec_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_heap_type_spec_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_identifier_list_type_spec_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_identifier_type_spec_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_pointer_type_spec_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_push_port_type_spec_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_pull_port_type_spec_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_signature_type_spec_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_cast_expr_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_implicit_conversion_expr_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const TypeExpression& node)
+      {
+        print_indent (node);
+        out << "TypeExpression " << node.typed_value << '\n';
+        print_children (node);
+      }
+      void visit (const ast_binary_arithmetic_expr_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_address_of_expr_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_call_expr_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_dereference_expr_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_implicit_dereference_expr_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_identifier_expr_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_index_expr_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_slice_expr_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_indexed_port_call_expr_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_list_expr_t& node)
+      {
+        print_indent (node);
+        out << "list_expr\n";
+        print_children (node);
+      }
+      void visit (const ast_literal_expr_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_unary_arithmetic_expr_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_push_port_call_expr_t& node)
+      {
+        print_indent (node);
+        out << "push_port_call_expr " << node.typed_value << '\n';
+        print_children (node);
+      }
+      void visit (const ast_select_expr_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_empty_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_add_assign_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_change_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_assign_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_expression_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_if_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_while_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_list_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_return_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_increment_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_decrement_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_subtract_assign_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_activate_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_var_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_bind_push_port_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_bind_push_port_param_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_bind_pull_port_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_for_iota_statement_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_action_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_const_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_dimensioned_action_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_bind_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_function_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_getter_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_initializer_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_instance_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_method_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_reaction_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const ast_dimensioned_reaction_t& node)
+      {
+        unimplemented;
+      }
+      void visit (const Type& node)
+      {
+        unimplemented;
+      }
+      void visit (const SourceFile& node)
+      {
+        unimplemented;
       }
     };
 
@@ -140,7 +400,7 @@ namespace Ast
 
   std::string ast_get_identifier (const Node* ast)
   {
-    struct visitor : public ConstVisitor
+    struct visitor : public DefaultConstVisitor
     {
       std::string retval;
 
@@ -387,6 +647,7 @@ namespace Ast
   Node::Node (unsigned int line_, size_t children_count)
     : inMutableSection (false)
     , location (line_)
+    , operation (NULL)
     , m_parent (NULL)
     , o_context (Parent)
   {

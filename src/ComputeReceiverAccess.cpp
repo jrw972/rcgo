@@ -15,7 +15,7 @@ using namespace Ast;
 ReceiverAccess
 ComputeReceiverAccess (const Ast::Node* node)
 {
-  struct visitor : public ConstVisitor
+  struct visitor : public DefaultConstVisitor
   {
     ReceiverAccess access;
 

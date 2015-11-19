@@ -110,7 +110,7 @@ processIota (Node& node, Ast::Node*& dimensionNode, ParameterSymbol*& parameterS
       false);
   parameterSymbol = ParameterSymbol::make (iota_parameter);
 
-  return dimension.Convert (dimensionNode->location, Type::Uint::Instance ()).value.ref (*Type::Uint::Instance ());
+  return dimension.Convert (dimensionNode->location, Type::Uint::Instance (), node).value.ref (*Type::Uint::Instance ());
 }
 
 static void
@@ -143,7 +143,7 @@ processSignatureReturn (Ast::Node* signatureNode, Ast::Node* returnType, Mutabil
 void
 ProcessDeclarations (Node * node)
 {
-  struct visitor : public Ast::Visitor
+  struct visitor : public Ast::DefaultVisitor
   {
     void default_action (Node& node)
     {

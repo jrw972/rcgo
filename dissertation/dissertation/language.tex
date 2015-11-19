@@ -9,11 +9,11 @@ In this chapter, we present a programming language for reactive components.
 We state the motivation for the language, our assumptions for tractability, and the features that guided our design.
 We then show how reactive components are expressed in the language and we conclude with illustrative examples.
 
-\section{Motivation}
+\section{Introduction}
 
-An implementation of reactive components is necessary for at least three reasons.
+An implementation of the reactive component model presented in chapter~\ref{model} is necessary for at least three reasons.
 First and foremost, an implementation tests the practicality of the model.
-The act of implementing the model will reveal whether the assumptions upon which the model is founded can be realized using existing techniques.
+The act of implementing the model can help to evaluate whether the assumptions upon which the model is founded can be realized using existing techniques.
 Conversely, an implementation can suggest restrictions to the model that are necessary to produce an effective implementation.
 An example of this was seen in chapter~\ref{model} where the component instance was used as proxy for its state variables for the purpose of determining which variables were involved in a transaction.
 Implementation forces one to supply and consider details that can either qualify or disqualify a model as a practical engineering tool.
@@ -32,8 +32,23 @@ By comparing implementations of similar systems in two different models, we can 
 These ideas will be explored further in chapter~\ref{evaluation}.
 
 \section{Approach}
-Our approach to implementing reactive components is to define a programming language for reactive components and implement that language in an interpreter.
-The Go programming language~\cite{go} was adopted as the \emph{transformational basis} of the language due to its simplicity.
+Our approach to implementing reactive components is to define a high-level programming language for reactive components and implement that language in an interpreter.
+The two alternatives to a high-level programming language are a low-level byte-code and a coordination language.
+The main purpose of byte-code is to describe a transformation computation for a real or virtual machine.
+Many of the interesting elements of reactive components, like actions, reactions, getters, push ports, pull ports, activations, and bindings are more declarative in nature.
+Thus, the initial effort should be to capture these elements using a high-level language.
+The choice to implement an interpreter made the task more tractable as it avoids code generation, linking, and loading.
+However, in moving from the interpreter to a compiler, the processes of code generation, linking, and loading must provide the same guarantees that are enforced by the high-level language.
+We describe the challenges of moving from interpreter to compiler in chapter~\ref{future_work}.
+
+We elected to not implement reactive components as a coordination language due to the interplay between reactive and transformational semantics.
+The coordination language approach involves two completely separate languages.
+The reactive language would encode systems using the elements of the reactive component model, e.g., components, actions, push ports, etc. while the transformation language would define all of the types and computation performed on those types.
+For this approach to be viable, the transformational language must guarantee that no component changes state during the immutable phase of a transition and that the state of each component remain isolated.
+An ordinary programmer with a sufficiently powerful transformational language, like C, C++, or Java, can easily violate these requirements.
+Based on this observation, we elected to define a language for reactive components that includes a \emph{transformational basis} that has been modified to provide the guarantees necessary for reactive component semantics.
+
+The Go programming language~\cite{go} was adopted as the transformational basis of the language due to its simplicity.
 That is, we will defer to Go's syntax and semantics for types,declarations, statements, and expressions when they are not in conflict with the semantics of reactive components.
 Go is an imperative programming language that supports methods but places no emphasis on an inheritance hierarchy.
 In the same vein, Go does not have constructors, destructors, function overloading, and operator overloading.
@@ -42,12 +57,8 @@ This combination, in our opinion, makes Go an attractive transformational basis 
 We will not discuss the syntax and semantics of Go except when they interact with the semantics of reactive components.
 Our implementation of Go is intentionally incomplete as a full implementation is beyond the scope of this project.
 
-The choice to implement an interpreter instead of a byte-code interpretation, i.e., a virtual machine, or a compiler made the task tractable as it avoids code generation, linking, and loading.
-However, in moving from the interpreter to a compiler, the processes of code generation, linking, and loading must provide certain guarantees.
-We describe the challenges of moving from interpreter to compiler in chapter~\ref{future_work}.
-
 \paragraph{Static system assumption.}
-To make implementation tractable, we will assume that the systems to be implemented have a static topology meaning that all reactive components are statically allocated.
+To make implementation more tractable, we will assume that the systems to be implemented have a static topology meaning that all reactive components are statically allocated.
 Both finite state and infinite state (subject to system resource limits) reactive components are permitted, but both the number and configurations of reactive components in a system are fixed.
 This is equivalent to systems that assume a fixed number of actors and is roughly equivalent to systems that assume a fixed number of threads.
 These assumptions are common in embedded and real-time systems due to the combination of limited resources and a need for predictability.

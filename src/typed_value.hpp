@@ -197,7 +197,6 @@ struct typed_value_t
   static typed_value_t dereference (typed_value_t tv);
   static typed_value_t address_of (typed_value_t tv);
   static typed_value_t select (typed_value_t tv, const std::string& identifier);
-  static typed_value_t index (const Location& location, typed_value_t tv, typed_value_t index);
   static typed_value_t slice (const Location& location, typed_value_t tv, typed_value_t low, typed_value_t high);
   static typed_value_t merge (typed_value_t tv);
   static typed_value_t move (typed_value_t tv);
@@ -210,7 +209,7 @@ struct typed_value_t
   bool AssignableTo (const Type::Type* type) const;
 
   // Does not check for errors.
-  typed_value_t Convert (const Location& location, const Type::Type* type) const;
+  typed_value_t Convert (const Location& location, const Type::Type* type, Ast::Node& node) const;
 
   static typed_value_t Equal (const Location& location, const typed_value_t& left, const typed_value_t& right);
   static typed_value_t NotEqual (const Location& location, const typed_value_t& left, const typed_value_t& right);
@@ -244,7 +243,7 @@ struct typed_value_t
   {
     return type == NULL;
   }
-  bool isReference () const
+  bool IsReference () const
   {
     return kind == REFERENCE;
   }
@@ -272,7 +271,9 @@ struct typed_value_t
     return value.slice_value ();
   }
 
+  void RequireReference (const Location loc) const;
   void RequireValue (const Location loc) const;
+  void RequireReferenceOrValue (const Location loc) const;
 
   std::ostream& print (std::ostream& o) const;
 

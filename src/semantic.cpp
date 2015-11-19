@@ -88,7 +88,7 @@ allocate_symtab (Ast::Node* node, MemoryModel& memory_model)
 static void
 allocate_statement_stack_variables (Ast::Node* node, MemoryModel& memory_model)
 {
-  struct visitor : public Visitor
+  struct visitor : public DefaultVisitor
   {
     MemoryModel& memory_model;
 
@@ -233,7 +233,7 @@ allocate_parameter (MemoryModel& memory_model,
 void
 allocate_stack_variables (Ast::Node* node)
 {
-  struct visitor : public Visitor
+  struct visitor : public DefaultVisitor
   {
     void visit (ast_action_t& node)
     {

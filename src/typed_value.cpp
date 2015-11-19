@@ -10,6 +10,10 @@ using namespace Type;
 #include "Template.hpp"
 #include <utility>
 using namespace std::rel_ops;
+#include "Ast.hpp"
+using namespace Ast;
+#include "runtime.hpp"
+using namespace runtime;
 
 static Type::C64 operator* (const Type::C64&, const Type::C64&)
 {
@@ -194,7 +198,7 @@ typed_value_t::zero ()
       type_not_reached (type);
     }
 
-    void visit (const Int& type)
+    void visit (const Type::Int& type)
     {
       value.value.ref (type) = 0;
     }
@@ -441,64 +445,6 @@ typed_value_t::select (typed_value_t in, const std::string& identifier)
     }
 
   return typed_value_t ();
-}
-
-typed_value_t
-typed_value_t::index (const Location& location, typed_value_t in, typed_value_t index)
-{
-  assert (in.type != NULL);
-  assert (in.kind == REFERENCE);
-  assert (index.type != NULL);
-  assert (index.kind == VALUE);
-
-  struct visitor : public DefaultVisitor
-  {
-    const Location& location;
-    const typed_value_t& index;
-    const Type::Type* result_type;
-
-    visitor (const Location& loc, const typed_value_t& i) : location (loc), index (i), result_type (NULL) { }
-
-    void default_action (const Type::Type& type)
-    {
-      error_at_line (-1, 0, location.File.c_str (), location.Line,
-                     "cannot index expression of type %s (E74)", type.ToString ().c_str ());
-    }
-
-    void visit (const Array& type)
-    {
-      if (!type_is_integral (index.type))
-        {
-          error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "cannot index array by value of type %s (E75)", index.type->ToString ().c_str ());
-        }
-
-      if (index.value.present && index.integral_value () >= type.dimension)
-        {
-          error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "index out of bounds (E76)");
-        }
-
-      if (index.low_value.present && index.low_integral_value () < 0)
-        {
-          error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "index out of bounds (E77)");
-        }
-
-      if (index.high_value.present && index.high_integral_value () > type.dimension)
-        {
-          error_at_line (-1, 0, location.File.c_str (), location.Line,
-                         "index out of bounds (E78)");
-        }
-
-      result_type = type.Base ();
-    }
-  };
-  visitor v (location, index);
-  in.type->Accept (v);
-
-  in.type = v.result_type;
-  return in;
 }
 
 typed_value_t
@@ -768,12 +714,32 @@ typed_value_t::change (const Location& location, typed_value_t tv)
 }
 
 void
+typed_value_t::RequireReference (const Location location) const
+{
+  if (!IsReference ())
+    {
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
+                     "expected a reference (E14)");
+    }
+}
+
+void
 typed_value_t::RequireValue (const Location location) const
 {
   if (!IsValue ())
     {
       error_at_line (-1, 0, location.File.c_str (), location.Line,
-                     "required type (E24)");
+                     "expected a value (E24)");
+    }
+}
+
+void
+typed_value_t::RequireReferenceOrValue (const Location location) const
+{
+  if (!(IsReference () || IsValue ()))
+    {
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
+                     "expected reference or value (E143)");
     }
 }
 
@@ -885,8 +851,9 @@ struct ConvertImpl
   const Location& location;
   typed_value_t& out;
   const typed_value_t& in;
+  Node& node;
 
-  ConvertImpl (const Location& loc, typed_value_t& o, const typed_value_t& i) : location (loc), out (o), in (i) { }
+  ConvertImpl (const Location& loc, typed_value_t& o, const typed_value_t& i, Node& n) : location (loc), out (o), in (i), node (n) { }
 
   // Caused by untyped bool being convert to named bool.
   // The untyped bool comes from comparison operators.
@@ -911,9 +878,11 @@ struct ConvertImpl
   {
     if (type1.Base () == &NamedByte)
       {
-        out.value.ref (type1).ptr = in.value.ref (type2).ptr;
-        out.value.ref (type1).length = in.value.ref (type2).length;
-        out.value.ref (type1).capacity = in.value.ref (type2).length;
+        // Dynamic conversion.
+        out.intrinsic_mutability = MUTABLE;
+        out.dereference_mutability = MUTABLE;
+        out.value.present = false;
+        node.operation = &ConvertStringToSliceOfBytes::instance;
       }
     else
       {
@@ -943,7 +912,7 @@ pointerConversion (const Type::Type* x, const Type::Type* t)
 }
 
 typed_value_t
-typed_value_t::Convert (const Location& location, const Type::Type* type) const
+typed_value_t::Convert (const Location& location, const Type::Type* type, Node& node) const
 {
   assert (!IsError ());
   RequireValue (location);
@@ -959,7 +928,7 @@ typed_value_t::Convert (const Location& location, const Type::Type* type) const
             {
               typed_value_t out = *this;
               out.type = type;
-              ConvertImpl c (location, out, *this);
+              ConvertImpl c (location, out, *this, node);
               DoubleDispatch (type->UnderlyingType (), this->type, c);
               out.fix ();
               return out;
@@ -1028,11 +997,12 @@ typed_value_t::Convert (const Location& location, const Type::Type* type) const
         }
     }
 
-  typed_value_t out = *this;
-  out.type = type;
-  ConvertImpl c (location, out, *this);
-  DoubleDispatch (type->UnderlyingType (), this->type, c);
-  return out;
+  not_reached;
+  // typed_value_t out = *this;
+  // out.type = type;
+  // ConvertImpl c (location, out, *this);
+  // DoubleDispatch (type->UnderlyingType (), this->type, c);
+  // return out;
 }
 
 template <typename VisitorType>

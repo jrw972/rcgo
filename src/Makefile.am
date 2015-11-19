@@ -43,6 +43,7 @@ Symbol.hpp Symbol.cpp \
 SymbolVisitor.hpp \
 Template.hpp Template.cpp \
 Type.hpp Type.cpp \
+TypeCheckExpression.cpp \
 typed_value.hpp typed_value.cpp \
 types.hpp \
 util.hpp util.cpp \

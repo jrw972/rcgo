@@ -477,7 +477,7 @@ namespace Composition
              bind_pos != bind_limit;
              ++bind_pos)
           {
-            struct visitor : public ConstVisitor
+            struct visitor : public DefaultConstVisitor
             {
               Composer& table;
               const size_t receiver_address;
@@ -637,7 +637,7 @@ namespace Composition
   // Determine what relationship the given entity has with other entities.
   // These relationships are created through activate statements and calls to
   // getters and pull ports.
-  struct Composer::ElaborationVisitor : public ConstVisitor
+  struct Composer::ElaborationVisitor : public DefaultConstVisitor
   {
     Composer& table;
     Action* action;
@@ -780,7 +780,7 @@ namespace Composition
                          "port index out of bounds (E100)");
         }
 
-      size_t port = activation->instance->address + node.field->offset + index.value * node.array_type->ElementSize ();
+      size_t port = activation->instance->address + node.field->offset + index.value * node.array_type->UnitSize ();
 
       // Find what is bound to this port.
       Composer::PushPortsType::const_iterator port_pos = table.push_ports.find (port);

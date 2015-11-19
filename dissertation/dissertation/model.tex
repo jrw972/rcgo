@@ -446,7 +446,7 @@ component System {
 \paragraph{Determinism and composition.}
 The result of composing two well-defined reactive components may yield a system that is non-deterministic.
 The two ``hazards'' that must be avoided are non-deterministic assignment to state variables and recursively activated reactions.
-To illustrate these hazards, we model an individual transaction as a directed graph $G = (N,V)$ where each node $N=(i,t)$ is an instance/transition pair and the edges are modeled as function $V: N \to N$ that encodes the causal relationships induced by port activations and bindings.
+To illustrate these hazards, we model an individual transaction as a directed graph $G = (N,V)$ where each node $N=(i,t)$ is an instance/transition pair and the edges are modeled as a function $V: N \to N$ that encodes the causal relationships induced by port activations and bindings.
 A transaction graph has a distinguished root $r \in N$ where the transition corresponds to an action while all of the other nodes in the graph correspond to reactions.
 
 Non-deterministic assignment results when the next value for a state variable is not well defined due to the inclusion of two or more transitions that operate on the state variable.
@@ -607,11 +607,20 @@ Composition cannot ``undo'' a property established for a component.
 \section{Summary}
 In this chapter, we presented the reactive component model for reactive programs.
 A reactive component consists of a set of state variables and transitions that are private to the component.
-The interface of a reactive component consists of push ports, which allow a component to trigger a transition in another component, and pull ports, which allow a component to access the state of another component.
-
-Composition is achieved through recursive encapsulation and explicit port binding.
-Transitions that are linked through composition form an atomic transaction that allows the properties of one component to be related to another component.
-Composition achieves the principles outline in chapter~\ref{introduction}.
+The interface of a reactive component consists of push ports and reactions, which allow a component to trigger a transition in another component, and pull ports and getters, which allow a component to access the state of another component.
+Composition is achieved through recursive encapsulation and explicit port binding and achieves the principles outlined in chapter~\ref{introduction}.
 The definitions of sub-components can be substituted into the containing component resulting in an equivalent system (substitutional equivalence).
 Similarly, sub-components may be ``factored out'' by using pull ports and getters to safely access the state of the sub-components.
-Non-deterministic state transitions resulting from composition can be detected by analyzing over component instances instead of individual state variables.
+
+The private nature of state variables and transitions causes properties established from the text of a component to be preserved through composition.
+Composition links transitions to form an atomic transaction that allows the properties of one component to be related to another component.
+If the sub-components of a component are protected from further composition, then the properties of the sub-components as well as all properties derived from their interactions are also preserved as the parent component is composed.
+Property-preserving composition is essential for reasoning about systems in a hierarchical and/or modular fashion.
+
+Two hazards associated with composition are recursive transactions and non-deterministic state transitions.
+Analysis of these hazards at the state variable level is impossible due to the undecidable nature of their sub-problems.
+This suggests that implementations may restrict composition to prevent the conditions necessary for recursive transactions and non-deterministic state transitions.
+The main concession is allowing a component instance to proxy for its state variables.
+The problem of detecting recursive transactions, then, can be posed as the problem of detecting cycles in a directed graph.
+Similarly, the problem of detecting potentially non-deterministic state transitions reduces to a set membership problem.
+Valid systems that fail the check for non-deterministic state transitions using component instance proxies can be refactored by decomposing  the offending components.

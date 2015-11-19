@@ -121,11 +121,11 @@ struct static_value_t
       {
       case STACK_ADDRESS:
         out = in;
-        out.offset += type->ElementSize () * idx.value;
+        out.offset += type->UnitSize () * idx.value;
         break;
       case ABSOLUTE_ADDRESS:
         out = in;
-        out.address += type->ElementSize () * idx.value;
+        out.address += type->UnitSize () * idx.value;
         break;
       case VALUE:
         not_reached;

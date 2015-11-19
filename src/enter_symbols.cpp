@@ -90,7 +90,7 @@ enter_symbols (Node * node)
                      node,
                      typed_value_t (Type::Boolean::Instance (), false)));
 
-  struct visitor : public Visitor
+  struct visitor : public DefaultVisitor
   {
     void default_action (Node& node)
     {

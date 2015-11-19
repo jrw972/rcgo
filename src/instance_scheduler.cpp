@@ -13,8 +13,8 @@ instance_scheduler_t::lock (const Composition::InstanceSet& set)
        pos != limit;
        ++pos)
     {
-      instance_info_t* record = info_map_[pos->first];
       unimplemented;
+      //instance_info_t* record = info_map_[pos->first];
       // switch (pos->second)
       //   {
       //   case ACTIVATION_READ:
@@ -34,8 +34,8 @@ instance_scheduler_t::unlock (const Composition::InstanceSet& set)
        pos != limit;
        ++pos)
     {
-      instance_info_t* record = info_map_[pos->first];
       unimplemented;
+      //instance_info_t* record = info_map_[pos->first];
       // switch (pos->second)
       //   {
       //   case ACTIVATION_READ:

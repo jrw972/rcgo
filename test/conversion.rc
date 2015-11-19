@@ -9,10 +9,14 @@ func test (num *uint; desc string; status bool) {
   *num++;
 }
 
+func getslice () []byte {
+  return []byte ("Hello");
+}
+
 type Test component { };
 
 init (this *Test) Main () {
-  println (`1..19`);
+  println (`1..21`);
   var n uint = 1;
   {
     const x int8 = 3.0;
@@ -89,6 +93,13 @@ init (this *Test) Main () {
   {
     const x complex128 = 2147483648.0;
     test (&n, `2147483648.0 to complex128`, x == (1<<31));
+  }
+  {
+    var x []byte = getslice();
+    test (&n, `"Hello" to []byte`, x[3] == 108);
+    x[3] = 0;
+    var y []byte = getslice();
+    test (&n, `string copy`, y[3] == 108);
   }
 }
 

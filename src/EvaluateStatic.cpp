@@ -28,7 +28,7 @@ operator<< (std::ostream& o,
 static_value_t
 EvaluateStatic (const Ast::Node* node, const static_memory_t& memory)
 {
-  struct visitor : public ConstVisitor
+  struct visitor : public Ast::DefaultConstVisitor
   {
     const static_memory_t& memory;
     static_value_t result;
@@ -83,7 +83,7 @@ EvaluateStatic (const Ast::Node* node, const static_memory_t& memory)
     void visit (const ast_literal_expr_t& node)
     {
       typed_value_t tv = node.typed_value;
-      struct visitor : public DefaultVisitor
+      struct visitor : public Type::DefaultVisitor
       {
         typed_value_t tv;
         static_value_t result;

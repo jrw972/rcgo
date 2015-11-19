@@ -12,6 +12,7 @@ grep -o -h -E '\(E[0-9]+\)' src/*.hpp src/*.cpp | tr -d '()E' | sort -n -u | sor
 grep -o -h -E 'E[0-9]+' test/*.sh | tr -d 'E' | sort -n -u | sort > tested_errors
 
 echo "The following errors are not tested:"
-join -v 1 error_list tested_errors | sort -n
+join -v 1 error_list tested_errors | sort -n | tr '\n' ' '
+echo
 
 echo "Errors tested: $(awk 'END { print NR; }' tested_errors) / $(awk 'END { print NR; }' error_list)"
