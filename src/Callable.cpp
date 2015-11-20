@@ -1,10 +1,10 @@
 #include "Callable.hpp"
 #include "executor_base.hpp"
-#include "Ast.hpp"
+#include "ast.hpp"
 #include "runtime.hpp"
 #include "SymbolVisitor.hpp"
 
-using namespace Ast;
+using namespace ast;
 
 Function::Function (ast_function_t& node_)
   : Symbol (ast_get_identifier (node_.identifier ()), node_.identifier ())
@@ -123,7 +123,7 @@ void Initializer::call (executor_base_t& exec, const MemoryModel& memoryModel, c
   stack_frame_popn (exec.stack (), top_after - top_before);
 }
 
-void Initializer::call (executor_base_t& exec, component_t* thisPtr, const Ast::Node* args) const
+void Initializer::call (executor_base_t& exec, component_t* thisPtr, const ast::Node* args) const
 {
   // Create space for the return.
   stack_frame_reserve (exec.stack (), this->returnSize);

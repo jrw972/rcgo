@@ -88,7 +88,7 @@ namespace Type
   {
   public:
     typedef std::vector<Getter*> GettersType;
-    typedef std::vector<action_t*> ActionsType;
+    typedef std::vector<decl::Action*> ActionsType;
     typedef std::vector<reaction_t*> ReactionsType;
     typedef std::vector<bind_t*> BindsType;
 
@@ -164,11 +164,11 @@ namespace Type
     {
       return getters_.end ();
     }
-    void Add (action_t* action)
+    void Add (decl::Action* action)
     {
       actions_.push_back (action);
     }
-    action_t* GetAction (const std::string& identifier) const;
+    decl::Action* GetAction (const std::string& identifier) const;
     ActionsType::const_iterator ActionsBegin () const
     {
       return actions_.begin ();
@@ -2247,7 +2247,7 @@ namespace Type
   reaction_t*
   type_select_reaction (const Type* type, const std::string& identifier);
 
-  action_t*
+  decl::Action*
   type_select_action (const Type* type, const std::string& identifier);
 
   bind_t*

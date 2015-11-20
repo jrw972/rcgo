@@ -3,10 +3,10 @@
 #include "yyparse.hpp"
 #include "debug.hpp"
 
-using namespace Ast;
+using namespace ast;
 %}
 
-%union { Ast::Node* node; Mutability mutability; }
+%union { ast::Node* node; Mutability mutability; }
 %token <node> IDENTIFIER
 %token <node> LITERAL
 
@@ -109,7 +109,7 @@ Const:
 
 Instance: INSTANCE IDENTIFIER IDENTIFIER IDENTIFIER '(' OptionalExpressionList ')' ';' { $$ = new ast_instance_t (@1, $2, $3, $4, $6); }
 
-TypeDecl: TYPE IDENTIFIER Type ';' { $$ = new Ast::Type (@1, $2, $3); }
+TypeDecl: TYPE IDENTIFIER Type ';' { $$ = new ast::Type (@1, $2, $3); }
 
 Mutability:
 /* Empty. */

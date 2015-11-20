@@ -1,13 +1,13 @@
 #include "semantic.hpp"
 #include "Type.hpp"
-#include "Ast.hpp"
+#include "ast.hpp"
 #include <error.h>
 #include "Symbol.hpp"
 #include "parameter.hpp"
 #include "AstVisitor.hpp"
 
 using namespace Type;
-using namespace Ast;
+using namespace ast;
 
 // Look up a symbol.  Error if it is not defined.
 static Symbol *
@@ -23,7 +23,7 @@ lookup_no_force (Node * node, const std::string& identifier)
 }
 
 typed_value_t
-process_array_dimension (Ast::Node*& ptr)
+process_array_dimension (ast::Node*& ptr)
 {
   typed_value_t tv = CheckAndImplicitlyDereferenceAndConvertToDefault (ptr);
   tv.ArrayDimension (ptr->location);
@@ -54,7 +54,7 @@ CheckForForeignSafe (const Signature* signature, const parameter_t* return_param
 const Type::Type *
 process_type_spec (Node * node, bool force_identifiers, bool is_component, NamedType* named_type)
 {
-  struct type_spec_visitor_t : public Ast::DefaultVisitor
+  struct type_spec_visitor_t : public ast::DefaultVisitor
   {
     const Type::Type* type;
     bool force_identifiers;
@@ -97,7 +97,7 @@ process_type_spec (Node * node, bool force_identifiers, bool is_component, Named
     {
       type = Enum::Instance ();
 
-      Ast::Node* value = node.values ();
+      ast::Node* value = node.values ();
       size_t e = 0;
       for (Node::ConstIterator pos = value->Begin (), limit = value->End ();
            pos != limit;
@@ -132,7 +132,7 @@ process_type_spec (Node * node, bool force_identifiers, bool is_component, Named
            pos != limit;
            ++pos)
         {
-          Ast::Node* child = *pos;
+          ast::Node* child = *pos;
           ast_identifier_list_type_spec_t* c = static_cast<ast_identifier_list_type_spec_t*> (child);
           Node *identifier_list = c->identifier_list ();
           Node *type_spec = c->type_spec ();
@@ -142,7 +142,7 @@ process_type_spec (Node * node, bool force_identifiers, bool is_component, Named
                pos2 != limit2;
                ++pos2)
             {
-              Ast::Node* id = *pos2;
+              ast::Node* id = *pos2;
               const std::string& identifier = ast_get_identifier (id);
               const Type::Type *field = type_select (field_list, identifier);
               if (field == NULL)
@@ -233,7 +233,7 @@ process_type_spec (Node * node, bool force_identifiers, bool is_component, Named
                pos2 != limit2;
                ++pos2)
             {
-              Ast::Node* id = *pos2;
+              ast::Node* id = *pos2;
               const std::string& identifier = ast_get_identifier (id);
               const parameter_t *parameter = signature->Find (identifier);
               if (parameter == NULL)

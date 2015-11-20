@@ -1,13 +1,13 @@
 #include "Type.hpp"
 #include "Composition.hpp"
 #include "field.hpp"
-#include "Ast.hpp"
+#include "ast.hpp"
 #include "Symbol.hpp"
 #include "SymbolVisitor.hpp"
 #include "AstVisitor.hpp"
 
 using namespace Type;
-using namespace Ast;
+using namespace ast;
 
 static void
 instantiate_contained_instances (const Type::Type * type,
@@ -144,7 +144,7 @@ instantiate_contained_instances (const Type::Type * type,
 void
 enumerate_instances (Node * node, Composition::Composer& instance_table)
 {
-  struct visitor : public Ast::DefaultVisitor
+  struct visitor : public ast::DefaultVisitor
   {
     Composition::Composer& instance_table;
     size_t address;

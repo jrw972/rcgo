@@ -1,16 +1,19 @@
-#include "semantic.hpp"
-#include "Ast.hpp"
-#include "Symbol.hpp"
 #include <error.h>
+
+#include "semantic.hpp"
+#include "ast.hpp"
+#include "Symbol.hpp"
 #include "semantic.hpp"
 #include "action.hpp"
+#include "reaction.hpp"
 #include "field.hpp"
 #include "parameter.hpp"
 #include "Callable.hpp"
 #include "AstVisitor.hpp"
 
 using namespace Type;
-using namespace Ast;
+using namespace ast;
+using namespace decl;
 
 void
 check_assignment (typed_value_t left_tv,
@@ -62,7 +65,7 @@ check_assignment (typed_value_t left_tv,
 }
 
 typed_value_t
-CheckExpectReference (Ast::Node* expr)
+CheckExpectReference (ast::Node* expr)
 {
   typed_value_t tv = TypeCheckExpression (expr);
   tv.RequireReference (expr->location);
@@ -70,7 +73,7 @@ CheckExpectReference (Ast::Node* expr)
 }
 
 static typed_value_t
-check_condition (Ast::Node*& condition_node)
+check_condition (ast::Node*& condition_node)
 {
   typed_value_t tv = CheckAndImplicitlyDereferenceAndConvertToDefault (condition_node);
   if (!type_is_boolean (tv.type))
@@ -85,7 +88,7 @@ check_condition (Ast::Node*& condition_node)
 static void
 type_check_statement (Node * node)
 {
-  struct visitor : public Ast::DefaultVisitor
+  struct visitor : public ast::DefaultVisitor
   {
     void default_action (Node& node)
     {
@@ -100,7 +103,7 @@ type_check_statement (Node * node)
     void visit (ast_empty_statement_t& node)
     { }
 
-    typed_value_t bind (Node& node, Ast::Node* port_node, Ast::Node*& reaction_node)
+    typed_value_t bind (Node& node, ast::Node* port_node, ast::Node*& reaction_node)
     {
       CheckExpectReference (port_node);
       CheckAndImplicitlyDereference (reaction_node);
@@ -220,7 +223,7 @@ type_check_statement (Node * node)
     }
 
     static typed_value_t
-    check_assignment_target (Ast::Node* left)
+    check_assignment_target (ast::Node* left)
     {
       typed_value_t tv = CheckExpectReference (left);
       if (tv.intrinsic_mutability != MUTABLE)
@@ -244,10 +247,10 @@ type_check_statement (Node * node)
 
       struct visitor : public Type::DefaultVisitor
       {
-        Ast::Node* node;
+        ast::Node* node;
         const char* symbol;
 
-        visitor (Ast::Node* n, const char* s) : node (n), symbol (s) { }
+        visitor (ast::Node* n, const char* s) : node (n), symbol (s) { }
 
         void visit (const NamedType& type)
         {
@@ -356,7 +359,7 @@ type_check_statement (Node * node)
 
     void visit (ast_increment_statement_t& node)
     {
-      Ast::Node* expr = node.child ();
+      ast::Node* expr = node.child ();
       check_assignment_target (expr);
       struct visitor : public Type::DefaultVisitor
       {
@@ -412,9 +415,9 @@ type_check_statement (Node * node)
 
     void visit (ast_var_statement_t& node)
     {
-      Ast::Node* identifier_list = node.identifier_list ();
-      Ast::Node* type_spec = node.type_spec ();
-      Ast::Node* expression_list = node.expression_list ();
+      ast::Node* identifier_list = node.identifier_list ();
+      ast::Node* type_spec = node.type_spec ();
+      ast::Node* expression_list = node.expression_list ();
 
       if (expression_list->Size () != 0 &&
           identifier_list->Size () != expression_list->Size ())
@@ -512,7 +515,7 @@ type_check_statement (Node * node)
 static void
 control_check_statement (Node * node)
 {
-  struct visitor : public Ast::DefaultVisitor
+  struct visitor : public ast::DefaultVisitor
   {
     bool in_activation_statement;
 
@@ -613,14 +616,14 @@ enter_signature (Node& node, const Signature * type)
 void
 process_definitions (Node * node)
 {
-  struct visitor : public Ast::DefaultVisitor
+  struct visitor : public ast::DefaultVisitor
   {
     void default_action (Node& node)
     {
       ast_not_reached (node);
     }
 
-    void visit (Ast::Type& node)
+    void visit (ast::Type& node)
     { }
 
     void visit (ast_const_t& node)
@@ -640,11 +643,11 @@ process_definitions (Node * node)
         {
           if (tv.value.ref (*Bool::Instance ()))
             {
-              node.action->precondition_kind = action_t::STATIC_TRUE;
+              node.action->precondition_kind = Action::StaticTrue;
             }
           else
             {
-              node.action->precondition_kind = action_t::STATIC_FALSE;
+              node.action->precondition_kind = Action::StaticFalse;
             }
         }
     }
@@ -663,11 +666,11 @@ process_definitions (Node * node)
         {
           if (tv.value.ref (*Bool::Instance ()))
             {
-              node.action->precondition_kind = action_t::STATIC_TRUE;
+              node.action->precondition_kind = Action::StaticTrue;
             }
           else
             {
-              node.action->precondition_kind = action_t::STATIC_FALSE;
+              node.action->precondition_kind = Action::StaticFalse;
             }
         }
     }
@@ -713,7 +716,7 @@ process_definitions (Node * node)
       // Lookup the initialization function.
       InstanceSymbol* symbol = node.symbol;
       const NamedType* type = symbol->type;
-      Ast::Node* initializer_node = node.initializer ();
+      ast::Node* initializer_node = node.initializer ();
       Initializer* initializer = type->GetInitializer (ast_get_identifier (initializer_node));
       if (initializer == NULL)
         {

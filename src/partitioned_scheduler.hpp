@@ -235,9 +235,9 @@ private:
     size_t generation_;
   };
 
-  struct action_task_t : public task_t
+  struct Actionask_t : public task_t
   {
-    action_task_t (const Composition::Action* a)
+    Actionask_t (const Composition::Action* a)
       : action (a)
     { }
 

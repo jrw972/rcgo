@@ -10,7 +10,7 @@
 #include <error.h>
 
   using namespace Type;
-  using namespace Ast;
+  using namespace ast;
 
   static int octalvalue (char c) {
     return c - '0';

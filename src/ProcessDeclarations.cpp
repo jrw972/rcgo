@@ -1,18 +1,21 @@
-#include "Ast.hpp"
-#include "semantic.hpp"
 #include <error.h>
+
+#include "ast.hpp"
+#include "semantic.hpp"
 #include "Symbol.hpp"
 #include "action.hpp"
+#include "reaction.hpp"
 #include "bind.hpp"
 #include "parameter.hpp"
 #include "Callable.hpp"
 #include "AstVisitor.hpp"
 
 using namespace Type;
-using namespace Ast;
+using namespace ast;
+using namespace decl;
 
 static NamedType*
-processReceiver (Ast::Node* n, Ast::Node* identifierNode, parameter_t*& this_parameter, ParameterSymbol*& thisSymbol,
+processReceiver (ast::Node* n, ast::Node* identifierNode, parameter_t*& this_parameter, ParameterSymbol*& thisSymbol,
                  bool requireComponent, bool requireImmutableDereferenceMutability)
 {
   ast_receiver_t* node = ast_cast<ast_receiver_t> (n);
@@ -94,7 +97,7 @@ processReceiver (Ast::Node* n, Ast::Node* identifierNode, parameter_t*& this_par
 }
 
 static Type::Uint::ValueType
-processIota (Node& node, Ast::Node*& dimensionNode, ParameterSymbol*& parameterSymbol)
+processIota (Node& node, ast::Node*& dimensionNode, ParameterSymbol*& parameterSymbol)
 {
   typed_value_t dimension = process_array_dimension (dimensionNode);
 
@@ -108,13 +111,13 @@ processIota (Node& node, Ast::Node*& dimensionNode, ParameterSymbol*& parameterS
       "IOTA",
       iota_value,
       false);
-  parameterSymbol = ParameterSymbol::make (iota_parameter);
+  parameterSymbol = ParameterSymbol::makeIota (iota_parameter);
 
   return dimension.Convert (dimensionNode->location, Type::Uint::Instance (), node).value.ref (*Type::Uint::Instance ());
 }
 
 static void
-processSignatureReturn (Ast::Node* signatureNode, Ast::Node* returnType, Mutability dereferenceMutability, bool requireForeignSafe,
+processSignatureReturn (ast::Node* signatureNode, ast::Node* returnType, Mutability dereferenceMutability, bool requireForeignSafe,
                         const Signature*& signature, parameter_t*& returnParameter, ParameterSymbol*& returnSymbol)
 {
   /* Process the signature. */
@@ -143,7 +146,7 @@ processSignatureReturn (Ast::Node* signatureNode, Ast::Node* returnType, Mutabil
 void
 ProcessDeclarations (Node * node)
 {
-  struct visitor : public Ast::DefaultVisitor
+  struct visitor : public ast::DefaultVisitor
   {
     void default_action (Node& node)
     {
@@ -152,9 +155,9 @@ ProcessDeclarations (Node * node)
 
     void visit (ast_const_t& node)
     {
-      Ast::Node* identifier_list = node.identifier_list ();
-      Ast::Node* type_spec = node.type_spec ();
-      Ast::Node* expression_list = node.expression_list ();
+      ast::Node* identifier_list = node.identifier_list ();
+      ast::Node* type_spec = node.type_spec ();
+      ast::Node* expression_list = node.expression_list ();
 
       if (expression_list->Size () != 0 &&
           identifier_list->Size () != expression_list->Size ())
@@ -236,9 +239,10 @@ ProcessDeclarations (Node * node)
       ParameterSymbol* thisSymbol;
       NamedType* type = processReceiver (node.receiver (), node.identifier (), this_parameter, thisSymbol, true, true);
       enter_symbol (node, thisSymbol);
-      action_t *action = new action_t (type, &node, thisSymbol, node.body (), ast_get_identifier (node.identifier ()));
+      Action *action = new Action (node.body (), ast_get_identifier (node.identifier ()));
       type->Add (action);
       node.action = action;
+      node.type = type;
     }
 
     void visit (ast_dimensioned_action_t& node)
@@ -250,9 +254,10 @@ ProcessDeclarations (Node * node)
       ParameterSymbol* iotaSymbol;
       Type::Uint::ValueType dimension = processIota (node, node.dimension_ref (), iotaSymbol);
       enter_symbol (node, iotaSymbol);
-      action_t *action = new action_t (type, &node, thisSymbol, node.body (), ast_get_identifier (node.identifier ()), iotaSymbol, dimension);
+      Action *action = new Action (node.body (), ast_get_identifier (node.identifier ()), dimension);
       type->Add (action);
       node.action = action;
+      node.type = type;
     }
 
     void visit (ast_bind_t& node)
@@ -446,7 +451,7 @@ ProcessDeclarations (Node * node)
       node.VisitChildren (*this);
     }
 
-    void visit (Ast::Type& node)
+    void visit (ast::Type& node)
     {
       TypeSymbol* symbol = node.symbol;
       if (symbol->defined ())

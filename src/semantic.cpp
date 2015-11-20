@@ -1,8 +1,11 @@
 #include "semantic.hpp"
-#include "debug.hpp"
-#include "Ast.hpp"
+
 #include <error.h>
+
+#include "debug.hpp"
+#include "ast.hpp"
 #include "action.hpp"
+#include "reaction.hpp"
 #include "Type.hpp"
 #include "parameter.hpp"
 #include "field.hpp"
@@ -12,7 +15,7 @@
 #include "Callable.hpp"
 #include "AstVisitor.hpp"
 
-using namespace Ast;
+using namespace ast;
 
 // TODO:  Replace interacting with type_t* with typed_value_t.
 
@@ -38,11 +41,19 @@ allocate_symbol (MemoryModel& memory_model,
         case ParameterSymbol::Ordinary:
         case ParameterSymbol::Receiver:
         case ParameterSymbol::Return:
+        case ParameterSymbol::Iota:
         {
           const Type::Type* type = symbol.value.type;
           memory_model.ArgumentsPush (type->Size ());
           static_cast<Symbol&> (symbol).offset (memory_model.ArgumentsOffset ());
-          memory_model.SetReceiverOffset ();
+          if (symbol.kind == ParameterSymbol::Receiver)
+            {
+              memory_model.SetReceiverOffset ();
+            }
+          if (symbol.kind == ParameterSymbol::Iota)
+            {
+              memory_model.SetIotaOffset ();
+            }
         }
         break;
         case ParameterSymbol::ReceiverDuplicate:
@@ -74,7 +85,7 @@ allocate_symbol (MemoryModel& memory_model,
 }
 
 static void
-allocate_symtab (Ast::Node* node, MemoryModel& memory_model)
+allocate_symtab (ast::Node* node, MemoryModel& memory_model)
 {
   // Allocate the parameters.
   for (Node::SymbolsType::const_iterator pos = node->SymbolsBegin (), limit = node->SymbolsEnd ();
@@ -86,7 +97,7 @@ allocate_symtab (Ast::Node* node, MemoryModel& memory_model)
 }
 
 static void
-allocate_statement_stack_variables (Ast::Node* node, MemoryModel& memory_model)
+allocate_statement_stack_variables (ast::Node* node, MemoryModel& memory_model)
 {
   struct visitor : public DefaultVisitor
   {
@@ -231,7 +242,7 @@ allocate_parameter (MemoryModel& memory_model,
 }
 
 void
-allocate_stack_variables (Ast::Node* node)
+allocate_stack_variables (ast::Node* node)
 {
   struct visitor : public DefaultVisitor
   {
@@ -288,8 +299,8 @@ allocate_stack_variables (Ast::Node* node)
     // Return the size of the locals.
     void
     allocate_stack_variables_helper (MemoryModel& memoryModel,
-                                     Ast::Node& node,
-                                     Ast::Node* child)
+                                     ast::Node& node,
+                                     ast::Node* child)
     {
       // Allocate the parameters.
       Node::SymbolsType::const_iterator pos = node.SymbolsBegin ();

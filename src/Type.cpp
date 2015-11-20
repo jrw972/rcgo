@@ -1,5 +1,6 @@
 #include "Type.hpp"
 #include "action.hpp"
+#include "reaction.hpp"
 #include "parameter.hpp"
 #include "field.hpp"
 #include "Callable.hpp"
@@ -7,6 +8,7 @@
 
 namespace Type
 {
+  using namespace decl;
 
   std::ostream&
   operator<< (std::ostream& o, const Type& type)
@@ -159,7 +161,7 @@ namespace Type
     return NULL;
   }
 
-  action_t*
+  Action*
   NamedType::GetAction (const std::string& identifier) const
   {
     for (ActionsType::const_iterator pos = this->actions_.begin (),
@@ -167,7 +169,7 @@ namespace Type
          pos != limit;
          ++pos)
       {
-        action_t* a = *pos;
+        Action* a = *pos;
         if (a->name == identifier)
           {
             return a;
@@ -333,12 +335,12 @@ namespace Type
     return v.retval;
   }
 
-  action_t *
+  Action *
   type_select_action (const Type* type, const std::string& identifier)
   {
     struct visitor : public DefaultVisitor
     {
-      action_t* retval;
+      Action* retval;
       const std::string& identifier;
       visitor (const std::string& id) : retval (NULL), identifier (id) { }
 
@@ -404,7 +406,7 @@ namespace Type
         return r->reaction_type;
       }
 
-    action_t* a = type_select_action (type, identifier);
+    Action* a = type_select_action (type, identifier);
     if (a)
       {
         return Void::Instance ();

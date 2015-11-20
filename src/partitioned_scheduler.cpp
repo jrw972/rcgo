@@ -5,6 +5,8 @@
 #include <list>
 #include <errno.h>
 
+using namespace decl;
+
 void
 partitioned_scheduler_t::initialize_task (task_t* t, size_t thread_count)
 {
@@ -64,13 +66,13 @@ partitioned_scheduler_t::run (Composition::Composer& instance_table,
           Composition::Action* action = *action_pos;
           switch (action->action->precondition_kind)
             {
-            case action_t::DYNAMIC:
-              initialize_task (new action_task_t (action), thread_count);
+            case Action::Dynamic:
+              initialize_task (new Actionask_t (action), thread_count);
               break;
-            case action_t::STATIC_TRUE:
+            case Action::StaticTrue:
               initialize_task (new always_task_t (action), thread_count);
               break;
-            case action_t::STATIC_FALSE:
+            case Action::StaticFalse:
               // Do nothing.
               break;
             }

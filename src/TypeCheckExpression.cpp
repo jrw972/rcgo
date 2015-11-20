@@ -1,13 +1,13 @@
 #include "semantic.hpp"
 #include "AstVisitor.hpp"
-using namespace Ast;
+using namespace ast;
 #include "Type.hpp"
 using namespace Type;
 #include "runtime.hpp"
 using namespace runtime;
 
 typed_value_t
-ImplicitlyConvert (Ast::Node*& expr, const Type::Type* target)
+ImplicitlyConvert (ast::Node*& expr, const Type::Type* target)
 {
   typed_value_t tv = expr->typed_value;
   if (!Type::Identitical (target, tv.type) && tv.AssignableTo (target))
@@ -20,7 +20,7 @@ ImplicitlyConvert (Ast::Node*& expr, const Type::Type* target)
 }
 
 typed_value_t
-ImplicitlyConvertToDefault (Ast::Node*& expr)
+ImplicitlyConvertToDefault (ast::Node*& expr)
 {
   typed_value_t tv = expr->typed_value;
   const Type::Type* target = tv.type->DefaultType ();
@@ -39,7 +39,7 @@ ImplicitlyConvertToDefault (Ast::Node*& expr)
 }
 
 static typed_value_t
-insertImplicitDereference (Ast::Node*& expr)
+insertImplicitDereference (ast::Node*& expr)
 {
   typed_value_t tv = expr->typed_value;
   expr = new ast_implicit_dereference_expr_t (expr->location.Line, expr);
@@ -49,7 +49,7 @@ insertImplicitDereference (Ast::Node*& expr)
 }
 
 typed_value_t
-CheckAndImplicitlyDereference (Ast::Node*& expr)
+CheckAndImplicitlyDereference (ast::Node*& expr)
 {
   typed_value_t tv = TypeCheckExpression (expr);
   if (tv.IsReference ())
@@ -61,7 +61,7 @@ CheckAndImplicitlyDereference (Ast::Node*& expr)
 }
 
 typed_value_t
-CheckAndImplicitlyDereferenceAndConvert (Ast::Node*& expr, const Type::Type* type)
+CheckAndImplicitlyDereferenceAndConvert (ast::Node*& expr, const Type::Type* type)
 {
   CheckAndImplicitlyDereference (expr);
   ImplicitlyConvert (expr, type);
@@ -69,7 +69,7 @@ CheckAndImplicitlyDereferenceAndConvert (Ast::Node*& expr, const Type::Type* typ
 }
 
 typed_value_t
-CheckAndImplicitlyDereferenceAndConvertToDefault (Ast::Node*& expr)
+CheckAndImplicitlyDereferenceAndConvertToDefault (ast::Node*& expr)
 {
   CheckAndImplicitlyDereference (expr);
   ImplicitlyConvertToDefault (expr);
@@ -78,7 +78,7 @@ CheckAndImplicitlyDereferenceAndConvertToDefault (Ast::Node*& expr)
 
 
 static typed_value_t
-insertExplicitDereference (Ast::Node*& expr, typed_value_t tv)
+insertExplicitDereference (ast::Node*& expr, typed_value_t tv)
 {
   expr = new ast_dereference_expr_t (expr->location.Line, expr);
   tv = typed_value_t::dereference (tv);
@@ -101,7 +101,7 @@ void
 TypeCheckCall (Node& node,
                const Type::Signature* signature,
                typed_value_t return_value,
-               Ast::Node* argsnode,
+               ast::Node* argsnode,
                const TypedValueListType& args)
 {
   size_t argument_count = args.size ();
@@ -136,11 +136,11 @@ TypeCheckCall (Node& node,
   node.typed_value.component_state = component_state && type_contains_pointer (return_value.type);
 }
 
-struct check_visitor : public Ast::DefaultVisitor
+struct check_visitor : public ast::DefaultVisitor
 {
-  Ast::Node* ptr;
+  ast::Node* ptr;
 
-  check_visitor (Ast::Node* p) : ptr (p) { }
+  check_visitor (ast::Node* p) : ptr (p) { }
 
   void default_action (Node& node)
   {
@@ -361,7 +361,7 @@ struct check_visitor : public Ast::DefaultVisitor
 
   void check_address_of (ast_address_of_expr_t& node)
   {
-    Ast::Node* expr = node.child ();
+    ast::Node* expr = node.child ();
     typed_value_t in = expr->typed_value;
     typed_value_t out = typed_value_t::address_of (in);
     if (out.IsError ())
@@ -616,7 +616,7 @@ struct check_visitor : public Ast::DefaultVisitor
 
         // Convert to a function call.
         // Move the receiver to the args.
-        Ast::Node* receiver = node.expr ()->At (0)->At (0);
+        ast::Node* receiver = node.expr ()->At (0)->At (0);
         if (type_dereference (type.receiver_type) != NULL)
           {
             // Method expects a pointer.  Insert address of.
@@ -862,7 +862,7 @@ struct check_visitor : public Ast::DefaultVisitor
 };
 
 typed_value_t
-TypeCheckExpression (Ast::Node* ptr)
+TypeCheckExpression (ast::Node* ptr)
 {
   check_visitor check_lvalue_visitor (ptr);
   ptr->Accept (check_lvalue_visitor);

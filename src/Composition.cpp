@@ -1,19 +1,24 @@
 #include "Composition.hpp"
-#include "Ast.hpp"
+
+#include <error.h>
+
+#include <set>
+
+#include "ast.hpp"
 #include "AstVisitor.hpp"
 #include "bind.hpp"
 #include "field.hpp"
-#include <error.h>
 #include "action.hpp"
 #include "Callable.hpp"
 #include "semantic.hpp"
 #include "EvaluateStatic.hpp"
-#include <set>
+#include "reaction.hpp"
 
 namespace Composition
 {
   using namespace Type;
-  using namespace Ast;
+  using namespace ast;
+  using namespace decl;
 
   Instance::Instance (Instance* p,
                       size_t a,
@@ -96,7 +101,7 @@ namespace Composition
   }
 
   Action::Action (Instance* i,
-                  action_t* a,
+                  decl::Action* a,
                   Type::Uint::ValueType p)
     : Node (getname (i, a, p))
     , instance (i)
@@ -142,7 +147,7 @@ namespace Composition
   }
 
   std::string
-  Action::getname (Instance* i, action_t* a, Type::Uint::ValueType p)
+  Action::getname (Instance* i, decl::Action* a, Type::Uint::ValueType p)
   {
     std::stringstream str;
     str << i->name << '.' << a->name;
@@ -531,7 +536,7 @@ namespace Composition
                 memory.set_value_at_offset (node.this_symbol->offset (), receiver_address);
               }
 
-              void bind (Ast::Node* left, Ast::Node* right, static_value_t param = static_value_t ())
+              void bind (ast::Node* left, ast::Node* right, static_value_t param = static_value_t ())
               {
                 static_value_t port = EvaluateStatic (left, memory);
                 // Strip off the implicit dereference and selecting of the reaction.
@@ -618,10 +623,10 @@ namespace Composition
              pos != limit;
              ++pos)
           {
-            action_t* action = *pos;
+            decl::Action* action = *pos;
             if (action->has_dimension ())
               {
-                for (Type::Uint::ValueType idx = 0; idx != action->dimension (); ++idx)
+                for (Type::Int::ValueType idx = 0; idx != action->dimension; ++idx)
                   {
                     instance->actions.push_back (new Action (instance, action, idx));
                   }
@@ -673,10 +678,10 @@ namespace Composition
     {
       if (action != NULL)
         {
-          memory.set_value_at_offset (action->action->receiver->offset (), action->instance->address);
+          memory.set_value_at_offset (action->action->memory_model.ReceiverOffset (), action->instance->address);
           if (action->action->has_dimension ())
             {
-              memory.set_value_at_offset (action->action->iota->offset (), action->iota);
+              memory.set_value_at_offset (action->action->memory_model.IotaOffset (), action->iota);
             }
         }
       else if (reaction != NULL)
@@ -713,7 +718,7 @@ namespace Composition
         }
     }
 
-    void default_action (const Ast::Node& node)
+    void default_action (const ast::Node& node)
     {
       ast_not_reached (node);
     }

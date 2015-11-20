@@ -2,7 +2,7 @@
 #include "SymbolVisitor.hpp"
 #include "executor_base.hpp"
 #include "heap.hpp"
-#include "Ast.hpp"
+#include "ast.hpp"
 #include "runtime.hpp"
 
 #include <errno.h>
@@ -17,7 +17,7 @@
 #include <netdb.h>
 
 using namespace Type;
-using namespace Ast;
+using namespace ast;
 
 void
 BuiltinFunction::accept (SymbolVisitor& visitor)
@@ -31,7 +31,7 @@ BuiltinFunction::accept (ConstSymbolVisitor& visitor) const
   visitor.visit (*this);
 }
 
-Readable::Readable (Ast::Node* dn)
+Readable::Readable (ast::Node* dn)
   : BuiltinFunction ("readable",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
@@ -62,7 +62,7 @@ Readable::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast
   stack_frame_push_tv (exec.stack (), typed_value_t (Bool::Instance (), pfd.revents & POLLIN));
 }
 
-Read::Read (Ast::Node* dn)
+Read::Read (ast::Node* dn)
   : BuiltinFunction ("read",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
@@ -87,7 +87,7 @@ Read::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_cal
   stack_frame_push_tv (exec.stack (), retval);
 }
 
-Writable::Writable (Ast::Node* dn)
+Writable::Writable (ast::Node* dn)
   : BuiltinFunction ("writable",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
@@ -118,7 +118,7 @@ Writable::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast
   stack_frame_push_tv (exec.stack (), typed_value_t (Bool::Instance (), pfd.revents & POLLOUT));
 }
 
-TimerfdCreate::TimerfdCreate (Ast::Node* dn)
+TimerfdCreate::TimerfdCreate (ast::Node* dn)
   : BuiltinFunction ("timerfd_create",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, new Signature (),
@@ -140,7 +140,7 @@ TimerfdCreate::call (executor_base_t& exec, const MemoryModel& memoryModel, cons
     }
 }
 
-TimerfdSettime::TimerfdSettime (Ast::Node* dn)
+TimerfdSettime::TimerfdSettime (ast::Node* dn)
   : BuiltinFunction ("timerfd_settime",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())
@@ -170,7 +170,7 @@ TimerfdSettime::call (executor_base_t& exec, const MemoryModel& memoryModel, con
   stack_frame_push_tv (exec.stack (), typed_value_t (Int::Instance (), retval));
 }
 
-UdpSocket::UdpSocket (Ast::Node* dn)
+UdpSocket::UdpSocket (ast::Node* dn)
   : BuiltinFunction ("udp_socket",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, new Signature (),
@@ -198,7 +198,7 @@ UdpSocket::call (executor_base_t& exec, const MemoryModel& memoryModel, const as
   stack_frame_push_pointer (exec.stack (), thefd);
 }
 
-Sendto::Sendto (Ast::Node* dn)
+Sendto::Sendto (ast::Node* dn)
   : BuiltinFunction ("sendto",
                      dn,
                      new Type::Function (Type::Function::FUNCTION, (new Signature ())

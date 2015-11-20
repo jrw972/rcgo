@@ -1,4 +1,4 @@
-#include "Ast.hpp"
+#include "ast.hpp"
 #include "AstVisitor.hpp"
 #include "Symbol.hpp"
 #include <error.h>
@@ -6,14 +6,14 @@
 #include "BuiltinFunction.hpp"
 #include "Template.hpp"
 #include "runtime.hpp"
-using namespace Ast;
+using namespace ast;
 
 template <typename T>
 static T*
 enter_undefined_symbol (T* s,
                         Node& a)
 {
-  Ast::Node* symtab = a.GetParent ();
+  ast::Node* symtab = a.GetParent ();
   const std::string& identifier = s->identifier;
   Symbol *symbol = symtab->FindLocalSymbol (identifier);
   if (symbol == NULL)
@@ -109,7 +109,7 @@ enter_symbols (Node * node)
                                 node);
     }
 
-    void visit (Ast::Type& node)
+    void visit (ast::Type& node)
     {
       node.symbol =
         enter_undefined_symbol (new TypeSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),

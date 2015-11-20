@@ -7,7 +7,12 @@
 #include <map>
 #include "debug.hpp"
 
-namespace Ast
+namespace decl
+{
+  class Action;
+}
+
+namespace ast
 {
   class ast_receiver_t;
   class ast_activate_statement_t;
@@ -34,8 +39,6 @@ class ParameterSymbol;
 class InstanceSymbol;
 class TypedConstantSymbol;
 class TypeSymbol;
-class action_reaction_base_t;
-class action_t;
 class bind_t;
 class Callable;
 class Template;

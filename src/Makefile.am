@@ -11,8 +11,8 @@ parser.hpp parser.cpp: parser.y
 #AM_YFLAGS = -v -d
 bin_PROGRAMS = rc
 rc_SOURCES = main.cpp \
-action.hpp \
-Ast.hpp Ast.cpp \
+action.hpp action.cpp \
+ast.hpp ast.cpp \
 AstVisitor.hpp \
 bind.hpp \
 BuiltinFunction.hpp BuiltinFunction.cpp \
@@ -35,9 +35,10 @@ partitioned_scheduler.hpp partitioned_scheduler.cpp \
 ProcessDeclarations.cpp \
 process_definitions.cpp \
 process_type_spec.cpp \
+reaction.hpp \
+runtime.hpp runtime.cpp \
 scanner.hpp scanner.cpp \
 semantic.hpp semantic.cpp \
-runtime.hpp runtime.cpp \
 stack_frame.hpp stack_frame.cpp \
 Symbol.hpp Symbol.cpp \
 SymbolVisitor.hpp \

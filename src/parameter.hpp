@@ -6,12 +6,12 @@
 
 struct parameter_t
 {
-  Ast::Node* const defining_node;
+  ast::Node* const defining_node;
   std::string const name;
   typed_value_t const value;
   bool const is_receiver;
 
-  parameter_t (Ast::Node* dn,
+  parameter_t (ast::Node* dn,
                const std::string& n, const typed_value_t& tv, bool is_receiver_)
     : defining_node (dn)
     , name (n)

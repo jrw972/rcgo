@@ -77,11 +77,22 @@ public:
     return receiverOffset;
   }
 
+  void SetIotaOffset ()
+  {
+    iotaOffset = ArgumentsOffset ();
+  }
+
+  ptrdiff_t IotaOffset () const
+  {
+    return iotaOffset;
+  }
+
 private:
   ptrdiff_t argumentsOffset;
   ptrdiff_t localsOffset;
   size_t localsSize;
   ptrdiff_t receiverOffset;
+  ptrdiff_t iotaOffset;
 };
 
 #endif /* MemoryModel_hpp */

@@ -1,12 +1,14 @@
-#ifndef Ast_hpp
-#define Ast_hpp
+#ifndef rc_ast_hpp
+#define rc_ast_hpp
+
+#include <vector>
 
 #include "types.hpp"
-#include <vector>
+
 #include "Location.hpp"
 #include "typed_value.hpp"
 
-namespace Ast
+namespace ast
 {
 
   struct Node
@@ -91,6 +93,7 @@ namespace Ast
 
     bool inMutableSection;
     Location const location;
+    // TODO:  Rename.
     typed_value_t typed_value;
     runtime::Operation* operation;
 
@@ -412,15 +415,7 @@ namespace Ast
     void Accept (ConstVisitor& visitor) const;
   };
 
-  class ast_expr_t : public Node
-  {
-  public:
-    ast_expr_t (unsigned int line, size_t children_count)
-      : Node (line, children_count)
-    { }
-  };
-
-  struct TypeExpression : public ast_expr_t
+  struct TypeExpression : public Node
   {
     enum
     {
@@ -429,7 +424,7 @@ namespace Ast
     };
 
     TypeExpression (unsigned int line, Node* type_spec)
-      : ast_expr_t (line, COUNT)
+      : Node (line, COUNT)
     {
       set (TYPE_SPEC, type_spec);
     }
@@ -443,41 +438,7 @@ namespace Ast
     virtual void Accept (ConstVisitor& visitor) const;
   };
 
-  // TODO:  This class can be removed.
-  struct ast_cast_expr_t : public ast_expr_t
-  {
-    enum
-    {
-      TYPE_SPEC,
-      CHILD,
-      COUNT
-    };
-
-    ast_cast_expr_t (unsigned int line, Node* type_spec, Node* child)
-      : ast_expr_t (line, COUNT)
-    {
-      set (TYPE_SPEC, type_spec);
-      set (CHILD, child);
-    }
-
-    Node* type_spec () const
-    {
-      return At (TYPE_SPEC);
-    }
-    Node* child () const
-    {
-      return At (CHILD);
-    }
-    Node*& child_ref ()
-    {
-      return At (CHILD);
-    }
-
-    virtual void Accept (Visitor& visitor);
-    virtual void Accept (ConstVisitor& visitor) const;
-  };
-
-  struct ast_unary_expr_t : public ast_expr_t
+  struct ast_unary_expr_t : public Node
   {
     enum
     {
@@ -486,7 +447,7 @@ namespace Ast
     };
 
     ast_unary_expr_t (unsigned int line, Node* child)
-      : ast_expr_t (line, COUNT)
+      : Node (line, COUNT)
     {
       set (CHILD, child);
     }
@@ -501,7 +462,7 @@ namespace Ast
     }
   };
 
-  struct ast_binary_expr_t : public ast_expr_t
+  struct ast_binary_expr_t : public Node
   {
     enum
     {
@@ -511,7 +472,7 @@ namespace Ast
     };
 
     ast_binary_expr_t (unsigned int line, Node* left, Node* right)
-      : ast_expr_t (line, COUNT)
+      : Node (line, COUNT)
     {
       set (LEFT, left);
       set (RIGHT, right);
@@ -571,7 +532,7 @@ namespace Ast
     bool address_of_dereference;
   };
 
-  struct ast_call_expr_t : public ast_expr_t
+  struct ast_call_expr_t : public Node
   {
     enum
     {
@@ -581,7 +542,7 @@ namespace Ast
     };
 
     ast_call_expr_t (unsigned int line, Node* expr, Node* args)
-      : ast_expr_t (line, COUNT)
+      : Node (line, COUNT)
     {
       set (EXPR, expr);
       set (ARGS, args);
@@ -627,10 +588,10 @@ namespace Ast
     void Accept (ConstVisitor& visitor) const;
   };
 
-  struct ast_list_expr_t : public ast_expr_t
+  struct ast_list_expr_t : public Node
   {
     ast_list_expr_t (unsigned int line)
-      : ast_expr_t (line, 0)
+      : Node (line, 0)
     { }
 
     void Accept (Visitor& visitor);
@@ -649,7 +610,7 @@ namespace Ast
     Symbol* symbol;
   };
 
-  struct ast_index_expr_t : public ast_expr_t
+  struct ast_index_expr_t : public Node
   {
     enum
     {
@@ -659,7 +620,7 @@ namespace Ast
     };
 
     ast_index_expr_t (unsigned int line, Node* base, Node* index)
-      : ast_expr_t (line, COUNT)
+      : Node (line, COUNT)
     {
       set (BASE, base);
       set (INDEX, index);
@@ -686,7 +647,7 @@ namespace Ast
     void Accept (ConstVisitor& visitor) const;
   };
 
-  struct ast_slice_expr_t : public ast_expr_t
+  struct ast_slice_expr_t : public Node
   {
     enum
     {
@@ -697,7 +658,7 @@ namespace Ast
     };
 
     ast_slice_expr_t (unsigned int line, Node* base, Node* low, Node* high)
-      : ast_expr_t (line, COUNT)
+      : Node (line, COUNT)
     {
       set (BASE, base);
       set (LOW, low);
@@ -746,7 +707,7 @@ namespace Ast
     void Accept (ConstVisitor& visitor) const;
   };
 
-  struct ast_push_port_call_expr_t : public ast_expr_t
+  struct ast_push_port_call_expr_t : public Node
   {
     enum
     {
@@ -756,7 +717,7 @@ namespace Ast
     };
 
     ast_push_port_call_expr_t (unsigned int line, Node* identifier, Node* args)
-      : ast_expr_t (line, COUNT)
+      : Node (line, COUNT)
     {
       set (IDENTIFIER, identifier);
       set (ARGS, args);
@@ -777,7 +738,7 @@ namespace Ast
     field_t* field;
   };
 
-  struct ast_indexed_port_call_expr_t : public ast_expr_t
+  struct ast_indexed_port_call_expr_t : public Node
   {
     enum
     {
@@ -791,7 +752,7 @@ namespace Ast
                                   Node * identifier,
                                   Node* index,
                                   Node * args)
-      : ast_expr_t (line, COUNT)
+      : Node (line, COUNT)
     {
       set (IDENTIFIER, identifier);
       set (INDEX, index);
@@ -823,7 +784,7 @@ namespace Ast
     runtime::Operation* index_op;
   };
 
-  struct ast_select_expr_t : public ast_expr_t
+  struct ast_select_expr_t : public Node
   {
     enum
     {
@@ -833,7 +794,7 @@ namespace Ast
     };
 
     ast_select_expr_t (unsigned int line, Node* base, Node* identifier)
-      : ast_expr_t (line, COUNT)
+      : Node (line, COUNT)
     {
       set (BASE, base);
       set (IDENTIFIER, identifier);
@@ -856,10 +817,10 @@ namespace Ast
     void Accept (ConstVisitor& visitor) const;
   };
 
-  struct ast_literal_expr_t : public ast_expr_t
+  struct ast_literal_expr_t : public Node
   {
     ast_literal_expr_t (unsigned int line, typed_value_t tv)
-      : ast_expr_t (line, 0)
+      : Node (line, 0)
     {
       typed_value = tv;
     }
@@ -1307,6 +1268,7 @@ namespace Ast
                   Node* precondition, Node* body)
       : Node (line, COUNT)
       , action (NULL)
+      , type (NULL)
     {
       o_context = Action;
       set (RECEIVER, receiver);
@@ -1339,7 +1301,8 @@ namespace Ast
     void Accept (Visitor& visitor);
     void Accept (ConstVisitor& visitor) const;
 
-    action_t* action;
+    decl::Action* action;
+    const Type::Type* type;
 
     virtual const Type::Type*
     GetReceiverType () const;
@@ -1365,6 +1328,7 @@ namespace Ast
                               Node* body)
       : Node (line, COUNT)
       , action (NULL)
+      , type (NULL)
     {
       o_context = Action;
       set (DIMENSION, dimension);
@@ -1406,7 +1370,8 @@ namespace Ast
     void Accept (Visitor& visitor);
     void Accept (ConstVisitor& visitor) const;
 
-    action_t* action;
+    decl::Action* action;
+    const Type::Type* type;
 
     virtual const Type::Type*
     GetReceiverType () const;
@@ -1931,4 +1896,4 @@ namespace Ast
 
 #define ast_not_reached(node) do { std::cerr << node; not_reached; } while (0);
 
-#endif /* Ast_hpp */
+#endif // rc_ast_hpp

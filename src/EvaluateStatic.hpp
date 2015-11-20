@@ -159,6 +159,6 @@ operator<< (std::ostream& o,
             const static_value_t& v);
 
 static_value_t
-EvaluateStatic (const Ast::Node* node, const static_memory_t& memory);
+EvaluateStatic (const ast::Node* node, const static_memory_t& memory);
 
 #endif /* EvaluateStatic_hpp */

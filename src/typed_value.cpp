@@ -10,10 +10,11 @@ using namespace Type;
 #include "Template.hpp"
 #include <utility>
 using namespace std::rel_ops;
-#include "Ast.hpp"
-using namespace Ast;
+#include "ast.hpp"
+using namespace ast;
 #include "runtime.hpp"
 using namespace runtime;
+#include "reaction.hpp"
 
 static Type::C64 operator* (const Type::C64&, const Type::C64&)
 {

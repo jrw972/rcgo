@@ -9,7 +9,7 @@
 struct Template : public Symbol
 {
   Template (const std::string& id,
-            Ast::Node* dn,
+            ast::Node* dn,
             const Type::Type* type)
     : Symbol (id, dn)
     , type_ (type)

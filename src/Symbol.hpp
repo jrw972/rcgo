@@ -16,7 +16,7 @@ extern std::string const ReturnSymbol;
  */
 struct Symbol
 {
-  Symbol (const std::string& id, Ast::Node* dn)
+  Symbol (const std::string& id, ast::Node* dn)
     : identifier (id)
     , definingNode (dn)
     , inProgress (false)
@@ -40,7 +40,7 @@ struct Symbol
   }
 
   std::string const identifier;
-  Ast::Node* const definingNode;
+  ast::Node* const definingNode;
   bool inProgress;
 
 private:
@@ -49,7 +49,7 @@ private:
 
 struct InstanceSymbol : public Symbol
 {
-  InstanceSymbol (const std::string& id, Ast::Node* dn)
+  InstanceSymbol (const std::string& id, ast::Node* dn)
     : Symbol (id, dn)
     , type (NULL)
     , initializer (NULL)
@@ -74,9 +74,10 @@ struct ParameterSymbol : public Symbol
     Receiver,
     ReceiverDuplicate,
     Return,
+    Iota,
   };
 
-  ParameterSymbol (const std::string& id, Ast::Node* dn, const typed_value_t& v, Kind k)
+  ParameterSymbol (const std::string& id, ast::Node* dn, const typed_value_t& v, Kind k)
     : Symbol (id, dn)
     , value (v)
     , kind (k)
@@ -96,6 +97,11 @@ struct ParameterSymbol : public Symbol
   static ParameterSymbol* makeReceiver (const parameter_t* parameter)
   {
     return new ParameterSymbol (parameter->name, parameter->defining_node, typed_value_t::make_ref (parameter->value), Receiver);
+  }
+
+  static ParameterSymbol* makeIota (const parameter_t* parameter)
+  {
+    return new ParameterSymbol (parameter->name, parameter->defining_node, typed_value_t::make_ref (parameter->value), Iota);
   }
 
   ParameterSymbol* duplicate (Mutability dereferenceMutability)
@@ -149,12 +155,12 @@ private:
 
 struct TypeSymbol : public Symbol
 {
-  TypeSymbol (const std::string& id, Ast::Node* dn, Type::NamedType* t)
+  TypeSymbol (const std::string& id, ast::Node* dn, Type::NamedType* t)
     : Symbol (id, dn)
     , type (t)
   { }
 
-  TypeSymbol (const std::string& id, Ast::Node* dn)
+  TypeSymbol (const std::string& id, ast::Node* dn)
     : Symbol (id, dn)
     , type (new Type::NamedType (id))
   { }
@@ -175,7 +181,7 @@ struct TypeSymbol : public Symbol
 
 struct TypedConstantSymbol : public Symbol
 {
-  TypedConstantSymbol (const std::string& id, Ast::Node* dn, const typed_value_t& v)
+  TypedConstantSymbol (const std::string& id, ast::Node* dn, const typed_value_t& v)
     : Symbol (id, dn)
     , value (typed_value_t::make_ref (v))
   { }
@@ -191,7 +197,7 @@ struct TypedConstantSymbol : public Symbol
 
 struct VariableSymbol : public Symbol
 {
-  VariableSymbol (const std::string& id, Ast::Node* dn, const typed_value_t& v)
+  VariableSymbol (const std::string& id, ast::Node* dn, const typed_value_t& v)
     : Symbol (id, dn)
     , value (v)
     , original_ (NULL)
@@ -233,7 +239,7 @@ private:
 
 struct HiddenSymbol : public Symbol
 {
-  HiddenSymbol (const Symbol* s, Ast::Node* dn)
+  HiddenSymbol (const Symbol* s, ast::Node* dn)
     : Symbol (s->identifier, dn)
   { }
   virtual void accept (SymbolVisitor& visitor);

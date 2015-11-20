@@ -3,11 +3,13 @@
 #include "SymbolVisitor.hpp"
 #include "types.hpp"
 #include "AstVisitor.hpp"
+#include "reaction.hpp"
 
 namespace runtime
 {
   using namespace Type;
-  using namespace Ast;
+  using namespace ast;
+  using namespace decl;
 
   struct port_t
   {
@@ -29,7 +31,7 @@ namespace runtime
   ControlAction
   evaluate_statement (executor_base_t& exec,
                       const MemoryModel& memoryModel,
-                      Ast::Node* node);
+                      ast::Node* node);
 
   static void
   execute (executor_base_t& exec,
@@ -977,7 +979,7 @@ namespace runtime
   void
   evaluate_expr (executor_base_t& exec,
                  const MemoryModel& memoryModel,
-                 const Ast::Node* node)
+                 const ast::Node* node)
   {
     typed_value_t tv = node->typed_value;
     if (tv.value.present)
@@ -999,7 +1001,7 @@ namespace runtime
           }
       }
 
-    struct visitor : public Ast::DefaultConstVisitor
+    struct visitor : public ast::DefaultConstVisitor
     {
       executor_base_t& exec;
       const MemoryModel& memoryModel;
@@ -1164,7 +1166,7 @@ namespace runtime
       }
 
       void push_port_call (const Node& node,
-                           Ast::Node* args,
+                           ast::Node* args,
                            const MemoryModel& memoryModel,
                            const field_t* field,
                            size_t offset = 0)
@@ -1379,7 +1381,7 @@ namespace runtime
   ControlAction
   evaluate_statement (executor_base_t& exec,
                       const MemoryModel& memoryModel,
-                      Ast::Node* node)
+                      ast::Node* node)
   {
     struct visitor : public DefaultConstVisitor
     {
@@ -1402,8 +1404,8 @@ namespace runtime
 
       void visit (const ast_assign_statement_t& node)
       {
-        Ast::Node* left = node.left ();
-        Ast::Node* right = node.right ();
+        ast::Node* left = node.left ();
+        ast::Node* right = node.right ();
         // Determine the size of the value being assigned.
         size_t size = right->typed_value.type->Size ();
         // Evaluate the address.
@@ -1417,8 +1419,8 @@ namespace runtime
 
       void visit (const ast_change_statement_t& node)
       {
-        Ast::Node* expr = node.expr ();
-        Ast::Node* body = node.body ();
+        ast::Node* expr = node.expr ();
+        ast::Node* body = node.body ();
         // Evaluate the pointer to the heap link.
         evaluate_expr (exec, memoryModel, expr);
         heap_link_t* hl = (heap_link_t*)stack_frame_pop_pointer (exec.stack ());
@@ -1460,7 +1462,7 @@ namespace runtime
 
       void visit (const ast_expression_statement_t& node)
       {
-        Ast::Node* child = node.child ();
+        ast::Node* child = node.child ();
         // Determine the size of the value being generated.
         size_t size = child->typed_value.type->Size ();
         // Evaluate.
@@ -1681,7 +1683,7 @@ namespace runtime
 
         // The caller pushed an instruction pointer which is just
         // before the base pointer.  Overwrite it with the body.
-        const Ast::Node* p = &node;
+        const ast::Node* p = &node;
         memcpy (stack_frame_ip (exec.stack ()), &p, sizeof (void*));
         // Execute the expression list.
         evaluate_expr (exec, memoryModel, node.expr_list ());
@@ -1693,7 +1695,7 @@ namespace runtime
 
       void visit (const ast_var_statement_t& node)
       {
-        Ast::Node* expression_list = node.expression_list ();
+        ast::Node* expression_list = node.expression_list ();
 
         if (expression_list->Size () == 0)
           {
@@ -1714,7 +1716,7 @@ namespace runtime
                 ptrdiff_t offset = symbol->offset ();
                 stack_frame_push_address (exec.stack (), offset);
                 void* ptr = stack_frame_pop_pointer (exec.stack ());
-                Ast::Node* initializer = expression_list->At (idx);
+                ast::Node* initializer = expression_list->At (idx);
                 size_t size = initializer->typed_value.type->Size ();
                 // Evaluate the value.
                 evaluate_expr (exec, memoryModel, initializer);
@@ -1733,7 +1735,7 @@ namespace runtime
   bool
   enabled (executor_base_t& exec,
            component_t* instance,
-           const action_t* action,
+           const Action* action,
            size_t iota)
   {
     assert (stack_frame_empty (exec.stack ()));
@@ -1784,7 +1786,7 @@ namespace runtime
 
   static void
   execute (executor_base_t& exec,
-           const action_t* action,
+           const Action* action,
            component_t* instance)
   {
     // Set the current instance.
@@ -1833,7 +1835,7 @@ namespace runtime
       }
   }
 
-  bool exec (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota)
+  bool exec (executor_base_t& exec, component_t* instance, const Action* action, size_t iota)
   {
     if (enabled (exec, instance, action, iota))
       {
@@ -1843,7 +1845,7 @@ namespace runtime
     return false;
   }
 
-  bool exec_no_check (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota)
+  bool exec_no_check (executor_base_t& exec, component_t* instance, const Action* action, size_t iota)
   {
     assert (stack_frame_empty (exec.stack ()));
 
@@ -1875,7 +1877,7 @@ namespace runtime
 
   struct NewImpl : public Callable
   {
-    NewImpl (const Type::Type* t, Ast::Node* definingNode)
+    NewImpl (const Type::Type* t, ast::Node* definingNode)
       : type_ (t)
       , function_type_ (makeFunctionType (t, definingNode))
     { }
@@ -1911,7 +1913,7 @@ namespace runtime
     }
     const Type::Type* const type_;
     const Type::Type* const function_type_;
-    static const Type::Type* makeFunctionType (const Type::Type* type, Ast::Node* definingNode)
+    static const Type::Type* makeFunctionType (const Type::Type* type, ast::Node* definingNode)
     {
       const Type::Type* return_type = type->GetPointer ();
       return new Type::Function (Type::Function::FUNCTION, (new Signature ()),
@@ -1920,7 +1922,7 @@ namespace runtime
 
   };
 
-  New::New (Ast::Node* dn)
+  New::New (ast::Node* dn)
     : Template ("new",
                 dn,
                 new Type::Template ())
@@ -1949,7 +1951,7 @@ namespace runtime
 
   struct MoveImpl : public Callable
   {
-    MoveImpl (const typed_value_t& in, const typed_value_t& out, Ast::Node* definingNode)
+    MoveImpl (const typed_value_t& in, const typed_value_t& out, ast::Node* definingNode)
       : function_type_ (makeFunctionType (in, out, definingNode))
     { }
 
@@ -1996,7 +1998,7 @@ namespace runtime
       return function_type_;
     }
     const Type::Type* const function_type_;
-    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, Ast::Node* definingNode)
+    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast::Node* definingNode)
     {
       typed_value_t in2 = in;
       in2.intrinsic_mutability = MUTABLE;
@@ -2007,7 +2009,7 @@ namespace runtime
 
   };
 
-  Move::Move (Ast::Node* dn)
+  Move::Move (ast::Node* dn)
     : Template ("move",
                 dn,
                 new Type::Template ())
@@ -2035,7 +2037,7 @@ namespace runtime
 
   struct MergeImpl : public Callable
   {
-    MergeImpl (const typed_value_t& in, const typed_value_t& out, Ast::Node* definingNode)
+    MergeImpl (const typed_value_t& in, const typed_value_t& out, ast::Node* definingNode)
       : function_type_ (makeFunctionType (in, out, definingNode))
     { }
 
@@ -2082,7 +2084,7 @@ namespace runtime
       return function_type_;
     }
     const Type::Type* const function_type_;
-    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, Ast::Node* definingNode)
+    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast::Node* definingNode)
     {
       typed_value_t in2 = in;
       in2.intrinsic_mutability = MUTABLE;
@@ -2092,7 +2094,7 @@ namespace runtime
     }
   };
 
-  Merge::Merge (Ast::Node* dn)
+  Merge::Merge (ast::Node* dn)
     : Template ("merge",
                 dn,
                 new Type::Template ())
@@ -2120,7 +2122,7 @@ namespace runtime
 
   struct CopyImpl : public Callable
   {
-    CopyImpl (const typed_value_t& in, const typed_value_t& out, Ast::Node* definingNode)
+    CopyImpl (const typed_value_t& in, const typed_value_t& out, ast::Node* definingNode)
       : in_ (in)
       , function_type_ (makeFunctionType (in, out, definingNode))
     { }
@@ -2140,7 +2142,7 @@ namespace runtime
     }
     const typed_value_t in_;
     const Type::Type* const function_type_;
-    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, Ast::Node* definingNode)
+    static const Type::Type* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast::Node* definingNode)
     {
       typed_value_t in2 = in;
       in2.intrinsic_mutability = MUTABLE;
@@ -2150,7 +2152,7 @@ namespace runtime
     }
   };
 
-  Copy::Copy (Ast::Node* dn)
+  Copy::Copy (ast::Node* dn)
     : Template ("copy",
                 dn,
                 new Type::Template ())
@@ -2178,20 +2180,20 @@ namespace runtime
 
   struct PrintlnImpl : public Callable
   {
-    PrintlnImpl (const TypedValueListType& tvlist, Ast::Node* definingNode)
+    PrintlnImpl (const TypedValueListType& tvlist, ast::Node* definingNode)
       : function_type_ (makeFunctionType (tvlist, definingNode))
     { }
 
     virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
     {
       exec.lock_stdout ();
-      Ast::Node* expr_list = node.args ();
+      ast::Node* expr_list = node.args ();
       for (Node::ConstIterator pos = expr_list->Begin (),
            limit = expr_list->End ();
            pos != limit;
            ++pos)
         {
-          Ast::Node* child = *pos;
+          ast::Node* child = *pos;
           evaluate_expr (exec, memoryModel, child);
           struct visitor : public Type::DefaultVisitor
           {
@@ -2293,6 +2295,13 @@ namespace runtime
                   printf ("slice");
                 }
             }
+
+            void visit (const Enum& type)
+            {
+              Enum::ValueType u;
+              stack_frame_pop (exec.stack (), u);
+              printf ("%lu", u);
+            }
           };
           visitor v (exec);
           type_strip (child->typed_value.type)->Accept (v);
@@ -2307,7 +2316,7 @@ namespace runtime
     }
     const typed_value_t in_;
     const Type::Type* const function_type_;
-    static const Type::Type* makeFunctionType (const TypedValueListType& tvlist, Ast::Node* definingNode)
+    static const Type::Type* makeFunctionType (const TypedValueListType& tvlist, ast::Node* definingNode)
     {
       Signature* sig = new Signature ();
       for (TypedValueListType::const_iterator pos = tvlist.begin (),
@@ -2326,7 +2335,7 @@ namespace runtime
     }
   };
 
-  Println::Println (Ast::Node* dn)
+  Println::Println (ast::Node* dn)
     : Template ("println",
                 dn,
                 new Type::Template ())

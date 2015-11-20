@@ -1,9 +1,9 @@
 #include "semantic.hpp"
 #include "debug.hpp"
-#include "Ast.hpp"
+#include "ast.hpp"
 #include "AstVisitor.hpp"
 
-using namespace Ast;
+using namespace ast;
 
 #define QUICK_CHECK do {                        \
       if (node.typed_value.component_state) {\
@@ -13,7 +13,7 @@ using namespace Ast;
       } while (0);
 
 ReceiverAccess
-ComputeReceiverAccess (const Ast::Node* node)
+ComputeReceiverAccess (const ast::Node* node)
 {
   struct visitor : public DefaultConstVisitor
   {
@@ -279,7 +279,7 @@ ComputeReceiverAccess (const Ast::Node* node)
 //       ast_not_reached (node);
 //     }
 
-//     void check_for_pointer_copy (Ast::Node* node)
+//     void check_for_pointer_copy (ast::Node* node)
 //     {
 //       typed_value_t tv = node->typed_value;
 //       if (type_cast<Pointer> (tv.type))

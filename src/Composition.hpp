@@ -26,7 +26,7 @@ namespace Composition
               size_t a,
               const Type::NamedType* t,
               Initializer* i,
-              Ast::ast_instance_t* n,
+              ast::ast_instance_t* n,
               const std::string& aName);
 
     Instance* const parent;
@@ -34,7 +34,7 @@ namespace Composition
     const Type::NamedType* const type;
     component_t* component;
     const Initializer* const initializer;
-    const Ast::ast_instance_t* const node;
+    const ast::ast_instance_t* const node;
     ActionsType actions;
     std::string const name;
 
@@ -78,9 +78,9 @@ namespace Composition
 
   struct Action : public Node
   {
-    Action (Instance* i, action_t* a, Type::Uint::ValueType p = 0);
+    Action (Instance* i, decl::Action* a, Type::Uint::ValueType p = 0);
     Instance* const instance;
-    action_t* const action;
+    decl::Action* const action;
     Type::Uint::ValueType const iota;
     virtual size_t OutgoingCount () const;
     virtual Node* OutgoingNode (size_t i) const;
@@ -91,7 +91,7 @@ namespace Composition
     }
     NodesType nodes;
   private:
-    static std::string getname (Instance* i, action_t* a, Type::Uint::ValueType p);
+    static std::string getname (Instance* i, decl::Action* a, Type::Uint::ValueType p);
   };
 
   struct ReactionKey
@@ -139,12 +139,12 @@ namespace Composition
 
   struct Activation : public Node
   {
-    Activation (Instance* i, const Ast::ast_activate_statement_t* as);
+    Activation (Instance* i, const ast::ast_activate_statement_t* as);
     virtual size_t OutgoingCount () const;
     virtual Node* OutgoingNode (size_t i) const;
     const InstanceSet& GetInstanceSet ();
     Instance* const instance;
-    const Ast::ast_activate_statement_t* const activate_statement;
+    const ast::ast_activate_statement_t* const activate_statement;
     NodesType nodes;
   private:
     static std::string getname (Activation* a);

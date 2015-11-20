@@ -10,7 +10,7 @@
 struct BuiltinFunction : public Callable, public Symbol
 {
   BuiltinFunction (const std::string& id,
-                   Ast::Node* dn,
+                   ast::Node* dn,
                    const Type::Function* type)
     : Symbol (id, dn)
     , type_ (type)
@@ -41,44 +41,44 @@ protected:
 
 struct Readable : public BuiltinFunction
 {
-  Readable (Ast::Node* dn);
-  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const Ast::ast_call_expr_t& node) const;
+  Readable (ast::Node* dn);
+  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast::ast_call_expr_t& node) const;
 };
 
 struct Read : public BuiltinFunction
 {
-  Read (Ast::Node* dn);
-  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const Ast::ast_call_expr_t& node) const;
+  Read (ast::Node* dn);
+  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast::ast_call_expr_t& node) const;
 };
 
 struct Writable : public BuiltinFunction
 {
-  Writable (Ast::Node* dn);
-  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const Ast::ast_call_expr_t& node) const;
+  Writable (ast::Node* dn);
+  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast::ast_call_expr_t& node) const;
 };
 
 struct TimerfdCreate : public BuiltinFunction
 {
-  TimerfdCreate (Ast::Node* dn);
-  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const Ast::ast_call_expr_t& node) const;
+  TimerfdCreate (ast::Node* dn);
+  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast::ast_call_expr_t& node) const;
 };
 
 struct TimerfdSettime : public BuiltinFunction
 {
-  TimerfdSettime (Ast::Node* dn);
-  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const Ast::ast_call_expr_t& node) const;
+  TimerfdSettime (ast::Node* dn);
+  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast::ast_call_expr_t& node) const;
 };
 
 struct UdpSocket : public BuiltinFunction
 {
-  UdpSocket (Ast::Node* dn);
-  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const Ast::ast_call_expr_t& node) const;
+  UdpSocket (ast::Node* dn);
+  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast::ast_call_expr_t& node) const;
 };
 
 struct Sendto : public BuiltinFunction
 {
-  Sendto (Ast::Node* dn);
-  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const Ast::ast_call_expr_t& node) const;
+  Sendto (ast::Node* dn);
+  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast::ast_call_expr_t& node) const;
 };
 
 #endif /* BuiltinFunction_hpp */

@@ -2,7 +2,7 @@
 #define runtime_hpp
 
 #include "types.hpp"
-#include "Ast.hpp"
+#include "ast.hpp"
 #include "heap.hpp"
 #include "field.hpp"
 #include <error.h>
@@ -23,14 +23,14 @@ namespace runtime
   initialize (executor_base_t& exec, Composition::Instance* instance);
 
 // Returns true if the action is enabled.
-  bool enabled (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota);
+  bool enabled (executor_base_t& exec, component_t* instance, const decl::Action* action, size_t iota);
 
 // Returns true if the action was executed.
-  bool exec (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota);
+  bool exec (executor_base_t& exec, component_t* instance, const decl::Action* action, size_t iota);
 
 // Execute the action without checking the precondition.
 // Returns true.
-  bool exec_no_check (executor_base_t& exec, component_t* instance, const action_t* action, size_t iota);
+  bool exec_no_check (executor_base_t& exec, component_t* instance, const decl::Action* action, size_t iota);
 
   enum ControlAction
   {
@@ -41,40 +41,40 @@ namespace runtime
   ControlAction
   evaluate_statement (executor_base_t& exec,
                       const MemoryModel& memoryModel,
-                      Ast::Node* node);
+                      ast::Node* node);
 
   void
   evaluate_expr (executor_base_t& exec,
                  const MemoryModel& memoryModel,
-                 const Ast::Node* node);
+                 const ast::Node* node);
 
   struct New : public ::Template
   {
-    New (Ast::Node* dn);
+    New (ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
   struct Move : public ::Template
   {
-    Move (Ast::Node* dn);
+    Move (ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
   struct Merge : public ::Template
   {
-    Merge (Ast::Node* dn);
+    Merge (ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
   struct Copy : public ::Template
   {
-    Copy (Ast::Node* dn);
+    Copy (ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
   struct Println : public ::Template
   {
-    Println (Ast::Node* dn);
+    Println (ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
   };
 
@@ -97,9 +97,9 @@ namespace runtime
   // It should be removed in the future.
   struct EvaluateNode : public Operation
   {
-    EvaluateNode (const Ast::Node* n) : node (n) { }
+    EvaluateNode (const ast::Node* n) : node (n) { }
     virtual void execute (executor_base_t& exec, const MemoryModel& memoryModel) const;
-    const Ast::Node* const node;
+    const ast::Node* const node;
   };
 
   struct LoadSlice : public Operation

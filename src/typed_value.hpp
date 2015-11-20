@@ -209,7 +209,7 @@ struct typed_value_t
   bool AssignableTo (const Type::Type* type) const;
 
   // Does not check for errors.
-  typed_value_t Convert (const Location& location, const Type::Type* type, Ast::Node& node) const;
+  typed_value_t Convert (const Location& location, const Type::Type* type, ast::Node& node) const;
 
   static typed_value_t Equal (const Location& location, const typed_value_t& left, const typed_value_t& right);
   static typed_value_t NotEqual (const Location& location, const typed_value_t& left, const typed_value_t& right);

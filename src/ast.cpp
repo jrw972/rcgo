@@ -1,17 +1,21 @@
-#include "Ast.hpp"
+#include "ast.hpp"
+
 #include <cstdlib>
 #include <cstring>
+#include <vector>
+
 #include "debug.hpp"
 #include "util.hpp"
 #include "Type.hpp"
-#include <vector>
 #include "Callable.hpp"
 #include "SymbolVisitor.hpp"
 #include "action.hpp"
+#include "reaction.hpp"
 #include "AstVisitor.hpp"
 
-namespace Ast
+namespace ast
 {
+  using namespace decl;
 
   std::ostream&
   operator<< (std::ostream& out, const Node& node)
@@ -112,10 +116,6 @@ namespace Ast
         unimplemented;
       }
       void visit (const ast_signature_type_spec_t& node)
-      {
-        unimplemented;
-      }
-      void visit (const ast_cast_expr_t& node)
       {
         unimplemented;
       }
@@ -347,7 +347,6 @@ namespace Ast
   ACCEPT (ast_pull_port_type_spec_t)
   ACCEPT (ast_signature_type_spec_t)
 
-  ACCEPT (ast_cast_expr_t)
   ACCEPT (ast_implicit_conversion_expr_t)
   ACCEPT (TypeExpression)
   ACCEPT (ast_binary_arithmetic_expr_t)
@@ -513,13 +512,13 @@ namespace Ast
   const ::Type::Type*
   ast_action_t::GetReceiverType () const
   {
-    return action->type ();
+    return this->type;
   }
 
   const ::Type::Type*
   ast_dimensioned_action_t::GetReceiverType () const
   {
-    return action->type ();
+    return this->type;
   }
 
   const ::Type::Type*

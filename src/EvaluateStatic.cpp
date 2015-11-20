@@ -1,9 +1,9 @@
 #include "EvaluateStatic.hpp"
 #include "Type.hpp"
 using namespace Type;
-#include "Ast.hpp"
+#include "ast.hpp"
 #include "AstVisitor.hpp"
-using namespace Ast;
+using namespace ast;
 #include "Symbol.hpp"
 
 std::ostream&
@@ -26,9 +26,9 @@ operator<< (std::ostream& o,
 }
 
 static_value_t
-EvaluateStatic (const Ast::Node* node, const static_memory_t& memory)
+EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
 {
-  struct visitor : public Ast::DefaultConstVisitor
+  struct visitor : public ast::DefaultConstVisitor
   {
     const static_memory_t& memory;
     static_value_t result;

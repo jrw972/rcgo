@@ -1,9 +1,9 @@
 #ifndef AstVisitor_hpp
 #define AstVisitor_hpp
 
-#include "Ast.hpp"
+#include "ast.hpp"
 
-namespace Ast
+namespace ast
 {
 
   struct Visitor
@@ -23,7 +23,6 @@ namespace Ast
     virtual void visit (ast_push_port_type_spec_t& node) = 0;
     virtual void visit (ast_pull_port_type_spec_t& node) = 0;
     virtual void visit (ast_signature_type_spec_t& node) = 0;
-    virtual void visit (ast_cast_expr_t& node) = 0;
     virtual void visit (ast_implicit_conversion_expr_t& node) = 0;
     virtual void visit (TypeExpression& node) = 0;
     virtual void visit (ast_binary_arithmetic_expr_t& node) = 0;
@@ -90,7 +89,6 @@ namespace Ast
     virtual void visit (const ast_push_port_type_spec_t& node) = 0;
     virtual void visit (const ast_pull_port_type_spec_t& node) = 0;
     virtual void visit (const ast_signature_type_spec_t& node) = 0;
-    virtual void visit (const ast_cast_expr_t& node) = 0;
     virtual void visit (const ast_implicit_conversion_expr_t& node) = 0;
     virtual void visit (const TypeExpression& node) = 0;
     virtual void visit (const ast_binary_arithmetic_expr_t& node) = 0;
@@ -204,10 +202,6 @@ namespace Ast
       default_action (node);
     }
 
-    virtual void visit (ast_cast_expr_t& node)
-    {
-      default_action (node);
-    }
     virtual void visit (ast_implicit_conversion_expr_t& node)
     {
       default_action (node);
@@ -468,10 +462,6 @@ namespace Ast
       default_action (node);
     }
 
-    virtual void visit (const ast_cast_expr_t& node)
-    {
-      default_action (node);
-    }
     virtual void visit (const ast_implicit_conversion_expr_t& node)
     {
       default_action (node);

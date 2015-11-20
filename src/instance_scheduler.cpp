@@ -146,7 +146,7 @@ instance_scheduler_t::instance_executor_t::run_i ()
       //     /* dump_instances (runtime); */
       //     /* printf ("END instances before enabled\n"); */
 
-      //     const action_t* action = pos->action;
+      //     const Action* action = pos->action;
 
       //     scheduler_.lock (pos->set);
       //     runtime::exec (*this, record->instance->ptr (), action, pos->iota);
