@@ -249,7 +249,7 @@ private:
     }
     virtual bool execute_i () const
     {
-      return runtime::exec (*executor, action->instance->component, action->action, action->iota);
+      return runtime::execute (*executor, action->instance->component, action->action, action->iota);
     }
   };
 
@@ -267,7 +267,7 @@ private:
     }
     virtual bool execute_i () const
     {
-      return runtime::exec_no_check (*executor, action->instance->component, action->action, action->iota);
+      return runtime::execute_no_check (*executor, action->instance->component, action->action, action->iota);
     }
   };
 

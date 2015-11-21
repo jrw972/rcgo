@@ -4,6 +4,11 @@
 #include "types.hpp"
 #include "AstVisitor.hpp"
 #include "reaction.hpp"
+#include <error.h>
+#include "field.hpp"
+#include "Composition.hpp"
+#include "heap.hpp"
+#include "executor_base.hpp"
 
 namespace runtime
 {
@@ -243,10 +248,10 @@ namespace runtime
           const ast_binary_expr_t& node,
           const T&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       typename T::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       typename T::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left * right);
@@ -288,10 +293,10 @@ namespace runtime
                 const ast_binary_expr_t& node,
                 const Type::Int&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       Type::Int::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       Type::Int::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left / right);
@@ -303,10 +308,10 @@ namespace runtime
                 const ast_binary_expr_t& node,
                 const Float64&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       Float64::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       Float64::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left / right);
@@ -330,10 +335,10 @@ namespace runtime
                 const ast_binary_expr_t& node,
                 const Type::Int&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       Type::Int::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       Type::Int::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left % right);
@@ -392,10 +397,10 @@ namespace runtime
     template <typename U>
     void doit (const U&)
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       typename T::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       typename U::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left << right);
@@ -477,10 +482,10 @@ namespace runtime
 
         void visit (const Type::Int&)
         {
-          evaluate_expr (exec, memoryModel, node.left ());
+          evaluate_expression (exec, memoryModel, node.left ());
           Type::Int::ValueType left;
           exec.stack ().pop (left);
-          evaluate_expr (exec, memoryModel, node.right ());
+          evaluate_expression (exec, memoryModel, node.right ());
           Uint::ValueType right;
           exec.stack ().pop (right);
           exec.stack ().push (left >> right);
@@ -488,10 +493,10 @@ namespace runtime
 
         void visit (const Uint&)
         {
-          evaluate_expr (exec, memoryModel, node.left ());
+          evaluate_expression (exec, memoryModel, node.left ());
           Uint::ValueType left;
           exec.stack ().pop (left);
-          evaluate_expr (exec, memoryModel, node.right ());
+          evaluate_expression (exec, memoryModel, node.right ());
           Uint::ValueType right;
           exec.stack ().pop (right);
           exec.stack ().push (left >> right);
@@ -520,10 +525,10 @@ namespace runtime
                 const ast_binary_expr_t& node,
                 const Type::Int&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       Type::Int::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       Type::Int::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left & right);
@@ -547,10 +552,10 @@ namespace runtime
                 const ast_binary_expr_t& node,
                 const Type::Int&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       Type::Int::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       Type::Int::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left & (~right));
@@ -593,10 +598,10 @@ namespace runtime
           const ast_binary_expr_t& node,
           const T&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       typename T::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       typename T::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left + right);
@@ -620,10 +625,10 @@ namespace runtime
                 const ast_binary_expr_t& node,
                 const Type::Int&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       Type::Int::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       Type::Int::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left - right);
@@ -647,10 +652,10 @@ namespace runtime
                 const ast_binary_expr_t& node,
                 const Type::Int&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       Type::Int::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       Type::Int::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left | right);
@@ -674,10 +679,10 @@ namespace runtime
                 const ast_binary_expr_t& node,
                 const Type::Int&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       Type::Int::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       Type::Int::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left ^ right);
@@ -764,10 +769,10 @@ namespace runtime
                const ast_binary_expr_t& node,
                const T&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       typename T::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       typename T::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left == right);
@@ -834,10 +839,10 @@ namespace runtime
     void
     doit (executor_base_t& exec, const MemoryModel& memoryModel, const ast_binary_expr_t& node) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       typename T::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       typename T::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left != right);
@@ -861,10 +866,10 @@ namespace runtime
                 const ast_binary_expr_t& node,
                 const Type::Int&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       Type::Int::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       Type::Int::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left < right);
@@ -876,10 +881,10 @@ namespace runtime
                 const ast_binary_expr_t& node,
                 const Int8&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       Int8::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       Int8::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left < right);
@@ -903,10 +908,10 @@ namespace runtime
                 const ast_binary_expr_t& node,
                 const Type::Int&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       Type::Int::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       Type::Int::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left <= right);
@@ -930,10 +935,10 @@ namespace runtime
                 const ast_binary_expr_t& node,
                 const Type::Int&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       Type::Int::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       Type::Int::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left > right);
@@ -957,10 +962,10 @@ namespace runtime
                 const ast_binary_expr_t& node,
                 const Type::Int&) const
     {
-      evaluate_expr (exec, memoryModel, node.left ());
+      evaluate_expression (exec, memoryModel, node.left ());
       Type::Int::ValueType left;
       exec.stack ().pop (left);
-      evaluate_expr (exec, memoryModel, node.right ());
+      evaluate_expression (exec, memoryModel, node.right ());
       Type::Int::ValueType right;
       exec.stack ().pop (right);
       exec.stack ().push (left >= right);
@@ -977,9 +982,9 @@ namespace runtime
   };
 
   void
-  evaluate_expr (executor_base_t& exec,
-                 const MemoryModel& memoryModel,
-                 const ast::Node* node)
+  evaluate_expression (executor_base_t& exec,
+                       const MemoryModel& memoryModel,
+                       const ast::Node* node)
   {
     typed_value_t tv = node->typed_value;
     if (tv.value.present)
@@ -1050,9 +1055,9 @@ namespace runtime
 
         //     void visit (const Array& type)
         //     {
-        //       evaluate_expr (exec, memoryModel, node.base ());
+        //       evaluate_expression (exec, memoryModel, node.base ());
         //       void* ptr = stack_frame_pop_pointer (exec.stack ());
-        //       evaluate_expr (exec, memoryModel, node.index ());
+        //       evaluate_expression (exec, memoryModel, node.index ());
         //       Int::ValueType idx;
         //       stack_frame_pop (exec.stack (), idx);
         //       if (idx < 0 || idx >= type.dimension)
@@ -1075,14 +1080,14 @@ namespace runtime
 
       void visit (const ast_slice_expr_t& node)
       {
-        evaluate_expr (exec, memoryModel, node.base ());
+        evaluate_expression (exec, memoryModel, node.base ());
         typed_value_t base_tv = node.base ()->typed_value;
         exec.stack ().pop_tv (base_tv);
 
         typed_value_t low_tv = node.low ()->typed_value;
         if (!low_tv.value.present)
           {
-            evaluate_expr (exec, memoryModel, node.low ());
+            evaluate_expression (exec, memoryModel, node.low ());
             exec.stack ().pop_tv (low_tv);
           }
         Type::Int::ValueType low = low_tv.integral_value ();
@@ -1090,7 +1095,7 @@ namespace runtime
         typed_value_t high_tv = node.high ()->typed_value;
         if (!high_tv.value.present)
           {
-            evaluate_expr (exec, memoryModel, node.high ());
+            evaluate_expression (exec, memoryModel, node.high ());
             exec.stack ().pop_tv (high_tv);
           }
         Type::Int::ValueType high = high_tv.integral_value ();
@@ -1128,11 +1133,11 @@ namespace runtime
       {
         if (!node.address_of_dereference)
           {
-            evaluate_expr (exec, memoryModel, node.child ());
+            evaluate_expression (exec, memoryModel, node.child ());
           }
         else
           {
-            evaluate_expr (exec, memoryModel, node.child ()->At (0));
+            evaluate_expression (exec, memoryModel, node.child ()->At (0));
           }
       }
 
@@ -1150,7 +1155,7 @@ namespace runtime
               {
                 // Evaluate the pull port.
                 pull_port_t pull_port;
-                evaluate_expr (exec, memoryModel, node.expr ());
+                evaluate_expression (exec, memoryModel, node.expr ());
                 exec.stack ().store (&pull_port, sizeof (pull_port_t));
                 // Execute the call.
                 pull_port.getter->call (exec, node, pull_port.instance);
@@ -1158,7 +1163,7 @@ namespace runtime
           }
         else
           {
-            evaluate_expr (exec, memoryModel, node.args ());
+            evaluate_expression (exec, memoryModel, node.args ());
             node.operation->execute (exec, memoryModel);
           }
       }
@@ -1171,7 +1176,7 @@ namespace runtime
       {
         // Push all of the arguments first and measure their size.
         char* top_before = exec.stack ().top ();
-        evaluate_expr (exec, memoryModel, args);
+        evaluate_expression (exec, memoryModel, args);
         char* top_after = exec.stack ().top ();
         ptrdiff_t arguments_size = top_after - top_before; // Assumes stack grows up.
 
@@ -1222,13 +1227,13 @@ namespace runtime
              pos != limit;
              ++pos)
           {
-            evaluate_expr (exec, memoryModel, *pos);
+            evaluate_expression (exec, memoryModel, *pos);
           }
       }
 
       void visit (const ast_select_expr_t& node)
       {
-        evaluate_expr (exec, memoryModel, node.base ());
+        evaluate_expression (exec, memoryModel, node.base ());
         char* ptr = static_cast<char*> (exec.stack ().pop_pointer ());
         typed_value_t tv = node.typed_value;
         assert (tv.has_offset);
@@ -1237,7 +1242,7 @@ namespace runtime
 
       void visit (const ast_dereference_expr_t& node)
       {
-        evaluate_expr (exec, memoryModel, node.child ());
+        evaluate_expression (exec, memoryModel, node.child ());
       }
 
       void visit (const ast_identifier_expr_t& node)
@@ -1250,7 +1255,7 @@ namespace runtime
 
       void visit (const ast_unary_arithmetic_expr_t& node)
       {
-        evaluate_expr (exec, memoryModel, node.child ());
+        evaluate_expression (exec, memoryModel, node.child ());
         switch (node.arithmetic)
           {
           case LogicNot:
@@ -1268,7 +1273,7 @@ namespace runtime
 
       void visit (const ast_implicit_dereference_expr_t& node)
       {
-        evaluate_expr (exec, memoryModel, node.child ());
+        evaluate_expression (exec, memoryModel, node.child ());
         void* ptr = exec.stack ().pop_pointer ();
         if (ptr == NULL)
           {
@@ -1281,7 +1286,7 @@ namespace runtime
 
       void visit (const ast_implicit_conversion_expr_t& node)
       {
-        evaluate_expr (exec, memoryModel, node.child ());
+        evaluate_expression (exec, memoryModel, node.child ());
       }
 
       void visit (const ast_binary_arithmetic_expr_t& node)
@@ -1341,12 +1346,12 @@ namespace runtime
             break;
           case ::LogicAnd:
           {
-            evaluate_expr (exec, memoryModel, node.left ());
+            evaluate_expression (exec, memoryModel, node.left ());
             Bool::ValueType b;
             exec.stack ().pop (b);
             if (b)
               {
-                evaluate_expr (exec, memoryModel, node.right ());
+                evaluate_expression (exec, memoryModel, node.right ());
               }
             else
               {
@@ -1356,7 +1361,7 @@ namespace runtime
           break;
           case ::LogicOr:
           {
-            evaluate_expr (exec, memoryModel, node.left ());
+            evaluate_expression (exec, memoryModel, node.left ());
             Bool::ValueType b;
             exec.stack ().pop (b);
             if (b)
@@ -1365,7 +1370,7 @@ namespace runtime
               }
             else
               {
-                evaluate_expr (exec, memoryModel, node.right ());
+                evaluate_expression (exec, memoryModel, node.right ());
               }
           }
           break;
@@ -1387,7 +1392,7 @@ namespace runtime
       executor_base_t& exec;
       const MemoryModel& memoryModel;
 
-      visitor (executor_base_t& e, const MemoryModel& mm) : retval (CONTINUE), exec (e), memoryModel (mm) { }
+      visitor (executor_base_t& e, const MemoryModel& mm) : retval (Continue), exec (e), memoryModel (mm) { }
 
       void default_action (const Node& node)
       {
@@ -1407,10 +1412,10 @@ namespace runtime
         // Determine the size of the value being assigned.
         size_t size = right->typed_value.type->Size ();
         // Evaluate the address.
-        evaluate_expr (exec, memoryModel, left);
+        evaluate_expression (exec, memoryModel, left);
         void* ptr = exec.stack ().pop_pointer ();
         // Evaluate the value.
-        evaluate_expr (exec, memoryModel, right);
+        evaluate_expression (exec, memoryModel, right);
         // Store.
         exec.stack ().store (ptr, size);
       }
@@ -1420,7 +1425,7 @@ namespace runtime
         ast::Node* expr = node.expr ();
         ast::Node* body = node.body ();
         // Evaluate the pointer to the heap link.
-        evaluate_expr (exec, memoryModel, expr);
+        evaluate_expression (exec, memoryModel, expr);
         heap_link_t* hl = (heap_link_t*)exec.stack ().pop_pointer ();
         if (hl == NULL)
           {
@@ -1464,29 +1469,29 @@ namespace runtime
         // Determine the size of the value being generated.
         size_t size = child->typed_value.type->Size ();
         // Evaluate.
-        evaluate_expr (exec, memoryModel, child);
+        evaluate_expression (exec, memoryModel, child);
         // Remove value.
         exec.stack ().popn (size);
       }
 
       void visit (const ast_if_statement_t& node)
       {
-        evaluate_expr (exec, memoryModel, node.condition ());
+        evaluate_expression (exec, memoryModel, node.condition ());
         Bool::ValueType c;
         exec.stack ().pop (c);
         if (c)
           {
-            if (evaluate_statement (exec, memoryModel, node.true_branch ()) == RETURN)
+            if (evaluate_statement (exec, memoryModel, node.true_branch ()) == Return)
               {
-                retval = RETURN;
+                retval = Return;
                 return;
               }
           }
         else
           {
-            if (evaluate_statement (exec, memoryModel, node.false_branch ()) == RETURN)
+            if (evaluate_statement (exec, memoryModel, node.false_branch ()) == Return)
               {
-                retval = RETURN;
+                retval = Return;
                 return;
               }
           }
@@ -1496,14 +1501,14 @@ namespace runtime
       {
         for (;;)
           {
-            evaluate_expr (exec, memoryModel, node.condition ());
+            evaluate_expression (exec, memoryModel, node.condition ());
             Bool::ValueType c;
             exec.stack ().pop (c);
             if (c)
               {
-                if (evaluate_statement (exec, memoryModel, node.body ()) == RETURN)
+                if (evaluate_statement (exec, memoryModel, node.body ()) == Return)
                   {
-                    retval = RETURN;
+                    retval = Return;
                     return;
                   }
               }
@@ -1521,9 +1526,9 @@ namespace runtime
              ++idx)
           {
             exec.stack ().write (node.symbol->offset (), &idx, sizeof (idx));
-            if (evaluate_statement (exec, memoryModel, node.body ()) == RETURN)
+            if (evaluate_statement (exec, memoryModel, node.body ()) == Return)
               {
-                retval = RETURN;
+                retval = Return;
                 return;
               }
           }
@@ -1534,10 +1539,10 @@ namespace runtime
         // Determine the size of the value being assigned.
         const Type::Type* type = node.right ()->typed_value.type;
         // Evaluate the address.
-        evaluate_expr (exec, memoryModel, node.left ());
+        evaluate_expression (exec, memoryModel, node.left ());
         void* ptr = exec.stack ().pop_pointer ();
         // Evaluate the value.
-        evaluate_expr (exec, memoryModel, node.right ());
+        evaluate_expression (exec, memoryModel, node.right ());
 
         struct visitor : public Type::DefaultVisitor
         {
@@ -1578,10 +1583,10 @@ namespace runtime
         // Determine the size of the value being assigned.
         const Type::Type* type = node.right ()->typed_value.type;
         // Evaluate the address.
-        evaluate_expr (exec, memoryModel, node.left ());
+        evaluate_expression (exec, memoryModel, node.left ());
         void* ptr = exec.stack ().pop_pointer ();
         // Evaluate the value.
-        evaluate_expr (exec, memoryModel, node.right ());
+        evaluate_expression (exec, memoryModel, node.right ());
 
         struct visitor : public Type::DefaultVisitor
         {
@@ -1616,9 +1621,9 @@ namespace runtime
              pos != limit;
              ++pos)
           {
-            if (evaluate_statement (exec, memoryModel, *pos) == RETURN)
+            if (evaluate_statement (exec, memoryModel, *pos) == Return)
               {
-                retval = RETURN;
+                retval = Return;
                 return;
               }
           }
@@ -1627,16 +1632,16 @@ namespace runtime
       void visit (const ast_return_statement_t& node)
       {
         // Evaluate the expression.
-        evaluate_expr (exec, memoryModel, node.child ());
+        evaluate_expression (exec, memoryModel, node.child ());
         // Store in the return parameter.
         exec.stack ().move (node.return_symbol->offset (), SymbolCast<ParameterSymbol> (node.return_symbol)->value.type->Size ());
-        retval = RETURN;
+        retval = Return;
         return;
       }
 
       void visit (const ast_increment_statement_t& node)
       {
-        evaluate_expr (exec, memoryModel, node.child ());
+        evaluate_expression (exec, memoryModel, node.child ());
         void* ptr = exec.stack ().pop_pointer ();
 
         struct visitor : public Type::DefaultVisitor
@@ -1683,10 +1688,10 @@ namespace runtime
         const ast::Node* p = &node;
         memcpy (exec.stack ().pointer_to_instruction_pointer (), &p, sizeof (void*));
         // Execute the expression list.
-        evaluate_expr (exec, memoryModel, node.expr_list ());
+        evaluate_expression (exec, memoryModel, node.expr_list ());
 
         // Stop execution.
-        retval = RETURN;
+        retval = Return;
         return;
       }
 
@@ -1716,7 +1721,7 @@ namespace runtime
                 ast::Node* initializer = expression_list->At (idx);
                 size_t size = initializer->typed_value.type->Size ();
                 // Evaluate the value.
-                evaluate_expr (exec, memoryModel, initializer);
+                evaluate_expression (exec, memoryModel, initializer);
                 // Store.
                 exec.stack ().store (ptr, size);
               }
@@ -1733,7 +1738,7 @@ namespace runtime
   enabled (executor_base_t& exec,
            component_t* instance,
            const Action* action,
-           size_t iota)
+           Type::Int::ValueType iota)
   {
     assert (exec.stack ().empty ());
 
@@ -1750,7 +1755,7 @@ namespace runtime
     // Push an instruction pointer.
     exec.stack ().push_pointer (NULL);
     exec.stack ().setup (0 /* No locals. */);
-    evaluate_expr (exec, action->memory_model, action->precondition);
+    evaluate_expression (exec, action->memory_model, action->precondition);
     Bool::ValueType retval;
     exec.stack ().pop (retval);
     exec.stack ().teardown ();
@@ -1830,17 +1835,17 @@ namespace runtime
       }
   }
 
-  bool exec (executor_base_t& exec, component_t* instance, const Action* action, size_t iota)
+  bool execute (executor_base_t& exec, component_t* instance, const Action* action, Type::Int::ValueType iota)
   {
     if (enabled (exec, instance, action, iota))
       {
-        return exec_no_check (exec, instance, action, iota);
+        return execute_no_check (exec, instance, action, iota);
       }
 
     return false;
   }
 
-  bool exec_no_check (executor_base_t& exec, component_t* instance, const Action* action, size_t iota)
+  bool execute_no_check (executor_base_t& exec, component_t* instance, const Action* action, Type::Int::ValueType iota)
   {
     assert (exec.stack ().empty ());
 
@@ -1952,7 +1957,7 @@ namespace runtime
 
     virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
     {
-      evaluate_expr (exec, memoryModel, node.args ());
+      evaluate_expression (exec, memoryModel, node.args ());
       heap_link_t* hl = (heap_link_t*)exec.stack ().pop_pointer ();
       if (hl != NULL)
         {
@@ -2038,7 +2043,7 @@ namespace runtime
 
     virtual void call (executor_base_t& exec, const MemoryModel& memoryModel,const ast_call_expr_t& node) const
     {
-      evaluate_expr (exec, memoryModel, node.args ());
+      evaluate_expression (exec, memoryModel, node.args ());
       heap_link_t* hl = (heap_link_t*)exec.stack ().pop_pointer ();
       if (hl != NULL)
         {
@@ -2124,7 +2129,7 @@ namespace runtime
 
     virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
     {
-      evaluate_expr (exec, memoryModel, node.args ());
+      evaluate_expression (exec, memoryModel, node.args ());
       typed_value_t tv = in_;
       exec.stack ().pop_tv (tv);
       tv = typed_value_t::copy_exec (tv);
@@ -2189,7 +2194,7 @@ namespace runtime
            ++pos)
         {
           ast::Node* child = *pos;
-          evaluate_expr (exec, memoryModel, child);
+          evaluate_expression (exec, memoryModel, child);
           struct visitor : public Type::DefaultVisitor
           {
             executor_base_t& exec;
@@ -2361,7 +2366,7 @@ namespace runtime
   void
   EvaluateNode::execute (executor_base_t& exec, const MemoryModel& memoryModel) const
   {
-    evaluate_expr (exec, memoryModel, node);
+    evaluate_expression (exec, memoryModel, node);
   }
 
   void

@@ -45,7 +45,7 @@ void Function::call (executor_base_t& exec, const MemoryModel& memoryModel, cons
   char* top_before = exec.stack ().top ();
 
   // Push the arguments.
-  runtime::evaluate_expr (exec, memoryModel, node.args ());
+  runtime::evaluate_expression (exec, memoryModel, node.args ());
 
   // Push a fake instruction pointer.
   exec.stack ().push_pointer (NULL);
@@ -71,7 +71,7 @@ void Method::call (executor_base_t& exec, const MemoryModel& memoryModel, const 
   char* top_before = exec.stack ().top ();
 
   // Push the arguments.
-  runtime::evaluate_expr (exec, memoryModel, node.args ());
+  runtime::evaluate_expression (exec, memoryModel, node.args ());
 
   // Push a fake instruction pointer.
   exec.stack ().push_pointer (NULL);
@@ -97,13 +97,13 @@ void Initializer::call (executor_base_t& exec, const MemoryModel& memoryModel, c
   char* top_before = exec.stack ().top ();
 
   // Push this.
-  runtime::evaluate_expr (exec, memoryModel, node.args ()->At (0));
+  runtime::evaluate_expression (exec, memoryModel, node.args ()->At (0));
   component_t* thisPtr = static_cast<component_t*> (exec.stack ().peek_pointer ());
 
   // Push the arguments.
   for (size_t idx = 1; idx != node.args ()->Size (); ++idx)
     {
-      runtime::evaluate_expr (exec, memoryModel, node.args ()->At (idx));
+      runtime::evaluate_expression (exec, memoryModel, node.args ()->At (idx));
     }
 
   // Push a fake instruction pointer.
@@ -135,7 +135,7 @@ void Initializer::call (executor_base_t& exec, component_t* thisPtr, const ast::
   exec.stack ().push_pointer (thisPtr);
 
   // Push the arguments.
-  runtime::evaluate_expr (exec, memoryModel, args);
+  runtime::evaluate_expression (exec, memoryModel, args);
 
   // Push a fake instruction pointer.
   exec.stack ().push_pointer (NULL);
@@ -163,13 +163,13 @@ void Getter::call (executor_base_t& exec, const MemoryModel& memoryModel, const 
   char* top_before = exec.stack ().top ();
 
   // Push this.
-  runtime::evaluate_expr (exec, memoryModel, node.args ()->At (0));
+  runtime::evaluate_expression (exec, memoryModel, node.args ()->At (0));
   component_t* thisPtr = static_cast<component_t*> (exec.stack ().peek_pointer ());
 
   // Push the arguments.
   for (size_t idx = 1; idx != node.args ()->Size (); ++idx)
     {
-      runtime::evaluate_expr (exec, memoryModel, node.args ()->At (idx));
+      runtime::evaluate_expression (exec, memoryModel, node.args ()->At (idx));
     }
 
   // Push a fake instruction pointer.
@@ -201,7 +201,7 @@ void Getter::call (executor_base_t& exec, const ast_call_expr_t& node, component
   exec.stack ().push_pointer (thisPtr);
 
   // Push the arguments.
-  runtime::evaluate_expr (exec, memoryModel, node.args ());
+  runtime::evaluate_expression (exec, memoryModel, node.args ());
 
   // Push a fake instruction pointer.
   exec.stack ().push_pointer (NULL);

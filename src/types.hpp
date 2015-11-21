@@ -33,6 +33,17 @@ namespace runtime
   class Operation;
 }
 
+namespace Type
+{
+  class Type;
+}
+
+namespace Composition
+{
+  class Composer;
+  class Instance;
+}
+
 class typed_value_t;
 class MemoryModel;
 class Template;

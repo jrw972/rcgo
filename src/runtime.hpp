@@ -1,15 +1,9 @@
-#ifndef runtime_hpp
-#define runtime_hpp
+#ifndef rc_runtime_hpp
+#define rc_runtime_hpp
 
 #include "types.hpp"
-#include "ast.hpp"
-#include "heap.hpp"
-#include "field.hpp"
-#include <error.h>
-#include <string.h>
-#include "Composition.hpp"
-#include "executor_base.hpp"
 #include "Template.hpp"
+#include "Type.hpp"
 
 namespace runtime
 {
@@ -22,20 +16,29 @@ namespace runtime
   void
   initialize (executor_base_t& exec, Composition::Instance* instance);
 
-// Returns true if the action is enabled.
-  bool enabled (executor_base_t& exec, component_t* instance, const decl::Action* action, size_t iota);
+  // Returns true if the action is enabled.
+  bool enabled (executor_base_t& exec,
+                component_t* instance,
+                const decl::Action* action,
+                Type::Int::ValueType iota);
 
-// Returns true if the action was executed.
-  bool exec (executor_base_t& exec, component_t* instance, const decl::Action* action, size_t iota);
+  // Returns true if the action was executed.
+  bool execute (executor_base_t& exec,
+                component_t* instance,
+                const decl::Action* action,
+                Type::Int::ValueType iota);
 
-// Execute the action without checking the precondition.
-// Returns true.
-  bool exec_no_check (executor_base_t& exec, component_t* instance, const decl::Action* action, size_t iota);
+  // Execute the action without checking the precondition.
+  // Returns true.
+  bool execute_no_check (executor_base_t& exec,
+                         component_t* instance,
+                         const decl::Action* action,
+                         Type::Int::ValueType iota);
 
   enum ControlAction
   {
-    RETURN,
-    CONTINUE,
+    Return,
+    Continue,
   };
 
   ControlAction
@@ -44,9 +47,9 @@ namespace runtime
                       ast::Node* node);
 
   void
-  evaluate_expr (executor_base_t& exec,
-                 const MemoryModel& memoryModel,
-                 const ast::Node* node);
+  evaluate_expression (executor_base_t& exec,
+                       const MemoryModel& memoryModel,
+                       const ast::Node* node);
 
   struct New : public ::Template
   {
@@ -149,4 +152,4 @@ namespace runtime
   };
 }
 
-#endif /* runtime_hpp */
+#endif // rc_runtime_hpp

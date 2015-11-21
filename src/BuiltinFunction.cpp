@@ -5,6 +5,7 @@
 #include "ast.hpp"
 #include "runtime.hpp"
 
+#include <error.h>
 #include <errno.h>
 #include <unistd.h>
 #include <poll.h>
@@ -43,7 +44,7 @@ void
 Readable::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   Node::ConstIterator pos = node.args ()->Begin ();
-  runtime::evaluate_expr (exec, memoryModel, *pos);
+  runtime::evaluate_expression (exec, memoryModel, *pos);
   ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (exec.stack ().pop_pointer ());
 
   struct pollfd pfd;
@@ -75,9 +76,9 @@ void
 Read::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   Node::ConstIterator pos = node.args ()->Begin ();
-  runtime::evaluate_expr (exec, memoryModel, *pos++);
+  runtime::evaluate_expression (exec, memoryModel, *pos++);
   ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (exec.stack ().pop_pointer ());
-  runtime::evaluate_expr (exec, memoryModel, *pos++);
+  runtime::evaluate_expression (exec, memoryModel, *pos++);
   Slice::ValueType slice;
   exec.stack ().pop (slice);
   int r = read (fd->fd (), slice.ptr, slice.length);
@@ -96,7 +97,7 @@ void
 Writable::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   Node::ConstIterator pos = node.args ()->Begin ();
-  runtime::evaluate_expr (exec, memoryModel, *pos);
+  runtime::evaluate_expression (exec, memoryModel, *pos);
   ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (exec.stack ().pop_pointer ());
 
   struct pollfd pfd;
@@ -150,10 +151,10 @@ void
 TimerfdSettime::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   Node::ConstIterator pos = node.args ()->Begin ();
-  runtime::evaluate_expr (exec, memoryModel, *pos);
+  runtime::evaluate_expression (exec, memoryModel, *pos);
   ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (exec.stack ().pop_pointer ());
   ++pos;
-  runtime::evaluate_expr (exec, memoryModel, *pos);
+  runtime::evaluate_expression (exec, memoryModel, *pos);
   Uint64::ValueType v;
   exec.stack ().pop (v);
 
@@ -215,13 +216,13 @@ Sendto::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_c
   Slice::ValueType buf_slice;
 
   Node::ConstIterator pos = node.args ()->Begin ();
-  runtime::evaluate_expr (exec, memoryModel, *pos++);
+  runtime::evaluate_expression (exec, memoryModel, *pos++);
   fd = static_cast< ::FileDescriptor*> (exec.stack ().pop_pointer ());
-  runtime::evaluate_expr (exec, memoryModel, *pos++);
+  runtime::evaluate_expression (exec, memoryModel, *pos++);
   exec.stack ().pop (host_string);
-  runtime::evaluate_expr (exec, memoryModel, *pos++);
+  runtime::evaluate_expression (exec, memoryModel, *pos++);
   exec.stack ().pop (port_value);
-  runtime::evaluate_expr (exec, memoryModel, *pos++);
+  runtime::evaluate_expression (exec, memoryModel, *pos++);
   exec.stack ().pop (buf_slice);
 
   std::string host (static_cast<const char*> (host_string.ptr), host_string.length);

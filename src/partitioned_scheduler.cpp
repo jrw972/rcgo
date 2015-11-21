@@ -4,6 +4,7 @@
 #include "runtime.hpp"
 #include <list>
 #include <errno.h>
+#include <error.h>
 
 using namespace decl;
 
