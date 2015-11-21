@@ -39,66 +39,66 @@ Function::set (const Type::Function* functionType,
 void Function::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   // Create space for the return.
-  stack_frame_reserve (exec.stack (), this->returnSize_);
+  exec.stack ().reserve (this->returnSize_);
 
   // Sample the top of the stack.
-  char* top_before = stack_frame_top (exec.stack ());
+  char* top_before = exec.stack ().top ();
 
   // Push the arguments.
   runtime::evaluate_expr (exec, memoryModel, node.args ());
 
   // Push a fake instruction pointer.
-  stack_frame_push_pointer (exec.stack (), NULL);
+  exec.stack ().push_pointer (NULL);
 
   // Sample the top.
-  char* top_after = stack_frame_top (exec.stack ());
+  char* top_after = exec.stack ().top ();
 
   // Do the call.
-  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
+  exec.stack ().setup (this->memoryModel.LocalsSize ());
   runtime::evaluate_statement (exec, this->memoryModel, this->node.body ());
-  stack_frame_pop_base_pointer (exec.stack ());
+  exec.stack ().teardown ();
 
   // Pop the arguments.
-  stack_frame_popn (exec.stack (), top_after - top_before);
+  exec.stack ().popn (top_after - top_before);
 }
 
 void Method::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   // Create space for the return.
-  stack_frame_reserve (exec.stack (), this->returnSize);
+  exec.stack ().reserve (this->returnSize);
 
   // Sample the top of the stack.
-  char* top_before = stack_frame_top (exec.stack ());
+  char* top_before = exec.stack ().top ();
 
   // Push the arguments.
   runtime::evaluate_expr (exec, memoryModel, node.args ());
 
   // Push a fake instruction pointer.
-  stack_frame_push_pointer (exec.stack (), NULL);
+  exec.stack ().push_pointer (NULL);
 
   // Sample the top.
-  char* top_after = stack_frame_top (exec.stack ());
+  char* top_after = exec.stack ().top ();
 
   // Do the call.
-  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
+  exec.stack ().setup (this->memoryModel.LocalsSize ());
   runtime::evaluate_statement (exec, this->memoryModel, this->node->body ());
-  stack_frame_pop_base_pointer (exec.stack ());
+  exec.stack ().teardown ();
 
   // Pop the arguments.
-  stack_frame_popn (exec.stack (), top_after - top_before);
+  exec.stack ().popn (top_after - top_before);
 }
 
 void Initializer::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   // Create space for the return.
-  stack_frame_reserve (exec.stack (), this->returnSize);
+  exec.stack ().reserve (this->returnSize);
 
   // Sample the top of the stack.
-  char* top_before = stack_frame_top (exec.stack ());
+  char* top_before = exec.stack ().top ();
 
   // Push this.
   runtime::evaluate_expr (exec, memoryModel, node.args ()->At (0));
-  component_t* thisPtr = static_cast<component_t*> (stack_frame_read_pointer (exec.stack ()));
+  component_t* thisPtr = static_cast<component_t*> (exec.stack ().peek_pointer ());
 
   // Push the arguments.
   for (size_t idx = 1; idx != node.args ()->Size (); ++idx)
@@ -107,64 +107,64 @@ void Initializer::call (executor_base_t& exec, const MemoryModel& memoryModel, c
     }
 
   // Push a fake instruction pointer.
-  stack_frame_push_pointer (exec.stack (), NULL);
+  exec.stack ().push_pointer (NULL);
 
   // Sample the top.
-  char* top_after = stack_frame_top (exec.stack ());
+  char* top_after = exec.stack ().top ();
 
   // Do the call.
-  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
+  exec.stack ().setup (this->memoryModel.LocalsSize ());
   component_t* old_this = exec.current_instance (thisPtr);
   runtime::evaluate_statement (exec, this->memoryModel, this->node->body ());
   exec.current_instance (old_this);
-  stack_frame_pop_base_pointer (exec.stack ());
+  exec.stack ().teardown ();
 
   // Pop the arguments.
-  stack_frame_popn (exec.stack (), top_after - top_before);
+  exec.stack ().popn (top_after - top_before);
 }
 
 void Initializer::call (executor_base_t& exec, component_t* thisPtr, const ast::Node* args) const
 {
   // Create space for the return.
-  stack_frame_reserve (exec.stack (), this->returnSize);
+  exec.stack ().reserve (this->returnSize);
 
   // Sample the top of the stack.
-  char* top_before = stack_frame_top (exec.stack ());
+  char* top_before = exec.stack ().top ();
 
   // Push this.
-  stack_frame_push_pointer (exec.stack (), thisPtr);
+  exec.stack ().push_pointer (thisPtr);
 
   // Push the arguments.
   runtime::evaluate_expr (exec, memoryModel, args);
 
   // Push a fake instruction pointer.
-  stack_frame_push_pointer (exec.stack (), NULL);
+  exec.stack ().push_pointer (NULL);
 
   // Sample the top.
-  char* top_after = stack_frame_top (exec.stack ());
+  char* top_after = exec.stack ().top ();
 
   // Do the call.
-  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
+  exec.stack ().setup (this->memoryModel.LocalsSize ());
   component_t* old_this = exec.current_instance (thisPtr);
   runtime::evaluate_statement (exec, this->memoryModel, this->node->body ());
   exec.current_instance (old_this);
-  stack_frame_pop_base_pointer (exec.stack ());
+  exec.stack ().teardown ();
 
   // Pop the arguments.
-  stack_frame_popn (exec.stack (), top_after - top_before);
+  exec.stack ().popn (top_after - top_before);
 }
 
 void Getter::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
   // Create space for the return.
-  stack_frame_reserve (exec.stack (), this->returnSize);
+  exec.stack ().reserve (this->returnSize);
 
   // Sample the top of the stack.
-  char* top_before = stack_frame_top (exec.stack ());
+  char* top_before = exec.stack ().top ();
 
   // Push this.
   runtime::evaluate_expr (exec, memoryModel, node.args ()->At (0));
-  component_t* thisPtr = static_cast<component_t*> (stack_frame_read_pointer (exec.stack ()));
+  component_t* thisPtr = static_cast<component_t*> (exec.stack ().peek_pointer ());
 
   // Push the arguments.
   for (size_t idx = 1; idx != node.args ()->Size (); ++idx)
@@ -173,49 +173,49 @@ void Getter::call (executor_base_t& exec, const MemoryModel& memoryModel, const 
     }
 
   // Push a fake instruction pointer.
-  stack_frame_push_pointer (exec.stack (), NULL);
+  exec.stack ().push_pointer (NULL);
 
   // Sample the top.
-  char* top_after = stack_frame_top (exec.stack ());
+  char* top_after = exec.stack ().top ();
 
   // Do the call.
-  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
+  exec.stack ().setup (this->memoryModel.LocalsSize ());
   component_t* old_this = exec.current_instance (thisPtr);
   runtime::evaluate_statement (exec, this->memoryModel, this->node->body ());
   exec.current_instance (old_this);
-  stack_frame_pop_base_pointer (exec.stack ());
+  exec.stack ().teardown ();
 
   // Pop the arguments.
-  stack_frame_popn (exec.stack (), top_after - top_before);
+  exec.stack ().popn (top_after - top_before);
 }
 
 void Getter::call (executor_base_t& exec, const ast_call_expr_t& node, component_t* thisPtr) const
 {
   // Create space for the return.
-  stack_frame_reserve (exec.stack (), this->returnSize);
+  exec.stack ().reserve (this->returnSize);
 
   // Sample the top of the stack.
-  char* top_before = stack_frame_top (exec.stack ());
+  char* top_before = exec.stack ().top ();
 
   // Push this.
-  stack_frame_push_pointer (exec.stack (), thisPtr);
+  exec.stack ().push_pointer (thisPtr);
 
   // Push the arguments.
   runtime::evaluate_expr (exec, memoryModel, node.args ());
 
   // Push a fake instruction pointer.
-  stack_frame_push_pointer (exec.stack (), NULL);
+  exec.stack ().push_pointer (NULL);
 
   // Sample the top.
-  char* top_after = stack_frame_top (exec.stack ());
+  char* top_after = exec.stack ().top ();
 
   // Do the call.
-  stack_frame_push_base_pointer (exec.stack (), this->memoryModel.LocalsSize ());
+  exec.stack ().setup (this->memoryModel.LocalsSize ());
   component_t* old_this = exec.current_instance (thisPtr);
   runtime::evaluate_statement (exec, this->memoryModel, this->node->body ());
   exec.current_instance (old_this);
-  stack_frame_pop_base_pointer (exec.stack ());
+  exec.stack ().teardown ();
 
   // Pop the arguments.
-  stack_frame_popn (exec.stack (), top_after - top_before);
+  exec.stack ().popn (top_after - top_before);
 }

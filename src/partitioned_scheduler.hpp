@@ -4,7 +4,7 @@
 #include "types.hpp"
 #include <pthread.h>
 #include "heap.hpp"
-#include "stack_frame.hpp"
+#include "stack.hpp"
 #include "executor_base.hpp"
 #include "Composition.hpp"
 #include "runtime.hpp"

@@ -1,7 +1,7 @@
 #ifndef executor_base_hpp
 #define executor_base_hpp
 
-#include "stack_frame.hpp"
+#include "stack.hpp"
 #include "action.hpp"
 #include "heap.hpp"
 
@@ -25,7 +25,7 @@ class executor_base_t
 {
 public:
   executor_base_t (size_t stack_size, pthread_mutex_t* stdout_mutex)
-    : stack_ (stack_frame_make (stack_size))
+    : stack_ (stack_size)
     , current_instance_ (NULL)
     , mutable_phase_base_pointer_ (NULL)
     , stdout_mutex_ (stdout_mutex)
@@ -33,7 +33,7 @@ public:
 
   virtual ~executor_base_t () { }
 
-  stack_frame_t* stack () const
+  runtime::Stack& stack ()
   {
     return stack_;
   }
@@ -79,7 +79,7 @@ public:
   virtual void checkedForWritability (::FileDescriptor* fd) { }
 
 private:
-  stack_frame_t* stack_;
+  runtime::Stack stack_;
   component_t* current_instance_;
   char* mutable_phase_base_pointer_;
   pthread_mutex_t* stdout_mutex_;

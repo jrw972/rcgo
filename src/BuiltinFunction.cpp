@@ -44,7 +44,7 @@ Readable::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast
 {
   Node::ConstIterator pos = node.args ()->Begin ();
   runtime::evaluate_expr (exec, memoryModel, *pos);
-  ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (stack_frame_pop_pointer (exec.stack ()));
+  ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (exec.stack ().pop_pointer ());
 
   struct pollfd pfd;
   pfd.fd = fd->fd ();
@@ -59,7 +59,7 @@ Readable::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast
 
   exec.checkedForReadability (fd);
 
-  stack_frame_push_tv (exec.stack (), typed_value_t (Bool::Instance (), pfd.revents & POLLIN));
+  exec.stack ().push (Bool::ValueType (pfd.revents & POLLIN));
 }
 
 Read::Read (ast::Node* dn)
@@ -74,17 +74,14 @@ Read::Read (ast::Node* dn)
 void
 Read::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
-  typed_value_t buf_tv = type_->GetParameter ("buf")->value;
-
   Node::ConstIterator pos = node.args ()->Begin ();
   runtime::evaluate_expr (exec, memoryModel, *pos++);
-  ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (stack_frame_pop_pointer (exec.stack ()));
+  ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (exec.stack ().pop_pointer ());
   runtime::evaluate_expr (exec, memoryModel, *pos++);
-  stack_frame_pop_tv (exec.stack (), buf_tv);
-  Slice::ValueType slice = buf_tv.slice_value ();
+  Slice::ValueType slice;
+  exec.stack ().pop (slice);
   int r = read (fd->fd (), slice.ptr, slice.length);
-  typed_value_t retval (Int::Instance (), r);
-  stack_frame_push_tv (exec.stack (), retval);
+  exec.stack ().push (Int::ValueType (r));
 }
 
 Writable::Writable (ast::Node* dn)
@@ -100,7 +97,7 @@ Writable::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast
 {
   Node::ConstIterator pos = node.args ()->Begin ();
   runtime::evaluate_expr (exec, memoryModel, *pos);
-  ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (stack_frame_pop_pointer (exec.stack ()));
+  ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (exec.stack ().pop_pointer ());
 
   struct pollfd pfd;
   pfd.fd = fd->fd ();
@@ -115,7 +112,7 @@ Writable::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast
 
   exec.checkedForWritability (fd);
 
-  stack_frame_push_tv (exec.stack (), typed_value_t (Bool::Instance (), pfd.revents & POLLOUT));
+  exec.stack ().push (Bool::ValueType (pfd.revents & POLLOUT));
 }
 
 TimerfdCreate::TimerfdCreate (ast::Node* dn)
@@ -132,11 +129,11 @@ TimerfdCreate::call (executor_base_t& exec, const MemoryModel& memoryModel, cons
   if (fd != -1)
     {
       ::FileDescriptor* thefd = exec.allocateFileDescriptor (fd);
-      stack_frame_push_pointer (exec.stack (), thefd);
+      exec.stack ().push_pointer (thefd);
     }
   else
     {
-      stack_frame_push_pointer (exec.stack (), NULL);
+      exec.stack ().push_pointer (NULL);
     }
 }
 
@@ -154,20 +151,20 @@ TimerfdSettime::call (executor_base_t& exec, const MemoryModel& memoryModel, con
 {
   Node::ConstIterator pos = node.args ()->Begin ();
   runtime::evaluate_expr (exec, memoryModel, *pos);
-  ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (stack_frame_pop_pointer (exec.stack ()));
+  ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (exec.stack ().pop_pointer ());
   ++pos;
   runtime::evaluate_expr (exec, memoryModel, *pos);
-  typed_value_t tv (Uint64::Instance (), 0);
-  stack_frame_pop_tv (exec.stack (), tv);
+  Uint64::ValueType v;
+  exec.stack ().pop (v);
 
   struct itimerspec spec;
-  spec.it_interval.tv_sec = tv.value.ref (*Uint64::Instance ());
+  spec.it_interval.tv_sec = v;
   spec.it_interval.tv_nsec = 0;
-  spec.it_value.tv_sec = tv.value.ref (*Uint64::Instance ());
+  spec.it_value.tv_sec = v;
   spec.it_value.tv_nsec = 0;
   int retval = timerfd_settime (fd->fd (), 0, &spec, NULL);
 
-  stack_frame_push_tv (exec.stack (), typed_value_t (Int::Instance (), retval));
+  exec.stack ().push (Int::ValueType (retval));
 }
 
 UdpSocket::UdpSocket (ast::Node* dn)
@@ -183,19 +180,19 @@ UdpSocket::call (executor_base_t& exec, const MemoryModel& memoryModel, const as
   int fd = socket (AF_INET, SOCK_DGRAM, 0);
   if (fd == -1)
     {
-      stack_frame_push_pointer (exec.stack (), NULL);
+      exec.stack ().push_pointer (NULL);
       return;
     }
 
   int s = fcntl (fd, F_SETFL, O_NONBLOCK);
   if (s == -1)
     {
-      stack_frame_push_pointer (exec.stack (), NULL);
+      exec.stack ().push_pointer (NULL);
       return;
     }
 
   ::FileDescriptor* thefd = exec.allocateFileDescriptor (fd);
-  stack_frame_push_pointer (exec.stack (), thefd);
+  exec.stack ().push_pointer (thefd);
 }
 
 Sendto::Sendto (ast::Node* dn)
@@ -212,25 +209,24 @@ Sendto::Sendto (ast::Node* dn)
 void
 Sendto::call (executor_base_t& exec, const MemoryModel& memoryModel, const ast_call_expr_t& node) const
 {
-  typed_value_t host_tv = type_->GetParameter ("host")->value;
-  typed_value_t port_tv = type_->GetParameter ("port")->value;
-  typed_value_t buf_tv = type_->GetParameter ("buf")->value;
+  ::FileDescriptor* fd;
+  StringU::ValueType host_string;
+  Uint16::ValueType port_value;
+  Slice::ValueType buf_slice;
 
   Node::ConstIterator pos = node.args ()->Begin ();
   runtime::evaluate_expr (exec, memoryModel, *pos++);
-  ::FileDescriptor* fd = static_cast< ::FileDescriptor*> (stack_frame_pop_pointer (exec.stack ()));
+  fd = static_cast< ::FileDescriptor*> (exec.stack ().pop_pointer ());
   runtime::evaluate_expr (exec, memoryModel, *pos++);
-  stack_frame_pop_tv (exec.stack (), host_tv);
+  exec.stack ().pop (host_string);
   runtime::evaluate_expr (exec, memoryModel, *pos++);
-  stack_frame_pop_tv (exec.stack (), port_tv);
+  exec.stack ().pop (port_value);
   runtime::evaluate_expr (exec, memoryModel, *pos++);
-  stack_frame_pop_tv (exec.stack (), buf_tv);
+  exec.stack ().pop (buf_slice);
 
-  Slice::ValueType host_slice = host_tv.slice_value ();
-  std::string host (static_cast<const char*> (host_slice.ptr), host_slice.length);
+  std::string host (static_cast<const char*> (host_string.ptr), host_string.length);
   std::stringstream port;
-  port << port_tv.value.ref (*Uint16::Instance ());
-  Slice::ValueType buf_slice = buf_tv.slice_value ();
+  port << port_value;
 
   struct addrinfo* info;
   struct addrinfo hints;

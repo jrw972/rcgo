@@ -39,7 +39,7 @@ reaction.hpp \
 runtime.hpp runtime.cpp \
 scanner.hpp scanner.cpp \
 semantic.hpp semantic.cpp \
-stack_frame.hpp stack_frame.cpp \
+stack.hpp stack.cpp \
 Symbol.hpp Symbol.cpp \
 SymbolVisitor.hpp \
 Template.hpp Template.cpp \

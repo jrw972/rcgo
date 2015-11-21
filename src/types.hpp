@@ -33,6 +33,7 @@ namespace runtime
   class Operation;
 }
 
+class typed_value_t;
 class MemoryModel;
 class Template;
 class ParameterSymbol;
@@ -54,8 +55,12 @@ typedef struct parameter_t parameter_t;
 class port_t;
 class reaction_t;
 class scheduler_t;
-typedef struct stack_frame_t stack_frame_t;
 class Symbol;
+
+namespace runtime
+{
+  class Stack;
+}
 
 // A reference is either mutable, immutable, or foreign.
 // Ordered by strictness for <.

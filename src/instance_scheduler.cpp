@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "heap.hpp"
-#include "stack_frame.hpp"
+#include "stack.hpp"
 #include "action.hpp"
 
 void
