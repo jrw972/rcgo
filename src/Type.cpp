@@ -1,7 +1,6 @@
 #include "Type.hpp"
 #include "action.hpp"
 #include "reaction.hpp"
-#include "parameter.hpp"
 #include "field.hpp"
 #include "Callable.hpp"
 #include "bind.hpp"

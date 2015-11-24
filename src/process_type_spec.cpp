@@ -3,7 +3,6 @@
 #include "ast.hpp"
 #include <error.h>
 #include "Symbol.hpp"
-#include "parameter.hpp"
 #include "AstVisitor.hpp"
 
 using namespace Type;

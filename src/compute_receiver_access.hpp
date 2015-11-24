@@ -3,7 +3,8 @@
 
 #include "types.hpp"
 
-namespace semantic {
+namespace semantic
+{
   void compute_receiver_access (ast::Node* root);
 }
 

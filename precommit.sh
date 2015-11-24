@@ -1,6 +1,6 @@
 #!/bin/bash
 
-git status --porcelain | sed -n -e '/??/ d' -e '/^D / d' -e '/^ D/ d' -e 's/^ M //' -e 's/^RM.*->//' -e 's/^A //' -e 's/^AM //' -e '/.*[ch]pp/ p' | xargs astyle --style=gnu --indent=spaces=2 --indent-namespaces
+find src -name "*.[ch]pp" | xargs astyle --style=gnu --indent=spaces=2 --indent-namespaces
 
 echo -n '# of unimplemented code paths: '
 find src -name "*.[ch]pp" -o -name "*.[ly]" | xargs grep unimplemented | grep -v '#define' | wc -l

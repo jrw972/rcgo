@@ -3,7 +3,8 @@
 
 #include "types.hpp"
 
-namespace code {
+namespace code
+{
 
   void generate_code (ast::Node* root);
 }

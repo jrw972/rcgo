@@ -6,7 +6,6 @@
 #include "action.hpp"
 #include "reaction.hpp"
 #include "bind.hpp"
-#include "parameter.hpp"
 #include "Callable.hpp"
 #include "AstVisitor.hpp"
 

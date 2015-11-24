@@ -7,7 +7,6 @@
 #include "action.hpp"
 #include "reaction.hpp"
 #include "Type.hpp"
-#include "parameter.hpp"
 #include "field.hpp"
 #include "Symbol.hpp"
 #include "MemoryModel.hpp"

@@ -3,51 +3,62 @@
 #include "AstVisitor.hpp"
 #include "SymbolVisitor.hpp"
 
-namespace semantic {
+namespace semantic
+{
 
   using namespace ast;
 
-  namespace {
-    struct Visitor : public ast::DefaultVisitor {
-      void default_action (Node& node) {
+  namespace
+  {
+    struct Visitor : public ast::DefaultVisitor
+    {
+      void default_action (Node& node)
+      {
         ast_not_reached (node);
       }
 
-      void visit (SourceFile& node) {
+      void visit (SourceFile& node)
+      {
         node.VisitChildren (*this);
       }
 
-      void visit (ast::Type& node) {
+      void visit (ast::Type& node)
+      {
         // Do nothing.
       }
 
-      void visit (ast_initializer_t& node) {
+      void visit (ast_initializer_t& node)
+      {
         node.body ()->Accept (*this);
       }
 
-      void visit (ast_list_statement_t& node) {
+      void visit (ast_list_statement_t& node)
+      {
         node.VisitChildren (*this);
         node.receiver_access = AccessNone;
         for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
              pos != limit;
-             ++pos) {
-          node.receiver_access = std::max (node.receiver_access, (*pos)->receiver_access);
-        }
+             ++pos)
+          {
+            node.receiver_access = std::max (node.receiver_access, (*pos)->receiver_access);
+          }
       }
 
-      void visit (ast_expression_statement_t& node) {
+      void visit (ast_expression_statement_t& node)
+      {
         node.VisitChildren (*this);
         node.receiver_access = node.child ()->receiver_access;
       }
 
-      void visit (ast_call_expr_t& node) {
+      void visit (ast_call_expr_t& node)
+      {
         node.VisitChildren (*this);
         node.receiver_access = node.expr ()->receiver_access;
 
         // Check if a mutable pointer escapes.
         size_t i = 0;
         for (Node::ConstIterator pos = node.args ()->Begin (),
-               limit = node.args ()->End ();
+             limit = node.args ()->End ();
              pos != limit;
              ++pos)
           {
@@ -63,29 +74,35 @@ namespace semantic {
           }
       }
 
-      void visit (ast_identifier_expr_t& node) {
+      void visit (ast_identifier_expr_t& node)
+      {
         node.receiver_access = AccessNone;
         ParameterSymbol* parameter = SymbolCast<ParameterSymbol> (node.symbol);
-        if (parameter != NULL) {
-          unimplemented;
-        }
+        if (parameter != NULL)
+          {
+            unimplemented;
+          }
       }
 
-      void visit (ast_list_expr_t& node) {
+      void visit (ast_list_expr_t& node)
+      {
         node.VisitChildren (*this);
         node.receiver_access = AccessNone;
         for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
              pos != limit;
-             ++pos) {
-          node.receiver_access = std::max (node.receiver_access, (*pos)->receiver_access);
-        }
+             ++pos)
+          {
+            node.receiver_access = std::max (node.receiver_access, (*pos)->receiver_access);
+          }
       }
 
-      void visit (ast_literal_expr_t& node) {
+      void visit (ast_literal_expr_t& node)
+      {
         node.receiver_access = AccessNone;
       }
 
-      void visit (ast_instance_t& node) {
+      void visit (ast_instance_t& node)
+      {
         node.expression_list ()->Accept (*this);
       }
     };

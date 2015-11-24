@@ -4,7 +4,6 @@
 #include "types.hpp"
 #include "typed_value.hpp"
 #include "Type.hpp"
-#include "parameter.hpp"
 
 class SymbolVisitor;
 class ConstSymbolVisitor;

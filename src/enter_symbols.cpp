@@ -2,7 +2,6 @@
 #include "AstVisitor.hpp"
 #include "Symbol.hpp"
 #include <error.h>
-#include "parameter.hpp"
 #include "BuiltinFunction.hpp"
 #include "Template.hpp"
 #include "runtime.hpp"

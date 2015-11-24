@@ -11,19 +11,19 @@
 
 struct Location
 {
-    static std::string StaticFile;
-    std::string const File;
-    unsigned int const Line;
+  static std::string StaticFile;
+  std::string const File;
+  unsigned int const Line;
 
-    Location ()
-        : File (StaticFile)
-        , Line (0)
-    { }
+  Location ()
+    : File (StaticFile)
+    , Line (0)
+  { }
 
-    Location (unsigned int aLine)
-        : File (StaticFile)
-        , Line (aLine)
-    { }
+  Location (unsigned int aLine)
+    : File (StaticFile)
+    , Line (aLine)
+  { }
 };
 
 #endif /* Location_hpp */

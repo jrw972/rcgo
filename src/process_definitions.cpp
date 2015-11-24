@@ -7,7 +7,6 @@
 #include "action.hpp"
 #include "reaction.hpp"
 #include "field.hpp"
-#include "parameter.hpp"
 #include "Callable.hpp"
 #include "AstVisitor.hpp"
 

@@ -3,7 +3,8 @@
 
 #include "types.hpp"
 
-namespace semantic {
+namespace semantic
+{
   void check_mutability (ast::Node* root);
 }
 
