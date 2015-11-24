@@ -55,6 +55,12 @@ namespace runtime
   }
 
   void*
+  Stack::get_address (ptrdiff_t offset)
+  {
+    return base_pointer_ + offset;
+  }
+
+  void*
   Stack::read_pointer (ptrdiff_t offset)
   {
     void* retval;

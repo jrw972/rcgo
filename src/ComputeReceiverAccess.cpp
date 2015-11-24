@@ -5,204 +5,205 @@
 
 using namespace ast;
 
-#define QUICK_CHECK do {                        \
-      if (node.typed_value.component_state) {\
-        access = std::max (access, AccessRead);\
-        return;\
-      } \
-      } while (0);
+// #define QUICK_CHECK do {                        \
+//       if (node.typed_value.component_state) {\
+//         access = std::max (access, AccessRead);\
+//         return;\
+//       } \
+//       } while (0);
 
 ReceiverAccess
 ComputeReceiverAccess (const ast::Node* node)
 {
-  struct visitor : public DefaultConstVisitor
-  {
-    ReceiverAccess access;
+  unimplemented;
+  // struct visitor : public DefaultConstVisitor
+  // {
+  //   ReceiverAccess access;
 
-    visitor () : access (AccessNone) { }
+  //   visitor () : access (AccessNone) { }
 
-    void default_action (const Node& node)
-    {
-      ast_not_reached (node);
-    }
+  //   void default_action (const Node& node)
+  //   {
+  //     ast_not_reached (node);
+  //   }
 
-    void visit (const ast_implicit_dereference_expr_t& node)
-    {
-      QUICK_CHECK;
-      node.VisitChildren (*this);
-    }
+  //   void visit (const ast_implicit_dereference_expr_t& node)
+  //   {
+  //     QUICK_CHECK;
+  //     node.VisitChildren (*this);
+  //   }
 
-    void visit (const ast_address_of_expr_t& node)
-    {
-      QUICK_CHECK;
-      node.VisitChildren (*this);
-    }
+  //   void visit (const ast_address_of_expr_t& node)
+  //   {
+  //     QUICK_CHECK;
+  //     node.VisitChildren (*this);
+  //   }
 
-    void visit (const ast_index_expr_t& node)
-    {
-      QUICK_CHECK;
-      node.base ()->Accept (*this);
-    }
+  //   void visit (const ast_index_expr_t& node)
+  //   {
+  //     QUICK_CHECK;
+  //     node.base ()->Accept (*this);
+  //   }
 
-    void visit (const ast_select_expr_t& node)
-    {
-      QUICK_CHECK;
-      node.base ()->Accept (*this);
-    }
+  //   void visit (const ast_select_expr_t& node)
+  //   {
+  //     QUICK_CHECK;
+  //     node.base ()->Accept (*this);
+  //   }
 
-    void visit (const ast_dereference_expr_t& node)
-    {
-      QUICK_CHECK;
-      node.VisitChildren (*this);
-    }
+  //   void visit (const ast_dereference_expr_t& node)
+  //   {
+  //     QUICK_CHECK;
+  //     node.VisitChildren (*this);
+  //   }
 
-    void visit (const ast_identifier_expr_t& node)
-    {
-      QUICK_CHECK;
-    }
+  //   void visit (const ast_identifier_expr_t& node)
+  //   {
+  //     QUICK_CHECK;
+  //   }
 
-    void visit (const ast_list_statement_t& node)
-    {
-      node.VisitChildren (*this);
-    }
+  //   void visit (const ast_list_statement_t& node)
+  //   {
+  //     node.VisitChildren (*this);
+  //   }
 
-    void visit (const ast_expression_statement_t& node)
-    {
-      node.VisitChildren (*this);
-    }
+  //   void visit (const ast_expression_statement_t& node)
+  //   {
+  //     node.VisitChildren (*this);
+  //   }
 
-    void visit (const ast_call_expr_t& node)
-    {
-      QUICK_CHECK;
-      if (node.IsCall)
-        {
-          // Check if a mutable pointer escapes.
-          for (Node::ConstIterator pos = node.args ()->Begin (),
-               limit = node.args ()->End ();
-               pos != limit;
-               ++pos)
-            {
-              const typed_value_t& tv = (*pos)->typed_value;
-              if (tv.component_state && type_contains_pointer (tv.type) && tv.dereference_mutability == MUTABLE)
-                {
-                  access = AccessWrite;
-                  return;
-                }
-            }
-          node.VisitChildren (*this);
-        }
-      else
-        {
-          node.args ()->Accept (*this);
-        }
-    }
+  //   void visit (const ast_call_expr_t& node)
+  //   {
+  //     QUICK_CHECK;
+  //     if (node.IsCall)
+  //       {
+  //         // Check if a mutable pointer escapes.
+  //         for (Node::ConstIterator pos = node.args ()->Begin (),
+  //              limit = node.args ()->End ();
+  //              pos != limit;
+  //              ++pos)
+  //           {
+  //             const typed_value_t& tv = (*pos)->typed_value;
+  //             if (tv.component_state && type_contains_pointer (tv.type) && tv.dereference_mutability == MUTABLE)
+  //               {
+  //                 access = AccessWrite;
+  //                 return;
+  //               }
+  //           }
+  //         node.VisitChildren (*this);
+  //       }
+  //     else
+  //       {
+  //         node.args ()->Accept (*this);
+  //       }
+  //   }
 
-    void visit (const ast_list_expr_t& node)
-    {
-      node.VisitChildren (*this);
-    }
+  //   void visit (const ast_list_expr_t& node)
+  //   {
+  //     node.VisitChildren (*this);
+  //   }
 
-    void visit (const ast_implicit_conversion_expr_t& node)
-    {
-      QUICK_CHECK;
-      node.VisitChildren (*this);
-    }
+  //   void visit (const ast_implicit_conversion_expr_t& node)
+  //   {
+  //     QUICK_CHECK;
+  //     node.VisitChildren (*this);
+  //   }
 
-    void visit (const ast_literal_expr_t& node)
-    {
-      QUICK_CHECK;
-      node.VisitChildren (*this);
-    }
+  //   void visit (const ast_literal_expr_t& node)
+  //   {
+  //     QUICK_CHECK;
+  //     node.VisitChildren (*this);
+  //   }
 
-    void visit (const ast_assign_statement_t& node)
-    {
-      if (node.left ()->typed_value.component_state)
-        {
-          access = AccessWrite;
-          return;
-        }
-      // Check if a mutable pointer escapes.
-      if (node.right ()->typed_value.component_state &&
-          type_contains_pointer (node.right ()->typed_value.type) &&
-          node.right ()->typed_value.dereference_mutability == MUTABLE)
-        {
-          access = AccessWrite;
-          return;
-        }
-      node.left ()->Accept (*this);
-      node.right ()->Accept (*this);
-    }
+  //   void visit (const ast_assign_statement_t& node)
+  //   {
+  //     if (node.left ()->typed_value.component_state)
+  //       {
+  //         access = AccessWrite;
+  //         return;
+  //       }
+  //     // Check if a mutable pointer escapes.
+  //     if (node.right ()->typed_value.component_state &&
+  //         type_contains_pointer (node.right ()->typed_value.type) &&
+  //         node.right ()->typed_value.dereference_mutability == MUTABLE)
+  //       {
+  //         access = AccessWrite;
+  //         return;
+  //       }
+  //     node.left ()->Accept (*this);
+  //     node.right ()->Accept (*this);
+  //   }
 
-    void visit (const ast_activate_statement_t& node)
-    {
-      node.expr_list ()->Accept (*this);
-      // Don't do the body.  It should be analyzed separately.
-    }
+  //   void visit (const ast_activate_statement_t& node)
+  //   {
+  //     node.expr_list ()->Accept (*this);
+  //     // Don't do the body.  It should be analyzed separately.
+  //   }
 
-    void visit (const ast_unary_arithmetic_expr_t& node)
-    {
-      QUICK_CHECK;
-      node.VisitChildren (*this);
-    }
+  //   void visit (const ast_unary_arithmetic_expr_t& node)
+  //   {
+  //     QUICK_CHECK;
+  //     node.VisitChildren (*this);
+  //   }
 
-    void visit (const ast_push_port_call_expr_t& node)
-    {
-      QUICK_CHECK;
-      node.args ()->Accept (*this);
-    }
+  //   void visit (const ast_push_port_call_expr_t& node)
+  //   {
+  //     QUICK_CHECK;
+  //     node.args ()->Accept (*this);
+  //   }
 
-    void visit (const ast_binary_arithmetic_expr_t& node)
-    {
-      QUICK_CHECK;
-      node.VisitChildren (*this);
-    }
+  //   void visit (const ast_binary_arithmetic_expr_t& node)
+  //   {
+  //     QUICK_CHECK;
+  //     node.VisitChildren (*this);
+  //   }
 
-    void visit (const ast_return_statement_t& node)
-    {
-      node.VisitChildren (*this);
-    }
+  //   void visit (const ast_return_statement_t& node)
+  //   {
+  //     node.VisitChildren (*this);
+  //   }
 
-    void visit (const ast_var_statement_t& node)
-    {
-      node.expression_list ()->Accept (*this);
-    }
+  //   void visit (const ast_var_statement_t& node)
+  //   {
+  //     node.expression_list ()->Accept (*this);
+  //   }
 
-    void visit (const ast_empty_statement_t& node)
-    { }
+  //   void visit (const ast_empty_statement_t& node)
+  //   { }
 
-    void visit (const TypeExpression& node)
-    { }
+  //   void visit (const TypeExpression& node)
+  //   { }
 
-    void visit (const ast_increment_statement_t& node)
-    {
-      node.VisitChildren (*this);
-    }
+  //   void visit (const ast_increment_statement_t& node)
+  //   {
+  //     node.VisitChildren (*this);
+  //   }
 
-    void visit (const ast_change_statement_t& node)
-    {
-      node.expr ()->Accept (*this);
-      node.body ()->Accept (*this);
-    }
+  //   void visit (const ast_change_statement_t& node)
+  //   {
+  //     node.expr ()->Accept (*this);
+  //     node.body ()->Accept (*this);
+  //   }
 
-    void visit (const ast_indexed_port_call_expr_t& node)
-    {
-      node.args ()->Accept (*this);
-    }
+  //   void visit (const ast_indexed_port_call_expr_t& node)
+  //   {
+  //     node.args ()->Accept (*this);
+  //   }
 
-    void visit (const ast_if_statement_t& node)
-    {
-      node.VisitChildren (*this);
-    }
+  //   void visit (const ast_if_statement_t& node)
+  //   {
+  //     node.VisitChildren (*this);
+  //   }
 
-    void visit (const ast_slice_expr_t& node)
-    {
-      node.VisitChildren (*this);
-    }
-  };
+  //   void visit (const ast_slice_expr_t& node)
+  //   {
+  //     node.VisitChildren (*this);
+  //   }
+  // };
 
-  visitor v;
-  node->Accept (v);
-  return v.access;
+  // visitor v;
+  // node->Accept (v);
+  // return v.access;
 }
 
 /*

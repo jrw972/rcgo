@@ -18,6 +18,7 @@ struct Template : public Symbol
   { }
 
   virtual typed_value_t instantiate (TypedValueListType& tvlist) = 0;
+  virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types) = 0;
 
   // Symbol
   virtual void accept (SymbolVisitor& visitor);

@@ -44,7 +44,7 @@ check_assignment (typed_value_t left_tv,
     }
 
   if (!(
-        Identitical (left_tv.type, right_tv.type) ||
+        Identical (left_tv.type, right_tv.type) ||
         (Type::type_cast<Type::Pointer> (type_strip(left_tv.type)) && right_tv.type == Type::Nil::Instance ())
       ))
     {
@@ -67,22 +67,23 @@ check_assignment (typed_value_t left_tv,
 typed_value_t
 CheckExpectReference (ast::Node* expr)
 {
-  typed_value_t tv = TypeCheckExpression (expr);
-  tv.RequireReference (expr->location);
-  return tv;
+  unimplemented;
+  // typed_value_t tv = TypeCheckExpression (expr);
+  // tv.RequireReference (expr->location);
+  // return tv;
 }
 
-static typed_value_t
-check_condition (ast::Node*& condition_node)
+static void
+check_condition (ast::Node* condition_node)
 {
-  typed_value_t tv = CheckAndImplicitlyDereferenceAndConvertToDefault (condition_node);
-  if (!type_is_boolean (tv.type))
+  TypeCheckExpression (condition_node);
+  const Type::Type* type = condition_node->type;
+  if (!type_is_boolean (type))
     {
       error_at_line (-1, 0, condition_node->location.File.c_str (),
                      condition_node->location.Line,
-                     "cannot convert (%s) to boolean expression in condition (E37)", tv.type->ToString ().c_str ());
+                     "cannot convert (%s) to boolean expression in condition (E37)", type->ToString ().c_str ());
     }
-  return tv;
 }
 
 static void
@@ -106,33 +107,35 @@ type_check_statement (Node * node)
     typed_value_t bind (Node& node, ast::Node* port_node, ast::Node*& reaction_node)
     {
       CheckExpectReference (port_node);
-      CheckAndImplicitlyDereference (reaction_node);
+      unimplemented;
+      // CheckAndImplicitlyDereference (reaction_node);
 
-      typed_value_t port_tv = port_node->typed_value;
-      typed_value_t reaction_tv = reaction_node->typed_value;
+      // unimplemented;
+      // // typed_value_t port_tv = port_node->typed_value;
+      // // typed_value_t reaction_tv = reaction_node->typed_value;
 
-      const Type::Function *push_port_type = Type::type_cast<Type::Function> (port_tv.type);
+      // // const Type::Function *push_port_type = Type::type_cast<Type::Function> (port_tv.type);
 
-      if (push_port_type == NULL || push_port_type->kind != Type::Function::PUSH_PORT)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "source of bind is not a port (E38)");
-        }
+      // // if (push_port_type == NULL || push_port_type->kind != Type::Function::PUSH_PORT)
+      // //   {
+      // //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      // //                    "source of bind is not a port (E38)");
+      // //   }
 
-      const Type::Method* reaction_type = Type::type_cast<Type::Method> (reaction_tv.type);
-      if (reaction_type == NULL || reaction_type->kind != Type::Method::REACTION)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "target of bind is not a reaction (E39)");
-        }
+      // // const Type::Method* reaction_type = Type::type_cast<Type::Method> (reaction_tv.type);
+      // // if (reaction_type == NULL || reaction_type->kind != Type::Method::REACTION)
+      // //   {
+      // //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      // //                    "target of bind is not a reaction (E39)");
+      // //   }
 
-      if (!type_is_equal (push_port_type->GetSignature (), reaction_type->signature))
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "cannot bind %s to %s (E40)", push_port_type->ToString ().c_str (), reaction_type->ToString ().c_str ());
-        }
+      // // if (!type_is_equal (push_port_type->GetSignature (), reaction_type->signature))
+      // //   {
+      // //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      // //                    "cannot bind %s to %s (E40)", push_port_type->ToString ().c_str (), reaction_type->ToString ().c_str ());
+      // //   }
 
-      return reaction_tv;
+      // // return reaction_tv;
     }
 
     void visit (ast_bind_push_port_statement_t& node)
@@ -143,71 +146,73 @@ type_check_statement (Node * node)
     void visit (ast_bind_push_port_param_statement_t& node)
     {
       typed_value_t reaction_tv = bind (node, node.left (), node.right_ref ());
-      typed_value_t param_tv = CheckAndImplicitlyDereference (node.param_ref ());
-      assert (reaction_tv.value.present);
-      reaction_t* reaction = reaction_tv.value.reaction_value ();
-      if (!reaction->has_dimension ())
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "parameter specified for non-parameterized reaction (E41)");
-        }
-      Type::Int::ValueType dimension = reaction->dimension ();
+      unimplemented;
+      // typed_value_t param_tv = CheckAndImplicitlyDereference (node.param_ref ());
+      // assert (reaction_tv.value.present);
+      // reaction_t* reaction = reaction_tv.value.reaction_value ();
+      // if (!reaction->has_dimension ())
+      //   {
+      //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      //                    "parameter specified for non-parameterized reaction (E41)");
+      //   }
+      // Type::Int::ValueType dimension = reaction->dimension ();
 
-      if (!(param_tv.type->IsInteger () || param_tv.type->IsUntyped ()))
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "reaction array index must be an integer (E74)");
+      // if (!(param_tv.type->IsInteger () || param_tv.type->IsUntyped ()))
+      //   {
+      //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      //                    "reaction array index must be an integer (E74)");
 
-        }
-      if (param_tv.value.present)
-        {
-          if (!param_tv.RepresentableBy (Type::Int::Instance ()))
-            {
-              error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                             "reaction array index cannot be represented by an integer (E75)");
-            }
-          typed_value_t index_int_tv = param_tv.Convert (node.location, Type::Int::Instance (), node);
-          Type::Int::ValueType v = index_int_tv.value.ref (*Type::Int::Instance ());
-          if (v < 0)
-            {
-              error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                             "reaction array index is negative (E76)");
-            }
-          if (v >= dimension)
-            {
-              error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                             "reaction array index is out of range (E77)");
-            }
-        }
+      //   }
+      // if (param_tv.value.present)
+      //   {
+      //     if (!param_tv.RepresentableBy (Type::Int::Instance ()))
+      //       {
+      //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      //                        "reaction array index cannot be represented by an integer (E75)");
+      //       }
+      //     typed_value_t index_int_tv = param_tv.Convert (node.location, Type::Int::Instance (), node);
+      //     Type::Int::ValueType v = index_int_tv.value.ref (*Type::Int::Instance ());
+      //     if (v < 0)
+      //       {
+      //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      //                        "reaction array index is negative (E76)");
+      //       }
+      //     if (v >= dimension)
+      //       {
+      //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      //                        "reaction array index is out of range (E77)");
+      //       }
+      //   }
     }
 
     void visit (ast_bind_pull_port_statement_t& node)
     {
       typed_value_t pull_port_tv = CheckExpectReference (node.left ());
-      typed_value_t getter_tv = CheckAndImplicitlyDereference (node.right_ref ());
+      unimplemented;
+      // typed_value_t getter_tv = CheckAndImplicitlyDereference (node.right_ref ());
 
-      const Type::Function* pull_port_type = type_cast<Type::Function> (pull_port_tv.type);
+      // const Type::Function* pull_port_type = type_cast<Type::Function> (pull_port_tv.type);
 
-      if (pull_port_type == NULL || pull_port_type->kind != Type::Function::PULL_PORT)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "target of bind is not a pull port (E42)");
-        }
+      // if (pull_port_type == NULL || pull_port_type->kind != Type::Function::PULL_PORT)
+      //   {
+      //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      //                    "target of bind is not a pull port (E42)");
+      //   }
 
-      const Type::Method* getter_type = type_cast<Type::Method> (getter_tv.type);
+      // const Type::Method* getter_type = type_cast<Type::Method> (getter_tv.type);
 
-      if (getter_type == NULL)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "source of bind is not a getter (E43)");
-        }
+      // if (getter_type == NULL)
+      //   {
+      //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      //                    "source of bind is not a getter (E43)");
+      //   }
 
-      Type::Function g (Type::Function::FUNCTION, getter_type->signature, getter_type->return_parameter);
-      if (!type_is_equal (pull_port_type, &g))
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "cannot bind %s to %s (E44)", pull_port_type->ToString ().c_str (), getter_type->ToString ().c_str ());
-        }
+      // Type::Function g (Type::Function::FUNCTION, getter_type->signature, getter_type->return_parameter);
+      // if (!type_is_equal (pull_port_type, &g))
+      //   {
+      //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      //                    "cannot bind %s to %s (E44)", pull_port_type->ToString ().c_str (), getter_type->ToString ().c_str ());
+      //   }
     }
 
     void visit (ast_for_iota_statement_t& node)
@@ -237,44 +242,45 @@ type_check_statement (Node * node)
 
     static void arithmetic_assign (ast_binary_t* node, const char* symbol)
     {
-      typed_value_t left_tv = check_assignment_target (node->left ());
-      typed_value_t right_tv = CheckAndImplicitlyDereference (node->right_ref ());
-      if (!type_is_equal (left_tv.type, right_tv.type))
-        {
-          error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                         "incompatible types (%s) %s (%s) (E46)", left_tv.type->ToString ().c_str (), symbol, right_tv.type->ToString ().c_str ());
-        }
+      unimplemented;
+      // typed_value_t left_tv = check_assignment_target (node->left ());
+      // typed_value_t right_tv = CheckAndImplicitlyDereference (node->right_ref ());
+      // if (!type_is_equal (left_tv.type, right_tv.type))
+      //   {
+      //     error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+      //                    "incompatible types (%s) %s (%s) (E46)", left_tv.type->ToString ().c_str (), symbol, right_tv.type->ToString ().c_str ());
+      //   }
 
-      struct visitor : public Type::DefaultVisitor
-      {
-        ast::Node* node;
-        const char* symbol;
+      // struct visitor : public Type::DefaultVisitor
+      // {
+      //   ast::Node* node;
+      //   const char* symbol;
 
-        visitor (ast::Node* n, const char* s) : node (n), symbol (s) { }
+      //   visitor (ast::Node* n, const char* s) : node (n), symbol (s) { }
 
-        void visit (const NamedType& type)
-        {
-          type.UnderlyingType ()->Accept (*this);
-        }
+      //   void visit (const NamedType& type)
+      //   {
+      //     type.UnderlyingType ()->Accept (*this);
+      //   }
 
-        void visit (const Int& type)
-        {
-          // Okay.
-        }
+      //   void visit (const Int& type)
+      //   {
+      //     // Okay.
+      //   }
 
-        void visit (const Uint& type)
-        {
-          // Okay.
-        }
+      //   void visit (const Uint& type)
+      //   {
+      //     // Okay.
+      //   }
 
-        void default_action (const Type::Type& type)
-        {
-          error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                         "incompatible types (%s) %s (%s) (E47)", type.ToString ().c_str (), symbol, type.ToString ().c_str ());
-        }
-      };
-      visitor v (node, symbol);
-      left_tv.type->Accept (v);
+      //   void default_action (const Type::Type& type)
+      //   {
+      //     error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+      //                    "incompatible types (%s) %s (%s) (E47)", type.ToString ().c_str (), symbol, type.ToString ().c_str ());
+      //   }
+      // };
+      // visitor v (node, symbol);
+      // left_tv.type->Accept (v);
     }
 
     void visit (ast_assign_statement_t& node)
@@ -288,25 +294,26 @@ type_check_statement (Node * node)
 
     void visit (ast_change_statement_t& node)
     {
-      // Process the expression.
-      typed_value_t tv = CheckAndImplicitlyDereference (node.expr_ref ());
-      tv = typed_value_t::change (node.location, tv);
+      unimplemented;
+      // // Process the expression.
+      // typed_value_t tv = CheckAndImplicitlyDereference (node.expr_ref ());
+      // tv = typed_value_t::change (node.location, tv);
 
-      // Enter the new heap root.
-      const std::string& identifier = ast_get_identifier (node.identifier ());
-      Symbol* symbol = new VariableSymbol (identifier, &node, typed_value_t::make_ref (tv));
-      node.root_symbol = enter_symbol (node, symbol);
+      // // Enter the new heap root.
+      // const std::string& identifier = ast_get_identifier (node.identifier ());
+      // Symbol* symbol = new VariableSymbol (identifier, &node, typed_value_t::make_ref (tv));
+      // node.root_symbol = enter_symbol (node, symbol);
 
-      // Enter all parameters and variables in scope that are pointers as pointers to foreign.
-      node.Change ();
+      // // Enter all parameters and variables in scope that are pointers as pointers to foreign.
+      // node.Change ();
 
-      // Check the body.
-      type_check_statement (node.body ());
+      // // Check the body.
+      // type_check_statement (node.body ());
     }
 
     void visit (ast_expression_statement_t& node)
     {
-      CheckAndImplicitlyDereference (node.child_ref ());
+      TypeCheckExpression (node.child ());
     }
 
     void visit (ast_if_statement_t& node)
@@ -349,12 +356,19 @@ type_check_statement (Node * node)
       assert (node.return_symbol != NULL);
 
       // Check the expression.
-      typed_value_t expr_tv = CheckAndImplicitlyDereferenceAndConvert (node.child_ref (), node.return_symbol->value.type);
+      TypeCheckExpression (node.child ());
+      if (!assignable (node.child ()->type, node.return_symbol->type))
+        {
+          unimplemented;
+        }
 
-      // Check that it matches with the return type.
-      check_assignment (node.return_symbol->value, expr_tv, node,
-                        "cannot convert to (%s) from (%s) in return (E124)",
-                        "return leaks mutable pointers (E125)");
+      unimplemented;
+      // typed_value_t expr_tv = CheckAndImplicitlyDereferenceAndConvert (node.child_ref (), node.return_symbol->value.type);
+
+      // // Check that it matches with the return type.
+      // check_assignment (node.return_symbol->value, expr_tv, node,
+      //                   "cannot convert to (%s) from (%s) in return (E124)",
+      //                   "return leaks mutable pointers (E125)");
     }
 
     void visit (ast_increment_statement_t& node)
@@ -389,7 +403,8 @@ type_check_statement (Node * node)
         }
       };
       visitor v (node);
-      expr->typed_value.type->Accept (v);
+      unimplemented;
+      //expr->typed_value.type->Accept (v);
     }
 
     void visit (ast_decrement_statement_t& node)
@@ -491,19 +506,20 @@ type_check_statement (Node * node)
            id_pos != id_limit;
            ++id_pos, ++init_pos)
         {
-          // Process the initializer.
-          typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvertToDefault (*init_pos);
-          typed_value_t left_tv = typed_value_t::make_ref (right_tv);
-          left_tv.intrinsic_mutability = MUTABLE;
-          left_tv.dereference_mutability = node.dereferenceMutability;
-          check_assignment (left_tv, right_tv, node,
-                            "incompatible types (%s) = (%s) (E128)",
-                            "assignment leaks mutable pointers (E129)");
-          // Convert to specified mutability.
-          left_tv.intrinsic_mutability = node.mutability;
-          const std::string& name = ast_get_identifier (*id_pos);
-          Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
-          node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
+          unimplemented;
+          // // Process the initializer.
+          // typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvertToDefault (*init_pos);
+          // typed_value_t left_tv = typed_value_t::make_ref (right_tv);
+          // left_tv.intrinsic_mutability = MUTABLE;
+          // left_tv.dereference_mutability = node.dereferenceMutability;
+          // check_assignment (left_tv, right_tv, node,
+          //                   "incompatible types (%s) = (%s) (E128)",
+          //                   "assignment leaks mutable pointers (E129)");
+          // // Convert to specified mutability.
+          // left_tv.intrinsic_mutability = node.mutability;
+          // const std::string& name = ast_get_identifier (*id_pos);
+          // Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
+          // node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
         }
     }
   };
@@ -554,25 +570,26 @@ control_check_statement (Node * node)
 
     void visit (ast_activate_statement_t& node)
     {
-      Node::Context context = node.GetContext ();
-      Node *body_node = node.body ();
+      unimplemented;
+      // Node::Context context = node.GetContext ();
+      // Node *body_node = node.body ();
 
-      if (!(context == Node::Action ||
-            context == Node::Reaction))
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "activation outside of action or reaction (E53)");
-        }
+      // if (!(context == Node::Action ||
+      //       context == Node::Reaction))
+      //   {
+      //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      //                    "activation outside of action or reaction (E53)");
+      //   }
 
-      if (in_activation_statement)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "activations within activations are not allowed (E54)");
-        }
+      // if (in_activation_statement)
+      //   {
+      //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      //                    "activations within activations are not allowed (E54)");
+      //   }
 
-      in_activation_statement = true;
-      body_node->Accept (*this);
-      in_activation_statement = false;
+      // in_activation_statement = true;
+      // body_node->Accept (*this);
+      // in_activation_statement = false;
     }
   };
 
@@ -587,25 +604,17 @@ enter_signature (Node& node, const Signature * type)
   for (Signature::ParametersType::const_iterator pos = type->Begin (), limit = type->End ();
        pos != limit; ++pos)
     {
-      const parameter_t* parameter = *pos;
+      ParameterSymbol* x = *pos;
       // Check if the symbol is defined locally.
-      const std::string& identifier = parameter->name;
-      Symbol *s = node.FindLocalSymbol (identifier);
+      const std::string& identifier = x->identifier;
+      Symbol* s = node.FindLocalSymbol (identifier);
       if (s == NULL)
         {
-          if (parameter->is_receiver)
-            {
-              s = ParameterSymbol::makeReceiver (parameter);
-            }
-          else
-            {
-              s = ParameterSymbol::make (parameter);
-            }
-          node.EnterSymbol (s);
+          node.EnterSymbol (x);
         }
       else
         {
-          error_at_line (-1, 0, parameter->defining_node->location.File.c_str (), parameter->defining_node->location.Line,
+          error_at_line (-1, 0, x->definingNode->location.File.c_str (), x->definingNode->location.Line,
                          "%s is already defined in this scope (E55)",
                          identifier.c_str ());
         }
@@ -631,7 +640,7 @@ process_definitions (Node * node)
 
     void visit (ast_action_t& node)
     {
-      typed_value_t tv = check_condition (node.precondition_ref ());
+      check_condition (node.precondition_ref ());
       node.action->precondition = node.precondition ();
       Node *body_node = node.body ();
       type_check_statement (body_node);
@@ -639,22 +648,23 @@ process_definitions (Node * node)
       node.action->precondition_access = ComputeReceiverAccess (node.precondition ());
       node.action->immutable_phase_access = ComputeReceiverAccess (node.body ());
 
-      if (tv.value.present)
-        {
-          if (tv.value.ref (*Bool::Instance ()))
-            {
-              node.action->precondition_kind = Action::StaticTrue;
-            }
-          else
-            {
-              node.action->precondition_kind = Action::StaticFalse;
-            }
-        }
+      std::cout << "TODO:  Static preconditions\n";
+      // if (tv.value.present)
+      //   {
+      //     if (tv.value.ref (*Bool::Instance ()))
+      //       {
+      //         node.action->precondition_kind = Action::StaticTrue;
+      //       }
+      //     else
+      //       {
+      //         node.action->precondition_kind = Action::StaticFalse;
+      //       }
+      //   }
     }
 
     void visit (ast_dimensioned_action_t& node)
     {
-      typed_value_t tv = check_condition (node.precondition_ref ());
+      check_condition (node.precondition_ref ());
       node.action->precondition = node.precondition ();
       Node *body_node = node.body ();
       type_check_statement (body_node);
@@ -662,17 +672,18 @@ process_definitions (Node * node)
       node.action->precondition_access = ComputeReceiverAccess (node.precondition ());
       node.action->immutable_phase_access = ComputeReceiverAccess (node.body ());
 
-      if (tv.value.present)
-        {
-          if (tv.value.ref (*Bool::Instance ()))
-            {
-              node.action->precondition_kind = Action::StaticTrue;
-            }
-          else
-            {
-              node.action->precondition_kind = Action::StaticFalse;
-            }
-        }
+      std::cout << "TODO:  Static preconditions\n";
+      // if (tv.value.present)
+      //   {
+      //     if (tv.value.ref (*Bool::Instance ()))
+      //       {
+      //         node.action->precondition_kind = Action::StaticTrue;
+      //       }
+      //     else
+      //       {
+      //         node.action->precondition_kind = Action::StaticFalse;
+      //       }
+      //   }
     }
 
     void visit (ast_bind_t& node)
@@ -713,24 +724,7 @@ process_definitions (Node * node)
 
     void visit (ast_instance_t& node)
     {
-      // Lookup the initialization function.
-      InstanceSymbol* symbol = node.symbol;
-      const NamedType* type = symbol->type;
-      ast::Node* initializer_node = node.initializer ();
-      Initializer* initializer = type->GetInitializer (ast_get_identifier (initializer_node));
-      if (initializer == NULL)
-        {
-          error_at_line (-1, 0, initializer_node->location.File.c_str (),
-                         initializer_node->location.Line,
-                         "no initializer named %s (E56)",
-                         ast_get_identifier (initializer_node).c_str ());
-        }
-
-      // Check the call.
-      TypedValueListType tvlist;
-      TypeCheckArgs (node.expression_list (), tvlist);
-      TypeCheckCall (node, initializer->initializerType->signature, initializer->initializerType->return_parameter->value, node.expression_list (), tvlist);
-      symbol->initializer = initializer;
+      unimplemented;
     }
 
     void visit (ast_reaction_t& node)

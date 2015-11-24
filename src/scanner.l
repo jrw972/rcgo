@@ -262,7 +262,10 @@ ESCAPED \\[abfnrtv\\\"]
                          memcpy (v.ptr, begin, size);
                          v.length = size;
 
-                         yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (String::Instance (), v));
+                         value_t value;
+                         value.ref (*String::Instance ()) = v;
+                         value.present = true;
+                         yylval.node = new ast_literal_expr_t (yylloc, String::Instance (), value);
                          return LITERAL; }
 
 \"([^\"]|{OCTAL}|{HEX}|{LITTLEU}|{BIGU}|{ESCAPED})*\" {
@@ -276,68 +279,100 @@ ESCAPED \\[abfnrtv\\\"]
   memcpy (v.ptr, begin, size);
   v.length = size;
 
-  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (String::Instance (), v));
+  value_t value;
+  value.ref (*String::Instance ()) = v;
+  value.present = true;
+  yylval.node = new ast_literal_expr_t (yylloc, String::Instance (), value);
   return LITERAL;
 }
 
 [1-9][0-9]* {
-  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), strtol (yytext, NULL, 10)));
+  value_t value;
+  value.ref (*Integer::Instance ()) = strtol (yytext, NULL, 10);
+  value.present = true;
+  yylval.node = new ast_literal_expr_t (yylloc, Integer::Instance (), value);
   return LITERAL;
 }
 
 0{OCTAL_DIGIT}* {
-  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), strtol (yytext, NULL, 8)));
+  value_t value;
+  value.ref (*Integer::Instance ()) = strtol (yytext, NULL, 8);
+  value.present = true;
+  yylval.node = new ast_literal_expr_t (yylloc, Integer::Instance (), value);
   return LITERAL;
 }
 
 0[xX]{HEXADECIMAL_DIGIT}+ {
-  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Integer::Instance (), strtol (yytext, NULL, 16)));
+  value_t value;
+  value.ref (*Integer::Instance ()) = strtol (yytext, NULL, 16);
+  value.present = true;
+  yylval.node = new ast_literal_expr_t (yylloc, Integer::Instance (), value);
   return LITERAL;
 }
 
 {FLOAT} {
-  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Float::Instance (), strtod (yytext, NULL)));
+  value_t value;
+  value.ref (*Float::Instance ()) = strtod (yytext, NULL);
+  value.present = true;
+  yylval.node = new ast_literal_expr_t (yylloc, Float::Instance (), value);
   return LITERAL;
 }
 
 ({DECIMALS}|{FLOAT})i {
-  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Complex::Instance (), Complex::ValueType::make (0, strtod (yytext, NULL))));
+  value_t value;
+  value.ref (*Complex::Instance ()) = Complex::ValueType::make (0, strtod (yytext, NULL));
+  value.present = true;
+  yylval.node = new ast_literal_expr_t (yylloc, Complex::Instance (), value);
   return LITERAL;
 }
 
 '[^'\n]' {
-  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Rune::Instance (), yytext[1]));
+  value_t value;
+  value.ref (*Rune::Instance ()) = yytext[1];
+  value.present = true;
+  yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
   return LITERAL;
 }
 
 '\\[abfnrtv\\']' {
+  value_t value;
+  value.present = true;
   switch (yytext[2]) {
   case 'a':
-    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Rune::Instance (), '\a'));
+    value.ref (*Rune::Instance ()) = '\a';
+    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case 'b':
-    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Rune::Instance (), '\b'));
+    value.ref (*Rune::Instance ()) = '\b';
+    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case 'f':
-    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Rune::Instance (), '\f'));
+    value.ref (*Rune::Instance ()) = '\f';
+    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case 'n':
-    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Rune::Instance (), '\n'));
+    value.ref (*Rune::Instance ()) = '\n';
+    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case 'r':
-    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Rune::Instance (), '\r'));
+    value.ref (*Rune::Instance ()) = '\r';
+    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case 't':
-    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Rune::Instance (), '\t'));
+    value.ref (*Rune::Instance ()) = '\t';
+    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case 'v':
-    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Rune::Instance (), '\v'));
+    value.ref (*Rune::Instance ()) = '\v';
+    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case '\\':
-    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Rune::Instance (), '\\'));
+    value.ref (*Rune::Instance ()) = '\\';
+    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case '\'':
-    yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Rune::Instance (), '\''));
+    value.ref (*Rune::Instance ()) = '\'';
+    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   default:
     not_reached;
@@ -347,26 +382,34 @@ ESCAPED \\[abfnrtv\\\"]
 }
 
 '\\{OCTAL_DIGIT}{3}' {
-  int x = parseOctal (yylloc, yytext + 2);
-  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Rune::Instance (), x));
+  value_t value;
+  value.ref (*Rune::Instance ()) = parseOctal (yylloc, yytext + 2);
+  value.present = true;
+  yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
   return LITERAL;
 }
 
 '\\x{HEXADECIMAL_DIGIT}{2}' {
-  int x = parseHex (yylloc, yytext + 3);
-  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Rune::Instance (), x));
+  value_t value;
+  value.ref (*Rune::Instance ()) = parseHex (yylloc, yytext + 3);
+  value.present = true;
+  yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
   return LITERAL;
 }
 
 '\\u{HEXADECIMAL_DIGIT}{4}' {
-  int x = parseU4 (yylloc, yytext + 3);
-  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Rune::Instance (), x));
+  value_t value;
+  value.ref (*Rune::Instance ()) = parseU4 (yylloc, yytext + 3);
+  value.present = true;
+  yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
   return LITERAL;
 }
 
 '\\U{HEXADECIMAL_DIGIT}{8}' {
-  int x = parseU8 (yylloc, yytext + 3);
-  yylval.node = new ast_literal_expr_t (yylloc, typed_value_t (Rune::Instance (), x));
+  value_t value;
+  value.ref (*Rune::Instance ()) = parseU8 (yylloc, yytext + 3);
+  value.present = true;
+  yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
   return LITERAL;
 }
 

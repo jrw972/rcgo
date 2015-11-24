@@ -50,6 +50,8 @@ namespace runtime
     // Push base_pointer + offset.
     // Used to get the address of an argument or local variable.
     void push_address (ptrdiff_t offset);
+    // Return base_pointer + offset.
+    void* get_address (ptrdiff_t offset);
 
     // Reserve size bytes on the top of the stack.
     void reserve (size_t size);

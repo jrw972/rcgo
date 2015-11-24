@@ -19,15 +19,6 @@ namespace ast
     typedef std::vector<Symbol*> SymbolsType;
     typedef SymbolsType::const_iterator ConstSymbolIterator;
 
-    enum Context
-    {
-      Parent, // Use the context of the parent.
-      Action,
-      Reaction,
-      Initializer,
-      Getter,
-    };
-
     virtual ~Node() { }
 
     virtual void Accept (Visitor& visitor) = 0;
@@ -88,13 +79,16 @@ namespace ast
     void Activate ();
     void Change ();
 
-    Context GetContext () const;
-    bool GetInMutableSection () const;
-
-    bool inMutableSection;
     Location const location;
     // TODO:  Rename.
-    typed_value_t typed_value;
+    //typed_value_t typed_value;
+    const Type::Type* type;
+    value_t value;
+    ::Template* temp;
+    ExpressionKind expression_kind;
+    Mutability intrinsic_mutability;
+    Mutability dereference_mutability;
+    ReceiverAccess receiver_access;
     runtime::Operation* operation;
 
   private:
@@ -102,7 +96,6 @@ namespace ast
     ChildrenType m_children;
     SymbolsType m_symbols;
   protected:
-    Context o_context;
     Node (unsigned int line_, size_t children_count);
     void set (size_t idx, Node* child);
   };
@@ -543,6 +536,11 @@ namespace ast
 
     ast_call_expr_t (unsigned int line, Node* expr, Node* args)
       : Node (line, COUNT)
+      , callable (NULL)
+      , function_type (NULL)
+      , method_type (NULL)
+      , signature (NULL)
+      , return_parameter (NULL)
     {
       set (EXPR, expr);
       set (ARGS, args);
@@ -564,6 +562,11 @@ namespace ast
     void Accept (Visitor& visitor);
     void Accept (ConstVisitor& visitor) const;
 
+    Callable* callable;
+    const Type::Function* function_type;
+    const Type::Method* method_type;
+    const Type::Signature* signature;
+    const ParameterSymbol* return_parameter;
     typed_value_t original_expr_tv;
     bool IsCall;
   };
@@ -819,10 +822,11 @@ namespace ast
 
   struct ast_literal_expr_t : public Node
   {
-    ast_literal_expr_t (unsigned int line, typed_value_t tv)
+    ast_literal_expr_t (unsigned int line, const Type::Type* t, const value_t& v)
       : Node (line, 0)
     {
-      typed_value = tv;
+      type = t;
+      value = v;
     }
 
     void Accept (Visitor& visitor);
@@ -1087,7 +1091,6 @@ namespace ast
     {
       set (EXPR_LIST, expr_list);
       set (BODY, body);
-      body->inMutableSection = true;
     }
 
     Node* expr_list () const
@@ -1270,7 +1273,6 @@ namespace ast
       , action (NULL)
       , type (NULL)
     {
-      o_context = Action;
       set (RECEIVER, receiver);
       set (IDENTIFIER, identifier);
       set (PRECONDITION, precondition);
@@ -1330,7 +1332,6 @@ namespace ast
       , action (NULL)
       , type (NULL)
     {
-      o_context = Action;
       set (DIMENSION, dimension);
       set (RECEIVER, receiver);
       set (IDENTIFIER, identifier);
@@ -1623,7 +1624,6 @@ namespace ast
       , getter (NULL)
       , dereferenceMutability (dm)
     {
-      o_context = Getter;
       set (RECEIVER, receiver);
       set (IDENTIFIER, identifier);
       set (SIGNATURE, signature);
@@ -1682,7 +1682,6 @@ namespace ast
       , return_dereference_mutability (return_dm)
       , initializer (NULL)
     {
-      o_context = Initializer;
       set (RECEIVER, receiver);
       set (IDENTIFIER, identifier);
       set (SIGNATURE, signature);
@@ -1740,7 +1739,6 @@ namespace ast
       : Node (line, COUNT)
       , reaction (NULL)
     {
-      o_context = Reaction;
       set (RECEIVER, receiver);
       set (IDENTIFIER, identifier);
       set (SIGNATURE, signature);
@@ -1800,7 +1798,6 @@ namespace ast
       : Node (line, COUNT)
       , reaction (NULL)
     {
-      o_context = Reaction;
       set (DIMENSION, dimension);
       set (RECEIVER, receiver);
       set (IDENTIFIER, identifier);

@@ -39,7 +39,7 @@ namespace Type
     virtual std::string ToString () const = 0;
     virtual size_t Alignment () const = 0;
     virtual size_t Size () const = 0;
-    // When give the choice between two types, use the one with lower level.
+    // When give the choice between two types, use the one with high level.
     virtual TypeLevel Level () const = 0;
     virtual const Type* UnderlyingType () const
     {
@@ -596,7 +596,9 @@ namespace Type
   class Signature : public Type
   {
   public:
-    typedef std::vector<const parameter_t*> ParametersType;
+    Signature () : size_ (0) { }
+
+    typedef std::vector<ParameterSymbol*> ParametersType;
     typedef ParametersType::const_iterator const_iterator;
     void Accept (Visitor& visitor) const;
     std::string ToString () const;
@@ -606,7 +608,7 @@ namespace Type
     }
     size_t Size () const
     {
-      not_reached;
+      return size_;
     }
     virtual TypeLevel Level () const
     {
@@ -616,7 +618,7 @@ namespace Type
     {
       return parameters_.size ();
     }
-    const parameter_t* At (size_t idx) const
+    ParameterSymbol* At (size_t idx) const
     {
       return parameters_.at (idx);
     }
@@ -628,14 +630,12 @@ namespace Type
     {
       return parameters_.end ();
     }
-    const parameter_t * Find (const std::string& name) const;
-    Signature* Append (const parameter_t* p)
-    {
-      parameters_.push_back (p);
-      return this;
-    }
+    ParameterSymbol* Find (const std::string& name) const;
+    Signature* Append (ParameterSymbol* p);
+    void check_foreign_safe () const;
   private:
     ParametersType parameters_;
+    size_t size_;
   };
 
   class Function : public Type
@@ -649,7 +649,7 @@ namespace Type
     };
     Function (Kind k,
               const Signature * signature,
-              const parameter_t * return_parameter)
+              ParameterSymbol* return_parameter)
       : kind (k)
       , signature_ (signature)
       , return_parameter_ (return_parameter)
@@ -672,11 +672,11 @@ namespace Type
     {
       return signature_;
     }
-    const parameter_t* GetParameter (const std::string& name) const
+    ParameterSymbol* GetParameter (const std::string& name) const
     {
       return signature_->Find (name);
     }
-    const parameter_t* GetReturnParameter () const
+    ParameterSymbol* GetReturnParameter () const
     {
       return return_parameter_;
     }
@@ -684,7 +684,7 @@ namespace Type
     Kind const kind;
   private:
     const Signature* const signature_;
-    const parameter_t* const return_parameter_;
+    ParameterSymbol* const return_parameter_;
   };
 
   class Method : public Type
@@ -699,9 +699,9 @@ namespace Type
     };
     Method (Kind k,
             const NamedType* named_type_,
-            const parameter_t* this_parameter_,
+            ParameterSymbol* this_parameter_,
             const Signature * signature_,
-            const parameter_t* return_parameter_);
+            ParameterSymbol* return_parameter_);
     void Accept (Visitor& visitor) const;
     std::string ToString () const;
     size_t Alignment () const
@@ -719,15 +719,15 @@ namespace Type
     Kind const kind;
     const NamedType* const named_type;
     const Type* const receiver_type;
-    const parameter_t* const this_parameter;
+    ParameterSymbol* const this_parameter;
     const Function* const function_type;
     const Signature* const signature;
-    const parameter_t* const return_parameter;
+    ParameterSymbol* const return_parameter;
     const Type* return_type () const;
   private:
-    static Function* make_function_type (const parameter_t* this_parameter,
+    static Function* make_function_type (ParameterSymbol* this_parameter,
                                          const Signature* signature,
-                                         const parameter_t* return_parameter);
+                                         ParameterSymbol* return_parameter);
   };
 
   class Untyped : public Type
@@ -2282,7 +2282,13 @@ namespace Type
   type_is_equal (const Type* x, const Type* y);
 
   bool
-  Identitical (const Type* x, const Type* y);
+  Identical (const Type* x, const Type* y);
+
+  bool
+  assignable (const Type* from, const Type* to);
+
+  const Type*
+  Choose (const Type* x, const Type* y);
 
   // True if any pointer is accessible.
   bool

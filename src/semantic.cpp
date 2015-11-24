@@ -19,7 +19,7 @@ using namespace ast;
 
 // TODO:  Replace interacting with type_t* with typed_value_t.
 
-static void
+void
 allocate_symbol (MemoryModel& memory_model,
                  Symbol* symbol)
 {
@@ -43,7 +43,7 @@ allocate_symbol (MemoryModel& memory_model,
         case ParameterSymbol::Return:
         case ParameterSymbol::Iota:
         {
-          const Type::Type* type = symbol.value.type;
+          const Type::Type* type = symbol.type;
           memory_model.ArgumentsPush (type->Size ());
           static_cast<Symbol&> (symbol).offset (memory_model.ArgumentsOffset ());
           if (symbol.kind == ParameterSymbol::Receiver)
@@ -227,18 +227,6 @@ allocate_statement_stack_variables (ast::Node* node, MemoryModel& memory_model)
   };
   visitor v (memory_model);
   node->Accept (v);
-}
-
-static void
-allocate_parameter (MemoryModel& memory_model,
-                    Node::SymbolsType::const_iterator pos,
-                    Node::SymbolsType::const_iterator limit)
-{
-  if (pos != limit)
-    {
-      allocate_parameter (memory_model, pos + 1, limit);
-      allocate_symbol (memory_model, *pos);
-    }
 }
 
 void

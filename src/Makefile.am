@@ -17,6 +17,12 @@ AstVisitor.hpp \
 bind.hpp \
 BuiltinFunction.hpp BuiltinFunction.cpp \
 Callable.hpp Callable.cpp \
+check_types.hpp check_types.cpp \
+check_references.hpp check_references.cpp \
+check_mutability.hpp check_mutability.cpp \
+check_constants.hpp check_constants.cpp \
+check_control.hpp check_control.cpp \
+compute_receiver_access.hpp compute_receiver_access.cpp \
 Composition.hpp Composition.cpp \
 ComputeReceiverAccess.cpp \
 debug.hpp \
@@ -25,6 +31,7 @@ enumerate_instances.cpp \
 EvaluateStatic.hpp EvaluateStatic.cpp \
 executor_base.hpp \
 field.hpp \
+generate_code.hpp generate_code.cpp \
 heap.hpp heap.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
 Location.hpp Location.cpp \

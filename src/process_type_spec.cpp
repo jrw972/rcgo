@@ -25,29 +25,20 @@ lookup_no_force (Node * node, const std::string& identifier)
 typed_value_t
 process_array_dimension (ast::Node*& ptr)
 {
-  typed_value_t tv = CheckAndImplicitlyDereferenceAndConvertToDefault (ptr);
-  tv.ArrayDimension (ptr->location);
-  return tv;
+  unimplemented;
+  // typed_value_t tv = CheckAndImplicitlyDereferenceAndConvertToDefault (ptr);
+  // tv.ArrayDimension (ptr->location);
+  // return tv;
 }
 
 void
-CheckForForeignSafe (const Signature* signature, const parameter_t* return_parameter)
+CheckForForeignSafe (const Signature* signature, const ParameterSymbol* return_parameter)
 {
-  for (Signature::const_iterator pos = signature->Begin (), limit = signature->End ();
-       pos != limit;
-       ++pos)
+  // TODO:  Move this up to the function/method type.
+  signature->check_foreign_safe ();
+  if (return_parameter != NULL)
     {
-      const parameter_t* parameter = *pos;
-      if (!parameter->value.is_foreign_safe ())
-        {
-          error_at_line (-1, 0, parameter->defining_node->location.File.c_str (), parameter->defining_node->location.Line,
-                         "parameter is not foreign safe (E106)");
-        }
-    }
-  if (return_parameter != NULL && !return_parameter->value.is_foreign_safe ())
-    {
-      error_at_line (-1, 0, return_parameter->defining_node->location.File.c_str (), return_parameter->defining_node->location.Line,
-                     "return parameter is not foreign safe (E107)");
+      return_parameter->check_foreign_safe ();
     }
 }
 
@@ -195,12 +186,11 @@ process_type_spec (Node * node, bool force_identifiers, bool is_component, Named
     void visit (ast_push_port_type_spec_t& node)
     {
       const Signature* signature = type_cast<Signature> (process_type_spec (node.signature (), true));
-      const Type::Type* return_type = Type::Void::Instance ();
-      typed_value_t return_value = typed_value_t::make_value (return_type, IMMUTABLE, IMMUTABLE, false);
-      parameter_t* return_parameter = new parameter_t (&node,
-          ReturnSymbol,
-          return_value,
-          false);
+      ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (&node,
+                                          ReturnSymbol,
+                                          Type::Void::Instance (),
+                                          IMMUTABLE);
+
       CheckForForeignSafe (signature, return_parameter);
       type = new Type::Function (Type::Function::PUSH_PORT, signature, return_parameter);
     }
@@ -209,11 +199,10 @@ process_type_spec (Node * node, bool force_identifiers, bool is_component, Named
     {
       const Signature* signature = type_cast<Signature> (process_type_spec (node.signature (), true));
       const Type::Type* return_type = process_type_spec (node.return_type (), true);
-      typed_value_t return_value = typed_value_t::make_value (return_type, MUTABLE, node.dereferenceMutability, false);
-      parameter_t* return_parameter = new parameter_t (node.return_type (),
-          ReturnSymbol,
-          return_value,
-          false);
+      ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (&node,
+                                          ReturnSymbol,
+                                          return_type,
+                                          node.dereferenceMutability);
       CheckForForeignSafe (signature, return_parameter);
       type = new Type::Function (Type::Function::PULL_PORT, signature, return_parameter);
     }
@@ -235,14 +224,10 @@ process_type_spec (Node * node, bool force_identifiers, bool is_component, Named
             {
               ast::Node* id = *pos2;
               const std::string& identifier = ast_get_identifier (id);
-              const parameter_t *parameter = signature->Find (identifier);
+              const ParameterSymbol* parameter = signature->Find (identifier);
               if (parameter == NULL)
                 {
-                  typed_value_t tv = typed_value_t::make_value (type,
-                                     child->mutability,
-                                     child->dereferenceMutability,
-                                     false);
-                  signature->Append (new parameter_t (id, identifier, tv, false));
+                  signature->Append (ParameterSymbol::make (id, identifier, type, child->mutability, child->dereferenceMutability));
                 }
               else
                 {

@@ -15,7 +15,7 @@ using namespace ast;
 using namespace decl;
 
 static NamedType*
-processReceiver (ast::Node* n, ast::Node* identifierNode, parameter_t*& this_parameter, ParameterSymbol*& thisSymbol,
+processReceiver (ast::Node* n, ast::Node* identifierNode, ParameterSymbol*& receiver_symbol,
                  bool requireComponent, bool requireImmutableDereferenceMutability)
 {
   ast_receiver_t* node = ast_cast<ast_receiver_t> (n);
@@ -85,13 +85,13 @@ processReceiver (ast::Node* n, ast::Node* identifierNode, parameter_t*& this_par
                                node->mutability,
                                node->dereferenceMutability, true);
 
-  this_parameter = new parameter_t (this_identifier_node,
-                                    this_identifier,
-                                    this_value,
-                                    true);
+  receiver_symbol = ParameterSymbol::makeReceiver (this_identifier_node,
+                    this_identifier,
+                    this_value.type,
+                    node->mutability,
+                    node->dereferenceMutability);
 
-  thisSymbol = ParameterSymbol::makeReceiver (this_parameter);
-  node->this_symbol = thisSymbol;
+  node->this_symbol = receiver_symbol;
 
   return type;
 }
@@ -105,41 +105,36 @@ processIota (Node& node, ast::Node*& dimensionNode, ParameterSymbol*& parameterS
   typed_value_t zero = dimension;
   zero.zero ();
 
-  typed_value_t iota_value = typed_value_t::make_range (zero, dimension, IMMUTABLE, IMMUTABLE);
+  unimplemented;
+  // typed_value_t iota_value = typed_value_t::make_range (zero, dimension, IMMUTABLE, IMMUTABLE);
 
-  parameter_t* iota_parameter = new parameter_t (dimensionNode,
-      "IOTA",
-      iota_value,
-      false);
-  parameterSymbol = ParameterSymbol::makeIota (iota_parameter);
+  // parameter_t* iota_parameter = new parameter_t (dimensionNode,
+  //     "IOTA",
+  //     iota_value,
+  //     false);
+  // parameterSymbol = ParameterSymbol::makeIota (iota_parameter);
 
-  return dimension.Convert (dimensionNode->location, Type::Uint::Instance (), node).value.ref (*Type::Uint::Instance ());
+  // return dimension.Convert (dimensionNode->location, Type::Uint::Instance (), node).value.ref (*Type::Uint::Instance ());
 }
 
 static void
 processSignatureReturn (ast::Node* signatureNode, ast::Node* returnType, Mutability dereferenceMutability, bool requireForeignSafe,
-                        const Signature*& signature, parameter_t*& returnParameter, ParameterSymbol*& returnSymbol)
+                        const Signature*& signature, ParameterSymbol*& returnSymbol)
 {
   /* Process the signature. */
   signature = type_cast<Signature> (process_type_spec (signatureNode, true));
 
   /* Process the return type. */
   const Type::Type* return_type = process_type_spec (returnType, true);
-  typed_value_t return_value = typed_value_t::make_value (return_type,
-                               MUTABLE,
-                               dereferenceMutability,
-                               false);
 
-  returnParameter = new parameter_t (returnType,
-                                     ReturnSymbol,
-                                     return_value,
-                                     false);
-
-  returnSymbol = ParameterSymbol::makeReturn (returnParameter);
+  returnSymbol = ParameterSymbol::makeReturn (returnType,
+                 ReturnSymbol,
+                 return_type,
+                 dereferenceMutability);
 
   if (requireForeignSafe)
     {
-      CheckForForeignSafe (signature, returnParameter);
+      CheckForForeignSafe (signature, returnSymbol);
     }
 }
 
@@ -212,32 +207,32 @@ ProcessDeclarations (Node * node)
            ++id_pos, ++init_pos)
         {
           // Process the initializer.
-          typed_value_t right_tv = CheckAndImplicitlyDereference (*init_pos);
-          if (!right_tv.value.present)
-            {
-              error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                             "expression is not constant (E89)");
-            }
-          typed_value_t left_tv = typed_value_t::make_ref (right_tv);
-          left_tv.intrinsic_mutability = MUTABLE;
-          left_tv.dereference_mutability = IMMUTABLE;
-          check_assignment (left_tv, right_tv, node,
-                            "incompatible types (%s) = (%s) (E130)",
-                            "assignment leaks mutable pointers (E131)");
-          // Convert to specified mutability.
-          right_tv.intrinsic_mutability = IMMUTABLE;
-          const std::string& name = ast_get_identifier (*id_pos);
-          Symbol* symbol = new TypedConstantSymbol (name, *id_pos, right_tv);
-          enter_symbol (*node.GetParent (), symbol);
-          //node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
+          unimplemented;
+          // typed_value_t right_tv = CheckAndImplicitlyDereference (*init_pos);
+          // if (!right_tv.value.present)
+          //   {
+          //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+          //                    "expression is not constant (E89)");
+          //   }
+          // typed_value_t left_tv = typed_value_t::make_ref (right_tv);
+          // left_tv.intrinsic_mutability = MUTABLE;
+          // left_tv.dereference_mutability = IMMUTABLE;
+          // check_assignment (left_tv, right_tv, node,
+          //                   "incompatible types (%s) = (%s) (E130)",
+          //                   "assignment leaks mutable pointers (E131)");
+          // // Convert to specified mutability.
+          // right_tv.intrinsic_mutability = IMMUTABLE;
+          // const std::string& name = ast_get_identifier (*id_pos);
+          // Symbol* symbol = new TypedConstantSymbol (name, *id_pos, right_tv);
+          // enter_symbol (*node.GetParent (), symbol);
+          // //node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
         }
     }
 
     void visit (ast_action_t& node)
     {
-      parameter_t* this_parameter;
       ParameterSymbol* thisSymbol;
-      NamedType* type = processReceiver (node.receiver (), node.identifier (), this_parameter, thisSymbol, true, true);
+      NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, true, true);
       enter_symbol (node, thisSymbol);
       Action *action = new Action (node.body (), ast_get_identifier (node.identifier ()));
       type->Add (action);
@@ -247,9 +242,8 @@ ProcessDeclarations (Node * node)
 
     void visit (ast_dimensioned_action_t& node)
     {
-      parameter_t* this_parameter;
       ParameterSymbol* thisSymbol;
-      NamedType* type = processReceiver (node.receiver (), node.identifier (), this_parameter, thisSymbol, true, true);
+      NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, true, true);
       enter_symbol (node, thisSymbol);
       ParameterSymbol* iotaSymbol;
       Type::Uint::ValueType dimension = processIota (node, node.dimension_ref (), iotaSymbol);
@@ -262,9 +256,8 @@ ProcessDeclarations (Node * node)
 
     void visit (ast_bind_t& node)
     {
-      parameter_t* this_parameter;
       ParameterSymbol* thisSymbol;
-      NamedType* type = processReceiver (node.receiver (), node.identifier (), this_parameter, thisSymbol, true, false);
+      NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, true, false);
       enter_symbol (node, thisSymbol);
       bind_t* bind = new bind_t (&node, ast_get_identifier (node.identifier ()));
       type->Add (bind);
@@ -274,11 +267,10 @@ ProcessDeclarations (Node * node)
     void visit (ast_function_t& node)
     {
       const Signature* signature;
-      parameter_t* return_parameter;
       ParameterSymbol* return_symbol;
       processSignatureReturn (node.signature (), node.return_type (), node.dereferenceMutability, false,
-                              signature, return_parameter, return_symbol);
-      node.function->set (new Type::Function (Type::Function::FUNCTION, signature, return_parameter), return_symbol);
+                              signature, return_symbol);
+      node.function->set (new Type::Function (Type::Function::FUNCTION, signature, return_symbol));
       // Enter the return first as it is deeper on the stack.
       enter_symbol (node, return_symbol);
       enter_signature (node, signature);
@@ -286,25 +278,23 @@ ProcessDeclarations (Node * node)
 
     void visit (ast_method_t& node)
     {
-      parameter_t* this_parameter;
       ParameterSymbol* thisSymbol;
-      NamedType* type = processReceiver (node.receiver (), node.identifier (), this_parameter, thisSymbol, false, false);
+      NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, false, false);
 
       const Signature* signature;
-      parameter_t* return_parameter;
       ParameterSymbol* return_symbol;
       processSignatureReturn (node.signature (), node.return_type (), node.return_dereference_mutability, false,
-                              signature, return_parameter, return_symbol);
+                              signature, return_symbol);
 
       enter_symbol (node, return_symbol);
       enter_symbol (node, thisSymbol);
       enter_signature (node, signature);
 
       Type::Method* method_type = new Type::Method (Type::Method::METHOD, type,
-          this_parameter,
+          thisSymbol,
           signature,
-          return_parameter);
-      ::Method* method = new ::Method (&node, ast_get_identifier (node.identifier ()), method_type, return_symbol);
+          return_symbol);
+      ::Method* method = new ::Method (&node, ast_get_identifier (node.identifier ()), method_type);
 
       type->Add (method);
       node.method = method;
@@ -312,15 +302,13 @@ ProcessDeclarations (Node * node)
 
     void visit (ast_initializer_t& node)
     {
-      parameter_t* this_parameter;
       ParameterSymbol* thisSymbol;
-      NamedType* type = processReceiver (node.receiver (), node.identifier (), this_parameter, thisSymbol, true, false);
+      NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, true, false);
 
       const Signature* signature;
-      parameter_t* return_parameter;
       ParameterSymbol* return_symbol;
       processSignatureReturn (node.signature (), node.return_type (), node.return_dereference_mutability, true,
-                              signature, return_parameter, return_symbol);
+                              signature, return_symbol);
 
       enter_symbol (node, return_symbol);
       enter_symbol (node, thisSymbol);
@@ -328,11 +316,11 @@ ProcessDeclarations (Node * node)
 
       Type::Method* initializer_type =
         new Type::Method (Type::Method::INITIALIZER, type,
-                          this_parameter,
+                          thisSymbol,
                           signature,
-                          return_parameter);
+                          return_symbol);
 
-      Initializer* initializer = new Initializer (&node, ast_get_identifier (node.identifier ()), initializer_type, return_symbol);
+      Initializer* initializer = new Initializer (&node, ast_get_identifier (node.identifier ()), initializer_type);
 
       type->Add (initializer);
       node.initializer = initializer;
@@ -340,26 +328,24 @@ ProcessDeclarations (Node * node)
 
     void visit (ast_getter_t& node)
     {
-      parameter_t* this_parameter;
       ParameterSymbol* thisSymbol;
-      NamedType* type = processReceiver (node.receiver (), node.identifier (), this_parameter, thisSymbol, true, true);
+      NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, true, true);
 
       const Signature* signature;
-      parameter_t* return_parameter;
       ParameterSymbol* return_symbol;
       processSignatureReturn (node.signature (), node.return_type (), node.dereferenceMutability, true,
-                              signature, return_parameter, return_symbol);
+                              signature, return_symbol);
 
       enter_symbol (node, return_symbol);
       enter_symbol (node, thisSymbol);
       enter_signature (node, signature);
 
       Type::Method* getter_type = new Type::Method (Type::Method::GETTER, type,
-          this_parameter,
+          thisSymbol,
           signature,
-          return_parameter);
+          return_symbol);
 
-      Getter* getter = new Getter (&node, ast_get_identifier (node.identifier ()), getter_type, return_symbol);
+      Getter* getter = new Getter (&node, ast_get_identifier (node.identifier ()), getter_type);
 
       type->Add (getter);
       node.getter = getter;
@@ -390,24 +376,22 @@ ProcessDeclarations (Node * node)
 
     void visit (ast_reaction_t& node)
     {
-      parameter_t* this_parameter;
       ParameterSymbol* thisSymbol;
-      NamedType* type = processReceiver (node.receiver (), node.identifier (), this_parameter, thisSymbol, true, true);
+      NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, true, true);
 
       const Signature* signature;
-      parameter_t* return_parameter;
       ParameterSymbol* return_symbol;
       processSignatureReturn (node.signature (), node.return_type (), FOREIGN, true,
-                              signature, return_parameter, return_symbol);
+                              signature, return_symbol);
 
       // No return type.
       enter_symbol (node, thisSymbol);
       enter_signature (node, signature);
 
       Type::Method* reaction_type = new Type::Method (Type::Method::REACTION, type,
-          this_parameter,
+          thisSymbol,
           signature,
-          return_parameter);
+          return_symbol);
 
       reaction_t* reaction = new reaction_t (type, &node, thisSymbol, node.body (), ast_get_identifier (node.identifier ()), reaction_type);
 
@@ -417,15 +401,13 @@ ProcessDeclarations (Node * node)
 
     void visit (ast_dimensioned_reaction_t& node)
     {
-      parameter_t* this_parameter;
       ParameterSymbol* thisSymbol;
-      NamedType* type = processReceiver (node.receiver (), node.identifier (), this_parameter, thisSymbol, true, true);
+      NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, true, true);
 
       const Signature* signature;
-      parameter_t* return_parameter;
       ParameterSymbol* return_symbol;
       processSignatureReturn (node.signature (), node.return_type (), FOREIGN, true,
-                              signature, return_parameter, return_symbol);
+                              signature, return_symbol);
 
       ParameterSymbol* iotaSymbol;
       Type::Uint::ValueType dimension = processIota (node, node.dimension_ref (), iotaSymbol);
@@ -436,9 +418,9 @@ ProcessDeclarations (Node * node)
       enter_signature (node, signature);
 
       Type::Method* reaction_type = new Type::Method (Type::Method::REACTION, type,
-          this_parameter,
+          thisSymbol,
           signature,
-          return_parameter);
+          return_symbol);
 
       reaction_t* reaction = new reaction_t (type, &node, thisSymbol, node.body (), ast_get_identifier (node.identifier ()), reaction_type, iotaSymbol, dimension);
 

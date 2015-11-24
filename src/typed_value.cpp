@@ -16,14 +16,6 @@ using namespace ast;
 using namespace runtime;
 #include "reaction.hpp"
 
-static Type::C64 operator* (const Type::C64&, const Type::C64&)
-{
-  unimplemented;
-}
-static Type::C64 operator/ (const Type::C64&, const Type::C64&)
-{
-  unimplemented;
-}
 static Type::C64 operator+ (const Type::C64&, const Type::C64&)
 {
   unimplemented;
@@ -37,14 +29,6 @@ static Type::C64 operator- (const Type::C64&)
   unimplemented;
 }
 
-static Type::C128 operator* (const Type::C128&, const Type::C128&)
-{
-  unimplemented;
-}
-static Type::C128 operator/ (const Type::C128&, const Type::C128&)
-{
-  unimplemented;
-}
 static Type::C128 operator+ (const Type::C128&, const Type::C128&)
 {
   unimplemented;
@@ -58,14 +42,6 @@ static Type::C128 operator- (const Type::C128&)
   unimplemented;
 }
 
-static Type::Complex::ValueType operator* (const Type::Complex::ValueType&, const Type::Complex::ValueType&)
-{
-  unimplemented;
-}
-static Type::Complex::ValueType operator/ (const Type::Complex::ValueType&, const Type::Complex::ValueType&)
-{
-  unimplemented;
-}
 static Type::Complex::ValueType operator+ (const Type::Complex::ValueType&, const Type::Complex::ValueType&)
 {
   unimplemented;
@@ -139,7 +115,7 @@ numericConvert (const typed_value_t tv, const Type::Type* type)
 static void
 RequireIdentical (const Location& location, const char* op, const Type::Type* left, const Type::Type* right)
 {
-  if (!Type::Identitical (left, right))
+  if (!Type::Identical (left, right))
     {
       error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "%s cannot be applied to %s and %s (E93)", op, left->ToString ().c_str (), right->ToString ().c_str ());
@@ -812,12 +788,12 @@ typed_value_t::AssignableTo (const Type::Type* target) const
 {
   const Type::Type* source = this->type;
 
-  if (Identitical (source, target))
+  if (Identical (source, target))
     {
       return true;
     }
 
-  if (Identitical (source->UnderlyingType (), target->UnderlyingType ()) &&
+  if (Identical (source->UnderlyingType (), target->UnderlyingType ()) &&
       (type_cast<NamedType> (source) == NULL ||
        type_cast<NamedType> (target) == NULL))
     {
@@ -958,7 +934,7 @@ typed_value_t::Convert (const Location& location, const Type::Type* type, Node& 
           out.fix ();
           return out;
         }
-      else if (Type::Identitical (this->type->UnderlyingType (), type->UnderlyingType ()))
+      else if (Type::Identical (this->type->UnderlyingType (), type->UnderlyingType ()))
         {
           unimplemented;
         }
@@ -1245,86 +1221,6 @@ typed_value_t::LogicNot (const Location& location) const
   return out;
 }
 
-struct LogicOrImpl
-{
-  const Location& location;
-  typed_value_t& out;
-  const typed_value_t& left;
-  const typed_value_t& right;
-  LogicOrImpl (const Location& loc, typed_value_t& o, const typed_value_t& l, const typed_value_t& r) : location (loc), out (o), left (l), right (r) { }
-
-  const char* Op () const
-  {
-    return "||";
-  }
-
-  void operator() (const Type::Bool& type)
-  {
-    out.value.ref (type) = left.value.ref (type) || right.value.ref (type);
-    out.value.present = left.value.present && (left.value.ref (type) == true || right.value.present);
-  }
-
-  void operator() (const Type::Boolean& type)
-  {
-    out.value.ref (type) = left.value.ref (type) || right.value.ref (type);
-    out.value.present = left.value.present && (left.value.ref (type) == true || right.value.present);
-  }
-
-  template <typename T>
-  void NotLogical (const T& type)
-  {
-    error_at_line (-1, 0, location.File.c_str (), location.Line,
-                   "|| cannot be applied to %s (E86)", type.ToString ().c_str ());
-
-  }
-};
-
-typed_value_t
-typed_value_t::LogicOr (const Location& location, const typed_value_t& left, const typed_value_t& right)
-{
-  return symmetricBinary<Type::LogicalVisitor<LogicOrImpl> > (location, left, right);
-}
-
-struct LogicAndImpl
-{
-  const Location& location;
-  typed_value_t& out;
-  const typed_value_t& left;
-  const typed_value_t& right;
-  LogicAndImpl (const Location& loc, typed_value_t& o, const typed_value_t& l, const typed_value_t& r) : location (loc), out (o), left (l), right (r) { }
-
-  const char* Op () const
-  {
-    return "&&";
-  }
-
-  void operator() (const Type::Bool& type)
-  {
-    out.value.ref (type) = left.value.ref (type) && right.value.ref (type);
-    out.value.present = left.value.present && (left.value.ref (type) == false || right.value.present);
-  }
-
-  void operator() (const Type::Boolean& type)
-  {
-    out.value.ref (type) = left.value.ref (type) && right.value.ref (type);
-    out.value.present = left.value.present && (left.value.ref (type) == false || right.value.present);
-  }
-
-  template <typename T>
-  void NotLogical (const T& type)
-  {
-    error_at_line (-1, 0, location.File.c_str (), location.Line,
-                   "&& cannot be applied to %s (E85)", type.ToString ().c_str ());
-
-  }
-};
-
-typed_value_t
-typed_value_t::LogicAnd (const Location& location, const typed_value_t& left, const typed_value_t& right)
-{
-  return symmetricBinary<Type::LogicalVisitor <LogicAndImpl> > (location, left, right);
-}
-
 template <typename O>
 struct SymmetricBinary
 {
@@ -1396,66 +1292,6 @@ typed_value_t::Negate (const Location& location) const
   Type::ArithmeticVisitor<NegateImpl> visitor (c);
   this->type->UnderlyingType ()->Accept (visitor);
   return out;
-}
-
-struct MultiplyOp
-{
-  static const char* Op ()
-  {
-    return "*";
-  }
-
-  template <typename T>
-  T operator() (const T& t1, const T& t2) const
-  {
-    return t1 * t2;
-  }
-};
-
-typed_value_t
-typed_value_t::Multiply (const Location& location, const typed_value_t& left, const typed_value_t& right)
-{
-  return symmetricBinary<Type::ArithmeticVisitor<SymmetricBinary <MultiplyOp> > > (location, left, right);
-}
-
-struct DivideOp
-{
-  static const char* Op ()
-  {
-    return "/";
-  }
-
-  template <typename T>
-  T operator() (const T& t1, const T& t2) const
-  {
-    return t1 / t2;
-  }
-};
-
-typed_value_t
-typed_value_t::Divide (const Location& location, const typed_value_t& left, const typed_value_t& right)
-{
-  return symmetricBinary<Type::ArithmeticVisitor<SymmetricBinary <DivideOp> > > (location, left, right);
-}
-
-struct ModulusOp
-{
-  static const char* Op ()
-  {
-    return "%";
-  }
-
-  template <typename T>
-  T operator() (const T& t1, const T& t2) const
-  {
-    return t1 % t2;
-  }
-};
-
-typed_value_t
-typed_value_t::Modulus (const Location& location, const typed_value_t& left, const typed_value_t& right)
-{
-  return symmetricBinary<Type::IntegralVisitor<SymmetricBinary <ModulusOp> > > (location, left, right);
 }
 
 struct AddOp

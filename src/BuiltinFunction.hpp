@@ -42,43 +42,127 @@ protected:
 struct Readable : public BuiltinFunction
 {
   Readable (ast::Node* dn);
-  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast::ast_call_expr_t& node) const;
+  virtual void call (executor_base_t& exec) const;
+  virtual size_t return_size () const
+  {
+    unimplemented;
+  }
+  virtual size_t arguments_size () const
+  {
+    unimplemented;
+  }
+  virtual size_t locals_size () const
+  {
+    unimplemented;
+  }
 };
 
 struct Read : public BuiltinFunction
 {
   Read (ast::Node* dn);
-  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast::ast_call_expr_t& node) const;
+  virtual void call (executor_base_t& exec) const;
+  virtual size_t return_size () const
+  {
+    unimplemented;
+  }
+  virtual size_t arguments_size () const
+  {
+    unimplemented;
+  }
+  virtual size_t locals_size () const
+  {
+    unimplemented;
+  }
 };
 
 struct Writable : public BuiltinFunction
 {
   Writable (ast::Node* dn);
-  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast::ast_call_expr_t& node) const;
+  virtual void call (executor_base_t& exec) const;
+  virtual size_t return_size () const
+  {
+    unimplemented;
+  }
+  virtual size_t arguments_size () const
+  {
+    unimplemented;
+  }
+  virtual size_t locals_size () const
+  {
+    unimplemented;
+  }
 };
 
 struct TimerfdCreate : public BuiltinFunction
 {
   TimerfdCreate (ast::Node* dn);
-  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast::ast_call_expr_t& node) const;
+  virtual void call (executor_base_t& exec) const;
+  virtual size_t return_size () const
+  {
+    unimplemented;
+  }
+  virtual size_t arguments_size () const
+  {
+    unimplemented;
+  }
+  virtual size_t locals_size () const
+  {
+    unimplemented;
+  }
 };
 
 struct TimerfdSettime : public BuiltinFunction
 {
   TimerfdSettime (ast::Node* dn);
-  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast::ast_call_expr_t& node) const;
+  virtual void call (executor_base_t& exec) const;
+  virtual size_t return_size () const
+  {
+    unimplemented;
+  }
+  virtual size_t arguments_size () const
+  {
+    unimplemented;
+  }
+  virtual size_t locals_size () const
+  {
+    unimplemented;
+  }
 };
 
 struct UdpSocket : public BuiltinFunction
 {
   UdpSocket (ast::Node* dn);
-  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast::ast_call_expr_t& node) const;
+  virtual void call (executor_base_t& exec) const;
+  virtual size_t return_size () const
+  {
+    unimplemented;
+  }
+  virtual size_t arguments_size () const
+  {
+    unimplemented;
+  }
+  virtual size_t locals_size () const
+  {
+    unimplemented;
+  }
 };
 
 struct Sendto : public BuiltinFunction
 {
   Sendto (ast::Node* dn);
-  virtual void call (executor_base_t& exec, const MemoryModel& memoryModel, const ast::ast_call_expr_t& node) const;
+  virtual void call (executor_base_t& exec) const;
+  virtual size_t return_size () const
+  {
+    unimplemented;
+  }
+  virtual size_t arguments_size () const
+  {
+    unimplemented;
+  }
+  virtual size_t locals_size () const
+  {
+    unimplemented;
+  }
 };
 
 #endif /* BuiltinFunction_hpp */

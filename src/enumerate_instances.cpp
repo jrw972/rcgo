@@ -9,7 +9,7 @@
 using namespace Type;
 using namespace ast;
 
-static void
+static Composition::Instance*
 instantiate_contained_instances (const Type::Type * type,
                                  Composition::Composer& instance_table,
                                  Composition::Instance* parent,
@@ -32,6 +32,8 @@ instantiate_contained_instances (const Type::Type * type,
 
     const NamedType* named_type;
 
+    Composition::Instance* instance;
+
     visitor (Composition::Composer& it, Composition::Instance* p, Initializer* i, size_t a, field_t* f, unsigned int l, ast_instance_t* n, const std::string& aName)
       : instance_table (it)
       , parent (p)
@@ -42,6 +44,7 @@ instantiate_contained_instances (const Type::Type * type,
       , node (n)
       , name (aName)
       , named_type (NULL)
+      , instance (NULL)
     { }
 
     void default_action (const Type::Type& type)
@@ -61,6 +64,7 @@ instantiate_contained_instances (const Type::Type * type,
       assert (named_type != NULL);
 
       Composition::Instance* instance = new Composition::Instance (parent, address, named_type, initializer, node, name);
+      this->instance = instance;
       instance_table.AddInstance (instance);
 
       // Recur changing instance.
@@ -133,6 +137,7 @@ instantiate_contained_instances (const Type::Type * type,
   };
   visitor v (instance_table, parent, initializer, address, NULL, line, node, name);
   type->Accept (v);
+  return v.instance;
 }
 
 /*
@@ -155,7 +160,7 @@ enumerate_instances (Node * node, Composition::Composer& instance_table)
     {
       const NamedType *type = node.symbol->type;
       Initializer* initializer = node.symbol->initializer;
-      instantiate_contained_instances (type, instance_table, NULL, initializer, address, node.location.Line, &node, ast_get_identifier (node.identifier ()));
+      node.symbol->instance = instantiate_contained_instances (type, instance_table, NULL, initializer, address, node.location.Line, &node, ast_get_identifier (node.identifier ()));
       address += type->Size ();
     }
 

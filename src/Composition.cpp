@@ -538,19 +538,20 @@ namespace Composition
 
               void bind (ast::Node* left, ast::Node* right, static_value_t param = static_value_t ())
               {
-                static_value_t port = EvaluateStatic (left, memory);
-                // Strip off the implicit dereference and selecting of the reaction.
-                static_value_t input = EvaluateStatic (right->At (0)->At (0), memory);
-                typed_value_t reaction = right->typed_value;
+                unimplemented;
+                // static_value_t port = EvaluateStatic (left, memory);
+                // // Strip off the implicit dereference and selecting of the reaction.
+                // static_value_t input = EvaluateStatic (right->At (0)->At (0), memory);
+                // typed_value_t reaction = right->typed_value;
 
-                assert (port.kind == static_value_t::ABSOLUTE_ADDRESS);
-                assert (input.kind == static_value_t::ABSOLUTE_ADDRESS);
-                assert (param.kind == static_value_t::VALUE);
+                // assert (port.kind == static_value_t::ABSOLUTE_ADDRESS);
+                // assert (input.kind == static_value_t::ABSOLUTE_ADDRESS);
+                // assert (param.kind == static_value_t::VALUE);
 
-                PushPort* pp = table.push_ports[port.address];
-                Reaction* r = table.reactions[ReactionsType::key_type (table.instances[input.address], reaction.value.reaction_value (), param.value)];
-                pp->reactions.push_back (r);
-                r->push_ports.push_back (pp);
+                // PushPort* pp = table.push_ports[port.address];
+                // Reaction* r = table.reactions[ReactionsType::key_type (table.instances[input.address], reaction.value.reaction_value (), param.value)];
+                // pp->reactions.push_back (r);
+                // r->push_ports.push_back (pp);
               }
 
               void visit (const ast_bind_push_port_statement_t& node)
@@ -566,18 +567,19 @@ namespace Composition
 
               void visit (const ast_bind_pull_port_statement_t& node)
               {
-                static_value_t pull_port = EvaluateStatic (node.left (), memory);
-                assert (pull_port.kind == static_value_t::ABSOLUTE_ADDRESS);
-                typed_value_t tv = node.right ()->typed_value;
-                const Type::Method* getter_type = type_cast<Type::Method> (tv.type);
-                assert (getter_type != NULL);
-                // Strip off the implicit dereference and selecting of the getter.
-                static_value_t getter = EvaluateStatic (node.right ()->At(0)->At(0), memory);
-                assert (getter.kind == static_value_t::ABSOLUTE_ADDRESS);
+                unimplemented;
+                // static_value_t pull_port = EvaluateStatic (node.left (), memory);
+                // assert (pull_port.kind == static_value_t::ABSOLUTE_ADDRESS);
+                // typed_value_t tv = node.right ()->typed_value;
+                // const Type::Method* getter_type = type_cast<Type::Method> (tv.type);
+                // assert (getter_type != NULL);
+                // // Strip off the implicit dereference and selecting of the getter.
+                // static_value_t getter = EvaluateStatic (node.right ()->At(0)->At(0), memory);
+                // assert (getter.kind == static_value_t::ABSOLUTE_ADDRESS);
 
-                PullPort* pp = table.pull_ports[pull_port.address];
-                Getter* g = table.getters[GettersType::key_type (table.instances[getter.address], tv.value.callable_value ())];
-                pp->getters.push_back (g);
+                // PullPort* pp = table.pull_ports[pull_port.address];
+                // Getter* g = table.getters[GettersType::key_type (table.instances[getter.address], tv.value.callable_value ())];
+                // pp->getters.push_back (g);
               }
             };
             visitor v (*this, instance_pos->first);
@@ -777,6 +779,14 @@ namespace Composition
       static_memory_t memory;
       populateMemory (memory);
       static_value_t index = EvaluateStatic (node.index (), memory);
+      if (index.kind == static_value_t::STACK_ADDRESS)
+        {
+          index = static_value_t::implicit_dereference (index, memory);
+        }
+      else
+        {
+          unimplemented;
+        }
       assert (index.kind == static_value_t::VALUE);
 
       if (static_cast<ssize_t> (index.value) >= node.array_type->dimension)

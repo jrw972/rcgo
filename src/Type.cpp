@@ -421,7 +421,7 @@ namespace Type
     return NULL;
   }
 
-  const parameter_t *
+  ParameterSymbol*
   Signature::Find (const std::string& name) const
   {
     for (ParametersType::const_iterator ptr = parameters_.begin (),
@@ -429,7 +429,7 @@ namespace Type
          ptr != limit;
          ++ptr)
       {
-        if ((*ptr)->name == name)
+        if ((*ptr)->identifier == name)
           {
             return *ptr;
           }
@@ -483,7 +483,7 @@ namespace Type
           }
       }
 
-    return false;
+    return NULL;
   }
 
 #define ACCEPT(type) void \
@@ -626,15 +626,16 @@ type::Accept (Visitor& visitor) const \
 
             for (size_t idx = 0; idx != x_arity; ++idx)
               {
-                const parameter_t *x_parameter = x->At (idx);
-                const Type*x_parameter_type = x_parameter->value.type;
-                const parameter_t *y_parameter = y->At (idx);
-                const Type*y_parameter_type = y_parameter->value.type;
+                unimplemented;
+                // const parameter_t *x_parameter = x->At (idx);
+                // const Type*x_parameter_type = x_parameter->value.type;
+                // const parameter_t *y_parameter = y->At (idx);
+                // const Type*y_parameter_type = y_parameter->value.type;
 
-                if (!type_is_equal (x_parameter_type, y_parameter_type))
-                  {
-                    return;
-                  }
+                // if (!type_is_equal (x_parameter_type, y_parameter_type))
+                //   {
+                //     return;
+                //   }
               }
 
             flag = true;
@@ -667,9 +668,10 @@ type::Accept (Visitor& visitor) const \
         const Function* y = type_cast<Function> (other);
         if (y)
           {
-            flag = type_is_equal (x->GetSignature (), y->GetSignature ()) &&
-                   type_is_equal (x->GetReturnParameter ()->value.type, y->GetReturnParameter ()->value.type) &&
-                   x->GetReturnParameter ()->value.is_foreign_safe () && y->GetReturnParameter ()->value.is_foreign_safe ();
+            unimplemented;
+            // flag = type_is_equal (x->GetSignature (), y->GetSignature ()) &&
+            //        type_is_equal (x->GetReturnParameter ()->value.type, y->GetReturnParameter ()->value.type) &&
+            //        x->GetReturnParameter ()->value.is_foreign_safe () && y->GetReturnParameter ()->value.is_foreign_safe ();
           }
       }
     };
@@ -699,11 +701,11 @@ type::Accept (Visitor& visitor) const \
     return structurally_equal (type_strip (x), type_strip (y));
   }
 
-  struct IdentiticalImpl
+  struct IdenticalImpl
   {
     bool retval;
 
-    IdentiticalImpl () : retval (false) { }
+    IdenticalImpl () : retval (false) { }
 
     void operator() (const Array& type1, const Array& type2)
     {
@@ -712,7 +714,7 @@ type::Accept (Visitor& visitor) const \
 
     void operator() (const Slice& type1, const Slice& type2)
     {
-      retval = Identitical (type1.Base (), type2.Base ());
+      retval = Identical (type1.Base (), type2.Base ());
     }
 
     void operator() (const Struct& type1, const Struct& type2)
@@ -748,7 +750,7 @@ type::Accept (Visitor& visitor) const \
   };
 
   bool
-  Identitical (const Type* x, const Type* y)
+  Identical (const Type* x, const Type* y)
   {
     if (x == y)
       {
@@ -761,7 +763,7 @@ type::Accept (Visitor& visitor) const \
         return x == y;
       }
 
-    IdentiticalImpl i;
+    IdenticalImpl i;
     DoubleDispatch (x, y, i);
     return i.retval;
   }
@@ -782,7 +784,7 @@ type::Accept (Visitor& visitor) const \
             str << ", ";
           }
 
-        str << (*ptr)->value.type->ToString ();
+        str << (*ptr)->type->ToString ();
         flag = true;
       }
     str << ')';
@@ -979,6 +981,11 @@ type::Instance () \
       }
 
       void visit (const Bool& type)
+      {
+        flag = true;
+      }
+
+      void visit (const Boolean& type)
       {
         flag = true;
       }
@@ -1324,13 +1331,13 @@ type::Instance () \
     switch (kind)
       {
       case FUNCTION:
-        str << "func " << *GetSignature () << ' ' << *GetReturnParameter ()->value.type;
+        str << "func " << *GetSignature () << ' ' << *GetReturnParameter ()->type;
         break;
       case PUSH_PORT:
         str << "push " << *GetSignature ();
         break;
       case PULL_PORT:
-        str << "pull " << *GetSignature () << ' ' << *GetReturnParameter ()->value.type;
+        str << "pull " << *GetSignature () << ' ' << *GetReturnParameter ()->type;
         break;
       }
     return str.str ();
@@ -1359,9 +1366,9 @@ type::Instance () \
   }
 
   Function*
-  Method::make_function_type (const parameter_t* this_parameter,
+  Method::make_function_type (ParameterSymbol* this_parameter,
                               const Signature* signature,
-                              const parameter_t* return_parameter)
+                              ParameterSymbol* return_parameter)
   {
     Signature* sig = new Signature ();
 
@@ -1379,21 +1386,21 @@ type::Instance () \
   const Type*
   Function::GetReturnType () const
   {
-    return return_parameter_->value.type;
+    return return_parameter_->type;
   }
 
   const Type*
   Method::return_type () const
   {
-    return return_parameter->value.type;
+    return return_parameter->type;
   }
 
   Method::Method (Kind k, const NamedType* named_type_,
-                  const parameter_t* this_parameter_,
+                  ParameterSymbol* this_parameter_,
                   const Signature * signature_,
-                  const parameter_t* return_parameter_)
+                  ParameterSymbol* return_parameter_)
     : kind (k), named_type (named_type_)
-    , receiver_type (this_parameter_->value.type)
+    , receiver_type (NULL /*this_parameter_->value.type*/)
     , this_parameter (this_parameter_)
     , function_type (make_function_type (this_parameter_, signature_, return_parameter_))
     , signature (signature_)
@@ -1435,6 +1442,67 @@ type::Instance () \
   String::DefaultType () const
   {
     return &NamedString;
+  }
+
+  const Type*
+  Choose (const Type* x, const Type* y)
+  {
+    return (x->Level () > y->Level ()) ? x : y;
+  }
+
+  bool
+  assignable (const Type* from, const Type* to)
+  {
+    if (Identical (from, to))
+      {
+        return true;
+      }
+
+    if (Identical (from->UnderlyingType (), to->UnderlyingType ()) &&
+        (from->Level () != Type::NAMED || to->Level () != Type::NAMED))
+      {
+        return true;
+      }
+
+    // TODO:  T is an interface type and x implements T.
+
+    if (type_cast<Nil> (from) &&
+        (type_cast<Pointer> (to->UnderlyingType ()) ||
+         type_cast<Function> (to->UnderlyingType ()) ||
+         type_cast<Slice> (to->UnderlyingType ())
+         //type_cast<Map> (to->UnderlyingType ()) ||
+         //type_cast<Interface> (to->UnderlyingType ())
+        ))
+      {
+        return true;
+      }
+
+    if (from->IsUntyped ())
+      {
+        // This must be handled elsewhere.
+        return true;
+      }
+
+    return false;
+  }
+
+  Signature*
+  Signature::Append (ParameterSymbol* p)
+  {
+    parameters_.push_back (p);
+    size_ += util::AlignUp (p->type->Size (), MemoryModel::StackAlignment);
+    return this;
+  }
+
+  void
+  Signature::check_foreign_safe () const
+  {
+    for (const_iterator pos = Begin (), limit = End ();
+         pos != limit;
+         ++pos)
+      {
+        (*pos)->check_foreign_safe ();
+      }
   }
 
   NamedType NamedBool ("bool", Bool::Instance ());

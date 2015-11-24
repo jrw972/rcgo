@@ -33,6 +33,9 @@ struct value_t
   value_t (const Type::Complex*  t, Type::Complex::ValueType v)  : present (true), complex_value_ (v) { }
   value_t (const Type::String*  t, Type::String::ValueType v)  : present (true), string_value_ (v) { }
 
+  bool representable (const Type::Type* from, const Type::Type* to) const;
+  void convert (const Type::Type* from, const Type::Type* to);
+
   static value_t make_reference (Type::Pointer::ValueType v)
   {
     value_t r;

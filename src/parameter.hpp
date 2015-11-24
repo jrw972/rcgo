@@ -1,23 +1,27 @@
-#ifndef parameter_hpp
-#define parameter_hpp
+// #ifndef parameter_hpp
+// #define parameter_hpp
 
-#include "types.hpp"
-#include "typed_value.hpp"
+// #include "types.hpp"
 
-struct parameter_t
-{
-  ast::Node* const defining_node;
-  std::string const name;
-  typed_value_t const value;
-  bool const is_receiver;
+// struct parameter_t
+// {
+//   ast::Node* const defining_node;
+//   std::string const name;
+//   const Type::Type* const type;
+//   Mutability const dereference_mutability;
+//   bool const is_receiver;
 
-  parameter_t (ast::Node* dn,
-               const std::string& n, const typed_value_t& tv, bool is_receiver_)
-    : defining_node (dn)
-    , name (n)
-    , value (tv)
-    , is_receiver (is_receiver_)
-  { }
-};
+//   parameter_t (ast::Node* dn,
+//                const std::string& n,
+//                const Type::Type* t,
+//                Mutability dm,
+//                bool is_receiver_)
+//     : defining_node (dn)
+//     , name (n)
+//     , type (t)
+//     , dereference_mutability (dm)
+//     , is_receiver (is_receiver_)
+//   { }
+// };
 
-#endif /* parameter_hpp */
+// #endif /* parameter_hpp */

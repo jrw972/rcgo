@@ -62,7 +62,7 @@ T* processAndLookup (ast::Node * node, const std::string& identifier)
 typed_value_t process_array_dimension (ast::Node*& ptr);
 
 // Check that a signature has +foreign where needed.
-void CheckForForeignSafe (const Type::Signature* signature, const parameter_t* return_parameter);
+void CheckForForeignSafe (const Type::Signature* signature, const ParameterSymbol* return_parameter);
 
 // Process a type specification.
 const Type::Type * process_type_spec (ast::Node* node, bool force_identifiers, bool is_component = false, Type::NamedType* named_type = NULL);
@@ -70,21 +70,14 @@ const Type::Type * process_type_spec (ast::Node* node, bool force_identifiers, b
 /* Process all declarations (non-code). */
 void ProcessDeclarations (ast::Node* node);
 
-// Type check the expression and insert an implicit dereference if necessary.
-typed_value_t
-CheckAndImplicitlyDereference (ast::Node*& expr);
-
 // Type check the expression, insert an implicit dereference if necessary, and convert to the given type if necessary.
 typed_value_t
 CheckAndImplicitlyDereferenceAndConvert (ast::Node*& expr, const Type::Type* type);
 
-typed_value_t
-CheckAndImplicitlyDereferenceAndConvertToDefault (ast::Node*& expr);
-
 // Type check the expression expecting a reference.
 typed_value_t CheckExpectReference (ast::Node* expr);
 
-typed_value_t
+void
 TypeCheckExpression (ast::Node* ptr);
 
 // TODO:  Move this into TypeCheckCall.
@@ -118,5 +111,22 @@ Method*
 get_current_method (const ast::Node * node);
 
 ReceiverAccess ComputeReceiverAccess (const ast::Node* node);
+
+void
+allocate_symbol (MemoryModel& memory_model,
+                 Symbol* symbol);
+
+template <typename Iterator>
+void
+allocate_parameter (MemoryModel& memory_model,
+                    Iterator pos,
+                    Iterator limit)
+{
+  if (pos != limit)
+    {
+      allocate_parameter (memory_model, pos + 1, limit);
+      allocate_symbol (memory_model, *pos);
+    }
+}
 
 #endif /* semantic_hpp */

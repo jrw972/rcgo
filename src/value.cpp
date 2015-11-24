@@ -2,6 +2,68 @@
 
 using namespace Type;
 
+bool
+value_t::representable (const Type::Type* from, const Type::Type* to) const
+{
+  assert (present);
+
+  struct visitor : public Type::DefaultVisitor
+  {
+    const Type::Type* to;
+    bool flag;
+
+    visitor (const Type::Type* t) : to (t), flag (false) { }
+
+    void default_action (const Type::Type& type)
+    {
+      type_not_reached (type);
+    }
+
+    void visit (const Type::String& type)
+    {
+      if (type_cast<Type::StringU> (to->UnderlyingType ()))
+        {
+          flag = true;
+        }
+    }
+  } v (to);
+
+  from->Accept (v);
+  return v.flag;
+}
+
+void
+value_t::convert (const Type::Type* from, const Type::Type* to)
+{
+  assert (present);
+
+  struct visitor : public Type::DefaultVisitor
+  {
+    value_t& value;
+    const Type::Type* to;
+
+    visitor (value_t& v, const Type::Type* t) : value (v), to (t) { }
+
+    void default_action (const Type::Type& type)
+    {
+      type_not_reached (type);
+    }
+
+    void visit (const Type::String& type)
+    {
+      if (type_cast<Type::StringU> (to->UnderlyingType ()))
+        {
+          value.stringu_value_ = value.string_value_;
+          return;
+        }
+
+      not_reached;
+    }
+  } v (*this, to);
+
+  from->Accept (v);
+}
+
 void
 value_t::print (std::ostream& out, const Type::Type* type) const
 {

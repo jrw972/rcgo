@@ -65,68 +65,98 @@ namespace ast
       }
       void visit (const ast_identifier_list_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "identifier_list\n";
+        print_children (node);
       }
       void visit (const ast_receiver_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "receiver\n";
+        print_children (node);
       }
       void visit (const ast_array_type_spec_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "array_type_spec\n";
+        print_children (node);
       }
       void visit (const ast_slice_type_spec_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "slice_type_spec\n";
+        print_children (node);
       }
       void visit (const ast_empty_type_spec_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "empty_type_spec\n";
+        print_children (node);
       }
       void visit (const ast_enum_type_spec_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "enum_type_spec\n";
+        print_children (node);
       }
       void visit (const ast_field_list_type_spec_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "field_list_type_spec\n";
+        print_children (node);
       }
       void visit (const ast_heap_type_spec_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "heap_type_spec\n";
+        print_children (node);
       }
       void visit (const ast_identifier_list_type_spec_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "identifier_list_type_spec\n";
+        print_children (node);
       }
       void visit (const ast_identifier_type_spec_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "identifier_type_spec\n";
+        print_children (node);
       }
       void visit (const ast_pointer_type_spec_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "pointer_type_spec\n";
+        print_children (node);
       }
       void visit (const ast_push_port_type_spec_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "push_port_type_spec\n";
+        print_children (node);
       }
       void visit (const ast_pull_port_type_spec_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "pull_port_type_spec\n";
+        print_children (node);
       }
       void visit (const ast_signature_type_spec_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "signature_type_spec\n";
+        print_children (node);
       }
       void visit (const ast_implicit_conversion_expr_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "implicit_conversion_expr\n";
+        print_children (node);
       }
       void visit (const TypeExpression& node)
       {
         print_indent (node);
-        out << "TypeExpression " << node.typed_value << '\n';
+        out << "TypeExpression\n";
         print_children (node);
       }
       void visit (const ast_binary_arithmetic_expr_t& node)
@@ -139,7 +169,9 @@ namespace ast
       }
       void visit (const ast_call_expr_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "call_expr\n";
+        print_children (node);
       }
       void visit (const ast_dereference_expr_t& node)
       {
@@ -151,7 +183,9 @@ namespace ast
       }
       void visit (const ast_identifier_expr_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "identifier_expr\n";
+        print_children (node);
       }
       void visit (const ast_index_expr_t& node)
       {
@@ -173,7 +207,9 @@ namespace ast
       }
       void visit (const ast_literal_expr_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "literal_expr\n";
+        print_children (node);
       }
       void visit (const ast_unary_arithmetic_expr_t& node)
       {
@@ -182,7 +218,7 @@ namespace ast
       void visit (const ast_push_port_call_expr_t& node)
       {
         print_indent (node);
-        out << "push_port_call_expr " << node.typed_value << '\n';
+        out << "push_port_call_expr\n";
         print_children (node);
       }
       void visit (const ast_select_expr_t& node)
@@ -207,111 +243,165 @@ namespace ast
       }
       void visit (const ast_expression_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "expression_statement\n";
+        print_children (node);
       }
       void visit (const ast_if_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "if_statement\n";
+        print_children (node);
       }
       void visit (const ast_while_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "while_statement\n";
+        print_children (node);
       }
       void visit (const ast_list_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "list_statement\n";
+        print_children (node);
       }
       void visit (const ast_return_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "return_statement\n";
+        print_children (node);
       }
       void visit (const ast_increment_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "increment_statement\n";
+        print_children (node);
       }
       void visit (const ast_decrement_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "decrement_statement\n";
+        print_children (node);
       }
       void visit (const ast_subtract_assign_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "subtract_assign_statement\n";
+        print_children (node);
       }
       void visit (const ast_activate_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "activate_statement\n";
+        print_children (node);
       }
       void visit (const ast_var_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "var_statement\n";
+        print_children (node);
       }
       void visit (const ast_bind_push_port_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "bind_push_port_statement\n";
+        print_children (node);
       }
       void visit (const ast_bind_push_port_param_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "bind_push_port_param_statement\n";
+        print_children (node);
       }
       void visit (const ast_bind_pull_port_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "bind_pull_port_statement\n";
+        print_children (node);
       }
       void visit (const ast_for_iota_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "for_iota_statement\n";
+        print_children (node);
       }
       void visit (const ast_action_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "action\n";
+        print_children (node);
       }
       void visit (const ast_const_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "const\n";
+        print_children (node);
       }
       void visit (const ast_dimensioned_action_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "dimensioned_action\n";
+        print_children (node);
       }
       void visit (const ast_bind_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "bind\n";
+        print_children (node);
       }
       void visit (const ast_function_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "function\n";
+        print_children (node);
       }
       void visit (const ast_getter_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "getter\n";
+        print_children (node);
       }
       void visit (const ast_initializer_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "initializer\n";
+        print_children (node);
       }
       void visit (const ast_instance_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "instance\n";
+        print_children (node);
       }
       void visit (const ast_method_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "method\n";
+        print_children (node);
       }
       void visit (const ast_reaction_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "reaction\n";
+        print_children (node);
       }
       void visit (const ast_dimensioned_reaction_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "dimensioned_reaction\n";
+        print_children (node);
       }
       void visit (const Type& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "Type\n";
+        print_children (node);
       }
       void visit (const SourceFile& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "SourceFile\n";
+        print_children (node);
       }
     };
 
@@ -440,12 +530,13 @@ namespace ast
                     }
                   else
                     {
-                      typed_value_t tv = symbol->value;
-                      if (type_contains_pointer (tv.type) && tv.dereference_mutability == FOREIGN)
-                        {
-                          // Hide this parameter.
-                          EnterSymbol (new HiddenSymbol (symbol, this));
-                        }
+                      unimplemented;
+                      // typed_value_t tv = symbol->value;
+                      // if (type_contains_pointer (tv.type) && tv.dereference_mutability == FOREIGN)
+                      //   {
+                      //     // Hide this parameter.
+                      //     EnterSymbol (new HiddenSymbol (symbol, this));
+                      //   }
                     }
                 }
             }
@@ -482,13 +573,14 @@ namespace ast
               ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (*ptr);
               if (symbol != NULL)
                 {
-                  typed_value_t tv = SymbolCast<ParameterSymbol> (symbol)->value;
-                  if (type_contains_pointer (tv.type))
-                    {
-                      // Enter as a duplicate.
-                      Symbol* dup = SymbolCast<ParameterSymbol> (symbol)->duplicate (FOREIGN);
-                      EnterSymbol (dup);
-                    }
+                  unimplemented;
+                  // typed_value_t tv = SymbolCast<ParameterSymbol> (symbol)->value;
+                  // if (type_contains_pointer (tv.type))
+                  //   {
+                  //     // Enter as a duplicate.
+                  //     Symbol* dup = SymbolCast<ParameterSymbol> (symbol)->duplicate (FOREIGN);
+                  //     EnterSymbol (dup);
+                  //   }
                 }
             }
 
@@ -618,37 +710,12 @@ namespace ast
     At (idx) = child;
   }
 
-  bool
-  Node::GetInMutableSection () const
-  {
-    if (inMutableSection)
-      {
-        return true;
-      }
-
-    if (m_parent == NULL)
-      {
-        return false;
-      }
-    return m_parent->GetInMutableSection ();
-  }
-
-  Node::Context
-  Node::GetContext () const
-  {
-    if (o_context != Parent || m_parent == NULL)
-      {
-        return o_context;
-      }
-    return m_parent->GetContext ();
-  }
-
   Node::Node (unsigned int line_, size_t children_count)
-    : inMutableSection (false)
-    , location (line_)
+    : location (line_)
+    , type (NULL)
+    , temp (NULL)
     , operation (NULL)
     , m_parent (NULL)
-    , o_context (Parent)
   {
     assert (location.Line != 0);
     m_children.resize (children_count);

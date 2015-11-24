@@ -220,13 +220,8 @@ struct typed_value_t
   static typed_value_t MoreEqual (const Location& location, const typed_value_t& left, const typed_value_t& right);
 
   typed_value_t LogicNot (const Location& location) const;
-  static typed_value_t LogicOr (const Location& location, const typed_value_t& left, const typed_value_t& right);
-  static typed_value_t LogicAnd (const Location& location, const typed_value_t& left, const typed_value_t& right);
 
   typed_value_t Negate (const Location& location) const;
-  static typed_value_t Multiply (const Location& location, const typed_value_t& left, const typed_value_t& right);
-  static typed_value_t Divide (const Location& location, const typed_value_t& left, const typed_value_t& right);
-  static typed_value_t Modulus (const Location& location, const typed_value_t& left, const typed_value_t& right);
   static typed_value_t Add (const Location& location, const typed_value_t& left, const typed_value_t& right);
   static typed_value_t Subtract (const Location& location, const typed_value_t& left, const typed_value_t& right);
 

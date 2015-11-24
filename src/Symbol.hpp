@@ -53,6 +53,7 @@ struct InstanceSymbol : public Symbol
     : Symbol (id, dn)
     , type (NULL)
     , initializer (NULL)
+    , instance (NULL)
   { }
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
@@ -63,6 +64,7 @@ struct InstanceSymbol : public Symbol
 
   const Type::NamedType *type;
   Initializer* initializer;
+  Composition::Instance* instance;
 };
 
 struct ParameterSymbol : public Symbol
@@ -77,31 +79,45 @@ struct ParameterSymbol : public Symbol
     Iota,
   };
 
-  ParameterSymbol (const std::string& id, ast::Node* dn, const typed_value_t& v, Kind k)
+  ParameterSymbol (const std::string& id, ast::Node* dn, const Type::Type* t, Mutability im, Mutability dm, Kind k)
     : Symbol (id, dn)
-    , value (v)
+    , type (t)
+    , intrinsic_mutability (im)
+    , dereference_mutability (dm)
     , kind (k)
     , original_ (NULL)
   { }
 
-  static ParameterSymbol* make (const parameter_t* parameter)
+  static ParameterSymbol* make (ast::Node* defining_node,
+                                const std::string& name,
+                                const Type::Type* type,
+                                Mutability intrinsic_mutability,
+                                Mutability dereference_mutability)
   {
-    return new ParameterSymbol (parameter->name, parameter->defining_node, typed_value_t::make_ref (parameter->value), Ordinary);
+    return new ParameterSymbol (name, defining_node, type, intrinsic_mutability, dereference_mutability, Ordinary);
   }
 
-  static ParameterSymbol* makeReturn (const parameter_t* parameter)
+  static ParameterSymbol* makeReturn (ast::Node* defining_node,
+                                      const std::string& name,
+                                      const Type::Type* type,
+                                      Mutability dereference_mutability)
   {
-    return new ParameterSymbol (parameter->name, parameter->defining_node, typed_value_t::make_ref (parameter->value), Return);
+    return new ParameterSymbol (name, defining_node, type, MUTABLE, dereference_mutability, Return);
   }
 
-  static ParameterSymbol* makeReceiver (const parameter_t* parameter)
+  static ParameterSymbol* makeReceiver (ast::Node* defining_node,
+                                        const std::string& name,
+                                        const Type::Type* type,
+                                        Mutability intrinsic_mutability,
+                                        Mutability dereference_mutability)
   {
-    return new ParameterSymbol (parameter->name, parameter->defining_node, typed_value_t::make_ref (parameter->value), Receiver);
+    return new ParameterSymbol (name, defining_node, type, intrinsic_mutability, dereference_mutability, Receiver);
   }
 
-  static ParameterSymbol* makeIota (const parameter_t* parameter)
+  static ParameterSymbol* makeIota ()
   {
-    return new ParameterSymbol (parameter->name, parameter->defining_node, typed_value_t::make_ref (parameter->value), Iota);
+    unimplemented;
+    //return new ParameterSymbol (parameter->name, parameter->defining_node, typed_value_t::make_ref (parameter->value), Iota);
   }
 
   ParameterSymbol* duplicate (Mutability dereferenceMutability)
@@ -122,9 +138,10 @@ struct ParameterSymbol : public Symbol
       default:
         not_reached;
       }
-    s->value.dereference_mutability = dereferenceMutability;
-    s->original_ = this;
-    return s;
+    unimplemented;
+    // s->value.dereference_mutability = dereferenceMutability;
+    // s->original_ = this;
+    // return s;
   }
 
   virtual void accept (SymbolVisitor& visitor);
@@ -147,10 +164,14 @@ struct ParameterSymbol : public Symbol
     return "Parameter";
   }
 
-  typed_value_t value;
+  void check_foreign_safe () const;
+
+  const Type::Type* const type;
+  Mutability const intrinsic_mutability;
+  Mutability const dereference_mutability;
   Kind kind;
 private:
-  Symbol* original_;
+  Symbol* const original_;
 };
 
 struct TypeSymbol : public Symbol

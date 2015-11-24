@@ -1,11 +1,20 @@
 #ifndef types_hpp
 #define types_hpp
 
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
 #include <map>
+#include <vector>
+
 #include "debug.hpp"
+
+enum ExpressionKind
+{
+  kValue,
+  kReference,
+  kType
+};
 
 namespace decl
 {
@@ -36,7 +45,10 @@ namespace runtime
 namespace Type
 {
   class Type;
+  class NamedType;
 }
+
+typedef std::vector<const Type::Type*> TypeList;
 
 namespace Composition
 {
@@ -62,7 +74,6 @@ class Getter;
 class Initializer;
 class Method;
 typedef struct heap_t heap_t;
-typedef struct parameter_t parameter_t;
 class port_t;
 class reaction_t;
 class scheduler_t;

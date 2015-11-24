@@ -15,6 +15,13 @@
 #include "MemoryModel.hpp"
 #include "instance_scheduler.hpp"
 #include "partitioned_scheduler.hpp"
+#include "generate_code.hpp"
+#include "check_types.hpp"
+#include "check_references.hpp"
+#include "check_mutability.hpp"
+#include "check_constants.hpp"
+#include "check_control.hpp"
+#include "compute_receiver_access.hpp"
 
 static void
 print_version (void)
@@ -115,15 +122,25 @@ main (int argc, char **argv)
     }
   assert (root != NULL);
 
-  /* Check the semantics. */
+  MemoryModel::StackAlignment = sizeof (void*);
+
+  // Check the semantics.
   enter_symbols (root);
   ProcessDeclarations (root);
-  process_definitions (root);
+
+  semantic::check_types (root);
+  semantic::check_references (root);
+  semantic::check_mutability (root);
+  semantic::check_constants (root);
+  semantic::check_control (root);
+  semantic::compute_receiver_access (root);
 
   // Calculate the offsets of all stack variables.
-  // Do this before checking composition so the receiver of binds has an offset.
-  MemoryModel::StackAlignment = sizeof (void*);
+  // Do this so we can execute some code statically when checking composition.
   allocate_stack_variables (root);
+
+  // Generate code.
+  code::generate_code (root);
 
   // Check composition.
   Composition::Composer instance_table;
@@ -134,7 +151,6 @@ main (int argc, char **argv)
       instance_table.DumpGraphviz ();
       return 0;
     }
-
   instance_table.AnalyzeComposition ();
 
   //typedef instance_scheduler_t SchedulerType;
