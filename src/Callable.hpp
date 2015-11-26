@@ -27,7 +27,7 @@ public:
 struct Function : public Callable, public Symbol
 {
   // TODO:  Remove duplication with Symbol.
-  Function (ast::ast_function_t& node);
+  Function (ast::ast_function_t& node, const Type::Function* type);
 
   // Callable
   virtual void call (executor_base_t& exec) const;
@@ -47,13 +47,6 @@ struct Function : public Callable, public Symbol
   ast::ast_function_t& node;
   MemoryModel memoryModel;
 
-  void set (const Type::Function* functionType);
-
-  typed_value_t value () const
-  {
-    return value_;
-  }
-
   virtual size_t return_size () const
   {
     unimplemented;
@@ -70,7 +63,6 @@ struct Function : public Callable, public Symbol
 private:
   const Type::Function* functionType_;
   size_t returnSize_;
-  typed_value_t value_;
 };
 
 struct Method : public Callable

@@ -1,7 +1,9 @@
 #ifndef rc_reaction_hpp
 #define rc_reaction_hpp
 
-class reaction_t
+#include "Callable.hpp"
+
+class reaction_t : public Callable
 {
 public:
   reaction_t (Type::NamedType* type, ast::Node* a_node, Symbol* a_receiver, ast::Node* body_, const std::string& name_, const Type::Method* rt)
@@ -44,9 +46,27 @@ private:
 public:
   const Type::Method* const reaction_type;
 
+  void call (executor_base_t& exec) const
+  {
+    unimplemented;
+  }
+
   Type::NamedType* type () const
   {
     return type_;
+  }
+
+  size_t return_size () const
+  {
+    unimplemented;
+  }
+  size_t arguments_size () const
+  {
+    unimplemented;
+  }
+  size_t locals_size () const
+  {
+    unimplemented;
   }
 
   MemoryModel memory_model;

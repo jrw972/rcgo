@@ -144,8 +144,8 @@ type_check_statement (Node * node)
 
     void visit (ast_bind_push_port_param_statement_t& node)
     {
-      typed_value_t reaction_tv = bind (node, node.left (), node.right_ref ());
       unimplemented;
+      // typed_value_t reaction_tv = bind (node, node.left (), node.right_ref ());
       // typed_value_t param_tv = CheckAndImplicitlyDereference (node.param_ref ());
       // assert (reaction_tv.value.present);
       // reaction_t* reaction = reaction_tv.value.reaction_value ();
@@ -186,8 +186,8 @@ type_check_statement (Node * node)
 
     void visit (ast_bind_pull_port_statement_t& node)
     {
-      typed_value_t pull_port_tv = CheckExpectReference (node.left ());
       unimplemented;
+      // typed_value_t pull_port_tv = CheckExpectReference (node.left ());
       // typed_value_t getter_tv = CheckAndImplicitlyDereference (node.right_ref ());
 
       // const Type::Function* pull_port_type = type_cast<Type::Function> (pull_port_tv.type);
@@ -216,14 +216,16 @@ type_check_statement (Node * node)
 
     void visit (ast_for_iota_statement_t& node)
     {
-      const std::string& identifier = ast_get_identifier (node.identifier ());
-      typed_value_t limit = process_array_dimension (node.limit_node_ref ());
-      typed_value_t zero = limit;
-      zero.zero ();
-      Symbol* symbol = new VariableSymbol (identifier, node.identifier (), typed_value_t::make_ref (typed_value_t::make_range (zero, limit, IMMUTABLE, IMMUTABLE)));
-      node.symbol = enter_symbol (node, symbol);
-      type_check_statement (node.body ());
-      node.limit = limit;
+      unimplemented;
+      // const std::string& identifier = ast_get_identifier (node.identifier ());
+      // typed_value_t limit = process_array_dimension (node.limit_node_ref ());
+      // typed_value_t zero = limit;
+      // zero.zero ();
+      // unimplemented;
+      // Symbol* symbol = new VariableSymbol (identifier, node.identifier (), typed_value_t::make_ref (typed_value_t::make_range (zero, limit, IMMUTABLE, IMMUTABLE)));
+      // node.symbol = enter_symbol (node, symbol);
+      // type_check_statement (node.body ());
+      // node.limit = limit;
     }
 
     static typed_value_t
@@ -356,10 +358,11 @@ type_check_statement (Node * node)
 
       // Check the expression.
       TypeCheckExpression (node.child ());
-      if (!assignable (node.child ()->type, node.return_symbol->type))
-        {
-          unimplemented;
-        }
+      unimplemented;
+      // if (!assignable (node.child ()->type, node.return_symbol->type))
+      //   {
+      //     unimplemented;
+      //   }
 
       unimplemented;
       // typed_value_t expr_tv = CheckAndImplicitlyDereferenceAndConvert (node.child_ref (), node.return_symbol->value.type);
@@ -441,7 +444,7 @@ type_check_statement (Node * node)
         }
 
       // Process the type spec.
-      const Type::Type* type = process_type_spec (type_spec, true);
+      const Type::Type* type = process_type (type_spec, true);
 
       if (expression_list->Size () == 0)
         {
@@ -455,14 +458,13 @@ type_check_statement (Node * node)
             }
 
           // Enter each symbol.
-          typed_value_t left_tv = typed_value_t::make_ref (type, node.mutability, node.dereferenceMutability, false);
           for (Node::Iterator id_pos = identifier_list->Begin (),
                id_limit = identifier_list->End ();
                id_pos != id_limit;
                ++id_pos)
             {
               const std::string& name = ast_get_identifier (*id_pos);
-              Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
+              VariableSymbol* symbol = new VariableSymbol (name, *id_pos, type, node.mutability, node.dereferenceMutability);
               node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
             }
 
@@ -488,9 +490,10 @@ type_check_statement (Node * node)
                                 "assignment leaks mutable pointers (E127)");
               // Convert to specified mutability.
               left_tv.intrinsic_mutability = node.mutability;
-              const std::string& name = ast_get_identifier (*id_pos);
-              Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
-              node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
+              unimplemented;
+              // const std::string& name = ast_get_identifier (*id_pos);
+              // Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
+              // node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
             }
 
           return;

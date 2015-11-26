@@ -32,6 +32,11 @@ namespace semantic
         node.body ()->Accept (*this);
       }
 
+      void visit (ast_function_t& node)
+      {
+        // Do nothing.
+      }
+
       void visit (ast_list_statement_t& node)
       {
         node.VisitChildren (*this);

@@ -22,6 +22,8 @@
 #include "check_constants.hpp"
 #include "check_control.hpp"
 #include "compute_receiver_access.hpp"
+#include "process_types_and_constants.hpp"
+#include "process_functions_and_methods.hpp"
 
 static void
 print_version (void)
@@ -124,14 +126,12 @@ main (int argc, char **argv)
 
   MemoryModel::StackAlignment = sizeof (void*);
 
-  // Check the semantics.
   enter_symbols (root);
-  ProcessDeclarations (root);
-
+  semantic::process_types_and_constants (root);
+  semantic::process_functions_and_methods (root);
   semantic::check_types (root);
   semantic::check_references (root);
   semantic::check_mutability (root);
-  semantic::check_constants (root);
   semantic::check_control (root);
   semantic::compute_receiver_access (root);
 

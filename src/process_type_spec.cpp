@@ -8,19 +8,6 @@
 using namespace Type;
 using namespace ast;
 
-// Look up a symbol.  Error if it is not defined.
-static Symbol *
-lookup_no_force (Node * node, const std::string& identifier)
-{
-  Symbol *symbol = node->FindGlobalSymbol (identifier);
-  if (symbol == NULL)
-    {
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                     "%s was not declared in this scope (E102)", identifier.c_str ());
-    }
-  return symbol;
-}
-
 typed_value_t
 process_array_dimension (ast::Node*& ptr)
 {
@@ -42,22 +29,14 @@ CheckForForeignSafe (const Signature* signature, const ParameterSymbol* return_p
 }
 
 const Type::Type *
-process_type_spec (Node * node, bool force_identifiers, bool is_component, NamedType* named_type)
+process_type (Node* node, bool force)
 {
-  struct type_spec_visitor_t : public ast::DefaultVisitor
+  struct Visitor : public ast::DefaultVisitor
   {
     const Type::Type* type;
-    bool force_identifiers;
-    bool is_component;
-    NamedType* named_type;
 
-    type_spec_visitor_t (bool fi,
-                         bool ic,
-                         NamedType* nt)
+    Visitor ()
       : type (NULL)
-      , force_identifiers (fi)
-      , is_component (ic)
-      , named_type (nt)
     { }
 
     void default_action (Node& node)
@@ -68,13 +47,13 @@ process_type_spec (Node * node, bool force_identifiers, bool is_component, Named
     void visit (ast_array_type_spec_t& node)
     {
       typed_value_t dimension = process_array_dimension (node.dimension_ref ());
-      const Type::Type* base_type = process_type_spec (node.base_type (), true);
+      const Type::Type* base_type = process_type (node.base_type (), true);
       type = base_type->GetArray (dimension.integral_value ());
     }
 
     void visit (ast_slice_type_spec_t& node)
     {
-      const Type::Type* base_type = process_type_spec (node.child (), true);
+      const Type::Type* base_type = process_type (node.child (), false);
       type = base_type->GetSlice ();
     }
 
@@ -85,25 +64,26 @@ process_type_spec (Node * node, bool force_identifiers, bool is_component, Named
 
     void visit (ast_enum_type_spec_t& node)
     {
-      type = Enum::Instance ();
+      unimplemented;
+      // type = Enum::Instance ();
 
-      ast::Node* value = node.values ();
-      size_t e = 0;
-      for (Node::ConstIterator pos = value->Begin (), limit = value->End ();
-           pos != limit;
-           ++pos, ++e)
-        {
-          std::string id = ast_get_identifier (*pos);
-          if (node.GetParent ()->GetParent ()->FindLocalSymbol (id) != NULL)
-            {
-              error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
-                             "%s is already defined in this scope (E108)", id.c_str ());
-            }
+      // ast::Node* value = node.values ();
+      // size_t e = 0;
+      // for (Node::ConstIterator pos = value->Begin (), limit = value->End ();
+      //      pos != limit;
+      //      ++pos, ++e)
+      //   {
+      //     std::string id = ast_get_identifier (*pos);
+      //     if (node.GetParent ()->GetParent ()->FindLocalSymbol (id) != NULL)
+      //       {
+      //         error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
+      //                        "%s is already defined in this scope (E108)", id.c_str ());
+      //       }
 
-          node.GetParent ()->GetParent ()->EnterSymbol (new TypedConstantSymbol (id,
-              *pos,
-              typed_value_t (named_type, e)));
-        }
+      //     node.GetParent ()->GetParent ()->EnterSymbol (new TypedConstantSymbol (id,
+      //                                                                            *pos,
+      //                                                                            typed_value_t (named_type, e)));
+      //   }
     }
 
     void visit (ast_field_list_type_spec_t& node)
@@ -126,7 +106,7 @@ process_type_spec (Node * node, bool force_identifiers, bool is_component, Named
           ast_identifier_list_type_spec_t* c = static_cast<ast_identifier_list_type_spec_t*> (child);
           Node *identifier_list = c->identifier_list ();
           Node *type_spec = c->type_spec ();
-          const Type::Type *type = process_type_spec (type_spec, true);
+          const Type::Type *type = process_type (type_spec, true);
           for (Node::ConstIterator pos2 = identifier_list->Begin (),
                limit2 = identifier_list->End ();
                pos2 != limit2;
@@ -151,40 +131,37 @@ process_type_spec (Node * node, bool force_identifiers, bool is_component, Named
 
     void visit (ast_heap_type_spec_t& node)
     {
-      type = process_type_spec (node.child (), false)->GetHeap ();
+      type = process_type (node.child (), false)->GetHeap ();
     }
 
     void visit (ast_identifier_type_spec_t& node)
     {
       Node *child = node.child ();
       const std::string& identifier = ast_get_identifier (child);
-      TypeSymbol* symbol;
-      if (force_identifiers)
+      Symbol* s = node.FindGlobalSymbol (identifier);
+      if (s == NULL)
         {
-          symbol = processAndLookup<TypeSymbol> (child, identifier);
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                         "%s was not declared in this scope (E102)", identifier.c_str ());
         }
-      else
-        {
-          symbol = SymbolCast<TypeSymbol> (lookup_no_force (child, identifier));
-        }
-
+      TypeSymbol* symbol = SymbolCast<TypeSymbol> (s);
       if (symbol == NULL)
         {
           error_at_line (-1, 0, child->location.File.c_str (), child->location.Line,
                          "%s does not refer to a type (E110)", identifier.c_str ());
         }
-      type = SymbolCast<TypeSymbol> (symbol)->type;
+      type = symbol->type;
     }
 
     void visit (ast_pointer_type_spec_t& node)
     {
-      const Type::Type* base_type = process_type_spec (node.child (), false);
+      const Type::Type* base_type = process_type (node.child (), false);
       type = base_type->GetPointer ();
     }
 
     void visit (ast_push_port_type_spec_t& node)
     {
-      const Signature* signature = type_cast<Signature> (process_type_spec (node.signature (), true));
+      const Signature* signature = type_cast<Signature> (process_type (node.signature (), true));
       ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (&node,
                                           ReturnSymbol,
                                           Type::Void::Instance (),
@@ -196,8 +173,8 @@ process_type_spec (Node * node, bool force_identifiers, bool is_component, Named
 
     void visit (ast_pull_port_type_spec_t& node)
     {
-      const Signature* signature = type_cast<Signature> (process_type_spec (node.signature (), true));
-      const Type::Type* return_type = process_type_spec (node.return_type (), true);
+      const Signature* signature = type_cast<Signature> (process_type (node.signature (), true));
+      const Type::Type* return_type = process_type (node.return_type (), true);
       ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (&node,
                                           ReturnSymbol,
                                           return_type,
@@ -216,7 +193,7 @@ process_type_spec (Node * node, bool force_identifiers, bool is_component, Named
           ast_identifier_list_type_spec_t* child = static_cast<ast_identifier_list_type_spec_t*> (*pos1);
           Node *identifier_list = child->identifier_list ();
           Node *type_spec = child->type_spec ();
-          const Type::Type* type = process_type_spec (type_spec, true);
+          const Type::Type* type = process_type (type_spec, true);
           for (Node::Iterator pos2 = identifier_list->Begin (), limit2 = identifier_list->End ();
                pos2 != limit2;
                ++pos2)
@@ -240,7 +217,15 @@ process_type_spec (Node * node, bool force_identifiers, bool is_component, Named
     }
 
   };
-  type_spec_visitor_t type_spec_visitor (force_identifiers, is_component, named_type);
+
+  Visitor type_spec_visitor;
   node->Accept (type_spec_visitor);
+
+  if (force && type_spec_visitor.type->UnderlyingType () == NULL)
+    {
+      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+                     "type is defined recursively (E111)");
+    }
+
   return type_spec_visitor.type;
 }

@@ -65,7 +65,7 @@ typed_value_t process_array_dimension (ast::Node*& ptr);
 void CheckForForeignSafe (const Type::Signature* signature, const ParameterSymbol* return_parameter);
 
 // Process a type specification.
-const Type::Type * process_type_spec (ast::Node* node, bool force_identifiers, bool is_component = false, Type::NamedType* named_type = NULL);
+const Type::Type * process_type (ast::Node* node, bool force);
 
 /* Process all declarations (non-code). */
 void ProcessDeclarations (ast::Node* node);

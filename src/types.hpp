@@ -12,7 +12,7 @@
 enum ExpressionKind
 {
   kValue,
-  kReference,
+  kVariable,
   kType
 };
 
@@ -78,6 +78,8 @@ class port_t;
 class reaction_t;
 class scheduler_t;
 class Symbol;
+class value_t;
+class VariableSymbol;
 
 namespace runtime
 {

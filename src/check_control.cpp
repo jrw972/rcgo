@@ -42,11 +42,21 @@ namespace semantic
         // Do nothing.
       }
 
+      void visit (ast_instance_t& node)
+      {
+        node.expression_list ()->Accept (*this);
+      }
+
       void visit (ast_initializer_t& node)
       {
         Visitor v (*this);
         v.context = Initializer;
         node.body ()->Accept (v);
+      }
+
+      void visit (ast_function_t& node)
+      {
+        node.body ()->Accept (*this);
       }
 
       void visit (ast_list_statement_t& node)
@@ -55,6 +65,16 @@ namespace semantic
       }
 
       void visit (ast_expression_statement_t& node)
+      {
+        node.VisitChildren (*this);
+      }
+
+      void visit (ast_var_statement_t& node)
+      {
+        node.expression_list ()->Accept (*this);
+      }
+
+      void visit (ast_assign_statement_t& node)
       {
         node.VisitChildren (*this);
       }
@@ -158,9 +178,19 @@ namespace semantic
         // Do nothing.
       }
 
-      void visit (ast_instance_t& node)
+      void visit (ast_dereference_expr_t& node)
       {
-        node.expression_list ()->Accept (*this);
+        node.VisitChildren (*this);
+      }
+
+      void visit (ast_address_of_expr_t& node)
+      {
+        node.VisitChildren (*this);
+      }
+
+      void visit (ast_select_expr_t& node)
+      {
+        node.base ()->Accept (*this);
       }
     };
   }

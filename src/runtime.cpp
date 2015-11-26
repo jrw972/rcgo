@@ -1185,11 +1185,6 @@ namespace runtime
   //     exec.stack ().push_pointer (ptr + tv.offset);
   //   }
 
-  //   void visit (const ast_dereference_expr_t& node)
-  //   {
-  //     evaluate_expression (exec, memoryModel, node.child ());
-  //   }
-
   //   void visit (const ast_identifier_expr_t& node)
   //   {
   //     // Get the address of the identifier.
@@ -1631,7 +1626,8 @@ namespace runtime
             for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
               {
                 Symbol* symbol = node.symbols[idx];
-                exec.stack ().clear (symbol->offset (), SymbolCast<VariableSymbol> (symbol)->value.type->Size ());
+                unimplemented;
+                //exec.stack ().clear (symbol->offset (), SymbolCast<VariableSymbol> (symbol)->value.type->Size ());
               }
           }
         else
@@ -2542,6 +2538,11 @@ namespace runtime
     {
       op = make_literal (value.ref (type));
     }
+
+    void visit (const Int& type)
+    {
+      op = make_literal (value.ref (type));
+    }
   };
 
   Operation* make_literal (const Type::Type* type, const value_t& value)
@@ -2605,6 +2606,32 @@ namespace runtime
     child->execute (exec);
     exec.current_instance (old_receiver);
   }
+
+  void
+  Clear::execute (executor_base_t& exec) const
+  {
+    unimplemented;
+  }
+
+  void
+  Assign::execute (executor_base_t& exec) const
+  {
+    unimplemented;
+  }
+
+
+  void
+  Reference::execute (executor_base_t& exec) const
+  {
+    unimplemented;
+  }
+
+  void
+  Select::execute (executor_base_t& exec) const
+  {
+    unimplemented;
+  }
+
 }
 
 // void

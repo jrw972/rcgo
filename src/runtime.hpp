@@ -276,6 +276,38 @@ namespace runtime
     Operation* const child;
     ptrdiff_t const receiver_offset;
   };
+
+  struct Clear : public Operation
+  {
+    Clear (ptrdiff_t o, size_t s) : offset (o), size (s) { }
+    virtual void execute (executor_base_t& exec) const;
+    ptrdiff_t const offset;
+    size_t const size;
+  };
+
+  struct Assign : public Operation
+  {
+    Assign (Operation* l, Operation* r) : left (l), right (r) { }
+    virtual void execute (executor_base_t& exec) const;
+    Operation* const left;
+    Operation* const right;
+  };
+
+  struct Reference : public Operation
+  {
+    Reference (ptrdiff_t o) : offset (o) { }
+    virtual void execute (executor_base_t& exec) const;
+    ptrdiff_t const offset;
+  };
+
+  struct Select : public Operation
+  {
+    Select (Operation* b, ptrdiff_t o) : base (b), offset (o) { }
+    virtual void execute (executor_base_t& exec) const;
+    Operation* const base;
+    ptrdiff_t const offset;
+  };
+
 }
 
 #endif // rc_runtime_hpp

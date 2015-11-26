@@ -121,10 +121,10 @@ processSignatureReturn (ast::Node* signatureNode, ast::Node* returnType, Mutabil
                         const Signature*& signature, ParameterSymbol*& returnSymbol)
 {
   /* Process the signature. */
-  signature = type_cast<Signature> (process_type_spec (signatureNode, true));
+  signature = type_cast<Signature> (process_type (signatureNode, true));
 
   /* Process the return type. */
-  const Type::Type* return_type = process_type_spec (returnType, true);
+  const Type::Type* return_type = process_type (returnType, true);
 
   returnSymbol = ParameterSymbol::makeReturn (returnType,
                  ReturnSymbol,
@@ -161,7 +161,7 @@ ProcessDeclarations (Node * node)
         }
 
       // Process the type spec.
-      const Type::Type* type = process_type_spec (type_spec, true);
+      const Type::Type* type = process_type (type_spec, true);
 
       if (type_cast<Void> (type) == NULL)
         {
@@ -261,18 +261,6 @@ ProcessDeclarations (Node * node)
       bind_t* bind = new bind_t (&node, ast_get_identifier (node.identifier ()));
       type->Add (bind);
       node.bind = bind;
-    }
-
-    void visit (ast_function_t& node)
-    {
-      const Signature* signature;
-      ParameterSymbol* return_symbol;
-      processSignatureReturn (node.signature (), node.return_type (), node.dereferenceMutability, false,
-                              signature, return_symbol);
-      node.function->set (new Type::Function (Type::Function::FUNCTION, signature, return_symbol));
-      // Enter the return first as it is deeper on the stack.
-      enter_symbol (node, return_symbol);
-      enter_signature (node, signature);
     }
 
     void visit (ast_method_t& node)
@@ -425,27 +413,6 @@ ProcessDeclarations (Node * node)
 
       type->Add (reaction);
       node.reaction = reaction;
-    }
-
-    void visit (SourceFile& node)
-    {
-      node.VisitChildren (*this);
-    }
-
-    void visit (ast::Type& node)
-    {
-      TypeSymbol* symbol = node.symbol;
-      if (symbol->defined ())
-        return;
-      if (symbol->inProgress)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "%s is defined recursively (E65)", symbol->identifier.c_str ());
-        }
-      symbol->inProgress = true;
-      NamedType* type = SymbolCast<TypeSymbol> (symbol)->type;
-      type->UnderlyingType (process_type_spec (node.type_spec (), true, false, type));
-      symbol->inProgress = false;
     }
   };
 

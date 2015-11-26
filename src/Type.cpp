@@ -1450,7 +1450,7 @@ type::Instance () \
   }
 
   bool
-  assignable (const Type* from, const Type* to)
+  assignable (const Type*& from, value_t& from_value, const Type* to)
   {
     if (Identical (from, to))
       {
@@ -1476,9 +1476,10 @@ type::Instance () \
         return true;
       }
 
-    if (from->IsUntyped ())
+    if (from->IsUntyped () && from_value.representable (from, to))
       {
-        // This must be handled elsewhere.
+        from_value.convert (from, to);
+        from = to;
         return true;
       }
 
@@ -1502,6 +1503,42 @@ type::Instance () \
       {
         (*pos)->check_foreign_safe ();
       }
+  }
+
+  field_t*
+  Struct::select_field (const std::string& name) const
+  {
+    return Find (name);
+  }
+
+  Callable*
+  NamedType::select_callable (const std::string& name) const
+  {
+    ::Method* m = type_select_method (this, name);
+    if (m)
+      {
+        return m;
+      }
+
+    Initializer* i = type_select_initializer (this, name);
+    if (i)
+      {
+        return i;
+      }
+
+    Getter* g = type_select_getter (this, name);
+    if (g)
+      {
+        return g;
+      }
+
+    reaction_t* r = type_select_reaction (this, name);
+    if (r)
+      {
+        return r;
+      }
+
+    return NULL;
   }
 
   NamedType NamedBool ("bool", Bool::Instance ());

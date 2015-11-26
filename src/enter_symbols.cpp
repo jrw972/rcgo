@@ -107,19 +107,6 @@ enter_symbols (Node * node)
         enter_undefined_symbol (new InstanceSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),
                                 node);
     }
-
-    void visit (ast::Type& node)
-    {
-      node.symbol =
-        enter_undefined_symbol (new TypeSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),
-                                node);
-    }
-
-    void visit (ast_function_t& node)
-    {
-      node.function = enter_undefined_symbol (new Function (node),
-                                              node);
-    }
   };
 
   visitor v;

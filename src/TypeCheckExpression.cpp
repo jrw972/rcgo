@@ -60,16 +60,6 @@ CheckAndImplicitlyDereferenceAndConvert (ast::Node*& expr, const Type::Type* typ
   // return expr->typed_value;
 }
 
-static typed_value_t
-insertExplicitDereference (ast::Node*& expr, typed_value_t tv)
-{
-  unimplemented;
-  // expr = new ast_dereference_expr_t (expr->location.Line, expr);
-  // tv = typed_value_t::dereference (tv);
-  // expr->typed_value = tv;
-  // return tv;
-}
-
 void
 TypeCheckArgs (Node * node, TypedValueListType& tvlist)
 {
@@ -472,59 +462,6 @@ struct check_visitor : public ast::DefaultVisitor
     // symbol->accept (v);
 
     // node.symbol = symbol;
-  }
-
-  void visit (ast_select_expr_t& node)
-  {
-    unimplemented;
-    // const std::string& identifier = ast_get_identifier (node.identifier ());
-    // typed_value_t in = TypeCheckExpression (node.base ());
-    // assert (in.type != NULL);
-
-    // if (in.IsReference () && type_dereference (in.type))
-    //   {
-    //     // Pointer reference.
-    //     // Insert an implicit dereference.
-    //     in = insertImplicitDereference (node.base_ref ());
-    //   }
-
-    // if (in.IsValue () && type_dereference (in.type))
-    //   {
-    //     // Pointer value.
-    //     // Insert an explicit dereference.
-    //     in = insertExplicitDereference (node.base_ref (), in);
-    //   }
-
-    // if (in.IsReference ())
-    //   {
-    //     typed_value_t out = typed_value_t::select (in, identifier);
-    //     if (out.IsError ())
-    //       {
-    //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-    //                        "cannot select %s from expression of type %s (E20)",
-    //                        identifier.c_str (), in.type->ToString ().c_str ());
-    //       }
-    //     unimplemented;
-    //     //node.typed_value = out;
-    //   }
-    // else if (in.IsValue ())
-    //   {
-    //     unimplemented;
-    //   }
-  }
-
-  void visit (ast_dereference_expr_t& node)
-  {
-    unimplemented;
-    // typed_value_t in = CheckAndImplicitlyDereference (node.child_ref ());
-    // typed_value_t out = typed_value_t::dereference (in);
-    // if (out.IsError ())
-    //   {
-    //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-    //                    "incompatible types: %s (E21)", in.type->ToString ().c_str ());
-    //   }
-    // unimplemented;
-    // //node.typed_value = out;
   }
 
   void visit (ast_literal_expr_t& node)

@@ -24,7 +24,6 @@ struct Symbol
   virtual ~Symbol() { }
   virtual void accept (SymbolVisitor& visitor) = 0;
   virtual void accept (ConstSymbolVisitor& visitor) const = 0;
-  virtual const char* kindString () const = 0;
   virtual bool defined () const
   {
     not_reached;
@@ -56,10 +55,6 @@ struct InstanceSymbol : public Symbol
   { }
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-  virtual const char* kindString () const
-  {
-    return "Instance";
-  }
 
   const Type::NamedType *type;
   Initializer* initializer;
@@ -158,11 +153,6 @@ struct ParameterSymbol : public Symbol
       }
   }
 
-  virtual const char* kindString () const
-  {
-    return "Parameter";
-  }
-
   void check_foreign_safe () const;
 
   const Type::Type* const type;
@@ -180,20 +170,11 @@ struct TypeSymbol : public Symbol
     , type (t)
   { }
 
-  TypeSymbol (const std::string& id, ast::Node* dn)
-    : Symbol (id, dn)
-    , type (new Type::NamedType (id))
-  { }
-
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
   virtual bool defined () const
   {
     return type->UnderlyingType () != NULL;
-  }
-  virtual const char* kindString () const
-  {
-    return "Type";
   }
 
   Type::NamedType* const type;
@@ -207,28 +188,22 @@ struct TypedConstantSymbol : public Symbol
   { }
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-  virtual const char* kindString () const
-  {
-    return "TypedConstant";
-  }
 
   typed_value_t const value;
 };
 
 struct VariableSymbol : public Symbol
 {
-  VariableSymbol (const std::string& id, ast::Node* dn, const typed_value_t& v)
+  VariableSymbol (const std::string& id, ast::Node* dn, const Type::Type* t, Mutability im, Mutability dm)
     : Symbol (id, dn)
-    , value (v)
+    , type (t)
+    , intrinsic_mutability (im)
+    , dereference_mutability (dm)
     , original_ (NULL)
   { }
 
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-  virtual const char* kindString () const
-  {
-    return "Variable";
-  }
 
   virtual ptrdiff_t offset () const
   {
@@ -244,15 +219,14 @@ struct VariableSymbol : public Symbol
 
   VariableSymbol* duplicate()
   {
-    typed_value_t tv = value;
-    tv.intrinsic_mutability = FOREIGN;
-    tv.dereference_mutability = FOREIGN;
-    VariableSymbol* s = new VariableSymbol (this->identifier, this->definingNode, tv);
+    VariableSymbol* s = new VariableSymbol (this->identifier, this->definingNode, this->type, FOREIGN, FOREIGN);
     s->original_ = this;
     return s;
   }
 
-  typed_value_t const value;
+  const Type::Type* const type;
+  Mutability const intrinsic_mutability;
+  Mutability const dereference_mutability;
 private:
   Symbol* original_;
 };
@@ -264,10 +238,11 @@ struct HiddenSymbol : public Symbol
   { }
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-  virtual const char* kindString () const
-  {
-    return "Hidden";
-  }
 };
+
+std::ostream&
+operator<< (std::ostream& out, const Symbol& s);
+
+#define symbol_not_reached(s) do { std::cerr << s << '\n'; not_reached; } while (0);
 
 #endif /* Symbol_hpp */

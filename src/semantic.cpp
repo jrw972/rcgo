@@ -68,7 +68,7 @@ allocate_symbol (MemoryModel& memory_model,
 
     void visit (VariableSymbol& symbol)
     {
-      const Type::Type* type = symbol.value.type;
+      const Type::Type* type = symbol.type;
       static_cast<Symbol&>(symbol).offset (memory_model.LocalsOffset ());
       memory_model.LocalsPush (type->Size ());
     }

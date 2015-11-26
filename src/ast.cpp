@@ -165,7 +165,9 @@ namespace ast
       }
       void visit (const ast_address_of_expr_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "address_of_expr\n";
+        print_children (node);
       }
       void visit (const ast_call_expr_t& node)
       {
@@ -175,11 +177,15 @@ namespace ast
       }
       void visit (const ast_dereference_expr_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "dereference_expr\n";
+        print_children (node);
       }
       void visit (const ast_implicit_dereference_expr_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "implicit_dereference_expr\n";
+        print_children (node);
       }
       void visit (const ast_identifier_expr_t& node)
       {
@@ -223,7 +229,9 @@ namespace ast
       }
       void visit (const ast_select_expr_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "select_expr\n";
+        print_children (node);
       }
       void visit (const ast_empty_statement_t& node)
       {
@@ -239,7 +247,9 @@ namespace ast
       }
       void visit (const ast_assign_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "assign_statement\n";
+        print_children (node);
       }
       void visit (const ast_expression_statement_t& node)
       {
@@ -545,12 +555,13 @@ namespace ast
               const VariableSymbol* symbol = SymbolCast<VariableSymbol> (*ptr);
               if (symbol != NULL)
                 {
-                  typed_value_t tv = symbol->value;
-                  if (type_contains_pointer (tv.type) && tv.dereference_mutability == FOREIGN)
-                    {
-                      // Hide this variable.
-                      EnterSymbol (new HiddenSymbol (symbol, this));
-                    }
+                  unimplemented;
+                  // typed_value_t tv = symbol->value;
+                  // if (type_contains_pointer (tv.type) && tv.dereference_mutability == FOREIGN)
+                  //   {
+                  //     // Hide this variable.
+                  //     EnterSymbol (new HiddenSymbol (symbol, this));
+                  //   }
                 }
             }
 
@@ -588,13 +599,14 @@ namespace ast
               VariableSymbol* symbol = SymbolCast<VariableSymbol> (*ptr);
               if (symbol != NULL)
                 {
-                  typed_value_t tv = SymbolCast<VariableSymbol> (symbol)->value;
-                  if (type_contains_pointer (tv.type))
-                    {
-                      // Enter as a duplicate.
-                      Symbol* dup = SymbolCast<VariableSymbol> (symbol)->duplicate ();
-                      EnterSymbol (dup);
-                    }
+                  unimplemented;
+                  // typed_value_t tv = SymbolCast<VariableSymbol> (symbol)->value;
+                  // if (type_contains_pointer (tv.type))
+                  //   {
+                  //     // Enter as a duplicate.
+                  //     Symbol* dup = SymbolCast<VariableSymbol> (symbol)->duplicate ();
+                  //     EnterSymbol (dup);
+                  //   }
                 }
             }
           }
@@ -713,6 +725,8 @@ namespace ast
   Node::Node (unsigned int line_, size_t children_count)
     : location (line_)
     , type (NULL)
+    , field (NULL)
+    , callable (NULL)
     , temp (NULL)
     , operation (NULL)
     , m_parent (NULL)

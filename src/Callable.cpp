@@ -6,11 +6,11 @@
 
 using namespace ast;
 
-Function::Function (ast_function_t& node_)
+Function::Function (ast_function_t& node_, const Type::Function* ft)
   : Symbol (ast_get_identifier (node_.identifier ()), node_.identifier ())
   , node (node_)
-  , functionType_ (NULL)
-  , returnSize_ (0)
+  , functionType_ (ft)
+  , returnSize_ (ft->GetReturnType ()->Size ())
 { }
 
 void
@@ -23,14 +23,6 @@ void
 Function::accept (ConstSymbolVisitor& visitor) const
 {
   visitor.visit (*this);
-}
-
-void
-Function::set (const Type::Function* functionType)
-{
-  functionType_ = functionType;
-  returnSize_ = functionType->GetReturnType ()->Size ();
-  value_ = typed_value_t::make_ref (typed_value_t (this));
 }
 
 void Function::call (executor_base_t& exec) const

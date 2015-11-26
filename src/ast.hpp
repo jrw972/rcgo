@@ -32,6 +32,10 @@ namespace ast
     {
       return m_children.size ();
     }
+    size_t Empty () const
+    {
+      return m_children.empty ();
+    }
     Node* Prepend (Node * child);
     Node* Append (Node * child);
     Node* const & At (size_t idx) const
@@ -84,6 +88,8 @@ namespace ast
     //typed_value_t typed_value;
     const Type::Type* type;
     value_t value;
+    field_t* field;
+    Callable* callable;
     ::Template* temp;
     ExpressionKind expression_kind;
     Mutability intrinsic_mutability;
@@ -1147,7 +1153,8 @@ namespace ast
 
     Mutability const mutability;
     Mutability const dereferenceMutability;
-    std::vector<Symbol*> symbols;
+    typedef std::vector<VariableSymbol*> SymbolsType;
+    SymbolsType symbols;
   };
 
   struct ast_bind_push_port_statement_t : public ast_binary_t
@@ -1871,8 +1878,6 @@ namespace ast
 
     void Accept (Visitor& visitor);
     void Accept (ConstVisitor& visitor) const;
-
-    TypeSymbol* symbol;
   };
 
   struct SourceFile : public Node

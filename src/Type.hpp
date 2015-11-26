@@ -73,6 +73,14 @@ namespace Type
     const Slice* GetSlice () const;
     const Array* GetArray (UintValueType dimension) const;
     const Heap* GetHeap () const;
+    virtual field_t* select_field (const std::string& name) const
+    {
+      return NULL;
+    }
+    virtual Callable* select_callable (const std::string& name) const
+    {
+      return NULL;
+    }
   private:
     const Pointer* pointer_;
     const Slice* slice_;
@@ -203,6 +211,11 @@ namespace Type
     {
       return binds_.end ();
     }
+    virtual field_t* select_field (const std::string& name) const
+    {
+      return underlyingType_->select_field (name);
+    }
+    virtual Callable* select_callable (const std::string& name) const;
 
   private:
     std::string const name_;
@@ -453,6 +466,14 @@ namespace Type
     {
       return UNNAMED;
     }
+    virtual field_t* select_field (const std::string& name) const
+    {
+      return base_->select_field (name);
+    }
+    virtual Callable* select_callable (const std::string& name) const
+    {
+      return base_->select_callable (name);
+    }
   private:
     friend class Type;
     Pointer (const Type* base) : BaseType (base) { }
@@ -577,6 +598,7 @@ namespace Type
     }
     void Append (const std::string& field_name, const Type* field_type);
     field_t* Find (const std::string& name) const;
+    virtual field_t* select_field (const std::string& name) const;
   private:
     FieldsType fields_;
     ptrdiff_t offset_;
@@ -2285,7 +2307,7 @@ namespace Type
   Identical (const Type* x, const Type* y);
 
   bool
-  assignable (const Type* from, const Type* to);
+  assignable (const Type*& from, value_t& from_value, const Type* to);
 
   const Type*
   Choose (const Type* x, const Type* y);

@@ -28,7 +28,7 @@ namespace semantic
               if (signature->At (i)->dereference_mutability < (*pos)->dereference_mutability)
                 {
                   error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
-                                 "call casts aways +const or +foreign (E30)");
+                                 "call casts away +const or +foreign (E85)");
                 }
             }
         }
@@ -110,7 +110,8 @@ namespace semantic
 
           void visit (const VariableSymbol& symbol)
           {
-            unimplemented;
+            node.intrinsic_mutability = symbol.intrinsic_mutability;
+            node.dereference_mutability = symbol.dereference_mutability;
           }
 
           void visit (const HiddenSymbol& symbol)
@@ -132,7 +133,18 @@ namespace semantic
         // Do nothing.
       }
 
+      void visit (ast_instance_t& node)
+      {
+        node.expression_list ()->Accept (*this);
+        check_mutability_arguments (node.expression_list (), node.symbol->initializer->initializerType->signature);
+      }
+
       void visit (ast_initializer_t& node)
+      {
+        node.body ()->Accept (*this);
+      }
+
+      void visit (ast_function_t& node)
       {
         node.body ()->Accept (*this);
       }
@@ -147,10 +159,59 @@ namespace semantic
         node.VisitChildren (*this);
       }
 
-      void visit (ast_instance_t& node)
+      void visit (ast_var_statement_t& node)
       {
-        node.expression_list ()->Accept (*this);
-        check_mutability_arguments (node.expression_list (), node.symbol->initializer->initializerType->signature);
+        if (!node.expression_list ()->Empty ())
+          {
+            unimplemented;
+          }
+      }
+
+      void visit (ast_assign_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        if (node.left ()->intrinsic_mutability != MUTABLE)
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "target of assignment is not mutable (E86)");
+          }
+
+        if (type_contains_pointer (node.right ()->type) &&
+            node.left ()->dereference_mutability < node.right ()->dereference_mutability)
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "assignment casts away +const or +foreign (E149)");
+          }
+      }
+
+      void visit (ast_dereference_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        node.intrinsic_mutability = node.child ()->dereference_mutability;
+        node.dereference_mutability = node.child ()->dereference_mutability;
+      }
+
+      void visit (ast_address_of_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        node.intrinsic_mutability = node.child ()->intrinsic_mutability;
+        node.dereference_mutability = std::max (node.child ()->intrinsic_mutability, node.child ()->dereference_mutability);
+      }
+
+      void visit (ast_select_expr_t& node)
+      {
+        node.base ()->Accept (*this);
+
+        if (type_dereference (node.base ()->type))
+          {
+            node.intrinsic_mutability = node.base ()->dereference_mutability;
+            node.dereference_mutability = node.base ()->dereference_mutability;
+          }
+        else
+          {
+            node.intrinsic_mutability = node.base ()->intrinsic_mutability;
+            node.dereference_mutability = node.base ()->dereference_mutability;
+          }
       }
     };
 

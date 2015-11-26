@@ -37,3 +37,59 @@ ParameterSymbol::check_foreign_safe () const
         }
     }
 }
+
+std::ostream&
+operator<< (std::ostream& out, const Symbol& s)
+{
+  struct Visitor : public ConstSymbolVisitor
+  {
+    std::ostream& out;
+
+    Visitor (std::ostream& o) : out (o) { }
+
+    void defaultAction (const Symbol& s)
+    {
+      not_reached;
+    }
+
+    virtual void visit (const BuiltinFunction& s)
+    {
+      unimplemented;
+    }
+    virtual void visit (const Template& s)
+    {
+      unimplemented;
+    }
+    virtual void visit (const Function& s)
+    {
+      unimplemented;
+    }
+    virtual void visit (const InstanceSymbol& s)
+    {
+      unimplemented;
+    }
+    virtual void visit (const ParameterSymbol& s)
+    {
+      unimplemented;
+    }
+    virtual void visit (const TypeSymbol& s)
+    {
+      unimplemented;
+    }
+    virtual void visit (const TypedConstantSymbol& s)
+    {
+      unimplemented;
+    }
+    virtual void visit (const VariableSymbol& s)
+    {
+      out << "Variable";
+    }
+    virtual void visit (const HiddenSymbol& s)
+    {
+      unimplemented;
+    }
+  };
+  Visitor v (out);
+  s.accept (v);
+  return out;
+}
