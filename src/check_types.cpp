@@ -18,6 +18,83 @@ namespace semantic
 
   namespace
   {
+    template <template <typename T> class S>
+    static void alpha (const Type::Type* type, value_t& out, const value_t& left, const value_t& right)
+    {
+      assert (left.present);
+      assert (right.present);
+      out.present = true;
+
+      struct visitor : public Type::DefaultVisitor {
+        value_t& out;
+        const value_t& left;
+        const value_t& right;
+
+        visitor (value_t& o, const value_t& l, const value_t& r) : out (o), left (l), right (r) { }
+
+        void default_action (const Type::Type& type) {
+          type_not_reached (type);
+        }
+
+        void visit (const Boolean& type) {
+          out.ref (type) = S<Boolean::ValueType> () (left.ref (type), right.ref (type));
+        }
+      };
+      visitor v (out, left, right);
+      type->Accept (v);
+    }
+
+    template <template <typename S> class T>
+    static void process_comparable (ast_binary_expr_t& node)
+    {
+      if (!(assignable (node.left ()->type, node.left ()->value, node.right ()->type) ||
+            assignable (node.right ()->type, node.right ()->value, node.left ()->type))) {
+        error_at_line (-1, 0, node.location.File.c_str (),
+                       node.location.Line,
+                       "%s and %s are not comparable (E19)",
+                       node.left ()->type->ToString ().c_str (),
+                       node.right ()->type->ToString ().c_str ());
+      }
+
+      if (!comparable (node.left ()->type)) {
+        error_at_line (-1, 0, node.location.File.c_str (),
+                       node.location.Line,
+                       "%s and %s are not comparable (E19)",
+                       node.left ()->type->ToString ().c_str (),
+                       node.right ()->type->ToString ().c_str ());
+      }
+
+      if (node.left ()->type->IsUntyped () &&
+          node.right ()->type->IsUntyped ()) {
+        assert (node.left ()->type == node.right ()->type);
+        assert (node.left ()->value.present);
+        assert (node.right ()->value.present);
+
+        node.type = node.left ()->type;
+        alpha<T> (node.type, node.value, node.left ()->value, node.right ()->value);
+        // Done.
+        return;
+      }
+
+      if (node.left ()->type->IsUntyped ()) {
+        // Convert to right.
+        unimplemented;
+      }
+
+      if (node.right ()->type->IsUntyped ()) {
+        // Convert to left.
+        unimplemented;
+      }
+
+      node.type = Bool::Instance ();
+
+      if (node.left ()->value.present &&
+          node.right ()->value.present ) {
+        // Do the comparison.
+        unimplemented;
+      }
+    }
+
     static void check_types_arguments (ast::Node* node, const Type::Signature* signature)
     {
       ast_list_expr_t* args = ast_cast<ast_list_expr_t> (node);
@@ -72,6 +149,10 @@ namespace semantic
             node.callable = node.expr ()->temp->instantiate (argument_types);
             node.expr ()->type = node.callable->type ();
           }
+        else {
+          node.callable = node.expr ()->callable;
+        }
+
 
         node.function_type = type_cast<Type::Function> (node.expr ()->type);
         node.method_type = type_cast<Type::Method> (node.expr ()->type);
@@ -144,6 +225,7 @@ namespace semantic
           void visit (const ::Function& symbol)
           {
             node.type = symbol.type ();
+            node.callable = &symbol;
           }
 
           void visit (const ParameterSymbol& symbol)
@@ -156,9 +238,10 @@ namespace semantic
             node.type = typed_value_t (symbol.type).type;
           }
 
-          void visit (const TypedConstantSymbol& symbol)
+          void visit (const ConstantSymbol& symbol)
           {
-            node.type = symbol.value.type;
+            node.type = symbol.type;
+            node.value = symbol.value;
           }
 
           void visit (const VariableSymbol& symbol)
@@ -177,6 +260,207 @@ namespace semantic
         node.symbol->accept (v);
       }
 
+      void visit (ast_unary_arithmetic_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        switch (node.arithmetic) {
+        case LogicNot:
+          {
+            if (!(is_bool (node.child ()->type) ||
+                  is_untyped_boolean (node.child ()->type))) {
+              error_at_line (-1, 0, node.location.File.c_str (),
+                             node.location.Line,
+                             "! cannot be applied to %s (E19)",
+                             node.child ()->type->ToString ().c_str ());
+
+            }
+            node.type = node.child ()->type;
+            if (node.child ()->value.present) {
+              if (is_bool (node.child ()->type)) {
+                node.value.ref (*Type::Bool::Instance ()) = !node.child ()->value.ref (*Type::Bool::Instance ());
+              } else {
+                node.value.ref (*Type::Boolean::Instance ()) = !node.child ()->value.ref (*Type::Boolean::Instance ());
+              }
+              node.value.present = true;
+            }
+          }
+          break;
+        case Negate:
+          unimplemented;
+        }
+      }
+
+      void visit (ast_binary_arithmetic_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        switch (node.arithmetic) {
+        case Multiply:
+          unimplemented;
+        case Divide:
+          unimplemented;
+        case Modulus:
+          unimplemented;
+        case LeftShift:
+          unimplemented;
+        case RightShift:
+          unimplemented;
+        case BitAnd:
+          unimplemented;
+        case BitAndNot:
+          unimplemented;
+        case Add:
+          unimplemented;
+        case Subtract:
+          unimplemented;
+        case BitOr:
+          unimplemented;
+        case BitXor:
+          unimplemented;
+        case Equal:
+          process_comparable<Equalizer> (node);
+          break;
+        case NotEqual:
+          process_comparable<NotEqualizer> (node);
+          break;
+        case LessThan:
+          unimplemented;
+        case LessEqual:
+          unimplemented;
+        case MoreThan:
+          unimplemented;
+        case MoreEqual:
+          unimplemented;
+        case LogicOr:
+          {
+            if (!(assignable (node.left ()->type, node.left ()->value, node.right ()->type) ||
+                  assignable (node.right ()->type, node.right ()->value, node.left ()->type))) {
+              error_at_line (-1, 0, node.location.File.c_str (),
+                             node.location.Line,
+                             "|| cannot be applied to %s and %s (E63)",
+                             node.left ()->type->ToString ().c_str (),
+                             node.right ()->type->ToString ().c_str ());
+            }
+
+            if (!(is_bool (node.left ()->type) ||
+                  is_untyped_boolean (node.left ()->type))) {
+              error_at_line (-1, 0, node.location.File.c_str (),
+                             node.location.Line,
+                             "|| cannot be applied to %s and %s (E65)",
+                             node.left ()->type->ToString ().c_str (),
+                             node.right ()->type->ToString ().c_str ());
+            }
+
+            if (node.left ()->type->IsUntyped () &&
+                node.right ()->type->IsUntyped ()) {
+              assert (node.left ()->type == node.right ()->type);
+              assert (node.left ()->value.present);
+              assert (node.right ()->value.present);
+
+              node.type = node.left ()->type;
+              node.value.present = true;
+              node.value.ref (*Boolean::Instance ()) =
+                node.left ()->value.ref (*Boolean::Instance ()) ||
+                node.right ()->value.ref (*Boolean::Instance ());
+              // Done.
+              break;
+            }
+
+            if (node.left ()->type->IsUntyped ()) {
+              // Convert to right.
+              unimplemented;
+            }
+
+            if (node.right ()->type->IsUntyped ()) {
+              // Convert to left.
+              unimplemented;
+            }
+
+            node.type = node.left ()->type;
+
+            if (node.left ()->value.present &&
+                node.left ()->value.ref (*Bool::Instance ())) {
+              node.value.present = true;
+              node.value.ref (*Bool::Instance ()) = true;
+              // Done.
+              break;
+            }
+
+            if (node.left ()->value.present &&
+                node.right ()->value.present) {
+              node.value.present = true;
+              node.value.ref (*Bool::Instance ()) = node.right ()->value.ref (*Bool::Instance ());
+              // Done.
+              break;
+            }
+          }
+          break;
+        case LogicAnd:
+          {
+            if (!(assignable (node.left ()->type, node.left ()->value, node.right ()->type) ||
+                  assignable (node.right ()->type, node.right ()->value, node.left ()->type))) {
+              error_at_line (-1, 0, node.location.File.c_str (),
+                             node.location.Line,
+                             "&& cannot be applied to %s and %s (E63)",
+                             node.left ()->type->ToString ().c_str (),
+                             node.right ()->type->ToString ().c_str ());
+            }
+
+            if (!(is_bool (node.left ()->type) ||
+                  is_untyped_boolean (node.left ()->type))) {
+              error_at_line (-1, 0, node.location.File.c_str (),
+                             node.location.Line,
+                             "&& cannot be applied to %s and %s (E65)",
+                             node.left ()->type->ToString ().c_str (),
+                             node.right ()->type->ToString ().c_str ());
+            }
+
+            if (node.left ()->type->IsUntyped () &&
+                node.right ()->type->IsUntyped ()) {
+              assert (node.left ()->type == node.right ()->type);
+              assert (node.left ()->value.present);
+              assert (node.right ()->value.present);
+
+              node.type = node.left ()->type;
+              node.value.present = true;
+              node.value.ref (*Boolean::Instance ()) =
+                node.left ()->value.ref (*Boolean::Instance ()) &&
+                node.right ()->value.ref (*Boolean::Instance ());
+              // Done.
+              break;
+            }
+
+            if (node.left ()->type->IsUntyped ()) {
+              // Convert to right.
+              unimplemented;
+            }
+
+            if (node.right ()->type->IsUntyped ()) {
+              // Convert to left.
+              unimplemented;
+            }
+
+            node.type = node.left ()->type;
+
+            if (node.left ()->value.present &&
+                !node.left ()->value.ref (*Bool::Instance ())) {
+              node.value.present = true;
+              node.value.ref (*Bool::Instance ()) = false;
+              // Done.
+              break;
+            }
+
+            if (node.left ()->value.present &&
+                node.right ()->value.present) {
+              node.value.present = true;
+              node.value.ref (*Bool::Instance ()) = node.right ()->value.ref (*Bool::Instance ());
+              // Done.
+              break;
+            }
+          }
+          break;
+        }
+      }
+
       void visit (SourceFile& node)
       {
         node.VisitChildren (*this);
@@ -189,23 +473,9 @@ namespace semantic
 
       void visit (ast_instance_t& node)
       {
-        // Lookup the initialization function.
-        InstanceSymbol* symbol = node.symbol;
-        const NamedType* type = symbol->type;
-        ast::Node* initializer_node = node.initializer ();
-        Initializer* initializer = type->GetInitializer (ast_get_identifier (initializer_node));
-        if (initializer == NULL)
-          {
-            error_at_line (-1, 0, initializer_node->location.File.c_str (),
-                           initializer_node->location.Line,
-                           "no initializer named %s (E56)",
-                           ast_get_identifier (initializer_node).c_str ());
-          }
-
         // Check the arguments.
         node.expression_list ()->Accept (*this);
-        check_types_arguments (node.expression_list (), initializer->initializerType->signature);
-        symbol->initializer = initializer;
+        check_types_arguments (node.expression_list (), node.symbol->initializer->initializerType->signature);
       }
 
       void visit (ast_initializer_t& node)
@@ -226,6 +496,40 @@ namespace semantic
       void visit (ast_expression_statement_t& node)
       {
         node.VisitChildren (*this);
+      }
+
+      void visit (ast_return_statement_t& node)
+      {
+        // Check the expression.
+        node.VisitChildren (*this);
+
+        // Get the return symbol.
+        node.return_symbol = SymbolCast<ParameterSymbol> (node.FindGlobalSymbol (ReturnSymbol));
+        assert (node.return_symbol != NULL);
+
+        if (!assignable (node.child ()->type, node.child ()->value, node.return_symbol->type))
+          {
+            error_at_line (-1, 0, node.location.File.c_str (),
+                           node.location.Line, "cannot convert %s to %s in return (E19)",
+                           node.child ()->type->ToString ().c_str (), node.return_symbol->type->ToString ().c_str ());
+          }
+      }
+
+      void visit (ast_if_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        const Type::Type* condition = node.condition ()->type;
+        if (!(is_bool (condition) || is_untyped_boolean (condition))) {
+          error_at_line (-1, 0, node.location.File.c_str (),
+                         node.location.Line,
+                         "condition is not boolean");
+        }
+
+        if (node.condition ()->value.present && is_untyped_boolean (condition)) {
+          node.condition ()->value.convert (node.condition ()->type, node.condition ()->type->DefaultType ());
+          node.condition ()->type = node.condition ()->type->DefaultType ();
+        }
+
       }
 
       void visit (ast_var_statement_t& node)
@@ -326,6 +630,7 @@ namespace semantic
       void visit (ast_assign_statement_t& node)
       {
         node.VisitChildren (*this);
+
         const Type::Type* left = node.left ()->type;
         const Type::Type*& right = node.right ()->type;
         value_t& val = node.right ()->value;
@@ -376,10 +681,66 @@ namespace semantic
           }
 
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "cannot select %s from expression of type %s (E20)",
+                       "cannot select %s from expression of type %s (E152)",
                        identifier.c_str (), base_type->ToString ().c_str ());
       }
 
+      void visit (ast_index_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        const Type::Type* base_type = node.base ()->type;
+        node.array_type = type_cast<Array> (base_type->UnderlyingType ());
+        if (node.array_type != NULL) {
+          const Type::Type* index_type = node.index ()->type;
+          if (!(is_integral (index_type) || is_untyped_numeric (index_type))) {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "array index is not an integer (E20)");
+          }
+
+          Node* index_node = node.index ();
+          value_t& index_value = index_node->value;
+
+          if (is_untyped_numeric (index_type)) {
+            // Convert to int.
+            if (!index_value.representable (index_type, &NamedInt)) {
+              error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
+                             "array index is not an integer (E108)");
+            }
+
+            index_value.convert (index_type, &NamedInt);
+            index_node->type = &NamedInt;
+            index_type = &NamedInt;
+          }
+
+          if (index_value.present) {
+            // Convert to int.
+            if (!index_value.representable (index_type, &NamedInt)) {
+              error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
+                             "array index is not an integer (E153)");
+            }
+
+            index_value.convert (index_type, &NamedInt);
+            index_node->type = &NamedInt;
+            index_type = &NamedInt;
+
+            Int::ValueType x = index_value.ref (*Int::Instance ());
+            if (x < 0) {
+              error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
+                             "array index is negative (E154)");
+            }
+
+            if (x >= node.array_type->dimension) {
+              error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
+                             "array index is out of range (E155)");
+            }
+          }
+
+          node.type = node.array_type->Base ();
+          return;
+        }
+
+        not_reached;
+      }
     };
   }
 

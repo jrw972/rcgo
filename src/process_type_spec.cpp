@@ -8,13 +8,40 @@
 using namespace Type;
 using namespace ast;
 
-typed_value_t
-process_array_dimension (ast::Node*& ptr)
+static void
+process_constant_expression (ast::Node* node)
 {
-  unimplemented;
-  // typed_value_t tv = CheckAndImplicitlyDereferenceAndConvertToDefault (ptr);
-  // tv.ArrayDimension (ptr->location);
-  // return tv;
+  struct visitor : public ast::DefaultVisitor {
+    void default_action (Node& node) {
+      ast_not_reached (node);
+    }
+
+    void visit (ast_literal_expr_t& node) {
+      // Do nothing.
+    }
+  };
+  visitor v;
+  node->Accept (v);
+}
+
+Type::Int::ValueType
+process_array_dimension (ast::Node* node)
+{
+  process_constant_expression (node);
+  // Convert to an int.
+  if (!node->value.representable (node->type, &NamedInt)) {
+    error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+                   "array dimension is not an integer (E108)");
+  }
+
+  node->value.convert (node->type, &NamedInt);
+  node->type = &NamedInt;
+  Type::Int::ValueType dim = node->value.ref (*Type::Int::Instance ());
+  if (dim < 0) {
+    error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+                   "array dimension is negative (E108)");
+  }
+  return dim;
 }
 
 void
@@ -46,9 +73,9 @@ process_type (Node* node, bool force)
 
     void visit (ast_array_type_spec_t& node)
     {
-      typed_value_t dimension = process_array_dimension (node.dimension_ref ());
+      Type::Int::ValueType dimension = process_array_dimension (node.dimension_ref ());
       const Type::Type* base_type = process_type (node.base_type (), true);
-      type = base_type->GetArray (dimension.integral_value ());
+      type = base_type->GetArray (dimension);
     }
 
     void visit (ast_slice_type_spec_t& node)
@@ -80,7 +107,7 @@ process_type (Node* node, bool force)
       //                        "%s is already defined in this scope (E108)", id.c_str ());
       //       }
 
-      //     node.GetParent ()->GetParent ()->EnterSymbol (new TypedConstantSymbol (id,
+      //     node.GetParent ()->GetParent ()->EnterSymbol (new ConstantSymbol (id,
       //                                                                            *pos,
       //                                                                            typed_value_t (named_type, e)));
       //   }

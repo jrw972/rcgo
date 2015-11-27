@@ -9,6 +9,7 @@ namespace semantic
 {
 
   using namespace ast;
+  using namespace Type;
 
   namespace
   {
@@ -102,7 +103,7 @@ namespace semantic
 
           void visit (const ::Function& symbol)
           {
-            unimplemented;
+            node.expression_kind = kValue;
           }
 
           void visit (const ParameterSymbol& symbol)
@@ -115,9 +116,9 @@ namespace semantic
             unimplemented;
           }
 
-          void visit (const TypedConstantSymbol& symbol)
+          void visit (const ConstantSymbol& symbol)
           {
-            unimplemented;
+            node.expression_kind = kValue;
           }
 
           void visit (const VariableSymbol& symbol)
@@ -171,6 +172,18 @@ namespace semantic
         require_value_or_variable (node.child ());
       }
 
+      void visit (ast_return_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        require_value_or_variable (node.child ());
+      }
+
+      void visit (ast_if_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        require_value_or_variable (node.condition ());
+      }
+
       void visit (ast_var_statement_t& node)
       {
         node.expression_list ()->Accept (*this);
@@ -214,8 +227,35 @@ namespace semantic
             node.expression_kind = node.base ()->expression_kind;
           }
       }
-    };
 
+      void visit (ast_index_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        require_value_or_variable (node.base ());
+        require_value_or_variable (node.index ());
+
+        if (node.array_type != NULL) {
+          node.expression_kind = node.base ()->expression_kind;
+          return;
+        }
+        not_reached;
+      }
+
+      void visit (ast_unary_arithmetic_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        require_value_or_variable (node.child ());
+        node.expression_kind = kValue;
+      }
+
+      void visit (ast_binary_arithmetic_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        require_value_or_variable (node.left ());
+        require_value_or_variable (node.left ());
+        node.expression_kind = kValue;
+      }
+    };
   }
 
   void check_references (ast::Node* root)

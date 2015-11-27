@@ -18,18 +18,18 @@ func test (num uint; desc string; status bool) {
 init (this *Test) Main () {
   println (`1..38`);
 
-  test (1, `literal false!: `, !false == true);
-  test (2, `literal true!: `, !true == false);
+  test (1, `literal !false`, !false == true);
+  test (2, `literal !true`, !true == false);
 
-  test (3, `literal false || false: `, (false || false) == false);
-  test (4, `literal false || true: `, (false || true) == true);
-  test (5, `literal true || false: `, (true || false) == true);
-  test (6, `literal true || true: `, (true || true) == true);
+  test (3, `literal false || false`, (false || false) == false);
+  test (4, `literal false || true`, (false || true) == true);
+  test (5, `literal true || false`, (true || false) == true);
+  test (6, `literal true || true`, (true || true) == true);
 
-  test (7, `literal false && false: `, (false && false) == false);
-  test (8, `literal false && true: `, (false && true) == false);
-  test (9, `literal true && false: `, (true && false) == false);
-  test (10, `literal true && true: `, (true && true) == true);
+  test (7, `literal false && false`, (false && false) == false);
+  test (8, `literal false && true`, (false && true) == false);
+  test (9, `literal true && false`, (true && false) == false);
+  test (10, `literal true && true`, (true && true) == true);
 
   test (11, `literal false == false`, (false == false) == true);
   test (12, `literal false == true`, (false == true) == false);
@@ -45,18 +45,18 @@ init (this *Test) Main () {
   f = false;
   t = true;
 
-  test (19, `false!: `, !f == true);
-  test (20, `true!: `, !t == false);
+  test (19, `!false `, !f == true);
+  test (20, `!true `, !t == false);
 
-  test (21, `false || false: `, (f || f) == false);
-  test (22, `false || true: `, (f || t) == true);
-  test (23, `true || false: `, (t || f) == true);
-  test (24, `true || true: `, (t || t) == true);
+  test (21, `false || false`, (f || f) == false);
+  test (22, `false || true`, (f || t) == true);
+  test (23, `true || false`, (t || f) == true);
+  test (24, `true || true`, (t || t) == true);
 
-  test (25, `false && false: `, (f && f) == false);
-  test (26, `false && true: `, (f && t) == false);
-  test (27, `true && false: `, (t && f) == false);
-  test (28, `true && true: `, (t && t) == true);
+  test (25, `false && false`, (f && f) == false);
+  test (26, `false && true`, (f && t) == false);
+  test (27, `true && false`, (t && f) == false);
+  test (28, `true && true`, (t && t) == true);
 
   test (29, `literal false == false`, (f == f) == true);
   test (30, `literal false == true`, (f == t) == false);

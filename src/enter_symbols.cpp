@@ -7,27 +7,6 @@
 #include "runtime.hpp"
 using namespace ast;
 
-template <typename T>
-static T*
-enter_undefined_symbol (T* s,
-                        Node& a)
-{
-  ast::Node* symtab = a.GetParent ();
-  const std::string& identifier = s->identifier;
-  Symbol *symbol = symtab->FindLocalSymbol (identifier);
-  if (symbol == NULL)
-    {
-      symtab->EnterSymbol (s);
-    }
-  else
-    {
-      error_at_line (-1, 0, s->definingNode->location.File.c_str (),
-                     s->definingNode->location.Line,
-                     "%s is already defined in this scope (E73)", identifier.c_str ());
-    }
-  return s;
-}
-
 void
 enter_symbols (Node * node)
 {
@@ -77,38 +56,18 @@ enter_symbols (Node * node)
   node->EnterSymbol (new Sendto (node));
 
   /* Insert zero constant. */
-  node->EnterSymbol (new TypedConstantSymbol ("nil",
-                     node,
-                     typed_value_t::nil ()));
+  node->EnterSymbol (new ConstantSymbol ("nil",
+                                         node,
+                                         Type::Nil::Instance (),
+                                         value_t ()));
 
   /* Insert untyped boolean constants. */
-  node->EnterSymbol (new TypedConstantSymbol ("true",
-                     node,
-                     typed_value_t (Type::Boolean::Instance (), true)));
-  node->EnterSymbol (new TypedConstantSymbol ("false",
-                     node,
-                     typed_value_t (Type::Boolean::Instance (), false)));
-
-  struct visitor : public DefaultVisitor
-  {
-    void default_action (Node& node)
-    {
-      for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
-           pos != limit;
-           ++pos)
-        {
-          (*pos)->Accept (*this);
-        }
-    }
-
-    void visit (ast_instance_t& node)
-    {
-      node.symbol =
-        enter_undefined_symbol (new InstanceSymbol (ast_get_identifier (node.identifier ()), node.identifier ()),
-                                node);
-    }
-  };
-
-  visitor v;
-  node->Accept (v);
+  node->EnterSymbol (new ConstantSymbol ("true",
+                                         node,
+                                         Type::Boolean::Instance (),
+                                         value_t (Type::Boolean::Instance (), true)));
+  node->EnterSymbol (new ConstantSymbol ("false",
+                                         node,
+                                         Type::Boolean::Instance (),
+                                         value_t (Type::Boolean::Instance (), false)));
 }

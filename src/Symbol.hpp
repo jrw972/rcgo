@@ -47,17 +47,17 @@ private:
 
 struct InstanceSymbol : public Symbol
 {
-  InstanceSymbol (const std::string& id, ast::Node* dn)
+  InstanceSymbol (const std::string& id, ast::Node* dn, const Type::NamedType* t, Initializer* init)
     : Symbol (id, dn)
-    , type (NULL)
-    , initializer (NULL)
+    , type (t)
+    , initializer (init)
     , instance (NULL)
   { }
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
 
-  const Type::NamedType *type;
-  Initializer* initializer;
+  const Type::NamedType* const type;
+  Initializer* const initializer;
   Composition::Instance* instance;
 };
 
@@ -77,7 +77,7 @@ struct ParameterSymbol : public Symbol
     : Symbol (id, dn)
     , type (t)
     , intrinsic_mutability (im)
-    , dereference_mutability (dm)
+    , dereference_mutability (is_string (t) ? std::max (dm, IMMUTABLE) : dm)
     , kind (k)
     , original_ (NULL)
   { }
@@ -180,16 +180,17 @@ struct TypeSymbol : public Symbol
   Type::NamedType* const type;
 };
 
-struct TypedConstantSymbol : public Symbol
+struct ConstantSymbol : public Symbol
 {
-  TypedConstantSymbol (const std::string& id, ast::Node* dn, const typed_value_t& v)
+  ConstantSymbol (const std::string& id, ast::Node* dn, const Type::Type* t, const value_t& v)
     : Symbol (id, dn)
-    , value (typed_value_t::make_ref (v))
+    , type (t)
+    , value (v)
   { }
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-
-  typed_value_t const value;
+  const Type::Type* const type;
+  value_t const value;
 };
 
 struct VariableSymbol : public Symbol
@@ -198,7 +199,7 @@ struct VariableSymbol : public Symbol
     : Symbol (id, dn)
     , type (t)
     , intrinsic_mutability (im)
-    , dereference_mutability (dm)
+    , dereference_mutability (is_string (t) ? std::max (dm, IMMUTABLE) : dm)
     , original_ (NULL)
   { }
 

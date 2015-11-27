@@ -49,20 +49,19 @@ struct Function : public Callable, public Symbol
 
   virtual size_t return_size () const
   {
-    unimplemented;
+    return functionType_->GetReturnType ()->Size ();
   }
   virtual size_t arguments_size () const
   {
-    unimplemented;
+    return functionType_->GetSignature ()->Size ();
   }
   virtual size_t locals_size () const
   {
-    unimplemented;
+    return memoryModel.LocalsSize ();
   }
 
 private:
   const Type::Function* functionType_;
-  size_t returnSize_;
 };
 
 struct Method : public Callable

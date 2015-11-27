@@ -2534,12 +2534,22 @@ namespace runtime
       type_not_reached (type);
     }
 
-    void visit (const StringU& type)
+    void visit (const Bool& type)
+    {
+      op = make_literal (value.ref (type));
+    }
+
+    void visit (const Uint& type)
     {
       op = make_literal (value.ref (type));
     }
 
     void visit (const Int& type)
+    {
+      op = make_literal (value.ref (type));
+    }
+
+    void visit (const StringU& type)
     {
       op = make_literal (value.ref (type));
     }
@@ -2610,20 +2620,22 @@ namespace runtime
   void
   Clear::execute (executor_base_t& exec) const
   {
-    unimplemented;
+    exec.stack ().clear (offset, size);
   }
 
   void
   Assign::execute (executor_base_t& exec) const
   {
-    unimplemented;
+    left->execute (exec);
+    void* ptr = exec.stack ().pop_pointer ();
+    right->execute (exec);
+    exec.stack ().store (ptr, size);
   }
-
 
   void
   Reference::execute (executor_base_t& exec) const
   {
-    unimplemented;
+    exec.stack ().push_address (offset);
   }
 
   void
@@ -2632,6 +2644,30 @@ namespace runtime
     unimplemented;
   }
 
+  void
+  Index::execute (executor_base_t& exec) const
+  {
+    unimplemented;
+  }
+
+  void
+  ReturnJ::execute (executor_base_t& exec) const
+  {
+    unimplemented;
+  }
+
+  void
+  If::execute (executor_base_t& exec) const
+  {
+    condition->execute (exec);
+    Bool::ValueType c;
+    exec.stack ().pop (c);
+    if (c) {
+      true_branch->execute (exec);
+    } else {
+      false_branch->execute (exec);
+    }
+  }
 }
 
 // void

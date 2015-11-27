@@ -61,7 +61,7 @@ allocate_symbol (MemoryModel& memory_model,
         }
     }
 
-    void visit (TypedConstantSymbol& symbol)
+    void visit (ConstantSymbol& symbol)
     {
       // No need to allocate.
     }

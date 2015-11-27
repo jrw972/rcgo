@@ -31,26 +31,31 @@ namespace semantic
         type->UnderlyingType (process_type (node.type_spec (), true));
       }
 
-      // void visit (ast::Type& node)
-      // {
-      //   TypeSymbol* symbol = node.symbol;
-      //   if (symbol->defined ())
-      //     return;
-      //   if (symbol->inProgress)
-      //     {
-      //       error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-      //                      "%s is defined recursively (E65)", symbol->identifier.c_str ());
-      //     }
-      //   symbol->inProgress = true;
-      //   NamedType* type = SymbolCast<TypeSymbol> (symbol)->type;
-      //   type->UnderlyingType (process_type_spec (node.type_spec (), true, false, type));
-      //   symbol->inProgress = false;
-      // }
-
       void visit (ast_function_t& node)
       {
         // Do nothing.
       }
+
+      void visit (ast_initializer_t& node)
+      {
+        // Do nothing.
+      }
+
+      void visit (ast_reaction_t& node)
+      {
+        // Do nothing.
+      }
+
+      void visit (ast_getter_t& node)
+      {
+        // Do nothing.
+      }
+
+      void visit (ast_instance_t& node)
+      {
+        // Do nothing.
+      }
+
     };
   }
 

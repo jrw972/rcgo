@@ -75,14 +75,15 @@ CheckExpectReference (ast::Node* expr)
 static void
 check_condition (ast::Node* condition_node)
 {
-  TypeCheckExpression (condition_node);
-  const Type::Type* type = condition_node->type;
-  if (!type_is_boolean (type))
-    {
-      error_at_line (-1, 0, condition_node->location.File.c_str (),
-                     condition_node->location.Line,
-                     "cannot convert (%s) to boolean expression in condition (E37)", type->ToString ().c_str ());
-    }
+  unimplemented;
+  // TypeCheckExpression (condition_node);
+  // const Type::Type* type = condition_node->type;
+  // if (!type_is_boolean (type))
+  //   {
+  //     error_at_line (-1, 0, condition_node->location.File.c_str (),
+  //                    condition_node->location.Line,
+  //                    "cannot convert (%s) to boolean expression in condition (E37)", type->ToString ().c_str ());
+  //   }
 }
 
 static void
@@ -312,18 +313,6 @@ type_check_statement (Node * node)
       // type_check_statement (node.body ());
     }
 
-    void visit (ast_expression_statement_t& node)
-    {
-      TypeCheckExpression (node.child ());
-    }
-
-    void visit (ast_if_statement_t& node)
-    {
-      check_condition (node.condition_ref ());
-      type_check_statement (node.true_branch ());
-      type_check_statement (node.false_branch ());
-    }
-
     void visit (ast_while_statement_t& node)
     {
       check_condition (node.condition_ref ());
@@ -348,29 +337,6 @@ type_check_statement (Node * node)
         {
           type_check_statement (*pos);
         }
-    }
-
-    void visit (ast_return_statement_t& node)
-    {
-      // Get the return symbol.
-      node.return_symbol = SymbolCast<ParameterSymbol> (node.FindGlobalSymbol (ReturnSymbol));
-      assert (node.return_symbol != NULL);
-
-      // Check the expression.
-      TypeCheckExpression (node.child ());
-      unimplemented;
-      // if (!assignable (node.child ()->type, node.return_symbol->type))
-      //   {
-      //     unimplemented;
-      //   }
-
-      unimplemented;
-      // typed_value_t expr_tv = CheckAndImplicitlyDereferenceAndConvert (node.child_ref (), node.return_symbol->value.type);
-
-      // // Check that it matches with the return type.
-      // check_assignment (node.return_symbol->value, expr_tv, node,
-      //                   "cannot convert to (%s) from (%s) in return (E124)",
-      //                   "return leaks mutable pointers (E125)");
     }
 
     void visit (ast_increment_statement_t& node)
@@ -416,18 +382,19 @@ type_check_statement (Node * node)
 
     void visit (ast_activate_statement_t& node)
     {
-      Node *expression_list_node = node.expr_list ();
-      Node *body_node = node.body ();
+      unimplemented;
+      // Node *expression_list_node = node.expr_list ();
+      // Node *body_node = node.body ();
 
-      /* Check the activations. */
-      TypeCheckExpression (expression_list_node);
+      // /* Check the activations. */
+      // TypeCheckExpression (expression_list_node);
 
-      /* Re-insert this as a pointer to mutable. */
-      node.Activate ();
+      // /* Re-insert this as a pointer to mutable. */
+      // node.Activate ();
 
-      /* Check the body. */
-      type_check_statement (body_node);
-      node.mutable_phase_access = ComputeReceiverAccess (body_node);
+      // /* Check the body. */
+      // type_check_statement (body_node);
+      // node.mutable_phase_access = ComputeReceiverAccess (body_node);
     }
 
     void visit (ast_var_statement_t& node)

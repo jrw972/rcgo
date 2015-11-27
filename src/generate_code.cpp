@@ -5,11 +5,13 @@
 #include "Callable.hpp"
 #include "SymbolVisitor.hpp"
 #include "field.hpp"
+#include "semantic.hpp"
 
 namespace  code
 {
   using namespace ast;
   using namespace runtime;
+  using namespace Type;
 
   struct CodeGenVisitor : public ast::DefaultVisitor
   {
@@ -69,6 +71,30 @@ namespace  code
       node.operation = node.child ()->operation;
     }
 
+    void visit (ast_return_statement_t& node)
+    {
+      node.VisitChildren (*this);
+      node.operation = new ReturnJ (node.child ()->operation);
+    }
+
+    void visit (ast_if_statement_t& node)
+    {
+      node.VisitChildren (*this);
+      if (node.condition ()->value.present) {
+        if (node.condition ()->value.ref (*Bool::Instance ())) {
+          node.operation = node.true_branch ()->operation;
+        } else {
+          node.operation = node.false_branch ()->operation;
+        }
+      } else {
+        Operation* c = node.condition ()->operation;
+        if (node.condition ()->expression_kind == kVariable) {
+          c = new Load (c, node.condition ()->type);
+        }
+        node.operation = new If (c, node.true_branch ()->operation, node.false_branch ()->operation);
+      }
+    }
+
     void visit (ast_var_statement_t& node)
     {
       ListOperation* op = new ListOperation ();
@@ -100,7 +126,7 @@ namespace  code
         {
           right = new Load (right, node.right ()->type);
         }
-      node.operation = new Assign (left, right);
+      node.operation = new Assign (left, right, node.left ()->type->Size ());
     }
 
     void visit (ast_call_expr_t& node)
@@ -125,7 +151,11 @@ namespace  code
            pos != limit;
            ++pos)
         {
-          op->list.push_back ((*pos)->operation);
+          if ((*pos)->expression_kind == kVariable) {
+            op->list.push_back (new Load ((*pos)->operation, (*pos)->type));
+          } else {
+            op->list.push_back ((*pos)->operation);
+          }
         }
       node.operation = op;
     }
@@ -139,11 +169,22 @@ namespace  code
     {
       struct Visitor : public ConstSymbolVisitor
       {
+        ast_identifier_expr_t& node;
         Operation* op;
-        Visitor () : op (NULL) { }
+        Visitor (ast_identifier_expr_t& n) : node (n), op (NULL) { }
         void defaultAction (const Symbol& s)
         {
           symbol_not_reached (s);
+        }
+
+        void visit (const ConstantSymbol& s)
+        {
+          op = make_literal (node.type, node.value);
+        }
+
+        void visit (const ParameterSymbol& s)
+        {
+          op = new Reference (s.offset ());
         }
 
         void visit (const VariableSymbol& s)
@@ -151,7 +192,7 @@ namespace  code
           op = new Reference (s.offset ());
         }
       };
-      Visitor v;
+      Visitor v (node);
       node.symbol->accept (v);
       node.operation = v.op;
     }
@@ -205,6 +246,114 @@ namespace  code
         {
           unimplemented;
         }
+    }
+
+    void visit (ast_index_expr_t& node)
+    {
+      node.VisitChildren (*this);
+      if (node.array_type != NULL) {
+
+        Operation* index_op = node.index ()->operation;
+        if (node.index ()->expression_kind == kVariable) {
+          index_op = new Load (index_op, node.index ()->type);
+        }
+
+        index_op = MakeConvertToInt (index_op, node.index ()->type);
+
+        if (node.base ()->expression_kind == kVariable) {
+          node.operation = new Index (node.base ()->operation, index_op);
+        } else {
+          unimplemented;
+        }
+
+        return;
+      }
+
+      not_reached;
+    }
+
+
+    void visit (ast_unary_arithmetic_expr_t& node)
+    {
+      if (node.value.present) {
+        unimplemented;
+      } else {
+        node.VisitChildren (*this);
+        Operation* c = node.child ()->operation;
+        if (node.child ()->expression_kind == kVariable) {
+          c = new Load (c, node.child ()->type);
+        }
+        switch (node.arithmetic) {
+        case LogicNot:
+          node.operation = make_unary<LogicNotter> (node.type, c);
+          break;
+        case Negate:
+          node.operation = make_unary<Negater> (node.type, c);
+          break;
+        }
+      }
+    }
+
+    void visit (ast_binary_arithmetic_expr_t& node)
+    {
+      if (node.value.present) {
+        node.operation = make_literal (node.type, node.value);
+      } else {
+        node.VisitChildren (*this);
+        Operation* left = node.left ()->operation;
+        if (node.left ()->expression_kind == kVariable) {
+          left = new Load (left, node.left ()->type);
+        }
+        Operation* right = node.right ()->operation;
+        if (node.right ()->expression_kind == kVariable) {
+          right = new Load (right, node.right ()->type);
+        }
+
+        switch (node.arithmetic) {
+        case Multiply:
+          unimplemented;
+        case Divide:
+          unimplemented;
+        case Modulus:
+          unimplemented;
+        case LeftShift:
+          unimplemented;
+        case RightShift:
+          unimplemented;
+        case BitAnd:
+          unimplemented;
+        case BitAndNot:
+          unimplemented;
+        case Add:
+          unimplemented;
+        case Subtract:
+          unimplemented;
+        case BitOr:
+          unimplemented;
+        case BitXor:
+          unimplemented;
+        case Equal:
+          node.operation = make_binary<Equalizer> (node.type, left, right);
+          break;
+        case NotEqual:
+          node.operation = make_binary<NotEqualizer> (node.type, left, right);
+          break;
+        case LessThan:
+          unimplemented;
+        case LessEqual:
+          unimplemented;
+        case MoreThan:
+          unimplemented;
+        case MoreEqual:
+          unimplemented;
+        case ::LogicOr:
+          node.operation = new runtime::LogicOr (left, right);
+          break;
+        case ::LogicAnd:
+          node.operation = new runtime::LogicAnd (left, right);
+          break;
+        }
+      }
     }
   };
 

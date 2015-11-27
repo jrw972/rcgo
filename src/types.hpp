@@ -61,7 +61,7 @@ class MemoryModel;
 class Template;
 class ParameterSymbol;
 class InstanceSymbol;
-class TypedConstantSymbol;
+class ConstantSymbol;
 class TypeSymbol;
 class bind_t;
 class Callable;

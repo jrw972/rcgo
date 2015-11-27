@@ -107,7 +107,7 @@ Const:
 | CONST IdentifierList          '=' ExpressionList ';'
   { $$ = new ast_const_t (@1, $2, new ast_empty_type_spec_t (@1), $4); }
 
-Instance: INSTANCE IDENTIFIER IDENTIFIER IDENTIFIER '(' OptionalExpressionList ')' ';' { $$ = new ast_instance_t (@1, $2, $3, $4, $6); }
+Instance: INSTANCE IDENTIFIER TypeName IDENTIFIER '(' OptionalExpressionList ')' ';' { $$ = new ast_instance_t (@1, $2, $3, $4, $6); }
 
 TypeDecl: TYPE IDENTIFIER Type ';' { $$ = new ast::Type (@1, $2, $3); }
 

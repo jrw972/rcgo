@@ -33,7 +33,7 @@ struct SymbolVisitor
   {
     defaultAction (s);
   }
-  virtual void visit (TypedConstantSymbol& s)
+  virtual void visit (ConstantSymbol& s)
   {
     defaultAction (s);
   }
@@ -75,7 +75,7 @@ struct ConstSymbolVisitor
   {
     defaultAction (s);
   }
-  virtual void visit (const TypedConstantSymbol& s)
+  virtual void visit (const ConstantSymbol& s)
   {
     defaultAction (s);
   }

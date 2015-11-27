@@ -334,16 +334,6 @@ struct check_visitor : public ast::DefaultVisitor
     ast_not_reached(node);
   }
 
-  void visit (ast_list_expr_t& node)
-  {
-    for (Node::Iterator pos = node.Begin (), limit = node.End ();
-         pos != limit;
-         ++pos)
-      {
-        TypeCheckExpression (*pos);
-      }
-  }
-
   void visit (TypeExpression& node)
   {
     unimplemented;
@@ -441,7 +431,7 @@ struct check_visitor : public ast::DefaultVisitor
     //     node.typed_value = typed_value_t (symbol.type);
     //   }
 
-    //   void visit (const TypedConstantSymbol& symbol)
+    //   void visit (const ConstantSymbol& symbol)
     //   {
     //     node.typed_value = symbol.value;
     //   }
@@ -1049,9 +1039,3 @@ struct check_visitor : public ast::DefaultVisitor
 //     node.typed_value = result;
 //   }
 };
-
-void
-TypeCheckExpression (ast::Node* node)
-{
-  unimplemented;
-}

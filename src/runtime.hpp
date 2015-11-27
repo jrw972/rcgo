@@ -191,61 +191,61 @@ namespace runtime
     const Operation* const right;
   };
 
-  template <typename O, typename T>
-  struct Binary : public Operation
-  {
-    Binary (const Location& loc, const Operation* l, const Operation* r) : location (loc), left (l), right (r) { }
-    virtual void execute (executor_base_t& exec) const
-    {
-      left->execute (exec);
-      typename T::ValueType left;
-      exec.stack ().pop (left);
-      right->execute (exec);
-      typename T::ValueType right;
-      exec.stack ().pop (right);
-      exec.stack ().push (O () (location, left, right));
-    }
+  // template <typename O, typename T>
+  // struct Binary : public Operation
+  // {
+  //   Binary (const Location& loc, const Operation* l, const Operation* r) : location (loc), left (l), right (r) { }
+  //   virtual void execute (executor_base_t& exec) const
+  //   {
+  //     left->execute (exec);
+  //     typename T::ValueType left;
+  //     exec.stack ().pop (left);
+  //     right->execute (exec);
+  //     typename T::ValueType right;
+  //     exec.stack ().pop (right);
+  //     exec.stack ().push (O () (location, left, right));
+  //   }
 
-    Location const location;
-    const Operation* const left;
-    const Operation* const right;
-  };
+  //   Location const location;
+  //   const Operation* const left;
+  //   const Operation* const right;
+  // };
 
-  template <typename O>
-  struct BinaryGenerator
-  {
-    const Location& location;
-    const Operation* left;
-    const Operation* right;
+  // template <typename O>
+  // struct BinaryGenerator
+  // {
+  //   const Location& location;
+  //   const Operation* left;
+  //   const Operation* right;
 
-    BinaryGenerator (const Location& loc, const Operation* l, const Operation* r) : location (loc), left (l), right (r) { }
-    Operation* operation;
+  //   BinaryGenerator (const Location& loc, const Operation* l, const Operation* r) : location (loc), left (l), right (r) { }
+  //   Operation* operation;
 
-    template <typename T>
-    void operator() (const T& type)
-    {
-      operation = new Binary<O, T> (location, left, right);
-    }
+  //   template <typename T>
+  //   void operator() (const T& type)
+  //   {
+  //     operation = new Binary<O, T> (location, left, right);
+  //   }
 
-    void NotArithmetic (const Type::Type& type)
-    {
-      type_not_reached (type);
-    }
+  //   void NotArithmetic (const Type::Type& type)
+  //   {
+  //     type_not_reached (type);
+  //   }
 
-    void NotIntegral (const Type::Type& t)
-    {
-      type_not_reached (t);
-    }
-  };
+  //   void NotIntegral (const Type::Type& t)
+  //   {
+  //     type_not_reached (t);
+  //   }
+  // };
 
-  template <template <typename S> class Visitor, typename T>
-  Operation* make_binary (const Type::Type* type, const Location& location, const Operation* left, const Operation* right)
-  {
-    BinaryGenerator<T> g (location, left, right);
-    Visitor<BinaryGenerator<T> > visitor (g);
-    type->Accept (visitor);
-    return g.operation;
-  }
+  // template <template <typename S> class Visitor, typename T>
+  // Operation* make_binary (const Type::Type* type, const Location& location, const Operation* left, const Operation* right)
+  // {
+  //   BinaryGenerator<T> g (location, left, right);
+  //   Visitor<BinaryGenerator<T> > visitor (g);
+  //   type->Accept (visitor);
+  //   return g.operation;
+  // }
 
   struct ListOperation : public Operation
   {
@@ -256,10 +256,10 @@ namespace runtime
 
   struct CallableOperation : public Operation
   {
-    CallableOperation (Callable* c, Operation* o) : callable (c), arguments (o) { }
+    CallableOperation (const Callable* c, Operation* o) : callable (c), arguments (o) { }
     virtual void execute (executor_base_t& exec) const;
-    Callable* callable;
-    Operation* arguments;
+    const Callable* const callable;
+    Operation* const arguments;
   };
 
   struct Instance : public Operation
@@ -287,10 +287,11 @@ namespace runtime
 
   struct Assign : public Operation
   {
-    Assign (Operation* l, Operation* r) : left (l), right (r) { }
+    Assign (Operation* l, Operation* r, size_t s) : left (l), right (r), size (s) { }
     virtual void execute (executor_base_t& exec) const;
     Operation* const left;
     Operation* const right;
+    size_t const size;
   };
 
   struct Reference : public Operation
@@ -307,6 +308,105 @@ namespace runtime
     Operation* const base;
     ptrdiff_t const offset;
   };
+
+  struct Index : public Operation
+  {
+    Index (Operation* b, Operation* i) : base (b), index (i) { }
+    virtual void execute (executor_base_t& exec) const;
+    Operation* const base;
+    Operation* const index;
+  };
+
+  struct ReturnJ : public Operation
+  {
+    ReturnJ (Operation* c) : child (c) { }
+    virtual void execute (executor_base_t& exec) const;
+    Operation* const child;
+  };
+
+  struct If : public Operation
+  {
+    If (Operation* c, Operation* t, Operation* f) : condition (c), true_branch (t), false_branch (f) { }
+    virtual void execute (executor_base_t& exec) const;
+    Operation* const condition;
+    Operation* const true_branch;
+    Operation* const false_branch;
+  };
+
+  template <typename T>
+  struct Unary : public Operation {
+    Unary (Operation* c) : child (c) { }
+    virtual void execute (executor_base_t& exec) const
+    {
+      typename T::ValueType x;
+      child->execute (exec);
+      exec.stack ().pop (x);
+      exec.stack ().push (T () (x));
+    }
+    Operation* const child;
+  };
+
+  template <template <typename S> class T>
+  Operation* make_unary (const Type::Type* type, Operation* child)
+  {
+    struct visitor : public Type::DefaultVisitor {
+      Operation* child;
+      Operation* operation;
+
+      visitor (Operation* c) : child (c), operation (NULL) { }
+
+      void default_action (const Type::Type& type) {
+        type_not_reached (type);
+      }
+
+      void visit (const Type::Bool& type) {
+        operation = new Unary<T<Type::Bool::ValueType> > (child);
+      }
+    };
+    visitor v (child);
+    type->UnderlyingType ()->Accept (v);
+    return v.operation;
+  }
+
+  template <typename T>
+  struct Binary : public Operation {
+    Binary (Operation* l, Operation* r) : left (l), right (r) { }
+    virtual void execute (executor_base_t& exec) const
+    {
+      typename T::ValueType x;
+      typename T::ValueType y;
+      left->execute (exec);
+      exec.stack ().pop (x);
+      right->execute (exec);
+      exec.stack ().pop (y);
+      exec.stack ().push (T () (x, y));
+    }
+    Operation* const left;
+    Operation* const right;
+  };
+
+  template <template <typename S> class T>
+  Operation* make_binary (const Type::Type* type, Operation* left, Operation* right)
+  {
+    struct visitor : public Type::DefaultVisitor {
+      Operation* left;
+      Operation* right;
+      Operation* operation;
+
+      visitor (Operation* l, Operation* r) : left (l), right (r), operation (NULL) { }
+
+      void default_action (const Type::Type& type) {
+        type_not_reached (type);
+      }
+
+      void visit (const Type::Bool& type) {
+        operation = new Binary<T<Type::Bool::ValueType> > (left, right);
+      }
+    };
+    visitor v (left, right);
+    type->UnderlyingType ()->Accept (v);
+    return v.operation;
+  }
 
 }
 

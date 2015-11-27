@@ -69,6 +69,16 @@ namespace semantic
         node.VisitChildren (*this);
       }
 
+      void visit (ast_return_statement_t& node)
+      {
+        node.VisitChildren (*this);
+      }
+
+      void visit (ast_if_statement_t& node)
+      {
+        node.VisitChildren (*this);
+      }
+
       void visit (ast_var_statement_t& node)
       {
         node.expression_list ()->Accept (*this);
@@ -191,6 +201,21 @@ namespace semantic
       void visit (ast_select_expr_t& node)
       {
         node.base ()->Accept (*this);
+      }
+
+      void visit (ast_index_expr_t& node)
+      {
+        node.VisitChildren (*this);
+      }
+
+      void visit (ast_unary_arithmetic_expr_t& node)
+      {
+        node.VisitChildren (*this);
+      }
+
+      void visit (ast_binary_arithmetic_expr_t& node)
+      {
+        node.VisitChildren (*this);
       }
     };
   }

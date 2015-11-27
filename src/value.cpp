@@ -4,31 +4,42 @@
 
 using namespace Type;
 
+struct alpha_visitor : public Type::DefaultVisitor
+{
+  bool flag;
+  Complex::ValueType x;
+
+  alpha_visitor (Complex::ValueType z) : flag (false), x (z) { }
+
+  void default_action (const Type::Type& type)
+  {
+    type_not_reached (type);
+  }
+
+  template <typename T>
+  void doit (const T& type)
+  {
+    typename T::ValueType y;
+    y = x;
+    Complex::ValueType z;
+    z = y;
+    flag = (x == z);
+  }
+
+  void visit (const Uint& type)
+  {
+    doit (type);
+  }
+
+  void visit (const Int& type)
+  {
+    doit (type);
+  }
+};
+
 static bool to_and_back (Complex::ValueType x, const Type::Type* type)
 {
-  struct visitor : public Type::DefaultVisitor
-  {
-    bool flag;
-    Complex::ValueType x;
-
-    visitor (Complex::ValueType z) : flag (false), x (z) { }
-
-    void default_action (const Type::Type& type)
-    {
-      type_not_reached (type);
-    }
-
-    void visit (const Int& type)
-    {
-      Int::ValueType y;
-      y = x;
-      Complex::ValueType z;
-      z = y;
-      flag = (x == z);
-    }
-  };
-
-  visitor v (x);
+  alpha_visitor v (x);
   type->Accept (v);
   return v.flag;
 }
@@ -45,6 +56,11 @@ static void convert_numeric (value_t& value, Complex::ValueType x, const Type::T
     void default_action (const Type::Type& type)
     {
       type_not_reached (type);
+    }
+
+    void visit (const Uint& type)
+    {
+      value.ref (type) = x;
     }
 
     void visit (const Int& type)
@@ -75,12 +91,11 @@ value_t::representable (const Type::Type* from, const Type::Type* to) const
       type_not_reached (type);
     }
 
-    void visit (const Type::String& type)
+    void visit (const Type::Boolean& type)
     {
-      if (Type::type_cast<Type::StringU> (to->UnderlyingType ()))
-        {
-          flag = true;
-        }
+      flag =
+        type_cast<Type::Boolean> (to) != NULL ||
+        type_cast<Type::Bool> (to) != NULL;
     }
 
     void visit (const Type::Integer& type)
@@ -89,8 +104,23 @@ value_t::representable (const Type::Type* from, const Type::Type* to) const
       x = value.ref (type);
       flag = to_and_back (x, to->UnderlyingType ());
     }
-  } v (*this, to);
-  from->Accept (v);
+
+    void visit (const Type::Int& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      flag = to_and_back (x, to->UnderlyingType ());
+    }
+
+    void visit (const Type::String& type)
+    {
+      if (Type::type_cast<Type::StringU> (to->UnderlyingType ()))
+        {
+          flag = true;
+        }
+    }
+  } v (*this, to->UnderlyingType ());
+  from->UnderlyingType ()->Accept (v);
   return v.flag;
 }
 
@@ -111,9 +141,30 @@ value_t::convert (const Type::Type* from, const Type::Type* to)
       type_not_reached (type);
     }
 
+    void visit (const Type::Boolean& type)
+    {
+      if (type_cast<Type::Bool> (to) != NULL) {
+        value.ref (*Type::Bool::Instance ()) = value.ref (type);
+      }
+    }
+
+    void visit (const Type::Integer& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
+    void visit (const Type::Int& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
     void visit (const Type::String& type)
     {
-      if (Type::type_cast<Type::StringU> (to->UnderlyingType ()))
+      if (Type::type_cast<Type::StringU> (to))
         {
           value.stringu_value_ = value.string_value_;
           return;
@@ -121,17 +172,9 @@ value_t::convert (const Type::Type* from, const Type::Type* to)
 
       not_reached;
     }
+  } v (*this, to->UnderlyingType ());
 
-    void visit (const Type::Integer& type)
-    {
-      Complex::ValueType x;
-      x = value.ref (type);
-      convert_numeric (value, x, to->UnderlyingType ());
-    }
-
-  } v (*this, to);
-
-  from->Accept (v);
+  from->UnderlyingType ()->Accept (v);
 }
 
 void

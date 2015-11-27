@@ -7,6 +7,38 @@
 #include "SymbolVisitor.hpp"
 #include "Composition.hpp"
 
+template <typename T>
+struct Equalizer {
+  typedef T ValueType;
+  bool operator() (const T& x, const T& y) const {
+    return x == y;
+  }
+};
+
+template <typename T>
+struct NotEqualizer {
+  typedef T ValueType;
+  bool operator() (const T& x, const T& y) const {
+    return x != y;
+  }
+};
+
+template <typename T>
+struct LogicNotter {
+  typedef T ValueType;
+  bool operator() (const T& x) const {
+    return !x;
+  }
+};
+
+template <typename T>
+struct Negater {
+  typedef T ValueType;
+  T operator() (const T& x) const {
+    return -x;
+  }
+};
+
 /* Enter all symbols except vars and parameters. */
 void enter_symbols (ast::Node* node);
 
@@ -59,7 +91,7 @@ T* processAndLookup (ast::Node * node, const std::string& identifier)
 }
 
 // Extract an array dimension or error.
-typed_value_t process_array_dimension (ast::Node*& ptr);
+Type::Int::ValueType process_array_dimension (ast::Node* ptr);
 
 // Check that a signature has +foreign where needed.
 void CheckForForeignSafe (const Type::Signature* signature, const ParameterSymbol* return_parameter);
@@ -76,9 +108,6 @@ CheckAndImplicitlyDereferenceAndConvert (ast::Node*& expr, const Type::Type* typ
 
 // Type check the expression expecting a reference.
 typed_value_t CheckExpectReference (ast::Node* expr);
-
-void
-TypeCheckExpression (ast::Node* ptr);
 
 // TODO:  Move this into TypeCheckCall.
 void

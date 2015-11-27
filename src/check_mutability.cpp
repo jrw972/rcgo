@@ -27,8 +27,10 @@ namespace semantic
             {
               if (signature->At (i)->dereference_mutability < (*pos)->dereference_mutability)
                 {
+                  std::cout << signature->At (i)->dereference_mutability << '\n';
+                  std::cout << (*pos)->dereference_mutability << '\n';
                   error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
-                                 "call casts away +const or +foreign (E85)");
+                                 "argument %zd casts away +const or +foreign (E85)", i + 1);
                 }
             }
         }
@@ -89,7 +91,8 @@ namespace semantic
 
           void visit (const ::Function& symbol)
           {
-            unimplemented;
+            node.intrinsic_mutability = IMMUTABLE;
+            node.dereference_mutability = IMMUTABLE;
           }
 
           void visit (const ParameterSymbol& symbol)
@@ -103,9 +106,10 @@ namespace semantic
             unimplemented;
           }
 
-          void visit (const TypedConstantSymbol& symbol)
+          void visit (const ConstantSymbol& symbol)
           {
-            unimplemented;
+            node.intrinsic_mutability = IMMUTABLE;
+            node.dereference_mutability = IMMUTABLE;
           }
 
           void visit (const VariableSymbol& symbol)
@@ -155,6 +159,23 @@ namespace semantic
       }
 
       void visit (ast_expression_statement_t& node)
+      {
+        node.VisitChildren (*this);
+      }
+
+      void visit (ast_return_statement_t& node)
+      {
+        node.VisitChildren (*this);
+
+        if (type_contains_pointer (node.child ()->type) &&
+            node.return_symbol->dereference_mutability < node.child ()->dereference_mutability)
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "return casts away +const or +foreign (E149)");
+          }
+      }
+
+      void visit (ast_if_statement_t& node)
       {
         node.VisitChildren (*this);
       }
@@ -212,6 +233,31 @@ namespace semantic
             node.intrinsic_mutability = node.base ()->intrinsic_mutability;
             node.dereference_mutability = node.base ()->dereference_mutability;
           }
+      }
+
+      void visit (ast_index_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        if (node.array_type != NULL) {
+          node.intrinsic_mutability = node.base ()->intrinsic_mutability;
+          node.dereference_mutability = node.base ()->dereference_mutability;
+          return;
+        }
+        not_reached;
+      }
+
+      void visit (ast_unary_arithmetic_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        node.intrinsic_mutability = IMMUTABLE;
+        node.dereference_mutability = IMMUTABLE;
+      }
+
+      void visit (ast_binary_arithmetic_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        node.intrinsic_mutability = IMMUTABLE;
+        node.dereference_mutability = IMMUTABLE;
       }
     };
 

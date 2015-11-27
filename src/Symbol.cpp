@@ -11,7 +11,7 @@ void type::accept (ConstSymbolVisitor& visitor) const { visitor.visit (*this); }
 ACCEPT(InstanceSymbol)
 ACCEPT(ParameterSymbol)
 ACCEPT(TypeSymbol)
-ACCEPT(TypedConstantSymbol)
+ACCEPT(ConstantSymbol)
 ACCEPT(VariableSymbol)
 ACCEPT(HiddenSymbol)
 
@@ -70,15 +70,15 @@ operator<< (std::ostream& out, const Symbol& s)
     }
     virtual void visit (const ParameterSymbol& s)
     {
-      unimplemented;
+      out << "Parameter";
     }
     virtual void visit (const TypeSymbol& s)
     {
       unimplemented;
     }
-    virtual void visit (const TypedConstantSymbol& s)
+    virtual void visit (const ConstantSymbol& s)
     {
-      unimplemented;
+      out << "Constant";
     }
     virtual void visit (const VariableSymbol& s)
     {

@@ -2320,6 +2320,20 @@ namespace Type
   bool
   type_is_boolean (const Type* type);
 
+  // True for typed integral types.
+  bool is_integral (const Type* type);
+  // True for untyped numeric types.
+  bool is_untyped_numeric (const Type* type);
+  // True for typed bool.
+  bool is_bool (const Type* type);
+  // True for untyped bool.
+  bool is_untyped_boolean (const Type* type);
+  // True for type strings.
+  bool is_string (const Type* type);
+
+  // True if the type is comparable.
+  bool comparable (const Type* type);
+
   // True if type is an integer.
   bool
   type_is_integral (const Type* type);

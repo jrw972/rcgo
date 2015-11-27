@@ -89,11 +89,12 @@ namespace ast
     const Type::Type* type;
     value_t value;
     field_t* field;
-    Callable* callable;
+    const Callable* callable;
     ::Template* temp;
     ExpressionKind expression_kind;
     Mutability intrinsic_mutability;
     Mutability dereference_mutability;
+    bool receiver_state;
     ReceiverAccess receiver_access;
     runtime::Operation* operation;
 
@@ -542,7 +543,6 @@ namespace ast
 
     ast_call_expr_t (unsigned int line, Node* expr, Node* args)
       : Node (line, COUNT)
-      , callable (NULL)
       , function_type (NULL)
       , method_type (NULL)
       , signature (NULL)
@@ -568,7 +568,6 @@ namespace ast
     void Accept (Visitor& visitor);
     void Accept (ConstVisitor& visitor) const;
 
-    Callable* callable;
     const Type::Function* function_type;
     const Type::Method* method_type;
     const Type::Signature* signature;
@@ -630,6 +629,7 @@ namespace ast
 
     ast_index_expr_t (unsigned int line, Node* base, Node* index)
       : Node (line, COUNT)
+      , array_type (NULL)
     {
       set (BASE, base);
       set (INDEX, index);
@@ -654,6 +654,8 @@ namespace ast
 
     void Accept (Visitor& visitor);
     void Accept (ConstVisitor& visitor) const;
+
+    const Type::Array* array_type;
   };
 
   struct ast_slice_expr_t : public Node
@@ -1475,17 +1477,17 @@ namespace ast
     enum
     {
       IDENTIFIER,
-      TYPE_IDENTIFIER,
+      TYPE_NAME,
       INITIALIZER,
       EXPRESSION_LIST,
       COUNT
     };
 
-    ast_instance_t (unsigned int line, Node* identifier, Node* type_identifier, Node* initializer, Node* expression_list)
+    ast_instance_t (unsigned int line, Node* identifier, Node* type_name, Node* initializer, Node* expression_list)
       : Node (line, COUNT)
     {
       set (IDENTIFIER, identifier);
-      set (TYPE_IDENTIFIER, type_identifier);
+      set (TYPE_NAME, type_name);
       set (INITIALIZER, initializer);
       set (EXPRESSION_LIST, expression_list);
     }
@@ -1494,9 +1496,9 @@ namespace ast
     {
       return At (IDENTIFIER);
     }
-    Node* type_identifier () const
+    Node* type_name () const
     {
-      return At (TYPE_IDENTIFIER);
+      return At (TYPE_NAME);
     }
     Node* initializer () const
     {
@@ -1547,7 +1549,7 @@ namespace ast
     void Accept (Visitor& visitor);
     void Accept (ConstVisitor& visitor) const;
 
-    TypedConstantSymbol* symbol;
+    ConstantSymbol* symbol;
   };
 
   struct ast_method_t : public Node
