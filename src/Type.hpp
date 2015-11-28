@@ -25,6 +25,54 @@ namespace Type
   typedef uint64_t UintValueType;
   typedef int64_t IntValueType;
 
+  enum Kind {
+    kNamed,
+
+    kVoid,
+
+    kBool,
+    kEnum,
+    kUint8,
+    kUint16,
+    kUint32,
+    kUint64,
+    kInt8,
+    kInt16,
+    kInt32,
+    kInt64,
+    kFloat32,
+    kFloat64,
+    kComplex64,
+    kComplex128,
+    kUint,
+    kInt,
+    kUintptr,
+    kStringU,
+
+    kStruct,
+    kComponent,
+    kArray,
+
+    kPointer,
+    kSlice,
+    kHeap,
+
+    kSignature,
+    kFunction,
+    kMethod,
+    kTemplate,
+
+    kNil,
+    kBoolean,
+    kRune,
+    kInteger,
+    kFloat,
+    kComplex,
+    kString,
+
+    kFileDescriptor,
+  };
+
   struct Type
   {
     enum TypeLevel
@@ -39,6 +87,8 @@ namespace Type
     virtual std::string ToString () const = 0;
     virtual size_t Alignment () const = 0;
     virtual size_t Size () const = 0;
+    virtual Kind kind () const = 0;
+    virtual Kind underlying_kind () const { return UnderlyingType ()->kind (); }
     // When give the choice between two types, use the one with high level.
     virtual TypeLevel Level () const = 0;
     virtual const Type* UnderlyingType () const
@@ -129,6 +179,7 @@ namespace Type
     {
       return underlyingType_->Size ();
     }
+    virtual Kind kind () const { return kNamed; }
     virtual TypeLevel Level () const
     {
       return NAMED;
@@ -244,6 +295,7 @@ namespace Type
     {
       return 0;
     }
+    virtual Kind kind () const { return kVoid; }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -253,7 +305,7 @@ namespace Type
     Void () { }
   };
 
-  template <typename T, typename S, bool Numeric, bool FloatingPoint, bool Integer>
+  template <typename T, typename S, bool Numeric, bool FloatingPoint, bool Integer, Kind k>
   class Scalar : public Type
   {
   public:
@@ -271,6 +323,7 @@ namespace Type
     {
       return sizeof (T);
     }
+    virtual Kind kind () const { return k; }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -287,50 +340,50 @@ namespace Type
     {
       return Integer;
     }
-    static const Scalar<T, S, Numeric, FloatingPoint, Integer>* Instance ()
+    static const Scalar<T, S, Numeric, FloatingPoint, Integer, k>* Instance ()
     {
-      static Scalar<T, S, Numeric, FloatingPoint, Integer>* instance_ = new Scalar<T, S, Numeric, FloatingPoint, Integer> ();
+      static Scalar<T, S, Numeric, FloatingPoint, Integer, k>* instance_ = new Scalar<T, S, Numeric, FloatingPoint, Integer, k> ();
       return instance_;
     }
   private:
-    Scalar<T, S, Numeric, FloatingPoint, Integer> () { }
+    Scalar<T, S, Numeric, FloatingPoint, Integer, k> () { }
   };
 
   StringReturner(EnumString, "<enum>");
-  typedef Scalar<size_t, EnumString, false, false, false> Enum;
+  typedef Scalar<size_t, EnumString, false, false, false, kEnum> Enum;
 
   StringReturner(BoolString, "<bool>");
-  typedef Scalar<bool, BoolString, false, false, false> Bool;
+  typedef Scalar<bool, BoolString, false, false, false, kBool> Bool;
 
   StringReturner(Uint8String, "<uint8>");
-  typedef Scalar<uint8_t, Uint8String, true, false, true> Uint8;
+  typedef Scalar<uint8_t, Uint8String, true, false, true, kUint8> Uint8;
 
   StringReturner(Uint16String, "<uint16>");
-  typedef Scalar<uint16_t, Uint16String, true, false, true> Uint16;
+  typedef Scalar<uint16_t, Uint16String, true, false, true, kUint16> Uint16;
 
   StringReturner(Uint32String, "<uint32>");
-  typedef Scalar<uint32_t, Uint32String, true, false, true> Uint32;
+  typedef Scalar<uint32_t, Uint32String, true, false, true, kUint32> Uint32;
 
   StringReturner(Uint64String, "<uint64>");
-  typedef Scalar<uint64_t, Uint64String, true, false, true> Uint64;
+  typedef Scalar<uint64_t, Uint64String, true, false, true, kUint64> Uint64;
 
   StringReturner(Int8String, "<int8>");
-  typedef Scalar<int8_t, Int8String, true, false, true> Int8;
+  typedef Scalar<int8_t, Int8String, true, false, true, kInt8> Int8;
 
   StringReturner(Int16String, "<int16>");
-  typedef Scalar<int16_t, Int16String, true, false, true> Int16;
+  typedef Scalar<int16_t, Int16String, true, false, true, kInt16> Int16;
 
   StringReturner(Int32String, "<int32>");
-  typedef Scalar<int32_t, Int32String, true, false, true> Int32;
+  typedef Scalar<int32_t, Int32String, true, false, true, kInt32> Int32;
 
   StringReturner(Int64String, "<int64>");
-  typedef Scalar<int64_t, Int64String, true, false, true> Int64;
+  typedef Scalar<int64_t, Int64String, true, false, true, kInt64> Int64;
 
   StringReturner(Float32String, "<float32>");
-  typedef Scalar<float, Float32String, true, true, false> Float32;
+  typedef Scalar<float, Float32String, true, true, false, kFloat32> Float32;
 
   StringReturner(Float64String, "<float64>");
-  typedef Scalar<double, Float64String, true, true, false> Float64;
+  typedef Scalar<double, Float64String, true, true, false, kFloat64> Float64;
 
   StringReturner(Complex64String, "<complex64>");
   struct C64
@@ -355,7 +408,7 @@ namespace Type
       return *this;
     }
   };
-  typedef Scalar<C64, Complex64String, true, false, false> Complex64;
+  typedef Scalar<C64, Complex64String, true, false, false, kComplex64> Complex64;
 
   StringReturner(Complex128String, "<complex128>");
   struct C128
@@ -380,16 +433,16 @@ namespace Type
       return *this;
     }
   };
-  typedef Scalar<C128, Complex128String, true, false, false> Complex128;
+  typedef Scalar<C128, Complex128String, true, false, false, kComplex128> Complex128;
 
   StringReturner(UintString, "<uint>");
-  typedef Scalar<UintValueType, UintString, true, false, true> Uint;
+  typedef Scalar<UintValueType, UintString, true, false, true, kUint> Uint;
 
   StringReturner(IntString, "<int>");
-  typedef Scalar<IntValueType, IntString, true, false, true> Int;
+  typedef Scalar<IntValueType, IntString, true, false, true, kInt> Int;
 
   StringReturner(UintptrString, "<uintptr>");
-  typedef Scalar<ptrdiff_t, UintptrString, true, false, true> Uintptr;
+  typedef Scalar<ptrdiff_t, UintptrString, true, false, true, kUintptr> Uintptr;
 
   StringReturner(StringUString, "<string>");
   struct StringRep
@@ -430,7 +483,7 @@ namespace Type
         }
     }
   };
-  typedef Scalar<StringRep, StringUString, false, false, false> StringU;
+  typedef Scalar<StringRep, StringUString, false, false, false, kStringU> StringU;
 
   // Helper class for types that have a base type.
   class BaseType
@@ -462,6 +515,7 @@ namespace Type
     {
       return sizeof (ValueType);
     }
+    virtual Kind kind () const { return kPointer; }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -501,6 +555,7 @@ namespace Type
     {
       return sizeof (ValueType);
     }
+    virtual Kind kind () const { return kSlice; }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -527,6 +582,7 @@ namespace Type
     {
       return UnitSize () * dimension;
     }
+    virtual Kind kind () const { return kArray; }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -556,6 +612,7 @@ namespace Type
     {
       not_reached;
     }
+    virtual Kind kind () const { return kHeap; }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -572,6 +629,7 @@ namespace Type
     typedef FieldsType::const_iterator const_iterator;
     Struct (bool insert_runtime = false);
     void Accept (Visitor& visitor) const;
+    virtual Kind kind () const { return kStruct; }
     std::string ToString () const
     {
       unimplemented;
@@ -608,6 +666,7 @@ namespace Type
   struct Component : public Struct
   {
     Component () : Struct (true) { }
+    virtual Kind kind () const { return kComponent; }
     void Accept (Visitor& visitor) const;
     std::string ToString () const
     {
@@ -632,6 +691,7 @@ namespace Type
     {
       return size_;
     }
+    virtual Kind kind () const { return kSignature; }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -663,16 +723,16 @@ namespace Type
   class Function : public Type
   {
   public:
-    enum Kind
+    enum FunctionKind
     {
       FUNCTION,
       PUSH_PORT,
       PULL_PORT
     };
-    Function (Kind k,
+    Function (FunctionKind k,
               const Signature * signature,
               ParameterSymbol* return_parameter)
-      : kind (k)
+      : function_kind (k)
       , signature_ (signature)
       , return_parameter_ (return_parameter)
     { }
@@ -684,8 +744,9 @@ namespace Type
     }
     size_t Size () const
     {
-      return kind == PULL_PORT ? sizeof (pull_port_t) : sizeof (void*);
+      return function_kind == PULL_PORT ? sizeof (pull_port_t) : sizeof (void*);
     }
+    virtual Kind kind () const { return kFunction; }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -703,7 +764,7 @@ namespace Type
       return return_parameter_;
     }
     const Type* GetReturnType () const;
-    Kind const kind;
+    FunctionKind const function_kind;
   private:
     const Signature* const signature_;
     ParameterSymbol* const return_parameter_;
@@ -712,14 +773,14 @@ namespace Type
   class Method : public Type
   {
   public:
-    enum Kind
+    enum MethodKind
     {
       METHOD,
       INITIALIZER,
       GETTER,
       REACTION,
     };
-    Method (Kind k,
+    Method (MethodKind k,
             const NamedType* named_type_,
             ParameterSymbol* this_parameter_,
             const Signature * signature_,
@@ -734,11 +795,12 @@ namespace Type
     {
       return sizeof (void*);
     }
+    virtual Kind kind () const { return kMethod; }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
     }
-    Kind const kind;
+    MethodKind const method_kind;
     const NamedType* const named_type;
     const Type* const receiver_type;
     ParameterSymbol* const this_parameter;
@@ -772,6 +834,7 @@ namespace Type
   class Nil : public Untyped
   {
   public:
+    virtual Kind kind () const { return kNil; }
     void Accept (Visitor& visitor) const;
     std::string ToString () const
     {
@@ -786,6 +849,7 @@ namespace Type
   {
   public:
     typedef bool ValueType;
+    virtual Kind kind () const { return kBoolean; }
     virtual const Type* DefaultType () const;
     void Accept (Visitor& visitor) const;
     std::string ToString () const
@@ -801,6 +865,7 @@ namespace Type
   {
   public:
     typedef int32_t ValueType;
+    virtual Kind kind () const { return kRune; }
     virtual const Type* DefaultType () const;
     virtual bool IsNumeric () const
     {
@@ -824,6 +889,7 @@ namespace Type
   {
   public:
     typedef long long ValueType;
+    virtual Kind kind () const { return kInteger; }
     virtual const Type* DefaultType () const;
     virtual bool IsNumeric () const
     {
@@ -847,6 +913,7 @@ namespace Type
   {
   public:
     typedef double ValueType;
+    virtual Kind kind () const { return kFloat; }
     virtual const Type* DefaultType () const;
     virtual bool IsNumeric () const
     {
@@ -912,6 +979,7 @@ namespace Type
         return this->real;
       }
     };
+    virtual Kind kind () const { return kComplex; }
     virtual const Type* DefaultType () const;
     virtual bool IsNumeric () const
     {
@@ -931,6 +999,7 @@ namespace Type
   {
   public:
     typedef StringRep ValueType;
+    virtual Kind kind () const { return kString; }
     virtual const Type* DefaultType () const;
     void Accept (Visitor& visitor) const;
     std::string ToString () const
@@ -958,6 +1027,7 @@ namespace Type
     {
       not_reached;
     }
+    virtual Kind kind () const { return kTemplate; }
     virtual TypeLevel Level () const
     {
       return UNTYPED;
@@ -979,6 +1049,7 @@ namespace Type
     {
       return sizeof (void*);
     }
+    virtual Kind kind () const { return kFileDescriptor; }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -2322,6 +2393,9 @@ namespace Type
 
   // True for typed integral types.
   bool is_integral (const Type* type);
+  bool is_unsigned_integral (const Type* type);
+  // True to typed numeric types.
+  bool is_numeric (const Type* type);
   // True for untyped numeric types.
   bool is_untyped_numeric (const Type* type);
   // True for typed bool.
@@ -2333,6 +2407,14 @@ namespace Type
 
   // True if the type is comparable.
   bool comparable (const Type* type);
+
+  // True if the type is orderable.
+  bool orderable (const Type* type);
+
+  // True if the types are arithmetic.
+  bool arithmetic (const Type* type);
+
+  bool integral (const Type* type);
 
   // True if type is an integer.
   bool
@@ -2407,6 +2489,73 @@ namespace Type
     return type_cast<T> (type_strip (type));
   }
 
+  inline C64 operator* (const C64&, const C64&)
+  {
+    unimplemented;
+  }
+  inline C64 operator/ (const C64&, const C64&)
+  {
+    unimplemented;
+  }
+
+
+  inline C128 operator* (const C128&, const C128&)
+  {
+    unimplemented;
+  }
+  inline C128 operator/ (const C128&, const C128&)
+  {
+    unimplemented;
+  }
+
+  inline Complex::ValueType operator* (const Complex::ValueType&, const Complex::ValueType&)
+  {
+    unimplemented;
+  }
+  inline Complex::ValueType operator/ (const Complex::ValueType&, const Complex::ValueType&)
+  {
+    unimplemented;
+  }
+
+  inline C64 operator+ (const C64&, const C64&)
+  {
+    unimplemented;
+  }
+  inline C64 operator- (const C64&, const C64&)
+  {
+    unimplemented;
+  }
+  inline C64 operator- (const C64&)
+  {
+    unimplemented;
+  }
+
+  inline C128 operator+ (const C128&, const C128&)
+  {
+    unimplemented;
+  }
+  inline C128 operator- (const C128&, const C128&)
+  {
+    unimplemented;
+  }
+  inline C128 operator- (const C128&)
+  {
+    unimplemented;
+  }
+
+  inline Complex::ValueType operator+ (const Complex::ValueType&, const Complex::ValueType&)
+  {
+    unimplemented;
+  }
+  inline Complex::ValueType operator- (const Complex::ValueType&, const Complex::ValueType&)
+  {
+    unimplemented;
+  }
+  inline Complex::ValueType operator- (const Complex::ValueType&)
+  {
+    unimplemented;
+  }
+
   extern NamedType NamedBool;
 
   extern NamedType NamedUint8;
@@ -2434,6 +2583,11 @@ namespace Type
   extern NamedType NamedString;
 
   extern NamedType NamedFileDescriptor;
+
+  inline std::ostream& operator<< (std::ostream& out, const StringRep& s)
+  {
+    return out << std::string (static_cast<const char*> (s.ptr), s.length);
+  }
 }
 
 #endif /* Type_hpp */

@@ -184,6 +184,11 @@ namespace semantic
         require_value_or_variable (node.condition ());
       }
 
+      void visit (ast_const_t& node)
+      {
+        // Do nothing.
+      }
+
       void visit (ast_var_statement_t& node)
       {
         node.expression_list ()->Accept (*this);

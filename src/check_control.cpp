@@ -47,6 +47,11 @@ namespace semantic
         node.expression_list ()->Accept (*this);
       }
 
+      void visit (ast_const_t& node)
+      {
+        // Do nothing.
+      }
+
       void visit (ast_initializer_t& node)
       {
         Visitor v (*this);
@@ -94,7 +99,7 @@ namespace semantic
         node.VisitChildren (*this);
         if (node.function_type)
           {
-            switch (node.function_type->kind)
+            switch (node.function_type->function_kind)
               {
               case Type::Function::FUNCTION:
                 // No restrictions on caller.
@@ -128,7 +133,7 @@ namespace semantic
           }
         else if (node.method_type)
           {
-            switch (node.method_type->kind)
+            switch (node.method_type->method_kind)
               {
               case Type::Method::METHOD:
                 // No restrictions on caller.

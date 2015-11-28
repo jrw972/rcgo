@@ -2407,87 +2407,157 @@ namespace runtime
     const Operation* const child;
   };
 
-  template<typename T>
-  static Operation*
-  makeConvertToInt (const T& t, const Operation* child)
-  {
-    return new ConvertToInt<T> (child);
-  }
+  // template<typename T>
+  // static Operation*
+  // makeConvertToInt (const T& t, const Operation* child)
+  // {
+  //   return new ConvertToInt<T> (child);
+  // }
 
-  struct ConvertToIntListener
-  {
-    const Operation* const child;
-    Operation* operation;
-    ConvertToIntListener (const Operation* c) : child (c), operation (NULL) { }
+  // struct ConvertToIntListener
+  // {
+  //   const Operation* const child;
+  //   Operation* operation;
+  //   ConvertToIntListener (const Operation* c) : child (c), operation (NULL) { }
 
-    void NotIntegral (const Type::Type& type)
-    {
-      not_reached;
-    }
+  //   void NotIntegral (const Type::Type& type)
+  //   {
+  //     not_reached;
+  //   }
 
-    void operator() (const Uint8& type)
-    {
-      operation = makeConvertToInt (type, child);
-    }
-    void operator() (const Uint16& type)
-    {
-      operation = makeConvertToInt (type, child);
-    }
-    void operator() (const Uint32& type)
-    {
-      operation = makeConvertToInt (type, child);
-    }
-    void operator() (const Uint64& type)
-    {
-      operation = makeConvertToInt (type, child);
-    }
+  //   void operator() (const Uint8& type)
+  //   {
+  //     operation = makeConvertToInt (type, child);
+  //   }
+  //   void operator() (const Uint16& type)
+  //   {
+  //     operation = makeConvertToInt (type, child);
+  //   }
+  //   void operator() (const Uint32& type)
+  //   {
+  //     operation = makeConvertToInt (type, child);
+  //   }
+  //   void operator() (const Uint64& type)
+  //   {
+  //     operation = makeConvertToInt (type, child);
+  //   }
 
-    void operator() (const Int8& type)
-    {
-      operation = makeConvertToInt (type, child);
-    }
-    void operator() (const Int16& type)
-    {
-      operation = makeConvertToInt (type, child);
-    }
-    void operator() (const Int32& type)
-    {
-      operation = makeConvertToInt (type, child);
-    }
-    void operator() (const Int64& type)
-    {
-      operation = makeConvertToInt (type, child);
-    }
+  //   void operator() (const Int8& type)
+  //   {
+  //     operation = makeConvertToInt (type, child);
+  //   }
+  //   void operator() (const Int16& type)
+  //   {
+  //     operation = makeConvertToInt (type, child);
+  //   }
+  //   void operator() (const Int32& type)
+  //   {
+  //     operation = makeConvertToInt (type, child);
+  //   }
+  //   void operator() (const Int64& type)
+  //   {
+  //     operation = makeConvertToInt (type, child);
+  //   }
 
-    void operator() (const Uint& type)
-    {
-      operation = makeConvertToInt (type, child);
-    }
-    void operator() (const Type::Int& type)
-    {
-      operation = makeConvertToInt (type, child);
-    }
-    void operator() (const Uintptr& type)
-    {
-      operation = makeConvertToInt (type, child);
-    }
-    void operator() (const Rune& type)
-    {
-      NotIntegral (type);
-    }
-    void operator() (const Integer& type)
-    {
-      NotIntegral (type);
-    }
-  };
+  //   void operator() (const Uint& type)
+  //   {
+  //     operation = makeConvertToInt (type, child);
+  //   }
+  //   void operator() (const Type::Int& type)
+  //   {
+  //     operation = makeConvertToInt (type, child);
+  //   }
+  //   void operator() (const Uintptr& type)
+  //   {
+  //     operation = makeConvertToInt (type, child);
+  //   }
+  //   void operator() (const Rune& type)
+  //   {
+  //     NotIntegral (type);
+  //   }
+  //   void operator() (const Integer& type)
+  //   {
+  //     NotIntegral (type);
+  //   }
+  // };
 
   Operation*
   MakeConvertToInt (const Operation* c, const Type::Type* type)
   {
-    ConvertToIntListener b (c);
-    IntegralVisitor<ConvertToIntListener> visitor (b);
-    type->Accept (visitor);
-    return b.operation;
+    switch (type->underlying_kind ()) {
+    case kUint8:
+      return new ConvertToInt<Uint8> (c);
+    case kUint16:
+      return new ConvertToInt<Uint16> (c);
+    case kUint32:
+      return new ConvertToInt<Uint32> (c);
+    case kUint64:
+      return new ConvertToInt<Uint64> (c);
+    case kInt8:
+      return new ConvertToInt<Int8> (c);
+    case kInt16:
+      return new ConvertToInt<Int16> (c);
+    case kInt32:
+      return new ConvertToInt<Int32> (c);
+    case kInt64:
+      return new ConvertToInt<Int64> (c);
+    case kUint:
+      return new ConvertToInt<Uint> (c);
+    case kInt:
+      return new ConvertToInt<Int> (c);
+    case kUintptr:
+      return new ConvertToInt<Uintptr> (c);
+
+    default:
+      type_not_reached (*type);
+    }
+  }
+
+  template<typename T>
+  struct ConvertToUint : public Operation
+  {
+    ConvertToUint (const Operation* c) : child (c) { }
+    void execute (executor_base_t& exec) const
+    {
+      child->execute (exec);
+      typename T::ValueType in;
+      exec.stack ().pop (in);
+      Type::Uint::ValueType out = in;
+      exec.stack ().push (out);
+    }
+    const Operation* const child;
+  };
+
+  Operation*
+  MakeConvertToUint (const Operation* c, const Type::Type* type)
+  {
+    switch (type->underlying_kind ()) {
+    case kUint8:
+      return new ConvertToUint<Uint8> (c);
+    case kUint16:
+      return new ConvertToUint<Uint16> (c);
+    case kUint32:
+      return new ConvertToUint<Uint32> (c);
+    case kUint64:
+      return new ConvertToUint<Uint64> (c);
+    case kInt8:
+      return new ConvertToUint<Int8> (c);
+    case kInt16:
+      return new ConvertToUint<Int16> (c);
+    case kInt32:
+      return new ConvertToUint<Int32> (c);
+    case kInt64:
+      return new ConvertToUint<Int64> (c);
+    case kUint:
+      return new ConvertToUint<Uint> (c);
+    case kInt:
+      return new ConvertToUint<Int> (c);
+    case kUintptr:
+      return new ConvertToUint<Uintptr> (c);
+
+    default:
+      type_not_reached (*type);
+    }
   }
 
   void

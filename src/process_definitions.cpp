@@ -98,7 +98,7 @@ type_check_statement (Node * node)
 
     void visit (ast_const_t& node)
     {
-      ProcessDeclarations (&node);
+      unimplemented;
     }
 
     void visit (ast_empty_statement_t& node)

@@ -9,6 +9,8 @@
 #include "semantic.hpp"
 #include "Symbol.hpp"
 #include "field.hpp"
+#include "process_types_and_constants.hpp"
+#include "Symbol.hpp"
 
 namespace semantic
 {
@@ -18,33 +20,7 @@ namespace semantic
 
   namespace
   {
-    template <template <typename T> class S>
-    static void alpha (const Type::Type* type, value_t& out, const value_t& left, const value_t& right)
-    {
-      assert (left.present);
-      assert (right.present);
-      out.present = true;
-
-      struct visitor : public Type::DefaultVisitor {
-        value_t& out;
-        const value_t& left;
-        const value_t& right;
-
-        visitor (value_t& o, const value_t& l, const value_t& r) : out (o), left (l), right (r) { }
-
-        void default_action (const Type::Type& type) {
-          type_not_reached (type);
-        }
-
-        void visit (const Boolean& type) {
-          out.ref (type) = S<Boolean::ValueType> () (left.ref (type), right.ref (type));
-        }
-      };
-      visitor v (out, left, right);
-      type->Accept (v);
-    }
-
-    template <template <typename S> class T>
+    template <typename T>
     static void process_comparable (ast_binary_expr_t& node)
     {
       if (!(assignable (node.left ()->type, node.left ()->value, node.right ()->type) ||
@@ -59,39 +35,433 @@ namespace semantic
       if (!comparable (node.left ()->type)) {
         error_at_line (-1, 0, node.location.File.c_str (),
                        node.location.Line,
-                       "%s and %s are not comparable (E19)",
+                       "%s and %s are not comparable (E124)",
                        node.left ()->type->ToString ().c_str (),
                        node.right ()->type->ToString ().c_str ());
       }
 
-      if (node.left ()->type->IsUntyped () &&
-          node.right ()->type->IsUntyped ()) {
-        assert (node.left ()->type == node.right ()->type);
-        assert (node.left ()->value.present);
-        assert (node.right ()->value.present);
+      const Type::Type* in_type = Choose (node.left ()->type, node.right ()->type);
 
-        node.type = node.left ()->type;
-        alpha<T> (node.type, node.value, node.left ()->value, node.right ()->value);
-        // Done.
-        return;
-      }
-
-      if (node.left ()->type->IsUntyped ()) {
-        // Convert to right.
+      if (node.left ()->type != in_type) {
+        // Convert.
         unimplemented;
       }
 
-      if (node.right ()->type->IsUntyped ()) {
-        // Convert to left.
+      if (node.right ()->type != in_type) {
+        // Convert.
         unimplemented;
       }
-
-      node.type = Bool::Instance ();
 
       if (node.left ()->value.present &&
-          node.right ()->value.present ) {
-        // Do the comparison.
+          node.right ()->value.present) {
+        node.type = Boolean::Instance ();
+        node.value.present = true;
+        switch (in_type->underlying_kind ()) {
+        case kBool:
+          node.value.bool_value_ = T () (node.left ()->value.bool_value_, node.right ()->value.bool_value_);
+          break;
+        case kUint8:
+          node.value.uint8_value_ = T () (node.left ()->value.uint8_value_, node.right ()->value.uint8_value_);
+          break;
+        case kUint16:
+          node.value.uint16_value_ = T () (node.left ()->value.uint16_value_, node.right ()->value.uint16_value_);
+          break;
+        case kUint32:
+          node.value.uint32_value_ = T () (node.left ()->value.uint32_value_, node.right ()->value.uint32_value_);
+          break;
+        case kUint64:
+          node.value.uint64_value_ = T () (node.left ()->value.uint64_value_, node.right ()->value.uint64_value_);
+          break;
+        case kInt8:
+          node.value.int8_value_ = T () (node.left ()->value.int8_value_, node.right ()->value.int8_value_);
+          break;
+        case kInt16:
+          node.value.int16_value_ = T () (node.left ()->value.int16_value_, node.right ()->value.int16_value_);
+          break;
+        case kInt32:
+          node.value.int32_value_ = T () (node.left ()->value.int32_value_, node.right ()->value.int32_value_);
+          break;
+        case kInt64:
+          node.value.int64_value_ = T () (node.left ()->value.int64_value_, node.right ()->value.int64_value_);
+          break;
+        case kUint:
+          node.value.uint_value_ = T () (node.left ()->value.uint_value_, node.right ()->value.uint_value_);
+          break;
+        case kInt:
+          node.value.int_value_ = T () (node.left ()->value.int_value_, node.right ()->value.int_value_);
+          break;
+        case kUintptr:
+          node.value.uintptr_value_ = T () (node.left ()->value.uintptr_value_, node.right ()->value.uintptr_value_);
+          break;
+        case kBoolean:
+          node.value.boolean_value_ = T () (node.left ()->value.boolean_value_, node.right ()->value.boolean_value_);
+          break;
+        case kRune:
+          node.value.boolean_value_ = T () (node.left ()->value.rune_value_, node.right ()->value.rune_value_);
+          break;
+        case kInteger:
+          node.value.boolean_value_ = T () (node.left ()->value.integer_value_, node.right ()->value.integer_value_);
+          break;
+        case kFloat:
+          node.value.boolean_value_ = T () (node.left ()->value.float_value_, node.right ()->value.float_value_);
+          break;
+        case kComplex:
+          node.value.boolean_value_ = T () (node.left ()->value.complex_value_, node.right ()->value.complex_value_);
+          break;
+        case kString:
+          node.value.boolean_value_ = T () (node.left ()->value.string_value_, node.right ()->value.string_value_);
+          break;
+        default:
+          type_not_reached (*in_type);
+        }
+      } else {
+        node.type = Bool::Instance ();
+      }
+    }
+
+    template <typename T>
+    static void process_orderable (ast_binary_expr_t& node)
+    {
+      if (!(assignable (node.left ()->type, node.left ()->value, node.right ()->type) ||
+            assignable (node.right ()->type, node.right ()->value, node.left ()->type))) {
+        error_at_line (-1, 0, node.location.File.c_str (),
+                       node.location.Line,
+                       "%s and %s are not orderable (E19)",
+                       node.left ()->type->ToString ().c_str (),
+                       node.right ()->type->ToString ().c_str ());
+      }
+
+      if (!orderable (node.left ()->type)) {
+        error_at_line (-1, 0, node.location.File.c_str (),
+                       node.location.Line,
+                       "%s and %s are not orderable (E124)",
+                       node.left ()->type->ToString ().c_str (),
+                       node.right ()->type->ToString ().c_str ());
+      }
+
+      const Type::Type* in_type = Choose (node.left ()->type, node.right ()->type);
+
+      if (node.left ()->type != in_type) {
+        // Convert.
         unimplemented;
+      }
+
+      if (node.right ()->type != in_type) {
+        // Convert.
+        unimplemented;
+      }
+
+      if (node.left ()->value.present &&
+          node.right ()->value.present) {
+        node.type = Boolean::Instance ();
+        node.value.present = true;
+        switch (in_type->underlying_kind ()) {
+        case kUint8:
+          node.value.boolean_value_ = T () (node.left ()->value.uint8_value_, node.right ()->value.uint8_value_);
+          break;
+        case kUint16:
+          node.value.boolean_value_ = T () (node.left ()->value.uint16_value_, node.right ()->value.uint16_value_);
+          break;
+        case kUint32:
+          node.value.boolean_value_ = T () (node.left ()->value.uint32_value_, node.right ()->value.uint32_value_);
+          break;
+        case kUint64:
+          node.value.boolean_value_ = T () (node.left ()->value.uint64_value_, node.right ()->value.uint64_value_);
+          break;
+        case kInt8:
+          node.value.boolean_value_ = T () (node.left ()->value.int8_value_, node.right ()->value.int8_value_);
+          break;
+        case kInt16:
+          node.value.boolean_value_ = T () (node.left ()->value.int16_value_, node.right ()->value.int16_value_);
+          break;
+        case kInt32:
+          node.value.boolean_value_ = T () (node.left ()->value.int32_value_, node.right ()->value.int32_value_);
+          break;
+        case kInt64:
+          node.value.boolean_value_ = T () (node.left ()->value.int64_value_, node.right ()->value.int64_value_);
+          break;
+        case kUint:
+          node.value.boolean_value_ = T () (node.left ()->value.uint_value_, node.right ()->value.uint_value_);
+          break;
+        case kInt:
+          node.value.boolean_value_ = T () (node.left ()->value.int_value_, node.right ()->value.int_value_);
+          break;
+        case kUintptr:
+          node.value.boolean_value_ = T () (node.left ()->value.uintptr_value_, node.right ()->value.uintptr_value_);
+          break;
+        case kRune:
+          node.value.boolean_value_ = T () (node.left ()->value.rune_value_, node.right ()->value.rune_value_);
+          break;
+        case kInteger:
+          node.value.boolean_value_ = T () (node.left ()->value.integer_value_, node.right ()->value.integer_value_);
+          break;
+        case kFloat:
+          node.value.boolean_value_ = T () (node.left ()->value.float_value_, node.right ()->value.float_value_);
+          break;
+        case kComplex:
+          node.value.boolean_value_ = T () (node.left ()->value.complex_value_, node.right ()->value.complex_value_);
+          break;
+        case kString:
+          node.value.boolean_value_ = T () (node.left ()->value.string_value_, node.right ()->value.string_value_);
+          break;
+        default:
+          type_not_reached (*in_type);
+        }
+      } else {
+        node.type = Bool::Instance ();
+      }
+    }
+
+    template <typename T>
+    static void process_arithmetic (ast_binary_expr_t& node)
+    {
+      if (!(assignable (node.left ()->type, node.left ()->value, node.right ()->type) ||
+            assignable (node.right ()->type, node.right ()->value, node.left ()->type))) {
+        error_at_line (-1, 0, node.location.File.c_str (),
+                       node.location.Line,
+                       "%s and %s are not arithmetic (E125)",
+                       node.left ()->type->ToString ().c_str (),
+                       node.right ()->type->ToString ().c_str ());
+      }
+
+      if (!arithmetic (node.left ()->type)) {
+        error_at_line (-1, 0, node.location.File.c_str (),
+                       node.location.Line,
+                       "%s and %s are not arithmetic (E156)",
+                       node.left ()->type->ToString ().c_str (),
+                       node.right ()->type->ToString ().c_str ());
+      }
+
+      const Type::Type* in_type = Choose (node.left ()->type, node.right ()->type);
+
+      if (node.left ()->type != in_type) {
+        // Convert.
+        unimplemented;
+      }
+
+      if (node.right ()->type != in_type) {
+        // Convert.
+        unimplemented;
+      }
+
+      if (node.left ()->value.present &&
+          node.right ()->value.present) {
+        node.type = in_type;
+        node.value.present = true;
+        switch (in_type->underlying_kind ()) {
+        case kUint8:
+          node.value.uint8_value_ = T () (node.left ()->value.uint8_value_, node.right ()->value.uint8_value_);
+          break;
+        case kUint16:
+          node.value.uint16_value_ = T () (node.left ()->value.uint16_value_, node.right ()->value.uint16_value_);
+          break;
+        case kUint32:
+          node.value.uint32_value_ = T () (node.left ()->value.uint32_value_, node.right ()->value.uint32_value_);
+          break;
+        case kUint64:
+          node.value.uint64_value_ = T () (node.left ()->value.uint64_value_, node.right ()->value.uint64_value_);
+          break;
+        case kInt8:
+          node.value.int8_value_ = T () (node.left ()->value.int8_value_, node.right ()->value.int8_value_);
+          break;
+        case kInt16:
+          node.value.int16_value_ = T () (node.left ()->value.int16_value_, node.right ()->value.int16_value_);
+          break;
+        case kInt32:
+          node.value.int32_value_ = T () (node.left ()->value.int32_value_, node.right ()->value.int32_value_);
+          break;
+        case kInt64:
+          node.value.int64_value_ = T () (node.left ()->value.int64_value_, node.right ()->value.int64_value_);
+          break;
+        case kUint:
+          node.value.uint_value_ = T () (node.left ()->value.uint_value_, node.right ()->value.uint_value_);
+          break;
+        case kInt:
+          node.value.int_value_ = T () (node.left ()->value.int_value_, node.right ()->value.int_value_);
+          break;
+        case kUintptr:
+          node.value.uintptr_value_ = T () (node.left ()->value.uintptr_value_, node.right ()->value.uintptr_value_);
+          break;
+        case kRune:
+          node.value.rune_value_ = T () (node.left ()->value.rune_value_, node.right ()->value.rune_value_);
+          break;
+        case kInteger:
+          node.value.integer_value_ = T () (node.left ()->value.integer_value_, node.right ()->value.integer_value_);
+          break;
+        case kFloat:
+          node.value.float_value_ = T () (node.left ()->value.float_value_, node.right ()->value.float_value_);
+          break;
+        case kComplex:
+          node.value.complex_value_ = T () (node.left ()->value.complex_value_, node.right ()->value.complex_value_);
+          break;
+        default:
+          type_not_reached (*in_type);
+        }
+      } else {
+        node.type = in_type;
+      }
+    }
+
+    template <typename T>
+    static void process_integral (ast_binary_expr_t& node)
+    {
+      if (!(assignable (node.left ()->type, node.left ()->value, node.right ()->type) ||
+            assignable (node.right ()->type, node.right ()->value, node.left ()->type))) {
+        error_at_line (-1, 0, node.location.File.c_str (),
+                       node.location.Line,
+                       "%s and %s are not integral (E125)",
+                       node.left ()->type->ToString ().c_str (),
+                       node.right ()->type->ToString ().c_str ());
+      }
+
+      if (!integral (node.left ()->type)) {
+        error_at_line (-1, 0, node.location.File.c_str (),
+                       node.location.Line,
+                       "%s and %s are not integral (E156)",
+                       node.left ()->type->ToString ().c_str (),
+                       node.right ()->type->ToString ().c_str ());
+      }
+
+      const Type::Type* in_type = Choose (node.left ()->type, node.right ()->type);
+
+      if (node.left ()->type != in_type) {
+        // Convert.
+        unimplemented;
+      }
+
+      if (node.right ()->type != in_type) {
+        // Convert.
+        unimplemented;
+      }
+
+      if (node.left ()->value.present &&
+          node.right ()->value.present) {
+        node.type = in_type;
+        node.value.present = true;
+        switch (in_type->underlying_kind ()) {
+        case kUint8:
+          node.value.uint8_value_ = T () (node.left ()->value.uint8_value_, node.right ()->value.uint8_value_);
+          break;
+        case kUint16:
+          node.value.uint16_value_ = T () (node.left ()->value.uint16_value_, node.right ()->value.uint16_value_);
+          break;
+        case kUint32:
+          node.value.uint32_value_ = T () (node.left ()->value.uint32_value_, node.right ()->value.uint32_value_);
+          break;
+        case kUint64:
+          node.value.uint64_value_ = T () (node.left ()->value.uint64_value_, node.right ()->value.uint64_value_);
+          break;
+        case kInt8:
+          node.value.int8_value_ = T () (node.left ()->value.int8_value_, node.right ()->value.int8_value_);
+          break;
+        case kInt16:
+          node.value.int16_value_ = T () (node.left ()->value.int16_value_, node.right ()->value.int16_value_);
+          break;
+        case kInt32:
+          node.value.int32_value_ = T () (node.left ()->value.int32_value_, node.right ()->value.int32_value_);
+          break;
+        case kInt64:
+          node.value.int64_value_ = T () (node.left ()->value.int64_value_, node.right ()->value.int64_value_);
+          break;
+        case kUint:
+          node.value.uint_value_ = T () (node.left ()->value.uint_value_, node.right ()->value.uint_value_);
+          break;
+        case kInt:
+          node.value.int_value_ = T () (node.left ()->value.int_value_, node.right ()->value.int_value_);
+          break;
+        case kUintptr:
+          node.value.uintptr_value_ = T () (node.left ()->value.uintptr_value_, node.right ()->value.uintptr_value_);
+          break;
+        case kRune:
+          node.value.rune_value_ = T () (node.left ()->value.rune_value_, node.right ()->value.rune_value_);
+          break;
+        case kInteger:
+          node.value.integer_value_ = T () (node.left ()->value.integer_value_, node.right ()->value.integer_value_);
+          break;
+        default:
+          type_not_reached (*in_type);
+        }
+      } else {
+        node.type = in_type;
+      }
+    }
+
+    template <typename T>
+    static void process_shift (ast_binary_expr_t& node)
+    {
+      if (!(is_unsigned_integral (node.right ()->type) || is_untyped_numeric (node.right ()->type))) {
+        error_at_line (-1, 0, node.location.File.c_str (),
+                       node.location.Line,
+                       "%s is not integral (E156)",
+                       node.right ()->type->ToString ().c_str ());
+      }
+
+      if (node.right ()->value.present) {
+        if (!node.right ()->value.representable (node.right ()->type, Type::Uint::Instance ())) {
+          error_at_line (-1, 0, node.location.File.c_str (),
+                         node.location.Line,
+                         "shift amount %s is not a uint (E156)",
+                         node.right ()->type->ToString ().c_str ());
+        }
+        node.right ()->value.convert (node.right ()->type, Type::Uint::Instance ());
+        node.right ()->type = Type::Uint::Instance ();
+      }
+
+      if (!integral (node.left ()->type)) {
+        error_at_line (-1, 0, node.location.File.c_str (),
+                       node.location.Line,
+                       "%s is not integral (E156)",
+                       node.left ()->type->ToString ().c_str ());
+      }
+
+      node.type = node.left ()->type;
+
+      if (node.left ()->value.present &&
+          node.right ()->value.present) {
+        node.value.present = true;
+        switch (node.type->underlying_kind ()) {
+        case kUint8:
+          node.value.uint8_value_ = T () (node.left ()->value.uint8_value_, node.right ()->value.uint_value_);
+          break;
+        case kUint16:
+          node.value.uint16_value_ = T () (node.left ()->value.uint16_value_, node.right ()->value.uint_value_);
+          break;
+        case kUint32:
+          node.value.uint32_value_ = T () (node.left ()->value.uint32_value_, node.right ()->value.uint_value_);
+          break;
+        case kUint64:
+          node.value.uint64_value_ = T () (node.left ()->value.uint64_value_, node.right ()->value.uint_value_);
+          break;
+        case kInt8:
+          node.value.int8_value_ = T () (node.left ()->value.int8_value_, node.right ()->value.uint_value_);
+          break;
+        case kInt16:
+          node.value.int16_value_ = T () (node.left ()->value.int16_value_, node.right ()->value.uint_value_);
+          break;
+        case kInt32:
+          node.value.int32_value_ = T () (node.left ()->value.int32_value_, node.right ()->value.uint_value_);
+          break;
+        case kInt64:
+          node.value.int64_value_ = T () (node.left ()->value.int64_value_, node.right ()->value.uint_value_);
+          break;
+        case kUint:
+          node.value.uint_value_ = T () (node.left ()->value.uint_value_, node.right ()->value.uint_value_);
+          break;
+        case kInt:
+          node.value.int_value_ = T () (node.left ()->value.int_value_, node.right ()->value.uint_value_);
+          break;
+        case kUintptr:
+          node.value.uintptr_value_ = T () (node.left ()->value.uintptr_value_, node.right ()->value.uint_value_);
+          break;
+        case kRune:
+          node.value.rune_value_ = T () (node.left ()->value.rune_value_, node.right ()->value.uint_value_);
+          break;
+        case kInteger:
+          node.value.integer_value_ = T () (node.left ()->value.integer_value_, node.right ()->value.uint_value_);
+          break;
+        default:
+          type_not_reached (*node.type);
+        }
       }
     }
 
@@ -184,6 +554,7 @@ namespace semantic
       void visit (ast_literal_expr_t& node)
       {
         // Do nothing.  Type already set.
+        assert (node.value.present);
       }
 
       void visit (ast_identifier_expr_t& node)
@@ -242,6 +613,7 @@ namespace semantic
           {
             node.type = symbol.type;
             node.value = symbol.value;
+            assert (node.value.present);
           }
 
           void visit (const VariableSymbol& symbol)
@@ -252,7 +624,7 @@ namespace semantic
           void visit (const HiddenSymbol& symbol)
           {
             error_at_line (-1, 0, node.location.File.c_str (),
-                           node.location.Line, "%s is not accessible in this scope (E19)",
+                           node.location.Line, "%s is not accessible in this scope (E157)",
                            symbol.identifier.c_str ());
           }
         };
@@ -270,23 +642,101 @@ namespace semantic
                   is_untyped_boolean (node.child ()->type))) {
               error_at_line (-1, 0, node.location.File.c_str (),
                              node.location.Line,
-                             "! cannot be applied to %s (E19)",
+                             "! cannot be applied to %s (E158)",
                              node.child ()->type->ToString ().c_str ());
-
             }
             node.type = node.child ()->type;
             if (node.child ()->value.present) {
-              if (is_bool (node.child ()->type)) {
-                node.value.ref (*Type::Bool::Instance ()) = !node.child ()->value.ref (*Type::Bool::Instance ());
-              } else {
-                node.value.ref (*Type::Boolean::Instance ()) = !node.child ()->value.ref (*Type::Boolean::Instance ());
-              }
               node.value.present = true;
+              switch (node.type->underlying_kind ()) {
+              case kBool:
+                node.value.bool_value_ = !node.child ()->value.bool_value_;
+                break;
+              case kBoolean:
+                node.value.boolean_value_ = !node.child ()->value.boolean_value_;
+                break;
+              default:
+                not_reached;
+              }
             }
           }
           break;
         case Negate:
-          unimplemented;
+          {
+            if (!(is_numeric (node.child ()->type) ||
+                  is_untyped_numeric (node.child ()->type))) {
+              error_at_line (-1, 0, node.location.File.c_str (),
+                             node.location.Line,
+                             "- cannot be applied to %s (E159)",
+                             node.child ()->type->ToString ().c_str ());
+            }
+            node.type = node.child ()->type;
+            if (node.child ()->value.present) {
+              node.value.present = true;
+              switch (node.type->underlying_kind ()) {
+              case kUint8:
+                node.value.uint8_value_ = -node.child ()->value.uint8_value_;
+                break;
+              case kUint16:
+                node.value.uint16_value_ = -node.child ()->value.uint16_value_;
+                break;
+              case kUint32:
+                node.value.uint32_value_ = -node.child ()->value.uint32_value_;
+                break;
+              case kUint64:
+                node.value.uint32_value_ = -node.child ()->value.uint32_value_;
+                break;
+              case kInt8:
+                node.value.int8_value_ = -node.child ()->value.int8_value_;
+                break;
+              case kInt16:
+                node.value.int16_value_ = -node.child ()->value.int16_value_;
+                break;
+              case kInt32:
+                node.value.int32_value_ = -node.child ()->value.int32_value_;
+                break;
+              case kInt64:
+                node.value.int64_value_ = -node.child ()->value.int64_value_;
+                break;
+              case kFloat32:
+                node.value.float32_value_ = -node.child ()->value.float32_value_;
+                break;
+              case kFloat64:
+                node.value.float64_value_ = -node.child ()->value.float64_value_;
+                break;
+              case kComplex64:
+                node.value.complex64_value_ = -node.child ()->value.complex64_value_;
+                break;
+              case kComplex128:
+                node.value.complex128_value_ = -node.child ()->value.complex128_value_;
+                break;
+              case kUint:
+                node.value.uint_value_ = -node.child ()->value.uint_value_;
+                break;
+              case kInt:
+                node.value.int_value_ = -node.child ()->value.int_value_;
+                break;
+              case kUintptr:
+                node.value.uintptr_value_ = -node.child ()->value.uintptr_value_;
+                break;
+              case kRune:
+                node.value.rune_value_ = -node.child ()->value.rune_value_;
+                break;
+              case kInteger:
+                node.value.integer_value_ = -node.child ()->value.integer_value_;
+                break;
+              case kFloat:
+                node.value.float_value_ = -node.child ()->value.float_value_;
+                break;
+              case kComplex:
+                node.value.complex_value_ = -node.child ()->value.complex_value_;
+                break;
+              default:
+                not_reached;
+              }
+            }
+          }
+          break;
         }
       }
 
@@ -295,27 +745,38 @@ namespace semantic
         node.VisitChildren (*this);
         switch (node.arithmetic) {
         case Multiply:
-          unimplemented;
+          process_arithmetic<Multiplier> (node);
+          break;
         case Divide:
-          unimplemented;
+          process_arithmetic<Divider> (node);
+          break;
         case Modulus:
-          unimplemented;
+          process_integral<Modulizer> (node);
+          break;
         case LeftShift:
-          unimplemented;
+          process_shift<LeftShifter> (node);
+          break;
         case RightShift:
-          unimplemented;
+          process_shift<RightShifter> (node);
+          break;
         case BitAnd:
-          unimplemented;
+          process_integral<BitAnder> (node);
+          break;
         case BitAndNot:
-          unimplemented;
+          process_integral<BitAndNotter> (node);
+          break;
         case Add:
-          unimplemented;
+          process_arithmetic<Adder> (node);
+          break;
         case Subtract:
-          unimplemented;
+          process_arithmetic<Subtracter> (node);
+          break;
         case BitOr:
-          unimplemented;
+          process_integral<BitOrer> (node);
+          break;
         case BitXor:
-          unimplemented;
+          process_integral<BitXorer> (node);
+          break;
         case Equal:
           process_comparable<Equalizer> (node);
           break;
@@ -323,13 +784,17 @@ namespace semantic
           process_comparable<NotEqualizer> (node);
           break;
         case LessThan:
-          unimplemented;
+          process_orderable<LessThaner> (node);
+          break;
         case LessEqual:
-          unimplemented;
+          process_orderable<LessEqualizer> (node);
+          break;
         case MoreThan:
-          unimplemented;
+          process_orderable<MoreThaner> (node);
+          break;
         case MoreEqual:
-          unimplemented;
+          process_orderable<MoreEqualizer> (node);
+          break;
         case LogicOr:
           {
             if (!(assignable (node.left ()->type, node.left ()->value, node.right ()->type) ||
@@ -510,7 +975,7 @@ namespace semantic
         if (!assignable (node.child ()->type, node.child ()->value, node.return_symbol->type))
           {
             error_at_line (-1, 0, node.location.File.c_str (),
-                           node.location.Line, "cannot convert %s to %s in return (E19)",
+                           node.location.Line, "cannot convert %s to %s in return (E160)",
                            node.child ()->type->ToString ().c_str (), node.return_symbol->type->ToString ().c_str ());
           }
       }
@@ -530,6 +995,11 @@ namespace semantic
           node.condition ()->type = node.condition ()->type->DefaultType ();
         }
 
+      }
+
+      void visit (ast_const_t& node)
+      {
+        process_types_and_constants (&node);
       }
 
       void visit (ast_var_statement_t& node)
@@ -584,18 +1054,23 @@ namespace semantic
                  id_pos != id_limit;
                  ++id_pos, ++init_pos)
               {
-                // Assume left is mutable.
-                unimplemented;
-                // typed_value_t left_tv = typed_value_t::make_ref (type, MUTABLE, node.dereferenceMutability, false);
-                // typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvert (*init_pos, left_tv.type);
-                // check_assignment (left_tv, right_tv, node,
-                //                   "incompatible types (%s) = (%s) (E126)",
-                //                   "assignment leaks mutable pointers (E127)");
-                // // Convert to specified mutability.
-                // left_tv.intrinsic_mutability = node.mutability;
-                // const std::string& name = ast_get_identifier (*id_pos);
-                // Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
-                // node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
+                Node* n = *init_pos;
+                check_types (n);
+
+                if (!assignable (n->type, n->value, type)) {
+                  error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                                 "cannot assign %s to %s in initialization (E62)", n->type->ToString ().c_str (), type->ToString ().c_str ());
+                }
+
+                if (n->value.present &&
+                    n->type->IsUntyped ()) {
+                  n->value.convert (n->type, type);
+                  n->type = type;
+                }
+
+                const std::string& name = ast_get_identifier (*id_pos);
+                VariableSymbol* symbol = new VariableSymbol (name, *id_pos, type, node.intrinsic_mutability, node.dereferenceMutability);
+                node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
               }
 
             return;

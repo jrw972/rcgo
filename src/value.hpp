@@ -283,7 +283,6 @@ struct value_t
 
   void print (std::ostream& out, const Type::Type* type) const;
 
-private:
   union
   {
     Type::Bool::ValueType bool_value_;

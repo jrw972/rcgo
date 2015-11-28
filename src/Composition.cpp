@@ -808,7 +808,7 @@ namespace Composition
     {
       // Are we calling a getter or pull port.
       const Type::Method* method = type_cast<Type::Method> (node.original_expr_tv.type);
-      if (method != NULL && method->kind == Type::Method::GETTER)
+      if (method != NULL && method->method_kind == Type::Method::GETTER)
         {
           static_memory_t memory;
           populateMemory (memory);
@@ -819,7 +819,7 @@ namespace Composition
         }
 
       const Type::Function* function = type_cast<Type::Function> (node.original_expr_tv.type);
-      if (function != NULL && function->kind == Type::Function::PULL_PORT)
+      if (function != NULL && function->function_kind == Type::Function::PULL_PORT)
         {
           static_memory_t memory;
           populateMemory (memory);

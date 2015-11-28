@@ -1327,7 +1327,7 @@ type::Instance () \
   Function::ToString () const
   {
     std::stringstream str;
-    switch (kind)
+    switch (function_kind)
       {
       case FUNCTION:
         str << "func " << *GetSignature () << ' ' << *GetReturnParameter ()->type;
@@ -1346,7 +1346,7 @@ type::Instance () \
   Method::ToString () const
   {
     std::stringstream str;
-    switch (kind)
+    switch (method_kind)
       {
       case METHOD:
         str << '(' << *receiver_type << ')' << " func " << *signature << ' ' << *return_type ();
@@ -1394,11 +1394,11 @@ type::Instance () \
     return return_parameter->type;
   }
 
-  Method::Method (Kind k, const NamedType* named_type_,
+  Method::Method (MethodKind k, const NamedType* named_type_,
                   ParameterSymbol* this_parameter_,
                   const Signature * signature_,
                   ParameterSymbol* return_parameter_)
-    : kind (k), named_type (named_type_)
+    : method_kind (k), named_type (named_type_)
     , receiver_type (NULL /*this_parameter_->value.type*/)
     , this_parameter (this_parameter_)
     , function_type (make_function_type (this_parameter_, signature_, return_parameter_))
@@ -1563,6 +1563,33 @@ type::Instance () \
     return v.flag;
   }
 
+  bool is_unsigned_integral (const Type* type)
+  {
+    switch (type->underlying_kind ()) {
+    case kUint8:
+    case kUint16:
+    case kUint32:
+    case kUint64:
+      return true;
+    default:
+      return false;
+    }
+  }
+
+  bool is_numeric (const Type* type)
+  {
+    struct visitor : DefaultVisitor {
+      bool flag;
+      visitor () : flag (false) { }
+      void visit (const Uint& type) { flag = true; }
+      void visit (const Int& type) { flag = true; }
+      void visit (const Uintptr& type) { flag = true; }
+    };
+    visitor v;
+    type->UnderlyingType ()->Accept (v);
+    return v.flag;
+  }
+
   bool is_untyped_numeric (const Type* type)
   {
     struct visitor : DefaultVisitor {
@@ -1595,16 +1622,111 @@ type::Instance () \
 
   bool comparable (const Type* type)
   {
-    // TODO:  This is incomplete.
-    struct visitor : DefaultVisitor {
-      bool flag;
-      visitor () : flag (false) { }
-      void visit (const Bool& type) { flag = true; }
-      void visit (const Boolean& type) { flag = true; }
-    };
-    visitor v;
-    type->UnderlyingType ()->Accept (v);
-    return v.flag;
+    switch (type->underlying_kind ()) {
+    case kBool:
+    case kUint8:
+    case kUint16:
+    case kUint32:
+    case kUint64:
+    case kInt8:
+    case kInt16:
+    case kInt32:
+    case kInt64:
+    case kFloat32:
+    case kFloat64:
+    case kComplex64:
+    case kComplex128:
+    case kUint:
+    case kInt:
+    case kUintptr:
+    case kStringU:
+    case kBoolean:
+    case kRune:
+    case kInteger:
+    case kFloat:
+    case kComplex:
+    case kString:
+      return true;
+    default:
+      return false;
+    }
+  }
+
+  bool orderable (const Type* type)
+  {
+    switch (type->underlying_kind ()) {
+    case kUint8:
+    case kUint16:
+    case kUint32:
+    case kUint64:
+    case kInt8:
+    case kInt16:
+    case kInt32:
+    case kInt64:
+    case kFloat32:
+    case kFloat64:
+    case kUint:
+    case kInt:
+    case kUintptr:
+    case kStringU:
+    case kRune:
+    case kInteger:
+    case kFloat:
+    case kString:
+      return true;
+    default:
+      return false;
+    }
+  }
+
+  bool arithmetic (const Type* type)
+  {
+    switch (type->underlying_kind ()) {
+    case kUint8:
+    case kUint16:
+    case kUint32:
+    case kUint64:
+    case kInt8:
+    case kInt16:
+    case kInt32:
+    case kInt64:
+    case kFloat32:
+    case kFloat64:
+    case kComplex64:
+    case kComplex128:
+    case kUint:
+    case kInt:
+    case kUintptr:
+    case kRune:
+    case kInteger:
+    case kFloat:
+    case kComplex:
+      return true;
+    default:
+      return false;
+    }
+  }
+
+  bool integral (const Type* type)
+  {
+    switch (type->underlying_kind ()) {
+    case kUint8:
+    case kUint16:
+    case kUint32:
+    case kUint64:
+    case kInt8:
+    case kInt16:
+    case kInt32:
+    case kInt64:
+    case kUint:
+    case kInt:
+    case kUintptr:
+    case kRune:
+    case kInteger:
+      return true;
+    default:
+      return false;
+    }
   }
 
   NamedType NamedBool ("bool", Bool::Instance ());

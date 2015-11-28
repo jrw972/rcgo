@@ -153,6 +153,11 @@ namespace semantic
         node.body ()->Accept (*this);
       }
 
+      void visit (ast_const_t& node)
+      {
+        // Do nothing.
+      }
+
       void visit (ast_list_statement_t& node)
       {
         node.VisitChildren (*this);
@@ -184,7 +189,21 @@ namespace semantic
       {
         if (!node.expression_list ()->Empty ())
           {
-            unimplemented;
+            node.expression_list ()->Accept (*this);
+            size_t idx = 0;
+            for (Node::ConstIterator pos = node.expression_list ()->Begin (), limit = node.expression_list ()->End ();
+                 pos != limit;
+                 ++pos, ++idx) {
+              Node* n = *pos;
+              VariableSymbol* symbol = node.symbols[idx];
+
+              if (type_contains_pointer (n->type) &&
+                  symbol->dereference_mutability < n->dereference_mutability)
+                {
+                  error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                                 "assignment casts away +const or +foreign (E149)");
+                }
+            }
           }
       }
 

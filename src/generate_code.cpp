@@ -39,6 +39,11 @@ namespace  code
       node.operation = new CallableOperation (node.symbol->initializer, node.expression_list ()->operation);
     }
 
+    void visit (ast_const_t& node)
+    {
+      // Do nothing.
+    }
+
     void visit (ast_initializer_t& node)
     {
       node.body ()->Accept (*this);
@@ -59,7 +64,9 @@ namespace  code
            pos != limit;
            ++pos)
         {
-          op->list.push_back ((*pos)->operation);
+          if ((*pos)->operation != NULL) {
+            op->list.push_back ((*pos)->operation);
+          }
         }
       node.operation = op;
     }
@@ -111,8 +118,19 @@ namespace  code
         }
       else
         {
+          node.expression_list ()->Accept (*this);
           // Initialize the variables.
-          unimplemented;
+          size_t idx = 0;
+          for (Node::ConstIterator pos = node.expression_list ()->Begin (), limit = node.expression_list ()->End ();
+               pos != limit;
+               ++pos, ++idx) {
+            VariableSymbol* symbol = node.symbols[idx];
+            Operation* right = (*pos)->operation;
+            if ((*pos)->expression_kind == kVariable) {
+              right = new Load (right, (*pos)->type);
+            }
+            op->list.push_back (new Assign (new Reference (symbol->offset ()), right, symbol->type));
+          }
         }
       node.operation = op;
     }
@@ -126,7 +144,7 @@ namespace  code
         {
           right = new Load (right, node.right ()->type);
         }
-      node.operation = new Assign (left, right, node.left ()->type->Size ());
+      node.operation = new Assign (left, right, node.left ()->type);
     }
 
     void visit (ast_call_expr_t& node)
@@ -151,6 +169,7 @@ namespace  code
            pos != limit;
            ++pos)
         {
+          assert ((*pos)->operation != NULL);
           if ((*pos)->expression_kind == kVariable) {
             op->list.push_back (new Load ((*pos)->operation, (*pos)->type));
           } else {
@@ -167,6 +186,11 @@ namespace  code
 
     void visit (ast_identifier_expr_t& node)
     {
+      if (node.value.present) {
+        node.operation = make_literal (node.type, node.value);
+        return;
+      }
+
       struct Visitor : public ConstSymbolVisitor
       {
         ast_identifier_expr_t& node;
@@ -175,11 +199,6 @@ namespace  code
         void defaultAction (const Symbol& s)
         {
           symbol_not_reached (s);
-        }
-
-        void visit (const ConstantSymbol& s)
-        {
-          op = make_literal (node.type, node.value);
         }
 
         void visit (const ParameterSymbol& s)
@@ -276,7 +295,7 @@ namespace  code
     void visit (ast_unary_arithmetic_expr_t& node)
     {
       if (node.value.present) {
-        unimplemented;
+        node.operation = make_literal (node.type, node.value);
       } else {
         node.VisitChildren (*this);
         Operation* c = node.child ()->operation;
@@ -311,41 +330,56 @@ namespace  code
 
         switch (node.arithmetic) {
         case Multiply:
-          unimplemented;
+          node.operation = make_binary_arithmetic<Multiplier> (node.type, left, right);
+          break;
         case Divide:
-          unimplemented;
+          node.operation = make_binary_arithmetic<Divider> (node.type, left, right);
+          break;
         case Modulus:
-          unimplemented;
+          node.operation = make_binary_integral<Modulizer> (node.type, left, right);
+          break;
         case LeftShift:
-          unimplemented;
+          node.operation = make_shift<LeftShifter> (node.type, left, MakeConvertToUint (right, node.right ()->type));
+          break;
         case RightShift:
-          unimplemented;
+          node.operation = make_shift<RightShifter> (node.type, left, MakeConvertToUint (right, node.right ()->type));
+          break;
         case BitAnd:
-          unimplemented;
+          node.operation = make_binary_integral<BitAnder> (node.type, left, right);
+          break;
         case BitAndNot:
-          unimplemented;
+          node.operation = make_binary_integral<BitAndNotter> (node.type, left, right);
+          break;
         case Add:
-          unimplemented;
+          node.operation = make_binary_arithmetic<Adder> (node.type, left, right);
+          break;
         case Subtract:
-          unimplemented;
+          node.operation = make_binary_arithmetic<Subtracter> (node.type, left, right);
+          break;
         case BitOr:
-          unimplemented;
+          node.operation = make_binary_integral<BitOrer> (node.type, left, right);
+          break;
         case BitXor:
-          unimplemented;
+          node.operation = make_binary_integral<BitXorer> (node.type, left, right);
+          break;
         case Equal:
-          node.operation = make_binary<Equalizer> (node.type, left, right);
+          node.operation = make_binary_arithmetic<Equalizer> (node.left ()->type, left, right);
           break;
         case NotEqual:
-          node.operation = make_binary<NotEqualizer> (node.type, left, right);
+          node.operation = make_binary_arithmetic<NotEqualizer> (node.left ()->type, left, right);
           break;
         case LessThan:
-          unimplemented;
+          node.operation = make_binary_arithmetic<LessThaner> (node.left ()->type, left, right);
+          break;
         case LessEqual:
-          unimplemented;
+          node.operation = make_binary_arithmetic<LessEqualizer> (node.left ()->type, left, right);
+          break;
         case MoreThan:
-          unimplemented;
+          node.operation = make_binary_arithmetic<MoreThaner> (node.left ()->type, left, right);
+          break;
         case MoreEqual:
-          unimplemented;
+          node.operation = make_binary_arithmetic<MoreEqualizer> (node.left ()->type, left, right);
+          break;
         case ::LogicOr:
           node.operation = new runtime::LogicOr (left, right);
           break;

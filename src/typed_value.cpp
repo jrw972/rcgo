@@ -16,45 +16,6 @@ using namespace ast;
 using namespace runtime;
 #include "reaction.hpp"
 
-static Type::C64 operator+ (const Type::C64&, const Type::C64&)
-{
-  unimplemented;
-}
-static Type::C64 operator- (const Type::C64&, const Type::C64&)
-{
-  unimplemented;
-}
-static Type::C64 operator- (const Type::C64&)
-{
-  unimplemented;
-}
-
-static Type::C128 operator+ (const Type::C128&, const Type::C128&)
-{
-  unimplemented;
-}
-static Type::C128 operator- (const Type::C128&, const Type::C128&)
-{
-  unimplemented;
-}
-static Type::C128 operator- (const Type::C128&)
-{
-  unimplemented;
-}
-
-static Type::Complex::ValueType operator+ (const Type::Complex::ValueType&, const Type::Complex::ValueType&)
-{
-  unimplemented;
-}
-static Type::Complex::ValueType operator- (const Type::Complex::ValueType&, const Type::Complex::ValueType&)
-{
-  unimplemented;
-}
-static Type::Complex::ValueType operator- (const Type::Complex::ValueType&)
-{
-  unimplemented;
-}
-
 template <typename TargetType>
 struct Helper2
 {

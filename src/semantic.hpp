@@ -1,25 +1,132 @@
 #ifndef semantic_hpp
 #define semantic_hpp
 
+#include <utility>
+
 #include "types.hpp"
 #include "ast.hpp"
 #include <error.h>
 #include "SymbolVisitor.hpp"
 #include "Composition.hpp"
 
-template <typename T>
+using namespace std::rel_ops;
+
+struct Multiplier {
+  template <typename T>
+  T operator() (const T& x, const T& y) const {
+    return x * y;
+  }
+};
+
+struct Divider {
+  template <typename T>
+  T operator() (const T& x, const T& y) const {
+    return x / y;
+  }
+};
+
+struct Modulizer {
+  template <typename T>
+  T operator() (const T& x, const T& y) const {
+    return x % y;
+  }
+};
+
+struct LeftShifter {
+  template <typename T, typename U>
+  T operator() (const T& x, const U& y) const {
+    return x << y;
+  }
+};
+
+struct RightShifter {
+  template <typename T, typename U>
+  T operator() (const T& x, const U& y) const {
+    return x >> y;
+  }
+};
+
+struct BitAnder {
+  template <typename T>
+  T operator() (const T& x, const T& y) const {
+    return x & y;
+  }
+};
+
+struct BitAndNotter {
+  template <typename T>
+  T operator() (const T& x, const T& y) const {
+    return x & (~y);
+  }
+};
+
+struct Adder {
+  template <typename T>
+  T operator() (const T& x, const T& y) const {
+    return x + y;
+  }
+};
+
+struct Subtracter {
+  template <typename T>
+  T operator() (const T& x, const T& y) const {
+    return x - y;
+  }
+};
+
+struct BitOrer {
+  template <typename T>
+  T operator() (const T& x, const T& y) const {
+    return x | y;
+  }
+};
+
+struct BitXorer {
+  template <typename T>
+  T operator() (const T& x, const T& y) const {
+    return x ^ y;
+  }
+};
+
 struct Equalizer {
-  typedef T ValueType;
+  template <typename T>
   bool operator() (const T& x, const T& y) const {
     return x == y;
   }
 };
 
-template <typename T>
 struct NotEqualizer {
-  typedef T ValueType;
+  template <typename T>
   bool operator() (const T& x, const T& y) const {
     return x != y;
+  }
+};
+
+struct LessThaner {
+  template <typename T>
+  bool operator() (const T& x, const T& y) const {
+    return x < y;
+  }
+};
+
+struct LessEqualizer {
+  template <typename T>
+  bool operator() (const T& x, const T& y) const {
+    return x <= y;
+  }
+};
+
+struct MoreThaner {
+  template <typename T>
+  bool operator() (const T& x, const T& y) const {
+    return x > y;
+  }
+};
+
+struct MoreEqualizer {
+  template <typename T>
+  bool operator() (const T& x, const T& y) const {
+    return x >= y;
   }
 };
 

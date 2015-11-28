@@ -157,34 +157,6 @@ static Operation* check_array_index (Node* node,
   //   }
 }
 
-static Type::C64 operator* (const Type::C64&, const Type::C64&)
-{
-  unimplemented;
-}
-static Type::C64 operator/ (const Type::C64&, const Type::C64&)
-{
-  unimplemented;
-}
-
-
-static Type::C128 operator* (const Type::C128&, const Type::C128&)
-{
-  unimplemented;
-}
-static Type::C128 operator/ (const Type::C128&, const Type::C128&)
-{
-  unimplemented;
-}
-
-static Type::Complex::ValueType operator* (const Type::Complex::ValueType&, const Type::Complex::ValueType&)
-{
-  unimplemented;
-}
-static Type::Complex::ValueType operator/ (const Type::Complex::ValueType&, const Type::Complex::ValueType&)
-{
-  unimplemented;
-}
-
 struct Predicate
 {
   bool flag;
@@ -362,7 +334,7 @@ struct check_visitor : public ast::DefaultVisitor
 
     const Type::Function* push_port_type = Type::type_cast<Type::Function> (array_type->Base ());
 
-    if (push_port_type == NULL || push_port_type->kind != Type::Function::PUSH_PORT)
+    if (push_port_type == NULL || push_port_type->function_kind != Type::Function::PUSH_PORT)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "%s is not an array of ports (E17)", port_identifier.c_str ());
@@ -867,7 +839,7 @@ struct check_visitor : public ast::DefaultVisitor
     const std::string& port_identifier = ast_get_identifier (expr);
     const Type::Type *this_type = node.GetReceiverType ();
     const Type::Function *push_port_type = Type::type_cast<Type::Function> (type_select (this_type, port_identifier));
-    if (push_port_type == NULL || push_port_type->kind != Type::Function::PUSH_PORT)
+    if (push_port_type == NULL || push_port_type->function_kind != Type::Function::PUSH_PORT)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "no port named %s (E34)", port_identifier.c_str ());

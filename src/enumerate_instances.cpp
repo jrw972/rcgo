@@ -119,7 +119,7 @@ instantiate_contained_instances (const Type::Type * type,
 
     void visit (const Type::Function& type)
     {
-      switch (type.kind)
+      switch (type.function_kind)
         {
         case Type::Function::FUNCTION:
           // Do nothing.
