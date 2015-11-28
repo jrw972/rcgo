@@ -68,6 +68,14 @@ public:
   {
     unimplemented;
   }
+  virtual const Type::Signature* signature () const
+  {
+    unimplemented;
+  }
+  virtual void check_types (ast::Node* args) const
+  {
+    unimplemented;
+  }
 
   MemoryModel memory_model;
 

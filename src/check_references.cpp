@@ -32,16 +32,6 @@ namespace semantic
         }
     }
 
-    static void require_value_or_variable_list (const Node* node)
-    {
-      for (Node::ConstIterator pos = node->Begin (), limit = node->End ();
-           pos != limit;
-           ++pos)
-        {
-          require_value_or_variable (*pos);
-        }
-    }
-
     // static void require_variable_list (const Node* node) {
     //   for (Node::ConstIterator pos = node->Begin (), limit = node->End ();
     //        pos != limit;
@@ -62,7 +52,7 @@ namespace semantic
       {
         node.VisitChildren (*this);
         require_value_or_variable (node.expr ());
-        require_value_or_variable_list (node.args ());
+        node.callable->check_references (node.args ());
         node.expression_kind = kValue;
       }
 
@@ -184,6 +174,13 @@ namespace semantic
         require_value_or_variable (node.condition ());
       }
 
+      void visit (ast_change_statement_t& node)
+      {
+        node.expr ()->Accept (*this);
+        require_value_or_variable (node.expr ());
+        node.body ()->Accept (*this);
+      }
+
       void visit (ast_const_t& node)
       {
         // Do nothing.
@@ -239,10 +236,11 @@ namespace semantic
         require_value_or_variable (node.base ());
         require_value_or_variable (node.index ());
 
-        if (node.array_type != NULL) {
-          node.expression_kind = node.base ()->expression_kind;
-          return;
-        }
+        if (node.array_type != NULL)
+          {
+            node.expression_kind = node.base ()->expression_kind;
+            return;
+          }
         not_reached;
       }
 
@@ -260,7 +258,31 @@ namespace semantic
         require_value_or_variable (node.left ());
         node.expression_kind = kValue;
       }
+
+      void visit (TypeExpression& node)
+      {
+        node.expression_kind = kType;
+      }
     };
+  }
+
+  void require_type (const Node* node)
+  {
+    if (!(node->expression_kind == kType))
+      {
+        error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+                       "required a type (E2)");
+      }
+  }
+
+  void require_value_or_variable_list (const Node* node)
+  {
+    for (Node::ConstIterator pos = node->Begin (), limit = node->End ();
+         pos != limit;
+         ++pos)
+      {
+        require_value_or_variable (*pos);
+      }
   }
 
   void check_references (ast::Node* root)

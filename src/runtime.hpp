@@ -56,30 +56,21 @@ namespace runtime
   {
     New (ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
-    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types)
-    {
-      unimplemented;
-    }
+    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types);
   };
 
   struct Move : public ::Template
   {
     Move (ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
-    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types)
-    {
-      unimplemented;
-    }
+    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types);
   };
 
   struct Merge : public ::Template
   {
     Merge (ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
-    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types)
-    {
-      unimplemented;
-    }
+    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types);
   };
 
   struct Copy : public ::Template
@@ -288,7 +279,8 @@ namespace runtime
 
   struct Assign : public Operation
   {
-    Assign (Operation* l, Operation* r, const Type::Type* t) : left (l), right (r), size (t->Size ()) {
+    Assign (Operation* l, Operation* r, const Type::Type* t) : left (l), right (r), size (t->Size ())
+    {
       assert (left != NULL);
       assert (right != NULL);
     }
@@ -338,7 +330,8 @@ namespace runtime
   };
 
   template <typename T>
-  struct Unary : public Operation {
+  struct Unary : public Operation
+  {
     Unary (Operation* c) : child (c) { }
     virtual void execute (executor_base_t& exec) const
     {
@@ -353,17 +346,20 @@ namespace runtime
   template <template <typename S> class T>
   Operation* make_unary (const Type::Type* type, Operation* child)
   {
-    struct visitor : public Type::DefaultVisitor {
+    struct visitor : public Type::DefaultVisitor
+    {
       Operation* child;
       Operation* operation;
 
       visitor (Operation* c) : child (c), operation (NULL) { }
 
-      void default_action (const Type::Type& type) {
+      void default_action (const Type::Type& type)
+      {
         type_not_reached (type);
       }
 
-      void visit (const Type::Bool& type) {
+      void visit (const Type::Bool& type)
+      {
         operation = new Unary<T<Type::Bool::ValueType> > (child);
       }
     };
@@ -373,7 +369,8 @@ namespace runtime
   }
 
   template <typename V, typename T>
-  struct Binary : public Operation {
+  struct Binary : public Operation
+  {
     Binary (Operation* l, Operation* r) : left (l), right (r) { }
     virtual void execute (executor_base_t& exec) const
     {
@@ -390,7 +387,8 @@ namespace runtime
   };
 
   template <typename V, typename T>
-  struct Shift : public Operation {
+  struct Shift : public Operation
+  {
     Shift (Operation* l, Operation* r) : left (l), right (r) { }
     virtual void execute (executor_base_t& exec) const
     {
@@ -409,108 +407,122 @@ namespace runtime
   template <typename T>
   Operation* make_binary_arithmetic (const Type::Type* type, Operation* left, Operation* right)
   {
-    switch (type->underlying_kind ()) {
-    case Type::kBool:
-      return new Binary<Type::Bool::ValueType, T> (left, right);
-    case Type::kUint8:
-      return new Binary<Type::Uint8::ValueType, T> (left, right);
-    case Type::kUint16:
-      return new Binary<Type::Uint16::ValueType, T> (left, right);
-    case Type::kUint32:
-      return new Binary<Type::Uint32::ValueType, T> (left, right);
-    case Type::kUint64:
-      return new Binary<Type::Uint64::ValueType, T> (left, right);
-    case Type::kInt8:
-      return new Binary<Type::Int8::ValueType, T> (left, right);
-    case Type::kInt16:
-      return new Binary<Type::Int16::ValueType, T> (left, right);
-    case Type::kInt32:
-      return new Binary<Type::Int32::ValueType, T> (left, right);
-    case Type::kInt64:
-      return new Binary<Type::Int64::ValueType, T> (left, right);
-    case Type::kFloat32:
-      return new Binary<Type::Float32::ValueType, T> (left, right);
-    case Type::kFloat64:
-      return new Binary<Type::Float64::ValueType, T> (left, right);
-    case Type::kComplex64:
-      return new Binary<Type::Complex64::ValueType, T> (left, right);
-    case Type::kComplex128:
-      return new Binary<Type::Complex128::ValueType, T> (left, right);
-    case Type::kUint:
-      return new Binary<Type::Uint::ValueType, T> (left, right);
-    case Type::kInt:
-      return new Binary<Type::Int::ValueType, T> (left, right);
-    case Type::kUintptr:
-      return new Binary<Type::Uintptr::ValueType, T> (left, right);
+    switch (type->underlying_kind ())
+      {
+      case Type::kBool:
+        return new Binary<Type::Bool::ValueType, T> (left, right);
+      case Type::kUint8:
+        return new Binary<Type::Uint8::ValueType, T> (left, right);
+      case Type::kUint16:
+        return new Binary<Type::Uint16::ValueType, T> (left, right);
+      case Type::kUint32:
+        return new Binary<Type::Uint32::ValueType, T> (left, right);
+      case Type::kUint64:
+        return new Binary<Type::Uint64::ValueType, T> (left, right);
+      case Type::kInt8:
+        return new Binary<Type::Int8::ValueType, T> (left, right);
+      case Type::kInt16:
+        return new Binary<Type::Int16::ValueType, T> (left, right);
+      case Type::kInt32:
+        return new Binary<Type::Int32::ValueType, T> (left, right);
+      case Type::kInt64:
+        return new Binary<Type::Int64::ValueType, T> (left, right);
+      case Type::kFloat32:
+        return new Binary<Type::Float32::ValueType, T> (left, right);
+      case Type::kFloat64:
+        return new Binary<Type::Float64::ValueType, T> (left, right);
+      case Type::kComplex64:
+        return new Binary<Type::Complex64::ValueType, T> (left, right);
+      case Type::kComplex128:
+        return new Binary<Type::Complex128::ValueType, T> (left, right);
+      case Type::kUint:
+        return new Binary<Type::Uint::ValueType, T> (left, right);
+      case Type::kInt:
+        return new Binary<Type::Int::ValueType, T> (left, right);
+      case Type::kUintptr:
+        return new Binary<Type::Uintptr::ValueType, T> (left, right);
+      case Type::kPointer:
+        return new Binary<Type::Uintptr::ValueType, T> (left, right);
 
-    default:
-      type_not_reached (*type);
-    }
+      default:
+        type_not_reached (*type);
+      }
   }
 
   template <typename T>
   Operation* make_binary_integral (const Type::Type* type, Operation* left, Operation* right)
   {
-    switch (type->underlying_kind ()) {
-    case Type::kUint8:
-      return new Binary<Type::Uint8::ValueType, T> (left, right);
-    case Type::kUint16:
-      return new Binary<Type::Uint16::ValueType, T> (left, right);
-    case Type::kUint32:
-      return new Binary<Type::Uint32::ValueType, T> (left, right);
-    case Type::kUint64:
-      return new Binary<Type::Uint64::ValueType, T> (left, right);
-    case Type::kInt8:
-      return new Binary<Type::Int8::ValueType, T> (left, right);
-    case Type::kInt16:
-      return new Binary<Type::Int16::ValueType, T> (left, right);
-    case Type::kInt32:
-      return new Binary<Type::Int32::ValueType, T> (left, right);
-    case Type::kInt64:
-      return new Binary<Type::Int64::ValueType, T> (left, right);
-    case Type::kUint:
-      return new Binary<Type::Uint::ValueType, T> (left, right);
-    case Type::kInt:
-      return new Binary<Type::Int::ValueType, T> (left, right);
-    case Type::kUintptr:
-      return new Binary<Type::Uintptr::ValueType, T> (left, right);
+    switch (type->underlying_kind ())
+      {
+      case Type::kUint8:
+        return new Binary<Type::Uint8::ValueType, T> (left, right);
+      case Type::kUint16:
+        return new Binary<Type::Uint16::ValueType, T> (left, right);
+      case Type::kUint32:
+        return new Binary<Type::Uint32::ValueType, T> (left, right);
+      case Type::kUint64:
+        return new Binary<Type::Uint64::ValueType, T> (left, right);
+      case Type::kInt8:
+        return new Binary<Type::Int8::ValueType, T> (left, right);
+      case Type::kInt16:
+        return new Binary<Type::Int16::ValueType, T> (left, right);
+      case Type::kInt32:
+        return new Binary<Type::Int32::ValueType, T> (left, right);
+      case Type::kInt64:
+        return new Binary<Type::Int64::ValueType, T> (left, right);
+      case Type::kUint:
+        return new Binary<Type::Uint::ValueType, T> (left, right);
+      case Type::kInt:
+        return new Binary<Type::Int::ValueType, T> (left, right);
+      case Type::kUintptr:
+        return new Binary<Type::Uintptr::ValueType, T> (left, right);
 
-    default:
-      type_not_reached (*type);
-    }
+      default:
+        type_not_reached (*type);
+      }
   }
 
   template <typename T>
   Operation* make_shift (const Type::Type* type, Operation* left, Operation* right)
   {
-    switch (type->underlying_kind ()) {
-    case Type::kUint8:
-      return new Shift<Type::Uint8::ValueType, T> (left, right);
-    case Type::kUint16:
-      return new Shift<Type::Uint16::ValueType, T> (left, right);
-    case Type::kUint32:
-      return new Shift<Type::Uint32::ValueType, T> (left, right);
-    case Type::kUint64:
-      return new Shift<Type::Uint64::ValueType, T> (left, right);
-    case Type::kInt8:
-      return new Shift<Type::Int8::ValueType, T> (left, right);
-    case Type::kInt16:
-      return new Shift<Type::Int16::ValueType, T> (left, right);
-    case Type::kInt32:
-      return new Shift<Type::Int32::ValueType, T> (left, right);
-    case Type::kInt64:
-      return new Shift<Type::Int64::ValueType, T> (left, right);
-    case Type::kUint:
-      return new Shift<Type::Uint::ValueType, T> (left, right);
-    case Type::kInt:
-      return new Shift<Type::Int::ValueType, T> (left, right);
-    case Type::kUintptr:
-      return new Shift<Type::Uintptr::ValueType, T> (left, right);
+    switch (type->underlying_kind ())
+      {
+      case Type::kUint8:
+        return new Shift<Type::Uint8::ValueType, T> (left, right);
+      case Type::kUint16:
+        return new Shift<Type::Uint16::ValueType, T> (left, right);
+      case Type::kUint32:
+        return new Shift<Type::Uint32::ValueType, T> (left, right);
+      case Type::kUint64:
+        return new Shift<Type::Uint64::ValueType, T> (left, right);
+      case Type::kInt8:
+        return new Shift<Type::Int8::ValueType, T> (left, right);
+      case Type::kInt16:
+        return new Shift<Type::Int16::ValueType, T> (left, right);
+      case Type::kInt32:
+        return new Shift<Type::Int32::ValueType, T> (left, right);
+      case Type::kInt64:
+        return new Shift<Type::Int64::ValueType, T> (left, right);
+      case Type::kUint:
+        return new Shift<Type::Uint::ValueType, T> (left, right);
+      case Type::kInt:
+        return new Shift<Type::Int::ValueType, T> (left, right);
+      case Type::kUintptr:
+        return new Shift<Type::Uintptr::ValueType, T> (left, right);
 
-    default:
-      type_not_reached (*type);
-    }
+      default:
+        type_not_reached (*type);
+      }
   }
+
+  struct Change : public Operation
+  {
+    Change (Operation* r, ptrdiff_t o, Operation* b) : root (r), root_offset (o), body (b) { }
+    virtual void execute (executor_base_t& exec) const;
+    Operation* const root;
+    ptrdiff_t const root_offset;
+    Operation* const body;
+  };
 
 }
 

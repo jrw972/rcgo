@@ -32,6 +32,7 @@ namespace ast
   class ast_initializer_t;
   class ast_instance_t;
   class ast_method_t;
+  class ast_list_expr_t;
 
   class Visitor;
   class ConstVisitor;
@@ -46,6 +47,7 @@ namespace Type
 {
   class Type;
   class NamedType;
+  class Signature;
 }
 
 typedef std::vector<const Type::Type*> TypeList;

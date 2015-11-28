@@ -306,13 +306,6 @@ struct check_visitor : public ast::DefaultVisitor
     ast_not_reached(node);
   }
 
-  void visit (TypeExpression& node)
-  {
-    unimplemented;
-    // const Type::Type* type = process_type_spec (node.type_spec (), true);
-    // node.typed_value = typed_value_t (type);
-  }
-
   void visit (ast_indexed_port_call_expr_t& node)
   {
     const std::string& port_identifier = ast_get_identifier (node.identifier ());

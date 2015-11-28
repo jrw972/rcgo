@@ -54,8 +54,8 @@ namespace semantic
 
             // Enter each symbol.
             for (Node::Iterator id_pos = identifier_list->Begin (),
-                   id_limit = identifier_list->End (),
-                   init_pos = expression_list->Begin ();
+                 id_limit = identifier_list->End (),
+                 init_pos = expression_list->Begin ();
                  id_pos != id_limit;
                  ++id_pos, ++init_pos)
               {
@@ -67,10 +67,11 @@ namespace semantic
                                    "expression is not constant (E62)");
                   }
 
-                if (!assignable (n->type, n->value, type)) {
-                  error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                 "cannot assign %s to %s in initialization (E62)", n->type->ToString ().c_str (), type->ToString ().c_str ());
-                }
+                if (!assignable (n->type, n->value, type))
+                  {
+                    error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                                   "cannot assign %s to %s in initialization (E62)", n->type->ToString ().c_str (), type->ToString ().c_str ());
+                  }
 
                 n->value.convert (n->type, type);
                 n->type = type;
@@ -87,8 +88,8 @@ namespace semantic
 
         // Enter each symbol.
         for (Node::Iterator id_pos = identifier_list->Begin (),
-               id_limit = identifier_list->End (),
-               init_pos = expression_list->Begin ();
+             id_limit = identifier_list->End (),
+             init_pos = expression_list->Begin ();
              id_pos != id_limit;
              ++id_pos, ++init_pos)
           {

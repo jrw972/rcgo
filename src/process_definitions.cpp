@@ -294,25 +294,6 @@ type_check_statement (Node * node)
                         "assignment leaks mutable pointers (E123)");
     }
 
-    void visit (ast_change_statement_t& node)
-    {
-      unimplemented;
-      // // Process the expression.
-      // typed_value_t tv = CheckAndImplicitlyDereference (node.expr_ref ());
-      // tv = typed_value_t::change (node.location, tv);
-
-      // // Enter the new heap root.
-      // const std::string& identifier = ast_get_identifier (node.identifier ());
-      // Symbol* symbol = new VariableSymbol (identifier, &node, typed_value_t::make_ref (tv));
-      // node.root_symbol = enter_symbol (node, symbol);
-
-      // // Enter all parameters and variables in scope that are pointers as pointers to foreign.
-      // node.Change ();
-
-      // // Check the body.
-      // type_check_statement (node.body ());
-    }
-
     void visit (ast_while_statement_t& node)
     {
       check_condition (node.condition_ref ());

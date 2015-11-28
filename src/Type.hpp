@@ -25,7 +25,8 @@ namespace Type
   typedef uint64_t UintValueType;
   typedef int64_t IntValueType;
 
-  enum Kind {
+  enum Kind
+  {
     kNamed,
 
     kVoid,
@@ -88,7 +89,10 @@ namespace Type
     virtual size_t Alignment () const = 0;
     virtual size_t Size () const = 0;
     virtual Kind kind () const = 0;
-    virtual Kind underlying_kind () const { return UnderlyingType ()->kind (); }
+    virtual Kind underlying_kind () const
+    {
+      return UnderlyingType ()->kind ();
+    }
     // When give the choice between two types, use the one with high level.
     virtual TypeLevel Level () const = 0;
     virtual const Type* UnderlyingType () const
@@ -179,7 +183,10 @@ namespace Type
     {
       return underlyingType_->Size ();
     }
-    virtual Kind kind () const { return kNamed; }
+    virtual Kind kind () const
+    {
+      return kNamed;
+    }
     virtual TypeLevel Level () const
     {
       return NAMED;
@@ -295,7 +302,10 @@ namespace Type
     {
       return 0;
     }
-    virtual Kind kind () const { return kVoid; }
+    virtual Kind kind () const
+    {
+      return kVoid;
+    }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -323,7 +333,10 @@ namespace Type
     {
       return sizeof (T);
     }
-    virtual Kind kind () const { return k; }
+    virtual Kind kind () const
+    {
+      return k;
+    }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -515,7 +528,10 @@ namespace Type
     {
       return sizeof (ValueType);
     }
-    virtual Kind kind () const { return kPointer; }
+    virtual Kind kind () const
+    {
+      return kPointer;
+    }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -555,7 +571,10 @@ namespace Type
     {
       return sizeof (ValueType);
     }
-    virtual Kind kind () const { return kSlice; }
+    virtual Kind kind () const
+    {
+      return kSlice;
+    }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -582,7 +601,10 @@ namespace Type
     {
       return UnitSize () * dimension;
     }
-    virtual Kind kind () const { return kArray; }
+    virtual Kind kind () const
+    {
+      return kArray;
+    }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -612,7 +634,10 @@ namespace Type
     {
       not_reached;
     }
-    virtual Kind kind () const { return kHeap; }
+    virtual Kind kind () const
+    {
+      return kHeap;
+    }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -629,7 +654,10 @@ namespace Type
     typedef FieldsType::const_iterator const_iterator;
     Struct (bool insert_runtime = false);
     void Accept (Visitor& visitor) const;
-    virtual Kind kind () const { return kStruct; }
+    virtual Kind kind () const
+    {
+      return kStruct;
+    }
     std::string ToString () const
     {
       unimplemented;
@@ -666,7 +694,10 @@ namespace Type
   struct Component : public Struct
   {
     Component () : Struct (true) { }
-    virtual Kind kind () const { return kComponent; }
+    virtual Kind kind () const
+    {
+      return kComponent;
+    }
     void Accept (Visitor& visitor) const;
     std::string ToString () const
     {
@@ -691,7 +722,10 @@ namespace Type
     {
       return size_;
     }
-    virtual Kind kind () const { return kSignature; }
+    virtual Kind kind () const
+    {
+      return kSignature;
+    }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -746,7 +780,10 @@ namespace Type
     {
       return function_kind == PULL_PORT ? sizeof (pull_port_t) : sizeof (void*);
     }
-    virtual Kind kind () const { return kFunction; }
+    virtual Kind kind () const
+    {
+      return kFunction;
+    }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -795,7 +832,10 @@ namespace Type
     {
       return sizeof (void*);
     }
-    virtual Kind kind () const { return kMethod; }
+    virtual Kind kind () const
+    {
+      return kMethod;
+    }
     virtual TypeLevel Level () const
     {
       return UNNAMED;
@@ -834,7 +874,10 @@ namespace Type
   class Nil : public Untyped
   {
   public:
-    virtual Kind kind () const { return kNil; }
+    virtual Kind kind () const
+    {
+      return kNil;
+    }
     void Accept (Visitor& visitor) const;
     std::string ToString () const
     {
@@ -849,7 +892,10 @@ namespace Type
   {
   public:
     typedef bool ValueType;
-    virtual Kind kind () const { return kBoolean; }
+    virtual Kind kind () const
+    {
+      return kBoolean;
+    }
     virtual const Type* DefaultType () const;
     void Accept (Visitor& visitor) const;
     std::string ToString () const
@@ -865,7 +911,10 @@ namespace Type
   {
   public:
     typedef int32_t ValueType;
-    virtual Kind kind () const { return kRune; }
+    virtual Kind kind () const
+    {
+      return kRune;
+    }
     virtual const Type* DefaultType () const;
     virtual bool IsNumeric () const
     {
@@ -889,7 +938,10 @@ namespace Type
   {
   public:
     typedef long long ValueType;
-    virtual Kind kind () const { return kInteger; }
+    virtual Kind kind () const
+    {
+      return kInteger;
+    }
     virtual const Type* DefaultType () const;
     virtual bool IsNumeric () const
     {
@@ -913,7 +965,10 @@ namespace Type
   {
   public:
     typedef double ValueType;
-    virtual Kind kind () const { return kFloat; }
+    virtual Kind kind () const
+    {
+      return kFloat;
+    }
     virtual const Type* DefaultType () const;
     virtual bool IsNumeric () const
     {
@@ -979,7 +1034,10 @@ namespace Type
         return this->real;
       }
     };
-    virtual Kind kind () const { return kComplex; }
+    virtual Kind kind () const
+    {
+      return kComplex;
+    }
     virtual const Type* DefaultType () const;
     virtual bool IsNumeric () const
     {
@@ -999,7 +1057,10 @@ namespace Type
   {
   public:
     typedef StringRep ValueType;
-    virtual Kind kind () const { return kString; }
+    virtual Kind kind () const
+    {
+      return kString;
+    }
     virtual const Type* DefaultType () const;
     void Accept (Visitor& visitor) const;
     std::string ToString () const
@@ -1027,7 +1088,10 @@ namespace Type
     {
       not_reached;
     }
-    virtual Kind kind () const { return kTemplate; }
+    virtual Kind kind () const
+    {
+      return kTemplate;
+    }
     virtual TypeLevel Level () const
     {
       return UNTYPED;
@@ -1049,7 +1113,10 @@ namespace Type
     {
       return sizeof (void*);
     }
-    virtual Kind kind () const { return kFileDescriptor; }
+    virtual Kind kind () const
+    {
+      return kFileDescriptor;
+    }
     virtual TypeLevel Level () const
     {
       return UNNAMED;

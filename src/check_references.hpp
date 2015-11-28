@@ -5,6 +5,8 @@
 
 namespace semantic
 {
+  void require_type (const ast::Node* node);
+  void require_value_or_variable_list (const ast::Node* node);
   void check_references (ast::Node* root);
 }
 

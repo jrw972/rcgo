@@ -59,13 +59,15 @@ namespace ast
 
       void print_common (const Node& node)
       {
-        if (node.type != NULL) {
-          out << ' ' << *node.type;
-          if (node.value.present) {
-            out << ' ';
-            node.value.print (out, node.type);
+        if (node.type != NULL)
+          {
+            out << ' ' << *node.type;
+            if (node.value.present)
+              {
+                out << ' ';
+                node.value.print (out, node.type);
+              }
           }
-        }
         out << '\n';
       }
 
@@ -290,7 +292,10 @@ namespace ast
       }
       void visit (const ast_change_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "change_statement";
+        print_common (node);
+        print_children (node);
       }
       void visit (const ast_assign_statement_t& node)
       {
@@ -659,14 +664,12 @@ namespace ast
               ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (*ptr);
               if (symbol != NULL)
                 {
-                  unimplemented;
-                  // typed_value_t tv = SymbolCast<ParameterSymbol> (symbol)->value;
-                  // if (type_contains_pointer (tv.type))
-                  //   {
-                  //     // Enter as a duplicate.
-                  //     Symbol* dup = SymbolCast<ParameterSymbol> (symbol)->duplicate (FOREIGN);
-                  //     EnterSymbol (dup);
-                  //   }
+                  if (type_contains_pointer (symbol->type))
+                    {
+                      // Enter as a duplicate.
+                      Symbol* dup = symbol->duplicate (FOREIGN);
+                      EnterSymbol (dup);
+                    }
                 }
             }
 
@@ -674,14 +677,12 @@ namespace ast
               VariableSymbol* symbol = SymbolCast<VariableSymbol> (*ptr);
               if (symbol != NULL)
                 {
-                  unimplemented;
-                  // typed_value_t tv = SymbolCast<VariableSymbol> (symbol)->value;
-                  // if (type_contains_pointer (tv.type))
-                  //   {
-                  //     // Enter as a duplicate.
-                  //     Symbol* dup = SymbolCast<VariableSymbol> (symbol)->duplicate ();
-                  //     EnterSymbol (dup);
-                  //   }
+                  if (type_contains_pointer (symbol->type))
+                    {
+                      // Enter as a duplicate.
+                      Symbol* dup = symbol->duplicate ();
+                      EnterSymbol (dup);
+                    }
                 }
             }
           }

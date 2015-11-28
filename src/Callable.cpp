@@ -3,8 +3,22 @@
 #include "ast.hpp"
 #include "runtime.hpp"
 #include "SymbolVisitor.hpp"
+#include "check_types.hpp"
+#include "check_references.hpp"
 
 using namespace ast;
+
+void
+Callable::check_types (ast::Node* args) const
+{
+  semantic::check_types_arguments (args, signature ());
+}
+
+void
+Callable::check_references (ast::Node* args) const
+{
+  semantic::require_value_or_variable_list (args);
+}
 
 Function::Function (ast_function_t& node_, const Type::Function* ft)
   : Symbol (ast_get_identifier (node_.identifier ()), node_.identifier ())

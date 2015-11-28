@@ -15,10 +15,13 @@ class Callable
 public:
   virtual ~Callable () { }
   virtual void call (executor_base_t& exec) const = 0;
+  virtual const Type::Signature* signature () const = 0;
   virtual const Type::Type* type () const = 0;
   virtual size_t return_size () const = 0;
   virtual size_t arguments_size () const = 0;
   virtual size_t locals_size () const = 0;
+  virtual void check_types (ast::Node* args) const;
+  virtual void check_references (ast::Node* args) const;
 };
 /*
  * TODO:  I debate whether or not the return symbols should be recorded here.
@@ -58,6 +61,10 @@ struct Function : public Callable, public Symbol
   virtual size_t locals_size () const
   {
     return memoryModel.LocalsSize ();
+  }
+  virtual const Type::Signature* signature () const
+  {
+    return functionType_->GetSignature ();
   }
 
 private:
@@ -130,6 +137,14 @@ struct Initializer : public Callable
   {
     return memoryModel.LocalsSize ();
   }
+  virtual const Type::Signature* signature () const
+  {
+    unimplemented;
+  }
+  virtual void check_types (ast::Node* args) const
+  {
+    unimplemented;
+  }
 
   ast::ast_initializer_t* const node;
   std::string const name;
@@ -165,6 +180,14 @@ struct Getter : public Callable
     unimplemented;
   }
   virtual size_t locals_size () const
+  {
+    unimplemented;
+  }
+  virtual const Type::Signature* signature () const
+  {
+    unimplemented;
+  }
+  virtual void check_types (ast::Node* args) const
   {
     unimplemented;
   }

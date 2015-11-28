@@ -132,10 +132,9 @@ struct ParameterSymbol : public Symbol
       default:
         not_reached;
       }
-    unimplemented;
-    // s->value.dereference_mutability = dereferenceMutability;
-    // s->original_ = this;
-    // return s;
+    s->dereference_mutability = dereferenceMutability;
+    s->original_ = this;
+    return s;
   }
 
   virtual void accept (SymbolVisitor& visitor);
@@ -157,10 +156,10 @@ struct ParameterSymbol : public Symbol
 
   const Type::Type* const type;
   Mutability const intrinsic_mutability;
-  Mutability const dereference_mutability;
+  Mutability dereference_mutability;
   Kind kind;
 private:
-  Symbol* const original_;
+  Symbol* original_;
 };
 
 struct TypeSymbol : public Symbol
@@ -227,7 +226,7 @@ struct VariableSymbol : public Symbol
 
   const Type::Type* const type;
   Mutability const intrinsic_mutability;
-  Mutability const dereference_mutability;
+  Mutability dereference_mutability;
 private:
   Symbol* original_;
 };

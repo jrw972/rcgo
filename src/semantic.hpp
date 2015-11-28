@@ -11,137 +11,175 @@
 
 using namespace std::rel_ops;
 
-struct Multiplier {
+struct Multiplier
+{
   template <typename T>
-  T operator() (const T& x, const T& y) const {
+  T operator() (const T& x, const T& y) const
+  {
     return x * y;
   }
 };
 
-struct Divider {
+struct Divider
+{
   template <typename T>
-  T operator() (const T& x, const T& y) const {
+  T operator() (const T& x, const T& y) const
+  {
     return x / y;
   }
 };
 
-struct Modulizer {
+struct Modulizer
+{
   template <typename T>
-  T operator() (const T& x, const T& y) const {
+  T operator() (const T& x, const T& y) const
+  {
     return x % y;
   }
 };
 
-struct LeftShifter {
+struct LeftShifter
+{
   template <typename T, typename U>
-  T operator() (const T& x, const U& y) const {
+  T operator() (const T& x, const U& y) const
+  {
     return x << y;
   }
 };
 
-struct RightShifter {
+struct RightShifter
+{
   template <typename T, typename U>
-  T operator() (const T& x, const U& y) const {
+  T operator() (const T& x, const U& y) const
+  {
     return x >> y;
   }
 };
 
-struct BitAnder {
+struct BitAnder
+{
   template <typename T>
-  T operator() (const T& x, const T& y) const {
+  T operator() (const T& x, const T& y) const
+  {
     return x & y;
   }
 };
 
-struct BitAndNotter {
+struct BitAndNotter
+{
   template <typename T>
-  T operator() (const T& x, const T& y) const {
+  T operator() (const T& x, const T& y) const
+  {
     return x & (~y);
   }
 };
 
-struct Adder {
+struct Adder
+{
   template <typename T>
-  T operator() (const T& x, const T& y) const {
+  T operator() (const T& x, const T& y) const
+  {
     return x + y;
   }
 };
 
-struct Subtracter {
+struct Subtracter
+{
   template <typename T>
-  T operator() (const T& x, const T& y) const {
+  T operator() (const T& x, const T& y) const
+  {
     return x - y;
   }
 };
 
-struct BitOrer {
+struct BitOrer
+{
   template <typename T>
-  T operator() (const T& x, const T& y) const {
+  T operator() (const T& x, const T& y) const
+  {
     return x | y;
   }
 };
 
-struct BitXorer {
+struct BitXorer
+{
   template <typename T>
-  T operator() (const T& x, const T& y) const {
+  T operator() (const T& x, const T& y) const
+  {
     return x ^ y;
   }
 };
 
-struct Equalizer {
+struct Equalizer
+{
   template <typename T>
-  bool operator() (const T& x, const T& y) const {
+  bool operator() (const T& x, const T& y) const
+  {
     return x == y;
   }
 };
 
-struct NotEqualizer {
+struct NotEqualizer
+{
   template <typename T>
-  bool operator() (const T& x, const T& y) const {
+  bool operator() (const T& x, const T& y) const
+  {
     return x != y;
   }
 };
 
-struct LessThaner {
+struct LessThaner
+{
   template <typename T>
-  bool operator() (const T& x, const T& y) const {
+  bool operator() (const T& x, const T& y) const
+  {
     return x < y;
   }
 };
 
-struct LessEqualizer {
+struct LessEqualizer
+{
   template <typename T>
-  bool operator() (const T& x, const T& y) const {
+  bool operator() (const T& x, const T& y) const
+  {
     return x <= y;
   }
 };
 
-struct MoreThaner {
+struct MoreThaner
+{
   template <typename T>
-  bool operator() (const T& x, const T& y) const {
+  bool operator() (const T& x, const T& y) const
+  {
     return x > y;
   }
 };
 
-struct MoreEqualizer {
+struct MoreEqualizer
+{
   template <typename T>
-  bool operator() (const T& x, const T& y) const {
+  bool operator() (const T& x, const T& y) const
+  {
     return x >= y;
   }
 };
 
 template <typename T>
-struct LogicNotter {
+struct LogicNotter
+{
   typedef T ValueType;
-  bool operator() (const T& x) const {
+  bool operator() (const T& x) const
+  {
     return !x;
   }
 };
 
 template <typename T>
-struct Negater {
+struct Negater
+{
   typedef T ValueType;
-  T operator() (const T& x) const {
+  T operator() (const T& x) const
+  {
     return -x;
   }
 };

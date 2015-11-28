@@ -56,10 +56,12 @@ enter_symbols (Node * node)
   node->EnterSymbol (new Sendto (node));
 
   /* Insert zero constant. */
+  value_t v;
+  v.present = true;
   node->EnterSymbol (new ConstantSymbol ("nil",
                                          node,
                                          Type::Nil::Instance (),
-                                         value_t ()));
+                                         v));
 
   /* Insert untyped boolean constants. */
   node->EnterSymbol (new ConstantSymbol ("true",

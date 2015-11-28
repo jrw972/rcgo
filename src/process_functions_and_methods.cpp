@@ -107,10 +107,10 @@ namespace semantic
                                    node->dereferenceMutability, true);
 
       receiver_symbol = ParameterSymbol::makeReceiver (this_identifier_node,
-                                                       this_identifier,
-                                                       this_value.type,
-                                                       node->mutability,
-                                                       node->dereferenceMutability);
+                        this_identifier,
+                        this_value.type,
+                        node->mutability,
+                        node->dereferenceMutability);
 
       node->this_symbol = receiver_symbol;
 
@@ -149,9 +149,9 @@ namespace semantic
       const Type::Type* return_type = process_type (returnType, true);
 
       returnSymbol = ParameterSymbol::makeReturn (returnType,
-                                                  ReturnSymbol,
-                                                  return_type,
-                                                  dereferenceMutability);
+                     ReturnSymbol,
+                     return_type,
+                     dereferenceMutability);
 
       if (requireForeignSafe)
         {

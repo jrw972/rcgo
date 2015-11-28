@@ -914,6 +914,11 @@ type::Instance () \
         flag = true;
       }
 
+      void visit (const Heap& type)
+      {
+        type.Base ()->Accept (*this);
+      }
+
       void visit (const Slice& type)
       {
         flag = true;
@@ -1543,20 +1548,54 @@ type::Instance () \
 
   bool is_integral (const Type* type)
   {
-    struct visitor : DefaultVisitor {
+    struct visitor : DefaultVisitor
+    {
       bool flag;
       visitor () : flag (false) { }
-      void visit (const Uint8& type) { flag = true; }
-      void visit (const Uint16& type) { flag = true; }
-      void visit (const Uint32& type) { flag = true; }
-      void visit (const Uint64& type) { flag = true; }
-      void visit (const Int8& type) { flag = true; }
-      void visit (const Int16& type) { flag = true; }
-      void visit (const Int32& type) { flag = true; }
-      void visit (const Int64& type) { flag = true; }
-      void visit (const Uint& type) { flag = true; }
-      void visit (const Int& type) { flag = true; }
-      void visit (const Uintptr& type) { flag = true; }
+      void visit (const Uint8& type)
+      {
+        flag = true;
+      }
+      void visit (const Uint16& type)
+      {
+        flag = true;
+      }
+      void visit (const Uint32& type)
+      {
+        flag = true;
+      }
+      void visit (const Uint64& type)
+      {
+        flag = true;
+      }
+      void visit (const Int8& type)
+      {
+        flag = true;
+      }
+      void visit (const Int16& type)
+      {
+        flag = true;
+      }
+      void visit (const Int32& type)
+      {
+        flag = true;
+      }
+      void visit (const Int64& type)
+      {
+        flag = true;
+      }
+      void visit (const Uint& type)
+      {
+        flag = true;
+      }
+      void visit (const Int& type)
+      {
+        flag = true;
+      }
+      void visit (const Uintptr& type)
+      {
+        flag = true;
+      }
     };
     visitor v;
     type->UnderlyingType ()->Accept (v);
@@ -1565,25 +1604,36 @@ type::Instance () \
 
   bool is_unsigned_integral (const Type* type)
   {
-    switch (type->underlying_kind ()) {
-    case kUint8:
-    case kUint16:
-    case kUint32:
-    case kUint64:
-      return true;
-    default:
-      return false;
-    }
+    switch (type->underlying_kind ())
+      {
+      case kUint8:
+      case kUint16:
+      case kUint32:
+      case kUint64:
+        return true;
+      default:
+        return false;
+      }
   }
 
   bool is_numeric (const Type* type)
   {
-    struct visitor : DefaultVisitor {
+    struct visitor : DefaultVisitor
+    {
       bool flag;
       visitor () : flag (false) { }
-      void visit (const Uint& type) { flag = true; }
-      void visit (const Int& type) { flag = true; }
-      void visit (const Uintptr& type) { flag = true; }
+      void visit (const Uint& type)
+      {
+        flag = true;
+      }
+      void visit (const Int& type)
+      {
+        flag = true;
+      }
+      void visit (const Uintptr& type)
+      {
+        flag = true;
+      }
     };
     visitor v;
     type->UnderlyingType ()->Accept (v);
@@ -1592,13 +1642,26 @@ type::Instance () \
 
   bool is_untyped_numeric (const Type* type)
   {
-    struct visitor : DefaultVisitor {
+    struct visitor : DefaultVisitor
+    {
       bool flag;
       visitor () : flag (false) { }
-      void visit (const Rune& type) { flag = true; }
-      void visit (const Integer& type) { flag = true; }
-      void visit (const Float& type) { flag = true; }
-      void visit (const Complex& type) { flag = true; }
+      void visit (const Rune& type)
+      {
+        flag = true;
+      }
+      void visit (const Integer& type)
+      {
+        flag = true;
+      }
+      void visit (const Float& type)
+      {
+        flag = true;
+      }
+      void visit (const Complex& type)
+      {
+        flag = true;
+      }
     };
     visitor v;
     type->UnderlyingType ()->Accept (v);
@@ -1622,111 +1685,116 @@ type::Instance () \
 
   bool comparable (const Type* type)
   {
-    switch (type->underlying_kind ()) {
-    case kBool:
-    case kUint8:
-    case kUint16:
-    case kUint32:
-    case kUint64:
-    case kInt8:
-    case kInt16:
-    case kInt32:
-    case kInt64:
-    case kFloat32:
-    case kFloat64:
-    case kComplex64:
-    case kComplex128:
-    case kUint:
-    case kInt:
-    case kUintptr:
-    case kStringU:
-    case kBoolean:
-    case kRune:
-    case kInteger:
-    case kFloat:
-    case kComplex:
-    case kString:
-      return true;
-    default:
-      return false;
-    }
+    switch (type->underlying_kind ())
+      {
+      case kBool:
+      case kUint8:
+      case kUint16:
+      case kUint32:
+      case kUint64:
+      case kInt8:
+      case kInt16:
+      case kInt32:
+      case kInt64:
+      case kFloat32:
+      case kFloat64:
+      case kComplex64:
+      case kComplex128:
+      case kUint:
+      case kInt:
+      case kUintptr:
+      case kStringU:
+      case kBoolean:
+      case kRune:
+      case kInteger:
+      case kFloat:
+      case kComplex:
+      case kString:
+      case kPointer:
+        return true;
+      default:
+        return false;
+      }
   }
 
   bool orderable (const Type* type)
   {
-    switch (type->underlying_kind ()) {
-    case kUint8:
-    case kUint16:
-    case kUint32:
-    case kUint64:
-    case kInt8:
-    case kInt16:
-    case kInt32:
-    case kInt64:
-    case kFloat32:
-    case kFloat64:
-    case kUint:
-    case kInt:
-    case kUintptr:
-    case kStringU:
-    case kRune:
-    case kInteger:
-    case kFloat:
-    case kString:
-      return true;
-    default:
-      return false;
-    }
+    switch (type->underlying_kind ())
+      {
+      case kUint8:
+      case kUint16:
+      case kUint32:
+      case kUint64:
+      case kInt8:
+      case kInt16:
+      case kInt32:
+      case kInt64:
+      case kFloat32:
+      case kFloat64:
+      case kUint:
+      case kInt:
+      case kUintptr:
+      case kStringU:
+      case kRune:
+      case kInteger:
+      case kFloat:
+      case kString:
+        return true;
+      default:
+        return false;
+      }
   }
 
   bool arithmetic (const Type* type)
   {
-    switch (type->underlying_kind ()) {
-    case kUint8:
-    case kUint16:
-    case kUint32:
-    case kUint64:
-    case kInt8:
-    case kInt16:
-    case kInt32:
-    case kInt64:
-    case kFloat32:
-    case kFloat64:
-    case kComplex64:
-    case kComplex128:
-    case kUint:
-    case kInt:
-    case kUintptr:
-    case kRune:
-    case kInteger:
-    case kFloat:
-    case kComplex:
-      return true;
-    default:
-      return false;
-    }
+    switch (type->underlying_kind ())
+      {
+      case kUint8:
+      case kUint16:
+      case kUint32:
+      case kUint64:
+      case kInt8:
+      case kInt16:
+      case kInt32:
+      case kInt64:
+      case kFloat32:
+      case kFloat64:
+      case kComplex64:
+      case kComplex128:
+      case kUint:
+      case kInt:
+      case kUintptr:
+      case kRune:
+      case kInteger:
+      case kFloat:
+      case kComplex:
+        return true;
+      default:
+        return false;
+      }
   }
 
   bool integral (const Type* type)
   {
-    switch (type->underlying_kind ()) {
-    case kUint8:
-    case kUint16:
-    case kUint32:
-    case kUint64:
-    case kInt8:
-    case kInt16:
-    case kInt32:
-    case kInt64:
-    case kUint:
-    case kInt:
-    case kUintptr:
-    case kRune:
-    case kInteger:
-      return true;
-    default:
-      return false;
-    }
+    switch (type->underlying_kind ())
+      {
+      case kUint8:
+      case kUint16:
+      case kUint32:
+      case kUint64:
+      case kInt8:
+      case kInt16:
+      case kInt32:
+      case kInt64:
+      case kUint:
+      case kInt:
+      case kUintptr:
+      case kRune:
+      case kInteger:
+        return true;
+      default:
+        return false;
+      }
   }
 
   NamedType NamedBool ("bool", Bool::Instance ());

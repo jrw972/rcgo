@@ -946,7 +946,7 @@ namespace ast
     void Accept (Visitor& visitor);
     void Accept (ConstVisitor& visitor) const;
 
-    Symbol* root_symbol;
+    VariableSymbol* root_symbol;
   };
 
   struct ast_expression_statement_t : public ast_unary_t

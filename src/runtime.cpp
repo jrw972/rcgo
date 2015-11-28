@@ -10,6 +10,7 @@
 #include "heap.hpp"
 #include "executor_base.hpp"
 #include "semantic.hpp"
+#include "check_references.hpp"
 
 namespace runtime
 {
@@ -1625,8 +1626,8 @@ namespace runtime
             // Zero out the variable.
             for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
               {
-                Symbol* symbol = node.symbols[idx];
                 unimplemented;
+                // Symbol* symbol = node.symbols[idx];
                 //exec.stack ().clear (symbol->offset (), SymbolCast<VariableSymbol> (symbol)->value.type->Size ());
               }
           }
@@ -1635,13 +1636,13 @@ namespace runtime
             // Initialize the variables.
             for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
               {
-                // Evaluate the address.
-                Symbol* symbol = node.symbols[idx];
-                ptrdiff_t offset = symbol->offset ();
-                exec.stack ().push_address (offset);
-                void* ptr = exec.stack ().pop_pointer ();
-                ast::Node* initializer = expression_list->At (idx);
                 unimplemented;
+                // // Evaluate the address.
+                // Symbol* symbol = node.symbols[idx];
+                // ptrdiff_t offset = symbol->offset ();
+                // exec.stack ().push_address (offset);
+                // void* ptr = exec.stack ().pop_pointer ();
+                // ast::Node* initializer = expression_list->At (idx);
                 // size_t size = initializer->typed_value.type->Size ();
                 // // Evaluate the value.
                 // evaluate_expression (exec, memoryModel, initializer);
@@ -1806,6 +1807,7 @@ namespace runtime
       , function_type_ (makeFunctionType (t, definingNode))
     {
       allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
+      allocate_symbol (memory_model, function_type_->GetReturnParameter ());
     }
 
     virtual void call (executor_base_t& exec) const
@@ -1814,9 +1816,8 @@ namespace runtime
       const Heap* heap_type = type_cast<Heap> (type_);
       if (heap_type == NULL)
         {
-          void* ptr = heap_allocate (exec.heap (), type_->Size ());
-          // Return the instance.
-          exec.stack ().push_pointer (ptr);
+          char** r = static_cast<char**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
+          *r = static_cast<char*> (heap_allocate (exec.heap (), type_->Size ()));
         }
       else
         {
@@ -1828,8 +1829,8 @@ namespace runtime
           heap_insert_child (h2, h);
           // Allocate a new heap link in the parent.
           heap_link_t* hl = make_heap_link (h, h2);
-          // Return the heap link.
-          exec.stack ().push_pointer (hl);
+          heap_link_t** r = static_cast<heap_link_t**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
+          *r = hl;
         }
     }
 
@@ -1842,23 +1843,34 @@ namespace runtime
     MemoryModel memory_model;
     static const Type::Function* makeFunctionType (const Type::Type* type, ast::Node* definingNode)
     {
-      unimplemented;
-      // const Type::Type* return_type = type->GetPointer ();
-      // return new Type::Function (Type::Function::FUNCTION, (new Signature ()),
-      //                            new parameter_t (definingNode, ReturnSymbol, typed_value_t::make_value (return_type, MUTABLE, MUTABLE, false), false));
+      const Type::Type* return_type = type->GetPointer ();
+      return new Type::Function (Type::Function::FUNCTION, (new Signature ()),
+                                 ParameterSymbol::makeReturn (definingNode, ReturnSymbol, return_type, MUTABLE));
     }
 
     virtual size_t return_size () const
     {
-      unimplemented;
+      return function_type_->GetReturnType ()->Size ();
     }
     virtual size_t arguments_size () const
     {
-      unimplemented;
+      return function_type_->GetSignature ()->Size ();
     }
     virtual size_t locals_size () const
     {
-      unimplemented;
+      return 0;
+    }
+    virtual const Type::Signature* signature () const
+    {
+      not_reached;
+    }
+    virtual void check_types (ast::Node* args) const
+    {
+      // Do nothing.
+    }
+    virtual void check_references (ast::Node* args) const
+    {
+      semantic::require_type (args->At (0));
     }
   };
 
@@ -1889,51 +1901,73 @@ namespace runtime
     return typed_value_t (new NewImpl (tv.type, definingNode));
   }
 
+  Callable*
+  New::instantiate (const std::vector<const Type::Type*>& argument_types)
+  {
+    if (argument_types.size () != 1)
+      {
+        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+                       "new expects one argument (E5)");
+      }
+
+    const Type::Type* type = argument_types.front ();
+
+    // TODO.
+    // if (tv.kind != typed_value_t::TYPE)
+    //   {
+    //     error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+    //                    "new expects a type (E6)");
+    //   }
+
+    return new NewImpl (type, definingNode);
+  }
+
   struct MoveImpl : public Callable
   {
-    MoveImpl (const typed_value_t& in, const typed_value_t& out, ast::Node* definingNode)
+    MoveImpl (const Type::Type* in, const Type::Type* out, ast::Node* definingNode)
       : function_type_ (makeFunctionType (in, out, definingNode))
     {
       allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
+      allocate_symbol (memory_model, function_type_->GetReturnParameter ());
     }
 
     virtual void call (executor_base_t& exec) const
     {
-      unimplemented;
-      // evaluate_expression (exec, memoryModel, node.args ());
-      // heap_link_t* hl = (heap_link_t*)exec.stack ().pop_pointer ();
-      // if (hl != NULL)
-      //   {
-      //     pthread_mutex_lock (&hl->mutex);
-      //     if (hl->heap != NULL && hl->change_count == 0)
-      //       {
-      //         // Break the link.
-      //         heap_t* h = hl->heap;
-      //         hl->heap = NULL;
-      //         pthread_mutex_unlock (&hl->mutex);
+      heap_link_t** r = static_cast<heap_link_t**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
+      ParameterSymbol* p = *function_type_->GetSignature ()->Begin ();
+      heap_link_t* hl = static_cast<heap_link_t*> (exec.stack ().read_pointer (p->offset ()));
+      if (hl != NULL)
+        {
+          pthread_mutex_lock (&hl->mutex);
+          if (hl->heap != NULL && hl->change_count == 0)
+            {
+              // Break the link.
+              heap_t* h = hl->heap;
+              hl->heap = NULL;
+              pthread_mutex_unlock (&hl->mutex);
 
-      //         // Remove from parent.
-      //         heap_remove_from_parent (h);
-      //         // Insert into the new parent.
-      //         heap_t* h2 = exec.heap ();
-      //         heap_insert_child (h2, h);
+              // Remove from parent.
+              heap_remove_from_parent (h);
+              // Insert into the new parent.
+              heap_t* h2 = exec.heap ();
+              heap_insert_child (h2, h);
 
-      //         // Allocate a new heap link in the parent.
-      //         heap_link_t* new_hl = make_heap_link (h, h2);
+              // Allocate a new heap link in the parent.
+              heap_link_t* new_hl = make_heap_link (h, h2);
 
-      //         // Return the heap link.
-      //         exec.stack ().push_pointer (new_hl);
-      //       }
-      //     else
-      //       {
-      //         pthread_mutex_unlock (&hl->mutex);
-      //         exec.stack ().push_pointer (NULL);
-      //       }
-      //   }
-      // else
-      //   {
-      //     exec.stack ().push_pointer (NULL);
-      //   }
+              // Return the heap link.
+              *r = new_hl;
+            }
+          else
+            {
+              pthread_mutex_unlock (&hl->mutex);
+              *r = NULL;
+            }
+        }
+      else
+        {
+          *r = NULL;
+        }
     }
 
     virtual const Type::Type* type () const
@@ -1942,27 +1976,29 @@ namespace runtime
     }
     const Type::Function* const function_type_;
     MemoryModel memory_model;
-    static const Type::Function* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast::Node* definingNode)
+    static const Type::Function* makeFunctionType (const Type::Type* in, const Type::Type* out, ast::Node* definingNode)
     {
-      typed_value_t in2 = in;
-      in2.intrinsic_mutability = MUTABLE;
-      unimplemented;
-      // return new Type::Function (Type::Function::FUNCTION, (new Signature ())
-      //                            ->Append (new parameter_t (definingNode, "h", in2, false)),
-      //                            new parameter_t (definingNode, ReturnSymbol, out, false));
+      // TODO:  The mutabilities may need to be adjusted.
+      return new Type::Function (Type::Function::FUNCTION, (new Signature ())
+                                 ->Append (ParameterSymbol::make (definingNode, "h", in, MUTABLE, FOREIGN)),
+                                 ParameterSymbol::makeReturn (definingNode, ReturnSymbol, out, MUTABLE));
     }
 
     virtual size_t return_size () const
     {
-      unimplemented;
+      return function_type_->GetReturnType ()->Size ();
     }
     virtual size_t arguments_size () const
     {
-      unimplemented;
+      return function_type_->GetSignature ()->Size ();
     }
     virtual size_t locals_size () const
     {
-      unimplemented;
+      return 0;
+    }
+    virtual const Type::Signature* signature () const
+    {
+      return function_type_->GetSignature ();
     }
   };
 
@@ -1989,54 +2025,76 @@ namespace runtime
                        "cannot move expression of type %s (E8)", in.type->ToString ().c_str ());
       }
 
-    return typed_value_t (new MoveImpl (in, out, definingNode));
+    unimplemented;
+    //return typed_value_t (new MoveImpl (in, out, definingNode));
+  }
+
+  Callable*
+  Move::instantiate (const std::vector<const Type::Type*>& argument_types)
+  {
+    if (argument_types.size () != 1)
+      {
+        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+                       "move expects one argument (E7)");
+      }
+
+    const Type::Type* in = argument_types.front ();
+    const Type::Type* out = type_move (in);
+    if (out == NULL)
+      {
+        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+                       "cannot move expression of type %s (E8)", in->ToString ().c_str ());
+      }
+
+    return new MoveImpl (in, out, definingNode);
   }
 
   struct MergeImpl : public Callable
   {
-    MergeImpl (const typed_value_t& in, const typed_value_t& out, ast::Node* definingNode)
+    MergeImpl (const Type::Type* in, const Type::Type* out, ast::Node* definingNode)
       : function_type_ (makeFunctionType (in, out, definingNode))
     {
       allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
+      allocate_symbol (memory_model, function_type_->GetReturnParameter ());
     }
 
     virtual void call (executor_base_t& exec) const
     {
-      unimplemented;
-      // evaluate_expression (exec, memoryModel, node.args ());
-      // heap_link_t* hl = (heap_link_t*)exec.stack ().pop_pointer ();
-      // if (hl != NULL)
-      //   {
-      //     pthread_mutex_lock (&hl->mutex);
-      //     if (hl->heap != NULL && hl->change_count == 0)
-      //       {
-      //         // Break the link.
-      //         heap_t* h = hl->heap;
-      //         hl->heap = NULL;
-      //         pthread_mutex_unlock (&hl->mutex);
+      char** r = static_cast<char**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
+      ParameterSymbol* p = *function_type_->GetSignature ()->Begin ();
+      heap_link_t* hl = static_cast<heap_link_t*> (exec.stack ().read_pointer (p->offset ()));
+      if (hl != NULL)
+        {
+          pthread_mutex_lock (&hl->mutex);
+          if (hl->heap != NULL && hl->change_count == 0)
+            {
+              // Break the link.
+              heap_t* h = hl->heap;
+              hl->heap = NULL;
+              pthread_mutex_unlock (&hl->mutex);
 
-      //         // Get the heap root.
-      //         void* root = heap_instance (h);
+              // Get the heap root.
+              char* root = static_cast<char*> (heap_instance (h));
 
-      //         // Remove from parent.
-      //         heap_remove_from_parent (h);
+              // Remove from parent.
+              heap_remove_from_parent (h);
 
-      //         // Merge into the new parent.
-      //         heap_merge (exec.heap (), h);
+              // Merge into the new parent.
+              heap_merge (exec.heap (), h);
 
-      //         // Return the root.
-      //         exec.stack ().push_pointer (root);
-      //       }
-      //     else
-      //       {
-      //         pthread_mutex_unlock (&hl->mutex);
-      //         exec.stack ().push_pointer (NULL);
-      //       }
-      //   }
-      // else
-      //   {
-      //     exec.stack ().push_pointer (NULL);
-      //   }
+              // Return the root.
+              *r = root;
+            }
+          else
+            {
+              pthread_mutex_unlock (&hl->mutex);
+              *r = NULL;
+            }
+        }
+      else
+        {
+          *r = NULL;
+        }
     }
 
     virtual const Type::Type* type () const
@@ -2045,27 +2103,29 @@ namespace runtime
     }
     const Type::Function* const function_type_;
     MemoryModel memory_model;
-    static const Type::Function* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast::Node* definingNode)
+    static const Type::Function* makeFunctionType (const Type::Type* in, const Type::Type* out, ast::Node* definingNode)
     {
-      typed_value_t in2 = in;
-      in2.intrinsic_mutability = MUTABLE;
-      unimplemented;
-      // return new Type::Function (Type::Function::FUNCTION, (new Signature ())
-      //                            ->Append (new parameter_t (definingNode, "h", in2, false)),
-      //                            new parameter_t (definingNode, ReturnSymbol, out, false));
+      // TODO:  Adjust mutability.
+      return new Type::Function (Type::Function::FUNCTION, (new Signature ())
+                                 ->Append (ParameterSymbol::make (definingNode, "h", in, MUTABLE, FOREIGN)),
+                                 ParameterSymbol::makeReturn (definingNode, ReturnSymbol, out, MUTABLE));
     }
 
     virtual size_t return_size () const
     {
-      unimplemented;
+      return function_type_->GetReturnType ()->Size ();
     }
     virtual size_t arguments_size () const
     {
-      unimplemented;
+      return function_type_->GetSignature ()->Size ();
     }
     virtual size_t locals_size () const
     {
-      unimplemented;
+      return 0;
+    }
+    virtual const Type::Signature* signature () const
+    {
+      return function_type_->GetSignature ();
     }
   };
 
@@ -2092,7 +2152,28 @@ namespace runtime
                        "cannot merge expression of type %s (E10)", in.type->ToString ().c_str ());
       }
 
-    return typed_value_t (new MergeImpl (in, out, definingNode));
+    unimplemented;
+    //return new MergeImpl (in, out, definingNode);
+  }
+
+  Callable*
+  Merge::instantiate (const std::vector<const Type::Type*>& argument_types)
+  {
+    if (argument_types.size () != 1)
+      {
+        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+                       "merge expects one argument (E9)");
+      }
+
+    const Type::Type* in = argument_types.front ();
+    const Type::Type* out = type_merge (in);
+    if (out == NULL)
+      {
+        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+                       "cannot merge expression of type %s (E10)", in->ToString ().c_str ());
+      }
+
+    return new MergeImpl (in, out, definingNode);
   }
 
   struct CopyImpl : public Callable
@@ -2102,6 +2183,7 @@ namespace runtime
       , function_type_ (makeFunctionType (in, out, definingNode))
     {
       allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
+      allocate_symbol (memory_model, function_type_->GetReturnParameter ());
     }
 
     virtual void call (executor_base_t& exec) const
@@ -2143,6 +2225,14 @@ namespace runtime
     {
       unimplemented;
     }
+    virtual const Type::Signature* signature () const
+    {
+      unimplemented;
+    }
+    virtual void check_types (ast::Node* args) const
+    {
+      unimplemented;
+    }
   };
 
   Copy::Copy (ast::Node* dn)
@@ -2177,6 +2267,7 @@ namespace runtime
       : function_type_ (makeFunctionType (type_list))
     {
       allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
+      allocate_symbol (memory_model, function_type_->GetReturnParameter ());
     }
 
     virtual void call (executor_base_t& exec) const
@@ -2307,6 +2398,10 @@ namespace runtime
     virtual size_t locals_size () const
     {
       return 0;
+    }
+    virtual const Type::Signature* signature () const
+    {
+      return function_type_->GetSignature ();
     }
   };
 
@@ -2484,33 +2579,34 @@ namespace runtime
   Operation*
   MakeConvertToInt (const Operation* c, const Type::Type* type)
   {
-    switch (type->underlying_kind ()) {
-    case kUint8:
-      return new ConvertToInt<Uint8> (c);
-    case kUint16:
-      return new ConvertToInt<Uint16> (c);
-    case kUint32:
-      return new ConvertToInt<Uint32> (c);
-    case kUint64:
-      return new ConvertToInt<Uint64> (c);
-    case kInt8:
-      return new ConvertToInt<Int8> (c);
-    case kInt16:
-      return new ConvertToInt<Int16> (c);
-    case kInt32:
-      return new ConvertToInt<Int32> (c);
-    case kInt64:
-      return new ConvertToInt<Int64> (c);
-    case kUint:
-      return new ConvertToInt<Uint> (c);
-    case kInt:
-      return new ConvertToInt<Int> (c);
-    case kUintptr:
-      return new ConvertToInt<Uintptr> (c);
+    switch (type->underlying_kind ())
+      {
+      case kUint8:
+        return new ConvertToInt<Uint8> (c);
+      case kUint16:
+        return new ConvertToInt<Uint16> (c);
+      case kUint32:
+        return new ConvertToInt<Uint32> (c);
+      case kUint64:
+        return new ConvertToInt<Uint64> (c);
+      case kInt8:
+        return new ConvertToInt<Int8> (c);
+      case kInt16:
+        return new ConvertToInt<Int16> (c);
+      case kInt32:
+        return new ConvertToInt<Int32> (c);
+      case kInt64:
+        return new ConvertToInt<Int64> (c);
+      case kUint:
+        return new ConvertToInt<Uint> (c);
+      case kInt:
+        return new ConvertToInt<Int> (c);
+      case kUintptr:
+        return new ConvertToInt<Uintptr> (c);
 
-    default:
-      type_not_reached (*type);
-    }
+      default:
+        type_not_reached (*type);
+      }
   }
 
   template<typename T>
@@ -2531,33 +2627,34 @@ namespace runtime
   Operation*
   MakeConvertToUint (const Operation* c, const Type::Type* type)
   {
-    switch (type->underlying_kind ()) {
-    case kUint8:
-      return new ConvertToUint<Uint8> (c);
-    case kUint16:
-      return new ConvertToUint<Uint16> (c);
-    case kUint32:
-      return new ConvertToUint<Uint32> (c);
-    case kUint64:
-      return new ConvertToUint<Uint64> (c);
-    case kInt8:
-      return new ConvertToUint<Int8> (c);
-    case kInt16:
-      return new ConvertToUint<Int16> (c);
-    case kInt32:
-      return new ConvertToUint<Int32> (c);
-    case kInt64:
-      return new ConvertToUint<Int64> (c);
-    case kUint:
-      return new ConvertToUint<Uint> (c);
-    case kInt:
-      return new ConvertToUint<Int> (c);
-    case kUintptr:
-      return new ConvertToUint<Uintptr> (c);
+    switch (type->underlying_kind ())
+      {
+      case kUint8:
+        return new ConvertToUint<Uint8> (c);
+      case kUint16:
+        return new ConvertToUint<Uint16> (c);
+      case kUint32:
+        return new ConvertToUint<Uint32> (c);
+      case kUint64:
+        return new ConvertToUint<Uint64> (c);
+      case kInt8:
+        return new ConvertToUint<Int8> (c);
+      case kInt16:
+        return new ConvertToUint<Int16> (c);
+      case kInt32:
+        return new ConvertToUint<Int32> (c);
+      case kInt64:
+        return new ConvertToUint<Int64> (c);
+      case kUint:
+        return new ConvertToUint<Uint> (c);
+      case kInt:
+        return new ConvertToUint<Int> (c);
+      case kUintptr:
+        return new ConvertToUint<Uintptr> (c);
 
-    default:
-      type_not_reached (*type);
-    }
+      default:
+        type_not_reached (*type);
+      }
   }
 
   void
@@ -2620,6 +2717,11 @@ namespace runtime
     }
 
     void visit (const StringU& type)
+    {
+      op = make_literal (value.ref (type));
+    }
+
+    void visit (const Pointer& type)
     {
       op = make_literal (value.ref (type));
     }
@@ -2732,11 +2834,48 @@ namespace runtime
     condition->execute (exec);
     Bool::ValueType c;
     exec.stack ().pop (c);
-    if (c) {
-      true_branch->execute (exec);
-    } else {
-      false_branch->execute (exec);
-    }
+    if (c)
+      {
+        true_branch->execute (exec);
+      }
+    else
+      {
+        false_branch->execute (exec);
+      }
+  }
+
+  void
+  Change::execute (executor_base_t& exec) const
+  {
+    root->execute (exec);
+    heap_link_t* hl = static_cast<heap_link_t*> (exec.stack ().pop_pointer ());
+    if (hl == NULL)
+      {
+        // Heap link is null.
+        unimplemented;
+      }
+    pthread_mutex_lock (&hl->mutex);
+    ++hl->change_count;
+    pthread_mutex_unlock (&hl->mutex);
+
+    // Save the old heap.
+    heap_t* old_heap = exec.heap ();
+    // Set the the new heap.
+    exec.heap (hl->heap);
+
+    char** root_value = static_cast<char**> (exec.stack ().get_address (root_offset));
+
+    // Push a pointer to the root object.
+    *root_value = static_cast<char*> (heap_instance (hl->heap));
+
+    body->execute (exec);
+
+    // Restore the old heap.
+    exec.heap (old_heap);
+
+    pthread_mutex_lock (&hl->mutex);
+    --hl->change_count;
+    pthread_mutex_unlock (&hl->mutex);
   }
 }
 

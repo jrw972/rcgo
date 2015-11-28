@@ -27,8 +27,6 @@ namespace semantic
             {
               if (signature->At (i)->dereference_mutability < (*pos)->dereference_mutability)
                 {
-                  std::cout << signature->At (i)->dereference_mutability << '\n';
-                  std::cout << (*pos)->dereference_mutability << '\n';
                   error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
                                  "argument %zd casts away +const or +foreign (E85)", i + 1);
                 }
@@ -193,17 +191,18 @@ namespace semantic
             size_t idx = 0;
             for (Node::ConstIterator pos = node.expression_list ()->Begin (), limit = node.expression_list ()->End ();
                  pos != limit;
-                 ++pos, ++idx) {
-              Node* n = *pos;
-              VariableSymbol* symbol = node.symbols[idx];
+                 ++pos, ++idx)
+              {
+                Node* n = *pos;
+                VariableSymbol* symbol = node.symbols[idx];
 
-              if (type_contains_pointer (n->type) &&
-                  symbol->dereference_mutability < n->dereference_mutability)
-                {
-                  error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                 "assignment casts away +const or +foreign (E149)");
-                }
-            }
+                if (type_contains_pointer (n->type) &&
+                    symbol->dereference_mutability < n->dereference_mutability)
+                  {
+                    error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                                   "assignment casts away +const or +foreign (E149)");
+                  }
+              }
           }
       }
 
@@ -222,6 +221,13 @@ namespace semantic
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                            "assignment casts away +const or +foreign (E149)");
           }
+      }
+
+      void visit (ast_change_statement_t& node)
+      {
+        node.expr ()->Accept (*this);
+        node.root_symbol->dereference_mutability = node.expr ()->dereference_mutability;
+        node.body ()->Accept (*this);
       }
 
       void visit (ast_dereference_expr_t& node)
@@ -257,11 +263,12 @@ namespace semantic
       void visit (ast_index_expr_t& node)
       {
         node.VisitChildren (*this);
-        if (node.array_type != NULL) {
-          node.intrinsic_mutability = node.base ()->intrinsic_mutability;
-          node.dereference_mutability = node.base ()->dereference_mutability;
-          return;
-        }
+        if (node.array_type != NULL)
+          {
+            node.intrinsic_mutability = node.base ()->intrinsic_mutability;
+            node.dereference_mutability = node.base ()->dereference_mutability;
+            return;
+          }
         not_reached;
       }
 
@@ -277,6 +284,11 @@ namespace semantic
         node.VisitChildren (*this);
         node.intrinsic_mutability = IMMUTABLE;
         node.dereference_mutability = IMMUTABLE;
+      }
+
+      void visit (TypeExpression& node)
+      {
+        // Do nothing.
       }
     };
 

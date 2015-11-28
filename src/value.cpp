@@ -143,9 +143,10 @@ value_t::convert (const Type::Type* from, const Type::Type* to)
 
     void visit (const Type::Boolean& type)
     {
-      if (type_cast<Type::Bool> (to) != NULL) {
-        value.ref (*Type::Bool::Instance ()) = value.ref (type);
-      }
+      if (type_cast<Type::Bool> (to) != NULL)
+        {
+          value.ref (*Type::Bool::Instance ()) = value.ref (type);
+        }
     }
 
     void visit (const Type::Integer& type)
@@ -172,6 +173,17 @@ value_t::convert (const Type::Type* from, const Type::Type* to)
 
       not_reached;
     }
+
+    void visit (const Type::Nil& type)
+    {
+      if (Type::type_cast<Type::Pointer> (to))
+        {
+          value.pointer_value_ = NULL;
+          return;
+        }
+      not_reached;
+    }
+
   } v (*this, to->UnderlyingType ());
 
   from->UnderlyingType ()->Accept (v);
@@ -271,6 +283,11 @@ value_t::print (std::ostream& out, const Type::Type* type) const
         {
           const StringU::ValueType& s = tv.ref (type);
           out << " value={" << s.ptr << ',' << s.length << '}';
+        }
+
+        void visit (const Pointer& type)
+        {
+          out << " value=" << tv.ref (type);
         }
 
         void visit (const Boolean& type)

@@ -71,10 +71,11 @@ namespace semantic
       {
         unimplemented;
         node.VisitChildren (*this);
-        if (node.left ()->receiver_access != AccessNone) {
-          node.receiver_access = AccessWrite;
-          return;
-        }
+        if (node.left ()->receiver_access != AccessNone)
+          {
+            node.receiver_access = AccessWrite;
+            return;
+          }
         // Check if a mutable pointer escapes.
         if (node.right ()->receiver_access != AccessNone &&
             type_contains_pointer (node.right ()->type) &&
@@ -111,11 +112,14 @@ namespace semantic
           }
 
         if (type_contains_pointer (node.type) &&
-            node.dereference_mutability == MUTABLE) {
-          node.receiver_state = flag;
-        } else {
-          node.receiver_state = false;
-        }
+            node.dereference_mutability == MUTABLE)
+          {
+            node.receiver_state = flag;
+          }
+        else
+          {
+            node.receiver_state = false;
+          }
       }
 
       void visit (ast_identifier_expr_t& node)

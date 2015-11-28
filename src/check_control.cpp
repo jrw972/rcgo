@@ -94,6 +94,12 @@ namespace semantic
         node.VisitChildren (*this);
       }
 
+      void visit (ast_change_statement_t& node)
+      {
+        node.expr ()->Accept (*this);
+        node.body ()->Accept (*this);
+      }
+
       void visit (ast_call_expr_t& node)
       {
         node.VisitChildren (*this);
@@ -221,6 +227,10 @@ namespace semantic
       void visit (ast_binary_arithmetic_expr_t& node)
       {
         node.VisitChildren (*this);
+      }
+      void visit (TypeExpression& node)
+      {
+        // Do nothing.
       }
     };
   }

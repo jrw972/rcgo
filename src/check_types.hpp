@@ -5,6 +5,7 @@
 
 namespace semantic
 {
+  void check_types_arguments (ast::Node* node, const Type::Signature* signature);
   void check_types (ast::Node* root);
 }
 

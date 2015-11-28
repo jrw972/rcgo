@@ -55,6 +55,14 @@ struct Readable : public BuiltinFunction
   {
     unimplemented;
   }
+  virtual const Type::Signature* signature () const
+  {
+    unimplemented;
+  }
+  virtual void check_types (ast::Node* args) const
+  {
+    unimplemented;
+  }
 };
 
 struct Read : public BuiltinFunction
@@ -70,6 +78,14 @@ struct Read : public BuiltinFunction
     unimplemented;
   }
   virtual size_t locals_size () const
+  {
+    unimplemented;
+  }
+  virtual const Type::Signature* signature () const
+  {
+    unimplemented;
+  }
+  virtual void check_types (ast::Node* args) const
   {
     unimplemented;
   }
@@ -91,6 +107,14 @@ struct Writable : public BuiltinFunction
   {
     unimplemented;
   }
+  virtual const Type::Signature* signature () const
+  {
+    unimplemented;
+  }
+  virtual void check_types (ast::Node* args) const
+  {
+    unimplemented;
+  }
 };
 
 struct TimerfdCreate : public BuiltinFunction
@@ -106,6 +130,14 @@ struct TimerfdCreate : public BuiltinFunction
     unimplemented;
   }
   virtual size_t locals_size () const
+  {
+    unimplemented;
+  }
+  virtual const Type::Signature* signature () const
+  {
+    unimplemented;
+  }
+  virtual void check_types (ast::Node* args) const
   {
     unimplemented;
   }
@@ -127,6 +159,14 @@ struct TimerfdSettime : public BuiltinFunction
   {
     unimplemented;
   }
+  virtual const Type::Signature* signature () const
+  {
+    unimplemented;
+  }
+  virtual void check_types (ast::Node* args) const
+  {
+    unimplemented;
+  }
 };
 
 struct UdpSocket : public BuiltinFunction
@@ -145,6 +185,14 @@ struct UdpSocket : public BuiltinFunction
   {
     unimplemented;
   }
+  virtual const Type::Signature* signature () const
+  {
+    unimplemented;
+  }
+  virtual void check_types (ast::Node* args) const
+  {
+    unimplemented;
+  }
 };
 
 struct Sendto : public BuiltinFunction
@@ -160,6 +208,14 @@ struct Sendto : public BuiltinFunction
     unimplemented;
   }
   virtual size_t locals_size () const
+  {
+    unimplemented;
+  }
+  virtual const Type::Signature* signature () const
+  {
+    unimplemented;
+  }
+  virtual void check_types (ast::Node* args) const
   {
     unimplemented;
   }

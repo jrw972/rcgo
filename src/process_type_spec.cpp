@@ -11,12 +11,15 @@ using namespace ast;
 static void
 process_constant_expression (ast::Node* node)
 {
-  struct visitor : public ast::DefaultVisitor {
-    void default_action (Node& node) {
+  struct visitor : public ast::DefaultVisitor
+  {
+    void default_action (Node& node)
+    {
       ast_not_reached (node);
     }
 
-    void visit (ast_literal_expr_t& node) {
+    void visit (ast_literal_expr_t& node)
+    {
       // Do nothing.
     }
   };
@@ -29,18 +32,20 @@ process_array_dimension (ast::Node* node)
 {
   process_constant_expression (node);
   // Convert to an int.
-  if (!node->value.representable (node->type, &NamedInt)) {
-    error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                   "array dimension is not an integer (E108)");
-  }
+  if (!node->value.representable (node->type, &NamedInt))
+    {
+      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+                     "array dimension is not an integer (E108)");
+    }
 
   node->value.convert (node->type, &NamedInt);
   node->type = &NamedInt;
   Type::Int::ValueType dim = node->value.ref (*Type::Int::Instance ());
-  if (dim < 0) {
-    error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                   "array dimension is negative (E108)");
-  }
+  if (dim < 0)
+    {
+      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+                     "array dimension is negative (E108)");
+    }
   return dim;
 }
 
