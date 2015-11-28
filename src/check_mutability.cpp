@@ -223,6 +223,16 @@ namespace semantic
           }
       }
 
+      void visit (ast_increment_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        if (node.child ()->intrinsic_mutability != MUTABLE)
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "target of increment is not mutable (E86)");
+          }
+      }
+
       void visit (ast_change_statement_t& node)
       {
         node.expr ()->Accept (*this);

@@ -1183,6 +1183,17 @@ namespace semantic
           }
       }
 
+      void visit (ast_increment_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        if (!arithmetic (node.child ()->type))
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "++ cannot be applied to %s (E30)",
+                           node.child ()->type->ToString ().c_str ());
+          }
+      }
+
       void visit (ast_dereference_expr_t& node)
       {
         node.VisitChildren (*this);

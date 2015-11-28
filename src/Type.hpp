@@ -420,6 +420,12 @@ namespace Type
       this->imag = 0;
       return *this;
     }
+
+    C64& operator++ ()
+    {
+      this->real += 1;
+      return *this;
+    }
   };
   typedef Scalar<C64, Complex64String, true, false, false, kComplex64> Complex64;
 
@@ -443,6 +449,12 @@ namespace Type
     {
       this->real = x;
       this->imag = 0;
+      return *this;
+    }
+
+    C128& operator++ ()
+    {
+      this->real += 1;
       return *this;
     }
   };

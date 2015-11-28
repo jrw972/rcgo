@@ -94,6 +94,11 @@ namespace semantic
         node.VisitChildren (*this);
       }
 
+      void visit (ast_increment_statement_t& node)
+      {
+        node.VisitChildren (*this);
+      }
+
       void visit (ast_change_statement_t& node)
       {
         node.expr ()->Accept (*this);

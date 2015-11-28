@@ -2877,6 +2877,58 @@ namespace runtime
     --hl->change_count;
     pthread_mutex_unlock (&hl->mutex);
   }
+
+  template <typename T>
+  struct Increment : public Operation
+  {
+    Increment (Operation* c) : child (c) { }
+    virtual void execute (executor_base_t& exec) const
+    {
+      child->execute (exec);
+      T* ptr = static_cast<T*> (exec.stack ().pop_pointer ());
+      ++*ptr;
+    }
+    Operation* const child;
+  };
+
+  Operation* make_increment (Operation* child, const Type::Type* type)
+  {
+    switch (type->underlying_kind ())
+      {
+      case kUint8:
+        return new Increment<Uint8::ValueType> (child);
+      case kUint16:
+        return new Increment<Uint16::ValueType> (child);
+      case kUint32:
+        return new Increment<Uint32::ValueType> (child);
+      case kUint64:
+        return new Increment<Uint64::ValueType> (child);
+      case kInt8:
+        return new Increment<Int8::ValueType> (child);
+      case kInt16:
+        return new Increment<Int16::ValueType> (child);
+      case kInt32:
+        return new Increment<Int32::ValueType> (child);
+      case kInt64:
+        return new Increment<Int64::ValueType> (child);
+      case kFloat32:
+        return new Increment<Float32::ValueType> (child);
+      case kFloat64:
+        return new Increment<Float64::ValueType> (child);
+      case kComplex64:
+        return new Increment<Complex64::ValueType> (child);
+      case kComplex128:
+        return new Increment<Complex128::ValueType> (child);
+      case kUint:
+        return new Increment<Uint::ValueType> (child);
+      case kInt:
+        return new Increment<Int::ValueType> (child);
+      case kUintptr:
+        return new Increment<Uintptr::ValueType> (child);
+      default:
+        type_not_reached (*type);
+      }
+  }
 }
 
 // void

@@ -157,6 +157,12 @@ namespace  code
       node.operation = new Assign (left, right, node.left ()->type);
     }
 
+    void visit (ast_increment_statement_t& node)
+    {
+      node.VisitChildren (*this);
+      node.operation = make_increment (node.child ()->operation, node.child ()->type);
+    }
+
     void visit (ast_change_statement_t& node)
     {
       node.expr ()->Accept (*this);

@@ -199,6 +199,12 @@ namespace semantic
         require_value_or_variable (node.right ());
       }
 
+      void visit (ast_increment_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        require_variable (node.child ());
+      }
+
       void visit (ast_dereference_expr_t& node)
       {
         node.VisitChildren (*this);

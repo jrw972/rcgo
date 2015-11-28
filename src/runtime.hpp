@@ -524,6 +524,7 @@ namespace runtime
     Operation* const body;
   };
 
+  Operation* make_increment (Operation* child, const Type::Type* type);
 }
 
 #endif // rc_runtime_hpp
