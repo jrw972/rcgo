@@ -103,7 +103,7 @@ namespace semantic
 
           void visit (const TypeSymbol& symbol)
           {
-            unimplemented;
+            node.expression_kind = kType;
           }
 
           void visit (const ConstantSymbol& symbol)

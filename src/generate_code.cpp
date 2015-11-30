@@ -104,7 +104,12 @@ namespace  code
     void visit (ast_return_statement_t& node)
     {
       node.VisitChildren (*this);
-      node.operation = new ReturnJ (node.child ()->operation);
+      Operation* c = node.child ()->operation;
+      if (node.child ()->expression_kind == kVariable)
+        {
+          c = new Load (c, node.child ()->type);
+        }
+      node.operation = new Return (c, node.return_symbol);
     }
 
     void visit (ast_if_statement_t& node)
@@ -284,6 +289,11 @@ namespace  code
         void visit (const VariableSymbol& s)
         {
           op = new Reference (s.offset ());
+        }
+
+        void visit (const TypeSymbol& s)
+        {
+          op = new Noop ();
         }
       };
       Visitor v (node);

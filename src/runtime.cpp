@@ -2386,7 +2386,7 @@ namespace runtime
 
   ConvertStringToSliceOfBytes ConvertStringToSliceOfBytes::instance;
 
-  void
+  ControlAction
   ConvertStringToSliceOfBytes::execute (executor_base_t& exec) const
   {
     StringU::ValueType in;
@@ -2397,17 +2397,19 @@ namespace runtime
     out.length = in.length;
     out.capacity = out.capacity;
     exec.stack ().push (out);
+    return kContinue;
   }
 
-  void
+  ControlAction
   Load::execute (executor_base_t& exec) const
   {
     child->execute (exec);
     void * ptr = exec.stack ().pop_pointer ();
     exec.stack ().load (ptr, type->Size ());
+    return kContinue;
   }
 
-  void
+  ControlAction
   IndexArrayReference::execute (executor_base_t& exec) const
   {
     base->execute (exec);
@@ -2421,15 +2423,16 @@ namespace runtime
                        "array index is out of bounds (E148)");
       }
     exec.stack ().push_pointer (static_cast<char*> (ptr) + i * type.UnitSize ());
+    return kContinue;
   }
 
-  void
+  ControlAction
   IndexArrayValue::execute (executor_base_t& exec) const
   {
-    unimplemented;
+    return kContinue;
   }
 
-  void
+  ControlAction
   IndexSlice::execute (executor_base_t& exec) const
   {
     base->execute (exec);
@@ -2445,19 +2448,21 @@ namespace runtime
 
       }
     exec.stack ().push_pointer (static_cast<char*> (s.ptr) + i * type.UnitSize ());
+    return kContinue;
   }
 
   template<typename T>
   struct ConvertToInt : public Operation
   {
     ConvertToInt (const Operation* c) : child (c) { }
-    void execute (executor_base_t& exec) const
+    ControlAction execute (executor_base_t& exec) const
     {
       child->execute (exec);
       typename T::ValueType in;
       exec.stack ().pop (in);
       Type::Int::ValueType out = in;
       exec.stack ().push (out);
+      return kContinue;
     }
     const Operation* const child;
   };
@@ -2573,13 +2578,14 @@ namespace runtime
   struct ConvertToUint : public Operation
   {
     ConvertToUint (const Operation* c) : child (c) { }
-    void execute (executor_base_t& exec) const
+    ControlAction execute (executor_base_t& exec) const
     {
       child->execute (exec);
       typename T::ValueType in;
       exec.stack ().pop (in);
       Type::Uint::ValueType out = in;
       exec.stack ().push (out);
+      return kContinue;
     }
     const Operation* const child;
   };
@@ -2617,7 +2623,7 @@ namespace runtime
       }
   }
 
-  void
+  ControlAction
   LogicOr::execute (executor_base_t& exec) const
   {
     left->execute (exec);
@@ -2631,9 +2637,10 @@ namespace runtime
       {
         right->execute (exec);
       }
+    return kContinue;
   }
 
-  void
+  ControlAction
   LogicAnd::execute (executor_base_t& exec) const
   {
     left->execute (exec);
@@ -2647,6 +2654,7 @@ namespace runtime
       {
         right->execute (exec);
       }
+    return kContinue;
   }
 
   struct MakeLiteralVisitor : public Type::DefaultVisitor
@@ -2695,18 +2703,22 @@ namespace runtime
     return visitor.op;
   }
 
-  void
+  ControlAction
   ListOperation::execute (executor_base_t& exec) const
   {
     for (ListType::const_iterator pos = list.begin (), limit = list.end ();
          pos != limit;
          ++pos)
       {
-        (*pos)->execute (exec);
+        if ((*pos)->execute (exec) == kReturn)
+          {
+            return kReturn;
+          }
       }
+    return kContinue;
   }
 
-  void
+  ControlAction
   CallableOperation::execute (executor_base_t& exec) const
   {
     // Create space for the return.
@@ -2732,66 +2744,77 @@ namespace runtime
 
     // Pop the arguments.
     exec.stack ().popn (callable->arguments_size ());
+
+    return kContinue;
   }
 
-  void
+  ControlAction
   Instance::execute (executor_base_t& exec) const
   {
     exec.stack ().push_pointer (instance->instance->component);
+    return kContinue;
   }
 
-  void
+  ControlAction
   SetRestoreCurrentInstance::execute (executor_base_t& exec) const
   {
     component_t* new_receiver = static_cast<component_t*> (exec.stack ().read_pointer (receiver_offset));
     component_t* old_receiver = exec.current_instance (new_receiver);
-    child->execute (exec);
+    ControlAction ca = child->execute (exec);
     exec.current_instance (old_receiver);
+    return ca;
   }
 
-  void
+  ControlAction
   Clear::execute (executor_base_t& exec) const
   {
     exec.stack ().clear (offset, size);
+    return kContinue;
   }
 
-  void
+  ControlAction
   Assign::execute (executor_base_t& exec) const
   {
     left->execute (exec);
     void* ptr = exec.stack ().pop_pointer ();
     right->execute (exec);
     exec.stack ().store (ptr, size);
+    return kContinue;
   }
 
-  void
+  ControlAction
   Reference::execute (executor_base_t& exec) const
   {
     exec.stack ().push_address (offset);
+    return kContinue;
   }
 
-  void
+  ControlAction
   Select::execute (executor_base_t& exec) const
   {
     base->execute (exec);
     char* ptr = static_cast<char*> (exec.stack ().pop_pointer ());
     ptr += offset;
     exec.stack ().push_pointer (ptr);
+    return kContinue;
   }
 
-  void
+  ControlAction
   Index::execute (executor_base_t& exec) const
   {
     unimplemented;
+    return kContinue;
   }
 
-  void
-  ReturnJ::execute (executor_base_t& exec) const
+  ControlAction
+  Return::execute (executor_base_t& exec) const
   {
-    unimplemented;
+    child->execute (exec);
+    exec.stack ().move (return_offset, return_size);
+    return kReturn;
   }
 
-  void
+  ControlAction
   If::execute (executor_base_t& exec) const
   {
     condition->execute (exec);
@@ -2799,15 +2822,15 @@ namespace runtime
     exec.stack ().pop (c);
     if (c)
       {
-        true_branch->execute (exec);
+        return true_branch->execute (exec);
       }
     else
       {
-        false_branch->execute (exec);
+        return false_branch->execute (exec);
       }
   }
 
-  void
+  ControlAction
   Change::execute (executor_base_t& exec) const
   {
     root->execute (exec);
@@ -2831,7 +2854,7 @@ namespace runtime
     // Push a pointer to the root object.
     *root_value = static_cast<char*> (heap_instance (hl->heap));
 
-    body->execute (exec);
+    ControlAction ca = body->execute (exec);
 
     // Restore the old heap.
     exec.heap (old_heap);
@@ -2839,17 +2862,20 @@ namespace runtime
     pthread_mutex_lock (&hl->mutex);
     --hl->change_count;
     pthread_mutex_unlock (&hl->mutex);
+
+    return ca;
   }
 
   template <typename T>
   struct Increment : public Operation
   {
     Increment (Operation* c) : child (c) { }
-    virtual void execute (executor_base_t& exec) const
+    virtual ControlAction execute (executor_base_t& exec) const
     {
       child->execute (exec);
       T* ptr = static_cast<T*> (exec.stack ().pop_pointer ());
       ++*ptr;
+      return kContinue;
     }
     Operation* const child;
   };
@@ -2893,7 +2919,7 @@ namespace runtime
       }
   }
 
-  void
+  ControlAction
   Activate::execute (executor_base_t& exec) const
   {
     // Need to keep track of the largest base pointer so we can process the mutable section.
@@ -2909,9 +2935,11 @@ namespace runtime
     *ip = body;
     // Execute the expression list.
     port_calls->execute (exec);
+
+    return kReturn;
   }
 
-  void
+  ControlAction
   PushPortCall::execute (executor_base_t& exec) const
   {
     // TODO:  The port knows the size of the arguments.  No need to measure.
@@ -2954,19 +2982,22 @@ namespace runtime
 
         port = port->next;
       }
+
+    return kContinue;
   }
 
-  void
+  ControlAction
   BindPushPort::execute (executor_base_t& exec) const
   {
     unimplemented;
   }
 
-  void
+  ControlAction
   Push::execute (executor_base_t& exec) const
   {
-    body->execute (exec);
+    ControlAction ca = body->execute (exec);
     exec.push ();
+    return ca;
   }
 }
 

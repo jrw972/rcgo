@@ -70,19 +70,19 @@ operator<< (std::ostream& out, const Symbol& s)
     }
     virtual void visit (const ParameterSymbol& s)
     {
-      out << "Parameter";
+      out << "Parameter " << s.identifier << '\n';
     }
     virtual void visit (const TypeSymbol& s)
     {
-      unimplemented;
+      out << "Type " << s.identifier << '\n';
     }
     virtual void visit (const ConstantSymbol& s)
     {
-      out << "Constant";
+      out << "Constant " << s.identifier << '\n';
     }
     virtual void visit (const VariableSymbol& s)
     {
-      out << "Variable";
+      out << "Variable " << s.identifier << '\n';
     }
     virtual void visit (const HiddenSymbol& s)
     {

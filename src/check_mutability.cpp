@@ -101,7 +101,7 @@ namespace semantic
 
           void visit (const TypeSymbol& symbol)
           {
-            unimplemented;
+            // Do nothing.
           }
 
           void visit (const ConstantSymbol& symbol)

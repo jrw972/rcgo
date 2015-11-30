@@ -38,8 +38,8 @@ namespace runtime
 
   enum ControlAction
   {
-    Return,
-    Continue,
+    kReturn,
+    kContinue,
   };
 
   struct New : public ::Template
@@ -84,13 +84,13 @@ namespace runtime
   struct Operation
   {
     virtual ~Operation() { }
-    virtual void execute (executor_base_t& exec) const = 0;
+    virtual ControlAction execute (executor_base_t& exec) const = 0;
   };
 
   struct ConvertStringToSliceOfBytes : public Operation
   {
     static ConvertStringToSliceOfBytes instance;
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
   private:
     ConvertStringToSliceOfBytes () { }
   };
@@ -98,7 +98,7 @@ namespace runtime
   struct Load : public Operation
   {
     Load (const Operation* c, const Type::Type* t) : child (c), type (t) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     const Operation* const child;
     const Type::Type* const type;
   };
@@ -106,7 +106,7 @@ namespace runtime
   struct IndexArrayReference : public Operation
   {
     IndexArrayReference (const Location& l, const Operation* b, const Operation* i, const Type::Array& t) : location (l), base (b), index (i), type (t) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     Location const location;
     const Operation* const base;
     const Operation* const index;
@@ -116,7 +116,7 @@ namespace runtime
   struct IndexArrayValue : public Operation
   {
     IndexArrayValue (const Location& l, const Operation* b, const Operation* i, const Type::Array& t) : location (l), base (b), index (i), type (t) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     Location const location;
     const Operation* const base;
     const Operation* const index;
@@ -126,7 +126,7 @@ namespace runtime
   struct IndexSlice : public Operation
   {
     IndexSlice (const Location& l, const Operation* b, const Operation* i, const Type::Slice& t) : location (l), base (b), index (i), type (t) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     Location const location;
     const Operation* const base;
     const Operation* const index;
@@ -140,9 +140,10 @@ namespace runtime
   struct Literal : public Operation
   {
     Literal (T v) : value (v) { }
-    virtual void execute (executor_base_t& exec) const
+    virtual ControlAction execute (executor_base_t& exec) const
     {
       exec.stack ().push (value);
+      return kContinue;
     }
 
     T const value;
@@ -160,7 +161,7 @@ namespace runtime
   struct LogicOr : public Operation
   {
     LogicOr (const Operation* l, const Operation* r) : left (l), right (r) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     const Operation* const left;
     const Operation* const right;
   };
@@ -168,7 +169,7 @@ namespace runtime
   struct LogicAnd : public Operation
   {
     LogicAnd (const Operation* l, const Operation* r) : left (l), right (r) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     const Operation* const left;
     const Operation* const right;
   };
@@ -177,7 +178,7 @@ namespace runtime
   // struct Binary : public Operation
   // {
   //   Binary (const Location& loc, const Operation* l, const Operation* r) : location (loc), left (l), right (r) { }
-  //   virtual void execute (executor_base_t& exec) const
+  //   virtual ControlAction execute (executor_base_t& exec) const
   //   {
   //     left->execute (exec);
   //     typename T::ValueType left;
@@ -231,7 +232,7 @@ namespace runtime
 
   struct ListOperation : public Operation
   {
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     typedef std::vector<Operation*> ListType;
     ListType list;
   };
@@ -239,7 +240,7 @@ namespace runtime
   struct CallableOperation : public Operation
   {
     CallableOperation (const Callable* c, Operation* o) : callable (c), arguments (o) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     const Callable* const callable;
     Operation* const arguments;
   };
@@ -247,14 +248,14 @@ namespace runtime
   struct Instance : public Operation
   {
     Instance (InstanceSymbol* i) : instance (i) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     InstanceSymbol* instance;
   };
 
   struct SetRestoreCurrentInstance : public Operation
   {
     SetRestoreCurrentInstance (Operation* c, ptrdiff_t o) : child (c), receiver_offset (o) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     Operation* const child;
     ptrdiff_t const receiver_offset;
   };
@@ -262,7 +263,7 @@ namespace runtime
   struct Clear : public Operation
   {
     Clear (ptrdiff_t o, size_t s) : offset (o), size (s) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     ptrdiff_t const offset;
     size_t const size;
   };
@@ -274,7 +275,7 @@ namespace runtime
       assert (left != NULL);
       assert (right != NULL);
     }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     Operation* const left;
     Operation* const right;
     size_t const size;
@@ -283,14 +284,14 @@ namespace runtime
   struct Reference : public Operation
   {
     Reference (ptrdiff_t o) : offset (o) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     ptrdiff_t const offset;
   };
 
   struct Select : public Operation
   {
     Select (Operation* b, ptrdiff_t o) : base (b), offset (o) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     Operation* const base;
     ptrdiff_t const offset;
   };
@@ -298,22 +299,24 @@ namespace runtime
   struct Index : public Operation
   {
     Index (Operation* b, Operation* i) : base (b), index (i) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     Operation* const base;
     Operation* const index;
   };
 
-  struct ReturnJ : public Operation
+  struct Return : public Operation
   {
-    ReturnJ (Operation* c) : child (c) { }
-    virtual void execute (executor_base_t& exec) const;
+    Return (Operation* c, const ParameterSymbol* r) : child (c), return_offset (r->offset ()), return_size (r->type->Size ()) { }
+    virtual ControlAction execute (executor_base_t& exec) const;
     Operation* const child;
+    ptrdiff_t const return_offset;
+    size_t const return_size;
   };
 
   struct If : public Operation
   {
     If (Operation* c, Operation* t, Operation* f) : condition (c), true_branch (t), false_branch (f) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     Operation* const condition;
     Operation* const true_branch;
     Operation* const false_branch;
@@ -323,12 +326,13 @@ namespace runtime
   struct Unary : public Operation
   {
     Unary (Operation* c) : child (c) { }
-    virtual void execute (executor_base_t& exec) const
+    virtual ControlAction execute (executor_base_t& exec) const
     {
       typename T::ValueType x;
       child->execute (exec);
       exec.stack ().pop (x);
       exec.stack ().push (T () (x));
+      return kContinue;
     }
     Operation* const child;
   };
@@ -362,7 +366,7 @@ namespace runtime
   struct Binary : public Operation
   {
     Binary (Operation* l, Operation* r) : left (l), right (r) { }
-    virtual void execute (executor_base_t& exec) const
+    virtual ControlAction execute (executor_base_t& exec) const
     {
       V x;
       V y;
@@ -371,6 +375,7 @@ namespace runtime
       right->execute (exec);
       exec.stack ().pop (y);
       exec.stack ().push (T () (x, y));
+      return kContinue;
     }
     Operation* const left;
     Operation* const right;
@@ -380,7 +385,7 @@ namespace runtime
   struct Shift : public Operation
   {
     Shift (Operation* l, Operation* r) : left (l), right (r) { }
-    virtual void execute (executor_base_t& exec) const
+    virtual ControlAction execute (executor_base_t& exec) const
     {
       V x;
       Type::Uint::ValueType y;
@@ -389,6 +394,7 @@ namespace runtime
       right->execute (exec);
       exec.stack ().pop (y);
       exec.stack ().push (T () (x, y));
+      return kContinue;
     }
     Operation* const left;
     Operation* const right;
@@ -508,7 +514,7 @@ namespace runtime
   struct Change : public Operation
   {
     Change (Operation* r, ptrdiff_t o, Operation* b) : root (r), root_offset (o), body (b) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     Operation* const root;
     ptrdiff_t const root_offset;
     Operation* const body;
@@ -519,7 +525,7 @@ namespace runtime
   struct Activate : public Operation
   {
     Activate (Operation* pc, Operation* b) : port_calls (pc), body (b) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     Operation* const port_calls;
     Operation* const body;
   };
@@ -527,7 +533,7 @@ namespace runtime
   struct PushPortCall : public Operation
   {
     PushPortCall (ptrdiff_t ro, ptrdiff_t po, Operation* o) : receiver_offset (ro), port_offset (po), args (o) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     ptrdiff_t const receiver_offset;
     ptrdiff_t const port_offset;
     Operation* const args;
@@ -536,7 +542,7 @@ namespace runtime
   struct BindPushPort : public Operation
   {
     BindPushPort (Operation* l, Operation* r) : left (l), right (r) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     Operation* const left;
     Operation* const right;
   };
@@ -544,8 +550,16 @@ namespace runtime
   struct Push : public Operation
   {
     Push (Operation* b) : body (b) { }
-    virtual void execute (executor_base_t& exec) const;
+    virtual ControlAction execute (executor_base_t& exec) const;
     Operation* const body;
+  };
+
+  struct Noop : public Operation
+  {
+    virtual ControlAction execute (executor_base_t& exec) const
+    {
+      return kContinue;
+    }
   };
 }
 
