@@ -831,7 +831,7 @@ namespace Type
     };
     Method (MethodKind k,
             const NamedType* named_type_,
-            ParameterSymbol* this_parameter_,
+            ParameterSymbol* receiver_parameter_,
             const Signature * signature_,
             ParameterSymbol* return_parameter_);
     void Accept (Visitor& visitor) const;
@@ -854,14 +854,14 @@ namespace Type
     }
     MethodKind const method_kind;
     const NamedType* const named_type;
-    const Type* const receiver_type;
-    ParameterSymbol* const this_parameter;
+    const Type* receiver_type () const;
+    ParameterSymbol* const receiver_parameter;
     const Function* const function_type;
     const Signature* const signature;
     ParameterSymbol* const return_parameter;
     const Type* return_type () const;
   private:
-    static Function* make_function_type (ParameterSymbol* this_parameter,
+    static Function* make_function_type (ParameterSymbol* receiver_parameter,
                                          const Signature* signature,
                                          ParameterSymbol* return_parameter);
   };

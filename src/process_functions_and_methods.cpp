@@ -3,13 +3,16 @@
 #include "AstVisitor.hpp"
 #include "semantic.hpp"
 #include "Symbol.hpp"
+#include "action.hpp"
 #include "reaction.hpp"
 #include "semantic.hpp"
+#include "bind.hpp"
 
 namespace semantic
 {
   using namespace ast;
   using namespace Type;
+  using namespace decl;
 
   namespace
   {
@@ -239,6 +242,18 @@ namespace semantic
         node.initializer = initializer;
       }
 
+      void visit (ast_action_t& node)
+      {
+        ParameterSymbol* thisSymbol;
+        NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, true, true);
+        enter_symbol (node, thisSymbol);
+        Action *action = new Action (node.body (), ast_get_identifier (node.identifier ()));
+        type->Add (action);
+        node.receiver_symbol = thisSymbol;
+        node.action = action;
+        node.type = type;
+      }
+
       void visit (ast_reaction_t& node)
       {
         ParameterSymbol* thisSymbol;
@@ -258,7 +273,7 @@ namespace semantic
             signature,
             return_symbol);
 
-        reaction_t* reaction = new reaction_t (type, &node, thisSymbol, node.body (), ast_get_identifier (node.identifier ()), reaction_type);
+        reaction_t* reaction = new reaction_t (&node, thisSymbol, node.body (), ast_get_identifier (node.identifier ()), reaction_type);
 
         type->Add (reaction);
         node.reaction = reaction;
@@ -287,6 +302,16 @@ namespace semantic
 
         type->Add (getter);
         node.getter = getter;
+      }
+
+      void visit (ast_bind_t& node)
+      {
+        ParameterSymbol* thisSymbol;
+        NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, true, false);
+        enter_symbol (node, thisSymbol);
+        bind_t* bind = new bind_t (&node, ast_get_identifier (node.identifier ()), thisSymbol);
+        type->Add (bind);
+        node.bind = bind;
       }
 
       void visit (ast_instance_t& node)

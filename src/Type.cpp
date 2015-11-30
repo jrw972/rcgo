@@ -1354,16 +1354,16 @@ type::Instance () \
     switch (method_kind)
       {
       case METHOD:
-        str << '(' << *receiver_type << ')' << " func " << *signature << ' ' << *return_type ();
+        str << '(' << *receiver_type () << ')' << " func " << *signature << ' ' << *return_type ();
         break;
       case INITIALIZER:
-        str << '(' << *receiver_type << ')' << " init " << *signature << ' ' << *return_type ();
+        str << '(' << *receiver_type () << ')' << " init " << *signature << ' ' << *return_type ();
         break;
       case GETTER:
-        str << '(' << *receiver_type << ')' << " getter " << *signature << ' ' << *return_type ();
+        str << '(' << *receiver_type () << ')' << " getter " << *signature << ' ' << *return_type ();
         break;
       case REACTION:
-        str << '(' << *receiver_type << ')' << " reaction " << *signature;
+        str << '(' << *receiver_type () << ')' << " reaction " << *signature;
         break;
       }
     return str.str ();
@@ -1394,19 +1394,24 @@ type::Instance () \
   }
 
   const Type*
+  Method::receiver_type () const
+  {
+    return receiver_parameter->type;
+  }
+
+  const Type*
   Method::return_type () const
   {
     return return_parameter->type;
   }
 
   Method::Method (MethodKind k, const NamedType* named_type_,
-                  ParameterSymbol* this_parameter_,
+                  ParameterSymbol* receiver_parameter_,
                   const Signature * signature_,
                   ParameterSymbol* return_parameter_)
     : method_kind (k), named_type (named_type_)
-    , receiver_type (NULL /*this_parameter_->value.type*/)
-    , this_parameter (this_parameter_)
-    , function_type (make_function_type (this_parameter_, signature_, return_parameter_))
+    , receiver_parameter (receiver_parameter_)
+    , function_type (make_function_type (receiver_parameter_, signature_, return_parameter_))
     , signature (signature_)
     , return_parameter (return_parameter_)
   {

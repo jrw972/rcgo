@@ -251,13 +251,6 @@ void ProcessDeclarations (ast::Node* node);
 typed_value_t
 CheckAndImplicitlyDereferenceAndConvert (ast::Node*& expr, const Type::Type* type);
 
-// Type check the expression expecting a reference.
-typed_value_t CheckExpectReference (ast::Node* expr);
-
-// TODO:  Move this into TypeCheckCall.
-void
-TypeCheckArgs (ast::Node * node, TypedValueListType& tvlist);
-
 void
 TypeCheckCall (ast::Node& node,
                const Type::Signature* signature,

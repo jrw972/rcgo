@@ -23,18 +23,6 @@ ProcessDeclarations (Node * node)
       ast_not_reached (node);
     }
 
-    void visit (ast_action_t& node)
-    {
-      unimplemented;
-      // ParameterSymbol* thisSymbol;
-      // NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, true, true);
-      // enter_symbol (node, thisSymbol);
-      // Action *action = new Action (node.body (), ast_get_identifier (node.identifier ()));
-      // type->Add (action);
-      // node.action = action;
-      // node.type = type;
-    }
-
     void visit (ast_dimensioned_action_t& node)
     {
       unimplemented;
@@ -48,17 +36,6 @@ ProcessDeclarations (Node * node)
       // type->Add (action);
       // node.action = action;
       // node.type = type;
-    }
-
-    void visit (ast_bind_t& node)
-    {
-      unimplemented;
-      // ParameterSymbol* thisSymbol;
-      // NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, true, false);
-      // enter_symbol (node, thisSymbol);
-      // bind_t* bind = new bind_t (&node, ast_get_identifier (node.identifier ()));
-      // type->Add (bind);
-      // node.bind = bind;
     }
 
     void visit (ast_method_t& node)

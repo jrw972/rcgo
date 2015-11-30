@@ -61,18 +61,6 @@ CheckAndImplicitlyDereferenceAndConvert (ast::Node*& expr, const Type::Type* typ
 }
 
 void
-TypeCheckArgs (Node * node, TypedValueListType& tvlist)
-{
-  for (Node::Iterator child = node->Begin (), limit = node->End ();
-       child != limit;
-       ++child)
-    {
-      unimplemented;
-      //tvlist.push_back (CheckAndImplicitlyDereference (*child));
-    }
-}
-
-void
 TypeCheckCall (Node& node,
                const Type::Signature* signature,
                typed_value_t return_value,
@@ -337,8 +325,8 @@ struct check_visitor : public ast::DefaultVisitor
 
     Node *args = node.args ();
     TypedValueListType tvlist;
-    TypeCheckArgs (args, tvlist);
     unimplemented;
+    // TypeCheckArgs (args, tvlist);
     // TypeCheckCall (node, push_port_type->GetSignature (), push_port_type->GetReturnParameter ()->value, args, tvlist);
     // node.field = type_select_field (this_type, port_identifier);
     // node.array_type = array_type;
@@ -441,15 +429,16 @@ struct check_visitor : public ast::DefaultVisitor
 
   void visit (ast_address_of_expr_t& node)
   {
-    typed_value_t in = CheckExpectReference (node.child ());
-    typed_value_t out = typed_value_t::address_of (in);
-    if (out.IsError ())
-      {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "E45: incompatible types: %s (E23)", in.type->ToString ().c_str ());
-      }
     unimplemented;
-    //node.typed_value = out;
+    // typed_value_t in = CheckExpectReference (node.child ());
+    // typed_value_t out = typed_value_t::address_of (in);
+    // if (out.IsError ())
+    //   {
+    //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+    //                    "E45: incompatible types: %s (E23)", in.type->ToString ().c_str ());
+    //   }
+    // unimplemented;
+    // //node.typed_value = out;
   }
 
   void visit (ast_unary_arithmetic_expr_t& node)
@@ -823,25 +812,6 @@ struct check_visitor : public ast::DefaultVisitor
 
     // visitor v (*this, node, tvlist);
     // expr_tv.type->Accept (v);
-  }
-
-  void visit (ast_push_port_call_expr_t& node)
-  {
-    Node *expr = node.identifier ();
-    Node *args = node.args ();
-    const std::string& port_identifier = ast_get_identifier (expr);
-    const Type::Type *this_type = node.GetReceiverType ();
-    const Type::Function *push_port_type = Type::type_cast<Type::Function> (type_select (this_type, port_identifier));
-    if (push_port_type == NULL || push_port_type->function_kind != Type::Function::PUSH_PORT)
-      {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "no port named %s (E34)", port_identifier.c_str ());
-      }
-    TypedValueListType tvlist;
-    TypeCheckArgs (args, tvlist);
-    unimplemented;
-    // TypeCheckCall (node, push_port_type->GetSignature (), push_port_type->GetReturnParameter ()->value, args, tvlist);
-    // node.field = type_select_field (this_type, port_identifier);
   }
 
 //   void visit (ast_index_expr_t& node)

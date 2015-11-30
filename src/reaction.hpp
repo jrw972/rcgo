@@ -6,9 +6,8 @@
 class reaction_t : public Callable
 {
 public:
-  reaction_t (Type::NamedType* type, ast::Node* a_node, Symbol* a_receiver, ast::Node* body_, const std::string& name_, const Type::Method* rt)
-    : type_ (type)
-    , node (a_node)
+  reaction_t (ast::Node* a_node, Symbol* a_receiver, ast::Node* body_, const std::string& name_, const Type::Method* rt)
+    : node (a_node)
     , receiver (a_receiver)
     , body (body_)
     , name (name_)
@@ -17,9 +16,8 @@ public:
     , reaction_type (rt)
   { }
 
-  reaction_t (Type::NamedType* type, ast::Node* a_node, Symbol* a_receiver, ast::Node* body_, const std::string& name_, const Type::Method* rt, Symbol* a_iota, Type::Uint::ValueType dimension)
-    : type_ (type)
-    , node (a_node)
+  reaction_t (ast::Node* a_node, Symbol* a_receiver, ast::Node* body_, const std::string& name_, const Type::Method* rt, Symbol* a_iota, Type::Uint::ValueType dimension)
+    : node (a_node)
     , receiver (a_receiver)
     , body (body_)
     , name (name_)
@@ -29,8 +27,6 @@ public:
     , reaction_type (rt)
   { }
 
-private:
-  Type::NamedType* type_;
 public:
   ast::Node* const node;
   Symbol* const receiver;
@@ -46,14 +42,12 @@ private:
 public:
   const Type::Method* const reaction_type;
 
-  void call (executor_base_t& exec) const
-  {
-    unimplemented;
-  }
+  void call (executor_base_t& exec) const;
 
-  Type::NamedType* type () const
+  const Type::Type* type () const
   {
-    return type_;
+    // This used to the named type.
+    return reaction_type;
   }
 
   size_t return_size () const

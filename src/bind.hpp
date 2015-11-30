@@ -6,9 +6,10 @@
 class bind_t
 {
 public:
-  bind_t (ast::Node* node, const std::string& name_)
+  bind_t (ast::Node* node, const std::string& name_, ParameterSymbol* rp)
     : node_ (node)
     , name (name_)
+    , receiver_parameter (rp)
   { }
 
   ast::Node* node () const
@@ -22,6 +23,7 @@ private:
   ast::Node* node_;
 public:
   const std::string& name;
+  ParameterSymbol* receiver_parameter;
 };
 
 #endif /* bind_hpp */

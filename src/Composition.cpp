@@ -13,12 +13,15 @@
 #include "semantic.hpp"
 #include "EvaluateStatic.hpp"
 #include "reaction.hpp"
+#include "stack.hpp"
+#include "runtime.hpp"
 
 namespace Composition
 {
   using namespace Type;
   using namespace ast;
   using namespace decl;
+  using namespace runtime;
 
   Instance::Instance (Instance* p,
                       size_t a,
@@ -158,7 +161,7 @@ namespace Composition
     return str.str ();
   }
 
-  ReactionKey::ReactionKey (Instance* i, reaction_t* a, Type::Uint::ValueType p)
+  ReactionKey::ReactionKey (Instance* i, const reaction_t* a, Type::Uint::ValueType p)
     : instance (i)
     , reaction (a)
     , iota (p)
@@ -465,6 +468,23 @@ namespace Composition
     pull_ports[address] = new PullPort (address, input_instance, input_field, name);
   }
 
+  struct Executor : public executor_base_t
+  {
+    Executor () : executor_base_t (1024, NULL) { }
+    virtual heap_t* heap () const
+    {
+      unimplemented;
+    }
+    virtual void heap (heap_t* heap)
+    {
+      unimplemented;
+    }
+    virtual void push ()
+    {
+      unimplemented;
+    }
+  };
+
   void
   Composer::elaborateBindings ()
   {
@@ -485,10 +505,15 @@ namespace Composition
             struct visitor : public DefaultConstVisitor
             {
               Composer& table;
-              const size_t receiver_address;
-              static_memory_t memory;
+              Executor exec;
 
-              visitor (Composer& t, size_t ra) : table (t), receiver_address (ra) { }
+              visitor (Composer& t, size_t receiver_address) : table (t)
+              {
+                // Build a stack frame.
+                exec.stack ().push_pointer(reinterpret_cast<void*> (receiver_address));
+                exec.stack ().push_pointer (NULL);
+                exec.stack ().setup (0);
+              }
 
               void default_action (const Node& node)
               {
@@ -497,15 +522,16 @@ namespace Composition
 
               void visit (const ast_if_statement_t& node)
               {
-                static_value_t c = EvaluateStatic (node.condition (), memory);
-                if (c.value != 0)
-                  {
-                    node.true_branch ()->Accept (*this);
-                  }
-                else
-                  {
-                    node.false_branch ()->Accept (*this);
-                  }
+                unimplemented;
+                // static_value_t c = EvaluateStatic (node.condition (), memory);
+                // if (c.value != 0)
+                //   {
+                //     node.true_branch ()->Accept (*this);
+                //   }
+                // else
+                //   {
+                //     node.false_branch ()->Accept (*this);
+                //   }
               }
 
               void visit (const ast_list_statement_t& node)
@@ -515,43 +541,33 @@ namespace Composition
 
               void visit (const ast_for_iota_statement_t& node)
               {
-                for (Int::ValueType idx = 0, limit = node.limit.integral_value ();
-                     idx != limit;
-                     ++idx)
-                  {
-                    memory.set_value_at_offset (node.symbol->offset (), idx);
-                    node.body ()->Accept (*this);
-                  }
+                unimplemented;
+                // for (Int::ValueType idx = 0, limit = node.limit.integral_value ();
+                //      idx != limit;
+                //      ++idx)
+                //   {
+                //     memory.set_value_at_offset (node.symbol->offset (), idx);
+                //     node.body ()->Accept (*this);
+                //   }
               }
 
               void visit (const ast_bind_t& node)
               {
-                node.receiver ()->Accept (*this);
-
                 node.body ()->Accept (*this);
-              }
-
-              void visit (const ast_receiver_t& node)
-              {
-                memory.set_value_at_offset (node.this_symbol->offset (), receiver_address);
               }
 
               void bind (ast::Node* left, ast::Node* right, static_value_t param = static_value_t ())
               {
-                unimplemented;
-                // static_value_t port = EvaluateStatic (left, memory);
-                // // Strip off the implicit dereference and selecting of the reaction.
-                // static_value_t input = EvaluateStatic (right->At (0)->At (0), memory);
-                // typed_value_t reaction = right->typed_value;
+                left->operation->execute (exec);
+                void* port = exec.stack ().pop_pointer ();
+                right->At (0)->operation->execute (exec);
+                void* reaction_component = exec.stack ().pop_pointer ();
+                const reaction_t* reaction = static_cast<const reaction_t*> (right->callable);
 
-                // assert (port.kind == static_value_t::ABSOLUTE_ADDRESS);
-                // assert (input.kind == static_value_t::ABSOLUTE_ADDRESS);
-                // assert (param.kind == static_value_t::VALUE);
-
-                // PushPort* pp = table.push_ports[port.address];
-                // Reaction* r = table.reactions[ReactionsType::key_type (table.instances[input.address], reaction.value.reaction_value (), param.value)];
-                // pp->reactions.push_back (r);
-                // r->push_ports.push_back (pp);
+                PushPort* pp = table.push_ports[reinterpret_cast<size_t> (port)];
+                Reaction* r = table.reactions[ReactionsType::key_type (table.instances[reinterpret_cast<size_t> (reaction_component)], reaction, param.value)];
+                pp->reactions.push_back (r);
+                r->push_ports.push_back (pp);
               }
 
               void visit (const ast_bind_push_port_statement_t& node)
@@ -561,8 +577,9 @@ namespace Composition
 
               void visit (const ast_bind_push_port_param_statement_t& node)
               {
-                static_value_t param = EvaluateStatic (node.param (), memory);
-                bind (node.left (), node.right (), param);
+                unimplemented;
+                // static_value_t param = EvaluateStatic (node.param (), memory);
+                // bind (node.left (), node.right (), param);
               }
 
               void visit (const ast_bind_pull_port_statement_t& node)

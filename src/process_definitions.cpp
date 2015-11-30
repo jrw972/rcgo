@@ -63,15 +63,6 @@ check_assignment (typed_value_t left_tv,
     }
 }
 
-typed_value_t
-CheckExpectReference (ast::Node* expr)
-{
-  unimplemented;
-  // typed_value_t tv = TypeCheckExpression (expr);
-  // tv.RequireReference (expr->location);
-  // return tv;
-}
-
 static void
 check_condition (ast::Node* condition_node)
 {
@@ -103,45 +94,6 @@ type_check_statement (Node * node)
 
     void visit (ast_empty_statement_t& node)
     { }
-
-    typed_value_t bind (Node& node, ast::Node* port_node, ast::Node*& reaction_node)
-    {
-      CheckExpectReference (port_node);
-      unimplemented;
-      // CheckAndImplicitlyDereference (reaction_node);
-
-      // unimplemented;
-      // // typed_value_t port_tv = port_node->typed_value;
-      // // typed_value_t reaction_tv = reaction_node->typed_value;
-
-      // // const Type::Function *push_port_type = Type::type_cast<Type::Function> (port_tv.type);
-
-      // // if (push_port_type == NULL || push_port_type->kind != Type::Function::PUSH_PORT)
-      // //   {
-      // //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-      // //                    "source of bind is not a port (E38)");
-      // //   }
-
-      // // const Type::Method* reaction_type = Type::type_cast<Type::Method> (reaction_tv.type);
-      // // if (reaction_type == NULL || reaction_type->kind != Type::Method::REACTION)
-      // //   {
-      // //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-      // //                    "target of bind is not a reaction (E39)");
-      // //   }
-
-      // // if (!type_is_equal (push_port_type->GetSignature (), reaction_type->signature))
-      // //   {
-      // //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-      // //                    "cannot bind %s to %s (E40)", push_port_type->ToString ().c_str (), reaction_type->ToString ().c_str ());
-      // //   }
-
-      // // return reaction_tv;
-    }
-
-    void visit (ast_bind_push_port_statement_t& node)
-    {
-      bind (node, node.left (), node.right_ref ());
-    }
 
     void visit (ast_bind_push_port_param_statement_t& node)
     {
@@ -232,14 +184,15 @@ type_check_statement (Node * node)
     static typed_value_t
     check_assignment_target (ast::Node* left)
     {
-      typed_value_t tv = CheckExpectReference (left);
-      if (tv.intrinsic_mutability != MUTABLE)
-        {
-          error_at_line (-1, 0, left->location.File.c_str (), left->location.Line,
-                         "cannot assign to read-only location of type %s (E45)", tv.type->ToString ().c_str ());
-        }
+      unimplemented;
+      // typed_value_t tv = CheckExpectReference (left);
+      // if (tv.intrinsic_mutability != MUTABLE)
+      //   {
+      //     error_at_line (-1, 0, left->location.File.c_str (), left->location.Line,
+      //                    "cannot assign to read-only location of type %s (E45)", tv.type->ToString ().c_str ());
+      //   }
 
-      return tv;
+      // return tv;
     }
 
     static void arithmetic_assign (ast_binary_t* node, const char* symbol)
@@ -359,23 +312,6 @@ type_check_statement (Node * node)
     void visit (ast_decrement_statement_t& node)
     {
       unimplemented;
-    }
-
-    void visit (ast_activate_statement_t& node)
-    {
-      unimplemented;
-      // Node *expression_list_node = node.expr_list ();
-      // Node *body_node = node.body ();
-
-      // /* Check the activations. */
-      // TypeCheckExpression (expression_list_node);
-
-      // /* Re-insert this as a pointer to mutable. */
-      // node.Activate ();
-
-      // /* Check the body. */
-      // type_check_statement (body_node);
-      // node.mutable_phase_access = ComputeReceiverAccess (body_node);
     }
 
     void visit (ast_var_statement_t& node)
@@ -517,30 +453,6 @@ control_check_statement (Node * node)
     {
       // TODO: Maybe.
     }
-
-    void visit (ast_activate_statement_t& node)
-    {
-      unimplemented;
-      // Node::Context context = node.GetContext ();
-      // Node *body_node = node.body ();
-
-      // if (!(context == Node::Action ||
-      //       context == Node::Reaction))
-      //   {
-      //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-      //                    "activation outside of action or reaction (E53)");
-      //   }
-
-      // if (in_activation_statement)
-      //   {
-      //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-      //                    "activations within activations are not allowed (E54)");
-      //   }
-
-      // in_activation_statement = true;
-      // body_node->Accept (*this);
-      // in_activation_statement = false;
-    }
   };
 
   visitor v;
@@ -588,30 +500,6 @@ process_definitions (Node * node)
     void visit (ast_const_t& node)
     { }
 
-    void visit (ast_action_t& node)
-    {
-      check_condition (node.precondition_ref ());
-      node.action->precondition = node.precondition ();
-      Node *body_node = node.body ();
-      type_check_statement (body_node);
-      control_check_statement (body_node);
-      node.action->precondition_access = ComputeReceiverAccess (node.precondition ());
-      node.action->immutable_phase_access = ComputeReceiverAccess (node.body ());
-
-      std::cout << "TODO:  Static preconditions\n";
-      // if (tv.value.present)
-      //   {
-      //     if (tv.value.ref (*Bool::Instance ()))
-      //       {
-      //         node.action->precondition_kind = Action::StaticTrue;
-      //       }
-      //     else
-      //       {
-      //         node.action->precondition_kind = Action::StaticFalse;
-      //       }
-      //   }
-    }
-
     void visit (ast_dimensioned_action_t& node)
     {
       check_condition (node.precondition_ref ());
@@ -634,13 +522,6 @@ process_definitions (Node * node)
       //         node.action->precondition_kind = Action::StaticFalse;
       //       }
       //   }
-    }
-
-    void visit (ast_bind_t& node)
-    {
-      Node *body_node = node.body ();
-      type_check_statement (body_node);
-      control_check_statement (body_node);
     }
 
     void visit (ast_function_t& node)
@@ -675,14 +556,6 @@ process_definitions (Node * node)
     void visit (ast_instance_t& node)
     {
       unimplemented;
-    }
-
-    void visit (ast_reaction_t& node)
-    {
-      Node *body_node = node.body ();
-      type_check_statement (body_node);
-      control_check_statement (body_node);
-      node.reaction->immutable_phase_access = ComputeReceiverAccess (body_node);
     }
 
     void visit (ast_dimensioned_reaction_t& node)

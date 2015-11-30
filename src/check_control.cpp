@@ -59,6 +59,26 @@ namespace semantic
         node.body ()->Accept (v);
       }
 
+      void visit (ast_action_t& node)
+      {
+        Visitor v (*this);
+        v.context = Action;
+        node.precondition ()->Accept (v);
+        node.body ()->Accept (v);
+      }
+
+      void visit (ast_reaction_t& node)
+      {
+        Visitor v (*this);
+        v.context = Reaction;
+        node.body ()->Accept (v);
+      }
+
+      void visit (ast_bind_t& node)
+      {
+        // Do nothing.
+      }
+
       void visit (ast_function_t& node)
       {
         node.body ()->Accept (*this);
@@ -103,6 +123,27 @@ namespace semantic
       {
         node.expr ()->Accept (*this);
         node.body ()->Accept (*this);
+      }
+
+      void visit (ast_activate_statement_t& node)
+      {
+        if (!(context == Action ||
+              context == Reaction))
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "activation outside of action or reaction (E53)");
+          }
+
+        if (in_mutable_phase)
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "activations within activations are not allowed (E54)");
+          }
+
+        node.expr_list ()->Accept (*this);
+        Visitor v (*this);
+        v.in_mutable_phase = true;
+        node.body ()->Accept (v);
       }
 
       void visit (ast_call_expr_t& node)
@@ -233,9 +274,15 @@ namespace semantic
       {
         node.VisitChildren (*this);
       }
+
       void visit (TypeExpression& node)
       {
         // Do nothing.
+      }
+
+      void visit (ast_push_port_call_expr_t& node)
+      {
+        node.args ()->Accept (*this);
       }
     };
   }

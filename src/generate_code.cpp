@@ -6,6 +6,8 @@
 #include "SymbolVisitor.hpp"
 #include "field.hpp"
 #include "semantic.hpp"
+#include "reaction.hpp"
+#include "bind.hpp"
 
 namespace  code
 {
@@ -48,6 +50,26 @@ namespace  code
     {
       node.body ()->Accept (*this);
       node.operation = new SetRestoreCurrentInstance (node.body ()->operation, node.initializer->memoryModel.ReceiverOffset ());
+    }
+
+    void visit (ast_action_t& node)
+    {
+      node.precondition ()->Accept (*this);
+      node.precondition ()->operation = new SetRestoreCurrentInstance (node.precondition ()->operation, node.action->memory_model.ReceiverOffset ());
+      node.body ()->Accept (*this);
+      node.body ()->operation = new SetRestoreCurrentInstance (node.body ()->operation, node.action->memory_model.ReceiverOffset ());
+    }
+
+    void visit (ast_reaction_t& node)
+    {
+      node.body ()->Accept (*this);
+      node.operation = new SetRestoreCurrentInstance (node.body ()->operation, node.reaction->memory_model.ReceiverOffset ());
+    }
+
+    void visit (ast_bind_t& node)
+    {
+      node.body ()->Accept (*this);
+      node.operation = new SetRestoreCurrentInstance (node.body ()->operation, node.bind->receiver_parameter->offset ());
     }
 
     void visit (ast_function_t& node)
@@ -175,6 +197,25 @@ namespace  code
       node.operation = new Change (root, node.root_symbol->offset (), node.body ()->operation);
     }
 
+    void visit (ast_activate_statement_t& node)
+    {
+      node.VisitChildren (*this);
+      Operation* b = node.body ()->operation;
+      b = new SetRestoreCurrentInstance (b, node.memoryModel->ReceiverOffset ());
+      // Add to the schedule.
+      if (node.mutable_phase_access == AccessWrite)
+        {
+          b = new Push (b);
+        }
+      node.operation = new Activate (node.expr_list ()->operation, b);
+    }
+
+    void visit (ast_bind_push_port_statement_t& node)
+    {
+      node.VisitChildren (*this);
+      node.operation = new BindPushPort (node.left ()->operation, node.right ()->operation);
+    }
+
     void visit (ast_call_expr_t& node)
     {
       node.args ()->Accept (*this);
@@ -276,7 +317,7 @@ namespace  code
             {
               if (node.base ()->expression_kind == kVariable)
                 {
-                  unimplemented;
+                  node.operation = new Select (new Load (node.base ()->operation, node.base ()->type), node.field->offset);
                 }
               else
                 {
@@ -297,7 +338,11 @@ namespace  code
         }
       else
         {
-          unimplemented;
+          assert (node.callable != NULL);
+          value_t v;
+          v.present = true;
+          v.pointer_value_ = const_cast<void*> (static_cast<const void*> (node.callable));
+          node.operation = make_literal (Int::Instance ()->GetPointer (), v);
         }
     }
 
@@ -443,6 +488,12 @@ namespace  code
     void visit (TypeExpression& node)
     {
       //Do nothing.
+    }
+
+    void visit (ast_push_port_call_expr_t& node)
+    {
+      node.args ()->Accept (*this);
+      node.operation = new PushPortCall (node.receiver_parameter->offset (), node.field->offset, node.args ()->operation);
     }
   };
 

@@ -146,6 +146,23 @@ namespace semantic
         node.body ()->Accept (*this);
       }
 
+      void visit (ast_action_t& node)
+      {
+        node.precondition ()->Accept (*this);
+        require_value_or_variable (node.precondition ());
+        node.body ()->Accept (*this);
+      }
+
+      void visit (ast_reaction_t& node)
+      {
+        node.body ()->Accept (*this);
+      }
+
+      void visit (ast_bind_t& node)
+      {
+        node.body ()->Accept (*this);
+      }
+
       void visit (ast_function_t& node)
       {
         node.body ()->Accept (*this);
@@ -179,6 +196,18 @@ namespace semantic
         node.expr ()->Accept (*this);
         require_value_or_variable (node.expr ());
         node.body ()->Accept (*this);
+      }
+
+      void visit (ast_activate_statement_t& node)
+      {
+        node.VisitChildren (*this);
+      }
+
+      void visit (ast_bind_push_port_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        require_variable (node.left ());
+        require_variable (node.right ());
       }
 
       void visit (ast_const_t& node)
@@ -268,6 +297,12 @@ namespace semantic
       void visit (TypeExpression& node)
       {
         node.expression_kind = kType;
+      }
+
+      void visit (ast_push_port_call_expr_t& node)
+      {
+        node.args ()->Accept (*this);
+        require_value_or_variable_list (node.args ());
       }
     };
   }

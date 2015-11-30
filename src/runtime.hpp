@@ -42,16 +42,6 @@ namespace runtime
     Continue,
   };
 
-  ControlAction
-  evaluate_statement (executor_base_t& exec,
-                      const MemoryModel& memoryModel,
-                      ast::Node* node);
-
-  // void
-  // evaluate_expression (executor_base_t& exec,
-  //                      const MemoryModel& memoryModel,
-  //                      const ast::Node* node);
-
   struct New : public ::Template
   {
     New (ast::Node* dn);
@@ -525,6 +515,38 @@ namespace runtime
   };
 
   Operation* make_increment (Operation* child, const Type::Type* type);
+
+  struct Activate : public Operation
+  {
+    Activate (Operation* pc, Operation* b) : port_calls (pc), body (b) { }
+    virtual void execute (executor_base_t& exec) const;
+    Operation* const port_calls;
+    Operation* const body;
+  };
+
+  struct PushPortCall : public Operation
+  {
+    PushPortCall (ptrdiff_t ro, ptrdiff_t po, Operation* o) : receiver_offset (ro), port_offset (po), args (o) { }
+    virtual void execute (executor_base_t& exec) const;
+    ptrdiff_t const receiver_offset;
+    ptrdiff_t const port_offset;
+    Operation* const args;
+  };
+
+  struct BindPushPort : public Operation
+  {
+    BindPushPort (Operation* l, Operation* r) : left (l), right (r) { }
+    virtual void execute (executor_base_t& exec) const;
+    Operation* const left;
+    Operation* const right;
+  };
+
+  struct Push : public Operation
+  {
+    Push (Operation* b) : body (b) { }
+    virtual void execute (executor_base_t& exec) const;
+    Operation* const body;
+  };
 }
 
 #endif // rc_runtime_hpp

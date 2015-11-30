@@ -35,16 +35,6 @@ namespace runtime
     size_t change_count;
   };
 
-  ControlAction
-  evaluate_statement (executor_base_t& exec,
-                      const MemoryModel& memoryModel,
-                      ast::Node* node);
-
-  static void
-  execute (executor_base_t& exec,
-           const reaction_t* reaction,
-           component_t* instance);
-
   void
   allocate_instances (Composition::Composer& instance_table)
   {
@@ -1292,371 +1282,371 @@ namespace runtime
   // node->Accept (v);
   // }
 
-  ControlAction
-  evaluate_statement (executor_base_t& exec,
-                      const MemoryModel& memoryModel,
-                      ast::Node* node)
-  {
-    struct visitor : public DefaultConstVisitor
-    {
-      ControlAction retval;
-      executor_base_t& exec;
-      const MemoryModel& memoryModel;
+  // ControlAction
+  // evaluate_statement (executor_base_t& exec,
+  //                     const MemoryModel& memoryModel,
+  //                     ast::Node* node)
+  // {
+  //   struct visitor : public DefaultConstVisitor
+  //   {
+  //     ControlAction retval;
+  //     executor_base_t& exec;
+  //     const MemoryModel& memoryModel;
 
-      visitor (executor_base_t& e, const MemoryModel& mm) : retval (Continue), exec (e), memoryModel (mm) { }
+  //     visitor (executor_base_t& e, const MemoryModel& mm) : retval (Continue), exec (e), memoryModel (mm) { }
 
-      void default_action (const Node& node)
-      {
-        ast_not_reached (node);
-      }
+  //     void default_action (const Node& node)
+  //     {
+  //       ast_not_reached (node);
+  //     }
 
-      void visit (const ast_const_t& node)
-      { }
+  //     void visit (const ast_const_t& node)
+  //     { }
 
-      void visit (const ast_empty_statement_t& node)
-      { }
+  //     void visit (const ast_empty_statement_t& node)
+  //     { }
 
-      void visit (const ast_assign_statement_t& node)
-      {
-        unimplemented;
-        // ast::Node* left = node.left ();
-        // ast::Node* right = node.right ();
-        // // Determine the size of the value being assigned.
-        // size_t size = right->typed_value.type->Size ();
-        // // Evaluate the address.
-        // evaluate_expression (exec, memoryModel, left);
-        // void* ptr = exec.stack ().pop_pointer ();
-        // // Evaluate the value.
-        // evaluate_expression (exec, memoryModel, right);
-        // // Store.
-        // exec.stack ().store (ptr, size);
-      }
+  //     void visit (const ast_assign_statement_t& node)
+  //     {
+  //       unimplemented;
+  //       // ast::Node* left = node.left ();
+  //       // ast::Node* right = node.right ();
+  //       // // Determine the size of the value being assigned.
+  //       // size_t size = right->typed_value.type->Size ();
+  //       // // Evaluate the address.
+  //       // evaluate_expression (exec, memoryModel, left);
+  //       // void* ptr = exec.stack ().pop_pointer ();
+  //       // // Evaluate the value.
+  //       // evaluate_expression (exec, memoryModel, right);
+  //       // // Store.
+  //       // exec.stack ().store (ptr, size);
+  //     }
 
-      void visit (const ast_change_statement_t& node)
-      {
-        unimplemented;
-        // ast::Node* expr = node.expr ();
-        // ast::Node* body = node.body ();
-        // // Evaluate the pointer to the heap link.
-        // evaluate_expression (exec, memoryModel, expr);
-        // heap_link_t* hl = (heap_link_t*)exec.stack ().pop_pointer ();
-        // if (hl == NULL)
-        //   {
-        //     // Heap link is null.
-        //     unimplemented;
-        //   }
-        // pthread_mutex_lock (&hl->mutex);
-        // ++hl->change_count;
-        // pthread_mutex_unlock (&hl->mutex);
+  //     void visit (const ast_change_statement_t& node)
+  //     {
+  //       unimplemented;
+  //       // ast::Node* expr = node.expr ();
+  //       // ast::Node* body = node.body ();
+  //       // // Evaluate the pointer to the heap link.
+  //       // evaluate_expression (exec, memoryModel, expr);
+  //       // heap_link_t* hl = (heap_link_t*)exec.stack ().pop_pointer ();
+  //       // if (hl == NULL)
+  //       //   {
+  //       //     // Heap link is null.
+  //       //     unimplemented;
+  //       //   }
+  //       // pthread_mutex_lock (&hl->mutex);
+  //       // ++hl->change_count;
+  //       // pthread_mutex_unlock (&hl->mutex);
 
-        // // Save the old heap.
-        // heap_t* old_heap = exec.heap ();
-        // // Set the the new heap.
-        // exec.heap (hl->heap);
+  //       // // Save the old heap.
+  //       // heap_t* old_heap = exec.heap ();
+  //       // // Set the the new heap.
+  //       // exec.heap (hl->heap);
 
-        // {
-        //   // Evaluate the address of the heap root.
-        //   Symbol* symbol = node.root_symbol;
-        //   assert (symbol != NULL);
-        //   ptrdiff_t offset = symbol->offset ();
-        //   exec.stack ().push_address (offset);
-        // }
+  //       // {
+  //       //   // Evaluate the address of the heap root.
+  //       //   Symbol* symbol = node.root_symbol;
+  //       //   assert (symbol != NULL);
+  //       //   ptrdiff_t offset = symbol->offset ();
+  //       //   exec.stack ().push_address (offset);
+  //       // }
 
-        // char** root_value = (char**)exec.stack ().pop_pointer ();
-        // // Push a pointer to the root object.
-        // *root_value = static_cast<char*> (heap_instance (hl->heap));
+  //       // char** root_value = (char**)exec.stack ().pop_pointer ();
+  //       // // Push a pointer to the root object.
+  //       // *root_value = static_cast<char*> (heap_instance (hl->heap));
 
-        // evaluate_statement (exec, memoryModel, body);
+  //       // evaluate_statement (exec, memoryModel, body);
 
-        // // Restore the old heap.
-        // exec.heap (old_heap);
+  //       // // Restore the old heap.
+  //       // exec.heap (old_heap);
 
-        // pthread_mutex_lock (&hl->mutex);
-        // --hl->change_count;
-        // pthread_mutex_unlock (&hl->mutex);
-      }
+  //       // pthread_mutex_lock (&hl->mutex);
+  //       // --hl->change_count;
+  //       // pthread_mutex_unlock (&hl->mutex);
+  //     }
 
-      void visit (const ast_expression_statement_t& node)
-      {
-        unimplemented;
-        // ast::Node* child = node.child ();
-        // // Determine the size of the value being generated.
-        // size_t size = child->typed_value.type->Size ();
-        // // Evaluate.
-        // evaluate_expression (exec, memoryModel, child);
-        // // Remove value.
-        // exec.stack ().popn (size);
-      }
+  //     void visit (const ast_expression_statement_t& node)
+  //     {
+  //       unimplemented;
+  //       // ast::Node* child = node.child ();
+  //       // // Determine the size of the value being generated.
+  //       // size_t size = child->typed_value.type->Size ();
+  //       // // Evaluate.
+  //       // evaluate_expression (exec, memoryModel, child);
+  //       // // Remove value.
+  //       // exec.stack ().popn (size);
+  //     }
 
-      void visit (const ast_if_statement_t& node)
-      {
-        unimplemented;
-        // evaluate_expression (exec, memoryModel, node.condition ());
-        // Bool::ValueType c;
-        // exec.stack ().pop (c);
-        // if (c)
-        //   {
-        //     if (evaluate_statement (exec, memoryModel, node.true_branch ()) == Return)
-        //       {
-        //         retval = Return;
-        //         return;
-        //       }
-        //   }
-        // else
-        //   {
-        //     if (evaluate_statement (exec, memoryModel, node.false_branch ()) == Return)
-        //       {
-        //         retval = Return;
-        //         return;
-        //       }
-        //   }
-      }
+  //     void visit (const ast_if_statement_t& node)
+  //     {
+  //       unimplemented;
+  //       // evaluate_expression (exec, memoryModel, node.condition ());
+  //       // Bool::ValueType c;
+  //       // exec.stack ().pop (c);
+  //       // if (c)
+  //       //   {
+  //       //     if (evaluate_statement (exec, memoryModel, node.true_branch ()) == Return)
+  //       //       {
+  //       //         retval = Return;
+  //       //         return;
+  //       //       }
+  //       //   }
+  //       // else
+  //       //   {
+  //       //     if (evaluate_statement (exec, memoryModel, node.false_branch ()) == Return)
+  //       //       {
+  //       //         retval = Return;
+  //       //         return;
+  //       //       }
+  //       //   }
+  //     }
 
-      void visit (const ast_while_statement_t& node)
-      {
-        unimplemented;
-        // for (;;)
-        //   {
-        //     evaluate_expression (exec, memoryModel, node.condition ());
-        //     Bool::ValueType c;
-        //     exec.stack ().pop (c);
-        //     if (c)
-        //       {
-        //         if (evaluate_statement (exec, memoryModel, node.body ()) == Return)
-        //           {
-        //             retval = Return;
-        //             return;
-        //           }
-        //       }
-        //     else
-        //       {
-        //         return;
-        //       }
-        //   }
-      }
+  //     void visit (const ast_while_statement_t& node)
+  //     {
+  //       unimplemented;
+  //       // for (;;)
+  //       //   {
+  //       //     evaluate_expression (exec, memoryModel, node.condition ());
+  //       //     Bool::ValueType c;
+  //       //     exec.stack ().pop (c);
+  //       //     if (c)
+  //       //       {
+  //       //         if (evaluate_statement (exec, memoryModel, node.body ()) == Return)
+  //       //           {
+  //       //             retval = Return;
+  //       //             return;
+  //       //           }
+  //       //       }
+  //       //     else
+  //       //       {
+  //       //         return;
+  //       //       }
+  //       //   }
+  //     }
 
-      void visit (const ast_for_iota_statement_t& node)
-      {
-        for (Type::Int::ValueType idx = 0, limit = node.limit.integral_value ();
-             idx != limit;
-             ++idx)
-          {
-            exec.stack ().write (node.symbol->offset (), &idx, sizeof (idx));
-            if (evaluate_statement (exec, memoryModel, node.body ()) == Return)
-              {
-                retval = Return;
-                return;
-              }
-          }
-      }
+  //     void visit (const ast_for_iota_statement_t& node)
+  //     {
+  //       for (Type::Int::ValueType idx = 0, limit = node.limit.integral_value ();
+  //            idx != limit;
+  //            ++idx)
+  //         {
+  //           exec.stack ().write (node.symbol->offset (), &idx, sizeof (idx));
+  //           if (evaluate_statement (exec, memoryModel, node.body ()) == Return)
+  //             {
+  //               retval = Return;
+  //               return;
+  //             }
+  //         }
+  //     }
 
-      void visit (const ast_add_assign_statement_t& node)
-      {
-        unimplemented;
-        // // Determine the size of the value being assigned.
-        // const Type::Type* type = node.right ()->typed_value.type;
-        // // Evaluate the address.
-        // evaluate_expression (exec, memoryModel, node.left ());
-        // void* ptr = exec.stack ().pop_pointer ();
-        // // Evaluate the value.
-        // evaluate_expression (exec, memoryModel, node.right ());
+  //     void visit (const ast_add_assign_statement_t& node)
+  //     {
+  //       unimplemented;
+  //       // // Determine the size of the value being assigned.
+  //       // const Type::Type* type = node.right ()->typed_value.type;
+  //       // // Evaluate the address.
+  //       // evaluate_expression (exec, memoryModel, node.left ());
+  //       // void* ptr = exec.stack ().pop_pointer ();
+  //       // // Evaluate the value.
+  //       // evaluate_expression (exec, memoryModel, node.right ());
 
-        // struct visitor : public Type::DefaultVisitor
-        // {
-        //   executor_base_t& exec;
-        //   void* ptr;
-        //   visitor (executor_base_t& e, void* p) : exec (e), ptr (p) { }
+  //       // struct visitor : public Type::DefaultVisitor
+  //       // {
+  //       //   executor_base_t& exec;
+  //       //   void* ptr;
+  //       //   visitor (executor_base_t& e, void* p) : exec (e), ptr (p) { }
 
-        //   void visit (const NamedType& type)
-        //   {
-        //     type.UnderlyingType ()->Accept (*this);
-        //   }
+  //       //   void visit (const NamedType& type)
+  //       //   {
+  //       //     type.UnderlyingType ()->Accept (*this);
+  //       //   }
 
-        //   void visit (const Type::Int& type)
-        //   {
-        //     Type::Int::ValueType x;
-        //     exec.stack ().pop (x);
-        //     *((Type::Int::ValueType*)ptr) += x;
-        //   }
+  //       //   void visit (const Type::Int& type)
+  //       //   {
+  //       //     Type::Int::ValueType x;
+  //       //     exec.stack ().pop (x);
+  //       //     *((Type::Int::ValueType*)ptr) += x;
+  //       //   }
 
-        //   void visit (const Uint& type)
-        //   {
-        //     Uint::ValueType x;
-        //     exec.stack ().pop (x);
-        //     *((Uint::ValueType*)ptr) += x;
-        //   }
+  //       //   void visit (const Uint& type)
+  //       //   {
+  //       //     Uint::ValueType x;
+  //       //     exec.stack ().pop (x);
+  //       //     *((Uint::ValueType*)ptr) += x;
+  //       //   }
 
-        //   void default_action (const Type::Type& type)
-        //   {
-        //     unimplemented;
-        //   }
-        // };
-        // visitor v (exec, ptr);
-        // type->Accept (v);
-      }
+  //       //   void default_action (const Type::Type& type)
+  //       //   {
+  //       //     unimplemented;
+  //       //   }
+  //       // };
+  //       // visitor v (exec, ptr);
+  //       // type->Accept (v);
+  //     }
 
-      void visit (const ast_subtract_assign_statement_t& node)
-      {
-        unimplemented;
-        // // Determine the size of the value being assigned.
-        // const Type::Type* type = node.right ()->typed_value.type;
-        // // Evaluate the address.
-        // evaluate_expression (exec, memoryModel, node.left ());
-        // void* ptr = exec.stack ().pop_pointer ();
-        // // Evaluate the value.
-        // evaluate_expression (exec, memoryModel, node.right ());
+  //     void visit (const ast_subtract_assign_statement_t& node)
+  //     {
+  //       unimplemented;
+  //       // // Determine the size of the value being assigned.
+  //       // const Type::Type* type = node.right ()->typed_value.type;
+  //       // // Evaluate the address.
+  //       // evaluate_expression (exec, memoryModel, node.left ());
+  //       // void* ptr = exec.stack ().pop_pointer ();
+  //       // // Evaluate the value.
+  //       // evaluate_expression (exec, memoryModel, node.right ());
 
-        // struct visitor : public Type::DefaultVisitor
-        // {
-        //   executor_base_t& exec;
-        //   void* ptr;
-        //   visitor (executor_base_t& e, void* p) : exec (e), ptr (p) { }
+  //       // struct visitor : public Type::DefaultVisitor
+  //       // {
+  //       //   executor_base_t& exec;
+  //       //   void* ptr;
+  //       //   visitor (executor_base_t& e, void* p) : exec (e), ptr (p) { }
 
-        //   void visit (const NamedType& type)
-        //   {
-        //     type.UnderlyingType ()->Accept (*this);
-        //   }
+  //       //   void visit (const NamedType& type)
+  //       //   {
+  //       //     type.UnderlyingType ()->Accept (*this);
+  //       //   }
 
-        //   void visit (const Uint& type)
-        //   {
-        //     Uint::ValueType x;
-        //     exec.stack ().pop (x);
-        //     *((Uint::ValueType*)ptr) -= x;
-        //   }
+  //       //   void visit (const Uint& type)
+  //       //   {
+  //       //     Uint::ValueType x;
+  //       //     exec.stack ().pop (x);
+  //       //     *((Uint::ValueType*)ptr) -= x;
+  //       //   }
 
-        //   void default_action (const Type::Type& type)
-        //   {
-        //     unimplemented;
-        //   }
-        // };
-        // visitor v (exec, ptr);
-        // type->Accept (v);
-      }
+  //       //   void default_action (const Type::Type& type)
+  //       //   {
+  //       //     unimplemented;
+  //       //   }
+  //       // };
+  //       // visitor v (exec, ptr);
+  //       // type->Accept (v);
+  //     }
 
-      void visit (const ast_list_statement_t& node)
-      {
-        for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
-             pos != limit;
-             ++pos)
-          {
-            if (evaluate_statement (exec, memoryModel, *pos) == Return)
-              {
-                retval = Return;
-                return;
-              }
-          }
-      }
+  //     void visit (const ast_list_statement_t& node)
+  //     {
+  //       for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
+  //            pos != limit;
+  //            ++pos)
+  //         {
+  //           if (evaluate_statement (exec, memoryModel, *pos) == Return)
+  //             {
+  //               retval = Return;
+  //               return;
+  //             }
+  //         }
+  //     }
 
-      void visit (const ast_return_statement_t& node)
-      {
-        unimplemented;
-        // // Evaluate the expression.
-        // evaluate_expression (exec, memoryModel, node.child ());
-        // // Store in the return parameter.
-        // unimplemented;
-        // // exec.stack ().move (node.return_symbol->offset (), SymbolCast<ParameterSymbol> (node.return_symbol)->value.type->Size ());
-        // // retval = Return;
-        // // return;
-      }
+  //     void visit (const ast_return_statement_t& node)
+  //     {
+  //       unimplemented;
+  //       // // Evaluate the expression.
+  //       // evaluate_expression (exec, memoryModel, node.child ());
+  //       // // Store in the return parameter.
+  //       // unimplemented;
+  //       // // exec.stack ().move (node.return_symbol->offset (), SymbolCast<ParameterSymbol> (node.return_symbol)->value.type->Size ());
+  //       // // retval = Return;
+  //       // // return;
+  //     }
 
-      void visit (const ast_increment_statement_t& node)
-      {
-        unimplemented;
-        // evaluate_expression (exec, memoryModel, node.child ());
-        // void* ptr = exec.stack ().pop_pointer ();
+  //     void visit (const ast_increment_statement_t& node)
+  //     {
+  //       unimplemented;
+  //       // evaluate_expression (exec, memoryModel, node.child ());
+  //       // void* ptr = exec.stack ().pop_pointer ();
 
-        // struct visitor : public Type::DefaultVisitor
-        // {
-        //   void* ptr;
+  //       // struct visitor : public Type::DefaultVisitor
+  //       // {
+  //       //   void* ptr;
 
-        //   visitor (void* p) : ptr (p) { }
+  //       //   visitor (void* p) : ptr (p) { }
 
-        //   void default_action (const Type::Type& type)
-        //   {
-        //     not_reached;
-        //   }
+  //       //   void default_action (const Type::Type& type)
+  //       //   {
+  //       //     not_reached;
+  //       //   }
 
-        //   void visit (const NamedType& type)
-        //   {
-        //     type.UnderlyingType ()->Accept (*this);
-        //   }
+  //       //   void visit (const NamedType& type)
+  //       //   {
+  //       //     type.UnderlyingType ()->Accept (*this);
+  //       //   }
 
-        //   void visit (const Type::Int& type)
-        //   {
-        //     ++(*static_cast<Type::Int::ValueType*> (ptr));
-        //   }
+  //       //   void visit (const Type::Int& type)
+  //       //   {
+  //       //     ++(*static_cast<Type::Int::ValueType*> (ptr));
+  //       //   }
 
-        //   void visit (const Uint& type)
-        //   {
-        //     ++(*static_cast<Uint::ValueType*> (ptr));
-        //   }
-        // };
-        // visitor v (ptr);
-        // node.child ()->typed_value.type->Accept (v);
-      }
+  //       //   void visit (const Uint& type)
+  //       //   {
+  //       //     ++(*static_cast<Uint::ValueType*> (ptr));
+  //       //   }
+  //       // };
+  //       // visitor v (ptr);
+  //       // node.child ()->typed_value.type->Accept (v);
+  //     }
 
-      void visit (const ast_activate_statement_t& node)
-      {
-        unimplemented;
-        // // Need to keep track of the largest base pointer so we can process the mutable section.
-        // char* base_pointer = exec.stack ().base_pointer ();
-        // if (base_pointer > exec.mutable_phase_base_pointer ())
-        //   {
-        //     exec.mutable_phase_base_pointer (base_pointer);
-        //   }
+  //     void visit (const ast_activate_statement_t& node)
+  //     {
+  //       unimplemented;
+  //       // // Need to keep track of the largest base pointer so we can process the mutable section.
+  //       // char* base_pointer = exec.stack ().base_pointer ();
+  //       // if (base_pointer > exec.mutable_phase_base_pointer ())
+  //       //   {
+  //       //     exec.mutable_phase_base_pointer (base_pointer);
+  //       //   }
 
-        // // The caller pushed an instruction pointer which is just
-        // // before the base pointer.  Overwrite it with the body.
-        // const ast::Node* p = &node;
-        // memcpy (exec.stack ().pointer_to_instruction_pointer (), &p, sizeof (void*));
-        // // Execute the expression list.
-        // evaluate_expression (exec, memoryModel, node.expr_list ());
+  //       // // The caller pushed an instruction pointer which is just
+  //       // // before the base pointer.  Overwrite it with the body.
+  //       // const ast::Node* p = &node;
+  //       // memcpy (exec.stack ().pointer_to_instruction_pointer (), &p, sizeof (void*));
+  //       // // Execute the expression list.
+  //       // evaluate_expression (exec, memoryModel, node.expr_list ());
 
-        // // Stop execution.
-        // retval = Return;
-        // return;
-      }
+  //       // // Stop execution.
+  //       // retval = Return;
+  //       // return;
+  //     }
 
-      void visit (const ast_var_statement_t& node)
-      {
-        ast::Node* expression_list = node.expression_list ();
+  //     void visit (const ast_var_statement_t& node)
+  //     {
+  //       ast::Node* expression_list = node.expression_list ();
 
-        if (expression_list->Size () == 0)
-          {
-            // Zero out the variable.
-            for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
-              {
-                unimplemented;
-                // Symbol* symbol = node.symbols[idx];
-                //exec.stack ().clear (symbol->offset (), SymbolCast<VariableSymbol> (symbol)->value.type->Size ());
-              }
-          }
-        else
-          {
-            // Initialize the variables.
-            for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
-              {
-                unimplemented;
-                // // Evaluate the address.
-                // Symbol* symbol = node.symbols[idx];
-                // ptrdiff_t offset = symbol->offset ();
-                // exec.stack ().push_address (offset);
-                // void* ptr = exec.stack ().pop_pointer ();
-                // ast::Node* initializer = expression_list->At (idx);
-                // size_t size = initializer->typed_value.type->Size ();
-                // // Evaluate the value.
-                // evaluate_expression (exec, memoryModel, initializer);
-                // // Store.
-                // exec.stack ().store (ptr, size);
-              }
-          }
-      }
-    };
-    visitor v (exec, memoryModel);
-    node->Accept (v);
+  //       if (expression_list->Size () == 0)
+  //         {
+  //           // Zero out the variable.
+  //           for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
+  //             {
+  //               unimplemented;
+  //               // Symbol* symbol = node.symbols[idx];
+  //               //exec.stack ().clear (symbol->offset (), SymbolCast<VariableSymbol> (symbol)->value.type->Size ());
+  //             }
+  //         }
+  //       else
+  //         {
+  //           // Initialize the variables.
+  //           for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
+  //             {
+  //               unimplemented;
+  //               // // Evaluate the address.
+  //               // Symbol* symbol = node.symbols[idx];
+  //               // ptrdiff_t offset = symbol->offset ();
+  //               // exec.stack ().push_address (offset);
+  //               // void* ptr = exec.stack ().pop_pointer ();
+  //               // ast::Node* initializer = expression_list->At (idx);
+  //               // size_t size = initializer->typed_value.type->Size ();
+  //               // // Evaluate the value.
+  //               // evaluate_expression (exec, memoryModel, initializer);
+  //               // // Store.
+  //               // exec.stack ().store (ptr, size);
+  //             }
+  //         }
+  //     }
+  //   };
+  //   visitor v (exec, memoryModel);
+  //   node->Accept (v);
 
-    return v.retval;
-  }
+  //   return v.retval;
+  // }
 
   bool
   enabled (executor_base_t& exec,
@@ -1664,51 +1654,34 @@ namespace runtime
            const Action* action,
            Type::Int::ValueType iota)
   {
-    unimplemented;
-    // assert (exec.stack ().empty ());
+    assert (exec.stack ().empty ());
 
-    // // Set the current instance.
-    // exec.current_instance (instance);
-
-    // // Push this.
-    // exec.stack ().push_pointer (instance);
-    // // Push iota.
-    // if (action->has_dimension ())
-    //   {
-    //     exec.stack ().push<Uint::ValueType> (iota);
-    //   }
-    // // Push an instruction pointer.
-    // exec.stack ().push_pointer (NULL);
-    // exec.stack ().setup (0 /* No locals. */);
-    // evaluate_expression (exec, action->memory_model, action->precondition);
-    // Bool::ValueType retval;
-    // exec.stack ().pop (retval);
-    // exec.stack ().teardown ();
-    // // Pop the instruction pointer.
-    // exec.stack ().pop_pointer ();
-    // // Pop iota.
-    // if (action->has_dimension ())
-    //   {
-    //     Uint::ValueType x;
-    //     exec.stack ().pop (x);
-    //   }
-    // // Pop this.
-    // exec.stack ().pop_pointer ();
-    // assert (exec.stack ().empty ());
-    // return retval;
-  }
-
-  static void
-  execute (executor_base_t& exec,
-           const reaction_t* reaction,
-           component_t* instance)
-  {
-    // Set the current instance.
-    exec.current_instance (instance);
-
-    exec.stack ().setup (reaction->memory_model.LocalsSize ());
-
-    evaluate_statement (exec, reaction->memory_model, reaction->body);
+    // Push receiver.
+    exec.stack ().push_pointer (instance);
+    // Push iota.
+    if (action->has_dimension ())
+      {
+        exec.stack ().push<Uint::ValueType> (iota);
+      }
+    // Push an instruction pointer.
+    exec.stack ().push_pointer (NULL);
+    exec.stack ().setup (0 /* No locals. */);
+    action->precondition->operation->execute (exec);
+    Bool::ValueType retval;
+    exec.stack ().pop (retval);
+    exec.stack ().teardown ();
+    // Pop the instruction pointer.
+    exec.stack ().pop_pointer ();
+    // Pop iota.
+    if (action->has_dimension ())
+      {
+        Uint::ValueType x;
+        exec.stack ().pop (x);
+      }
+    // Pop this.
+    exec.stack ().pop_pointer ();
+    assert (exec.stack ().empty ());
+    return retval;
   }
 
   static void
@@ -1716,15 +1689,12 @@ namespace runtime
            const Action* action,
            component_t* instance)
   {
-    // Set the current instance.
-    exec.current_instance (instance);
-
     // Reset the mutable phase base pointer.
     exec.mutable_phase_base_pointer (0);
 
     exec.stack ().setup (action->memory_model.LocalsSize ());
 
-    evaluate_statement (exec, action->memory_model, action->body);
+    action->body->operation->execute (exec);
 
     if (exec.mutable_phase_base_pointer () == 0)
       {
@@ -1740,20 +1710,10 @@ namespace runtime
     while (exec.stack ().base_pointer () != NULL)
       {
         // Get the deferred body.
-        ast_activate_statement_t* as = *(ast_activate_statement_t**)exec.stack ().pointer_to_instruction_pointer ();
-
-        // Set the current record.
-        void* receiverPtr = exec.stack ().read_pointer (as->memoryModel->ReceiverOffset ());
-        exec.current_instance (static_cast<component_t*> (receiverPtr));
+        Operation* o = *static_cast<Operation**> (exec.stack ().pointer_to_instruction_pointer ());
 
         // Execute it.
-        evaluate_statement (exec, *as->memoryModel, as->body ());
-
-        // Add to the schedule.
-        if (as->mutable_phase_access == AccessWrite)
-          {
-            exec.push ();
-          }
+        o->execute (exec);
 
         // Pop the base pointer.
         exec.stack ().teardown ();
@@ -2205,9 +2165,9 @@ namespace runtime
     MemoryModel memory_model;
     static const Type::Function* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast::Node* definingNode)
     {
-      typed_value_t in2 = in;
-      in2.intrinsic_mutability = MUTABLE;
       unimplemented;
+      // typed_value_t in2 = in;
+      // in2.intrinsic_mutability = MUTABLE;
       // return new Type::Function (Type::Function::FUNCTION, (new Signature ())
       //                            ->Append (new parameter_t (definingNode, "h", in2, false)),
       //                            new parameter_t (definingNode, ReturnSymbol, out, false));
@@ -2813,7 +2773,10 @@ namespace runtime
   void
   Select::execute (executor_base_t& exec) const
   {
-    unimplemented;
+    base->execute (exec);
+    char* ptr = static_cast<char*> (exec.stack ().pop_pointer ());
+    ptr += offset;
+    exec.stack ().push_pointer (ptr);
   }
 
   void
@@ -2928,6 +2891,82 @@ namespace runtime
       default:
         type_not_reached (*type);
       }
+  }
+
+  void
+  Activate::execute (executor_base_t& exec) const
+  {
+    // Need to keep track of the largest base pointer so we can process the mutable section.
+    char* base_pointer = exec.stack ().base_pointer ();
+    if (base_pointer > exec.mutable_phase_base_pointer ())
+      {
+        exec.mutable_phase_base_pointer (base_pointer);
+      }
+
+    // The caller pushed an instruction pointer which is just
+    // before the base pointer.  Overwrite it with the body.
+    Operation** ip = static_cast<Operation**> (exec.stack ().pointer_to_instruction_pointer ());
+    *ip = body;
+    // Execute the expression list.
+    port_calls->execute (exec);
+  }
+
+  void
+  PushPortCall::execute (executor_base_t& exec) const
+  {
+    // TODO:  The port knows the size of the arguments.  No need to measure.
+    // Push all of the arguments first and measure their size.
+    char* top_before = exec.stack ().top ();
+    args->execute (exec);
+    char* top_after = exec.stack ().top ();
+    ptrdiff_t arguments_size = top_after - top_before; // Assumes stack grows up.
+
+    // Find the port to activate.
+    port_t* port = *reinterpret_cast<port_t**> (static_cast<char*> (exec.stack ().read_pointer (receiver_offset)) + port_offset);
+
+    char* base_pointer = exec.stack ().base_pointer ();
+
+    // Activate all the reactions bound to the port.
+    while (port != NULL)
+      {
+        // Set up a frame.
+        // Push the instance.
+        exec.stack ().push_pointer (port->instance);
+        // Push the parameter.
+        if (port->reaction->has_dimension ())
+          {
+            exec.stack ().push<Type::Int::ValueType> (port->parameter);
+          }
+        // Push the arguments.
+        exec.stack ().load (top_before, arguments_size);
+        // Push an instruction pointer.
+        exec.stack ().push_pointer (NULL);
+
+        // Jump to the last frame.
+        exec.stack ().base_pointer (exec.mutable_phase_base_pointer ());
+
+        exec.stack ().setup (port->reaction->memory_model.LocalsSize ());
+
+        port->reaction->call (exec);
+
+        // Move back to our frame.
+        exec.stack ().base_pointer (base_pointer);
+
+        port = port->next;
+      }
+  }
+
+  void
+  BindPushPort::execute (executor_base_t& exec) const
+  {
+    unimplemented;
+  }
+
+  void
+  Push::execute (executor_base_t& exec) const
+  {
+    body->execute (exec);
+    exec.push ();
   }
 }
 

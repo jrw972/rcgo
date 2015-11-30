@@ -44,7 +44,7 @@ process_definitions.cpp \
 process_type_spec.cpp \
 process_functions_and_methods.hpp process_functions_and_methods.cpp \
 process_types_and_constants.hpp process_types_and_constants.cpp \
-reaction.hpp \
+reaction.hpp reaction.cpp \
 runtime.hpp runtime.cpp \
 scanner.hpp scanner.cpp \
 semantic.hpp semantic.cpp \

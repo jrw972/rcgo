@@ -11,6 +11,8 @@
 #include "field.hpp"
 #include "process_types_and_constants.hpp"
 #include "Symbol.hpp"
+#include "action.hpp"
+#include "reaction.hpp"
 
 namespace semantic
 {
@@ -20,6 +22,47 @@ namespace semantic
 
   namespace
   {
+    static void bind (Node& node, ast::Node* port_node, ast::Node* reaction_node)
+    {
+      const Type::Function* push_port_type = Type::type_cast<Type::Function> (port_node->type);
+
+      if (push_port_type == NULL || push_port_type->function_kind != Type::Function::PUSH_PORT)
+        {
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                         "source of bind is not a port (E38)");
+        }
+
+      const Type::Method* reaction_type = Type::type_cast<Type::Method> (reaction_node->type);
+      if (reaction_type == NULL || reaction_type->method_kind != Type::Method::REACTION)
+        {
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                         "target of bind is not a reaction (E39)");
+        }
+
+      if (!type_is_equal (push_port_type->GetSignature (), reaction_type->signature))
+        {
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                         "cannot bind %s to %s (E40)", push_port_type->ToString ().c_str (), reaction_type->ToString ().c_str ());
+        }
+    }
+
+    static void check_condition (Node* node)
+    {
+      const Type::Type* condition = node->type;
+      if (!(is_bool (condition) || is_untyped_boolean (condition)))
+        {
+          error_at_line (-1, 0, node->location.File.c_str (),
+                         node->location.Line,
+                         "condition is not boolean");
+        }
+
+      if (node->value.present && is_untyped_boolean (condition))
+        {
+          node->value.convert (node->type, node->type->DefaultType ());
+          node->type = node->type->DefaultType ();
+        }
+    }
+
     template <typename T>
     static void process_comparable (const char* s, ast_binary_expr_t& node)
     {
@@ -508,6 +551,10 @@ namespace semantic
     // Determine the type of an expression.
     struct Visitor : public ast::DefaultVisitor
     {
+      ParameterSymbol* receiver_parameter;
+
+      Visitor () : receiver_parameter (NULL) { }
+
       void default_action (Node& node)
       {
         ast_not_reached (node);
@@ -982,6 +1029,39 @@ namespace semantic
 
       void visit (ast_initializer_t& node)
       {
+        receiver_parameter = node.initializer->initializerType->receiver_parameter;
+        node.body ()->Accept (*this);
+      }
+
+      void visit (ast_action_t& node)
+      {
+        receiver_parameter = node.receiver_symbol;
+        node.precondition ()->Accept (*this);
+        check_condition (node.precondition_ref ());
+        node.body ()->Accept (*this);
+        node.action->precondition = node.precondition ();
+
+        if (node.precondition ()->value.present)
+          {
+            if (node.precondition ()->value.bool_value_)
+              {
+                node.action->precondition_kind = decl::Action::StaticTrue;
+              }
+            else
+              {
+                node.action->precondition_kind = decl::Action::StaticFalse;
+              }
+          }
+      }
+
+      void visit (ast_reaction_t& node)
+      {
+        receiver_parameter = node.reaction->reaction_type->receiver_parameter;
+        node.body ()->Accept (*this);
+      }
+
+      void visit (ast_bind_t& node)
+      {
         node.body ()->Accept (*this);
       }
 
@@ -1020,20 +1100,7 @@ namespace semantic
       void visit (ast_if_statement_t& node)
       {
         node.VisitChildren (*this);
-        const Type::Type* condition = node.condition ()->type;
-        if (!(is_bool (condition) || is_untyped_boolean (condition)))
-          {
-            error_at_line (-1, 0, node.location.File.c_str (),
-                           node.location.Line,
-                           "condition is not boolean");
-          }
-
-        if (node.condition ()->value.present && is_untyped_boolean (condition))
-          {
-            node.condition ()->value.convert (node.condition ()->type, node.condition ()->type->DefaultType ());
-            node.condition ()->type = node.condition ()->type->DefaultType ();
-          }
-
+        check_condition (node.condition ());
       }
 
       void visit (ast_change_statement_t& node)
@@ -1056,6 +1123,16 @@ namespace semantic
         VariableSymbol* symbol = new VariableSymbol (identifier, &node, root_type, IMMUTABLE, FOREIGN);
         node.root_symbol = enter_symbol (node, symbol);
 
+        // Check the body.
+        node.body ()->Accept (*this);
+      }
+
+      void visit (ast_activate_statement_t& node)
+      {
+        // Check the activations.
+        node.expr_list ()->Accept (*this);
+        // Re-insert this as a pointer to mutable.
+        node.Activate ();
         // Check the body.
         node.body ()->Accept (*this);
       }
@@ -1194,6 +1271,12 @@ namespace semantic
           }
       }
 
+      void visit (ast_bind_push_port_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        bind (node, node.left (), node.right_ref ());
+      }
+
       void visit (ast_dereference_expr_t& node)
       {
         node.VisitChildren (*this);
@@ -1304,6 +1387,23 @@ namespace semantic
       void visit (TypeExpression& node)
       {
         node.type = process_type (node.type_spec (), true);
+      }
+
+      void visit (ast_push_port_call_expr_t& node)
+      {
+        node.receiver_parameter = receiver_parameter;
+        const std::string& port_identifier = ast_get_identifier (node.identifier ());
+        const Type::Type* this_type = node.GetReceiverType ();
+        const Type::Function* push_port_type = Type::type_cast<Type::Function> (type_select (this_type, port_identifier));
+        if (push_port_type == NULL || push_port_type->function_kind != Type::Function::PUSH_PORT)
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "no port named %s (E34)", port_identifier.c_str ());
+          }
+
+        node.args ()->Accept (*this);
+        check_types_arguments (node.args (), push_port_type->GetSignature ());
+        node.field = type_select_field (this_type, port_identifier);
       }
     };
   }

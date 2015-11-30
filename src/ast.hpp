@@ -747,6 +747,7 @@ namespace ast
     void Accept (ConstVisitor& visitor) const;
 
     field_t* field;
+    ParameterSymbol* receiver_parameter;
   };
 
   struct ast_indexed_port_call_expr_t : public Node
@@ -1281,6 +1282,7 @@ namespace ast
       : Node (line, COUNT)
       , action (NULL)
       , type (NULL)
+      , receiver_symbol (NULL)
     {
       set (RECEIVER, receiver);
       set (IDENTIFIER, identifier);
@@ -1314,6 +1316,7 @@ namespace ast
 
     decl::Action* action;
     const Type::Type* type;
+    ParameterSymbol* receiver_symbol;
 
     virtual const Type::Type*
     GetReceiverType () const;

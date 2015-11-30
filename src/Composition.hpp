@@ -96,10 +96,10 @@ namespace Composition
 
   struct ReactionKey
   {
-    ReactionKey (Instance* i, reaction_t* a, Type::Uint::ValueType p = 0);
+    ReactionKey (Instance* i, const reaction_t* a, Type::Uint::ValueType p = 0);
     bool operator< (const ReactionKey& other) const;
     Instance* instance;
-    reaction_t* reaction;
+    const reaction_t* reaction;
     Type::Uint::ValueType iota;
   };
 

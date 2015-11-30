@@ -146,6 +146,22 @@ namespace semantic
         node.body ()->Accept (*this);
       }
 
+      void visit (ast_action_t& node)
+      {
+        node.precondition ()->Accept (*this);
+        node.body ()->Accept (*this);
+      }
+
+      void visit (ast_reaction_t& node)
+      {
+        node.body ()->Accept (*this);
+      }
+
+      void visit (ast_bind_t& node)
+      {
+        // Do nothing.
+      }
+
       void visit (ast_function_t& node)
       {
         node.body ()->Accept (*this);
@@ -240,6 +256,11 @@ namespace semantic
         node.body ()->Accept (*this);
       }
 
+      void visit (ast_activate_statement_t& node)
+      {
+        node.VisitChildren (*this);
+      }
+
       void visit (ast_dereference_expr_t& node)
       {
         node.VisitChildren (*this);
@@ -299,6 +320,11 @@ namespace semantic
       void visit (TypeExpression& node)
       {
         // Do nothing.
+      }
+
+      void visit (ast_push_port_call_expr_t& node)
+      {
+        node.args ()->Accept (*this);
       }
     };
 
