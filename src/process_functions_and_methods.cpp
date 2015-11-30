@@ -216,6 +216,30 @@ namespace semantic
         enter_symbol (*node.GetParent (), node.function);
       }
 
+      void visit (ast_method_t& node)
+      {
+        ParameterSymbol* thisSymbol;
+        NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, false, false);
+
+        const Signature* signature;
+        ParameterSymbol* return_symbol;
+        processSignatureReturn (node.signature (), node.return_type (), node.return_dereference_mutability, false,
+                                signature, return_symbol);
+
+        enter_symbol (node, return_symbol);
+        enter_symbol (node, thisSymbol);
+        enter_signature (node, signature);
+
+        Type::Method* method_type = new Type::Method (Type::Method::METHOD, type,
+            thisSymbol,
+            signature,
+            return_symbol);
+        ::Method* method = new ::Method (&node, ast_get_identifier (node.identifier ()), method_type);
+
+        type->Add (method);
+        node.method = method;
+      }
+
       void visit (ast_initializer_t& node)
       {
         ParameterSymbol* thisSymbol;

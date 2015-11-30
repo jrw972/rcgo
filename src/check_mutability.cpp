@@ -167,6 +167,11 @@ namespace semantic
         node.body ()->Accept (*this);
       }
 
+      void visit (ast_method_t& node)
+      {
+        node.body ()->Accept (*this);
+      }
+
       void visit (ast_const_t& node)
       {
         // Do nothing.
@@ -216,7 +221,7 @@ namespace semantic
                     symbol->dereference_mutability < n->dereference_mutability)
                   {
                     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "assignment casts away +const or +foreign (E149)");
+                                   "assignment casts away +const or +foreign (E92)");
                   }
               }
           }
@@ -235,7 +240,7 @@ namespace semantic
             node.left ()->dereference_mutability < node.right ()->dereference_mutability)
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "assignment casts away +const or +foreign (E149)");
+                           "assignment casts away +const or +foreign (E161)");
           }
       }
 

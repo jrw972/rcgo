@@ -121,6 +121,11 @@ namespace semantic
         // Do nothing.
       }
 
+      void visit (ast_method_t& node)
+      {
+        // Do nothing.
+      }
+
       void visit (ast_initializer_t& node)
       {
         // Do nothing.

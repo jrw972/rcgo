@@ -83,6 +83,11 @@ struct Method : public Callable
   { }
 
   virtual void call (executor_base_t& exec) const;
+  virtual const Type::Signature* signature () const
+  {
+    return methodType->signature;
+  }
+
   virtual const Type::Type* type () const
   {
     return methodType;

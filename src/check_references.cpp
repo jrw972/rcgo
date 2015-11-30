@@ -168,6 +168,11 @@ namespace semantic
         node.body ()->Accept (*this);
       }
 
+      void visit (ast_method_t& node)
+      {
+        node.body ()->Accept (*this);
+      }
+
       void visit (ast_list_statement_t& node)
       {
         node.VisitChildren (*this);

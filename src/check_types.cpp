@@ -1070,6 +1070,12 @@ namespace semantic
         node.body ()->Accept (*this);
       }
 
+      void visit (ast_method_t& node)
+      {
+        receiver_parameter = node.method->methodType->receiver_parameter;
+        node.body ()->Accept (*this);
+      }
+
       void visit (ast_list_statement_t& node)
       {
         node.VisitChildren (*this);
