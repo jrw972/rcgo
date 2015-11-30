@@ -35,6 +35,11 @@ struct alpha_visitor : public Type::DefaultVisitor
   {
     doit (type);
   }
+
+  void visit (const Integer& type)
+  {
+    doit (type);
+  }
 };
 
 static bool to_and_back (Complex::ValueType x, const Type::Type* type)
@@ -67,6 +72,11 @@ static void convert_numeric (value_t& value, Complex::ValueType x, const Type::T
     {
       value.ref (type) = x;
     }
+
+    void visit (const Integer& type)
+    {
+      value.ref (type) = x;
+    }
   };
 
   visitor v (value, x);
@@ -91,6 +101,13 @@ value_t::representable (const Type::Type* from, const Type::Type* to) const
       type_not_reached (type);
     }
 
+    void visit (const Type::Int& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      flag = to_and_back (x, to->UnderlyingType ());
+    }
+
     void visit (const Type::Boolean& type)
     {
       flag =
@@ -98,14 +115,14 @@ value_t::representable (const Type::Type* from, const Type::Type* to) const
         type_cast<Type::Bool> (to) != NULL;
     }
 
-    void visit (const Type::Integer& type)
+    void visit (const Type::Rune& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       flag = to_and_back (x, to->UnderlyingType ());
     }
 
-    void visit (const Type::Int& type)
+    void visit (const Type::Integer& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
@@ -147,6 +164,13 @@ value_t::convert (const Type::Type* from, const Type::Type* to)
         {
           value.ref (*Type::Bool::Instance ()) = value.ref (type);
         }
+    }
+
+    void visit (const Type::Rune& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
     }
 
     void visit (const Type::Integer& type)
