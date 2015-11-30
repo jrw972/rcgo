@@ -1233,20 +1233,18 @@ namespace semantic
              id_pos != id_limit;
              ++id_pos, ++init_pos)
           {
-            unimplemented;
-            // // Process the initializer.
-            // typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvertToDefault (*init_pos);
-            // typed_value_t left_tv = typed_value_t::make_ref (right_tv);
-            // left_tv.intrinsic_mutability = MUTABLE;
-            // left_tv.dereference_mutability = node.dereferenceMutability;
-            // check_assignment (left_tv, right_tv, node,
-            //                   "incompatible types (%s) = (%s) (E128)",
-            //                   "assignment leaks mutable pointers (E129)");
-            // // Convert to specified mutability.
-            // left_tv.intrinsic_mutability = node.mutability;
-            // const std::string& name = ast_get_identifier (*id_pos);
-            // Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
-            // node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
+            Node* n = *init_pos;
+            check_types (n);
+
+            if (n->type->IsUntyped ())
+              {
+                n->value.convert (n->type, n->type->DefaultType ());
+                n->type = n->type->DefaultType ();
+              }
+
+            const std::string& name = ast_get_identifier (*id_pos);
+            VariableSymbol* symbol = new VariableSymbol (name, *id_pos, n->type, node.intrinsic_mutability, node.dereferenceMutability);
+            node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
           }
       }
 

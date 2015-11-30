@@ -66,7 +66,6 @@ namespace semantic
                     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                                    "expression is not constant (E62)");
                   }
-
                 if (!assignable (n->type, n->value, type))
                   {
                     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -93,26 +92,17 @@ namespace semantic
              id_pos != id_limit;
              ++id_pos, ++init_pos)
           {
-            // Process the initializer.
-            unimplemented;
-            // typed_value_t right_tv = CheckAndImplicitlyDereference (*init_pos);
-            // if (!right_tv.value.present)
-            //   {
-            //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-            //                    "expression is not constant (E89)");
-            //   }
-            // typed_value_t left_tv = typed_value_t::make_ref (right_tv);
-            // left_tv.intrinsic_mutability = MUTABLE;
-            // left_tv.dereference_mutability = IMMUTABLE;
-            // check_assignment (left_tv, right_tv, node,
-            //                   "incompatible types (%s) = (%s) (E130)",
-            //                   "assignment leaks mutable pointers (E131)");
-            // // Convert to specified mutability.
-            // right_tv.intrinsic_mutability = IMMUTABLE;
-            // const std::string& name = ast_get_identifier (*id_pos);
-            // Symbol* symbol = new TypedConstantSymbol (name, *id_pos, right_tv);
-            // enter_symbol (*node.GetParent (), symbol);
-            // //node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
+            Node* n = *init_pos;
+            check_types (n);
+            if (!n->value.present)
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "expression is not constant (E89)");
+              }
+
+            const std::string& name = ast_get_identifier (*id_pos);
+            Symbol* symbol = new ConstantSymbol (name, *id_pos, n->type, n->value);
+            enter_symbol (*node.GetParent (), symbol);
           }
       }
 
