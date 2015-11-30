@@ -620,13 +620,11 @@ namespace ast
                     }
                   else
                     {
-                      unimplemented;
-                      // typed_value_t tv = symbol->value;
-                      // if (type_contains_pointer (tv.type) && tv.dereference_mutability == FOREIGN)
-                      //   {
-                      //     // Hide this parameter.
-                      //     EnterSymbol (new HiddenSymbol (symbol, this));
-                      //   }
+                      if (type_contains_pointer (symbol->type) && symbol->dereference_mutability == FOREIGN)
+                        {
+                          // Hide this parameter.
+                          EnterSymbol (new HiddenSymbol (symbol, this));
+                        }
                     }
                 }
             }
