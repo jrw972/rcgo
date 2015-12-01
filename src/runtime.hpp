@@ -89,10 +89,9 @@ namespace runtime
 
   struct ConvertStringToSliceOfBytes : public Operation
   {
-    static ConvertStringToSliceOfBytes instance;
+    ConvertStringToSliceOfBytes (Operation* c) : child (c) { }
     virtual ControlAction execute (executor_base_t& exec) const;
-  private:
-    ConvertStringToSliceOfBytes () { }
+    Operation* const child;
   };
 
   struct Load : public Operation
@@ -103,34 +102,24 @@ namespace runtime
     const Type::Type* const type;
   };
 
-  struct IndexArrayReference : public Operation
+  struct IndexArray : public Operation
   {
-    IndexArrayReference (const Location& l, const Operation* b, const Operation* i, const Type::Array& t) : location (l), base (b), index (i), type (t) { }
+    IndexArray (const Location& l, Operation* b, Operation* i, const Type::Array* t) : location (l), base (b), index (i), type (t) { }
     virtual ControlAction execute (executor_base_t& exec) const;
     Location const location;
-    const Operation* const base;
-    const Operation* const index;
-    const Type::Array& type;
-  };
-
-  struct IndexArrayValue : public Operation
-  {
-    IndexArrayValue (const Location& l, const Operation* b, const Operation* i, const Type::Array& t) : location (l), base (b), index (i), type (t) { }
-    virtual ControlAction execute (executor_base_t& exec) const;
-    Location const location;
-    const Operation* const base;
-    const Operation* const index;
-    const Type::Array& type;
+    Operation* const base;
+    Operation* const index;
+    const Type::Array* type;
   };
 
   struct IndexSlice : public Operation
   {
-    IndexSlice (const Location& l, const Operation* b, const Operation* i, const Type::Slice& t) : location (l), base (b), index (i), type (t) { }
+    IndexSlice (const Location& l, const Operation* b, const Operation* i, const Type::Slice* t) : location (l), base (b), index (i), type (t) { }
     virtual ControlAction execute (executor_base_t& exec) const;
     Location const location;
     const Operation* const base;
     const Operation* const index;
-    const Type::Slice& type;
+    const Type::Slice* type;
   };
 
   Operation* MakeConvertToInt (const Operation* c, const Type::Type* type);
@@ -294,14 +283,6 @@ namespace runtime
     virtual ControlAction execute (executor_base_t& exec) const;
     Operation* const base;
     ptrdiff_t const offset;
-  };
-
-  struct Index : public Operation
-  {
-    Index (Operation* b, Operation* i) : base (b), index (i) { }
-    virtual ControlAction execute (executor_base_t& exec) const;
-    Operation* const base;
-    Operation* const index;
   };
 
   struct Return : public Operation

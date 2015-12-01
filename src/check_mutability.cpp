@@ -45,9 +45,22 @@ namespace semantic
       void visit (ast_call_expr_t& node)
       {
         node.VisitChildren (*this);
-        check_mutability_arguments (node.args (), node.signature);
-        node.intrinsic_mutability = IMMUTABLE;
-        node.dereference_mutability = node.return_parameter->dereference_mutability;
+        if (node.callable != NULL)
+          {
+            check_mutability_arguments (node.args (), node.signature);
+            node.intrinsic_mutability = IMMUTABLE;
+            node.dereference_mutability = node.return_parameter->dereference_mutability;
+          }
+        else
+          {
+            // Conversion.
+            node.intrinsic_mutability = IMMUTABLE;
+            node.dereference_mutability = node.args ()->At (0)->dereference_mutability;
+            if (node.string_duplication)
+              {
+                node.dereference_mutability = MUTABLE;
+              }
+          }
       }
 
       void visit (ast_list_expr_t& node)
@@ -190,7 +203,6 @@ namespace semantic
       void visit (ast_return_statement_t& node)
       {
         node.VisitChildren (*this);
-
         if (type_contains_pointer (node.child ()->type) &&
             node.return_symbol->dereference_mutability < node.child ()->dereference_mutability)
           {
@@ -300,6 +312,12 @@ namespace semantic
       {
         node.VisitChildren (*this);
         if (node.array_type != NULL)
+          {
+            node.intrinsic_mutability = node.base ()->intrinsic_mutability;
+            node.dereference_mutability = node.base ()->dereference_mutability;
+            return;
+          }
+        if (node.slice_type != NULL)
           {
             node.intrinsic_mutability = node.base ()->intrinsic_mutability;
             node.dereference_mutability = node.base ()->dereference_mutability;

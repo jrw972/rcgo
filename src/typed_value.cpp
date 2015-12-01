@@ -820,7 +820,8 @@ struct ConvertImpl
         out.intrinsic_mutability = MUTABLE;
         out.dereference_mutability = MUTABLE;
         out.value.present = false;
-        node.operation = &ConvertStringToSliceOfBytes::instance;
+        unimplemented;
+        //node.operation = &ConvertStringToSliceOfBytes::instance;
       }
     else
       {

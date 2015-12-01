@@ -49,7 +49,7 @@ namespace semantic
     static void check_condition (Node* node)
     {
       const Type::Type* condition = node->type;
-      if (!(is_bool (condition) || is_untyped_boolean (condition)))
+      if (!(is_any_boolean (condition)))
         {
           error_at_line (-1, 0, node->location.File.c_str (),
                          node->location.Line,
@@ -109,40 +109,52 @@ namespace semantic
           switch (in_type->underlying_kind ())
             {
             case kBool:
-              node.value.bool_value_ = T () (node.left ()->value.bool_value_, node.right ()->value.bool_value_);
+              node.value.boolean_value_ = T () (node.left ()->value.bool_value_, node.right ()->value.bool_value_);
               break;
             case kUint8:
-              node.value.uint8_value_ = T () (node.left ()->value.uint8_value_, node.right ()->value.uint8_value_);
+              node.value.boolean_value_ = T () (node.left ()->value.uint8_value_, node.right ()->value.uint8_value_);
               break;
             case kUint16:
-              node.value.uint16_value_ = T () (node.left ()->value.uint16_value_, node.right ()->value.uint16_value_);
+              node.value.boolean_value_ = T () (node.left ()->value.uint16_value_, node.right ()->value.uint16_value_);
               break;
             case kUint32:
-              node.value.uint32_value_ = T () (node.left ()->value.uint32_value_, node.right ()->value.uint32_value_);
+              node.value.boolean_value_ = T () (node.left ()->value.uint32_value_, node.right ()->value.uint32_value_);
               break;
             case kUint64:
-              node.value.uint64_value_ = T () (node.left ()->value.uint64_value_, node.right ()->value.uint64_value_);
+              node.value.boolean_value_ = T () (node.left ()->value.uint64_value_, node.right ()->value.uint64_value_);
               break;
             case kInt8:
-              node.value.int8_value_ = T () (node.left ()->value.int8_value_, node.right ()->value.int8_value_);
+              node.value.boolean_value_ = T () (node.left ()->value.int8_value_, node.right ()->value.int8_value_);
               break;
             case kInt16:
-              node.value.int16_value_ = T () (node.left ()->value.int16_value_, node.right ()->value.int16_value_);
+              node.value.boolean_value_ = T () (node.left ()->value.int16_value_, node.right ()->value.int16_value_);
               break;
             case kInt32:
-              node.value.int32_value_ = T () (node.left ()->value.int32_value_, node.right ()->value.int32_value_);
+              node.value.boolean_value_ = T () (node.left ()->value.int32_value_, node.right ()->value.int32_value_);
               break;
             case kInt64:
-              node.value.int64_value_ = T () (node.left ()->value.int64_value_, node.right ()->value.int64_value_);
+              node.value.boolean_value_ = T () (node.left ()->value.int64_value_, node.right ()->value.int64_value_);
               break;
             case kUint:
-              node.value.uint_value_ = T () (node.left ()->value.uint_value_, node.right ()->value.uint_value_);
+              node.value.boolean_value_ = T () (node.left ()->value.uint_value_, node.right ()->value.uint_value_);
               break;
             case kInt:
-              node.value.int_value_ = T () (node.left ()->value.int_value_, node.right ()->value.int_value_);
+              node.value.boolean_value_ = T () (node.left ()->value.int_value_, node.right ()->value.int_value_);
               break;
             case kUintptr:
-              node.value.uintptr_value_ = T () (node.left ()->value.uintptr_value_, node.right ()->value.uintptr_value_);
+              node.value.boolean_value_ = T () (node.left ()->value.uintptr_value_, node.right ()->value.uintptr_value_);
+              break;
+            case kFloat32:
+              node.value.boolean_value_ = T () (node.left ()->value.float32_value_, node.right ()->value.float32_value_);
+              break;
+            case kFloat64:
+              node.value.boolean_value_ = T () (node.left ()->value.float64_value_, node.right ()->value.float64_value_);
+              break;
+            case kComplex64:
+              node.value.boolean_value_ = T () (node.left ()->value.complex64_value_, node.right ()->value.complex64_value_);
+              break;
+            case kComplex128:
+              node.value.boolean_value_ = T () (node.left ()->value.complex128_value_, node.right ()->value.complex128_value_);
               break;
             case kBoolean:
               node.value.boolean_value_ = T () (node.left ()->value.boolean_value_, node.right ()->value.boolean_value_);
@@ -585,27 +597,81 @@ namespace semantic
             node.callable = node.expr ()->callable;
           }
 
-        node.callable->check_types (args);
-
-        node.function_type = type_cast<Type::Function> (node.expr ()->type);
-        node.method_type = type_cast<Type::Method> (node.expr ()->type);
-
-        if (node.function_type)
+        if (node.callable != NULL)
           {
-            node.signature = node.function_type->GetSignature ();
-            node.return_parameter = node.function_type->GetReturnParameter ();
-          }
-        else if (node.method_type)
-          {
-            node.signature = node.method_type->signature;
-            node.return_parameter = node.method_type->return_parameter;
+            node.callable->check_types (args);
+
+            node.function_type = type_cast<Type::Function> (node.expr ()->type);
+            node.method_type = type_cast<Type::Method> (node.expr ()->type);
+
+            if (node.function_type)
+              {
+                node.signature = node.function_type->GetSignature ();
+                node.return_parameter = node.function_type->GetReturnParameter ();
+              }
+            else if (node.method_type)
+              {
+                node.signature = node.method_type->signature;
+                node.return_parameter = node.method_type->return_parameter;
+              }
+            else
+              {
+                not_reached;
+              }
+
+            node.type = node.return_parameter->type;
           }
         else
           {
-            not_reached;
-          }
+            // Conversion.
+            if (node.args ()->Size () != 1)
+              {
+                error_at_line (-1, 0, node.location.File.c_str (),
+                               node.location.Line,
+                               "conversion requires exactly one argument (E156)");
+              }
 
-        node.type = node.return_parameter->type;
+            const Type::Type* to = node.expr ()->type;
+            const Type::Type*& from = node.args ()->At (0)->type;
+            value_t& x = node.args ()->At (0)->value;
+
+            if (x.present)
+              {
+                if (x.representable (from, to))
+                  {
+                    unimplemented;
+                  }
+                else if (is_floating_point (from) && is_floating_point (to))
+                  {
+                    unimplemented;
+                  }
+                else if (is_integral (from) && is_any_string (to))
+                  {
+                    unimplemented;
+                  }
+                else if (is_any_string (from) && is_slice_of_bytes (to))
+                  {
+                    node.string_duplication = true;
+                    if (from->IsUntyped ())
+                      {
+                        x.convert (from, from->DefaultType ());
+                        from = from->DefaultType ();
+                      }
+                  }
+                else
+                  {
+                    error_at_line (-1, 0, node.location.File.c_str (),
+                                   node.location.Line,
+                                   "illegal conversion (E156)");
+                  }
+              }
+            else
+              {
+                unimplemented;
+              }
+
+            node.type = to;
+          }
       }
 
       void visit (ast_list_expr_t& node)
@@ -701,8 +767,7 @@ namespace semantic
           {
           case LogicNot:
           {
-            if (!(is_bool (node.child ()->type) ||
-                  is_untyped_boolean (node.child ()->type)))
+            if (!(is_any_boolean (node.child ()->type)))
               {
                 error_at_line (-1, 0, node.location.File.c_str (),
                                node.location.Line,
@@ -877,8 +942,7 @@ namespace semantic
                                node.right ()->type->ToString ().c_str ());
               }
 
-            if (!(is_bool (node.left ()->type) ||
-                  is_untyped_boolean (node.left ()->type)))
+            if (!(is_any_boolean (node.left ()->type)))
               {
                 error_at_line (-1, 0, node.location.File.c_str (),
                                node.location.Line,
@@ -948,8 +1012,7 @@ namespace semantic
                                node.right ()->type->ToString ().c_str ());
               }
 
-            if (!(is_bool (node.left ()->type) ||
-                  is_untyped_boolean (node.left ()->type)))
+            if (!(is_any_boolean (node.left ()->type)))
               {
                 error_at_line (-1, 0, node.location.File.c_str (),
                                node.location.Line,
@@ -1385,7 +1448,61 @@ namespace semantic
             return;
           }
 
-        not_reached;
+        node.slice_type = type_cast<Slice> (base_type->UnderlyingType ());
+        if (node.slice_type != NULL)
+          {
+            const Type::Type* index_type = node.index ()->type;
+            if (!(is_integral (index_type) || is_untyped_numeric (index_type)))
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "array index is not an integer (E20)");
+              }
+
+            Node* index_node = node.index ();
+            value_t& index_value = index_node->value;
+
+            if (is_untyped_numeric (index_type))
+              {
+                // Convert to int.
+                if (!index_value.representable (index_type, &NamedInt))
+                  {
+                    error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
+                                   "array index is not an integer (E108)");
+                  }
+
+                index_value.convert (index_type, &NamedInt);
+                index_node->type = &NamedInt;
+                index_type = &NamedInt;
+              }
+
+            if (index_value.present)
+              {
+                // Convert to int.
+                if (!index_value.representable (index_type, &NamedInt))
+                  {
+                    error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
+                                   "slice index is not an integer (E153)");
+                  }
+
+                index_value.convert (index_type, &NamedInt);
+                index_node->type = &NamedInt;
+                index_type = &NamedInt;
+
+                Int::ValueType x = index_value.ref (*Int::Instance ());
+                if (x < 0)
+                  {
+                    error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
+                                   "slice index is negative (E154)");
+                  }
+              }
+
+            node.type = node.slice_type->Base ();
+            return;
+          }
+
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "cannot index expression of type %s (E152)",
+                       base_type->ToString ().c_str ());
       }
 
       void visit (TypeExpression& node)

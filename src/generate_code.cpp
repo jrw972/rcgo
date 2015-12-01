@@ -231,7 +231,13 @@ namespace  code
         }
       else
         {
-          unimplemented;
+          // Conversion.
+          node.operation = node.args ()->At (0)->operation;
+
+          if (node.string_duplication)
+            {
+              node.operation = new ConvertStringToSliceOfBytes (node.operation);
+            }
         }
     }
 
@@ -359,9 +365,9 @@ namespace  code
     void visit (ast_index_expr_t& node)
     {
       node.VisitChildren (*this);
+
       if (node.array_type != NULL)
         {
-
           Operation* index_op = node.index ()->operation;
           if (node.index ()->expression_kind == kVariable)
             {
@@ -372,7 +378,29 @@ namespace  code
 
           if (node.base ()->expression_kind == kVariable)
             {
-              node.operation = new Index (node.base ()->operation, index_op);
+              node.operation = new IndexArray (node.location, node.base ()->operation, index_op, node.array_type);
+            }
+          else
+            {
+              unimplemented;
+            }
+
+          return;
+        }
+
+      if (node.slice_type != NULL)
+        {
+          Operation* index_op = node.index ()->operation;
+          if (node.index ()->expression_kind == kVariable)
+            {
+              index_op = new Load (index_op, node.index ()->type);
+            }
+
+          index_op = MakeConvertToInt (index_op, node.index ()->type);
+
+          if (node.base ()->expression_kind == kVariable)
+            {
+              node.operation = new IndexSlice (node.location, new Load (node.base ()->operation, node.slice_type), index_op, node.slice_type);
             }
           else
             {

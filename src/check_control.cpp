@@ -149,84 +149,91 @@ namespace semantic
       void visit (ast_call_expr_t& node)
       {
         node.VisitChildren (*this);
-        if (node.function_type)
+        if (node.callable != NULL)
           {
-            switch (node.function_type->function_kind)
+            if (node.function_type)
               {
-              case Type::Function::FUNCTION:
-                // No restrictions on caller.
-                break;
-
-              case Type::Function::PUSH_PORT:
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "push ports cannot be called (E28)");
-                break;
-
-              case Type::Function::PULL_PORT:
-                // Must be called from either a getter, an action, or reaction.
-                if (!(context == Getter ||
-                      context == Action ||
-                      context == Reaction))
+                switch (node.function_type->function_kind)
                   {
-                    error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "pull ports may only be called from a getter, an action, or a reaction (E29)");
-                  }
+                  case Type::Function::FUNCTION:
+                    // No restrictions on caller.
+                    break;
 
-                unimplemented;
-                //TypeCheckCall (node, type.GetSignature (), type.GetReturnParameter ()->value, node.args (), tvlist);
-                unimplemented;
-                // if (node.GetInMutableSection ())
-                //   {
-                //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                //                    "cannot call pull port in mutable section (E30)");
-                //   }
-                break;
-              }
-          }
-        else if (node.method_type)
-          {
-            switch (node.method_type->method_kind)
-              {
-              case Type::Method::METHOD:
-                // No restrictions on caller.
-                break;
-              case Type::Method::INITIALIZER:
-                // Caller must be an initializer.
-                if (context != Initializer)
-                  {
+                  case Type::Function::PUSH_PORT:
                     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "initializers may only be called from initializers (E31)");
+                                   "push ports cannot be called (E28)");
+                    break;
+
+                  case Type::Function::PULL_PORT:
+                    // Must be called from either a getter, an action, or reaction.
+                    if (!(context == Getter ||
+                          context == Action ||
+                          context == Reaction))
+                      {
+                        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                                       "pull ports may only be called from a getter, an action, or a reaction (E29)");
+                      }
+
+                    unimplemented;
+                    //TypeCheckCall (node, type.GetSignature (), type.GetReturnParameter ()->value, node.args (), tvlist);
+                    unimplemented;
+                    // if (node.GetInMutableSection ())
+                    //   {
+                    //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                    //                    "cannot call pull port in mutable section (E30)");
+                    //   }
+                    break;
                   }
-                break;
-              case Type::Method::GETTER:
+                return;
+              }
+            else if (node.method_type)
               {
-                // Must be called from either a getter, action, reaction, or initializer.
-                if (!(context == Getter ||
-                      context == Action ||
-                      context == Reaction ||
-                      context == Initializer))
+                switch (node.method_type->method_kind)
                   {
-                    error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "getters may only be called from a getter, an action, a reaction, or an initializer (E32)");
+                  case Type::Method::METHOD:
+                    // No restrictions on caller.
+                    break;
+                  case Type::Method::INITIALIZER:
+                    // Caller must be an initializer.
+                    if (context != Initializer)
+                      {
+                        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                                       "initializers may only be called from initializers (E31)");
+                      }
+                    break;
+                  case Type::Method::GETTER:
+                  {
+                    // Must be called from either a getter, action, reaction, or initializer.
+                    if (!(context == Getter ||
+                          context == Action ||
+                          context == Reaction ||
+                          context == Initializer))
+                      {
+                        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                                       "getters may only be called from a getter, an action, a reaction, or an initializer (E32)");
+                      }
+                    unimplemented;
+                    // if (node.GetInMutableSection ())
+                    //   {
+                    //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                    //                    "cannot call getter in mutable section (E33)");
+                    //   }
                   }
-                unimplemented;
-                // if (node.GetInMutableSection ())
-                //   {
-                //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                //                    "cannot call getter in mutable section (E33)");
-                //   }
+                  break;
+                  case Type::Method::REACTION:
+                  {
+                    unimplemented;
+                  }
+                  break;
+                  }
+                return;
               }
-              break;
-              case Type::Method::REACTION:
-              {
-                unimplemented;
-              }
-              break;
-              }
+            not_reached;
           }
         else
           {
-            not_reached;
+            // Conversion.
+            // Do nothing.
           }
       }
 

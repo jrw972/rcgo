@@ -77,7 +77,7 @@ struct ParameterSymbol : public Symbol
     : Symbol (id, dn)
     , type (t)
     , intrinsic_mutability (im)
-    , dereference_mutability (is_string (t) ? std::max (dm, IMMUTABLE) : dm)
+    , dereference_mutability (is_typed_string (t) ? std::max (dm, IMMUTABLE) : dm)
     , kind (k)
     , original_ (NULL)
   { }
@@ -198,7 +198,7 @@ struct VariableSymbol : public Symbol
     : Symbol (id, dn)
     , type (t)
     , intrinsic_mutability (im)
-    , dereference_mutability (is_string (t) ? std::max (dm, IMMUTABLE) : dm)
+    , dereference_mutability (is_typed_string (t) ? std::max (dm, IMMUTABLE) : dm)
     , original_ (NULL)
   { }
 

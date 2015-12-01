@@ -972,34 +972,6 @@ type::Instance () \
   }
 
   bool
-  type_is_boolean (const Type* type)
-  {
-    struct visitor : public DefaultVisitor
-    {
-      bool flag;
-      visitor () : flag (false) { }
-
-      void visit (const NamedType& type)
-      {
-        type.UnderlyingType ()->Accept (*this);
-      }
-
-      void visit (const Bool& type)
-      {
-        flag = true;
-      }
-
-      void visit (const Boolean& type)
-      {
-        flag = true;
-      }
-    };
-    visitor v;
-    type->Accept (v);
-    return v.flag;
-  }
-
-  bool
   type_is_integral (const Type* type)
   {
     struct visitor : public DefaultVisitor
@@ -1621,6 +1593,19 @@ type::Instance () \
       }
   }
 
+  bool is_floating_point (const Type* type)
+  {
+    switch (type->underlying_kind ())
+      {
+      case kFloat32:
+      case kFloat64:
+      case kFloat:
+        return true;
+      default:
+        return false;
+      }
+  }
+
   bool is_numeric (const Type* type)
   {
     struct visitor : DefaultVisitor
@@ -1673,19 +1658,29 @@ type::Instance () \
     return v.flag;
   }
 
-  bool is_bool (const Type* type)
+  bool is_typed_string (const Type* type)
   {
-    return type_cast<Bool> (type->UnderlyingType ()) != NULL;
+    return type->underlying_kind () == kStringU;
   }
 
-  bool is_untyped_boolean (const Type* type)
+  bool is_untyped_string (const Type* type)
   {
-    return type_cast<Boolean> (type->UnderlyingType ()) != NULL;
+    return type->underlying_kind () == kString;
   }
 
-  bool is_string (const Type* type)
+  bool is_any_string (const Type* type)
   {
-    return type_cast<StringU> (type->UnderlyingType ()) != NULL;
+    return is_typed_string (type) || is_untyped_string (type);
+  }
+
+  bool is_slice_of_bytes (const Type* type)
+  {
+    const Slice* slice_type = type_cast<Slice> (type->UnderlyingType ());
+    if (slice_type == NULL)
+      {
+        return false;
+      }
+    return type_cast<Uint8> (slice_type->Base ()->UnderlyingType ()) != NULL;
   }
 
   bool comparable (const Type* type)
@@ -1800,6 +1795,21 @@ type::Instance () \
       default:
         return false;
       }
+  }
+
+  bool is_typed_boolean (const Type* type)
+  {
+    return type->underlying_kind () == kBool;
+  }
+
+  bool is_untyped_boolean (const Type* type)
+  {
+    return type->underlying_kind () == kBoolean;
+  }
+
+  bool is_any_boolean (const Type* type)
+  {
+    return is_typed_boolean (type) || is_untyped_boolean (type);
   }
 
   NamedType NamedBool ("bool", Bool::Instance ());

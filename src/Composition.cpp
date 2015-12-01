@@ -237,7 +237,7 @@ namespace Composition
     return str.str ();
   }
 
-  GetterKey::GetterKey (Instance* i, Callable* g)
+  GetterKey::GetterKey (Instance* i, const Callable* g)
     : instance (i)
     , getter (g)
   { }
@@ -824,18 +824,18 @@ namespace Composition
     void visit (const ast_call_expr_t& node)
     {
       // Are we calling a getter or pull port.
-      const Type::Method* method = type_cast<Type::Method> (node.original_expr_tv.type);
+      const Type::Method* method = node.method_type;
       if (method != NULL && method->method_kind == Type::Method::GETTER)
         {
           static_memory_t memory;
           populateMemory (memory);
           Instance* i = table.instances[EvaluateStatic (node.args ()->At (0), memory).value];
-          Callable* g = node.original_expr_tv.value.callable_value ();
+          const Callable* g = node.callable;
           Getter* getter = table.getters[GetterKey (i, g)];
           addCall (getter);
         }
 
-      const Type::Function* function = type_cast<Type::Function> (node.original_expr_tv.type);
+      const Type::Function* function = node.function_type;
       if (function != NULL && function->function_kind == Type::Function::PULL_PORT)
         {
           static_memory_t memory;

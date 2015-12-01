@@ -2306,6 +2306,11 @@ namespace runtime
         {
           printf ("%lu", *static_cast<Enum::ValueType*> (ptr));
         }
+
+        void visit (const Slice& type)
+        {
+          printf ("<slice>");
+        }
       };
 
       exec.lock_stdout ();
@@ -2384,18 +2389,17 @@ namespace runtime
     return new PrintlnImpl (argument_types);
   }
 
-  ConvertStringToSliceOfBytes ConvertStringToSliceOfBytes::instance;
-
   ControlAction
   ConvertStringToSliceOfBytes::execute (executor_base_t& exec) const
   {
+    child->execute (exec);
     StringU::ValueType in;
-    Slice::ValueType out;
     exec.stack ().pop (in);
+    Slice::ValueType out;
     out.ptr = heap_allocate (exec.heap (), in.length);
     memcpy (out.ptr, in.ptr, in.length);
     out.length = in.length;
-    out.capacity = out.capacity;
+    out.capacity = in.length;
     exec.stack ().push (out);
     return kContinue;
   }
@@ -2409,45 +2413,24 @@ namespace runtime
     return kContinue;
   }
 
-  ControlAction
-  IndexArrayReference::execute (executor_base_t& exec) const
-  {
-    base->execute (exec);
-    index->execute (exec);
-    Type::Int::ValueType i;
-    exec.stack ().pop (i);
-    void* ptr = exec.stack ().pop_pointer ();
-    if (i < 0 || i >= type.dimension)
-      {
-        error_at_line (-1, 0, location.File.c_str (), location.Line,
-                       "array index is out of bounds (E148)");
-      }
-    exec.stack ().push_pointer (static_cast<char*> (ptr) + i * type.UnitSize ());
-    return kContinue;
-  }
-
-  ControlAction
-  IndexArrayValue::execute (executor_base_t& exec) const
-  {
-    return kContinue;
-  }
 
   ControlAction
   IndexSlice::execute (executor_base_t& exec) const
   {
     base->execute (exec);
+    Slice::ValueType s;
+    exec.stack ().pop (s);
     index->execute (exec);
     Type::Int::ValueType i;
     exec.stack ().pop (i);
-    Slice::ValueType s;
-    exec.stack ().pop (s);
+
     if (i < 0 || static_cast<Type::Uint::ValueType> (i) >= s.length)
       {
         error_at_line (-1, 0, location.File.c_str (), location.Line,
                        "slice index is out of bounds (E35)");
 
       }
-    exec.stack ().push_pointer (static_cast<char*> (s.ptr) + i * type.UnitSize ());
+    exec.stack ().push_pointer (static_cast<char*> (s.ptr) + i * type->UnitSize ());
     return kContinue;
   }
 
@@ -2674,6 +2657,46 @@ namespace runtime
       op = make_literal (value.ref (type));
     }
 
+    void visit (const Uint8& type)
+    {
+      op = make_literal (value.ref (type));
+    }
+
+    void visit (const Uint16& type)
+    {
+      op = make_literal (value.ref (type));
+    }
+
+    void visit (const Uint32& type)
+    {
+      op = make_literal (value.ref (type));
+    }
+
+    void visit (const Uint64& type)
+    {
+      op = make_literal (value.ref (type));
+    }
+
+    void visit (const Int8& type)
+    {
+      op = make_literal (value.ref (type));
+    }
+
+    void visit (const Int16& type)
+    {
+      op = make_literal (value.ref (type));
+    }
+
+    void visit (const Int32& type)
+    {
+      op = make_literal (value.ref (type));
+    }
+
+    void visit (const Int64& type)
+    {
+      op = make_literal (value.ref (type));
+    }
+
     void visit (const Uint& type)
     {
       op = make_literal (value.ref (type));
@@ -2800,9 +2823,19 @@ namespace runtime
   }
 
   ControlAction
-  Index::execute (executor_base_t& exec) const
+  IndexArray::execute (executor_base_t& exec) const
   {
-    unimplemented;
+    base->execute (exec);
+    index->execute (exec);
+    Type::Int::ValueType i;
+    exec.stack ().pop (i);
+    void* ptr = exec.stack ().pop_pointer ();
+    if (i < 0 || i >= type->dimension)
+      {
+        error_at_line (-1, 0, location.File.c_str (), location.Line,
+                       "array index is out of bounds (E148)");
+      }
+    exec.stack ().push_pointer (static_cast<char*> (ptr) + i * type->UnitSize ());
     return kContinue;
   }
 

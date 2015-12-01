@@ -26,12 +26,72 @@ struct alpha_visitor : public Type::DefaultVisitor
     flag = (x == z);
   }
 
+  void visit (const Uint8& type)
+  {
+    doit (type);
+  }
+
+  void visit (const Uint16& type)
+  {
+    doit (type);
+  }
+
+  void visit (const Uint32& type)
+  {
+    doit (type);
+  }
+
+  void visit (const Uint64& type)
+  {
+    doit (type);
+  }
+
+  void visit (const Int8& type)
+  {
+    doit (type);
+  }
+
+  void visit (const Int16& type)
+  {
+    doit (type);
+  }
+
+  void visit (const Int32& type)
+  {
+    doit (type);
+  }
+
+  void visit (const Int64& type)
+  {
+    doit (type);
+  }
+
   void visit (const Uint& type)
   {
     doit (type);
   }
 
   void visit (const Int& type)
+  {
+    doit (type);
+  }
+
+  void visit (const Float32& type)
+  {
+    doit (type);
+  }
+
+  void visit (const Float64& type)
+  {
+    doit (type);
+  }
+
+  void visit (const Complex64& type)
+  {
+    doit (type);
+  }
+
+  void visit (const Complex128& type)
   {
     doit (type);
   }
@@ -63,12 +123,72 @@ static void convert_numeric (value_t& value, Complex::ValueType x, const Type::T
       type_not_reached (type);
     }
 
+    void visit (const Uint8& type)
+    {
+      value.ref (type) = x;
+    }
+
+    void visit (const Uint16& type)
+    {
+      value.ref (type) = x;
+    }
+
+    void visit (const Uint32& type)
+    {
+      value.ref (type) = x;
+    }
+
+    void visit (const Uint64& type)
+    {
+      value.ref (type) = x;
+    }
+
+    void visit (const Int8& type)
+    {
+      value.ref (type) = x;
+    }
+
+    void visit (const Int16& type)
+    {
+      value.ref (type) = x;
+    }
+
+    void visit (const Int32& type)
+    {
+      value.ref (type) = x;
+    }
+
+    void visit (const Int64& type)
+    {
+      value.ref (type) = x;
+    }
+
     void visit (const Uint& type)
     {
       value.ref (type) = x;
     }
 
     void visit (const Int& type)
+    {
+      value.ref (type) = x;
+    }
+
+    void visit (const Float32& type)
+    {
+      value.ref (type) = x;
+    }
+
+    void visit (const Float64& type)
+    {
+      value.ref (type) = x;
+    }
+
+    void visit (const Complex64& type)
+    {
+      value.ref (type) = x;
+    }
+
+    void visit (const Complex128& type)
     {
       value.ref (type) = x;
     }
@@ -129,6 +249,13 @@ value_t::representable (const Type::Type* from, const Type::Type* to) const
       flag = to_and_back (x, to->UnderlyingType ());
     }
 
+    void visit (const Type::Float& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      flag = to_and_back (x, to->UnderlyingType ());
+    }
+
     void visit (const Type::String& type)
     {
       if (Type::type_cast<Type::StringU> (to->UnderlyingType ()))
@@ -180,7 +307,98 @@ value_t::convert (const Type::Type* from, const Type::Type* to)
       convert_numeric (value, x, to);
     }
 
+    void visit (const Type::Float& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
+    void visit (const Type::Uint8& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
+    void visit (const Type::Uint16& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
+    void visit (const Type::Uint32& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
+    void visit (const Type::Uint64& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
+    void visit (const Type::Int8& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
+    void visit (const Type::Int16& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
+    void visit (const Type::Int32& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
+    void visit (const Type::Int64& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
     void visit (const Type::Int& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
+    void visit (const Type::Float32& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
+    void visit (const Type::Float64& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
+    void visit (const Type::Complex64& type)
+    {
+      Complex::ValueType x;
+      x = value.ref (type);
+      convert_numeric (value, x, to);
+    }
+
+    void visit (const Type::Complex128& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
@@ -243,21 +461,6 @@ value_t::print (std::ostream& out, const Type::Type* type) const
           out << " value=" << tv.ref (type);
         }
 
-        void visit (const Int& type)
-        {
-          out << " value=" << tv.ref (type);
-        }
-
-        void visit (const Int8& type)
-        {
-          out << " value=" << (int)tv.ref (type);
-        }
-
-        void visit (const Uint& type)
-        {
-          out << " value=" << tv.ref (type);
-        }
-
         void visit (const Uint8& type)
         {
           out << " value=" << (int)tv.ref (type);
@@ -278,9 +481,59 @@ value_t::print (std::ostream& out, const Type::Type* type) const
           out << " value=" << tv.ref (type);
         }
 
+        void visit (const Int8& type)
+        {
+          out << " value=" << (int)tv.ref (type);
+        }
+
+        void visit (const Int16& type)
+        {
+          out << " value=" << (int)tv.ref (type);
+        }
+
+        void visit (const Int32& type)
+        {
+          out << " value=" << tv.ref (type);
+        }
+
+        void visit (const Int64& type)
+        {
+          out << " value=" << tv.ref (type);
+        }
+
+        void visit (const Uint& type)
+        {
+          out << " value=" << tv.ref (type);
+        }
+
+        void visit (const Int& type)
+        {
+          out << " value=" << tv.ref (type);
+        }
+
+        void visit (const Uintptr& type)
+        {
+          out << " value=" << tv.ref (type);
+        }
+
+        void visit (const Float32& type)
+        {
+          out << " value=" << tv.ref (type);
+        }
+
         void visit (const Float64& type)
         {
           out << " value=" << tv.ref (type);
+        }
+
+        void visit (const Complex64& type)
+        {
+          out << " value=(" << tv.ref (type).real << ',' << tv.ref (type).imag << "i)";
+        }
+
+        void visit (const Complex128& type)
+        {
+          out << " value=(" << tv.ref (type).real << ',' << tv.ref (type).imag << "i)";
         }
 
         void visit (const Nil& type)

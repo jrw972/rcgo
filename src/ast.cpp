@@ -67,6 +67,43 @@ namespace ast
                 out << ' ';
                 node.value.print (out, node.type);
               }
+            out << ' ';
+            switch (node.expression_kind)
+              {
+              case kValue:
+                out << "value";
+                break;
+              case kVariable:
+                out << "variable";
+                break;
+              case kType:
+                out << "type";
+                break;
+              }
+            out << ' ';
+            switch (node.intrinsic_mutability)
+              {
+              case MUTABLE:
+                break;
+              case IMMUTABLE:
+                out << "const";
+                break;
+              case FOREIGN:
+                out << "foreign";
+                break;
+              }
+            out << ' ';
+            switch (node.dereference_mutability)
+              {
+              case MUTABLE:
+                break;
+              case IMMUTABLE:
+                out << "+const";
+                break;
+              case FOREIGN:
+                out << "+foreign";
+                break;
+              }
           }
         out << '\n';
       }

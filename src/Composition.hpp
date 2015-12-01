@@ -120,10 +120,10 @@ namespace Composition
 
   struct GetterKey
   {
-    GetterKey (Instance* i, Callable* c);
+    GetterKey (Instance* i, const Callable* c);
     bool operator< (const GetterKey& other) const;
     Instance* instance;
-    Callable* getter;
+    const Callable* getter;
   };
 
   struct Getter : public Node

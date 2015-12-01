@@ -411,7 +411,7 @@ namespace Type
 
     operator double() const
     {
-      unimplemented;
+      return real;
     }
 
     C64& operator= (const Int64::ValueType& x)
@@ -442,7 +442,7 @@ namespace Type
 
     operator double() const
     {
-      unimplemented;
+      return real;
     }
 
     C128& operator= (const Int64::ValueType& x)
@@ -2466,23 +2466,22 @@ namespace Type
   bool
   type_contains_pointer (const Type* type);
 
-  // True if boolean operators can be applied to values of this type.
-  bool
-  type_is_boolean (const Type* type);
+  bool is_typed_boolean (const Type* type);
+  bool is_untyped_boolean (const Type* type);
+  bool is_any_boolean (const Type* type);
 
-  // True for typed integral types.
+  bool is_typed_string (const Type* type);
+  bool is_untyped_string (const Type* type);
+  bool is_any_string (const Type* type);
+
   bool is_integral (const Type* type);
   bool is_unsigned_integral (const Type* type);
+  bool is_floating_point (const Type* type);
   // True to typed numeric types.
   bool is_numeric (const Type* type);
   // True for untyped numeric types.
   bool is_untyped_numeric (const Type* type);
-  // True for typed bool.
-  bool is_bool (const Type* type);
-  // True for untyped bool.
-  bool is_untyped_boolean (const Type* type);
-  // True for type strings.
-  bool is_string (const Type* type);
+  bool is_slice_of_bytes (const Type* type);
 
   // True if the type is comparable.
   bool comparable (const Type* type);

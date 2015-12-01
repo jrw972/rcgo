@@ -51,9 +51,19 @@ namespace semantic
       void visit (ast_call_expr_t& node)
       {
         node.VisitChildren (*this);
-        require_value_or_variable (node.expr ());
-        node.callable->check_references (node.args ());
-        node.expression_kind = kValue;
+        if (node.callable != NULL)
+          {
+            require_value_or_variable (node.expr ());
+            node.callable->check_references (node.args ());
+            node.expression_kind = kValue;
+          }
+        else
+          {
+            // Conversion.
+            require_type (node.expr ());
+            require_value_or_variable (node.args ());
+            node.expression_kind = kValue;
+          }
       }
 
       void visit (ast_list_expr_t& node)
@@ -273,12 +283,19 @@ namespace semantic
       void visit (ast_index_expr_t& node)
       {
         node.VisitChildren (*this);
-        require_value_or_variable (node.base ());
-        require_value_or_variable (node.index ());
 
         if (node.array_type != NULL)
           {
+            require_value_or_variable (node.base ());
+            require_value_or_variable (node.index ());
             node.expression_kind = node.base ()->expression_kind;
+            return;
+          }
+        if (node.slice_type != NULL)
+          {
+            require_value_or_variable (node.base ());
+            require_value_or_variable (node.index ());
+            node.expression_kind = kVariable;
             return;
           }
         not_reached;
