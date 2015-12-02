@@ -27,8 +27,16 @@ namespace Type
 
   enum Kind
   {
-    kNamed,
+    // Untyped types.
+    kNil,
+    kBoolean,
+    kRune,
+    kInteger,
+    kFloat,
+    kComplex,
+    kString,
 
+    // Typed types.
     kVoid,
 
     kBool,
@@ -63,15 +71,10 @@ namespace Type
     kMethod,
     kTemplate,
 
-    kNil,
-    kBoolean,
-    kRune,
-    kInteger,
-    kFloat,
-    kComplex,
-    kString,
-
     kFileDescriptor,
+
+    // Named types.
+    kNamed,
   };
 
   struct Type
@@ -2457,7 +2460,7 @@ namespace Type
   Identical (const Type* x, const Type* y);
 
   bool
-  assignable (const Type*& from, value_t& from_value, const Type* to);
+  assignable (const Type* from, const value_t& from_value, const Type* to);
 
   const Type*
   Choose (const Type* x, const Type* y);
@@ -2478,7 +2481,7 @@ namespace Type
   bool is_unsigned_integral (const Type* type);
   bool is_floating_point (const Type* type);
   // True to typed numeric types.
-  bool is_numeric (const Type* type);
+  bool is_typed_numeric (const Type* type);
   // True for untyped numeric types.
   bool is_untyped_numeric (const Type* type);
   bool is_slice_of_bytes (const Type* type);

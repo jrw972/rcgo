@@ -1081,75 +1081,6 @@ type::Instance () \
   }
 
   bool
-  type_is_comparable (const Type* type)
-  {
-    struct visitor : public DefaultVisitor
-    {
-      bool flag;
-      visitor () : flag (false) { }
-
-      void visit (const Pointer& type)
-      {
-        flag = true;
-      }
-
-      void visit (const NamedType& type)
-      {
-        type.UnderlyingType
-        ()->Accept (*this);
-      }
-
-      void visit (const Bool& type)
-      {
-        flag = true;
-      }
-
-      void visit (const Int& type)
-      {
-        flag = true;
-      }
-
-      void visit (const Int8& type)
-      {
-        flag = true;
-      }
-
-      void visit (const Int64& type)
-      {
-        flag = true;
-      }
-
-      void visit (const Uint& type)
-      {
-        flag = true;
-      }
-
-      void visit (const Uint8& type)
-      {
-        flag = true;
-      }
-
-      void visit (const Uint32& type)
-      {
-        flag = true;
-      }
-
-      void visit (const Uint64& type)
-      {
-        flag = true;
-      }
-
-      void visit (const Enum& type)
-      {
-        flag = true;
-      }
-    };
-    visitor v;
-    type->Accept (v);
-    return v.flag;
-  }
-
-  bool
   type_is_orderable (const Type* type)
   {
     struct visitor : public DefaultVisitor
@@ -1428,12 +1359,17 @@ type::Instance () \
   const Type*
   Choose (const Type* x, const Type* y)
   {
-    return (x->Level () > y->Level ()) ? x : y;
+    return (x->kind () > y->kind ()) ? x : y;
   }
 
   bool
-  assignable (const Type*& from, value_t& from_value, const Type* to)
+  assignable (const Type* from, const value_t& from_value, const Type* to)
   {
+    if (to->IsUntyped ())
+      {
+        return false;
+      }
+
     if (Identical (from, to))
       {
         return true;
@@ -1460,8 +1396,6 @@ type::Instance () \
 
     if (from->IsUntyped () && from_value.representable (from, to))
       {
-        from_value.convert (from, to);
-        from = to;
         return true;
       }
 
@@ -1606,28 +1540,29 @@ type::Instance () \
       }
   }
 
-  bool is_numeric (const Type* type)
+  bool is_typed_numeric (const Type* type)
   {
-    struct visitor : DefaultVisitor
-    {
-      bool flag;
-      visitor () : flag (false) { }
-      void visit (const Uint& type)
+    switch (type->underlying_kind ())
       {
-        flag = true;
+      case kUint8:
+      case kUint16:
+      case kUint32:
+      case kUint64:
+      case kInt8:
+      case kInt16:
+      case kInt32:
+      case kInt64:
+      case kFloat32:
+      case kFloat64:
+      case kComplex64:
+      case kComplex128:
+      case kUint:
+      case kInt:
+      case kUintptr:
+        return true;
+      default:
+        return false;
       }
-      void visit (const Int& type)
-      {
-        flag = true;
-      }
-      void visit (const Uintptr& type)
-      {
-        flag = true;
-      }
-    };
-    visitor v;
-    type->UnderlyingType ()->Accept (v);
-    return v.flag;
   }
 
   bool is_untyped_numeric (const Type* type)
@@ -1681,40 +1616,6 @@ type::Instance () \
         return false;
       }
     return type_cast<Uint8> (slice_type->Base ()->UnderlyingType ()) != NULL;
-  }
-
-  bool comparable (const Type* type)
-  {
-    switch (type->underlying_kind ())
-      {
-      case kBool:
-      case kUint8:
-      case kUint16:
-      case kUint32:
-      case kUint64:
-      case kInt8:
-      case kInt16:
-      case kInt32:
-      case kInt64:
-      case kFloat32:
-      case kFloat64:
-      case kComplex64:
-      case kComplex128:
-      case kUint:
-      case kInt:
-      case kUintptr:
-      case kStringU:
-      case kBoolean:
-      case kRune:
-      case kInteger:
-      case kFloat:
-      case kComplex:
-      case kString:
-      case kPointer:
-        return true;
-      default:
-        return false;
-      }
   }
 
   bool orderable (const Type* type)

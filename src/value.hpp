@@ -35,6 +35,7 @@ struct value_t
 
   bool representable (const Type::Type* from, const Type::Type* to) const;
   void convert (const Type::Type* from, const Type::Type* to);
+  void convert (Type::Kind from, Type::Kind to);
 
   static value_t make_reference (Type::Pointer::ValueType v)
   {
@@ -281,6 +282,8 @@ struct value_t
     return slice_value_;
   }
 
+  Type::Int::ValueType to_int (const Type::Type* type) const;
+
   void print (std::ostream& out, const Type::Type* type) const;
 
   union
@@ -325,5 +328,23 @@ struct value_t
     Type::String::ValueType string_value_;
   };
 };
+
+void equal (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
+void not_equal (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
+void less_than (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
+void less_equal (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
+void more_than (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
+void more_equal (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
+
+void multiply (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
+void divide (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
+void modulus (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
+void add (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
+void subtract (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
+
+void bit_and (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
+void bit_and_not (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
+void bit_or (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
+void bit_xor (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
 
 #endif /* value_hpp */

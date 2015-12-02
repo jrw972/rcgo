@@ -64,12 +64,12 @@ namespace semantic
                 if (!n->value.present)
                   {
                     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "expression is not constant (E62)");
+                                   "expression is not constant (E130)");
                   }
                 if (!assignable (n->type, n->value, type))
                   {
                     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "cannot assign %s to %s in initialization (E62)", n->type->ToString ().c_str (), type->ToString ().c_str ());
+                                   "cannot assign %s to %s in initialization (E131)", n->type->ToString ().c_str (), type->ToString ().c_str ());
                   }
 
                 n->value.convert (n->type, type);
