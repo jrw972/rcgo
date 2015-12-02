@@ -18,6 +18,7 @@ public:
   virtual const Type::Signature* signature () const = 0;
   virtual const Type::Type* type () const = 0;
   virtual size_t return_size () const = 0;
+  virtual size_t receiver_size () const = 0;
   virtual size_t arguments_size () const = 0;
   virtual size_t locals_size () const = 0;
   virtual void check_types (ast::Node* args) const;
@@ -53,6 +54,10 @@ struct Function : public Callable, public Symbol
   virtual size_t return_size () const
   {
     return functionType_->GetReturnType ()->Size ();
+  }
+  virtual size_t receiver_size () const
+  {
+    return 0;
   }
   virtual size_t arguments_size () const
   {
@@ -95,15 +100,19 @@ struct Method : public Callable
 
   virtual size_t return_size () const
   {
-    unimplemented;
+    return methodType->return_type ()->Size ();
+  }
+  virtual size_t receiver_size () const
+  {
+    return methodType->receiver_type ()->Size ();
   }
   virtual size_t arguments_size () const
   {
-    unimplemented;
+    return methodType->signature->Size ();
   }
   virtual size_t locals_size () const
   {
-    unimplemented;
+    return memoryModel.LocalsSize ();
   }
 
   ast::ast_method_t* const node;
@@ -134,9 +143,13 @@ struct Initializer : public Callable
   {
     return returnSize;
   }
+  virtual size_t receiver_size () const
+  {
+    return initializerType->receiver_type ()->Size ();
+  }
   virtual size_t arguments_size () const
   {
-    return initializerType->function_type->GetSignature ()->Size ();
+    return initializerType->signature->Size ();
   }
   virtual size_t locals_size () const
   {
@@ -144,11 +157,7 @@ struct Initializer : public Callable
   }
   virtual const Type::Signature* signature () const
   {
-    unimplemented;
-  }
-  virtual void check_types (ast::Node* args) const
-  {
-    unimplemented;
+    return initializerType->signature;
   }
 
   ast::ast_initializer_t* const node;
@@ -178,23 +187,23 @@ struct Getter : public Callable
 
   virtual size_t return_size () const
   {
-    unimplemented;
+    return getterType->return_type ()->Size ();
+  }
+  virtual size_t receiver_size () const
+  {
+    return getterType->receiver_type ()->Size ();
   }
   virtual size_t arguments_size () const
   {
-    unimplemented;
+    return getterType->signature->Size ();
   }
   virtual size_t locals_size () const
   {
-    unimplemented;
+    return memoryModel.LocalsSize ();
   }
   virtual const Type::Signature* signature () const
   {
-    unimplemented;
-  }
-  virtual void check_types (ast::Node* args) const
-  {
-    unimplemented;
+    return getterType->signature;
   }
 
   ast::ast_getter_t* const node;

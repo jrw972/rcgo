@@ -18,7 +18,6 @@ bind.hpp \
 BuiltinFunction.hpp BuiltinFunction.cpp \
 Callable.hpp Callable.cpp \
 check_types.hpp check_types.cpp \
-check_references.hpp check_references.cpp \
 check_mutability.hpp check_mutability.cpp \
 check_constants.hpp check_constants.cpp \
 check_control.hpp check_control.cpp \
@@ -36,7 +35,6 @@ heap.hpp heap.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
 Location.hpp Location.cpp \
 MemoryModel.hpp MemoryModel.cpp \
-parameter.hpp \
 parser.hpp parser.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
 ProcessDeclarations.cpp \

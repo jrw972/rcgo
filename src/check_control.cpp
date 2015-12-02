@@ -59,6 +59,13 @@ namespace semantic
         node.body ()->Accept (v);
       }
 
+      void visit (ast_getter_t& node)
+      {
+        Visitor v (*this);
+        v.context = Getter;
+        node.body ()->Accept (v);
+      }
+
       void visit (ast_action_t& node)
       {
         Visitor v (*this);
@@ -80,6 +87,11 @@ namespace semantic
       }
 
       void visit (ast_function_t& node)
+      {
+        node.body ()->Accept (*this);
+      }
+
+      void visit (ast_method_t& node)
       {
         node.body ()->Accept (*this);
       }
@@ -212,12 +224,11 @@ namespace semantic
                         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                                        "getters may only be called from a getter, an action, a reaction, or an initializer (E32)");
                       }
-                    unimplemented;
-                    // if (node.GetInMutableSection ())
-                    //   {
-                    //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                    //                    "cannot call getter in mutable section (E33)");
-                    //   }
+                    if (in_mutable_phase)
+                      {
+                        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                                       "cannot call getter in mutable section (E33)");
+                      }
                   }
                   break;
                   case Type::Method::REACTION:

@@ -724,30 +724,6 @@ namespace ast
       }
   }
 
-  const ::Type::Type*
-  ast_action_t::GetReceiverType () const
-  {
-    return this->type;
-  }
-
-  const ::Type::Type*
-  ast_dimensioned_action_t::GetReceiverType () const
-  {
-    return this->type;
-  }
-
-  const ::Type::Type*
-  ast_reaction_t::GetReceiverType () const
-  {
-    return reaction->type ();
-  }
-
-  const ::Type::Type*
-  ast_dimensioned_reaction_t::GetReceiverType () const
-  {
-    unimplemented;
-  }
-
   Symbol *
   Node::FindGlobalSymbol (const std::string& identifier) const
   {
@@ -846,15 +822,5 @@ namespace ast
   {
     assert (location.Line != 0);
     m_children.resize (children_count);
-  }
-
-  const ::Type::Type*
-  Node::GetReceiverType () const
-  {
-    if (m_parent == NULL)
-      {
-        return NULL;
-      }
-    return m_parent->GetReceiverType ();
   }
 }

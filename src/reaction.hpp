@@ -54,6 +54,10 @@ public:
   {
     unimplemented;
   }
+  virtual size_t receiver_size () const
+  {
+    return reaction_type->receiver_type ()->Size ();
+  }
   size_t arguments_size () const
   {
     unimplemented;
@@ -64,11 +68,7 @@ public:
   }
   virtual const Type::Signature* signature () const
   {
-    unimplemented;
-  }
-  virtual void check_types (ast::Node* args) const
-  {
-    unimplemented;
+    return reaction_type->signature;
   }
 
   MemoryModel memory_model;

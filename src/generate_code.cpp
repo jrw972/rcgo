@@ -35,10 +35,7 @@ namespace  code
     void visit (ast_instance_t& node)
     {
       node.expression_list ()->Accept (*this);
-      ListOperation* list = static_cast<ListOperation*> (node.expression_list ()->operation);
-      // Prepend the receiver.
-      list->list.insert (list->list.begin (), new runtime::Instance (node.symbol));
-      node.operation = new CallableOperation (node.symbol->initializer, node.expression_list ()->operation);
+      node.operation = new MethodCall (node.symbol->initializer, new runtime::Instance (node.symbol), node.expression_list ()->operation);
     }
 
     void visit (ast_const_t& node)
@@ -50,6 +47,12 @@ namespace  code
     {
       node.body ()->Accept (*this);
       node.operation = new SetRestoreCurrentInstance (node.body ()->operation, node.initializer->memoryModel.ReceiverOffset ());
+    }
+
+    void visit (ast_getter_t& node)
+    {
+      node.body ()->Accept (*this);
+      node.operation = new SetRestoreCurrentInstance (node.body ()->operation, node.getter->memoryModel.ReceiverOffset ());
     }
 
     void visit (ast_action_t& node)
@@ -69,10 +72,15 @@ namespace  code
     void visit (ast_bind_t& node)
     {
       node.body ()->Accept (*this);
-      node.operation = new SetRestoreCurrentInstance (node.body ()->operation, node.bind->receiver_parameter->offset ());
     }
 
     void visit (ast_function_t& node)
+    {
+      node.body ()->Accept (*this);
+      node.operation = node.body ()->operation;
+    }
+
+    void visit (ast_method_t& node)
     {
       node.body ()->Accept (*this);
       node.operation = node.body ()->operation;
@@ -218,18 +226,18 @@ namespace  code
     void visit (ast_bind_push_port_statement_t& node)
     {
       node.VisitChildren (*this);
-      node.operation = new BindPushPort (node.left ()->operation, node.right ()->operation);
+    }
+
+    void visit (ast_bind_pull_port_statement_t& node)
+    {
+      node.VisitChildren (*this);
     }
 
     void visit (ast_call_expr_t& node)
     {
       node.args ()->Accept (*this);
 
-      if (node.callable != NULL)
-        {
-          node.operation = new CallableOperation (node.callable, node.args ()->operation);
-        }
-      else
+      if (node.expr ()->expression_kind == kType)
         {
           // Conversion.
           node.operation = node.args ()->At (0)->operation;
@@ -237,6 +245,99 @@ namespace  code
           if (node.string_duplication)
             {
               node.operation = new ConvertStringToSliceOfBytes (node.operation);
+            }
+          return;
+        }
+      else if (node.callable != NULL)
+        {
+          if (node.function_type)
+            {
+              node.operation = new FunctionCall (node.callable, node.args ()->operation);
+            }
+          else if (node.method_type)
+            {
+              node.expr ()->Accept (*this);
+              if (type_dereference (node.expr ()->At (0)->type))
+                {
+                  if (type_dereference (node.method_type->receiver_type ()))
+                    {
+                      if (node.expr ()->At (0)->expression_kind == kVariable)
+                        {
+                          // Got a pointer.  Expecting a pointer.  Load the pointer.
+                          node.operation = new MethodCall (node.callable, new Load (node.expr ()->At (0)->operation, node.expr ()->At (0)->type), node.args ()->operation);
+                        }
+                      else
+                        {
+                          // Got a pointer.  Expecting a pointer.  Pointer is alreay loaded.
+                          node.operation = new MethodCall (node.callable, node.expr ()->At (0)->operation, node.args ()->operation);
+                        }
+                    }
+                  else
+                    {
+                      // Got a pointer.  Expecting a value.  Load the variable and then the pointer.
+                      if (node.expr ()->At (0)->expression_kind == kVariable)
+                        {
+                          node.operation = new MethodCall (node.callable, new Load (new Load (node.expr ()->At (0)->operation, node.expr ()->At (0)->type), node.method_type->receiver_type ()), node.args ()->operation);
+                        }
+                      else
+                        {
+                          unimplemented;
+                        }
+                    }
+                }
+              else
+                {
+                  if (type_dereference (node.method_type->receiver_type ()))
+                    {
+                      if (node.expr ()->At (0)->expression_kind == kVariable)
+                        {
+                          // Got a value.  Expected a pointer.  Use variable as pointer.
+                          node.operation = new MethodCall (node.callable, node.expr ()->At (0)->operation, node.args ()->operation);
+                        }
+                      else
+                        {
+                          unimplemented;
+                        }
+                    }
+                  else
+                    {
+                      if (node.expr ()->At (0)->expression_kind == kVariable)
+                        {
+                          // Got a value.  Expected a value.  Load the variable.
+                          node.operation = new MethodCall (node.callable, new Load (node.expr ()->At (0)->operation, node.expr ()->At (0)->type), node.args ()->operation);
+                        }
+                      else
+                        {
+                          unimplemented;
+                        }
+                    }
+                }
+            }
+          else
+            {
+              not_reached;
+            }
+        }
+      else
+        {
+          node.expr ()->Accept (*this);
+          if (node.function_type)
+            {
+              node.expr ()->Accept (*this);
+              Operation* r = node.expr ()->operation;
+              if (node.expr ()->expression_kind == kVariable)
+                {
+                  r = new Load (r, node.expr ()->type);
+                }
+              node.operation = new DynamicFunctionCall (node.function_type, r, node.args ()->operation);
+            }
+          else if (node.method_type)
+            {
+              unimplemented;
+            }
+          else
+            {
+              not_reached;
             }
         }
     }

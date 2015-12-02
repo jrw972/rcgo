@@ -45,6 +45,12 @@ namespace semantic
         // Do nothing.
       }
 
+      void visit (ast_getter_t& node)
+      {
+        node.body ()->Accept (*this);
+        node.getter->immutable_phase_access = node.body ()->receiver_access;
+      }
+
       void visit (ast_action_t& node)
       {
         node.precondition ()->Accept (*this);
@@ -65,6 +71,11 @@ namespace semantic
       }
 
       void visit (ast_function_t& node)
+      {
+        // Do nothing.
+      }
+
+      void visit (ast_method_t& node)
       {
         // Do nothing.
       }
@@ -108,6 +119,12 @@ namespace semantic
             return;
           }
         node.receiver_access = std::max (node.left ()->receiver_access, node.right ()->receiver_access);
+      }
+
+      void visit (ast_return_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        node.receiver_access = node.child ()->receiver_access;
       }
 
       void visit (ast_activate_statement_t& node)

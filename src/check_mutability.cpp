@@ -159,6 +159,11 @@ namespace semantic
         node.body ()->Accept (*this);
       }
 
+      void visit (ast_getter_t& node)
+      {
+        node.body ()->Accept (*this);
+      }
+
       void visit (ast_action_t& node)
       {
         node.precondition ()->Accept (*this);

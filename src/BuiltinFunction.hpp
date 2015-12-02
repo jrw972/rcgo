@@ -47,6 +47,10 @@ struct Readable : public BuiltinFunction
   {
     unimplemented;
   }
+  virtual size_t receiver_size () const
+  {
+    return 0;
+  }
   virtual size_t arguments_size () const
   {
     unimplemented;
@@ -72,6 +76,10 @@ struct Read : public BuiltinFunction
   virtual size_t return_size () const
   {
     unimplemented;
+  }
+  virtual size_t receiver_size () const
+  {
+    return 0;
   }
   virtual size_t arguments_size () const
   {
@@ -99,6 +107,10 @@ struct Writable : public BuiltinFunction
   {
     unimplemented;
   }
+  virtual size_t receiver_size () const
+  {
+    return 0;
+  }
   virtual size_t arguments_size () const
   {
     unimplemented;
@@ -124,6 +136,10 @@ struct TimerfdCreate : public BuiltinFunction
   virtual size_t return_size () const
   {
     unimplemented;
+  }
+  virtual size_t receiver_size () const
+  {
+    return 0;
   }
   virtual size_t arguments_size () const
   {
@@ -151,6 +167,10 @@ struct TimerfdSettime : public BuiltinFunction
   {
     unimplemented;
   }
+  virtual size_t receiver_size () const
+  {
+    return 0;
+  }
   virtual size_t arguments_size () const
   {
     unimplemented;
@@ -177,6 +197,10 @@ struct UdpSocket : public BuiltinFunction
   {
     unimplemented;
   }
+  virtual size_t receiver_size () const
+  {
+    return 0;
+  }
   virtual size_t arguments_size () const
   {
     unimplemented;
@@ -202,6 +226,10 @@ struct Sendto : public BuiltinFunction
   virtual size_t return_size () const
   {
     unimplemented;
+  }
+  virtual size_t receiver_size () const
+  {
+    return 0;
   }
   virtual size_t arguments_size () const
   {

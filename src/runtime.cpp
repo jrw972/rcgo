@@ -10,7 +10,7 @@
 #include "heap.hpp"
 #include "executor_base.hpp"
 #include "semantic.hpp"
-#include "check_references.hpp"
+#include "check_types.hpp"
 
 namespace runtime
 {
@@ -1812,6 +1812,10 @@ namespace runtime
     {
       return function_type_->GetReturnType ()->Size ();
     }
+    virtual size_t receiver_size () const
+    {
+      return 0;
+    }
     virtual size_t arguments_size () const
     {
       return function_type_->GetSignature ()->Size ();
@@ -1948,6 +1952,10 @@ namespace runtime
     {
       return function_type_->GetReturnType ()->Size ();
     }
+    virtual size_t receiver_size () const
+    {
+      return 0;
+    }
     virtual size_t arguments_size () const
     {
       return function_type_->GetSignature ()->Size ();
@@ -2075,6 +2083,10 @@ namespace runtime
     {
       return function_type_->GetReturnType ()->Size ();
     }
+    virtual size_t receiver_size () const
+    {
+      return 0;
+    }
     virtual size_t arguments_size () const
     {
       return function_type_->GetSignature ()->Size ();
@@ -2176,6 +2188,10 @@ namespace runtime
     virtual size_t return_size () const
     {
       unimplemented;
+    }
+    virtual size_t receiver_size () const
+    {
+      return 0;
     }
     virtual size_t arguments_size () const
     {
@@ -2355,6 +2371,10 @@ namespace runtime
     virtual size_t return_size () const
     {
       return function_type_->GetReturnType ()->Size ();
+    }
+    virtual size_t receiver_size () const
+    {
+      return 0;
     }
     virtual size_t arguments_size () const
     {
@@ -2742,7 +2762,7 @@ namespace runtime
   }
 
   ControlAction
-  CallableOperation::execute (executor_base_t& exec) const
+  FunctionCall::execute (executor_base_t& exec) const
   {
     // Create space for the return.
     exec.stack ().reserve (callable->return_size ());
@@ -2769,6 +2789,90 @@ namespace runtime
     exec.stack ().popn (callable->arguments_size ());
 
     return kContinue;
+  }
+
+  ControlAction
+  MethodCall::execute (executor_base_t& exec) const
+  {
+    // Create space for the return.
+    exec.stack ().reserve (callable->return_size ());
+
+    // Push the receiver.
+    receiver->execute (exec);
+
+    // Push the arguments.
+    arguments->execute (exec);
+
+    // Push a fake instruction pointer.
+    exec.stack ().push_pointer (NULL);
+
+    // Setup the frame.
+    exec.stack ().setup (callable->locals_size ());
+
+    // Do the call.
+    callable->call (exec);
+
+    // Tear down the frame.
+    exec.stack ().teardown ();
+
+    // Pop the fake instruction pointer.
+    exec.stack ().pop_pointer ();
+
+    // Pop the arguments.
+    exec.stack ().popn (callable->arguments_size ());
+
+    exec.stack ().popn (callable->receiver_size ());
+
+    return kContinue;
+  }
+
+  ControlAction
+  DynamicFunctionCall::execute (executor_base_t& exec) const
+  {
+    switch (type->function_kind)
+      {
+      case Type::Function::FUNCTION:
+        unimplemented;
+      case Type::Function::PUSH_PORT:
+        unimplemented;
+      case Type::Function::PULL_PORT:
+      {
+        func->execute (exec);
+        pull_port_t pp;
+        exec.stack ().pop (pp);
+
+        // Create space for the return.
+        exec.stack ().reserve (pp.getter->return_size ());
+
+        // Push the arguments.
+        exec.stack ().push_pointer (pp.instance);
+        arguments->execute (exec);
+
+        // Push a fake instruction pointer.
+        exec.stack ().push_pointer (NULL);
+
+        // Setup the frame.
+        exec.stack ().setup (pp.getter->locals_size ());
+
+        // Do the call.
+        pp.getter->call (exec);
+
+        // Tear down the frame.
+        exec.stack ().teardown ();
+
+        // Pop the fake instruction pointer.
+        exec.stack ().pop_pointer ();
+
+        // Pop the arguments.
+        exec.stack ().popn (pp.getter->arguments_size ());
+        exec.stack ().pop_pointer ();
+
+        return kContinue;
+      }
+      break;
+      }
+
+    not_reached;
   }
 
   ControlAction
@@ -3017,12 +3121,6 @@ namespace runtime
       }
 
     return kContinue;
-  }
-
-  ControlAction
-  BindPushPort::execute (executor_base_t& exec) const
-  {
-    unimplemented;
   }
 
   ControlAction

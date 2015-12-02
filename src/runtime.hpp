@@ -226,11 +226,29 @@ namespace runtime
     ListType list;
   };
 
-  struct CallableOperation : public Operation
+  struct FunctionCall : public Operation
   {
-    CallableOperation (const Callable* c, Operation* o) : callable (c), arguments (o) { }
+    FunctionCall (const Callable* c, Operation* o) : callable (c), arguments (o) { }
     virtual ControlAction execute (executor_base_t& exec) const;
     const Callable* const callable;
+    Operation* const arguments;
+  };
+
+  struct MethodCall : public Operation
+  {
+    MethodCall (const Callable* c, Operation* r, Operation* o) : callable (c), receiver (r), arguments (o) { }
+    virtual ControlAction execute (executor_base_t& exec) const;
+    const Callable* const callable;
+    Operation* const receiver;
+    Operation* const arguments;
+  };
+
+  struct DynamicFunctionCall : public Operation
+  {
+    DynamicFunctionCall (const Type::Function* t, Operation* f, Operation* a) : type (t), func (f), arguments (a) { }
+    virtual ControlAction execute (executor_base_t& exec) const;
+    const Type::Function* type;
+    Operation* const func;
     Operation* const arguments;
   };
 
@@ -518,14 +536,6 @@ namespace runtime
     ptrdiff_t const receiver_offset;
     ptrdiff_t const port_offset;
     Operation* const args;
-  };
-
-  struct BindPushPort : public Operation
-  {
-    BindPushPort (Operation* l, Operation* r) : left (l), right (r) { }
-    virtual ControlAction execute (executor_base_t& exec) const;
-    Operation* const left;
-    Operation* const right;
   };
 
   struct Push : public Operation

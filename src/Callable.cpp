@@ -4,7 +4,6 @@
 #include "runtime.hpp"
 #include "SymbolVisitor.hpp"
 #include "check_types.hpp"
-#include "check_references.hpp"
 
 using namespace ast;
 
@@ -45,29 +44,7 @@ void Function::call (executor_base_t& exec) const
 
 void Method::call (executor_base_t& exec) const
 {
-  unimplemented;
-  // // Create space for the return.
-  // exec.stack ().reserve (this->returnSize);
-
-  // // Sample the top of the stack.
-  // char* top_before = exec.stack ().top ();
-
-  // // Push the arguments.
-  // runtime::evaluate_expression (exec, memoryModel, node.args ());
-
-  // // Push a fake instruction pointer.
-  // exec.stack ().push_pointer (NULL);
-
-  // // Sample the top.
-  // char* top_after = exec.stack ().top ();
-
-  // // Do the call.
-  // exec.stack ().setup (this->memoryModel.LocalsSize ());
-  // runtime::evaluate_statement (exec, this->memoryModel, this->node->body ());
-  // exec.stack ().teardown ();
-
-  // // Pop the arguments.
-  // exec.stack ().popn (top_after - top_before);
+  this->node->body ()->operation->execute (exec);
 }
 
 void Initializer::call (executor_base_t& exec) const
@@ -77,38 +54,7 @@ void Initializer::call (executor_base_t& exec) const
 
 void Getter::call (executor_base_t& exec) const
 {
-  unimplemented;
-  // // Create space for the return.
-  // exec.stack ().reserve (this->returnSize);
-
-  // // Sample the top of the stack.
-  // char* top_before = exec.stack ().top ();
-
-  // // Push this.
-  // runtime::evaluate_expression (exec, memoryModel, node.args ()->At (0));
-  // component_t* thisPtr = static_cast<component_t*> (exec.stack ().peek_pointer ());
-
-  // // Push the arguments.
-  // for (size_t idx = 1; idx != node.args ()->Size (); ++idx)
-  //   {
-  //     runtime::evaluate_expression (exec, memoryModel, node.args ()->At (idx));
-  //   }
-
-  // // Push a fake instruction pointer.
-  // exec.stack ().push_pointer (NULL);
-
-  // // Sample the top.
-  // char* top_after = exec.stack ().top ();
-
-  // // Do the call.
-  // exec.stack ().setup (this->memoryModel.LocalsSize ());
-  // component_t* old_this = exec.current_instance (thisPtr);
-  // runtime::evaluate_statement (exec, this->memoryModel, this->node->body ());
-  // exec.current_instance (old_this);
-  // exec.stack ().teardown ();
-
-  // // Pop the arguments.
-  // exec.stack ().popn (top_after - top_before);
+  this->node->operation->execute (exec);
 }
 
 void Getter::call (executor_base_t& exec, const ast_call_expr_t& node, component_t* thisPtr) const

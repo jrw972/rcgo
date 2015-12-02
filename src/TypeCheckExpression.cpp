@@ -296,40 +296,41 @@ struct check_visitor : public ast::DefaultVisitor
 
   void visit (ast_indexed_port_call_expr_t& node)
   {
-    const std::string& port_identifier = ast_get_identifier (node.identifier ());
-    const Type::Type* this_type = node.GetReceiverType ();
-    const Type::Type* type = type_select (this_type, port_identifier);
-
-    if (type == NULL)
-      {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "no port named %s (E15)", port_identifier.c_str ());
-      }
-
-    const Type::Array* array_type = Type::type_cast<Type::Array> (type);
-    if (array_type == NULL)
-      {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "%s is not an array of ports (E16)", port_identifier.c_str ());
-      }
-
-    const Type::Function* push_port_type = Type::type_cast<Type::Function> (array_type->Base ());
-
-    if (push_port_type == NULL || push_port_type->function_kind != Type::Function::PUSH_PORT)
-      {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "%s is not an array of ports (E17)", port_identifier.c_str ());
-      }
-
-    node.index_op = check_array_index (node.index (), array_type);
-
-    Node *args = node.args ();
-    TypedValueListType tvlist;
     unimplemented;
-    // TypeCheckArgs (args, tvlist);
-    // TypeCheckCall (node, push_port_type->GetSignature (), push_port_type->GetReturnParameter ()->value, args, tvlist);
-    // node.field = type_select_field (this_type, port_identifier);
-    // node.array_type = array_type;
+    // const std::string& port_identifier = ast_get_identifier (node.identifier ());
+    // const Type::Type* this_type = node.GetReceiverType ();
+    // const Type::Type* type = type_select (this_type, port_identifier);
+
+    // if (type == NULL)
+    //   {
+    //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+    //                    "no port named %s (E15)", port_identifier.c_str ());
+    //   }
+
+    // const Type::Array* array_type = Type::type_cast<Type::Array> (type);
+    // if (array_type == NULL)
+    //   {
+    //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+    //                    "%s is not an array of ports (E16)", port_identifier.c_str ());
+    //   }
+
+    // const Type::Function* push_port_type = Type::type_cast<Type::Function> (array_type->Base ());
+
+    // if (push_port_type == NULL || push_port_type->function_kind != Type::Function::PUSH_PORT)
+    //   {
+    //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+    //                    "%s is not an array of ports (E17)", port_identifier.c_str ());
+    //   }
+
+    // node.index_op = check_array_index (node.index (), array_type);
+
+    // Node *args = node.args ();
+    // TypedValueListType tvlist;
+    // unimplemented;
+    // // TypeCheckArgs (args, tvlist);
+    // // TypeCheckCall (node, push_port_type->GetSignature (), push_port_type->GetReturnParameter ()->value, args, tvlist);
+    // // node.field = type_select_field (this_type, port_identifier);
+    // // node.array_type = array_type;
   }
 
   void visit (ast_identifier_expr_t& node)

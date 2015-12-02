@@ -79,7 +79,6 @@ namespace ast
     }
     Symbol* FindGlobalSymbol (const std::string& identifier) const;
     Symbol* FindLocalSymbol (const std::string& identifier) const;
-    virtual const Type::Type* GetReceiverType () const;
     void Activate ();
     void Change ();
 
@@ -1319,9 +1318,6 @@ namespace ast
     decl::Action* action;
     const Type::Type* type;
     ParameterSymbol* receiver_symbol;
-
-    virtual const Type::Type*
-    GetReceiverType () const;
   };
 
   struct ast_dimensioned_action_t : public Node
@@ -1387,9 +1383,6 @@ namespace ast
 
     decl::Action* action;
     const Type::Type* type;
-
-    virtual const Type::Type*
-    GetReceiverType () const;
   };
 
   struct ast_bind_t : public Node
@@ -1729,12 +1722,6 @@ namespace ast
 
     Mutability const return_dereference_mutability;
     ::Initializer* initializer;
-
-    virtual const Type::Type*
-    GetReceiverType () const
-    {
-      unimplemented;
-    }
   };
 
   struct ast_reaction_t : public Node
@@ -1785,9 +1772,6 @@ namespace ast
     void Accept (ConstVisitor& visitor) const;
 
     reaction_t* reaction;
-
-    virtual const Type::Type*
-    GetReceiverType () const;
   };
 
   struct ast_dimensioned_reaction_t : public Node
@@ -1853,9 +1837,6 @@ namespace ast
     void Accept (ConstVisitor& visitor) const;
 
     reaction_t* reaction;
-
-    virtual const Type::Type*
-    GetReceiverType () const;
   };
 
   struct Type : public Node

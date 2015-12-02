@@ -625,16 +625,15 @@ type::Accept (Visitor& visitor) const \
 
             for (size_t idx = 0; idx != x_arity; ++idx)
               {
-                unimplemented;
-                // const parameter_t *x_parameter = x->At (idx);
-                // const Type*x_parameter_type = x_parameter->value.type;
-                // const parameter_t *y_parameter = y->At (idx);
-                // const Type*y_parameter_type = y_parameter->value.type;
+                const ParameterSymbol* x_parameter = x->At (idx);
+                const Type* x_parameter_type = x_parameter->type;
+                const ParameterSymbol* y_parameter = y->At (idx);
+                const Type* y_parameter_type = y_parameter->type;
 
-                // if (!type_is_equal (x_parameter_type, y_parameter_type))
-                //   {
-                //     return;
-                //   }
+                if (!type_is_equal (x_parameter_type, y_parameter_type))
+                  {
+                    return;
+                  }
               }
 
             flag = true;
@@ -667,10 +666,8 @@ type::Accept (Visitor& visitor) const \
         const Function* y = type_cast<Function> (other);
         if (y)
           {
-            unimplemented;
-            // flag = type_is_equal (x->GetSignature (), y->GetSignature ()) &&
-            //        type_is_equal (x->GetReturnParameter ()->value.type, y->GetReturnParameter ()->value.type) &&
-            //        x->GetReturnParameter ()->value.is_foreign_safe () && y->GetReturnParameter ()->value.is_foreign_safe ();
+            flag = type_is_equal (x->GetSignature (), y->GetSignature ()) &&
+                   type_is_equal (x->GetReturnParameter ()->type, y->GetReturnParameter ()->type);
           }
       }
     };

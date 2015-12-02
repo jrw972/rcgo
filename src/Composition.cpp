@@ -564,8 +564,15 @@ namespace Composition
                 void* reaction_component = exec.stack ().pop_pointer ();
                 const reaction_t* reaction = static_cast<const reaction_t*> (right->callable);
 
-                PushPort* pp = table.push_ports[reinterpret_cast<size_t> (port)];
-                Reaction* r = table.reactions[ReactionsType::key_type (table.instances[reinterpret_cast<size_t> (reaction_component)], reaction, param.value)];
+                PushPortsType::const_iterator pp_pos = table.push_ports.find (reinterpret_cast<size_t> (port));
+                assert (pp_pos != table.push_ports.end ());
+                PushPort* pp = pp_pos->second;
+                InstancesType::const_iterator i_pos = table.instances.find (reinterpret_cast<size_t> (reaction_component));
+                assert (i_pos != table.instances.end ());
+                Instance* i = i_pos->second;
+                ReactionsType::const_iterator r_pos = table.reactions.find (ReactionsType::key_type (i, reaction, param.value));
+                assert (r_pos != table.reactions.end ());
+                Reaction* r = r_pos->second;
                 pp->reactions.push_back (r);
                 r->push_ports.push_back (pp);
               }
@@ -584,19 +591,22 @@ namespace Composition
 
               void visit (const ast_bind_pull_port_statement_t& node)
               {
-                unimplemented;
-                // static_value_t pull_port = EvaluateStatic (node.left (), memory);
-                // assert (pull_port.kind == static_value_t::ABSOLUTE_ADDRESS);
-                // typed_value_t tv = node.right ()->typed_value;
-                // const Type::Method* getter_type = type_cast<Type::Method> (tv.type);
-                // assert (getter_type != NULL);
-                // // Strip off the implicit dereference and selecting of the getter.
-                // static_value_t getter = EvaluateStatic (node.right ()->At(0)->At(0), memory);
-                // assert (getter.kind == static_value_t::ABSOLUTE_ADDRESS);
+                node.left ()->operation->execute (exec);
+                void* port = exec.stack ().pop_pointer ();
+                node.right ()->At (0)->operation->execute (exec);
+                void* getter_component = exec.stack ().pop_pointer ();
+                const ::Getter* getter = static_cast<const ::Getter*> (node.right ()->callable);
 
-                // PullPort* pp = table.pull_ports[pull_port.address];
-                // Getter* g = table.getters[GettersType::key_type (table.instances[getter.address], tv.value.callable_value ())];
-                // pp->getters.push_back (g);
+                PullPortsType::const_iterator pp_pos = table.pull_ports.find (reinterpret_cast<size_t> (port));
+                assert (pp_pos != table.pull_ports.end ());
+                PullPort* pp = pp_pos->second;
+                InstancesType::const_iterator i_pos = table.instances.find (reinterpret_cast<size_t> (getter_component));
+                assert (i_pos != table.instances.end ());
+                Instance* i = i_pos->second;
+                GettersType::const_iterator g_pos = table.getters.find (GettersType::key_type (i, getter));
+                assert (g_pos != table.getters.end ());
+                Getter* g = g_pos->second;
+                pp->getters.push_back (g);
               }
             };
             visitor v (*this, instance_pos->first);
@@ -663,6 +673,7 @@ namespace Composition
   // getters and pull ports.
   struct Composer::ElaborationVisitor : public DefaultConstVisitor
   {
+    Executor exec;
     Composer& table;
     Action* action;
     Reaction* reaction;
@@ -675,7 +686,12 @@ namespace Composition
       , reaction (NULL)
       , getter (NULL)
       , activation (NULL)
-    { }
+    {
+      // TODO:  IOTA.
+      exec.stack ().push_pointer (reinterpret_cast<void*> (a->instance->address));
+      exec.stack ().push_pointer (NULL);
+      exec.stack ().setup (0);
+    }
 
     ElaborationVisitor (Composer& t, Reaction* r)
       : table (t)
@@ -683,7 +699,13 @@ namespace Composition
       , reaction (r)
       , getter (NULL)
       , activation (NULL)
-    { }
+    {
+      // TODO:  IOTA.
+      exec.stack ().push_pointer (reinterpret_cast<void*> (reaction->instance->address));
+      exec.stack ().reserve (reaction->reaction->signature ()->Size ());
+      exec.stack ().push_pointer (NULL);
+      exec.stack ().setup (0);
+    }
 
     ElaborationVisitor (Composer& t, Getter* g)
       : table (t)
@@ -691,7 +713,12 @@ namespace Composition
       , reaction (NULL)
       , getter (g)
       , activation (NULL)
-    { }
+    {
+      exec.stack ().push_pointer (reinterpret_cast<void*> (getter->instance->address));
+      exec.stack ().reserve (getter->getter->signature ()->Size ());
+      exec.stack ().push_pointer (NULL);
+      exec.stack ().setup (0);
+    }
 
     void populateMemory (static_memory_t& memory)
     {
@@ -717,8 +744,25 @@ namespace Composition
         }
     }
 
+    Instance* get_instance () const
+    {
+      if (action != NULL)
+        {
+          return action->instance;
+        }
+      else if (reaction != NULL)
+        {
+          return reaction->instance;
+        }
+      else
+        {
+          not_reached;
+        }
+    }
+
     void addCall (Node* n)
     {
+      assert (n != NULL);
       if (action != NULL)
         {
           action->nodes.push_back (n);
@@ -823,25 +867,38 @@ namespace Composition
 
     void visit (const ast_call_expr_t& node)
     {
-      // Are we calling a getter or pull port.
-      const Type::Method* method = node.method_type;
-      if (method != NULL && method->method_kind == Type::Method::GETTER)
+      if (node.expr ()->expression_kind != kType)
         {
-          static_memory_t memory;
-          populateMemory (memory);
-          Instance* i = table.instances[EvaluateStatic (node.args ()->At (0), memory).value];
-          const Callable* g = node.callable;
-          Getter* getter = table.getters[GetterKey (i, g)];
-          addCall (getter);
-        }
+          // Are we calling a getter or pull port.
+          const Type::Method* method = node.method_type;
+          if (method != NULL && method->method_kind == Type::Method::GETTER)
+            {
+              node.expr ()->At (0)->operation->execute (exec);
+              if (node.expr ()->At (0)->expression_kind == kVariable &&
+                  type_dereference (node.expr ()->At (0)->type))
+                {
+                  void * ptr = exec.stack ().pop_pointer ();
+                  exec.stack ().load (ptr, node.expr ()->At (0)->type->Size ());
+                }
+              size_t inst_addr = reinterpret_cast<size_t> (exec.stack ().pop_pointer ());
+              InstancesType::const_iterator i_pos = table.instances.find (inst_addr);
+              assert (i_pos != table.instances.end ());
+              Instance* i = i_pos->second;
+              const Callable* g = node.callable;
+              assert (g != NULL);
+              GettersType::const_iterator g_pos = table.getters.find (GetterKey (i, g));
+              assert (g_pos != table.getters.end ());
+              addCall (g_pos->second);
+            }
 
-      const Type::Function* function = node.function_type;
-      if (function != NULL && function->function_kind == Type::Function::PULL_PORT)
-        {
-          static_memory_t memory;
-          populateMemory (memory);
-          PullPort* pp = table.pull_ports[EvaluateStatic (node.expr ()->At (0), memory).value];
-          addCall (pp);
+          const Type::Function* function = node.function_type;
+          if (function != NULL && function->function_kind == Type::Function::PULL_PORT)
+            {
+              size_t port = get_instance ()->address + node.field->offset;
+              Composer::PullPortsType::const_iterator port_pos = table.pull_ports.find (port);
+              assert (port_pos != table.pull_ports.end ());
+              addCall (port_pos->second);
+            }
         }
 
       node.VisitChildren (*this);

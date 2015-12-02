@@ -17,7 +17,6 @@
 #include "partitioned_scheduler.hpp"
 #include "generate_code.hpp"
 #include "check_types.hpp"
-#include "check_references.hpp"
 #include "check_mutability.hpp"
 #include "check_constants.hpp"
 #include "check_control.hpp"
@@ -130,7 +129,6 @@ main (int argc, char **argv)
   semantic::process_types_and_constants (root);
   semantic::process_functions_and_methods (root);
   semantic::check_types (root);
-  semantic::check_references (root);
   semantic::check_mutability (root);
   semantic::check_control (root);
   semantic::compute_receiver_access (root);
