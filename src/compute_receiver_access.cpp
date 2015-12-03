@@ -100,6 +100,11 @@ namespace semantic
         process_list (node, node.expression_list ());
       }
 
+      void visit (ast_empty_statement_t& node)
+      {
+        node.receiver_access = AccessNone;
+      }
+
       void visit (ast_assign_statement_t& node)
       {
         node.VisitChildren (*this);
@@ -121,6 +126,12 @@ namespace semantic
         node.receiver_access = std::max (node.left ()->receiver_access, node.right ()->receiver_access);
       }
 
+      void visit (ast_increment_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        node.receiver_access = node.child ()->receiver_access;
+      }
+
       void visit (ast_return_statement_t& node)
       {
         node.VisitChildren (*this);
@@ -134,29 +145,36 @@ namespace semantic
         node.mutable_phase_access = node.body ()->receiver_access;
       }
 
+      void visit (ast_change_statement_t& node)
+      {
+        node.expr ()->Accept (*this);
+        node.body ()->Accept (*this);
+        process_list (node, &node);
+      }
+
       void visit (ast_call_expr_t& node)
       {
+        if (node.expr ()->expression_kind == kType)
+          {
+            // Conversion.
+            node.args ()->Accept (*this);
+            node.receiver_access = node.args ()->At (0)->receiver_access;
+            node.receiver_state = node.args ()->At (0)->receiver_state;
+            return;
+          }
+
         node.VisitChildren (*this);
         node.receiver_access = node.expr ()->receiver_access;
 
         // Check if a mutable pointer escapes.
         bool flag = false;
-        size_t i = 0;
-        for (Node::ConstIterator pos = node.args ()->Begin (),
-             limit = node.args ()->End ();
-             pos != limit;
-             ++pos)
+        if (node.callable != NULL)
           {
-            Node* arg = *pos;
-            ParameterSymbol* param = node.signature->At (i);
-            node.receiver_access = std::max (node.receiver_access, arg->receiver_access);
-            if (arg->receiver_state &&
-                type_contains_pointer (param->type) &&
-                param->dereference_mutability == MUTABLE)
-              {
-                node.receiver_access = std::max (node.receiver_access, AccessWrite);
-                flag = true;
-              }
+            node.callable->compute_receiver_access (node.args (), node.receiver_access, flag);
+          }
+        else
+          {
+            compute_receiver_access_arguments (node.args (), node.signature, node.receiver_access, flag);
           }
 
         if (type_contains_pointer (node.type) &&
@@ -227,7 +245,43 @@ namespace semantic
         node.args ()->Accept (*this);
         process_list (node, node.args ());
       }
+
+      void visit (TypeExpression& node)
+      {
+        // Do nothing.
+      }
+
+      void visit (ast_dereference_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        node.receiver_state = node.child ()->receiver_state;
+        node.receiver_access = node.child ()->receiver_access;
+      }
     };
+  }
+
+  void compute_receiver_access_arguments (Node* args, const Type::Signature* signature, ReceiverAccess& receiver_access, bool& flag)
+  {
+    // Check if a mutable pointer escapes.
+    receiver_access = AccessNone;
+    flag = false;
+    size_t i = 0;
+    for (Node::ConstIterator pos = args->Begin (),
+         limit = args->End ();
+         pos != limit;
+         ++pos)
+      {
+        Node* arg = *pos;
+        ParameterSymbol* param = signature->At (i);
+        receiver_access = std::max (receiver_access, arg->receiver_access);
+        if (arg->receiver_state &&
+            type_contains_pointer (param->type) &&
+            param->dereference_mutability == MUTABLE)
+          {
+            receiver_access = std::max (receiver_access, AccessWrite);
+            flag = true;
+          }
+      }
   }
 
   void compute_receiver_access (ast::Node* root)

@@ -13,27 +13,6 @@ namespace semantic
 
   namespace
   {
-    void check_mutability_arguments (ast::Node* node, const Type::Signature* signature)
-    {
-      ast_list_expr_t* args = ast_cast<ast_list_expr_t> (node);
-
-      size_t i = 0;
-      for (Node::ConstIterator pos = args->Begin (), limit = args->End ();
-           pos != limit;
-           ++pos, ++i)
-        {
-          const Type::Type* arg = (*pos)->type;
-          if (type_contains_pointer (arg))
-            {
-              if (signature->At (i)->dereference_mutability < (*pos)->dereference_mutability)
-                {
-                  error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
-                                 "argument %zd casts away +const or +foreign (E85)", i + 1);
-                }
-            }
-        }
-    }
-
     // Compute and check the intrinsic and dereference mutability of the expression.
     struct MutabilityVisitor : public ast::DefaultVisitor
     {
@@ -44,15 +23,9 @@ namespace semantic
 
       void visit (ast_call_expr_t& node)
       {
-        node.VisitChildren (*this);
-        if (node.callable != NULL)
+        if (node.expr ()->expression_kind == kType)
           {
-            check_mutability_arguments (node.args (), node.signature);
-            node.intrinsic_mutability = IMMUTABLE;
-            node.dereference_mutability = node.return_parameter->dereference_mutability;
-          }
-        else
-          {
+            node.args ()->Accept (*this);
             // Conversion.
             node.intrinsic_mutability = IMMUTABLE;
             node.dereference_mutability = node.args ()->At (0)->dereference_mutability;
@@ -60,7 +33,21 @@ namespace semantic
               {
                 node.dereference_mutability = MUTABLE;
               }
+            return;
           }
+
+        node.VisitChildren (*this);
+
+        if (node.callable != NULL)
+          {
+            node.callable->check_mutability (node.args ());
+          }
+        else
+          {
+            check_mutability_arguments (node.args (), node.signature);
+          }
+        node.intrinsic_mutability = IMMUTABLE;
+        node.dereference_mutability = node.return_parameter->dereference_mutability;
       }
 
       void visit (ast_list_expr_t& node)
@@ -221,6 +208,11 @@ namespace semantic
         node.VisitChildren (*this);
       }
 
+      void visit (ast_empty_statement_t& node)
+      {
+        // Do nothing.
+      }
+
       void visit (ast_var_statement_t& node)
       {
         if (!node.expression_list ()->Empty ())
@@ -356,6 +348,27 @@ namespace semantic
       }
     };
 
+  }
+
+  void check_mutability_arguments (ast::Node* node, const Type::Signature* signature)
+  {
+    ast_list_expr_t* args = ast_cast<ast_list_expr_t> (node);
+
+    size_t i = 0;
+    for (Node::ConstIterator pos = args->Begin (), limit = args->End ();
+         pos != limit;
+         ++pos, ++i)
+      {
+        const Type::Type* arg = (*pos)->type;
+        if (type_contains_pointer (arg))
+          {
+            if (signature->At (i)->dereference_mutability < (*pos)->dereference_mutability)
+              {
+                error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
+                               "argument %zd casts away +const or +foreign (E85)", i + 1);
+              }
+          }
+      }
   }
 
   void check_mutability (ast::Node* root)

@@ -321,11 +321,17 @@ namespace ast
       }
       void visit (const ast_empty_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "empty_statement";
+        print_common (node);
+        print_children (node);
       }
       void visit (const ast_add_assign_statement_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "add_assign_statement";
+        print_common (node);
+        print_children (node);
       }
       void visit (const ast_change_statement_t& node)
       {
@@ -670,13 +676,11 @@ namespace ast
               const VariableSymbol* symbol = SymbolCast<VariableSymbol> (*ptr);
               if (symbol != NULL)
                 {
-                  unimplemented;
-                  // typed_value_t tv = symbol->value;
-                  // if (type_contains_pointer (tv.type) && tv.dereference_mutability == FOREIGN)
-                  //   {
-                  //     // Hide this variable.
-                  //     EnterSymbol (new HiddenSymbol (symbol, this));
-                  //   }
+                  if (type_contains_pointer (symbol->type) && symbol->dereference_mutability == FOREIGN)
+                    {
+                      // Hide this variable.
+                      EnterSymbol (new HiddenSymbol (symbol, this));
+                    }
                 }
             }
 

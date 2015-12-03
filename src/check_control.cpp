@@ -121,6 +121,11 @@ namespace semantic
         node.expression_list ()->Accept (*this);
       }
 
+      void visit (ast_empty_statement_t& node)
+      {
+        // Do nothing.
+      }
+
       void visit (ast_assign_statement_t& node)
       {
         node.VisitChildren (*this);

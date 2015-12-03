@@ -23,6 +23,8 @@ public:
   virtual size_t locals_size () const = 0;
   virtual void check_types (ast::Node* args) const;
   virtual void check_references (ast::Node* args) const;
+  virtual void check_mutability (ast::Node* args) const;
+  virtual void compute_receiver_access (ast::Node* args, ReceiverAccess& receiver_access, bool& flag) const;
 };
 /*
  * TODO:  I debate whether or not the return symbols should be recorded here.

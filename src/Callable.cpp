@@ -4,6 +4,8 @@
 #include "runtime.hpp"
 #include "SymbolVisitor.hpp"
 #include "check_types.hpp"
+#include "check_mutability.hpp"
+#include "compute_receiver_access.hpp"
 
 using namespace ast;
 
@@ -17,6 +19,18 @@ void
 Callable::check_references (ast::Node* args) const
 {
   semantic::require_value_or_variable_list (args);
+}
+
+void
+Callable::check_mutability (ast::Node* args) const
+{
+  semantic::check_mutability_arguments (args, signature ());
+}
+
+void
+Callable::compute_receiver_access (ast::Node* args, ReceiverAccess& receiver_access, bool& flag) const
+{
+  semantic::compute_receiver_access_arguments (args, signature (), receiver_access, flag);
 }
 
 Function::Function (ast_function_t& node_, const Type::Function* ft)

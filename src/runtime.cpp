@@ -1836,6 +1836,15 @@ namespace runtime
     {
       semantic::require_type (args->At (0));
     }
+    virtual void check_mutability (ast::Node* args) const
+    {
+      // Do nothing.
+    }
+    virtual void compute_receiver_access (ast::Node* args, ReceiverAccess& receiver_access, bool& flag) const
+    {
+      // Do nothing.
+    }
+
   };
 
   New::New (ast::Node* dn)

@@ -1321,6 +1321,11 @@ namespace semantic
         process_types_and_constants (&node);
       }
 
+      void visit (ast_empty_statement_t& node)
+      {
+        // Do nothing.
+      }
+
       void visit (ast_var_statement_t& node)
       {
         ast::Node* identifier_list = node.identifier_list ();

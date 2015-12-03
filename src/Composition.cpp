@@ -562,8 +562,12 @@ namespace Composition
                 void* port = exec.stack ().pop_pointer ();
                 right->At (0)->operation->execute (exec);
                 void* reaction_component = exec.stack ().pop_pointer ();
+                if (type_dereference (right->At (0)->type))
+                  {
+                    exec.stack ().load (reaction_component, right->At (0)->type->Size ());
+                    reaction_component = exec.stack ().pop_pointer ();
+                  }
                 const reaction_t* reaction = static_cast<const reaction_t*> (right->callable);
-
                 PushPortsType::const_iterator pp_pos = table.push_ports.find (reinterpret_cast<size_t> (port));
                 assert (pp_pos != table.push_ports.end ());
                 PushPort* pp = pp_pos->second;

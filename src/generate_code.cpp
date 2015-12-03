@@ -180,6 +180,11 @@ namespace  code
       node.operation = op;
     }
 
+    void visit (ast_empty_statement_t& node)
+    {
+      node.operation = new Noop ();
+    }
+
     void visit (ast_assign_statement_t& node)
     {
       node.VisitChildren (*this);
