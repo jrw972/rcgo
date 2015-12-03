@@ -58,7 +58,12 @@ namespace  code
     void visit (ast_action_t& node)
     {
       node.precondition ()->Accept (*this);
-      node.precondition ()->operation = new SetRestoreCurrentInstance (node.precondition ()->operation, node.action->memory_model.ReceiverOffset ());
+      Operation* p = node.precondition ()->operation;
+      if (node.precondition ()->expression_kind == kVariable)
+        {
+          p = new Load (p, node.precondition ()->type);
+        }
+      node.precondition ()->operation = new SetRestoreCurrentInstance (p, node.action->memory_model.ReceiverOffset ());
       node.body ()->Accept (*this);
       node.body ()->operation = new SetRestoreCurrentInstance (node.body ()->operation, node.action->memory_model.ReceiverOffset ());
     }
