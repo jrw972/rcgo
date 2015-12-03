@@ -1871,7 +1871,7 @@ namespace runtime
     if (argument_types.size () != 1)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "new expects one argument (E5)");
+                       "new expects one argument (E220)");
       }
 
     const Type::Type* type = argument_types.front ();
@@ -1880,7 +1880,7 @@ namespace runtime
     // if (tv.kind != typed_value_t::TYPE)
     //   {
     //     error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-    //                    "new expects a type (E6)");
+    //                    "new expects a type (E219)");
     //   }
 
     return new NewImpl (type, definingNode);
@@ -2003,7 +2003,7 @@ namespace runtime
     if (argument_types.size () != 1)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "move expects one argument (E7)");
+                       "move expects one argument (E218)");
       }
 
     const Type::Type* in = argument_types.front ();
@@ -2011,7 +2011,7 @@ namespace runtime
     if (out == NULL)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "cannot move expression of type %s (E8)", in->ToString ().c_str ());
+                       "cannot move expression of type %s (E217)", in->ToString ().c_str ());
       }
 
     return new MoveImpl (in, out, definingNode);
@@ -2134,7 +2134,7 @@ namespace runtime
     if (argument_types.size () != 1)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "merge expects one argument (E9)");
+                       "merge expects one argument (E216)");
       }
 
     const Type::Type* in = argument_types.front ();
@@ -2142,7 +2142,7 @@ namespace runtime
     if (out == NULL)
       {
         error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "cannot merge expression of type %s (E10)", in->ToString ().c_str ());
+                       "cannot merge expression of type %s (E215)", in->ToString ().c_str ());
       }
 
     return new MergeImpl (in, out, definingNode);

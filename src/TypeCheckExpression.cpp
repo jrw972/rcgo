@@ -185,7 +185,7 @@ struct DivideValues
     if (y == 0)
       {
         error_at_line (-1, 0, loc.File.c_str (), loc.Line,
-                       "division by zero (E147)");
+                       "division by zero (E169)");
       }
     return x / y;
   }
@@ -199,7 +199,7 @@ struct ModulusValues
     if (y == 0)
       {
         error_at_line (-1, 0, loc.File.c_str (), loc.Line,
-                       "division by zero (E147)");
+                       "division by zero (E152)");
       }
     return x % y;
   }
@@ -255,12 +255,12 @@ static void binary_arithmetic (ast_binary_arithmetic_expr_t& node,
   if (!(type_predicate<Visitor> (left.type) && type_predicate<Visitor> (right.type)))
     {
       error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                     "%s cannot be applied to %s and %s (E45)", s, left.type->ToString ().c_str (), right.type->ToString ().c_str ());
+                     "%s cannot be applied to %s and %s (E185)", s, left.type->ToString ().c_str (), right.type->ToString ().c_str ());
     }
   if (!(left.AssignableTo (right.type) || right.AssignableTo (left.type)))
     {
       error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                     "%s cannot be applied to %s and %s (E45)", s, left.type->ToString ().c_str (), right.type->ToString ().c_str ());
+                     "%s cannot be applied to %s and %s (E186)", s, left.type->ToString ().c_str (), right.type->ToString ().c_str ());
     }
   // Determine the resulting type.
   if (left.type->Level () > right.type->Level ())
@@ -436,7 +436,7 @@ struct check_visitor : public ast::DefaultVisitor
     // if (out.IsError ())
     //   {
     //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-    //                    "E45: incompatible types: %s (E23)", in.type->ToString ().c_str ());
+    //                    "incompatible types: %s (E23)", in.type->ToString ().c_str ());
     //   }
     // unimplemented;
     // //node.typed_value = out;
@@ -575,12 +575,12 @@ struct check_visitor : public ast::DefaultVisitor
     //       if (!(type_is_boolean (left.type) &&
     //             type_is_boolean (right.type))) {
     //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-    //                        "|| cannot be applied to %s and %s (E45)", left.type->ToString ().c_str (), right.type->ToString ().c_str ());
+    //                        "|| cannot be applied to %s and %s (E187)", left.type->ToString ().c_str (), right.type->ToString ().c_str ());
     //       }
     //       if (!(left.AssignableTo (right.type) ||
     //             right.AssignableTo (left.type))) {
     //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-    //                        "|| cannot be applied to %s and %s (E45)", left.type->ToString ().c_str (), right.type->ToString ().c_str ());
+    //                        "|| cannot be applied to %s and %s (E188)", left.type->ToString ().c_str (), right.type->ToString ().c_str ());
     //       }
     //       // Determine the resulting type.
     //       const Type::Type* type = Type::Choose (left.type, right.type);
@@ -612,12 +612,12 @@ struct check_visitor : public ast::DefaultVisitor
     //       if (!(type_is_boolean (left.type) &&
     //             type_is_boolean (right.type))) {
     //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-    //                        "&& cannot be applied to %s and %s (E45)", left.type->ToString ().c_str (), right.type->ToString ().c_str ());
+    //                        "&& cannot be applied to %s and %s (E189)", left.type->ToString ().c_str (), right.type->ToString ().c_str ());
     //       }
     //       if (!(left.AssignableTo (right.type) ||
     //             right.AssignableTo (left.type))) {
     //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-    //                        "&& cannot be applied to %s and %s (E45)", left.type->ToString ().c_str (), right.type->ToString ().c_str ());
+    //                        "&& cannot be applied to %s and %s (E190)", left.type->ToString ().c_str (), right.type->ToString ().c_str ());
     //       }
     //       // Determine the resulting type.
     //       const Type::Type* type = Type::Choose (left.type, right.type);

@@ -169,7 +169,7 @@ namespace semantic
             {
               error_at_line (-1, 0, node.location.File.c_str (),
                              node.location.Line,
-                             "%s cannot be applied to %s and %s (E19)",
+                             "%s cannot be applied to %s and %s (E206)",
                              s,
                              left_type->ToString ().c_str (),
                              right_type->ToString ().c_str ());
@@ -186,7 +186,7 @@ namespace semantic
         {
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
-                         "%s cannot be applied to %s and %s (E19)",
+                         "%s cannot be applied to %s and %s (E207)",
                          s,
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
@@ -280,7 +280,7 @@ namespace semantic
             {
               error_at_line (-1, 0, node.location.File.c_str (),
                              node.location.Line,
-                             "%s cannot be applied to %s and %s (E19)",
+                             "%s cannot be applied to %s and %s (E208)",
                              s,
                              left_type->ToString ().c_str (),
                              right_type->ToString ().c_str ());
@@ -297,7 +297,7 @@ namespace semantic
         {
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
-                         "%s cannot be applied to %s and %s (E19)",
+                         "%s cannot be applied to %s and %s (E209)",
                          s,
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
@@ -311,7 +311,7 @@ namespace semantic
         {
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
-                         "%s cannot be applied to %s and %s (E124)",
+                         "%s cannot be applied to %s and %s (E170)",
                          s,
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
@@ -390,7 +390,7 @@ namespace semantic
             {
               error_at_line (-1, 0, node.location.File.c_str (),
                              node.location.Line,
-                             "%s cannot be applied to %s and %s (E19)",
+                             "%s cannot be applied to %s and %s (E210)",
                              s,
                              left_type->ToString ().c_str (),
                              right_type->ToString ().c_str ());
@@ -407,7 +407,7 @@ namespace semantic
         {
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
-                         "%s cannot be applied to %s and %s (E19)",
+                         "%s cannot be applied to %s and %s (E211)",
                          s,
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
@@ -421,7 +421,7 @@ namespace semantic
         {
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
-                         "%s cannot be applied to %s and %s (E124)",
+                         "%s cannot be applied to %s and %s (E171)",
                          s,
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
@@ -495,7 +495,7 @@ namespace semantic
             {
               error_at_line (-1, 0, node.location.File.c_str (),
                              node.location.Line,
-                             "%s cannot be applied to %s and %s (E19)",
+                             "%s cannot be applied to %s and %s (E212)",
                              s,
                              left_type->ToString ().c_str (),
                              right_type->ToString ().c_str ());
@@ -512,7 +512,7 @@ namespace semantic
         {
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
-                         "%s cannot be applied to %s and %s (E19)",
+                         "%s cannot be applied to %s and %s (E213)",
                          s,
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
@@ -526,7 +526,7 @@ namespace semantic
         {
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
-                         "%s cannot be applied to %s and %s (E124)",
+                         "%s cannot be applied to %s and %s (E172)",
                          s,
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
@@ -660,7 +660,7 @@ namespace semantic
         {
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
-                         "|| cannot be applied to %s and %s (E63)",
+                         "|| cannot be applied to %s and %s (E178)",
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
         }
@@ -673,7 +673,7 @@ namespace semantic
         {
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
-                         "|| cannot be applied to %s and %s (E63)",
+                         "|| cannot be applied to %s and %s (E179)",
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
         }
@@ -711,7 +711,7 @@ namespace semantic
             {
               error_at_line (-1, 0, node.location.File.c_str (),
                              node.location.Line,
-                             "&& cannot be applied to %s and %s (E63)",
+                             "&& cannot be applied to %s and %s (E180)",
                              left_type->ToString ().c_str (),
                              right_type->ToString ().c_str ());
             }
@@ -726,7 +726,7 @@ namespace semantic
         {
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
-                         "&& cannot be applied to %s and %s (E63)",
+                         "&& cannot be applied to %s and %s (E181)",
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
         }
@@ -739,7 +739,7 @@ namespace semantic
         {
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
-                         "&& cannot be applied to %s and %s (E63)",
+                         "&& cannot be applied to %s and %s (E182)",
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
         }
@@ -908,7 +908,7 @@ namespace semantic
         if (node.symbol == NULL)
           {
             error_at_line (-1, 0, identifier_node->location.File.c_str (),
-                           identifier_node->location.Line, "%s is not defined (E18)",
+                           identifier_node->location.Line, "%s is not defined (E214)",
                            identifier.c_str ());
           }
 
@@ -1331,7 +1331,7 @@ namespace semantic
             identifier_list->Size () != expression_list->Size ())
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "wrong number of initializers (E51)");
+                           "wrong number of initializers (E184)");
           }
 
         // Process the type spec.
@@ -1344,7 +1344,7 @@ namespace semantic
             if (type_cast<Void> (type) != NULL)
               {
                 error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "missing type (E52)");
+                               "missing type (E183)");
 
               }
 
@@ -1427,7 +1427,7 @@ namespace semantic
         if (!assignable (from, val, to))
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "cannot assign value of type %s to variable of type %s (E30)",
+                           "cannot assign value of type %s to variable of type %s (E199)",
                            from->ToString ().c_str (),
                            to->ToString ().c_str ());
           }
@@ -1442,7 +1442,7 @@ namespace semantic
         if (!arithmetic (node.child ()->type))
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "++ cannot be applied to %s (E30)",
+                           "++ cannot be applied to %s (E200)",
                            node.child ()->type->ToString ().c_str ());
           }
         require_variable (node.child ());
@@ -1463,7 +1463,7 @@ namespace semantic
         if (pull_port_type == NULL || pull_port_type->function_kind != Type::Function::PULL_PORT)
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "target of bind is not a pull port (E42)");
+                           "target of bind is not a pull port (E193)");
           }
 
         require_variable (node.left ());
@@ -1473,7 +1473,7 @@ namespace semantic
         if (getter_type == NULL || getter_type->method_kind != Type::Method::GETTER)
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "source of bind is not a getter (E43)");
+                           "source of bind is not a getter (E192)");
           }
 
         require_variable (node.right ());
@@ -1482,7 +1482,7 @@ namespace semantic
         if (!type_is_equal (pull_port_type, &g))
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "cannot bind %s to %s (E44)", pull_port_type->ToString ().c_str (), getter_type->ToString ().c_str ());
+                           "cannot bind %s to %s (E191)", pull_port_type->ToString ().c_str (), getter_type->ToString ().c_str ());
           }
       }
 
@@ -1541,7 +1541,7 @@ namespace semantic
         else
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "cannot select %s from expression of type %s (E152)",
+                           "cannot select %s from expression of type %s (E154)",
                            identifier.c_str (), base_type->ToString ().c_str ());
           }
       }
@@ -1570,12 +1570,12 @@ namespace semantic
                 if (idx < 0)
                   {
                     error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
-                                   "array index is negative (E154)");
+                                   "array index is negative (E162)");
                   }
                 if (idx >= node.array_type->dimension)
                   {
                     error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
-                                   "array index is out of bounds (E154)");
+                                   "array index is out of bounds (E163)");
                   }
               }
             else if (is_integral (index_type))
@@ -1586,19 +1586,19 @@ namespace semantic
                     if (idx < 0)
                       {
                         error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
-                                       "array index is negative (E154)");
+                                       "array index is negative (E164)");
                       }
                     if (idx >= node.array_type->dimension)
                       {
                         error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
-                                       "array index is out of bounds (E154)");
+                                       "array index is out of bounds (E165)");
                       }
                   }
               }
             else
               {
                 error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "array index is not an integer (E20)");
+                               "array index is not an integer (E203)");
               }
 
             require_value_or_variable (node.base ());
@@ -1617,7 +1617,7 @@ namespace semantic
                 if (!index_value.representable (index_type, Int::Instance ()))
                   {
                     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "slice index is not an integer (E20)");
+                                   "slice index is not an integer (E204)");
                   }
                 index_value.convert (index_type, Int::Instance ());
                 index_type = Int::Instance ();
@@ -1625,7 +1625,7 @@ namespace semantic
                 if (idx < 0)
                   {
                     error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
-                                   "slice index is negative (E154)");
+                                   "slice index is negative (E166)");
                   }
               }
             else if (is_integral (index_type))
@@ -1636,14 +1636,14 @@ namespace semantic
                     if (idx < 0)
                       {
                         error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
-                                       "slice index is negative (E154)");
+                                       "slice index is negative (E167)");
                       }
                   }
               }
             else
               {
                 error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "slice index is not an integer (E20)");
+                               "slice index is not an integer (E205)");
               }
 
             require_value_or_variable (node.base ());
@@ -1655,7 +1655,7 @@ namespace semantic
           }
 
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "cannot index expression of type %s (E152)",
+                       "cannot index expression of type %s (E168)",
                        base_type->ToString ().c_str ());
       }
 
@@ -1674,13 +1674,13 @@ namespace semantic
         if (node.field == NULL)
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "no port named %s (E34)", port_identifier.c_str ());
+                           "no port named %s (E194)", port_identifier.c_str ());
           }
         const Type::Function* push_port_type = Type::type_cast<Type::Function> (node.field->type);
         if (push_port_type == NULL || push_port_type->function_kind != Type::Function::PUSH_PORT)
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "no port named %s (E34)", port_identifier.c_str ());
+                           "no port named %s (E195)", port_identifier.c_str ());
           }
 
         node.args ()->Accept (*this);
@@ -1722,7 +1722,7 @@ namespace semantic
     if (!(node->expression_kind == kType))
       {
         error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                       "required a type (E2)");
+                       "required a type (E221)");
       }
   }
 

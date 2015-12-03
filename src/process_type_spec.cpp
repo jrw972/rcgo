@@ -44,7 +44,7 @@ process_array_dimension (ast::Node* node)
   if (dim < 0)
     {
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                     "array dimension is negative (E108)");
+                     "array dimension is negative (E174)");
     }
   return dim;
 }
@@ -109,7 +109,7 @@ process_type (Node* node, bool force)
       //     if (node.GetParent ()->GetParent ()->FindLocalSymbol (id) != NULL)
       //       {
       //         error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
-      //                        "%s is already defined in this scope (E108)", id.c_str ());
+      //                        "%s is already defined in this scope (E175)", id.c_str ());
       //       }
 
       //     node.GetParent ()->GetParent ()->EnterSymbol (new ConstantSymbol (id,
@@ -256,7 +256,7 @@ process_type (Node* node, bool force)
   if (force && type_spec_visitor.type->UnderlyingType () == NULL)
     {
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                     "type is defined recursively (E111)");
+                     "type is defined recursively (E173)");
     }
 
   return type_spec_visitor.type;

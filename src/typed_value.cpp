@@ -644,7 +644,7 @@ typed_value_t::change (const Location& location, typed_value_t tv)
   if (root_type == NULL)
     {
       error_at_line (-1, 0, location.File.c_str (), location.Line,
-                     "cannot change expression of type %s (E96)", tv.type->ToString ().c_str ());
+                     "cannot change expression of type %s (E176)", tv.type->ToString ().c_str ());
     }
 
   tv.type = root_type;

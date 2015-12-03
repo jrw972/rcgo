@@ -267,7 +267,7 @@ namespace semantic
         if (node.child ()->intrinsic_mutability != MUTABLE)
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "target of increment is not mutable (E86)");
+                           "target of increment is not mutable (E177)");
           }
       }
 
