@@ -1361,7 +1361,10 @@ namespace semantic
 
       void visit (ast_const_t& node)
       {
-        process_types_and_constants (&node);
+        if (!node.done)
+          {
+            process_types_and_constants (&node);
+          }
       }
 
       void visit (ast_empty_statement_t& node)

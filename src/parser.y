@@ -27,7 +27,6 @@ using namespace ast;
 %type <node> Definition
 %type <node> DefinitionList
 %type <node> EmptyStatement
-%type <node> EnumType
 %type <node> Expression
 %type <node> ExpressionList
 %type <node> ExpressionStatement
@@ -275,7 +274,6 @@ TypeLitExpression:
 | PushPortType  { $$ = $1; }
 | PullPortType  { $$ = $1; }
 | HeapType      { $$ = $1; }
-| EnumType      { $$ = $1; }
 
 ArrayType:
   ArrayDimension Type { $$ = new ast_array_type_spec_t (@1, $1, $2); }
@@ -300,9 +298,6 @@ PullPortType:
 
 HeapType:
   HEAP Type { $$ = new ast_heap_type_spec_t (@1, $2); }
-
-EnumType:
-  ENUM '{' IdentifierList '}' { $$ = new ast_enum_type_spec_t (@1, $3); }
 
 PointerType:
   '*' Type { $$ = new ast_pointer_type_spec_t (@1, $2); }

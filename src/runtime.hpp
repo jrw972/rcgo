@@ -421,11 +421,15 @@ namespace runtime
 
   struct ForIota : public Operation
   {
+    ForIota (const VariableSymbol* symbol, Type::Int::ValueType l, Operation* b) : offset (symbol->offset ()), limit (l), body (b) { }
     virtual ControlAction execute (executor_base_t& exec) const;
     virtual void dump () const
     {
       unimplemented;
     }
+    ptrdiff_t const offset;
+    Type::Int::ValueType const limit;
+    Operation* const body;
   };
 
   template <typename T>

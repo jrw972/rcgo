@@ -18,7 +18,6 @@ struct value_t
   value_t (const Type::Uint16* t, Type::Uint16::ValueType v) : present (true), uint16_value_ (v) { }
   value_t (const Type::Uint32* t, Type::Uint32::ValueType v) : present (true), uint32_value_ (v) { }
   value_t (const Type::Uint64* t, Type::Uint64::ValueType v) : present (true), uint64_value_ (v) { }
-  value_t (const Type::NamedType* t, Type::Enum::ValueType v) : present (true), enum_value_ (v) { }
   value_t (const Type::Float32* t, Type::Float32::ValueType v) : present (true), float32_value_ (v) { }
   value_t (const Type::Float64* t, Type::Float64::ValueType v) : present (true), float64_value_ (v) { }
   value_t (Callable* c) : present (true), callable_value_ (c) { }
@@ -182,10 +181,6 @@ struct value_t
   }
 
 
-  const Type::Enum::ValueType& ref (const Type::Enum&) const
-  {
-    return enum_value_;
-  }
   Type::Pointer::ValueType& ref (const Type::Pointer&)
   {
     return pointer_value_;
@@ -289,7 +284,6 @@ struct value_t
   union
   {
     Type::Bool::ValueType bool_value_;
-    Type::Enum::ValueType enum_value_;
 
     Type::Uint8::ValueType uint8_value_;
     Type::Uint16::ValueType uint16_value_;

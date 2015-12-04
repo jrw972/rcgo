@@ -150,13 +150,6 @@ namespace ast
         print_common (node);
         print_children (node);
       }
-      void visit (const ast_enum_type_spec_t& node)
-      {
-        print_indent (node);
-        out << "enum_type_spec";
-        print_common (node);
-        print_children (node);
-      }
       void visit (const ast_field_list_type_spec_t& node)
       {
         print_indent (node);
@@ -563,7 +556,6 @@ namespace ast
   ACCEPT (ast_array_type_spec_t)
   ACCEPT (ast_slice_type_spec_t)
   ACCEPT (ast_empty_type_spec_t)
-  ACCEPT (ast_enum_type_spec_t)
   ACCEPT (ast_field_list_type_spec_t)
   ACCEPT (ast_heap_type_spec_t)
   ACCEPT (ast_identifier_list_type_spec_t)

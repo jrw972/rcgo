@@ -260,11 +260,6 @@ namespace runtime
         stack->push (tv.value.ref (type));
       }
 
-      void visit (const Enum& type)
-      {
-        stack->push (tv.value.ref (type));
-      }
-
       void visit (const String& type)
       {
         stack->push (tv.value.ref (type));

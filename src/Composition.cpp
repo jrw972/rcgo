@@ -551,8 +551,8 @@ namespace Composition
                      idx != limit;
                      ++idx)
                   {
-                    exec.stack ().push (idx);
-                    exec.stack ().move (node.symbol->offset (), sizeof (idx));
+                    Int::ValueType* i = static_cast<Int::ValueType*> (exec.stack ().get_address (node.symbol->offset ()));
+                    *i = idx;
                     node.body ()->Accept (*this);
                   }
               }
@@ -739,7 +739,6 @@ namespace Composition
       exec.stack ().push_pointer (reinterpret_cast<void*> (getter->instance->address));
       exec.stack ().reserve (getter->getter->signature ()->Size ());
       exec.stack ().push_pointer (NULL);
-      std::cout << "Getter locals " << getter->getter->locals_size () << '\n';
       exec.stack ().setup (getter->getter->locals_size ());
     }
 

@@ -94,30 +94,6 @@ process_type (Node* node, bool force)
       type = Void::Instance ();
     }
 
-    void visit (ast_enum_type_spec_t& node)
-    {
-      unimplemented;
-      // type = Enum::Instance ();
-
-      // ast::Node* value = node.values ();
-      // size_t e = 0;
-      // for (Node::ConstIterator pos = value->Begin (), limit = value->End ();
-      //      pos != limit;
-      //      ++pos, ++e)
-      //   {
-      //     std::string id = ast_get_identifier (*pos);
-      //     if (node.GetParent ()->GetParent ()->FindLocalSymbol (id) != NULL)
-      //       {
-      //         error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
-      //                        "%s is already defined in this scope (E175)", id.c_str ());
-      //       }
-
-      //     node.GetParent ()->GetParent ()->EnterSymbol (new ConstantSymbol (id,
-      //                                                                            *pos,
-      //                                                                            typed_value_t (named_type, e)));
-      //   }
-    }
-
     void visit (ast_field_list_type_spec_t& node)
     {
       Struct* field_list;

@@ -506,11 +506,6 @@ struct SingleDispatchVisitor : public Type::DefaultVisitor
     t (type);
   }
 
-  void visit (const Type::Enum& type)
-  {
-    t (type);
-  }
-
   void visit (const Type::Pointer& type)
   {
     t (type);

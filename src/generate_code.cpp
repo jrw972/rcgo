@@ -183,7 +183,7 @@ namespace  code
     void visit (ast_for_iota_statement_t& node)
     {
       node.body ()->Accept (*this);
-      node.operation = new ForIota ();
+      node.operation = new ForIota (node.symbol, node.limit, node.body ()->operation);
     }
 
     void visit (ast_var_statement_t& node)

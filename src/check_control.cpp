@@ -136,6 +136,11 @@ namespace semantic
         node.VisitChildren (*this);
       }
 
+      void visit (ast_for_iota_statement_t& node)
+      {
+        node.body ()->Accept (*this);
+      }
+
       void visit (ast_var_statement_t& node)
       {
         node.expression_list ()->Accept (*this);

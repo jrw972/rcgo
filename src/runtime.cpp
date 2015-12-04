@@ -204,11 +204,6 @@ namespace runtime
       {
         op (exec, memoryModel, node, t);
       }
-
-      void visit (const Enum& t)
-      {
-        op (exec, memoryModel, node, t);
-      }
     };
 
     visitor v (exec, memoryModel, node, op);
@@ -714,15 +709,6 @@ namespace runtime
                 const MemoryModel& memoryModel,
                 const ast_binary_expr_t& node,
                 const Pointer& type) const
-    {
-      doit (exec, memoryModel, node, type);
-    }
-
-    void
-    operator() (executor_base_t& exec,
-                const MemoryModel& memoryModel,
-                const ast_binary_expr_t& node,
-                const Enum& type) const
     {
       doit (exec, memoryModel, node, type);
     }
@@ -2327,11 +2313,6 @@ namespace runtime
           printf ("%g", *static_cast<Float64::ValueType*> (ptr));
         }
 
-        void visit (const Enum& type)
-        {
-          printf ("%lu", *static_cast<Enum::ValueType*> (ptr));
-        }
-
         void visit (const Slice& type)
         {
           printf ("<slice>");
@@ -3259,7 +3240,16 @@ namespace runtime
   ControlAction
   ForIota::execute (executor_base_t& exec) const
   {
-    unimplemented;
+    for (Int::ValueType idx = 0; idx != limit; ++idx)
+      {
+        Int::ValueType* i = static_cast<Int::ValueType*> (exec.stack ().get_address (offset));
+        *i = idx;
+        if (body->execute (exec) == kReturn)
+          {
+            return kReturn;
+          }
+      }
+    return kContinue;
   }
 }
 

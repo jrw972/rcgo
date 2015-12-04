@@ -237,29 +237,6 @@ namespace ast
     void Accept (ConstVisitor& visitor) const;
   };
 
-  struct ast_enum_type_spec_t : public Node
-  {
-    enum
-    {
-      VALUES,
-      COUNT,
-    };
-
-    ast_enum_type_spec_t (unsigned int line, Node* values)
-      : Node (line, COUNT)
-    {
-      set (VALUES, values);
-    }
-
-    Node* values () const
-    {
-      return At (VALUES);
-    }
-
-    void Accept (Visitor& visitor);
-    void Accept (ConstVisitor& visitor) const;
-  };
-
   struct ast_field_list_type_spec_t : public Node
   {
     ast_field_list_type_spec_t (unsigned int line)
@@ -1531,6 +1508,7 @@ namespace ast
 
     ast_const_t (unsigned int line, Node* identifier_list, Node* type_spec, Node* expression_list)
       : Node (line, COUNT)
+      , done (false)
     {
       set (IDENTIFIER_LIST, identifier_list);
       set (TYPE_SPEC, type_spec);
@@ -1553,7 +1531,7 @@ namespace ast
     void Accept (Visitor& visitor);
     void Accept (ConstVisitor& visitor) const;
 
-    ConstantSymbol* symbol;
+    bool done;
   };
 
   struct ast_method_t : public Node

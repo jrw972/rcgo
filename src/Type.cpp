@@ -493,7 +493,6 @@ type::Accept (Visitor& visitor) const \
 
 #define T_ACCEPT(type) template<> void type::Accept (Visitor& visitor) const { visitor.visit (*this); }
 
-  T_ACCEPT(Enum)
   ACCEPT(NamedType)
   ACCEPT(Component)
   ACCEPT(Struct)
@@ -898,9 +897,6 @@ type::Instance () \
       void visit (const Complex128& type)
       { }
 
-      void visit (const Enum& type)
-      { }
-
       void visit (const Array& type)
       {
         type.Base ()->Accept (*this);
@@ -1106,11 +1102,6 @@ type::Instance () \
       }
 
       void visit (const Uint& type)
-      {
-        flag = true;
-      }
-
-      void visit (const Enum& type)
       {
         flag = true;
       }

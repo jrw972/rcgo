@@ -14,7 +14,6 @@ namespace ast
     virtual void visit (ast_array_type_spec_t& node) = 0;
     virtual void visit (ast_slice_type_spec_t& node) = 0;
     virtual void visit (ast_empty_type_spec_t& node) = 0;
-    virtual void visit (ast_enum_type_spec_t& node) = 0;
     virtual void visit (ast_field_list_type_spec_t& node) = 0;
     virtual void visit (ast_heap_type_spec_t& node) = 0;
     virtual void visit (ast_identifier_list_type_spec_t& node) = 0;
@@ -80,7 +79,6 @@ namespace ast
     virtual void visit (const ast_array_type_spec_t& node) = 0;
     virtual void visit (const ast_slice_type_spec_t& node) = 0;
     virtual void visit (const ast_empty_type_spec_t& node) = 0;
-    virtual void visit (const ast_enum_type_spec_t& node) = 0;
     virtual void visit (const ast_field_list_type_spec_t& node) = 0;
     virtual void visit (const ast_heap_type_spec_t& node) = 0;
     virtual void visit (const ast_identifier_list_type_spec_t& node) = 0;
@@ -162,10 +160,6 @@ namespace ast
       default_action (node);
     }
     virtual void visit (ast_empty_type_spec_t& node)
-    {
-      default_action (node);
-    }
-    virtual void visit (ast_enum_type_spec_t& node)
     {
       default_action (node);
     }
@@ -422,10 +416,6 @@ namespace ast
       default_action (node);
     }
     virtual void visit (const ast_empty_type_spec_t& node)
-    {
-      default_action (node);
-    }
-    virtual void visit (const ast_enum_type_spec_t& node)
     {
       default_action (node);
     }

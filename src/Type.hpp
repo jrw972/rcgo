@@ -40,7 +40,6 @@ namespace Type
     kVoid,
 
     kBool,
-    kEnum,
     kUint8,
     kUint16,
     kUint32,
@@ -172,7 +171,8 @@ namespace Type
     }
     void UnderlyingType (const Type* u)
     {
-      underlyingType_ = u;
+      underlyingType_ = u->UnderlyingType ();
+      assert (underlyingType_->Level () == UNNAMED);
     }
     const Type* UnderlyingType () const
     {
@@ -364,9 +364,6 @@ namespace Type
   private:
     Scalar<T, S, Numeric, FloatingPoint, Integer, k> () { }
   };
-
-  StringReturner(EnumString, "<enum>");
-  typedef Scalar<size_t, EnumString, false, false, false, kEnum> Enum;
 
   StringReturner(BoolString, "<bool>");
   typedef Scalar<bool, BoolString, false, false, false, kBool> Bool;
@@ -1162,7 +1159,6 @@ namespace Type
     virtual void visit (const Slice& type) = 0;
     virtual void visit (const Bool& type) = 0;
     virtual void visit (const Component& type) = 0;
-    virtual void visit (const Enum& type) = 0;
     virtual void visit (const Function& type) = 0;
     virtual void visit (const Method& type) = 0;
     virtual void visit (const Heap& type) = 0;
@@ -1221,10 +1217,6 @@ namespace Type
     virtual void visit (const Component& type)
     {
       t.NotComparable (type);
-    }
-    virtual void visit (const Enum& type)
-    {
-      t (type);
     }
     virtual void visit (const Function& type)
     {
@@ -1381,10 +1373,6 @@ namespace Type
       t.NotOrderable (type);
     }
     virtual void visit (const Component& type)
-    {
-      t.NotOrderable (type);
-    }
-    virtual void visit (const Enum& type)
     {
       t.NotOrderable (type);
     }
@@ -1546,10 +1534,6 @@ namespace Type
     {
       t.NotArithmetic (type);
     }
-    virtual void visit (const Enum& type)
-    {
-      t.NotArithmetic (type);
-    }
     virtual void visit (const Function& type)
     {
       t.NotArithmetic (type);
@@ -1705,10 +1689,6 @@ namespace Type
       t.NotIntegral (type);
     }
     virtual void visit (const Component& type)
-    {
-      t.NotIntegral (type);
-    }
-    virtual void visit (const Enum& type)
     {
       t.NotIntegral (type);
     }
@@ -1870,10 +1850,6 @@ namespace Type
     {
       t.NotLogical (type);
     }
-    virtual void visit (const Enum& type)
-    {
-      t.NotLogical (type);
-    }
     virtual void visit (const Function& type)
     {
       t.NotLogical (type);
@@ -2023,10 +1999,6 @@ namespace Type
       default_action (type);
     }
     virtual void visit (const Component& type)
-    {
-      default_action (type);
-    }
-    virtual void visit (const Enum& type)
     {
       default_action (type);
     }

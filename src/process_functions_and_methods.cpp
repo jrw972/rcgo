@@ -179,6 +179,11 @@ namespace semantic
         // Do nothing.
       }
 
+      void visit (ast_const_t& node)
+      {
+        // Do nothing.
+      }
+
       void visit (ast_function_t& node)
       {
         const Signature* signature;

@@ -80,6 +80,7 @@ namespace semantic
                 enter_symbol (*node.GetParent (), symbol);
               }
 
+            node.done = true;
             return;
           }
 
@@ -104,6 +105,7 @@ namespace semantic
             Symbol* symbol = new ConstantSymbol (name, *id_pos, n->type, n->value);
             enter_symbol (*node.GetParent (), symbol);
           }
+        node.done = true;
       }
 
       void visit (ast_function_t& node)

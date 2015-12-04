@@ -18,13 +18,12 @@ getter (this +const * Variable) Get () int {
     return this.value;
 }
 
-type ProcessStatus enum {
-    PROCESS_IDLE,
-    PROCESS_READ,
-    PROCESS_WRITE,
-    PROCESS_DECIDE,
-    PROCESS_DONE
-};
+type ProcessStatus int;
+const PROCESS_IDLE = 0;
+const PROCESS_READ = 1;
+const PROCESS_WRITE = 2;
+const PROCESS_DECIDE = 3;
+const PROCESS_DONE = 4;
 
 type Process component {
     status ProcessStatus;
@@ -83,11 +82,10 @@ action (this +const * Process) _decide (this.status == PROCESS_DECIDE) {
     }
 }
 
-type UserStatus enum {
-    USER_REQUEST,
-    USER_WAIT,
-    USER_DONE
-};
+type UserStatus int;
+const USER_REQUEST = 0;
+const USER_WAIT = 1;
+const USER_DONE = 2;
 
 type User component {
     v int;

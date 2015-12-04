@@ -40,6 +40,11 @@ namespace semantic
         // Do nothing.
       }
 
+      void visit (ast_const_t& node)
+      {
+        // Do nothing.
+      }
+
       void visit (ast_initializer_t& node)
       {
         // Do nothing.
@@ -117,6 +122,13 @@ namespace semantic
       void visit (ast_empty_statement_t& node)
       {
         node.receiver_access = AccessNone;
+      }
+
+      void visit (ast_if_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        node.receiver_access = AccessNone;
+        process_list (node, &node);
       }
 
       void visit (ast_assign_statement_t& node)

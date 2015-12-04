@@ -146,19 +146,6 @@ struct typed_value_t
     fix ();
   }
 
-  typed_value_t (const Type::NamedType* type,
-                 size_t e)
-    : type (type)
-    , kind (VALUE)
-    , intrinsic_mutability (IMMUTABLE)
-    , dereference_mutability (IMMUTABLE)
-    , component_state (false)
-    , value (type, e)
-    , has_offset (false)
-  {
-    fix ();
-  }
-
   explicit typed_value_t (Callable* c);
 
   explicit typed_value_t (::Template* t);

@@ -528,11 +528,6 @@ value_t::print (std::ostream& out, const Type::Type* type) const
           type_not_reached(type);
         }
 
-        void visit (const Type::Enum& type)
-        {
-          out << " value=" << tv.ref (type);
-        }
-
         void visit (const Type::Bool& type)
         {
           out << " value=" << tv.ref (type);
