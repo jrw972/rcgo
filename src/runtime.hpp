@@ -85,12 +85,17 @@ namespace runtime
   {
     virtual ~Operation() { }
     virtual ControlAction execute (executor_base_t& exec) const = 0;
+    virtual void dump () const = 0;
   };
 
   struct ConvertStringToSliceOfBytes : public Operation
   {
     ConvertStringToSliceOfBytes (Operation* c) : child (c) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     Operation* const child;
   };
 
@@ -98,6 +103,12 @@ namespace runtime
   {
     Load (const Operation* c, const Type::Type* t) : child (c), type (t) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      std::cout << "Load(";
+      child->dump ();
+      std::cout << *type << ")\n";
+    }
     const Operation* const child;
     const Type::Type* const type;
   };
@@ -106,6 +117,14 @@ namespace runtime
   {
     IndexArray (const Location& l, Operation* b, Operation* i, const Type::Array* t) : location (l), base (b), index (i), type (t) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      std::cout << "IndexArray (";
+      base->dump ();
+      std::cout << ", ";
+      index->dump ();
+      std::cout << ")\n";
+    }
     Location const location;
     Operation* const base;
     Operation* const index;
@@ -116,6 +135,10 @@ namespace runtime
   {
     IndexSlice (const Location& l, const Operation* b, const Operation* i, const Type::Slice* t) : location (l), base (b), index (i), type (t) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     Location const location;
     const Operation* const base;
     const Operation* const index;
@@ -134,7 +157,10 @@ namespace runtime
       exec.stack ().push (value);
       return kContinue;
     }
-
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     T const value;
   };
 
@@ -151,6 +177,10 @@ namespace runtime
   {
     LogicOr (const Operation* l, const Operation* r) : left (l), right (r) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     const Operation* const left;
     const Operation* const right;
   };
@@ -159,6 +189,10 @@ namespace runtime
   {
     LogicAnd (const Operation* l, const Operation* r) : left (l), right (r) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     const Operation* const left;
     const Operation* const right;
   };
@@ -222,6 +256,10 @@ namespace runtime
   struct ListOperation : public Operation
   {
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     typedef std::vector<Operation*> ListType;
     ListType list;
   };
@@ -230,6 +268,10 @@ namespace runtime
   {
     FunctionCall (const Callable* c, Operation* o) : callable (c), arguments (o) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     const Callable* const callable;
     Operation* const arguments;
   };
@@ -238,6 +280,10 @@ namespace runtime
   {
     MethodCall (const Callable* c, Operation* r, Operation* o) : callable (c), receiver (r), arguments (o) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     const Callable* const callable;
     Operation* const receiver;
     Operation* const arguments;
@@ -247,6 +293,10 @@ namespace runtime
   {
     DynamicFunctionCall (const Type::Function* t, Operation* f, Operation* a) : type (t), func (f), arguments (a) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     const Type::Function* type;
     Operation* const func;
     Operation* const arguments;
@@ -256,6 +306,10 @@ namespace runtime
   {
     Instance (InstanceSymbol* i) : instance (i) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     InstanceSymbol* instance;
   };
 
@@ -263,6 +317,10 @@ namespace runtime
   {
     SetRestoreCurrentInstance (Operation* c, ptrdiff_t o) : child (c), receiver_offset (o) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     Operation* const child;
     ptrdiff_t const receiver_offset;
   };
@@ -271,6 +329,10 @@ namespace runtime
   {
     Clear (ptrdiff_t o, size_t s) : offset (o), size (s) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     ptrdiff_t const offset;
     size_t const size;
   };
@@ -283,15 +345,25 @@ namespace runtime
       assert (right != NULL);
     }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     Operation* const left;
     Operation* const right;
     size_t const size;
   };
 
+  Operation* make_add_assign (Operation* l, Operation* r, const Type::Type* t);
+
   struct Reference : public Operation
   {
     Reference (ptrdiff_t o) : offset (o) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      std::cout << "Reference offset=" << offset << '\n';
+    }
     ptrdiff_t const offset;
   };
 
@@ -299,6 +371,12 @@ namespace runtime
   {
     Select (Operation* b, ptrdiff_t o) : base (b), offset (o) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      std::cout << "Select (";
+      base->dump ();
+      std::cout << " offset = " << offset << ")\n";
+    }
     Operation* const base;
     ptrdiff_t const offset;
   };
@@ -307,6 +385,10 @@ namespace runtime
   {
     Return (Operation* c, const ParameterSymbol* r) : child (c), return_offset (r->offset ()), return_size (r->type->Size ()) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     Operation* const child;
     ptrdiff_t const return_offset;
     size_t const return_size;
@@ -316,9 +398,34 @@ namespace runtime
   {
     If (Operation* c, Operation* t, Operation* f) : condition (c), true_branch (t), false_branch (f) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     Operation* const condition;
     Operation* const true_branch;
     Operation* const false_branch;
+  };
+
+  struct While : public Operation
+  {
+    While (Operation* c, Operation* b) : condition (c), body (b) { }
+    virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
+    Operation* const condition;
+    Operation* const body;
+  };
+
+  struct ForIota : public Operation
+  {
+    virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
   };
 
   template <typename T>
@@ -332,6 +439,10 @@ namespace runtime
       exec.stack ().pop (x);
       exec.stack ().push (T () (x));
       return kContinue;
+    }
+    virtual void dump () const
+    {
+      unimplemented;
     }
     Operation* const child;
   };
@@ -376,6 +487,10 @@ namespace runtime
       exec.stack ().push (T () (x, y));
       return kContinue;
     }
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     Operation* const left;
     Operation* const right;
   };
@@ -394,6 +509,10 @@ namespace runtime
       exec.stack ().pop (y);
       exec.stack ().push (T () (x, y));
       return kContinue;
+    }
+    virtual void dump () const
+    {
+      unimplemented;
     }
     Operation* const left;
     Operation* const right;
@@ -514,6 +633,10 @@ namespace runtime
   {
     Change (Operation* r, ptrdiff_t o, Operation* b) : root (r), root_offset (o), body (b) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     Operation* const root;
     ptrdiff_t const root_offset;
     Operation* const body;
@@ -525,6 +648,10 @@ namespace runtime
   {
     Activate (Operation* pc, Operation* b) : port_calls (pc), body (b) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     Operation* const port_calls;
     Operation* const body;
   };
@@ -533,15 +660,38 @@ namespace runtime
   {
     PushPortCall (ptrdiff_t ro, ptrdiff_t po, Operation* o) : receiver_offset (ro), port_offset (po), args (o) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     ptrdiff_t const receiver_offset;
     ptrdiff_t const port_offset;
     Operation* const args;
+  };
+
+  struct IndexedPushPortCall : public Operation
+  {
+    IndexedPushPortCall (ptrdiff_t ro, ptrdiff_t po, Operation* i, Operation* o, const Type::Array* a) : receiver_offset (ro), port_offset (po), index (i), args (o), array_type (a) { }
+    virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
+    ptrdiff_t const receiver_offset;
+    ptrdiff_t const port_offset;
+    Operation* const index;
+    Operation* const args;
+    const Type::Array* const array_type;
   };
 
   struct Push : public Operation
   {
     Push (Operation* b) : body (b) { }
     virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
     Operation* const body;
   };
 
@@ -550,6 +700,10 @@ namespace runtime
     virtual ControlAction execute (executor_base_t& exec) const
     {
       return kContinue;
+    }
+    virtual void dump () const
+    {
+      unimplemented;
     }
   };
 }

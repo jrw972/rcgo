@@ -429,6 +429,13 @@ namespace Type
       this->real += 1;
       return *this;
     }
+
+    C64& operator+= (const C64& x)
+    {
+      this->real += x.real;
+      this->imag += x.imag;
+      return *this;
+    }
   };
   typedef Scalar<C64, Complex64String, true, false, false, kComplex64> Complex64;
 
@@ -458,6 +465,13 @@ namespace Type
     C128& operator++ ()
     {
       this->real += 1;
+      return *this;
+    }
+
+    C128& operator+= (const C128& x)
+    {
+      this->real += x.real;
+      this->imag += x.imag;
       return *this;
     }
   };

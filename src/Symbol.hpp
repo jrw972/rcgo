@@ -70,7 +70,6 @@ struct ParameterSymbol : public Symbol
     Receiver,
     ReceiverDuplicate,
     Return,
-    Iota,
   };
 
   ParameterSymbol (const std::string& id, ast::Node* dn, const Type::Type* t, Mutability im, Mutability dm, Kind k)
@@ -106,12 +105,6 @@ struct ParameterSymbol : public Symbol
                                         Mutability dereference_mutability)
   {
     return new ParameterSymbol (name, defining_node, type, intrinsic_mutability, dereference_mutability, Receiver);
-  }
-
-  static ParameterSymbol* makeIota ()
-  {
-    unimplemented;
-    //return new ParameterSymbol (parameter->name, parameter->defining_node, typed_value_t::make_ref (parameter->value), Iota);
   }
 
   ParameterSymbol* duplicate (Mutability dereferenceMutability)

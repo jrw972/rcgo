@@ -126,7 +126,17 @@ namespace semantic
         // Do nothing.
       }
 
+      void visit (ast_dimensioned_action_t& node)
+      {
+        // Do nothing.
+      }
+
       void visit (ast_reaction_t& node)
+      {
+        // Do nothing.
+      }
+
+      void visit (ast_dimensioned_reaction_t& node)
       {
         // Do nothing.
       }

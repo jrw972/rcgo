@@ -157,7 +157,18 @@ namespace semantic
         node.body ()->Accept (*this);
       }
 
+      void visit (ast_dimensioned_action_t& node)
+      {
+        node.precondition ()->Accept (*this);
+        node.body ()->Accept (*this);
+      }
+
       void visit (ast_reaction_t& node)
+      {
+        node.body ()->Accept (*this);
+      }
+
+      void visit (ast_dimensioned_reaction_t& node)
       {
         node.body ()->Accept (*this);
       }
@@ -208,6 +219,11 @@ namespace semantic
         node.VisitChildren (*this);
       }
 
+      void visit (ast_while_statement_t& node)
+      {
+        node.VisitChildren (*this);
+      }
+
       void visit (ast_empty_statement_t& node)
       {
         // Do nothing.
@@ -250,6 +266,16 @@ namespace semantic
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                            "assignment casts away +const or +foreign (E161)");
+          }
+      }
+
+      void visit (ast_add_assign_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        if (node.left ()->intrinsic_mutability != MUTABLE)
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "target of assignment is not mutable (E15)");
           }
       }
 
@@ -345,6 +371,12 @@ namespace semantic
       void visit (ast_push_port_call_expr_t& node)
       {
         node.args ()->Accept (*this);
+      }
+
+      void visit (ast_indexed_port_call_expr_t& node)
+      {
+        node.args ()->Accept (*this);
+        node.index ()->Accept (*this);
       }
     };
 

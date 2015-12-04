@@ -730,6 +730,8 @@ namespace ast
 
     ast_push_port_call_expr_t (unsigned int line, Node* identifier, Node* args)
       : Node (line, COUNT)
+      , field (NULL)
+      , receiver_parameter (NULL)
     {
       set (IDENTIFIER, identifier);
       set (ARGS, args);
@@ -766,6 +768,8 @@ namespace ast
                                   Node* index,
                                   Node * args)
       : Node (line, COUNT)
+      , field (NULL)
+      , receiver_parameter (NULL)
     {
       set (IDENTIFIER, identifier);
       set (INDEX, index);
@@ -793,8 +797,8 @@ namespace ast
     void Accept (ConstVisitor& visitor) const;
 
     field_t* field;
+    ParameterSymbol* receiver_parameter;
     const Type::Array* array_type;
-    runtime::Operation* index_op;
   };
 
   struct ast_select_expr_t : public Node
@@ -1262,8 +1266,8 @@ namespace ast
     void Accept (Visitor& visitor);
     void Accept (ConstVisitor& visitor) const;
 
-    Symbol* symbol;
-    typed_value_t limit;
+    VariableSymbol* symbol;
+    Type::Int::ValueType limit;
   };
 
   struct ast_action_t : public Node
@@ -1341,6 +1345,7 @@ namespace ast
       : Node (line, COUNT)
       , action (NULL)
       , type (NULL)
+      , receiver_symbol (NULL)
     {
       set (DIMENSION, dimension);
       set (RECEIVER, receiver);
@@ -1383,6 +1388,7 @@ namespace ast
 
     decl::Action* action;
     const Type::Type* type;
+    ParameterSymbol* receiver_symbol;
   };
 
   struct ast_bind_t : public Node

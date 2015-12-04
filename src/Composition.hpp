@@ -78,10 +78,10 @@ namespace Composition
 
   struct Action : public Node
   {
-    Action (Instance* i, decl::Action* a, Type::Uint::ValueType p = 0);
+    Action (Instance* i, decl::Action* a, Type::Int::ValueType p = 0);
     Instance* const instance;
     decl::Action* const action;
-    Type::Uint::ValueType const iota;
+    Type::Int::ValueType const iota;
     virtual size_t OutgoingCount () const;
     virtual Node* OutgoingNode (size_t i) const;
     const InstanceSet& GetInstanceSet ();
@@ -91,31 +91,31 @@ namespace Composition
     }
     NodesType nodes;
   private:
-    static std::string getname (Instance* i, decl::Action* a, Type::Uint::ValueType p);
+    static std::string getname (Instance* i, decl::Action* a, Type::Int::ValueType p);
   };
 
   struct ReactionKey
   {
-    ReactionKey (Instance* i, const reaction_t* a, Type::Uint::ValueType p = 0);
+    ReactionKey (Instance* i, const reaction_t* a, Type::Int::ValueType p = 0);
     bool operator< (const ReactionKey& other) const;
     Instance* instance;
     const reaction_t* reaction;
-    Type::Uint::ValueType iota;
+    Type::Int::ValueType iota;
   };
 
   struct Reaction : public Node
   {
-    Reaction (Instance* i, reaction_t* a, Type::Uint::ValueType p = 0);
+    Reaction (Instance* i, reaction_t* a, Type::Int::ValueType p = 0);
     virtual size_t OutgoingCount () const;
     virtual Node* OutgoingNode (size_t i) const;
     const InstanceSet& GetInstanceSet ();
     Instance* const instance;
     reaction_t* const reaction;
-    Type::Uint::ValueType const iota;
+    Type::Int::ValueType const iota;
     NodesType nodes;
     std::vector<PushPort*> push_ports;
   private:
-    static std::string getname (Instance* i, reaction_t* a, Type::Uint::ValueType p);
+    static std::string getname (Instance* i, reaction_t* a, Type::Int::ValueType p);
   };
 
   struct GetterKey

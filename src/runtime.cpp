@@ -2476,6 +2476,12 @@ namespace runtime
       exec.stack ().push (out);
       return kContinue;
     }
+    virtual void dump () const
+    {
+      std::cout << "ConvertToInt(";
+      child->dump ();
+      std::cout << ")\n";
+    }
     const Operation* const child;
   };
 
@@ -2598,6 +2604,10 @@ namespace runtime
       Type::Uint::ValueType out = in;
       exec.stack ().push (out);
       return kContinue;
+    }
+    virtual void dump () const
+    {
+      unimplemented;
     }
     const Operation* const child;
   };
@@ -2918,6 +2928,72 @@ namespace runtime
     return kContinue;
   }
 
+  template <typename T>
+  struct AddAssign : public Operation
+  {
+    AddAssign (Operation* l, Operation* r) : left (l), right (r)
+    {
+      assert (left != NULL);
+      assert (right != NULL);
+    }
+    ControlAction
+    execute (executor_base_t& exec) const
+    {
+      left->execute (exec);
+      T* ptr = static_cast<T*> (exec.stack ().pop_pointer ());
+      right->execute (exec);
+      T v;
+      exec.stack ().pop (v);
+      *ptr += v;
+      return kContinue;
+    }
+    virtual void dump () const
+    {
+      unimplemented;
+    }
+    Operation* const left;
+    Operation* const right;
+  };
+
+  Operation* make_add_assign (Operation* l, Operation* r, const Type::Type* t)
+  {
+    switch (t->underlying_kind ())
+      {
+      case kUint8:
+        return new AddAssign<Uint8::ValueType> (l, r);
+      case kUint16:
+        return new AddAssign<Uint16::ValueType> (l, r);
+      case kUint32:
+        return new AddAssign<Uint32::ValueType> (l, r);
+      case kUint64:
+        return new AddAssign<Uint64::ValueType> (l, r);
+      case kInt8:
+        return new AddAssign<Int8::ValueType> (l, r);
+      case kInt16:
+        return new AddAssign<Int16::ValueType> (l, r);
+      case kInt32:
+        return new AddAssign<Int32::ValueType> (l, r);
+      case kInt64:
+        return new AddAssign<Int64::ValueType> (l, r);
+      case kFloat32:
+        return new AddAssign<Float32::ValueType> (l, r);
+      case kFloat64:
+        return new AddAssign<Float64::ValueType> (l, r);
+      case kComplex64:
+        return new AddAssign<Complex64::ValueType> (l, r);
+      case kComplex128:
+        return new AddAssign<Complex128::ValueType> (l, r);
+      case kUint:
+        return new AddAssign<Uint::ValueType> (l, r);
+      case kInt:
+        return new AddAssign<Int::ValueType> (l, r);
+      case kUintptr:
+        return new AddAssign<Uintptr::ValueType> (l, r);
+      default:
+        not_reached;
+      }
+  }
+
   ControlAction
   Reference::execute (executor_base_t& exec) const
   {
@@ -2939,10 +3015,10 @@ namespace runtime
   IndexArray::execute (executor_base_t& exec) const
   {
     base->execute (exec);
+    void* ptr = exec.stack ().pop_pointer ();
     index->execute (exec);
     Type::Int::ValueType i;
     exec.stack ().pop (i);
-    void* ptr = exec.stack ().pop_pointer ();
     if (i < 0 || i >= type->dimension)
       {
         error_at_line (-1, 0, location.File.c_str (), location.Line,
@@ -2973,6 +3049,28 @@ namespace runtime
     else
       {
         return false_branch->execute (exec);
+      }
+  }
+
+  ControlAction
+  While::execute (executor_base_t& exec) const
+  {
+    for (;;)
+      {
+        condition->execute (exec);
+        Bool::ValueType c;
+        exec.stack ().pop (c);
+        if (c)
+          {
+            if (body->execute (exec) == kReturn)
+              {
+                return kReturn;
+              }
+          }
+        else
+          {
+            return kContinue;
+          }
       }
   }
 
@@ -3022,6 +3120,10 @@ namespace runtime
       T* ptr = static_cast<T*> (exec.stack ().pop_pointer ());
       ++*ptr;
       return kContinue;
+    }
+    virtual void dump () const
+    {
+      unimplemented;
     }
     Operation* const child;
   };
@@ -3085,8 +3187,7 @@ namespace runtime
     return kReturn;
   }
 
-  ControlAction
-  PushPortCall::execute (executor_base_t& exec) const
+  static void push_port_call (executor_base_t& exec, Operation* args, ptrdiff_t receiver_offset, ptrdiff_t port_offset, ptrdiff_t array_offset)
   {
     // TODO:  The port knows the size of the arguments.  No need to measure.
     // Push all of the arguments first and measure their size.
@@ -3096,7 +3197,7 @@ namespace runtime
     ptrdiff_t arguments_size = top_after - top_before; // Assumes stack grows up.
 
     // Find the port to activate.
-    port_t* port = *reinterpret_cast<port_t**> (static_cast<char*> (exec.stack ().read_pointer (receiver_offset)) + port_offset);
+    port_t* port = *reinterpret_cast<port_t**> (static_cast<char*> (exec.stack ().read_pointer (receiver_offset)) + port_offset + array_offset);
 
     char* base_pointer = exec.stack ().base_pointer ();
 
@@ -3128,7 +3229,22 @@ namespace runtime
 
         port = port->next;
       }
+  }
 
+  ControlAction
+  PushPortCall::execute (executor_base_t& exec) const
+  {
+    push_port_call (exec, args, receiver_offset, port_offset, 0);
+    return kContinue;
+  }
+
+  ControlAction
+  IndexedPushPortCall::execute (executor_base_t& exec) const
+  {
+    index->execute (exec);
+    Int::ValueType idx;
+    exec.stack ().pop (idx);
+    push_port_call (exec, args, receiver_offset, port_offset, idx * array_type->UnitSize ());
     return kContinue;
   }
 
@@ -3138,6 +3254,12 @@ namespace runtime
     ControlAction ca = body->execute (exec);
     exec.push ();
     return ca;
+  }
+
+  ControlAction
+  ForIota::execute (executor_base_t& exec) const
+  {
+    unimplemented;
   }
 }
 

@@ -105,7 +105,7 @@ namespace Composition
 
   Action::Action (Instance* i,
                   decl::Action* a,
-                  Type::Uint::ValueType p)
+                  Type::Int::ValueType p)
     : Node (getname (i, a, p))
     , instance (i)
     , action (a)
@@ -150,7 +150,7 @@ namespace Composition
   }
 
   std::string
-  Action::getname (Instance* i, decl::Action* a, Type::Uint::ValueType p)
+  Action::getname (Instance* i, decl::Action* a, Type::Int::ValueType p)
   {
     std::stringstream str;
     str << i->name << '.' << a->name;
@@ -161,7 +161,7 @@ namespace Composition
     return str.str ();
   }
 
-  ReactionKey::ReactionKey (Instance* i, const reaction_t* a, Type::Uint::ValueType p)
+  ReactionKey::ReactionKey (Instance* i, const reaction_t* a, Type::Int::ValueType p)
     : instance (i)
     , reaction (a)
     , iota (p)
@@ -183,7 +183,7 @@ namespace Composition
 
   Reaction::Reaction (Instance* i,
                       reaction_t* a,
-                      Type::Uint::ValueType p)
+                      Type::Int::ValueType p)
     : Node (getname (i, a, p))
     , instance (i)
     , reaction (a)
@@ -226,7 +226,7 @@ namespace Composition
   }
 
   std::string
-  Reaction::getname (Instance* i, reaction_t* a, Type::Uint::ValueType p)
+  Reaction::getname (Instance* i, reaction_t* a, Type::Int::ValueType p)
   {
     std::stringstream str;
     str << i->name << '.' << a->name;
@@ -507,12 +507,12 @@ namespace Composition
               Composer& table;
               Executor exec;
 
-              visitor (Composer& t, size_t receiver_address) : table (t)
+              visitor (Composer& t, size_t receiver_address, const bind_t* b) : table (t)
               {
                 // Build a stack frame.
                 exec.stack ().push_pointer(reinterpret_cast<void*> (receiver_address));
                 exec.stack ().push_pointer (NULL);
-                exec.stack ().setup (0);
+                exec.stack ().setup (b->memory_model.LocalsSize ());
               }
 
               void default_action (const Node& node)
@@ -522,16 +522,22 @@ namespace Composition
 
               void visit (const ast_if_statement_t& node)
               {
-                unimplemented;
-                // static_value_t c = EvaluateStatic (node.condition (), memory);
-                // if (c.value != 0)
-                //   {
-                //     node.true_branch ()->Accept (*this);
-                //   }
-                // else
-                //   {
-                //     node.false_branch ()->Accept (*this);
-                //   }
+                node.condition ()->operation->execute (exec);
+                if (node.condition ()->expression_kind == kVariable)
+                  {
+                    void* ptr = exec.stack ().pop_pointer ();
+                    exec.stack ().load (ptr, node.condition ()->type->Size ());
+                  }
+                Bool::ValueType c;
+                exec.stack ().pop (c);
+                if (c)
+                  {
+                    node.true_branch ()->Accept (*this);
+                  }
+                else
+                  {
+                    node.false_branch ()->Accept (*this);
+                  }
               }
 
               void visit (const ast_list_statement_t& node)
@@ -541,14 +547,14 @@ namespace Composition
 
               void visit (const ast_for_iota_statement_t& node)
               {
-                unimplemented;
-                // for (Int::ValueType idx = 0, limit = node.limit.integral_value ();
-                //      idx != limit;
-                //      ++idx)
-                //   {
-                //     memory.set_value_at_offset (node.symbol->offset (), idx);
-                //     node.body ()->Accept (*this);
-                //   }
+                for (Int::ValueType idx = 0, limit = node.limit;
+                     idx != limit;
+                     ++idx)
+                  {
+                    exec.stack ().push (idx);
+                    exec.stack ().move (node.symbol->offset (), sizeof (idx));
+                    node.body ()->Accept (*this);
+                  }
               }
 
               void visit (const ast_bind_t& node)
@@ -556,7 +562,7 @@ namespace Composition
                 node.body ()->Accept (*this);
               }
 
-              void bind (ast::Node* left, ast::Node* right, static_value_t param = static_value_t ())
+              void bind (ast::Node* left, ast::Node* right, Int::ValueType param = 0)
               {
                 left->operation->execute (exec);
                 void* port = exec.stack ().pop_pointer ();
@@ -574,7 +580,7 @@ namespace Composition
                 InstancesType::const_iterator i_pos = table.instances.find (reinterpret_cast<size_t> (reaction_component));
                 assert (i_pos != table.instances.end ());
                 Instance* i = i_pos->second;
-                ReactionsType::const_iterator r_pos = table.reactions.find (ReactionsType::key_type (i, reaction, param.value));
+                ReactionsType::const_iterator r_pos = table.reactions.find (ReactionsType::key_type (i, reaction, param));
                 assert (r_pos != table.reactions.end ());
                 Reaction* r = r_pos->second;
                 pp->reactions.push_back (r);
@@ -588,9 +594,15 @@ namespace Composition
 
               void visit (const ast_bind_push_port_param_statement_t& node)
               {
-                unimplemented;
-                // static_value_t param = EvaluateStatic (node.param (), memory);
-                // bind (node.left (), node.right (), param);
+                node.param ()->operation->execute (exec);
+                if (node.param ()->expression_kind == kVariable)
+                  {
+                    void* ptr = exec.stack ().pop_pointer ();
+                    exec.stack ().load (ptr, node.param ()->type->Size ());
+                  }
+                Int::ValueType idx;
+                exec.stack ().pop (idx);
+                bind (node.left (), node.right (), idx);
               }
 
               void visit (const ast_bind_pull_port_statement_t& node)
@@ -613,7 +625,7 @@ namespace Composition
                 pp->getters.push_back (g);
               }
             };
-            visitor v (*this, instance_pos->first);
+            visitor v (*this, instance_pos->first, *bind_pos);
             (*bind_pos)->node ()->Accept (v);
           }
       }
@@ -691,10 +703,13 @@ namespace Composition
       , getter (NULL)
       , activation (NULL)
     {
-      // TODO:  IOTA.
-      exec.stack ().push_pointer (reinterpret_cast<void*> (a->instance->address));
+      exec.stack ().push_pointer (reinterpret_cast<void*> (action->instance->address));
+      if (action->action->has_dimension ())
+        {
+          exec.stack ().push (action->iota);
+        }
       exec.stack ().push_pointer (NULL);
-      exec.stack ().setup (0);
+      exec.stack ().setup (action->action->memory_model.LocalsSize ());
     }
 
     ElaborationVisitor (Composer& t, Reaction* r)
@@ -704,11 +719,14 @@ namespace Composition
       , getter (NULL)
       , activation (NULL)
     {
-      // TODO:  IOTA.
       exec.stack ().push_pointer (reinterpret_cast<void*> (reaction->instance->address));
+      if (reaction->reaction->has_dimension ())
+        {
+          exec.stack ().push (reaction->iota);
+        }
       exec.stack ().reserve (reaction->reaction->signature ()->Size ());
       exec.stack ().push_pointer (NULL);
-      exec.stack ().setup (0);
+      exec.stack ().setup (reaction->reaction->locals_size ());
     }
 
     ElaborationVisitor (Composer& t, Getter* g)
@@ -721,31 +739,8 @@ namespace Composition
       exec.stack ().push_pointer (reinterpret_cast<void*> (getter->instance->address));
       exec.stack ().reserve (getter->getter->signature ()->Size ());
       exec.stack ().push_pointer (NULL);
-      exec.stack ().setup (0);
-    }
-
-    void populateMemory (static_memory_t& memory)
-    {
-      if (action != NULL)
-        {
-          memory.set_value_at_offset (action->action->memory_model.ReceiverOffset (), action->instance->address);
-          if (action->action->has_dimension ())
-            {
-              memory.set_value_at_offset (action->action->memory_model.IotaOffset (), action->iota);
-            }
-        }
-      else if (reaction != NULL)
-        {
-          memory.set_value_at_offset (reaction->reaction->receiver->offset (), reaction->instance->address);
-          if (reaction->reaction->has_dimension ())
-            {
-              memory.set_value_at_offset (reaction->reaction->iota->offset (), reaction->iota);
-            }
-        }
-      else
-        {
-          not_reached;
-        }
+      std::cout << "Getter locals " << getter->getter->locals_size () << '\n';
+      exec.stack ().setup (getter->getter->locals_size ());
     }
 
     Instance* get_instance () const
@@ -841,26 +836,27 @@ namespace Composition
 
     void visit (const ast_indexed_port_call_expr_t& node)
     {
-      static_memory_t memory;
-      populateMemory (memory);
-      static_value_t index = EvaluateStatic (node.index (), memory);
-      if (index.kind == static_value_t::STACK_ADDRESS)
+      node.index ()->operation->execute (exec);
+      if (node.index ()->expression_kind == kVariable)
         {
-          index = static_value_t::implicit_dereference (index, memory);
+          void* ptr = exec.stack ().pop_pointer ();
+          exec.stack ().load (ptr, node.index ()->type->Size ());
         }
-      else
-        {
-          unimplemented;
-        }
-      assert (index.kind == static_value_t::VALUE);
 
-      if (static_cast<ssize_t> (index.value) >= node.array_type->dimension)
+      Int::ValueType idx;
+      exec.stack ().pop (idx);
+      if (idx < 0)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "port index out of bounds (E100)");
+                         "port index is negative (E100)");
+        }
+      if (idx >= node.array_type->dimension)
+        {
+          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                         "port index is negative (E75)");
         }
 
-      size_t port = activation->instance->address + node.field->offset + index.value * node.array_type->UnitSize ();
+      size_t port = activation->instance->address + node.field->offset + idx * node.array_type->UnitSize ();
 
       // Find what is bound to this port.
       Composer::PushPortsType::const_iterator port_pos = table.push_ports.find (port);
@@ -881,7 +877,7 @@ namespace Composition
               if (node.expr ()->At (0)->expression_kind == kVariable &&
                   type_dereference (node.expr ()->At (0)->type))
                 {
-                  void * ptr = exec.stack ().pop_pointer ();
+                  void* ptr = exec.stack ().pop_pointer ();
                   exec.stack ().load (ptr, node.expr ()->At (0)->type->Size ());
                 }
               size_t inst_addr = reinterpret_cast<size_t> (exec.stack ().pop_pointer ());
@@ -1026,7 +1022,7 @@ namespace Composition
             reaction_t* reaction = *pos;
             if (reaction->has_dimension ())
               {
-                for (Type::Uint::ValueType idx = 0; idx != reaction->dimension (); ++idx)
+                for (Type::Int::ValueType idx = 0; idx != reaction->dimension (); ++idx)
                   {
                     reactions.insert (std::make_pair (ReactionKey (instance, reaction, idx), new Reaction (instance, reaction, idx)));
                   }

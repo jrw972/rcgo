@@ -74,7 +74,22 @@ namespace semantic
         node.body ()->Accept (v);
       }
 
+      void visit (ast_dimensioned_action_t& node)
+      {
+        Visitor v (*this);
+        v.context = Action;
+        node.precondition ()->Accept (v);
+        node.body ()->Accept (v);
+      }
+
       void visit (ast_reaction_t& node)
+      {
+        Visitor v (*this);
+        v.context = Reaction;
+        node.body ()->Accept (v);
+      }
+
+      void visit (ast_dimensioned_reaction_t& node)
       {
         Visitor v (*this);
         v.context = Reaction;
@@ -116,6 +131,11 @@ namespace semantic
         node.VisitChildren (*this);
       }
 
+      void visit (ast_while_statement_t& node)
+      {
+        node.VisitChildren (*this);
+      }
+
       void visit (ast_var_statement_t& node)
       {
         node.expression_list ()->Accept (*this);
@@ -127,6 +147,11 @@ namespace semantic
       }
 
       void visit (ast_assign_statement_t& node)
+      {
+        node.VisitChildren (*this);
+      }
+
+      void visit (ast_add_assign_statement_t& node)
       {
         node.VisitChildren (*this);
       }
@@ -305,6 +330,12 @@ namespace semantic
 
       void visit (ast_push_port_call_expr_t& node)
       {
+        node.args ()->Accept (*this);
+      }
+
+      void visit (ast_indexed_port_call_expr_t& node)
+      {
+        node.index ()->Accept (*this);
         node.args ()->Accept (*this);
       }
     };

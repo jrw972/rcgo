@@ -282,7 +282,10 @@ namespace ast
       }
       void visit (const ast_indexed_port_call_expr_t& node)
       {
-        unimplemented;
+        print_indent (node);
+        out << "indexed_port_call_expr";
+        print_common (node);
+        print_children (node);
       }
       void visit (const ast_list_expr_t& node)
       {

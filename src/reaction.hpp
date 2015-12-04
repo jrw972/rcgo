@@ -16,7 +16,7 @@ public:
     , reaction_type (rt)
   { }
 
-  reaction_t (ast::Node* a_node, Symbol* a_receiver, ast::Node* body_, const std::string& name_, const Type::Method* rt, Symbol* a_iota, Type::Uint::ValueType dimension)
+  reaction_t (ast::Node* a_node, Symbol* a_receiver, ast::Node* body_, const std::string& name_, const Type::Method* rt, Symbol* a_iota, Type::Int::ValueType dimension)
     : node (a_node)
     , receiver (a_receiver)
     , body (body_)
@@ -38,7 +38,7 @@ private:
 public:
   Symbol* const iota;
 private:
-  Type::Uint::ValueType dimension_;
+  Type::Int::ValueType dimension_;
 public:
   const Type::Method* const reaction_type;
 
@@ -64,7 +64,7 @@ public:
   }
   size_t locals_size () const
   {
-    unimplemented;
+    return memory_model.LocalsSize ();
   }
   virtual const Type::Signature* signature () const
   {
@@ -78,7 +78,7 @@ public:
     return has_dimension_;
   }
 
-  Type::Uint::ValueType dimension () const
+  Type::Int::ValueType dimension () const
   {
     assert (has_dimension_);
     return dimension_;

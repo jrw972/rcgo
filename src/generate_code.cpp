@@ -68,7 +68,26 @@ namespace  code
       node.body ()->operation = new SetRestoreCurrentInstance (node.body ()->operation, node.action->memory_model.ReceiverOffset ());
     }
 
+    void visit (ast_dimensioned_action_t& node)
+    {
+      node.precondition ()->Accept (*this);
+      Operation* p = node.precondition ()->operation;
+      if (node.precondition ()->expression_kind == kVariable)
+        {
+          p = new Load (p, node.precondition ()->type);
+        }
+      node.precondition ()->operation = new SetRestoreCurrentInstance (p, node.action->memory_model.ReceiverOffset ());
+      node.body ()->Accept (*this);
+      node.body ()->operation = new SetRestoreCurrentInstance (node.body ()->operation, node.action->memory_model.ReceiverOffset ());
+    }
+
     void visit (ast_reaction_t& node)
+    {
+      node.body ()->Accept (*this);
+      node.operation = new SetRestoreCurrentInstance (node.body ()->operation, node.reaction->memory_model.ReceiverOffset ());
+    }
+
+    void visit (ast_dimensioned_reaction_t& node)
     {
       node.body ()->Accept (*this);
       node.operation = new SetRestoreCurrentInstance (node.body ()->operation, node.reaction->memory_model.ReceiverOffset ());
@@ -150,6 +169,23 @@ namespace  code
         }
     }
 
+    void visit (ast_while_statement_t& node)
+    {
+      node.VisitChildren (*this);
+      Operation* c = node.condition ()->operation;
+      if (node.condition ()->expression_kind == kVariable)
+        {
+          c = new Load (c, node.condition ()->type);
+        }
+      node.operation = new While (c, node.body ()->operation);
+    }
+
+    void visit (ast_for_iota_statement_t& node)
+    {
+      node.body ()->Accept (*this);
+      node.operation = new ForIota ();
+    }
+
     void visit (ast_var_statement_t& node)
     {
       ListOperation* op = new ListOperation ();
@@ -202,6 +238,18 @@ namespace  code
       node.operation = new Assign (left, right, node.left ()->type);
     }
 
+    void visit (ast_add_assign_statement_t& node)
+    {
+      node.VisitChildren (*this);
+      Operation* left = node.left ()->operation;
+      Operation* right = node.right ()->operation;
+      if (node.right ()->expression_kind == kVariable)
+        {
+          right = new Load (right, node.right ()->type);
+        }
+      node.operation = make_add_assign (left, right, node.left ()->type);
+    }
+
     void visit (ast_increment_statement_t& node)
     {
       node.VisitChildren (*this);
@@ -234,6 +282,11 @@ namespace  code
     }
 
     void visit (ast_bind_push_port_statement_t& node)
+    {
+      node.VisitChildren (*this);
+    }
+
+    void visit (ast_bind_push_port_param_statement_t& node)
     {
       node.VisitChildren (*this);
     }
@@ -644,6 +697,19 @@ namespace  code
       node.args ()->Accept (*this);
       node.operation = new PushPortCall (node.receiver_parameter->offset (), node.field->offset, node.args ()->operation);
     }
+
+    void visit (ast_indexed_port_call_expr_t& node)
+    {
+      node.index ()->Accept (*this);
+      Operation* i = node.index ()->operation;
+      if (node.index ()->expression_kind == kVariable)
+        {
+          i = new Load (i, node.index ()->type);
+        }
+      node.args ()->Accept (*this);
+      node.operation = new IndexedPushPortCall (node.receiver_parameter->offset (), node.field->offset, i, node.args ()->operation, node.array_type);
+    }
+
   };
 
   void generate_code (ast::Node* root)

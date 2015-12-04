@@ -61,7 +61,7 @@ namespace semantic
         }
     }
 
-    static void bind (Node& node, ast::Node* port_node, ast::Node* reaction_node)
+    static const reaction_t* bind (Node& node, ast::Node* port_node, ast::Node* reaction_node)
     {
       const Type::Function* push_port_type = Type::type_cast<Type::Function> (port_node->type);
 
@@ -87,6 +87,8 @@ namespace semantic
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                          "cannot bind %s to %s (E40)", push_port_type->ToString ().c_str (), reaction_type->ToString ().c_str ());
         }
+
+      return static_cast<const reaction_t*> (reaction_node->callable);
     }
 
     static void check_condition (Node* node)
@@ -100,6 +102,7 @@ namespace semantic
                          "condition is not boolean (E155)");
         }
       convert (node, condition->DefaultType ());
+      require_value_or_variable (node);
     }
 
     // Select the type for == and !=.
@@ -1202,8 +1205,28 @@ namespace semantic
       {
         receiver_parameter = node.receiver_symbol;
         node.precondition ()->Accept (*this);
-        check_condition (node.precondition_ref ());
-        require_value_or_variable (node.precondition ());
+        check_condition (node.precondition ());
+        node.body ()->Accept (*this);
+        node.action->precondition = node.precondition ();
+
+        if (node.precondition ()->value.present)
+          {
+            if (node.precondition ()->value.bool_value_)
+              {
+                node.action->precondition_kind = decl::Action::StaticTrue;
+              }
+            else
+              {
+                node.action->precondition_kind = decl::Action::StaticFalse;
+              }
+          }
+      }
+
+      void visit (ast_dimensioned_action_t& node)
+      {
+        receiver_parameter = node.receiver_symbol;
+        node.precondition ()->Accept (*this);
+        check_condition (node.precondition ());
         node.body ()->Accept (*this);
         node.action->precondition = node.precondition ();
 
@@ -1221,6 +1244,12 @@ namespace semantic
       }
 
       void visit (ast_reaction_t& node)
+      {
+        receiver_parameter = node.reaction->reaction_type->receiver_parameter;
+        node.body ()->Accept (*this);
+      }
+
+      void visit (ast_dimensioned_reaction_t& node)
       {
         receiver_parameter = node.reaction->reaction_type->receiver_parameter;
         node.body ()->Accept (*this);
@@ -1277,7 +1306,21 @@ namespace semantic
       {
         node.VisitChildren (*this);
         check_condition (node.condition ());
-        require_value_or_variable (node.condition ());
+      }
+
+      void visit (ast_while_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        check_condition (node.condition ());
+      }
+
+      void visit (ast_for_iota_statement_t& node)
+      {
+        const std::string& identifier = ast_get_identifier (node.identifier ());
+        node.limit = process_array_dimension (node.limit_node ());
+        node.symbol = new VariableSymbol (identifier, node.identifier (), Int::Instance (), IMMUTABLE, IMMUTABLE);
+        enter_symbol (node, node.symbol);
+        node.body ()->Accept (*this);
       }
 
       void visit (ast_change_statement_t& node)
@@ -1425,7 +1468,6 @@ namespace semantic
       void visit (ast_assign_statement_t& node)
       {
         node.VisitChildren (*this);
-
         const Type::Type* to = node.left ()->type;
         const Type::Type*& from = node.right ()->type;
         value_t& val = node.right ()->value;
@@ -1441,13 +1483,38 @@ namespace semantic
         require_value_or_variable (node.right ());
       }
 
+      void visit (ast_add_assign_statement_t& node)
+      {
+        node.VisitChildren (*this);
+
+        const Type::Type* to = node.left ()->type;
+        const Type::Type*& from = node.right ()->type;
+        value_t& val = node.right ()->value;
+        if (!arithmetic (to))
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "+= cannot be applied to %s (E200)",
+                           to->ToString ().c_str ());
+          }
+        if (!assignable (from, val, to))
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "cannot assign value of type %s to variable of type %s (E76)",
+                           from->ToString ().c_str (),
+                           to->ToString ().c_str ());
+          }
+        convert (node.right (), to);
+        require_variable (node.left ());
+        require_value_or_variable (node.right ());
+      }
+
       void visit (ast_increment_statement_t& node)
       {
         node.VisitChildren (*this);
         if (!arithmetic (node.child ()->type))
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "++ cannot be applied to %s (E200)",
+                           "++ cannot be applied to %s (E77)",
                            node.child ()->type->ToString ().c_str ());
           }
         require_variable (node.child ());
@@ -1457,6 +1524,19 @@ namespace semantic
       {
         node.VisitChildren (*this);
         bind (node, node.left (), node.right_ref ());
+      }
+
+      void visit (ast_bind_push_port_param_statement_t& node)
+      {
+        node.VisitChildren (*this);
+        const reaction_t* reaction = bind (node, node.left (), node.right_ref ());
+        if (!reaction->has_dimension ())
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "parameter specified for non-parameterized reaction (E41)");
+          }
+        Type::Int::ValueType dimension = reaction->dimension ();
+        check_array_index (reaction->reaction_type->GetArray (dimension), node.param ());
       }
 
       void visit (ast_bind_pull_port_statement_t& node)
@@ -1551,6 +1631,57 @@ namespace semantic
           }
       }
 
+      void check_array_index (const Array* array_type, Node* index)
+      {
+        const Type::Type*& index_type = index->type;
+        value_t& index_value = index->value;
+
+        if (is_untyped_numeric (index_type))
+          {
+            if (!index_value.representable (index_type, Int::Instance ()))
+              {
+                error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
+                               "array index is not an integer (E20)");
+              }
+            index_value.convert (index_type, Int::Instance ());
+            index_type = Int::Instance ();
+            Int::ValueType idx = index_value.int_value_;
+            if (idx < 0)
+              {
+                error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
+                               "array index is negative (E162)");
+              }
+            if (idx >= array_type->dimension)
+              {
+                error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
+                               "array index is out of bounds (E163)");
+              }
+          }
+        else if (is_integral (index_type))
+          {
+            if (index_value.present)
+              {
+                Int::ValueType idx = index_value.to_int (index_type);
+                if (idx < 0)
+                  {
+                    error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
+                                   "array index is negative (E164)");
+                  }
+                if (idx >= array_type->dimension)
+                  {
+                    error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
+                                   "array index is out of bounds (E165)");
+                  }
+              }
+          }
+        else
+          {
+            error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
+                           "array index is not an integer (E203)");
+          }
+        require_value_or_variable (index);
+      }
+
       void visit (ast_index_expr_t& node)
       {
         node.VisitChildren (*this);
@@ -1562,53 +1693,8 @@ namespace semantic
         node.array_type = type_cast<Array> (base_type->UnderlyingType ());
         if (node.array_type != NULL)
           {
-            if (is_untyped_numeric (index_type))
-              {
-                if (!index_value.representable (index_type, Int::Instance ()))
-                  {
-                    error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "array index is not an integer (E20)");
-                  }
-                index_value.convert (index_type, Int::Instance ());
-                index_type = Int::Instance ();
-                Int::ValueType idx = index_value.int_value_;
-                if (idx < 0)
-                  {
-                    error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
-                                   "array index is negative (E162)");
-                  }
-                if (idx >= node.array_type->dimension)
-                  {
-                    error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
-                                   "array index is out of bounds (E163)");
-                  }
-              }
-            else if (is_integral (index_type))
-              {
-                if (index_value.present)
-                  {
-                    Int::ValueType idx = index_value.to_int (index_type);
-                    if (idx < 0)
-                      {
-                        error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
-                                       "array index is negative (E164)");
-                      }
-                    if (idx >= node.array_type->dimension)
-                      {
-                        error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
-                                       "array index is out of bounds (E165)");
-                      }
-                  }
-              }
-            else
-              {
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "array index is not an integer (E203)");
-              }
-
+            check_array_index (node.array_type, node.index ());
             require_value_or_variable (node.base ());
-            require_value_or_variable (node.index ());
-
             node.type = node.array_type->Base ();
             node.expression_kind = node.base ()->expression_kind;
             return;
@@ -1692,6 +1778,39 @@ namespace semantic
         check_types_arguments (node.args (), push_port_type->GetSignature ());
         require_value_or_variable_list (node.args ());
       }
+
+      void visit (ast_indexed_port_call_expr_t& node)
+      {
+        node.receiver_parameter = receiver_parameter;
+        const std::string& port_identifier = ast_get_identifier (node.identifier ());
+        const Type::Type* this_type = receiver_parameter->type;
+        node.field = this_type->select_field (port_identifier);
+        if (node.field == NULL)
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "no port named %s (E74)", port_identifier.c_str ());
+          }
+        node.array_type = Type::type_cast<Type::Array> (node.field->type);
+        if (node.array_type == NULL)
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "%s is not an array of ports (E16)", port_identifier.c_str ());
+          }
+        const Type::Function* push_port_type = Type::type_cast<Type::Function> (node.array_type->Base ());
+        if (push_port_type == NULL || push_port_type->function_kind != Type::Function::PUSH_PORT)
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "%s is not an array of ports (E17)", port_identifier.c_str ());
+          }
+
+        node.index ()->Accept (*this);
+        check_array_index (node.array_type, node.index ());
+
+        node.args ()->Accept (*this);
+        check_types_arguments (node.args (), push_port_type->GetSignature ());
+        require_value_or_variable_list (node.args ());
+      }
+
     };
   }
 

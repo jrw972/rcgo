@@ -37,7 +37,6 @@ Location.hpp Location.cpp \
 MemoryModel.hpp MemoryModel.cpp \
 parser.hpp parser.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
-ProcessDeclarations.cpp \
 process_definitions.cpp \
 process_type_spec.cpp \
 process_functions_and_methods.hpp process_functions_and_methods.cpp \

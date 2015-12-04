@@ -244,9 +244,6 @@ void CheckForForeignSafe (const Type::Signature* signature, const ParameterSymbo
 // Process a type specification.
 const Type::Type * process_type (ast::Node* node, bool force);
 
-/* Process all declarations (non-code). */
-void ProcessDeclarations (ast::Node* node);
-
 // Type check the expression, insert an implicit dereference if necessary, and convert to the given type if necessary.
 typed_value_t
 CheckAndImplicitlyDereferenceAndConvert (ast::Node*& expr, const Type::Type* type);
@@ -264,9 +261,6 @@ check_assignment (typed_value_t left_tv,
                   const ast::Node& node,
                   const char* conversion_message,
                   const char* leak_message);
-
-/* Process all definitions (code). */
-void process_definitions (ast::Node* node);
 
 void
 enumerate_instances (ast::Node* node, Composition::Composer& instance_table);

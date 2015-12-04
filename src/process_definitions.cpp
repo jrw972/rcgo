@@ -87,56 +87,6 @@ type_check_statement (Node * node)
       ast_not_reached (node);
     }
 
-    void visit (ast_const_t& node)
-    {
-      unimplemented;
-    }
-
-    void visit (ast_empty_statement_t& node)
-    { }
-
-    void visit (ast_bind_push_port_param_statement_t& node)
-    {
-      unimplemented;
-      // typed_value_t reaction_tv = bind (node, node.left (), node.right_ref ());
-      // typed_value_t param_tv = CheckAndImplicitlyDereference (node.param_ref ());
-      // assert (reaction_tv.value.present);
-      // reaction_t* reaction = reaction_tv.value.reaction_value ();
-      // if (!reaction->has_dimension ())
-      //   {
-      //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-      //                    "parameter specified for non-parameterized reaction (E41)");
-      //   }
-      // Type::Int::ValueType dimension = reaction->dimension ();
-
-      // if (!(param_tv.type->IsInteger () || param_tv.type->IsUntyped ()))
-      //   {
-      //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-      //                    "reaction array index must be an integer (E74)");
-
-      //   }
-      // if (param_tv.value.present)
-      //   {
-      //     if (!param_tv.RepresentableBy (Type::Int::Instance ()))
-      //       {
-      //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-      //                        "reaction array index cannot be represented by an integer (E75)");
-      //       }
-      //     typed_value_t index_int_tv = param_tv.Convert (node.location, Type::Int::Instance (), node);
-      //     Type::Int::ValueType v = index_int_tv.value.ref (*Type::Int::Instance ());
-      //     if (v < 0)
-      //       {
-      //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-      //                        "reaction array index is negative (E76)");
-      //       }
-      //     if (v >= dimension)
-      //       {
-      //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-      //                        "reaction array index is out of range (E77)");
-      //       }
-      //   }
-    }
-
     void visit (ast_bind_pull_port_statement_t& node)
     {
       unimplemented;
@@ -165,20 +115,6 @@ type_check_statement (Node * node)
       //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
       //                    "cannot bind %s to %s (E44)", pull_port_type->ToString ().c_str (), getter_type->ToString ().c_str ());
       //   }
-    }
-
-    void visit (ast_for_iota_statement_t& node)
-    {
-      unimplemented;
-      // const std::string& identifier = ast_get_identifier (node.identifier ());
-      // typed_value_t limit = process_array_dimension (node.limit_node_ref ());
-      // typed_value_t zero = limit;
-      // zero.zero ();
-      // unimplemented;
-      // Symbol* symbol = new VariableSymbol (identifier, node.identifier (), typed_value_t::make_ref (typed_value_t::make_range (zero, limit, IMMUTABLE, IMMUTABLE)));
-      // node.symbol = enter_symbol (node, symbol);
-      // type_check_statement (node.body ());
-      // node.limit = limit;
     }
 
     static typed_value_t
@@ -236,26 +172,6 @@ type_check_statement (Node * node)
       // };
       // visitor v (node, symbol);
       // left_tv.type->Accept (v);
-    }
-
-    void visit (ast_assign_statement_t& node)
-    {
-      typed_value_t left_tv = check_assignment_target (node.left ());
-      typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvert (node.right_ref (), left_tv.type);
-      check_assignment (left_tv, right_tv, node,
-                        "incompatible types (%s) = (%s) (E122)",
-                        "assignment leaks mutable pointers (E123)");
-    }
-
-    void visit (ast_while_statement_t& node)
-    {
-      check_condition (node.condition_ref ());
-      type_check_statement (node.body ());
-    }
-
-    void visit (ast_add_assign_statement_t& node)
-    {
-      arithmetic_assign (&node, "+=");
     }
 
     void visit (ast_subtract_assign_statement_t& node)
@@ -414,51 +330,6 @@ type_check_statement (Node * node)
   node->Accept (v);
 }
 
-static void
-control_check_statement (Node * node)
-{
-  struct visitor : public ast::DefaultVisitor
-  {
-    bool in_activation_statement;
-
-    visitor () : in_activation_statement (false) { }
-
-    void visit (ast_change_statement_t& node)
-    {
-      node.body ()->Accept (*this);
-    }
-
-    void visit (ast_if_statement_t& node)
-    {
-      node.true_branch ()->Accept (*this);
-      node.false_branch ()->Accept (*this);
-    }
-
-    void visit (ast_while_statement_t& node)
-    {
-      node.body ()->Accept (*this);
-    }
-
-    void visit (ast_list_statement_t& node)
-    {
-      for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
-           pos != limit;
-           ++pos)
-        {
-          (*pos)->Accept (*this);
-        }
-    }
-
-    void visit (ast_return_statement_t& node)
-    {
-      // TODO: Maybe.
-    }
-  };
-
-  visitor v;
-  node->Accept (v);
-}
-
 // TODO: Replace node with its symbol table.
 void
 enter_signature (Node& node, const Signature * type)
@@ -481,97 +352,4 @@ enter_signature (Node& node, const Signature * type)
                          identifier.c_str ());
         }
     }
-}
-
-/* Check the semantics of all executable code. */
-void
-process_definitions (Node * node)
-{
-  struct visitor : public ast::DefaultVisitor
-  {
-    void default_action (Node& node)
-    {
-      ast_not_reached (node);
-    }
-
-    void visit (ast::Type& node)
-    { }
-
-    void visit (ast_const_t& node)
-    { }
-
-    void visit (ast_dimensioned_action_t& node)
-    {
-      check_condition (node.precondition_ref ());
-      node.action->precondition = node.precondition ();
-      Node *body_node = node.body ();
-      type_check_statement (body_node);
-      control_check_statement (body_node);
-      node.action->precondition_access = ComputeReceiverAccess (node.precondition ());
-      node.action->immutable_phase_access = ComputeReceiverAccess (node.body ());
-
-      std::cout << "TODO:  Static preconditions\n";
-      // if (tv.value.present)
-      //   {
-      //     if (tv.value.ref (*Bool::Instance ()))
-      //       {
-      //         node.action->precondition_kind = Action::StaticTrue;
-      //       }
-      //     else
-      //       {
-      //         node.action->precondition_kind = Action::StaticFalse;
-      //       }
-      //   }
-    }
-
-    void visit (ast_function_t& node)
-    {
-      Node *body_node = node.body ();
-      type_check_statement (body_node);
-      control_check_statement (body_node);
-    }
-
-    void visit (ast_method_t& node)
-    {
-      Node *body_node = node.body ();
-      type_check_statement (body_node);
-      control_check_statement (body_node);
-    }
-
-    void visit (ast_initializer_t& node)
-    {
-      Node *body_node = node.body ();
-      type_check_statement (body_node);
-      control_check_statement (body_node);
-    }
-
-    void visit (ast_getter_t& node)
-    {
-      Node *body_node = node.body ();
-      type_check_statement (body_node);
-      control_check_statement (body_node);
-      node.getter->immutable_phase_access = ComputeReceiverAccess (body_node);
-    }
-
-    void visit (ast_instance_t& node)
-    {
-      unimplemented;
-    }
-
-    void visit (ast_dimensioned_reaction_t& node)
-    {
-      Node *body_node = node.body ();
-      type_check_statement (body_node);
-      control_check_statement (body_node);
-      node.reaction->immutable_phase_access = ComputeReceiverAccess (body_node);
-    }
-
-    void visit (SourceFile& node)
-    {
-      node.VisitChildren (*this);
-    }
-  };
-
-  visitor v;
-  node->Accept (v);
 }

@@ -40,7 +40,6 @@ allocate_symbol (MemoryModel& memory_model,
         case ParameterSymbol::Ordinary:
         case ParameterSymbol::Receiver:
         case ParameterSymbol::Return:
-        case ParameterSymbol::Iota:
         {
           const Type::Type* type = symbol.type;
           memory_model.ArgumentsPush (type->Size ());
@@ -48,10 +47,6 @@ allocate_symbol (MemoryModel& memory_model,
           if (symbol.kind == ParameterSymbol::Receiver)
             {
               memory_model.SetReceiverOffset ();
-            }
-          if (symbol.kind == ParameterSymbol::Iota)
-            {
-              memory_model.SetIotaOffset ();
             }
         }
         break;

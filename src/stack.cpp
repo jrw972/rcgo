@@ -18,6 +18,11 @@ namespace runtime
     std::memset (data_, 0, capacity);
   }
 
+  Stack::~Stack ()
+  {
+    delete[] data_;
+  }
+
   void
   Stack::push_pointer (void* pointer)
   {

@@ -59,7 +59,21 @@ namespace semantic
         node.action->immutable_phase_access = node.body ()->receiver_access;
       }
 
+      void visit (ast_dimensioned_action_t& node)
+      {
+        node.precondition ()->Accept (*this);
+        node.body ()->Accept (*this);
+        node.action->precondition_access = node.precondition ()->receiver_access;
+        node.action->immutable_phase_access = node.body ()->receiver_access;
+      }
+
       void visit (ast_reaction_t& node)
+      {
+        node.body ()->Accept (*this);
+        node.reaction->immutable_phase_access = node.body ()->receiver_access;
+      }
+
+      void visit (ast_dimensioned_reaction_t& node)
       {
         node.body ()->Accept (*this);
         node.reaction->immutable_phase_access = node.body ()->receiver_access;
@@ -246,6 +260,13 @@ namespace semantic
         process_list (node, node.args ());
       }
 
+      void visit (ast_indexed_port_call_expr_t& node)
+      {
+        node.index ()->Accept (*this);
+        node.args ()->Accept (*this);
+        process_list (node, node.args ());
+      }
+
       void visit (TypeExpression& node)
       {
         // Do nothing.
@@ -257,6 +278,14 @@ namespace semantic
         node.receiver_state = node.child ()->receiver_state;
         node.receiver_access = node.child ()->receiver_access;
       }
+
+      void visit (ast_index_expr_t& node)
+      {
+        node.base ()->Accept (*this);
+        node.receiver_state = node.base ()->receiver_state;
+        node.receiver_access = node.base ()->receiver_access;
+      }
+
     };
   }
 

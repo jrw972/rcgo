@@ -15,6 +15,7 @@ namespace runtime
   struct Stack
   {
     Stack (size_t capacity);
+    ~Stack ();
 
     void push_pointer (void* pointer);
     void* pop_pointer ();

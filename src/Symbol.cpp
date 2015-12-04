@@ -26,7 +26,6 @@ ParameterSymbol::check_foreign_safe () const
         case OrdinaryDuplicate:
         case Receiver:
         case ReceiverDuplicate:
-        case Iota:
           error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
                          "parameter is not foreign safe (E106)");
           break;
