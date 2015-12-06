@@ -971,15 +971,15 @@ namespace semantic
 
           void visit (const BuiltinFunction& symbol)
           {
-            node.type = symbol.value ().type;
+            node.type = symbol.type ();
             node.callable = &symbol;
             node.expression_kind = kValue;
           }
 
           void visit (const ::Template& symbol)
           {
-            node.type = symbol.value ().type;
-            node.temp = symbol.value ().value.template_value ();
+            node.type = symbol.type ();
+            node.temp = &symbol;
             node.expression_kind = kValue;
           }
 
@@ -998,7 +998,7 @@ namespace semantic
 
           void visit (const TypeSymbol& symbol)
           {
-            node.type = typed_value_t (symbol.type).type;
+            node.type = symbol.type;
             node.expression_kind = kType;
           }
 

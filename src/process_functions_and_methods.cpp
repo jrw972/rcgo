@@ -104,16 +104,12 @@ namespace semantic
           receiver_type = type;
         }
 
-      typed_value_t this_value =
-        typed_value_t::make_value (receiver_type,
-                                   node->mutability,
-                                   node->dereferenceMutability, true);
-
-      receiver_symbol = ParameterSymbol::makeReceiver (this_identifier_node,
-                        this_identifier,
-                        this_value.type,
-                        node->mutability,
-                        node->dereferenceMutability);
+      receiver_symbol =
+        ParameterSymbol::makeReceiver (this_identifier_node,
+                                       this_identifier,
+                                       receiver_type,
+                                       node->mutability,
+                                       node->dereferenceMutability);
 
       node->this_symbol = receiver_symbol;
 

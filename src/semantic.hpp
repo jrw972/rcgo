@@ -249,13 +249,6 @@ typed_value_t
 CheckAndImplicitlyDereferenceAndConvert (ast::Node*& expr, const Type::Type* type);
 
 void
-TypeCheckCall (ast::Node& node,
-               const Type::Signature* signature,
-               typed_value_t return_value,
-               ast::Node* argsnode,
-               const TypedValueListType& args);
-
-void
 check_assignment (typed_value_t left_tv,
                   typed_value_t right_tv,
                   const ast::Node& node,

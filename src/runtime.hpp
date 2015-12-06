@@ -5,6 +5,7 @@
 #include "Template.hpp"
 #include "Type.hpp"
 #include "executor_base.hpp"
+#include "Location.hpp"
 
 namespace runtime
 {
@@ -45,36 +46,31 @@ namespace runtime
   struct New : public ::Template
   {
     New (ast::Node* dn);
-    virtual typed_value_t instantiate (TypedValueListType& tvlist);
-    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types);
+    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types) const;
   };
 
   struct Move : public ::Template
   {
     Move (ast::Node* dn);
-    virtual typed_value_t instantiate (TypedValueListType& tvlist);
-    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types);
+    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types) const;
   };
 
   struct Merge : public ::Template
   {
     Merge (ast::Node* dn);
-    virtual typed_value_t instantiate (TypedValueListType& tvlist);
-    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types);
+    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types) const;
   };
 
   struct Copy : public ::Template
   {
     Copy (ast::Node* dn);
-    virtual typed_value_t instantiate (TypedValueListType& tvlist);
-    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types);
+    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types) const;
   };
 
   struct Println : public ::Template
   {
     Println (ast::Node* dn);
-    virtual typed_value_t instantiate (TypedValueListType& tvlist);
-    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types);
+    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types) const;
   };
 
   // Operations

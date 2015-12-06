@@ -4,9 +4,8 @@
 #include <vector>
 
 #include "types.hpp"
-
 #include "Location.hpp"
-#include "typed_value.hpp"
+#include "value.hpp"
 
 namespace ast
 {
@@ -89,7 +88,7 @@ namespace ast
     value_t value;
     field_t* field;
     const Callable* callable;
-    ::Template* temp;
+    const ::Template* temp;
     ExpressionKind expression_kind;
     Mutability intrinsic_mutability;
     Mutability dereference_mutability;

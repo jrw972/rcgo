@@ -14,11 +14,9 @@ struct Template : public Symbol
     : Symbol (id, dn)
     , type_ (type)
     // type () is called here
-    , typed_value_ (typed_value_t::make_ref (typed_value_t (this)))
   { }
 
-  virtual typed_value_t instantiate (TypedValueListType& tvlist) = 0;
-  virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types) = 0;
+  virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types) const = 0;
 
   // Symbol
   virtual void accept (SymbolVisitor& visitor);
@@ -33,14 +31,8 @@ struct Template : public Symbol
     return type_;
   }
 
-  typed_value_t value () const
-  {
-    return typed_value_;
-  }
-
 private:
   const Type::Type* const type_;
-  typed_value_t const typed_value_;
 };
 
 #endif /* Template_hpp */

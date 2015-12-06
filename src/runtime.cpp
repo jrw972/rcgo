@@ -1839,29 +1839,8 @@ namespace runtime
                 new Type::Template ())
   { }
 
-  typed_value_t
-  New::instantiate (TypedValueListType& tvlist)
-  {
-    if (tvlist.size () != 1)
-      {
-        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "new expects one argument (E5)");
-      }
-
-    typed_value_t tv = tvlist[0];
-    tvlist.clear ();
-
-    if (tv.kind != typed_value_t::TYPE)
-      {
-        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "new expects a type (E6)");
-      }
-
-    return typed_value_t (new NewImpl (tv.type, definingNode));
-  }
-
   Callable*
-  New::instantiate (const std::vector<const Type::Type*>& argument_types)
+  New::instantiate (const std::vector<const Type::Type*>& argument_types) const
   {
     if (argument_types.size () != 1)
       {
@@ -1971,29 +1950,8 @@ namespace runtime
                 new Type::Template ())
   { }
 
-  typed_value_t
-  Move::instantiate (TypedValueListType& tvlist)
-  {
-    if (tvlist.size () != 1)
-      {
-        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "move expects one argument (E7)");
-      }
-
-    typed_value_t in = tvlist[0];
-    typed_value_t out = typed_value_t::move (in);
-    if (out.type == NULL)
-      {
-        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "cannot move expression of type %s (E8)", in.type->ToString ().c_str ());
-      }
-
-    unimplemented;
-    //return typed_value_t (new MoveImpl (in, out, definingNode));
-  }
-
   Callable*
-  Move::instantiate (const std::vector<const Type::Type*>& argument_types)
+  Move::instantiate (const std::vector<const Type::Type*>& argument_types) const
   {
     if (argument_types.size () != 1)
       {
@@ -2102,29 +2060,8 @@ namespace runtime
                 new Type::Template ())
   { }
 
-  typed_value_t
-  Merge::instantiate (TypedValueListType& tvlist)
-  {
-    if (tvlist.size () != 1)
-      {
-        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "merge expects one argument (E9)");
-      }
-
-    typed_value_t in = tvlist[0];
-    typed_value_t out = typed_value_t::merge (in);
-    if (out.type == NULL)
-      {
-        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "cannot merge expression of type %s (E10)", in.type->ToString ().c_str ());
-      }
-
-    unimplemented;
-    //return new MergeImpl (in, out, definingNode);
-  }
-
   Callable*
-  Merge::instantiate (const std::vector<const Type::Type*>& argument_types)
+  Merge::instantiate (const std::vector<const Type::Type*>& argument_types) const
   {
     if (argument_types.size () != 1)
       {
@@ -2146,8 +2083,7 @@ namespace runtime
   struct CopyImpl : public Callable
   {
     CopyImpl (const Type::Type* in, ast::Node* definingNode)
-      : in_ (in)
-      , function_type_ (makeFunctionType (in, definingNode))
+      : function_type_ (makeFunctionType (in, definingNode))
     {
       allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
       allocate_symbol (memory_model, function_type_->GetReturnParameter ());
@@ -2188,7 +2124,6 @@ namespace runtime
     {
       return function_type_;
     }
-    const typed_value_t in_;
     const Type::Function* const function_type_;
     MemoryModel memory_model;
     static const Type::Function* makeFunctionType (const Type::Type* in, ast::Node* definingNode)
@@ -2226,29 +2161,8 @@ namespace runtime
                 new Type::Template ())
   { }
 
-  typed_value_t
-  Copy::instantiate (TypedValueListType& tvlist)
-  {
-    if (tvlist.size () != 1)
-      {
-        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "copy expects one argument (E11)");
-      }
-
-    typed_value_t in = tvlist[0];
-    typed_value_t out = typed_value_t::copy (definingNode->location, in);
-    if (out.type == NULL)
-      {
-        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
-                       "cannot copy expression of type %s (E12)", in.type->ToString ().c_str ());
-      }
-
-    unimplemented;
-    //return typed_value_t (new CopyImpl (in, out, definingNode));
-  }
-
   Callable*
-  Copy::instantiate (const std::vector<const Type::Type*>& argument_types)
+  Copy::instantiate (const std::vector<const Type::Type*>& argument_types) const
   {
     if (argument_types.size () != 1)
       {
@@ -2398,7 +2312,6 @@ namespace runtime
     {
       return function_type_;
     }
-    const typed_value_t in_;
     const Type::Function* const function_type_;
     MemoryModel memory_model;
 
@@ -2447,15 +2360,8 @@ namespace runtime
                 new Type::Template ())
   { }
 
-  typed_value_t
-  Println::instantiate (TypedValueListType& tvlist)
-  {
-    unimplemented;
-    //return typed_value_t (new PrintlnImpl (tvlist));
-  }
-
   Callable*
-  Println::instantiate (const TypeList& argument_types)
+  Println::instantiate (const TypeList& argument_types) const
   {
     return new PrintlnImpl (argument_types);
   }

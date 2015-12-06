@@ -14,69 +14,6 @@ using namespace Type;
 using namespace ast;
 using namespace decl;
 
-void
-check_assignment (typed_value_t left_tv,
-                  typed_value_t right_tv,
-                  const Node& node,
-                  const char* conversion_message,
-                  const char* leak_message)
-{
-  assert (left_tv.type != NULL);
-  assert (right_tv.type != NULL);
-
-  if (left_tv.kind != typed_value_t::REFERENCE)
-    {
-      error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                     "target of assignment is not an lvalue (E48)");
-    }
-
-  if (left_tv.intrinsic_mutability != MUTABLE)
-    {
-      error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                     "target of assignment is not mutable (E13)");
-    }
-
-  if (right_tv.kind != typed_value_t::VALUE)
-    {
-      error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                     "source of assignment is not an rvalue (E132)");
-    }
-
-  if (!(
-        Identical (left_tv.type, right_tv.type) ||
-        (Type::type_cast<Type::Pointer> (type_strip(left_tv.type)) && right_tv.type == Type::Nil::Instance ())
-      ))
-    {
-      error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                     conversion_message, left_tv.type->ToString ().c_str (), right_tv.type->ToString ().c_str ());
-    }
-
-  if (type_contains_pointer (left_tv.type))
-    {
-      if (left_tv.dereference_mutability < right_tv.dereference_mutability)
-        {
-          std::cout << left_tv << '\n';
-          std::cout << right_tv << '\n';
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "%s", leak_message);
-        }
-    }
-}
-
-static void
-check_condition (ast::Node* condition_node)
-{
-  unimplemented;
-  // TypeCheckExpression (condition_node);
-  // const Type::Type* type = condition_node->type;
-  // if (!type_is_boolean (type))
-  //   {
-  //     error_at_line (-1, 0, condition_node->location.File.c_str (),
-  //                    condition_node->location.Line,
-  //                    "cannot convert (%s) to boolean expression in condition (E37)", type->ToString ().c_str ());
-  //   }
-}
-
 static void
 type_check_statement (Node * node)
 {
@@ -115,20 +52,6 @@ type_check_statement (Node * node)
       //     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
       //                    "cannot bind %s to %s (E44)", pull_port_type->ToString ().c_str (), getter_type->ToString ().c_str ());
       //   }
-    }
-
-    static typed_value_t
-    check_assignment_target (ast::Node* left)
-    {
-      unimplemented;
-      // typed_value_t tv = CheckExpectReference (left);
-      // if (tv.intrinsic_mutability != MUTABLE)
-      //   {
-      //     error_at_line (-1, 0, left->location.File.c_str (), left->location.Line,
-      //                    "cannot assign to read-only location of type %s (E45)", tv.type->ToString ().c_str ());
-      //   }
-
-      // return tv;
     }
 
     static void arithmetic_assign (ast_binary_t* node, const char* symbol)
@@ -189,140 +112,9 @@ type_check_statement (Node * node)
         }
     }
 
-    void visit (ast_increment_statement_t& node)
-    {
-      ast::Node* expr = node.child ();
-      check_assignment_target (expr);
-      struct visitor : public Type::DefaultVisitor
-      {
-        Node& node;
-
-        visitor (Node& n) : node (n) { }
-
-        void default_action (const Type::Type& type)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "cannot increment location of type %s (E50)", type.ToString ().c_str ());
-        }
-
-        void visit (const NamedType& type)
-        {
-          type.UnderlyingType ()->Accept (*this);
-        }
-
-        void visit (const Int& type)
-        {
-          // Okay.
-        }
-
-        void visit (const Uint& type)
-        {
-          // Okay.
-        }
-      };
-      visitor v (node);
-      unimplemented;
-      //expr->typed_value.type->Accept (v);
-    }
-
     void visit (ast_decrement_statement_t& node)
     {
       unimplemented;
-    }
-
-    void visit (ast_var_statement_t& node)
-    {
-      ast::Node* identifier_list = node.identifier_list ();
-      ast::Node* type_spec = node.type_spec ();
-      ast::Node* expression_list = node.expression_list ();
-
-      if (expression_list->Size () != 0 &&
-          identifier_list->Size () != expression_list->Size ())
-        {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                         "wrong number of initializers (E51)");
-        }
-
-      // Process the type spec.
-      const Type::Type* type = process_type (type_spec, true);
-
-      if (expression_list->Size () == 0)
-        {
-          // Type, no expressions.
-
-          if (type_cast<Void> (type) != NULL)
-            {
-              error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                             "missing type (E52)");
-
-            }
-
-          // Enter each symbol.
-          for (Node::Iterator id_pos = identifier_list->Begin (),
-               id_limit = identifier_list->End ();
-               id_pos != id_limit;
-               ++id_pos)
-            {
-              const std::string& name = ast_get_identifier (*id_pos);
-              VariableSymbol* symbol = new VariableSymbol (name, *id_pos, type, node.mutability, node.dereferenceMutability);
-              node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
-            }
-
-          return;
-        }
-
-      if (type_cast<Void> (type) == NULL)
-        {
-          // Type, expressions.
-
-          // Enter each symbol.
-          for (Node::Iterator id_pos = identifier_list->Begin (),
-               id_limit = identifier_list->End (),
-               init_pos = expression_list->Begin ();
-               id_pos != id_limit;
-               ++id_pos, ++init_pos)
-            {
-              // Assume left is mutable.
-              typed_value_t left_tv = typed_value_t::make_ref (type, MUTABLE, node.dereferenceMutability, false);
-              typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvert (*init_pos, left_tv.type);
-              check_assignment (left_tv, right_tv, node,
-                                "incompatible types (%s) = (%s) (E126)",
-                                "assignment leaks mutable pointers (E127)");
-              // Convert to specified mutability.
-              left_tv.intrinsic_mutability = node.mutability;
-              unimplemented;
-              // const std::string& name = ast_get_identifier (*id_pos);
-              // Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
-              // node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
-            }
-
-          return;
-        }
-
-      // No type, expressions.
-
-      // Enter each symbol.
-      for (Node::Iterator id_pos = identifier_list->Begin (),
-           id_limit = identifier_list->End (),
-           init_pos = expression_list->Begin ();
-           id_pos != id_limit;
-           ++id_pos, ++init_pos)
-        {
-          unimplemented;
-          // // Process the initializer.
-          // typed_value_t right_tv = CheckAndImplicitlyDereferenceAndConvertToDefault (*init_pos);
-          // typed_value_t left_tv = typed_value_t::make_ref (right_tv);
-          // left_tv.intrinsic_mutability = MUTABLE;
-          // left_tv.dereference_mutability = node.dereferenceMutability;
-          // check_assignment (left_tv, right_tv, node,
-          //                   "incompatible types (%s) = (%s) (E128)",
-          //                   "assignment leaks mutable pointers (E129)");
-          // // Convert to specified mutability.
-          // left_tv.intrinsic_mutability = node.mutability;
-          // const std::string& name = ast_get_identifier (*id_pos);
-          // Symbol* symbol = new VariableSymbol (name, *id_pos, left_tv);
-          // node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
-        }
     }
   };
 

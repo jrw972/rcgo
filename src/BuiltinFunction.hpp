@@ -25,10 +25,6 @@ struct BuiltinFunction : public Callable, public Symbol
   {
     return type_;
   }
-  virtual typed_value_t value () const
-  {
-    return value_;
-  }
   virtual const Type::Signature* signature () const
   {
     return type_->GetSignature ();
@@ -52,7 +48,6 @@ struct BuiltinFunction : public Callable, public Symbol
 
 protected:
   const Type::Function* const type_;
-  typed_value_t const value_;
   MemoryModel memory_model_;
 };
 

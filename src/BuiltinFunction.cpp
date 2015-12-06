@@ -26,7 +26,6 @@ BuiltinFunction::BuiltinFunction (const std::string& id,
                                   const Type::Function* type)
   : Symbol (id, dn)
   , type_ (type)
-  , value_ (typed_value_t::make_ref (typed_value_t (this)))
 {
   allocate_parameter (memory_model_, type_->GetSignature ()->Begin (), type_->GetSignature ()->End ());
   allocate_symbol (memory_model_, type_->GetReturnParameter ());

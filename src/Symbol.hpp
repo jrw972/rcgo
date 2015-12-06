@@ -2,8 +2,8 @@
 #define Symbol_hpp
 
 #include "types.hpp"
-#include "typed_value.hpp"
 #include "Type.hpp"
+#include "value.hpp"
 
 class SymbolVisitor;
 class ConstSymbolVisitor;
