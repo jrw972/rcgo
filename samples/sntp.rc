@@ -100,7 +100,7 @@ action (this +const * UdpParticipant) _receive (readable (this.fd)) {
        activate {
           var buf [128]byte;
           var r int = read(this.fd, buf[0:128]);
-          println (buf[0:r]);
+          println (string (buf[0:r]));
        }
 }
 

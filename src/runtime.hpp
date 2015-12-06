@@ -67,10 +67,7 @@ namespace runtime
   {
     Copy (ast::Node* dn);
     virtual typed_value_t instantiate (TypedValueListType& tvlist);
-    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types)
-    {
-      unimplemented;
-    }
+    virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types);
   };
 
   struct Println : public ::Template
@@ -86,17 +83,6 @@ namespace runtime
     virtual ~Operation() { }
     virtual ControlAction execute (executor_base_t& exec) const = 0;
     virtual void dump () const = 0;
-  };
-
-  struct ConvertStringToSliceOfBytes : public Operation
-  {
-    ConvertStringToSliceOfBytes (Operation* c) : child (c) { }
-    virtual ControlAction execute (executor_base_t& exec) const;
-    virtual void dump () const
-    {
-      unimplemented;
-    }
-    Operation* const child;
   };
 
   struct Load : public Operation
@@ -145,6 +131,21 @@ namespace runtime
     const Type::Slice* type;
   };
 
+  struct SliceArray : public Operation
+  {
+    SliceArray (const Location& loc, Operation* b, Operation* l, Operation* h, const Type::Array* t) : location (loc), base (b), low (l), high (h), type (t) { }
+    virtual ControlAction execute (executor_base_t& exec) const;
+    virtual void dump () const
+    {
+      unimplemented;
+    }
+    Location const location;
+    Operation* const base;
+    Operation* const low;
+    Operation* const high;
+    const Type::Array* type;
+  };
+
   Operation* MakeConvertToInt (const Operation* c, const Type::Type* type);
   Operation* MakeConvertToUint (const Operation* c, const Type::Type* type);
 
@@ -159,7 +160,7 @@ namespace runtime
     }
     virtual void dump () const
     {
-      unimplemented;
+      std::cout << "Literal value=" << value << '\n';
     }
     T const value;
   };
@@ -710,6 +711,8 @@ namespace runtime
       unimplemented;
     }
   };
+
+  Operation* make_conversion (Operation* c, const Type::Type* from, const Type::Type* to);
 }
 
 #endif // rc_runtime_hpp

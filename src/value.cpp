@@ -670,7 +670,7 @@ value_t::print (std::ostream& out, const Type::Type* type) const
 Type::Int::ValueType
 value_t::to_int (const Type::Type* type) const
 {
-  assert (is_integral (type));
+  assert (is_typed_integer (type));
   switch (type->underlying_kind ())
     {
     case kUint8:

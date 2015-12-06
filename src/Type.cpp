@@ -1445,7 +1445,7 @@ type::Instance () \
     return NULL;
   }
 
-  bool is_integral (const Type* type)
+  bool is_typed_integer (const Type* type)
   {
     struct visitor : DefaultVisitor
     {
@@ -1501,7 +1501,7 @@ type::Instance () \
     return v.flag;
   }
 
-  bool is_unsigned_integral (const Type* type)
+  bool is_typed_unsigned_integer (const Type* type)
   {
     switch (type->underlying_kind ())
       {
@@ -1515,13 +1515,24 @@ type::Instance () \
       }
   }
 
-  bool is_floating_point (const Type* type)
+  bool is_typed_float (const Type* type)
   {
     switch (type->underlying_kind ())
       {
       case kFloat32:
       case kFloat64:
-      case kFloat:
+        return true;
+      default:
+        return false;
+      }
+  }
+
+  bool is_typed_complex (const Type* type)
+  {
+    switch (type->underlying_kind ())
+      {
+      case kComplex64:
+      case kComplex128:
         return true;
       default:
         return false;
@@ -1604,6 +1615,16 @@ type::Instance () \
         return false;
       }
     return type_cast<Uint8> (slice_type->Base ()->UnderlyingType ()) != NULL;
+  }
+
+  bool is_slice_of_runes (const Type* type)
+  {
+    const Slice* slice_type = type_cast<Slice> (type->UnderlyingType ());
+    if (slice_type == NULL)
+      {
+        return false;
+      }
+    return type_cast<Int32> (slice_type->Base ()->UnderlyingType ()) != NULL;
   }
 
   bool orderable (const Type* type)

@@ -53,19 +53,19 @@ operator<< (std::ostream& out, const Symbol& s)
 
     virtual void visit (const BuiltinFunction& s)
     {
-      unimplemented;
+      out << "BuiltinFunction " << s.identifier << '\n';
     }
     virtual void visit (const Template& s)
     {
-      unimplemented;
+      out << "Template " << s.identifier << '\n';
     }
     virtual void visit (const Function& s)
     {
-      unimplemented;
+      out << "Function " << s.identifier << '\n';
     }
     virtual void visit (const InstanceSymbol& s)
     {
-      unimplemented;
+      out << "InstanceSymbol " << s.identifier << '\n';
     }
     virtual void visit (const ParameterSymbol& s)
     {

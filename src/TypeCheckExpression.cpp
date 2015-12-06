@@ -918,21 +918,4 @@ struct check_visitor : public ast::DefaultVisitor
 //     } v (node);
 //     base_tv.type->Accept (v);
 //   }
-
-//   void visit (ast_slice_expr_t& node)
-//   {
-//     typed_value_t base_tv = CheckExpectReference (node.base_ref ());
-//     typed_value_t low_tv = CheckAndImplicitlyDereference (node.low_ref ());
-//     typed_value_t high_tv = CheckAndImplicitlyDereference (node.high_ref ());
-//     typed_value_t result = typed_value_t::slice (node.location, base_tv, low_tv, high_tv);
-//     if (result.IsError ())
-//       {
-//         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-//                        "incompatible types (%s)[%s : %s] (E36)",
-//                        base_tv.type->ToString ().c_str (),
-//                        low_tv.type->ToString ().c_str (),
-//                        high_tv.type->ToString ().c_str ());
-//       }
-//     node.typed_value = result;
-//   }
 };

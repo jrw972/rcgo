@@ -293,11 +293,15 @@ namespace semantic
 
       void visit (ast_index_expr_t& node)
       {
-        node.base ()->Accept (*this);
-        node.receiver_state = node.base ()->receiver_state;
-        node.receiver_access = node.base ()->receiver_access;
+        node.VisitChildren (*this);
+        process_list (node, &node);
       }
 
+      void visit (ast_slice_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        process_list (node, &node);
+      }
     };
   }
 

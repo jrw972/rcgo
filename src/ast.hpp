@@ -523,7 +523,7 @@ namespace ast
       , method_type (NULL)
       , signature (NULL)
       , return_parameter (NULL)
-      , string_duplication (false)
+      , reset_mutability (false)
     {
       set (EXPR, expr);
       set (ARGS, args);
@@ -549,7 +549,7 @@ namespace ast
     const Type::Method* method_type;
     const Type::Signature* signature;
     const ParameterSymbol* return_parameter;
-    bool string_duplication;
+    bool reset_mutability;
   };
 
   struct ast_dereference_expr_t : public ast_unary_expr_t
@@ -648,6 +648,8 @@ namespace ast
 
     ast_slice_expr_t (unsigned int line, Node* base, Node* low, Node* high)
       : Node (line, COUNT)
+      , array_type (NULL)
+      , slice_type (NULL)
     {
       set (BASE, base);
       set (LOW, low);
@@ -681,6 +683,9 @@ namespace ast
 
     void Accept (Visitor& visitor);
     void Accept (ConstVisitor& visitor) const;
+
+    const Type::Array* array_type;
+    const Type::Slice* slice_type;
   };
 
   struct ast_unary_arithmetic_expr_t : public ast_unary_expr_t

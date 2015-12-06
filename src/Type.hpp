@@ -137,6 +137,10 @@ namespace Type
     {
       return NULL;
     }
+    virtual const Type* pointer_base_type () const
+    {
+      return NULL;
+    }
   private:
     const Pointer* pointer_;
     const Slice* slice_;
@@ -277,6 +281,10 @@ namespace Type
       return underlyingType_->select_field (name);
     }
     virtual Callable* select_callable (const std::string& name) const;
+    virtual const Type* pointer_base_type () const
+    {
+      return underlyingType_->pointer_base_type ();
+    }
 
   private:
     std::string const name_;
@@ -569,6 +577,10 @@ namespace Type
     virtual Callable* select_callable (const std::string& name) const
     {
       return base_->select_callable (name);
+    }
+    virtual const Type* pointer_base_type () const
+    {
+      return base_;
     }
   private:
     friend class Type;
@@ -2463,14 +2475,16 @@ namespace Type
   bool is_untyped_string (const Type* type);
   bool is_any_string (const Type* type);
 
-  bool is_integral (const Type* type);
-  bool is_unsigned_integral (const Type* type);
-  bool is_floating_point (const Type* type);
+  bool is_typed_integer (const Type* type);
+  bool is_typed_unsigned_integer (const Type* type);
+  bool is_typed_float (const Type* type);
+  bool is_typed_complex (const Type* type);
   // True to typed numeric types.
   bool is_typed_numeric (const Type* type);
   // True for untyped numeric types.
   bool is_untyped_numeric (const Type* type);
   bool is_slice_of_bytes (const Type* type);
+  bool is_slice_of_runes (const Type* type);
 
   // True if the type is comparable.
   bool comparable (const Type* type);

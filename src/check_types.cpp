@@ -550,7 +550,7 @@ namespace semantic
     template <typename T>
     static void process_shift (ast_binary_expr_t& node)
     {
-      if (!(is_unsigned_integral (node.right ()->type) || is_untyped_numeric (node.right ()->type)))
+      if (!(is_typed_unsigned_integer (node.right ()->type) || is_untyped_numeric (node.right ()->type)))
         {
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
@@ -811,22 +811,23 @@ namespace semantic
                   {
                     unimplemented;
                   }
-                else if (is_floating_point (from) && is_floating_point (to))
+                else if (is_typed_float (from) && is_typed_float (to))
                   {
                     unimplemented;
                   }
-                else if (is_integral (from) && is_any_string (to))
+                else if (is_typed_integer (from) && is_any_string (to))
                   {
                     unimplemented;
+                    node.reset_mutability = true;
                   }
                 else if (is_any_string (from) && is_slice_of_bytes (to))
                   {
-                    node.string_duplication = true;
                     if (from->IsUntyped ())
                       {
                         x.convert (from, from->DefaultType ());
                         from = from->DefaultType ();
                       }
+                    node.reset_mutability = true;
                   }
                 else
                   {
@@ -837,7 +838,47 @@ namespace semantic
               }
             else
               {
-                unimplemented;
+                if (assignable (from, x, to))
+                  {
+                    // Okay.
+                  }
+                else if (Identical (from->UnderlyingType (), to->UnderlyingType ()))
+                  {
+                    // Okay.
+                  }
+                else if (from->Level () == Type::Type::UNNAMED &&
+                         to->Level () == Type::Type::UNNAMED &&
+                         from->underlying_kind () == kPointer &&
+                         to->underlying_kind () == kPointer &&
+                         Identical (from->pointer_base_type (), to->pointer_base_type ()))
+                  {
+                    // Okay.
+                  }
+                else if ((is_typed_integer (from) || is_typed_float (from)) &&
+                         (is_typed_integer (to) || is_typed_float (from)))
+                  {
+                    // Okay.
+                  }
+                else if (is_typed_complex (from) && is_typed_complex (to))
+                  {
+                    // Okay.
+                  }
+                else if ((is_typed_integer (from) || is_slice_of_bytes (from) || is_slice_of_runes (from)) && is_typed_string (to))
+                  {
+                    // Okay.
+                    node.reset_mutability = true;
+                  }
+                else if (is_typed_string (from) && (is_slice_of_bytes (to) || is_slice_of_runes (to)))
+                  {
+                    // Okay.
+                    node.reset_mutability = true;
+                  }
+                else
+                  {
+                    error_at_line (-1, 0, node.location.File.c_str (),
+                                   node.location.Line,
+                                   "illegal conversion (E122)");
+                  }
               }
 
             node.type = to;
@@ -931,6 +972,7 @@ namespace semantic
           void visit (const BuiltinFunction& symbol)
           {
             node.type = symbol.value ().type;
+            node.callable = &symbol;
             node.expression_kind = kValue;
           }
 
@@ -1539,7 +1581,7 @@ namespace semantic
                            "parameter specified for non-parameterized reaction (E41)");
           }
         Type::Int::ValueType dimension = reaction->dimension ();
-        check_array_index (reaction->reaction_type->GetArray (dimension), node.param ());
+        check_array_index (reaction->reaction_type->GetArray (dimension), node.param (), false);
       }
 
       void visit (ast_bind_pull_port_statement_t& node)
@@ -1634,7 +1676,7 @@ namespace semantic
           }
       }
 
-      void check_array_index (const Array* array_type, Node* index)
+      void check_array_index (const Array* array_type, Node* index, bool allow_equal)
       {
         const Type::Type*& index_type = index->type;
         value_t& index_value = index->value;
@@ -1654,13 +1696,14 @@ namespace semantic
                 error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
                                "array index is negative (E162)");
               }
-            if (idx >= array_type->dimension)
+            if ((!allow_equal && idx >= array_type->dimension) ||
+                (allow_equal && idx > array_type->dimension))
               {
                 error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
                                "array index is out of bounds (E163)");
               }
           }
-        else if (is_integral (index_type))
+        else if (is_typed_integer (index_type))
           {
             if (index_value.present)
               {
@@ -1696,7 +1739,7 @@ namespace semantic
         node.array_type = type_cast<Array> (base_type->UnderlyingType ());
         if (node.array_type != NULL)
           {
-            check_array_index (node.array_type, node.index ());
+            check_array_index (node.array_type, node.index (), false);
             require_value_or_variable (node.base ());
             node.type = node.array_type->Base ();
             node.expression_kind = node.base ()->expression_kind;
@@ -1722,7 +1765,7 @@ namespace semantic
                                    "slice index is negative (E166)");
                   }
               }
-            else if (is_integral (index_type))
+            else if (is_typed_integer (index_type))
               {
                 if (index_value.present)
                   {
@@ -1751,6 +1794,65 @@ namespace semantic
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "cannot index expression of type %s (E168)",
                        base_type->ToString ().c_str ());
+      }
+
+      void visit (ast_slice_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        Node* base = node.base ();
+        const Type::Type* base_type = node.base ()->type;
+        Node* low_node = node.low ();
+        const Type::Type*& low_type = low_node->type;
+        value_t& low_value = low_node->value;
+        Node* high_node = node.high ();
+        const Type::Type*& high_type = high_node->type;
+        value_t& high_value = high_node->value;
+
+        node.array_type = type_cast<Array> (base_type->UnderlyingType ());
+        if (node.array_type != NULL)
+          {
+            check_array_index (node.array_type, low_node, true);
+            check_array_index (node.array_type, high_node, true);
+            if (low_value.present && high_value.present)
+              {
+                if (!(low_value.to_int (low_type) <= high_value.to_int (high_type)))
+                  {
+                    error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                                   "slice indices are out of range (E224)");
+                  }
+              }
+            require_value_or_variable (base);
+            require_value_or_variable (low_node);
+            require_value_or_variable (high_node);
+            node.type = node.array_type->Base ()->GetSlice ();
+            node.expression_kind = kValue;
+            return;
+          }
+
+        node.slice_type = type_cast<Slice> (base_type->UnderlyingType ());
+        if (node.slice_type != NULL)
+          {
+            unimplemented;
+            return;
+          }
+
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "cannot slice expression of type %s (E225)",
+                       base_type->ToString ().c_str ());
+
+        //     typed_value_t base_tv = CheckExpectReference (node.base_ref ());
+        //     typed_value_t low_tv = CheckAndImplicitlyDereference (node.low_ref ());
+        //     typed_value_t high_tv = CheckAndImplicitlyDereference (node.high_ref ());
+        //     typed_value_t result = typed_value_t::slice (node.location, base_tv, low_tv, high_tv);
+        //     if (result.IsError ())
+        //       {
+        //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        //                        "incompatible types (%s)[%s : %s] (E36)",
+        //                        base_tv.type->ToString ().c_str (),
+        //                        low_tv.type->ToString ().c_str (),
+        //                        high_tv.type->ToString ().c_str ());
+        //       }
+        //     node.typed_value = result;
       }
 
       void visit (TypeExpression& node)
@@ -1807,7 +1909,7 @@ namespace semantic
           }
 
         node.index ()->Accept (*this);
-        check_array_index (node.array_type, node.index ());
+        check_array_index (node.array_type, node.index (), false);
 
         node.args ()->Accept (*this);
         check_types_arguments (node.args (), push_port_type->GetSignature ());

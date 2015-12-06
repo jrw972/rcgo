@@ -303,15 +303,11 @@ namespace  code
       if (node.expr ()->expression_kind == kType)
         {
           // Conversion.
-          node.operation = node.args ()->At (0)->operation;
-
-          if (node.string_duplication)
-            {
-              node.operation = new ConvertStringToSliceOfBytes (node.operation);
-            }
+          node.operation = make_conversion (node.args ()->At (0)->operation, node.args ()->At (0)->type, node.type);
           return;
         }
-      else if (node.callable != NULL)
+
+      if (node.callable != NULL)
         {
           if (node.function_type)
             {
@@ -577,6 +573,46 @@ namespace  code
       not_reached;
     }
 
+    void visit (ast_slice_expr_t& node)
+    {
+      node.VisitChildren (*this);
+
+      Operation* low = node.low ()->operation;
+      if (node.low ()->expression_kind == kVariable)
+        {
+          low = new Load (low, node.low ()->type);
+        }
+      low = MakeConvertToInt (low, node.low ()->type);
+
+      Operation* high = node.high ()->operation;
+      if (node.high ()->expression_kind == kVariable)
+        {
+          high = new Load (high, node.high ()->type);
+        }
+      high = MakeConvertToInt (high, node.high ()->type);
+
+      if (node.array_type != NULL)
+        {
+          if (node.base ()->expression_kind == kVariable)
+            {
+              node.operation = new SliceArray (node.location, node.base ()->operation, low, high, node.array_type);
+              return;
+            }
+          else
+            {
+              unimplemented;
+              return;
+            }
+        }
+
+      if (node.slice_type != NULL)
+        {
+          unimplemented;
+          return;
+        }
+
+      not_reached;
+    }
 
     void visit (ast_unary_arithmetic_expr_t& node)
     {

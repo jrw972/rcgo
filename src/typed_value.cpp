@@ -582,7 +582,7 @@ typed_value_t::copy (const Location& location, typed_value_t tv)
   if (type_strip_cast<Component> (tv.type) != NULL)
     {
       error_at_line (-1, 0, location.File.c_str (), location.Line,
-                     "cannot copy components (E94)");
+                     "cannot copy components (E175)");
     }
 
   {
@@ -592,7 +592,7 @@ typed_value_t::copy (const Location& location, typed_value_t tv)
         if (type_contains_pointer (st->Base ()))
           {
             error_at_line (-1, 0, location.File.c_str (), location.Line,
-                           "copy leaks pointers (E95)");
+                           "copy leaks pointers (E222)");
 
           }
         // We will copy so a dereference can mutate the data.

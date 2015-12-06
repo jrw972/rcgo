@@ -2145,9 +2145,9 @@ namespace runtime
 
   struct CopyImpl : public Callable
   {
-    CopyImpl (const typed_value_t& in, const typed_value_t& out, ast::Node* definingNode)
+    CopyImpl (const Type::Type* in, ast::Node* definingNode)
       : in_ (in)
-      , function_type_ (makeFunctionType (in, out, definingNode))
+      , function_type_ (makeFunctionType (in, definingNode))
     {
       allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
       allocate_symbol (memory_model, function_type_->GetReturnParameter ());
@@ -2155,12 +2155,33 @@ namespace runtime
 
     virtual void call (executor_base_t& exec) const
     {
-      unimplemented;
-      // evaluate_expression (exec, memoryModel, node.args ());
-      // typed_value_t tv = in_;
-      // exec.stack ().pop_tv (tv);
-      // tv = typed_value_t::copy_exec (tv);
-      // exec.stack ().push_tv (tv);
+      const Slice* slice_type = type_strip_cast<Slice>(function_type_->GetReturnParameter ()->type);
+      if (slice_type != NULL)
+        {
+          Slice::ValueType* in = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetSignature ()->At (0)->offset ()));
+          Slice::ValueType* out = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
+          size_t sz = slice_type->Base ()->Size () * in->length;
+          out->ptr = malloc (sz);
+          memcpy (out->ptr, in->ptr, sz);
+          out->length = in->length;
+          out->capacity = in->length;
+          return;
+        }
+
+      const StringU* string_type = type_strip_cast<StringU>(function_type_->GetReturnParameter ()->type);
+      if (string_type != NULL)
+        {
+          StringU::ValueType* in = static_cast<StringU::ValueType*> (exec.stack ().get_address (function_type_->GetSignature ()->At (0)->offset ()));
+          StringU::ValueType* out = static_cast<StringU::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
+          out->ptr = malloc (in->length);
+          memcpy (out->ptr, in->ptr, in->length);
+          out->length = in->length;
+          return;
+        }
+
+      void* in = exec.stack ().get_address (function_type_->GetSignature ()->At (0)->offset ());
+      void* out = exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ());
+      memcpy (out, in, function_type_->GetReturnType ()->Size ());
     }
 
     virtual const Type::Type* type () const
@@ -2170,19 +2191,16 @@ namespace runtime
     const typed_value_t in_;
     const Type::Function* const function_type_;
     MemoryModel memory_model;
-    static const Type::Function* makeFunctionType (const typed_value_t& in, const typed_value_t& out, ast::Node* definingNode)
+    static const Type::Function* makeFunctionType (const Type::Type* in, ast::Node* definingNode)
     {
-      unimplemented;
-      // typed_value_t in2 = in;
-      // in2.intrinsic_mutability = MUTABLE;
-      // return new Type::Function (Type::Function::FUNCTION, (new Signature ())
-      //                            ->Append (new parameter_t (definingNode, "h", in2, false)),
-      //                            new parameter_t (definingNode, ReturnSymbol, out, false));
+      return new Type::Function (Type::Function::FUNCTION, (new Signature ())
+                                 ->Append (ParameterSymbol::make (definingNode, "h", in, IMMUTABLE, FOREIGN)),
+                                 ParameterSymbol::makeReturn (definingNode, ReturnSymbol, in, MUTABLE));
     }
 
     virtual size_t return_size () const
     {
-      unimplemented;
+      return function_type_->GetReturnType ()->Size ();
     }
     virtual size_t receiver_size () const
     {
@@ -2190,19 +2208,15 @@ namespace runtime
     }
     virtual size_t arguments_size () const
     {
-      unimplemented;
+      return function_type_->GetSignature ()->Size ();
     }
     virtual size_t locals_size () const
     {
-      unimplemented;
+      return 0;
     }
     virtual const Type::Signature* signature () const
     {
-      unimplemented;
-    }
-    virtual void check_types (ast::Node* args) const
-    {
-      unimplemented;
+      return function_type_->GetSignature ();
     }
   };
 
@@ -2229,7 +2243,54 @@ namespace runtime
                        "cannot copy expression of type %s (E12)", in.type->ToString ().c_str ());
       }
 
-    return typed_value_t (new CopyImpl (in, out, definingNode));
+    unimplemented;
+    //return typed_value_t (new CopyImpl (in, out, definingNode));
+  }
+
+  Callable*
+  Copy::instantiate (const std::vector<const Type::Type*>& argument_types)
+  {
+    if (argument_types.size () != 1)
+      {
+        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+                       "copy expects one argument (E123)");
+      }
+
+    const Type::Type* in = argument_types.front ();
+
+    if (type_strip_cast<Component> (in) != NULL)
+      {
+        error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+                       "cannot copy components (E94)");
+      }
+
+    {
+      const Slice* st = type_strip_cast<Slice> (in);
+      if (st != NULL)
+        {
+          if (type_contains_pointer (st->Base ()))
+            {
+              error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+                             "copy leaks pointers (E95)");
+
+            }
+          // We will copy so a dereference can mutate the data.
+          //tv.intrinsic_mutability = MUTABLE;
+          //tv.dereference_mutability = MUTABLE;
+        }
+    }
+
+    {
+      const StringU* st = type_strip_cast<StringU> (in);
+      if (st != NULL)
+        {
+          // We will copy so a dereference can mutate the data.
+          //tv.intrinsic_mutability = MUTABLE;
+          //tv.dereference_mutability = IMMUTABLE;
+        }
+    }
+
+    return new CopyImpl (in, definingNode);
   }
 
   struct PrintlnImpl : public Callable
@@ -2397,21 +2458,6 @@ namespace runtime
   Println::instantiate (const TypeList& argument_types)
   {
     return new PrintlnImpl (argument_types);
-  }
-
-  ControlAction
-  ConvertStringToSliceOfBytes::execute (executor_base_t& exec) const
-  {
-    child->execute (exec);
-    StringU::ValueType in;
-    exec.stack ().pop (in);
-    Slice::ValueType out;
-    out.ptr = heap_allocate (exec.heap (), in.length);
-    memcpy (out.ptr, in.ptr, in.length);
-    out.length = in.length;
-    out.capacity = in.length;
-    exec.stack ().push (out);
-    return kContinue;
   }
 
   ControlAction
@@ -3010,6 +3056,35 @@ namespace runtime
   }
 
   ControlAction
+  SliceArray::execute (executor_base_t& exec) const
+  {
+    base->execute (exec);
+    char* ptr = static_cast<char*> (exec.stack ().pop_pointer ());
+    low->execute (exec);
+    Int::ValueType low_val;
+    exec.stack ().pop (low_val);
+    high->execute (exec);
+    Int::ValueType high_val;
+    exec.stack ().pop (high_val);
+    // Bounds check.
+    if (!(0 <= low_val &&
+          low_val <= high_val &&
+          high_val <= type->dimension))
+      {
+        error_at_line (-1, 0, location.File.c_str (), location.Line,
+                       "slice index is out of range (E223)");
+      }
+
+    Slice::ValueType slice_val;
+    slice_val.length = high_val - low_val;
+    slice_val.capacity = type->dimension - low_val;
+    slice_val.ptr = slice_val.length ? ptr + low_val * type->UnitSize () : NULL;
+    exec.stack ().push (slice_val);
+
+    return kContinue;
+  }
+
+  ControlAction
   Return::execute (executor_base_t& exec) const
   {
     child->execute (exec);
@@ -3250,6 +3325,105 @@ namespace runtime
           }
       }
     return kContinue;
+  }
+
+  struct ConvertStringToSliceOfBytes : public Operation
+  {
+    ConvertStringToSliceOfBytes (Operation* c) : child (c) { }
+    ControlAction
+    execute (executor_base_t& exec) const
+    {
+      child->execute (exec);
+      StringU::ValueType in;
+      exec.stack ().pop (in);
+      Slice::ValueType out;
+      out.ptr = heap_allocate (exec.heap (), in.length);
+      memcpy (out.ptr, in.ptr, in.length);
+      out.length = in.length;
+      out.capacity = in.length;
+      exec.stack ().push (out);
+      return kContinue;
+    }
+
+    virtual void dump () const
+    {
+      unimplemented;
+    }
+    Operation* const child;
+  };
+
+  struct ConvertSliceOfBytesToString : public Operation
+  {
+    ConvertSliceOfBytesToString (Operation* c) : child (c) { }
+    ControlAction
+    execute (executor_base_t& exec) const
+    {
+      child->execute (exec);
+      Slice::ValueType in;
+      exec.stack ().pop (in);
+      StringU::ValueType out;
+      out.ptr = heap_allocate (exec.heap (), in.length);
+      memcpy (out.ptr, in.ptr, in.length);
+      out.length = in.length;
+      exec.stack ().push (out);
+      return kContinue;
+    }
+
+    virtual void dump () const
+    {
+      unimplemented;
+    }
+    Operation* const child;
+  };
+
+  Operation* make_conversion (Operation* c, const Type::Type* from, const Type::Type* to)
+  {
+    if (Identical (from->UnderlyingType (), to->UnderlyingType ()))
+      {
+        unimplemented;
+      }
+    else if (from->Level () == Type::Type::UNNAMED &&
+             to->Level () == Type::Type::UNNAMED &&
+             from->underlying_kind () == kPointer &&
+             to->underlying_kind () == kPointer &&
+             Identical (from->pointer_base_type (), to->pointer_base_type ()))
+      {
+        unimplemented;
+      }
+    else if ((is_typed_integer (from) || is_typed_float (from)) &&
+             (is_typed_integer (to) || is_typed_float (from)))
+      {
+        unimplemented;
+      }
+    else if (is_typed_complex (from) && is_typed_complex (to))
+      {
+        unimplemented;
+      }
+    else if (is_typed_integer (from) && is_typed_string (to))
+      {
+        unimplemented;
+      }
+    else if (is_slice_of_bytes (from) && is_typed_string (to))
+      {
+        return new ConvertSliceOfBytesToString (c);
+      }
+    else if (is_slice_of_runes (from) && is_typed_string (to))
+      {
+        unimplemented;
+      }
+    else if (is_typed_string (from) && is_slice_of_bytes (to))
+      {
+        return new ConvertStringToSliceOfBytes (c);
+      }
+    else if (is_typed_string (from) && is_slice_of_runes (to))
+      {
+        unimplemented;
+      }
+    else
+      {
+        // Assignable.
+        unimplemented;
+      }
   }
 }
 

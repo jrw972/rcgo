@@ -11,11 +11,7 @@ struct BuiltinFunction : public Callable, public Symbol
 {
   BuiltinFunction (const std::string& id,
                    ast::Node* dn,
-                   const Type::Function* type)
-    : Symbol (id, dn)
-    , type_ (type)
-    , value_ (typed_value_t::make_ref (typed_value_t (this)))
-  { }
+                   const Type::Function* type);
 
   // Symbol
   virtual void accept (SymbolVisitor& visitor);
@@ -33,220 +29,73 @@ struct BuiltinFunction : public Callable, public Symbol
   {
     return value_;
   }
+  virtual const Type::Signature* signature () const
+  {
+    return type_->GetSignature ();
+  }
+  virtual size_t return_size () const
+  {
+    return type_->GetReturnType ()->Size ();
+  }
+  virtual size_t receiver_size () const
+  {
+    return 0;
+  }
+  virtual size_t locals_size () const
+  {
+    return 0;
+  }
+  virtual size_t arguments_size () const
+  {
+    return type_->GetSignature ()->Size ();
+  }
 
 protected:
   const Type::Function* const type_;
   typed_value_t const value_;
+  MemoryModel memory_model_;
 };
 
 struct Readable : public BuiltinFunction
 {
   Readable (ast::Node* dn);
   virtual void call (executor_base_t& exec) const;
-  virtual size_t return_size () const
-  {
-    unimplemented;
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const
-  {
-    unimplemented;
-  }
-  virtual size_t locals_size () const
-  {
-    unimplemented;
-  }
-  virtual const Type::Signature* signature () const
-  {
-    unimplemented;
-  }
-  virtual void check_types (ast::Node* args) const
-  {
-    unimplemented;
-  }
 };
 
 struct Read : public BuiltinFunction
 {
   Read (ast::Node* dn);
   virtual void call (executor_base_t& exec) const;
-  virtual size_t return_size () const
-  {
-    unimplemented;
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const
-  {
-    unimplemented;
-  }
-  virtual size_t locals_size () const
-  {
-    unimplemented;
-  }
-  virtual const Type::Signature* signature () const
-  {
-    unimplemented;
-  }
-  virtual void check_types (ast::Node* args) const
-  {
-    unimplemented;
-  }
 };
 
 struct Writable : public BuiltinFunction
 {
   Writable (ast::Node* dn);
   virtual void call (executor_base_t& exec) const;
-  virtual size_t return_size () const
-  {
-    unimplemented;
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const
-  {
-    unimplemented;
-  }
-  virtual size_t locals_size () const
-  {
-    unimplemented;
-  }
-  virtual const Type::Signature* signature () const
-  {
-    unimplemented;
-  }
-  virtual void check_types (ast::Node* args) const
-  {
-    unimplemented;
-  }
 };
 
 struct TimerfdCreate : public BuiltinFunction
 {
   TimerfdCreate (ast::Node* dn);
   virtual void call (executor_base_t& exec) const;
-  virtual size_t return_size () const
-  {
-    unimplemented;
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const
-  {
-    unimplemented;
-  }
-  virtual size_t locals_size () const
-  {
-    unimplemented;
-  }
-  virtual const Type::Signature* signature () const
-  {
-    unimplemented;
-  }
-  virtual void check_types (ast::Node* args) const
-  {
-    unimplemented;
-  }
 };
 
 struct TimerfdSettime : public BuiltinFunction
 {
   TimerfdSettime (ast::Node* dn);
   virtual void call (executor_base_t& exec) const;
-  virtual size_t return_size () const
-  {
-    unimplemented;
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const
-  {
-    unimplemented;
-  }
-  virtual size_t locals_size () const
-  {
-    unimplemented;
-  }
-  virtual const Type::Signature* signature () const
-  {
-    unimplemented;
-  }
-  virtual void check_types (ast::Node* args) const
-  {
-    unimplemented;
-  }
 };
 
 struct UdpSocket : public BuiltinFunction
 {
   UdpSocket (ast::Node* dn);
   virtual void call (executor_base_t& exec) const;
-  virtual size_t return_size () const
-  {
-    unimplemented;
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const
-  {
-    unimplemented;
-  }
-  virtual size_t locals_size () const
-  {
-    unimplemented;
-  }
-  virtual const Type::Signature* signature () const
-  {
-    unimplemented;
-  }
-  virtual void check_types (ast::Node* args) const
-  {
-    unimplemented;
-  }
 };
 
 struct Sendto : public BuiltinFunction
 {
   Sendto (ast::Node* dn);
   virtual void call (executor_base_t& exec) const;
-  virtual size_t return_size () const
-  {
-    unimplemented;
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const
-  {
-    unimplemented;
-  }
-  virtual size_t locals_size () const
-  {
-    unimplemented;
-  }
-  virtual const Type::Signature* signature () const
-  {
-    unimplemented;
-  }
-  virtual void check_types (ast::Node* args) const
-  {
-    unimplemented;
-  }
 };
 
 #endif /* BuiltinFunction_hpp */

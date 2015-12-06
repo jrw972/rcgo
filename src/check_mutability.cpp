@@ -5,14 +5,23 @@
 #include "AstVisitor.hpp"
 #include "Symbol.hpp"
 #include "SymbolVisitor.hpp"
+#include "Type.hpp"
 
 namespace semantic
 {
-
   using namespace ast;
+  using namespace Type;
 
   namespace
   {
+    void fix (Node& node)
+    {
+      if (node.type->underlying_kind () == Type::kStringU)
+        {
+          node.dereference_mutability = std::max (node.dereference_mutability, IMMUTABLE);
+        }
+    }
+
     // Compute and check the intrinsic and dereference mutability of the expression.
     struct MutabilityVisitor : public ast::DefaultVisitor
     {
@@ -29,10 +38,11 @@ namespace semantic
             // Conversion.
             node.intrinsic_mutability = IMMUTABLE;
             node.dereference_mutability = node.args ()->At (0)->dereference_mutability;
-            if (node.string_duplication)
+            if (node.reset_mutability)
               {
                 node.dereference_mutability = MUTABLE;
               }
+            fix (node);
             return;
           }
 
@@ -48,6 +58,7 @@ namespace semantic
           }
         node.intrinsic_mutability = IMMUTABLE;
         node.dereference_mutability = node.return_parameter->dereference_mutability;
+        fix (node);
       }
 
       void visit (ast_list_expr_t& node)
@@ -59,6 +70,7 @@ namespace semantic
       {
         node.intrinsic_mutability = IMMUTABLE;
         node.dereference_mutability = IMMUTABLE;
+        fix (node);
       }
 
       void visit (ast_identifier_expr_t& node)
@@ -78,25 +90,30 @@ namespace semantic
 
           void visit (const BuiltinFunction& symbol)
           {
-            unimplemented;
+            node.intrinsic_mutability = IMMUTABLE;
+            node.dereference_mutability = IMMUTABLE;
+            fix (node);
           }
 
           void visit (const ::Template& symbol)
           {
             node.intrinsic_mutability = IMMUTABLE;
             node.dereference_mutability = IMMUTABLE;
+            fix (node);
           }
 
           void visit (const ::Function& symbol)
           {
             node.intrinsic_mutability = IMMUTABLE;
             node.dereference_mutability = IMMUTABLE;
+            fix (node);
           }
 
           void visit (const ParameterSymbol& symbol)
           {
             node.intrinsic_mutability = symbol.intrinsic_mutability;
             node.dereference_mutability = symbol.dereference_mutability;
+            fix (node);
           }
 
           void visit (const TypeSymbol& symbol)
@@ -108,12 +125,14 @@ namespace semantic
           {
             node.intrinsic_mutability = IMMUTABLE;
             node.dereference_mutability = IMMUTABLE;
+            fix (node);
           }
 
           void visit (const VariableSymbol& symbol)
           {
             node.intrinsic_mutability = symbol.intrinsic_mutability;
             node.dereference_mutability = symbol.dereference_mutability;
+            fix (node);
           }
 
           void visit (const HiddenSymbol& symbol)
@@ -311,6 +330,7 @@ namespace semantic
         node.VisitChildren (*this);
         node.intrinsic_mutability = node.child ()->dereference_mutability;
         node.dereference_mutability = node.child ()->dereference_mutability;
+        fix (node);
       }
 
       void visit (ast_address_of_expr_t& node)
@@ -318,6 +338,7 @@ namespace semantic
         node.VisitChildren (*this);
         node.intrinsic_mutability = node.child ()->intrinsic_mutability;
         node.dereference_mutability = std::max (node.child ()->intrinsic_mutability, node.child ()->dereference_mutability);
+        fix (node);
       }
 
       void visit (ast_select_expr_t& node)
@@ -328,11 +349,13 @@ namespace semantic
           {
             node.intrinsic_mutability = node.base ()->dereference_mutability;
             node.dereference_mutability = node.base ()->dereference_mutability;
+            fix (node);
           }
         else
           {
             node.intrinsic_mutability = node.base ()->intrinsic_mutability;
             node.dereference_mutability = node.base ()->dereference_mutability;
+            fix (node);
           }
       }
 
@@ -343,12 +366,34 @@ namespace semantic
           {
             node.intrinsic_mutability = node.base ()->intrinsic_mutability;
             node.dereference_mutability = node.base ()->dereference_mutability;
+            fix (node);
             return;
           }
         if (node.slice_type != NULL)
           {
             node.intrinsic_mutability = node.base ()->intrinsic_mutability;
             node.dereference_mutability = node.base ()->dereference_mutability;
+            fix (node);
+            return;
+          }
+        not_reached;
+      }
+
+      void visit (ast_slice_expr_t& node)
+      {
+        node.VisitChildren (*this);
+        if (node.array_type != NULL)
+          {
+            node.intrinsic_mutability = IMMUTABLE;
+            node.dereference_mutability = node.base ()->dereference_mutability;
+            fix (node);
+            return;
+          }
+        if (node.slice_type != NULL)
+          {
+            node.intrinsic_mutability = IMMUTABLE;
+            node.dereference_mutability = node.base ()->dereference_mutability;
+            fix (node);
             return;
           }
         not_reached;
@@ -359,6 +404,7 @@ namespace semantic
         node.VisitChildren (*this);
         node.intrinsic_mutability = IMMUTABLE;
         node.dereference_mutability = IMMUTABLE;
+        fix (node);
       }
 
       void visit (ast_binary_arithmetic_expr_t& node)
@@ -366,6 +412,7 @@ namespace semantic
         node.VisitChildren (*this);
         node.intrinsic_mutability = IMMUTABLE;
         node.dereference_mutability = IMMUTABLE;
+        fix (node);
       }
 
       void visit (TypeExpression& node)
