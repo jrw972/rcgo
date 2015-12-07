@@ -19,7 +19,6 @@ BuiltinFunction.hpp BuiltinFunction.cpp \
 Callable.hpp Callable.cpp \
 check_types.hpp check_types.cpp \
 check_mutability.hpp check_mutability.cpp \
-check_constants.hpp check_constants.cpp \
 check_control.hpp check_control.cpp \
 compute_receiver_access.hpp compute_receiver_access.cpp \
 Composition.hpp Composition.cpp \

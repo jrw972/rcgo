@@ -18,7 +18,6 @@
 #include "generate_code.hpp"
 #include "check_types.hpp"
 #include "check_mutability.hpp"
-#include "check_constants.hpp"
 #include "check_control.hpp"
 #include "compute_receiver_access.hpp"
 #include "process_types_and_constants.hpp"
