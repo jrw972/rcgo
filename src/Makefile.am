@@ -32,7 +32,7 @@ field.hpp \
 generate_code.hpp generate_code.cpp \
 heap.hpp heap.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
-Location.hpp Location.cpp \
+Location.hpp location.cpp \
 MemoryModel.hpp MemoryModel.cpp \
 parser.hpp parser.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
