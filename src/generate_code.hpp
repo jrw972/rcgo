@@ -6,7 +6,7 @@
 namespace code
 {
 
-  void generate_code (ast::Node* root);
+void generate_code (ast::Node* root);
 }
 
 #endif // rc_generate_code_hpp

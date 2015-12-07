@@ -111,455 +111,455 @@
 
 namespace semantic
 {
-  using namespace ast;
-  using namespace Type;
+using namespace ast;
+using namespace Type;
 
-  namespace
-  {
-    void fix (Node& node)
+namespace
+{
+void fix (Node& node)
+{
+  if (node.type->underlying_kind () == Type::kStringU)
     {
-      if (node.type->underlying_kind () == Type::kStringU)
-        {
-          node.dereference_mutability = std::max (node.dereference_mutability, IMMUTABLE);
-        }
+      node.dereference_mutability = std::max (node.dereference_mutability, IMMUTABLE);
     }
+}
 
-    // Compute and check the intrinsic and dereference mutability of the expression.
-    struct MutabilityVisitor : public ast::DefaultVisitor
+// Compute and check the intrinsic and dereference mutability of the expression.
+struct MutabilityVisitor : public ast::DefaultVisitor
+{
+  void default_action (Node& node)
+  {
+    ast_not_reached (node);
+  }
+
+  void visit (ast_call_expr_t& node)
+  {
+    if (node.expr ()->expression_kind == kType)
+      {
+        node.args ()->Accept (*this);
+        // Conversion.
+        node.intrinsic_mutability = IMMUTABLE;
+        node.dereference_mutability = node.args ()->At (0)->dereference_mutability;
+        if (node.reset_mutability)
+          {
+            node.dereference_mutability = MUTABLE;
+          }
+        fix (node);
+        return;
+      }
+
+    node.VisitChildren (*this);
+
+    if (node.callable != NULL)
+      {
+        node.callable->check_mutability (node.args ());
+      }
+    else
+      {
+        check_mutability_arguments (node.args (), node.signature);
+      }
+    node.intrinsic_mutability = IMMUTABLE;
+    node.dereference_mutability = node.return_parameter->dereference_mutability;
+    fix (node);
+  }
+
+  void visit (ast_list_expr_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_literal_expr_t& node)
+  {
+    node.intrinsic_mutability = IMMUTABLE;
+    node.dereference_mutability = IMMUTABLE;
+    fix (node);
+  }
+
+  void visit (ast_identifier_expr_t& node)
+  {
+    struct visitor : public ConstSymbolVisitor
     {
-      void default_action (Node& node)
+      ast_identifier_expr_t& node;
+
+      visitor (ast_identifier_expr_t& n)
+        : node (n)
+      { }
+
+      void defaultAction (const Symbol& symbol)
       {
-        ast_not_reached (node);
-      }
-
-      void visit (ast_call_expr_t& node)
-      {
-        if (node.expr ()->expression_kind == kType)
-          {
-            node.args ()->Accept (*this);
-            // Conversion.
-            node.intrinsic_mutability = IMMUTABLE;
-            node.dereference_mutability = node.args ()->At (0)->dereference_mutability;
-            if (node.reset_mutability)
-              {
-                node.dereference_mutability = MUTABLE;
-              }
-            fix (node);
-            return;
-          }
-
-        node.VisitChildren (*this);
-
-        if (node.callable != NULL)
-          {
-            node.callable->check_mutability (node.args ());
-          }
-        else
-          {
-            check_mutability_arguments (node.args (), node.signature);
-          }
-        node.intrinsic_mutability = IMMUTABLE;
-        node.dereference_mutability = node.return_parameter->dereference_mutability;
-        fix (node);
-      }
-
-      void visit (ast_list_expr_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_literal_expr_t& node)
-      {
-        node.intrinsic_mutability = IMMUTABLE;
-        node.dereference_mutability = IMMUTABLE;
-        fix (node);
-      }
-
-      void visit (ast_identifier_expr_t& node)
-      {
-        struct visitor : public ConstSymbolVisitor
-        {
-          ast_identifier_expr_t& node;
-
-          visitor (ast_identifier_expr_t& n)
-            : node (n)
-          { }
-
-          void defaultAction (const Symbol& symbol)
-          {
-            not_reached;
-          }
-
-          void visit (const BuiltinFunction& symbol)
-          {
-            node.intrinsic_mutability = IMMUTABLE;
-            node.dereference_mutability = IMMUTABLE;
-            fix (node);
-          }
-
-          void visit (const ::Template& symbol)
-          {
-            node.intrinsic_mutability = IMMUTABLE;
-            node.dereference_mutability = IMMUTABLE;
-            fix (node);
-          }
-
-          void visit (const ::Function& symbol)
-          {
-            node.intrinsic_mutability = IMMUTABLE;
-            node.dereference_mutability = IMMUTABLE;
-            fix (node);
-          }
-
-          void visit (const ParameterSymbol& symbol)
-          {
-            node.intrinsic_mutability = symbol.intrinsic_mutability;
-            node.dereference_mutability = symbol.dereference_mutability;
-            fix (node);
-          }
-
-          void visit (const TypeSymbol& symbol)
-          {
-            // Do nothing.
-          }
-
-          void visit (const ConstantSymbol& symbol)
-          {
-            node.intrinsic_mutability = IMMUTABLE;
-            node.dereference_mutability = IMMUTABLE;
-            fix (node);
-          }
-
-          void visit (const VariableSymbol& symbol)
-          {
-            node.intrinsic_mutability = symbol.intrinsic_mutability;
-            node.dereference_mutability = symbol.dereference_mutability;
-            fix (node);
-          }
-
-          void visit (const HiddenSymbol& symbol)
-          {
-            unimplemented;
-          }
-        };
-        visitor v (node);
-        node.symbol->accept (v);
-      }
-
-      void visit (SourceFile& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast::Type& node)
-      {
-        // Do nothing.
-      }
-
-      void visit (ast_instance_t& node)
-      {
-        node.expression_list ()->Accept (*this);
-        check_mutability_arguments (node.expression_list (), node.symbol->initializer->initializerType->signature);
-      }
-
-      void visit (ast_initializer_t& node)
-      {
-        node.body ()->Accept (*this);
-      }
-
-      void visit (ast_getter_t& node)
-      {
-        node.body ()->Accept (*this);
-      }
-
-      void visit (ast_action_t& node)
-      {
-        node.precondition ()->Accept (*this);
-        node.body ()->Accept (*this);
-      }
-
-      void visit (ast_dimensioned_action_t& node)
-      {
-        node.precondition ()->Accept (*this);
-        node.body ()->Accept (*this);
-      }
-
-      void visit (ast_reaction_t& node)
-      {
-        node.body ()->Accept (*this);
-      }
-
-      void visit (ast_dimensioned_reaction_t& node)
-      {
-        node.body ()->Accept (*this);
-      }
-
-      void visit (ast_bind_t& node)
-      {
-        // Do nothing.
-      }
-
-      void visit (ast_function_t& node)
-      {
-        node.body ()->Accept (*this);
-      }
-
-      void visit (ast_method_t& node)
-      {
-        node.body ()->Accept (*this);
-      }
-
-      void visit (ast_const_t& node)
-      {
-        // Do nothing.
-      }
-
-      void visit (ast_list_statement_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_expression_statement_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_return_statement_t& node)
-      {
-        node.VisitChildren (*this);
-        if (type_contains_pointer (node.child ()->type) &&
-            node.return_symbol->dereference_mutability < node.child ()->dereference_mutability)
-          {
-            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "return casts away +const or +foreign (E149)");
-          }
-      }
-
-      void visit (ast_if_statement_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_while_statement_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_for_iota_statement_t& node)
-      {
-        node.body ()->Accept (*this);
-      }
-
-      void visit (ast_empty_statement_t& node)
-      {
-        // Do nothing.
-      }
-
-      void visit (ast_var_statement_t& node)
-      {
-        if (!node.expression_list ()->Empty ())
-          {
-            node.expression_list ()->Accept (*this);
-            size_t idx = 0;
-            for (Node::ConstIterator pos = node.expression_list ()->Begin (), limit = node.expression_list ()->End ();
-                 pos != limit;
-                 ++pos, ++idx)
-              {
-                Node* n = *pos;
-                VariableSymbol* symbol = node.symbols[idx];
-
-                if (type_contains_pointer (n->type) &&
-                    symbol->dereference_mutability < n->dereference_mutability)
-                  {
-                    error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "assignment casts away +const or +foreign (E92)");
-                  }
-              }
-          }
-      }
-
-      void visit (ast_assign_statement_t& node)
-      {
-        node.VisitChildren (*this);
-        if (node.left ()->intrinsic_mutability != MUTABLE)
-          {
-            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "target of assignment is not mutable (E86)");
-          }
-
-        if (type_contains_pointer (node.right ()->type) &&
-            node.left ()->dereference_mutability < node.right ()->dereference_mutability)
-          {
-            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "assignment casts away +const or +foreign (E161)");
-          }
-      }
-
-      void visit (ast_add_assign_statement_t& node)
-      {
-        node.VisitChildren (*this);
-        if (node.left ()->intrinsic_mutability != MUTABLE)
-          {
-            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "target of assignment is not mutable (E15)");
-          }
-      }
-
-      void visit (ast_increment_statement_t& node)
-      {
-        node.VisitChildren (*this);
-        if (node.child ()->intrinsic_mutability != MUTABLE)
-          {
-            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "target of increment is not mutable (E177)");
-          }
-      }
-
-      void visit (ast_change_statement_t& node)
-      {
-        node.expr ()->Accept (*this);
-        node.root_symbol->dereference_mutability = node.expr ()->dereference_mutability;
-        node.body ()->Accept (*this);
-      }
-
-      void visit (ast_activate_statement_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_dereference_expr_t& node)
-      {
-        node.VisitChildren (*this);
-        node.intrinsic_mutability = node.child ()->dereference_mutability;
-        node.dereference_mutability = node.child ()->dereference_mutability;
-        fix (node);
-      }
-
-      void visit (ast_address_of_expr_t& node)
-      {
-        node.VisitChildren (*this);
-        node.intrinsic_mutability = node.child ()->intrinsic_mutability;
-        node.dereference_mutability = std::max (node.child ()->intrinsic_mutability, node.child ()->dereference_mutability);
-        fix (node);
-      }
-
-      void visit (ast_select_expr_t& node)
-      {
-        node.base ()->Accept (*this);
-
-        if (type_dereference (node.base ()->type))
-          {
-            node.intrinsic_mutability = node.base ()->dereference_mutability;
-            node.dereference_mutability = node.base ()->dereference_mutability;
-            fix (node);
-          }
-        else
-          {
-            node.intrinsic_mutability = node.base ()->intrinsic_mutability;
-            node.dereference_mutability = node.base ()->dereference_mutability;
-            fix (node);
-          }
-      }
-
-      void visit (ast_index_expr_t& node)
-      {
-        node.VisitChildren (*this);
-        if (node.array_type != NULL)
-          {
-            node.intrinsic_mutability = node.base ()->intrinsic_mutability;
-            node.dereference_mutability = node.base ()->dereference_mutability;
-            fix (node);
-            return;
-          }
-        if (node.slice_type != NULL)
-          {
-            node.intrinsic_mutability = node.base ()->intrinsic_mutability;
-            node.dereference_mutability = node.base ()->dereference_mutability;
-            fix (node);
-            return;
-          }
         not_reached;
       }
 
-      void visit (ast_slice_expr_t& node)
+      void visit (const BuiltinFunction& symbol)
       {
-        node.VisitChildren (*this);
-        if (node.array_type != NULL)
-          {
-            node.intrinsic_mutability = IMMUTABLE;
-            node.dereference_mutability = node.base ()->dereference_mutability;
-            fix (node);
-            return;
-          }
-        if (node.slice_type != NULL)
-          {
-            node.intrinsic_mutability = IMMUTABLE;
-            node.dereference_mutability = node.base ()->dereference_mutability;
-            fix (node);
-            return;
-          }
-        not_reached;
-      }
-
-      void visit (ast_unary_arithmetic_expr_t& node)
-      {
-        node.VisitChildren (*this);
         node.intrinsic_mutability = IMMUTABLE;
         node.dereference_mutability = IMMUTABLE;
         fix (node);
       }
 
-      void visit (ast_binary_arithmetic_expr_t& node)
+      void visit (const ::Template& symbol)
       {
-        node.VisitChildren (*this);
         node.intrinsic_mutability = IMMUTABLE;
         node.dereference_mutability = IMMUTABLE;
         fix (node);
       }
 
-      void visit (TypeExpression& node)
+      void visit (const ::Function& symbol)
+      {
+        node.intrinsic_mutability = IMMUTABLE;
+        node.dereference_mutability = IMMUTABLE;
+        fix (node);
+      }
+
+      void visit (const ParameterSymbol& symbol)
+      {
+        node.intrinsic_mutability = symbol.intrinsic_mutability;
+        node.dereference_mutability = symbol.dereference_mutability;
+        fix (node);
+      }
+
+      void visit (const TypeSymbol& symbol)
       {
         // Do nothing.
       }
 
-      void visit (ast_push_port_call_expr_t& node)
+      void visit (const ConstantSymbol& symbol)
       {
-        node.args ()->Accept (*this);
+        node.intrinsic_mutability = IMMUTABLE;
+        node.dereference_mutability = IMMUTABLE;
+        fix (node);
       }
 
-      void visit (ast_indexed_port_call_expr_t& node)
+      void visit (const VariableSymbol& symbol)
       {
-        node.args ()->Accept (*this);
-        node.index ()->Accept (*this);
+        node.intrinsic_mutability = symbol.intrinsic_mutability;
+        node.dereference_mutability = symbol.dereference_mutability;
+        fix (node);
+      }
+
+      void visit (const HiddenSymbol& symbol)
+      {
+        unimplemented;
       }
     };
-
+    visitor v (node);
+    node.symbol->accept (v);
   }
 
-  void check_mutability_arguments (ast::Node* node, const Type::Signature* signature)
+  void visit (SourceFile& node)
   {
-    ast_list_expr_t* args = ast_cast<ast_list_expr_t> (node);
+    node.VisitChildren (*this);
+  }
 
-    size_t i = 0;
-    for (Node::ConstIterator pos = args->Begin (), limit = args->End ();
-         pos != limit;
-         ++pos, ++i)
+  void visit (ast::Type& node)
+  {
+    // Do nothing.
+  }
+
+  void visit (ast_instance_t& node)
+  {
+    node.expression_list ()->Accept (*this);
+    check_mutability_arguments (node.expression_list (), node.symbol->initializer->initializerType->signature);
+  }
+
+  void visit (ast_initializer_t& node)
+  {
+    node.body ()->Accept (*this);
+  }
+
+  void visit (ast_getter_t& node)
+  {
+    node.body ()->Accept (*this);
+  }
+
+  void visit (ast_action_t& node)
+  {
+    node.precondition ()->Accept (*this);
+    node.body ()->Accept (*this);
+  }
+
+  void visit (ast_dimensioned_action_t& node)
+  {
+    node.precondition ()->Accept (*this);
+    node.body ()->Accept (*this);
+  }
+
+  void visit (ast_reaction_t& node)
+  {
+    node.body ()->Accept (*this);
+  }
+
+  void visit (ast_dimensioned_reaction_t& node)
+  {
+    node.body ()->Accept (*this);
+  }
+
+  void visit (ast_bind_t& node)
+  {
+    // Do nothing.
+  }
+
+  void visit (ast_function_t& node)
+  {
+    node.body ()->Accept (*this);
+  }
+
+  void visit (ast_method_t& node)
+  {
+    node.body ()->Accept (*this);
+  }
+
+  void visit (ast_const_t& node)
+  {
+    // Do nothing.
+  }
+
+  void visit (ast_list_statement_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_expression_statement_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_return_statement_t& node)
+  {
+    node.VisitChildren (*this);
+    if (type_contains_pointer (node.child ()->type) &&
+        node.return_symbol->dereference_mutability < node.child ()->dereference_mutability)
       {
-        const Type::Type* arg = (*pos)->type;
-        if (type_contains_pointer (arg))
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "return casts away +const or +foreign (E149)");
+      }
+  }
+
+  void visit (ast_if_statement_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_while_statement_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_for_iota_statement_t& node)
+  {
+    node.body ()->Accept (*this);
+  }
+
+  void visit (ast_empty_statement_t& node)
+  {
+    // Do nothing.
+  }
+
+  void visit (ast_var_statement_t& node)
+  {
+    if (!node.expression_list ()->Empty ())
+      {
+        node.expression_list ()->Accept (*this);
+        size_t idx = 0;
+        for (Node::ConstIterator pos = node.expression_list ()->Begin (), limit = node.expression_list ()->End ();
+             pos != limit;
+             ++pos, ++idx)
           {
-            if (signature->At (i)->dereference_mutability < (*pos)->dereference_mutability)
+            Node* n = *pos;
+            VariableSymbol* symbol = node.symbols[idx];
+
+            if (type_contains_pointer (n->type) &&
+                symbol->dereference_mutability < n->dereference_mutability)
               {
-                error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
-                               "argument %zd casts away +const or +foreign (E85)", i + 1);
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "assignment casts away +const or +foreign (E92)");
               }
           }
       }
   }
 
-  void check_mutability (ast::Node* root)
+  void visit (ast_assign_statement_t& node)
   {
-    MutabilityVisitor visitor;
-    root->Accept (visitor);
+    node.VisitChildren (*this);
+    if (node.left ()->intrinsic_mutability != MUTABLE)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "target of assignment is not mutable (E86)");
+      }
+
+    if (type_contains_pointer (node.right ()->type) &&
+        node.left ()->dereference_mutability < node.right ()->dereference_mutability)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "assignment casts away +const or +foreign (E161)");
+      }
   }
+
+  void visit (ast_add_assign_statement_t& node)
+  {
+    node.VisitChildren (*this);
+    if (node.left ()->intrinsic_mutability != MUTABLE)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "target of assignment is not mutable (E15)");
+      }
+  }
+
+  void visit (ast_increment_statement_t& node)
+  {
+    node.VisitChildren (*this);
+    if (node.child ()->intrinsic_mutability != MUTABLE)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "target of increment is not mutable (E177)");
+      }
+  }
+
+  void visit (ast_change_statement_t& node)
+  {
+    node.expr ()->Accept (*this);
+    node.root_symbol->dereference_mutability = node.expr ()->dereference_mutability;
+    node.body ()->Accept (*this);
+  }
+
+  void visit (ast_activate_statement_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_dereference_expr_t& node)
+  {
+    node.VisitChildren (*this);
+    node.intrinsic_mutability = node.child ()->dereference_mutability;
+    node.dereference_mutability = node.child ()->dereference_mutability;
+    fix (node);
+  }
+
+  void visit (ast_address_of_expr_t& node)
+  {
+    node.VisitChildren (*this);
+    node.intrinsic_mutability = node.child ()->intrinsic_mutability;
+    node.dereference_mutability = std::max (node.child ()->intrinsic_mutability, node.child ()->dereference_mutability);
+    fix (node);
+  }
+
+  void visit (ast_select_expr_t& node)
+  {
+    node.base ()->Accept (*this);
+
+    if (type_dereference (node.base ()->type))
+      {
+        node.intrinsic_mutability = node.base ()->dereference_mutability;
+        node.dereference_mutability = node.base ()->dereference_mutability;
+        fix (node);
+      }
+    else
+      {
+        node.intrinsic_mutability = node.base ()->intrinsic_mutability;
+        node.dereference_mutability = node.base ()->dereference_mutability;
+        fix (node);
+      }
+  }
+
+  void visit (ast_index_expr_t& node)
+  {
+    node.VisitChildren (*this);
+    if (node.array_type != NULL)
+      {
+        node.intrinsic_mutability = node.base ()->intrinsic_mutability;
+        node.dereference_mutability = node.base ()->dereference_mutability;
+        fix (node);
+        return;
+      }
+    if (node.slice_type != NULL)
+      {
+        node.intrinsic_mutability = node.base ()->intrinsic_mutability;
+        node.dereference_mutability = node.base ()->dereference_mutability;
+        fix (node);
+        return;
+      }
+    not_reached;
+  }
+
+  void visit (ast_slice_expr_t& node)
+  {
+    node.VisitChildren (*this);
+    if (node.array_type != NULL)
+      {
+        node.intrinsic_mutability = IMMUTABLE;
+        node.dereference_mutability = node.base ()->dereference_mutability;
+        fix (node);
+        return;
+      }
+    if (node.slice_type != NULL)
+      {
+        node.intrinsic_mutability = IMMUTABLE;
+        node.dereference_mutability = node.base ()->dereference_mutability;
+        fix (node);
+        return;
+      }
+    not_reached;
+  }
+
+  void visit (ast_unary_arithmetic_expr_t& node)
+  {
+    node.VisitChildren (*this);
+    node.intrinsic_mutability = IMMUTABLE;
+    node.dereference_mutability = IMMUTABLE;
+    fix (node);
+  }
+
+  void visit (ast_binary_arithmetic_expr_t& node)
+  {
+    node.VisitChildren (*this);
+    node.intrinsic_mutability = IMMUTABLE;
+    node.dereference_mutability = IMMUTABLE;
+    fix (node);
+  }
+
+  void visit (TypeExpression& node)
+  {
+    // Do nothing.
+  }
+
+  void visit (ast_push_port_call_expr_t& node)
+  {
+    node.args ()->Accept (*this);
+  }
+
+  void visit (ast_indexed_port_call_expr_t& node)
+  {
+    node.args ()->Accept (*this);
+    node.index ()->Accept (*this);
+  }
+};
+
+}
+
+void check_mutability_arguments (ast::Node* node, const Type::Signature* signature)
+{
+  ast_list_expr_t* args = ast_cast<ast_list_expr_t> (node);
+
+  size_t i = 0;
+  for (Node::ConstIterator pos = args->Begin (), limit = args->End ();
+       pos != limit;
+       ++pos, ++i)
+    {
+      const Type::Type* arg = (*pos)->type;
+      if (type_contains_pointer (arg))
+        {
+          if (signature->At (i)->dereference_mutability < (*pos)->dereference_mutability)
+            {
+              error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
+                             "argument %zd casts away +const or +foreign (E85)", i + 1);
+            }
+        }
+    }
+}
+
+void check_mutability (ast::Node* root)
+{
+  MutabilityVisitor visitor;
+  root->Accept (visitor);
+}
 }

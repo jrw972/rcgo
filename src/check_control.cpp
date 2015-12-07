@@ -7,349 +7,349 @@
 namespace semantic
 {
 
-  using namespace ast;
+using namespace ast;
 
-  namespace
+namespace
+{
+struct Visitor : public ast::DefaultVisitor
+{
+  enum Context
   {
-    struct Visitor : public ast::DefaultVisitor
-    {
-      enum Context
+    Other,
+    Action,
+    Reaction,
+    Initializer,
+    Getter,
+  };
+
+  Context context;
+  bool in_mutable_phase;
+
+  Visitor () : context (Other), in_mutable_phase (false) { }
+
+  void default_action (Node& node)
+  {
+    ast_not_reached (node);
+  }
+
+  void visit (SourceFile& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast::Type& node)
+  {
+    // Do nothing.
+  }
+
+  void visit (ast_instance_t& node)
+  {
+    node.expression_list ()->Accept (*this);
+  }
+
+  void visit (ast_const_t& node)
+  {
+    // Do nothing.
+  }
+
+  void visit (ast_initializer_t& node)
+  {
+    Visitor v (*this);
+    v.context = Initializer;
+    node.body ()->Accept (v);
+  }
+
+  void visit (ast_getter_t& node)
+  {
+    Visitor v (*this);
+    v.context = Getter;
+    node.body ()->Accept (v);
+  }
+
+  void visit (ast_action_t& node)
+  {
+    Visitor v (*this);
+    v.context = Action;
+    node.precondition ()->Accept (v);
+    node.body ()->Accept (v);
+  }
+
+  void visit (ast_dimensioned_action_t& node)
+  {
+    Visitor v (*this);
+    v.context = Action;
+    node.precondition ()->Accept (v);
+    node.body ()->Accept (v);
+  }
+
+  void visit (ast_reaction_t& node)
+  {
+    Visitor v (*this);
+    v.context = Reaction;
+    node.body ()->Accept (v);
+  }
+
+  void visit (ast_dimensioned_reaction_t& node)
+  {
+    Visitor v (*this);
+    v.context = Reaction;
+    node.body ()->Accept (v);
+  }
+
+  void visit (ast_bind_t& node)
+  {
+    // Do nothing.
+  }
+
+  void visit (ast_function_t& node)
+  {
+    node.body ()->Accept (*this);
+  }
+
+  void visit (ast_method_t& node)
+  {
+    node.body ()->Accept (*this);
+  }
+
+  void visit (ast_list_statement_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_expression_statement_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_return_statement_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_if_statement_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_while_statement_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_for_iota_statement_t& node)
+  {
+    node.body ()->Accept (*this);
+  }
+
+  void visit (ast_var_statement_t& node)
+  {
+    node.expression_list ()->Accept (*this);
+  }
+
+  void visit (ast_empty_statement_t& node)
+  {
+    // Do nothing.
+  }
+
+  void visit (ast_assign_statement_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_add_assign_statement_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_increment_statement_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_change_statement_t& node)
+  {
+    node.expr ()->Accept (*this);
+    node.body ()->Accept (*this);
+  }
+
+  void visit (ast_activate_statement_t& node)
+  {
+    if (!(context == Action ||
+          context == Reaction))
       {
-        Other,
-        Action,
-        Reaction,
-        Initializer,
-        Getter,
-      };
-
-      Context context;
-      bool in_mutable_phase;
-
-      Visitor () : context (Other), in_mutable_phase (false) { }
-
-      void default_action (Node& node)
-      {
-        ast_not_reached (node);
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "activation outside of action or reaction (E53)");
       }
 
-      void visit (SourceFile& node)
+    if (in_mutable_phase)
       {
-        node.VisitChildren (*this);
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "activations within activations are not allowed (E54)");
       }
 
-      void visit (ast::Type& node)
+    node.expr_list ()->Accept (*this);
+    Visitor v (*this);
+    v.in_mutable_phase = true;
+    node.body ()->Accept (v);
+  }
+
+  void visit (ast_call_expr_t& node)
+  {
+    if (node.expr ()->expression_kind == kType)
       {
-        // Do nothing.
+        node.args ()->Accept (*this);
+        return;
       }
 
-      void visit (ast_instance_t& node)
+    node.VisitChildren (*this);
+    if (node.function_type)
       {
-        node.expression_list ()->Accept (*this);
-      }
-
-      void visit (ast_const_t& node)
-      {
-        // Do nothing.
-      }
-
-      void visit (ast_initializer_t& node)
-      {
-        Visitor v (*this);
-        v.context = Initializer;
-        node.body ()->Accept (v);
-      }
-
-      void visit (ast_getter_t& node)
-      {
-        Visitor v (*this);
-        v.context = Getter;
-        node.body ()->Accept (v);
-      }
-
-      void visit (ast_action_t& node)
-      {
-        Visitor v (*this);
-        v.context = Action;
-        node.precondition ()->Accept (v);
-        node.body ()->Accept (v);
-      }
-
-      void visit (ast_dimensioned_action_t& node)
-      {
-        Visitor v (*this);
-        v.context = Action;
-        node.precondition ()->Accept (v);
-        node.body ()->Accept (v);
-      }
-
-      void visit (ast_reaction_t& node)
-      {
-        Visitor v (*this);
-        v.context = Reaction;
-        node.body ()->Accept (v);
-      }
-
-      void visit (ast_dimensioned_reaction_t& node)
-      {
-        Visitor v (*this);
-        v.context = Reaction;
-        node.body ()->Accept (v);
-      }
-
-      void visit (ast_bind_t& node)
-      {
-        // Do nothing.
-      }
-
-      void visit (ast_function_t& node)
-      {
-        node.body ()->Accept (*this);
-      }
-
-      void visit (ast_method_t& node)
-      {
-        node.body ()->Accept (*this);
-      }
-
-      void visit (ast_list_statement_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_expression_statement_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_return_statement_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_if_statement_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_while_statement_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_for_iota_statement_t& node)
-      {
-        node.body ()->Accept (*this);
-      }
-
-      void visit (ast_var_statement_t& node)
-      {
-        node.expression_list ()->Accept (*this);
-      }
-
-      void visit (ast_empty_statement_t& node)
-      {
-        // Do nothing.
-      }
-
-      void visit (ast_assign_statement_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_add_assign_statement_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_increment_statement_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_change_statement_t& node)
-      {
-        node.expr ()->Accept (*this);
-        node.body ()->Accept (*this);
-      }
-
-      void visit (ast_activate_statement_t& node)
-      {
-        if (!(context == Action ||
-              context == Reaction))
+        switch (node.function_type->function_kind)
           {
+          case Type::Function::FUNCTION:
+            // No restrictions on caller.
+            break;
+
+          case Type::Function::PUSH_PORT:
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "activation outside of action or reaction (E53)");
-          }
+                           "push ports cannot be called (E202)");
+            break;
 
-        if (in_mutable_phase)
-          {
-            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                           "activations within activations are not allowed (E54)");
-          }
-
-        node.expr_list ()->Accept (*this);
-        Visitor v (*this);
-        v.in_mutable_phase = true;
-        node.body ()->Accept (v);
-      }
-
-      void visit (ast_call_expr_t& node)
-      {
-        if (node.expr ()->expression_kind == kType)
-          {
-            node.args ()->Accept (*this);
-            return;
-          }
-
-        node.VisitChildren (*this);
-        if (node.function_type)
-          {
-            switch (node.function_type->function_kind)
+          case Type::Function::PULL_PORT:
+            // Must be called from either a getter, an action, or reaction.
+            if (!(context == Getter ||
+                  context == Action ||
+                  context == Reaction))
               {
-              case Type::Function::FUNCTION:
-                // No restrictions on caller.
-                break;
-
-              case Type::Function::PUSH_PORT:
                 error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "push ports cannot be called (E202)");
-                break;
-
-              case Type::Function::PULL_PORT:
-                // Must be called from either a getter, an action, or reaction.
-                if (!(context == Getter ||
-                      context == Action ||
-                      context == Reaction))
-                  {
-                    error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "pull ports may only be called from a getter, an action, or a reaction (E201)");
-                  }
-                if (in_mutable_phase)
-                  {
-                    error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "cannot call pull port in mutable section (E198)");
-                  }
-                break;
+                               "pull ports may only be called from a getter, an action, or a reaction (E201)");
               }
-            return;
+            if (in_mutable_phase)
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "cannot call pull port in mutable section (E198)");
+              }
+            break;
           }
+        return;
+      }
 
-        if (node.method_type)
+    if (node.method_type)
+      {
+        switch (node.method_type->method_kind)
           {
-            switch (node.method_type->method_kind)
+          case Type::Method::METHOD:
+            // No restrictions on caller.
+            break;
+          case Type::Method::INITIALIZER:
+            // Caller must be an initializer.
+            if (context != Initializer)
               {
-              case Type::Method::METHOD:
-                // No restrictions on caller.
-                break;
-              case Type::Method::INITIALIZER:
-                // Caller must be an initializer.
-                if (context != Initializer)
-                  {
-                    error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "initializers may only be called from initializers (E197)");
-                  }
-                break;
-              case Type::Method::GETTER:
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "initializers may only be called from initializers (E197)");
+              }
+            break;
+          case Type::Method::GETTER:
+          {
+            // Must be called from either a getter, action, reaction, or initializer.
+            if (!(context == Getter ||
+                  context == Action ||
+                  context == Reaction ||
+                  context == Initializer))
               {
-                // Must be called from either a getter, action, reaction, or initializer.
-                if (!(context == Getter ||
-                      context == Action ||
-                      context == Reaction ||
-                      context == Initializer))
-                  {
-                    error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "getters may only be called from a getter, an action, a reaction, or an initializer (E196)");
-                  }
-                if (in_mutable_phase)
-                  {
-                    error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                                   "cannot call getter in mutable section (E34)");
-                  }
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "getters may only be called from a getter, an action, a reaction, or an initializer (E196)");
               }
-              break;
-              case Type::Method::REACTION:
+            if (in_mutable_phase)
               {
-                unimplemented;
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "cannot call getter in mutable section (E34)");
               }
-              break;
-              }
-            return;
           }
-
-        not_reached;
+          break;
+          case Type::Method::REACTION:
+          {
+            unimplemented;
+          }
+          break;
+          }
+        return;
       }
 
-      void visit (ast_identifier_expr_t& node)
-      {
-        // Do nothing.
-      }
-
-      void visit (ast_list_expr_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_literal_expr_t& node)
-      {
-        // Do nothing.
-      }
-
-      void visit (ast_dereference_expr_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_address_of_expr_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_select_expr_t& node)
-      {
-        node.base ()->Accept (*this);
-      }
-
-      void visit (ast_index_expr_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_slice_expr_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_unary_arithmetic_expr_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (ast_binary_arithmetic_expr_t& node)
-      {
-        node.VisitChildren (*this);
-      }
-
-      void visit (TypeExpression& node)
-      {
-        // Do nothing.
-      }
-
-      void visit (ast_push_port_call_expr_t& node)
-      {
-        node.args ()->Accept (*this);
-      }
-
-      void visit (ast_indexed_port_call_expr_t& node)
-      {
-        node.index ()->Accept (*this);
-        node.args ()->Accept (*this);
-      }
-    };
+    not_reached;
   }
 
-  void check_control (ast::Node* root)
+  void visit (ast_identifier_expr_t& node)
   {
-    Visitor v;
-    root->Accept (v);
+    // Do nothing.
   }
+
+  void visit (ast_list_expr_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_literal_expr_t& node)
+  {
+    // Do nothing.
+  }
+
+  void visit (ast_dereference_expr_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_address_of_expr_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_select_expr_t& node)
+  {
+    node.base ()->Accept (*this);
+  }
+
+  void visit (ast_index_expr_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_slice_expr_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_unary_arithmetic_expr_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (ast_binary_arithmetic_expr_t& node)
+  {
+    node.VisitChildren (*this);
+  }
+
+  void visit (TypeExpression& node)
+  {
+    // Do nothing.
+  }
+
+  void visit (ast_push_port_call_expr_t& node)
+  {
+    node.args ()->Accept (*this);
+  }
+
+  void visit (ast_indexed_port_call_expr_t& node)
+  {
+    node.index ()->Accept (*this);
+    node.args ()->Accept (*this);
+  }
+};
+}
+
+void check_control (ast::Node* root)
+{
+  Visitor v;
+  root->Accept (v);
+}
 }

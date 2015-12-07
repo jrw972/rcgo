@@ -5,7 +5,7 @@
 
 namespace semantic
 {
-  void check_control (ast::Node* root);
+void check_control (ast::Node* root);
 }
 
 #endif // rc_check_control_hpp

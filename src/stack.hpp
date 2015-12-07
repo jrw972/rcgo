@@ -8,128 +8,128 @@
 
 namespace runtime
 {
-  // An aligned stack of bytes.
-  // The alignment is given by MemoryModel::StackAlignment.
-  // The stack grows up (instead of down like a hardware stack).
-  // The stack contains a base pointer to set up function call frames.
-  struct Stack
+// An aligned stack of bytes.
+// The alignment is given by MemoryModel::StackAlignment.
+// The stack grows up (instead of down like a hardware stack).
+// The stack contains a base pointer to set up function call frames.
+struct Stack
+{
+  Stack (size_t capacity);
+  ~Stack ();
+
+  void push_pointer (void* pointer);
+  void* pop_pointer ();
+  void* peek_pointer () const;
+
+  template <typename T>
+  void
+  push (T b)
   {
-    Stack (size_t capacity);
-    ~Stack ();
+    size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
+    assert (top_ + s <= limit_);
+    std::memcpy (top_, &b, sizeof (T));
+    top_ += s;
+  }
 
-    void push_pointer (void* pointer);
-    void* pop_pointer ();
-    void* peek_pointer () const;
+  template <typename T>
+  void
+  pop (T& retval)
+  {
+    size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
+    assert (top_ - s >= data_);
+    top_ -= s;
+    std::memcpy (&retval, top_, sizeof (T));
+  }
 
-    template <typename T>
-    void
-    push (T b)
-    {
-      size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
-      assert (top_ + s <= limit_);
-      std::memcpy (top_, &b, sizeof (T));
-      top_ += s;
-    }
+  // Pop size bytes from the top of the stack.
+  void popn (size_t size);
 
-    template <typename T>
-    void
-    pop (T& retval)
-    {
-      size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
-      assert (top_ - s >= data_);
-      top_ -= s;
-      std::memcpy (&retval, top_, sizeof (T));
-    }
+  // TODO:  Remove these methods once they are no longer need by runtime.
+  void push_tv (const typed_value_t& tv);
+  void pop_tv (typed_value_t& tv);
 
-    // Pop size bytes from the top of the stack.
-    void popn (size_t size);
+  // Push base_pointer + offset.
+  // Used to get the address of an argument or local variable.
+  void push_address (ptrdiff_t offset);
+  // Return base_pointer + offset.
+  void* get_address (ptrdiff_t offset);
 
-    // TODO:  Remove these methods once they are no longer need by runtime.
-    void push_tv (const typed_value_t& tv);
-    void pop_tv (typed_value_t& tv);
+  // Reserve size bytes on the top of the stack.
+  void reserve (size_t size);
 
-    // Push base_pointer + offset.
-    // Used to get the address of an argument or local variable.
-    void push_address (ptrdiff_t offset);
-    // Return base_pointer + offset.
-    void* get_address (ptrdiff_t offset);
+  // Copy size bytes from ptr to the top of the stack.
+  void load (void* ptr,
+             size_t size);
 
-    // Reserve size bytes on the top of the stack.
-    void reserve (size_t size);
+  // Copy size bytes from the top of the stack to ptr
+  // and remove that many bytes from the stack.
+  void store (void* ptr,
+              size_t size);
 
-    // Copy size bytes from ptr to the top of the stack.
-    void load (void* ptr,
-               size_t size);
+  // Copy size bytes from ptr to base_pointer + offset.
+  void write (ptrdiff_t offset,
+              void* ptr,
+              size_t size);
 
-    // Copy size bytes from the top of the stack to ptr
-    // and remove that many bytes from the stack.
-    void store (void* ptr,
-                size_t size);
+  // Read a pointer at base_pointer + offset.
+  void* read_pointer (ptrdiff_t offset);
 
-    // Copy size bytes from ptr to base_pointer + offset.
-    void write (ptrdiff_t offset,
-                void* ptr,
-                size_t size);
+  // Copy size bytes from the top of the stack to base_pointer + offset
+  // and remove that many bytes from the stack.
+  void move (ptrdiff_t offset,
+             size_t size);
 
-    // Read a pointer at base_pointer + offset.
-    void* read_pointer (ptrdiff_t offset);
+  // Clear size bytes at base_pointer + offset.
+  void clear (ptrdiff_t offset,
+              size_t size);
 
-    // Copy size bytes from the top of the stack to base_pointer + offset
-    // and remove that many bytes from the stack.
-    void move (ptrdiff_t offset,
-               size_t size);
+  // Setup a new frame by
+  // - pushing the old base pointer
+  // - setting a new base pointer
+  // - reserving and clearing size bytes and set them to zero.
+  void setup (size_t size);
 
-    // Clear size bytes at base_pointer + offset.
-    void clear (ptrdiff_t offset,
-                size_t size);
+  // Tear down a frame by resetting the base pointer.
+  void teardown ();
 
-    // Setup a new frame by
-    // - pushing the old base pointer
-    // - setting a new base pointer
-    // - reserving and clearing size bytes and set them to zero.
-    void setup (size_t size);
+  // Get/set the base pointer.
+  char* base_pointer () const
+  {
+    return base_pointer_;
+  }
+  void base_pointer (char* base_pointer)
+  {
+    base_pointer_ = base_pointer;
+  }
 
-    // Tear down a frame by resetting the base pointer.
-    void teardown ();
+  // Get/set the top of the stack.
+  // TODO:  Remove this method.  Requires different logic for calculating the size of arguments.
+  char* top () const
+  {
+    return top_;
+  }
 
-    // Get/set the base pointer.
-    char* base_pointer () const
-    {
-      return base_pointer_;
-    }
-    void base_pointer (char* base_pointer)
-    {
-      base_pointer_ = base_pointer;
-    }
+  // True if the stack is empty.
+  bool empty () const
+  {
+    return data_ == top_;
+  }
 
-    // Get/set the top of the stack.
-    // TODO:  Remove this method.  Requires different logic for calculating the size of arguments.
-    char* top () const
-    {
-      return top_;
-    }
+  // Return a pointer to the return instruction pointer.
+  void* pointer_to_instruction_pointer () const
+  {
+    return base_pointer_ - sizeof (void*);
+  }
 
-    // True if the stack is empty.
-    bool empty () const
-    {
-      return data_ == top_;
-    }
+  // Debugging dump.
+  void dump () const;
 
-    // Return a pointer to the return instruction pointer.
-    void* pointer_to_instruction_pointer () const
-    {
-      return base_pointer_ - sizeof (void*);
-    }
-
-    // Debugging dump.
-    void dump () const;
-
-  private:
-    char* data_;
-    char* base_pointer_;
-    char* top_;
-    char* limit_;
-  };
+private:
+  char* data_;
+  char* base_pointer_;
+  char* top_;
+  char* limit_;
+};
 
 }
 

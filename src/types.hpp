@@ -18,44 +18,44 @@ enum ExpressionKind
 
 namespace decl
 {
-  class Action;
+class Action;
 }
 
 namespace ast
 {
-  class ast_receiver_t;
-  class ast_activate_statement_t;
-  class Node;
-  class ast_call_expr_t;
-  class ast_function_t;
-  class ast_getter_t;
-  class ast_initializer_t;
-  class ast_instance_t;
-  class ast_method_t;
-  class ast_list_expr_t;
+class ast_receiver_t;
+class ast_activate_statement_t;
+class Node;
+class ast_call_expr_t;
+class ast_function_t;
+class ast_getter_t;
+class ast_initializer_t;
+class ast_instance_t;
+class ast_method_t;
+class ast_list_expr_t;
 
-  class Visitor;
-  class ConstVisitor;
+class Visitor;
+class ConstVisitor;
 }
 
 namespace runtime
 {
-  class Operation;
+class Operation;
 }
 
 namespace Type
 {
-  class Type;
-  class NamedType;
-  class Signature;
+class Type;
+class NamedType;
+class Signature;
 }
 
 typedef std::vector<const Type::Type*> TypeList;
 
 namespace Composition
 {
-  class Composer;
-  class Instance;
+class Composer;
+class Instance;
 }
 
 class typed_value_t;
@@ -85,7 +85,7 @@ class VariableSymbol;
 
 namespace runtime
 {
-  class Stack;
+class Stack;
 }
 
 // A reference is either mutable, immutable, or foreign.

@@ -5,7 +5,7 @@
 
 namespace semantic
 {
-  void process_functions_and_methods (ast::Node* root);
+void process_functions_and_methods (ast::Node* root);
 }
 
 #endif // rc_process_functions_and_methods_hpp

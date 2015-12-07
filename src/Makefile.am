@@ -51,7 +51,7 @@ Template.hpp Template.cpp \
 Type.hpp Type.cpp \
 TypeCheckExpression.cpp \
 types.hpp \
-util.hpp util.cpp \
+util.hpp \
 value.hpp value.cpp \
 yyparse.hpp yyparse.cpp
 rc_LDADD=-lpthread
