@@ -6,8 +6,8 @@
 #include "types.hpp"
 #include "ast.hpp"
 #include <error.h>
-#include "SymbolVisitor.hpp"
-#include "Composition.hpp"
+#include "symbol_visitor.hpp"
+#include "composition.hpp"
 
 using namespace std::rel_ops;
 

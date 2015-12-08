@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "Type.hpp"
+#include "type.hpp"
 
 using namespace Type;
 using namespace std::rel_ops;

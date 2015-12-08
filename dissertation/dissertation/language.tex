@@ -15,7 +15,7 @@ An implementation of the reactive component model presented in chapter~\ref{mode
 First and foremost, an implementation tests the practicality of the model.
 The act of implementing the model can help to evaluate whether the assumptions upon which the model is founded can be realized using existing techniques.
 Conversely, an implementation can suggest restrictions to the model that are necessary to produce an effective implementation.
-An example of this was seen in chapter~\ref{model} where the component instance was used as proxy for its state variables for the purpose of determining which variables were involved in a transaction.
+An example of this was seen in section~\ref{compprops} where the component instance was used as proxy for its state variables for the purpose of determining which variables were involved in a transaction.
 Implementation forces one to supply and consider details that can either qualify or disqualify a model as a practical engineering tool.
 This is consistent with the emerging attitude in systems research that all new ideas and techniques must be accompanied by relevant tools and evaluations to show their feasibility.
 
@@ -30,6 +30,56 @@ That is, given a platform for reactive components, we can design, construct, and
 Furthermore, we can evaluate critically the design and implementation processes that the model and platform encourage.
 By comparing implementations of similar systems in two different models, we can gain insight into the strengths and weaknesses of the model.
 These ideas will be explored further in chapter~\ref{evaluation}.
+
+\section{Requirements and Assumptions}
+\paragraph{Terminology.}
+An implementation of reactive components must provide facilities for declaring and defining the features of the model depicted in figure~\ref{reactive_component}.
+The
+
+\paragraph{Strict enforcement of the reactive component model.}
+
+\paragraph{How do we enforce the immutable/mutable phase split?}
+
+\paragraph{Direct implementation.}
+
+\paragraph{Static system assumption.}
+
+\paragraph{Efficient communication.}
+
+\paragraph{Can scheduling be efficient?}
+
+\paragraph{Can we interact with POSIX?}
+
+\paragraph{Generality.}
+
+\paragraph{Approachability.}
+
+
+
+
+
+\section{Design Sketch}
+
+question -> requirement
+
+How does the
+
+practicality
+
+directness
+
+design problems
+
+
+
+
+\section{Requirements}
+
+What questions do we want to answer?
+- efficiency of scheduler
+- interaction of reactive component semantics on transformation parts
+
+
 
 \section{Approach}
 Our approach to implementing reactive components is to define a high-level programming language for reactive components and implement that language in an interpreter.

@@ -1,7 +1,7 @@
 #include "semantic.hpp"
-#include "AstVisitor.hpp"
+#include "ast_visitor.hpp"
 using namespace ast;
-#include "Type.hpp"
+#include "type.hpp"
 using namespace Type;
 #include "runtime.hpp"
 using namespace runtime;

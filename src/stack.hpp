@@ -4,7 +4,7 @@
 #include <cstring>
 
 #include "types.hpp"
-#include "MemoryModel.hpp"
+#include "memory_model.hpp"
 
 namespace runtime
 {

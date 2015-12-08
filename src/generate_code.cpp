@@ -1,9 +1,9 @@
 #include "generate_code.hpp"
 
-#include "AstVisitor.hpp"
+#include "ast_visitor.hpp"
 #include "runtime.hpp"
-#include "Callable.hpp"
-#include "SymbolVisitor.hpp"
+#include "callable.hpp"
+#include "symbol_visitor.hpp"
 #include "field.hpp"
 #include "semantic.hpp"
 #include "reaction.hpp"

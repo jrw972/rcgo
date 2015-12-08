@@ -1,7 +1,7 @@
 #ifndef Composition_hpp
 #define Composition_hpp
 
-#include "Type.hpp"
+#include "type.hpp"
 #include "types.hpp"
 
 namespace Composition

@@ -1,7 +1,7 @@
 #ifndef bind_hpp
 #define bind_hpp
 
-#include "MemoryModel.hpp"
+#include "memory_model.hpp"
 
 class bind_t
 {

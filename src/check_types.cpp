@@ -2,15 +2,15 @@
 
 #include <error.h>
 
-#include "AstVisitor.hpp"
-#include "Template.hpp"
-#include "Callable.hpp"
-#include "SymbolVisitor.hpp"
+#include "ast_visitor.hpp"
+#include "template.hpp"
+#include "callable.hpp"
+#include "symbol_visitor.hpp"
 #include "semantic.hpp"
-#include "Symbol.hpp"
+#include "symbol.hpp"
 #include "field.hpp"
 #include "process_types_and_constants.hpp"
-#include "Symbol.hpp"
+#include "symbol.hpp"
 #include "action.hpp"
 #include "reaction.hpp"
 

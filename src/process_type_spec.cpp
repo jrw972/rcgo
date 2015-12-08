@@ -1,9 +1,9 @@
 #include "semantic.hpp"
-#include "Type.hpp"
+#include "type.hpp"
 #include "ast.hpp"
 #include <error.h>
-#include "Symbol.hpp"
-#include "AstVisitor.hpp"
+#include "symbol.hpp"
+#include "ast_visitor.hpp"
 
 using namespace Type;
 using namespace ast;

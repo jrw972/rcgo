@@ -1,17 +1,17 @@
-#include "Composition.hpp"
+#include "composition.hpp"
 
 #include <error.h>
 
 #include <set>
 
 #include "ast.hpp"
-#include "AstVisitor.hpp"
+#include "ast_visitor.hpp"
 #include "bind.hpp"
 #include "field.hpp"
 #include "action.hpp"
-#include "Callable.hpp"
+#include "callable.hpp"
 #include "semantic.hpp"
-#include "EvaluateStatic.hpp"
+#include "evaluate_static.hpp"
 #include "reaction.hpp"
 #include "stack.hpp"
 #include "runtime.hpp"

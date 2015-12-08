@@ -2,10 +2,10 @@
 #define rc_runtime_hpp
 
 #include "types.hpp"
-#include "Template.hpp"
-#include "Type.hpp"
+#include "template.hpp"
+#include "type.hpp"
 #include "executor_base.hpp"
-#include "Location.hpp"
+#include "location.hpp"
 
 namespace runtime
 {

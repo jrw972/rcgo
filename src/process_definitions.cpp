@@ -2,13 +2,13 @@
 
 #include "semantic.hpp"
 #include "ast.hpp"
-#include "Symbol.hpp"
+#include "symbol.hpp"
 #include "semantic.hpp"
 #include "action.hpp"
 #include "reaction.hpp"
 #include "field.hpp"
-#include "Callable.hpp"
-#include "AstVisitor.hpp"
+#include "callable.hpp"
+#include "ast_visitor.hpp"
 
 using namespace Type;
 using namespace ast;

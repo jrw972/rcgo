@@ -6,12 +6,12 @@
 
 #include "debug.hpp"
 #include "util.hpp"
-#include "Type.hpp"
-#include "Callable.hpp"
-#include "SymbolVisitor.hpp"
+#include "type.hpp"
+#include "callable.hpp"
+#include "symbol_visitor.hpp"
 #include "action.hpp"
 #include "reaction.hpp"
-#include "AstVisitor.hpp"
+#include "ast_visitor.hpp"
 
 namespace ast
 {

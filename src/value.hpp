@@ -2,7 +2,7 @@
 #define value_hpp
 
 #include "types.hpp"
-#include "Type.hpp"
+#include "type.hpp"
 
 struct value_t
 {

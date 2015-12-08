@@ -1,6 +1,6 @@
 #include "heap.hpp"
 #include "util.hpp"
-#include "Type.hpp"
+#include "type.hpp"
 #include "debug.hpp"
 #include <string.h>
 #include <pthread.h>

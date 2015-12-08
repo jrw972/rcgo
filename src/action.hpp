@@ -2,8 +2,8 @@
 #define action_hpp
 
 #include "types.hpp"
-#include "Type.hpp"
-#include "MemoryModel.hpp"
+#include "type.hpp"
+#include "memory_model.hpp"
 
 namespace decl
 {

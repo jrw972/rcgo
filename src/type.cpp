@@ -1,8 +1,8 @@
-#include "Type.hpp"
+#include "type.hpp"
 #include "action.hpp"
 #include "reaction.hpp"
 #include "field.hpp"
-#include "Callable.hpp"
+#include "callable.hpp"
 #include "bind.hpp"
 
 namespace Type

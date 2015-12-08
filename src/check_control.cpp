@@ -2,7 +2,7 @@
 
 #include <error.h>
 
-#include "AstVisitor.hpp"
+#include "ast_visitor.hpp"
 
 namespace semantic
 {

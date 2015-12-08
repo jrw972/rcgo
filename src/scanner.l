@@ -6,7 +6,7 @@
 #include "yyparse.hpp"
 #include "parser.hpp"
 #include "debug.hpp"
-#include "Type.hpp"
+#include "type.hpp"
 #include <error.h>
 
   using namespace Type;

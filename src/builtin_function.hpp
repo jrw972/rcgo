@@ -1,8 +1,8 @@
 #ifndef BuiltinFunction_hpp
 #define BuiltinFunction_hpp
 
-#include "Callable.hpp"
-#include "Symbol.hpp"
+#include "callable.hpp"
+#include "symbol.hpp"
 
 /*
  * Base class for builtin functions.

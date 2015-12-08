@@ -2,10 +2,10 @@
 
 #include <error.h>
 
-#include "AstVisitor.hpp"
-#include "Symbol.hpp"
-#include "SymbolVisitor.hpp"
-#include "Type.hpp"
+#include "ast_visitor.hpp"
+#include "symbol.hpp"
+#include "symbol_visitor.hpp"
+#include "type.hpp"
 
 /*
   A reference has:

@@ -2,7 +2,7 @@
 #define yyparse_h
 
 #include "ast.hpp"
-#include "Type.hpp"
+#include "type.hpp"
 
 #define YYLTYPE size_t
 

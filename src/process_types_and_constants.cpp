@@ -1,7 +1,7 @@
 #include "process_types_and_constants.hpp"
 
-#include "AstVisitor.hpp"
-#include "Symbol.hpp"
+#include "ast_visitor.hpp"
+#include "symbol.hpp"
 #include "semantic.hpp"
 #include "check_types.hpp"
 

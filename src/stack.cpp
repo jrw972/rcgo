@@ -1,7 +1,7 @@
 #include "stack.hpp"
 
 #include "util.hpp"
-#include "Type.hpp"
+#include "type.hpp"
 
 namespace runtime
 {
