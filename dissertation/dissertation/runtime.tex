@@ -1,5 +1,203 @@
 \chapter{Implementation \label{implementation}}
 
+\section{Enforcing Sound Composition}
+
+In this section, we outline the algorithm for checking the composition semantics of reactive components.
+The algorithm leverages the static system assumption.
+
+\paragraph{Enumerate instances and ports.}
+The first step to analyzing composition is to enumerate the components in the system.
+The top-level components are given by the declared instances.
+Sub-components are enumerated by recursively instantiating fields that are also components.
+Fields that are ports are also enumerated.
+
+\paragraph{Enumerate bindings.}
+Let $I$ be a component instance of type $T$.
+Associated with $T$ is a set of binders $B$.
+Each binder $b \in B$ is evaluated for $I$ to create a set of bindings.
+A binding either binds a push port to a reaction or a getter to a pull port.
+The result of this calculation is two functions.
+The function $reactions: (I,Push) \to \{(I,Reaction)\}$ maps an instance/push port pair to a set of instance/reaction pairs.
+The function $getter: (I,Pull) \to \{(I,Getter)\}$ map an instance/pull port pair to a set of instance/getter pairs.
+
+\paragraph{Check bindings.}
+Inverting $reactions$ yields a function that maps an instance/reaction pair to a set of instance/push port pairs $reactions^{-1}: (I,Reaction) \to \{(I,Push)\}$.
+A reaction can be bound to at most one push port:
+\begin{displaymath}
+\forall (I,Reaction) : |reactions^{-1} (I,Reaction)| \leq 1
+\end{displaymath}
+A pull port must be bound to exactly one getter:
+\begin{displaymath}
+\forall (I,Pull) : |getters (I,Pull)| = 1
+\end{displaymath}
+
+\begin{figure}[H]
+\centering
+%%\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    reaction/.style={rectangle, draw, rounded corners=1mm, text width=2cm,
+        text centered, anchor=north},
+    activation/.style={rectangle, draw, rounded corners=1mm, dashed, text width=2cm,
+        text centered, anchor=north},
+    push/.style={rectangle, draw, rounded corners=1mm, dotted, text width=2cm,
+        text centered, anchor=north},
+    level 1/.style={sibling distance=7.0cm},
+    level 2/.style={sibling distance=4.0cm},
+    level 3/.style={sibling distance=3.0cm},
+    level distance=0.5cm, growth parent anchor=south
+]
+\node (Action) [reaction] {Instance1 Action}
+  child {
+    node (Activation01) [activation] {Instance1* Activation1}
+    child {
+      node (Push01) [push] {Instance1 Push1}
+      child {
+        node (Rection01) [reaction] {Instance2 Reaction1}
+        child {
+          node (Activation03) [activation] {Instance2* Activation3}
+        }
+      }
+    }
+    child {
+      node (Push02) [push] {Instance1 Push2}
+    }
+  }
+  child {
+    node (Activation02) [activation] {Instance1 Activation2}
+    child {
+      node (Push04) [push] {Instance1 Push1}
+      child {
+        node (Rection08) [reaction] {Instance2 Reaction1}
+        child {
+          node (Activation08) [activation] {Instance2* Activation3}
+        }
+      }
+    }
+    child {
+      node (Push03) [push] {Instance1 Push3}
+      child {
+        node (Rection02) [reaction] {Instance2 Reaction2}
+        child {
+          node (Activation04) [activation] {Instance2* Activation5}
+        }
+      }
+      child {
+        node (Rection03) [reaction] {Instance3 Reaction3}
+        child {
+          node (Activation05) [activation] {Instance3 Activation6}
+        }
+      }
+    }
+  }
+;
+
+\end{tikzpicture}
+%%}%
+\caption{Example concrete action\label{concrete_action}}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+%%\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    reaction/.style={rectangle, draw, rounded corners=1mm, text width=2cm,
+        text centered, anchor=north},
+    activation/.style={rectangle, draw, rounded corners=1mm, dashed, text width=2cm,
+        text centered, anchor=north},
+    push/.style={rectangle, draw, rounded corners=1mm, dotted, text width=2cm,
+        text centered, anchor=north},
+    level 1/.style={sibling distance=7.0cm},
+    level 2/.style={sibling distance=4.0cm},
+    level 3/.style={sibling distance=3.0cm},
+    level distance=0.5cm, growth parent anchor=south
+]
+\node (Action) [reaction] {Instance1 Instance1* Instance2* Instance3}
+  child {
+    node (Activation01) [activation] {Instance1* Instance2*}
+    child {
+      node (Push01) [push] {Instance2*}
+      child {
+        node (Rection01) [reaction] {Instance2*}
+        child {
+          node (Activation03) [activation] {Instance2*}
+        }
+      }
+    }
+    child {
+      node (Push02) [push] {}
+    }
+  }
+  child {
+    node (Activation02) [activation] {Instance1 Instance2* Instance3}
+    child {
+      node (Push04) [push] {Instance2*}
+      child {
+        node (Rection08) [reaction] {Instance2*}
+        child {
+          node (Activation08) [activation] {Instance2*}
+        }
+      }
+    }
+    child {
+      node (Push03) [push] {Instance2* Instance3}
+      child {
+        node (Rection02) [reaction] {Instance2*}
+        child {
+          node (Activation04) [activation] {Instance2*}
+        }
+      }
+      child {
+        node (Rection03) [reaction] {Instance3}
+        child {
+          node (Activation05) [activation] {Instance3}
+        }
+      }
+    }
+  }
+;
+
+\end{tikzpicture}
+%%}%
+\caption{Example instance set calculation\label{instance_sets}}
+\end{figure}
+
+\paragraph{Enumerate concrete actions.}
+Let $I$ be a component instance of type $T$.
+Associated with $T$ is a set of actions $A$.
+Each action $a \in A$ is evaluated for $I$ to create a concrete action.
+A concrete action is a directed graph constructed as follows:
+\begin{enumerate}
+\item The root is $(I,a)$.
+\item The descendants of the root are the activations in $a$.
+\item The descendants of the activations are the push ports named in each activation.
+\item The descendants of the push ports are the reactions bound to the push ports given by $reactions$.
+\item This process is the repeated for each instance/reaction leaf.
+\end{enumerate}
+Figure~\ref{concrete_action} shows an example concrete action depicted as a tree.
+
+The first step in analyzing a concrete action is to ensure that the directed graph is acyclic.
+A cycle forms when a reaction activates itself through the set of concrete bindings.
+Once the concrete action is proven free of cycles, it may be considered and represented as a tree as shown in figure~\ref{concrete_action}.
+In the example, the Instance1/Push1 is activated by both Activation1 and Activation2.
+It is replicated to convert the directed graph to a tree.
+
+The second step in analyzing a concrete action is to determine which activations mutate the state of a component.
+The current implementation uses a conservative static analysis of the body of an activate statement to determine if the activation mutates the state of the component.
+These activations are marked with an asterisk (*) in figure~\ref{concrete_action}.
+
+The third step is to compute a set of instances for each node in the concrete action.
+If the node is not an activation, the set of instances is the union of the instances of its children.
+If the node is an activation, the set of instances is the union of the instances of its children and the instance implied by the activation.
+Figure~\ref{instance_sets} shows the instance set calculation for the concrete action in figure~\ref{concrete_action}.
+The root shows that Instance1 does not change in at least one activation and may change in at least one activation, that Instance2 may change in every activation, and that Instance3 is ``read-only'' in this concrete action.
+
+The fourth step is to check that a mutated instance appears in at most one child node instance set for the activation and push port nodes.
+This check succeeds everywhere but Activation2 in figures~\ref{concrete_action}~and~\ref{instance_sets} as Instance2* appears in both children.
+The activation and push port nodes represent activities that will be performed together.
+That is, once control passes to an activation statement, all push ports and their bound reactions are activated.
+In contrast, activations, as children of action and reaction nodes, represent mutually exclusive alternatives, i.e., at most one activation statement is executed per action/reaction body.
+Thus, a mutated instance appearing in two or more children of an activation node or push port node indicates that the state of a component may be mutated in disparate ways leading to a non-deterministic state transition.
+
 \begin{quote}
 In theory, there is no difference between theory and practice. \linebreak
 But, in practice, there is.  \emph{Anonymous}

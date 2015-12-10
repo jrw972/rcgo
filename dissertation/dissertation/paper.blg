@@ -3,6 +3,7 @@ Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
 The top-level auxiliary file: paper.aux
 The style file: plain.bst
 Database file #1: paper.bib
+Warning--I didn't find a database entry for "dangle"
 Warning--to sort, need author, editor, or key in 1983proceedings
 Warning--to sort, need author or key in cxx11
 Warning--to sort, need author or key in ioatoolkit
@@ -12,7 +13,7 @@ Warning--empty journal in armstrong1996concurrent
 Warning--can't use both volume and number fields in blumofe1995cilk
 You've used 61 entries,
             2118 wiz_defined-function locations,
-            841 strings with 12027 characters,
+            842 strings with 12033 characters,
 and the built_in function-call counts, 18398 in all, are:
 = -- 1836
 > -- 716
@@ -51,4 +52,4 @@ warning$ -- 7
 while$ -- 185
 width$ -- 63
 write$ -- 654
-(There were 7 warnings)
+(There were 8 warnings)
