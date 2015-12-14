@@ -2,9 +2,9 @@
 #define Callable_hpp
 
 #include "types.hpp"
-#include "Type.hpp"
-#include "MemoryModel.hpp"
-#include "Symbol.hpp"
+#include "type.hpp"
+#include "memory_model.hpp"
+#include "symbol.hpp"
 
 /*
  * Base class for things that can be called.

@@ -1,10 +1,10 @@
-#include "Type.hpp"
-#include "Composition.hpp"
+#include "type.hpp"
+#include "composition.hpp"
 #include "field.hpp"
 #include "ast.hpp"
-#include "Symbol.hpp"
-#include "SymbolVisitor.hpp"
-#include "AstVisitor.hpp"
+#include "symbol.hpp"
+#include "symbol_visitor.hpp"
+#include "ast_visitor.hpp"
 
 using namespace Type;
 using namespace ast;

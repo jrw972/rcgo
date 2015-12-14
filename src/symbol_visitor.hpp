@@ -1,10 +1,10 @@
 #ifndef SymbolVisitor_hpp
 #define SymbolVisitor_hpp
 
-#include "Symbol.hpp"
-#include "BuiltinFunction.hpp"
-#include "Template.hpp"
-#include "Callable.hpp"
+#include "symbol.hpp"
+#include "builtin_function.hpp"
+#include "template.hpp"
+#include "callable.hpp"
 
 struct SymbolVisitor
 {

@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "types.hpp"
-#include "Location.hpp"
+#include "location.hpp"
 #include "value.hpp"
 
 namespace ast

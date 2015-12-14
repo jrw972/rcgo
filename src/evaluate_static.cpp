@@ -1,10 +1,10 @@
-#include "EvaluateStatic.hpp"
-#include "Type.hpp"
+#include "evaluate_static.hpp"
+#include "type.hpp"
 using namespace Type;
 #include "ast.hpp"
-#include "AstVisitor.hpp"
+#include "ast_visitor.hpp"
 using namespace ast;
-#include "Symbol.hpp"
+#include "symbol.hpp"
 
 std::ostream&
 operator<< (std::ostream& o,

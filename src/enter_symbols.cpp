@@ -1,9 +1,9 @@
 #include "ast.hpp"
-#include "AstVisitor.hpp"
-#include "Symbol.hpp"
+#include "ast_visitor.hpp"
+#include "symbol.hpp"
 #include <error.h>
-#include "BuiltinFunction.hpp"
-#include "Template.hpp"
+#include "builtin_function.hpp"
+#include "template.hpp"
 #include "runtime.hpp"
 using namespace ast;
 

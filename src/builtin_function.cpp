@@ -1,5 +1,5 @@
-#include "BuiltinFunction.hpp"
-#include "SymbolVisitor.hpp"
+#include "builtin_function.hpp"
+#include "symbol_visitor.hpp"
 #include "executor_base.hpp"
 #include "heap.hpp"
 #include "ast.hpp"

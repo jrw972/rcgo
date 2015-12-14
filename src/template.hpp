@@ -1,7 +1,7 @@
 #ifndef Template_hpp
 #define Template_hpp
 
-#include "Symbol.hpp"
+#include "symbol.hpp"
 
 /*
  * Base class for builtin functions.

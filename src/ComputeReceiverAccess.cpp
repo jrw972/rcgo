@@ -1,7 +1,7 @@
 #include "semantic.hpp"
 #include "debug.hpp"
 #include "ast.hpp"
-#include "AstVisitor.hpp"
+#include "ast_visitor.hpp"
 
 using namespace ast;
 

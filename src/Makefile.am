@@ -13,27 +13,27 @@ bin_PROGRAMS = rc
 rc_SOURCES = main.cpp \
 action.hpp action.cpp \
 ast.hpp ast.cpp \
-AstVisitor.hpp \
+ast_visitor.hpp \
 bind.hpp \
-BuiltinFunction.hpp BuiltinFunction.cpp \
-Callable.hpp Callable.cpp \
+builtin_function.hpp builtin_function.cpp \
+callable.hpp callable.cpp \
 check_types.hpp check_types.cpp \
 check_mutability.hpp check_mutability.cpp \
 check_control.hpp check_control.cpp \
 compute_receiver_access.hpp compute_receiver_access.cpp \
-Composition.hpp Composition.cpp \
+composition.hpp composition.cpp \
 ComputeReceiverAccess.cpp \
 debug.hpp \
 enter_symbols.cpp \
 enumerate_instances.cpp \
-EvaluateStatic.hpp EvaluateStatic.cpp \
+evaluate_static.hpp evaluate_static.cpp \
 executor_base.hpp \
 field.hpp \
 generate_code.hpp generate_code.cpp \
 heap.hpp heap.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
-Location.hpp location.cpp \
-MemoryModel.hpp memory_model.cpp \
+location.hpp location.cpp \
+memory_model.hpp memory_model.cpp \
 parser.hpp parser.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
 process_definitions.cpp \
@@ -45,11 +45,11 @@ runtime.hpp runtime.cpp \
 scanner.hpp scanner.cpp \
 semantic.hpp semantic.cpp \
 stack.hpp stack.cpp \
-Symbol.hpp Symbol.cpp \
-SymbolVisitor.hpp \
-Template.hpp Template.cpp \
-Type.hpp Type.cpp \
-TypeCheckExpression.cpp \
+symbol.hpp symbol.cpp \
+symbol_visitor.hpp \
+template.hpp template.cpp \
+type.hpp type.cpp \
+type_check_expression.cpp \
 types.hpp \
 util.hpp \
 value.hpp value.cpp \

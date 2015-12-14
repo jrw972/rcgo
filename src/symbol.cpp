@@ -1,5 +1,5 @@
-#include "Symbol.hpp"
-#include "SymbolVisitor.hpp"
+#include "symbol.hpp"
+#include "symbol_visitor.hpp"
 #include "ast.hpp"
 #include <error.h>
 

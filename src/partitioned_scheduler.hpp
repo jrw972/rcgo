@@ -6,7 +6,7 @@
 #include "heap.hpp"
 #include "stack.hpp"
 #include "executor_base.hpp"
-#include "Composition.hpp"
+#include "composition.hpp"
 #include "runtime.hpp"
 #include <queue>
 #include <poll.h>

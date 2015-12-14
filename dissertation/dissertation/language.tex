@@ -75,6 +75,95 @@ Thus, an implementation of reactive components must take special care to preserv
 
 \paragraph{What techniques, assumptions, and approximations are necessary to facilitate efficient communication between reactive components?}
 Linked data structures create the opportunity for efficient communication between components.
+=======
+\section{Requirements and Assumptions}
+\paragraph{Terminology.}
+An implementation of reactive components must provide facilities for declaring and defining the features of the model depicted in figure~\ref{reactive_component}.
+The
+
+\paragraph{Strict enforcement of the reactive component model.}
+
+\paragraph{How do we enforce the immutable/mutable phase split?}
+
+\paragraph{Direct implementation.}
+
+\paragraph{Static system assumption.}
+
+\paragraph{Efficient communication.}
+
+\paragraph{Can scheduling be efficient?}
+
+\paragraph{Can we interact with POSIX?}
+
+\paragraph{Generality.}
+
+\paragraph{Approachability.}
+
+
+
+
+
+\section{Design Sketch}
+
+question -> requirement
+
+How does the
+
+practicality
+
+directness
+
+design problems
+
+
+
+
+\section{Requirements}
+
+What questions do we want to answer?
+- efficiency of scheduler
+- interaction of reactive component semantics on transformation parts
+
+
+
+\section{Approach}
+Our approach to implementing reactive components is to define a high-level programming language for reactive components and implement that language in an interpreter.
+The two alternatives to a high-level programming language are a low-level byte-code and a coordination language.
+The main purpose of byte-code is to describe a transformation computation for a real or virtual machine.
+Many of the interesting elements of reactive components, like actions, reactions, getters, push ports, pull ports, activations, and bindings are more declarative in nature.
+Thus, the initial effort should be to capture these elements using a high-level language.
+The choice to implement an interpreter made the task more tractable as it avoids code generation, linking, and loading.
+However, in moving from the interpreter to a compiler, the processes of code generation, linking, and loading must provide the same guarantees that are enforced by the high-level language.
+We describe the challenges of moving from interpreter to compiler in chapter~\ref{future_work}.
+
+We elected to not implement reactive components as a coordination language due to the interplay between reactive and transformational semantics.
+The coordination language approach involves two completely separate languages.
+The reactive language would encode systems using the elements of the reactive component model, e.g., components, actions, push ports, etc. while the transformation language would define all of the types and computation performed on those types.
+For this approach to be viable, the transformational language must guarantee that no component changes state during the immutable phase of a transition and that the state of each component remain isolated.
+An ordinary programmer with a sufficiently powerful transformational language, like C, C++, or Java, can easily violate these requirements.
+Based on this observation, we elected to define a language for reactive components that includes a \emph{transformational basis} that has been modified to provide the guarantees necessary for reactive component semantics.
+
+The Go programming language~\cite{go} was adopted as the transformational basis of the language due to its simplicity.
+That is, we will defer to Go's syntax and semantics for types,declarations, statements, and expressions when they are not in conflict with the semantics of reactive components.
+Go is an imperative programming language that supports methods but places no emphasis on an inheritance hierarchy.
+In the same vein, Go does not have constructors, destructors, function overloading, and operator overloading.
+Go's type system is straightforward and the syntax of expressions and statements resemble C.
+This combination, in our opinion, makes Go an attractive transformational basis in terms of being tractable in implementation and approachable by a general audience.
+We will not discuss the syntax and semantics of Go except when they interact with the semantics of reactive components.
+Our implementation of Go is intentionally incomplete as a full implementation is beyond the scope of this project.
+
+\paragraph{Static system assumption.}
+To make implementation more tractable, we will assume that the systems to be implemented have a static topology meaning that all reactive components are statically allocated.
+Both finite state and infinite state (subject to system resource limits) reactive components are permitted, but both the number and configurations of reactive components in a system are fixed.
+This is equivalent to systems that assume a fixed number of actors and is roughly equivalent to systems that assume a fixed number of threads.
+These assumptions are common in embedded and real-time systems due to the combination of limited resources and a need for predictability.
+We also believe these assumptions are common in less constrained environments as the number of threads is often fixed by the design, e.g., only a fixed number of concurrent activities is needed, or the number of threads is limited by the number of available physical cores.
+Thus, even with the static system assumption, an implementation of the model is still applicable to many systems of interest.
+We leave implementation of extensions that facilitate the dynamic creation and binding of reactive components for future work.
+
+\paragraph{Efficient communication.}
+One of the goals of the implementation was to allow components to communicate efficiently.
+>>>>>>> develop
 There are three modes by which a component (sender) can share information with another component (receiver) as they interact through push ports and pull ports.
 First, the sender may use \emph{value semantics} where it provides a complete copy of the value to be communicated.
 This approach is reasonable for values like numbers and small records.

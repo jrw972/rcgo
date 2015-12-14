@@ -1,8 +1,8 @@
 #include "process_functions_and_methods.hpp"
 
-#include "AstVisitor.hpp"
+#include "ast_visitor.hpp"
 #include "semantic.hpp"
-#include "Symbol.hpp"
+#include "symbol.hpp"
 #include "action.hpp"
 #include "reaction.hpp"
 #include "semantic.hpp"

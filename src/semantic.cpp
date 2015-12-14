@@ -6,13 +6,13 @@
 #include "ast.hpp"
 #include "action.hpp"
 #include "reaction.hpp"
-#include "Type.hpp"
+#include "type.hpp"
 #include "field.hpp"
-#include "Symbol.hpp"
-#include "MemoryModel.hpp"
+#include "symbol.hpp"
+#include "memory_model.hpp"
 #include "bind.hpp"
-#include "Callable.hpp"
-#include "AstVisitor.hpp"
+#include "callable.hpp"
+#include "ast_visitor.hpp"
 
 using namespace ast;
 

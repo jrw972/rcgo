@@ -12,7 +12,7 @@
 #include "semantic.hpp"
 #include "debug.hpp"
 #include "runtime.hpp"
-#include "MemoryModel.hpp"
+#include "memory_model.hpp"
 #include "instance_scheduler.hpp"
 #include "partitioned_scheduler.hpp"
 #include "generate_code.hpp"

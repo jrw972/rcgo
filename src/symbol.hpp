@@ -2,7 +2,7 @@
 #define Symbol_hpp
 
 #include "types.hpp"
-#include "Type.hpp"
+#include "type.hpp"
 #include "value.hpp"
 
 class SymbolVisitor;

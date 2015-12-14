@@ -1,7 +1,7 @@
 #include "compute_receiver_access.hpp"
 
-#include "AstVisitor.hpp"
-#include "SymbolVisitor.hpp"
+#include "ast_visitor.hpp"
+#include "symbol_visitor.hpp"
 #include "action.hpp"
 #include "reaction.hpp"
 
