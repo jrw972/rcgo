@@ -2366,17 +2366,17 @@ Println::instantiate (const TypeList& argument_types) const
   return new PrintlnImpl (argument_types);
 }
 
-ControlAction
+OpReturn
 Load::execute (executor_base_t& exec) const
 {
   child->execute (exec);
   void * ptr = exec.stack ().pop_pointer ();
   exec.stack ().load (ptr, type->Size ());
-  return kContinue;
+  return make_continue ();
 }
 
 
-ControlAction
+OpReturn
 IndexSlice::execute (executor_base_t& exec) const
 {
   base->execute (exec);
@@ -2393,21 +2393,21 @@ IndexSlice::execute (executor_base_t& exec) const
 
     }
   exec.stack ().push_pointer (static_cast<char*> (s.ptr) + i * type->UnitSize ());
-  return kContinue;
+  return make_continue ();
 }
 
 template<typename T>
 struct ConvertToInt : public Operation
 {
   ConvertToInt (const Operation* c) : child (c) { }
-  ControlAction execute (executor_base_t& exec) const
+  OpReturn execute (executor_base_t& exec) const
   {
     child->execute (exec);
     typename T::ValueType in;
     exec.stack ().pop (in);
     Type::Int::ValueType out = in;
     exec.stack ().push (out);
-    return kContinue;
+    return make_continue ();
   }
   virtual void dump () const
   {
@@ -2529,14 +2529,14 @@ template<typename T>
 struct ConvertToUint : public Operation
 {
   ConvertToUint (const Operation* c) : child (c) { }
-  ControlAction execute (executor_base_t& exec) const
+  OpReturn execute (executor_base_t& exec) const
   {
     child->execute (exec);
     typename T::ValueType in;
     exec.stack ().pop (in);
     Type::Uint::ValueType out = in;
     exec.stack ().push (out);
-    return kContinue;
+    return make_continue ();
   }
   virtual void dump () const
   {
@@ -2578,7 +2578,7 @@ MakeConvertToUint (const Operation* c, const Type::Type* type)
     }
 }
 
-ControlAction
+OpReturn
 LogicOr::execute (executor_base_t& exec) const
 {
   left->execute (exec);
@@ -2592,10 +2592,10 @@ LogicOr::execute (executor_base_t& exec) const
     {
       right->execute (exec);
     }
-  return kContinue;
+  return make_continue ();
 }
 
-ControlAction
+OpReturn
 LogicAnd::execute (executor_base_t& exec) const
 {
   left->execute (exec);
@@ -2609,7 +2609,7 @@ LogicAnd::execute (executor_base_t& exec) const
     {
       right->execute (exec);
     }
-  return kContinue;
+  return make_continue ();
 }
 
 struct MakeLiteralVisitor : public Type::DefaultVisitor
@@ -2698,22 +2698,23 @@ Operation* make_literal (const Type::Type* type, const value_t& value)
   return visitor.op;
 }
 
-ControlAction
+OpReturn
 ListOperation::execute (executor_base_t& exec) const
 {
   for (ListType::const_iterator pos = list.begin (), limit = list.end ();
        pos != limit;
        ++pos)
     {
-      if ((*pos)->execute (exec) == kReturn)
+      OpReturn r = (*pos)->execute (exec);
+      if (r == kReturn)
         {
-          return kReturn;
+          return r;
         }
     }
-  return kContinue;
+  return make_continue ();
 }
 
-ControlAction
+OpReturn
 FunctionCall::execute (executor_base_t& exec) const
 {
   // Create space for the return.
@@ -2740,10 +2741,10 @@ FunctionCall::execute (executor_base_t& exec) const
   // Pop the arguments.
   exec.stack ().popn (callable->arguments_size ());
 
-  return kContinue;
+  return make_continue ();
 }
 
-ControlAction
+OpReturn
 MethodCall::execute (executor_base_t& exec) const
 {
   // Create space for the return.
@@ -2775,10 +2776,10 @@ MethodCall::execute (executor_base_t& exec) const
 
   exec.stack ().popn (callable->receiver_size ());
 
-  return kContinue;
+  return make_continue ();
 }
 
-ControlAction
+OpReturn
 DynamicFunctionCall::execute (executor_base_t& exec) const
 {
   switch (type->function_kind)
@@ -2819,7 +2820,7 @@ DynamicFunctionCall::execute (executor_base_t& exec) const
       exec.stack ().popn (pp.getter->arguments_size ());
       exec.stack ().pop_pointer ();
 
-      return kContinue;
+      return make_continue ();
     }
     break;
     }
@@ -2827,38 +2828,38 @@ DynamicFunctionCall::execute (executor_base_t& exec) const
   not_reached;
 }
 
-ControlAction
+OpReturn
 Instance::execute (executor_base_t& exec) const
 {
   exec.stack ().push_pointer (instance->instance->component);
-  return kContinue;
+  return make_continue ();
 }
 
-ControlAction
+OpReturn
 SetRestoreCurrentInstance::execute (executor_base_t& exec) const
 {
   component_t* new_receiver = static_cast<component_t*> (exec.stack ().read_pointer (receiver_offset));
   component_t* old_receiver = exec.current_instance (new_receiver);
-  ControlAction ca = child->execute (exec);
+  OpReturn ca = child->execute (exec);
   exec.current_instance (old_receiver);
   return ca;
 }
 
-ControlAction
+OpReturn
 Clear::execute (executor_base_t& exec) const
 {
   exec.stack ().clear (offset, size);
-  return kContinue;
+  return make_continue ();
 }
 
-ControlAction
+OpReturn
 Assign::execute (executor_base_t& exec) const
 {
   left->execute (exec);
   void* ptr = exec.stack ().pop_pointer ();
   right->execute (exec);
   exec.stack ().store (ptr, size);
-  return kContinue;
+  return make_continue ();
 }
 
 template <typename T>
@@ -2869,7 +2870,7 @@ struct AddAssign : public Operation
     assert (left != NULL);
     assert (right != NULL);
   }
-  ControlAction
+  OpReturn
   execute (executor_base_t& exec) const
   {
     left->execute (exec);
@@ -2878,7 +2879,7 @@ struct AddAssign : public Operation
     T v;
     exec.stack ().pop (v);
     *ptr += v;
-    return kContinue;
+    return make_continue ();
   }
   virtual void dump () const
   {
@@ -2927,24 +2928,24 @@ Operation* make_add_assign (Operation* l, Operation* r, const Type::Type* t)
     }
 }
 
-ControlAction
+OpReturn
 Reference::execute (executor_base_t& exec) const
 {
   exec.stack ().push_address (offset);
-  return kContinue;
+  return make_continue ();
 }
 
-ControlAction
+OpReturn
 Select::execute (executor_base_t& exec) const
 {
   base->execute (exec);
   char* ptr = static_cast<char*> (exec.stack ().pop_pointer ());
   ptr += offset;
   exec.stack ().push_pointer (ptr);
-  return kContinue;
+  return make_continue ();
 }
 
-ControlAction
+OpReturn
 IndexArray::execute (executor_base_t& exec) const
 {
   base->execute (exec);
@@ -2958,10 +2959,10 @@ IndexArray::execute (executor_base_t& exec) const
                      "array index is out of bounds (E148)");
     }
   exec.stack ().push_pointer (static_cast<char*> (ptr) + i * type->UnitSize ());
-  return kContinue;
+  return make_continue ();
 }
 
-ControlAction
+OpReturn
 SliceArray::execute (executor_base_t& exec) const
 {
   base->execute (exec);
@@ -2987,18 +2988,18 @@ SliceArray::execute (executor_base_t& exec) const
   slice_val.ptr = slice_val.length ? ptr + low_val * type->UnitSize () : NULL;
   exec.stack ().push (slice_val);
 
-  return kContinue;
+  return make_continue ();
 }
 
-ControlAction
+OpReturn
 Return::execute (executor_base_t& exec) const
 {
   child->execute (exec);
   exec.stack ().move (return_offset, return_size);
-  return kReturn;
+  return make_return ();
 }
 
-ControlAction
+OpReturn
 If::execute (executor_base_t& exec) const
 {
   condition->execute (exec);
@@ -3014,7 +3015,7 @@ If::execute (executor_base_t& exec) const
     }
 }
 
-ControlAction
+OpReturn
 While::execute (executor_base_t& exec) const
 {
   for (;;)
@@ -3024,19 +3025,20 @@ While::execute (executor_base_t& exec) const
       exec.stack ().pop (c);
       if (c)
         {
-          if (body->execute (exec) == kReturn)
+          OpReturn r = body->execute (exec);
+          if (r == kReturn)
             {
-              return kReturn;
+              return r;
             }
         }
       else
         {
-          return kContinue;
+          return make_continue ();
         }
     }
 }
 
-ControlAction
+OpReturn
 Change::execute (executor_base_t& exec) const
 {
   root->execute (exec);
@@ -3060,7 +3062,7 @@ Change::execute (executor_base_t& exec) const
   // Push a pointer to the root object.
   *root_value = static_cast<char*> (heap_instance (hl->heap));
 
-  ControlAction ca = body->execute (exec);
+  OpReturn ca = body->execute (exec);
 
   // Restore the old heap.
   exec.heap (old_heap);
@@ -3076,12 +3078,12 @@ template <typename T>
 struct Increment : public Operation
 {
   Increment (Operation* c) : child (c) { }
-  virtual ControlAction execute (executor_base_t& exec) const
+  virtual OpReturn execute (executor_base_t& exec) const
   {
     child->execute (exec);
     T* ptr = static_cast<T*> (exec.stack ().pop_pointer ());
     ++*ptr;
-    return kContinue;
+    return make_continue ();
   }
   virtual void dump () const
   {
@@ -3129,24 +3131,24 @@ Operation* make_increment (Operation* child, const Type::Type* type)
     }
 }
 
-ControlAction
+OpReturn
 Activate::execute (executor_base_t& exec) const
 {
-  // Need to keep track of the largest base pointer so we can process the mutable section.
-  char* base_pointer = exec.stack ().base_pointer ();
-  if (base_pointer > exec.mutable_phase_base_pointer ())
-    {
-      exec.mutable_phase_base_pointer (base_pointer);
-    }
+  // Save the base pointer to return to.
+  // Currently, this is done in the port call.
+  // char* return_bp = *reinterpret_cast<char**> (exec.stack ().base_pointer ());
+  // Insert into the mutable phase list.
+  *reinterpret_cast<char**> (exec.stack ().base_pointer ()) = exec.mutable_phase_base_pointer ();
+  exec.mutable_phase_base_pointer (exec.stack ().base_pointer ());
 
-  // The caller pushed an instruction pointer which is just
+  // The caller pushed a (fake) instruction pointer which is just
   // before the base pointer.  Overwrite it with the body.
   Operation** ip = static_cast<Operation**> (exec.stack ().pointer_to_instruction_pointer ());
   *ip = body;
   // Execute the expression list.
   port_calls->execute (exec);
 
-  return kReturn;
+  return make_return ();
 }
 
 static void push_port_call (executor_base_t& exec, Operation* args, ptrdiff_t receiver_offset, ptrdiff_t port_offset, ptrdiff_t array_offset)
@@ -3193,50 +3195,51 @@ static void push_port_call (executor_base_t& exec, Operation* args, ptrdiff_t re
     }
 }
 
-ControlAction
+OpReturn
 PushPortCall::execute (executor_base_t& exec) const
 {
   push_port_call (exec, args, receiver_offset, port_offset, 0);
-  return kContinue;
+  return make_continue ();
 }
 
-ControlAction
+OpReturn
 IndexedPushPortCall::execute (executor_base_t& exec) const
 {
   index->execute (exec);
   Int::ValueType idx;
   exec.stack ().pop (idx);
   push_port_call (exec, args, receiver_offset, port_offset, idx * array_type->UnitSize ());
-  return kContinue;
+  return make_continue ();
 }
 
-ControlAction
+OpReturn
 Push::execute (executor_base_t& exec) const
 {
-  ControlAction ca = body->execute (exec);
+  OpReturn ca = body->execute (exec);
   exec.push ();
   return ca;
 }
 
-ControlAction
+OpReturn
 ForIota::execute (executor_base_t& exec) const
 {
   for (Int::ValueType idx = 0; idx != limit; ++idx)
     {
       Int::ValueType* i = static_cast<Int::ValueType*> (exec.stack ().get_address (offset));
       *i = idx;
-      if (body->execute (exec) == kReturn)
+      OpReturn r = body->execute (exec);
+      if (r == kReturn)
         {
-          return kReturn;
+          return r;
         }
     }
-  return kContinue;
+  return make_continue ();
 }
 
 struct ConvertStringToSliceOfBytes : public Operation
 {
   ConvertStringToSliceOfBytes (Operation* c) : child (c) { }
-  ControlAction
+  OpReturn
   execute (executor_base_t& exec) const
   {
     child->execute (exec);
@@ -3248,7 +3251,7 @@ struct ConvertStringToSliceOfBytes : public Operation
     out.length = in.length;
     out.capacity = in.length;
     exec.stack ().push (out);
-    return kContinue;
+    return make_continue ();
   }
 
   virtual void dump () const
@@ -3261,7 +3264,7 @@ struct ConvertStringToSliceOfBytes : public Operation
 struct ConvertSliceOfBytesToString : public Operation
 {
   ConvertSliceOfBytesToString (Operation* c) : child (c) { }
-  ControlAction
+  OpReturn
   execute (executor_base_t& exec) const
   {
     child->execute (exec);
@@ -3272,7 +3275,7 @@ struct ConvertSliceOfBytesToString : public Operation
     memcpy (out.ptr, in.ptr, in.length);
     out.length = in.length;
     exec.stack ().push (out);
-    return kContinue;
+    return make_continue ();
   }
 
   virtual void dump () const

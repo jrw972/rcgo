@@ -1,5 +1,17 @@
 \chapter{Implementation \label{implementation}}
 
+In this chapter, we present an overview of an interpreter designed for the language presented in chapter~\ref{language}.
+The algorithm for checking composition, the implementation of activations, the implementation of heaps, and the scheduler are presented in detail.
+
+\paragraph{Interpreter organization.}
+The interpreter has an orthodox design consisting of a scanner, a parser, a sequence of semantic checks, a code generation phase, composition checks, and a execution phase.
+The scanner and parser are unremarkable.
+The semantic checks include type checking and checks to support the enforcement of \verb+const+ and \verb+foreign+ intrinsic and dereference mutability.
+The implementation of these checks follow the requirements set forth in chapter~\ref{language}.
+The code generation phase converts the AST into a tree of stack operations.
+The execution phase begins by initializing the instances by calling the initializer associated with each instances.
+The scheduler then proceeds by selecting and executing actions with weak fairness.
+
 \section{Enforcing Sound Composition}
 
 In this section, we outline the algorithm for checking the composition semantics of reactive components.
@@ -31,7 +43,21 @@ A pull port must be bound to exactly one getter:
 \forall (I,Pull) : |getters (I,Pull)| = 1
 \end{displaymath}
 
-\begin{figure}[H]
+\paragraph{Enumerate concrete actions.}
+Let $I$ be a component instance of type $T$.
+Associated with $T$ is a set of actions $A$.
+Each action $a \in A$ is evaluated for $I$ to create a concrete action.
+A concrete action is a directed graph constructed as follows:
+\begin{enumerate}
+\item The root is $(I,a)$.
+\item The descendants of the root are the activations in $a$.
+\item The descendants of the activations are the push ports named in each activation.
+\item The descendants of the push ports are the reactions bound to the push ports given by $reactions$.
+\item This process is the repeated for each instance/reaction leaf.
+\end{enumerate}
+Figure~\ref{concrete_action} shows an example concrete action depicted as a tree.
+
+\begin{figure}
 \centering
 %%\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
@@ -65,15 +91,6 @@ A pull port must be bound to exactly one getter:
   child {
     node (Activation02) [activation] {Instance1 Activation2}
     child {
-      node (Push04) [push] {Instance1 Push1}
-      child {
-        node (Rection08) [reaction] {Instance2 Reaction1}
-        child {
-          node (Activation08) [activation] {Instance2* Activation3}
-        }
-      }
-    }
-    child {
       node (Push03) [push] {Instance1 Push3}
       child {
         node (Rection02) [reaction] {Instance2 Reaction2}
@@ -91,12 +108,14 @@ A pull port must be bound to exactly one getter:
   }
 ;
 
+\draw (Activation02) -- (Push01);
+
 \end{tikzpicture}
 %%}%
 \caption{Example concrete action\label{concrete_action}}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}
 \centering
 %%\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
@@ -130,15 +149,6 @@ A pull port must be bound to exactly one getter:
   child {
     node (Activation02) [activation] {Instance1 Instance2* Instance3}
     child {
-      node (Push04) [push] {Instance2*}
-      child {
-        node (Rection08) [reaction] {Instance2*}
-        child {
-          node (Activation08) [activation] {Instance2*}
-        }
-      }
-    }
-    child {
       node (Push03) [push] {Instance2* Instance3}
       child {
         node (Rection02) [reaction] {Instance2*}
@@ -156,30 +166,16 @@ A pull port must be bound to exactly one getter:
   }
 ;
 
+\draw (Activation02) -- (Push01);
+
 \end{tikzpicture}
 %%}%
 \caption{Example instance set calculation\label{instance_sets}}
 \end{figure}
 
-\paragraph{Enumerate concrete actions.}
-Let $I$ be a component instance of type $T$.
-Associated with $T$ is a set of actions $A$.
-Each action $a \in A$ is evaluated for $I$ to create a concrete action.
-A concrete action is a directed graph constructed as follows:
-\begin{enumerate}
-\item The root is $(I,a)$.
-\item The descendants of the root are the activations in $a$.
-\item The descendants of the activations are the push ports named in each activation.
-\item The descendants of the push ports are the reactions bound to the push ports given by $reactions$.
-\item This process is the repeated for each instance/reaction leaf.
-\end{enumerate}
-Figure~\ref{concrete_action} shows an example concrete action depicted as a tree.
-
 The first step in analyzing a concrete action is to ensure that the directed graph is acyclic.
-A cycle forms when a reaction activates itself through the set of concrete bindings.
-Once the concrete action is proven free of cycles, it may be considered and represented as a tree as shown in figure~\ref{concrete_action}.
+A cycle forms when a reaction activates itself through the set of concrete bindings or a getter calls itself.
 In the example, the Instance1/Push1 is activated by both Activation1 and Activation2.
-It is replicated to convert the directed graph to a tree.
 
 The second step in analyzing a concrete action is to determine which activations mutate the state of a component.
 The current implementation uses a conservative static analysis of the body of an activate statement to determine if the activation mutates the state of the component.
@@ -198,12 +194,216 @@ That is, once control passes to an activation statement, all push ports and thei
 In contrast, activations, as children of action and reaction nodes, represent mutually exclusive alternatives, i.e., at most one activation statement is executed per action/reaction body.
 Thus, a mutated instance appearing in two or more children of an activation node or push port node indicates that the state of a component may be mutated in disparate ways leading to a non-deterministic state transition.
 
-\begin{quote}
-In theory, there is no difference between theory and practice. \linebreak
-But, in practice, there is.  \emph{Anonymous}
-\end{quote}
+\section{Activations}
 
-TODO:  Write a short introduction.
+When executing a transaction, the run-time must execute the immutable phase of all implied state transitions before executing any of the mutable phases.
+To accomplish this, the run-time uses a novel calling convention to create a list of deferred contexts and statements that represent the mutable phase of each state transition.
+The immutable phase constructs the list and the mutable phase processes the list.
+To present the calling convention, we first present some details about the run-time such as the ordinary calling convention and push ports.
+We then describe the behavior of the calling convention and illustrate its behavior using a number of examples.
+
+\paragraph{Ordinary calling convention.}
+The ordinary call mechanism in the run-time is based on the C-decl calling convention.
+It assumes the existence of an \emph{instruction pointer} which contains the address of the currently executing instruction and a \emph{base pointer} which points to a location in the stack which can be offset to access arguments and local variables.
+A ordinary call in the language is accomplished through the following sequence:
+\begin{enumerate}
+\item (Caller) Push arguments onto the stack, left to right.
+\item (Caller) Push the instruction pointer onto the stack and transfer control to the body of the function, method, action, reaction, getter, or initializer.
+\item (Callee) Push the base pointer onto the stack and set the base pointer to the top of the stack.
+\item (Callee) Reserve space on the stack for local variables.
+\item (Callee) Execute the body of the function, method, etc.
+\item (Callee) Pop the stack, pop and restore the base pointer, pop and restore the instruction pointer.
+\item (Caller) Pop the arguments.
+\end{enumerate}
+The major difference between this calling convention and C-decl is that the arguments are pushed in the opposite order to match the semantics of Go.
+The collection of arguments, previous instruction pointer, previous base pointer, and reserved space is called a \emph{stack frame} or a \emph{call frame}.
+Figure~\ref{frame} shows the layout of a normal stack frame.
+For this presentation, we assume that the stack grows down, i.e., the previous base pointer has a lower address in memory than the previous instruction pointer.
+
+\begin{figure}
+\centering
+\resizebox{.5\textwidth}{!}{%
+\begin{tikzpicture}
+%% component boundary
+
+\draw (0,1) -- (0,7);
+\draw (5,1) -- (5,7);
+
+\node at (2.5, 6.5) { ... };
+\draw (0,6) -- (5,6);
+\node at (2.5, 5.5) { arguments };
+\draw (0,5) -- (5,5);
+\node at (2.5, 4.5) { previous instruction pointer };
+\draw (0,4) -- (5,4);
+\node (pbp) at (2.5, 3.5) { previous base pointer };
+\draw (0,3) -- (5,3);
+\node at (2.5, 2.5) { locals };
+\draw (0,2) -- (5,2);
+\node at (2.5, 1.5) { ... };
+
+\node (bp) at (-2.5, 3.5) { base pointer };
+\draw[->] (bp) -- (pbp);
+
+\end{tikzpicture}
+}%
+\caption{Diagram of a stack frame\label{frame}.  The stack is depicted as growing down.}
+\end{figure}
+
+\paragraph{Push ports.}
+A push port is a field in a component.
+Physically, a push port is a pointer to a linked list that contains the component pointer/reaction pairs that are bound to the push port.
+The run-time populates each push port before execution begins.
+
+\paragraph{Synchronized two-phase calling convention.}
+To prepare for the mutable phase, the immutable phase must preserve the stack frame (context) of the action or reaction that executes an activation statement and must record which activation statement was executed so that the same activation can be resumed in the mutable phase.
+To accomplish this, we devised the \emph{synchronized two-phase calling convention} which is used to execute activation statements during the immutable phase.
+
+As previously stated, the execution of an activation statement is split into an immutable phase and a mutable phase.
+Recall that activation statements may only appear in actions and reactions.
+After executing the immutable phase of an activation statement in a reaction, control must be returned to the calling activation statement so that it may activate other push ports.
+After executing the immutable phase of an activation statement in an action, control must be returned to the run-time to begin the mutable phase.
+In the ordinary calling convention, the call frame for the reaction would be popped, control would be returned to the caller, and the arguments would be popped.
+To preserve the call frame for use during the mutable phase, the activation statement returns control to the caller without popping the frame and the caller does not pop the arguments.
+Thus, the complete frame for the reaction is preserved on the stack.
+
+Each deferred call frame is added to a list to make it available in the mutable phase.
+Let $head$ be a variable containing a pointer, initially nil, which will serve as the head of a linked list.
+Before the activation statement returns from the immutable phase, it sets the previous base pointer in the call frame to the value of $head$ and updates head to be the current base pointer which inserts the call frame into the list.
+The run-time can iterate over the elements of the list by following the previous base pointer to access all of the call frames that are needed for the mutable phase.
+If the list is empty ($head$ is nil), then no activation statement was executed and the mutable phase may be skipped.
+
+The final piece of information that must be recorded is the activation statement or rather the body of the activation statement so that it is accessible in the mutable phase.
+Before returning from the immutable phase, the activation statement records the body of the activation statement in the previous instruction pointer slot of the call frame.
+It is safe to use the previous instruction pointer because it is not used beyond the immediate return.
+Furthermore, it is at a fixed location which allows it to be accessed in any deferred call frame.
+
+The synchronized two-phase calling convention is used when executing an activation statement and proceeds as follows:
+\begin{enumerate}
+\item Save the previous base pointer of the current stack frame in $bp$.
+\item Set the previous base pointer of the current stack frame to the value of $head$.
+\item Set $head$ to the value of the base pointer.
+\item Save the previous instruction pointer of the current stack frame in $ip$.
+\item Set the previous instruction pointer of the current stack frame to the body of the activation statement.
+\item For each push port in the port call list:
+  \begin{enumerate}
+  \item Push the arguments to the push port onto the stack.\label{step1}
+  \item For each component pointer/reaction pair in the push port:
+    \begin{enumerate}
+    \item Push the component pointer onto the stack.
+    \item Copy the arguments prepared in~\ref{step1} onto the stack.
+    \item Call the reaction.
+    \end{enumerate}
+  \end{enumerate}
+\item Set the base pointer to the value of $bp$ and return control to the value of $ip$.
+\end{enumerate}
+
+The synchronized two-phase calling convention evaluates the arguments to a push port once and passes a copy to each bound reaction.
+One alternative is to evaluate the arguments for each bound reaction.
+This means that the arguments may not be evaluated, i.e., the push port is not bound to any reactions, or may be evaluated multiple times.
+If the arguments contain an expression with side-effects, then the behavior of the code becomes dependent on composition.
+While this may be desirable in some cases, we opted for making a port call resemble ordinary function call as much as possible.
+This sentiment also influenced our decision to pass a copy of the arguments to each reaction as opposed to reusing the same set of prepared arguments.
+Since each reaction starts with a copy of the arguments, it is free to manipulate them as allowed by the semantics of Go.
+Furthermore, the arguments are available in the mutable phase which obviates the need to make local copies of arguments.
+This approach assumes that copying arguments does not generate significant overhead.
+
+%% After an activation statement calls the last push port, it makes temporary copies of the instruction pointer and base pointer of the caller.
+%% It may then safely overwrite the base pointer to insert itself into the list of mutable phase call frames and it may safely overwrite the instruction pointer with the body of the activation statement.
+
+The major caveat when using the synchronized two-phase calling convention is that it must be assumed that the stack pointer changes when calling a push port.
+To illustrate why this is an issue, consider the case when a caller wishes to preserve the contents of a register.
+One strategy is to push the contents of the register onto the stack, perform the call, and then pop the value from the stack into the register.
+After calling a push port, the caller may no longer assume that the previous value of the register is at the top of the stack.
+The easy work-around is to allocate local variables, i.e., variables whose addresses are relative to the base pointer instead of the stack pointer, for saving temporary values that must persists across a push port call.
+In the same way, the variables used to iterate over the list of component/reaction pairs in a push port should be allocated as local variables so that they may survive the calls to the reactions.
+
+\paragraph{The mutable phase.}
+The mutable phase consists of executing all of the deferred activation statements.
+The algorithm for doing so is as follows:
+\begin{enumerate}
+\item If the value of $head$ is nil, stop.  Otherwise, set the base pointer to the value in $head$.
+\item Transfer control to the instruction indicated by the previous instruction pointer\label{transfer}.  Execution continues until the body of the activation statement implicitly or explicitly returns.
+\item If the previous base pointer is nil, stop.  Otherwise, set the base pointer to the previous base pointer and go to \ref{transfer}.
+\end{enumerate}
+
+The algorithm iterates over the list of deferred call frames accessible through $head$.
+The last element in the list is indicated by a previous base pointer that is nil.
+Transfer is controlled to the previous instruction pointer which contains the body of the activation statement.
+
+\begin{figure}
+\centering
+\resizebox{.75\textwidth}{!}{%
+\begin{tikzpicture}
+%% component boundary
+
+\draw (0,-5) -- (0,7);
+\draw (5,-5) -- (5,7);
+
+\node at (2.5, 6.5) { ... };
+\draw (0,6) -- (5,6);
+\node at (2.5, 5.5) { argument (component pointer) };
+\draw (0,5) -- (5,5);
+\node (pip1) at (2.5, 4.5) { previous instruction pointer };
+\draw (0,4) -- (5,4);
+\node (pbp1) at (2.5, 3.5) { previous base pointer };
+\draw (0,3) -- (5,3);
+\node at (2.5, 2.5) { locals };
+\draw (0,2) -- (5,2);
+\node at (2.5, 1.5) { arguments to push port };
+\draw (0,1) -- (5,1);
+\node at (2.5, .5) { argument (component pointer) };
+\draw (0,0) -- (5,0);
+\node at (2.5, -.5) { arguments to push port };
+\draw (0,-1) -- (5,-1);
+\node (pip2) at (2.5, -1.5) { previous instruction pointer };
+\draw (0,-2) -- (5,-2);
+\node (pbp2) at (2.5, -2.5) { previous base pointer };
+\draw (0,-3) -- (5,-3);
+\node at (2.5, -3.5) { locals };
+\draw (0,-4) -- (5,-4);
+\node at (2.5, -4.5) { ... };
+
+\node[anchor=west] (as1) at (5.5, 4.5) { activation statement body };
+\draw[->] (pip1) -- (as1);
+\node[anchor=west] (as2) at (5.5, -1.5) { activation statement body };
+\draw[->] (pip2) -- (as2);
+
+\draw[->] (pbp2) -- ++(-3,0) -- ++(0,6) -- (pbp1);
+
+\node[anchor=west] (nil) at (5.5, 3.5) { nil };
+\draw[->] (pbp1) -- (nil);
+
+\node[anchor=west] (head) at (5.5, -2.5) { $head$ };
+\draw[->] (head) -- (pbp2);
+
+\draw[decorate,decoration={brace}] (-1,2) -- (-1,6) node[anchor=east,midway] { action };
+
+\draw[decorate,decoration={brace}] (-1,-4) -- (-1,1) node[anchor=east,midway] { reaction };
+
+\end{tikzpicture}
+}%
+\caption{Diagram of the stack after the immutable phase when an action activates a single reaction.\label{activation_ex_1}}
+\end{figure}
+
+\paragraph{Example:  one action, one reaction.}
+Suppose an action activates a single push port that is bound to a single reaction and the reaction has a single activation that does not activate any push ports.
+Figure~\ref{activation_ex_1} shows a diagram of the stack after the immutable phase for this scenario.
+The stack contains two frames, one corresponding to the action and one corresponding to the reaction.
+The $head$ variable points to the reaction frame which in turn points to the action frame using the previous base pointer slot.
+The action frame points to nil indicating that it is the last frame in the list.
+The previous instruction pointers point the bodies of the activation statements.
+Between the frames are the push port arguments which duplicated for the call to the reaction.
+
+\section{Heaps}
+
+\section{Scheduler}
+
+
+
+
+
+
+
 
 \section{Motivation}
 

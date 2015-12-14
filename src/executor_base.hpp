@@ -59,6 +59,7 @@ public:
   {
     mutable_phase_base_pointer_ = ptr;
   }
+
   void lock_stdout ()
   {
     pthread_mutex_lock (stdout_mutex_);

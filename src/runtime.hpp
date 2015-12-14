@@ -73,18 +73,29 @@ struct Println : public ::Template
   virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types) const;
 };
 
+
+typedef ControlAction OpReturn;
+
+inline OpReturn make_continue () {
+  return kContinue;
+}
+
+inline OpReturn make_return () {
+  return kReturn;
+}
+
 // Operations
 struct Operation
 {
   virtual ~Operation() { }
-  virtual ControlAction execute (executor_base_t& exec) const = 0;
+  virtual OpReturn execute (executor_base_t& exec) const = 0;
   virtual void dump () const = 0;
 };
 
 struct Load : public Operation
 {
   Load (const Operation* c, const Type::Type* t) : child (c), type (t) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     std::cout << "Load(";
@@ -98,7 +109,7 @@ struct Load : public Operation
 struct IndexArray : public Operation
 {
   IndexArray (const Location& l, Operation* b, Operation* i, const Type::Array* t) : location (l), base (b), index (i), type (t) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     std::cout << "IndexArray (";
@@ -116,7 +127,7 @@ struct IndexArray : public Operation
 struct IndexSlice : public Operation
 {
   IndexSlice (const Location& l, const Operation* b, const Operation* i, const Type::Slice* t) : location (l), base (b), index (i), type (t) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -130,7 +141,7 @@ struct IndexSlice : public Operation
 struct SliceArray : public Operation
 {
   SliceArray (const Location& loc, Operation* b, Operation* l, Operation* h, const Type::Array* t) : location (loc), base (b), low (l), high (h), type (t) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -149,10 +160,10 @@ template <typename T>
 struct Literal : public Operation
 {
   Literal (T v) : value (v) { }
-  virtual ControlAction execute (executor_base_t& exec) const
+  virtual OpReturn execute (executor_base_t& exec) const
   {
     exec.stack ().push (value);
-    return kContinue;
+    return make_continue ();
   }
   virtual void dump () const
   {
@@ -173,7 +184,7 @@ Operation* make_literal (const Type::Type* type, const value_t& value);
 struct LogicOr : public Operation
 {
   LogicOr (const Operation* l, const Operation* r) : left (l), right (r) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -185,7 +196,7 @@ struct LogicOr : public Operation
 struct LogicAnd : public Operation
 {
   LogicAnd (const Operation* l, const Operation* r) : left (l), right (r) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -198,7 +209,7 @@ struct LogicAnd : public Operation
 // struct Binary : public Operation
 // {
 //   Binary (const Location& loc, const Operation* l, const Operation* r) : location (loc), left (l), right (r) { }
-//   virtual ControlAction execute (executor_base_t& exec) const
+//   virtual OpReturn execute (executor_base_t& exec) const
 //   {
 //     left->execute (exec);
 //     typename T::ValueType left;
@@ -252,7 +263,7 @@ struct LogicAnd : public Operation
 
 struct ListOperation : public Operation
 {
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -264,7 +275,7 @@ struct ListOperation : public Operation
 struct FunctionCall : public Operation
 {
   FunctionCall (const Callable* c, Operation* o) : callable (c), arguments (o) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -276,7 +287,7 @@ struct FunctionCall : public Operation
 struct MethodCall : public Operation
 {
   MethodCall (const Callable* c, Operation* r, Operation* o) : callable (c), receiver (r), arguments (o) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -289,7 +300,7 @@ struct MethodCall : public Operation
 struct DynamicFunctionCall : public Operation
 {
   DynamicFunctionCall (const Type::Function* t, Operation* f, Operation* a) : type (t), func (f), arguments (a) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -302,7 +313,7 @@ struct DynamicFunctionCall : public Operation
 struct Instance : public Operation
 {
   Instance (InstanceSymbol* i) : instance (i) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -313,7 +324,7 @@ struct Instance : public Operation
 struct SetRestoreCurrentInstance : public Operation
 {
   SetRestoreCurrentInstance (Operation* c, ptrdiff_t o) : child (c), receiver_offset (o) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -325,7 +336,7 @@ struct SetRestoreCurrentInstance : public Operation
 struct Clear : public Operation
 {
   Clear (ptrdiff_t o, size_t s) : offset (o), size (s) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -341,7 +352,7 @@ struct Assign : public Operation
     assert (left != NULL);
     assert (right != NULL);
   }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -356,7 +367,7 @@ Operation* make_add_assign (Operation* l, Operation* r, const Type::Type* t);
 struct Reference : public Operation
 {
   Reference (ptrdiff_t o) : offset (o) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     std::cout << "Reference offset=" << offset << '\n';
@@ -367,7 +378,7 @@ struct Reference : public Operation
 struct Select : public Operation
 {
   Select (Operation* b, ptrdiff_t o) : base (b), offset (o) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     std::cout << "Select (";
@@ -381,7 +392,7 @@ struct Select : public Operation
 struct Return : public Operation
 {
   Return (Operation* c, const ParameterSymbol* r) : child (c), return_offset (r->offset ()), return_size (r->type->Size ()) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -394,7 +405,7 @@ struct Return : public Operation
 struct If : public Operation
 {
   If (Operation* c, Operation* t, Operation* f) : condition (c), true_branch (t), false_branch (f) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -407,7 +418,7 @@ struct If : public Operation
 struct While : public Operation
 {
   While (Operation* c, Operation* b) : condition (c), body (b) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -419,7 +430,7 @@ struct While : public Operation
 struct ForIota : public Operation
 {
   ForIota (const VariableSymbol* symbol, Type::Int::ValueType l, Operation* b) : offset (symbol->offset ()), limit (l), body (b) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -433,13 +444,13 @@ template <typename T>
 struct Unary : public Operation
 {
   Unary (Operation* c) : child (c) { }
-  virtual ControlAction execute (executor_base_t& exec) const
+  virtual OpReturn execute (executor_base_t& exec) const
   {
     typename T::ValueType x;
     child->execute (exec);
     exec.stack ().pop (x);
     exec.stack ().push (T () (x));
-    return kContinue;
+    return make_continue ();
   }
   virtual void dump () const
   {
@@ -477,7 +488,7 @@ template <typename V, typename T>
 struct Binary : public Operation
 {
   Binary (Operation* l, Operation* r) : left (l), right (r) { }
-  virtual ControlAction execute (executor_base_t& exec) const
+  virtual OpReturn execute (executor_base_t& exec) const
   {
     V x;
     V y;
@@ -486,7 +497,7 @@ struct Binary : public Operation
     right->execute (exec);
     exec.stack ().pop (y);
     exec.stack ().push (T () (x, y));
-    return kContinue;
+    return make_continue ();
   }
   virtual void dump () const
   {
@@ -500,7 +511,7 @@ template <typename V, typename T>
 struct Shift : public Operation
 {
   Shift (Operation* l, Operation* r) : left (l), right (r) { }
-  virtual ControlAction execute (executor_base_t& exec) const
+  virtual OpReturn execute (executor_base_t& exec) const
   {
     V x;
     Type::Uint::ValueType y;
@@ -509,7 +520,7 @@ struct Shift : public Operation
     right->execute (exec);
     exec.stack ().pop (y);
     exec.stack ().push (T () (x, y));
-    return kContinue;
+    return make_continue ();
   }
   virtual void dump () const
   {
@@ -633,7 +644,7 @@ Operation* make_shift (const Type::Type* type, Operation* left, Operation* right
 struct Change : public Operation
 {
   Change (Operation* r, ptrdiff_t o, Operation* b) : root (r), root_offset (o), body (b) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -648,7 +659,7 @@ Operation* make_increment (Operation* child, const Type::Type* type);
 struct Activate : public Operation
 {
   Activate (Operation* pc, Operation* b) : port_calls (pc), body (b) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -660,7 +671,7 @@ struct Activate : public Operation
 struct PushPortCall : public Operation
 {
   PushPortCall (ptrdiff_t ro, ptrdiff_t po, Operation* o) : receiver_offset (ro), port_offset (po), args (o) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -673,7 +684,7 @@ struct PushPortCall : public Operation
 struct IndexedPushPortCall : public Operation
 {
   IndexedPushPortCall (ptrdiff_t ro, ptrdiff_t po, Operation* i, Operation* o, const Type::Array* a) : receiver_offset (ro), port_offset (po), index (i), args (o), array_type (a) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -688,7 +699,7 @@ struct IndexedPushPortCall : public Operation
 struct Push : public Operation
 {
   Push (Operation* b) : body (b) { }
-  virtual ControlAction execute (executor_base_t& exec) const;
+  virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
@@ -698,9 +709,9 @@ struct Push : public Operation
 
 struct Noop : public Operation
 {
-  virtual ControlAction execute (executor_base_t& exec) const
+  virtual OpReturn execute (executor_base_t& exec) const
   {
-    return kContinue;
+    return make_continue ();
   }
   virtual void dump () const
   {
