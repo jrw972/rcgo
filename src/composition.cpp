@@ -16,16 +16,16 @@
 #include "stack.hpp"
 #include "runtime.hpp"
 
-namespace Composition
+namespace composition
 {
-using namespace Type;
+using namespace type;
 using namespace ast;
 using namespace decl;
 using namespace runtime;
 
 Instance::Instance (Instance* p,
                     size_t a,
-                    const Type::NamedType* t,
+                    const type::NamedType* t,
                     Initializer* i,
                     ast_instance_t* n,
                     const std::string& aName)
@@ -105,7 +105,7 @@ InstanceSet::Union (const InstanceSet& other)
 
 Action::Action (Instance* i,
                 decl::Action* a,
-                Type::Int::ValueType p)
+                type::Int::ValueType p)
   : Node (getname (i, a, p))
   , instance (i)
   , action (a)
@@ -150,7 +150,7 @@ Action::GetInstanceSet ()
 }
 
 std::string
-Action::getname (Instance* i, decl::Action* a, Type::Int::ValueType p)
+Action::getname (Instance* i, decl::Action* a, type::Int::ValueType p)
 {
   std::stringstream str;
   str << i->name << '.' << a->name;
@@ -161,7 +161,7 @@ Action::getname (Instance* i, decl::Action* a, Type::Int::ValueType p)
   return str.str ();
 }
 
-ReactionKey::ReactionKey (Instance* i, const reaction_t* a, Type::Int::ValueType p)
+ReactionKey::ReactionKey (Instance* i, const reaction_t* a, type::Int::ValueType p)
   : instance (i)
   , reaction (a)
   , iota (p)
@@ -183,7 +183,7 @@ ReactionKey::operator< (const ReactionKey& other) const
 
 Reaction::Reaction (Instance* i,
                     reaction_t* a,
-                    Type::Int::ValueType p)
+                    type::Int::ValueType p)
   : Node (getname (i, a, p))
   , instance (i)
   , reaction (a)
@@ -226,7 +226,7 @@ Reaction::GetInstanceSet ()
 }
 
 std::string
-Reaction::getname (Instance* i, reaction_t* a, Type::Int::ValueType p)
+Reaction::getname (Instance* i, reaction_t* a, type::Int::ValueType p)
 {
   std::stringstream str;
   str << i->name << '.' << a->name;
@@ -253,7 +253,7 @@ GetterKey::operator< (const GetterKey& other) const
 }
 
 Getter::Getter (Instance* i,
-                ::Getter* g)
+                decl::Getter* g)
   : Node (i->name + "." + g->name)
   , instance (i)
   , getter (g)
@@ -611,7 +611,7 @@ Composer::elaborateBindings ()
               void* port = exec.stack ().pop_pointer ();
               node.right ()->At (0)->operation->execute (exec);
               void* getter_component = exec.stack ().pop_pointer ();
-              const ::Getter* getter = static_cast<const ::Getter*> (node.right ()->callable);
+              const decl::Getter* getter = static_cast<const decl::Getter*> (node.right ()->callable);
 
               PullPortsType::const_iterator pp_pos = table.pull_ports.find (reinterpret_cast<size_t> (port));
               assert (pp_pos != table.pull_ports.end ());
@@ -671,7 +671,7 @@ Composer::enumerateActions ()
           decl::Action* action = *pos;
           if (action->has_dimension ())
             {
-              for (Type::Int::ValueType idx = 0; idx != action->dimension; ++idx)
+              for (type::Int::ValueType idx = 0; idx != action->dimension; ++idx)
                 {
                   instance->actions.push_back (new Action (instance, action, idx));
                 }
@@ -869,8 +869,8 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
     if (node.expr ()->expression_kind != kType)
       {
         // Are we calling a getter or pull port.
-        const Type::Method* method = node.method_type;
-        if (method != NULL && method->method_kind == Type::Method::GETTER)
+        const type::Method* method = node.method_type;
+        if (method != NULL && method->method_kind == type::Method::GETTER)
           {
             node.expr ()->At (0)->operation->execute (exec);
             if (node.expr ()->At (0)->expression_kind == kVariable &&
@@ -890,8 +890,8 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
             addCall (g_pos->second);
           }
 
-        const Type::Function* function = node.function_type;
-        if (function != NULL && function->function_kind == Type::Function::PULL_PORT)
+        const type::Function* function = node.function_type;
+        if (function != NULL && function->function_kind == type::Function::PULL_PORT)
           {
             size_t port = get_instance ()->address + node.field->offset;
             Composer::PullPortsType::const_iterator port_pos = table.pull_ports.find (port);
@@ -1021,7 +1021,7 @@ Composer::enumerateReactions ()
           reaction_t* reaction = *pos;
           if (reaction->has_dimension ())
             {
-              for (Type::Int::ValueType idx = 0; idx != reaction->dimension (); ++idx)
+              for (type::Int::ValueType idx = 0; idx != reaction->dimension (); ++idx)
                 {
                   reactions.insert (std::make_pair (ReactionKey (instance, reaction, idx), new Reaction (instance, reaction, idx)));
                 }
@@ -1063,7 +1063,7 @@ Composer::enumerateGetters ()
            pos != limit;
            ++pos)
         {
-          ::Getter* getter = *pos;
+          decl::Getter* getter = *pos;
           getters.insert (std::make_pair (GetterKey (instance, getter), new Getter (instance, getter)));
         }
     }

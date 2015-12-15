@@ -6,6 +6,9 @@
 #include "memory_model.hpp"
 #include "symbol.hpp"
 
+namespace decl
+{
+
 /*
  * Base class for things that can be called.
  */
@@ -14,9 +17,9 @@ class Callable
 {
 public:
   virtual ~Callable () { }
-  virtual void call (executor_base_t& exec) const = 0;
-  virtual const Type::Signature* signature () const = 0;
-  virtual const Type::Type* type () const = 0;
+  virtual void call (runtime::executor_base_t& exec) const = 0;
+  virtual const type::Signature* signature () const = 0;
+  virtual const type::Type* type () const = 0;
   virtual size_t return_size () const = 0;
   virtual size_t receiver_size () const = 0;
   virtual size_t arguments_size () const = 0;
@@ -30,28 +33,28 @@ public:
  * TODO:  I debate whether or not the return symbols should be recorded here.
  */
 
-struct Function : public Callable, public Symbol
+struct Function : public Callable, public decl::Symbol
 {
   // TODO:  Remove duplication with Symbol.
-  Function (ast::ast_function_t& node, const Type::Function* type);
+  Function (ast::ast_function_t& node, const type::Function* type);
 
   // Callable
-  virtual void call (executor_base_t& exec) const;
-  virtual const Type::Type* type () const
+  virtual void call (runtime::executor_base_t& exec) const;
+  virtual const type::Type* type () const
   {
     return functionType_;
   }
 
   // Symbol
-  virtual void accept (SymbolVisitor& visitor);
-  virtual void accept (ConstSymbolVisitor& visitor) const;
+  virtual void accept (decl::SymbolVisitor& visitor);
+  virtual void accept (decl::ConstSymbolVisitor& visitor) const;
   virtual const char* kindString () const
   {
     return "Function";
   }
 
   ast::ast_function_t& node;
-  MemoryModel memoryModel;
+  runtime::MemoryModel memoryModel;
 
   virtual size_t return_size () const
   {
@@ -69,33 +72,33 @@ struct Function : public Callable, public Symbol
   {
     return memoryModel.LocalsSize ();
   }
-  virtual const Type::Signature* signature () const
+  virtual const type::Signature* signature () const
   {
     return functionType_->GetSignature ();
   }
 
 private:
-  const Type::Function* functionType_;
+  const type::Function* functionType_;
 };
 
 struct Method : public Callable
 {
   Method (ast::ast_method_t* n,
           const std::string& na,
-          const Type::Method* method_type_)
+          const type::Method* method_type_)
     : node (n)
     , name (na)
     , methodType (method_type_)
     , returnSize (method_type_->return_type ()->Size ())
   { }
 
-  virtual void call (executor_base_t& exec) const;
-  virtual const Type::Signature* signature () const
+  virtual void call (runtime::executor_base_t& exec) const;
+  virtual const type::Signature* signature () const
   {
     return methodType->signature;
   }
 
-  virtual const Type::Type* type () const
+  virtual const type::Type* type () const
   {
     return methodType;
   }
@@ -119,24 +122,24 @@ struct Method : public Callable
 
   ast::ast_method_t* const node;
   std::string const name;
-  const Type::Method * const methodType;
+  const type::Method * const methodType;
   size_t const returnSize;
-  MemoryModel memoryModel;
+  runtime::MemoryModel memoryModel;
 };
 
 struct Initializer : public Callable
 {
   Initializer (ast::ast_initializer_t* n,
                const std::string& na,
-               const Type::Method* initializer_type_)
+               const type::Method* initializer_type_)
     : node (n)
     , name (na)
     , initializerType (initializer_type_)
     , returnSize (initializer_type_->return_type ()->Size ())
   { }
 
-  virtual void call (executor_base_t& exec) const;
-  virtual const Type::Type* type () const
+  virtual void call (runtime::executor_base_t& exec) const;
+  virtual const type::Type* type () const
   {
     return initializerType;
   }
@@ -157,32 +160,32 @@ struct Initializer : public Callable
   {
     return memoryModel.LocalsSize ();
   }
-  virtual const Type::Signature* signature () const
+  virtual const type::Signature* signature () const
   {
     return initializerType->signature;
   }
 
   ast::ast_initializer_t* const node;
   std::string const name;
-  const Type::Method * const initializerType;
+  const type::Method * const initializerType;
   size_t const returnSize;
-  MemoryModel memoryModel;
+  runtime::MemoryModel memoryModel;
 };
 
 struct Getter : public Callable
 {
   Getter (ast::ast_getter_t* n,
           const std::string& na,
-          const Type::Method* getter_type_)
+          const type::Method* getter_type_)
     : node (n)
     , name (na)
     , getterType (getter_type_)
     , returnSize (getter_type_->return_type ()->Size ())
   { }
 
-  virtual void call (executor_base_t& exec) const;
-  void call (executor_base_t& exec, const ast::ast_call_expr_t& node, component_t* thisPtr) const;
-  virtual const Type::Type* type () const
+  virtual void call (runtime::executor_base_t& exec) const;
+  void call (runtime::executor_base_t& exec, const ast::ast_call_expr_t& node, component_t* thisPtr) const;
+  virtual const type::Type* type () const
   {
     return getterType;
   }
@@ -203,17 +206,19 @@ struct Getter : public Callable
   {
     return memoryModel.LocalsSize ();
   }
-  virtual const Type::Signature* signature () const
+  virtual const type::Signature* signature () const
   {
     return getterType->signature;
   }
 
   ast::ast_getter_t* const node;
   std::string const name;
-  const Type::Method * const getterType;
+  const type::Method * const getterType;
   size_t const returnSize;
   ReceiverAccess immutable_phase_access;
-  MemoryModel memoryModel;
+  runtime::MemoryModel memoryModel;
 };
+
+}
 
 #endif // rc_src_callable_hpp

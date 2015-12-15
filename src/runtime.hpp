@@ -9,32 +9,32 @@
 namespace runtime
 {
 void
-allocate_instances (Composition::Composer& instance_table);
+allocate_instances (composition::Composer& instance_table);
 
 void
-create_bindings (Composition::Composer& instance_table);
+create_bindings (composition::Composer& instance_table);
 
 void
-initialize (executor_base_t& exec, Composition::Instance* instance);
+initialize (executor_base_t& exec, composition::Instance* instance);
 
 // Returns true if the action is enabled.
 bool enabled (executor_base_t& exec,
               component_t* instance,
               const decl::Action* action,
-              Type::Int::ValueType iota);
+              type::Int::ValueType iota);
 
 // Returns true if the action was executed.
 bool execute (executor_base_t& exec,
               component_t* instance,
               const decl::Action* action,
-              Type::Int::ValueType iota);
+              type::Int::ValueType iota);
 
 // Execute the action without checking the precondition.
 // Returns true.
 bool execute_no_check (executor_base_t& exec,
                        component_t* instance,
                        const decl::Action* action,
-                       Type::Int::ValueType iota);
+                       type::Int::ValueType iota);
 
 enum ControlAction
 {
@@ -42,34 +42,34 @@ enum ControlAction
   kContinue,
 };
 
-struct New : public ::Template
+struct New : public decl::Template
 {
   New (ast::Node* dn);
-  virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types) const;
+  virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
 };
 
-struct Move : public ::Template
+struct Move : public decl::Template
 {
   Move (ast::Node* dn);
-  virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types) const;
+  virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
 };
 
-struct Merge : public ::Template
+struct Merge : public decl::Template
 {
   Merge (ast::Node* dn);
-  virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types) const;
+  virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
 };
 
-struct Copy : public ::Template
+struct Copy : public decl::Template
 {
   Copy (ast::Node* dn);
-  virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types) const;
+  virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
 };
 
-struct Println : public ::Template
+struct Println : public decl::Template
 {
   Println (ast::Node* dn);
-  virtual Callable* instantiate (const std::vector<const Type::Type*>& argument_types) const;
+  virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
 };
 
 
@@ -95,7 +95,7 @@ struct Operation
 
 struct Load : public Operation
 {
-  Load (const Operation* c, const Type::Type* t) : child (c), type (t) { }
+  Load (const Operation* c, const type::Type* t) : child (c), type (t) { }
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
@@ -104,12 +104,12 @@ struct Load : public Operation
     std::cout << *type << ")\n";
   }
   const Operation* const child;
-  const Type::Type* const type;
+  const type::Type* const type;
 };
 
 struct IndexArray : public Operation
 {
-  IndexArray (const Location& l, Operation* b, Operation* i, const Type::Array* t) : location (l), base (b), index (i), type (t) { }
+  IndexArray (const util::Location& l, Operation* b, Operation* i, const type::Array* t) : location (l), base (b), index (i), type (t) { }
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
@@ -119,43 +119,43 @@ struct IndexArray : public Operation
     index->dump ();
     std::cout << ")\n";
   }
-  Location const location;
+  util::Location const location;
   Operation* const base;
   Operation* const index;
-  const Type::Array* type;
+  const type::Array* type;
 };
 
 struct IndexSlice : public Operation
 {
-  IndexSlice (const Location& l, const Operation* b, const Operation* i, const Type::Slice* t) : location (l), base (b), index (i), type (t) { }
+  IndexSlice (const util::Location& l, const Operation* b, const Operation* i, const type::Slice* t) : location (l), base (b), index (i), type (t) { }
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
   }
-  Location const location;
+  util::Location const location;
   const Operation* const base;
   const Operation* const index;
-  const Type::Slice* type;
+  const type::Slice* type;
 };
 
 struct SliceArray : public Operation
 {
-  SliceArray (const Location& loc, Operation* b, Operation* l, Operation* h, const Type::Array* t) : location (loc), base (b), low (l), high (h), type (t) { }
+  SliceArray (const util::Location& loc, Operation* b, Operation* l, Operation* h, const type::Array* t) : location (loc), base (b), low (l), high (h), type (t) { }
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
   }
-  Location const location;
+  util::Location const location;
   Operation* const base;
   Operation* const low;
   Operation* const high;
-  const Type::Array* type;
+  const type::Array* type;
 };
 
-Operation* MakeConvertToInt (const Operation* c, const Type::Type* type);
-Operation* MakeConvertToUint (const Operation* c, const Type::Type* type);
+Operation* MakeConvertToInt (const Operation* c, const type::Type* type);
+Operation* MakeConvertToUint (const Operation* c, const type::Type* type);
 
 template <typename T>
 struct Literal : public Operation
@@ -180,7 +180,7 @@ make_literal (T v)
   return new Literal<T> (v);
 }
 
-Operation* make_literal (const Type::Type* type, const value_t& value);
+  Operation* make_literal (const type::Type* type, const semantic::value_t& value);
 
 struct LogicOr : public Operation
 {
@@ -209,7 +209,7 @@ struct LogicAnd : public Operation
 // template <typename O, typename T>
 // struct Binary : public Operation
 // {
-//   Binary (const Location& loc, const Operation* l, const Operation* r) : location (loc), left (l), right (r) { }
+//   Binary (const util::Location& loc, const Operation* l, const Operation* r) : location (loc), left (l), right (r) { }
 //   virtual OpReturn execute (executor_base_t& exec) const
 //   {
 //     left->execute (exec);
@@ -221,7 +221,7 @@ struct LogicAnd : public Operation
 //     exec.stack ().push (O () (location, left, right));
 //   }
 
-//   Location const location;
+//   util::Location const location;
 //   const Operation* const left;
 //   const Operation* const right;
 // };
@@ -229,11 +229,11 @@ struct LogicAnd : public Operation
 // template <typename O>
 // struct BinaryGenerator
 // {
-//   const Location& location;
+//   const util::Location& location;
 //   const Operation* left;
 //   const Operation* right;
 
-//   BinaryGenerator (const Location& loc, const Operation* l, const Operation* r) : location (loc), left (l), right (r) { }
+//   BinaryGenerator (const util::Location& loc, const Operation* l, const Operation* r) : location (loc), left (l), right (r) { }
 //   Operation* operation;
 
 //   template <typename T>
@@ -242,19 +242,19 @@ struct LogicAnd : public Operation
 //     operation = new Binary<O, T> (location, left, right);
 //   }
 
-//   void NotArithmetic (const Type::Type& type)
+//   void NotArithmetic (const type::Type& type)
 //   {
 //     type_not_reached (type);
 //   }
 
-//   void NotIntegral (const Type::Type& t)
+//   void NotIntegral (const type::Type& t)
 //   {
 //     type_not_reached (t);
 //   }
 // };
 
 // template <template <typename S> class Visitor, typename T>
-// Operation* make_binary (const Type::Type* type, const Location& location, const Operation* left, const Operation* right)
+// Operation* make_binary (const type::Type* type, const util::Location& location, const Operation* left, const Operation* right)
 // {
 //   BinaryGenerator<T> g (location, left, right);
 //   Visitor<BinaryGenerator<T> > visitor (g);
@@ -275,51 +275,51 @@ struct ListOperation : public Operation
 
 struct FunctionCall : public Operation
 {
-  FunctionCall (const Callable* c, Operation* o) : callable (c), arguments (o) { }
+  FunctionCall (const decl::Callable* c, Operation* o) : callable (c), arguments (o) { }
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
   }
-  const Callable* const callable;
+  const decl::Callable* const callable;
   Operation* const arguments;
 };
 
 struct MethodCall : public Operation
 {
-  MethodCall (const Callable* c, Operation* r, Operation* o) : callable (c), receiver (r), arguments (o) { }
+  MethodCall (const decl::Callable* c, Operation* r, Operation* o) : callable (c), receiver (r), arguments (o) { }
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
   }
-  const Callable* const callable;
+  const decl::Callable* const callable;
   Operation* const receiver;
   Operation* const arguments;
 };
 
 struct DynamicFunctionCall : public Operation
 {
-  DynamicFunctionCall (const Type::Function* t, Operation* f, Operation* a) : type (t), func (f), arguments (a) { }
+  DynamicFunctionCall (const type::Function* t, Operation* f, Operation* a) : type (t), func (f), arguments (a) { }
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
   }
-  const Type::Function* type;
+  const type::Function* type;
   Operation* const func;
   Operation* const arguments;
 };
 
 struct Instance : public Operation
 {
-  Instance (InstanceSymbol* i) : instance (i) { }
+  Instance (decl::InstanceSymbol* i) : instance (i) { }
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
   }
-  InstanceSymbol* instance;
+  decl::InstanceSymbol* instance;
 };
 
 struct SetRestoreCurrentInstance : public Operation
@@ -348,7 +348,7 @@ struct Clear : public Operation
 
 struct Assign : public Operation
 {
-  Assign (Operation* l, Operation* r, const Type::Type* t) : left (l), right (r), size (t->Size ())
+  Assign (Operation* l, Operation* r, const type::Type* t) : left (l), right (r), size (t->Size ())
   {
     assert (left != NULL);
     assert (right != NULL);
@@ -363,7 +363,7 @@ struct Assign : public Operation
   size_t const size;
 };
 
-Operation* make_add_assign (Operation* l, Operation* r, const Type::Type* t);
+Operation* make_add_assign (Operation* l, Operation* r, const type::Type* t);
 
 struct Reference : public Operation
 {
@@ -392,7 +392,7 @@ struct Select : public Operation
 
 struct Return : public Operation
 {
-  Return (Operation* c, const ParameterSymbol* r) : child (c), return_offset (r->offset ()), return_size (r->type->Size ()) { }
+  Return (Operation* c, const decl::ParameterSymbol* r) : child (c), return_offset (r->offset ()), return_size (r->type->Size ()) { }
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
@@ -430,14 +430,14 @@ struct While : public Operation
 
 struct ForIota : public Operation
 {
-  ForIota (const VariableSymbol* symbol, Type::Int::ValueType l, Operation* b) : offset (symbol->offset ()), limit (l), body (b) { }
+  ForIota (const decl::VariableSymbol* symbol, type::Int::ValueType l, Operation* b) : offset (symbol->offset ()), limit (l), body (b) { }
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
     unimplemented;
   }
   ptrdiff_t const offset;
-  Type::Int::ValueType const limit;
+  type::Int::ValueType const limit;
   Operation* const body;
 };
 
@@ -461,23 +461,23 @@ struct Unary : public Operation
 };
 
 template <template <typename S> class T>
-Operation* make_unary (const Type::Type* type, Operation* child)
+Operation* make_unary (const type::Type* type, Operation* child)
 {
-  struct visitor : public Type::DefaultVisitor
+  struct visitor : public type::DefaultVisitor
   {
     Operation* child;
     Operation* operation;
 
     visitor (Operation* c) : child (c), operation (NULL) { }
 
-    void default_action (const Type::Type& type)
+    void default_action (const type::Type& type)
     {
       type_not_reached (type);
     }
 
-    void visit (const Type::Bool& type)
+    void visit (const type::Bool& type)
     {
-      operation = new Unary<T<Type::Bool::ValueType> > (child);
+      operation = new Unary<T<type::Bool::ValueType> > (child);
     }
   };
   visitor v (child);
@@ -515,7 +515,7 @@ struct Shift : public Operation
   virtual OpReturn execute (executor_base_t& exec) const
   {
     V x;
-    Type::Uint::ValueType y;
+    type::Uint::ValueType y;
     left->execute (exec);
     exec.stack ().pop (x);
     right->execute (exec);
@@ -532,44 +532,44 @@ struct Shift : public Operation
 };
 
 template <typename T>
-Operation* make_binary_arithmetic (const Type::Type* type, Operation* left, Operation* right)
+Operation* make_binary_arithmetic (const type::Type* type, Operation* left, Operation* right)
 {
   switch (type->underlying_kind ())
     {
-    case Type::kBool:
-      return new Binary<Type::Bool::ValueType, T> (left, right);
-    case Type::kUint8:
-      return new Binary<Type::Uint8::ValueType, T> (left, right);
-    case Type::kUint16:
-      return new Binary<Type::Uint16::ValueType, T> (left, right);
-    case Type::kUint32:
-      return new Binary<Type::Uint32::ValueType, T> (left, right);
-    case Type::kUint64:
-      return new Binary<Type::Uint64::ValueType, T> (left, right);
-    case Type::kInt8:
-      return new Binary<Type::Int8::ValueType, T> (left, right);
-    case Type::kInt16:
-      return new Binary<Type::Int16::ValueType, T> (left, right);
-    case Type::kInt32:
-      return new Binary<Type::Int32::ValueType, T> (left, right);
-    case Type::kInt64:
-      return new Binary<Type::Int64::ValueType, T> (left, right);
-    case Type::kFloat32:
-      return new Binary<Type::Float32::ValueType, T> (left, right);
-    case Type::kFloat64:
-      return new Binary<Type::Float64::ValueType, T> (left, right);
-    case Type::kComplex64:
-      return new Binary<Type::Complex64::ValueType, T> (left, right);
-    case Type::kComplex128:
-      return new Binary<Type::Complex128::ValueType, T> (left, right);
-    case Type::kUint:
-      return new Binary<Type::Uint::ValueType, T> (left, right);
-    case Type::kInt:
-      return new Binary<Type::Int::ValueType, T> (left, right);
-    case Type::kUintptr:
-      return new Binary<Type::Uintptr::ValueType, T> (left, right);
-    case Type::kPointer:
-      return new Binary<Type::Uintptr::ValueType, T> (left, right);
+    case type::kBool:
+      return new Binary<type::Bool::ValueType, T> (left, right);
+    case type::kUint8:
+      return new Binary<type::Uint8::ValueType, T> (left, right);
+    case type::kUint16:
+      return new Binary<type::Uint16::ValueType, T> (left, right);
+    case type::kUint32:
+      return new Binary<type::Uint32::ValueType, T> (left, right);
+    case type::kUint64:
+      return new Binary<type::Uint64::ValueType, T> (left, right);
+    case type::kInt8:
+      return new Binary<type::Int8::ValueType, T> (left, right);
+    case type::kInt16:
+      return new Binary<type::Int16::ValueType, T> (left, right);
+    case type::kInt32:
+      return new Binary<type::Int32::ValueType, T> (left, right);
+    case type::kInt64:
+      return new Binary<type::Int64::ValueType, T> (left, right);
+    case type::kFloat32:
+      return new Binary<type::Float32::ValueType, T> (left, right);
+    case type::kFloat64:
+      return new Binary<type::Float64::ValueType, T> (left, right);
+    case type::kComplex64:
+      return new Binary<type::Complex64::ValueType, T> (left, right);
+    case type::kComplex128:
+      return new Binary<type::Complex128::ValueType, T> (left, right);
+    case type::kUint:
+      return new Binary<type::Uint::ValueType, T> (left, right);
+    case type::kInt:
+      return new Binary<type::Int::ValueType, T> (left, right);
+    case type::kUintptr:
+      return new Binary<type::Uintptr::ValueType, T> (left, right);
+    case type::kPointer:
+      return new Binary<type::Uintptr::ValueType, T> (left, right);
 
     default:
       type_not_reached (*type);
@@ -577,32 +577,32 @@ Operation* make_binary_arithmetic (const Type::Type* type, Operation* left, Oper
 }
 
 template <typename T>
-Operation* make_binary_integral (const Type::Type* type, Operation* left, Operation* right)
+Operation* make_binary_integral (const type::Type* type, Operation* left, Operation* right)
 {
   switch (type->underlying_kind ())
     {
-    case Type::kUint8:
-      return new Binary<Type::Uint8::ValueType, T> (left, right);
-    case Type::kUint16:
-      return new Binary<Type::Uint16::ValueType, T> (left, right);
-    case Type::kUint32:
-      return new Binary<Type::Uint32::ValueType, T> (left, right);
-    case Type::kUint64:
-      return new Binary<Type::Uint64::ValueType, T> (left, right);
-    case Type::kInt8:
-      return new Binary<Type::Int8::ValueType, T> (left, right);
-    case Type::kInt16:
-      return new Binary<Type::Int16::ValueType, T> (left, right);
-    case Type::kInt32:
-      return new Binary<Type::Int32::ValueType, T> (left, right);
-    case Type::kInt64:
-      return new Binary<Type::Int64::ValueType, T> (left, right);
-    case Type::kUint:
-      return new Binary<Type::Uint::ValueType, T> (left, right);
-    case Type::kInt:
-      return new Binary<Type::Int::ValueType, T> (left, right);
-    case Type::kUintptr:
-      return new Binary<Type::Uintptr::ValueType, T> (left, right);
+    case type::kUint8:
+      return new Binary<type::Uint8::ValueType, T> (left, right);
+    case type::kUint16:
+      return new Binary<type::Uint16::ValueType, T> (left, right);
+    case type::kUint32:
+      return new Binary<type::Uint32::ValueType, T> (left, right);
+    case type::kUint64:
+      return new Binary<type::Uint64::ValueType, T> (left, right);
+    case type::kInt8:
+      return new Binary<type::Int8::ValueType, T> (left, right);
+    case type::kInt16:
+      return new Binary<type::Int16::ValueType, T> (left, right);
+    case type::kInt32:
+      return new Binary<type::Int32::ValueType, T> (left, right);
+    case type::kInt64:
+      return new Binary<type::Int64::ValueType, T> (left, right);
+    case type::kUint:
+      return new Binary<type::Uint::ValueType, T> (left, right);
+    case type::kInt:
+      return new Binary<type::Int::ValueType, T> (left, right);
+    case type::kUintptr:
+      return new Binary<type::Uintptr::ValueType, T> (left, right);
 
     default:
       type_not_reached (*type);
@@ -610,32 +610,32 @@ Operation* make_binary_integral (const Type::Type* type, Operation* left, Operat
 }
 
 template <typename T>
-Operation* make_shift (const Type::Type* type, Operation* left, Operation* right)
+Operation* make_shift (const type::Type* type, Operation* left, Operation* right)
 {
   switch (type->underlying_kind ())
     {
-    case Type::kUint8:
-      return new Shift<Type::Uint8::ValueType, T> (left, right);
-    case Type::kUint16:
-      return new Shift<Type::Uint16::ValueType, T> (left, right);
-    case Type::kUint32:
-      return new Shift<Type::Uint32::ValueType, T> (left, right);
-    case Type::kUint64:
-      return new Shift<Type::Uint64::ValueType, T> (left, right);
-    case Type::kInt8:
-      return new Shift<Type::Int8::ValueType, T> (left, right);
-    case Type::kInt16:
-      return new Shift<Type::Int16::ValueType, T> (left, right);
-    case Type::kInt32:
-      return new Shift<Type::Int32::ValueType, T> (left, right);
-    case Type::kInt64:
-      return new Shift<Type::Int64::ValueType, T> (left, right);
-    case Type::kUint:
-      return new Shift<Type::Uint::ValueType, T> (left, right);
-    case Type::kInt:
-      return new Shift<Type::Int::ValueType, T> (left, right);
-    case Type::kUintptr:
-      return new Shift<Type::Uintptr::ValueType, T> (left, right);
+    case type::kUint8:
+      return new Shift<type::Uint8::ValueType, T> (left, right);
+    case type::kUint16:
+      return new Shift<type::Uint16::ValueType, T> (left, right);
+    case type::kUint32:
+      return new Shift<type::Uint32::ValueType, T> (left, right);
+    case type::kUint64:
+      return new Shift<type::Uint64::ValueType, T> (left, right);
+    case type::kInt8:
+      return new Shift<type::Int8::ValueType, T> (left, right);
+    case type::kInt16:
+      return new Shift<type::Int16::ValueType, T> (left, right);
+    case type::kInt32:
+      return new Shift<type::Int32::ValueType, T> (left, right);
+    case type::kInt64:
+      return new Shift<type::Int64::ValueType, T> (left, right);
+    case type::kUint:
+      return new Shift<type::Uint::ValueType, T> (left, right);
+    case type::kInt:
+      return new Shift<type::Int::ValueType, T> (left, right);
+    case type::kUintptr:
+      return new Shift<type::Uintptr::ValueType, T> (left, right);
 
     default:
       type_not_reached (*type);
@@ -655,7 +655,7 @@ struct Change : public Operation
   Operation* const body;
 };
 
-Operation* make_increment (Operation* child, const Type::Type* type);
+Operation* make_increment (Operation* child, const type::Type* type);
 
 struct Activate : public Operation
 {
@@ -684,7 +684,7 @@ struct PushPortCall : public Operation
 
 struct IndexedPushPortCall : public Operation
 {
-  IndexedPushPortCall (ptrdiff_t ro, ptrdiff_t po, Operation* i, Operation* o, const Type::Array* a) : receiver_offset (ro), port_offset (po), index (i), args (o), array_type (a) { }
+  IndexedPushPortCall (ptrdiff_t ro, ptrdiff_t po, Operation* i, Operation* o, const type::Array* a) : receiver_offset (ro), port_offset (po), index (i), args (o), array_type (a) { }
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
@@ -694,7 +694,7 @@ struct IndexedPushPortCall : public Operation
   ptrdiff_t const port_offset;
   Operation* const index;
   Operation* const args;
-  const Type::Array* const array_type;
+  const type::Array* const array_type;
 };
 
 struct Push : public Operation
@@ -720,7 +720,7 @@ struct Noop : public Operation
   }
 };
 
-Operation* make_conversion (Operation* c, const Type::Type* from, const Type::Type* to);
+Operation* make_conversion (Operation* c, const type::Type* from, const type::Type* to);
 }
 
 #endif // rc_src_runtime_hpp

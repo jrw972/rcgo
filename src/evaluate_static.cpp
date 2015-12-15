@@ -5,7 +5,10 @@
 #include "ast_visitor.hpp"
 #include "symbol.hpp"
 
-using namespace Type;
+namespace semantic
+{
+
+using namespace type;
 using namespace ast;
 
 std::ostream&
@@ -153,4 +156,6 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
   // visitor v (memory);
   // node->Accept (v);
   // return v.result;
+}
+
 }

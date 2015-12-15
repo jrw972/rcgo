@@ -105,13 +105,13 @@ main (int argc, char **argv)
       error (EXIT_FAILURE, 0, "Illegal thread count: %d", thread_count);
     }
 
-  Location::StaticFile = argv[optind];
+  util::Location::StaticFile = argv[optind];
 
   // Open the input file.
-  yyin = fopen (Location::StaticFile.c_str (), "r");
+  yyin = fopen (util::Location::StaticFile.c_str (), "r");
   if (yyin == NULL)
     {
-      error (EXIT_FAILURE, errno, "Could not open '%s'", Location::StaticFile.c_str ());
+      error (EXIT_FAILURE, errno, "Could not open '%s'", util::Location::StaticFile.c_str ());
     }
 
   yylloc = 1;
@@ -122,9 +122,9 @@ main (int argc, char **argv)
     }
   assert (root != NULL);
 
-  MemoryModel::StackAlignment = sizeof (void*);
+  runtime::MemoryModel::StackAlignment = sizeof (void*);
 
-  enter_symbols (root);
+  semantic::enter_symbols (root);
   semantic::process_types_and_constants (root);
   semantic::process_functions_and_methods (root);
   semantic::check_types (root);
@@ -134,14 +134,14 @@ main (int argc, char **argv)
 
   // Calculate the offsets of all stack variables.
   // Do this so we can execute some code statically when checking composition.
-  allocate_stack_variables (root);
+  semantic::allocate_stack_variables (root);
 
   // Generate code.
   code::generate_code (root);
 
   // Check composition.
-  Composition::Composer instance_table;
-  enumerate_instances (root, instance_table);
+  composition::Composer instance_table;
+  semantic::enumerate_instances (root, instance_table);
   instance_table.ElaborateComposition ();
   if (show_composition)
     {
@@ -151,7 +151,7 @@ main (int argc, char **argv)
   instance_table.AnalyzeComposition ();
 
   //typedef instance_scheduler_t SchedulerType;
-  typedef partitioned_scheduler_t SchedulerType;
+  typedef runtime::partitioned_scheduler_t SchedulerType;
 
   SchedulerType scheduler;
   runtime::allocate_instances (instance_table);

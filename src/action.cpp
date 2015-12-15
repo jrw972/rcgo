@@ -3,7 +3,7 @@
 namespace decl
 {
 using namespace ast;
-using namespace Type;
+using namespace type;
 
 Action::Action (Node* a_body,
                 const std::string& a_name)

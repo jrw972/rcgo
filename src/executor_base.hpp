@@ -5,6 +5,9 @@
 #include "action.hpp"
 #include "heap.hpp"
 
+namespace runtime
+{
+
 class FileDescriptor
 {
 public:
@@ -37,8 +40,8 @@ public:
   {
     return stack_;
   }
-  virtual heap_t* heap () const = 0;
-  virtual void heap (heap_t* heap) = 0;
+  virtual runtime::heap_t* heap () const = 0;
+  virtual void heap (runtime::heap_t* heap) = 0;
   component_t* current_instance () const
   {
     return current_instance_;
@@ -70,14 +73,14 @@ public:
   }
   virtual void push () = 0;
 
-  ::FileDescriptor*
+  runtime::FileDescriptor*
   allocateFileDescriptor (int fd)
   {
-    return new (static_cast< ::FileDescriptor*> (heap_allocate (this->heap (), sizeof (::FileDescriptor)))) ::FileDescriptor (fd);
+    return new (static_cast< runtime::FileDescriptor*> (runtime::heap_allocate (this->heap (), sizeof (runtime::FileDescriptor)))) runtime::FileDescriptor (fd);
   }
 
-  virtual void checkedForReadability (::FileDescriptor* fd) { }
-  virtual void checkedForWritability (::FileDescriptor* fd) { }
+  virtual void checkedForReadability (runtime::FileDescriptor* fd) { }
+  virtual void checkedForWritability (runtime::FileDescriptor* fd) { }
 
 private:
   runtime::Stack stack_;
@@ -85,5 +88,7 @@ private:
   char* mutable_phase_base_pointer_;
   pthread_mutex_t* stdout_mutex_;
 };
+
+}
 
 #endif // rc_src_executor_base_hpp

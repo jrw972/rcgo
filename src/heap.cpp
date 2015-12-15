@@ -27,6 +27,9 @@
 #define MARK 0x04
 #define SCANNED 0x08
 
+namespace runtime
+{
+
 // Element in the free list.
 typedef struct chunk_t chunk_t;
 struct chunk_t
@@ -714,4 +717,6 @@ void heap_remove_from_parent (heap_t* child)
 
       pthread_mutex_unlock (&parent->mutex);
     }
+}
+
 }

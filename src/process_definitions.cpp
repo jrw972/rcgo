@@ -10,7 +10,10 @@
 #include "callable.hpp"
 #include "ast_visitor.hpp"
 
-using namespace Type;
+namespace semantic
+{
+
+using namespace type;
 using namespace ast;
 using namespace decl;
 
@@ -144,4 +147,6 @@ enter_signature (Node& node, const Signature * type)
                          identifier.c_str ());
         }
     }
+}
+
 }

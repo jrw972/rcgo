@@ -112,13 +112,14 @@
 namespace semantic
 {
 using namespace ast;
-using namespace Type;
+using namespace type;
+  using namespace decl;
 
 namespace
 {
 void fix (Node& node)
 {
-  if (node.type->underlying_kind () == Type::kStringU)
+  if (node.type->underlying_kind () == type::kStringU)
     {
       node.dereference_mutability = std::max (node.dereference_mutability, IMMUTABLE);
     }
@@ -195,14 +196,14 @@ struct MutabilityVisitor : public ast::DefaultVisitor
         fix (node);
       }
 
-      void visit (const ::Template& symbol)
+      void visit (const decl::Template& symbol)
       {
         node.intrinsic_mutability = IMMUTABLE;
         node.dereference_mutability = IMMUTABLE;
         fix (node);
       }
 
-      void visit (const ::Function& symbol)
+      void visit (const decl::Function& symbol)
       {
         node.intrinsic_mutability = IMMUTABLE;
         node.dereference_mutability = IMMUTABLE;
@@ -544,7 +545,7 @@ struct MutabilityVisitor : public ast::DefaultVisitor
 
 }
 
-void check_mutability_arguments (ast::Node* node, const Type::Signature* signature)
+void check_mutability_arguments (ast::Node* node, const type::Signature* signature)
 {
   ast_list_expr_t* args = ast_cast<ast_list_expr_t> (node);
 
@@ -553,7 +554,7 @@ void check_mutability_arguments (ast::Node* node, const Type::Signature* signatu
        pos != limit;
        ++pos, ++i)
     {
-      const Type::Type* arg = (*pos)->type;
+      const type::Type* arg = (*pos)->type;
       if (type_contains_pointer (arg))
         {
           if (signature->At (i)->dereference_mutability < (*pos)->dereference_mutability)

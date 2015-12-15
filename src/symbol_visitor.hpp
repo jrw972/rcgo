@@ -6,6 +6,9 @@
 #include "template.hpp"
 #include "callable.hpp"
 
+namespace decl
+{
+
 struct SymbolVisitor
 {
   virtual ~SymbolVisitor() { }
@@ -13,7 +16,7 @@ struct SymbolVisitor
   {
     defaultAction (s);
   }
-  virtual void visit (Template& s)
+  virtual void visit (decl::Template& s)
   {
     defaultAction (s);
   }
@@ -55,7 +58,7 @@ struct ConstSymbolVisitor
   {
     defaultAction (s);
   }
-  virtual void visit (const Template& s)
+  virtual void visit (const decl::Template& s)
   {
     defaultAction (s);
   }
@@ -122,6 +125,8 @@ const T* SymbolCast (const Symbol* symbol)
   visitor v;
   symbol->accept (v);
   return v.retval;
+}
+
 }
 
 #endif // rc_src_symbol_visitor_hpp

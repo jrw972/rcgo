@@ -18,7 +18,8 @@ namespace semantic
 {
 
 using namespace ast;
-using namespace Type;
+using namespace type;
+using namespace decl;
 
 namespace
 {
@@ -49,7 +50,7 @@ static void require_variable (const Node* node)
 //   }
 // }
 
-static void convert (ast::Node* node, const Type::Type* type)
+static void convert (ast::Node* node, const type::Type* type)
 {
   if (node->type != type)
     {
@@ -63,9 +64,9 @@ static void convert (ast::Node* node, const Type::Type* type)
 
 static const reaction_t* bind (Node& node, ast::Node* port_node, ast::Node* reaction_node)
 {
-  const Type::Function* push_port_type = Type::type_cast<Type::Function> (port_node->type);
+  const type::Function* push_port_type = type::type_cast<type::Function> (port_node->type);
 
-  if (push_port_type == NULL || push_port_type->function_kind != Type::Function::PUSH_PORT)
+  if (push_port_type == NULL || push_port_type->function_kind != type::Function::PUSH_PORT)
     {
       error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                      "source of bind is not a port (E38)");
@@ -73,8 +74,8 @@ static const reaction_t* bind (Node& node, ast::Node* port_node, ast::Node* reac
 
   require_variable (port_node);
 
-  const Type::Method* reaction_type = Type::type_cast<Type::Method> (reaction_node->type);
-  if (reaction_type == NULL || reaction_type->method_kind != Type::Method::REACTION)
+  const type::Method* reaction_type = type::type_cast<type::Method> (reaction_node->type);
+  if (reaction_type == NULL || reaction_type->method_kind != type::Method::REACTION)
     {
       error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                      "target of bind is not a reaction (E39)");
@@ -93,7 +94,7 @@ static const reaction_t* bind (Node& node, ast::Node* port_node, ast::Node* reac
 
 static void check_condition (Node* node)
 {
-  const Type::Type* condition = node->type;
+  const type::Type* condition = node->type;
   if (!(is_any_boolean (condition)))
     {
       error_at_line (-1, 0,
@@ -107,7 +108,7 @@ static void check_condition (Node* node)
 
 // Select the type for == and !=.
 // NULL means no suitable type.
-static const Type::Type* comparable (const Type::Type* left_type, const Type::Type* right_type)
+static const type::Type* comparable (const type::Type* left_type, const type::Type* right_type)
 {
   switch (left_type->underlying_kind ())
     {
@@ -155,19 +156,19 @@ static const Type::Type* comparable (const Type::Type* left_type, const Type::Ty
   return NULL;
 }
 
-static void process_comparable (const char* s, ast_binary_expr_t& node, void (*func) (value_t&, const Type::Type*, const value_t&, const value_t&))
+static void process_comparable (const char* s, ast_binary_expr_t& node, void (*func) (value_t&, const type::Type*, const value_t&, const value_t&))
 {
-  const Type::Type*& left_type = node.left ()->type;
+  const type::Type*& left_type = node.left ()->type;
   value_t& left_value = node.left ()->value;
-  const Type::Type*& right_type = node.right ()->type;
+  const type::Type*& right_type = node.right ()->type;
   value_t& right_value = node.right ()->value;
-  const Type::Type*& type = node.type;
+  const type::Type*& type = node.type;
   value_t& value = node.value;
 
   if (left_type->IsUntyped () &&
       right_type->IsUntyped ())
     {
-      const Type::Type* t = comparable (left_type, right_type);
+      const type::Type* t = comparable (left_type, right_type);
       if (t == NULL)
         {
           error_at_line (-1, 0, node.location.File.c_str (),
@@ -195,7 +196,7 @@ static void process_comparable (const char* s, ast_binary_expr_t& node, void (*f
                      right_type->ToString ().c_str ());
     }
 
-  const Type::Type* in_type = Choose (left_type, right_type);
+  const type::Type* in_type = Choose (left_type, right_type);
   convert (node.left (), in_type);
   convert (node.right (), in_type);
 
@@ -223,7 +224,7 @@ static void process_comparable (const char* s, ast_binary_expr_t& node, void (*f
 
 // Select the type for <, <=, >, and >=.
 // NULL means no suitable type.
-static const Type::Type* orderable (const Type::Type* left_type, const Type::Type* right_type)
+static const type::Type* orderable (const type::Type* left_type, const type::Type* right_type)
 {
   switch (left_type->underlying_kind ())
     {
@@ -266,19 +267,19 @@ static const Type::Type* orderable (const Type::Type* left_type, const Type::Typ
   return NULL;
 }
 
-static void process_orderable (const char* s, ast_binary_expr_t& node, void (*func) (value_t&, const Type::Type*, const value_t&, const value_t&))
+static void process_orderable (const char* s, ast_binary_expr_t& node, void (*func) (value_t&, const type::Type*, const value_t&, const value_t&))
 {
-  const Type::Type*& left_type = node.left ()->type;
+  const type::Type*& left_type = node.left ()->type;
   value_t& left_value = node.left ()->value;
-  const Type::Type*& right_type = node.right ()->type;
+  const type::Type*& right_type = node.right ()->type;
   value_t& right_value = node.right ()->value;
-  const Type::Type*& type = node.type;
+  const type::Type*& type = node.type;
   value_t& value = node.value;
 
   if (left_type->IsUntyped () &&
       right_type->IsUntyped ())
     {
-      const Type::Type* t = orderable (left_type, right_type);
+      const type::Type* t = orderable (left_type, right_type);
       if (t == NULL)
         {
           error_at_line (-1, 0, node.location.File.c_str (),
@@ -306,7 +307,7 @@ static void process_orderable (const char* s, ast_binary_expr_t& node, void (*fu
                      right_type->ToString ().c_str ());
     }
 
-  const Type::Type* in_type = Choose (left_type, right_type);
+  const type::Type* in_type = Choose (left_type, right_type);
   convert (node.left (), in_type);
   convert (node.right (), in_type);
 
@@ -334,7 +335,7 @@ static void process_orderable (const char* s, ast_binary_expr_t& node, void (*fu
 
 // Select the type for *, /, +, -.
 // NULL means no suitable type.
-static const Type::Type* arithmetic (const Type::Type* left_type, const Type::Type* right_type)
+static const type::Type* arithmetic (const type::Type* left_type, const type::Type* right_type)
 {
   switch (left_type->underlying_kind ())
     {
@@ -376,19 +377,19 @@ static const Type::Type* arithmetic (const Type::Type* left_type, const Type::Ty
   return NULL;
 }
 
-static void process_arithmetic (const char* s, ast_binary_expr_t& node, void (*func) (value_t&, const Type::Type*, const value_t&, const value_t&))
+static void process_arithmetic (const char* s, ast_binary_expr_t& node, void (*func) (value_t&, const type::Type*, const value_t&, const value_t&))
 {
-  const Type::Type*& left_type = node.left ()->type;
+  const type::Type*& left_type = node.left ()->type;
   value_t& left_value = node.left ()->value;
-  const Type::Type*& right_type = node.right ()->type;
+  const type::Type*& right_type = node.right ()->type;
   value_t& right_value = node.right ()->value;
-  const Type::Type*& type = node.type;
+  const type::Type*& type = node.type;
   value_t& value = node.value;
 
   if (left_type->IsUntyped () &&
       right_type->IsUntyped ())
     {
-      const Type::Type* t = arithmetic (left_type, right_type);
+      const type::Type* t = arithmetic (left_type, right_type);
       if (t == NULL)
         {
           error_at_line (-1, 0, node.location.File.c_str (),
@@ -416,7 +417,7 @@ static void process_arithmetic (const char* s, ast_binary_expr_t& node, void (*f
                      right_type->ToString ().c_str ());
     }
 
-  const Type::Type* in_type = Choose (left_type, right_type);
+  const type::Type* in_type = Choose (left_type, right_type);
   convert (node.left (), in_type);
   convert (node.right (), in_type);
 
@@ -444,7 +445,7 @@ static void process_arithmetic (const char* s, ast_binary_expr_t& node, void (*f
 
 // Select the type for %.
 // NULL means no suitable type.
-static const Type::Type* integral (const Type::Type* left_type, const Type::Type* right_type)
+static const type::Type* integral (const type::Type* left_type, const type::Type* right_type)
 {
   switch (left_type->underlying_kind ())
     {
@@ -481,19 +482,19 @@ static const Type::Type* integral (const Type::Type* left_type, const Type::Type
   return NULL;
 }
 
-static void process_integral (const char* s, ast_binary_expr_t& node, void (*func) (value_t&, const Type::Type*, const value_t&, const value_t&))
+static void process_integral (const char* s, ast_binary_expr_t& node, void (*func) (value_t&, const type::Type*, const value_t&, const value_t&))
 {
-  const Type::Type*& left_type = node.left ()->type;
+  const type::Type*& left_type = node.left ()->type;
   value_t& left_value = node.left ()->value;
-  const Type::Type*& right_type = node.right ()->type;
+  const type::Type*& right_type = node.right ()->type;
   value_t& right_value = node.right ()->value;
-  const Type::Type*& type = node.type;
+  const type::Type*& type = node.type;
   value_t& value = node.value;
 
   if (left_type->IsUntyped () &&
       right_type->IsUntyped ())
     {
-      const Type::Type* t = integral (left_type, right_type);
+      const type::Type* t = integral (left_type, right_type);
       if (t == NULL)
         {
           error_at_line (-1, 0, node.location.File.c_str (),
@@ -521,7 +522,7 @@ static void process_integral (const char* s, ast_binary_expr_t& node, void (*fun
                      right_type->ToString ().c_str ());
     }
 
-  const Type::Type* in_type = Choose (left_type, right_type);
+  const type::Type* in_type = Choose (left_type, right_type);
   convert (node.left (), in_type);
   convert (node.right (), in_type);
 
@@ -560,15 +561,15 @@ static void process_shift (ast_binary_expr_t& node)
 
   if (node.right ()->value.present)
     {
-      if (!node.right ()->value.representable (node.right ()->type, Type::Uint::Instance ()))
+      if (!node.right ()->value.representable (node.right ()->type, type::Uint::Instance ()))
         {
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
                          "shift amount %s is not a uint (E90)",
                          node.right ()->type->ToString ().c_str ());
         }
-      node.right ()->value.convert (node.right ()->type, Type::Uint::Instance ());
-      node.right ()->type = Type::Uint::Instance ();
+      node.right ()->value.convert (node.right ()->type, type::Uint::Instance ());
+      node.right ()->type = type::Uint::Instance ();
     }
 
   if (!integral (node.left ()->type))
@@ -634,11 +635,11 @@ static void process_shift (ast_binary_expr_t& node)
 
 static void process_logic_or (ast_binary_expr_t& node)
 {
-  const Type::Type*& left_type = node.left ()->type;
+  const type::Type*& left_type = node.left ()->type;
   value_t& left_value = node.left ()->value;
-  const Type::Type*& right_type = node.right ()->type;
+  const type::Type*& right_type = node.right ()->type;
   value_t& right_value = node.right ()->value;
-  const Type::Type*& type = node.type;
+  const type::Type*& type = node.type;
   value_t& value = node.value;
 
   if (left_type->IsUntyped () &&
@@ -668,7 +669,7 @@ static void process_logic_or (ast_binary_expr_t& node)
                      right_type->ToString ().c_str ());
     }
 
-  const Type::Type* in_type = Choose (left_type, right_type);
+  const type::Type* in_type = Choose (left_type, right_type);
   convert (node.left (), in_type);
   convert (node.right (), in_type);
 
@@ -700,11 +701,11 @@ static void process_logic_or (ast_binary_expr_t& node)
 
 static void process_logic_and (ast_binary_expr_t& node)
 {
-  const Type::Type*& left_type = node.left ()->type;
+  const type::Type*& left_type = node.left ()->type;
   value_t& left_value = node.left ()->value;
-  const Type::Type*& right_type = node.right ()->type;
+  const type::Type*& right_type = node.right ()->type;
   value_t& right_value = node.right ()->value;
-  const Type::Type*& type = node.type;
+  const type::Type*& type = node.type;
   value_t& value = node.value;
 
   if (left_type->IsUntyped () &&
@@ -734,7 +735,7 @@ static void process_logic_and (ast_binary_expr_t& node)
                      right_type->ToString ().c_str ());
     }
 
-  const Type::Type* in_type = Choose (left_type, right_type);
+  const type::Type* in_type = Choose (left_type, right_type);
   convert (node.left (), in_type);
   convert (node.right (), in_type);
 
@@ -800,8 +801,8 @@ struct Visitor : public ast::DefaultVisitor
         node.callable = node.expr ()->callable;
       }
 
-    node.function_type = type_cast<Type::Function> (node.expr ()->type);
-    node.method_type = type_cast<Type::Method> (node.expr ()->type);
+    node.function_type = type_cast<type::Function> (node.expr ()->type);
+    node.method_type = type_cast<type::Method> (node.expr ()->type);
 
     if (node.function_type)
       {
@@ -844,8 +845,8 @@ struct Visitor : public ast::DefaultVisitor
     require_type (node.type_expr ());
     require_value_or_variable (node.expr ());
 
-    const Type::Type* to = node.type_expr ()->type;
-    const Type::Type*& from = node.expr ()->type;
+    const type::Type* to = node.type_expr ()->type;
+    const type::Type*& from = node.expr ()->type;
     value_t& x = node.expr ()->value;
 
     if (x.present)
@@ -889,8 +890,8 @@ struct Visitor : public ast::DefaultVisitor
           {
             // Okay.
           }
-        else if (from->Level () == Type::Type::UNNAMED &&
-                 to->Level () == Type::Type::UNNAMED &&
+        else if (from->Level () == type::Type::UNNAMED &&
+                 to->Level () == type::Type::UNNAMED &&
                  from->underlying_kind () == kPointer &&
                  to->underlying_kind () == kPointer &&
                  Identical (from->pointer_base_type (), to->pointer_base_type ()))
@@ -971,14 +972,14 @@ struct Visitor : public ast::DefaultVisitor
         node.expression_kind = kValue;
       }
 
-      void visit (const ::Template& symbol)
+      void visit (const decl::Template& symbol)
       {
         node.type = symbol.type ();
         node.temp = &symbol;
         node.expression_kind = kValue;
       }
 
-      void visit (const ::Function& symbol)
+      void visit (const decl::Function& symbol)
       {
         node.type = symbol.type ();
         node.callable = &symbol;
@@ -1364,7 +1365,7 @@ struct Visitor : public ast::DefaultVisitor
   {
     node.expr ()->Accept (*this);
 
-    const Type::Type* root_type = type_change (node.expr ()->type);
+    const type::Type* root_type = type_change (node.expr ()->type);
     if (root_type == NULL)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -1423,7 +1424,7 @@ struct Visitor : public ast::DefaultVisitor
       }
 
     // Process the type spec.
-    const Type::Type* type = process_type (type_spec, true);
+    const type::Type* type = process_type (type_spec, true);
 
     if (expression_list->Size () == 0)
       {
@@ -1508,8 +1509,8 @@ struct Visitor : public ast::DefaultVisitor
   void visit (ast_assign_statement_t& node)
   {
     node.VisitChildren (*this);
-    const Type::Type* to = node.left ()->type;
-    const Type::Type*& from = node.right ()->type;
+    const type::Type* to = node.left ()->type;
+    const type::Type*& from = node.right ()->type;
     value_t& val = node.right ()->value;
     if (!assignable (from, val, to))
       {
@@ -1527,8 +1528,8 @@ struct Visitor : public ast::DefaultVisitor
   {
     node.VisitChildren (*this);
 
-    const Type::Type* to = node.left ()->type;
-    const Type::Type*& from = node.right ()->type;
+    const type::Type* to = node.left ()->type;
+    const type::Type*& from = node.right ()->type;
     value_t& val = node.right ()->value;
     if (!arithmetic (to))
       {
@@ -1575,7 +1576,7 @@ struct Visitor : public ast::DefaultVisitor
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "parameter specified for non-parameterized reaction (E41)");
       }
-    Type::Int::ValueType dimension = reaction->dimension ();
+    type::Int::ValueType dimension = reaction->dimension ();
     check_array_index (reaction->reaction_type->GetArray (dimension), node.param (), false);
   }
 
@@ -1583,9 +1584,9 @@ struct Visitor : public ast::DefaultVisitor
   {
     node.VisitChildren (*this);
 
-    const Type::Function* pull_port_type = type_cast<Type::Function> (node.left ()->type);
+    const type::Function* pull_port_type = type_cast<type::Function> (node.left ()->type);
 
-    if (pull_port_type == NULL || pull_port_type->function_kind != Type::Function::PULL_PORT)
+    if (pull_port_type == NULL || pull_port_type->function_kind != type::Function::PULL_PORT)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "target of bind is not a pull port (E193)");
@@ -1593,9 +1594,9 @@ struct Visitor : public ast::DefaultVisitor
 
     require_variable (node.left ());
 
-    const Type::Method* getter_type = type_cast<Type::Method> (node.right ()->type);
+    const type::Method* getter_type = type_cast<type::Method> (node.right ()->type);
 
-    if (getter_type == NULL || getter_type->method_kind != Type::Method::GETTER)
+    if (getter_type == NULL || getter_type->method_kind != type::Method::GETTER)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "source of bind is not a getter (E192)");
@@ -1603,7 +1604,7 @@ struct Visitor : public ast::DefaultVisitor
 
     require_variable (node.right ());
 
-    Type::Function g (Type::Function::FUNCTION, getter_type->signature, getter_type->return_parameter);
+    type::Function g (type::Function::FUNCTION, getter_type->signature, getter_type->return_parameter);
     if (!type_is_equal (pull_port_type, &g))
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -1614,7 +1615,7 @@ struct Visitor : public ast::DefaultVisitor
   void visit (ast_dereference_expr_t& node)
   {
     node.VisitChildren (*this);
-    const Type::Type* t = node.child ()->type;
+    const type::Type* t = node.child ()->type;
     const Pointer* p = type_cast<Pointer> (t->UnderlyingType ());
     if (p == NULL)
       {
@@ -1638,7 +1639,7 @@ struct Visitor : public ast::DefaultVisitor
   {
     const std::string& identifier = ast_get_identifier (node.identifier ());
     node.base ()->Accept (*this);
-    const Type::Type* base_type = node.base ()->type;
+    const type::Type* base_type = node.base ()->type;
     require_value_or_variable (node.base ());
 
     if (type_dereference (base_type))
@@ -1673,7 +1674,7 @@ struct Visitor : public ast::DefaultVisitor
 
   void check_array_index (const Array* array_type, Node* index, bool allow_equal)
   {
-    const Type::Type*& index_type = index->type;
+    const type::Type*& index_type = index->type;
     value_t& index_value = index->value;
 
     if (is_untyped_numeric (index_type))
@@ -1726,10 +1727,10 @@ struct Visitor : public ast::DefaultVisitor
   void visit (ast_index_expr_t& node)
   {
     node.VisitChildren (*this);
-    const Type::Type* base_type = node.base ()->type;
+    const type::Type* base_type = node.base ()->type;
     Node* index_node = node.index ();
     value_t& index_value = index_node->value;
-    const Type::Type*& index_type = node.index ()->type;
+    const type::Type*& index_type = node.index ()->type;
 
     node.array_type = type_cast<Array> (base_type->UnderlyingType ());
     if (node.array_type != NULL)
@@ -1795,12 +1796,12 @@ struct Visitor : public ast::DefaultVisitor
   {
     node.VisitChildren (*this);
     Node* base = node.base ();
-    const Type::Type* base_type = node.base ()->type;
+    const type::Type* base_type = node.base ()->type;
     Node* low_node = node.low ();
-    const Type::Type*& low_type = low_node->type;
+    const type::Type*& low_type = low_node->type;
     value_t& low_value = low_node->value;
     Node* high_node = node.high ();
-    const Type::Type*& high_type = high_node->type;
+    const type::Type*& high_type = high_node->type;
     value_t& high_value = high_node->value;
 
     node.array_type = type_cast<Array> (base_type->UnderlyingType ());
@@ -1860,15 +1861,15 @@ struct Visitor : public ast::DefaultVisitor
   {
     node.receiver_parameter = receiver_parameter;
     const std::string& port_identifier = ast_get_identifier (node.identifier ());
-    const Type::Type* this_type = receiver_parameter->type;
+    const type::Type* this_type = receiver_parameter->type;
     node.field = this_type->select_field (port_identifier);
     if (node.field == NULL)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "no port named %s (E194)", port_identifier.c_str ());
       }
-    const Type::Function* push_port_type = Type::type_cast<Type::Function> (node.field->type);
-    if (push_port_type == NULL || push_port_type->function_kind != Type::Function::PUSH_PORT)
+    const type::Function* push_port_type = type::type_cast<type::Function> (node.field->type);
+    if (push_port_type == NULL || push_port_type->function_kind != type::Function::PUSH_PORT)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "no port named %s (E195)", port_identifier.c_str ());
@@ -1883,21 +1884,21 @@ struct Visitor : public ast::DefaultVisitor
   {
     node.receiver_parameter = receiver_parameter;
     const std::string& port_identifier = ast_get_identifier (node.identifier ());
-    const Type::Type* this_type = receiver_parameter->type;
+    const type::Type* this_type = receiver_parameter->type;
     node.field = this_type->select_field (port_identifier);
     if (node.field == NULL)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "no port named %s (E74)", port_identifier.c_str ());
       }
-    node.array_type = Type::type_cast<Type::Array> (node.field->type);
+    node.array_type = type::type_cast<type::Array> (node.field->type);
     if (node.array_type == NULL)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "%s is not an array of ports (E16)", port_identifier.c_str ());
       }
-    const Type::Function* push_port_type = Type::type_cast<Type::Function> (node.array_type->Base ());
-    if (push_port_type == NULL || push_port_type->function_kind != Type::Function::PUSH_PORT)
+    const type::Function* push_port_type = type::type_cast<type::Function> (node.array_type->Base ());
+    if (push_port_type == NULL || push_port_type->function_kind != type::Function::PUSH_PORT)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "%s is not an array of ports (E17)", port_identifier.c_str ());
@@ -1947,7 +1948,7 @@ struct Visitor : public ast::DefaultVisitor
 };
 }
 
-void check_types_arguments (ast::Node* node, const Type::Signature* signature)
+void check_types_arguments (ast::Node* node, const type::Signature* signature)
 {
   ast_list_expr_t* args = ast_cast<ast_list_expr_t> (node);
 
@@ -1962,10 +1963,10 @@ void check_types_arguments (ast::Node* node, const Type::Signature* signature)
        pos != limit;
        ++pos, ++i)
     {
-      const Type::Type*& arg = (*pos)->type;
+      const type::Type*& arg = (*pos)->type;
       value_t& val = (*pos)->value;
-      const Type::Type* param = signature->At (i)->type;
-      if (!Type::assignable (arg, val, param))
+      const type::Type* param = signature->At (i)->type;
+      if (!type::assignable (arg, val, param))
         {
           error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
                          "cannot assign %s to %s in call (E151)", arg->ToString ().c_str (), param->ToString ().c_str ());

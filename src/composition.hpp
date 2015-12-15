@@ -4,7 +4,7 @@
 #include "types.hpp"
 #include "type.hpp"
 
-namespace Composition
+namespace composition
 {
 struct Instance;
 struct Node;
@@ -24,16 +24,16 @@ struct Instance
 {
   Instance (Instance* p,
             size_t a,
-            const Type::NamedType* t,
-            Initializer* i,
+            const type::NamedType* t,
+            decl::Initializer* i,
             ast::ast_instance_t* n,
             const std::string& aName);
 
   Instance* const parent;
   size_t const address;
-  const Type::NamedType* const type;
+  const type::NamedType* const type;
   component_t* component;
-  const Initializer* const initializer;
+  const decl::Initializer* const initializer;
   const ast::ast_instance_t* const node;
   ActionsType actions;
   std::string const name;
@@ -78,10 +78,10 @@ protected:
 
 struct Action : public Node
 {
-  Action (Instance* i, decl::Action* a, Type::Int::ValueType p = 0);
+  Action (Instance* i, decl::Action* a, type::Int::ValueType p = 0);
   Instance* const instance;
   decl::Action* const action;
-  Type::Int::ValueType const iota;
+  type::Int::ValueType const iota;
   virtual size_t OutgoingCount () const;
   virtual Node* OutgoingNode (size_t i) const;
   const InstanceSet& GetInstanceSet ();
@@ -91,49 +91,49 @@ struct Action : public Node
   }
   NodesType nodes;
 private:
-  static std::string getname (Instance* i, decl::Action* a, Type::Int::ValueType p);
+  static std::string getname (Instance* i, decl::Action* a, type::Int::ValueType p);
 };
 
 struct ReactionKey
 {
-  ReactionKey (Instance* i, const reaction_t* a, Type::Int::ValueType p = 0);
+  ReactionKey (Instance* i, const decl::reaction_t* a, type::Int::ValueType p = 0);
   bool operator< (const ReactionKey& other) const;
   Instance* instance;
-  const reaction_t* reaction;
-  Type::Int::ValueType iota;
+  const decl::reaction_t* reaction;
+  type::Int::ValueType iota;
 };
 
 struct Reaction : public Node
 {
-  Reaction (Instance* i, reaction_t* a, Type::Int::ValueType p = 0);
+  Reaction (Instance* i, decl::reaction_t* a, type::Int::ValueType p = 0);
   virtual size_t OutgoingCount () const;
   virtual Node* OutgoingNode (size_t i) const;
   const InstanceSet& GetInstanceSet ();
   Instance* const instance;
-  reaction_t* const reaction;
-  Type::Int::ValueType const iota;
+  decl::reaction_t* const reaction;
+  type::Int::ValueType const iota;
   NodesType nodes;
   std::vector<PushPort*> push_ports;
 private:
-  static std::string getname (Instance* i, reaction_t* a, Type::Int::ValueType p);
+  static std::string getname (Instance* i, decl::reaction_t* a, type::Int::ValueType p);
 };
 
 struct GetterKey
 {
-  GetterKey (Instance* i, const Callable* c);
+  GetterKey (Instance* i, const decl::Callable* c);
   bool operator< (const GetterKey& other) const;
   Instance* instance;
-  const Callable* getter;
+  const decl::Callable* getter;
 };
 
 struct Getter : public Node
 {
-  Getter (Instance* i, ::Getter* g);
+  Getter (Instance* i, decl::Getter* g);
   virtual size_t OutgoingCount () const;
   virtual Node* OutgoingNode (size_t i) const;
   const InstanceSet& GetInstanceSet ();
   Instance* const instance;
-  ::Getter* const getter;
+  decl::Getter* const getter;
   NodesType nodes;
 };
 
@@ -152,25 +152,25 @@ private:
 
 struct PushPort : public Node
 {
-  PushPort (size_t a, Instance* oi, field_t* of, const std::string& name);
+  PushPort (size_t a, Instance* oi, type::field_t* of, const std::string& name);
   virtual size_t OutgoingCount () const;
   virtual Node* OutgoingNode (size_t i) const;
   const InstanceSet& GetInstanceSet ();
   size_t const address;
   Instance* const instance;
-  field_t* const field;
+  type::field_t* const field;
   ReactionsType reactions;
 };
 
 struct PullPort : public Node
 {
-  PullPort (size_t a, Instance* oi, field_t* of, const std::string& name);
+  PullPort (size_t a, Instance* oi, type::field_t* of, const std::string& name);
   virtual size_t OutgoingCount () const;
   virtual Node* OutgoingNode (size_t i) const;
   virtual const InstanceSet& GetInstanceSet ();
   size_t const address;
   Instance* const instance;
-  field_t* const field;
+  type::field_t* const field;
   GettersType getters;
 };
 
@@ -183,11 +183,11 @@ public:
   void AddInstance (Instance* instance);
   void AddPushPort (size_t address,
                     Instance* output_instance,
-                    field_t* output_field,
+                    type::field_t* output_field,
                     const std::string& name);
   void AddPullPort (size_t address,
                     Instance* input_instance,
-                    field_t* input_field,
+                    type::field_t* input_field,
                     const std::string& name);
 
   void ElaborateComposition ();

@@ -16,6 +16,7 @@
 namespace ast
 {
 using namespace decl;
+using namespace semantic;
 
 std::ostream&
 operator<< (std::ostream& out, const Node& node)
@@ -684,7 +685,7 @@ Node::Activate ()
            ++ptr)
         {
           {
-            ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (*ptr);
+            ParameterSymbol* symbol = decl::SymbolCast<ParameterSymbol> (*ptr);
             if (symbol != NULL)
               {
                 if (symbol->kind == ParameterSymbol::Receiver)
@@ -857,4 +858,12 @@ Node::Node (unsigned int line_, size_t children_count)
   assert (location.Line != 0);
   m_children.resize (children_count);
 }
+
+  ast_literal_expr_t::ast_literal_expr_t (unsigned int line, const ::type::Type* t, const value_t& v)
+    : Node (line, 0)
+  {
+    type = t;
+    value = v;
+  }
+
 }

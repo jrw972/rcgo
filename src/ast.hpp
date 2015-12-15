@@ -15,7 +15,7 @@ struct Node
   typedef std::vector<Node*> ChildrenType;
   typedef ChildrenType::iterator Iterator;
   typedef ChildrenType::const_iterator ConstIterator;
-  typedef std::vector<Symbol*> SymbolsType;
+  typedef std::vector<decl::Symbol*> SymbolsType;
   typedef SymbolsType::const_iterator ConstSymbolIterator;
 
   virtual ~Node() { }
@@ -72,23 +72,23 @@ struct Node
   {
     return m_symbols.end ();
   }
-  void EnterSymbol (Symbol* s)
+  void EnterSymbol (decl::Symbol* s)
   {
     m_symbols.push_back (s);
   }
-  Symbol* FindGlobalSymbol (const std::string& identifier) const;
-  Symbol* FindLocalSymbol (const std::string& identifier) const;
+  decl::Symbol* FindGlobalSymbol (const std::string& identifier) const;
+  decl::Symbol* FindLocalSymbol (const std::string& identifier) const;
   void Activate ();
   void Change ();
 
-  Location const location;
+  util::Location const location;
   // TODO:  Rename.
   //typed_value_t typed_value;
-  const Type::Type* type;
-  value_t value;
-  field_t* field;
-  const Callable* callable;
-  const ::Template* temp;
+  const type::Type* type;
+  semantic::value_t value;
+  type::field_t* field;
+  const decl::Callable* callable;
+  const decl::Template* temp;
   ExpressionKind expression_kind;
   Mutability intrinsic_mutability;
   Mutability dereference_mutability;
@@ -166,7 +166,7 @@ struct ast_receiver_t : public Node
   Mutability const mutability;
   Mutability const dereferenceMutability;
   bool const isPointer;
-  Symbol* this_symbol;
+  decl::Symbol* this_symbol;
 };
 
 struct ast_array_type_spec_t : public Node
@@ -519,10 +519,10 @@ struct ast_call_expr_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  const Type::Function* function_type;
-  const Type::Method* method_type;
-  const Type::Signature* signature;
-  const ParameterSymbol* return_parameter;
+  const type::Function* function_type;
+  const type::Method* method_type;
+  const type::Signature* signature;
+  const decl::ParameterSymbol* return_parameter;
 };
 
 struct ast_conversion_expr_t : public Node
@@ -596,7 +596,7 @@ struct ast_identifier_expr_t : public ast_unary_expr_t
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  Symbol* symbol;
+  decl::Symbol* symbol;
 };
 
 struct ast_index_expr_t : public Node
@@ -629,8 +629,8 @@ struct ast_index_expr_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  const Type::Array* array_type;
-  const Type::Slice* slice_type;
+  const type::Array* array_type;
+  const type::Slice* slice_type;
 };
 
 struct ast_slice_expr_t : public Node
@@ -675,8 +675,8 @@ struct ast_slice_expr_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  const Type::Array* array_type;
-  const Type::Slice* slice_type;
+  const type::Array* array_type;
+  const type::Slice* slice_type;
 };
 
 struct ast_auto_expr_t : public Node
@@ -732,8 +732,8 @@ struct ast_push_port_call_expr_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  field_t* field;
-  ParameterSymbol* receiver_parameter;
+  type::field_t* field;
+  decl::ParameterSymbol* receiver_parameter;
 };
 
 struct ast_indexed_port_call_expr_t : public Node
@@ -775,9 +775,9 @@ struct ast_indexed_port_call_expr_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  field_t* field;
-  ParameterSymbol* receiver_parameter;
-  const Type::Array* array_type;
+  type::field_t* field;
+  decl::ParameterSymbol* receiver_parameter;
+  const type::Array* array_type;
 };
 
 struct ast_select_expr_t : public Node
@@ -811,13 +811,7 @@ struct ast_select_expr_t : public Node
 
 struct ast_literal_expr_t : public Node
 {
-  ast_literal_expr_t (unsigned int line, const Type::Type* t, const value_t& v)
-    : Node (line, 0)
-  {
-    type = t;
-    value = v;
-  }
-
+  ast_literal_expr_t (unsigned int line, const type::Type* t, const semantic::value_t& v);
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 };
@@ -915,7 +909,7 @@ struct ast_change_statement_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  VariableSymbol* root_symbol;
+  decl::VariableSymbol* root_symbol;
 };
 
 struct ast_expression_statement_t : public ast_unary_t
@@ -1002,7 +996,7 @@ struct ast_return_statement_t : public ast_unary_t
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  const ParameterSymbol* return_symbol;
+  const decl::ParameterSymbol* return_symbol;
 };
 
 struct ast_increment_statement_t : public ast_unary_t
@@ -1074,7 +1068,7 @@ struct ast_activate_statement_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  const MemoryModel* memoryModel;
+  const runtime::MemoryModel* memoryModel;
   ReceiverAccess mutable_phase_access;
 };
 
@@ -1116,7 +1110,7 @@ struct ast_var_statement_t : public Node
 
   Mutability const mutability;
   Mutability const dereferenceMutability;
-  typedef std::vector<VariableSymbol*> SymbolsType;
+  typedef std::vector<decl::VariableSymbol*> SymbolsType;
   SymbolsType symbols;
 };
 
@@ -1209,8 +1203,8 @@ struct ast_for_iota_statement_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  VariableSymbol* symbol;
-  Type::Int::ValueType limit;
+  decl::VariableSymbol* symbol;
+  type::Int::ValueType limit;
 };
 
 struct ast_action_t : public Node
@@ -1259,8 +1253,8 @@ struct ast_action_t : public Node
   void Accept (ConstVisitor& visitor) const;
 
   decl::Action* action;
-  const Type::Type* type;
-  ParameterSymbol* receiver_symbol;
+  const type::Type* type;
+  decl::ParameterSymbol* receiver_symbol;
 };
 
 struct ast_dimensioned_action_t : public Node
@@ -1318,8 +1312,8 @@ struct ast_dimensioned_action_t : public Node
   void Accept (ConstVisitor& visitor) const;
 
   decl::Action* action;
-  const Type::Type* type;
-  ParameterSymbol* receiver_symbol;
+  const type::Type* type;
+  decl::ParameterSymbol* receiver_symbol;
 };
 
 struct ast_bind_t : public Node
@@ -1357,7 +1351,7 @@ struct ast_bind_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  bind_t* bind;
+  decl::bind_t* bind;
 };
 
 struct ast_function_t : public Node
@@ -1403,7 +1397,7 @@ struct ast_function_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  ::Function* function;
+  decl::Function* function;
   Mutability const dereferenceMutability;
 };
 
@@ -1447,7 +1441,7 @@ struct ast_instance_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  InstanceSymbol* symbol;
+  decl::InstanceSymbol* symbol;
 };
 
 struct ast_const_t : public Node
@@ -1542,7 +1536,7 @@ struct ast_method_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  ::Method* method;
+  decl::Method* method;
   Mutability const return_dereference_mutability;
 };
 
@@ -1600,7 +1594,7 @@ struct ast_getter_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  ::Getter* getter;
+  decl::Getter* getter;
   Mutability const dereferenceMutability;
 };
 
@@ -1659,7 +1653,7 @@ struct ast_initializer_t : public Node
   void Accept (ConstVisitor& visitor) const;
 
   Mutability const return_dereference_mutability;
-  ::Initializer* initializer;
+  decl::Initializer* initializer;
 };
 
 struct ast_reaction_t : public Node
@@ -1709,7 +1703,7 @@ struct ast_reaction_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  reaction_t* reaction;
+  decl::reaction_t* reaction;
 };
 
 struct ast_dimensioned_reaction_t : public Node
@@ -1770,7 +1764,7 @@ struct ast_dimensioned_reaction_t : public Node
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 
-  reaction_t* reaction;
+  decl::reaction_t* reaction;
 };
 
 struct Type : public Node

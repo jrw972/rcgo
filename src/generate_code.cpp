@@ -13,7 +13,9 @@ namespace  code
 {
 using namespace ast;
 using namespace runtime;
-using namespace Type;
+using namespace type;
+using namespace semantic;
+  using namespace decl;
 
 struct CodeGenVisitor : public ast::DefaultVisitor
 {

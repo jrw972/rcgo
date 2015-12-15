@@ -2,7 +2,10 @@
 
 #include <utility>
 
-using namespace Type;
+namespace semantic
+{
+
+using namespace type;
 using namespace std::rel_ops;
 
 // struct alpha_visitor : public Type::DefaultVisitor
@@ -121,7 +124,7 @@ static bool to_and_back_helper (const T& x)
 }
 
 template <typename T>
-static bool to_and_back (const T& x, const Type::Type* type)
+static bool to_and_back (const T& x, const type::Type* type)
 {
   switch (type->underlying_kind ())
     {
@@ -160,16 +163,16 @@ static bool to_and_back (const T& x, const Type::Type* type)
     }
 }
 
-static void convert_numeric (value_t& value, Complex::ValueType x, const Type::Type* type)
+static void convert_numeric (value_t& value, Complex::ValueType x, const type::Type* type)
 {
-  struct visitor : public Type::DefaultVisitor
+  struct visitor : public type::DefaultVisitor
   {
     value_t& value;
     Complex::ValueType x;
 
     visitor (value_t& v, Complex::ValueType z) : value (v), x (z) { }
 
-    void default_action (const Type::Type& type)
+    void default_action (const type::Type& type)
     {
       type_not_reached (type);
     }
@@ -255,7 +258,7 @@ static void convert_numeric (value_t& value, Complex::ValueType x, const Type::T
 }
 
 bool
-value_t::representable (const Type::Type* from, const Type::Type* to) const
+value_t::representable (const type::Type* from, const type::Type* to) const
 {
   assert (present);
   assert (from->IsUntyped ());
@@ -283,57 +286,57 @@ value_t::representable (const Type::Type* from, const Type::Type* to) const
       not_reached;
     }
 
-  // struct visitor : public Type::DefaultVisitor
+  // struct visitor : public type::DefaultVisitor
   // {
   //   const value_t& value;
-  //   const Type::Type* to;
+  //   const type::Type* to;
   //   bool flag;
 
-  //   visitor (const value_t& v, const Type::Type* t) : value (v), to (t), flag (false) { }
+  //   visitor (const value_t& v, const type::Type* t) : value (v), to (t), flag (false) { }
 
-  //   void default_action (const Type::Type& type)
+  //   void default_action (const type::Type& type)
   //   {
   //     type_not_reached (type);
   //   }
 
-  //   void visit (const Type::Int& type)
+  //   void visit (const type::Int& type)
   //   {
   //     Complex::ValueType x;
   //     x = value.ref (type);
   //     flag = to_and_back (x, to->UnderlyingType ());
   //   }
 
-  //   void visit (const Type::Boolean& type)
+  //   void visit (const type::Boolean& type)
   //   {
   //     flag =
-  //       type_cast<Type::Boolean> (to) != NULL ||
-  //       type_cast<Type::Bool> (to) != NULL;
+  //       type_cast<type::Boolean> (to) != NULL ||
+  //       type_cast<type::Bool> (to) != NULL;
   //   }
 
-  //   void visit (const Type::Rune& type)
+  //   void visit (const type::Rune& type)
   //   {
   //     Complex::ValueType x;
   //     x = value.ref (type);
   //     flag = to_and_back (x, to->UnderlyingType ());
   //   }
 
-  //   void visit (const Type::Integer& type)
+  //   void visit (const type::Integer& type)
   //   {
   //     Complex::ValueType x;
   //     x = value.ref (type);
   //     flag = to_and_back (x, to->UnderlyingType ());
   //   }
 
-  //   void visit (const Type::Float& type)
+  //   void visit (const type::Float& type)
   //   {
   //     Complex::ValueType x;
   //     x = value.ref (type);
   //     flag = to_and_back (x, to->UnderlyingType ());
   //   }
 
-  //   void visit (const Type::String& type)
+  //   void visit (const type::String& type)
   //   {
-  //     if (Type::type_cast<Type::StringU> (to->UnderlyingType ()))
+  //     if (type::type_cast<type::StringU> (to->UnderlyingType ()))
   //       {
   //         flag = true;
   //       }
@@ -344,145 +347,145 @@ value_t::representable (const Type::Type* from, const Type::Type* to) const
 }
 
 void
-value_t::convert (const Type::Type* from, const Type::Type* to)
+value_t::convert (const type::Type* from, const type::Type* to)
 {
   assert (present);
 
-  struct visitor : public Type::DefaultVisitor
+  struct visitor : public type::DefaultVisitor
   {
     value_t& value;
-    const Type::Type* to;
+    const type::Type* to;
 
-    visitor (value_t& v, const Type::Type* t) : value (v), to (t) { }
+    visitor (value_t& v, const type::Type* t) : value (v), to (t) { }
 
-    void default_action (const Type::Type& type)
+    void default_action (const type::Type& type)
     {
       type_not_reached (type);
     }
 
-    void visit (const Type::Boolean& type)
+    void visit (const type::Boolean& type)
     {
-      if (type_cast<Type::Bool> (to) != NULL)
+      if (type_cast<type::Bool> (to) != NULL)
         {
-          value.ref (*Type::Bool::Instance ()) = value.ref (type);
+          value.ref (*type::Bool::Instance ()) = value.ref (type);
         }
     }
 
-    void visit (const Type::Rune& type)
+    void visit (const type::Rune& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Integer& type)
+    void visit (const type::Integer& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Float& type)
+    void visit (const type::Float& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Uint8& type)
+    void visit (const type::Uint8& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Uint16& type)
+    void visit (const type::Uint16& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Uint32& type)
+    void visit (const type::Uint32& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Uint64& type)
+    void visit (const type::Uint64& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Int8& type)
+    void visit (const type::Int8& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Int16& type)
+    void visit (const type::Int16& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Int32& type)
+    void visit (const type::Int32& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Int64& type)
+    void visit (const type::Int64& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Int& type)
+    void visit (const type::Int& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Float32& type)
+    void visit (const type::Float32& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Float64& type)
+    void visit (const type::Float64& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Complex64& type)
+    void visit (const type::Complex64& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::Complex128& type)
+    void visit (const type::Complex128& type)
     {
       Complex::ValueType x;
       x = value.ref (type);
       convert_numeric (value, x, to);
     }
 
-    void visit (const Type::String& type)
+    void visit (const type::String& type)
     {
-      if (Type::type_cast<Type::StringU> (to))
+      if (type::type_cast<type::StringU> (to))
         {
           value.stringu_value_ = value.string_value_;
           return;
@@ -491,9 +494,9 @@ value_t::convert (const Type::Type* from, const Type::Type* to)
       not_reached;
     }
 
-    void visit (const Type::Nil& type)
+    void visit (const type::Nil& type)
     {
-      if (Type::type_cast<Type::Pointer> (to))
+      if (type::type_cast<type::Pointer> (to))
         {
           value.pointer_value_ = NULL;
           return;
@@ -507,11 +510,11 @@ value_t::convert (const Type::Type* from, const Type::Type* to)
 }
 
 void
-value_t::print (std::ostream& out, const Type::Type* type) const
+value_t::print (std::ostream& out, const type::Type* type) const
 {
   if (present)
     {
-      struct visitor : public Type::DefaultVisitor
+      struct visitor : public type::DefaultVisitor
       {
         const value_t& tv;
         std::ostream& out;
@@ -521,12 +524,12 @@ value_t::print (std::ostream& out, const Type::Type* type) const
           , out (o)
         { }
 
-        void default_action (const Type::Type& type)
+        void default_action (const type::Type& type)
         {
           type_not_reached(type);
         }
 
-        void visit (const Type::Bool& type)
+        void visit (const type::Bool& type)
         {
           out << " value=" << tv.ref (type);
         }
@@ -611,12 +614,12 @@ value_t::print (std::ostream& out, const Type::Type* type) const
           out << " value=" << (void*)NULL;
         }
 
-        void visit (const Type::Function& type)
+        void visit (const type::Function& type)
         {
           out << " value=<function>";
         }
 
-        void visit (const Type::Method& type)
+        void visit (const type::Method& type)
         {
           out << " value=<method>";
         }
@@ -654,7 +657,7 @@ value_t::print (std::ostream& out, const Type::Type* type) const
           const String::ValueType& s = tv.ref (type);
           out << " value={" << s.ptr << ',' << s.length << '}';
         }
-        void visit (const Type::Template& type)
+        void visit (const type::Template& type)
         {
           out << " value=<template>";
         }
@@ -665,8 +668,8 @@ value_t::print (std::ostream& out, const Type::Type* type) const
 }
 
 
-Type::Int::ValueType
-value_t::to_int (const Type::Type* type) const
+type::Int::ValueType
+value_t::to_int (const type::Type* type) const
 {
   assert (is_typed_integer (type));
   switch (type->underlying_kind ())
@@ -698,7 +701,7 @@ value_t::to_int (const Type::Type* type) const
     }
 }
 
-void equal (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void equal (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -783,7 +786,7 @@ void equal (value_t& out, const Type::Type* type, const value_t& left, const val
     }
 }
 
-void not_equal (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void not_equal (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -868,7 +871,7 @@ void not_equal (value_t& out, const Type::Type* type, const value_t& left, const
     }
 }
 
-void less_than (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void less_than (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -932,7 +935,7 @@ void less_than (value_t& out, const Type::Type* type, const value_t& left, const
     }
 }
 
-void less_equal (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void less_equal (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -996,7 +999,7 @@ void less_equal (value_t& out, const Type::Type* type, const value_t& left, cons
     }
 }
 
-void more_than (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void more_than (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -1060,7 +1063,7 @@ void more_than (value_t& out, const Type::Type* type, const value_t& left, const
     }
 }
 
-void more_equal (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void more_equal (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -1124,7 +1127,7 @@ void more_equal (value_t& out, const Type::Type* type, const value_t& left, cons
     }
 }
 
-void multiply (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void multiply (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -1191,7 +1194,7 @@ void multiply (value_t& out, const Type::Type* type, const value_t& left, const 
     }
 }
 
-void divide (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void divide (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -1258,7 +1261,7 @@ void divide (value_t& out, const Type::Type* type, const value_t& left, const va
     }
 }
 
-void modulus (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void modulus (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -1307,7 +1310,7 @@ void modulus (value_t& out, const Type::Type* type, const value_t& left, const v
     }
 }
 
-void add (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void add (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -1374,7 +1377,7 @@ void add (value_t& out, const Type::Type* type, const value_t& left, const value
     }
 }
 
-void subtract (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void subtract (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -1441,7 +1444,7 @@ void subtract (value_t& out, const Type::Type* type, const value_t& left, const 
     }
 }
 
-void bit_and (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void bit_and (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -1490,7 +1493,7 @@ void bit_and (value_t& out, const Type::Type* type, const value_t& left, const v
     }
 }
 
-void bit_and_not (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void bit_and_not (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -1539,7 +1542,7 @@ void bit_and_not (value_t& out, const Type::Type* type, const value_t& left, con
     }
 }
 
-void bit_xor (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void bit_xor (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -1588,7 +1591,7 @@ void bit_xor (value_t& out, const Type::Type* type, const value_t& left, const v
     }
 }
 
-void bit_or (value_t& out, const Type::Type* type, const value_t& left, const value_t& right)
+void bit_or (value_t& out, const type::Type* type, const value_t& left, const value_t& right)
 {
   out.present = true;
   switch (type->underlying_kind ())
@@ -1635,4 +1638,6 @@ void bit_or (value_t& out, const Type::Type* type, const value_t& left, const va
     default:
       type_not_reached (*type);
     }
+}
+
 }

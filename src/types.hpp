@@ -19,6 +19,20 @@ enum ExpressionKind
 namespace decl
 {
 class Action;
+class reaction_t;
+class Template;
+class Symbol;
+class ParameterSymbol;
+class VariableSymbol;
+class TypeSymbol;
+class ConstantSymbol;
+class InstanceSymbol;
+class Callable;
+class Function;
+class Getter;
+class Initializer;
+class Method;
+class bind_t;
 }
 
 namespace ast
@@ -43,49 +57,38 @@ namespace runtime
 class Operation;
 }
 
-namespace Type
+namespace type
 {
 class Type;
 class NamedType;
 class Signature;
+class field_t;
 }
 
-typedef std::vector<const Type::Type*> TypeList;
+typedef std::vector<const type::Type*> TypeList;
 
-namespace Composition
+namespace composition
 {
 class Composer;
 class Instance;
 }
 
 class typed_value_t;
-class MemoryModel;
-class Template;
-class ParameterSymbol;
-class InstanceSymbol;
-class ConstantSymbol;
-class TypeSymbol;
-class bind_t;
-class Callable;
-class Template;
 class component_t;
-class executor_base_t;
-class field_t;
-class Function;
-class Getter;
-class Initializer;
-class Method;
-typedef struct heap_t heap_t;
 class port_t;
-class reaction_t;
 class scheduler_t;
-class Symbol;
-class value_t;
-class VariableSymbol;
+
+namespace semantic
+{
+  class value_t;
+}
 
 namespace runtime
 {
 class Stack;
+class MemoryModel;
+typedef struct heap_t heap_t;
+class executor_base_t;
 }
 
 // A reference is either mutable, immutable, or foreign.
@@ -107,7 +110,7 @@ enum ReceiverAccess
 struct pull_port_t
 {
   component_t* instance;
-  Getter* getter;
+  decl::Getter* getter;
 };
 
 enum UnaryArithmetic

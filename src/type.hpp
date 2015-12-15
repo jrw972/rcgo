@@ -14,7 +14,7 @@
 
 #define StringReturner(name, string) struct name { const char* operator() () const { return string; } }
 
-namespace Type
+namespace type
 {
 
 class Visitor;
@@ -134,7 +134,7 @@ struct Type
   {
     return NULL;
   }
-  virtual Callable* select_callable (const std::string& name) const
+  virtual decl::Callable* select_callable (const std::string& name) const
   {
     return NULL;
   }
@@ -156,10 +156,10 @@ operator<< (std::ostream& o, const Type& type);
 class NamedType : public Type
 {
 public:
-  typedef std::vector<Getter*> GettersType;
+  typedef std::vector<decl::Getter*> GettersType;
   typedef std::vector<decl::Action*> ActionsType;
-  typedef std::vector<reaction_t*> ReactionsType;
-  typedef std::vector<bind_t*> BindsType;
+  typedef std::vector<decl::reaction_t*> ReactionsType;
+  typedef std::vector<decl::bind_t*> BindsType;
 
   NamedType (const std::string& name)
     : name_ (name)
@@ -215,21 +215,21 @@ public:
   {
     return underlyingType_->IsString ();
   }
-  void Add (Method* method)
+  void Add (decl::Method* method)
   {
     methods_.push_back (method);
   }
-  Method* GetMethod (const std::string& identifier) const;
-  void Add (Initializer* initializer)
+  decl::Method* GetMethod (const std::string& identifier) const;
+  void Add (decl::Initializer* initializer)
   {
     initializers_.push_back (initializer);
   }
-  Initializer* GetInitializer (const std::string& identifier) const;
-  void Add (Getter* getter)
+  decl::Initializer* GetInitializer (const std::string& identifier) const;
+  void Add (decl::Getter* getter)
   {
     getters_.push_back (getter);
   }
-  Getter* GetGetter (const std::string& identifier) const;
+  decl::Getter* GetGetter (const std::string& identifier) const;
   GettersType::const_iterator GettersBegin () const
   {
     return getters_.begin ();
@@ -251,11 +251,11 @@ public:
   {
     return actions_.end ();
   }
-  void Add (reaction_t* reaction)
+  void Add (decl::reaction_t* reaction)
   {
     reactions_.push_back (reaction);
   }
-  reaction_t* GetReaction (const std::string& identifier) const;
+  decl::reaction_t* GetReaction (const std::string& identifier) const;
   ReactionsType::const_iterator ReactionsBegin () const
   {
     return reactions_.begin ();
@@ -264,11 +264,11 @@ public:
   {
     return reactions_.end ();
   }
-  void Add (bind_t* bind)
+  void Add (decl::bind_t* bind)
   {
     binds_.push_back (bind);
   }
-  bind_t* GetBind (const std::string& identifier) const;
+  decl::bind_t* GetBind (const std::string& identifier) const;
   BindsType::const_iterator BindsBegin () const
   {
     return binds_.begin ();
@@ -281,7 +281,7 @@ public:
   {
     return underlyingType_->select_field (name);
   }
-  virtual Callable* select_callable (const std::string& name) const;
+  virtual decl::Callable* select_callable (const std::string& name) const;
   virtual const Type* pointer_base_type () const
   {
     return underlyingType_->pointer_base_type ();
@@ -290,8 +290,8 @@ public:
 private:
   std::string const name_;
   const Type* underlyingType_;
-  std::vector<Method*> methods_;
-  std::vector<Initializer*> initializers_;
+  std::vector<decl::Method*> methods_;
+  std::vector<decl::Initializer*> initializers_;
   GettersType getters_;
   ActionsType actions_;
   ReactionsType reactions_;
@@ -575,7 +575,7 @@ public:
   {
     return base_->select_field (name);
   }
-  virtual Callable* select_callable (const std::string& name) const
+  virtual decl::Callable* select_callable (const std::string& name) const
   {
     return base_->select_callable (name);
   }
@@ -749,7 +749,7 @@ class Signature : public Type
 public:
   Signature () : size_ (0) { }
 
-  typedef std::vector<ParameterSymbol*> ParametersType;
+  typedef std::vector<decl::ParameterSymbol*> ParametersType;
   typedef ParametersType::const_iterator const_iterator;
   void Accept (Visitor& visitor) const;
   std::string ToString () const;
@@ -773,7 +773,7 @@ public:
   {
     return parameters_.size ();
   }
-  ParameterSymbol* At (size_t idx) const
+  decl::ParameterSymbol* At (size_t idx) const
   {
     return parameters_.at (idx);
   }
@@ -785,8 +785,8 @@ public:
   {
     return parameters_.end ();
   }
-  ParameterSymbol* Find (const std::string& name) const;
-  Signature* Append (ParameterSymbol* p);
+  decl::ParameterSymbol* Find (const std::string& name) const;
+  Signature* Append (decl::ParameterSymbol* p);
   void check_foreign_safe () const;
 private:
   ParametersType parameters_;
@@ -804,7 +804,7 @@ public:
   };
   Function (FunctionKind k,
             const Signature * signature,
-            ParameterSymbol* return_parameter)
+            decl::ParameterSymbol* return_parameter)
     : function_kind (k)
     , signature_ (signature)
     , return_parameter_ (return_parameter)
@@ -831,11 +831,11 @@ public:
   {
     return signature_;
   }
-  ParameterSymbol* GetParameter (const std::string& name) const
+  decl::ParameterSymbol* GetParameter (const std::string& name) const
   {
     return signature_->Find (name);
   }
-  ParameterSymbol* GetReturnParameter () const
+  decl::ParameterSymbol* GetReturnParameter () const
   {
     return return_parameter_;
   }
@@ -843,7 +843,7 @@ public:
   FunctionKind const function_kind;
 private:
   const Signature* const signature_;
-  ParameterSymbol* const return_parameter_;
+  decl::ParameterSymbol* const return_parameter_;
 };
 
 class Method : public Type
@@ -858,9 +858,9 @@ public:
   };
   Method (MethodKind k,
           const NamedType* named_type_,
-          ParameterSymbol* receiver_parameter_,
+          decl::ParameterSymbol* receiver_parameter_,
           const Signature * signature_,
-          ParameterSymbol* return_parameter_);
+          decl::ParameterSymbol* return_parameter_);
   void Accept (Visitor& visitor) const;
   std::string ToString () const;
   size_t Alignment () const
@@ -882,15 +882,15 @@ public:
   MethodKind const method_kind;
   const NamedType* const named_type;
   const Type* receiver_type () const;
-  ParameterSymbol* const receiver_parameter;
+  decl::ParameterSymbol* const receiver_parameter;
   const Function* const function_type;
   const Signature* const signature;
-  ParameterSymbol* const return_parameter;
+  decl::ParameterSymbol* const return_parameter;
   const Type* return_type () const;
 private:
-  static Function* make_function_type (ParameterSymbol* receiver_parameter,
+  static Function* make_function_type (decl::ParameterSymbol* receiver_parameter,
                                        const Signature* signature,
-                                       ParameterSymbol* return_parameter);
+                                       decl::ParameterSymbol* return_parameter);
 };
 
 class Untyped : public Type
@@ -2409,22 +2409,22 @@ static void DoubleDispatch (const Type* type1, const Type* type2, T& t)
 field_t*
 type_select_field (const Type* type, const std::string& identifier);
 
-::Method*
+decl::Method*
 type_select_method (const Type* type, const std::string& identifier);
 
-Initializer*
+decl::Initializer*
 type_select_initializer (const Type* type, const std::string& identifier);
 
-Getter*
+decl::Getter*
 type_select_getter (const Type* type, const std::string& identifier);
 
-reaction_t*
+  decl::reaction_t*
 type_select_reaction (const Type* type, const std::string& identifier);
 
 decl::Action*
 type_select_action (const Type* type, const std::string& identifier);
 
-bind_t*
+  decl::bind_t*
 type_select_bind (const Type* type, const std::string& identifier);
 
 // Return type of selected field, method, or reaction.
@@ -2459,7 +2459,7 @@ bool
 Identical (const Type* x, const Type* y);
 
 bool
-assignable (const Type* from, const value_t& from_value, const Type* to);
+assignable (const Type* from, const semantic::value_t& from_value, const Type* to);
 
 const Type*
 Choose (const Type* x, const Type* y);

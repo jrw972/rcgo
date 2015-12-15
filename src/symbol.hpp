@@ -4,6 +4,8 @@
 #include "types.hpp"
 #include "value.hpp"
 
+namespace decl
+{
 class SymbolVisitor;
 class ConstSymbolVisitor;
 
@@ -46,7 +48,7 @@ private:
 
 struct InstanceSymbol : public Symbol
 {
-  InstanceSymbol (const std::string& id, ast::Node* dn, const Type::NamedType* t, Initializer* init)
+  InstanceSymbol (const std::string& id, ast::Node* dn, const type::NamedType* t, Initializer* init)
     : Symbol (id, dn)
     , type (t)
     , initializer (init)
@@ -55,9 +57,9 @@ struct InstanceSymbol : public Symbol
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
 
-  const Type::NamedType* const type;
+  const type::NamedType* const type;
   Initializer* const initializer;
-  Composition::Instance* instance;
+  composition::Instance* instance;
 };
 
 struct ParameterSymbol : public Symbol
@@ -71,7 +73,7 @@ struct ParameterSymbol : public Symbol
     Return,
   };
 
-  ParameterSymbol (const std::string& id, ast::Node* dn, const Type::Type* t, Mutability im, Mutability dm, Kind k)
+  ParameterSymbol (const std::string& id, ast::Node* dn, const type::Type* t, Mutability im, Mutability dm, Kind k)
     : Symbol (id, dn)
     , type (t)
     , intrinsic_mutability (im)
@@ -82,7 +84,7 @@ struct ParameterSymbol : public Symbol
 
   static ParameterSymbol* make (ast::Node* defining_node,
                                 const std::string& name,
-                                const Type::Type* type,
+                                const type::Type* type,
                                 Mutability intrinsic_mutability,
                                 Mutability dereference_mutability)
   {
@@ -91,7 +93,7 @@ struct ParameterSymbol : public Symbol
 
   static ParameterSymbol* makeReturn (ast::Node* defining_node,
                                       const std::string& name,
-                                      const Type::Type* type,
+                                      const type::Type* type,
                                       Mutability dereference_mutability)
   {
     return new ParameterSymbol (name, defining_node, type, MUTABLE, dereference_mutability, Return);
@@ -99,7 +101,7 @@ struct ParameterSymbol : public Symbol
 
   static ParameterSymbol* makeReceiver (ast::Node* defining_node,
                                         const std::string& name,
-                                        const Type::Type* type,
+                                        const type::Type* type,
                                         Mutability intrinsic_mutability,
                                         Mutability dereference_mutability)
   {
@@ -146,7 +148,7 @@ struct ParameterSymbol : public Symbol
 
   void check_foreign_safe () const;
 
-  const Type::Type* const type;
+  const type::Type* const type;
   Mutability const intrinsic_mutability;
   Mutability dereference_mutability;
   Kind kind;
@@ -156,7 +158,7 @@ private:
 
 struct TypeSymbol : public Symbol
 {
-  TypeSymbol (const std::string& id, ast::Node* dn, Type::NamedType* t)
+  TypeSymbol (const std::string& id, ast::Node* dn, type::NamedType* t)
     : Symbol (id, dn)
     , type (t)
   { }
@@ -168,25 +170,25 @@ struct TypeSymbol : public Symbol
     return type->UnderlyingType () != NULL;
   }
 
-  Type::NamedType* const type;
+  type::NamedType* const type;
 };
 
 struct ConstantSymbol : public Symbol
 {
-  ConstantSymbol (const std::string& id, ast::Node* dn, const Type::Type* t, const value_t& v)
+  ConstantSymbol (const std::string& id, ast::Node* dn, const type::Type* t, const semantic::value_t& v)
     : Symbol (id, dn)
     , type (t)
     , value (v)
   { }
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-  const Type::Type* const type;
-  value_t const value;
+  const type::Type* const type;
+  semantic::value_t const value;
 };
 
 struct VariableSymbol : public Symbol
 {
-  VariableSymbol (const std::string& id, ast::Node* dn, const Type::Type* t, Mutability im, Mutability dm)
+  VariableSymbol (const std::string& id, ast::Node* dn, const type::Type* t, Mutability im, Mutability dm)
     : Symbol (id, dn)
     , type (t)
     , intrinsic_mutability (im)
@@ -216,7 +218,7 @@ struct VariableSymbol : public Symbol
     return s;
   }
 
-  const Type::Type* const type;
+  const type::Type* const type;
   Mutability const intrinsic_mutability;
   Mutability dereference_mutability;
 private:
@@ -234,6 +236,8 @@ struct HiddenSymbol : public Symbol
 
 std::ostream&
 operator<< (std::ostream& out, const Symbol& s);
+
+}
 
 #define symbol_not_reached(s) do { std::cerr << s << '\n'; not_reached; } while (0);
 

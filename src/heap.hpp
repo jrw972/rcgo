@@ -3,6 +3,9 @@
 
 #include "types.hpp"
 
+namespace runtime
+{
+
 heap_t* heap_make (void* begin, size_t size);
 
 heap_t* heap_make_size (size_t size_of_root);
@@ -20,5 +23,7 @@ void heap_insert_child (heap_t* parent, heap_t* child);
 void heap_remove_from_parent (heap_t* child);
 
 void heap_dump (heap_t* heap);
+
+}
 
 #endif // rc_src_heap_hpp

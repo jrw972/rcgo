@@ -8,10 +8,13 @@
 #include "stack.hpp"
 #include "action.hpp"
 
-void
-instance_scheduler_t::lock (const Composition::InstanceSet& set)
+namespace runtime
 {
-  for (Composition::InstanceSet::const_iterator pos = set.begin (), limit = set.end ();
+
+void
+instance_scheduler_t::lock (const composition::InstanceSet& set)
+{
+  for (composition::InstanceSet::const_iterator pos = set.begin (), limit = set.end ();
        pos != limit;
        ++pos)
     {
@@ -30,9 +33,9 @@ instance_scheduler_t::lock (const Composition::InstanceSet& set)
 }
 
 void
-instance_scheduler_t::unlock (const Composition::InstanceSet& set)
+instance_scheduler_t::unlock (const composition::InstanceSet& set)
 {
-  for (Composition::InstanceSet::const_iterator pos = set.begin (), limit = set.end ();
+  for (composition::InstanceSet::const_iterator pos = set.begin (), limit = set.end ();
        pos != limit;
        ++pos)
     {
@@ -190,7 +193,7 @@ instance_scheduler_t::instance_executor_t::run_i ()
 }
 
 void
-instance_scheduler_t::run (Composition::Composer& instance_table,
+instance_scheduler_t::run (composition::Composer& instance_table,
                            size_t stack_size,
                            size_t thread_count)
 {
@@ -236,4 +239,6 @@ instance_scheduler_t::run (Composition::Composer& instance_table,
       exec->join ();
       delete exec;
     }
+}
+
 }

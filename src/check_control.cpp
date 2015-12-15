@@ -200,16 +200,16 @@ struct Visitor : public ast::DefaultVisitor
       {
         switch (node.function_type->function_kind)
           {
-          case Type::Function::FUNCTION:
+          case type::Function::FUNCTION:
             // No restrictions on caller.
             break;
 
-          case Type::Function::PUSH_PORT:
+          case type::Function::PUSH_PORT:
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                            "push ports cannot be called (E202)");
             break;
 
-          case Type::Function::PULL_PORT:
+          case type::Function::PULL_PORT:
             // Must be called from either a getter, an action, or reaction.
             if (!(context == Getter ||
                   context == Action ||
@@ -232,10 +232,10 @@ struct Visitor : public ast::DefaultVisitor
       {
         switch (node.method_type->method_kind)
           {
-          case Type::Method::METHOD:
+          case type::Method::METHOD:
             // No restrictions on caller.
             break;
-          case Type::Method::INITIALIZER:
+          case type::Method::INITIALIZER:
             // Caller must be an initializer.
             if (context != Initializer)
               {
@@ -243,7 +243,7 @@ struct Visitor : public ast::DefaultVisitor
                                "initializers may only be called from initializers (E197)");
               }
             break;
-          case Type::Method::GETTER:
+          case type::Method::GETTER:
           {
             // Must be called from either a getter, action, reaction, or initializer.
             if (!(context == Getter ||
@@ -261,7 +261,7 @@ struct Visitor : public ast::DefaultVisitor
               }
           }
           break;
-          case Type::Method::REACTION:
+          case type::Method::REACTION:
           {
             unimplemented;
           }

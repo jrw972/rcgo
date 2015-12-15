@@ -11,8 +11,10 @@
 #include "ast.hpp"
 #include <error.h>
 
-  using namespace Type;
+  using namespace type;
   using namespace ast;
+  using namespace semantic;
+  using namespace util;
 
   static int octalvalue (char c) {
     return c - '0';

@@ -8,7 +8,8 @@
 namespace semantic
 {
 using namespace ast;
-using namespace Type;
+using namespace type;
+  using namespace decl;
 
 namespace
 {
@@ -46,7 +47,7 @@ struct Visitor : public ast::DefaultVisitor
       }
 
     // Process the type spec.
-    const Type::Type* type = process_type (type_spec, true);
+    const type::Type* type = process_type (type_spec, true);
 
     if (type_cast<Void> (type) == NULL)
       {

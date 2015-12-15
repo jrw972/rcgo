@@ -6,7 +6,7 @@
 namespace runtime
 {
 
-using namespace Type;
+using namespace type;
 
 Stack::Stack (size_t capacity)
   : data_ (new char[capacity])

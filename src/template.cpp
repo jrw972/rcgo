@@ -2,6 +2,9 @@
 
 #include "symbol_visitor.hpp"
 
+namespace decl
+{
+
 void
 Template::accept (SymbolVisitor& visitor)
 {
@@ -12,4 +15,6 @@ void
 Template::accept (ConstSymbolVisitor& visitor) const
 {
   visitor.visit (*this);
+}
+
 }

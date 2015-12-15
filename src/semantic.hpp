@@ -10,6 +10,9 @@
 #include "symbol_visitor.hpp"
 #include "composition.hpp"
 
+namespace semantic
+{
+
 using namespace std::rel_ops;
 
 struct Multiplier
@@ -195,7 +198,7 @@ enter_symbol (ast::Node& node, T* symbol)
 {
   // Check if the symbol is defined locally.
   const std::string& identifier = symbol->identifier;
-  Symbol *s = node.FindLocalSymbol (identifier);
+  decl::Symbol *s = node.FindLocalSymbol (identifier);
   if (s == NULL)
     {
       node.EnterSymbol (symbol);
@@ -210,13 +213,13 @@ enter_symbol (ast::Node& node, T* symbol)
 }
 
 // Enter a signature.
-void enter_signature (ast::Node& node, const Type::Signature * type);
+void enter_signature (ast::Node& node, const type::Signature * type);
 
 // Look up a symbol.  If it is not defined, process its definition.
 template<typename T>
 T* processAndLookup (ast::Node * node, const std::string& identifier)
 {
-  Symbol *symbol = node->FindGlobalSymbol (identifier);
+  decl::Symbol *symbol = node->FindGlobalSymbol (identifier);
   if (symbol == NULL)
     {
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
@@ -233,21 +236,21 @@ T* processAndLookup (ast::Node * node, const std::string& identifier)
       unimplemented;
     }
 
-  return SymbolCast<T> (symbol);
+  return decl::SymbolCast<T> (symbol);
 }
 
 // Extract an array dimension or error.
-Type::Int::ValueType process_array_dimension (ast::Node* ptr);
+type::Int::ValueType process_array_dimension (ast::Node* ptr);
 
 // Check that a signature has +foreign where needed.
-void CheckForForeignSafe (const Type::Signature* signature, const ParameterSymbol* return_parameter);
+void CheckForForeignSafe (const type::Signature* signature, const decl::ParameterSymbol* return_parameter);
 
 // Process a type specification.
-const Type::Type * process_type (ast::Node* node, bool force);
+const type::Type * process_type (ast::Node* node, bool force);
 
 // Type check the expression, insert an implicit dereference if necessary, and convert to the given type if necessary.
 typed_value_t
-CheckAndImplicitlyDereferenceAndConvert (ast::Node*& expr, const Type::Type* type);
+CheckAndImplicitlyDereferenceAndConvert (ast::Node*& expr, const type::Type* type);
 
 void
 check_assignment (typed_value_t left_tv,
@@ -257,23 +260,23 @@ check_assignment (typed_value_t left_tv,
                   const char* leak_message);
 
 void
-enumerate_instances (ast::Node* node, Composition::Composer& instance_table);
+enumerate_instances (ast::Node* node, composition::Composer& instance_table);
 
 void
 allocate_stack_variables (ast::Node* node);
 
-Method*
+  decl::Method*
 get_current_method (const ast::Node * node);
 
 ReceiverAccess ComputeReceiverAccess (const ast::Node* node);
 
 void
-allocate_symbol (MemoryModel& memory_model,
-                 Symbol* symbol);
+allocate_symbol (runtime::MemoryModel& memory_model,
+                 decl::Symbol* symbol);
 
 template <typename Iterator>
 void
-allocate_parameter (MemoryModel& memory_model,
+allocate_parameter (runtime::MemoryModel& memory_model,
                     Iterator pos,
                     Iterator limit)
 {
@@ -282,6 +285,8 @@ allocate_parameter (MemoryModel& memory_model,
       allocate_parameter (memory_model, pos + 1, limit);
       allocate_symbol (memory_model, *pos);
     }
+}
+
 }
 
 #endif // rc_src_semantic_hpp

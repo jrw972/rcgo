@@ -9,6 +9,9 @@
 #include "executor_base.hpp"
 #include "composition.hpp"
 
+namespace runtime
+{
+
 class instance_scheduler_t
 {
 public:
@@ -22,7 +25,7 @@ public:
     pthread_mutex_init (&stdout_mutex_, NULL);
   }
 
-  void run (Composition::Composer& instance_table, size_t stack_size, size_t thread_count);
+  void run (composition::Composer& instance_table, size_t stack_size, size_t thread_count);
   void dump_schedule () const;
 
 private:
@@ -31,7 +34,7 @@ private:
   {
     // Scheduling lock.
     pthread_rwlock_t lock;
-    Composition::Instance* instance;
+    composition::Instance* instance;
     heap_t* heap;
     // Next instance on the schedule.
     // 0 means this instance is not on the schedule.
@@ -39,7 +42,7 @@ private:
     // ? means this instance is on the schedule.
     instance_info_t* next;
 
-    instance_info_t (Composition::Instance* instance)
+    instance_info_t (composition::Instance* instance)
       : instance (instance)
       , heap (heap_make (instance->component, instance->type->Size ()))
       , next (NULL)
@@ -112,8 +115,8 @@ private:
   };
 
   void push (instance_info_t* info);
-  void lock (const Composition::InstanceSet& set);
-  void unlock (const Composition::InstanceSet& set);
+  void lock (const composition::InstanceSet& set);
+  void unlock (const composition::InstanceSet& set);
 
   instance_info_t* head_;
   instance_info_t** tail_;
@@ -122,7 +125,9 @@ private:
   pthread_cond_t list_cond_;
   pthread_mutex_t stdout_mutex_;
   // TODO:  Replace this datastructure by translating once.
-  std::map<Composition::Instance*, instance_info_t*> info_map_;
+  std::map<composition::Instance*, instance_info_t*> info_map_;
 };
+
+}
 
 #endif // rc_src_instance_scheduler_hpp

@@ -9,6 +9,8 @@
 #include "heap.hpp"
 #include "runtime.hpp"
 
+namespace runtime {
+
 using namespace decl;
 
 void
@@ -22,29 +24,29 @@ partitioned_scheduler_t::initialize_task (task_t* t, size_t thread_count)
 }
 
 void
-partitioned_scheduler_t::run (Composition::Composer& instance_table,
+partitioned_scheduler_t::run (composition::Composer& instance_table,
                               size_t stack_size,
                               size_t thread_count)
 {
   // Set up data structures.
-  for (Composition::Composer::InstancesType::const_iterator pos = instance_table.InstancesBegin (),
+  for (composition::Composer::InstancesType::const_iterator pos = instance_table.InstancesBegin (),
        limit = instance_table.InstancesEnd ();
        pos != limit;
        ++pos)
     {
-      Composition::Instance* instance = pos->second;
+      composition::Instance* instance = pos->second;
       new info_t (instance);
     }
 
   {
     // Initialize.
     executor_t exec (*this, 0, 0, stack_size, &stdout_mutex_);
-    for (Composition::Composer::InstancesType::const_iterator pos = instance_table.InstancesBegin (),
+    for (composition::Composer::InstancesType::const_iterator pos = instance_table.InstancesBegin (),
          limit = instance_table.InstancesEnd ();
          pos != limit;
          ++pos)
       {
-        Composition::Instance* instance = pos->second;
+        composition::Instance* instance = pos->second;
         runtime::initialize (exec, instance);
       }
   }
@@ -55,19 +57,19 @@ partitioned_scheduler_t::run (Composition::Composer& instance_table,
     }
 
   // Create tasks.
-  for (Composition::Composer::InstancesType::const_iterator instance_pos = instance_table.InstancesBegin (),
+  for (composition::Composer::InstancesType::const_iterator instance_pos = instance_table.InstancesBegin (),
        instance_limit = instance_table.InstancesEnd ();
        instance_pos != instance_limit;
        ++instance_pos)
     {
-      Composition::Instance* instance = instance_pos->second;
+      composition::Instance* instance = instance_pos->second;
 
-      for (Composition::ActionsType::const_iterator action_pos = instance->actions.begin (),
+      for (composition::ActionsType::const_iterator action_pos = instance->actions.begin (),
            action_limit = instance->actions.end ();
            action_pos != action_limit;
            ++action_pos)
         {
-          Composition::Action* action = *action_pos;
+          composition::Action* action = *action_pos;
           switch (action->action->precondition_kind)
             {
             case Action::Dynamic:
@@ -509,4 +511,6 @@ partitioned_scheduler_t::task_t::resume (size_t generation)
   to_idle_list ();
 
   return er;
+}
+
 }

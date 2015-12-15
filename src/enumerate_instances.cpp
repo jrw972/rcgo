@@ -6,24 +6,27 @@
 #include "symbol_visitor.hpp"
 #include "ast_visitor.hpp"
 
-using namespace Type;
+namespace semantic
+{
+
+using namespace type;
 using namespace ast;
 
-static Composition::Instance*
-instantiate_contained_instances (const Type::Type * type,
-                                 Composition::Composer& instance_table,
-                                 Composition::Instance* parent,
-                                 Initializer* initializer,
+static composition::Instance*
+instantiate_contained_instances (const type::Type * type,
+                                 composition::Composer& instance_table,
+                                 composition::Instance* parent,
+                                 decl::Initializer* initializer,
                                  size_t address,
                                  unsigned int line,
                                  ast_instance_t* node,
                                  const std::string& name)
 {
-  struct visitor : public ::Type::DefaultVisitor
+  struct visitor : public ::type::DefaultVisitor
   {
-    Composition::Composer& instance_table;
-    Composition::Instance* const parent;
-    Initializer* const initializer;
+    composition::Composer& instance_table;
+    composition::Instance* const parent;
+    decl::Initializer* const initializer;
     size_t const address;
     field_t* const field;
     unsigned int const line;
@@ -32,9 +35,9 @@ instantiate_contained_instances (const Type::Type * type,
 
     const NamedType* named_type;
 
-    Composition::Instance* instance;
+    composition::Instance* instance;
 
-    visitor (Composition::Composer& it, Composition::Instance* p, Initializer* i, size_t a, field_t* f, unsigned int l, ast_instance_t* n, const std::string& aName)
+    visitor (composition::Composer& it, composition::Instance* p, decl::Initializer* i, size_t a, field_t* f, unsigned int l, ast_instance_t* n, const std::string& aName)
       : instance_table (it)
       , parent (p)
       , initializer (i)
@@ -47,7 +50,7 @@ instantiate_contained_instances (const Type::Type * type,
       , instance (NULL)
     { }
 
-    void default_action (const Type::Type& type)
+    void default_action (const type::Type& type)
     {
       type_not_reached (type);
     }
@@ -63,7 +66,7 @@ instantiate_contained_instances (const Type::Type * type,
     {
       assert (named_type != NULL);
 
-      Composition::Instance* instance = new Composition::Instance (parent, address, named_type, initializer, node, name);
+      composition::Instance* instance = new composition::Instance (parent, address, named_type, initializer, node, name);
       this->instance = instance;
       instance_table.AddInstance (instance);
 
@@ -115,23 +118,23 @@ instantiate_contained_instances (const Type::Type * type,
 
     void visit (const Pointer& type) { }
 
-    void visit (const Type::Function& type)
+    void visit (const type::Function& type)
     {
       switch (type.function_kind)
         {
-        case Type::Function::FUNCTION:
+        case type::Function::FUNCTION:
           // Do nothing.
           break;
-        case Type::Function::PUSH_PORT:
+        case type::Function::PUSH_PORT:
           instance_table.AddPushPort (address, parent, field, name);
           break;
-        case Type::Function::PULL_PORT:
+        case type::Function::PULL_PORT:
           instance_table.AddPullPort (address, parent, field, name);
           break;
         }
     }
 
-    void visit (const Type::FileDescriptor& type) { }
+    void visit (const type::FileDescriptor& type) { }
   };
   visitor v (instance_table, parent, initializer, address, NULL, line, node, name);
   type->Accept (v);
@@ -145,19 +148,19 @@ instantiate_contained_instances (const Type::Type * type,
   2.  (instance, field) -> instance
 */
 void
-enumerate_instances (Node * node, Composition::Composer& instance_table)
+enumerate_instances (Node * node, composition::Composer& instance_table)
 {
   struct visitor : public ast::DefaultVisitor
   {
-    Composition::Composer& instance_table;
+    composition::Composer& instance_table;
     size_t address;
 
-    visitor (Composition::Composer& it) : instance_table (it), address (0) { }
+    visitor (composition::Composer& it) : instance_table (it), address (0) { }
 
     void visit (ast_instance_t& node)
     {
       const NamedType *type = node.symbol->type;
-      Initializer* initializer = node.symbol->initializer;
+      decl::Initializer* initializer = node.symbol->initializer;
       node.symbol->instance = instantiate_contained_instances (type, instance_table, NULL, initializer, address, node.location.Line, &node, ast_get_identifier (node.identifier ()));
       address += type->Size ();
     }
@@ -175,4 +178,6 @@ enumerate_instances (Node * node, Composition::Composer& instance_table)
 
   visitor v (instance_table);
   node->Accept (v);
+}
+
 }

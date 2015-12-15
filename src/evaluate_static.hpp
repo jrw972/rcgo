@@ -6,6 +6,9 @@
 
 #include "type.hpp"
 
+namespace semantic
+{
+
 class static_memory_t
 {
 public:
@@ -115,7 +118,7 @@ struct static_value_t
     return out;
   }
 
-  static static_value_t index (static_value_t in, const Type::Array* type, static_value_t idx)
+  static static_value_t index (static_value_t in, const type::Array* type, static_value_t idx)
   {
     static_value_t out;
     switch (in.kind)
@@ -161,5 +164,7 @@ operator<< (std::ostream& o,
 
 static_value_t
 EvaluateStatic (const ast::Node* node, const static_memory_t& memory);
+
+}
 
 #endif // rc_src_evaluate_static_hpp

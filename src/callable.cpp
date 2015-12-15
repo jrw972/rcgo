@@ -7,6 +7,9 @@
 #include "check_mutability.hpp"
 #include "compute_receiver_access.hpp"
 
+namespace decl
+{
+
 using namespace ast;
 
 void
@@ -33,7 +36,7 @@ Callable::compute_receiver_access (ast::Node* args, ReceiverAccess& receiver_acc
   semantic::compute_receiver_access_arguments (args, signature (), receiver_access, flag);
 }
 
-Function::Function (ast_function_t& node_, const Type::Function* ft)
+Function::Function (ast_function_t& node_, const type::Function* ft)
   : Symbol (ast_get_identifier (node_.identifier ()), node_.identifier ())
   , node (node_)
   , functionType_ (ft)
@@ -51,27 +54,27 @@ Function::accept (ConstSymbolVisitor& visitor) const
   visitor.visit (*this);
 }
 
-void Function::call (executor_base_t& exec) const
+void Function::call (runtime::executor_base_t& exec) const
 {
   this->node.body ()->operation->execute (exec);
 }
 
-void Method::call (executor_base_t& exec) const
+void Method::call (runtime::executor_base_t& exec) const
 {
   this->node->body ()->operation->execute (exec);
 }
 
-void Initializer::call (executor_base_t& exec) const
+void Initializer::call (runtime::executor_base_t& exec) const
 {
   this->node->operation->execute (exec);
 }
 
-void Getter::call (executor_base_t& exec) const
+void Getter::call (runtime::executor_base_t& exec) const
 {
   this->node->operation->execute (exec);
 }
 
-void Getter::call (executor_base_t& exec, const ast_call_expr_t& node, component_t* thisPtr) const
+void Getter::call (runtime::executor_base_t& exec, const ast_call_expr_t& node, component_t* thisPtr) const
 {
   unimplemented;
   // // Create space for the return.
@@ -101,4 +104,6 @@ void Getter::call (executor_base_t& exec, const ast_call_expr_t& node, component
 
   // // Pop the arguments.
   // exec.stack ().popn (top_after - top_before);
+}
+
 }

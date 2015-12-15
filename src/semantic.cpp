@@ -14,19 +14,23 @@
 #include "callable.hpp"
 #include "ast_visitor.hpp"
 
+namespace semantic
+{
+
 using namespace ast;
+using namespace decl;
 
 // TODO:  Replace interacting with type_t* with typed_value_t.
 
 void
-allocate_symbol (MemoryModel& memory_model,
+allocate_symbol (runtime::MemoryModel& memory_model,
                  Symbol* symbol)
 {
   struct visitor : public SymbolVisitor
   {
-    MemoryModel& memory_model;
+    runtime::MemoryModel& memory_model;
 
-    visitor (MemoryModel& mm) : memory_model (mm) { }
+    visitor (runtime::MemoryModel& mm) : memory_model (mm) { }
 
     void defineAction (Symbol& symbol)
     {
@@ -41,7 +45,7 @@ allocate_symbol (MemoryModel& memory_model,
         case ParameterSymbol::Receiver:
         case ParameterSymbol::Return:
         {
-          const Type::Type* type = symbol.type;
+          const type::Type* type = symbol.type;
           memory_model.ArgumentsPush (type->Size ());
           static_cast<Symbol&> (symbol).offset (memory_model.ArgumentsOffset ());
           if (symbol.kind == ParameterSymbol::Receiver)
@@ -63,7 +67,7 @@ allocate_symbol (MemoryModel& memory_model,
 
     void visit (VariableSymbol& symbol)
     {
-      const Type::Type* type = symbol.type;
+      const type::Type* type = symbol.type;
       static_cast<Symbol&>(symbol).offset (memory_model.LocalsOffset ());
       memory_model.LocalsPush (type->Size ());
     }
@@ -79,7 +83,7 @@ allocate_symbol (MemoryModel& memory_model,
 }
 
 static void
-allocate_symtab (ast::Node* node, MemoryModel& memory_model)
+allocate_symtab (ast::Node* node, runtime::MemoryModel& memory_model)
 {
   // Allocate the parameters.
   for (Node::SymbolsType::const_iterator pos = node->SymbolsBegin (), limit = node->SymbolsEnd ();
@@ -91,13 +95,13 @@ allocate_symtab (ast::Node* node, MemoryModel& memory_model)
 }
 
 static void
-allocate_statement_stack_variables (ast::Node* node, MemoryModel& memory_model)
+allocate_statement_stack_variables (ast::Node* node, runtime::MemoryModel& memory_model)
 {
   struct visitor : public DefaultVisitor
   {
-    MemoryModel& memory_model;
+    runtime::MemoryModel& memory_model;
 
-    visitor (MemoryModel& m) : memory_model (m) { }
+    visitor (runtime::MemoryModel& m) : memory_model (m) { }
 
     void default_action (Node& node)
     {
@@ -280,7 +284,7 @@ allocate_stack_variables (ast::Node* node)
 
     // Return the size of the locals.
     void
-    allocate_stack_variables_helper (MemoryModel& memoryModel,
+    allocate_stack_variables_helper (runtime::MemoryModel& memoryModel,
                                      ast::Node& node,
                                      ast::Node* child)
     {
@@ -297,4 +301,6 @@ allocate_stack_variables (ast::Node* node)
 
   visitor v;
   node->Accept (v);
+}
+
 }

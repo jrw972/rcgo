@@ -9,6 +9,7 @@ namespace semantic
 {
 
 using namespace ast;
+  using namespace decl;
 
 namespace
 {
@@ -305,7 +306,7 @@ struct Visitor : public ast::DefaultVisitor
 };
 }
 
-void compute_receiver_access_arguments (Node* args, const Type::Signature* signature, ReceiverAccess& receiver_access, bool& flag)
+void compute_receiver_access_arguments (Node* args, const type::Signature* signature, ReceiverAccess& receiver_access, bool& flag)
 {
   // Check if a mutable pointer escapes.
   receiver_access = AccessNone;

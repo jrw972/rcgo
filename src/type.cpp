@@ -6,9 +6,10 @@
 #include "callable.hpp"
 #include "bind.hpp"
 
-namespace Type
+namespace type
 {
 using namespace decl;
+using namespace semantic;
 
 std::ostream&
 operator<< (std::ostream& o, const Type& type)
@@ -107,15 +108,15 @@ NamedType::GetReaction (const std::string& identifier) const
   return NULL;
 }
 
-::Method*
+decl::Method*
 NamedType::GetMethod (const std::string& identifier) const
 {
-  for (std::vector< ::Method*>::const_iterator pos = this->methods_.begin (),
+  for (std::vector< decl::Method*>::const_iterator pos = this->methods_.begin (),
        limit = this->methods_.end ();
        pos != limit;
        ++pos)
     {
-      ::Method* a = *pos;
+      decl::Method* a = *pos;
       if (a->name == identifier)
         {
           return a;
@@ -259,12 +260,12 @@ type_select_field (const Type* type, const std::string& identifier)
   return v.retval;
 }
 
-::Method*
+decl::Method*
 type_select_method (const Type* type, const std::string& identifier)
 {
   struct visitor : public DefaultVisitor
   {
-    ::Method* retval;
+    decl::Method* retval;
     const std::string& identifier;
     visitor (const std::string& id) : retval (NULL), identifier (id) { }
 
@@ -382,7 +383,7 @@ type_select (const Type* type, const std::string& identifier)
       return f->type;
     }
 
-  ::Method* m = type_select_method (type, identifier);
+  decl::Method* m = type_select_method (type, identifier);
   if (m)
     {
       return m->methodType;
@@ -1395,7 +1396,7 @@ Signature*
 Signature::Append (ParameterSymbol* p)
 {
   parameters_.push_back (p);
-  size_ += util::AlignUp (p->type->Size (), MemoryModel::StackAlignment);
+  size_ += util::AlignUp (p->type->Size (), runtime::MemoryModel::StackAlignment);
   return this;
 }
 
@@ -1419,7 +1420,7 @@ Struct::select_field (const std::string& name) const
 Callable*
 NamedType::select_callable (const std::string& name) const
 {
-  ::Method* m = type_select_method (this, name);
+  decl::Method* m = type_select_method (this, name);
   if (m)
     {
       return m;

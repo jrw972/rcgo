@@ -3,10 +3,13 @@
 
 #include "callable.hpp"
 
+namespace decl
+{
+
 class reaction_t : public Callable
 {
 public:
-  reaction_t (ast::Node* a_node, Symbol* a_receiver, ast::Node* body_, const std::string& name_, const Type::Method* rt)
+  reaction_t (ast::Node* a_node, decl::Symbol* a_receiver, ast::Node* body_, const std::string& name_, const type::Method* rt)
     : node (a_node)
     , receiver (a_receiver)
     , body (body_)
@@ -16,7 +19,7 @@ public:
     , reaction_type (rt)
   { }
 
-  reaction_t (ast::Node* a_node, Symbol* a_receiver, ast::Node* body_, const std::string& name_, const Type::Method* rt, Symbol* a_iota, Type::Int::ValueType dimension)
+  reaction_t (ast::Node* a_node, decl::Symbol* a_receiver, ast::Node* body_, const std::string& name_, const type::Method* rt, decl::Symbol* a_iota, type::Int::ValueType dimension)
     : node (a_node)
     , receiver (a_receiver)
     , body (body_)
@@ -29,22 +32,22 @@ public:
 
 public:
   ast::Node* const node;
-  Symbol* const receiver;
+  decl::Symbol* const receiver;
   ast::Node* const body;
   std::string const name;
   ReceiverAccess immutable_phase_access;
 private:
   bool has_dimension_;
 public:
-  Symbol* const iota;
+  decl::Symbol* const iota;
 private:
-  Type::Int::ValueType dimension_;
+  type::Int::ValueType dimension_;
 public:
-  const Type::Method* const reaction_type;
+  const type::Method* const reaction_type;
 
-  void call (executor_base_t& exec) const;
+  void call (runtime::executor_base_t& exec) const;
 
-  const Type::Type* type () const
+  const type::Type* type () const
   {
     // This used to the named type.
     return reaction_type;
@@ -66,23 +69,25 @@ public:
   {
     return memory_model.LocalsSize ();
   }
-  virtual const Type::Signature* signature () const
+  virtual const type::Signature* signature () const
   {
     return reaction_type->signature;
   }
 
-  MemoryModel memory_model;
+  runtime::MemoryModel memory_model;
 
   bool has_dimension () const
   {
     return has_dimension_;
   }
 
-  Type::Int::ValueType dimension () const
+  type::Int::ValueType dimension () const
   {
     assert (has_dimension_);
     return dimension_;
   }
 };
+
+}
 
 #endif // rc_src_reaction_hpp

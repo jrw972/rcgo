@@ -3,6 +3,9 @@
 
 #include <string>
 
+namespace util
+{
+
 /*
  * Describes a location in a file.
  *
@@ -25,5 +28,7 @@ struct Location
     , Line (aLine)
   { }
 };
+
+}
 
 #endif // rc_src_location_hpp

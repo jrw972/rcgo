@@ -5,6 +5,9 @@
 #include "symbol_visitor.hpp"
 #include "ast.hpp"
 
+namespace decl
+{
+
 std::string const ReturnSymbol ("0return");
 
 #define ACCEPT(type) void type::accept (SymbolVisitor& visitor) { visitor.visit (*this); } \
@@ -57,7 +60,7 @@ operator<< (std::ostream& out, const Symbol& s)
     {
       out << "BuiltinFunction " << s.identifier << '\n';
     }
-    virtual void visit (const Template& s)
+    virtual void visit (const decl::Template& s)
     {
       out << "Template " << s.identifier << '\n';
     }
@@ -93,4 +96,6 @@ operator<< (std::ostream& out, const Symbol& s)
   Visitor v (out);
   s.accept (v);
   return out;
+}
+
 }

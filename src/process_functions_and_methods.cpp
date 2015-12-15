@@ -11,7 +11,7 @@
 namespace semantic
 {
 using namespace ast;
-using namespace Type;
+using namespace type;
 using namespace decl;
 
 namespace
@@ -81,7 +81,7 @@ processReceiver (ast::Node* n, ast::Node* identifierNode, ParameterSymbol*& rece
 
   {
     const std::string& identifier = ast_get_identifier (identifierNode);
-    const Type::Type *t = type_select (type, identifier);
+    const type::Type *t = type_select (type, identifier);
     if (t != NULL)
       {
         error_at_line (-1, 0, identifierNode->location.File.c_str (),
@@ -94,7 +94,7 @@ processReceiver (ast::Node* n, ast::Node* identifierNode, ParameterSymbol*& rece
   Node *this_identifier_node = node->this_identifier ();
   const std::string& this_identifier = ast_get_identifier (this_identifier_node);
 
-  const Type::Type* receiver_type;
+  const type::Type* receiver_type;
   if (node->isPointer)
     {
       receiver_type = type->GetPointer ();
@@ -124,7 +124,7 @@ processSignatureReturn (ast::Node* signatureNode, ast::Node* returnType, Mutabil
   signature = type_cast<Signature> (process_type (signatureNode, true));
 
   /* Process the return type. */
-  const Type::Type* return_type = process_type (returnType, true);
+  const type::Type* return_type = process_type (returnType, true);
 
   returnSymbol = ParameterSymbol::makeReturn (returnType,
                  ReturnSymbol,
@@ -145,7 +145,7 @@ process_signature_return (ast::Node* signatureNode, ast::Node* returnType, Mutab
   signature = type_cast<Signature> (process_type (signatureNode, true));
 
   /* Process the return type. */
-  const Type::Type* return_type = process_type (returnType, true);
+  const type::Type* return_type = process_type (returnType, true);
 
   returnSymbol = ParameterSymbol::makeReturn (returnType,
                  ReturnSymbol,
@@ -186,8 +186,8 @@ struct Visitor : public ast::DefaultVisitor
     ParameterSymbol* return_symbol;
     process_signature_return (node.signature (), node.return_type (), node.dereferenceMutability, false,
                               signature, return_symbol);
-    const Type::Function* function_type = new Type::Function (Type::Function::FUNCTION, signature, return_symbol);
-    node.function = new ::Function (node, function_type);
+    const type::Function* function_type = new type::Function (type::Function::FUNCTION, signature, return_symbol);
+    node.function = new decl::Function (node, function_type);
 
     // Enter the return first as it is deeper on the stack.
     enter_symbol (node, return_symbol);
@@ -210,11 +210,11 @@ struct Visitor : public ast::DefaultVisitor
     enter_symbol (node, thisSymbol);
     enter_signature (node, signature);
 
-    Type::Method* method_type = new Type::Method (Type::Method::METHOD, type,
+    type::Method* method_type = new type::Method (type::Method::METHOD, type,
         thisSymbol,
         signature,
         return_symbol);
-    ::Method* method = new ::Method (&node, ast_get_identifier (node.identifier ()), method_type);
+    decl::Method* method = new decl::Method (&node, ast_get_identifier (node.identifier ()), method_type);
 
     type->Add (method);
     node.method = method;
@@ -234,8 +234,8 @@ struct Visitor : public ast::DefaultVisitor
     enter_symbol (node, thisSymbol);
     enter_signature (node, signature);
 
-    Type::Method* initializer_type =
-      new Type::Method (Type::Method::INITIALIZER, type,
+    type::Method* initializer_type =
+      new type::Method (type::Method::INITIALIZER, type,
                         thisSymbol,
                         signature,
                         return_symbol);
@@ -263,9 +263,9 @@ struct Visitor : public ast::DefaultVisitor
     ParameterSymbol* thisSymbol;
     NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, true, true);
     enter_symbol (node, thisSymbol);
-    ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension (), "IOTA", Type::Int::Instance (), IMMUTABLE, IMMUTABLE);
+    ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension (), "IOTA", type::Int::Instance (), IMMUTABLE, IMMUTABLE);
     enter_symbol (node, iotaSymbol);
-    Type::Int::ValueType dimension = process_array_dimension (node.dimension ());
+    type::Int::ValueType dimension = process_array_dimension (node.dimension ());
     Action *action = new Action (node.body (), ast_get_identifier (node.identifier ()), dimension);
     type->Add (action);
     node.receiver_symbol = thisSymbol;
@@ -287,7 +287,7 @@ struct Visitor : public ast::DefaultVisitor
     enter_symbol (node, thisSymbol);
     enter_signature (node, signature);
 
-    Type::Method* reaction_type = new Type::Method (Type::Method::REACTION, type,
+    type::Method* reaction_type = new type::Method (type::Method::REACTION, type,
         thisSymbol,
         signature,
         return_symbol);
@@ -308,15 +308,15 @@ struct Visitor : public ast::DefaultVisitor
     processSignatureReturn (node.signature (), node.return_type (), FOREIGN, true,
                             signature, return_symbol);
 
-    ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension (), "IOTA", Type::Int::Instance (), IMMUTABLE, IMMUTABLE);
-    Type::Int::ValueType dimension = process_array_dimension (node.dimension ());
+    ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension (), "IOTA", type::Int::Instance (), IMMUTABLE, IMMUTABLE);
+    type::Int::ValueType dimension = process_array_dimension (node.dimension ());
 
     // No return type.
     enter_symbol (node, thisSymbol);
     enter_symbol (node, iotaSymbol);
     enter_signature (node, signature);
 
-    Type::Method* reaction_type = new Type::Method (Type::Method::REACTION, type,
+    type::Method* reaction_type = new type::Method (type::Method::REACTION, type,
         thisSymbol,
         signature,
         return_symbol);
@@ -341,7 +341,7 @@ struct Visitor : public ast::DefaultVisitor
     enter_symbol (node, thisSymbol);
     enter_signature (node, signature);
 
-    Type::Method* getter_type = new Type::Method (Type::Method::GETTER, type,
+    type::Method* getter_type = new type::Method (type::Method::GETTER, type,
         thisSymbol,
         signature,
         return_symbol);
@@ -367,7 +367,7 @@ struct Visitor : public ast::DefaultVisitor
     const std::string& identifier = ast_get_identifier (node.identifier ());
     const std::string& initializer_identifier = ast_get_identifier (node.initializer ());
 
-    const Type::NamedType* type = type_cast<NamedType> (process_type (node.type_name (), true));
+    const type::NamedType* type = type_cast<NamedType> (process_type (node.type_name (), true));
 
     if (type_cast<Component> (type_strip (type)) == NULL)
       {

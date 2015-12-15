@@ -16,18 +16,19 @@
 
 namespace runtime
 {
-using namespace Type;
+using namespace type;
 using namespace ast;
 using namespace decl;
+  using namespace semantic;
 
 struct port_t
 {
   component_t* instance;
   const reaction_t* reaction;
-  Type::Int::ValueType parameter;
+  type::Int::ValueType parameter;
   port_t* next;
 
-  port_t (component_t* i, const reaction_t* r, Type::Int::ValueType p) : instance (i), reaction (r), parameter (p), next (NULL) { }
+  port_t (component_t* i, const reaction_t* r, type::Int::ValueType p) : instance (i), reaction (r), parameter (p), next (NULL) { }
 };
 
 struct heap_link_t
@@ -38,18 +39,18 @@ struct heap_link_t
 };
 
 void
-allocate_instances (Composition::Composer& instance_table)
+allocate_instances (composition::Composer& instance_table)
 {
-  for (Composition::Composer::InstancesType::const_iterator pos = instance_table.InstancesBegin (),
+  for (composition::Composer::InstancesType::const_iterator pos = instance_table.InstancesBegin (),
        limit = instance_table.InstancesEnd ();
        pos != limit;
        ++pos)
     {
-      Composition::Instance* instance = pos->second;
+      composition::Instance* instance = pos->second;
       component_t* ptr;
       if (instance->IsTopLevel ())
         {
-          const Type::Type* type = instance->type;
+          const type::Type* type = instance->type;
           size_t size = type->Size ();
           ptr = static_cast<component_t*> (malloc (size));
           memset (ptr, 0, size);
@@ -63,7 +64,7 @@ allocate_instances (Composition::Composer& instance_table)
 }
 
 static void
-bind (port_t** output_port, component_t* input_instance, const reaction_t* reaction, Type::Int::ValueType parameter)
+bind (port_t** output_port, component_t* input_instance, const reaction_t* reaction, type::Int::ValueType parameter)
 {
   port_t* port = new port_t (input_instance, reaction, parameter);
   port->next = *output_port;
@@ -83,23 +84,23 @@ make_heap_link (heap_t* heap,
 }
 
 void
-create_bindings (Composition::Composer& instance_table)
+create_bindings (composition::Composer& instance_table)
 {
-  for (Composition::Composer::PushPortsType::const_iterator pp_pos = instance_table.PushPortsBegin (),
+  for (composition::Composer::PushPortsType::const_iterator pp_pos = instance_table.PushPortsBegin (),
        pp_limit = instance_table.PushPortsEnd ();
        pp_pos != pp_limit;
        ++pp_pos)
     {
-      Composition::PushPort* pp = pp_pos->second;
-      Composition::Instance* output_instance = pp->instance;
+      composition::PushPort* pp = pp_pos->second;
+      composition::Instance* output_instance = pp->instance;
       size_t output_port = pp->address - output_instance->address;
 
-      for (Composition::ReactionsType::const_iterator reaction_pos = pp->reactions.begin (),
+      for (composition::ReactionsType::const_iterator reaction_pos = pp->reactions.begin (),
            reaction_limit = pp->reactions.end ();
            reaction_pos != reaction_limit;
            ++reaction_pos)
         {
-          Composition::Reaction* r = *reaction_pos;
+          composition::Reaction* r = *reaction_pos;
           bind (reinterpret_cast<port_t**> (reinterpret_cast<char*> (output_instance->component) + output_port),
                 r->instance->component,
                 r->reaction,
@@ -107,14 +108,14 @@ create_bindings (Composition::Composer& instance_table)
         }
     }
 
-  for (Composition::Composer::PullPortsType::const_iterator pp_pos = instance_table.PullPortsBegin (),
+  for (composition::Composer::PullPortsType::const_iterator pp_pos = instance_table.PullPortsBegin (),
        pp_limit = instance_table.PullPortsEnd ();
        pp_pos != pp_limit;
        ++pp_pos)
     {
-      Composition::Instance* pull_port_instance = pp_pos->second->instance;
+      composition::Instance* pull_port_instance = pp_pos->second->instance;
       size_t pull_port_address = pp_pos->first - pull_port_instance->address;
-      Composition::Getter* getter = *pp_pos->second->getters.begin ();
+      composition::Getter* getter = *pp_pos->second->getters.begin ();
       pull_port_t* pull_port = reinterpret_cast<pull_port_t*> (reinterpret_cast<char*> (pull_port_instance->component) + pull_port_address);
       assert (getter->instance != NULL);
       pull_port->instance = getter->instance->component;
@@ -123,7 +124,7 @@ create_bindings (Composition::Composer& instance_table)
 }
 
 void
-initialize (executor_base_t& exec, Composition::Instance* instance)
+initialize (executor_base_t& exec, composition::Instance* instance)
 {
   if (instance->IsTopLevel ())
     {
@@ -140,7 +141,7 @@ template <typename T>
 static void
 evaluate (executor_base_t& exec, const MemoryModel& memoryModel, const ast_binary_expr_t& node, const T& op)
 {
-  struct visitor : public Type::DefaultVisitor
+  struct visitor : public type::DefaultVisitor
   {
     executor_base_t& exec;
     const MemoryModel& memoryModel;
@@ -152,7 +153,7 @@ evaluate (executor_base_t& exec, const MemoryModel& memoryModel, const ast_binar
              const ast_binary_expr_t& n,
              const T& o) : exec (e), memoryModel (mm), node (n), op (o) { }
 
-    void default_action (const Type::Type& t)
+    void default_action (const type::Type& t)
     {
       type_not_reached (t);
     }
@@ -172,7 +173,7 @@ evaluate (executor_base_t& exec, const MemoryModel& memoryModel, const ast_binar
       op (exec, memoryModel, node, t);
     }
 
-    void visit (const Type::Int& t)
+    void visit (const type::Int& t)
     {
       op (exec, memoryModel, node, t);
     }
@@ -214,7 +215,7 @@ evaluate (executor_base_t& exec, const MemoryModel& memoryModel, const ast_binar
 
 struct RetvalDispatch
 {
-  const Type::Type*
+  const type::Type*
   dispatch_type (const ast_binary_expr_t& node) const
   {
     unimplemented;
@@ -224,7 +225,7 @@ struct RetvalDispatch
 
 struct LeftDispatch
 {
-  const Type::Type*
+  const type::Type*
   dispatch_type (const ast_binary_expr_t& node) const
   {
     unimplemented;
@@ -238,14 +239,14 @@ struct Divide : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int&) const
+              const type::Int&) const
   {
     unimplemented;
     // evaluate_expression (exec, memoryModel, node.left ());
-    // Type::Int::ValueType left;
+    // type::Int::ValueType left;
     // exec.stack ().pop (left);
     // evaluate_expression (exec, memoryModel, node.right ());
-    // Type::Int::ValueType right;
+    // type::Int::ValueType right;
     // exec.stack ().pop (right);
     // exec.stack ().push (left / right);
   }
@@ -270,7 +271,7 @@ struct Divide : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -282,14 +283,14 @@ struct Modulus : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int&) const
+              const type::Int&) const
   {
     unimplemented;
     // evaluate_expression (exec, memoryModel, node.left ());
-    // Type::Int::ValueType left;
+    // type::Int::ValueType left;
     // exec.stack ().pop (left);
     // evaluate_expression (exec, memoryModel, node.right ());
-    // Type::Int::ValueType right;
+    // type::Int::ValueType right;
     // exec.stack ().pop (right);
     // exec.stack ().push (left % right);
   }
@@ -298,14 +299,14 @@ struct Modulus : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
 };
 
 template <typename T>
-struct LeftShiftVisitor : public Type::DefaultVisitor
+struct LeftShiftVisitor : public type::DefaultVisitor
 {
   executor_base_t& exec;
   const MemoryModel& memoryModel;
@@ -319,7 +320,7 @@ struct LeftShiftVisitor : public Type::DefaultVisitor
     , node (n)
   { }
 
-  void default_action (const Type::Type& t)
+  void default_action (const type::Type& t)
   {
     type_not_reached (t);
   }
@@ -329,7 +330,7 @@ struct LeftShiftVisitor : public Type::DefaultVisitor
     t.UnderlyingType ()->Accept (*this);
   }
 
-  void visit (const Type::Int& t)
+  void visit (const type::Int& t)
   {
     doit (t);
   }
@@ -376,7 +377,7 @@ struct LeftShift : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int& t) const
+              const type::Int& t) const
   {
     doit (exec, memoryModel, node, t);
   }
@@ -394,7 +395,7 @@ struct LeftShift : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -406,9 +407,9 @@ struct RightShift : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int&) const
+              const type::Int&) const
   {
-    struct visitor : public Type::DefaultVisitor
+    struct visitor : public type::DefaultVisitor
     {
       executor_base_t& exec;
       const MemoryModel& memoryModel;
@@ -422,7 +423,7 @@ struct RightShift : public RetvalDispatch
         , node (n)
       { }
 
-      void default_action (const Type::Type& t)
+      void default_action (const type::Type& t)
       {
         type_not_reached (t);
       }
@@ -432,11 +433,11 @@ struct RightShift : public RetvalDispatch
         t.UnderlyingType ()->Accept (*this);
       }
 
-      void visit (const Type::Int&)
+      void visit (const type::Int&)
       {
         unimplemented;
         // evaluate_expression (exec, memoryModel, node.left ());
-        // Type::Int::ValueType left;
+        // type::Int::ValueType left;
         // exec.stack ().pop (left);
         // evaluate_expression (exec, memoryModel, node.right ());
         // Uint::ValueType right;
@@ -466,7 +467,7 @@ struct RightShift : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -478,14 +479,14 @@ struct BitAnd : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int&) const
+              const type::Int&) const
   {
     unimplemented;
     // evaluate_expression (exec, memoryModel, node.left ());
-    // Type::Int::ValueType left;
+    // type::Int::ValueType left;
     // exec.stack ().pop (left);
     // evaluate_expression (exec, memoryModel, node.right ());
-    // Type::Int::ValueType right;
+    // type::Int::ValueType right;
     // exec.stack ().pop (right);
     // exec.stack ().push (left & right);
   }
@@ -494,7 +495,7 @@ struct BitAnd : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -506,14 +507,14 @@ struct BitAndNot : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int&) const
+              const type::Int&) const
   {
     unimplemented;
     // evaluate_expression (exec, memoryModel, node.left ());
-    // Type::Int::ValueType left;
+    // type::Int::ValueType left;
     // exec.stack ().pop (left);
     // evaluate_expression (exec, memoryModel, node.right ());
-    // Type::Int::ValueType right;
+    // type::Int::ValueType right;
     // exec.stack ().pop (right);
     // exec.stack ().push (left & (~right));
   }
@@ -522,7 +523,7 @@ struct BitAndNot : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -534,7 +535,7 @@ struct Add : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int& type) const
+              const type::Int& type) const
   {
     doit (exec, memoryModel, node, type);
   }
@@ -569,7 +570,7 @@ struct Add : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -581,14 +582,14 @@ struct Subtract : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int&) const
+              const type::Int&) const
   {
     unimplemented;
     // evaluate_expression (exec, memoryModel, node.left ());
-    // Type::Int::ValueType left;
+    // type::Int::ValueType left;
     // exec.stack ().pop (left);
     // evaluate_expression (exec, memoryModel, node.right ());
-    // Type::Int::ValueType right;
+    // type::Int::ValueType right;
     // exec.stack ().pop (right);
     // exec.stack ().push (left - right);
   }
@@ -597,7 +598,7 @@ struct Subtract : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -609,14 +610,14 @@ struct BitOr : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int&) const
+              const type::Int&) const
   {
     unimplemented;
     // evaluate_expression (exec, memoryModel, node.left ());
-    // Type::Int::ValueType left;
+    // type::Int::ValueType left;
     // exec.stack ().pop (left);
     // evaluate_expression (exec, memoryModel, node.right ());
-    // Type::Int::ValueType right;
+    // type::Int::ValueType right;
     // exec.stack ().pop (right);
     // exec.stack ().push (left | right);
   }
@@ -625,7 +626,7 @@ struct BitOr : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -637,14 +638,14 @@ struct BitXor : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int&) const
+              const type::Int&) const
   {
     unimplemented;
     // evaluate_expression (exec, memoryModel, node.left ());
-    // Type::Int::ValueType left;
+    // type::Int::ValueType left;
     // exec.stack ().pop (left);
     // evaluate_expression (exec, memoryModel, node.right ());
-    // Type::Int::ValueType right;
+    // type::Int::ValueType right;
     // exec.stack ().pop (right);
     // exec.stack ().push (left ^ right);
   }
@@ -653,7 +654,7 @@ struct BitXor : public RetvalDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -683,7 +684,7 @@ struct Equal : public LeftDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int& type) const
+              const type::Int& type) const
   {
     doit (exec, memoryModel, node, type);
   }
@@ -735,7 +736,7 @@ struct Equal : public LeftDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -756,9 +757,9 @@ struct NotEqual : public LeftDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int&) const
+              const type::Int&) const
   {
-    doit<Type::Int> (exec, memoryModel, node);
+    doit<type::Int> (exec, memoryModel, node);
   }
 
   void
@@ -806,7 +807,7 @@ struct NotEqual : public LeftDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -818,14 +819,14 @@ struct LessThan : public LeftDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int&) const
+              const type::Int&) const
   {
     unimplemented;
     // evaluate_expression (exec, memoryModel, node.left ());
-    // Type::Int::ValueType left;
+    // type::Int::ValueType left;
     // exec.stack ().pop (left);
     // evaluate_expression (exec, memoryModel, node.right ());
-    // Type::Int::ValueType right;
+    // type::Int::ValueType right;
     // exec.stack ().pop (right);
     // exec.stack ().push (left < right);
   }
@@ -850,7 +851,7 @@ struct LessThan : public LeftDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -862,14 +863,14 @@ struct LessEqual : public LeftDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int&) const
+              const type::Int&) const
   {
     unimplemented;
     // evaluate_expression (exec, memoryModel, node.left ());
-    // Type::Int::ValueType left;
+    // type::Int::ValueType left;
     // exec.stack ().pop (left);
     // evaluate_expression (exec, memoryModel, node.right ());
-    // Type::Int::ValueType right;
+    // type::Int::ValueType right;
     // exec.stack ().pop (right);
     // exec.stack ().push (left <= right);
   }
@@ -878,7 +879,7 @@ struct LessEqual : public LeftDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -890,14 +891,14 @@ struct MoreThan : public LeftDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int&) const
+              const type::Int&) const
   {
     unimplemented;
     // evaluate_expression (exec, memoryModel, node.left ());
-    // Type::Int::ValueType left;
+    // type::Int::ValueType left;
     // exec.stack ().pop (left);
     // evaluate_expression (exec, memoryModel, node.right ());
-    // Type::Int::ValueType right;
+    // type::Int::ValueType right;
     // exec.stack ().pop (right);
     // exec.stack ().push (left > right);
   }
@@ -906,7 +907,7 @@ struct MoreThan : public LeftDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -918,14 +919,14 @@ struct MoreEqual : public LeftDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Int&) const
+              const type::Int&) const
   {
     unimplemented;
     // evaluate_expression (exec, memoryModel, node.left ());
-    // Type::Int::ValueType left;
+    // type::Int::ValueType left;
     // exec.stack ().pop (left);
     // evaluate_expression (exec, memoryModel, node.right ());
-    // Type::Int::ValueType right;
+    // type::Int::ValueType right;
     // exec.stack ().pop (right);
     // exec.stack ().push (left >= right);
   }
@@ -934,7 +935,7 @@ struct MoreEqual : public LeftDispatch
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
               const ast_binary_expr_t& node,
-              const Type::Type& t) const
+              const type::Type& t) const
   {
     type_not_reached (t);
   }
@@ -986,7 +987,7 @@ struct MoreEqual : public LeftDispatch
 //   {
 //     // Determine the push port index.
 //     node.index_op->execute (exec, memoryModel);
-//     Type::Int::ValueType idx;
+//     type::Int::ValueType idx;
 //     exec.stack ().pop (idx);
 //     if (idx < 0 || idx >= node.array_type->dimension)
 //       {
@@ -1014,7 +1015,7 @@ struct MoreEqual : public LeftDispatch
 //         evaluate_expression (exec, memoryModel, node.low ());
 //         exec.stack ().pop_tv (low_tv);
 //       }
-//     Type::Int::ValueType low = low_tv.integral_value ();
+//     type::Int::ValueType low = low_tv.integral_value ();
 
 //     typed_value_t high_tv = node.high ()->typed_value;
 //     if (!high_tv.value.present)
@@ -1022,7 +1023,7 @@ struct MoreEqual : public LeftDispatch
 //         evaluate_expression (exec, memoryModel, node.high ());
 //         exec.stack ().pop_tv (high_tv);
 //       }
-//     Type::Int::ValueType high = high_tv.integral_value ();
+//     type::Int::ValueType high = high_tv.integral_value ();
 
 //     const Array* array_type = type_cast<Array> (base_tv.type);
 //     if (array_type)
@@ -1069,9 +1070,9 @@ struct MoreEqual : public LeftDispatch
 //   {
 //     if (node.IsCall)
 //       {
-//         const Type::Function* f = type_cast<Type::Function> (node.expr ()->typed_value.type);
+//         const type::Function* f = type_cast<type::Function> (node.expr ()->typed_value.type);
 //         assert (f != NULL);
-//         if (f->kind != Type::Function::PULL_PORT)
+//         if (f->kind != type::Function::PULL_PORT)
 //           {
 //             node.expr ()->typed_value.value.callable_value ()->call (exec, memoryModel, node);
 //           }
@@ -1120,7 +1121,7 @@ struct MoreEqual : public LeftDispatch
 //         // Push the parameter.
 //         if (port->reaction->has_dimension ())
 //           {
-//             exec.stack ().push<Type::Int::ValueType> (port->parameter);
+//             exec.stack ().push<type::Int::ValueType> (port->parameter);
 //           }
 //         // Push the arguments.
 //         exec.stack ().load (top_before, arguments_size);
@@ -1415,7 +1416,7 @@ struct MoreEqual : public LeftDispatch
 
 //     void visit (const ast_for_iota_statement_t& node)
 //     {
-//       for (Type::Int::ValueType idx = 0, limit = node.limit.integral_value ();
+//       for (type::Int::ValueType idx = 0, limit = node.limit.integral_value ();
 //            idx != limit;
 //            ++idx)
 //         {
@@ -1432,14 +1433,14 @@ struct MoreEqual : public LeftDispatch
 //     {
 //       unimplemented;
 //       // // Determine the size of the value being assigned.
-//       // const Type::Type* type = node.right ()->typed_value.type;
+//       // const type::Type* type = node.right ()->typed_value.type;
 //       // // Evaluate the address.
 //       // evaluate_expression (exec, memoryModel, node.left ());
 //       // void* ptr = exec.stack ().pop_pointer ();
 //       // // Evaluate the value.
 //       // evaluate_expression (exec, memoryModel, node.right ());
 
-//       // struct visitor : public Type::DefaultVisitor
+//       // struct visitor : public type::DefaultVisitor
 //       // {
 //       //   executor_base_t& exec;
 //       //   void* ptr;
@@ -1450,11 +1451,11 @@ struct MoreEqual : public LeftDispatch
 //       //     type.UnderlyingType ()->Accept (*this);
 //       //   }
 
-//       //   void visit (const Type::Int& type)
+//       //   void visit (const type::Int& type)
 //       //   {
-//       //     Type::Int::ValueType x;
+//       //     type::Int::ValueType x;
 //       //     exec.stack ().pop (x);
-//       //     *((Type::Int::ValueType*)ptr) += x;
+//       //     *((type::Int::ValueType*)ptr) += x;
 //       //   }
 
 //       //   void visit (const Uint& type)
@@ -1464,7 +1465,7 @@ struct MoreEqual : public LeftDispatch
 //       //     *((Uint::ValueType*)ptr) += x;
 //       //   }
 
-//       //   void default_action (const Type::Type& type)
+//       //   void default_action (const type::Type& type)
 //       //   {
 //       //     unimplemented;
 //       //   }
@@ -1477,14 +1478,14 @@ struct MoreEqual : public LeftDispatch
 //     {
 //       unimplemented;
 //       // // Determine the size of the value being assigned.
-//       // const Type::Type* type = node.right ()->typed_value.type;
+//       // const type::Type* type = node.right ()->typed_value.type;
 //       // // Evaluate the address.
 //       // evaluate_expression (exec, memoryModel, node.left ());
 //       // void* ptr = exec.stack ().pop_pointer ();
 //       // // Evaluate the value.
 //       // evaluate_expression (exec, memoryModel, node.right ());
 
-//       // struct visitor : public Type::DefaultVisitor
+//       // struct visitor : public type::DefaultVisitor
 //       // {
 //       //   executor_base_t& exec;
 //       //   void* ptr;
@@ -1502,7 +1503,7 @@ struct MoreEqual : public LeftDispatch
 //       //     *((Uint::ValueType*)ptr) -= x;
 //       //   }
 
-//       //   void default_action (const Type::Type& type)
+//       //   void default_action (const type::Type& type)
 //       //   {
 //       //     unimplemented;
 //       //   }
@@ -1543,13 +1544,13 @@ struct MoreEqual : public LeftDispatch
 //       // evaluate_expression (exec, memoryModel, node.child ());
 //       // void* ptr = exec.stack ().pop_pointer ();
 
-//       // struct visitor : public Type::DefaultVisitor
+//       // struct visitor : public type::DefaultVisitor
 //       // {
 //       //   void* ptr;
 
 //       //   visitor (void* p) : ptr (p) { }
 
-//       //   void default_action (const Type::Type& type)
+//       //   void default_action (const type::Type& type)
 //       //   {
 //       //     not_reached;
 //       //   }
@@ -1559,9 +1560,9 @@ struct MoreEqual : public LeftDispatch
 //       //     type.UnderlyingType ()->Accept (*this);
 //       //   }
 
-//       //   void visit (const Type::Int& type)
+//       //   void visit (const type::Int& type)
 //       //   {
-//       //     ++(*static_cast<Type::Int::ValueType*> (ptr));
+//       //     ++(*static_cast<type::Int::ValueType*> (ptr));
 //       //   }
 
 //       //   void visit (const Uint& type)
@@ -1640,7 +1641,7 @@ bool
 enabled (executor_base_t& exec,
          component_t* instance,
          const Action* action,
-         Type::Int::ValueType iota)
+         type::Int::ValueType iota)
 {
   assert (exec.stack ().empty ());
 
@@ -1708,7 +1709,7 @@ execute (executor_base_t& exec,
     }
 }
 
-bool execute (executor_base_t& exec, component_t* instance, const Action* action, Type::Int::ValueType iota)
+bool execute (executor_base_t& exec, component_t* instance, const Action* action, type::Int::ValueType iota)
 {
   if (enabled (exec, instance, action, iota))
     {
@@ -1718,7 +1719,7 @@ bool execute (executor_base_t& exec, component_t* instance, const Action* action
   return false;
 }
 
-bool execute_no_check (executor_base_t& exec, component_t* instance, const Action* action, Type::Int::ValueType iota)
+bool execute_no_check (executor_base_t& exec, component_t* instance, const Action* action, type::Int::ValueType iota)
 {
   assert (exec.stack ().empty ());
 
@@ -1750,7 +1751,7 @@ bool execute_no_check (executor_base_t& exec, component_t* instance, const Actio
 
 struct NewImpl : public Callable
 {
-  NewImpl (const Type::Type* t, ast::Node* definingNode)
+  NewImpl (const type::Type* t, ast::Node* definingNode)
     : type_ (t)
     , function_type_ (makeFunctionType (t, definingNode))
   {
@@ -1769,7 +1770,7 @@ struct NewImpl : public Callable
       }
     else
       {
-        const Type::Type* t = heap_type->Base ();
+        const type::Type* t = heap_type->Base ();
         // Allocate a new heap and root object.
         heap_t* h = heap_make_size (t->Size ());
         // Insert it into its parent.
@@ -1782,17 +1783,17 @@ struct NewImpl : public Callable
       }
   }
 
-  virtual const Type::Type* type () const
+  virtual const type::Type* type () const
   {
     return function_type_;
   }
-  const Type::Type* const type_;
-  const Type::Function* const function_type_;
+  const type::Type* const type_;
+  const type::Function* const function_type_;
   MemoryModel memory_model;
-  static const Type::Function* makeFunctionType (const Type::Type* type, ast::Node* definingNode)
+  static const type::Function* makeFunctionType (const type::Type* type, ast::Node* definingNode)
   {
-    const Type::Type* return_type = type->GetPointer ();
-    return new Type::Function (Type::Function::FUNCTION, (new Signature ()),
+    const type::Type* return_type = type->GetPointer ();
+    return new type::Function (type::Function::FUNCTION, (new Signature ()),
                                ParameterSymbol::makeReturn (definingNode, ReturnSymbol, return_type, MUTABLE));
   }
 
@@ -1812,7 +1813,7 @@ struct NewImpl : public Callable
   {
     return 0;
   }
-  virtual const Type::Signature* signature () const
+  virtual const type::Signature* signature () const
   {
     not_reached;
   }
@@ -1838,11 +1839,11 @@ struct NewImpl : public Callable
 New::New (ast::Node* dn)
   : Template ("new",
               dn,
-              new Type::Template ())
+              new type::Template ())
 { }
 
 Callable*
-New::instantiate (const std::vector<const Type::Type*>& argument_types) const
+New::instantiate (const std::vector<const type::Type*>& argument_types) const
 {
   if (argument_types.size () != 1)
     {
@@ -1850,7 +1851,7 @@ New::instantiate (const std::vector<const Type::Type*>& argument_types) const
                      "new expects one argument (E220)");
     }
 
-  const Type::Type* type = argument_types.front ();
+  const type::Type* type = argument_types.front ();
 
   // TODO.
   // if (tv.kind != typed_value_t::TYPE)
@@ -1864,7 +1865,7 @@ New::instantiate (const std::vector<const Type::Type*>& argument_types) const
 
 struct MoveImpl : public Callable
 {
-  MoveImpl (const Type::Type* in, const Type::Type* out, ast::Node* definingNode)
+  MoveImpl (const type::Type* in, const type::Type* out, ast::Node* definingNode)
     : function_type_ (makeFunctionType (in, out, definingNode))
   {
     allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
@@ -1910,16 +1911,16 @@ struct MoveImpl : public Callable
       }
   }
 
-  virtual const Type::Type* type () const
+  virtual const type::Type* type () const
   {
     return function_type_;
   }
-  const Type::Function* const function_type_;
+  const type::Function* const function_type_;
   MemoryModel memory_model;
-  static const Type::Function* makeFunctionType (const Type::Type* in, const Type::Type* out, ast::Node* definingNode)
+  static const type::Function* makeFunctionType (const type::Type* in, const type::Type* out, ast::Node* definingNode)
   {
     // TODO:  The mutabilities may need to be adjusted.
-    return new Type::Function (Type::Function::FUNCTION, (new Signature ())
+    return new type::Function (type::Function::FUNCTION, (new Signature ())
                                ->Append (ParameterSymbol::make (definingNode, "h", in, MUTABLE, FOREIGN)),
                                ParameterSymbol::makeReturn (definingNode, ReturnSymbol, out, MUTABLE));
   }
@@ -1940,7 +1941,7 @@ struct MoveImpl : public Callable
   {
     return 0;
   }
-  virtual const Type::Signature* signature () const
+  virtual const type::Signature* signature () const
   {
     return function_type_->GetSignature ();
   }
@@ -1949,11 +1950,11 @@ struct MoveImpl : public Callable
 Move::Move (ast::Node* dn)
   : Template ("move",
               dn,
-              new Type::Template ())
+              new type::Template ())
 { }
 
 Callable*
-Move::instantiate (const std::vector<const Type::Type*>& argument_types) const
+Move::instantiate (const std::vector<const type::Type*>& argument_types) const
 {
   if (argument_types.size () != 1)
     {
@@ -1961,8 +1962,8 @@ Move::instantiate (const std::vector<const Type::Type*>& argument_types) const
                      "move expects one argument (E218)");
     }
 
-  const Type::Type* in = argument_types.front ();
-  const Type::Type* out = type_move (in);
+  const type::Type* in = argument_types.front ();
+  const type::Type* out = type_move (in);
   if (out == NULL)
     {
       error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
@@ -1974,7 +1975,7 @@ Move::instantiate (const std::vector<const Type::Type*>& argument_types) const
 
 struct MergeImpl : public Callable
 {
-  MergeImpl (const Type::Type* in, const Type::Type* out, ast::Node* definingNode)
+  MergeImpl (const type::Type* in, const type::Type* out, ast::Node* definingNode)
     : function_type_ (makeFunctionType (in, out, definingNode))
   {
     allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
@@ -2020,16 +2021,16 @@ struct MergeImpl : public Callable
       }
   }
 
-  virtual const Type::Type* type () const
+  virtual const type::Type* type () const
   {
     return function_type_;
   }
-  const Type::Function* const function_type_;
+  const type::Function* const function_type_;
   MemoryModel memory_model;
-  static const Type::Function* makeFunctionType (const Type::Type* in, const Type::Type* out, ast::Node* definingNode)
+  static const type::Function* makeFunctionType (const type::Type* in, const type::Type* out, ast::Node* definingNode)
   {
     // TODO:  Adjust mutability.
-    return new Type::Function (Type::Function::FUNCTION, (new Signature ())
+    return new type::Function (type::Function::FUNCTION, (new Signature ())
                                ->Append (ParameterSymbol::make (definingNode, "h", in, MUTABLE, FOREIGN)),
                                ParameterSymbol::makeReturn (definingNode, ReturnSymbol, out, MUTABLE));
   }
@@ -2050,7 +2051,7 @@ struct MergeImpl : public Callable
   {
     return 0;
   }
-  virtual const Type::Signature* signature () const
+  virtual const type::Signature* signature () const
   {
     return function_type_->GetSignature ();
   }
@@ -2059,11 +2060,11 @@ struct MergeImpl : public Callable
 Merge::Merge (ast::Node* dn)
   : Template ("merge",
               dn,
-              new Type::Template ())
+              new type::Template ())
 { }
 
 Callable*
-Merge::instantiate (const std::vector<const Type::Type*>& argument_types) const
+Merge::instantiate (const std::vector<const type::Type*>& argument_types) const
 {
   if (argument_types.size () != 1)
     {
@@ -2071,8 +2072,8 @@ Merge::instantiate (const std::vector<const Type::Type*>& argument_types) const
                      "merge expects one argument (E216)");
     }
 
-  const Type::Type* in = argument_types.front ();
-  const Type::Type* out = type_merge (in);
+  const type::Type* in = argument_types.front ();
+  const type::Type* out = type_merge (in);
   if (out == NULL)
     {
       error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
@@ -2084,7 +2085,7 @@ Merge::instantiate (const std::vector<const Type::Type*>& argument_types) const
 
 struct CopyImpl : public Callable
 {
-  CopyImpl (const Type::Type* in, ast::Node* definingNode)
+  CopyImpl (const type::Type* in, ast::Node* definingNode)
     : function_type_ (makeFunctionType (in, definingNode))
   {
     allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
@@ -2122,15 +2123,15 @@ struct CopyImpl : public Callable
     memcpy (out, in, function_type_->GetReturnType ()->Size ());
   }
 
-  virtual const Type::Type* type () const
+  virtual const type::Type* type () const
   {
     return function_type_;
   }
-  const Type::Function* const function_type_;
+  const type::Function* const function_type_;
   MemoryModel memory_model;
-  static const Type::Function* makeFunctionType (const Type::Type* in, ast::Node* definingNode)
+  static const type::Function* makeFunctionType (const type::Type* in, ast::Node* definingNode)
   {
-    return new Type::Function (Type::Function::FUNCTION, (new Signature ())
+    return new type::Function (type::Function::FUNCTION, (new Signature ())
                                ->Append (ParameterSymbol::make (definingNode, "h", in, IMMUTABLE, FOREIGN)),
                                ParameterSymbol::makeReturn (definingNode, ReturnSymbol, in, MUTABLE));
   }
@@ -2151,7 +2152,7 @@ struct CopyImpl : public Callable
   {
     return 0;
   }
-  virtual const Type::Signature* signature () const
+  virtual const type::Signature* signature () const
   {
     return function_type_->GetSignature ();
   }
@@ -2160,11 +2161,11 @@ struct CopyImpl : public Callable
 Copy::Copy (ast::Node* dn)
   : Template ("copy",
               dn,
-              new Type::Template ())
+              new type::Template ())
 { }
 
 Callable*
-Copy::instantiate (const std::vector<const Type::Type*>& argument_types) const
+Copy::instantiate (const std::vector<const type::Type*>& argument_types) const
 {
   if (argument_types.size () != 1)
     {
@@ -2172,7 +2173,7 @@ Copy::instantiate (const std::vector<const Type::Type*>& argument_types) const
                      "copy expects one argument (E123)");
     }
 
-  const Type::Type* in = argument_types.front ();
+  const type::Type* in = argument_types.front ();
 
   if (type_strip_cast<Component> (in) != NULL)
     {
@@ -2220,14 +2221,14 @@ struct PrintlnImpl : public Callable
 
   virtual void call (executor_base_t& exec) const
   {
-    struct visitor : public Type::DefaultVisitor
+    struct visitor : public type::DefaultVisitor
     {
       executor_base_t& exec;
       void* ptr;
 
       visitor (executor_base_t& e, void* p) : exec (e), ptr (p) { }
 
-      void default_action (const Type::Type& type)
+      void default_action (const type::Type& type)
       {
         type_not_reached (type);
       }
@@ -2275,7 +2276,7 @@ struct PrintlnImpl : public Callable
         printf ("%lu", *static_cast<Uint64::ValueType*> (ptr));
       }
 
-      void visit (const Type::Int& type)
+      void visit (const type::Int& type)
       {
         printf ("%ld", *static_cast<Int::ValueType*> (ptr));
       }
@@ -2297,7 +2298,7 @@ struct PrintlnImpl : public Callable
     };
 
     exec.lock_stdout ();
-    for (Type::Signature::const_iterator pos = function_type_->GetSignature ()->Begin (), limit = function_type_->GetSignature ()->End ();
+    for (type::Signature::const_iterator pos = function_type_->GetSignature ()->Begin (), limit = function_type_->GetSignature ()->End ();
          pos != limit;
          ++pos)
       {
@@ -2310,26 +2311,26 @@ struct PrintlnImpl : public Callable
     exec.unlock_stdout ();
   }
 
-  virtual const Type::Type* type () const
+  virtual const type::Type* type () const
   {
     return function_type_;
   }
-  const Type::Function* const function_type_;
+  const type::Function* const function_type_;
   MemoryModel memory_model;
 
-  static const Type::Function* makeFunctionType (const TypeList& argument_types)
+  static const type::Function* makeFunctionType (const TypeList& argument_types)
   {
     Signature* sig = new Signature ();
     for (TypeList::const_iterator pos = argument_types.begin (), limit = argument_types.end ();
          pos != limit;
          ++pos)
       {
-        const Type::Type* t = *pos;
+        const type::Type* t = *pos;
         t = t->DefaultType ();
         sig->Append (ParameterSymbol::make (NULL, "", t, IMMUTABLE, FOREIGN));
       }
 
-    return new Type::Function (Type::Function::FUNCTION, sig,
+    return new type::Function (type::Function::FUNCTION, sig,
                                ParameterSymbol::makeReturn (NULL, ReturnSymbol, Void::Instance (), FOREIGN));
 
   }
@@ -2350,7 +2351,7 @@ struct PrintlnImpl : public Callable
   {
     return 0;
   }
-  virtual const Type::Signature* signature () const
+  virtual const type::Signature* signature () const
   {
     return function_type_->GetSignature ();
   }
@@ -2359,7 +2360,7 @@ struct PrintlnImpl : public Callable
 Println::Println (ast::Node* dn)
   : Template ("println",
               dn,
-              new Type::Template ())
+              new type::Template ())
 { }
 
 Callable*
@@ -2385,10 +2386,10 @@ IndexSlice::execute (executor_base_t& exec) const
   Slice::ValueType s;
   exec.stack ().pop (s);
   index->execute (exec);
-  Type::Int::ValueType i;
+  type::Int::ValueType i;
   exec.stack ().pop (i);
 
-  if (i < 0 || static_cast<Type::Uint::ValueType> (i) >= s.length)
+  if (i < 0 || static_cast<type::Uint::ValueType> (i) >= s.length)
     {
       error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "slice index is out of bounds (E35)");
@@ -2407,7 +2408,7 @@ struct ConvertToInt : public Operation
     child->execute (exec);
     typename T::ValueType in;
     exec.stack ().pop (in);
-    Type::Int::ValueType out = in;
+    type::Int::ValueType out = in;
     exec.stack ().push (out);
     return make_continue ();
   }
@@ -2433,7 +2434,7 @@ struct ConvertToInt : public Operation
 //   Operation* operation;
 //   ConvertToIntListener (const Operation* c) : child (c), operation (NULL) { }
 
-//   void NotIntegral (const Type::Type& type)
+//   void NotIntegral (const type::Type& type)
 //   {
 //     not_reached;
 //   }
@@ -2476,7 +2477,7 @@ struct ConvertToInt : public Operation
 //   {
 //     operation = makeConvertToInt (type, child);
 //   }
-//   void operator() (const Type::Int& type)
+//   void operator() (const type::Int& type)
 //   {
 //     operation = makeConvertToInt (type, child);
 //   }
@@ -2495,7 +2496,7 @@ struct ConvertToInt : public Operation
 // };
 
 Operation*
-MakeConvertToInt (const Operation* c, const Type::Type* type)
+MakeConvertToInt (const Operation* c, const type::Type* type)
 {
   switch (type->underlying_kind ())
     {
@@ -2536,7 +2537,7 @@ struct ConvertToUint : public Operation
     child->execute (exec);
     typename T::ValueType in;
     exec.stack ().pop (in);
-    Type::Uint::ValueType out = in;
+    type::Uint::ValueType out = in;
     exec.stack ().push (out);
     return make_continue ();
   }
@@ -2548,7 +2549,7 @@ struct ConvertToUint : public Operation
 };
 
 Operation*
-MakeConvertToUint (const Operation* c, const Type::Type* type)
+MakeConvertToUint (const Operation* c, const type::Type* type)
 {
   switch (type->underlying_kind ())
     {
@@ -2614,14 +2615,14 @@ LogicAnd::execute (executor_base_t& exec) const
   return make_continue ();
 }
 
-struct MakeLiteralVisitor : public Type::DefaultVisitor
+struct MakeLiteralVisitor : public type::DefaultVisitor
 {
   const value_t& value;
   Operation* op;
 
   MakeLiteralVisitor (const value_t& v) : value (v), op (NULL) { }
 
-  void default_action (const Type::Type& type)
+  void default_action (const type::Type& type)
   {
     type_not_reached (type);
   }
@@ -2692,7 +2693,7 @@ struct MakeLiteralVisitor : public Type::DefaultVisitor
   }
 };
 
-Operation* make_literal (const Type::Type* type, const value_t& value)
+Operation* make_literal (const type::Type* type, const value_t& value)
 {
   assert (value.present);
   MakeLiteralVisitor visitor (value);
@@ -2786,11 +2787,11 @@ DynamicFunctionCall::execute (executor_base_t& exec) const
 {
   switch (type->function_kind)
     {
-    case Type::Function::FUNCTION:
+    case type::Function::FUNCTION:
       unimplemented;
-    case Type::Function::PUSH_PORT:
+    case type::Function::PUSH_PORT:
       unimplemented;
-    case Type::Function::PULL_PORT:
+    case type::Function::PULL_PORT:
     {
       func->execute (exec);
       pull_port_t pp;
@@ -2891,7 +2892,7 @@ struct AddAssign : public Operation
   Operation* const right;
 };
 
-Operation* make_add_assign (Operation* l, Operation* r, const Type::Type* t)
+Operation* make_add_assign (Operation* l, Operation* r, const type::Type* t)
 {
   switch (t->underlying_kind ())
     {
@@ -2953,7 +2954,7 @@ IndexArray::execute (executor_base_t& exec) const
   base->execute (exec);
   void* ptr = exec.stack ().pop_pointer ();
   index->execute (exec);
-  Type::Int::ValueType i;
+  type::Int::ValueType i;
   exec.stack ().pop (i);
   if (i < 0 || i >= type->dimension)
     {
@@ -3094,7 +3095,7 @@ struct Increment : public Operation
   Operation* const child;
 };
 
-Operation* make_increment (Operation* child, const Type::Type* type)
+Operation* make_increment (Operation* child, const type::Type* type)
 {
   switch (type->underlying_kind ())
     {
@@ -3176,7 +3177,7 @@ static void push_port_call (executor_base_t& exec, Operation* args, ptrdiff_t re
       // Push the parameter.
       if (port->reaction->has_dimension ())
         {
-          exec.stack ().push<Type::Int::ValueType> (port->parameter);
+          exec.stack ().push<type::Int::ValueType> (port->parameter);
         }
       // Push the arguments.
       exec.stack ().load (top_before, arguments_size);
@@ -3287,14 +3288,14 @@ struct ConvertSliceOfBytesToString : public Operation
   Operation* const child;
 };
 
-Operation* make_conversion (Operation* c, const Type::Type* from, const Type::Type* to)
+Operation* make_conversion (Operation* c, const type::Type* from, const type::Type* to)
 {
   if (Identical (from->UnderlyingType (), to->UnderlyingType ()))
     {
       unimplemented;
     }
-  else if (from->Level () == Type::Type::UNNAMED &&
-           to->Level () == Type::Type::UNNAMED &&
+  else if (from->Level () == type::Type::UNNAMED &&
+           to->Level () == type::Type::UNNAMED &&
            from->underlying_kind () == kPointer &&
            to->underlying_kind () == kPointer &&
            Identical (from->pointer_base_type (), to->pointer_base_type ()))
@@ -3341,7 +3342,7 @@ Operation* make_conversion (Operation* c, const Type::Type* from, const Type::Ty
 // void
 // dump_instances (const runtime_t* runtime)
 // {
-//   for (Composer::InstancesType::const_iterator pos = runtime->instance_table.instances.begin (),
+//   for (Composer::Instancestype::const_iterator pos = runtime->instance_table.instances.begin (),
 //          limit = runtime->instance_table.instances.end ();
 //        pos != limit;
 //        ++pos)

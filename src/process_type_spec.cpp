@@ -7,8 +7,12 @@
 #include "symbol.hpp"
 #include "ast_visitor.hpp"
 
-using namespace Type;
+namespace semantic
+{
+
+using namespace type;
 using namespace ast;
+using namespace decl;
 
 static void
 process_constant_expression (ast::Node* node)
@@ -29,7 +33,7 @@ process_constant_expression (ast::Node* node)
   node->Accept (v);
 }
 
-Type::Int::ValueType
+type::Int::ValueType
 process_array_dimension (ast::Node* node)
 {
   process_constant_expression (node);
@@ -42,7 +46,7 @@ process_array_dimension (ast::Node* node)
 
   node->value.convert (node->type, &NamedInt);
   node->type = &NamedInt;
-  Type::Int::ValueType dim = node->value.ref (*Type::Int::Instance ());
+  type::Int::ValueType dim = node->value.ref (*type::Int::Instance ());
   if (dim < 0)
     {
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
@@ -62,12 +66,12 @@ CheckForForeignSafe (const Signature* signature, const ParameterSymbol* return_p
     }
 }
 
-const Type::Type *
+const type::Type *
 process_type (Node* node, bool force)
 {
   struct Visitor : public ast::DefaultVisitor
   {
-    const Type::Type* type;
+    const type::Type* type;
 
     Visitor ()
       : type (NULL)
@@ -80,14 +84,14 @@ process_type (Node* node, bool force)
 
     void visit (ast_array_type_spec_t& node)
     {
-      Type::Int::ValueType dimension = process_array_dimension (node.dimension ());
-      const Type::Type* base_type = process_type (node.base_type (), true);
+      type::Int::ValueType dimension = process_array_dimension (node.dimension ());
+      const type::Type* base_type = process_type (node.base_type (), true);
       type = base_type->GetArray (dimension);
     }
 
     void visit (ast_slice_type_spec_t& node)
     {
-      const Type::Type* base_type = process_type (node.child (), false);
+      const type::Type* base_type = process_type (node.child (), false);
       type = base_type->GetSlice ();
     }
 
@@ -116,7 +120,7 @@ process_type (Node* node, bool force)
           ast_identifier_list_type_spec_t* c = static_cast<ast_identifier_list_type_spec_t*> (child);
           Node *identifier_list = c->identifier_list ();
           Node *type_spec = c->type_spec ();
-          const Type::Type *type = process_type (type_spec, true);
+          const type::Type *type = process_type (type_spec, true);
           for (Node::ConstIterator pos2 = identifier_list->Begin (),
                limit2 = identifier_list->End ();
                pos2 != limit2;
@@ -124,7 +128,7 @@ process_type (Node* node, bool force)
             {
               ast::Node* id = *pos2;
               const std::string& identifier = ast_get_identifier (id);
-              const Type::Type *field = type_select (field_list, identifier);
+              const type::Type *field = type_select (field_list, identifier);
               if (field == NULL)
                 {
                   field_list->Append (identifier, type);
@@ -165,7 +169,7 @@ process_type (Node* node, bool force)
 
     void visit (ast_pointer_type_spec_t& node)
     {
-      const Type::Type* base_type = process_type (node.child (), false);
+      const type::Type* base_type = process_type (node.child (), false);
       type = base_type->GetPointer ();
     }
 
@@ -174,23 +178,23 @@ process_type (Node* node, bool force)
       const Signature* signature = type_cast<Signature> (process_type (node.signature (), true));
       ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (&node,
                                           ReturnSymbol,
-                                          Type::Void::Instance (),
+                                          type::Void::Instance (),
                                           IMMUTABLE);
 
       CheckForForeignSafe (signature, return_parameter);
-      type = new Type::Function (Type::Function::PUSH_PORT, signature, return_parameter);
+      type = new type::Function (type::Function::PUSH_PORT, signature, return_parameter);
     }
 
     void visit (ast_pull_port_type_spec_t& node)
     {
       const Signature* signature = type_cast<Signature> (process_type (node.signature (), true));
-      const Type::Type* return_type = process_type (node.return_type (), true);
+      const type::Type* return_type = process_type (node.return_type (), true);
       ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (&node,
                                           ReturnSymbol,
                                           return_type,
                                           node.dereferenceMutability);
       CheckForForeignSafe (signature, return_parameter);
-      type = new Type::Function (Type::Function::PULL_PORT, signature, return_parameter);
+      type = new type::Function (type::Function::PULL_PORT, signature, return_parameter);
     }
 
     void visit (ast_signature_type_spec_t& node)
@@ -203,7 +207,7 @@ process_type (Node* node, bool force)
           ast_identifier_list_type_spec_t* child = static_cast<ast_identifier_list_type_spec_t*> (*pos1);
           Node *identifier_list = child->identifier_list ();
           Node *type_spec = child->type_spec ();
-          const Type::Type* type = process_type (type_spec, true);
+          const type::Type* type = process_type (type_spec, true);
           for (Node::Iterator pos2 = identifier_list->Begin (), limit2 = identifier_list->End ();
                pos2 != limit2;
                ++pos2)
@@ -238,4 +242,6 @@ process_type (Node* node, bool force)
     }
 
   return type_spec_visitor.type;
+}
+
 }

@@ -15,6 +15,9 @@
 #include "composition.hpp"
 #include "runtime.hpp"
 
+namespace runtime
+{
+
 class partitioned_scheduler_t
 {
 public:
@@ -23,7 +26,7 @@ public:
     pthread_mutex_init (&stdout_mutex_, NULL);
   }
 
-  void run (Composition::Composer& instance_table,
+  void run (composition::Composer& instance_table,
             size_t stack_size,
             size_t thread_count);
 
@@ -33,7 +36,7 @@ private:
   class info_t
   {
   public:
-    info_t (Composition::Instance* instance)
+    info_t (composition::Instance* instance)
       : instance_ (instance)
       , heap_ (heap_make (instance->component, instance->type->Size ()))
       , lock_ (0)
@@ -174,7 +177,7 @@ private:
         }
     }
 
-    Composition::Instance* instance_;
+    composition::Instance* instance_;
     heap_t* heap_;
     volatile size_t lock_;
     ssize_t count_;
@@ -210,7 +213,7 @@ private:
       , generation_ (0)
     { }
 
-    virtual const Composition::InstanceSet& set () const = 0;
+    virtual const composition::InstanceSet& set () const = 0;
 
     ExecutionResult execute (size_t generation);
     ExecutionResult resume (size_t generation);
@@ -231,21 +234,21 @@ private:
   private:
     // Return true if the precondition was true.
     virtual bool execute_i () const = 0;
-    Composition::InstanceSet::const_iterator pos_;
-    Composition::InstanceSet::const_iterator limit_;
+    composition::InstanceSet::const_iterator pos_;
+    composition::InstanceSet::const_iterator limit_;
     ExecutionKind last_execution_kind_;
     size_t generation_;
   };
 
   struct Actionask_t : public task_t
   {
-    Actionask_t (const Composition::Action* a)
+    Actionask_t (const composition::Action* a)
       : action (a)
     { }
 
-    const Composition::Action* const action;
+    const composition::Action* const action;
 
-    const Composition::InstanceSet& set () const
+    const composition::InstanceSet& set () const
     {
       return action->GetInstanceSet ();
     }
@@ -257,13 +260,13 @@ private:
 
   struct always_task_t : public task_t
   {
-    always_task_t (const Composition::Action* a)
+    always_task_t (const composition::Action* a)
       : action (a)
     { }
 
-    const Composition::Action* const action;
+    const composition::Action* const action;
 
-    const Composition::InstanceSet& set () const
+    const composition::InstanceSet& set () const
     {
       return action->GetInstanceSet ();
     }
@@ -275,16 +278,16 @@ private:
 
   struct gc_task_t : public task_t
   {
-    gc_task_t (Composition::Instance* i)
+    gc_task_t (composition::Instance* i)
       : instance (i)
     {
       set_.insert (std::make_pair (instance, AccessWrite));
     }
 
-    Composition::Instance* instance;
-    Composition::InstanceSet set_;
+    composition::Instance* instance;
+    composition::InstanceSet set_;
 
-    const Composition::InstanceSet& set () const
+    const composition::InstanceSet& set () const
     {
       return set_;
     }
@@ -575,5 +578,7 @@ private:
   pthread_mutex_t stdout_mutex_;
   std::vector<executor_t*> executors_;
 };
+
+}
 
 #endif // rc_src_partitioned_scheduler_hpp

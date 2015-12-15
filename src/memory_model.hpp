@@ -4,6 +4,9 @@
 #include "types.hpp"
 #include "util.hpp"
 
+namespace runtime
+{
+
 /*
  * Utility class for calculate the offsets of arguments and local variables.
  *
@@ -83,5 +86,7 @@ private:
   size_t localsSize;
   ptrdiff_t receiverOffset;
 };
+
+}
 
 #endif // rc_src_memory_model_hpp
