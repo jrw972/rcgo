@@ -1,5 +1,5 @@
-#ifndef rc_src_location_hpp
-#define rc_src_location_hpp
+#ifndef RC_SRC_LOCATION_HPP
+#define RC_SRC_LOCATION_HPP
 
 #include <string>
 
@@ -31,4 +31,4 @@ struct Location
 
 }
 
-#endif // rc_src_location_hpp
+#endif // RC_SRC_LOCATION_HPP

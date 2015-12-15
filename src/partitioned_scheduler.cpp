@@ -9,7 +9,8 @@
 #include "heap.hpp"
 #include "runtime.hpp"
 
-namespace runtime {
+namespace runtime
+{
 
 using namespace decl;
 
@@ -177,7 +178,7 @@ partitioned_scheduler_t::executor_t::run_i ()
                   task->resume (generation);
                   break;
                 case POLL:
-                  not_reached;
+                  NOT_REACHED;
                   break;
                 }
             }
@@ -360,7 +361,7 @@ partitioned_scheduler_t::executor_t::run_i ()
             case WAIT1:
             case WAIT2:
             case POLL:
-              not_reached;
+              NOT_REACHED;
               break;
             }
           continue;

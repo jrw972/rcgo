@@ -34,7 +34,7 @@ allocate_symbol (runtime::MemoryModel& memory_model,
 
     void defineAction (Symbol& symbol)
     {
-      not_reached;
+      NOT_REACHED;
     }
 
     void visit (ParameterSymbol& symbol)
@@ -105,7 +105,7 @@ allocate_statement_stack_variables (ast::Node* node, runtime::MemoryModel& memor
 
     void default_action (Node& node)
     {
-      ast_not_reached (node);
+      AST_NOT_REACHED (node);
     }
 
     void visit (ast_const_t& node)

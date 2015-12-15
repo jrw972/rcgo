@@ -1,5 +1,5 @@
-#ifndef rc_src_heap_hpp
-#define rc_src_heap_hpp
+#ifndef RC_SRC_HEAP_HPP
+#define RC_SRC_HEAP_HPP
 
 #include "types.hpp"
 
@@ -26,4 +26,4 @@ void heap_dump (heap_t* heap);
 
 }
 
-#endif // rc_src_heap_hpp
+#endif // RC_SRC_HEAP_HPP

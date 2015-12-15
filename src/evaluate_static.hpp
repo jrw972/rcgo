@@ -1,5 +1,5 @@
-#ifndef rc_src_evaluate_static_hpp
-#define rc_src_evaluate_static_hpp
+#ifndef RC_SRC_EVALUATE_STATIC_HPP
+#define RC_SRC_EVALUATE_STATIC_HPP
 
 #include <cstddef>
 #include <map>
@@ -76,9 +76,9 @@ struct static_value_t
         out.value = memory.get_value_at_offset (in.offset);
         break;
       case ABSOLUTE_ADDRESS:
-        unimplemented;
+        UNIMPLEMENTED;
       case VALUE:
-        not_reached;
+        NOT_REACHED;
       }
     return out;
   }
@@ -90,7 +90,7 @@ struct static_value_t
       {
       case STACK_ADDRESS:
       case ABSOLUTE_ADDRESS:
-        not_reached;
+        NOT_REACHED;
       case VALUE:
         out.kind = ABSOLUTE_ADDRESS;
         out.address = in.value;
@@ -113,7 +113,7 @@ struct static_value_t
         out.address += offset;
         break;
       case VALUE:
-        not_reached;
+        NOT_REACHED;
       }
     return out;
   }
@@ -132,7 +132,7 @@ struct static_value_t
         out.address += type->UnitSize () * idx.value;
         break;
       case VALUE:
-        not_reached;
+        NOT_REACHED;
       }
     return out;
   }
@@ -145,13 +145,13 @@ struct static_value_t
     switch (in.kind)
       {
       case STACK_ADDRESS:
-        unimplemented;
+        UNIMPLEMENTED;
       case ABSOLUTE_ADDRESS:
         out.value = in.address;
         break;
-        unimplemented;
+        UNIMPLEMENTED;
       case VALUE:
-        unimplemented;
+        UNIMPLEMENTED;
       }
 
     return out;
@@ -167,4 +167,4 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory);
 
 }
 
-#endif // rc_src_evaluate_static_hpp
+#endif // RC_SRC_EVALUATE_STATIC_HPP

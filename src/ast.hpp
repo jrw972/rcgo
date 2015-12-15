@@ -1,5 +1,5 @@
-#ifndef rc_src_ast_hpp
-#define rc_src_ast_hpp
+#ifndef RC_SRC_AST_HPP
+#define RC_SRC_AST_HPP
 
 #include <vector>
 
@@ -1851,6 +1851,6 @@ std::string ast_get_identifier (const Node* ast);
 
 }
 
-#define ast_not_reached(node) do { std::cerr << node; not_reached; } while (0);
+#define AST_NOT_REACHED(node) do { std::cerr << node; NOT_REACHED; } while (0);
 
-#endif // rc_src_ast_hpp
+#endif // RC_SRC_AST_HPP

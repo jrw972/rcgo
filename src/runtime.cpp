@@ -19,7 +19,7 @@ namespace runtime
 using namespace type;
 using namespace ast;
 using namespace decl;
-  using namespace semantic;
+using namespace semantic;
 
 struct port_t
 {
@@ -155,7 +155,7 @@ evaluate (executor_base_t& exec, const MemoryModel& memoryModel, const ast_binar
 
     void default_action (const type::Type& t)
     {
-      type_not_reached (t);
+      TYPE_NOT_REACHED (t);
     }
 
     void visit (const NamedType& t)
@@ -218,7 +218,7 @@ struct RetvalDispatch
   const type::Type*
   dispatch_type (const ast_binary_expr_t& node) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     //return node.typed_value.type;
   }
 };
@@ -228,7 +228,7 @@ struct LeftDispatch
   const type::Type*
   dispatch_type (const ast_binary_expr_t& node) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     //return node.left ()->typed_value.type;
   }
 };
@@ -241,7 +241,7 @@ struct Divide : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Int&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // type::Int::ValueType left;
     // exec.stack ().pop (left);
@@ -257,7 +257,7 @@ struct Divide : public RetvalDispatch
               const ast_binary_expr_t& node,
               const Float64&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // Float64::ValueType left;
     // exec.stack ().pop (left);
@@ -273,7 +273,7 @@ struct Divide : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -285,7 +285,7 @@ struct Modulus : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Int&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // type::Int::ValueType left;
     // exec.stack ().pop (left);
@@ -301,7 +301,7 @@ struct Modulus : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -322,7 +322,7 @@ struct LeftShiftVisitor : public type::DefaultVisitor
 
   void default_action (const type::Type& t)
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 
   void visit (const NamedType& t)
@@ -348,7 +348,7 @@ struct LeftShiftVisitor : public type::DefaultVisitor
   template <typename U>
   void doit (const U&)
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // typename T::ValueType left;
     // exec.stack ().pop (left);
@@ -369,7 +369,7 @@ struct LeftShift : public RetvalDispatch
         const T&) const
   {
     LeftShiftVisitor<T> v (exec, memoryModel, node);
-    unimplemented;
+    UNIMPLEMENTED;
     //node.right ()->typed_value.type->Accept (v);
   }
 
@@ -397,7 +397,7 @@ struct LeftShift : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -425,7 +425,7 @@ struct RightShift : public RetvalDispatch
 
       void default_action (const type::Type& t)
       {
-        type_not_reached (t);
+        TYPE_NOT_REACHED (t);
       }
 
       void visit (const NamedType& t)
@@ -435,7 +435,7 @@ struct RightShift : public RetvalDispatch
 
       void visit (const type::Int&)
       {
-        unimplemented;
+        UNIMPLEMENTED;
         // evaluate_expression (exec, memoryModel, node.left ());
         // type::Int::ValueType left;
         // exec.stack ().pop (left);
@@ -447,7 +447,7 @@ struct RightShift : public RetvalDispatch
 
       void visit (const Uint&)
       {
-        unimplemented;
+        UNIMPLEMENTED;
         // evaluate_expression (exec, memoryModel, node.left ());
         // Uint::ValueType left;
         // exec.stack ().pop (left);
@@ -459,7 +459,7 @@ struct RightShift : public RetvalDispatch
     };
 
     visitor v (exec, memoryModel, node);
-    unimplemented;
+    UNIMPLEMENTED;
     //node.right ()->typed_value.type->Accept (v);
   }
 
@@ -469,7 +469,7 @@ struct RightShift : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -481,7 +481,7 @@ struct BitAnd : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Int&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // type::Int::ValueType left;
     // exec.stack ().pop (left);
@@ -497,7 +497,7 @@ struct BitAnd : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -509,7 +509,7 @@ struct BitAndNot : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Int&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // type::Int::ValueType left;
     // exec.stack ().pop (left);
@@ -525,7 +525,7 @@ struct BitAndNot : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -556,7 +556,7 @@ struct Add : public RetvalDispatch
         const ast_binary_expr_t& node,
         const T&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // typename T::ValueType left;
     // exec.stack ().pop (left);
@@ -572,7 +572,7 @@ struct Add : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -584,7 +584,7 @@ struct Subtract : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Int&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // type::Int::ValueType left;
     // exec.stack ().pop (left);
@@ -600,7 +600,7 @@ struct Subtract : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -612,7 +612,7 @@ struct BitOr : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Int&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // type::Int::ValueType left;
     // exec.stack ().pop (left);
@@ -628,7 +628,7 @@ struct BitOr : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -640,7 +640,7 @@ struct BitXor : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Int&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // type::Int::ValueType left;
     // exec.stack ().pop (left);
@@ -656,7 +656,7 @@ struct BitXor : public RetvalDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -722,7 +722,7 @@ struct Equal : public LeftDispatch
              const ast_binary_expr_t& node,
              const T&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // typename T::ValueType left;
     // exec.stack ().pop (left);
@@ -738,7 +738,7 @@ struct Equal : public LeftDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -793,7 +793,7 @@ struct NotEqual : public LeftDispatch
   void
   doit (executor_base_t& exec, const MemoryModel& memoryModel, const ast_binary_expr_t& node) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // typename T::ValueType left;
     // exec.stack ().pop (left);
@@ -809,7 +809,7 @@ struct NotEqual : public LeftDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -821,7 +821,7 @@ struct LessThan : public LeftDispatch
               const ast_binary_expr_t& node,
               const type::Int&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // type::Int::ValueType left;
     // exec.stack ().pop (left);
@@ -837,7 +837,7 @@ struct LessThan : public LeftDispatch
               const ast_binary_expr_t& node,
               const Int8&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // Int8::ValueType left;
     // exec.stack ().pop (left);
@@ -853,7 +853,7 @@ struct LessThan : public LeftDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -865,7 +865,7 @@ struct LessEqual : public LeftDispatch
               const ast_binary_expr_t& node,
               const type::Int&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // type::Int::ValueType left;
     // exec.stack ().pop (left);
@@ -881,7 +881,7 @@ struct LessEqual : public LeftDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -893,7 +893,7 @@ struct MoreThan : public LeftDispatch
               const ast_binary_expr_t& node,
               const type::Int&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // type::Int::ValueType left;
     // exec.stack ().pop (left);
@@ -909,7 +909,7 @@ struct MoreThan : public LeftDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -921,7 +921,7 @@ struct MoreEqual : public LeftDispatch
               const ast_binary_expr_t& node,
               const type::Int&) const
   {
-    unimplemented;
+    UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
     // type::Int::ValueType left;
     // exec.stack ().pop (left);
@@ -937,7 +937,7 @@ struct MoreEqual : public LeftDispatch
               const ast_binary_expr_t& node,
               const type::Type& t) const
   {
-    type_not_reached (t);
+    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -946,7 +946,7 @@ struct MoreEqual : public LeftDispatch
 //                      const MemoryModel& memoryModel,
 //                      const ast::Node* node)
 // {
-//   unimplemented;
+//   UNIMPLEMENTED;
 // typed_value_t tv = node->typed_value;
 // if (tv.value.present)
 //   {
@@ -960,10 +960,10 @@ struct MoreEqual : public LeftDispatch
 //       break;
 //       case typed_value_t::REFERENCE:
 //         std::cout << *node;
-//         unimplemented;
+//         UNIMPLEMENTED;
 //       case typed_value_t::TYPE:
 //         std::cout << *node;
-//         unimplemented;
+//         UNIMPLEMENTED;
 //       }
 //   }
 
@@ -980,7 +980,7 @@ struct MoreEqual : public LeftDispatch
 
 //   void default_action (const Node& node)
 //   {
-//     ast_not_reached (node);
+//     AST_NOT_REACHED (node);
 //   }
 
 //   void visit (const ast_indexed_port_call_expr_t& node)
@@ -1050,7 +1050,7 @@ struct MoreEqual : public LeftDispatch
 //       }
 //     else
 //       {
-//         unimplemented;
+//         UNIMPLEMENTED;
 //       }
 //   }
 
@@ -1186,9 +1186,9 @@ struct MoreEqual : public LeftDispatch
 //       }
 //       return;
 //       case Negate:
-//         unimplemented;
+//         UNIMPLEMENTED;
 //       }
-//     not_reached;
+//     NOT_REACHED;
 //   }
 
 //   void visit (const ast_implicit_dereference_expr_t& node)
@@ -1198,7 +1198,7 @@ struct MoreEqual : public LeftDispatch
 //     if (ptr == NULL)
 //       {
 //         std::cout << node;
-//         unimplemented;
+//         UNIMPLEMENTED;
 //       }
 //     typed_value_t tv = node.typed_value;
 //     exec.stack ().load (ptr, tv.type->Size ());
@@ -1286,7 +1286,7 @@ struct MoreEqual : public LeftDispatch
 
 //     void default_action (const Node& node)
 //     {
-//       ast_not_reached (node);
+//       AST_NOT_REACHED (node);
 //     }
 
 //     void visit (const ast_const_t& node)
@@ -1297,7 +1297,7 @@ struct MoreEqual : public LeftDispatch
 
 //     void visit (const ast_assign_statement_t& node)
 //     {
-//       unimplemented;
+//       UNIMPLEMENTED;
 //       // ast::Node* left = node.left ();
 //       // ast::Node* right = node.right ();
 //       // // Determine the size of the value being assigned.
@@ -1313,7 +1313,7 @@ struct MoreEqual : public LeftDispatch
 
 //     void visit (const ast_change_statement_t& node)
 //     {
-//       unimplemented;
+//       UNIMPLEMENTED;
 //       // ast::Node* expr = node.expr ();
 //       // ast::Node* body = node.body ();
 //       // // Evaluate the pointer to the heap link.
@@ -1322,7 +1322,7 @@ struct MoreEqual : public LeftDispatch
 //       // if (hl == NULL)
 //       //   {
 //       //     // Heap link is null.
-//       //     unimplemented;
+//       //     UNIMPLEMENTED;
 //       //   }
 //       // pthread_mutex_lock (&hl->mutex);
 //       // ++hl->change_count;
@@ -1357,7 +1357,7 @@ struct MoreEqual : public LeftDispatch
 
 //     void visit (const ast_expression_statement_t& node)
 //     {
-//       unimplemented;
+//       UNIMPLEMENTED;
 //       // ast::Node* child = node.child ();
 //       // // Determine the size of the value being generated.
 //       // size_t size = child->typed_value.type->Size ();
@@ -1369,7 +1369,7 @@ struct MoreEqual : public LeftDispatch
 
 //     void visit (const ast_if_statement_t& node)
 //     {
-//       unimplemented;
+//       UNIMPLEMENTED;
 //       // evaluate_expression (exec, memoryModel, node.condition ());
 //       // Bool::ValueType c;
 //       // exec.stack ().pop (c);
@@ -1393,7 +1393,7 @@ struct MoreEqual : public LeftDispatch
 
 //     void visit (const ast_while_statement_t& node)
 //     {
-//       unimplemented;
+//       UNIMPLEMENTED;
 //       // for (;;)
 //       //   {
 //       //     evaluate_expression (exec, memoryModel, node.condition ());
@@ -1431,7 +1431,7 @@ struct MoreEqual : public LeftDispatch
 
 //     void visit (const ast_add_assign_statement_t& node)
 //     {
-//       unimplemented;
+//       UNIMPLEMENTED;
 //       // // Determine the size of the value being assigned.
 //       // const type::Type* type = node.right ()->typed_value.type;
 //       // // Evaluate the address.
@@ -1467,7 +1467,7 @@ struct MoreEqual : public LeftDispatch
 
 //       //   void default_action (const type::Type& type)
 //       //   {
-//       //     unimplemented;
+//       //     UNIMPLEMENTED;
 //       //   }
 //       // };
 //       // visitor v (exec, ptr);
@@ -1476,7 +1476,7 @@ struct MoreEqual : public LeftDispatch
 
 //     void visit (const ast_subtract_assign_statement_t& node)
 //     {
-//       unimplemented;
+//       UNIMPLEMENTED;
 //       // // Determine the size of the value being assigned.
 //       // const type::Type* type = node.right ()->typed_value.type;
 //       // // Evaluate the address.
@@ -1505,7 +1505,7 @@ struct MoreEqual : public LeftDispatch
 
 //       //   void default_action (const type::Type& type)
 //       //   {
-//       //     unimplemented;
+//       //     UNIMPLEMENTED;
 //       //   }
 //       // };
 //       // visitor v (exec, ptr);
@@ -1528,11 +1528,11 @@ struct MoreEqual : public LeftDispatch
 
 //     void visit (const ast_return_statement_t& node)
 //     {
-//       unimplemented;
+//       UNIMPLEMENTED;
 //       // // Evaluate the expression.
 //       // evaluate_expression (exec, memoryModel, node.child ());
 //       // // Store in the return parameter.
-//       // unimplemented;
+//       // UNIMPLEMENTED;
 //       // // exec.stack ().move (node.return_symbol->offset (), SymbolCast<ParameterSymbol> (node.return_symbol)->value.type->Size ());
 //       // // retval = Return;
 //       // // return;
@@ -1540,7 +1540,7 @@ struct MoreEqual : public LeftDispatch
 
 //     void visit (const ast_increment_statement_t& node)
 //     {
-//       unimplemented;
+//       UNIMPLEMENTED;
 //       // evaluate_expression (exec, memoryModel, node.child ());
 //       // void* ptr = exec.stack ().pop_pointer ();
 
@@ -1552,7 +1552,7 @@ struct MoreEqual : public LeftDispatch
 
 //       //   void default_action (const type::Type& type)
 //       //   {
-//       //     not_reached;
+//       //     NOT_REACHED;
 //       //   }
 
 //       //   void visit (const NamedType& type)
@@ -1576,7 +1576,7 @@ struct MoreEqual : public LeftDispatch
 
 //     void visit (const ast_activate_statement_t& node)
 //     {
-//       unimplemented;
+//       UNIMPLEMENTED;
 //       // // Need to keep track of the largest base pointer so we can process the mutable section.
 //       // char* base_pointer = exec.stack ().base_pointer ();
 //       // if (base_pointer > exec.mutable_phase_base_pointer ())
@@ -1605,7 +1605,7 @@ struct MoreEqual : public LeftDispatch
 //           // Zero out the variable.
 //           for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
 //             {
-//               unimplemented;
+//               UNIMPLEMENTED;
 //               // Symbol* symbol = node.symbols[idx];
 //               //exec.stack ().clear (symbol->offset (), SymbolCast<VariableSymbol> (symbol)->value.type->Size ());
 //             }
@@ -1615,7 +1615,7 @@ struct MoreEqual : public LeftDispatch
 //           // Initialize the variables.
 //           for (size_t idx = 0, limit = node.symbols.size (); idx != limit; ++idx)
 //             {
-//               unimplemented;
+//               UNIMPLEMENTED;
 //               // // Evaluate the address.
 //               // Symbol* symbol = node.symbols[idx];
 //               // ptrdiff_t offset = symbol->offset ();
@@ -1815,7 +1815,7 @@ struct NewImpl : public Callable
   }
   virtual const type::Signature* signature () const
   {
-    not_reached;
+    NOT_REACHED;
   }
   virtual void check_types (ast::Node* args) const
   {
@@ -2230,7 +2230,7 @@ struct PrintlnImpl : public Callable
 
       void default_action (const type::Type& type)
       {
-        type_not_reached (type);
+        TYPE_NOT_REACHED (type);
       }
 
       void visit (const Bool& type)
@@ -2436,7 +2436,7 @@ struct ConvertToInt : public Operation
 
 //   void NotIntegral (const type::Type& type)
 //   {
-//     not_reached;
+//     NOT_REACHED;
 //   }
 
 //   void operator() (const Uint8& type)
@@ -2524,7 +2524,7 @@ MakeConvertToInt (const Operation* c, const type::Type* type)
       return new ConvertToInt<Uintptr> (c);
 
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -2543,7 +2543,7 @@ struct ConvertToUint : public Operation
   }
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   const Operation* const child;
 };
@@ -2577,7 +2577,7 @@ MakeConvertToUint (const Operation* c, const type::Type* type)
       return new ConvertToUint<Uintptr> (c);
 
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -2624,7 +2624,7 @@ struct MakeLiteralVisitor : public type::DefaultVisitor
 
   void default_action (const type::Type& type)
   {
-    type_not_reached (type);
+    TYPE_NOT_REACHED (type);
   }
 
   void visit (const Bool& type)
@@ -2788,9 +2788,9 @@ DynamicFunctionCall::execute (executor_base_t& exec) const
   switch (type->function_kind)
     {
     case type::Function::FUNCTION:
-      unimplemented;
+      UNIMPLEMENTED;
     case type::Function::PUSH_PORT:
-      unimplemented;
+      UNIMPLEMENTED;
     case type::Function::PULL_PORT:
     {
       func->execute (exec);
@@ -2828,7 +2828,7 @@ DynamicFunctionCall::execute (executor_base_t& exec) const
     break;
     }
 
-  not_reached;
+  NOT_REACHED;
 }
 
 OpReturn
@@ -2886,7 +2886,7 @@ struct AddAssign : public Operation
   }
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const left;
   Operation* const right;
@@ -2927,7 +2927,7 @@ Operation* make_add_assign (Operation* l, Operation* r, const type::Type* t)
     case kUintptr:
       return new AddAssign<Uintptr::ValueType> (l, r);
     default:
-      not_reached;
+      NOT_REACHED;
     }
 }
 
@@ -3049,7 +3049,7 @@ Change::execute (executor_base_t& exec) const
   if (hl == NULL)
     {
       // Heap link is null.
-      unimplemented;
+      UNIMPLEMENTED;
     }
   pthread_mutex_lock (&hl->mutex);
   ++hl->change_count;
@@ -3090,7 +3090,7 @@ struct Increment : public Operation
   }
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const child;
 };
@@ -3130,7 +3130,7 @@ Operation* make_increment (Operation* child, const type::Type* type)
     case kUintptr:
       return new Increment<Uintptr::ValueType> (child);
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -3259,7 +3259,7 @@ struct ConvertStringToSliceOfBytes : public Operation
 
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const child;
 };
@@ -3283,7 +3283,7 @@ struct ConvertSliceOfBytesToString : public Operation
 
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const child;
 };
@@ -3292,7 +3292,7 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
 {
   if (Identical (from->UnderlyingType (), to->UnderlyingType ()))
     {
-      unimplemented;
+      UNIMPLEMENTED;
     }
   else if (from->Level () == type::Type::UNNAMED &&
            to->Level () == type::Type::UNNAMED &&
@@ -3300,20 +3300,20 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
            to->underlying_kind () == kPointer &&
            Identical (from->pointer_base_type (), to->pointer_base_type ()))
     {
-      unimplemented;
+      UNIMPLEMENTED;
     }
   else if ((is_typed_integer (from) || is_typed_float (from)) &&
            (is_typed_integer (to) || is_typed_float (from)))
     {
-      unimplemented;
+      UNIMPLEMENTED;
     }
   else if (is_typed_complex (from) && is_typed_complex (to))
     {
-      unimplemented;
+      UNIMPLEMENTED;
     }
   else if (is_typed_integer (from) && is_typed_string (to))
     {
-      unimplemented;
+      UNIMPLEMENTED;
     }
   else if (is_slice_of_bytes (from) && is_typed_string (to))
     {
@@ -3321,7 +3321,7 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
     }
   else if (is_slice_of_runes (from) && is_typed_string (to))
     {
-      unimplemented;
+      UNIMPLEMENTED;
     }
   else if (is_typed_string (from) && is_slice_of_bytes (to))
     {
@@ -3329,12 +3329,12 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
     }
   else if (is_typed_string (from) && is_slice_of_runes (to))
     {
-      unimplemented;
+      UNIMPLEMENTED;
     }
   else
     {
       // Assignable.
-      unimplemented;
+      UNIMPLEMENTED;
     }
 }
 }
@@ -3350,7 +3350,7 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
 //       Instance* instance = pos->second;
 //       if (instance->is_top_level ())
 //         {
-//           unimplemented;
+//           UNIMPLEMENTED;
 //           //void* ptr = instance_record_get_ptr (instance_get_record (instance));
 //           //type_print_value (instance_type (instance), ptr);
 //           printf ("\n");

@@ -29,7 +29,7 @@ struct Visitor : public ast::DefaultVisitor
 
   void default_action (Node& node)
   {
-    ast_not_reached (node);
+    AST_NOT_REACHED (node);
   }
 
   void visit (SourceFile& node)
@@ -263,14 +263,14 @@ struct Visitor : public ast::DefaultVisitor
           break;
           case type::Method::REACTION:
           {
-            unimplemented;
+            UNIMPLEMENTED;
           }
           break;
           }
         return;
       }
 
-    not_reached;
+    NOT_REACHED;
   }
 
   void visit (ast_conversion_expr_t& node)

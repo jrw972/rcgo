@@ -1,10 +1,11 @@
-#ifndef rc_src_value_hpp
-#define rc_src_value_hpp
+#ifndef RC_SRC_VALUE_HPP
+#define RC_SRC_VALUE_HPP
 
 #include "types.hpp"
 #include "type.hpp"
 
-namespace semantic {
+namespace semantic
+{
 
 struct value_t
 {
@@ -345,4 +346,4 @@ void bit_xor (value_t& out, const type::Type* type, const value_t& left, const v
 
 }
 
-#endif // rc_src_value_hpp
+#endif // RC_SRC_VALUE_HPP

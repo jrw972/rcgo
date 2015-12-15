@@ -1,5 +1,5 @@
-#ifndef rc_src_memory_model_hpp
-#define rc_src_memory_model_hpp
+#ifndef RC_SRC_MEMORY_MODEL_HPP
+#define RC_SRC_MEMORY_MODEL_HPP
 
 #include "types.hpp"
 #include "util.hpp"
@@ -89,4 +89,4 @@ private:
 
 }
 
-#endif // rc_src_memory_model_hpp
+#endif // RC_SRC_MEMORY_MODEL_HPP

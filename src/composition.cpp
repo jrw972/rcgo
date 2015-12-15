@@ -473,15 +473,15 @@ struct Executor : public executor_base_t
   Executor () : executor_base_t (1024, NULL) { }
   virtual heap_t* heap () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   virtual void heap (heap_t* heap)
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   virtual void push ()
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
 };
 
@@ -517,7 +517,7 @@ Composer::elaborateBindings ()
 
             void default_action (const Node& node)
             {
-              not_reached;
+              NOT_REACHED;
             }
 
             void visit (const ast_if_statement_t& node)
@@ -754,7 +754,7 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
       }
     else
       {
-        not_reached;
+        NOT_REACHED;
       }
   }
 
@@ -775,13 +775,13 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
       }
     else
       {
-        not_reached;
+        NOT_REACHED;
       }
   }
 
   void default_action (const ast::Node& node)
   {
-    ast_not_reached (node);
+    AST_NOT_REACHED (node);
   }
 
   void visit (const ast_list_statement_t& node)
@@ -813,7 +813,7 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
       }
     else
       {
-        not_reached;
+        NOT_REACHED;
       }
     node.expr_list ()->Accept (*this);
   }

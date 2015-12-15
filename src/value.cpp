@@ -17,7 +17,7 @@ using namespace std::rel_ops;
 
 //   void default_action (const Type::Type& type)
 //   {
-//     type_not_reached (type);
+//     TYPE_NOT_REACHED (type);
 //   }
 
 //   template <typename T>
@@ -174,7 +174,7 @@ static void convert_numeric (value_t& value, Complex::ValueType x, const type::T
 
     void default_action (const type::Type& type)
     {
-      type_not_reached (type);
+      TYPE_NOT_REACHED (type);
     }
 
     void visit (const Uint8& type)
@@ -283,7 +283,7 @@ value_t::representable (const type::Type* from, const type::Type* to) const
     case kString:
       return to->underlying_kind () == kStringU;
     default:
-      not_reached;
+      NOT_REACHED;
     }
 
   // struct visitor : public type::DefaultVisitor
@@ -296,7 +296,7 @@ value_t::representable (const type::Type* from, const type::Type* to) const
 
   //   void default_action (const type::Type& type)
   //   {
-  //     type_not_reached (type);
+  //     TYPE_NOT_REACHED (type);
   //   }
 
   //   void visit (const type::Int& type)
@@ -360,7 +360,7 @@ value_t::convert (const type::Type* from, const type::Type* to)
 
     void default_action (const type::Type& type)
     {
-      type_not_reached (type);
+      TYPE_NOT_REACHED (type);
     }
 
     void visit (const type::Boolean& type)
@@ -491,7 +491,7 @@ value_t::convert (const type::Type* from, const type::Type* to)
           return;
         }
 
-      not_reached;
+      NOT_REACHED;
     }
 
     void visit (const type::Nil& type)
@@ -501,7 +501,7 @@ value_t::convert (const type::Type* from, const type::Type* to)
           value.pointer_value_ = NULL;
           return;
         }
-      not_reached;
+      NOT_REACHED;
     }
 
   } v (*this, to->UnderlyingType ());
@@ -526,7 +526,7 @@ value_t::print (std::ostream& out, const type::Type* type) const
 
         void default_action (const type::Type& type)
         {
-          type_not_reached(type);
+          TYPE_NOT_REACHED(type);
         }
 
         void visit (const type::Bool& type)
@@ -697,7 +697,7 @@ value_t::to_int (const type::Type* type) const
     case kUintptr:
       return uintptr_value_;
     default:
-      not_reached;
+      NOT_REACHED;
     }
 }
 
@@ -782,7 +782,7 @@ void equal (value_t& out, const type::Type* type, const value_t& left, const val
       out.boolean_value_ = left.pointer_value_ == right.pointer_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -867,7 +867,7 @@ void not_equal (value_t& out, const type::Type* type, const value_t& left, const
       out.boolean_value_ = left.pointer_value_ != right.pointer_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -931,7 +931,7 @@ void less_than (value_t& out, const type::Type* type, const value_t& left, const
       out.boolean_value_ = left.stringu_value_ < right.stringu_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -995,7 +995,7 @@ void less_equal (value_t& out, const type::Type* type, const value_t& left, cons
       out.boolean_value_ = left.stringu_value_ <= right.stringu_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -1059,7 +1059,7 @@ void more_than (value_t& out, const type::Type* type, const value_t& left, const
       out.boolean_value_ = left.stringu_value_ > right.stringu_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -1123,7 +1123,7 @@ void more_equal (value_t& out, const type::Type* type, const value_t& left, cons
       out.boolean_value_ = left.stringu_value_ >= right.stringu_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -1190,7 +1190,7 @@ void multiply (value_t& out, const type::Type* type, const value_t& left, const 
       out.uintptr_value_ = left.uintptr_value_ * right.uintptr_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -1257,7 +1257,7 @@ void divide (value_t& out, const type::Type* type, const value_t& left, const va
       out.uintptr_value_ = left.uintptr_value_ / right.uintptr_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -1306,7 +1306,7 @@ void modulus (value_t& out, const type::Type* type, const value_t& left, const v
       out.uintptr_value_ = left.uintptr_value_ % right.uintptr_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -1373,7 +1373,7 @@ void add (value_t& out, const type::Type* type, const value_t& left, const value
       out.uintptr_value_ = left.uintptr_value_ + right.uintptr_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -1440,7 +1440,7 @@ void subtract (value_t& out, const type::Type* type, const value_t& left, const 
       out.uintptr_value_ = left.uintptr_value_ - right.uintptr_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -1489,7 +1489,7 @@ void bit_and (value_t& out, const type::Type* type, const value_t& left, const v
       out.uintptr_value_ = left.uintptr_value_ & right.uintptr_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -1538,7 +1538,7 @@ void bit_and_not (value_t& out, const type::Type* type, const value_t& left, con
       out.uintptr_value_ = left.uintptr_value_ & ~right.uintptr_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -1587,7 +1587,7 @@ void bit_xor (value_t& out, const type::Type* type, const value_t& left, const v
       out.uintptr_value_ = left.uintptr_value_ ^ right.uintptr_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -1636,7 +1636,7 @@ void bit_or (value_t& out, const type::Type* type, const value_t& left, const va
       out.uintptr_value_ = left.uintptr_value_ | right.uintptr_value_;
       break;
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 

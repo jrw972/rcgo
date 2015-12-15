@@ -162,7 +162,7 @@ struct Visitor : public ast::DefaultVisitor
 {
   void default_action (Node& node)
   {
-    ast_not_reached (node);
+    AST_NOT_REACHED (node);
   }
 
   void visit (SourceFile& node)

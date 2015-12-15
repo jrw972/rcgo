@@ -76,7 +76,7 @@ void Getter::call (runtime::executor_base_t& exec) const
 
 void Getter::call (runtime::executor_base_t& exec, const ast_call_expr_t& node, component_t* thisPtr) const
 {
-  unimplemented;
+  UNIMPLEMENTED;
   // // Create space for the return.
   // exec.stack ().reserve (this->returnSize);
 

@@ -1,5 +1,5 @@
-#ifndef rc_src_callable_hpp
-#define rc_src_callable_hpp
+#ifndef RC_SRC_CALLABLE_HPP
+#define RC_SRC_CALLABLE_HPP
 
 #include "types.hpp"
 #include "type.hpp"
@@ -221,4 +221,4 @@ struct Getter : public Callable
 
 }
 
-#endif // rc_src_callable_hpp
+#endif // RC_SRC_CALLABLE_HPP

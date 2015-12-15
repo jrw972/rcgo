@@ -1,5 +1,5 @@
-#ifndef rc_src_instance_scheduler_hpp
-#define rc_src_instance_scheduler_hpp
+#ifndef RC_SRC_INSTANCE_SCHEDULER_HPP
+#define RC_SRC_INSTANCE_SCHEDULER_HPP
 
 #include <pthread.h>
 
@@ -130,4 +130,4 @@ private:
 
 }
 
-#endif // rc_src_instance_scheduler_hpp
+#endif // RC_SRC_INSTANCE_SCHEDULER_HPP

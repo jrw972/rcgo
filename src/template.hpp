@@ -1,5 +1,5 @@
-#ifndef rc_src_template_hpp
-#define rc_src_template_hpp
+#ifndef RC_SRC_TEMPLATE_HPP
+#define RC_SRC_TEMPLATE_HPP
 
 #include "symbol.hpp"
 
@@ -40,4 +40,4 @@ private:
 
 }
 
-#endif // rc_src_template_hpp
+#endif // RC_SRC_TEMPLATE_HPP

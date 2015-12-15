@@ -234,13 +234,13 @@ Sendto::call (runtime::executor_base_t& exec) const
   int r = getaddrinfo (host2.c_str (), port2.str ().c_str (), &hints, &info);
   if (r != 0)
     {
-      unimplemented;
+      UNIMPLEMENTED;
     }
 
   ssize_t s = sendto ((*fd)->fd (), buf->ptr, buf->length, 0, info->ai_addr, info->ai_addrlen);
   if (s != static_cast<ssize_t> (buf->length))
     {
-      unimplemented;
+      UNIMPLEMENTED;
     }
 
   freeaddrinfo (info);

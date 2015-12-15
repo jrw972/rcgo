@@ -1,5 +1,5 @@
-#ifndef rc_src_process_functions_and_methods_hpp
-#define rc_src_process_functions_and_methods_hpp
+#ifndef RC_SRC_PROCESS_FUNCTIONS_AND_METHODS_HPP
+#define RC_SRC_PROCESS_FUNCTIONS_AND_METHODS_HPP
 
 #include "types.hpp"
 
@@ -8,4 +8,4 @@ namespace semantic
 void process_functions_and_methods (ast::Node* root);
 }
 
-#endif // rc_src_process_functions_and_methods_hpp
+#endif // RC_SRC_PROCESS_FUNCTIONS_AND_METHODS_HPP

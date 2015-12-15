@@ -113,7 +113,7 @@ namespace semantic
 {
 using namespace ast;
 using namespace type;
-  using namespace decl;
+using namespace decl;
 
 namespace
 {
@@ -130,7 +130,7 @@ struct MutabilityVisitor : public ast::DefaultVisitor
 {
   void default_action (Node& node)
   {
-    ast_not_reached (node);
+    AST_NOT_REACHED (node);
   }
 
   void visit (ast_call_expr_t& node)
@@ -186,7 +186,7 @@ struct MutabilityVisitor : public ast::DefaultVisitor
 
       void defaultAction (const Symbol& symbol)
       {
-        not_reached;
+        NOT_REACHED;
       }
 
       void visit (const BuiltinFunction& symbol)
@@ -238,7 +238,7 @@ struct MutabilityVisitor : public ast::DefaultVisitor
 
       void visit (const HiddenSymbol& symbol)
       {
-        unimplemented;
+        UNIMPLEMENTED;
       }
     };
     visitor v (node);
@@ -477,7 +477,7 @@ struct MutabilityVisitor : public ast::DefaultVisitor
         fix (node);
         return;
       }
-    not_reached;
+    NOT_REACHED;
   }
 
   void visit (ast_slice_expr_t& node)
@@ -497,7 +497,7 @@ struct MutabilityVisitor : public ast::DefaultVisitor
         fix (node);
         return;
       }
-    not_reached;
+    NOT_REACHED;
   }
 
   void visit (ast_unary_arithmetic_expr_t& node)

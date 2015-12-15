@@ -1,5 +1,5 @@
-#ifndef rc_src_partitioned_scheduler_hpp
-#define rc_src_partitioned_scheduler_hpp
+#ifndef RC_SRC_PARTITIONED_SCHEDULER_HPP
+#define RC_SRC_PARTITIONED_SCHEDULER_HPP
 
 #include <pthread.h>
 #include <poll.h>
@@ -581,4 +581,4 @@ private:
 
 }
 
-#endif // rc_src_partitioned_scheduler_hpp
+#endif // RC_SRC_PARTITIONED_SCHEDULER_HPP

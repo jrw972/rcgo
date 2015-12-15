@@ -1,5 +1,5 @@
-#ifndef rc_src_type_hpp
-#define rc_src_type_hpp
+#ifndef RC_SRC_TYPE_HPP
+#define RC_SRC_TYPE_HPP
 
 #include "types.hpp"
 
@@ -10,9 +10,9 @@
 
 #include "util.hpp"
 
-#define type_not_reached(type) do { std::cerr << '\n' << type << std::endl; not_reached; } while (0);
+#define TYPE_NOT_REACHED(type) do { std::cerr << '\n' << type << std::endl; NOT_REACHED; } while (0);
 
-#define StringReturner(name, string) struct name { const char* operator() () const { return string; } }
+#define STRING_RETURNER(name, string) struct name { const char* operator() () const { return string; } }
 
 namespace type
 {
@@ -308,7 +308,7 @@ public:
   }
   size_t Alignment () const
   {
-    not_reached;
+    NOT_REACHED;
   }
   size_t Size () const
   {
@@ -374,40 +374,40 @@ private:
   Scalar<T, S, Numeric, FloatingPoint, Integer, k> () { }
 };
 
-StringReturner(BoolString, "<bool>");
+STRING_RETURNER(BoolString, "<bool>");
 typedef Scalar<bool, BoolString, false, false, false, kBool> Bool;
 
-StringReturner(Uint8String, "<uint8>");
+STRING_RETURNER(Uint8String, "<uint8>");
 typedef Scalar<uint8_t, Uint8String, true, false, true, kUint8> Uint8;
 
-StringReturner(Uint16String, "<uint16>");
+STRING_RETURNER(Uint16String, "<uint16>");
 typedef Scalar<uint16_t, Uint16String, true, false, true, kUint16> Uint16;
 
-StringReturner(Uint32String, "<uint32>");
+STRING_RETURNER(Uint32String, "<uint32>");
 typedef Scalar<uint32_t, Uint32String, true, false, true, kUint32> Uint32;
 
-StringReturner(Uint64String, "<uint64>");
+STRING_RETURNER(Uint64String, "<uint64>");
 typedef Scalar<uint64_t, Uint64String, true, false, true, kUint64> Uint64;
 
-StringReturner(Int8String, "<int8>");
+STRING_RETURNER(Int8String, "<int8>");
 typedef Scalar<int8_t, Int8String, true, false, true, kInt8> Int8;
 
-StringReturner(Int16String, "<int16>");
+STRING_RETURNER(Int16String, "<int16>");
 typedef Scalar<int16_t, Int16String, true, false, true, kInt16> Int16;
 
-StringReturner(Int32String, "<int32>");
+STRING_RETURNER(Int32String, "<int32>");
 typedef Scalar<int32_t, Int32String, true, false, true, kInt32> Int32;
 
-StringReturner(Int64String, "<int64>");
+STRING_RETURNER(Int64String, "<int64>");
 typedef Scalar<int64_t, Int64String, true, false, true, kInt64> Int64;
 
-StringReturner(Float32String, "<float32>");
+STRING_RETURNER(Float32String, "<float32>");
 typedef Scalar<float, Float32String, true, true, false, kFloat32> Float32;
 
-StringReturner(Float64String, "<float64>");
+STRING_RETURNER(Float64String, "<float64>");
 typedef Scalar<double, Float64String, true, true, false, kFloat64> Float64;
 
-StringReturner(Complex64String, "<complex64>");
+STRING_RETURNER(Complex64String, "<complex64>");
 struct C64
 {
   float real;
@@ -445,7 +445,7 @@ struct C64
 };
 typedef Scalar<C64, Complex64String, true, false, false, kComplex64> Complex64;
 
-StringReturner(Complex128String, "<complex128>");
+STRING_RETURNER(Complex128String, "<complex128>");
 struct C128
 {
   double real;
@@ -483,16 +483,16 @@ struct C128
 };
 typedef Scalar<C128, Complex128String, true, false, false, kComplex128> Complex128;
 
-StringReturner(UintString, "<uint>");
+STRING_RETURNER(UintString, "<uint>");
 typedef Scalar<UintValueType, UintString, true, false, true, kUint> Uint;
 
-StringReturner(IntString, "<int>");
+STRING_RETURNER(IntString, "<int>");
 typedef Scalar<IntValueType, IntString, true, false, true, kInt> Int;
 
-StringReturner(UintptrString, "<uintptr>");
+STRING_RETURNER(UintptrString, "<uintptr>");
 typedef Scalar<ptrdiff_t, UintptrString, true, false, true, kUintptr> Uintptr;
 
-StringReturner(StringUString, "<string>");
+STRING_RETURNER(StringUString, "<string>");
 struct StringRep
 {
   void* ptr;
@@ -667,11 +667,11 @@ struct Heap : public Type, public BaseType
   }
   size_t Alignment () const
   {
-    not_reached;
+    NOT_REACHED;
   }
   size_t Size () const
   {
-    not_reached;
+    NOT_REACHED;
   }
   virtual Kind kind () const
   {
@@ -699,7 +699,7 @@ public:
   }
   std::string ToString () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   size_t Alignment () const
   {
@@ -740,7 +740,7 @@ struct Component : public Struct
   void Accept (Visitor& visitor) const;
   std::string ToString () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
 };
 
@@ -755,7 +755,7 @@ public:
   std::string ToString () const;
   size_t Alignment () const
   {
-    not_reached;
+    NOT_REACHED;
   }
   size_t Size () const
   {
@@ -898,11 +898,11 @@ class Untyped : public Type
 public:
   size_t Alignment () const
   {
-    not_reached;
+    NOT_REACHED;
   }
   size_t Size () const
   {
-    not_reached;
+    NOT_REACHED;
   }
   virtual TypeLevel Level () const
   {
@@ -1121,11 +1121,11 @@ public:
   }
   virtual size_t Alignment () const
   {
-    not_reached;
+    NOT_REACHED;
   }
   virtual size_t Size () const
   {
-    not_reached;
+    NOT_REACHED;
   }
   virtual Kind kind () const
   {
@@ -2161,7 +2161,7 @@ struct visitor2 : public DefaultVisitor
 
   void default_action (const Type& type)
   {
-    type_not_reached (type);
+    TYPE_NOT_REACHED (type);
   }
 
   void visit (const Bool& type2)
@@ -2288,7 +2288,7 @@ struct visitor1 : public DefaultVisitor
 
   void default_action (const Type& type)
   {
-    type_not_reached (type);
+    TYPE_NOT_REACHED (type);
   }
 
   void visit (const Bool& type)
@@ -2418,13 +2418,13 @@ type_select_initializer (const Type* type, const std::string& identifier);
 decl::Getter*
 type_select_getter (const Type* type, const std::string& identifier);
 
-  decl::reaction_t*
+decl::reaction_t*
 type_select_reaction (const Type* type, const std::string& identifier);
 
 decl::Action*
 type_select_action (const Type* type, const std::string& identifier);
 
-  decl::bind_t*
+decl::bind_t*
 type_select_bind (const Type* type, const std::string& identifier);
 
 // Return type of selected field, method, or reaction.
@@ -2573,69 +2573,69 @@ type_strip_cast (const Type* type)
 
 inline C64 operator* (const C64&, const C64&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 inline C64 operator/ (const C64&, const C64&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 
 
 inline C128 operator* (const C128&, const C128&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 inline C128 operator/ (const C128&, const C128&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 
 inline Complex::ValueType operator* (const Complex::ValueType&, const Complex::ValueType&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 inline Complex::ValueType operator/ (const Complex::ValueType&, const Complex::ValueType&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 
 inline C64 operator+ (const C64&, const C64&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 inline C64 operator- (const C64&, const C64&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 inline C64 operator- (const C64&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 
 inline C128 operator+ (const C128&, const C128&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 inline C128 operator- (const C128&, const C128&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 inline C128 operator- (const C128&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 
 inline Complex::ValueType operator+ (const Complex::ValueType&, const Complex::ValueType&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 inline Complex::ValueType operator- (const Complex::ValueType&, const Complex::ValueType&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 inline Complex::ValueType operator- (const Complex::ValueType&)
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 
 extern NamedType NamedBool;
@@ -2672,4 +2672,4 @@ inline std::ostream& operator<< (std::ostream& out, const StringRep& s)
 }
 }
 
-#endif // rc_src_type_hpp
+#endif // RC_SRC_TYPE_HPP

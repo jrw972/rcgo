@@ -1,5 +1,5 @@
-#ifndef rc_src_debug_hpp
-#define rc_src_debug_hpp
+#ifndef RC_SRC_DEBUG_HPP
+#define RC_SRC_DEBUG_HPP
 
 #include <stdlib.h>
 #include <assert.h>
@@ -7,10 +7,10 @@
 
 #include <iostream>
 
-#define unimplemented do { fprintf (stderr, "%s:%d: unimplemented\n", __FILE__, __LINE__); abort (); } while (0);
+#define UNIMPLEMENTED do { fprintf (stderr, "%s:%d: UNIMPLEMENTED\n", __FILE__, __LINE__); abort (); } while (0);
 
-#define bug(x) do { fprintf (stderr, "%s:%d: BUG %s\n", __FILE__, __LINE__, x); abort (); } while (0);
+#define BUG(x) do { fprintf (stderr, "%s:%d: BUG %s\n", __FILE__, __LINE__, x); abort (); } while (0);
 
-#define not_reached bug("code designated unreachable has been reached")
+#define NOT_REACHED BUG("code designated unreachable has been reached")
 
-#endif // rc_src_debug_hpp
+#endif // RC_SRC_DEBUG_HPP

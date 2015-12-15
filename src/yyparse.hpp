@@ -1,5 +1,5 @@
-#ifndef rc_src_yyparse_hpp
-#define rc_src_yyparse_hpp
+#ifndef RC_SRC_YYPARSE_HPP
+#define RC_SRC_YYPARSE_HPP
 
 #include "types.hpp"
 
@@ -22,4 +22,4 @@ extern ast::Node* root;
 int yyparse (void);
 void yyerror (char const *);
 
-#endif // rc_src_yyparse_hpp
+#endif // RC_SRC_YYPARSE_HPP

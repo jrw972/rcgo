@@ -628,7 +628,7 @@ static void process_shift (ast_binary_expr_t& node)
           node.value.integer_value_ = T () (node.left ()->value.integer_value_, node.right ()->value.uint_value_);
           break;
         default:
-          type_not_reached (*node.type);
+          TYPE_NOT_REACHED (*node.type);
         }
     }
 }
@@ -774,7 +774,7 @@ struct Visitor : public ast::DefaultVisitor
 
   void default_action (Node& node)
   {
-    ast_not_reached (node);
+    AST_NOT_REACHED (node);
   }
 
   void visit (ast_call_expr_t& node)
@@ -816,7 +816,7 @@ struct Visitor : public ast::DefaultVisitor
       }
     else
       {
-        not_reached;
+        NOT_REACHED;
       }
 
     if (node.callable != NULL)
@@ -853,15 +853,15 @@ struct Visitor : public ast::DefaultVisitor
       {
         if (x.representable (from, to))
           {
-            unimplemented;
+            UNIMPLEMENTED;
           }
         else if (is_typed_float (from) && is_typed_float (to))
           {
-            unimplemented;
+            UNIMPLEMENTED;
           }
         else if (is_typed_integer (from) && is_any_string (to))
           {
-            unimplemented;
+            UNIMPLEMENTED;
             node.reset_mutability = true;
           }
         else if (is_any_string (from) && is_slice_of_bytes (to))
@@ -962,7 +962,7 @@ struct Visitor : public ast::DefaultVisitor
 
       void defaultAction (const Symbol& symbol)
       {
-        not_reached;
+        NOT_REACHED;
       }
 
       void visit (const BuiltinFunction& symbol)
@@ -1050,7 +1050,7 @@ struct Visitor : public ast::DefaultVisitor
                 node.value.boolean_value_ = !node.child ()->value.boolean_value_;
                 break;
               default:
-                not_reached;
+                NOT_REACHED;
               }
           }
       }
@@ -1129,7 +1129,7 @@ struct Visitor : public ast::DefaultVisitor
                 node.value.complex_value_ = -node.child ()->value.complex_value_;
                 break;
               default:
-                not_reached;
+                NOT_REACHED;
               }
           }
       }
@@ -1828,7 +1828,7 @@ struct Visitor : public ast::DefaultVisitor
     node.slice_type = type_cast<Slice> (base_type->UnderlyingType ());
     if (node.slice_type != NULL)
       {
-        unimplemented;
+        UNIMPLEMENTED;
         return;
       }
 
@@ -1927,17 +1927,17 @@ struct Visitor : public ast::DefaultVisitor
              ++pos)
           {
             Node* element = *pos;
-            unimplemented;
+            UNIMPLEMENTED;
           }
       }
       break;
 
       case kArray:
-        unimplemented;
+        UNIMPLEMENTED;
         break;
 
       case kSlice:
-        unimplemented;
+        UNIMPLEMENTED;
         break;
 
       default:

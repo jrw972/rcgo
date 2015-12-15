@@ -52,7 +52,7 @@ instantiate_contained_instances (const type::Type * type,
 
     void default_action (const type::Type& type)
     {
-      type_not_reached (type);
+      TYPE_NOT_REACHED (type);
     }
 
     void visit (const NamedType& type)

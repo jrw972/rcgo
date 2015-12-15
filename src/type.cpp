@@ -19,19 +19,19 @@ operator<< (std::ostream& o, const Type& type)
 
 bool Type::IsString () const
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 bool Type::IsComplex () const
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 bool Type::IsSliceOfBytes () const
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 bool Type::IsSliceOfRunes () const
 {
-  unimplemented;
+  UNIMPLEMENTED;
 }
 
 const Pointer*
@@ -706,7 +706,7 @@ struct IdenticalImpl
 
   void operator() (const Array& type1, const Array& type2)
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
 
   void operator() (const Slice& type1, const Slice& type2)
@@ -716,27 +716,27 @@ struct IdenticalImpl
 
   void operator() (const Struct& type1, const Struct& type2)
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
 
   void operator() (const Pointer& type1, const Pointer& type2)
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
 
   void operator() (const Function& type1, const Function& type2)
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
 
   // TODO:  Interfaces
   // void operator() (const Function& type1, const Function& type2) {
-  //   unimplemented;
+  //   UNIMPLEMENTED;
   // }
 
   // TODO:  Maps
   // void operator() (const Function& type1, const Function& type2) {
-  //   unimplemented;
+  //   UNIMPLEMENTED;
   // }
 
   template <typename T1, typename T2>
@@ -843,7 +843,7 @@ type_contains_pointer (const Type* type)
 
     void default_action (const Type& type)
     {
-      type_not_reached (type);
+      TYPE_NOT_REACHED (type);
     }
 
     void visit (const NamedType& type)

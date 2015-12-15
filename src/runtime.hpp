@@ -1,5 +1,5 @@
-#ifndef rc_src_runtime_hpp
-#define rc_src_runtime_hpp
+#ifndef RC_SRC_RUNTIME_HPP
+#define RC_SRC_RUNTIME_HPP
 
 #include "types.hpp"
 #include "template.hpp"
@@ -131,7 +131,7 @@ struct IndexSlice : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   util::Location const location;
   const Operation* const base;
@@ -145,7 +145,7 @@ struct SliceArray : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   util::Location const location;
   Operation* const base;
@@ -180,7 +180,7 @@ make_literal (T v)
   return new Literal<T> (v);
 }
 
-  Operation* make_literal (const type::Type* type, const semantic::value_t& value);
+Operation* make_literal (const type::Type* type, const semantic::value_t& value);
 
 struct LogicOr : public Operation
 {
@@ -188,7 +188,7 @@ struct LogicOr : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   const Operation* const left;
   const Operation* const right;
@@ -200,7 +200,7 @@ struct LogicAnd : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   const Operation* const left;
   const Operation* const right;
@@ -244,12 +244,12 @@ struct LogicAnd : public Operation
 
 //   void NotArithmetic (const type::Type& type)
 //   {
-//     type_not_reached (type);
+//     TYPE_NOT_REACHED (type);
 //   }
 
 //   void NotIntegral (const type::Type& t)
 //   {
-//     type_not_reached (t);
+//     TYPE_NOT_REACHED (t);
 //   }
 // };
 
@@ -267,7 +267,7 @@ struct ListOperation : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   typedef std::vector<Operation*> ListType;
   ListType list;
@@ -279,7 +279,7 @@ struct FunctionCall : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   const decl::Callable* const callable;
   Operation* const arguments;
@@ -291,7 +291,7 @@ struct MethodCall : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   const decl::Callable* const callable;
   Operation* const receiver;
@@ -304,7 +304,7 @@ struct DynamicFunctionCall : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   const type::Function* type;
   Operation* const func;
@@ -317,7 +317,7 @@ struct Instance : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   decl::InstanceSymbol* instance;
 };
@@ -328,7 +328,7 @@ struct SetRestoreCurrentInstance : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const child;
   ptrdiff_t const receiver_offset;
@@ -340,7 +340,7 @@ struct Clear : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   ptrdiff_t const offset;
   size_t const size;
@@ -356,7 +356,7 @@ struct Assign : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const left;
   Operation* const right;
@@ -396,7 +396,7 @@ struct Return : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const child;
   ptrdiff_t const return_offset;
@@ -409,7 +409,7 @@ struct If : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const condition;
   Operation* const true_branch;
@@ -422,7 +422,7 @@ struct While : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const condition;
   Operation* const body;
@@ -434,7 +434,7 @@ struct ForIota : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   ptrdiff_t const offset;
   type::Int::ValueType const limit;
@@ -455,7 +455,7 @@ struct Unary : public Operation
   }
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const child;
 };
@@ -472,7 +472,7 @@ Operation* make_unary (const type::Type* type, Operation* child)
 
     void default_action (const type::Type& type)
     {
-      type_not_reached (type);
+      TYPE_NOT_REACHED (type);
     }
 
     void visit (const type::Bool& type)
@@ -502,7 +502,7 @@ struct Binary : public Operation
   }
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const left;
   Operation* const right;
@@ -525,7 +525,7 @@ struct Shift : public Operation
   }
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const left;
   Operation* const right;
@@ -572,7 +572,7 @@ Operation* make_binary_arithmetic (const type::Type* type, Operation* left, Oper
       return new Binary<type::Uintptr::ValueType, T> (left, right);
 
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -605,7 +605,7 @@ Operation* make_binary_integral (const type::Type* type, Operation* left, Operat
       return new Binary<type::Uintptr::ValueType, T> (left, right);
 
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -638,7 +638,7 @@ Operation* make_shift (const type::Type* type, Operation* left, Operation* right
       return new Shift<type::Uintptr::ValueType, T> (left, right);
 
     default:
-      type_not_reached (*type);
+      TYPE_NOT_REACHED (*type);
     }
 }
 
@@ -648,7 +648,7 @@ struct Change : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const root;
   ptrdiff_t const root_offset;
@@ -663,7 +663,7 @@ struct Activate : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const port_calls;
   Operation* const body;
@@ -675,7 +675,7 @@ struct PushPortCall : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   ptrdiff_t const receiver_offset;
   ptrdiff_t const port_offset;
@@ -688,7 +688,7 @@ struct IndexedPushPortCall : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   ptrdiff_t const receiver_offset;
   ptrdiff_t const port_offset;
@@ -703,7 +703,7 @@ struct Push : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   Operation* const body;
 };
@@ -716,11 +716,11 @@ struct Noop : public Operation
   }
   virtual void dump () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
 };
 
 Operation* make_conversion (Operation* c, const type::Type* from, const type::Type* to);
 }
 
-#endif // rc_src_runtime_hpp
+#endif // RC_SRC_RUNTIME_HPP

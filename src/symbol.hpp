@@ -1,5 +1,5 @@
-#ifndef rc_src_symbol_hpp
-#define rc_src_symbol_hpp
+#ifndef RC_SRC_SYMBOL_HPP
+#define RC_SRC_SYMBOL_HPP
 
 #include "types.hpp"
 #include "value.hpp"
@@ -27,7 +27,7 @@ struct Symbol
   virtual void accept (ConstSymbolVisitor& visitor) const = 0;
   virtual bool defined () const
   {
-    not_reached;
+    NOT_REACHED;
   }
   void offset (ptrdiff_t o)
   {
@@ -124,7 +124,7 @@ struct ParameterSymbol : public Symbol
       case OrdinaryDuplicate:
         break;
       default:
-        not_reached;
+        NOT_REACHED;
       }
     s->dereference_mutability = dereferenceMutability;
     s->original_ = this;
@@ -239,6 +239,6 @@ operator<< (std::ostream& out, const Symbol& s);
 
 }
 
-#define symbol_not_reached(s) do { std::cerr << s << '\n'; not_reached; } while (0);
+#define SYMBOL_NOT_REACHED(s) do { std::cerr << s << '\n'; NOT_REACHED; } while (0);
 
-#endif // rc_src_symbol_hpp
+#endif // RC_SRC_SYMBOL_HPP

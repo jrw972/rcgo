@@ -1,5 +1,5 @@
-#ifndef rc_src_symbol_visitor_hpp
-#define rc_src_symbol_visitor_hpp
+#ifndef RC_SRC_SYMBOL_VISITOR_HPP
+#define RC_SRC_SYMBOL_VISITOR_HPP
 
 #include "symbol.hpp"
 #include "builtin_function.hpp"
@@ -129,4 +129,4 @@ const T* SymbolCast (const Symbol* symbol)
 
 }
 
-#endif // rc_src_symbol_visitor_hpp
+#endif // RC_SRC_SYMBOL_VISITOR_HPP

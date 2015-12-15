@@ -1,5 +1,5 @@
-#ifndef rc_src_check_mutability_hpp
-#define rc_src_check_mutability_hpp
+#ifndef RC_SRC_CHECK_MUTABILITY_HPP
+#define RC_SRC_CHECK_MUTABILITY_HPP
 
 #include "types.hpp"
 
@@ -9,4 +9,4 @@ void check_mutability_arguments (ast::Node* node, const type::Signature* signatu
 void check_mutability (ast::Node* root);
 }
 
-#endif // rc_src_check_mutability_hpp
+#endif // RC_SRC_CHECK_MUTABILITY_HPP

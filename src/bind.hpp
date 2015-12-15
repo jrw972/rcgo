@@ -1,5 +1,5 @@
-#ifndef rc_src_bind_hpp
-#define rc_src_bind_hpp
+#ifndef RC_SRC_BIND_HPP
+#define RC_SRC_BIND_HPP
 
 #include "memory_model.hpp"
 
@@ -31,4 +31,4 @@ public:
 
 }
 
-#endif // rc_src_bind_hpp
+#endif // RC_SRC_BIND_HPP

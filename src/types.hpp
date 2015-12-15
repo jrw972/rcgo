@@ -1,5 +1,5 @@
-#ifndef rc_src_types_hpp
-#define rc_src_types_hpp
+#ifndef RC_SRC_TYPES_HPP
+#define RC_SRC_TYPES_HPP
 
 #include <stddef.h>
 #include <stdint.h>
@@ -80,7 +80,7 @@ class scheduler_t;
 
 namespace semantic
 {
-  class value_t;
+class value_t;
 }
 
 namespace runtime
@@ -129,7 +129,7 @@ inline const char* unary_arithmetic_symbol (UnaryArithmetic ua)
       return "-";
     }
 
-  not_reached;
+  NOT_REACHED;
 }
 
 enum BinaryArithmetic
@@ -207,7 +207,7 @@ inline const char* binary_arithmetic_symbol (BinaryArithmetic ba)
       return "&&";
     }
 
-  not_reached;
+  NOT_REACHED;
 }
 
-#endif // rc_src_types_hpp
+#endif // RC_SRC_TYPES_HPP

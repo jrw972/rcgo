@@ -18,7 +18,7 @@ instance_scheduler_t::lock (const composition::InstanceSet& set)
        pos != limit;
        ++pos)
     {
-      unimplemented;
+      UNIMPLEMENTED;
       //instance_info_t* record = info_map_[pos->first];
       // switch (pos->second)
       //   {
@@ -39,7 +39,7 @@ instance_scheduler_t::unlock (const composition::InstanceSet& set)
        pos != limit;
        ++pos)
     {
-      unimplemented;
+      UNIMPLEMENTED;
       //instance_info_t* record = info_map_[pos->first];
       // switch (pos->second)
       //   {
@@ -141,7 +141,7 @@ instance_scheduler_t::instance_executor_t::run_i ()
       /* printf ("END schedule after pop\n"); */
 
       // Try all the actions.
-      unimplemented;
+      UNIMPLEMENTED;
       // for (instance_t::InstanceSetsType::const_iterator pos = record->instance->instance_sets.begin (),
       //        limit = record->instance->instance_sets.end ();
       //      pos != limit;
@@ -197,7 +197,7 @@ instance_scheduler_t::run (composition::Composer& instance_table,
                            size_t stack_size,
                            size_t thread_count)
 {
-  unimplemented;
+  UNIMPLEMENTED;
   // // Set up data structures.
   // for (Composer::InstancesType::const_iterator pos = instance_table.instances.begin (),
   //        limit = instance_table.instances.end ();

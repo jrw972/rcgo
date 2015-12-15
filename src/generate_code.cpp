@@ -15,13 +15,13 @@ using namespace ast;
 using namespace runtime;
 using namespace type;
 using namespace semantic;
-  using namespace decl;
+using namespace decl;
 
 struct CodeGenVisitor : public ast::DefaultVisitor
 {
   void default_action (Node& node)
   {
-    ast_not_reached (node);
+    AST_NOT_REACHED (node);
   }
 
   void visit (SourceFile& node)
@@ -335,7 +335,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
                       }
                     else
                       {
-                        unimplemented;
+                        UNIMPLEMENTED;
                       }
                   }
               }
@@ -350,7 +350,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
                       }
                     else
                       {
-                        unimplemented;
+                        UNIMPLEMENTED;
                       }
                   }
                 else
@@ -362,14 +362,14 @@ struct CodeGenVisitor : public ast::DefaultVisitor
                       }
                     else
                       {
-                        unimplemented;
+                        UNIMPLEMENTED;
                       }
                   }
               }
           }
         else
           {
-            not_reached;
+            NOT_REACHED;
           }
       }
     else
@@ -387,11 +387,11 @@ struct CodeGenVisitor : public ast::DefaultVisitor
           }
         else if (node.method_type)
           {
-            unimplemented;
+            UNIMPLEMENTED;
           }
         else
           {
-            not_reached;
+            NOT_REACHED;
           }
       }
   }
@@ -445,7 +445,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
       Visitor (ast_identifier_expr_t& n) : node (n), op (NULL) { }
       void defaultAction (const Symbol& s)
       {
-        symbol_not_reached (s);
+        SYMBOL_NOT_REACHED (s);
       }
 
       void visit (const ParameterSymbol& s)
@@ -498,7 +498,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
               }
             else
               {
-                unimplemented;
+                UNIMPLEMENTED;
               }
           }
         else
@@ -509,7 +509,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
               }
             else
               {
-                unimplemented;
+                UNIMPLEMENTED;
               }
           }
       }
@@ -543,7 +543,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
           }
         else
           {
-            unimplemented;
+            UNIMPLEMENTED;
           }
 
         return;
@@ -565,13 +565,13 @@ struct CodeGenVisitor : public ast::DefaultVisitor
           }
         else
           {
-            unimplemented;
+            UNIMPLEMENTED;
           }
 
         return;
       }
 
-    not_reached;
+    NOT_REACHED;
   }
 
   void visit (ast_slice_expr_t& node)
@@ -601,18 +601,18 @@ struct CodeGenVisitor : public ast::DefaultVisitor
           }
         else
           {
-            unimplemented;
+            UNIMPLEMENTED;
             return;
           }
       }
 
     if (node.slice_type != NULL)
       {
-        unimplemented;
+        UNIMPLEMENTED;
         return;
       }
 
-    not_reached;
+    NOT_REACHED;
   }
 
   void visit (ast_unary_arithmetic_expr_t& node)

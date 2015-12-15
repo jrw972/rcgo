@@ -1,5 +1,5 @@
-#ifndef rc_src_compute_receiver_access_hpp
-#define rc_src_compute_receiver_access_hpp
+#ifndef RC_SRC_COMPUTE_RECEIVER_ACCESS_HPP
+#define RC_SRC_COMPUTE_RECEIVER_ACCESS_HPP
 
 #include "types.hpp"
 
@@ -9,4 +9,4 @@ void compute_receiver_access_arguments (ast::Node* args, const type::Signature* 
 void compute_receiver_access (ast::Node* root);
 }
 
-#endif // rc_src_compute_receiver_access_hpp
+#endif // RC_SRC_COMPUTE_RECEIVER_ACCESS_HPP

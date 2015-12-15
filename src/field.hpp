@@ -1,5 +1,5 @@
-#ifndef rc_src_field_hpp
-#define rc_src_field_hpp
+#ifndef RC_SRC_FIELD_HPP
+#define RC_SRC_FIELD_HPP
 
 #include "types.hpp"
 
@@ -21,4 +21,4 @@ struct field_t
 
 }
 
-#endif // rc_src_field_hpp
+#endif // RC_SRC_FIELD_HPP

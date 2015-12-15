@@ -6,12 +6,12 @@ Include Guards
 ==============
 * Header files should have an appropriate include guard.
 
-        #ifndef rc_src_types_hpp
-        #define rc_src_types_hpp
+        #ifndef RC_SRC_TYPES_HPP
+        #define RC_SRC_TYPES_HPP
         ...
-        #endif // rc_src_types_hpp
+        #endif // RC_SRC_TYPES_HPP
 
-* The header guard is the path to the file using an underscore as a separator.
+* The header guard is the all-caps path to the file using an underscore as a separator.
 
 Include Order
 =============
@@ -19,6 +19,10 @@ Include Order
 2. C headers
 3. C++ headers
 4. Project headers
+
+Macros
+======
+Macros are all-caps with underscores.
 
 Namespaces
 ==========

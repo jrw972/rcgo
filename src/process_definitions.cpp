@@ -24,12 +24,12 @@ type_check_statement (Node * node)
   {
     void default_action (Node& node)
     {
-      ast_not_reached (node);
+      AST_NOT_REACHED (node);
     }
 
     void visit (ast_bind_pull_port_statement_t& node)
     {
-      unimplemented;
+      UNIMPLEMENTED;
       // typed_value_t pull_port_tv = CheckExpectReference (node.left ());
       // typed_value_t getter_tv = CheckAndImplicitlyDereference (node.right_ref ());
 
@@ -59,7 +59,7 @@ type_check_statement (Node * node)
 
     static void arithmetic_assign (ast_binary_t* node, const char* symbol)
     {
-      unimplemented;
+      UNIMPLEMENTED;
       // typed_value_t left_tv = check_assignment_target (node->left ());
       // typed_value_t right_tv = CheckAndImplicitlyDereference (node->right_ref ());
       // if (!type_is_equal (left_tv.type, right_tv.type))
@@ -117,7 +117,7 @@ type_check_statement (Node * node)
 
     void visit (ast_decrement_statement_t& node)
     {
-      unimplemented;
+      UNIMPLEMENTED;
     }
   };
 

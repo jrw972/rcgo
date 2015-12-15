@@ -659,7 +659,7 @@ std::string ast_get_identifier (const Node* ast)
 
     void default_action (const Node* node)
     {
-      not_reached;
+      NOT_REACHED;
     }
 
     void visit (const ast_identifier_t& ast)
@@ -859,11 +859,11 @@ Node::Node (unsigned int line_, size_t children_count)
   m_children.resize (children_count);
 }
 
-  ast_literal_expr_t::ast_literal_expr_t (unsigned int line, const ::type::Type* t, const value_t& v)
-    : Node (line, 0)
-  {
-    type = t;
-    value = v;
-  }
+ast_literal_expr_t::ast_literal_expr_t (unsigned int line, const ::type::Type* t, const value_t& v)
+  : Node (line, 0)
+{
+  type = t;
+  value = v;
+}
 
 }

@@ -53,7 +53,7 @@ operator<< (std::ostream& out, const Symbol& s)
 
     void defaultAction (const Symbol& s)
     {
-      not_reached;
+      NOT_REACHED;
     }
 
     virtual void visit (const BuiltinFunction& s)
@@ -90,7 +90,7 @@ operator<< (std::ostream& out, const Symbol& s)
     }
     virtual void visit (const HiddenSymbol& s)
     {
-      unimplemented;
+      UNIMPLEMENTED;
     }
   };
   Visitor v (out);

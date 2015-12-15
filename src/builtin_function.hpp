@@ -1,5 +1,5 @@
-#ifndef rc_src_builtin_function_hpp
-#define rc_src_builtin_function_hpp
+#ifndef RC_SRC_BUILTIN_FUNCTION_HPP
+#define RC_SRC_BUILTIN_FUNCTION_HPP
 
 #include "callable.hpp"
 #include "symbol.hpp"
@@ -98,4 +98,4 @@ struct Sendto : public BuiltinFunction
 
 }
 
-#endif // rc_src_builtin_function_hpp
+#endif // RC_SRC_BUILTIN_FUNCTION_HPP

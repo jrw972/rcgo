@@ -1,5 +1,5 @@
-#ifndef rc_src_ast_visitor_hpp
-#define rc_src_ast_visitor_hpp
+#ifndef RC_SRC_AST_VISITOR_HPP
+#define RC_SRC_AST_VISITOR_HPP
 
 #include "ast.hpp"
 
@@ -716,4 +716,4 @@ ast_cast (Node* node)
 
 }
 
-#endif // rc_src_ast_visitor_hpp
+#endif // RC_SRC_AST_VISITOR_HPP

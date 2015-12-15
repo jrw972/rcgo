@@ -33,7 +33,7 @@ operator<< (std::ostream& o,
 static_value_t
 EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
 {
-  unimplemented;
+  UNIMPLEMENTED;
   // struct visitor : public ast::DefaultConstVisitor
   // {
   //   const static_memory_t& memory;
@@ -43,7 +43,7 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
 
   //   void default_action (const Node& node)
   //   {
-  //     ast_not_reached (node);
+  //     AST_NOT_REACHED (node);
   //   }
 
   //   void visit (const ast_binary_arithmetic_expr_t& node)
@@ -57,16 +57,16 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
   //       case RightShift:
   //       case BitAnd:
   //       case BitAndNot:
-  //         unimplemented;
+  //         UNIMPLEMENTED;
 
   //       case Add:
   //       case Subtract:
   //       case BitOr:
   //       case BitXor:
-  //         unimplemented;
+  //         UNIMPLEMENTED;
 
   //       case Equal:
-  //         unimplemented;
+  //         UNIMPLEMENTED;
   //       case NotEqual:
   //       {
   //         static_value_t left = EvaluateStatic (node.left (), memory);
@@ -78,11 +78,11 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
   //       case LessEqual:
   //       case MoreThan:
   //       case MoreEqual:
-  //         unimplemented;
+  //         UNIMPLEMENTED;
   //       case LogicAnd:
-  //         unimplemented;
+  //         UNIMPLEMENTED;
   //       case LogicOr:
-  //         unimplemented;
+  //         UNIMPLEMENTED;
   //       }
   //   }
 
@@ -98,12 +98,12 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
 
   //       void default_action (const Type::Type& type)
   //       {
-  //         not_reached;
+  //         NOT_REACHED;
   //       }
 
   //       void visit (const Int& type)
   //       {
-  //         unimplemented;
+  //         UNIMPLEMENTED;
   //         //result = static_value_t::make_value (tv.int_value);
   //       }
   //     };

@@ -1,5 +1,5 @@
-#ifndef rc_src_executor_base_hpp
-#define rc_src_executor_base_hpp
+#ifndef RC_SRC_EXECUTOR_BASE_HPP
+#define RC_SRC_EXECUTOR_BASE_HPP
 
 #include "stack.hpp"
 #include "action.hpp"
@@ -91,4 +91,4 @@ private:
 
 }
 
-#endif // rc_src_executor_base_hpp
+#endif // RC_SRC_EXECUTOR_BASE_HPP

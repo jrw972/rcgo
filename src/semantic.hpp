@@ -1,5 +1,5 @@
-#ifndef rc_src_semantic_hpp
-#define rc_src_semantic_hpp
+#ifndef RC_SRC_SEMANTIC_HPP
+#define RC_SRC_SEMANTIC_HPP
 
 #include <error.h>
 
@@ -233,7 +233,7 @@ T* processAndLookup (ast::Node * node, const std::string& identifier)
   if (!symbol->defined ())
     {
       // Process the definition.
-      unimplemented;
+      UNIMPLEMENTED;
     }
 
   return decl::SymbolCast<T> (symbol);
@@ -265,7 +265,7 @@ enumerate_instances (ast::Node* node, composition::Composer& instance_table);
 void
 allocate_stack_variables (ast::Node* node);
 
-  decl::Method*
+decl::Method*
 get_current_method (const ast::Node * node);
 
 ReceiverAccess ComputeReceiverAccess (const ast::Node* node);
@@ -289,4 +289,4 @@ allocate_parameter (runtime::MemoryModel& memory_model,
 
 }
 
-#endif // rc_src_semantic_hpp
+#endif // RC_SRC_SEMANTIC_HPP

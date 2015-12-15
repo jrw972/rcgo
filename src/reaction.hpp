@@ -1,5 +1,5 @@
-#ifndef rc_src_reaction_hpp
-#define rc_src_reaction_hpp
+#ifndef RC_SRC_REACTION_HPP
+#define RC_SRC_REACTION_HPP
 
 #include "callable.hpp"
 
@@ -55,7 +55,7 @@ public:
 
   size_t return_size () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   virtual size_t receiver_size () const
   {
@@ -63,7 +63,7 @@ public:
   }
   size_t arguments_size () const
   {
-    unimplemented;
+    UNIMPLEMENTED;
   }
   size_t locals_size () const
   {
@@ -90,4 +90,4 @@ public:
 
 }
 
-#endif // rc_src_reaction_hpp
+#endif // RC_SRC_REACTION_HPP
