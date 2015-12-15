@@ -1916,31 +1916,33 @@ struct Visitor : public ast::DefaultVisitor
     node.type = process_type (node.literal_type (), true);
     node.expression_kind = kVariable;
 
-    switch (node.type->underlying_kind ()) {
-    case kStruct:
+    switch (node.type->underlying_kind ())
+      {
+      case kStruct:
       {
         for (ast::Node::Iterator pos = node.literal_value ()->Begin (),
-               limit = node.literal_value ()->End ();
+             limit = node.literal_value ()->End ();
              pos != limit;
-             ++pos) {
-          Node* element = *pos;
-          unimplemented;
-        }
+             ++pos)
+          {
+            Node* element = *pos;
+            unimplemented;
+          }
       }
       break;
 
-    case kArray:
-      unimplemented;
-      break;
+      case kArray:
+        unimplemented;
+        break;
 
-    case kSlice:
-      unimplemented;
-      break;
+      case kSlice:
+        unimplemented;
+        break;
 
-    default:
-      error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                     "cannot define composite literals for %s (E5)", node.type->ToString ().c_str ());
-    }
+      default:
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "cannot define composite literals for %s (E5)", node.type->ToString ().c_str ());
+      }
   }
 };
 }

@@ -1,5 +1,5 @@
-#ifndef rc_runtime_hpp
-#define rc_runtime_hpp
+#ifndef rc_src_runtime_hpp
+#define rc_src_runtime_hpp
 
 #include "types.hpp"
 #include "template.hpp"
@@ -76,11 +76,13 @@ struct Println : public ::Template
 
 typedef ControlAction OpReturn;
 
-inline OpReturn make_continue () {
+inline OpReturn make_continue ()
+{
   return kContinue;
 }
 
-inline OpReturn make_return () {
+inline OpReturn make_return ()
+{
   return kReturn;
 }
 
@@ -722,4 +724,4 @@ struct Noop : public Operation
 Operation* make_conversion (Operation* c, const Type::Type* from, const Type::Type* to);
 }
 
-#endif // rc_runtime_hpp
+#endif // rc_src_runtime_hpp

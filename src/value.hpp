@@ -1,5 +1,5 @@
-#ifndef value_hpp
-#define value_hpp
+#ifndef rc_src_value_hpp
+#define rc_src_value_hpp
 
 #include "types.hpp"
 #include "type.hpp"
@@ -341,4 +341,4 @@ void bit_and_not (value_t& out, const Type::Type* type, const value_t& left, con
 void bit_or (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
 void bit_xor (value_t& out, const Type::Type* type, const value_t& left, const value_t& right);
 
-#endif /* value_hpp */
+#endif // rc_src_value_hpp

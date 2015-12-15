@@ -1,5 +1,5 @@
-#ifndef debug_hpp
-#define debug_hpp
+#ifndef rc_src_debug_hpp
+#define rc_src_debug_hpp
 
 #include <stdlib.h>
 #include <assert.h>
@@ -12,4 +12,4 @@
 
 #define not_reached bug("code designated unreachable has been reached")
 
-#endif /* debug_hp */
+#endif // rc_src_debug_hpp

@@ -1,5 +1,5 @@
-#ifndef partitioned_scheduler_hpp
-#define partitioned_scheduler_hpp
+#ifndef rc_src_partitioned_scheduler_hpp
+#define rc_src_partitioned_scheduler_hpp
 
 #include "types.hpp"
 #include <pthread.h>
@@ -574,4 +574,4 @@ private:
   std::vector<executor_t*> executors_;
 };
 
-#endif /* partitioned_scheduler_hpp */
+#endif // rc_src_partitioned_scheduler_hpp

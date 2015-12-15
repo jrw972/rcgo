@@ -1,5 +1,5 @@
-#ifndef rc_check_types_hpp
-#define rc_check_types_hpp
+#ifndef rc_src_check_types_hpp
+#define rc_src_check_types_hpp
 
 #include "types.hpp"
 
@@ -11,4 +11,4 @@ void require_value_or_variable_list (const ast::Node* node);
 void check_types (ast::Node* root);
 }
 
-#endif // rc_check_types_hpp
+#endif // rc_src_check_types_hpp

@@ -1,5 +1,5 @@
-#ifndef semantic_hpp
-#define semantic_hpp
+#ifndef rc_src_semantic_hpp
+#define rc_src_semantic_hpp
 
 #include <utility>
 
@@ -283,4 +283,4 @@ allocate_parameter (MemoryModel& memory_model,
     }
 }
 
-#endif /* semantic_hpp */
+#endif // rc_src_semantic_hpp

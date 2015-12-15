@@ -1,5 +1,5 @@
-#ifndef types_hpp
-#define types_hpp
+#ifndef rc_src_types_hpp
+#define rc_src_types_hpp
 
 #include <stddef.h>
 #include <stdint.h>
@@ -207,4 +207,4 @@ inline const char* binary_arithmetic_symbol (BinaryArithmetic ba)
   not_reached;
 }
 
-#endif /* types_hpp */
+#endif // rc_src_types_hpp

@@ -1,5 +1,5 @@
-#ifndef Callable_hpp
-#define Callable_hpp
+#ifndef rc_src_callable_hpp
+#define rc_src_callable_hpp
 
 #include "types.hpp"
 #include "type.hpp"
@@ -216,4 +216,4 @@ struct Getter : public Callable
   MemoryModel memoryModel;
 };
 
-#endif /* Callable_hpp */
+#endif // rc_src_callable_hpp

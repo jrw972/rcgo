@@ -1,5 +1,5 @@
-#ifndef rc_util_hpp
-#define rc_util_hpp
+#ifndef rc_src_util_hpp
+#define rc_src_util_hpp
 
 #include <cstddef>
 #include <cstdlib>
@@ -14,4 +14,4 @@ inline ptrdiff_t AlignUp (ptrdiff_t value, size_t alignment)
 
 }
 
-#endif /* rc_util_hpp */
+#endif // rc_src_util_hpp

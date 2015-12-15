@@ -1,5 +1,5 @@
-#ifndef rc_reaction_hpp
-#define rc_reaction_hpp
+#ifndef rc_src_reaction_hpp
+#define rc_src_reaction_hpp
 
 #include "callable.hpp"
 
@@ -85,4 +85,4 @@ public:
   }
 };
 
-#endif // rc_reaction_hpp
+#endif // rc_src_reaction_hpp

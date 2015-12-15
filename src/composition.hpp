@@ -1,5 +1,5 @@
-#ifndef Composition_hpp
-#define Composition_hpp
+#ifndef rc_src_composition_hpp
+#define rc_src_composition_hpp
 
 #include "type.hpp"
 #include "types.hpp"
@@ -242,4 +242,4 @@ private:
 };
 }
 
-#endif /* Composition_hpp */
+#endif // rc_src_composition_hpp

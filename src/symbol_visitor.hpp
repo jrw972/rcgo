@@ -1,5 +1,5 @@
-#ifndef SymbolVisitor_hpp
-#define SymbolVisitor_hpp
+#ifndef rc_src_symbol_visitor_hpp
+#define rc_src_symbol_visitor_hpp
 
 #include "symbol.hpp"
 #include "builtin_function.hpp"
@@ -124,4 +124,4 @@ const T* SymbolCast (const Symbol* symbol)
   return v.retval;
 }
 
-#endif /* SymbolVisitor */
+#endif // rc_src_symbol_visitor_hpp

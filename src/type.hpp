@@ -1,5 +1,5 @@
-#ifndef Type_hpp
-#define Type_hpp
+#ifndef rc_src_type_hpp
+#define rc_src_type_hpp
 
 #include "types.hpp"
 #include "debug.hpp"
@@ -2671,4 +2671,4 @@ inline std::ostream& operator<< (std::ostream& out, const StringRep& s)
 }
 }
 
-#endif /* Type_hpp */
+#endif // rc_src_type_hpp

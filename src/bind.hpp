@@ -1,5 +1,5 @@
-#ifndef bind_hpp
-#define bind_hpp
+#ifndef rc_src_bind_hpp
+#define rc_src_bind_hpp
 
 #include "memory_model.hpp"
 
@@ -26,4 +26,4 @@ public:
   ParameterSymbol* receiver_parameter;
 };
 
-#endif /* bind_hpp */
+#endif // rc_src_bind_hpp

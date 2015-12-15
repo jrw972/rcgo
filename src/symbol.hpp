@@ -1,5 +1,5 @@
-#ifndef Symbol_hpp
-#define Symbol_hpp
+#ifndef rc_src_symbol_hpp
+#define rc_src_symbol_hpp
 
 #include "types.hpp"
 #include "type.hpp"
@@ -238,4 +238,4 @@ operator<< (std::ostream& out, const Symbol& s);
 
 #define symbol_not_reached(s) do { std::cerr << s << '\n'; not_reached; } while (0);
 
-#endif /* Symbol_hpp */
+#endif // rc_src_symbol_hpp

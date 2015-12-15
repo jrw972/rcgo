@@ -1,5 +1,5 @@
-#ifndef Template_hpp
-#define Template_hpp
+#ifndef rc_src_template_hpp
+#define rc_src_template_hpp
 
 #include "symbol.hpp"
 
@@ -35,4 +35,4 @@ private:
   const Type::Type* const type_;
 };
 
-#endif /* Template_hpp */
+#endif // rc_src_template_hpp

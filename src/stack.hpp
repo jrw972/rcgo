@@ -1,5 +1,5 @@
-#ifndef rc_stack_hpp
-#define rc_stack_hpp
+#ifndef rc_src_stack_hpp
+#define rc_src_stack_hpp
 
 #include <cstring>
 
@@ -133,4 +133,4 @@ private:
 
 }
 
-#endif // rc_stack_hpp
+#endif // rc_src_stack_hpp

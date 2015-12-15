@@ -1,5 +1,5 @@
-#ifndef instance_scheduler_hpp
-#define instance_scheduler_hpp
+#ifndef rc_src_instance_scheduler_hpp
+#define rc_src_instance_scheduler_hpp
 
 #include "types.hpp"
 #include <pthread.h>
@@ -124,4 +124,4 @@ private:
   std::map<Composition::Instance*, instance_info_t*> info_map_;
 };
 
-#endif /* instance_scheduler_hpp */
+#endif // rc_src_instance_scheduler_hpp

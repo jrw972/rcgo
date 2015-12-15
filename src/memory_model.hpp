@@ -1,5 +1,5 @@
-#ifndef MemoryModel_hpp
-#define MemoryModel_hpp
+#ifndef rc_src_memory_model_hpp
+#define rc_src_memory_model_hpp
 
 #include "types.hpp"
 #include "util.hpp"
@@ -84,4 +84,4 @@ private:
   ptrdiff_t receiverOffset;
 };
 
-#endif /* MemoryModel_hpp */
+#endif // rc_src_memory_model_hpp

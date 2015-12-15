@@ -1,5 +1,5 @@
-#ifndef executor_base_hpp
-#define executor_base_hpp
+#ifndef rc_src_executor_base_hpp
+#define rc_src_executor_base_hpp
 
 #include "stack.hpp"
 #include "action.hpp"
@@ -86,4 +86,4 @@ private:
   pthread_mutex_t* stdout_mutex_;
 };
 
-#endif /* executor_base_hpp */
+#endif // rc_src_executor_base_hpp

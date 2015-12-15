@@ -1,5 +1,5 @@
-#ifndef BuiltinFunction_hpp
-#define BuiltinFunction_hpp
+#ifndef rc_src_builtin_function_hpp
+#define rc_src_builtin_function_hpp
 
 #include "callable.hpp"
 #include "symbol.hpp"
@@ -93,4 +93,4 @@ struct Sendto : public BuiltinFunction
   virtual void call (executor_base_t& exec) const;
 };
 
-#endif /* BuiltinFunction_hpp */
+#endif // rc_src_builtin_function_hpp

@@ -1,5 +1,5 @@
-#ifndef action_hpp
-#define action_hpp
+#ifndef rc_src_action_hpp
+#define rc_src_action_hpp
 
 #include "types.hpp"
 #include "type.hpp"
@@ -42,4 +42,4 @@ struct Action
 
 }
 
-#endif // action_hpp
+#endif // rc_src_action_hpp

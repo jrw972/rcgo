@@ -1,5 +1,5 @@
-#ifndef EvaluateStatic_hpp
-#define EvaluateStatic_hpp
+#ifndef rc_src_evaluate_static_hpp
+#define rc_src_evaluate_static_hpp
 
 #include <cstddef>
 #include <map>
@@ -161,4 +161,4 @@ operator<< (std::ostream& o,
 static_value_t
 EvaluateStatic (const ast::Node* node, const static_memory_t& memory);
 
-#endif /* EvaluateStatic_hpp */
+#endif // rc_src_evaluate_static_hpp

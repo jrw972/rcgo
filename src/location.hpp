@@ -1,5 +1,5 @@
-#ifndef Location_hpp
-#define Location_hpp
+#ifndef rc_src_location_hpp
+#define rc_src_location_hpp
 
 #include <string>
 
@@ -26,4 +26,4 @@ struct Location
   { }
 };
 
-#endif /* Location_hpp */
+#endif // rc_src_location_hpp

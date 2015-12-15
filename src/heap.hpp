@@ -1,5 +1,5 @@
-#ifndef heap_h
-#define heap_h
+#ifndef rc_src_heap_hpp
+#define rc_src_heap_hpp
 
 #include "types.hpp"
 
@@ -21,4 +21,4 @@ void heap_remove_from_parent (heap_t* child);
 
 void heap_dump (heap_t* heap);
 
-#endif /* heap_h */
+#endif // rc_src_heap_hpp
