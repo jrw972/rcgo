@@ -9,12 +9,35 @@
 
 #include "debug.hpp"
 
-enum ExpressionKind
+namespace ast
 {
-  kValue,
-  kVariable,
-  kType
-};
+class ast_receiver_t;
+class ast_activate_statement_t;
+class Node;
+class ast_call_expr_t;
+class ast_function_t;
+class ast_getter_t;
+class ast_initializer_t;
+class ast_instance_t;
+class ast_method_t;
+class ast_list_expr_t;
+
+class Visitor;
+class ConstVisitor;
+}
+
+namespace semantic
+{
+class value_t;
+}
+
+namespace type
+{
+class Type;
+class NamedType;
+class Signature;
+class field_t;
+}
 
 namespace decl
 {
@@ -35,61 +58,41 @@ class Method;
 class bind_t;
 }
 
-namespace ast
+namespace composition
 {
-class ast_receiver_t;
-class ast_activate_statement_t;
-class Node;
-class ast_call_expr_t;
-class ast_function_t;
-class ast_getter_t;
-class ast_initializer_t;
-class ast_instance_t;
-class ast_method_t;
-class ast_list_expr_t;
-
-class Visitor;
-class ConstVisitor;
+struct Composer;
+struct Instance;
+struct Node;
+struct Action;
+struct Reaction;
+struct Activation;
+struct PushPort;
+struct PullPort;
+struct Getter;
 }
 
 namespace runtime
 {
 class Operation;
-}
-
-namespace type
-{
-class Type;
-class NamedType;
-class Signature;
-class field_t;
-}
-
-typedef std::vector<const type::Type*> TypeList;
-
-namespace composition
-{
-class Composer;
-class Instance;
-}
-
-class typed_value_t;
-class component_t;
-class port_t;
-class scheduler_t;
-
-namespace semantic
-{
-class value_t;
-}
-
-namespace runtime
-{
 class Stack;
 class MemoryModel;
 typedef struct heap_t heap_t;
 class executor_base_t;
 }
+
+enum ExpressionKind
+{
+  kValue,
+  kVariable,
+  kType
+};
+
+typedef std::vector<const type::Type*> TypeList;
+
+class typed_value_t;
+class component_t;
+class port_t;
+class scheduler_t;
 
 // A reference is either mutable, immutable, or foreign.
 // Ordered by strictness for <.

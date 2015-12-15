@@ -41,14 +41,14 @@ struct heap_link_t
 void
 allocate_instances (composition::Composer& instance_table)
 {
-  for (composition::Composer::InstancesType::const_iterator pos = instance_table.InstancesBegin (),
-       limit = instance_table.InstancesEnd ();
+  for (composition::Composer::InstancesType::const_iterator pos = instance_table.instances_begin (),
+       limit = instance_table.instances_end ();
        pos != limit;
        ++pos)
     {
       composition::Instance* instance = pos->second;
       component_t* ptr;
-      if (instance->IsTopLevel ())
+      if (instance->is_top_level ())
         {
           const type::Type* type = instance->type;
           size_t size = type->Size ();
@@ -57,7 +57,7 @@ allocate_instances (composition::Composer& instance_table)
         }
       else
         {
-          ptr = reinterpret_cast<component_t*> (reinterpret_cast<char*> (instance->parent->component) + instance->Offset ());
+          ptr = reinterpret_cast<component_t*> (reinterpret_cast<char*> (instance->parent->component) + instance->offset ());
         }
       instance->component = ptr;
     }
@@ -86,8 +86,8 @@ make_heap_link (heap_t* heap,
 void
 create_bindings (composition::Composer& instance_table)
 {
-  for (composition::Composer::PushPortsType::const_iterator pp_pos = instance_table.PushPortsBegin (),
-       pp_limit = instance_table.PushPortsEnd ();
+  for (composition::Composer::PushPortsType::const_iterator pp_pos = instance_table.push_ports_begin (),
+       pp_limit = instance_table.push_ports_end ();
        pp_pos != pp_limit;
        ++pp_pos)
     {
@@ -108,8 +108,8 @@ create_bindings (composition::Composer& instance_table)
         }
     }
 
-  for (composition::Composer::PullPortsType::const_iterator pp_pos = instance_table.PullPortsBegin (),
-       pp_limit = instance_table.PullPortsEnd ();
+  for (composition::Composer::PullPortsType::const_iterator pp_pos = instance_table.pull_ports_begin (),
+       pp_limit = instance_table.pull_ports_end ();
        pp_pos != pp_limit;
        ++pp_pos)
     {
@@ -126,12 +126,12 @@ create_bindings (composition::Composer& instance_table)
 void
 initialize (executor_base_t& exec, composition::Instance* instance)
 {
-  if (instance->IsTopLevel ())
+  if (instance->is_top_level ())
     {
       // Set up the heap.
       exec.current_instance (instance->component);
       // Call the initializer.
-      instance->node->operation->execute (exec);
+      instance->operation->execute (exec);
       // Clean up any return value.
       exec.stack ().popn (instance->initializer->return_size ());
     }

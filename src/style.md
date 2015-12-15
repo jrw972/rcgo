@@ -11,7 +11,8 @@ Include Guards
         ...
         #endif // RC_SRC_TYPES_HPP
 
-* The header guard is the all-caps path to the file using an underscore as a separator.
+* The header guard is the all-caps path to the file using an
+  underscore as a separator.
 
 Include Order
 =============
@@ -29,3 +30,18 @@ Namespaces
 1. Everything should be in a namespace.
 2. Namespaces should be a single word, all lowercase.
 3. Namespaces are not indented.
+
+Names
+=====
+1. Types are CamelCase.
+2. Constants including enum values are CamelCase.
+3. Every other identifier is lowercase with underscores.
+4. Private and protected members have a trailing underscore.
+
+Forward Declarations
+====================
+To limit the number of includes required by a header, add forward declarations in types.hpp.
+
+Predicates
+==========
+Name predicates is_XXXX.

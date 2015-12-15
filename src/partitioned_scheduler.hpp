@@ -250,7 +250,7 @@ private:
 
     const composition::InstanceSet& set () const
     {
-      return action->GetInstanceSet ();
+      return action->instance_set ();
     }
     virtual bool execute_i () const
     {
@@ -268,7 +268,7 @@ private:
 
     const composition::InstanceSet& set () const
     {
-      return action->GetInstanceSet ();
+      return action->instance_set ();
     }
     virtual bool execute_i () const
     {

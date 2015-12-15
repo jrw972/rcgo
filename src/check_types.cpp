@@ -1926,7 +1926,7 @@ struct Visitor : public ast::DefaultVisitor
              pos != limit;
              ++pos)
           {
-            Node* element = *pos;
+            //Node* element = *pos;
             UNIMPLEMENTED;
           }
       }

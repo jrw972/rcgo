@@ -30,8 +30,8 @@ partitioned_scheduler_t::run (composition::Composer& instance_table,
                               size_t thread_count)
 {
   // Set up data structures.
-  for (composition::Composer::InstancesType::const_iterator pos = instance_table.InstancesBegin (),
-       limit = instance_table.InstancesEnd ();
+  for (composition::Composer::InstancesType::const_iterator pos = instance_table.instances_begin (),
+       limit = instance_table.instances_end ();
        pos != limit;
        ++pos)
     {
@@ -42,8 +42,8 @@ partitioned_scheduler_t::run (composition::Composer& instance_table,
   {
     // Initialize.
     executor_t exec (*this, 0, 0, stack_size, &stdout_mutex_);
-    for (composition::Composer::InstancesType::const_iterator pos = instance_table.InstancesBegin (),
-         limit = instance_table.InstancesEnd ();
+    for (composition::Composer::InstancesType::const_iterator pos = instance_table.instances_begin (),
+         limit = instance_table.instances_end ();
          pos != limit;
          ++pos)
       {
@@ -58,8 +58,8 @@ partitioned_scheduler_t::run (composition::Composer& instance_table,
     }
 
   // Create tasks.
-  for (composition::Composer::InstancesType::const_iterator instance_pos = instance_table.InstancesBegin (),
-       instance_limit = instance_table.InstancesEnd ();
+  for (composition::Composer::InstancesType::const_iterator instance_pos = instance_table.instances_begin (),
+       instance_limit = instance_table.instances_end ();
        instance_pos != instance_limit;
        ++instance_pos)
     {

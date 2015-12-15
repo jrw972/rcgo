@@ -27,19 +27,19 @@ Instance::Instance (Instance* p,
                     size_t a,
                     const type::NamedType* t,
                     Initializer* i,
-                    ast_instance_t* n,
+                    const Operation* o,
                     const std::string& aName)
   : parent (p)
   , address (a)
   , type (t)
   , component (NULL)
   , initializer (i)
-  , node (n)
+  , operation (o)
   , name (aName)
 { }
 
 size_t
-Instance::Offset () const
+Instance::offset () const
 {
   if (parent == NULL)
     {
@@ -52,14 +52,14 @@ Instance::Offset () const
 }
 
 void
-InstanceSet::Insert (const value_type& v)
+InstanceSet::insert (const value_type& v)
 {
-  std::pair<iterator, bool> p = insert (v);
+  std::pair<iterator, bool> p = std::map<Instance*, ReceiverAccess>::insert (v);
   p.first->second = std::max (p.first->second, v.second);
 }
 
 bool
-InstanceSet::Compatible (const InstanceSet& other) const
+InstanceSet::is_compatible (const InstanceSet& other) const
 {
   const_iterator pos1, pos2, limit1, limit2;
   pos1 = begin ();
@@ -93,15 +93,21 @@ InstanceSet::Compatible (const InstanceSet& other) const
 }
 
 void
-InstanceSet::Union (const InstanceSet& other)
+InstanceSet::add_union (const InstanceSet& other)
 {
   for (const_iterator pos = other.begin (), limit = other.end ();
        pos != limit;
        ++pos)
     {
-      Insert (*pos);
+      insert (*pos);
     }
 }
+
+Node::Node (const std::string& n)
+  : name (n)
+  , state (Unmarked)
+  , instance_set_computed_ (false)
+{ }
 
 Action::Action (Instance* i,
                 decl::Action* a,
@@ -113,23 +119,23 @@ Action::Action (Instance* i,
 { }
 
 size_t
-Action::OutgoingCount () const
+Action::outgoing_count () const
 {
   return nodes.size ();
 }
 
 Node*
-Action::OutgoingNode (size_t i) const
+Action::outgoing_node (size_t i) const
 {
   return nodes.at (i);
 }
 
 const InstanceSet&
-Action::GetInstanceSet ()
+Action::instance_set ()
 {
-  if (instance_set_computed)
+  if (instance_set_computed_)
     {
-      return instance_set;
+      return instance_set_;
     }
 
   for (NodesType::const_iterator pos = nodes.begin (),
@@ -137,16 +143,16 @@ Action::GetInstanceSet ()
        pos != limit;
        ++pos)
     {
-      instance_set.Union ((*pos)->GetInstanceSet ());
+      instance_set_.add_union ((*pos)->instance_set ());
     }
 
   // Is the instance read in the precondition?
-  instance_set.Insert (std::make_pair (instance, action->precondition_access));
+  instance_set_.insert (std::make_pair (instance, action->precondition_access));
   // Is the instance read in the immutable phase?
-  instance_set.Insert (std::make_pair (instance, action->immutable_phase_access));
+  instance_set_.insert (std::make_pair (instance, action->immutable_phase_access));
 
-  instance_set_computed = true;
-  return instance_set;
+  instance_set_computed_ = true;
+  return instance_set_;
 }
 
 std::string
@@ -191,23 +197,23 @@ Reaction::Reaction (Instance* i,
 { }
 
 size_t
-Reaction::OutgoingCount () const
+Reaction::outgoing_count () const
 {
   return nodes.size ();
 }
 
 Node*
-Reaction::OutgoingNode (size_t i) const
+Reaction::outgoing_node (size_t i) const
 {
   return nodes.at (i);
 }
 
 const InstanceSet&
-Reaction::GetInstanceSet ()
+Reaction::instance_set ()
 {
-  if (instance_set_computed)
+  if (instance_set_computed_)
     {
-      return instance_set;
+      return instance_set_;
     }
 
   for (NodesType::const_iterator pos = nodes.begin (),
@@ -215,14 +221,14 @@ Reaction::GetInstanceSet ()
        pos != limit;
        ++pos)
     {
-      instance_set.Union ((*pos)->GetInstanceSet ());
+      instance_set_.add_union ((*pos)->instance_set ());
     }
 
   // Is the instance read in the immutable phase?
-  instance_set.Insert (std::make_pair (instance, reaction->immutable_phase_access));
+  instance_set_.insert (std::make_pair (instance, reaction->immutable_phase_access));
 
-  instance_set_computed = true;
-  return instance_set;
+  instance_set_computed_ = true;
+  return instance_set_;
 }
 
 std::string
@@ -260,23 +266,23 @@ Getter::Getter (Instance* i,
 { }
 
 size_t
-Getter::OutgoingCount () const
+Getter::outgoing_count () const
 {
   return nodes.size ();
 }
 
 Node*
-Getter::OutgoingNode (size_t i) const
+Getter::outgoing_node (size_t i) const
 {
   return nodes.at (i);
 }
 
 const InstanceSet&
-Getter::GetInstanceSet ()
+Getter::instance_set ()
 {
-  if (instance_set_computed)
+  if (instance_set_computed_)
     {
-      return instance_set;
+      return instance_set_;
     }
 
   for (NodesType::const_iterator pos = nodes.begin (),
@@ -284,40 +290,40 @@ Getter::GetInstanceSet ()
        pos != limit;
        ++pos)
     {
-      instance_set.Union ((*pos)->GetInstanceSet ());
+      instance_set_.add_union ((*pos)->instance_set ());
     }
 
   // Is the instance read in the immutable phase?
-  instance_set.Insert (std::make_pair (instance, getter->immutable_phase_access));
+  instance_set_.insert (std::make_pair (instance, getter->immutable_phase_access));
 
-  instance_set_computed = true;
-  return instance_set;
+  instance_set_computed_ = true;
+  return instance_set_;
 }
 
-Activation::Activation (Instance* i, const ast_activate_statement_t* as)
+Activation::Activation (Instance* i, ReceiverAccess mpa)
   : Node (getname (this))
   , instance (i)
-  , activate_statement (as)
+  , mutable_phase_access (mpa)
 { }
 
 size_t
-Activation::OutgoingCount () const
+Activation::outgoing_count () const
 {
   return nodes.size ();
 }
 
 Node*
-Activation::OutgoingNode (size_t i) const
+Activation::outgoing_node (size_t i) const
 {
   return nodes.at (i);
 }
 
 const InstanceSet&
-Activation::GetInstanceSet ()
+Activation::instance_set ()
 {
-  if (instance_set_computed)
+  if (instance_set_computed_)
     {
-      return instance_set;
+      return instance_set_;
     }
 
   for (NodesType::const_iterator pos = nodes.begin (),
@@ -325,10 +331,10 @@ Activation::GetInstanceSet ()
        pos != limit;
        ++pos)
     {
-      const InstanceSet& s = (*pos)->GetInstanceSet ();
-      if (instance_set.Compatible (s))
+      const InstanceSet& s = (*pos)->instance_set ();
+      if (instance_set_.is_compatible (s))
         {
-          instance_set.Union (s);
+          instance_set_.add_union (s);
         }
       else
         {
@@ -336,10 +342,10 @@ Activation::GetInstanceSet ()
         }
     }
 
-  instance_set.Insert (std::make_pair (instance, activate_statement->mutable_phase_access));
+  instance_set_.insert (std::make_pair (instance, mutable_phase_access));
 
-  instance_set_computed = true;
-  return instance_set;
+  instance_set_computed_ = true;
+  return instance_set_;
 }
 
 std::string
@@ -358,23 +364,23 @@ PushPort::PushPort (size_t a, Instance* oi, field_t* of, const std::string& name
 { }
 
 size_t
-PushPort::OutgoingCount () const
+PushPort::outgoing_count () const
 {
   return reactions.size ();
 }
 
 Node*
-PushPort::OutgoingNode (size_t i) const
+PushPort::outgoing_node (size_t i) const
 {
   return reactions.at (i);
 }
 
 const InstanceSet&
-PushPort::GetInstanceSet ()
+PushPort::instance_set ()
 {
-  if (instance_set_computed)
+  if (instance_set_computed_)
     {
-      return instance_set;
+      return instance_set_;
     }
 
   for (ReactionsType::const_iterator pos = reactions.begin (),
@@ -382,10 +388,10 @@ PushPort::GetInstanceSet ()
        pos != limit;
        ++pos)
     {
-      const InstanceSet& s = (*pos)->GetInstanceSet ();
-      if (instance_set.Compatible (s))
+      const InstanceSet& s = (*pos)->instance_set ();
+      if (instance_set_.is_compatible (s))
         {
-          instance_set.Union (s);
+          instance_set_.add_union (s);
         }
       else
         {
@@ -393,8 +399,8 @@ PushPort::GetInstanceSet ()
         }
     }
 
-  instance_set_computed = true;
-  return instance_set;
+  instance_set_computed_ = true;
+  return instance_set_;
 }
 
 PullPort::PullPort (size_t a, Instance* oi, field_t* of, const std::string& name)
@@ -405,23 +411,23 @@ PullPort::PullPort (size_t a, Instance* oi, field_t* of, const std::string& name
 { }
 
 size_t
-PullPort::OutgoingCount () const
+PullPort::outgoing_count () const
 {
   return getters.size ();
 }
 
 Node*
-PullPort::OutgoingNode (size_t i) const
+PullPort::outgoing_node (size_t i) const
 {
   return getters.at (i);
 }
 
 const InstanceSet&
-PullPort::GetInstanceSet ()
+PullPort::instance_set ()
 {
-  if (instance_set_computed)
+  if (instance_set_computed_)
     {
-      return instance_set;
+      return instance_set_;
     }
 
   for (GettersType::const_iterator pos = getters.begin (),
@@ -429,10 +435,10 @@ PullPort::GetInstanceSet ()
        pos != limit;
        ++pos)
     {
-      const InstanceSet& s = (*pos)->GetInstanceSet ();
-      if (instance_set.Compatible (s))
+      const InstanceSet& s = (*pos)->instance_set ();
+      if (instance_set_.is_compatible (s))
         {
-          instance_set.Union (s);
+          instance_set_.add_union (s);
         }
       else
         {
@@ -440,32 +446,32 @@ PullPort::GetInstanceSet ()
         }
     }
 
-  instance_set_computed = true;
-  return instance_set;
+  instance_set_computed_ = true;
+  return instance_set_;
 }
 
 void
-Composer::AddInstance (Instance* instance)
+Composer::add_instance (Instance* instance)
 {
-  instances[instance->address] = instance;
+  instances_[instance->address] = instance;
 }
 
 void
-Composer::AddPushPort (size_t address,
-                       Instance* output_instance,
-                       field_t* output_field,
-                       const std::string& name)
+Composer::add_push_port (size_t address,
+                         Instance* output_instance,
+                         field_t* output_field,
+                         const std::string& name)
 {
-  push_ports[address] = new PushPort (address, output_instance, output_field, name);
+  push_ports_[address] = new PushPort (address, output_instance, output_field, name);
 }
 
 void
-Composer::AddPullPort (size_t address,
-                       Instance* input_instance,
-                       field_t* input_field,
-                       const std::string& name)
+Composer::add_pull_port (size_t address,
+                         Instance* input_instance,
+                         field_t* input_field,
+                         const std::string& name)
 {
-  pull_ports[address] = new PullPort (address, input_instance, input_field, name);
+  pull_ports_[address] = new PullPort (address, input_instance, input_field, name);
 }
 
 struct Executor : public executor_base_t
@@ -486,11 +492,11 @@ struct Executor : public executor_base_t
 };
 
 void
-Composer::elaborateBindings ()
+Composer::elaborate_bindings ()
 {
   // For each instance.
-  for (Composer::InstancesType::const_iterator instance_pos = this->instances.begin (),
-       instance_limit = this->instances.end ();
+  for (Composer::InstancesType::const_iterator instance_pos = this->instances_.begin (),
+       instance_limit = this->instances_.end ();
        instance_pos != instance_limit;
        ++instance_pos)
     {
@@ -574,14 +580,14 @@ Composer::elaborateBindings ()
                   reaction_component = exec.stack ().pop_pointer ();
                 }
               const reaction_t* reaction = static_cast<const reaction_t*> (right->callable);
-              PushPortsType::const_iterator pp_pos = table.push_ports.find (reinterpret_cast<size_t> (port));
-              assert (pp_pos != table.push_ports.end ());
+              PushPortsType::const_iterator pp_pos = table.push_ports_.find (reinterpret_cast<size_t> (port));
+              assert (pp_pos != table.push_ports_.end ());
               PushPort* pp = pp_pos->second;
-              InstancesType::const_iterator i_pos = table.instances.find (reinterpret_cast<size_t> (reaction_component));
-              assert (i_pos != table.instances.end ());
+              InstancesType::const_iterator i_pos = table.instances_.find (reinterpret_cast<size_t> (reaction_component));
+              assert (i_pos != table.instances_.end ());
               Instance* i = i_pos->second;
-              ReactionsType::const_iterator r_pos = table.reactions.find (ReactionsType::key_type (i, reaction, param));
-              assert (r_pos != table.reactions.end ());
+              ReactionsType::const_iterator r_pos = table.reactions_.find (ReactionsType::key_type (i, reaction, param));
+              assert (r_pos != table.reactions_.end ());
               Reaction* r = r_pos->second;
               pp->reactions.push_back (r);
               r->push_ports.push_back (pp);
@@ -613,14 +619,14 @@ Composer::elaborateBindings ()
               void* getter_component = exec.stack ().pop_pointer ();
               const decl::Getter* getter = static_cast<const decl::Getter*> (node.right ()->callable);
 
-              PullPortsType::const_iterator pp_pos = table.pull_ports.find (reinterpret_cast<size_t> (port));
-              assert (pp_pos != table.pull_ports.end ());
+              PullPortsType::const_iterator pp_pos = table.pull_ports_.find (reinterpret_cast<size_t> (port));
+              assert (pp_pos != table.pull_ports_.end ());
               PullPort* pp = pp_pos->second;
-              InstancesType::const_iterator i_pos = table.instances.find (reinterpret_cast<size_t> (getter_component));
-              assert (i_pos != table.instances.end ());
+              InstancesType::const_iterator i_pos = table.instances_.find (reinterpret_cast<size_t> (getter_component));
+              assert (i_pos != table.instances_.end ());
               Instance* i = i_pos->second;
-              GettersType::const_iterator g_pos = table.getters.find (GettersType::key_type (i, getter));
-              assert (g_pos != table.getters.end ());
+              GettersType::const_iterator g_pos = table.getters_.find (GettersType::key_type (i, getter));
+              assert (g_pos != table.getters_.end ());
               Getter* g = g_pos->second;
               pp->getters.push_back (g);
             }
@@ -637,9 +643,9 @@ static void tarjan (Node* n)
     {
     case Node::Unmarked:
       n->state = Node::Temporary;
-      for (size_t i = 0; i != n->OutgoingCount (); ++i)
+      for (size_t i = 0; i != n->outgoing_count (); ++i)
         {
-          Node* m = n->OutgoingNode (i);
+          Node* m = n->outgoing_node (i);
           tarjan (m);
         }
       n->state = Node::Marked;
@@ -654,10 +660,10 @@ static void tarjan (Node* n)
 }
 
 void
-Composer::enumerateActions ()
+Composer::enumerate_actions ()
 {
-  for (InstancesType::const_iterator pos = instances.begin (),
-       limit = instances.end ();
+  for (InstancesType::const_iterator pos = instances_.begin (),
+       limit = instances_.end ();
        pos != limit;
        ++pos)
     {
@@ -803,12 +809,12 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
   {
     if (action != NULL)
       {
-        activation = new Activation (action->instance, &node);
+        activation = new Activation (action->instance, node.mutable_phase_access);
         action->nodes.push_back (activation);
       }
     else if (reaction != NULL)
       {
-        activation = new Activation (reaction->instance, &node);
+        activation = new Activation (reaction->instance, node.mutable_phase_access);
         reaction->nodes.push_back (activation);
       }
     else
@@ -827,8 +833,8 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
   {
     size_t port = activation->instance->address + node.field->offset;
     // Find what is bound to this port.
-    Composer::PushPortsType::const_iterator port_pos = table.push_ports.find (port);
-    assert (port_pos != table.push_ports.end ());
+    Composer::PushPortsType::const_iterator port_pos = table.push_ports_.find (port);
+    assert (port_pos != table.push_ports_.end ());
     activation->nodes.push_back (port_pos->second);
     node.args ()->Accept (*this);
   }
@@ -858,8 +864,8 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
     size_t port = activation->instance->address + node.field->offset + idx * node.array_type->UnitSize ();
 
     // Find what is bound to this port.
-    Composer::PushPortsType::const_iterator port_pos = table.push_ports.find (port);
-    assert (port_pos != table.push_ports.end ());
+    Composer::PushPortsType::const_iterator port_pos = table.push_ports_.find (port);
+    assert (port_pos != table.push_ports_.end ());
     activation->nodes.push_back (port_pos->second);
     node.args ()->Accept (*this);
   }
@@ -880,13 +886,13 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
                 exec.stack ().load (ptr, node.expr ()->At (0)->type->Size ());
               }
             size_t inst_addr = reinterpret_cast<size_t> (exec.stack ().pop_pointer ());
-            InstancesType::const_iterator i_pos = table.instances.find (inst_addr);
-            assert (i_pos != table.instances.end ());
+            InstancesType::const_iterator i_pos = table.instances_.find (inst_addr);
+            assert (i_pos != table.instances_.end ());
             Instance* i = i_pos->second;
             const Callable* g = node.callable;
             assert (g != NULL);
-            GettersType::const_iterator g_pos = table.getters.find (GetterKey (i, g));
-            assert (g_pos != table.getters.end ());
+            GettersType::const_iterator g_pos = table.getters_.find (GetterKey (i, g));
+            assert (g_pos != table.getters_.end ());
             addCall (g_pos->second);
           }
 
@@ -894,8 +900,8 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
         if (function != NULL && function->function_kind == type::Function::PULL_PORT)
           {
             size_t port = get_instance ()->address + node.field->offset;
-            Composer::PullPortsType::const_iterator port_pos = table.pull_ports.find (port);
-            assert (port_pos != table.pull_ports.end ());
+            Composer::PullPortsType::const_iterator port_pos = table.pull_ports_.find (port);
+            assert (port_pos != table.pull_ports_.end ());
             addCall (port_pos->second);
           }
       }
@@ -984,10 +990,10 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
 };
 
 void
-Composer::elaborateActions ()
+Composer::elaborate_actions ()
 {
-  for (InstancesType::const_iterator ipos = instances.begin (),
-       ilimit = instances.end ();
+  for (InstancesType::const_iterator ipos = instances_.begin (),
+       ilimit = instances_.end ();
        ipos != ilimit;
        ++ipos)
     {
@@ -1004,10 +1010,10 @@ Composer::elaborateActions ()
 }
 
 void
-Composer::enumerateReactions ()
+Composer::enumerate_reactions ()
 {
-  for (InstancesType::const_iterator pos = instances.begin (),
-       limit = instances.end ();
+  for (InstancesType::const_iterator pos = instances_.begin (),
+       limit = instances_.end ();
        pos != limit;
        ++pos)
     {
@@ -1023,22 +1029,22 @@ Composer::enumerateReactions ()
             {
               for (type::Int::ValueType idx = 0; idx != reaction->dimension (); ++idx)
                 {
-                  reactions.insert (std::make_pair (ReactionKey (instance, reaction, idx), new Reaction (instance, reaction, idx)));
+                  reactions_.insert (std::make_pair (ReactionKey (instance, reaction, idx), new Reaction (instance, reaction, idx)));
                 }
             }
           else
             {
-              reactions.insert (std::make_pair (ReactionKey (instance, reaction), new Reaction (instance, reaction)));
+              reactions_.insert (std::make_pair (ReactionKey (instance, reaction), new Reaction (instance, reaction)));
             }
         }
     }
 }
 
 void
-Composer::elaborateReactions ()
+Composer::elaborate_reactions ()
 {
-  for (ReactionsType::const_iterator pos = reactions.begin (),
-       limit = reactions.end ();
+  for (ReactionsType::const_iterator pos = reactions_.begin (),
+       limit = reactions_.end ();
        pos != limit;
        ++pos)
     {
@@ -1049,10 +1055,10 @@ Composer::elaborateReactions ()
 }
 
 void
-Composer::enumerateGetters ()
+Composer::enumerate_getters ()
 {
-  for (InstancesType::const_iterator pos = instances.begin (),
-       limit = instances.end ();
+  for (InstancesType::const_iterator pos = instances_.begin (),
+       limit = instances_.end ();
        pos != limit;
        ++pos)
     {
@@ -1064,16 +1070,16 @@ Composer::enumerateGetters ()
            ++pos)
         {
           decl::Getter* getter = *pos;
-          getters.insert (std::make_pair (GetterKey (instance, getter), new Getter (instance, getter)));
+          getters_.insert (std::make_pair (GetterKey (instance, getter), new Getter (instance, getter)));
         }
     }
 }
 
 void
-Composer::elaborateGetters ()
+Composer::elaborate_getters ()
 {
-  for (GettersType::const_iterator pos = getters.begin (),
-       limit = getters.end ();
+  for (GettersType::const_iterator pos = getters_.begin (),
+       limit = getters_.end ();
        pos != limit;
        ++pos)
     {
@@ -1084,11 +1090,11 @@ Composer::elaborateGetters ()
 }
 
 void
-Composer::checkStructure ()
+Composer::check_structure ()
 {
   // Check that no reaction is bound more than once.
-  for (ReactionsType::const_iterator pos = reactions.begin (),
-       limit = reactions.end ();
+  for (ReactionsType::const_iterator pos = reactions_.begin (),
+       limit = reactions_.end ();
        pos != limit;
        ++pos)
     {
@@ -1101,8 +1107,8 @@ Composer::checkStructure ()
     }
 
   // Check that every pull port is bound exactly once.
-  for (Composer::PullPortsType::const_iterator pos = pull_ports.begin (),
-       limit = pull_ports.end ();
+  for (Composer::PullPortsType::const_iterator pos = pull_ports_.begin (),
+       limit = pull_ports_.end ();
        pos != limit;
        ++pos)
     {
@@ -1118,8 +1124,8 @@ Composer::checkStructure ()
 
   // Prove that the graph is acyclic.
   // We'll use Tarjan's algorithm on the actions since they are the roots.
-  for (InstancesType::const_iterator ipos = instances.begin (),
-       ilimit = instances.end ();
+  for (InstancesType::const_iterator ipos = instances_.begin (),
+       ilimit = instances_.end ();
        ipos != ilimit;
        ++ipos)
     {
@@ -1134,10 +1140,10 @@ Composer::checkStructure ()
 }
 
 void
-Composer::computeInstanceSets ()
+Composer::compute_instance_sets ()
 {
-  for (InstancesType::const_iterator ipos = instances.begin (),
-       ilimit = instances.end ();
+  for (InstancesType::const_iterator ipos = instances_.begin (),
+       ilimit = instances_.end ();
        ipos != ilimit;
        ++ipos)
     {
@@ -1146,33 +1152,33 @@ Composer::computeInstanceSets ()
            pos != limit;
            ++pos)
         {
-          (*pos)->GetInstanceSet ();
+          (*pos)->instance_set ();
         }
     }
 }
 
 void
-Composer::ElaborateComposition ()
+Composer::elaborate ()
 {
   // At this point, we have instances, push ports, and pull ports.
   // Enumerate getters first because they can be called by actions and reactions.
-  enumerateGetters ();
-  elaborateGetters ();
-  enumerateActions ();
-  elaborateActions ();
-  enumerateReactions ();
-  elaborateReactions ();
+  enumerate_getters ();
+  elaborate_getters ();
+  enumerate_actions ();
+  elaborate_actions ();
+  enumerate_reactions ();
+  elaborate_reactions ();
   // At this point, we have instances, push ports, pull ports, actions, reactions, and activations.
   // The edges from actions and reactions to activations are present.
   // The edges from activations to push ports are present.
-  elaborateBindings ();
+  elaborate_bindings ();
 }
 
 void
-Composer::AnalyzeComposition ()
+Composer::analyze ()
 {
-  checkStructure ();
-  computeInstanceSets ();
+  check_structure ();
+  compute_instance_sets ();
 }
 
 static void collect (std::set<Node*>& nodes, Node* n)
@@ -1180,21 +1186,21 @@ static void collect (std::set<Node*>& nodes, Node* n)
   if (nodes.count (n) == 0)
     {
       nodes.insert (n);
-      for (size_t i = 0; i != n->OutgoingCount (); ++i)
+      for (size_t i = 0; i != n->outgoing_count (); ++i)
         {
-          collect (nodes, n->OutgoingNode (i));
+          collect (nodes, n->outgoing_node (i));
         }
     }
 }
 
 void
-Composer::DumpGraphviz () const
+Composer::dump_graphviz () const
 {
   // Collect all the nodes.
   // Necessary if graph is cyclic.
   std::set<Node*> nodes;
-  for (InstancesType::const_iterator ipos = instances.begin (),
-       ilimit = instances.end ();
+  for (InstancesType::const_iterator ipos = instances_.begin (),
+       ilimit = instances_.end ();
        ipos != ilimit;
        ++ipos)
     {
@@ -1216,9 +1222,9 @@ Composer::DumpGraphviz () const
     {
       Node* node = *pos;
       std::cout << '"' << node->name << '"' << " -> " << '{';
-      for (size_t i = 0; i != node->OutgoingCount (); ++i)
+      for (size_t i = 0; i != node->outgoing_count (); ++i)
         {
-          std::cout << ' ' << '"' << node->OutgoingNode (i)->name << '"';
+          std::cout << ' ' << '"' << node->outgoing_node (i)->name << '"';
         }
       std::cout << "}\n";
     }

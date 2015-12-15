@@ -8,7 +8,6 @@
 #include "types.hpp"
 #include "ast.hpp"
 #include "symbol_visitor.hpp"
-#include "composition.hpp"
 
 namespace semantic
 {

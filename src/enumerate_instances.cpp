@@ -66,9 +66,9 @@ instantiate_contained_instances (const type::Type * type,
     {
       assert (named_type != NULL);
 
-      composition::Instance* instance = new composition::Instance (parent, address, named_type, initializer, node, name);
+      composition::Instance* instance = new composition::Instance (parent, address, named_type, initializer, (node != NULL) ? node->operation : NULL, name);
       this->instance = instance;
-      instance_table.AddInstance (instance);
+      instance_table.add_instance (instance);
 
       // Recur changing instance.
       visitor v (instance_table, instance, NULL, address, NULL, line, NULL, name);
@@ -126,10 +126,10 @@ instantiate_contained_instances (const type::Type * type,
           // Do nothing.
           break;
         case type::Function::PUSH_PORT:
-          instance_table.AddPushPort (address, parent, field, name);
+          instance_table.add_push_port (address, parent, field, name);
           break;
         case type::Function::PULL_PORT:
-          instance_table.AddPullPort (address, parent, field, name);
+          instance_table.add_pull_port (address, parent, field, name);
           break;
         }
     }
