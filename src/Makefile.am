@@ -22,7 +22,6 @@ check_mutability.hpp check_mutability.cpp \
 check_control.hpp check_control.cpp \
 compute_receiver_access.hpp compute_receiver_access.cpp \
 composition.hpp composition.cpp \
-ComputeReceiverAccess.cpp \
 debug.hpp \
 enter_symbols.cpp \
 enumerate_instances.cpp \
