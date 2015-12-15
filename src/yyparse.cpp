@@ -1,7 +1,9 @@
 #include "yyparse.hpp"
-#include "parser.hpp"
+
 #include <error.h>
-#include "debug.hpp"
+
+#include "parser.hpp"
+#include "location.hpp"
 
 ast::Node *root = NULL;
 

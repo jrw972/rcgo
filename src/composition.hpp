@@ -1,8 +1,8 @@
 #ifndef rc_src_composition_hpp
 #define rc_src_composition_hpp
 
-#include "type.hpp"
 #include "types.hpp"
+#include "type.hpp"
 
 namespace Composition
 {

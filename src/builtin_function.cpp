@@ -1,10 +1,4 @@
 #include "builtin_function.hpp"
-#include "symbol_visitor.hpp"
-#include "executor_base.hpp"
-#include "heap.hpp"
-#include "ast.hpp"
-#include "runtime.hpp"
-#include "semantic.hpp"
 
 #include <error.h>
 #include <errno.h>
@@ -17,6 +11,13 @@
 #include <netinet/in.h>
 #include <netinet/udp.h>
 #include <netdb.h>
+
+#include "symbol_visitor.hpp"
+#include "executor_base.hpp"
+#include "heap.hpp"
+#include "ast.hpp"
+#include "runtime.hpp"
+#include "semantic.hpp"
 
 using namespace Type;
 using namespace ast;

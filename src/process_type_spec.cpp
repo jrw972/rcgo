@@ -1,7 +1,9 @@
 #include "semantic.hpp"
+
+#include <error.h>
+
 #include "type.hpp"
 #include "ast.hpp"
-#include <error.h>
 #include "symbol.hpp"
 #include "ast_visitor.hpp"
 

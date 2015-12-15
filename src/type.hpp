@@ -2,12 +2,13 @@
 #define rc_src_type_hpp
 
 #include "types.hpp"
-#include "debug.hpp"
-#include "util.hpp"
+
 #include <vector>
 #include <string>
 #include <sstream>
 #include <cstring>
+
+#include "util.hpp"
 
 #define type_not_reached(type) do { std::cerr << '\n' << type << std::endl; not_reached; } while (0);
 

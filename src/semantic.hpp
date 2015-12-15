@@ -1,11 +1,12 @@
 #ifndef rc_src_semantic_hpp
 #define rc_src_semantic_hpp
 
+#include <error.h>
+
 #include <utility>
 
 #include "types.hpp"
 #include "ast.hpp"
-#include <error.h>
 #include "symbol_visitor.hpp"
 #include "composition.hpp"
 

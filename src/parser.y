@@ -2,6 +2,7 @@
 #include "scanner.hpp"
 #include "yyparse.hpp"
 #include "debug.hpp"
+#include "ast.hpp"
 
 using namespace ast;
 %}

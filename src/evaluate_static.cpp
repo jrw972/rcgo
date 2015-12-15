@@ -1,10 +1,12 @@
 #include "evaluate_static.hpp"
+
 #include "type.hpp"
-using namespace Type;
 #include "ast.hpp"
 #include "ast_visitor.hpp"
-using namespace ast;
 #include "symbol.hpp"
+
+using namespace Type;
+using namespace ast;
 
 std::ostream&
 operator<< (std::ostream& o,

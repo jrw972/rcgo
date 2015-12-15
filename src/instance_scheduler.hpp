@@ -1,8 +1,9 @@
 #ifndef rc_src_instance_scheduler_hpp
 #define rc_src_instance_scheduler_hpp
 
-#include "types.hpp"
 #include <pthread.h>
+
+#include "types.hpp"
 #include "heap.hpp"
 #include "stack.hpp"
 #include "executor_base.hpp"

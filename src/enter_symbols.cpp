@@ -1,10 +1,12 @@
+#include <error.h>
+
 #include "ast.hpp"
 #include "ast_visitor.hpp"
 #include "symbol.hpp"
-#include <error.h>
 #include "builtin_function.hpp"
 #include "template.hpp"
 #include "runtime.hpp"
+
 using namespace ast;
 
 void

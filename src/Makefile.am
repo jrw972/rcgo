@@ -48,7 +48,6 @@ symbol.hpp symbol.cpp \
 symbol_visitor.hpp \
 template.hpp template.cpp \
 type.hpp type.cpp \
-type_check_expression.cpp \
 types.hpp \
 util.hpp \
 value.hpp value.cpp \

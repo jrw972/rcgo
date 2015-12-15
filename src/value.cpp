@@ -2,8 +2,6 @@
 
 #include <utility>
 
-#include "type.hpp"
-
 using namespace Type;
 using namespace std::rel_ops;
 

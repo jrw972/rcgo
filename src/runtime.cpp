@@ -1,10 +1,12 @@
 #include "runtime.hpp"
+
+#include <error.h>
+
 #include "callable.hpp"
 #include "symbol_visitor.hpp"
 #include "types.hpp"
 #include "ast_visitor.hpp"
 #include "reaction.hpp"
-#include <error.h>
 #include "field.hpp"
 #include "composition.hpp"
 #include "heap.hpp"

@@ -1,10 +1,13 @@
 #include "partitioned_scheduler.hpp"
+
+#include <errno.h>
+#include <error.h>
+
+#include <list>
+
 #include "debug.hpp"
 #include "heap.hpp"
 #include "runtime.hpp"
-#include <list>
-#include <errno.h>
-#include <error.h>
 
 using namespace decl;
 

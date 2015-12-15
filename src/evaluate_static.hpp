@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <map>
+
 #include "type.hpp"
 
 class static_memory_t

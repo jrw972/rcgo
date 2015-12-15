@@ -1,7 +1,9 @@
 #include "instance_scheduler.hpp"
+
+#include <cstdlib>
+#include <cstring>
+
 #include "runtime.hpp"
-#include <stdlib.h>
-#include <string.h>
 #include "heap.hpp"
 #include "stack.hpp"
 #include "action.hpp"

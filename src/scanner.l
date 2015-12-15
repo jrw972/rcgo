@@ -7,6 +7,8 @@
 #include "parser.hpp"
 #include "debug.hpp"
 #include "type.hpp"
+#include "location.hpp"
+#include "ast.hpp"
 #include <error.h>
 
   using namespace Type;

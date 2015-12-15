@@ -1,7 +1,9 @@
 #include "symbol.hpp"
+
+#include <error.h>
+
 #include "symbol_visitor.hpp"
 #include "ast.hpp"
-#include <error.h>
 
 std::string const ReturnSymbol ("0return");
 

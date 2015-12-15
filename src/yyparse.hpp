@@ -1,8 +1,7 @@
 #ifndef rc_src_yyparse_hpp
 #define rc_src_yyparse_hpp
 
-#include "ast.hpp"
-#include "type.hpp"
+#include "types.hpp"
 
 #define YYLTYPE size_t
 

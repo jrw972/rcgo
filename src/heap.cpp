@@ -1,9 +1,11 @@
 #include "heap.hpp"
+
+#include <cstring>
+#include <pthread.h>
+
 #include "util.hpp"
 #include "type.hpp"
 #include "debug.hpp"
-#include <string.h>
-#include <pthread.h>
 
 /*
   A heap consists of a number of blocks.  A block represents a

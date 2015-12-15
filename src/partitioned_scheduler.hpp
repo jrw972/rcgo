@@ -1,17 +1,19 @@
 #ifndef rc_src_partitioned_scheduler_hpp
 #define rc_src_partitioned_scheduler_hpp
 
-#include "types.hpp"
 #include <pthread.h>
+#include <poll.h>
+#include <sys/eventfd.h>
+#include <unistd.h>
+
+#include <queue>
+
+#include "types.hpp"
 #include "heap.hpp"
 #include "stack.hpp"
 #include "executor_base.hpp"
 #include "composition.hpp"
 #include "runtime.hpp"
-#include <queue>
-#include <poll.h>
-#include <sys/eventfd.h>
-#include <unistd.h>
 
 class partitioned_scheduler_t
 {
