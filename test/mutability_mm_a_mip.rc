@@ -1,5 +1,5 @@
 func f () {
   var x *int;
-  var y +const *int;
+  var y $const *int;
   x = y;
 }

@@ -27,11 +27,13 @@ struct Visitor
   virtual void visit (ast_binary_arithmetic_expr_t& node) = 0;
   virtual void visit (ast_address_of_expr_t& node) = 0;
   virtual void visit (ast_call_expr_t& node) = 0;
+  virtual void visit (ast_conversion_expr_t& node) = 0;
   virtual void visit (ast_dereference_expr_t& node) = 0;
   virtual void visit (ast_implicit_dereference_expr_t& node) = 0;
   virtual void visit (ast_identifier_expr_t& node) = 0;
   virtual void visit (ast_index_expr_t& node) = 0;
   virtual void visit (ast_slice_expr_t& node) = 0;
+  virtual void visit (ast_auto_expr_t& node) = 0;
   virtual void visit (ast_indexed_port_call_expr_t& node) = 0;
   virtual void visit (ast_list_expr_t& node) = 0;
   virtual void visit (ast_literal_expr_t& node) = 0;
@@ -69,6 +71,8 @@ struct Visitor
   virtual void visit (ast_dimensioned_reaction_t& node) = 0;
   virtual void visit (Type& node) = 0;
   virtual void visit (SourceFile& node) = 0;
+  virtual void visit (ast_element_list_t& node) = 0;
+  virtual void visit (ast_composite_literal_t& node) = 0;
 };
 
 struct ConstVisitor
@@ -92,11 +96,13 @@ struct ConstVisitor
   virtual void visit (const ast_binary_arithmetic_expr_t& node) = 0;
   virtual void visit (const ast_address_of_expr_t& node) = 0;
   virtual void visit (const ast_call_expr_t& node) = 0;
+  virtual void visit (const ast_conversion_expr_t& node) = 0;
   virtual void visit (const ast_dereference_expr_t& node) = 0;
   virtual void visit (const ast_implicit_dereference_expr_t& node) = 0;
   virtual void visit (const ast_identifier_expr_t& node) = 0;
   virtual void visit (const ast_index_expr_t& node) = 0;
   virtual void visit (const ast_slice_expr_t& node) = 0;
+  virtual void visit (const ast_auto_expr_t& node) = 0;
   virtual void visit (const ast_indexed_port_call_expr_t& node) = 0;
   virtual void visit (const ast_list_expr_t& node) = 0;
   virtual void visit (const ast_literal_expr_t& node) = 0;
@@ -134,6 +140,8 @@ struct ConstVisitor
   virtual void visit (const ast_dimensioned_reaction_t& node) = 0;
   virtual void visit (const Type& node) = 0;
   virtual void visit (const SourceFile& node) = 0;
+  virtual void visit (const ast_element_list_t& node) = 0;
+  virtual void visit (const ast_composite_literal_t& node) = 0;
 };
 
 struct DefaultVisitor : public Visitor
@@ -216,6 +224,10 @@ struct DefaultVisitor : public Visitor
   {
     default_action (node);
   }
+  virtual void visit (ast_conversion_expr_t& node)
+  {
+    default_action (node);
+  }
   virtual void visit (ast_dereference_expr_t& node)
   {
     default_action (node);
@@ -233,6 +245,10 @@ struct DefaultVisitor : public Visitor
     default_action (node);
   }
   virtual void visit (ast_slice_expr_t& node)
+  {
+    default_action (node);
+  }
+  virtual void visit (ast_auto_expr_t& node)
   {
     default_action (node);
   }
@@ -389,6 +405,16 @@ struct DefaultVisitor : public Visitor
     default_action (node);
   }
 
+  virtual void visit (ast_element_list_t& node)
+  {
+    default_action (node);
+  }
+
+  virtual void visit (ast_composite_literal_t& node)
+  {
+    default_action (node);
+  }
+
   virtual void default_action (Node& node) { }
 };
 
@@ -472,6 +498,10 @@ struct DefaultConstVisitor : public ConstVisitor
   {
     default_action (node);
   }
+  virtual void visit (const ast_conversion_expr_t& node)
+  {
+    default_action (node);
+  }
   virtual void visit (const ast_dereference_expr_t& node)
   {
     default_action (node);
@@ -489,6 +519,10 @@ struct DefaultConstVisitor : public ConstVisitor
     default_action (node);
   }
   virtual void visit (const ast_slice_expr_t& node)
+  {
+    default_action (node);
+  }
+  virtual void visit (const ast_auto_expr_t& node)
   {
     default_action (node);
   }
@@ -641,6 +675,16 @@ struct DefaultConstVisitor : public ConstVisitor
   }
 
   virtual void visit (const SourceFile& node)
+  {
+    default_action (node);
+  }
+
+  virtual void visit (const ast_element_list_t& node)
+  {
+    default_action (node);
+  }
+
+  virtual void visit (const ast_composite_literal_t& node)
   {
     default_action (node);
   }

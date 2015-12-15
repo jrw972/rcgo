@@ -134,20 +134,6 @@ struct MutabilityVisitor : public ast::DefaultVisitor
 
   void visit (ast_call_expr_t& node)
   {
-    if (node.expr ()->expression_kind == kType)
-      {
-        node.args ()->Accept (*this);
-        // Conversion.
-        node.intrinsic_mutability = IMMUTABLE;
-        node.dereference_mutability = node.args ()->At (0)->dereference_mutability;
-        if (node.reset_mutability)
-          {
-            node.dereference_mutability = MUTABLE;
-          }
-        fix (node);
-        return;
-      }
-
     node.VisitChildren (*this);
 
     if (node.callable != NULL)
@@ -160,6 +146,18 @@ struct MutabilityVisitor : public ast::DefaultVisitor
       }
     node.intrinsic_mutability = IMMUTABLE;
     node.dereference_mutability = node.return_parameter->dereference_mutability;
+    fix (node);
+  }
+
+  void visit (ast_conversion_expr_t& node)
+  {
+    node.expr ()->Accept (*this);
+    node.intrinsic_mutability = IMMUTABLE;
+    node.dereference_mutability = node.expr ()->dereference_mutability;
+    if (node.reset_mutability)
+      {
+        node.dereference_mutability = MUTABLE;
+      }
     fix (node);
   }
 
@@ -531,6 +529,16 @@ struct MutabilityVisitor : public ast::DefaultVisitor
   {
     node.args ()->Accept (*this);
     node.index ()->Accept (*this);
+  }
+
+  void visit (ast_composite_literal_t& node)
+  {
+    node.literal_value ()->Accept (*this);
+  }
+
+  void visit (ast_element_list_t& node)
+  {
+    node.VisitChildren (*this);
   }
 };
 

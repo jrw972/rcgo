@@ -26,6 +26,7 @@ using namespace ast;
 %type <node> Const
 %type <node> Definition
 %type <node> DefinitionList
+%type <node> ElementType
 %type <node> EmptyStatement
 %type <node> Expression
 %type <node> ExpressionList
@@ -41,11 +42,15 @@ using namespace ast;
 %type <node> IndexExpression
 %type <node> Init
 %type <node> Instance
+%type <node> KeyType
+%type <node> LiteralValue
+%type <node> MapType
 %type <node> Method
 %type <node> MultiplyExpression
-%type <node> Operand
+%type <node> OptionalExpression
 %type <node> OptionalExpressionList
 %type <node> OptionalPushPortCallList
+%type <node> OptionalTypeOrExpressionList
 %type <node> OrExpression
 %type <node> Parameter
 %type <node> ParameterList
@@ -69,7 +74,9 @@ using namespace ast;
 %type <node> TypeLit
 %type <node> TypeName
 %type <node> TypeLitExpression
+%type <node> TypeOrExpressionList
 %type <node> UnaryExpression
+%type <node> Value
 %type <node> VarStatement
 %type <node> WhileStatement
 
@@ -81,6 +88,9 @@ using namespace ast;
 %token ACTION ACTIVATE BIND BREAK CASE CHANGE COMPONENT CONST CONTINUE DEFAULT ELSE ENUM FALLTHROUGH FOR FOREIGN_KW FUNC GETTER GOTO HEAP IF INIT INSTANCE INTERFACE MAP PULL PUSH RANGE REACTION RETURN_KW STRUCT SWITCH TYPE VAR
 
 %token LEFT_SHIFT RIGHT_SHIFT AND_NOT ADD_ASSIGN SUBTRACT_ASSIGN MULTIPLY_ASSIGN DIVIDE_ASSIGN MODULUS_ASSIGN AND_ASSIGN OR_ASSIGN XOR_ASSIGN LEFT_SHIFT_ASSIGN RIGHT_SHIFT_ASSIGN AND_NOT_ASSIGN LOGIC_AND LOGIC_OR LEFT_ARROW RIGHT_ARROW INCREMENT DECREMENT EQUAL NOT_EQUAL LESS_EQUAL MORE_EQUAL SHORT_ASSIGN DOTDOTDOT
+
+%precedence '{'
+%precedence IDENTIFIER
 
 %%
 
@@ -119,12 +129,9 @@ Mutability:
 { $$ = FOREIGN; }
 
 DereferenceMutability:
-/* Empty. */
-{ $$ = MUTABLE; }
-| '+' CONST
-{ $$ = IMMUTABLE; }
-| '+' FOREIGN_KW
-{ $$ = FOREIGN; }
+  /* Empty. */   { $$ = MUTABLE; }
+| '$' CONST      { $$ = IMMUTABLE; }
+| '$' FOREIGN_KW { $$ = FOREIGN; }
 
 Receiver:
   '(' IDENTIFIER Mutability DereferenceMutability '*' IDENTIFIER ')'
@@ -215,7 +222,10 @@ ActivateStatement: ACTIVATE OptionalPushPortCallList Block { $$ = new ast_activa
 
 ChangeStatement: CHANGE '(' Expression ',' IDENTIFIER ')' Block { $$ = new ast_change_statement_t (@1, $3, $5, $7); }
 
-ForIotaStatement: FOR IDENTIFIER DOTDOTDOT Expression Block { $$ = new ast_for_iota_statement_t (@1, $2, $4, $5); }
+ForIotaStatement: FOR '(' IDENTIFIER DOTDOTDOT Expression ')' Block {
+  unimplemented;
+  // $$ = new ast_for_iota_statement_t (@1, $2, $4, $5);
+ }
 
 ReturnStatement: RETURN_KW Expression ';' { $$ = new ast_return_statement_t (@1, $2); }
 
@@ -236,8 +246,17 @@ IndexExpression: '[' Expression ']' { $$ = $2; }
 OptionalExpressionList: /* Empty. */ { $$ = new ast_list_expr_t (yyloc); }
 | ExpressionList { $$ = $1; }
 
+OptionalTypeOrExpressionList: /* Empty. */ { $$ = new ast_list_expr_t (yyloc); }
+| TypeOrExpressionList { $$ = $1; }
+
 ExpressionList: Expression { $$ = (new ast_list_expr_t (@1))->Append ($1); }
 | ExpressionList ',' Expression { $$ = $1->Append ($3); }
+
+TypeOrExpressionList:
+  Expression { $$ = (new ast_list_expr_t (@1))->Append ($1); }
+| TypeLitExpression { $$ = (new ast_list_expr_t (@1))->Append (new TypeExpression (@1, $1)); }
+| TypeOrExpressionList ',' Expression { $$ = $1->Append ($3); }
+| TypeOrExpressionList ',' TypeLitExpression { $$ = $1->Append (new TypeExpression (@1, $3)); }
 
 ExpressionStatement: Expression ';' {
   $$ = new ast_expression_statement_t (@1, $1);
@@ -246,6 +265,7 @@ ExpressionStatement: Expression ';' {
 VarStatement: VAR IdentifierList Mutability DereferenceMutability Type '=' ExpressionList ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, $5, $7); }
 | VAR IdentifierList Mutability DereferenceMutability Type ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, $5, new ast_list_expr_t (@1)); }
 | VAR IdentifierList Mutability DereferenceMutability '=' ExpressionList ';' { $$ = new ast_var_statement_t (@1, $2, $3, $4, new ast_empty_type_spec_t (@1), $6); }
+| IdentifierList Mutability DereferenceMutability SHORT_ASSIGN ExpressionList ';' { $$ = new ast_var_statement_t (@1, $1, $2, $3, new ast_empty_type_spec_t (@1), $5); }
 
 AssignmentStatement: Expression '=' Expression ';' { $$ = new ast_assign_statement_t (@1, $1, $3); } /* CHECK */
 | Expression ADD_ASSIGN Expression ';' { $$ = new ast_add_assign_statement_t (@1, $1, $3); } /* CHECK */
@@ -269,20 +289,29 @@ TypeLitExpression:
 //| FunctionType  { $$ = $1; }
 //| InterfaceType { $$ = $1; }
 | SliceType     { $$ = $1; }
-//| MapType       { $$ = $1; }
+| MapType       { $$ = $1; }
 | ComponentType { $$ = $1; }
 | PushPortType  { $$ = $1; }
 | PullPortType  { $$ = $1; }
 | HeapType      { $$ = $1; }
 
 ArrayType:
-  ArrayDimension Type { $$ = new ast_array_type_spec_t (@1, $1, $2); }
+  ArrayDimension ElementType { $$ = new ast_array_type_spec_t (@1, $1, $2); }
+
+ElementType:
+  Type { $$ = $1; }
 
 StructType:
   STRUCT '{' FieldList '}' { $$ = $3; }
 
 SliceType:
-  '[' ']' Type { $$ = new ast_slice_type_spec_t (@1, $3); }
+  '[' ']' ElementType { $$ = new ast_slice_type_spec_t (@1, $3); }
+
+MapType:
+  MAP '[' KeyType ']' ElementType { unimplemented; }
+
+KeyType:
+  Type { $$ = $1; }
 
 ComponentType:
   COMPONENT '{' FieldList '}' {
@@ -318,6 +347,12 @@ ArrayDimension: '[' Expression ']' { $$ = $2; }
 
 FieldList: /* empty */ { $$ = new ast_field_list_type_spec_t (yyloc); }
 | FieldList IdentifierList Type ';' { $$ = $1->Append (new ast_identifier_list_type_spec_t (@1, $2, MUTABLE, MUTABLE, $3)); }
+
+OptionalExpression:
+  /* empty */
+{ $$ = new ast_auto_expr_t (yyloc); }
+| Expression
+{ $$ = $1; }
 
 Expression: OrExpression { $$ = $1; }
 
@@ -359,22 +394,41 @@ UnaryExpression: PrimaryExpression { $$ = $1; }
 | '&' UnaryExpression { $$ = new ast_address_of_expr_t (@1, $2); }
 
 PrimaryExpression:
-Operand
-{ $$ = $1; }
-| TypeLitExpression
-{ $$ = new TypeExpression (@1, $1); }
-| PrimaryExpression '.' IDENTIFIER
-{ $$ = new ast_select_expr_t (@1, $1, $3); }
-| PrimaryExpression '[' Expression ']'
-{ $$ = new ast_index_expr_t (@1, $1, $3); }
-| PrimaryExpression '[' Expression ':' Expression ']'
-{ $$ = new ast_slice_expr_t (@1, $1, $3, $5); }
-/* | PrimaryExpression TypeAssertion { unimplemented; } */
-| PrimaryExpression '(' OptionalExpressionList ')'
-{ $$ = new ast_call_expr_t (@1, $1, $3); }
-
-Operand: LITERAL { $$ = $1; }
+  LITERAL { $$ = $1; }
+| TypeLitExpression LiteralValue { unimplemented; }
+| IDENTIFIER LiteralValue { $$ = new ast_composite_literal_t (@1, new ast_identifier_type_spec_t (@1, $1), $2); }
+| '[' DOTDOTDOT ']' ElementType LiteralValue { unimplemented; }
+/* | FunctionLit */
 | IDENTIFIER { $$ = new ast_identifier_expr_t (@1, $1); }
 | '(' Expression ')' { $$ = $2; }
+| PrimaryExpression '.' IDENTIFIER { $$ = new ast_select_expr_t (@1, $1, $3); }
+| PrimaryExpression '[' Expression ']' { $$ = new ast_index_expr_t (@1, $1, $3); }
+| PrimaryExpression '[' OptionalExpression ':' OptionalExpression ']' { $$ = new ast_slice_expr_t (@1, $1, $3, $5, new ast_auto_expr_t (yyloc)); }
+| PrimaryExpression '[' OptionalExpression ':' Expression ':' Expression ']' { $$ = new ast_slice_expr_t (@1, $1, $3, $5, $7); }
+/* | PrimaryExpression TypeAssertion { unimplemented; } */
+| PrimaryExpression '(' OptionalTypeOrExpressionList ')' { $$ = new ast_call_expr_t (@1, $1, $3); }
+| TypeLitExpression '(' Expression ')' { $$ = new ast_conversion_expr_t (@1, new TypeExpression (@1, $1), $3); }
+
+LiteralValue:
+'{' '}' { $$ = new ast_element_list_t (@1); }
+| '{' ElementList OptionalComma '}' { unimplemented; }
+
+ElementList:
+  Element { unimplemented; }
+| ElementList ',' Element { unimplemented; }
+
+Element:
+  Key ':' Value { unimplemented; }
+| Value { unimplemented; }
+
+Key:
+  Expression { unimplemented; }
+| LiteralValue { unimplemented; }
+
+Value:
+  Expression { unimplemented; }
+| LiteralValue { unimplemented; }
+
+OptionalComma: /* empty */ | ','
 
 %%

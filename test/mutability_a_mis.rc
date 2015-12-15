@@ -4,6 +4,6 @@ type T struct {
 
 func f () {
   var x *int;
-  var y +const T;
+  var y $const T;
   x = y.s;
 }

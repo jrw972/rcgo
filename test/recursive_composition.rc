@@ -2,12 +2,12 @@ type C1 component {
   foo push ();
 };
 
-action (this +const *C1) Foo (true) {
+action (this $const *C1) Foo (true) {
   activate foo () {
   }
 }
 
-reaction (this +const *C1) Bar () {
+reaction (this $const *C1) Bar () {
   activate foo () {
   }
 }
@@ -16,7 +16,7 @@ type System component {
   x,y C1;
 };
 
-bind (this +const *System) Binder {
+bind (this $const *System) Binder {
   this.x.foo -> this.y.Bar;
   this.y.foo -> this.x.Bar;
 }

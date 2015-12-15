@@ -34,7 +34,7 @@ init (this *Sub) Init (x int; y int) bool {
   return x < y;
 }
 
-reaction (this +const *Sub) AReaction (x int; y int) {
+reaction (this $const *Sub) AReaction (x int; y int) {
   {
     test (9, `call a push/reaction`, x == 1 && y == 2);
   }
@@ -43,7 +43,7 @@ reaction (this +const *Sub) AReaction (x int; y int) {
   }
 }
 
-getter (this +const *Sub) Getter (x int; y int) bool {
+getter (this $const *Sub) Getter (x int; y int) bool {
   return x < y;
 }
 
@@ -92,7 +92,7 @@ init (this *Test) Main () {
   }
 }
 
-action (this +const *Test) AnAction (!this.flag) {
+action (this $const *Test) AnAction (!this.flag) {
   {
     test (7, `call a getter`, this.sub.Getter (1,2) == true);
   }

@@ -187,6 +187,7 @@ ESCAPED \\[abfnrtv\\\"]
 "type"                 { return TYPE; }
 "var"                  { return VAR; }
 
+"$"                    { return *yytext; }
 "+"                    { return *yytext; }
 "-"                    { return *yytext; }
 "*"                    { return *yytext; }

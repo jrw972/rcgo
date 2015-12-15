@@ -1,5 +1,5 @@
 type C component { };
 
-getter (this +const *C) Getter (x *int) int {
+getter (this $const *C) Getter (x *int) int {
   return 0;
 }

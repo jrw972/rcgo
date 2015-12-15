@@ -195,12 +195,6 @@ struct Visitor : public ast::DefaultVisitor
 
   void visit (ast_call_expr_t& node)
   {
-    if (node.expr ()->expression_kind == kType)
-      {
-        node.args ()->Accept (*this);
-        return;
-      }
-
     node.VisitChildren (*this);
     if (node.function_type)
       {
@@ -279,6 +273,11 @@ struct Visitor : public ast::DefaultVisitor
     not_reached;
   }
 
+  void visit (ast_conversion_expr_t& node)
+  {
+    node.expr ()->Accept (*this);
+  }
+
   void visit (ast_identifier_expr_t& node)
   {
     // Do nothing.
@@ -343,6 +342,16 @@ struct Visitor : public ast::DefaultVisitor
   {
     node.index ()->Accept (*this);
     node.args ()->Accept (*this);
+  }
+
+  void visit (ast_composite_literal_t& node)
+  {
+    node.literal_value ()->Accept (*this);
+  }
+
+  void visit (ast_element_list_t& node)
+  {
+    node.VisitChildren (*this);
   }
 };
 }

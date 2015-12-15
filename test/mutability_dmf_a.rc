@@ -1,4 +1,4 @@
 func f () {
-  var x +foreign * int;
+  var x $foreign * int;
   *x = 1;
 }

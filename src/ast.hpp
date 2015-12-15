@@ -189,10 +189,6 @@ struct ast_array_type_spec_t : public Node
   {
     return At (DIMENSION);
   }
-  Node*& dimension_ref ()
-  {
-    return At (DIMENSION);
-  }
   Node* base_type () const
   {
     return At (BASE_TYPE);
@@ -217,10 +213,6 @@ struct ast_unary_t : public Node
   }
 
   Node* child () const
-  {
-    return At (CHILD);
-  }
-  Node*& child_ref ()
   {
     return At (CHILD);
   }
@@ -431,10 +423,6 @@ struct ast_unary_expr_t : public Node
   {
     return At (CHILD);
   }
-  Node*& child_ref ()
-  {
-    return At (CHILD);
-  }
 };
 
 struct ast_binary_expr_t : public Node
@@ -453,17 +441,9 @@ struct ast_binary_expr_t : public Node
     set (RIGHT, right);
   }
 
-  Node*& left_ref ()
-  {
-    return At (LEFT);
-  }
   Node* left () const
   {
     return At (LEFT);
-  }
-  Node*& right_ref ()
-  {
-    return At (RIGHT);
   }
   Node* right () const
   {
@@ -522,17 +502,12 @@ struct ast_call_expr_t : public Node
     , method_type (NULL)
     , signature (NULL)
     , return_parameter (NULL)
-    , reset_mutability (false)
   {
     set (EXPR, expr);
     set (ARGS, args);
   }
 
   Node* expr () const
-  {
-    return At (EXPR);
-  }
-  Node*& expr_ref ()
   {
     return At (EXPR);
   }
@@ -548,6 +523,37 @@ struct ast_call_expr_t : public Node
   const Type::Method* method_type;
   const Type::Signature* signature;
   const ParameterSymbol* return_parameter;
+};
+
+struct ast_conversion_expr_t : public Node
+{
+  enum
+  {
+    TYPE_EXPR,
+    EXPR,
+    COUNT,
+  };
+
+  ast_conversion_expr_t (unsigned int line, Node* type_expr, Node* expr)
+    : Node (line, COUNT)
+    , reset_mutability (false)
+  {
+    set (TYPE_EXPR, type_expr);
+    set (EXPR, expr);
+  }
+
+  Node* type_expr () const
+  {
+    return At (TYPE_EXPR);
+  }
+  Node* expr () const
+  {
+    return At (EXPR);
+  }
+
+  void Accept (Visitor& visitor);
+  void Accept (ConstVisitor& visitor) const;
+
   bool reset_mutability;
 };
 
@@ -615,15 +621,7 @@ struct ast_index_expr_t : public Node
   {
     return At (BASE);
   }
-  Node*& base_ref ()
-  {
-    return At (BASE);
-  }
   Node* index () const
-  {
-    return At (INDEX);
-  }
-  Node*& index_ref ()
   {
     return At (INDEX);
   }
@@ -642,10 +640,11 @@ struct ast_slice_expr_t : public Node
     BASE,
     LOW,
     HIGH,
+    CAPACITY,
     COUNT,
   };
 
-  ast_slice_expr_t (unsigned int line, Node* base, Node* low, Node* high)
+  ast_slice_expr_t (unsigned int line, Node* base, Node* low, Node* high, Node* capacity)
     : Node (line, COUNT)
     , array_type (NULL)
     , slice_type (NULL)
@@ -653,13 +652,10 @@ struct ast_slice_expr_t : public Node
     set (BASE, base);
     set (LOW, low);
     set (HIGH, high);
+    set (CAPACITY, capacity);
   }
 
   Node* base () const
-  {
-    return At (BASE);
-  }
-  Node*& base_ref ()
   {
     return At (BASE);
   }
@@ -667,17 +663,13 @@ struct ast_slice_expr_t : public Node
   {
     return At (LOW);
   }
-  Node*& low_ref ()
-  {
-    return At (LOW);
-  }
   Node* high () const
   {
     return At (HIGH);
   }
-  Node*& high_ref ()
+  Node* capacity () const
   {
-    return At (HIGH);
+    return At (CAPACITY);
   }
 
   void Accept (Visitor& visitor);
@@ -685,6 +677,16 @@ struct ast_slice_expr_t : public Node
 
   const Type::Array* array_type;
   const Type::Slice* slice_type;
+};
+
+struct ast_auto_expr_t : public Node
+{
+  ast_auto_expr_t (unsigned int line)
+    : Node (line, 0)
+  { }
+
+  void Accept (Visitor& visitor);
+  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_unary_arithmetic_expr_t : public ast_unary_expr_t
@@ -765,10 +767,6 @@ struct ast_indexed_port_call_expr_t : public Node
   {
     return At (INDEX);
   }
-  Node*& index_ref ()
-  {
-    return At (INDEX);
-  }
   Node* args () const
   {
     return At (ARGS);
@@ -799,10 +797,6 @@ struct ast_select_expr_t : public Node
   }
 
   Node* base () const
-  {
-    return At (BASE);
-  }
-  Node*& base_ref ()
   {
     return At (BASE);
   }
@@ -848,15 +842,7 @@ struct ast_binary_t : public Node
   {
     return At (LEFT);
   }
-  Node*& left_ref ()
-  {
-    return At (LEFT);
-  }
   Node* right () const
-  {
-    return At (RIGHT);
-  }
-  Node*& right_ref ()
   {
     return At (RIGHT);
   }
@@ -917,10 +903,6 @@ struct ast_change_statement_t : public Node
   {
     return At (EXPR);
   }
-  Node*& expr_ref ()
-  {
-    return At (EXPR);
-  }
   Node* identifier () const
   {
     return At (IDENTIFIER);
@@ -968,10 +950,6 @@ struct ast_if_statement_t : public Node
   {
     return At (CONDITION);
   }
-  Node*& condition_ref ()
-  {
-    return At (CONDITION);
-  }
   Node* true_branch () const
   {
     return At (TRUE_BRANCH);
@@ -1002,10 +980,6 @@ struct ast_while_statement_t : public Node
   }
 
   Node* condition () const
-  {
-    return At (CONDITION);
-  }
-  Node*& condition_ref ()
   {
     return At (CONDITION);
   }
@@ -1182,15 +1156,7 @@ struct ast_bind_push_port_param_statement_t : public Node
   {
     return At (RIGHT);
   }
-  Node*& right_ref ()
-  {
-    return At (RIGHT);
-  }
   Node* param () const
-  {
-    return At (PARAM);
-  }
-  Node*& param_ref ()
   {
     return At (PARAM);
   }
@@ -1232,10 +1198,6 @@ struct ast_for_iota_statement_t : public Node
     return At (IDENTIFIER);
   }
   Node* limit_node () const
-  {
-    return At (LIMIT);
-  }
-  Node*& limit_node_ref ()
   {
     return At (LIMIT);
   }
@@ -1288,10 +1250,6 @@ struct ast_action_t : public Node
   {
     return At (PRECONDITION);
   }
-  Node*& precondition_ref ()
-  {
-    return At (PRECONDITION);
-  }
   Node* body () const
   {
     return At (BODY);
@@ -1339,10 +1297,6 @@ struct ast_dimensioned_action_t : public Node
   {
     return At (DIMENSION);
   }
-  Node*& dimension_ref ()
-  {
-    return At (DIMENSION);
-  }
   Node* receiver () const
   {
     return At (RECEIVER);
@@ -1352,10 +1306,6 @@ struct ast_dimensioned_action_t : public Node
     return At (IDENTIFIER);
   }
   Node* precondition () const
-  {
-    return At (PRECONDITION);
-  }
-  Node*& precondition_ref ()
   {
     return At (PRECONDITION);
   }
@@ -1796,10 +1746,6 @@ struct ast_dimensioned_reaction_t : public Node
   {
     return At (DIMENSION);
   }
-  Node*& dimension_ref ()
-  {
-    return At (DIMENSION);
-  }
   Node* receiver () const
   {
     return At (RECEIVER);
@@ -1861,6 +1807,45 @@ struct SourceFile : public Node
   SourceFile ()
     : Node (-1, 0)
   { }
+
+  void Accept (Visitor& visitor);
+  void Accept (ConstVisitor& visitor) const;
+};
+
+struct ast_element_list_t : public Node
+{
+  ast_element_list_t (unsigned int line)
+    : Node (line, 0)
+  { }
+
+  void Accept (Visitor& visitor);
+  void Accept (ConstVisitor& visitor) const;
+};
+
+struct ast_composite_literal_t : public Node
+{
+  enum
+  {
+    LITERAL_TYPE,
+    LITERAL_VALUE,
+    COUNT
+  };
+
+  ast_composite_literal_t (unsigned int line, Node* literal_type, Node* literal_value)
+    : Node (line, COUNT)
+  {
+    set (LITERAL_TYPE, literal_type);
+    set (LITERAL_VALUE, literal_value);
+  }
+
+  Node* literal_type () const
+  {
+    return At (LITERAL_TYPE);
+  }
+  Node* literal_value () const
+  {
+    return At (LITERAL_VALUE);
+  }
 
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;

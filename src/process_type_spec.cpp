@@ -78,7 +78,7 @@ process_type (Node* node, bool force)
 
     void visit (ast_array_type_spec_t& node)
     {
-      Type::Int::ValueType dimension = process_array_dimension (node.dimension_ref ());
+      Type::Int::ValueType dimension = process_array_dimension (node.dimension ());
       const Type::Type* base_type = process_type (node.base_type (), true);
       type = base_type->GetArray (dimension);
     }

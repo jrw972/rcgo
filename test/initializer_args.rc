@@ -21,7 +21,7 @@ func Two () *uint {
   return x;
 }
 
-init (this *Test) Main (x uint; y +foreign *uint) {
+init (this *Test) Main (x uint; y $foreign *uint) {
   println (`1..1`);
 
   test (1, `initializer args`, x == 1 && y != nil && *y == 2);

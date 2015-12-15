@@ -300,13 +300,6 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   {
     node.args ()->Accept (*this);
 
-    if (node.expr ()->expression_kind == kType)
-      {
-        // Conversion.
-        node.operation = make_conversion (node.args ()->At (0)->operation, node.args ()->At (0)->type, node.type);
-        return;
-      }
-
     if (node.callable != NULL)
       {
         if (node.function_type)
@@ -399,6 +392,12 @@ struct CodeGenVisitor : public ast::DefaultVisitor
             not_reached;
           }
       }
+  }
+
+  void visit (ast_conversion_expr_t& node)
+  {
+    node.expr ()->Accept (*this);
+    node.operation = make_conversion (node.expr ()->operation, node.expr ()->type, node.type);
   }
 
   void visit (ast_list_expr_t& node)

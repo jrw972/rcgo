@@ -3,7 +3,7 @@ type Actuator component {
   bang1 push ();
 };
 
-action (this +const * Actuator) bang (!this.flag) {
+action (this $const * Actuator) bang (!this.flag) {
   activate bang1 () {
     this.flag = true;
   }
@@ -13,7 +13,7 @@ type Detector component {
   flag bool;
 };
 
-reaction (this +const * Detector) bang1 () {
+reaction (this $const * Detector) bang1 () {
   println (`Bang Immutable`);
   activate {
     println (`Bang Mutable`);
@@ -21,7 +21,7 @@ reaction (this +const * Detector) bang1 () {
   }
 }
 
-reaction (this +const * Detector) bang2 () {
+reaction (this $const * Detector) bang2 () {
   println (`Bang Immutable`);
   activate {
     println (`Bang Mutable`);

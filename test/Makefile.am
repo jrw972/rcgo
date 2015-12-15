@@ -27,7 +27,8 @@ illegal_string_literals.sh \
 conversion.rc \
 illegal_conversion.sh \
 illegal_composition.sh \
-call.rc
+call.rc \
+composite_literals.rc
 
 EXTRA_DIST = $(TESTS) \
 helpers.sh \

@@ -4,6 +4,6 @@ type S struct {
 
 func f () {
   var x S;
-  var y +const S;
+  var y $const S;
   x = y;
 }

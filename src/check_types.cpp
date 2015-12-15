@@ -790,102 +790,6 @@ struct Visitor : public ast::DefaultVisitor
         argument_types.push_back ((*pos)->type);
       }
 
-    if (node.expr ()->expression_kind == kType)
-      {
-        // Conversion.
-        if (node.args ()->Size () != 1)
-          {
-            error_at_line (-1, 0, node.location.File.c_str (),
-                           node.location.Line,
-                           "conversion requires exactly one argument (E153)");
-          }
-        require_value_or_variable (node.args ()->At (0));
-
-        const Type::Type* to = node.expr ()->type;
-        const Type::Type*& from = node.args ()->At (0)->type;
-        value_t& x = node.args ()->At (0)->value;
-
-        if (x.present)
-          {
-            if (x.representable (from, to))
-              {
-                unimplemented;
-              }
-            else if (is_typed_float (from) && is_typed_float (to))
-              {
-                unimplemented;
-              }
-            else if (is_typed_integer (from) && is_any_string (to))
-              {
-                unimplemented;
-                node.reset_mutability = true;
-              }
-            else if (is_any_string (from) && is_slice_of_bytes (to))
-              {
-                if (from->IsUntyped ())
-                  {
-                    x.convert (from, from->DefaultType ());
-                    from = from->DefaultType ();
-                  }
-                node.reset_mutability = true;
-              }
-            else
-              {
-                error_at_line (-1, 0, node.location.File.c_str (),
-                               node.location.Line,
-                               "illegal conversion (E156)");
-              }
-          }
-        else
-          {
-            if (assignable (from, x, to))
-              {
-                // Okay.
-              }
-            else if (Identical (from->UnderlyingType (), to->UnderlyingType ()))
-              {
-                // Okay.
-              }
-            else if (from->Level () == Type::Type::UNNAMED &&
-                     to->Level () == Type::Type::UNNAMED &&
-                     from->underlying_kind () == kPointer &&
-                     to->underlying_kind () == kPointer &&
-                     Identical (from->pointer_base_type (), to->pointer_base_type ()))
-              {
-                // Okay.
-              }
-            else if ((is_typed_integer (from) || is_typed_float (from)) &&
-                     (is_typed_integer (to) || is_typed_float (from)))
-              {
-                // Okay.
-              }
-            else if (is_typed_complex (from) && is_typed_complex (to))
-              {
-                // Okay.
-              }
-            else if ((is_typed_integer (from) || is_slice_of_bytes (from) || is_slice_of_runes (from)) && is_typed_string (to))
-              {
-                // Okay.
-                node.reset_mutability = true;
-              }
-            else if (is_typed_string (from) && (is_slice_of_bytes (to) || is_slice_of_runes (to)))
-              {
-                // Okay.
-                node.reset_mutability = true;
-              }
-            else
-              {
-                error_at_line (-1, 0, node.location.File.c_str (),
-                               node.location.Line,
-                               "illegal conversion (E122)");
-              }
-          }
-
-        node.type = to;
-        node.expression_kind = kValue;
-        return;
-      }
-
     if (node.expr ()->temp != NULL)
       {
         node.callable = node.expr ()->temp->instantiate (argument_types);
@@ -930,6 +834,97 @@ struct Visitor : public ast::DefaultVisitor
       }
 
     node.type = node.return_parameter->type;
+    node.expression_kind = kValue;
+  }
+
+  void visit (ast_conversion_expr_t& node)
+  {
+    node.VisitChildren (*this);
+
+    require_type (node.type_expr ());
+    require_value_or_variable (node.expr ());
+
+    const Type::Type* to = node.type_expr ()->type;
+    const Type::Type*& from = node.expr ()->type;
+    value_t& x = node.expr ()->value;
+
+    if (x.present)
+      {
+        if (x.representable (from, to))
+          {
+            unimplemented;
+          }
+        else if (is_typed_float (from) && is_typed_float (to))
+          {
+            unimplemented;
+          }
+        else if (is_typed_integer (from) && is_any_string (to))
+          {
+            unimplemented;
+            node.reset_mutability = true;
+          }
+        else if (is_any_string (from) && is_slice_of_bytes (to))
+          {
+            if (from->IsUntyped ())
+              {
+                x.convert (from, from->DefaultType ());
+                from = from->DefaultType ();
+              }
+            node.reset_mutability = true;
+          }
+        else
+          {
+            error_at_line (-1, 0, node.location.File.c_str (),
+                           node.location.Line,
+                           "illegal conversion (E156)");
+          }
+      }
+    else
+      {
+        if (assignable (from, x, to))
+          {
+            // Okay.
+          }
+        else if (Identical (from->UnderlyingType (), to->UnderlyingType ()))
+          {
+            // Okay.
+          }
+        else if (from->Level () == Type::Type::UNNAMED &&
+                 to->Level () == Type::Type::UNNAMED &&
+                 from->underlying_kind () == kPointer &&
+                 to->underlying_kind () == kPointer &&
+                 Identical (from->pointer_base_type (), to->pointer_base_type ()))
+          {
+            // Okay.
+          }
+        else if ((is_typed_integer (from) || is_typed_float (from)) &&
+                 (is_typed_integer (to) || is_typed_float (from)))
+          {
+            // Okay.
+          }
+        else if (is_typed_complex (from) && is_typed_complex (to))
+          {
+            // Okay.
+          }
+        else if ((is_typed_integer (from) || is_slice_of_bytes (from) || is_slice_of_runes (from)) && is_typed_string (to))
+          {
+            // Okay.
+            node.reset_mutability = true;
+          }
+        else if (is_typed_string (from) && (is_slice_of_bytes (to) || is_slice_of_runes (to)))
+          {
+            // Okay.
+            node.reset_mutability = true;
+          }
+        else
+          {
+            error_at_line (-1, 0, node.location.File.c_str (),
+                           node.location.Line,
+                           "illegal conversion (E122)");
+          }
+      }
+
+    node.type = to;
     node.expression_kind = kValue;
   }
 
@@ -1568,13 +1563,13 @@ struct Visitor : public ast::DefaultVisitor
   void visit (ast_bind_push_port_statement_t& node)
   {
     node.VisitChildren (*this);
-    bind (node, node.left (), node.right_ref ());
+    bind (node, node.left (), node.right ());
   }
 
   void visit (ast_bind_push_port_param_statement_t& node)
   {
     node.VisitChildren (*this);
-    const reaction_t* reaction = bind (node, node.left (), node.right_ref ());
+    const reaction_t* reaction = bind (node, node.left (), node.right ());
     if (!reaction->has_dimension ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -1916,6 +1911,37 @@ struct Visitor : public ast::DefaultVisitor
     require_value_or_variable_list (node.args ());
   }
 
+  void visit (ast_composite_literal_t& node)
+  {
+    node.type = process_type (node.literal_type (), true);
+    node.expression_kind = kVariable;
+
+    switch (node.type->underlying_kind ()) {
+    case kStruct:
+      {
+        for (ast::Node::Iterator pos = node.literal_value ()->Begin (),
+               limit = node.literal_value ()->End ();
+             pos != limit;
+             ++pos) {
+          Node* element = *pos;
+          unimplemented;
+        }
+      }
+      break;
+
+    case kArray:
+      unimplemented;
+      break;
+
+    case kSlice:
+      unimplemented;
+      break;
+
+    default:
+      error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                     "cannot define composite literals for %s (E5)", node.type->ToString ().c_str ());
+    }
+  }
 };
 }
 

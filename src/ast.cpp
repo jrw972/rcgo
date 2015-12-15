@@ -241,6 +241,13 @@ operator<< (std::ostream& out, const Node& node)
       print_common (node);
       print_children (node);
     }
+    void visit (const ast_conversion_expr_t& node)
+    {
+      print_indent (node);
+      out << "conversion_expr";
+      print_common (node);
+      print_children (node);
+    }
     void visit (const ast_dereference_expr_t& node)
     {
       print_indent (node);
@@ -273,6 +280,13 @@ operator<< (std::ostream& out, const Node& node)
     {
       print_indent (node);
       out << "slice_expr";
+      print_common (node);
+      print_children (node);
+    }
+    void visit (const ast_auto_expr_t& node)
+    {
+      print_indent (node);
+      out << "auto_expr";
       print_common (node);
       print_children (node);
     }
@@ -535,6 +549,20 @@ operator<< (std::ostream& out, const Node& node)
       print_common (node);
       print_children (node);
     }
+    void visit (const ast_element_list_t& node)
+    {
+      print_indent (node);
+      out << "element_list";
+      print_common (node);
+      print_children (node);
+    }
+    void visit (const ast_composite_literal_t& node)
+    {
+      print_indent (node);
+      out << "composite_literal";
+      print_common (node);
+      print_children (node);
+    }
   };
 
   visitor v (out);
@@ -573,11 +601,13 @@ ACCEPT (TypeExpression)
 ACCEPT (ast_binary_arithmetic_expr_t)
 ACCEPT (ast_address_of_expr_t)
 ACCEPT (ast_call_expr_t)
+ACCEPT (ast_conversion_expr_t)
 ACCEPT (ast_dereference_expr_t)
 ACCEPT (ast_implicit_dereference_expr_t)
 ACCEPT (ast_identifier_expr_t)
 ACCEPT (ast_index_expr_t)
 ACCEPT (ast_slice_expr_t)
+ACCEPT (ast_auto_expr_t)
 ACCEPT (ast_indexed_port_call_expr_t)
 ACCEPT (ast_list_expr_t)
 ACCEPT (ast_literal_expr_t)
@@ -617,6 +647,8 @@ ACCEPT (ast_reaction_t)
 ACCEPT (ast_dimensioned_reaction_t)
 ACCEPT (Type)
 ACCEPT (SourceFile)
+ACCEPT (ast_element_list_t)
+ACCEPT (ast_composite_literal_t)
 
 std::string ast_get_identifier (const Node* ast)
 {
