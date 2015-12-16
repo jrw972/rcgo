@@ -223,9 +223,8 @@ ActivateStatement: ACTIVATE OptionalPushPortCallList Block { $$ = new ast_activa
 
 ChangeStatement: CHANGE '(' Expression ',' IDENTIFIER ')' Block { $$ = new ast_change_statement_t (@1, $3, $5, $7); }
 
-ForIotaStatement: FOR '(' IDENTIFIER DOTDOTDOT Expression ')' Block {
-  unimplemented;
-  // $$ = new ast_for_iota_statement_t (@1, $2, $4, $5);
+ForIotaStatement: FOR IDENTIFIER DOTDOTDOT Expression Block {
+  $$ = new ast_for_iota_statement_t (@1, $2, $4, $5);
  }
 
 ReturnStatement: RETURN_KW Expression ';' { $$ = new ast_return_statement_t (@1, $2); }
@@ -272,11 +271,11 @@ AssignmentStatement: Expression '=' Expression ';' { $$ = new ast_assign_stateme
 | Expression ADD_ASSIGN Expression ';' { $$ = new ast_add_assign_statement_t (@1, $1, $3); } /* CHECK */
 
 IfStatement: IF Expression Block { $$ = new ast_if_statement_t (@1, $2, $3, new ast_list_statement_t (@1)); }
-| IF Expression Block ELSE IfStatement { unimplemented; }
+| IF Expression Block ELSE IfStatement { UNIMPLEMENTED; }
 | IF Expression Block ELSE Block { $$ = new ast_if_statement_t (@1, $2, $3, $5); }
-| IF SimpleStatement ';' Expression Block { unimplemented; }
-| IF SimpleStatement ';' Expression Block ELSE IfStatement { unimplemented; }
-| IF SimpleStatement ';' Expression Block ELSE Block { unimplemented; }
+| IF SimpleStatement ';' Expression Block { UNIMPLEMENTED; }
+| IF SimpleStatement ';' Expression Block ELSE IfStatement { UNIMPLEMENTED; }
+| IF SimpleStatement ';' Expression Block ELSE Block { UNIMPLEMENTED; }
 
 WhileStatement: FOR Expression Block { $$ = new ast_while_statement_t (@1, $2, $3); }
 
@@ -309,7 +308,7 @@ SliceType:
   '[' ']' ElementType { $$ = new ast_slice_type_spec_t (@1, $3); }
 
 MapType:
-  MAP '[' KeyType ']' ElementType { unimplemented; }
+  MAP '[' KeyType ']' ElementType { UNIMPLEMENTED; }
 
 KeyType:
   Type { $$ = $1; }
@@ -387,18 +386,18 @@ MultiplyExpression: UnaryExpression { $$ = $1; }
 | UnaryExpression AND_NOT MultiplyExpression { $$ = new ast_binary_arithmetic_expr_t (@1, BitAndNot, $1, $3); }
 
 UnaryExpression: PrimaryExpression { $$ = $1; }
-| '+' UnaryExpression { unimplemented; }
+| '+' UnaryExpression { UNIMPLEMENTED; }
 | '-' UnaryExpression { $$ = new ast_unary_arithmetic_expr_t (@1, Negate, $2); }
 | '!' UnaryExpression { $$ = new ast_unary_arithmetic_expr_t (@1, LogicNot, $2); }
-| '^' UnaryExpression { unimplemented; }
+| '^' UnaryExpression { UNIMPLEMENTED; }
 | '*' UnaryExpression { $$ = new ast_dereference_expr_t (@1, $2); }
 | '&' UnaryExpression { $$ = new ast_address_of_expr_t (@1, $2); }
 
 PrimaryExpression:
   LITERAL { $$ = $1; }
-| TypeLitExpression LiteralValue { unimplemented; }
+| TypeLitExpression LiteralValue { UNIMPLEMENTED; }
 | IDENTIFIER LiteralValue { $$ = new ast_composite_literal_t (@1, new ast_identifier_type_spec_t (@1, $1), $2); }
-| '[' DOTDOTDOT ']' ElementType LiteralValue { unimplemented; }
+| '[' DOTDOTDOT ']' ElementType LiteralValue { UNIMPLEMENTED; }
 /* | FunctionLit */
 | IDENTIFIER { $$ = new ast_identifier_expr_t (@1, $1); }
 | '(' Expression ')' { $$ = $2; }
@@ -406,29 +405,29 @@ PrimaryExpression:
 | PrimaryExpression '[' Expression ']' { $$ = new ast_index_expr_t (@1, $1, $3); }
 | PrimaryExpression '[' OptionalExpression ':' OptionalExpression ']' { $$ = new ast_slice_expr_t (@1, $1, $3, $5, new ast_auto_expr_t (yyloc)); }
 | PrimaryExpression '[' OptionalExpression ':' Expression ':' Expression ']' { $$ = new ast_slice_expr_t (@1, $1, $3, $5, $7); }
-/* | PrimaryExpression TypeAssertion { unimplemented; } */
+/* | PrimaryExpression TypeAssertion { UNIMPLEMENTED; } */
 | PrimaryExpression '(' OptionalTypeOrExpressionList ')' { $$ = new ast_call_expr_t (@1, $1, $3); }
 | TypeLitExpression '(' Expression ')' { $$ = new ast_conversion_expr_t (@1, new TypeExpression (@1, $1), $3); }
 
 LiteralValue:
 '{' '}' { $$ = new ast_element_list_t (@1); }
-| '{' ElementList OptionalComma '}' { unimplemented; }
+| '{' ElementList OptionalComma '}' { UNIMPLEMENTED; }
 
 ElementList:
-  Element { unimplemented; }
-| ElementList ',' Element { unimplemented; }
+  Element { UNIMPLEMENTED; }
+| ElementList ',' Element { UNIMPLEMENTED; }
 
 Element:
-  Key ':' Value { unimplemented; }
-| Value { unimplemented; }
+  Key ':' Value { UNIMPLEMENTED; }
+| Value { UNIMPLEMENTED; }
 
 Key:
-  Expression { unimplemented; }
-| LiteralValue { unimplemented; }
+  Expression { UNIMPLEMENTED; }
+| LiteralValue { UNIMPLEMENTED; }
 
 Value:
-  Expression { unimplemented; }
-| LiteralValue { unimplemented; }
+  Expression { UNIMPLEMENTED; }
+| LiteralValue { UNIMPLEMENTED; }
 
 OptionalComma: /* empty */ | ','
 

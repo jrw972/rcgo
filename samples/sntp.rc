@@ -10,7 +10,7 @@ init (this *Timer) Init (interval uint64) {
      }
 }
 
-action (this +const * Timer) _alarm (readable(this.fd)) {
+action (this $const * Timer) _alarm (readable(this.fd)) {
      activate Alarm () {
           var buf [8]byte;
           var r int = read(this.fd, buf[0:8]);
@@ -23,7 +23,7 @@ type UdpMessage struct {
   msg  []byte;
 };
 
-func (this +foreign *UdpMessage) Copy () UdpMessage {
+func (this $foreign *UdpMessage) Copy () UdpMessage {
      var m UdpMessage;
      m.host = copy (this.host);
      m.port = this.port;
@@ -66,7 +66,7 @@ func (this *Queue) Pop ()
     };
 }
 
-func (this +const * Queue) Empty () bool
+func (this $const * Queue) Empty () bool
 {
   return this.head == nil;
 }
@@ -81,14 +81,14 @@ type UdpParticipant component {
      queue Queue;
 };
 
-reaction (this +const * UdpParticipant) Send (msg +foreign UdpMessage) {
+reaction (this $const * UdpParticipant) Send (msg $foreign UdpMessage) {
      var m UdpMessage = msg.Copy ();
      activate {
           this.queue.Push (m);
      };
 }
 
-action (this +const * UdpParticipant) _send (!this.queue.Empty () && writable (this.fd)) {
+action (this $const * UdpParticipant) _send (!this.queue.Empty () && writable (this.fd)) {
        activate {
               var m UdpMessage = this.queue.Front ();
               sendto (this.fd, m.host, m.port, m.msg);
@@ -96,7 +96,7 @@ action (this +const * UdpParticipant) _send (!this.queue.Empty () && writable (t
        }
 }
 
-action (this +const * UdpParticipant) _receive (readable (this.fd)) {
+action (this $const * UdpParticipant) _receive (readable (this.fd)) {
        activate {
           var buf [128]byte;
           var r int = read(this.fd, buf[0:128]);
@@ -111,7 +111,7 @@ init (this *UdpParticipant) Init () {
 type System component {
      timer Timer;
      udp UdpParticipant;
-     Send push (msg +foreign UdpMessage);
+     Send push (msg $foreign UdpMessage);
 };
 
 bind (this *System) _bind {
@@ -124,8 +124,8 @@ init (this *System) Init () {
      this.udp.Init();
 }
 
-reaction (this +const * System) Alarm () {
-     var msg +foreign UdpMessage;
+reaction (this $const * System) Alarm () {
+     var msg $foreign UdpMessage;
      msg.host = `localhost`;
      msg.port = 7;
      msg.msg = []byte(`hello, world`);

@@ -8,13 +8,13 @@ func (this *Variable) Init () {
     this.value = -1;
 }
 
-[3] reaction (this +const * Variable) Set (v int) {
+[3] reaction (this $const * Variable) Set (v int) {
     activate {
         this.value = v;
     }
 }
 
-getter (this +const * Variable) Get () int {
+getter (this $const * Variable) Get () int {
     return this.value;
 }
 
@@ -39,7 +39,7 @@ func (this *Process) Init () {
     this.output = -1;
 }
 
-reaction (this +const * Process) initr (v int) {
+reaction (this $const * Process) initr (v int) {
     activate {
         this.input = v;
         if this.status == PROCESS_IDLE {
@@ -49,7 +49,7 @@ reaction (this +const * Process) initr (v int) {
 }
 
 // Access
-action (this +const * Process) _access (this.status == PROCESS_ACCESS) {
+action (this $const * Process) _access (this.status == PROCESS_ACCESS) {
     var x int;
     x = this.get_x ();
     if x == -1 {
@@ -68,7 +68,7 @@ action (this +const * Process) _access (this.status == PROCESS_ACCESS) {
 }
 
 // Decide
-action (this +const * Process) _decide (this.status == PROCESS_DECIDE) {
+action (this $const * Process) _decide (this.status == PROCESS_DECIDE) {
     activate Decide (this.output) {
         this.status = PROCESS_DONE;
     }
@@ -95,7 +95,7 @@ init (this *User) Init (v int) {
 }
 
 // Init
-action (this +const * User) _init (this.status == USER_REQUEST || this.error) {
+action (this $const * User) _init (this.status == USER_REQUEST || this.error) {
     activate initp (this.v) {
         if !this.error {
             this.status = USER_WAIT;
@@ -104,10 +104,10 @@ action (this +const * User) _init (this.status == USER_REQUEST || this.error) {
 }
 
 // Dummy
-action (this +const * User) _dummy (this.error) {
+action (this $const * User) _dummy (this.error) {
 }
 
-reaction (this +const * User) Decide (v int) {
+reaction (this $const * User) Decide (v int) {
     println (this, ` decided value is `, v);
     activate {
         if !this.error {

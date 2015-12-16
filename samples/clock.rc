@@ -5,20 +5,20 @@ type Clock component {
   response push (t uint);
 };
 
-action (this +const * Clock) _tick (true) {
+action (this $const * Clock) _tick (true) {
   activate {
     this.counter++;
     println (`Counter is now `, this.counter);
   };
 }
 
-reaction (this +const * Clock) request () {
+reaction (this $const * Clock) request () {
   activate {
     this.flag = true;
   };
 }
 
-action (this +const * Clock) _clock (this.flag) {
+action (this $const * Clock) _clock (this.flag) {
   activate response (this.counter) {
     this.flag = false;
   };
@@ -29,13 +29,13 @@ type Sampler component {
   request push ();
 };
 
-action (this +const * Sampler) _request (!this.flag) {
+action (this $const * Sampler) _request (!this.flag) {
   activate request () {
     this.flag = true;
   };
 }
 
-reaction (this +const * Sampler) response (t uint) {
+reaction (this $const * Sampler) response (t uint) {
   println (`Received `, t);
   activate {
     this.flag = false;

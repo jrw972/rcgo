@@ -35,12 +35,12 @@ func (this *Queue) Pop ()
     };
 }
 
-func (this +const * Queue) Empty () bool
+func (this $const * Queue) Empty () bool
 {
   return this.head == nil;
 }
 
-func (this +const * Queue) Front () int
+func (this $const * Queue) Front () int
 {
   return this.head.value;
 }
@@ -51,7 +51,7 @@ type Channel component
   receive push (message int);
 };
 
-reaction (this +const * Channel) send (message int)
+reaction (this $const * Channel) send (message int)
 {
   activate
   {
@@ -59,7 +59,7 @@ reaction (this +const * Channel) send (message int)
   };
 }
 
-action (this +const * Channel) _receive (!this.queue.Empty ())
+action (this $const * Channel) _receive (!this.queue.Empty ())
 {
   activate receive (this.queue.Front ())
     {
@@ -83,7 +83,7 @@ init (this *Process) Init (i int)
   this.i = i;
 }
 
-reaction (this +const * Process) Initr (v int)
+reaction (this $const * Process) Initr (v int)
 {
   activate
   {
@@ -92,7 +92,7 @@ reaction (this +const * Process) Initr (v int)
   };
 }
 
-[3] action (this +const * Process) _send (this.val[this.i] != 0 && this.i != IOTA)
+[3] action (this $const * Process) _send (this.val[this.i] != 0 && this.i != IOTA)
 {
   // send
   println (`Process `, this.i, ` sending `, this.val[this.i], ` to process `, IOTA);
@@ -100,7 +100,7 @@ reaction (this +const * Process) Initr (v int)
   { };
 }
 
-[3] reaction (this +const * Process) receive (v int)
+[3] reaction (this $const * Process) receive (v int)
 {
   println (`In receive `, this);
   println (`Process `, this.i, ` received `, v, ` from process `, IOTA);
@@ -135,7 +135,7 @@ func f (val [3]int) int
   return sum;
 }
 
-action (this +const * Process) _decide (p (this.val))
+action (this $const * Process) _decide (p (this.val))
 {
   // decide
   var v int;
@@ -162,14 +162,14 @@ init (this *System) Init ()
   };
 }
 
-[3] action (this +const * System) _send (true)
+[3] action (this $const * System) _send (true)
 {
   // send
   activate initp[IOTA] (100 + IOTA)
   { };
 }
 
-[3] reaction (this +const * System) decide (v int)
+[3] reaction (this $const * System) decide (v int)
 {
   println (`Process `, IOTA, ` decided the value is `, v);
 }

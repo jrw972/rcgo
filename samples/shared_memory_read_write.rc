@@ -8,13 +8,13 @@ init (this *Variable) Init () {
     this.value = -1;
 }
 
-[3] reaction (this +const * Variable) Set (v int) {
+[3] reaction (this $const * Variable) Set (v int) {
     activate {
         this.value = v;
     }
 }
 
-getter (this +const * Variable) Get () int {
+getter (this $const * Variable) Get () int {
     return this.value;
 }
 
@@ -40,7 +40,7 @@ init (this *Process) Init () {
     this.output = -1;
 }
 
-reaction (this +const * Process) initr (v int) {
+reaction (this $const * Process) initr (v int) {
     activate {
         this.input = v;
         if this.status == PROCESS_IDLE {
@@ -50,7 +50,7 @@ reaction (this +const * Process) initr (v int) {
 }
 
 // Read
-action (this +const * Process) _read (this.status == PROCESS_READ) {
+action (this $const * Process) _read (this.status == PROCESS_READ) {
     var x int;
     x = this.get_x ();
     if x == -1 {
@@ -68,7 +68,7 @@ action (this +const * Process) _read (this.status == PROCESS_READ) {
 }
 
 // Write
-action (this +const * Process) _write (this.status == PROCESS_WRITE) {
+action (this $const * Process) _write (this.status == PROCESS_WRITE) {
     activate set_x (this.input) {
         println (`x set to `, this.input);
         this.status = PROCESS_DECIDE;
@@ -76,7 +76,7 @@ action (this +const * Process) _write (this.status == PROCESS_WRITE) {
 }
 
 // Decide
-action (this +const * Process) _decide (this.status == PROCESS_DECIDE) {
+action (this $const * Process) _decide (this.status == PROCESS_DECIDE) {
     activate Decide (this.output) {
         this.status = PROCESS_DONE;
     }
@@ -103,7 +103,7 @@ init (this *User) Init (v int) {
 }
 
 // Init
-action (this +const * User) _init (this.status == USER_REQUEST || this.error) {
+action (this $const * User) _init (this.status == USER_REQUEST || this.error) {
     activate initp (this.v) {
         if !this.error {
             this.status = USER_WAIT;
@@ -112,10 +112,10 @@ action (this +const * User) _init (this.status == USER_REQUEST || this.error) {
 }
 
 // Dummy
-action (this +const * User) _dummy (this.error) {
+action (this $const * User) _dummy (this.error) {
 }
 
-reaction (this +const * User) Decide (v int) {
+reaction (this $const * User) Decide (v int) {
     println (this, ` decided value is `, v);
     activate {
         if !this.error {
