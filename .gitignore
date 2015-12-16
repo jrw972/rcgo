@@ -3,6 +3,8 @@ Makefile
 Makefile.in
 *.o
 *.orig
+*.lo
+*.la
 GPATH
 GRTAGS
 GSYMS
@@ -24,3 +26,7 @@ test-driver
 ylwrap
 error_list
 tested_errors
+libtool
+m4
+.libs
+build-aux

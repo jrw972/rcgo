@@ -29,7 +29,6 @@ evaluate_static.hpp evaluate_static.cpp \
 executor_base.hpp \
 field.hpp \
 generate_code.hpp generate_code.cpp \
-heap.hpp heap.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
 location.hpp location.cpp \
 memory_model.hpp memory_model.cpp \
@@ -52,4 +51,8 @@ types.hpp \
 util.hpp \
 value.hpp value.cpp \
 yyparse.hpp yyparse.cpp
-rc_LDADD=-lpthread
+rc_LDADD=librc.la
+
+noinst_LTLIBRARIES=librc.la
+librc_la_SOURCES = heap.hpp heap.cpp
+librc_la_LIBADD=-lpthread
