@@ -1,10 +1,16 @@
-LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
-             $(top_srcdir)/build-aux/tap-driver.sh
+LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver.sh
 
 AM_TESTS_ENVIRONMENT = RC='$(top_builddir)/src/rc'; export RC; PATH="$(top_builddir)/src:$$PATH"; export PATH;
 #LOG_COMPILER = $(SH)
 
-TESTS = mutability.sh \
+AM_CXXFLAGS = -I $(top_srcdir)/src
+
+check_PROGRAMS = heap
+heap_SOURCES = heap.cpp
+heap_LDADD = $(top_builddir)/src/librc.la
+
+TESTS = heap \
+mutability.sh \
 foreign_safe.sh \
 boolean_type.rc \
 int_type.rc \

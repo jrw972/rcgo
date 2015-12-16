@@ -26,6 +26,5 @@ AC_PROG_YACC()
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
-                 unit/Makefile
                  test/Makefile])
 AC_OUTPUT
