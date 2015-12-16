@@ -80,6 +80,8 @@ static void block_free (block_t* block)
 
 static void block_insert (block_t** ptr, block_t* block)
 {
+  assert (block->left == NULL);
+  assert (block->right == NULL);
   block_t* p = *ptr;
   if (p == NULL)
     {
@@ -412,7 +414,7 @@ heap_t* heap_make_size (size_t size_of_root)
 
 }
 
-void* heap_instance (const heap_t* heap)
+void* heap_root (const heap_t* heap)
 {
   return heap->begin;
 }
@@ -576,14 +578,14 @@ static void scan (heap_t* heap, void* begin, void* end, block_t** work_list)
     }
 }
 
-bool heap_collect_garbage (heap_t* heap)
+  bool heap_collect_garbage (heap_t* heap, bool force)
 {
   bool retval = false;
 
   block_t* work_list = NULL;
   pthread_mutex_lock (&heap->mutex);
   // Strictly greater.  This avoids continuous collection if both are zero.
-  if (heap->allocated_size > heap->next_collection_size)
+  if (force || heap->allocated_size > heap->next_collection_size)
     {
       // Full collection.
       block_t* b = block_find (heap->block, heap->begin);
@@ -649,7 +651,9 @@ static void merge_blocks (heap_t* heap, block_t* block)
   if (block != NULL)
     {
       merge_blocks (heap, block->left);
+      block->left = NULL;
       merge_blocks (heap, block->right);
+      block->right = NULL;
       block_insert (&(heap->block), block);
     }
 }
@@ -719,4 +723,44 @@ void heap_remove_from_parent (heap_t* child)
     }
 }
 
+bool heap_contains (heap_t* heap, void* ptr)
+{
+  return block_find (heap->block, ptr) != NULL;
+}
+
+  bool heap_is_object (heap_t* heap, void* ptr)
+  {
+    block_t* block = block_find (heap->block, ptr);
+    if (block == NULL) {
+      return false;
+    }
+
+    size_t slot = block_slot (block, ptr);
+    unsigned char bits = block_get_bits (block, slot);
+
+    return bits & OBJECT;
+  }
+
+  bool heap_is_allocated (heap_t* heap, void* ptr)
+  {
+    block_t* block = block_find (heap->block, ptr);
+    if (block == NULL) {
+      return false;
+    }
+
+    size_t slot = block_slot (block, ptr);
+    unsigned char bits = block_get_bits (block, slot);
+
+    return bits & ALLOCATED;
+  }
+
+  bool heap_is_child (heap_t* parent, heap_t* child)
+  {
+    for (heap_t* h = parent->child; h != NULL; h = h->next) {
+      if (h == child) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

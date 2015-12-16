@@ -80,7 +80,7 @@ instance_scheduler_t::dump_schedule () const
       instance_info_t* record = head_;
       while (record != (instance_info_t*)1)
         {
-          printf ("%p instance=%p type=%p\n", record, heap_instance (record->heap), record->instance->type);
+          printf ("%p instance=%p type=%p\n", record, heap_root (record->heap), record->instance->type);
           record = record->next;
         }
     }

@@ -25,6 +25,7 @@ AC_PROG_YACC()
 # Checks for library functions.
 
 AC_CONFIG_FILES([Makefile
-           src/Makefile
-           test/Makefile])
+                 src/Makefile
+                 unit/Makefile
+                 test/Makefile])
 AC_OUTPUT

@@ -1998,7 +1998,7 @@ struct MergeImpl : public Callable
             pthread_mutex_unlock (&hl->mutex);
 
             // Get the heap root.
-            char* root = static_cast<char*> (heap_instance (h));
+            char* root = static_cast<char*> (heap_root (h));
 
             // Remove from parent.
             heap_remove_from_parent (h);
@@ -3063,7 +3063,7 @@ Change::execute (executor_base_t& exec) const
   char** root_value = static_cast<char**> (exec.stack ().get_address (root_offset));
 
   // Push a pointer to the root object.
-  *root_value = static_cast<char*> (heap_instance (hl->heap));
+  *root_value = static_cast<char*> (heap_root (hl->heap));
 
   OpReturn ca = body->execute (exec);
 

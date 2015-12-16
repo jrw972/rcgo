@@ -54,7 +54,7 @@ private:
 
     char* get_ptr () const
     {
-      return static_cast<char*> (heap_instance (heap));
+      return static_cast<char*> (heap_root (heap));
     }
 
     void collect_garbage ()

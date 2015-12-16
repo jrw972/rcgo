@@ -30,3 +30,6 @@ libtool
 m4
 .libs
 build-aux
+*.log
+*.trs
+.deps
