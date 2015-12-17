@@ -38,7 +38,7 @@ private:
   public:
     info_t (composition::Instance* instance)
       : instance_ (instance)
-      , heap_ (heap_make (instance->component, instance->type->Size ()))
+      , heap_ (new Heap (instance->component, instance->type->Size ()))
       , lock_ (0)
       , count_ (0)
       , head_ (NULL)
@@ -53,12 +53,12 @@ private:
       return instance_->component;
     }
 
-    heap_t* heap () const
+    Heap* heap () const
     {
       return heap_;
     }
 
-    void heap (heap_t* heap)
+    void heap (Heap* heap)
     {
       heap_ = heap;
     }
@@ -178,7 +178,7 @@ private:
     }
 
     composition::Instance* instance_;
-    heap_t* heap_;
+    Heap* heap_;
     volatile size_t lock_;
     ssize_t count_;
     task_t* head_;
@@ -294,7 +294,7 @@ private:
     virtual bool execute_i () const
     {
       executor->current_instance (instance->component);
-      return heap_collect_garbage (executor->heap ());
+      return executor->heap ()->collect_garbage ();
     }
   };
 
@@ -367,13 +367,13 @@ private:
       pthread_join (thread_, NULL);
     }
 
-    virtual heap_t* heap () const
+    virtual Heap* heap () const
     {
       info_t* info = *reinterpret_cast<info_t**> (current_instance ());
       return info->heap ();
     }
 
-    virtual void heap (heap_t* heap)
+    virtual void heap (Heap* heap)
     {
       info_t* info = *reinterpret_cast<info_t**> (current_instance ());
       info->heap (heap);

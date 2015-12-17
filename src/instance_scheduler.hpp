@@ -35,7 +35,7 @@ private:
     // Scheduling lock.
     pthread_rwlock_t lock;
     composition::Instance* instance;
-    heap_t* heap;
+    Heap* heap;
     // Next instance on the schedule.
     // 0 means this instance is not on the schedule.
     // 1 means this instance is the end of the schedule.
@@ -44,7 +44,7 @@ private:
 
     instance_info_t (composition::Instance* instance)
       : instance (instance)
-      , heap (heap_make (instance->component, instance->type->Size ()))
+      , heap (new Heap (instance->component, instance->type->Size ()))
       , next (NULL)
     {
       pthread_rwlock_init (&lock, NULL);
@@ -54,13 +54,13 @@ private:
 
     char* get_ptr () const
     {
-      return static_cast<char*> (heap_root (heap));
+      return static_cast<char*> (heap->root ());
     }
 
     void collect_garbage ()
     {
       pthread_rwlock_wrlock (&lock);
-      heap_collect_garbage (heap);
+      heap->collect_garbage ();
       pthread_rwlock_unlock (&lock);
     }
   };
@@ -77,13 +77,13 @@ private:
       , scheduler_ (s)
     { }
 
-    virtual heap_t* heap () const
+    virtual Heap* heap () const
     {
       instance_info_t* info = *reinterpret_cast<instance_info_t**> (current_instance ());
       return info->heap;
     }
 
-    virtual void heap (heap_t* heap)
+    virtual void heap (Heap* heap)
     {
       instance_info_t* info = *reinterpret_cast<instance_info_t**> (current_instance ());
       info->heap = heap;

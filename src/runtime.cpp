@@ -33,7 +33,7 @@ struct port_t
 
 struct heap_link_t
 {
-  heap_t* heap;
+  Heap* heap;
   pthread_mutex_t mutex;
   size_t change_count;
 };
@@ -72,11 +72,11 @@ bind (port_t** output_port, component_t* input_instance, const reaction_t* react
 }
 
 static heap_link_t*
-make_heap_link (heap_t* heap,
-                heap_t* allocator)
+make_heap_link (Heap* heap,
+                Heap* allocator)
 {
   // Allocate a new heap link in the parent.
-  heap_link_t* hl = (heap_link_t*)heap_allocate (allocator, sizeof (heap_link_t));
+  heap_link_t* hl = static_cast<heap_link_t*> (allocator->allocate (sizeof (heap_link_t)));
   // Set up the link.
   hl->heap = heap;
   pthread_mutex_init (&hl->mutex, NULL);
@@ -1329,7 +1329,7 @@ struct MoreEqual : public LeftDispatch
 //       // pthread_mutex_unlock (&hl->mutex);
 
 //       // // Save the old heap.
-//       // heap_t* old_heap = exec.heap ();
+//       // Heap* old_heap = exec.heap ();
 //       // // Set the the new heap.
 //       // exec.heap (hl->heap);
 
@@ -1762,20 +1762,20 @@ struct NewImpl : public Callable
   virtual void call (executor_base_t& exec) const
   {
     // Allocate a new instance of the type.
-    const Heap* heap_type = type_cast<Heap> (type_);
+    const type::Heap* heap_type = type_cast<type::Heap> (type_);
     if (heap_type == NULL)
       {
         char** r = static_cast<char**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-        *r = static_cast<char*> (heap_allocate (exec.heap (), type_->Size ()));
+        *r = static_cast<char*> (exec.heap ()->allocate (type_->Size ()));
       }
     else
       {
         const type::Type* t = heap_type->Base ();
         // Allocate a new heap and root object.
-        heap_t* h = heap_make_size (t->Size ());
+        Heap* h = new Heap (t->Size ());
         // Insert it into its parent.
-        heap_t* h2 = exec.heap ();
-        heap_insert_child (h2, h);
+        Heap* h2 = exec.heap ();
+        h2->insert_child (h);
         // Allocate a new heap link in the parent.
         heap_link_t* hl = make_heap_link (h, h2);
         heap_link_t** r = static_cast<heap_link_t**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
@@ -1883,15 +1883,15 @@ struct MoveImpl : public Callable
         if (hl->heap != NULL && hl->change_count == 0)
           {
             // Break the link.
-            heap_t* h = hl->heap;
+            Heap* h = hl->heap;
             hl->heap = NULL;
             pthread_mutex_unlock (&hl->mutex);
 
             // Remove from parent.
-            heap_remove_from_parent (h);
+            h->remove_from_parent ();
             // Insert into the new parent.
-            heap_t* h2 = exec.heap ();
-            heap_insert_child (h2, h);
+            Heap* h2 = exec.heap ();
+            h2->insert_child (h);
 
             // Allocate a new heap link in the parent.
             heap_link_t* new_hl = make_heap_link (h, h2);
@@ -1993,18 +1993,18 @@ struct MergeImpl : public Callable
         if (hl->heap != NULL && hl->change_count == 0)
           {
             // Break the link.
-            heap_t* h = hl->heap;
+            Heap* h = hl->heap;
             hl->heap = NULL;
             pthread_mutex_unlock (&hl->mutex);
 
             // Get the heap root.
-            char* root = static_cast<char*> (heap_root (h));
+            char* root = static_cast<char*> (h->root ());
 
             // Remove from parent.
-            heap_remove_from_parent (h);
+            h->remove_from_parent ();
 
             // Merge into the new parent.
-            heap_merge (exec.heap (), h);
+            exec.heap ()->merge (h);
 
             // Return the root.
             *r = root;
@@ -3056,14 +3056,14 @@ Change::execute (executor_base_t& exec) const
   pthread_mutex_unlock (&hl->mutex);
 
   // Save the old heap.
-  heap_t* old_heap = exec.heap ();
+  Heap* old_heap = exec.heap ();
   // Set the the new heap.
   exec.heap (hl->heap);
 
   char** root_value = static_cast<char**> (exec.stack ().get_address (root_offset));
 
   // Push a pointer to the root object.
-  *root_value = static_cast<char*> (heap_root (hl->heap));
+  *root_value = static_cast<char*> (hl->heap->root ());
 
   OpReturn ca = body->execute (exec);
 
@@ -3249,7 +3249,7 @@ struct ConvertStringToSliceOfBytes : public Operation
     StringU::ValueType in;
     exec.stack ().pop (in);
     Slice::ValueType out;
-    out.ptr = heap_allocate (exec.heap (), in.length);
+    out.ptr = exec.heap ()->allocate (in.length);
     memcpy (out.ptr, in.ptr, in.length);
     out.length = in.length;
     out.capacity = in.length;
@@ -3274,7 +3274,7 @@ struct ConvertSliceOfBytesToString : public Operation
     Slice::ValueType in;
     exec.stack ().pop (in);
     StringU::ValueType out;
-    out.ptr = heap_allocate (exec.heap (), in.length);
+    out.ptr = exec.heap ()->allocate (in.length);
     memcpy (out.ptr, in.ptr, in.length);
     out.length = in.length;
     exec.stack ().push (out);

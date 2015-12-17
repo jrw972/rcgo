@@ -40,8 +40,8 @@ public:
   {
     return stack_;
   }
-  virtual runtime::heap_t* heap () const = 0;
-  virtual void heap (runtime::heap_t* heap) = 0;
+  virtual runtime::Heap* heap () const = 0;
+  virtual void heap (runtime::Heap* heap) = 0;
   component_t* current_instance () const
   {
     return current_instance_;
@@ -76,7 +76,8 @@ public:
   runtime::FileDescriptor*
   allocateFileDescriptor (int fd)
   {
-    return new (static_cast< runtime::FileDescriptor*> (runtime::heap_allocate (this->heap (), sizeof (runtime::FileDescriptor)))) runtime::FileDescriptor (fd);
+    void* p = this->heap ()->allocate (sizeof (runtime::FileDescriptor));
+    return new (p) runtime::FileDescriptor (fd);
   }
 
   virtual void checkedForReadability (runtime::FileDescriptor* fd) { }

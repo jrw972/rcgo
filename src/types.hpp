@@ -76,7 +76,7 @@ namespace runtime
 class Operation;
 class Stack;
 class MemoryModel;
-typedef struct heap_t heap_t;
+class Heap;
 class executor_base_t;
 }
 

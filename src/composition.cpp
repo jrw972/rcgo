@@ -477,11 +477,11 @@ Composer::add_pull_port (size_t address,
 struct Executor : public executor_base_t
 {
   Executor () : executor_base_t (1024, NULL) { }
-  virtual heap_t* heap () const
+  virtual runtime::Heap* heap () const
   {
     UNIMPLEMENTED;
   }
-  virtual void heap (heap_t* heap)
+  virtual void heap (runtime::Heap* heap)
   {
     UNIMPLEMENTED;
   }
