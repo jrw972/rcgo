@@ -4,12 +4,13 @@
 #include <cstring>
 
 #include "types.hpp"
-#include "memory_model.hpp"
+#include "arch.hpp"
+#include "util.hpp"
 
 namespace runtime
 {
 // An aligned stack of bytes.
-// The alignment is given by MemoryModel::StackAlignment.
+// The alignment is given by arch::stack_alignment ().
 // The stack grows up (instead of down like a hardware stack).
 // The stack contains a base pointer to set up function call frames.
 struct Stack
@@ -25,7 +26,7 @@ struct Stack
   void
   push (T b)
   {
-    size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
+    size_t s = util::AlignUp (sizeof (T), arch::stack_alignment ());
     assert (top_ + s <= limit_);
     std::memcpy (top_, &b, sizeof (T));
     top_ += s;
@@ -35,7 +36,7 @@ struct Stack
   void
   pop (T& retval)
   {
-    size_t s = util::AlignUp (sizeof (T), MemoryModel::StackAlignment);
+    size_t s = util::AlignUp (sizeof (T), arch::stack_alignment ());
     assert (top_ - s >= data_);
     top_ -= s;
     std::memcpy (&retval, top_, sizeof (T));

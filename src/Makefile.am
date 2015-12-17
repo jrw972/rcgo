@@ -12,6 +12,7 @@ parser.hpp parser.cpp: parser.y
 bin_PROGRAMS = rc
 rc_SOURCES = main.cpp \
 action.hpp action.cpp \
+arch.hpp arch.cpp \
 ast.hpp ast.cpp \
 ast_visitor.hpp \
 bind.hpp \
@@ -31,7 +32,7 @@ field.hpp \
 generate_code.hpp generate_code.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
 location.hpp location.cpp \
-memory_model.hpp memory_model.cpp \
+memory_model.hpp \
 parser.hpp parser.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
 process_definitions.cpp \

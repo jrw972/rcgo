@@ -3,6 +3,7 @@
 
 #include "types.hpp"
 #include "util.hpp"
+#include "arch.hpp"
 
 namespace runtime
 {
@@ -19,9 +20,6 @@ namespace runtime
 class MemoryModel
 {
 public:
-  // Alignment of the stack in bytes.  Typically 4 (32-bits) or 8 (64-bits).
-  static size_t StackAlignment;
-
   MemoryModel ()
     : argumentsOffset (-(ptrdiff_t)sizeof (void*))
     , localsOffset (sizeof (void*))
@@ -35,7 +33,7 @@ public:
 
   void ArgumentsPush (size_t size)
   {
-    argumentsOffset -= util::AlignUp (size, StackAlignment);
+    argumentsOffset -= util::AlignUp (size, arch::stack_alignment ());
   }
 
   bool LocalsEmpty () const
@@ -45,14 +43,14 @@ public:
 
   void LocalsPush (size_t size)
   {
-    size = util::AlignUp (size, StackAlignment);
+    size = util::AlignUp (size, arch::stack_alignment ());
     localsOffset += size;
     localsSize += size;
   }
 
   void LocalsPop (size_t size)
   {
-    localsOffset -= util::AlignUp (size, StackAlignment);
+    localsOffset -= util::AlignUp (size, arch::stack_alignment ());
   }
 
   ptrdiff_t ArgumentsOffset () const

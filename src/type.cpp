@@ -5,6 +5,7 @@
 #include "field.hpp"
 #include "callable.hpp"
 #include "bind.hpp"
+#include "arch.hpp"
 
 namespace type
 {
@@ -1396,7 +1397,7 @@ Signature*
 Signature::Append (ParameterSymbol* p)
 {
   parameters_.push_back (p);
-  size_ += util::AlignUp (p->type->Size (), runtime::MemoryModel::StackAlignment);
+  size_ += util::AlignUp (p->type->Size (), arch::stack_alignment ());
   return this;
 }
 

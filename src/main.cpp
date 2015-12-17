@@ -12,7 +12,7 @@
 #include "semantic.hpp"
 #include "debug.hpp"
 #include "runtime.hpp"
-#include "memory_model.hpp"
+#include "arch.hpp"
 #include "instance_scheduler.hpp"
 #include "partitioned_scheduler.hpp"
 #include "generate_code.hpp"
@@ -122,7 +122,7 @@ main (int argc, char **argv)
     }
   assert (root != NULL);
 
-  runtime::MemoryModel::StackAlignment = sizeof (void*);
+  arch::set_stack_alignment (sizeof (void*));
 
   semantic::enter_symbols (root);
   semantic::process_types_and_constants (root);
