@@ -30,8 +30,6 @@
 namespace runtime
 {
 
-static void scan (Heap* heap, void* begin, void* end, Heap::Block** work_list);
-
 // Element in the free list.
 struct Heap::Chunk
 {
@@ -226,7 +224,7 @@ struct Heap::Block
             ((bits & SCANNED) == 0))
           {
             set_bits (slot, SCANNED);
-            runtime::scan (heap, static_cast<char*> (begin_) + slot * SLOT_SIZE, static_cast<char*> (begin_) + (slot + 1) * SLOT_SIZE, work_list);
+            heap->scan (static_cast<char*> (begin_) + slot * SLOT_SIZE, static_cast<char*> (begin_) + (slot + 1) * SLOT_SIZE, work_list);
           }
       }
   }
@@ -411,72 +409,73 @@ private:
 };
 
 Heap::Heap (void* b, size_t size)
-  : block (NULL)
-  , free_list_head (NULL)
-  , allocated_size (0)
-  , next_block_size (0)
-  , next_collection_size (0)
-  , begin (static_cast<char*> (b))
-  , end (begin + size)
-  , child (NULL)
-  , next (NULL)
-  , parent (NULL)
-  , reachable (false)
+  : block_ (NULL)
+  , free_list_head_ (NULL)
+  , allocated_size_ (0)
+  , next_block_size_ (0)
+  , next_collection_size_ (0)
+  , begin_ (static_cast<char*> (b))
+  , end_ (begin_ + size)
+  , child_ (NULL)
+  , next_ (NULL)
+  , parent_ (NULL)
+  , reachable_ (false)
 {
-  pthread_mutex_init (&mutex, NULL);
+  pthread_mutex_init (&mutex_, NULL);
 }
 
 Heap::Heap (size_t size_of_root)
-  : block (NULL)
-  , free_list_head (NULL)
-  , allocated_size (0)
-  , next_block_size (0)
-  , next_collection_size (0)
-  , begin (NULL)
-  , end (NULL)
-  , child (NULL)
-  , next (NULL)
-  , parent (NULL)
-  , reachable (false)
+  : block_ (NULL)
+  , free_list_head_ (NULL)
+  , allocated_size_ (0)
+  , next_block_size_ (0)
+  , next_collection_size_ (0)
+  , begin_ (NULL)
+  , end_ (NULL)
+  , child_ (NULL)
+  , next_ (NULL)
+  , parent_ (NULL)
+  , reachable_ (false)
 {
-  pthread_mutex_init (&mutex, NULL);
-  begin = static_cast<char*> (allocate (size_of_root));
-  end = begin + size_of_root;
+  pthread_mutex_init (&mutex_, NULL);
+  begin_ = static_cast<char*> (allocate (size_of_root));
+  end_ = begin_ + size_of_root;
 }
 
 void*
 Heap::root () const
 {
-  return begin;
+  return begin_;
 }
 
-static void heap_dump_i (Heap* heap)
+void
+Heap::dump_i () const
 {
-  printf ("%zd heap=%p begin=%p end=%p next_sz=%zd reachable=%d parent=%p next=%p\n", pthread_self(), heap, heap->begin, heap->end, heap->next_block_size, heap->reachable, heap->parent, heap->next);
+  printf ("%zd heap=%p begin=%p end=%p next_sz=%zd reachable=%d parent=%p next=%p\n", pthread_self(), this, this->begin_, this->end_, this->next_block_size_, this->reachable_, this->parent_, this->next_);
 
-  if (Heap::Block::find (heap->block, heap->begin) == NULL)
+  if (Heap::Block::find (this->block_, this->begin_) == NULL)
     {
-      char** begin = (char**)heap->begin;
-      char** end = (char**)heap->end;
+      char** begin = (char**)this->begin_;
+      char** end = (char**)this->end_;
       for (; begin < end; ++begin)
         {
           printf ("%zd %p => %p\n", pthread_self(), begin, *begin);
         }
     }
 
-  if (heap->block)
+  if (this->block_)
     {
-      heap->block->dump ();
+      this->block_->dump ();
     }
 
   Heap::Chunk* ch;
-  for (ch = heap->free_list_head; ch != NULL; ch = ch->next)
+  for (ch = this->free_list_head_; ch != NULL; ch = ch->next)
     {
       printf ("%zd chunk=%p size=%zd next=%p\n", pthread_self(), ch, ch->size, ch->next);
     }
 
   Heap* c;
-  for (c = heap->child; c != NULL; c = c->next)
+  for (c = this->child_; c != NULL; c = c->next_)
     {
       c->dump ();
     }
@@ -485,9 +484,9 @@ static void heap_dump_i (Heap* heap)
 void
 Heap::dump ()
 {
-  pthread_mutex_lock (&mutex);
-  heap_dump_i (this);
-  pthread_mutex_unlock (&mutex);
+  pthread_mutex_lock (&mutex_);
+  dump_i ();
+  pthread_mutex_unlock (&mutex_);
 }
 
 void*
@@ -498,14 +497,14 @@ Heap::allocate (size_t size)
       return NULL;
     }
 
-  pthread_mutex_lock (&mutex);
+  pthread_mutex_lock (&mutex_);
 
   // Must be a multiple of the slot size.
   size = util::AlignUp (size, SLOT_SIZE);
 
   // Find a chunk.
   Heap::Chunk** chunk;
-  for (chunk = &free_list_head;
+  for (chunk = &free_list_head_;
        *chunk != NULL && (*chunk)->size < size;
        chunk = &(*chunk)->next)
     ;;
@@ -515,20 +514,20 @@ Heap::allocate (size_t size)
   if (*chunk == NULL)
     {
       // We need to allocate a block.
-      if (size > next_block_size)
+      if (size > next_block_size_)
         {
-          next_block_size = size;
+          next_block_size_ = size;
         }
       // Allocate the block.
-      block = Heap::Block::make (next_block_size);
+      block = Heap::Block::make (next_block_size_);
       // Insert the block into the heap.
-      Heap::Block::insert (&(this->block), block);
+      Heap::Block::insert (&(this->block_), block);
       // Insert the chunk at the end of the free list.
       *chunk = reinterpret_cast<Heap::Chunk*> (block->begin ());
-      (*chunk)->size = next_block_size;
+      (*chunk)->size = next_block_size_;
       (*chunk)->next = NULL;
 
-      next_block_size *= 2;
+      next_block_size_ *= 2;
     }
 
   // Remove the chunk from the free list.
@@ -540,14 +539,14 @@ Heap::allocate (size_t size)
     {
       Heap::Chunk* d = reinterpret_cast<Heap::Chunk*> ((char*)c + size);
       d->size = c->size - size;
-      d->next = free_list_head;
-      free_list_head = d;
+      d->next = free_list_head_;
+      free_list_head_ = d;
     }
 
   // Find the block containing this chunk.
   if (block == NULL)
     {
-      block = Heap::Block::find (this->block, c);
+      block = Heap::Block::find (this->block_, c);
     }
 
   block->allocate (c, size);
@@ -555,35 +554,34 @@ Heap::allocate (size_t size)
   // Clear the memory.
   memset (c, 0, size);
 
-  allocated_size += size;
+  allocated_size_ += size;
 
-  pthread_mutex_unlock (&mutex);
+  pthread_mutex_unlock (&mutex_);
 
   return c;
 }
 
-static void heap_free (Heap* heap)
+Heap::~Heap ()
 {
   // Free all the blocks.
-  if (heap->block)
+  if (block_)
     {
-      delete heap->block;
+      delete block_;
     }
 
   // Free the child heaps.
-  while (heap->child != NULL)
+  while (child_ != NULL)
     {
-      Heap* c = heap->child;
-      heap->child = c->next;
-      heap_free (c);
+      Heap* c = child_;
+      child_ = c->next_;
+      delete c;
     }
-
-  free (heap);
 }
 
-static void mark_slot_for_address (Heap* heap, void* p, Heap::Block** work_list)
+void
+Heap::mark_slot_for_address (void* p, Heap::Block** work_list)
 {
-  Heap::Block* block = Heap::Block::find (heap->block, p);
+  Heap::Block* block = Heap::Block::find (this->block_, p);
   if (block != NULL)
     {
       block->mark (p, work_list);
@@ -591,18 +589,19 @@ static void mark_slot_for_address (Heap* heap, void* p, Heap::Block** work_list)
   else
     {
       Heap* ptr;
-      for (ptr = heap->child; ptr != NULL; ptr = ptr->next)
+      for (ptr = this->child_; ptr != NULL; ptr = ptr->next_)
         {
           if (ptr == (Heap*)p)
             {
-              ptr->reachable = true;
+              ptr->reachable_ = true;
               break;
             }
         }
     }
 }
 
-static void scan (Heap* heap, void* begin, void* end, Heap::Block** work_list)
+void
+Heap::scan (void* begin, void* end, Heap::Block** work_list)
 {
   char** b;
   char** e;
@@ -613,7 +612,7 @@ static void scan (Heap* heap, void* begin, void* end, Heap::Block** work_list)
   for (; b < e; ++b)
     {
       char* p = *b;
-      mark_slot_for_address (heap, p, work_list);
+      mark_slot_for_address (p, work_list);
     }
 }
 
@@ -621,47 +620,47 @@ bool
 Heap::collect_garbage (bool force)
 {
   bool retval = false;
-  pthread_mutex_lock (&mutex);
+  pthread_mutex_lock (&mutex_);
   // Strictly greater.  This avoids continuous collection if both are zero.
-  if (force || allocated_size > next_collection_size)
+  if (force || allocated_size_ > next_collection_size_)
     {
       // Full collection.
       Heap::Block* work_list = NULL;
-      Heap::Block* b = Heap::Block::find (block, begin);
+      Heap::Block* b = Heap::Block::find (block_, begin_);
       if (b != NULL)
         {
-          b->mark (begin, &work_list);
+          b->mark (begin_, &work_list);
         }
-      scan (this, begin, end, &work_list);
+      scan (begin_, end_, &work_list);
 
       Heap::Block::scan_worklist (work_list, this);
 
       // Sweep the heap (reconstruct the free list).
-      free_list_head = NULL;
-      allocated_size = Heap::Block::sweep (&block, &free_list_head) * SLOT_SIZE;
-      next_collection_size = allocated_size * 2;
+      free_list_head_ = NULL;
+      allocated_size_ = Heap::Block::sweep (&block_, &free_list_head_) * SLOT_SIZE;
+      next_collection_size_ = allocated_size_ * 2;
 
-      if (block == NULL)
+      if (block_ == NULL)
         {
-          next_block_size = 0;
+          next_block_size_ = 0;
         }
 
-      Heap** child = &this->child;
+      Heap** child = &this->child_;
       while (*child != NULL)
         {
-          if ((*child)->reachable)
+          if ((*child)->reachable_)
             {
               // Recur on reachable children.
               (*child)->collect_garbage ();
-              (*child)->reachable = false;
-              child = &(*child)->next;
+              (*child)->reachable_ = false;
+              child = &(*child)->next_;
             }
           else
             {
               // Free unreachable children.
               Heap* h = *child;
-              *child = h->next;
-              heap_free (h);
+              *child = h->next_;
+              delete h;
             }
         }
       retval = true;
@@ -669,12 +668,12 @@ Heap::collect_garbage (bool force)
   else
     {
       // Just process children.
-      for (Heap* child = this->child; child != NULL; child = child->next)
+      for (Heap* child = this->child_; child != NULL; child = child->next_)
         {
           retval |= child->collect_garbage ();
         }
     }
-  pthread_mutex_unlock (&mutex);
+  pthread_mutex_unlock (&mutex_);
   return retval;
 }
 
@@ -682,94 +681,96 @@ Heap::collect_garbage (bool force)
 void
 Heap::merge (Heap* x)
 {
-  pthread_mutex_lock (&mutex);
+  pthread_mutex_lock (&mutex_);
   // Merge the blocks.
-  Heap::Block::merge (&block, x->block);
+  Heap::Block::merge (&block_, x->block_);
+  x->block_ = NULL;
 
   // Merge the free list.
   Heap::Chunk** ch;
-  for (ch = &free_list_head; *ch != NULL; ch = &(*ch)->next)
+  for (ch = &free_list_head_; *ch != NULL; ch = &(*ch)->next)
     ;;
-  *ch = x->free_list_head;
+  *ch = x->free_list_head_;
 
-  allocated_size += x->allocated_size;
+  allocated_size_ += x->allocated_size_;
   // Not quite sure how to combine next_collection_size.
   // Doing nothing should work but may not be optimal.
 
   // Merge the children.
   Heap** h;
-  for (h = &child; *h != NULL; h = &(*h)->next)
+  for (h = &child_; *h != NULL; h = &(*h)->next_)
     ;;
-  *h = x->child;
+  *h = x->child_;
+  x->child_ = NULL;
 
   // Free the heap.
-  free (x);
+  delete x;
 
-  pthread_mutex_unlock (&mutex);
+  pthread_mutex_unlock (&mutex_);
 }
 
 void
 Heap::insert_child (Heap* child)
 {
-  pthread_mutex_lock (&this->mutex);
-  child->parent = this;
-  child->next = this->child;
-  this->child = child;
+  pthread_mutex_lock (&this->mutex_);
+  child->parent_ = this;
+  child->next_ = this->child_;
+  this->child_ = child;
   // Force garbage collection.
-  this->next_collection_size = 0;
-  pthread_mutex_unlock (&this->mutex);
+  this->next_collection_size_ = 0;
+  pthread_mutex_unlock (&this->mutex_);
 }
 
 void
 Heap::remove_from_parent ()
 {
-  Heap* parent = this->parent;
+  Heap* parent = this->parent_;
 
   if (parent != NULL)
     {
-      pthread_mutex_lock (&parent->mutex);
-      Heap** ptr = &(parent->child);
+      pthread_mutex_lock (&parent->mutex_);
+      Heap** ptr = &(parent->child_);
       while (*ptr != this)
         {
-          ptr = &(*ptr)->next;
+          ptr = &(*ptr)->next_;
         }
 
       // Remove from parent's list.
-      *ptr = this->next;
+      *ptr = this->next_;
 
       // Make the child forget the parent.
-      this->parent = NULL;
+      this->parent_ = NULL;
 
       // Force garbage collection.
-      parent->next_collection_size = 0;
+      parent->next_collection_size_ = 0;
 
-      pthread_mutex_unlock (&parent->mutex);
+      pthread_mutex_unlock (&parent->mutex_);
     }
 }
 
 bool
 Heap::contains (void* ptr)
 {
-  pthread_mutex_lock (&mutex);
-  bool retval = Heap::Block::find (block, ptr) != NULL;
-  pthread_mutex_unlock (&mutex);
+  pthread_mutex_lock (&mutex_);
+  bool retval = Heap::Block::find (block_, ptr) != NULL;
+  pthread_mutex_unlock (&mutex_);
   return retval;
 }
 
 bool
 Heap::is_object (void* ptr)
 {
-  pthread_mutex_lock (&mutex);
-  Heap::Block* block = Heap::Block::find (this->block, ptr);
+  pthread_mutex_lock (&mutex_);
+  Heap::Block* block = Heap::Block::find (this->block_, ptr);
   if (block == NULL)
     {
-      pthread_mutex_unlock (&mutex);
+      pthread_mutex_unlock (&mutex_);
       return false;
     }
 
   size_t slot = block->slot (ptr);
   unsigned char bits = block->get_bits (slot);
-  pthread_mutex_unlock (&mutex);
+  pthread_mutex_unlock (&mutex_);
 
   return bits & OBJECT;
 }
@@ -777,17 +778,17 @@ Heap::is_object (void* ptr)
 bool
 Heap::is_allocated (void* ptr)
 {
-  pthread_mutex_lock (&mutex);
-  Heap::Block* block = Heap::Block::find (this->block, ptr);
+  pthread_mutex_lock (&mutex_);
+  Heap::Block* block = Heap::Block::find (this->block_, ptr);
   if (block == NULL)
     {
-      pthread_mutex_unlock (&mutex);
+      pthread_mutex_unlock (&mutex_);
       return false;
     }
 
   size_t slot = block->slot (ptr);
   unsigned char bits = block->get_bits (slot);
-  pthread_mutex_unlock (&mutex);
+  pthread_mutex_unlock (&mutex_);
 
   return bits & ALLOCATED;
 }
@@ -795,16 +796,16 @@ Heap::is_allocated (void* ptr)
 bool
 Heap::is_child (Heap* child)
 {
-  pthread_mutex_lock (&mutex);
-  for (Heap* h = this->child; h != NULL; h = h->next)
+  pthread_mutex_lock (&mutex_);
+  for (Heap* h = this->child_; h != NULL; h = h->next_)
     {
       if (h == child)
         {
-          pthread_mutex_unlock (&mutex);
+          pthread_mutex_unlock (&mutex_);
           return true;
         }
     }
-  pthread_mutex_unlock (&mutex);
+  pthread_mutex_unlock (&mutex_);
   return false;
 }
 }
