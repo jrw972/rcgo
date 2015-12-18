@@ -634,9 +634,13 @@ struct CodeGenVisitor : public ast::DefaultVisitor
           case LogicNot:
             node.operation = make_unary<LogicNotter> (node.type, c);
             break;
+          case Posate:
+            UNIMPLEMENTED;
           case Negate:
             node.operation = make_unary<Negater> (node.type, c);
             break;
+          case Complement:
+            UNIMPLEMENTED;
           }
       }
   }

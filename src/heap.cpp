@@ -258,8 +258,8 @@ struct Heap::Block
         unsigned char bits = get_bits (slot);
         printf ("%zd slot %zd bits=%x scanned=%d mark=%d object=%d allocated=%d\n", pthread_self(), slot, bits, (bits & SCANNED) != 0, (bits & MARK) != 0, (bits & OBJECT) != 0, (bits & ALLOCATED) != 0);
       }
-    char** begin = (char**)begin;
-    char** end = (char**)end;
+    char** begin = (char**)begin_;
+    char** end = (char**)end_;
     for (; begin < end; ++begin)
       {
         printf ("%zd %p => %p\n", pthread_self(), begin, *begin);

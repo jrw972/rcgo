@@ -1794,7 +1794,7 @@ struct NewImpl : public Callable
   {
     const type::Type* return_type = type->GetPointer ();
     return new type::Function (type::Function::FUNCTION, (new Signature ()),
-                               ParameterSymbol::makeReturn (definingNode, ReturnSymbol, return_type, MUTABLE));
+                               ParameterSymbol::makeReturn (definingNode, ReturnSymbol, return_type, Mutable));
   }
 
   virtual size_t return_size () const
@@ -1921,8 +1921,8 @@ struct MoveImpl : public Callable
   {
     // TODO:  The mutabilities may need to be adjusted.
     return new type::Function (type::Function::FUNCTION, (new Signature ())
-                               ->Append (ParameterSymbol::make (definingNode, "h", in, MUTABLE, FOREIGN)),
-                               ParameterSymbol::makeReturn (definingNode, ReturnSymbol, out, MUTABLE));
+                               ->Append (ParameterSymbol::make (definingNode, "h", in, Mutable, Foreign)),
+                               ParameterSymbol::makeReturn (definingNode, ReturnSymbol, out, Mutable));
   }
 
   virtual size_t return_size () const
@@ -2031,8 +2031,8 @@ struct MergeImpl : public Callable
   {
     // TODO:  Adjust mutability.
     return new type::Function (type::Function::FUNCTION, (new Signature ())
-                               ->Append (ParameterSymbol::make (definingNode, "h", in, MUTABLE, FOREIGN)),
-                               ParameterSymbol::makeReturn (definingNode, ReturnSymbol, out, MUTABLE));
+                               ->Append (ParameterSymbol::make (definingNode, "h", in, Mutable, Foreign)),
+                               ParameterSymbol::makeReturn (definingNode, ReturnSymbol, out, Mutable));
   }
 
   virtual size_t return_size () const
@@ -2132,8 +2132,8 @@ struct CopyImpl : public Callable
   static const type::Function* makeFunctionType (const type::Type* in, ast::Node* definingNode)
   {
     return new type::Function (type::Function::FUNCTION, (new Signature ())
-                               ->Append (ParameterSymbol::make (definingNode, "h", in, IMMUTABLE, FOREIGN)),
-                               ParameterSymbol::makeReturn (definingNode, ReturnSymbol, in, MUTABLE));
+                               ->Append (ParameterSymbol::make (definingNode, "h", in, Immutable, Foreign)),
+                               ParameterSymbol::makeReturn (definingNode, ReturnSymbol, in, Mutable));
   }
 
   virtual size_t return_size () const
@@ -2327,11 +2327,11 @@ struct PrintlnImpl : public Callable
       {
         const type::Type* t = *pos;
         t = t->DefaultType ();
-        sig->Append (ParameterSymbol::make (NULL, "", t, IMMUTABLE, FOREIGN));
+        sig->Append (ParameterSymbol::make (NULL, "", t, Immutable, Foreign));
       }
 
     return new type::Function (type::Function::FUNCTION, sig,
-                               ParameterSymbol::makeReturn (NULL, ReturnSymbol, Void::Instance (), FOREIGN));
+                               ParameterSymbol::makeReturn (NULL, ReturnSymbol, Void::Instance (), Foreign));
 
   }
 

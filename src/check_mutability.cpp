@@ -121,7 +121,7 @@ void fix (Node& node)
 {
   if (node.type->underlying_kind () == type::kStringU)
     {
-      node.dereference_mutability = std::max (node.dereference_mutability, IMMUTABLE);
+      node.dereference_mutability = std::max (node.dereference_mutability, Immutable);
     }
 }
 
@@ -145,7 +145,7 @@ struct MutabilityVisitor : public ast::DefaultVisitor
       {
         check_mutability_arguments (node.args (), node.signature);
       }
-    node.intrinsic_mutability = IMMUTABLE;
+    node.intrinsic_mutability = Immutable;
     node.dereference_mutability = node.return_parameter->dereference_mutability;
     fix (node);
   }
@@ -153,11 +153,11 @@ struct MutabilityVisitor : public ast::DefaultVisitor
   void visit (ast_conversion_expr_t& node)
   {
     node.expr ()->Accept (*this);
-    node.intrinsic_mutability = IMMUTABLE;
+    node.intrinsic_mutability = Immutable;
     node.dereference_mutability = node.expr ()->dereference_mutability;
     if (node.reset_mutability)
       {
-        node.dereference_mutability = MUTABLE;
+        node.dereference_mutability = Mutable;
       }
     fix (node);
   }
@@ -169,8 +169,8 @@ struct MutabilityVisitor : public ast::DefaultVisitor
 
   void visit (ast_literal_expr_t& node)
   {
-    node.intrinsic_mutability = IMMUTABLE;
-    node.dereference_mutability = IMMUTABLE;
+    node.intrinsic_mutability = Immutable;
+    node.dereference_mutability = Immutable;
     fix (node);
   }
 
@@ -191,22 +191,22 @@ struct MutabilityVisitor : public ast::DefaultVisitor
 
       void visit (const BuiltinFunction& symbol)
       {
-        node.intrinsic_mutability = IMMUTABLE;
-        node.dereference_mutability = IMMUTABLE;
+        node.intrinsic_mutability = Immutable;
+        node.dereference_mutability = Immutable;
         fix (node);
       }
 
       void visit (const decl::Template& symbol)
       {
-        node.intrinsic_mutability = IMMUTABLE;
-        node.dereference_mutability = IMMUTABLE;
+        node.intrinsic_mutability = Immutable;
+        node.dereference_mutability = Immutable;
         fix (node);
       }
 
       void visit (const decl::Function& symbol)
       {
-        node.intrinsic_mutability = IMMUTABLE;
-        node.dereference_mutability = IMMUTABLE;
+        node.intrinsic_mutability = Immutable;
+        node.dereference_mutability = Immutable;
         fix (node);
       }
 
@@ -224,8 +224,8 @@ struct MutabilityVisitor : public ast::DefaultVisitor
 
       void visit (const ConstantSymbol& symbol)
       {
-        node.intrinsic_mutability = IMMUTABLE;
-        node.dereference_mutability = IMMUTABLE;
+        node.intrinsic_mutability = Immutable;
+        node.dereference_mutability = Immutable;
         fix (node);
       }
 
@@ -380,7 +380,7 @@ struct MutabilityVisitor : public ast::DefaultVisitor
   void visit (ast_assign_statement_t& node)
   {
     node.VisitChildren (*this);
-    if (node.left ()->intrinsic_mutability != MUTABLE)
+    if (node.left ()->intrinsic_mutability != Mutable)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "target of assignment is not mutable (E86)");
@@ -397,7 +397,7 @@ struct MutabilityVisitor : public ast::DefaultVisitor
   void visit (ast_add_assign_statement_t& node)
   {
     node.VisitChildren (*this);
-    if (node.left ()->intrinsic_mutability != MUTABLE)
+    if (node.left ()->intrinsic_mutability != Mutable)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "target of assignment is not mutable (E15)");
@@ -407,7 +407,7 @@ struct MutabilityVisitor : public ast::DefaultVisitor
   void visit (ast_increment_statement_t& node)
   {
     node.VisitChildren (*this);
-    if (node.child ()->intrinsic_mutability != MUTABLE)
+    if (node.child ()->intrinsic_mutability != Mutable)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "target of increment is not mutable (E177)");
@@ -485,14 +485,14 @@ struct MutabilityVisitor : public ast::DefaultVisitor
     node.VisitChildren (*this);
     if (node.array_type != NULL)
       {
-        node.intrinsic_mutability = IMMUTABLE;
+        node.intrinsic_mutability = Immutable;
         node.dereference_mutability = node.base ()->dereference_mutability;
         fix (node);
         return;
       }
     if (node.slice_type != NULL)
       {
-        node.intrinsic_mutability = IMMUTABLE;
+        node.intrinsic_mutability = Immutable;
         node.dereference_mutability = node.base ()->dereference_mutability;
         fix (node);
         return;
@@ -503,16 +503,16 @@ struct MutabilityVisitor : public ast::DefaultVisitor
   void visit (ast_unary_arithmetic_expr_t& node)
   {
     node.VisitChildren (*this);
-    node.intrinsic_mutability = IMMUTABLE;
-    node.dereference_mutability = IMMUTABLE;
+    node.intrinsic_mutability = Immutable;
+    node.dereference_mutability = Immutable;
     fix (node);
   }
 
   void visit (ast_binary_arithmetic_expr_t& node)
   {
     node.VisitChildren (*this);
-    node.intrinsic_mutability = IMMUTABLE;
-    node.dereference_mutability = IMMUTABLE;
+    node.intrinsic_mutability = Immutable;
+    node.dereference_mutability = Immutable;
     fix (node);
   }
 

@@ -145,7 +145,7 @@ struct Visitor : public ast::DefaultVisitor
     // Consevatively assume that is is written.
     if (node.right ()->receiver_state &&
         type_contains_pointer (node.right ()->type) &&
-        node.right ()->dereference_mutability == MUTABLE)
+        node.right ()->dereference_mutability == Mutable)
       {
         node.receiver_access = AccessWrite;
         return;
@@ -205,7 +205,7 @@ struct Visitor : public ast::DefaultVisitor
       }
 
     if (type_contains_pointer (node.type) &&
-        node.dereference_mutability == MUTABLE)
+        node.dereference_mutability == Mutable)
       {
         node.receiver_state = flag;
       }
@@ -322,7 +322,7 @@ void compute_receiver_access_arguments (Node* args, const type::Signature* signa
       receiver_access = std::max (receiver_access, arg->receiver_access);
       if (arg->receiver_state &&
           type_contains_pointer (param->type) &&
-          param->dereference_mutability == MUTABLE)
+          param->dereference_mutability == Mutable)
         {
           receiver_access = std::max (receiver_access, AccessWrite);
           flag = true;

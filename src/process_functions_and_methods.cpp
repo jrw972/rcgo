@@ -72,7 +72,7 @@ processReceiver (ast::Node* n, ast::Node* identifierNode, ParameterSymbol*& rece
                      "component receivers must be pointers (E59)");
     }
 
-  if (requireImmutableDereferenceMutability && node->dereferenceMutability < IMMUTABLE)
+  if (requireImmutableDereferenceMutability && node->dereferenceMutability < Immutable)
     {
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
                      "receiver must be declared +const or +foreign (E60)");
@@ -263,7 +263,7 @@ struct Visitor : public ast::DefaultVisitor
     ParameterSymbol* thisSymbol;
     NamedType* type = processReceiver (node.receiver (), node.identifier (), thisSymbol, true, true);
     enter_symbol (node, thisSymbol);
-    ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension (), "IOTA", type::Int::Instance (), IMMUTABLE, IMMUTABLE);
+    ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension (), "IOTA", type::Int::Instance (), Immutable, Immutable);
     enter_symbol (node, iotaSymbol);
     type::Int::ValueType dimension = process_array_dimension (node.dimension ());
     Action *action = new Action (node.body (), ast_get_identifier (node.identifier ()), dimension);
@@ -280,7 +280,7 @@ struct Visitor : public ast::DefaultVisitor
 
     const Signature* signature;
     ParameterSymbol* return_symbol;
-    processSignatureReturn (node.signature (), node.return_type (), FOREIGN, true,
+    processSignatureReturn (node.signature (), node.return_type (), Foreign, true,
                             signature, return_symbol);
 
     // No return type.
@@ -305,10 +305,10 @@ struct Visitor : public ast::DefaultVisitor
 
     const Signature* signature;
     ParameterSymbol* return_symbol;
-    processSignatureReturn (node.signature (), node.return_type (), FOREIGN, true,
+    processSignatureReturn (node.signature (), node.return_type (), Foreign, true,
                             signature, return_symbol);
 
-    ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension (), "IOTA", type::Int::Instance (), IMMUTABLE, IMMUTABLE);
+    ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension (), "IOTA", type::Int::Instance (), Immutable, Immutable);
     type::Int::ValueType dimension = process_array_dimension (node.dimension ());
 
     // No return type.

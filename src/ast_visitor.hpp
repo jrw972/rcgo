@@ -13,6 +13,7 @@ struct Visitor
   virtual void visit (ast_receiver_t& node) = 0;
   virtual void visit (ast_array_type_spec_t& node) = 0;
   virtual void visit (ast_slice_type_spec_t& node) = 0;
+  virtual void visit (ast_map_type_spec_t& node) = 0;
   virtual void visit (ast_empty_type_spec_t& node) = 0;
   virtual void visit (ast_field_list_type_spec_t& node) = 0;
   virtual void visit (ast_heap_type_spec_t& node) = 0;
@@ -72,6 +73,7 @@ struct Visitor
   virtual void visit (Type& node) = 0;
   virtual void visit (SourceFile& node) = 0;
   virtual void visit (ast_element_list_t& node) = 0;
+  virtual void visit (ast_element_t& node) = 0;
   virtual void visit (ast_composite_literal_t& node) = 0;
 };
 
@@ -82,6 +84,7 @@ struct ConstVisitor
   virtual void visit (const ast_receiver_t& node) = 0;
   virtual void visit (const ast_array_type_spec_t& node) = 0;
   virtual void visit (const ast_slice_type_spec_t& node) = 0;
+  virtual void visit (const ast_map_type_spec_t& node) = 0;
   virtual void visit (const ast_empty_type_spec_t& node) = 0;
   virtual void visit (const ast_field_list_type_spec_t& node) = 0;
   virtual void visit (const ast_heap_type_spec_t& node) = 0;
@@ -141,6 +144,7 @@ struct ConstVisitor
   virtual void visit (const Type& node) = 0;
   virtual void visit (const SourceFile& node) = 0;
   virtual void visit (const ast_element_list_t& node) = 0;
+  virtual void visit (const ast_element_t& node) = 0;
   virtual void visit (const ast_composite_literal_t& node) = 0;
 };
 
@@ -164,6 +168,10 @@ struct DefaultVisitor : public Visitor
     default_action (node);
   }
   virtual void visit (ast_slice_type_spec_t& node)
+  {
+    default_action (node);
+  }
+  virtual void visit (ast_map_type_spec_t& node)
   {
     default_action (node);
   }
@@ -410,6 +418,11 @@ struct DefaultVisitor : public Visitor
     default_action (node);
   }
 
+  virtual void visit (ast_element_t& node)
+  {
+    default_action (node);
+  }
+
   virtual void visit (ast_composite_literal_t& node)
   {
     default_action (node);
@@ -438,6 +451,10 @@ struct DefaultConstVisitor : public ConstVisitor
     default_action (node);
   }
   virtual void visit (const ast_slice_type_spec_t& node)
+  {
+    default_action (node);
+  }
+  virtual void visit (const ast_map_type_spec_t& node)
   {
     default_action (node);
   }
@@ -680,6 +697,11 @@ struct DefaultConstVisitor : public ConstVisitor
   }
 
   virtual void visit (const ast_element_list_t& node)
+  {
+    default_action (node);
+  }
+
+  virtual void visit (const ast_element_t& node)
   {
     default_action (node);
   }

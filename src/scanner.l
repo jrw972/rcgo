@@ -30,7 +30,7 @@
     if (c >= 'A' && c <= 'F') {
       return c - 'A' + 10;
     }
-    not_reached;
+    NOT_REACHED;
   }
 
   static void validUnicode (unsigned int line, int u) {
@@ -168,10 +168,9 @@ ESCAPED \\[abfnrtv\\\"]
 "continue"             { return CONTINUE; }
 "default"              { return DEFAULT; }
 "else"                 { return ELSE; }
-"enum"                 { return ENUM; }
 "fallthrough"          { return FALLTHROUGH; }
 "for"                  { return FOR; }
-"foreign"              { return FOREIGN_KW; }
+"foreign"              { return FOREIGN; }
 "func"                 { return FUNC; }
 "getter"               { return GETTER; }
 "goto"                 { return GOTO; }
@@ -185,7 +184,7 @@ ESCAPED \\[abfnrtv\\\"]
 "push"                 { return PUSH; }
 "range"                { return RANGE; }
 "reaction"             { return REACTION; }
-"return"               { return RETURN_KW; }
+"return"               { return RETURN; }
 "struct"               { return STRUCT; }
 "switch"               { return SWITCH; }
 "type"                 { return TYPE; }
@@ -380,7 +379,7 @@ ESCAPED \\[abfnrtv\\\"]
     yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   default:
-    not_reached;
+    NOT_REACHED;
   }
 
   return LITERAL;

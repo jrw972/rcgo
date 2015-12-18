@@ -77,7 +77,7 @@ struct ParameterSymbol : public Symbol
     : Symbol (id, dn)
     , type (t)
     , intrinsic_mutability (im)
-    , dereference_mutability (is_typed_string (t) ? std::max (dm, IMMUTABLE) : dm)
+    , dereference_mutability (is_typed_string (t) ? std::max (dm, Immutable) : dm)
     , kind (k)
     , original_ (NULL)
   { }
@@ -96,7 +96,7 @@ struct ParameterSymbol : public Symbol
                                       const type::Type* type,
                                       Mutability dereference_mutability)
   {
-    return new ParameterSymbol (name, defining_node, type, MUTABLE, dereference_mutability, Return);
+    return new ParameterSymbol (name, defining_node, type, Mutable, dereference_mutability, Return);
   }
 
   static ParameterSymbol* makeReceiver (ast::Node* defining_node,
@@ -192,7 +192,7 @@ struct VariableSymbol : public Symbol
     : Symbol (id, dn)
     , type (t)
     , intrinsic_mutability (im)
-    , dereference_mutability (is_typed_string (t) ? std::max (dm, IMMUTABLE) : dm)
+    , dereference_mutability (is_typed_string (t) ? std::max (dm, Immutable) : dm)
     , original_ (NULL)
   { }
 
@@ -213,7 +213,7 @@ struct VariableSymbol : public Symbol
 
   VariableSymbol* duplicate()
   {
-    VariableSymbol* s = new VariableSymbol (this->identifier, this->definingNode, this->type, FOREIGN, FOREIGN);
+    VariableSymbol* s = new VariableSymbol (this->identifier, this->definingNode, this->type, Foreign, Foreign);
     s->original_ = this;
     return s;
   }

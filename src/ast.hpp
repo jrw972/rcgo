@@ -317,6 +317,25 @@ struct ast_slice_type_spec_t : public ast_unary_t
   void Accept (ConstVisitor& visitor) const;
 };
 
+struct ast_map_type_spec_t : public Node
+{
+  enum {
+    KEY,
+    VALUE,
+    COUNT
+  };
+
+  ast_map_type_spec_t (unsigned int line, Node* key, Node* value)
+    : Node (line, COUNT)
+  {
+    set (KEY, key);
+    set (VALUE, key);
+  }
+
+  void Accept (Visitor& visitor);
+  void Accept (ConstVisitor& visitor) const;
+};
+
 struct ast_push_port_type_spec_t : public Node
 {
   enum
@@ -926,20 +945,26 @@ struct ast_if_statement_t : public Node
 {
   enum
   {
+    STATEMENT,
     CONDITION,
     TRUE_BRANCH,
     FALSE_BRANCH,
     COUNT,
   };
 
-  ast_if_statement_t (unsigned int line, Node* condition, Node* true_branch, Node* false_branch)
+  ast_if_statement_t (unsigned int line, Node* statement, Node* condition, Node* true_branch, Node* false_branch)
     : Node (line, COUNT)
   {
+    set (STATEMENT, statement);
     set (CONDITION, condition);
     set (TRUE_BRANCH, true_branch);
     set (FALSE_BRANCH, false_branch);
   }
 
+  Node* statement () const
+  {
+    return At (STATEMENT);
+  }
   Node* condition () const
   {
     return At (CONDITION);
@@ -1811,6 +1836,35 @@ struct ast_element_list_t : public Node
   ast_element_list_t (unsigned int line)
     : Node (line, 0)
   { }
+
+  void Accept (Visitor& visitor);
+  void Accept (ConstVisitor& visitor) const;
+};
+
+struct ast_element_t : public Node
+{
+  enum
+  {
+    KEY,
+    VALUE,
+    COUNT
+  };
+
+  ast_element_t (unsigned int line, Node* key, Node* value)
+    : Node (line, COUNT)
+  {
+    set (KEY, key);
+    set (VALUE, value);
+  }
+
+  Node* key () const
+  {
+    return At (KEY);
+  }
+  Node* value () const
+  {
+    return At (VALUE);
+  }
 
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;

@@ -179,7 +179,7 @@ process_type (Node* node, bool force)
       ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (&node,
                                           ReturnSymbol,
                                           type::Void::Instance (),
-                                          IMMUTABLE);
+                                          Immutable);
 
       CheckForForeignSafe (signature, return_parameter);
       type = new type::Function (type::Function::PUSH_PORT, signature, return_parameter);

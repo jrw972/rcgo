@@ -23,7 +23,7 @@ ACCEPT(HiddenSymbol)
 void
 ParameterSymbol::check_foreign_safe () const
 {
-  if (type_contains_pointer (type) && dereference_mutability != FOREIGN)
+  if (type_contains_pointer (type) && dereference_mutability != Foreign)
     {
       switch (kind)
         {

@@ -1055,6 +1055,8 @@ struct Visitor : public ast::DefaultVisitor
           }
       }
       break;
+      case Posate:
+        UNIMPLEMENTED;
       case Negate:
       {
         if (!(is_typed_numeric (node.child ()->type) ||
@@ -1134,6 +1136,8 @@ struct Visitor : public ast::DefaultVisitor
           }
       }
       break;
+      case Complement:
+        UNIMPLEMENTED;
       }
 
     require_value_or_variable (node.child ());
@@ -1356,7 +1360,7 @@ struct Visitor : public ast::DefaultVisitor
   {
     const std::string& identifier = ast_get_identifier (node.identifier ());
     node.limit = process_array_dimension (node.limit_node ());
-    node.symbol = new VariableSymbol (identifier, node.identifier (), Int::Instance (), IMMUTABLE, IMMUTABLE);
+    node.symbol = new VariableSymbol (identifier, node.identifier (), Int::Instance (), Immutable, Immutable);
     enter_symbol (node, node.symbol);
     node.body ()->Accept (*this);
   }
@@ -1380,7 +1384,7 @@ struct Visitor : public ast::DefaultVisitor
     // Enter the new heap root.
     const std::string& identifier = ast_get_identifier (node.identifier ());
     // Don't know dereference mutability yet.
-    VariableSymbol* symbol = new VariableSymbol (identifier, &node, root_type, IMMUTABLE, FOREIGN);
+    VariableSymbol* symbol = new VariableSymbol (identifier, &node, root_type, Immutable, Foreign);
     node.root_symbol = enter_symbol (node, symbol);
 
     // Check the body.

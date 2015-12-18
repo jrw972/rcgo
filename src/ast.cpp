@@ -84,24 +84,24 @@ operator<< (std::ostream& out, const Node& node)
           out << ' ';
           switch (node.intrinsic_mutability)
             {
-            case MUTABLE:
+            case Mutable:
               break;
-            case IMMUTABLE:
+            case Immutable:
               out << "const";
               break;
-            case FOREIGN:
+            case Foreign:
               out << "foreign";
               break;
             }
           out << ' ';
           switch (node.dereference_mutability)
             {
-            case MUTABLE:
+            case Mutable:
               break;
-            case IMMUTABLE:
+            case Immutable:
               out << "+const";
               break;
-            case FOREIGN:
+            case Foreign:
               out << "+foreign";
               break;
             }
@@ -141,6 +141,13 @@ operator<< (std::ostream& out, const Node& node)
     {
       print_indent (node);
       out << "slice_type_spec";
+      print_common (node);
+      print_children (node);
+    }
+    void visit (const ast_map_type_spec_t& node)
+    {
+      print_indent (node);
+      out << "map_type_spec";
       print_common (node);
       print_children (node);
     }
@@ -557,6 +564,13 @@ operator<< (std::ostream& out, const Node& node)
       print_common (node);
       print_children (node);
     }
+    void visit (const ast_element_t& node)
+    {
+      print_indent (node);
+      out << "element";
+      print_common (node);
+      print_children (node);
+    }
     void visit (const ast_composite_literal_t& node)
     {
       print_indent (node);
@@ -587,6 +601,7 @@ ACCEPT (ast_identifier_list_t)
 ACCEPT (ast_receiver_t)
 ACCEPT (ast_array_type_spec_t)
 ACCEPT (ast_slice_type_spec_t)
+ACCEPT (ast_map_type_spec_t)
 ACCEPT (ast_empty_type_spec_t)
 ACCEPT (ast_field_list_type_spec_t)
 ACCEPT (ast_heap_type_spec_t)
@@ -649,6 +664,7 @@ ACCEPT (ast_dimensioned_reaction_t)
 ACCEPT (Type)
 ACCEPT (SourceFile)
 ACCEPT (ast_element_list_t)
+ACCEPT (ast_element_t)
 ACCEPT (ast_composite_literal_t)
 
 std::string ast_get_identifier (const Node* ast)
@@ -690,11 +706,11 @@ Node::Activate ()
               {
                 if (symbol->kind == ParameterSymbol::Receiver)
                   {
-                    EnterSymbol (symbol->duplicate (MUTABLE));
+                    EnterSymbol (symbol->duplicate (Mutable));
                   }
                 else
                   {
-                    if (type_contains_pointer (symbol->type) && symbol->dereference_mutability == FOREIGN)
+                    if (type_contains_pointer (symbol->type) && symbol->dereference_mutability == Foreign)
                       {
                         // Hide this parameter.
                         EnterSymbol (new HiddenSymbol (symbol, this));
@@ -707,7 +723,7 @@ Node::Activate ()
             const VariableSymbol* symbol = SymbolCast<VariableSymbol> (*ptr);
             if (symbol != NULL)
               {
-                if (type_contains_pointer (symbol->type) && symbol->dereference_mutability == FOREIGN)
+                if (type_contains_pointer (symbol->type) && symbol->dereference_mutability == Foreign)
                   {
                     // Hide this variable.
                     EnterSymbol (new HiddenSymbol (symbol, this));
@@ -737,7 +753,7 @@ Node::Change ()
                 if (type_contains_pointer (symbol->type))
                   {
                     // Enter as a duplicate.
-                    Symbol* dup = symbol->duplicate (FOREIGN);
+                    Symbol* dup = symbol->duplicate (Foreign);
                     EnterSymbol (dup);
                   }
               }

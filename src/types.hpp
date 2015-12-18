@@ -98,9 +98,9 @@ class scheduler_t;
 // Ordered by strictness for <.
 enum Mutability
 {
-  MUTABLE,
-  IMMUTABLE,
-  FOREIGN,
+  Mutable,
+  Immutable,
+  Foreign,
 };
 
 enum ReceiverAccess
@@ -119,7 +119,9 @@ struct pull_port_t
 enum UnaryArithmetic
 {
   LogicNot,
+  Posate,
   Negate,
+  Complement,
 };
 
 inline const char* unary_arithmetic_symbol (UnaryArithmetic ua)
@@ -128,8 +130,12 @@ inline const char* unary_arithmetic_symbol (UnaryArithmetic ua)
     {
     case LogicNot:
       return "!";
+    case Posate:
+      return "+";
     case Negate:
       return "-";
+    case Complement:
+      return "^";
     }
 
   NOT_REACHED;

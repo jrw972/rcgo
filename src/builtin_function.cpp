@@ -52,8 +52,8 @@ Readable::Readable (ast::Node* dn)
   : BuiltinFunction ("readable",
                      dn,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, IMMUTABLE, FOREIGN)),
-                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedBool, IMMUTABLE)))
+                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, Immutable, Foreign)),
+                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedBool, Immutable)))
 { }
 
 void
@@ -82,9 +82,9 @@ Read::Read (ast::Node* dn)
   : BuiltinFunction ("read",
                      dn,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, IMMUTABLE, MUTABLE))
-                                         ->Append (ParameterSymbol::make (dn, "buf", type::NamedByte.GetSlice (), IMMUTABLE, MUTABLE)),
-                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, Int::Instance (), IMMUTABLE)))
+                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, Immutable, Mutable))
+                                         ->Append (ParameterSymbol::make (dn, "buf", type::NamedByte.GetSlice (), Immutable, Mutable)),
+                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, Int::Instance (), Immutable)))
 { }
 
 void
@@ -100,8 +100,8 @@ Writable::Writable (ast::Node* dn)
   : BuiltinFunction ("writable",
                      dn,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, IMMUTABLE, FOREIGN)),
-                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedBool, IMMUTABLE)))
+                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, Immutable, Foreign)),
+                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedBool, Immutable)))
 { }
 
 void
@@ -130,7 +130,7 @@ TimerfdCreate::TimerfdCreate (ast::Node* dn)
   : BuiltinFunction ("timerfd_create",
                      dn,
                      new type::Function (type::Function::FUNCTION, new Signature (),
-                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedFileDescriptor, MUTABLE)))
+                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedFileDescriptor, Mutable)))
 { }
 
 void
@@ -152,9 +152,9 @@ TimerfdSettime::TimerfdSettime (ast::Node* dn)
   : BuiltinFunction ("timerfd_settime",
                      dn,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, IMMUTABLE, MUTABLE))
-                                         ->Append (ParameterSymbol::make (dn, "s", &type::NamedUint64, IMMUTABLE, IMMUTABLE)),
-                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedInt, IMMUTABLE)))
+                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, Immutable, Mutable))
+                                         ->Append (ParameterSymbol::make (dn, "s", &type::NamedUint64, Immutable, Immutable)),
+                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedInt, Immutable)))
 { }
 
 void
@@ -176,7 +176,7 @@ UdpSocket::UdpSocket (ast::Node* dn)
   : BuiltinFunction ("udp_socket",
                      dn,
                      new type::Function (type::Function::FUNCTION, new Signature (),
-                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedFileDescriptor, MUTABLE)))
+                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedFileDescriptor, Mutable)))
 { }
 
 void
@@ -205,11 +205,11 @@ Sendto::Sendto (ast::Node* dn)
   : BuiltinFunction ("sendto",
                      dn,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, IMMUTABLE, MUTABLE))
-                                         ->Append (ParameterSymbol::make (dn, "host", &type::NamedString, IMMUTABLE, FOREIGN))
-                                         ->Append (ParameterSymbol::make (dn, "port", &type::NamedUint16, IMMUTABLE, IMMUTABLE))
-                                         ->Append (ParameterSymbol::make (dn, "buf", type::NamedByte.GetSlice (), IMMUTABLE, FOREIGN)),
-                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, Int::Instance (), IMMUTABLE)))
+                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, Immutable, Mutable))
+                                         ->Append (ParameterSymbol::make (dn, "host", &type::NamedString, Immutable, Foreign))
+                                         ->Append (ParameterSymbol::make (dn, "port", &type::NamedUint16, Immutable, Immutable))
+                                         ->Append (ParameterSymbol::make (dn, "buf", type::NamedByte.GetSlice (), Immutable, Foreign)),
+                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, Int::Instance (), Immutable)))
 { }
 
 void
