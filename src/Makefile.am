@@ -25,7 +25,6 @@ compute_receiver_access.hpp compute_receiver_access.cpp \
 composition.hpp composition.cpp \
 debug.hpp \
 enter_symbols.cpp \
-enumerate_instances.cpp \
 evaluate_static.hpp evaluate_static.cpp \
 executor_base.hpp \
 field.hpp \

@@ -259,9 +259,6 @@ check_assignment (typed_value_t left_tv,
                   const char* leak_message);
 
 void
-enumerate_instances (ast::Node* node, composition::Composer& instance_table);
-
-void
 allocate_stack_variables (ast::Node* node);
 
 decl::Method*

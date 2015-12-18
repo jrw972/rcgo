@@ -319,7 +319,8 @@ struct ast_slice_type_spec_t : public ast_unary_t
 
 struct ast_map_type_spec_t : public Node
 {
-  enum {
+  enum
+  {
     KEY,
     VALUE,
     COUNT

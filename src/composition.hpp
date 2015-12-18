@@ -185,16 +185,7 @@ struct PullPort : public Node
 class Composer
 {
 public:
-  void add_instance (Instance* instance);
-  void add_push_port (size_t address,
-                      Instance* output_instance,
-                      type::field_t* output_field,
-                      const std::string& name);
-  void add_pull_port (size_t address,
-                      Instance* input_instance,
-                      type::field_t* input_field,
-                      const std::string& name);
-
+  void enumerate_instances (ast::Node* node);
   void elaborate ();
   void analyze ();
 
@@ -235,6 +226,22 @@ private:
   ReactionsType reactions_;
   GettersType getters_;
   struct ElaborationVisitor;
+  Instance* instantiate_contained_instances (const type::Type * type,
+      Instance* parent,
+      decl::Initializer* initializer,
+      size_t address,
+      unsigned int line,
+      ast::ast_instance_t* node,
+      const std::string& name);
+  void add_instance (Instance* instance);
+  void add_push_port (size_t address,
+                      Instance* output_instance,
+                      type::field_t* output_field,
+                      const std::string& name);
+  void add_pull_port (size_t address,
+                      Instance* input_instance,
+                      type::field_t* input_field,
+                      const std::string& name);
   void enumerate_actions ();
   void elaborate_actions ();
   void enumerate_reactions ();

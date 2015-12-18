@@ -141,7 +141,7 @@ main (int argc, char **argv)
 
   // Check composition.
   composition::Composer instance_table;
-  semantic::enumerate_instances (root, instance_table);
+  instance_table.enumerate_instances (root);
   instance_table.elaborate ();
   if (show_composition)
     {
