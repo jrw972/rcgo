@@ -1,8 +1,5 @@
 #include "stack.hpp"
 
-#include "util.hpp"
-#include "type.hpp"
-
 namespace runtime
 {
 
