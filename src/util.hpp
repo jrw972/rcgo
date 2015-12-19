@@ -7,7 +7,7 @@
 namespace util
 {
 
-inline ptrdiff_t AlignUp (ptrdiff_t value, size_t alignment)
+inline ptrdiff_t align_up (ptrdiff_t value, size_t alignment)
 {
   return (value + (alignment - 1)) & ~(alignment - 1);
 }

@@ -26,7 +26,7 @@ struct Stack
   void
   push (T b)
   {
-    size_t s = util::AlignUp (sizeof (T), arch::stack_alignment ());
+    size_t s = util::align_up (sizeof (T), arch::stack_alignment ());
     assert (top_ + s <= limit_);
     std::memcpy (top_, &b, sizeof (T));
     top_ += s;
@@ -36,7 +36,7 @@ struct Stack
   void
   pop (T& retval)
   {
-    size_t s = util::AlignUp (sizeof (T), arch::stack_alignment ());
+    size_t s = util::align_up (sizeof (T), arch::stack_alignment ());
     assert (top_ - s >= data_);
     top_ -= s;
     std::memcpy (&retval, top_, sizeof (T));

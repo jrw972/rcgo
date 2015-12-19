@@ -620,7 +620,7 @@ public:
   }
   size_t UnitSize () const
   {
-    return util::AlignUp (base_->Size (), base_->Alignment ());
+    return util::align_up (base_->Size (), base_->Alignment ());
   }
 private:
   friend class Type;
@@ -651,7 +651,7 @@ public:
   const Int::ValueType dimension;
   size_t UnitSize () const
   {
-    return util::AlignUp (base_->Size (), base_->Alignment ());
+    return util::align_up (base_->Size (), base_->Alignment ());
   }
 private:
   friend class Type;

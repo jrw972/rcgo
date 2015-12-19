@@ -203,7 +203,7 @@ void
 Struct::Append (const std::string& field_name, const Type* field_type)
 {
   size_t alignment = field_type->Alignment ();
-  offset_ = util::AlignUp (offset_, alignment);
+  offset_ = util::align_up (offset_, alignment);
 
   field_t *field = new field_t (field_name, field_type, offset_);
   fields_.push_back (field);
@@ -1397,7 +1397,7 @@ Signature*
 Signature::Append (ParameterSymbol* p)
 {
   parameters_.push_back (p);
-  size_ += util::AlignUp (p->type->Size (), arch::stack_alignment ());
+  size_ += util::align_up (p->type->Size (), arch::stack_alignment ());
   return this;
 }
 

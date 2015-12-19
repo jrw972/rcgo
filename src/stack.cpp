@@ -22,7 +22,7 @@ Stack::~Stack ()
 void
 Stack::push_pointer (void* pointer)
 {
-  size_t s = util::AlignUp (sizeof (void*), arch::stack_alignment ());
+  size_t s = util::align_up (sizeof (void*), arch::stack_alignment ());
   assert (top_ + s <= limit_);
   std::memcpy (top_, &pointer, sizeof (void*));
   top_ += s;
@@ -32,7 +32,7 @@ void*
 Stack::pop_pointer ()
 {
   void* retval;
-  size_t s = util::AlignUp (sizeof (void*), arch::stack_alignment ());
+  size_t s = util::align_up (sizeof (void*), arch::stack_alignment ());
   assert (top_ - s >= data_);
   top_ -= s;
   std::memcpy (&retval, top_, sizeof (void*));
@@ -43,7 +43,7 @@ void*
 Stack::peek_pointer () const
 {
   void* retval;
-  size_t s = util::AlignUp (sizeof (void*), arch::stack_alignment ());
+  size_t s = util::align_up (sizeof (void*), arch::stack_alignment ());
   assert (top_ - s >= data_);
   std::memcpy (&retval, top_ - s, sizeof (void*));
   return retval;
@@ -66,7 +66,7 @@ Stack::read_pointer (ptrdiff_t offset)
 {
   void* retval;
   const size_t size = sizeof (void*);
-  size_t s = util::AlignUp (size, arch::stack_alignment ());
+  size_t s = util::align_up (size, arch::stack_alignment ());
   char* source = base_pointer_ + offset;
   assert (source >= data_ && source + size <= top_);
   assert (top_ + s <= limit_);
@@ -77,7 +77,7 @@ Stack::read_pointer (ptrdiff_t offset)
 void
 Stack::reserve (size_t size)
 {
-  size_t s = util::AlignUp (size, arch::stack_alignment ());
+  size_t s = util::align_up (size, arch::stack_alignment ());
   assert (top_ + s <= limit_);
   std::memset (top_, 0, size);
   top_ += s;
@@ -87,7 +87,7 @@ void
 Stack::load (void* ptr,
              size_t size)
 {
-  size_t s = util::AlignUp (size, arch::stack_alignment ());
+  size_t s = util::align_up (size, arch::stack_alignment ());
   assert (top_ + s <= limit_);
   std::memcpy (top_, ptr, size);
   top_ += s;
@@ -97,7 +97,7 @@ void
 Stack::store (void* ptr,
               size_t size)
 {
-  size_t s = util::AlignUp (size, arch::stack_alignment ());
+  size_t s = util::align_up (size, arch::stack_alignment ());
   assert (top_ - s >= data_);
   top_ -= s;
   std::memcpy (ptr, top_, size);
@@ -107,7 +107,7 @@ void
 Stack::move (ptrdiff_t offset,
              size_t size)
 {
-  size_t s = util::AlignUp (size, arch::stack_alignment ());
+  size_t s = util::align_up (size, arch::stack_alignment ());
   char* ptr = base_pointer_ + offset;
   assert (ptr >= data_ && ptr + size <= top_);
   assert (top_ - s >= data_);
@@ -119,7 +119,7 @@ void
 Stack::clear (ptrdiff_t offset,
               size_t size)
 {
-  size_t s = util::AlignUp (size, arch::stack_alignment ());
+  size_t s = util::align_up (size, arch::stack_alignment ());
   char* ptr = base_pointer_ + offset;
   assert (ptr >= data_ && ptr + size <= top_);
   std::memset (ptr, 0, s);
@@ -144,7 +144,7 @@ Stack::teardown ()
 void
 Stack::popn (size_t size)
 {
-  size_t s = util::AlignUp (size, arch::stack_alignment ());
+  size_t s = util::align_up (size, arch::stack_alignment ());
   assert (top_ - s >= data_);
   top_ -= s;
 }

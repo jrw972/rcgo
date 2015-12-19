@@ -33,7 +33,7 @@ public:
 
   void ArgumentsPush (size_t size)
   {
-    argumentsOffset -= util::AlignUp (size, arch::stack_alignment ());
+    argumentsOffset -= util::align_up (size, arch::stack_alignment ());
   }
 
   bool LocalsEmpty () const
@@ -43,14 +43,14 @@ public:
 
   void LocalsPush (size_t size)
   {
-    size = util::AlignUp (size, arch::stack_alignment ());
+    size = util::align_up (size, arch::stack_alignment ());
     localsOffset += size;
     localsSize += size;
   }
 
   void LocalsPop (size_t size)
   {
-    localsOffset -= util::AlignUp (size, arch::stack_alignment ());
+    localsOffset -= util::align_up (size, arch::stack_alignment ());
   }
 
   ptrdiff_t ArgumentsOffset () const

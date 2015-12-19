@@ -41,7 +41,7 @@ struct Heap::Block
 {
   static Block* make (size_t size)
   {
-    size = util::AlignUp (size, SLOT_SIZE);
+    size = util::align_up (size, SLOT_SIZE);
     size_t bits_bytes = (size / SLOT_SIZE * BITS_PER_SLOT + BITS_PER_SLOT) / 8;
     void* p = operator new (sizeof (Block) + bits_bytes);
     Block* block = new (p) Block (bits_bytes);
@@ -500,7 +500,7 @@ Heap::allocate (size_t size)
   pthread_mutex_lock (&mutex_);
 
   // Must be a multiple of the slot size.
-  size = util::AlignUp (size, SLOT_SIZE);
+  size = util::align_up (size, SLOT_SIZE);
 
   // Find a chunk.
   Heap::Chunk** chunk;
@@ -606,7 +606,7 @@ Heap::scan (void* begin, void* end, Heap::Block** work_list)
   char** b;
   char** e;
 
-  b = (char**)util::AlignUp ((size_t)begin, sizeof (void*));
+  b = (char**)util::align_up ((size_t)begin, sizeof (void*));
   e = (char**)end;
 
   for (; b < e; ++b)
