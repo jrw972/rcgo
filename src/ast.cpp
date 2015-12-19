@@ -19,9 +19,9 @@ using namespace decl;
 using namespace semantic;
 
 std::ostream&
-operator<< (std::ostream& out, const Node& node)
+operator<< (std::ostream& out, Node& node)
 {
-  struct visitor : public ConstVisitor
+  struct visitor : public Visitor
   {
     std::ostream& out;
     size_t indent;
@@ -108,469 +108,469 @@ operator<< (std::ostream& out, const Node& node)
       out << '\n';
     }
 
-    void visit (const ast_identifier_t& node)
+    void visit (ast_identifier_t& node)
     {
       print_indent (node);
       out << "identifier " << node.identifier;
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_identifier_list_t& node)
+    void visit (ast_identifier_list_t& node)
     {
       print_indent (node);
       out << "identifier_list";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_receiver_t& node)
+    void visit (ast_receiver_t& node)
     {
       print_indent (node);
       out << "receiver";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_array_type_spec_t& node)
+    void visit (ast_array_type_spec_t& node)
     {
       print_indent (node);
       out << "array_type_spec";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_slice_type_spec_t& node)
+    void visit (ast_slice_type_spec_t& node)
     {
       print_indent (node);
       out << "slice_type_spec";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_map_type_spec_t& node)
+    void visit (ast_map_type_spec_t& node)
     {
       print_indent (node);
       out << "map_type_spec";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_empty_type_spec_t& node)
+    void visit (ast_empty_type_spec_t& node)
     {
       print_indent (node);
       out << "empty_type_spec";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_field_list_type_spec_t& node)
+    void visit (ast_field_list_type_spec_t& node)
     {
       print_indent (node);
       out << "field_list_type_spec";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_heap_type_spec_t& node)
+    void visit (ast_heap_type_spec_t& node)
     {
       print_indent (node);
       out << "heap_type_spec";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_identifier_list_type_spec_t& node)
+    void visit (ast_identifier_list_type_spec_t& node)
     {
       print_indent (node);
       out << "identifier_list_type_spec";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_identifier_type_spec_t& node)
+    void visit (ast_identifier_type_spec_t& node)
     {
       print_indent (node);
       out << "identifier_type_spec";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_pointer_type_spec_t& node)
+    void visit (ast_pointer_type_spec_t& node)
     {
       print_indent (node);
       out << "pointer_type_spec";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_push_port_type_spec_t& node)
+    void visit (ast_push_port_type_spec_t& node)
     {
       print_indent (node);
       out << "push_port_type_spec";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_pull_port_type_spec_t& node)
+    void visit (ast_pull_port_type_spec_t& node)
     {
       print_indent (node);
       out << "pull_port_type_spec";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_signature_type_spec_t& node)
+    void visit (ast_signature_type_spec_t& node)
     {
       print_indent (node);
       out << "signature_type_spec";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_implicit_conversion_expr_t& node)
+    void visit (ast_implicit_conversion_expr_t& node)
     {
       print_indent (node);
       out << "implicit_conversion_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const TypeExpression& node)
+    void visit (TypeExpression& node)
     {
       print_indent (node);
       out << "TypeExpression";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_binary_arithmetic_expr_t& node)
+    void visit (ast_binary_arithmetic_expr_t& node)
     {
       print_indent (node);
       out << "binary_arithmetic_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_address_of_expr_t& node)
+    void visit (ast_address_of_expr_t& node)
     {
       print_indent (node);
       out << "address_of_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_call_expr_t& node)
+    void visit (ast_call_expr_t& node)
     {
       print_indent (node);
       out << "call_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_conversion_expr_t& node)
+    void visit (ast_conversion_expr_t& node)
     {
       print_indent (node);
       out << "conversion_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_dereference_expr_t& node)
+    void visit (ast_dereference_expr_t& node)
     {
       print_indent (node);
       out << "dereference_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_implicit_dereference_expr_t& node)
+    void visit (ast_implicit_dereference_expr_t& node)
     {
       print_indent (node);
       out << "implicit_dereference_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_identifier_expr_t& node)
+    void visit (ast_identifier_expr_t& node)
     {
       print_indent (node);
       out << "identifier_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_index_expr_t& node)
+    void visit (ast_index_expr_t& node)
     {
       print_indent (node);
       out << "index_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_slice_expr_t& node)
+    void visit (ast_slice_expr_t& node)
     {
       print_indent (node);
       out << "slice_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_auto_expr_t& node)
+    void visit (ast_auto_expr_t& node)
     {
       print_indent (node);
       out << "auto_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_indexed_port_call_expr_t& node)
+    void visit (ast_indexed_port_call_expr_t& node)
     {
       print_indent (node);
       out << "indexed_port_call_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_list_expr_t& node)
+    void visit (ast_list_expr_t& node)
     {
       print_indent (node);
       out << "list_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_literal_expr_t& node)
+    void visit (ast_literal_expr_t& node)
     {
       print_indent (node);
       out << "literal_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_unary_arithmetic_expr_t& node)
+    void visit (ast_unary_arithmetic_expr_t& node)
     {
       print_indent (node);
       out << "unary_arithmetic_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_push_port_call_expr_t& node)
+    void visit (ast_push_port_call_expr_t& node)
     {
       print_indent (node);
       out << "push_port_call_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_select_expr_t& node)
+    void visit (ast_select_expr_t& node)
     {
       print_indent (node);
       out << "select_expr";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_empty_statement_t& node)
+    void visit (ast_empty_statement_t& node)
     {
       print_indent (node);
       out << "empty_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_add_assign_statement_t& node)
+    void visit (ast_add_assign_statement_t& node)
     {
       print_indent (node);
       out << "add_assign_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_change_statement_t& node)
+    void visit (ast_change_statement_t& node)
     {
       print_indent (node);
       out << "change_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_assign_statement_t& node)
+    void visit (ast_assign_statement_t& node)
     {
       print_indent (node);
       out << "assign_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_expression_statement_t& node)
+    void visit (ast_expression_statement_t& node)
     {
       print_indent (node);
       out << "expression_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_if_statement_t& node)
+    void visit (ast_if_statement_t& node)
     {
       print_indent (node);
       out << "if_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_while_statement_t& node)
+    void visit (ast_while_statement_t& node)
     {
       print_indent (node);
       out << "while_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_list_statement_t& node)
+    void visit (ast_list_statement_t& node)
     {
       print_indent (node);
       out << "list_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_return_statement_t& node)
+    void visit (ast_return_statement_t& node)
     {
       print_indent (node);
       out << "return_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_increment_statement_t& node)
+    void visit (ast_increment_statement_t& node)
     {
       print_indent (node);
       out << "increment_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_decrement_statement_t& node)
+    void visit (ast_decrement_statement_t& node)
     {
       print_indent (node);
       out << "decrement_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_subtract_assign_statement_t& node)
+    void visit (ast_subtract_assign_statement_t& node)
     {
       print_indent (node);
       out << "subtract_assign_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_activate_statement_t& node)
+    void visit (ast_activate_statement_t& node)
     {
       print_indent (node);
       out << "activate_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_var_statement_t& node)
+    void visit (ast_var_statement_t& node)
     {
       print_indent (node);
       out << "var_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_bind_push_port_statement_t& node)
+    void visit (ast_bind_push_port_statement_t& node)
     {
       print_indent (node);
       out << "bind_push_port_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_bind_push_port_param_statement_t& node)
+    void visit (ast_bind_push_port_param_statement_t& node)
     {
       print_indent (node);
       out << "bind_push_port_param_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_bind_pull_port_statement_t& node)
+    void visit (ast_bind_pull_port_statement_t& node)
     {
       print_indent (node);
       out << "bind_pull_port_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_for_iota_statement_t& node)
+    void visit (ast_for_iota_statement_t& node)
     {
       print_indent (node);
       out << "for_iota_statement";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_action_t& node)
+    void visit (ast_action_t& node)
     {
       print_indent (node);
       out << "action";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_const_t& node)
+    void visit (ast_const_t& node)
     {
       print_indent (node);
       out << "const";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_dimensioned_action_t& node)
+    void visit (ast_dimensioned_action_t& node)
     {
       print_indent (node);
       out << "dimensioned_action";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_bind_t& node)
+    void visit (ast_bind_t& node)
     {
       print_indent (node);
       out << "bind";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_function_t& node)
+    void visit (ast_function_t& node)
     {
       print_indent (node);
       out << "function";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_getter_t& node)
+    void visit (ast_getter_t& node)
     {
       print_indent (node);
       out << "getter";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_initializer_t& node)
+    void visit (ast_initializer_t& node)
     {
       print_indent (node);
       out << "initializer";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_instance_t& node)
+    void visit (ast_instance_t& node)
     {
       print_indent (node);
       out << "instance";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_method_t& node)
+    void visit (ast_method_t& node)
     {
       print_indent (node);
       out << "method";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_reaction_t& node)
+    void visit (ast_reaction_t& node)
     {
       print_indent (node);
       out << "reaction";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_dimensioned_reaction_t& node)
+    void visit (ast_dimensioned_reaction_t& node)
     {
       print_indent (node);
       out << "dimensioned_reaction";
       print_common (node);
       print_children (node);
     }
-    void visit (const Type& node)
+    void visit (Type& node)
     {
       print_indent (node);
       out << "Type";
       print_common (node);
       print_children (node);
     }
-    void visit (const SourceFile& node)
+    void visit (SourceFile& node)
     {
       print_indent (node);
       out << "SourceFile";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_element_list_t& node)
+    void visit (ast_element_list_t& node)
     {
       print_indent (node);
       out << "element_list";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_element_t& node)
+    void visit (ast_element_t& node)
     {
       print_indent (node);
       out << "element";
       print_common (node);
       print_children (node);
     }
-    void visit (const ast_composite_literal_t& node)
+    void visit (ast_composite_literal_t& node)
     {
       print_indent (node);
       out << "composite_literal";
@@ -586,11 +586,6 @@ operator<< (std::ostream& out, const Node& node)
 
 #define ACCEPT(type) void                               \
   type::Accept (Visitor& visitor)                 \
-  {                                                     \
-    visitor.visit (*this);                              \
-  }                                                     \
-  void                                                  \
-  type::Accept (ConstVisitor& visitor) const     \
   {                                                     \
     visitor.visit (*this);                              \
   }
@@ -666,9 +661,9 @@ ACCEPT (ast_element_list_t)
 ACCEPT (ast_element_t)
 ACCEPT (ast_composite_literal_t)
 
-std::string ast_get_identifier (const Node* ast)
+std::string ast_get_identifier (Node* ast)
 {
-  struct visitor : public DefaultConstVisitor
+  struct visitor : public DefaultVisitor
   {
     std::string retval;
 
@@ -677,7 +672,7 @@ std::string ast_get_identifier (const Node* ast)
       NOT_REACHED;
     }
 
-    void visit (const ast_identifier_t& ast)
+    void visit (ast_identifier_t& ast)
     {
       retval = ast.identifier;
     }
@@ -820,15 +815,6 @@ Node::FindLocalSymbol (const std::string& identifier) const
 
 void
 Node::VisitChildren (Visitor& visitor)
-{
-  for (ConstIterator pos = Begin (), limit = End (); pos != limit; ++pos)
-    {
-      (*pos)->Accept (visitor);
-    }
-}
-
-void
-Node::VisitChildren (ConstVisitor& visitor) const
 {
   for (ConstIterator pos = Begin (), limit = End (); pos != limit; ++pos)
     {

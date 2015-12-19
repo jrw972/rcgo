@@ -21,7 +21,6 @@ struct Node
   virtual ~Node() { }
 
   virtual void Accept (Visitor& visitor) = 0;
-  virtual void Accept (ConstVisitor& visitor) const = 0;
 
   Node* GetParent () const
   {
@@ -62,7 +61,6 @@ struct Node
     return m_children.end ();
   }
   void VisitChildren (Visitor& visitor);
-  void VisitChildren (ConstVisitor& visitor) const;
 
   ConstSymbolIterator SymbolsBegin () const
   {
@@ -106,7 +104,7 @@ protected:
 };
 
 std::ostream&
-operator<< (std::ostream& out, const Node& node);
+operator<< (std::ostream& out, Node& node);
 
 class ast_identifier_t : public Node
 {
@@ -117,7 +115,6 @@ public:
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   std::string const identifier;
 };
@@ -129,7 +126,6 @@ struct ast_identifier_list_t : public Node
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_receiver_t : public Node
@@ -161,7 +157,6 @@ struct ast_receiver_t : public Node
   }
 
   virtual void Accept (Visitor& visitor);
-  virtual void Accept (ConstVisitor& visitor) const;
 
   Mutability const mutability;
   Mutability const dereferenceMutability;
@@ -195,7 +190,6 @@ struct ast_array_type_spec_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_unary_t : public Node
@@ -225,7 +219,6 @@ struct ast_empty_type_spec_t : public Node
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_field_list_type_spec_t : public Node
@@ -236,7 +229,6 @@ struct ast_field_list_type_spec_t : public Node
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   bool IsComponent;
 };
@@ -248,7 +240,6 @@ struct ast_heap_type_spec_t : public ast_unary_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_identifier_type_spec_t : public ast_unary_t
@@ -258,7 +249,6 @@ struct ast_identifier_type_spec_t : public ast_unary_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_identifier_list_type_spec_t : public Node
@@ -294,7 +284,6 @@ struct ast_identifier_list_type_spec_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_pointer_type_spec_t : public ast_unary_t
@@ -304,7 +293,6 @@ struct ast_pointer_type_spec_t : public ast_unary_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_slice_type_spec_t : public ast_unary_t
@@ -314,7 +302,6 @@ struct ast_slice_type_spec_t : public ast_unary_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_map_type_spec_t : public Node
@@ -334,7 +321,6 @@ struct ast_map_type_spec_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_push_port_type_spec_t : public Node
@@ -357,7 +343,6 @@ struct ast_push_port_type_spec_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_pull_port_type_spec_t : public Node
@@ -387,7 +372,6 @@ struct ast_pull_port_type_spec_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   Mutability const dereferenceMutability;
 };
@@ -399,7 +383,6 @@ struct ast_signature_type_spec_t : public Node
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct TypeExpression : public Node
@@ -422,7 +405,6 @@ struct TypeExpression : public Node
   }
 
   virtual void Accept (Visitor& visitor);
-  virtual void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_unary_expr_t : public Node
@@ -481,7 +463,6 @@ struct ast_binary_arithmetic_expr_t : public ast_binary_expr_t
   const BinaryArithmetic arithmetic;
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_implicit_conversion_expr_t : public ast_unary_expr_t
@@ -491,7 +472,6 @@ struct ast_implicit_conversion_expr_t : public ast_unary_expr_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_address_of_expr_t : public ast_unary_expr_t
@@ -502,7 +482,6 @@ struct ast_address_of_expr_t : public ast_unary_expr_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   bool address_of_dereference;
 };
@@ -537,7 +516,6 @@ struct ast_call_expr_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   const type::Function* function_type;
   const type::Method* method_type;
@@ -572,7 +550,6 @@ struct ast_conversion_expr_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   bool reset_mutability;
 };
@@ -584,7 +561,6 @@ struct ast_dereference_expr_t : public ast_unary_expr_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_implicit_dereference_expr_t : public ast_unary_expr_t
@@ -594,7 +570,6 @@ struct ast_implicit_dereference_expr_t : public ast_unary_expr_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_list_expr_t : public Node
@@ -604,7 +579,6 @@ struct ast_list_expr_t : public Node
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_identifier_expr_t : public ast_unary_expr_t
@@ -614,7 +588,6 @@ struct ast_identifier_expr_t : public ast_unary_expr_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   decl::Symbol* symbol;
 };
@@ -647,7 +620,6 @@ struct ast_index_expr_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   const type::Array* array_type;
   const type::Slice* slice_type;
@@ -693,7 +665,6 @@ struct ast_slice_expr_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   const type::Array* array_type;
   const type::Slice* slice_type;
@@ -706,7 +677,6 @@ struct ast_auto_expr_t : public Node
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_unary_arithmetic_expr_t : public ast_unary_expr_t
@@ -719,7 +689,6 @@ struct ast_unary_arithmetic_expr_t : public ast_unary_expr_t
   const UnaryArithmetic arithmetic;
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_push_port_call_expr_t : public Node
@@ -750,7 +719,6 @@ struct ast_push_port_call_expr_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   type::field_t* field;
   decl::ParameterSymbol* receiver_parameter;
@@ -793,7 +761,6 @@ struct ast_indexed_port_call_expr_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   type::field_t* field;
   decl::ParameterSymbol* receiver_parameter;
@@ -826,14 +793,12 @@ struct ast_select_expr_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_literal_expr_t : public Node
 {
   ast_literal_expr_t (unsigned int line, const type::Type* t, const semantic::Value& v);
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_binary_t : public Node
@@ -869,7 +834,6 @@ struct ast_empty_statement_t : public Node
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_add_assign_statement_t : public ast_binary_t
@@ -879,7 +843,6 @@ struct ast_add_assign_statement_t : public ast_binary_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_assign_statement_t : public ast_binary_t
@@ -889,7 +852,6 @@ struct ast_assign_statement_t : public ast_binary_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_change_statement_t : public Node
@@ -927,7 +889,6 @@ struct ast_change_statement_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   decl::VariableSymbol* root_symbol;
 };
@@ -939,7 +900,6 @@ struct ast_expression_statement_t : public ast_unary_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_if_statement_t : public Node
@@ -980,7 +940,6 @@ struct ast_if_statement_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_while_statement_t : public Node
@@ -1009,7 +968,6 @@ struct ast_while_statement_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_return_statement_t : public ast_unary_t
@@ -1020,7 +978,6 @@ struct ast_return_statement_t : public ast_unary_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   const decl::ParameterSymbol* return_symbol;
 };
@@ -1032,7 +989,6 @@ struct ast_increment_statement_t : public ast_unary_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_decrement_statement_t : public ast_unary_t
@@ -1042,7 +998,6 @@ struct ast_decrement_statement_t : public ast_unary_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_list_statement_t : public Node
@@ -1052,7 +1007,6 @@ struct ast_list_statement_t : public Node
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_subtract_assign_statement_t : public ast_binary_t
@@ -1062,7 +1016,6 @@ struct ast_subtract_assign_statement_t : public ast_binary_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_activate_statement_t : public Node
@@ -1092,7 +1045,6 @@ struct ast_activate_statement_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   const runtime::MemoryModel* memoryModel;
   ReceiverAccess mutable_phase_access;
@@ -1132,7 +1084,6 @@ struct ast_var_statement_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   Mutability const mutability;
   Mutability const dereferenceMutability;
@@ -1147,7 +1098,6 @@ struct ast_bind_push_port_statement_t : public ast_binary_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_bind_push_port_param_statement_t : public Node
@@ -1182,7 +1132,6 @@ struct ast_bind_push_port_param_statement_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_bind_pull_port_statement_t : public ast_binary_t
@@ -1192,7 +1141,6 @@ struct ast_bind_pull_port_statement_t : public ast_binary_t
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_for_iota_statement_t : public Node
@@ -1227,7 +1175,6 @@ struct ast_for_iota_statement_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   decl::VariableSymbol* symbol;
   type::Int::ValueType limit;
@@ -1276,7 +1223,6 @@ struct ast_action_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   decl::Action* action;
   const type::Type* type;
@@ -1335,7 +1281,6 @@ struct ast_dimensioned_action_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   decl::Action* action;
   const type::Type* type;
@@ -1375,7 +1320,6 @@ struct ast_bind_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   decl::bind_t* bind;
 };
@@ -1421,7 +1365,6 @@ struct ast_function_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   decl::Function* function;
   Mutability const dereferenceMutability;
@@ -1465,7 +1408,6 @@ struct ast_instance_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   decl::InstanceSymbol* symbol;
 };
@@ -1503,7 +1445,6 @@ struct ast_const_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   bool done;
 };
@@ -1560,7 +1501,6 @@ struct ast_method_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   decl::Method* method;
   Mutability const return_dereference_mutability;
@@ -1618,7 +1558,6 @@ struct ast_getter_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   decl::Getter* getter;
   Mutability const dereferenceMutability;
@@ -1676,7 +1615,6 @@ struct ast_initializer_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   Mutability const return_dereference_mutability;
   decl::Initializer* initializer;
@@ -1727,7 +1665,6 @@ struct ast_reaction_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   decl::reaction_t* reaction;
 };
@@ -1788,7 +1725,6 @@ struct ast_dimensioned_reaction_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 
   decl::reaction_t* reaction;
 };
@@ -1819,7 +1755,6 @@ struct Type : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct SourceFile : public Node
@@ -1829,7 +1764,6 @@ struct SourceFile : public Node
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_element_list_t : public Node
@@ -1839,7 +1773,6 @@ struct ast_element_list_t : public Node
   { }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_element_t : public Node
@@ -1868,7 +1801,6 @@ struct ast_element_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 struct ast_composite_literal_t : public Node
@@ -1897,12 +1829,11 @@ struct ast_composite_literal_t : public Node
   }
 
   void Accept (Visitor& visitor);
-  void Accept (ConstVisitor& visitor) const;
 };
 
 /* Generic functions. */
 
-std::string ast_get_identifier (const Node* ast);
+std::string ast_get_identifier (Node* ast);
 
 }
 

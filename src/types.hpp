@@ -23,7 +23,6 @@ class ast_method_t;
 class ast_list_expr_t;
 
 class Visitor;
-class ConstVisitor;
 }
 
 namespace semantic

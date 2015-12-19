@@ -508,7 +508,7 @@ Composer::elaborate_bindings ()
            bind_pos != bind_limit;
            ++bind_pos)
         {
-          struct visitor : public DefaultConstVisitor
+          struct visitor : public ast::DefaultVisitor
           {
             Composer& table;
             Executor exec;
@@ -526,7 +526,7 @@ Composer::elaborate_bindings ()
               NOT_REACHED;
             }
 
-            void visit (const ast_if_statement_t& node)
+            void visit (ast_if_statement_t& node)
             {
               node.condition ()->operation->execute (exec);
               if (node.condition ()->expression_kind == kVariable)
@@ -546,12 +546,12 @@ Composer::elaborate_bindings ()
                 }
             }
 
-            void visit (const ast_list_statement_t& node)
+            void visit (ast_list_statement_t& node)
             {
               node.VisitChildren (*this);
             }
 
-            void visit (const ast_for_iota_statement_t& node)
+            void visit (ast_for_iota_statement_t& node)
             {
               for (Int::ValueType idx = 0, limit = node.limit;
                    idx != limit;
@@ -563,7 +563,7 @@ Composer::elaborate_bindings ()
                 }
             }
 
-            void visit (const ast_bind_t& node)
+            void visit (ast_bind_t& node)
             {
               node.body ()->Accept (*this);
             }
@@ -593,12 +593,12 @@ Composer::elaborate_bindings ()
               r->push_ports.push_back (pp);
             }
 
-            void visit (const ast_bind_push_port_statement_t& node)
+            void visit (ast_bind_push_port_statement_t& node)
             {
               bind (node.left (), node.right ());
             }
 
-            void visit (const ast_bind_push_port_param_statement_t& node)
+            void visit (ast_bind_push_port_param_statement_t& node)
             {
               node.param ()->operation->execute (exec);
               if (node.param ()->expression_kind == kVariable)
@@ -611,7 +611,7 @@ Composer::elaborate_bindings ()
               bind (node.left (), node.right (), idx);
             }
 
-            void visit (const ast_bind_pull_port_statement_t& node)
+            void visit (ast_bind_pull_port_statement_t& node)
             {
               node.left ()->operation->execute (exec);
               void* port = exec.stack ().pop_pointer ();
@@ -693,7 +693,7 @@ Composer::enumerate_actions ()
 // Determine what relationship the given entity has with other entities.
 // These relationships are created through activate statements and calls to
 // getters and pull ports.
-struct Composer::ElaborationVisitor : public DefaultConstVisitor
+  struct Composer::ElaborationVisitor : public ast::DefaultVisitor
 {
   Executor exec;
   Composer& table;
@@ -785,27 +785,27 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
       }
   }
 
-  void default_action (const ast::Node& node)
+  void default_action (ast::Node& node)
   {
     AST_NOT_REACHED (node);
   }
 
-  void visit (const ast_list_statement_t& node)
+  void visit (ast_list_statement_t& node)
   {
     node.VisitChildren (*this);
   }
 
-  void visit (const ast_expression_statement_t& node)
+  void visit (ast_expression_statement_t& node)
   {
     node.VisitChildren (*this);
   }
 
-  void visit (const ast_return_statement_t& node)
+  void visit (ast_return_statement_t& node)
   {
     node.VisitChildren (*this);
   }
 
-  void visit (const ast_activate_statement_t& node)
+  void visit (ast_activate_statement_t& node)
   {
     if (action != NULL)
       {
@@ -824,12 +824,12 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
     node.expr_list ()->Accept (*this);
   }
 
-  void visit (const ast_list_expr_t& node)
+  void visit (ast_list_expr_t& node)
   {
     node.VisitChildren (*this);
   }
 
-  void visit (const ast_push_port_call_expr_t& node)
+  void visit (ast_push_port_call_expr_t& node)
   {
     size_t port = activation->instance->address + node.field->offset;
     // Find what is bound to this port.
@@ -839,7 +839,7 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
     node.args ()->Accept (*this);
   }
 
-  void visit (const ast_indexed_port_call_expr_t& node)
+  void visit (ast_indexed_port_call_expr_t& node)
   {
     node.index ()->operation->execute (exec);
     if (node.index ()->expression_kind == kVariable)
@@ -870,7 +870,7 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
     node.args ()->Accept (*this);
   }
 
-  void visit (const ast_call_expr_t& node)
+  void visit (ast_call_expr_t& node)
   {
     if (node.expr ()->expression_kind != kType)
       {
@@ -909,81 +909,81 @@ struct Composer::ElaborationVisitor : public DefaultConstVisitor
     node.VisitChildren (*this);
   }
 
-  void visit (const ast_implicit_dereference_expr_t& node)
+  void visit (ast_implicit_dereference_expr_t& node)
   {
     node.VisitChildren (*this);
   }
 
-  void visit (const ast_identifier_expr_t& node)
+  void visit (ast_identifier_expr_t& node)
   {
     // Do nothing.
   }
 
-  void visit (const ast_implicit_conversion_expr_t& node)
+  void visit (ast_implicit_conversion_expr_t& node)
   {
     node.VisitChildren (*this);
   }
 
-  void visit (const ast_literal_expr_t& node)
+  void visit (ast_literal_expr_t& node)
   {
     // Do nothing.
   }
 
-  void visit (const ast_binary_arithmetic_expr_t& node)
+  void visit (ast_binary_arithmetic_expr_t& node)
   {
     node.VisitChildren (*this);
   }
 
-  void visit (const ast_unary_arithmetic_expr_t& node)
+  void visit (ast_unary_arithmetic_expr_t& node)
   {
     node.VisitChildren (*this);
   }
 
-  void visit (const ast_address_of_expr_t& node)
+  void visit (ast_address_of_expr_t& node)
   {
     node.VisitChildren (*this);
   }
 
-  void visit (const ast_select_expr_t& node)
+  void visit (ast_select_expr_t& node)
   {
     node.base ()->Accept (*this);
   }
 
-  void visit (const ast_dereference_expr_t& node)
+  void visit (ast_dereference_expr_t& node)
   {
     node.VisitChildren (*this);
   }
 
-  void visit (const ast_var_statement_t& node)
+  void visit (ast_var_statement_t& node)
   {
     node.expression_list ()->Accept (*this);
   }
 
-  void visit (const ast_assign_statement_t& node)
+  void visit (ast_assign_statement_t& node)
   {
     node.VisitChildren (*this);
   }
 
-  void visit (const TypeExpression& node)
+  void visit (TypeExpression& node)
   {
   }
 
-  void visit (const ast_change_statement_t& node)
+  void visit (ast_change_statement_t& node)
   {
     node.expr ()->Accept (*this);
     node.body ()->Accept (*this);
   }
 
-  void visit (const ast_empty_statement_t& node)
+  void visit (ast_empty_statement_t& node)
   {
   }
 
-  void visit (const ast_index_expr_t& node)
+  void visit (ast_index_expr_t& node)
   {
     node.VisitChildren (*this);
   }
 
-  void visit (const ast_if_statement_t& node)
+  void visit (ast_if_statement_t& node)
   {
     node.VisitChildren (*this);
   }
