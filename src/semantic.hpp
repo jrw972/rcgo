@@ -248,12 +248,12 @@ void CheckForForeignSafe (const type::Signature* signature, const decl::Paramete
 const type::Type * process_type (ast::Node* node, bool force);
 
 // Type check the expression, insert an implicit dereference if necessary, and convert to the given type if necessary.
-typed_value_t
+typed_Value
 CheckAndImplicitlyDereferenceAndConvert (ast::Node*& expr, const type::Type* type);
 
 void
-check_assignment (typed_value_t left_tv,
-                  typed_value_t right_tv,
+check_assignment (typed_Value left_tv,
+                  typed_Value right_tv,
                   const ast::Node& node,
                   const char* conversion_message,
                   const char* leak_message);

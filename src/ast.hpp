@@ -83,9 +83,9 @@ struct Node
 
   util::Location const location;
   // TODO:  Rename.
-  //typed_value_t typed_value;
+  //typed_Value typed_value;
   const type::Type* type;
-  semantic::value_t value;
+  semantic::Value value;
   type::field_t* field;
   const decl::Callable* callable;
   const decl::Template* temp;
@@ -831,7 +831,7 @@ struct ast_select_expr_t : public Node
 
 struct ast_literal_expr_t : public Node
 {
-  ast_literal_expr_t (unsigned int line, const type::Type* t, const semantic::value_t& v);
+  ast_literal_expr_t (unsigned int line, const type::Type* t, const semantic::Value& v);
   void Accept (Visitor& visitor);
   void Accept (ConstVisitor& visitor) const;
 };

@@ -156,14 +156,14 @@ static const type::Type* comparable (const type::Type* left_type, const type::Ty
   return NULL;
 }
 
-static void process_comparable (const char* s, ast_binary_expr_t& node, void (*func) (value_t&, const type::Type*, const value_t&, const value_t&))
+static void process_comparable (const char* s, ast_binary_expr_t& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
 {
   const type::Type*& left_type = node.left ()->type;
-  value_t& left_value = node.left ()->value;
+  Value& left_value = node.left ()->value;
   const type::Type*& right_type = node.right ()->type;
-  value_t& right_value = node.right ()->value;
+  Value& right_value = node.right ()->value;
   const type::Type*& type = node.type;
-  value_t& value = node.value;
+  Value& value = node.value;
 
   if (left_type->IsUntyped () &&
       right_type->IsUntyped ())
@@ -267,14 +267,14 @@ static const type::Type* orderable (const type::Type* left_type, const type::Typ
   return NULL;
 }
 
-static void process_orderable (const char* s, ast_binary_expr_t& node, void (*func) (value_t&, const type::Type*, const value_t&, const value_t&))
+static void process_orderable (const char* s, ast_binary_expr_t& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
 {
   const type::Type*& left_type = node.left ()->type;
-  value_t& left_value = node.left ()->value;
+  Value& left_value = node.left ()->value;
   const type::Type*& right_type = node.right ()->type;
-  value_t& right_value = node.right ()->value;
+  Value& right_value = node.right ()->value;
   const type::Type*& type = node.type;
-  value_t& value = node.value;
+  Value& value = node.value;
 
   if (left_type->IsUntyped () &&
       right_type->IsUntyped ())
@@ -377,14 +377,14 @@ static const type::Type* arithmetic (const type::Type* left_type, const type::Ty
   return NULL;
 }
 
-static void process_arithmetic (const char* s, ast_binary_expr_t& node, void (*func) (value_t&, const type::Type*, const value_t&, const value_t&))
+static void process_arithmetic (const char* s, ast_binary_expr_t& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
 {
   const type::Type*& left_type = node.left ()->type;
-  value_t& left_value = node.left ()->value;
+  Value& left_value = node.left ()->value;
   const type::Type*& right_type = node.right ()->type;
-  value_t& right_value = node.right ()->value;
+  Value& right_value = node.right ()->value;
   const type::Type*& type = node.type;
-  value_t& value = node.value;
+  Value& value = node.value;
 
   if (left_type->IsUntyped () &&
       right_type->IsUntyped ())
@@ -482,14 +482,14 @@ static const type::Type* integral (const type::Type* left_type, const type::Type
   return NULL;
 }
 
-static void process_integral (const char* s, ast_binary_expr_t& node, void (*func) (value_t&, const type::Type*, const value_t&, const value_t&))
+static void process_integral (const char* s, ast_binary_expr_t& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
 {
   const type::Type*& left_type = node.left ()->type;
-  value_t& left_value = node.left ()->value;
+  Value& left_value = node.left ()->value;
   const type::Type*& right_type = node.right ()->type;
-  value_t& right_value = node.right ()->value;
+  Value& right_value = node.right ()->value;
   const type::Type*& type = node.type;
-  value_t& value = node.value;
+  Value& value = node.value;
 
   if (left_type->IsUntyped () &&
       right_type->IsUntyped ())
@@ -589,43 +589,43 @@ static void process_shift (ast_binary_expr_t& node)
       switch (node.type->underlying_kind ())
         {
         case kUint8:
-          node.value.uint8_value_ = T () (node.left ()->value.uint8_value_, node.right ()->value.uint_value_);
+          node.value.uint8_value = T () (node.left ()->value.uint8_value, node.right ()->value.uint_value);
           break;
         case kUint16:
-          node.value.uint16_value_ = T () (node.left ()->value.uint16_value_, node.right ()->value.uint_value_);
+          node.value.uint16_value = T () (node.left ()->value.uint16_value, node.right ()->value.uint_value);
           break;
         case kUint32:
-          node.value.uint32_value_ = T () (node.left ()->value.uint32_value_, node.right ()->value.uint_value_);
+          node.value.uint32_value = T () (node.left ()->value.uint32_value, node.right ()->value.uint_value);
           break;
         case kUint64:
-          node.value.uint64_value_ = T () (node.left ()->value.uint64_value_, node.right ()->value.uint_value_);
+          node.value.uint64_value = T () (node.left ()->value.uint64_value, node.right ()->value.uint_value);
           break;
         case kInt8:
-          node.value.int8_value_ = T () (node.left ()->value.int8_value_, node.right ()->value.uint_value_);
+          node.value.int8_value = T () (node.left ()->value.int8_value, node.right ()->value.uint_value);
           break;
         case kInt16:
-          node.value.int16_value_ = T () (node.left ()->value.int16_value_, node.right ()->value.uint_value_);
+          node.value.int16_value = T () (node.left ()->value.int16_value, node.right ()->value.uint_value);
           break;
         case kInt32:
-          node.value.int32_value_ = T () (node.left ()->value.int32_value_, node.right ()->value.uint_value_);
+          node.value.int32_value = T () (node.left ()->value.int32_value, node.right ()->value.uint_value);
           break;
         case kInt64:
-          node.value.int64_value_ = T () (node.left ()->value.int64_value_, node.right ()->value.uint_value_);
+          node.value.int64_value = T () (node.left ()->value.int64_value, node.right ()->value.uint_value);
           break;
         case kUint:
-          node.value.uint_value_ = T () (node.left ()->value.uint_value_, node.right ()->value.uint_value_);
+          node.value.uint_value = T () (node.left ()->value.uint_value, node.right ()->value.uint_value);
           break;
         case kInt:
-          node.value.int_value_ = T () (node.left ()->value.int_value_, node.right ()->value.uint_value_);
+          node.value.int_value = T () (node.left ()->value.int_value, node.right ()->value.uint_value);
           break;
         case kUintptr:
-          node.value.uintptr_value_ = T () (node.left ()->value.uintptr_value_, node.right ()->value.uint_value_);
+          node.value.uintptr_value = T () (node.left ()->value.uintptr_value, node.right ()->value.uint_value);
           break;
         case kRune:
-          node.value.rune_value_ = T () (node.left ()->value.rune_value_, node.right ()->value.uint_value_);
+          node.value.rune_value = T () (node.left ()->value.rune_value, node.right ()->value.uint_value);
           break;
         case kInteger:
-          node.value.integer_value_ = T () (node.left ()->value.integer_value_, node.right ()->value.uint_value_);
+          node.value.integer_value = T () (node.left ()->value.integer_value, node.right ()->value.uint_value);
           break;
         default:
           TYPE_NOT_REACHED (*node.type);
@@ -636,11 +636,11 @@ static void process_shift (ast_binary_expr_t& node)
 static void process_logic_or (ast_binary_expr_t& node)
 {
   const type::Type*& left_type = node.left ()->type;
-  value_t& left_value = node.left ()->value;
+  Value& left_value = node.left ()->value;
   const type::Type*& right_type = node.right ()->type;
-  value_t& right_value = node.right ()->value;
+  Value& right_value = node.right ()->value;
   const type::Type*& type = node.type;
-  value_t& value = node.value;
+  Value& value = node.value;
 
   if (left_type->IsUntyped () &&
       right_type->IsUntyped ())
@@ -655,7 +655,7 @@ static void process_logic_or (ast_binary_expr_t& node)
         }
       type = Boolean::Instance ();
       value.present = true;
-      value.boolean_value_ = left_value.boolean_value_ || right_value.boolean_value_;
+      value.boolean_value = left_value.boolean_value || right_value.boolean_value;
       return;
     }
 
@@ -683,15 +683,15 @@ static void process_logic_or (ast_binary_expr_t& node)
     }
 
   if (left_value.present &&
-      left_value.bool_value_)
+      left_value.bool_value)
     {
       type = Boolean::Instance ();
-      value.boolean_value_ = true;
+      value.boolean_value = true;
     }
   else if (right_value.present)
     {
       type = Boolean::Instance ();
-      value.boolean_value_ = right_value.bool_value_;
+      value.boolean_value = right_value.bool_value;
     }
   else
     {
@@ -702,11 +702,11 @@ static void process_logic_or (ast_binary_expr_t& node)
 static void process_logic_and (ast_binary_expr_t& node)
 {
   const type::Type*& left_type = node.left ()->type;
-  value_t& left_value = node.left ()->value;
+  Value& left_value = node.left ()->value;
   const type::Type*& right_type = node.right ()->type;
-  value_t& right_value = node.right ()->value;
+  Value& right_value = node.right ()->value;
   const type::Type*& type = node.type;
-  value_t& value = node.value;
+  Value& value = node.value;
 
   if (left_type->IsUntyped () &&
       right_type->IsUntyped ())
@@ -721,7 +721,7 @@ static void process_logic_and (ast_binary_expr_t& node)
         }
       type = Boolean::Instance ();
       value.present = true;
-      value.boolean_value_ = left_value.boolean_value_ && right_value.boolean_value_;
+      value.boolean_value = left_value.boolean_value && right_value.boolean_value;
       return;
     }
 
@@ -749,15 +749,15 @@ static void process_logic_and (ast_binary_expr_t& node)
     }
 
   if (left_value.present &&
-      !left_value.bool_value_)
+      !left_value.bool_value)
     {
       type = Boolean::Instance ();
-      value.boolean_value_ = false;
+      value.boolean_value = false;
     }
   else if (right_value.present)
     {
       type = Boolean::Instance ();
-      value.boolean_value_ = right_value.bool_value_;
+      value.boolean_value = right_value.bool_value;
     }
   else
     {
@@ -847,7 +847,7 @@ struct Visitor : public ast::DefaultVisitor
 
     const type::Type* to = node.type_expr ()->type;
     const type::Type*& from = node.expr ()->type;
-    value_t& x = node.expr ()->value;
+    Value& x = node.expr ()->value;
 
     if (x.present)
       {
@@ -1044,10 +1044,10 @@ struct Visitor : public ast::DefaultVisitor
             switch (node.type->underlying_kind ())
               {
               case kBool:
-                node.value.bool_value_ = !node.child ()->value.bool_value_;
+                node.value.bool_value = !node.child ()->value.bool_value;
                 break;
               case kBoolean:
-                node.value.boolean_value_ = !node.child ()->value.boolean_value_;
+                node.value.boolean_value = !node.child ()->value.boolean_value;
                 break;
               default:
                 NOT_REACHED;
@@ -1074,61 +1074,61 @@ struct Visitor : public ast::DefaultVisitor
             switch (node.type->underlying_kind ())
               {
               case kUint8:
-                node.value.uint8_value_ = -node.child ()->value.uint8_value_;
+                node.value.uint8_value = -node.child ()->value.uint8_value;
                 break;
               case kUint16:
-                node.value.uint16_value_ = -node.child ()->value.uint16_value_;
+                node.value.uint16_value = -node.child ()->value.uint16_value;
                 break;
               case kUint32:
-                node.value.uint32_value_ = -node.child ()->value.uint32_value_;
+                node.value.uint32_value = -node.child ()->value.uint32_value;
                 break;
               case kUint64:
-                node.value.uint32_value_ = -node.child ()->value.uint32_value_;
+                node.value.uint32_value = -node.child ()->value.uint32_value;
                 break;
               case kInt8:
-                node.value.int8_value_ = -node.child ()->value.int8_value_;
+                node.value.int8_value = -node.child ()->value.int8_value;
                 break;
               case kInt16:
-                node.value.int16_value_ = -node.child ()->value.int16_value_;
+                node.value.int16_value = -node.child ()->value.int16_value;
                 break;
               case kInt32:
-                node.value.int32_value_ = -node.child ()->value.int32_value_;
+                node.value.int32_value = -node.child ()->value.int32_value;
                 break;
               case kInt64:
-                node.value.int64_value_ = -node.child ()->value.int64_value_;
+                node.value.int64_value = -node.child ()->value.int64_value;
                 break;
               case kFloat32:
-                node.value.float32_value_ = -node.child ()->value.float32_value_;
+                node.value.float32_value = -node.child ()->value.float32_value;
                 break;
               case kFloat64:
-                node.value.float64_value_ = -node.child ()->value.float64_value_;
+                node.value.float64_value = -node.child ()->value.float64_value;
                 break;
               case kComplex64:
-                node.value.complex64_value_ = -node.child ()->value.complex64_value_;
+                node.value.complex64_value = -node.child ()->value.complex64_value;
                 break;
               case kComplex128:
-                node.value.complex128_value_ = -node.child ()->value.complex128_value_;
+                node.value.complex128_value = -node.child ()->value.complex128_value;
                 break;
               case kUint:
-                node.value.uint_value_ = -node.child ()->value.uint_value_;
+                node.value.uint_value = -node.child ()->value.uint_value;
                 break;
               case kInt:
-                node.value.int_value_ = -node.child ()->value.int_value_;
+                node.value.int_value = -node.child ()->value.int_value;
                 break;
               case kUintptr:
-                node.value.uintptr_value_ = -node.child ()->value.uintptr_value_;
+                node.value.uintptr_value = -node.child ()->value.uintptr_value;
                 break;
               case kRune:
-                node.value.rune_value_ = -node.child ()->value.rune_value_;
+                node.value.rune_value = -node.child ()->value.rune_value;
                 break;
               case kInteger:
-                node.value.integer_value_ = -node.child ()->value.integer_value_;
+                node.value.integer_value = -node.child ()->value.integer_value;
                 break;
               case kFloat:
-                node.value.float_value_ = -node.child ()->value.float_value_;
+                node.value.float_value = -node.child ()->value.float_value;
                 break;
               case kComplex:
-                node.value.complex_value_ = -node.child ()->value.complex_value_;
+                node.value.complex_value = -node.child ()->value.complex_value;
                 break;
               default:
                 NOT_REACHED;
@@ -1253,7 +1253,7 @@ struct Visitor : public ast::DefaultVisitor
 
     if (node.precondition ()->value.present)
       {
-        if (node.precondition ()->value.bool_value_)
+        if (node.precondition ()->value.bool_value)
           {
             node.action->precondition_kind = decl::Action::StaticTrue;
           }
@@ -1274,7 +1274,7 @@ struct Visitor : public ast::DefaultVisitor
 
     if (node.precondition ()->value.present)
       {
-        if (node.precondition ()->value.bool_value_)
+        if (node.precondition ()->value.bool_value)
           {
             node.action->precondition_kind = decl::Action::StaticTrue;
           }
@@ -1515,7 +1515,7 @@ struct Visitor : public ast::DefaultVisitor
     node.VisitChildren (*this);
     const type::Type* to = node.left ()->type;
     const type::Type*& from = node.right ()->type;
-    value_t& val = node.right ()->value;
+    Value& val = node.right ()->value;
     if (!assignable (from, val, to))
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -1534,7 +1534,7 @@ struct Visitor : public ast::DefaultVisitor
 
     const type::Type* to = node.left ()->type;
     const type::Type*& from = node.right ()->type;
-    value_t& val = node.right ()->value;
+    Value& val = node.right ()->value;
     if (!arithmetic (to))
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -1679,7 +1679,7 @@ struct Visitor : public ast::DefaultVisitor
   void check_array_index (const Array* array_type, Node* index, bool allow_equal)
   {
     const type::Type*& index_type = index->type;
-    value_t& index_value = index->value;
+    Value& index_value = index->value;
 
     if (is_untyped_numeric (index_type))
       {
@@ -1690,7 +1690,7 @@ struct Visitor : public ast::DefaultVisitor
           }
         index_value.convert (index_type, Int::Instance ());
         index_type = Int::Instance ();
-        Int::ValueType idx = index_value.int_value_;
+        Int::ValueType idx = index_value.int_value;
         if (idx < 0)
           {
             error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
@@ -1733,7 +1733,7 @@ struct Visitor : public ast::DefaultVisitor
     node.VisitChildren (*this);
     const type::Type* base_type = node.base ()->type;
     Node* index_node = node.index ();
-    value_t& index_value = index_node->value;
+    Value& index_value = index_node->value;
     const type::Type*& index_type = node.index ()->type;
 
     node.array_type = type_cast<Array> (base_type->UnderlyingType ());
@@ -1758,7 +1758,7 @@ struct Visitor : public ast::DefaultVisitor
               }
             index_value.convert (index_type, Int::Instance ());
             index_type = Int::Instance ();
-            Int::ValueType idx = index_value.int_value_;
+            Int::ValueType idx = index_value.int_value;
             if (idx < 0)
               {
                 error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
@@ -1803,10 +1803,10 @@ struct Visitor : public ast::DefaultVisitor
     const type::Type* base_type = node.base ()->type;
     Node* low_node = node.low ();
     const type::Type*& low_type = low_node->type;
-    value_t& low_value = low_node->value;
+    Value& low_value = low_node->value;
     Node* high_node = node.high ();
     const type::Type*& high_type = high_node->type;
-    value_t& high_value = high_node->value;
+    Value& high_value = high_node->value;
 
     node.array_type = type_cast<Array> (base_type->UnderlyingType ());
     if (node.array_type != NULL)
@@ -1840,10 +1840,10 @@ struct Visitor : public ast::DefaultVisitor
                    "cannot slice expression of type %s (E225)",
                    base_type->ToString ().c_str ());
 
-    //     typed_value_t base_tv = CheckExpectReference (node.base_ref ());
-    //     typed_value_t low_tv = CheckAndImplicitlyDereference (node.low_ref ());
-    //     typed_value_t high_tv = CheckAndImplicitlyDereference (node.high_ref ());
-    //     typed_value_t result = typed_value_t::slice (node.location, base_tv, low_tv, high_tv);
+    //     typed_Value base_tv = CheckExpectReference (node.base_ref ());
+    //     typed_Value low_tv = CheckAndImplicitlyDereference (node.low_ref ());
+    //     typed_Value high_tv = CheckAndImplicitlyDereference (node.high_ref ());
+    //     typed_Value result = typed_Value::slice (node.location, base_tv, low_tv, high_tv);
     //     if (result.IsError ())
     //       {
     //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -1968,7 +1968,7 @@ void check_types_arguments (ast::Node* node, const type::Signature* signature)
        ++pos, ++i)
     {
       const type::Type*& arg = (*pos)->type;
-      value_t& val = (*pos)->value;
+      Value& val = (*pos)->value;
       const type::Type* param = signature->At (i)->type;
       if (!type::assignable (arg, val, param))
         {

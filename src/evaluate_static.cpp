@@ -13,31 +13,31 @@ using namespace ast;
 
 std::ostream&
 operator<< (std::ostream& o,
-            const static_value_t& v)
+            const static_Value& v)
 {
   switch (v.kind)
     {
-    case static_value_t::STACK_ADDRESS:
+    case static_Value::STACK_ADDRESS:
       o << "STACK " << v.offset;
       break;
-    case static_value_t::ABSOLUTE_ADDRESS:
+    case static_Value::ABSOLUTE_ADDRESS:
       o << "ABSOLUTE " << v.address;
       break;
-    case static_value_t::VALUE:
+    case static_Value::VALUE:
       o << "VALUE " << v.value;
       break;
     }
   return o;
 }
 
-static_value_t
+static_Value
 EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
 {
   UNIMPLEMENTED;
   // struct visitor : public ast::DefaultConstVisitor
   // {
   //   const static_memory_t& memory;
-  //   static_value_t result;
+  //   static_Value result;
 
   //   visitor (const static_memory_t& m) : memory (m) { }
 
@@ -69,9 +69,9 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
   //         UNIMPLEMENTED;
   //       case NotEqual:
   //       {
-  //         static_value_t left = EvaluateStatic (node.left (), memory);
-  //         static_value_t right = EvaluateStatic (node.right (), memory);
-  //         result = static_value_t::make_value (left.value != right.value);
+  //         static_Value left = EvaluateStatic (node.left (), memory);
+  //         static_Value right = EvaluateStatic (node.right (), memory);
+  //         result = static_Value::make_value (left.value != right.value);
   //       }
   //       break;
   //       case LessThan:
@@ -88,13 +88,13 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
 
   //   void visit (const ast_literal_expr_t& node)
   //   {
-  //     typed_value_t tv = node.typed_value;
+  //     typed_Value tv = node.typed_value;
   //     struct visitor : public Type::DefaultVisitor
   //     {
-  //       typed_value_t tv;
-  //       static_value_t result;
+  //       typed_Value tv;
+  //       static_Value result;
 
-  //       visitor (typed_value_t t) : tv (t) { }
+  //       visitor (typed_Value t) : tv (t) { }
 
   //       void default_action (const Type::Type& type)
   //       {
@@ -104,7 +104,7 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
   //       void visit (const Int& type)
   //       {
   //         UNIMPLEMENTED;
-  //         //result = static_value_t::make_value (tv.int_value);
+  //         //result = static_Value::make_value (tv.int_value);
   //       }
   //     };
   //     visitor v (tv);
@@ -114,43 +114,43 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
 
   //   void visit (const ast_index_expr_t& node)
   //   {
-  //     static_value_t base = EvaluateStatic (node.base (), memory);
-  //     static_value_t index = EvaluateStatic (node.index (), memory);
-  //     typed_value_t base_tv = node.base ()->typed_value;
+  //     static_Value base = EvaluateStatic (node.base (), memory);
+  //     static_Value index = EvaluateStatic (node.index (), memory);
+  //     typed_Value base_tv = node.base ()->typed_value;
   //     const Array* array_type = type_cast<Array> (base_tv.type);
-  //     result = static_value_t::index (base, array_type, index);
+  //     result = static_Value::index (base, array_type, index);
   //   }
 
   //   void visit (const ast_select_expr_t& node)
   //   {
-  //     typed_value_t tv = node.typed_value;
+  //     typed_Value tv = node.typed_value;
   //     assert (tv.has_offset);
-  //     static_value_t v = EvaluateStatic (node.base (), memory);
-  //     result = static_value_t::select (v, tv.offset);
+  //     static_Value v = EvaluateStatic (node.base (), memory);
+  //     result = static_Value::select (v, tv.offset);
   //   }
 
   //   void visit (const ast_dereference_expr_t& node)
   //   {
-  //     static_value_t v = EvaluateStatic (node.child (), memory);
-  //     result = static_value_t::dereference (v);
+  //     static_Value v = EvaluateStatic (node.child (), memory);
+  //     result = static_Value::dereference (v);
   //   }
 
   //   void visit (const ast_implicit_dereference_expr_t& node)
   //   {
-  //     static_value_t v = EvaluateStatic (node.child (), memory);
-  //     result = static_value_t::implicit_dereference (v, memory);
+  //     static_Value v = EvaluateStatic (node.child (), memory);
+  //     result = static_Value::implicit_dereference (v, memory);
   //   }
 
   //   void visit (const ast_identifier_expr_t& node)
   //   {
   //     ptrdiff_t offset = node.symbol->offset ();
-  //     result = static_value_t::make_stack_offset (offset);
+  //     result = static_Value::make_stack_offset (offset);
   //   }
 
   //   void visit (const ast_address_of_expr_t& node)
   //   {
-  //     static_value_t v = EvaluateStatic (node.child (), memory);
-  //     result = static_value_t::address_of (v);
+  //     static_Value v = EvaluateStatic (node.child (), memory);
+  //     result = static_Value::address_of (v);
   //   }
   // };
   // visitor v (memory);

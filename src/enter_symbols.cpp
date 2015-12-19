@@ -63,7 +63,7 @@ enter_symbols (Node * node)
   node->EnterSymbol (new Sendto (node));
 
   /* Insert zero constant. */
-  value_t v;
+  Value v;
   v.present = true;
   node->EnterSymbol (new ConstantSymbol ("nil",
                                          node,
@@ -71,14 +71,16 @@ enter_symbols (Node * node)
                                          v));
 
   /* Insert untyped boolean constants. */
+  v.bool_value = true;
   node->EnterSymbol (new ConstantSymbol ("true",
                                          node,
                                          type::Boolean::Instance (),
-                                         value_t (type::Boolean::Instance (), true)));
+                                         v));
+  v.bool_value = false;
   node->EnterSymbol (new ConstantSymbol ("false",
                                          node,
                                          type::Boolean::Instance (),
-                                         value_t (type::Boolean::Instance (), false)));
+                                         v));
 }
 
 }

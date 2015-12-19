@@ -20,7 +20,7 @@ namespace semantic
 using namespace ast;
 using namespace decl;
 
-// TODO:  Replace interacting with type_t* with typed_value_t.
+// TODO:  Replace interacting with type_t* with typed_Value.
 
 void
 allocate_symbol (runtime::MemoryModel& memory_model,

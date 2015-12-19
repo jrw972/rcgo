@@ -46,8 +46,8 @@ struct Stack
   void popn (size_t size);
 
   // TODO:  Remove these methods once they are no longer need by runtime.
-  void push_tv (const typed_value_t& tv);
-  void pop_tv (typed_value_t& tv);
+  void push_tv (const typed_Value& tv);
+  void pop_tv (typed_Value& tv);
 
   // Push base_pointer + offset.
   // Used to get the address of an argument or local variable.

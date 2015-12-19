@@ -28,7 +28,7 @@ class ConstVisitor;
 
 namespace semantic
 {
-class value_t;
+class Value;
 }
 
 namespace type
@@ -89,7 +89,7 @@ enum ExpressionKind
 
 typedef std::vector<const type::Type*> TypeList;
 
-class typed_value_t;
+class typed_Value;
 class component_t;
 class port_t;
 class scheduler_t;

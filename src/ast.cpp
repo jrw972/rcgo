@@ -65,8 +65,7 @@ operator<< (std::ostream& out, const Node& node)
           out << ' ' << *node.type;
           if (node.value.present)
             {
-              out << ' ';
-              node.value.print (out, node.type);
+              out << ' ' << ValuePrinter (node.type, node.value);
             }
           out << ' ';
           switch (node.expression_kind)
@@ -875,7 +874,7 @@ Node::Node (unsigned int line_, size_t children_count)
   m_children.resize (children_count);
 }
 
-ast_literal_expr_t::ast_literal_expr_t (unsigned int line, const ::type::Type* t, const value_t& v)
+ast_literal_expr_t::ast_literal_expr_t (unsigned int line, const ::type::Type* t, const Value& v)
   : Node (line, 0)
 {
   type = t;

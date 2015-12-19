@@ -175,7 +175,7 @@ struct TypeSymbol : public Symbol
 
 struct ConstantSymbol : public Symbol
 {
-  ConstantSymbol (const std::string& id, ast::Node* dn, const type::Type* t, const semantic::value_t& v)
+  ConstantSymbol (const std::string& id, ast::Node* dn, const type::Type* t, const semantic::Value& v)
     : Symbol (id, dn)
     , type (t)
     , value (v)
@@ -183,7 +183,7 @@ struct ConstantSymbol : public Symbol
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
   const type::Type* const type;
-  semantic::value_t const value;
+  semantic::Value const value;
 };
 
 struct VariableSymbol : public Symbol

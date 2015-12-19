@@ -151,7 +151,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
     node.VisitChildren (*this);
     if (node.condition ()->value.present)
       {
-        if (node.condition ()->value.ref (*Bool::Instance ()))
+        if (node.condition ()->value.bool_value)
           {
             node.operation = node.true_branch ()->operation;
           }
@@ -516,9 +516,9 @@ struct CodeGenVisitor : public ast::DefaultVisitor
     else
       {
         assert (node.callable != NULL);
-        value_t v;
+        Value v;
         v.present = true;
-        v.pointer_value_ = const_cast<void*> (static_cast<const void*> (node.callable));
+        v.pointer_value = const_cast<void*> (static_cast<const void*> (node.callable));
         node.operation = make_literal (Int::Instance ()->GetPointer (), v);
       }
   }

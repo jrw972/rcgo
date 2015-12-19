@@ -947,21 +947,21 @@ struct MoreEqual : public LeftDispatch
 //                      const ast::Node* node)
 // {
 //   UNIMPLEMENTED;
-// typed_value_t tv = node->typed_value;
+// typed_Value tv = node->typed_value;
 // if (tv.value.present)
 //   {
 //     switch (tv.kind)
 //       {
-//       case typed_value_t::VALUE:
+//       case typed_Value::VALUE:
 //       {
 //         exec.stack ().push_tv (tv);
 //         return;
 //       }
 //       break;
-//       case typed_value_t::REFERENCE:
+//       case typed_Value::REFERENCE:
 //         std::cout << *node;
 //         UNIMPLEMENTED;
-//       case typed_value_t::TYPE:
+//       case typed_Value::TYPE:
 //         std::cout << *node;
 //         UNIMPLEMENTED;
 //       }
@@ -1006,10 +1006,10 @@ struct MoreEqual : public LeftDispatch
 //   void visit (const ast_slice_expr_t& node)
 //   {
 //     evaluate_expression (exec, memoryModel, node.base ());
-//     typed_value_t base_tv = node.base ()->typed_value;
+//     typed_Value base_tv = node.base ()->typed_value;
 //     exec.stack ().pop_tv (base_tv);
 
-//     typed_value_t low_tv = node.low ()->typed_value;
+//     typed_Value low_tv = node.low ()->typed_value;
 //     if (!low_tv.value.present)
 //       {
 //         evaluate_expression (exec, memoryModel, node.low ());
@@ -1017,7 +1017,7 @@ struct MoreEqual : public LeftDispatch
 //       }
 //     type::Int::ValueType low = low_tv.integral_value ();
 
-//     typed_value_t high_tv = node.high ()->typed_value;
+//     typed_Value high_tv = node.high ()->typed_value;
 //     if (!high_tv.value.present)
 //       {
 //         evaluate_expression (exec, memoryModel, node.high ());
@@ -1160,7 +1160,7 @@ struct MoreEqual : public LeftDispatch
 //   {
 //     evaluate_expression (exec, memoryModel, node.base ());
 //     char* ptr = static_cast<char*> (exec.stack ().pop_pointer ());
-//     typed_value_t tv = node.typed_value;
+//     typed_Value tv = node.typed_value;
 //     assert (tv.has_offset);
 //     exec.stack ().push_pointer (ptr + tv.offset);
 //   }
@@ -1200,7 +1200,7 @@ struct MoreEqual : public LeftDispatch
 //         std::cout << node;
 //         UNIMPLEMENTED;
 //       }
-//     typed_value_t tv = node.typed_value;
+//     typed_Value tv = node.typed_value;
 //     exec.stack ().load (ptr, tv.type->Size ());
 //   }
 
@@ -1854,7 +1854,7 @@ New::instantiate (const std::vector<const type::Type*>& argument_types) const
   const type::Type* type = argument_types.front ();
 
   // TODO.
-  // if (tv.kind != typed_value_t::TYPE)
+  // if (tv.kind != typed_Value::TYPE)
   //   {
   //     error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
   //                    "new expects a type (E219)");
@@ -2617,10 +2617,10 @@ LogicAnd::execute (executor_base_t& exec) const
 
 struct MakeLiteralVisitor : public type::DefaultVisitor
 {
-  const value_t& value;
+  const Value& value;
   Operation* op;
 
-  MakeLiteralVisitor (const value_t& v) : value (v), op (NULL) { }
+  MakeLiteralVisitor (const Value& v) : value (v), op (NULL) { }
 
   void default_action (const type::Type& type)
   {
@@ -2629,71 +2629,71 @@ struct MakeLiteralVisitor : public type::DefaultVisitor
 
   void visit (const Bool& type)
   {
-    op = make_literal (value.ref (type));
+    op = make_literal (value.bool_value);
   }
 
   void visit (const Uint8& type)
   {
-    op = make_literal (value.ref (type));
+    op = make_literal (value.uint8_value);
   }
 
   void visit (const Uint16& type)
   {
-    op = make_literal (value.ref (type));
+    op = make_literal (value.uint16_value);
   }
 
   void visit (const Uint32& type)
   {
-    op = make_literal (value.ref (type));
+    op = make_literal (value.uint32_value);
   }
 
   void visit (const Uint64& type)
   {
-    op = make_literal (value.ref (type));
+    op = make_literal (value.uint64_value);
   }
 
   void visit (const Int8& type)
   {
-    op = make_literal (value.ref (type));
+    op = make_literal (value.int8_value);
   }
 
   void visit (const Int16& type)
   {
-    op = make_literal (value.ref (type));
+    op = make_literal (value.int16_value);
   }
 
   void visit (const Int32& type)
   {
-    op = make_literal (value.ref (type));
+    op = make_literal (value.int32_value);
   }
 
   void visit (const Int64& type)
   {
-    op = make_literal (value.ref (type));
+    op = make_literal (value.int64_value);
   }
 
   void visit (const Uint& type)
   {
-    op = make_literal (value.ref (type));
+    op = make_literal (value.uint_value);
   }
 
   void visit (const Int& type)
   {
-    op = make_literal (value.ref (type));
+    op = make_literal (value.int_value);
   }
 
   void visit (const StringU& type)
   {
-    op = make_literal (value.ref (type));
+    op = make_literal (value.stringu_value);
   }
 
   void visit (const Pointer& type)
   {
-    op = make_literal (value.ref (type));
+    op = make_literal (value.pointer_value);
   }
 };
 
-Operation* make_literal (const type::Type* type, const value_t& value)
+Operation* make_literal (const type::Type* type, const Value& value)
 {
   assert (value.present);
   MakeLiteralVisitor visitor (value);

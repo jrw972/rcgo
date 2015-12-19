@@ -28,7 +28,7 @@ private:
   StackType stack_;
 };
 
-struct static_value_t
+struct static_Value
 {
   enum Kind
   {
@@ -45,30 +45,30 @@ struct static_value_t
     size_t value; // VALUE
   };
 
-  static_value_t ()
+  static_Value ()
     : kind (VALUE)
     , value (0)
   { }
 
-  static static_value_t make_stack_offset (ptrdiff_t offset)
+  static static_Value make_stack_offset (ptrdiff_t offset)
   {
-    static_value_t v;
+    static_Value v;
     v.kind = STACK_ADDRESS;
     v.offset = offset;
     return v;
   }
 
-  static static_value_t make_value (size_t value)
+  static static_Value make_value (size_t value)
   {
-    static_value_t v;
+    static_Value v;
     v.kind = VALUE;
     v.value = value;
     return v;
   }
 
-  static static_value_t implicit_dereference (static_value_t in, const static_memory_t& memory)
+  static static_Value implicit_dereference (static_Value in, const static_memory_t& memory)
   {
-    static_value_t out;
+    static_Value out;
     switch (in.kind)
       {
       case STACK_ADDRESS:
@@ -83,9 +83,9 @@ struct static_value_t
     return out;
   }
 
-  static static_value_t dereference (static_value_t in)
+  static static_Value dereference (static_Value in)
   {
-    static_value_t out;
+    static_Value out;
     switch (in.kind)
       {
       case STACK_ADDRESS:
@@ -99,9 +99,9 @@ struct static_value_t
     return out;
   }
 
-  static static_value_t select (static_value_t in, ptrdiff_t offset)
+  static static_Value select (static_Value in, ptrdiff_t offset)
   {
-    static_value_t out;
+    static_Value out;
     switch (in.kind)
       {
       case STACK_ADDRESS:
@@ -118,9 +118,9 @@ struct static_value_t
     return out;
   }
 
-  static static_value_t index (static_value_t in, const type::Array* type, static_value_t idx)
+  static static_Value index (static_Value in, const type::Array* type, static_Value idx)
   {
-    static_value_t out;
+    static_Value out;
     switch (in.kind)
       {
       case STACK_ADDRESS:
@@ -137,9 +137,9 @@ struct static_value_t
     return out;
   }
 
-  static static_value_t address_of (static_value_t in)
+  static static_Value address_of (static_Value in)
   {
-    static_value_t out;
+    static_Value out;
     out.kind = VALUE;
 
     switch (in.kind)
@@ -160,9 +160,9 @@ struct static_value_t
 
 std::ostream&
 operator<< (std::ostream& o,
-            const static_value_t& v);
+            const static_Value& v);
 
-static_value_t
+static_Value
 EvaluateStatic (const ast::Node* node, const static_memory_t& memory);
 
 }

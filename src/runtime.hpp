@@ -180,7 +180,7 @@ make_literal (T v)
   return new Literal<T> (v);
 }
 
-Operation* make_literal (const type::Type* type, const semantic::value_t& value);
+Operation* make_literal (const type::Type* type, const semantic::Value& value);
 
 struct LogicOr : public Operation
 {

@@ -46,7 +46,7 @@ process_array_dimension (ast::Node* node)
 
   node->value.convert (node->type, &NamedInt);
   node->type = &NamedInt;
-  type::Int::ValueType dim = node->value.ref (*type::Int::Instance ());
+  type::Int::ValueType dim = node->value.int_value;
   if (dim < 0)
     {
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,

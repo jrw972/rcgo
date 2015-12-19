@@ -1354,7 +1354,7 @@ Choose (const Type* x, const Type* y)
 }
 
 bool
-assignable (const Type* from, const value_t& from_value, const Type* to)
+assignable (const Type* from, const Value& from_value, const Type* to)
 {
   if (to->IsUntyped ())
     {

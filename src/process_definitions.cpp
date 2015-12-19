@@ -30,8 +30,8 @@ type_check_statement (Node * node)
     void visit (ast_bind_pull_port_statement_t& node)
     {
       UNIMPLEMENTED;
-      // typed_value_t pull_port_tv = CheckExpectReference (node.left ());
-      // typed_value_t getter_tv = CheckAndImplicitlyDereference (node.right_ref ());
+      // typed_Value pull_port_tv = CheckExpectReference (node.left ());
+      // typed_Value getter_tv = CheckAndImplicitlyDereference (node.right_ref ());
 
       // const Type::Function* pull_port_type = type_cast<Type::Function> (pull_port_tv.type);
 
@@ -60,8 +60,8 @@ type_check_statement (Node * node)
     static void arithmetic_assign (ast_binary_t* node, const char* symbol)
     {
       UNIMPLEMENTED;
-      // typed_value_t left_tv = check_assignment_target (node->left ());
-      // typed_value_t right_tv = CheckAndImplicitlyDereference (node->right_ref ());
+      // typed_Value left_tv = check_assignment_target (node->left ());
+      // typed_Value right_tv = CheckAndImplicitlyDereference (node->right_ref ());
       // if (!type_is_equal (left_tv.type, right_tv.type))
       //   {
       //     error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,

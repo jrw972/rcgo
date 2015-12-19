@@ -2459,7 +2459,7 @@ bool
 Identical (const Type* x, const Type* y);
 
 bool
-assignable (const Type* from, const semantic::value_t& from_value, const Type* to);
+assignable (const Type* from, const semantic::Value& from_value, const Type* to);
 
 const Type*
 Choose (const Type* x, const Type* y);
