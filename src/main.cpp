@@ -1,9 +1,9 @@
-#include <stdlib.h>
-#include <assert.h>
 #include <error.h>
-#include <stdbool.h>
 #include <getopt.h>
 #include <errno.h>
+
+#include <cstdlib>
+#include <cassert>
 
 #include "config.h"
 #include "scanner.hpp"
@@ -26,19 +26,18 @@
 static void
 print_version (void)
 {
-  puts (PACKAGE_STRING);
-  puts ("Copyright (C) 2014 Justin R. Wilson");
-  puts
-  ("License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.");
-  puts ("This is free software: you are free to change and redistribute it.");
-  puts ("There is NO WARRANTY, to the extent permitted by law.");
+  std::cout <<
+            PACKAGE_STRING "\n"
+            "Copyright (C) 2014 Justin R. Wilson\n"
+            "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n"
+            "This is free software: you are free to change and redistribute it.\n"
+            "There is NO WARRANTY, to the extent permitted by law.\n";
 }
 
 static void
 try_help (void)
 {
-  fprintf (stderr, "Try `%s --help' for more information.\n",
-           program_invocation_short_name);
+  std::cerr << "Try `" << program_invocation_short_name << " --help' for more information.\n";
   exit (EXIT_FAILURE);
 }
 
@@ -76,13 +75,15 @@ main (int argc, char **argv)
           exit (EXIT_SUCCESS);
           break;
         case 'h':
-          printf ("Usage: %s OPTION... FILE \n",
-                  program_invocation_short_name);
-          puts ("Compile " PACKAGE_NAME " source code.\n" "\n"
-                "  -c, --composition print composition analysis and exit\n"
-                "  --help      display this help and exit\n"
-                "  --version   display version information and exit\n" "\n"
-                "Report bugs to: " PACKAGE_BUGREPORT);
+          std::cout << "Usage: " << program_invocation_short_name << " OPTION... FILE\n"
+                    <<
+                    "Compile " PACKAGE_NAME " source code.\n"
+                    "\n"
+                    "  -c, --composition print composition analysis and exit\n"
+                    "  --help      display this help and exit\n"
+                    "  --version   display version information and exit\n"
+                    "\n"
+                    "Report bugs to: " PACKAGE_BUGREPORT "\n";
           exit (EXIT_SUCCESS);
           break;
         case 't':
@@ -96,7 +97,7 @@ main (int argc, char **argv)
 
   if (optind + 1 != argc)
     {
-      fprintf (stderr, "No input file\n");
+      std::cerr << "No input file\n";
       try_help ();
     }
 
@@ -117,7 +118,6 @@ main (int argc, char **argv)
   yylloc = 1;
   if (yyparse () != 0)
     {
-      // TODO:  Error reporting.
       error (EXIT_FAILURE, 0, "yyparse failed");
     }
   assert (root != NULL);
