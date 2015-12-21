@@ -693,7 +693,7 @@ Composer::enumerate_actions ()
 // Determine what relationship the given entity has with other entities.
 // These relationships are created through activate statements and calls to
 // getters and pull ports.
-  struct Composer::ElaborationVisitor : public ast::DefaultVisitor
+struct Composer::ElaborationVisitor : public ast::DefaultVisitor
 {
   Executor exec;
   Composer& table;

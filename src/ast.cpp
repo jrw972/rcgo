@@ -105,6 +105,20 @@ operator<< (std::ostream& out, Node& node)
               break;
             }
         }
+      out << " receiver_state=" << node.receiver_state;
+      out << " receiver_access=";
+      switch (node.receiver_access)
+        {
+        case AccessNone:
+          out << "none";
+          break;
+        case AccessRead:
+          out << "read";
+          break;
+        case AccessWrite:
+          out << "write";
+          break;
+        }
       out << '\n';
     }
 
@@ -851,8 +865,8 @@ Node::Node (unsigned int line_, size_t children_count)
   , field (NULL)
   , callable (NULL)
   , temp (NULL)
-  , receiver_state (true)
-  , receiver_access (AccessWrite)
+  , receiver_state (false)
+  , receiver_access (AccessNone)
   , operation (NULL)
   , m_parent (NULL)
 {

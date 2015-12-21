@@ -191,6 +191,7 @@ struct Visitor : public ast::DefaultVisitor
     Visitor v (*this);
     v.in_mutable_phase = true;
     node.body ()->Accept (v);
+    node.in_action = context == Action;
   }
 
   void visit (ast_call_expr_t& node)

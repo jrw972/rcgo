@@ -274,12 +274,13 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   {
     node.VisitChildren (*this);
     Operation* b = node.body ()->operation;
-    b = new SetRestoreCurrentInstance (b, node.memoryModel->ReceiverOffset ());
     // Add to the schedule.
-    if (node.mutable_phase_access == AccessWrite)
+    if (node.mutable_phase_access == AccessWrite ||
+        (node.in_action && !node.expr_list ()->Empty ()))
       {
         b = new Push (b);
       }
+    b = new SetRestoreCurrentInstance (b, node.memoryModel->ReceiverOffset ());
     node.operation = new Activate (node.expr_list ()->operation, b);
   }
 

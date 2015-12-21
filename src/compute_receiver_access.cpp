@@ -157,6 +157,10 @@ struct Visitor : public ast::DefaultVisitor
   {
     node.VisitChildren (*this);
     node.receiver_access = node.child ()->receiver_access;
+    if (node.child ()->receiver_state)
+      {
+        node.receiver_access = AccessWrite;
+      }
   }
 
   void visit (ast_return_statement_t& node)
@@ -168,7 +172,7 @@ struct Visitor : public ast::DefaultVisitor
   void visit (ast_activate_statement_t& node)
   {
     node.VisitChildren (*this);
-    process_list (node, &node);
+    node.receiver_access = node.expr_list ()->receiver_access;
     node.mutable_phase_access = node.body ()->receiver_access;
   }
 
@@ -191,9 +195,8 @@ struct Visitor : public ast::DefaultVisitor
       }
 
     node.VisitChildren (*this);
-    node.receiver_access = node.expr ()->receiver_access;
 
-    // Check if a mutable pointer escapes.
+    // Check if a mutable pointer goes into a function.
     bool flag = false;
     if (node.callable != NULL)
       {
@@ -204,6 +207,17 @@ struct Visitor : public ast::DefaultVisitor
         compute_receiver_access_arguments (node.args (), node.signature, node.receiver_access, flag);
       }
 
+    // Extend the check to the receiver if invoking a method.
+    node.receiver_access = std::max (node.receiver_access, node.expr ()->receiver_access);
+    if (node.method_type != NULL &&
+        node.expr ()->receiver_state &&
+        type_contains_pointer (node.method_type->receiver_type ()) &&
+        node.method_type->receiver_parameter->dereference_mutability == Mutable)
+      {
+        node.receiver_access = AccessWrite;
+      }
+
+    // Check if a mutable pointer containing receiver state is returned.
     if (type_contains_pointer (node.type) &&
         node.dereference_mutability == Mutable)
       {

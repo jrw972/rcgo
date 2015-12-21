@@ -8,11 +8,12 @@
 #include "stack.hpp"
 #include "executor_base.hpp"
 #include "composition.hpp"
+#include "scheduler.hpp"
 
 namespace runtime
 {
 
-class instance_scheduler_t
+class instance_scheduler_t : public Scheduler
 {
 public:
   instance_scheduler_t ()
@@ -91,6 +92,8 @@ private:
 
     void push ()
     {
+      component_t* c = current_instance ();
+      assert (c != NULL);
       scheduler_.push (*reinterpret_cast<instance_info_t**> (current_instance ()));
     }
 

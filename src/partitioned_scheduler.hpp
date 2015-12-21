@@ -14,11 +14,12 @@
 #include "executor_base.hpp"
 #include "composition.hpp"
 #include "runtime.hpp"
+#include "scheduler.hpp"
 
 namespace runtime
 {
 
-class partitioned_scheduler_t
+class partitioned_scheduler_t : public Scheduler
 {
 public:
   partitioned_scheduler_t ()

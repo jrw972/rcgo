@@ -22,6 +22,7 @@
 #include "compute_receiver_access.hpp"
 #include "process_types_and_constants.hpp"
 #include "process_functions_and_methods.hpp"
+#include "scheduler.hpp"
 
 static void
 print_version (void)
@@ -46,6 +47,13 @@ main (int argc, char **argv)
 {
   int show_composition = 0;
   int thread_count = 2;
+  std::string scheduler_type = "partitioned";
+
+  const char* s = getenv ("RC_SCHEDULER");
+  if (s != NULL)
+    {
+      scheduler_type = s;
+    }
 
   while (true)
     {
@@ -53,8 +61,9 @@ main (int argc, char **argv)
       {
         {"composition", no_argument, &show_composition, 1},
         {"help", no_argument, NULL, 'h'},
+        {"scheduler", required_argument, NULL, 's'},
+        {"threads", required_argument, NULL, 't'},
         {"version", no_argument, NULL, 'v'},
-        {"thread", required_argument, NULL, 't'},
         {0, 0, 0, 0}
       };
 
@@ -70,24 +79,29 @@ main (int argc, char **argv)
         case 'c':
           show_composition = 1;
           break;
-        case 'v':
-          print_version ();
-          exit (EXIT_SUCCESS);
-          break;
         case 'h':
           std::cout << "Usage: " << program_invocation_short_name << " OPTION... FILE\n"
                     <<
                     "Compile " PACKAGE_NAME " source code.\n"
                     "\n"
-                    "  -c, --composition print composition analysis and exit\n"
-                    "  --help      display this help and exit\n"
-                    "  --version   display version information and exit\n"
+                    "  -c, --composition            print composition analysis and exit\n"
+                    "  -s SCHED, --scheduler=SCHED  select a scheduler (instance, partitioned)\n"
+                    "  -t NUM, --threads=NUM        use NUM threads\n"
+                    "  --help                       display this help and exit\n"
+                    "  --version                    display version information and exit\n"
                     "\n"
                     "Report bugs to: " PACKAGE_BUGREPORT "\n";
           exit (EXIT_SUCCESS);
           break;
+        case 's':
+          scheduler_type = optarg;
+          break;
         case 't':
           thread_count = atoi (optarg);
+          break;
+        case 'v':
+          print_version ();
+          exit (EXIT_SUCCESS);
           break;
         default:
           try_help ();
@@ -150,13 +164,24 @@ main (int argc, char **argv)
     }
   instance_table.analyze ();
 
-  //typedef instance_scheduler_t SchedulerType;
-  typedef runtime::partitioned_scheduler_t SchedulerType;
-
-  SchedulerType scheduler;
   runtime::allocate_instances (instance_table);
   runtime::create_bindings (instance_table);
-  scheduler.run (instance_table, 8 * 1024, thread_count);
+
+  runtime::Scheduler* scheduler;
+  if (scheduler_type == "partitioned")
+    {
+      scheduler = new runtime::partitioned_scheduler_t ();
+    }
+  else if (scheduler_type == "instance")
+    {
+      scheduler = new runtime::instance_scheduler_t ();
+    }
+  else
+    {
+      error (EXIT_FAILURE, 0, "unknown scheduler type '%s'", scheduler_type.c_str ());
+    }
+
+  scheduler->run (instance_table, 8 * 1024, thread_count);
 
   return 0;
 }

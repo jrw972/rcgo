@@ -1030,6 +1030,7 @@ struct ast_activate_statement_t : public Node
   ast_activate_statement_t (unsigned int line, Node * expr_list, Node * body)
     : Node (line, COUNT)
     , memoryModel (NULL)
+    , in_action (false)
   {
     set (EXPR_LIST, expr_list);
     set (BODY, body);
@@ -1048,6 +1049,7 @@ struct ast_activate_statement_t : public Node
 
   const runtime::MemoryModel* memoryModel;
   ReceiverAccess mutable_phase_access;
+  bool in_action;
 };
 
 struct ast_var_statement_t : public Node
