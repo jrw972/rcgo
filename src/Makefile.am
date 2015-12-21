@@ -41,6 +41,7 @@ process_types_and_constants.hpp process_types_and_constants.cpp \
 reaction.hpp reaction.cpp \
 runtime.hpp runtime.cpp \
 scanner.hpp scanner.cpp \
+scheduler.hpp \
 semantic.hpp semantic.cpp \
 stack.hpp stack.cpp \
 symbol.hpp symbol.cpp \
