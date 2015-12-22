@@ -267,7 +267,7 @@ ESCAPED \\[abfnrtv\\\"]
                          v.length = size;
 
                          Value value;
-                         value.string_value_ = v;
+                         value.string_value = v;
                          value.present = true;
                          yylval.node = new ast_literal_expr_t (yylloc, String::Instance (), value);
                          return LITERAL; }
@@ -284,7 +284,7 @@ ESCAPED \\[abfnrtv\\\"]
   v.length = size;
 
   Value value;
-  value.string_value_ = v;
+  value.string_value = v;
   value.present = true;
   yylval.node = new ast_literal_expr_t (yylloc, String::Instance (), value);
   return LITERAL;
@@ -292,7 +292,7 @@ ESCAPED \\[abfnrtv\\\"]
 
 [1-9][0-9]* {
   Value value;
-  value.integer_value_ = strtol (yytext, NULL, 10);
+  value.integer_value = strtol (yytext, NULL, 10);
   value.present = true;
   yylval.node = new ast_literal_expr_t (yylloc, Integer::Instance (), value);
   return LITERAL;
@@ -300,7 +300,7 @@ ESCAPED \\[abfnrtv\\\"]
 
 0{OCTAL_DIGIT}* {
   Value value;
-  value.integer_value_ = strtol (yytext, NULL, 8);
+  value.integer_value = strtol (yytext, NULL, 8);
   value.present = true;
   yylval.node = new ast_literal_expr_t (yylloc, Integer::Instance (), value);
   return LITERAL;
@@ -308,7 +308,7 @@ ESCAPED \\[abfnrtv\\\"]
 
 0[xX]{HEXADECIMAL_DIGIT}+ {
   Value value;
-  value.integer_value_ = strtol (yytext, NULL, 16);
+  value.integer_value = strtol (yytext, NULL, 16);
   value.present = true;
   yylval.node = new ast_literal_expr_t (yylloc, Integer::Instance (), value);
   return LITERAL;
@@ -316,7 +316,7 @@ ESCAPED \\[abfnrtv\\\"]
 
 {FLOAT} {
   Value value;
-  value.float_value_ = strtod (yytext, NULL);
+  value.float_value = strtod (yytext, NULL);
   value.present = true;
   yylval.node = new ast_literal_expr_t (yylloc, Float::Instance (), value);
   return LITERAL;
@@ -324,7 +324,7 @@ ESCAPED \\[abfnrtv\\\"]
 
 ({DECIMALS}|{FLOAT})i {
   Value value;
-  value.complex_value_ = Complex::ValueType::make (0, strtod (yytext, NULL));
+  value.complex_value = Complex::ValueType::make (0, strtod (yytext, NULL));
   value.present = true;
   yylval.node = new ast_literal_expr_t (yylloc, Complex::Instance (), value);
   return LITERAL;
@@ -332,7 +332,7 @@ ESCAPED \\[abfnrtv\\\"]
 
 '[^'\n]' {
   Value value;
-  value.rune_value_ = yytext[1];
+  value.rune_value = yytext[1];
   value.present = true;
   yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
   return LITERAL;
@@ -343,39 +343,39 @@ ESCAPED \\[abfnrtv\\\"]
   value.present = true;
   switch (yytext[2]) {
   case 'a':
-    value.rune_value_ = '\a';
+    value.rune_value = '\a';
     yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case 'b':
-    value.rune_value_ = '\b';
+    value.rune_value = '\b';
     yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case 'f':
-    value.rune_value_ = '\f';
+    value.rune_value = '\f';
     yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case 'n':
-    value.rune_value_ = '\n';
+    value.rune_value = '\n';
     yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case 'r':
-    value.rune_value_ = '\r';
+    value.rune_value = '\r';
     yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case 't':
-    value.rune_value_ = '\t';
+    value.rune_value = '\t';
     yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case 'v':
-    value.rune_value_ = '\v';
+    value.rune_value = '\v';
     yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case '\\':
-    value.rune_value_ = '\\';
+    value.rune_value = '\\';
     yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   case '\'':
-    value.rune_value_ = '\'';
+    value.rune_value = '\'';
     yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
     break;
   default:
@@ -387,7 +387,7 @@ ESCAPED \\[abfnrtv\\\"]
 
 '\\{OCTAL_DIGIT}{3}' {
   Value value;
-  value.rune_value_ = parseOctal (yylloc, yytext + 2);
+  value.rune_value = parseOctal (yylloc, yytext + 2);
   value.present = true;
   yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
   return LITERAL;
@@ -395,7 +395,7 @@ ESCAPED \\[abfnrtv\\\"]
 
 '\\x{HEXADECIMAL_DIGIT}{2}' {
   Value value;
-  value.rune_value_ = parseHex (yylloc, yytext + 3);
+  value.rune_value = parseHex (yylloc, yytext + 3);
   value.present = true;
   yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
   return LITERAL;
@@ -403,7 +403,7 @@ ESCAPED \\[abfnrtv\\\"]
 
 '\\u{HEXADECIMAL_DIGIT}{4}' {
   Value value;
-  value.rune_value_ = parseU4 (yylloc, yytext + 3);
+  value.rune_value = parseU4 (yylloc, yytext + 3);
   value.present = true;
   yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
   return LITERAL;
@@ -411,7 +411,7 @@ ESCAPED \\[abfnrtv\\\"]
 
 '\\U{HEXADECIMAL_DIGIT}{8}' {
   Value value;
-  value.rune_value_ = parseU8 (yylloc, yytext + 3);
+  value.rune_value = parseU8 (yylloc, yytext + 3);
   value.present = true;
   yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
   return LITERAL;
