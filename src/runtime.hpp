@@ -721,6 +721,19 @@ struct Noop : public Operation
 };
 
 Operation* make_conversion (Operation* c, const type::Type* from, const type::Type* to);
+
+struct Popn : public Operation
+{
+  Popn (Operation* c, size_t s) : child (c), size (s) { }
+  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual void dump () const
+  {
+    UNIMPLEMENTED;
+  }
+  Operation* const child;
+  size_t const size;
+};
+
 }
 
 #endif // RC_SRC_RUNTIME_HPP

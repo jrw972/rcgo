@@ -131,8 +131,11 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   void visit (ast_expression_statement_t& node)
   {
     node.VisitChildren (*this);
-    // TODO:  Add cleanup code so that something isn't left on the stack.
     node.operation = node.child ()->operation;
+    // Clean up the stack if necessary.
+    if (node.child ()->type->Size () != 0) {
+      node.operation = new Popn (node.operation, node.child ()->type->Size ());
+    }
   }
 
   void visit (ast_return_statement_t& node)

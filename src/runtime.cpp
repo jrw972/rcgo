@@ -3337,6 +3337,14 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
       UNIMPLEMENTED;
     }
 }
+
+  OpReturn
+  Popn::execute (executor_base_t& exec) const
+  {
+    OpReturn r = child->execute (exec);
+    exec.stack ().popn (size);
+    return r;
+  }
 }
 
 // void
