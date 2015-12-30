@@ -2,7 +2,9 @@
 
 #include <error.h>
 
+#include "ast.hpp"
 #include "ast_visitor.hpp"
+#include "ast_cast.hpp"
 #include "template.hpp"
 #include "callable.hpp"
 #include "symbol_visitor.hpp"
@@ -13,6 +15,7 @@
 #include "symbol.hpp"
 #include "action.hpp"
 #include "reaction.hpp"
+#include "bind.hpp"
 
 namespace semantic
 {
@@ -156,12 +159,12 @@ static const type::Type* comparable (const type::Type* left_type, const type::Ty
   return NULL;
 }
 
-static void process_comparable (const char* s, ast_binary_expr_t& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
+static void process_comparable (const char* s, Binary& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
 {
-  const type::Type*& left_type = node.left ()->type;
-  Value& left_value = node.left ()->value;
-  const type::Type*& right_type = node.right ()->type;
-  Value& right_value = node.right ()->value;
+  const type::Type*& left_type = node.left->type;
+  Value& left_value = node.left->value;
+  const type::Type*& right_type = node.right->type;
+  Value& right_value = node.right->value;
   const type::Type*& type = node.type;
   Value& value = node.value;
 
@@ -178,8 +181,8 @@ static void process_comparable (const char* s, ast_binary_expr_t& node, void (*f
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
         }
-      convert (node.left (), t);
-      convert (node.right (), t);
+      convert (node.left, t);
+      convert (node.right, t);
       type = Boolean::Instance ();
       func (value, t, left_value, right_value);
       return;
@@ -197,8 +200,8 @@ static void process_comparable (const char* s, ast_binary_expr_t& node, void (*f
     }
 
   const type::Type* in_type = Choose (left_type, right_type);
-  convert (node.left (), in_type);
-  convert (node.right (), in_type);
+  convert (node.left, in_type);
+  convert (node.right, in_type);
 
   if (comparable (in_type, in_type) == NULL)
     {
@@ -267,12 +270,12 @@ static const type::Type* orderable (const type::Type* left_type, const type::Typ
   return NULL;
 }
 
-static void process_orderable (const char* s, ast_binary_expr_t& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
+static void process_orderable (const char* s, Binary& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
 {
-  const type::Type*& left_type = node.left ()->type;
-  Value& left_value = node.left ()->value;
-  const type::Type*& right_type = node.right ()->type;
-  Value& right_value = node.right ()->value;
+  const type::Type*& left_type = node.left->type;
+  Value& left_value = node.left->value;
+  const type::Type*& right_type = node.right->type;
+  Value& right_value = node.right->value;
   const type::Type*& type = node.type;
   Value& value = node.value;
 
@@ -289,8 +292,8 @@ static void process_orderable (const char* s, ast_binary_expr_t& node, void (*fu
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
         }
-      convert (node.left (), t);
-      convert (node.right (), t);
+      convert (node.left, t);
+      convert (node.right, t);
       type = Boolean::Instance ();
       func (value, t, left_value, right_value);
       return;
@@ -308,8 +311,8 @@ static void process_orderable (const char* s, ast_binary_expr_t& node, void (*fu
     }
 
   const type::Type* in_type = Choose (left_type, right_type);
-  convert (node.left (), in_type);
-  convert (node.right (), in_type);
+  convert (node.left, in_type);
+  convert (node.right, in_type);
 
   if (orderable (in_type, in_type) == NULL)
     {
@@ -377,12 +380,12 @@ static const type::Type* arithmetic (const type::Type* left_type, const type::Ty
   return NULL;
 }
 
-static void process_arithmetic (const char* s, ast_binary_expr_t& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
+static void process_arithmetic (const char* s, Binary& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
 {
-  const type::Type*& left_type = node.left ()->type;
-  Value& left_value = node.left ()->value;
-  const type::Type*& right_type = node.right ()->type;
-  Value& right_value = node.right ()->value;
+  const type::Type*& left_type = node.left->type;
+  Value& left_value = node.left->value;
+  const type::Type*& right_type = node.right->type;
+  Value& right_value = node.right->value;
   const type::Type*& type = node.type;
   Value& value = node.value;
 
@@ -399,8 +402,8 @@ static void process_arithmetic (const char* s, ast_binary_expr_t& node, void (*f
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
         }
-      convert (node.left (), t);
-      convert (node.right (), t);
+      convert (node.left, t);
+      convert (node.right, t);
       type = t;
       func (value, t, left_value, right_value);
       return;
@@ -418,8 +421,8 @@ static void process_arithmetic (const char* s, ast_binary_expr_t& node, void (*f
     }
 
   const type::Type* in_type = Choose (left_type, right_type);
-  convert (node.left (), in_type);
-  convert (node.right (), in_type);
+  convert (node.left, in_type);
+  convert (node.right, in_type);
 
   if (arithmetic (in_type, in_type) == NULL)
     {
@@ -482,12 +485,12 @@ static const type::Type* integral (const type::Type* left_type, const type::Type
   return NULL;
 }
 
-static void process_integral (const char* s, ast_binary_expr_t& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
+static void process_integral (const char* s, Binary& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
 {
-  const type::Type*& left_type = node.left ()->type;
-  Value& left_value = node.left ()->value;
-  const type::Type*& right_type = node.right ()->type;
-  Value& right_value = node.right ()->value;
+  const type::Type*& left_type = node.left->type;
+  Value& left_value = node.left->value;
+  const type::Type*& right_type = node.right->type;
+  Value& right_value = node.right->value;
   const type::Type*& type = node.type;
   Value& value = node.value;
 
@@ -504,8 +507,8 @@ static void process_integral (const char* s, ast_binary_expr_t& node, void (*fun
                          left_type->ToString ().c_str (),
                          right_type->ToString ().c_str ());
         }
-      convert (node.left (), t);
-      convert (node.right (), t);
+      convert (node.left, t);
+      convert (node.right, t);
       type = t;
       func (value, t, left_value, right_value);
       return;
@@ -523,8 +526,8 @@ static void process_integral (const char* s, ast_binary_expr_t& node, void (*fun
     }
 
   const type::Type* in_type = Choose (left_type, right_type);
-  convert (node.left (), in_type);
-  convert (node.right (), in_type);
+  convert (node.left, in_type);
+  convert (node.right, in_type);
 
   if (integral (in_type, in_type) == NULL)
     {
@@ -549,83 +552,83 @@ static void process_integral (const char* s, ast_binary_expr_t& node, void (*fun
 }
 
 template <typename T>
-static void process_shift (ast_binary_expr_t& node)
+static void process_shift (Binary& node)
 {
-  if (!(is_typed_unsigned_integer (node.right ()->type) || is_untyped_numeric (node.right ()->type)))
+  if (!(is_typed_unsigned_integer (node.right->type) || is_untyped_numeric (node.right->type)))
     {
       error_at_line (-1, 0, node.location.File.c_str (),
                      node.location.Line,
                      "%s is not integral (E65)",
-                     node.right ()->type->ToString ().c_str ());
+                     node.right->type->ToString ().c_str ());
     }
 
-  if (node.right ()->value.present)
+  if (node.right->value.present)
     {
-      if (!node.right ()->value.representable (node.right ()->type, type::Uint::Instance ()))
+      if (!node.right->value.representable (node.right->type, type::Uint::Instance ()))
         {
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
                          "shift amount %s is not a uint (E90)",
-                         node.right ()->type->ToString ().c_str ());
+                         node.right->type->ToString ().c_str ());
         }
-      node.right ()->value.convert (node.right ()->type, type::Uint::Instance ());
-      node.right ()->type = type::Uint::Instance ();
+      node.right->value.convert (node.right->type, type::Uint::Instance ());
+      node.right->type = type::Uint::Instance ();
     }
 
-  if (!integral (node.left ()->type))
+  if (!integral (node.left->type))
     {
       error_at_line (-1, 0, node.location.File.c_str (),
                      node.location.Line,
                      "%s is not integral (E125)",
-                     node.left ()->type->ToString ().c_str ());
+                     node.left->type->ToString ().c_str ());
     }
 
-  node.type = node.left ()->type;
+  node.type = node.left->type;
 
-  if (node.left ()->value.present &&
-      node.right ()->value.present)
+  if (node.left->value.present &&
+      node.right->value.present)
     {
       node.value.present = true;
       switch (node.type->underlying_kind ())
         {
         case kUint8:
-          node.value.uint8_value = T () (node.left ()->value.uint8_value, node.right ()->value.uint_value);
+          node.value.uint8_value = T () (node.left->value.uint8_value, node.right->value.uint_value);
           break;
         case kUint16:
-          node.value.uint16_value = T () (node.left ()->value.uint16_value, node.right ()->value.uint_value);
+          node.value.uint16_value = T () (node.left->value.uint16_value, node.right->value.uint_value);
           break;
         case kUint32:
-          node.value.uint32_value = T () (node.left ()->value.uint32_value, node.right ()->value.uint_value);
+          node.value.uint32_value = T () (node.left->value.uint32_value, node.right->value.uint_value);
           break;
         case kUint64:
-          node.value.uint64_value = T () (node.left ()->value.uint64_value, node.right ()->value.uint_value);
+          node.value.uint64_value = T () (node.left->value.uint64_value, node.right->value.uint_value);
           break;
         case kInt8:
-          node.value.int8_value = T () (node.left ()->value.int8_value, node.right ()->value.uint_value);
+          node.value.int8_value = T () (node.left->value.int8_value, node.right->value.uint_value);
           break;
         case kInt16:
-          node.value.int16_value = T () (node.left ()->value.int16_value, node.right ()->value.uint_value);
+          node.value.int16_value = T () (node.left->value.int16_value, node.right->value.uint_value);
           break;
         case kInt32:
-          node.value.int32_value = T () (node.left ()->value.int32_value, node.right ()->value.uint_value);
+          node.value.int32_value = T () (node.left->value.int32_value, node.right->value.uint_value);
           break;
         case kInt64:
-          node.value.int64_value = T () (node.left ()->value.int64_value, node.right ()->value.uint_value);
+          node.value.int64_value = T () (node.left->value.int64_value, node.right->value.uint_value);
           break;
         case kUint:
-          node.value.uint_value = T () (node.left ()->value.uint_value, node.right ()->value.uint_value);
+          node.value.uint_value = T () (node.left->value.uint_value, node.right->value.uint_value);
           break;
         case kInt:
-          node.value.int_value = T () (node.left ()->value.int_value, node.right ()->value.uint_value);
+          node.value.int_value = T () (node.left->value.int_value, node.right->value.uint_value);
           break;
         case kUintptr:
-          node.value.uintptr_value = T () (node.left ()->value.uintptr_value, node.right ()->value.uint_value);
+          node.value.uintptr_value = T () (node.left->value.uintptr_value, node.right->value.uint_value);
           break;
         case kRune:
-          node.value.rune_value = T () (node.left ()->value.rune_value, node.right ()->value.uint_value);
+          node.value.rune_value = T () (node.left->value.rune_value, node.right->value.uint_value);
           break;
         case kInteger:
-          node.value.integer_value = T () (node.left ()->value.integer_value, node.right ()->value.uint_value);
+          node.value.integer_value = T () (node.left->value.integer_value, node.right->value.uint_value);
           break;
         default:
           TYPE_NOT_REACHED (*node.type);
@@ -633,12 +636,12 @@ static void process_shift (ast_binary_expr_t& node)
     }
 }
 
-static void process_logic_or (ast_binary_expr_t& node)
+static void process_logic_or (Binary& node)
 {
-  const type::Type*& left_type = node.left ()->type;
-  Value& left_value = node.left ()->value;
-  const type::Type*& right_type = node.right ()->type;
-  Value& right_value = node.right ()->value;
+  const type::Type*& left_type = node.left->type;
+  Value& left_value = node.left->value;
+  const type::Type*& right_type = node.right->type;
+  Value& right_value = node.right->value;
   const type::Type*& type = node.type;
   Value& value = node.value;
 
@@ -670,8 +673,8 @@ static void process_logic_or (ast_binary_expr_t& node)
     }
 
   const type::Type* in_type = Choose (left_type, right_type);
-  convert (node.left (), in_type);
-  convert (node.right (), in_type);
+  convert (node.left, in_type);
+  convert (node.right, in_type);
 
   if (in_type->underlying_kind () != kBool)
     {
@@ -699,12 +702,12 @@ static void process_logic_or (ast_binary_expr_t& node)
     }
 }
 
-static void process_logic_and (ast_binary_expr_t& node)
+static void process_logic_and (Binary& node)
 {
-  const type::Type*& left_type = node.left ()->type;
-  Value& left_value = node.left ()->value;
-  const type::Type*& right_type = node.right ()->type;
-  Value& right_value = node.right ()->value;
+  const type::Type*& left_type = node.left->type;
+  Value& left_value = node.left->value;
+  const type::Type*& right_type = node.right->type;
+  Value& right_value = node.right->value;
   const type::Type*& type = node.type;
   Value& value = node.value;
 
@@ -736,8 +739,8 @@ static void process_logic_and (ast_binary_expr_t& node)
     }
 
   const type::Type* in_type = Choose (left_type, right_type);
-  convert (node.left (), in_type);
-  convert (node.right (), in_type);
+  convert (node.left, in_type);
+  convert (node.right, in_type);
 
   if (in_type->underlying_kind () != kBool)
     {
@@ -768,41 +771,44 @@ static void process_logic_and (ast_binary_expr_t& node)
 // Determine the type of an expression.
 struct Visitor : public ast::DefaultVisitor
 {
+  decl::SymbolTable& symtab;
   ParameterSymbol* receiver_parameter;
 
-  Visitor () : receiver_parameter (NULL) { }
+  Visitor (decl::SymbolTable& st)
+    : symtab (st)
+    , receiver_parameter (NULL) { }
 
   void default_action (Node& node)
   {
     AST_NOT_REACHED (node);
   }
 
-  void visit (ast_call_expr_t& node)
+  void visit (CallExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
 
     // Collect the argument types.
     TypeList argument_types;
-    Node* args = node.args ();
-    for (Node::ConstIterator pos = args->Begin (), limit = args->End ();
+    List* args = node.args;
+    for (List::ConstIterator pos = args->begin (), limit = args->end ();
          pos != limit;
          ++pos)
       {
         argument_types.push_back ((*pos)->type);
       }
 
-    if (node.expr ()->temp != NULL)
+    if (node.expr->temp != NULL)
       {
-        node.callable = node.expr ()->temp->instantiate (argument_types);
-        node.expr ()->type = node.callable->type ();
+        node.callable = node.expr->temp->instantiate (argument_types);
+        node.expr->type = node.callable->type ();
       }
     else
       {
-        node.callable = node.expr ()->callable;
+        node.callable = node.expr->callable;
       }
 
-    node.function_type = type_cast<type::Function> (node.expr ()->type);
-    node.method_type = type_cast<type::Method> (node.expr ()->type);
+    node.function_type = type_cast<type::Function> (node.expr->type);
+    node.method_type = type_cast<type::Method> (node.expr->type);
 
     if (node.function_type)
       {
@@ -821,33 +827,33 @@ struct Visitor : public ast::DefaultVisitor
 
     if (node.callable != NULL)
       {
-        require_value_or_variable (node.expr ());
+        require_value_or_variable (node.expr);
         // TODO:  Merge check_references into check_types.
         node.callable->check_types (args);
-        node.callable->check_references (node.args ());
+        node.callable->check_references (node.args);
       }
     else
       {
-        node.field = node.expr ()->field;
+        node.field = node.expr->field;
         check_types_arguments (args, node.signature);
-        require_value_or_variable (node.expr ());
-        require_value_or_variable_list (node.args ());
+        require_value_or_variable (node.expr);
+        require_value_or_variable_list (node.args);
       }
 
     node.type = node.return_parameter->type;
     node.expression_kind = kValue;
   }
 
-  void visit (ast_conversion_expr_t& node)
+  void visit (ConversionExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
 
-    require_type (node.type_expr ());
-    require_value_or_variable (node.expr ());
+    require_type (node.type_expr);
+    require_value_or_variable (node.expr);
 
-    const type::Type* to = node.type_expr ()->type;
-    const type::Type*& from = node.expr ()->type;
-    Value& x = node.expr ()->value;
+    const type::Type* to = node.type_expr->type;
+    const type::Type*& from = node.expr->type;
+    Value& x = node.expr->value;
 
     if (x.present)
       {
@@ -929,22 +935,22 @@ struct Visitor : public ast::DefaultVisitor
     node.expression_kind = kValue;
   }
 
-  void visit (ast_list_expr_t& node)
+  void visit (ListExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_literal_expr_t& node)
+  void visit (LiteralExpr& node)
   {
     assert (node.value.present);
     node.expression_kind = kValue;
   }
 
-  void visit (ast_identifier_expr_t& node)
+  void visit (IdentifierExpr& node)
   {
-    Node *identifier_node = node.child ();
-    const std::string& identifier = ast_get_identifier (identifier_node);
-    node.symbol = node.FindGlobalSymbol (identifier);
+    Identifier *identifier_node = node.child;
+    const std::string& identifier = identifier_node->identifier;
+    node.symbol = symtab.find_global_symbol (identifier);
     if (node.symbol == NULL)
       {
         error_at_line (-1, 0, identifier_node->location.File.c_str (),
@@ -954,9 +960,9 @@ struct Visitor : public ast::DefaultVisitor
 
     struct visitor : public ConstSymbolVisitor
     {
-      ast_identifier_expr_t& node;
+      IdentifierExpr& node;
 
-      visitor (ast_identifier_expr_t& n)
+      visitor (IdentifierExpr& n)
         : node (n)
       { }
 
@@ -1023,31 +1029,31 @@ struct Visitor : public ast::DefaultVisitor
     node.symbol->accept (v);
   }
 
-  void visit (ast_unary_arithmetic_expr_t& node)
+  void visit (UnaryArithmeticExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
     switch (node.arithmetic)
       {
       case LogicNot:
       {
-        if (!(is_any_boolean (node.child ()->type)))
+        if (!(is_any_boolean (node.child->type)))
           {
             error_at_line (-1, 0, node.location.File.c_str (),
                            node.location.Line,
                            "! cannot be applied to %s (E158)",
-                           node.child ()->type->ToString ().c_str ());
+                           node.child->type->ToString ().c_str ());
           }
-        node.type = node.child ()->type;
-        if (node.child ()->value.present)
+        node.type = node.child->type;
+        if (node.child->value.present)
           {
             node.value.present = true;
             switch (node.type->underlying_kind ())
               {
               case kBool:
-                node.value.bool_value = !node.child ()->value.bool_value;
+                node.value.bool_value = !node.child->value.bool_value;
                 break;
               case kBoolean:
-                node.value.boolean_value = !node.child ()->value.boolean_value;
+                node.value.boolean_value = !node.child->value.boolean_value;
                 break;
               default:
                 NOT_REACHED;
@@ -1059,76 +1065,76 @@ struct Visitor : public ast::DefaultVisitor
         UNIMPLEMENTED;
       case Negate:
       {
-        if (!(is_typed_numeric (node.child ()->type) ||
-              is_untyped_numeric (node.child ()->type)))
+        if (!(is_typed_numeric (node.child->type) ||
+              is_untyped_numeric (node.child->type)))
           {
             error_at_line (-1, 0, node.location.File.c_str (),
                            node.location.Line,
                            "- cannot be applied to %s (E159)",
-                           node.child ()->type->ToString ().c_str ());
+                           node.child->type->ToString ().c_str ());
           }
-        node.type = node.child ()->type;
-        if (node.child ()->value.present)
+        node.type = node.child->type;
+        if (node.child->value.present)
           {
             node.value.present = true;
             switch (node.type->underlying_kind ())
               {
               case kUint8:
-                node.value.uint8_value = -node.child ()->value.uint8_value;
+                node.value.uint8_value = -node.child->value.uint8_value;
                 break;
               case kUint16:
-                node.value.uint16_value = -node.child ()->value.uint16_value;
+                node.value.uint16_value = -node.child->value.uint16_value;
                 break;
               case kUint32:
-                node.value.uint32_value = -node.child ()->value.uint32_value;
+                node.value.uint32_value = -node.child->value.uint32_value;
                 break;
               case kUint64:
-                node.value.uint32_value = -node.child ()->value.uint32_value;
+                node.value.uint32_value = -node.child->value.uint32_value;
                 break;
               case kInt8:
-                node.value.int8_value = -node.child ()->value.int8_value;
+                node.value.int8_value = -node.child->value.int8_value;
                 break;
               case kInt16:
-                node.value.int16_value = -node.child ()->value.int16_value;
+                node.value.int16_value = -node.child->value.int16_value;
                 break;
               case kInt32:
-                node.value.int32_value = -node.child ()->value.int32_value;
+                node.value.int32_value = -node.child->value.int32_value;
                 break;
               case kInt64:
-                node.value.int64_value = -node.child ()->value.int64_value;
+                node.value.int64_value = -node.child->value.int64_value;
                 break;
               case kFloat32:
-                node.value.float32_value = -node.child ()->value.float32_value;
+                node.value.float32_value = -node.child->value.float32_value;
                 break;
               case kFloat64:
-                node.value.float64_value = -node.child ()->value.float64_value;
+                node.value.float64_value = -node.child->value.float64_value;
                 break;
               case kComplex64:
-                node.value.complex64_value = -node.child ()->value.complex64_value;
+                node.value.complex64_value = -node.child->value.complex64_value;
                 break;
               case kComplex128:
-                node.value.complex128_value = -node.child ()->value.complex128_value;
+                node.value.complex128_value = -node.child->value.complex128_value;
                 break;
               case kUint:
-                node.value.uint_value = -node.child ()->value.uint_value;
+                node.value.uint_value = -node.child->value.uint_value;
                 break;
               case kInt:
-                node.value.int_value = -node.child ()->value.int_value;
+                node.value.int_value = -node.child->value.int_value;
                 break;
               case kUintptr:
-                node.value.uintptr_value = -node.child ()->value.uintptr_value;
+                node.value.uintptr_value = -node.child->value.uintptr_value;
                 break;
               case kRune:
-                node.value.rune_value = -node.child ()->value.rune_value;
+                node.value.rune_value = -node.child->value.rune_value;
                 break;
               case kInteger:
-                node.value.integer_value = -node.child ()->value.integer_value;
+                node.value.integer_value = -node.child->value.integer_value;
                 break;
               case kFloat:
-                node.value.float_value = -node.child ()->value.float_value;
+                node.value.float_value = -node.child->value.float_value;
                 break;
               case kComplex:
-                node.value.complex_value = -node.child ()->value.complex_value;
+                node.value.complex_value = -node.child->value.complex_value;
                 break;
               default:
                 NOT_REACHED;
@@ -1140,13 +1146,13 @@ struct Visitor : public ast::DefaultVisitor
         UNIMPLEMENTED;
       }
 
-    require_value_or_variable (node.child ());
+    require_value_or_variable (node.child);
     node.expression_kind = kValue;
   }
 
-  void visit (ast_binary_arithmetic_expr_t& node)
+  void visit (BinaryArithmeticExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
     switch (node.arithmetic)
       {
       case Multiply:
@@ -1208,14 +1214,14 @@ struct Visitor : public ast::DefaultVisitor
         break;
       }
 
-    require_value_or_variable (node.left ());
-    require_value_or_variable (node.left ());
+    require_value_or_variable (node.left);
+    require_value_or_variable (node.left);
     node.expression_kind = kValue;
   }
 
   void visit (SourceFile& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
   void visit (ast::Type& node)
@@ -1223,37 +1229,49 @@ struct Visitor : public ast::DefaultVisitor
     // Do nothing.
   }
 
-  void visit (ast_instance_t& node)
+  void visit (Instance& node)
   {
     // Check the arguments.
-    node.expression_list ()->Accept (*this);
-    check_types_arguments (node.expression_list (), node.symbol->initializer->initializerType->signature);
-    require_value_or_variable_list (node.expression_list ());
+    node.expression_list->accept (*this);
+    check_types_arguments (node.expression_list, node.symbol->initializer->initializerType->signature);
+    require_value_or_variable_list (node.expression_list);
   }
 
-  void visit (ast_initializer_t& node)
+  void visit (ast::Initializer& node)
   {
+    symtab.open_scope ();
+    symtab.enter_symbol (node.initializer->receiver_parameter ());
+    symtab.enter_signature (node.initializer->signature ());
+    symtab.enter_symbol (node.initializer->return_parameter ());
     receiver_parameter = node.initializer->initializerType->receiver_parameter;
-    node.body ()->Accept (*this);
+    node.body->accept (*this);
+    symtab.close_scope ();
   }
 
-  void visit (ast_getter_t& node)
+  void visit (ast::Getter& node)
   {
+    symtab.open_scope ();
+    symtab.enter_symbol (node.getter->receiver_parameter ());
+    symtab.enter_signature (node.getter->signature ());
+    symtab.enter_symbol (node.getter->return_parameter ());
     receiver_parameter = node.getter->getterType->receiver_parameter;
-    node.body ()->Accept (*this);
+    node.body->accept (*this);
+    symtab.close_scope ();
   }
 
-  void visit (ast_action_t& node)
+  void visit (ast::Action& node)
   {
-    receiver_parameter = node.receiver_symbol;
-    node.precondition ()->Accept (*this);
-    check_condition (node.precondition ());
-    node.body ()->Accept (*this);
-    node.action->precondition = node.precondition ();
+    symtab.open_scope ();
+    symtab.enter_symbol (node.action->receiver_parameter);
+    receiver_parameter = node.action->receiver_parameter;
+    node.precondition->accept (*this);
+    check_condition (node.precondition);
+    node.body->accept (*this);
+    node.action->precondition = node.precondition;
 
-    if (node.precondition ()->value.present)
+    if (node.precondition->value.present)
       {
-        if (node.precondition ()->value.bool_value)
+        if (node.precondition->value.bool_value)
           {
             node.action->precondition_kind = decl::Action::StaticTrue;
           }
@@ -1262,19 +1280,24 @@ struct Visitor : public ast::DefaultVisitor
             node.action->precondition_kind = decl::Action::StaticFalse;
           }
       }
+    symtab.close_scope ();
   }
 
-  void visit (ast_dimensioned_action_t& node)
+  void visit (DimensionedAction& node)
   {
-    receiver_parameter = node.receiver_symbol;
-    node.precondition ()->Accept (*this);
-    check_condition (node.precondition ());
-    node.body ()->Accept (*this);
-    node.action->precondition = node.precondition ();
+    symtab.open_scope ();
+    symtab.enter_symbol (node.action->receiver_parameter);
+    symtab.enter_symbol (node.action->iota_parameter);
 
-    if (node.precondition ()->value.present)
+    receiver_parameter = node.action->receiver_parameter;
+    node.precondition->accept (*this);
+    check_condition (node.precondition);
+    node.body->accept (*this);
+    node.action->precondition = node.precondition;
+
+    if (node.precondition->value.present)
       {
-        if (node.precondition ()->value.bool_value)
+        if (node.precondition->value.bool_value)
           {
             node.action->precondition_kind = decl::Action::StaticTrue;
           }
@@ -1283,154 +1306,189 @@ struct Visitor : public ast::DefaultVisitor
             node.action->precondition_kind = decl::Action::StaticFalse;
           }
       }
+    symtab.close_scope ();
   }
 
-  void visit (ast_reaction_t& node)
+  void visit (Reaction& node)
   {
+    symtab.open_scope ();
+    symtab.enter_symbol (node.reaction->receiver);
+    symtab.enter_signature (node.reaction->signature ());
+    // No return type.
+
     receiver_parameter = node.reaction->reaction_type->receiver_parameter;
-    node.body ()->Accept (*this);
+    node.body->accept (*this);
+    symtab.close_scope ();
   }
 
-  void visit (ast_dimensioned_reaction_t& node)
+  void visit (DimensionedReaction& node)
   {
+    symtab.open_scope ();
+    symtab.enter_symbol (node.reaction->receiver);
+    symtab.enter_symbol (node.reaction->iota);
+    symtab.enter_signature (node.reaction->signature ());
+
+    // No return type.
+
     receiver_parameter = node.reaction->reaction_type->receiver_parameter;
-    node.body ()->Accept (*this);
+    node.body->accept (*this);
+    symtab.close_scope ();
   }
 
-  void visit (ast_bind_t& node)
+  void visit (Bind& node)
   {
-    node.body ()->Accept (*this);
+    symtab.open_scope ();
+    symtab.enter_symbol (node.bind->receiver_parameter);
+    node.body->accept (*this);
+    symtab.close_scope ();
   }
 
-  void visit (ast_function_t& node)
+  void visit (ast::Function& node)
   {
-    node.body ()->Accept (*this);
+    symtab.open_scope ();
+    symtab.enter_signature (node.function->signature ());
+    symtab.enter_symbol (node.function->return_parameter ());
+    node.body->accept (*this);
+    symtab.close_scope ();
   }
 
-  void visit (ast_method_t& node)
+  void visit (ast::Method& node)
   {
+    symtab.open_scope ();
+    symtab.enter_symbol (node.method->receiver_parameter ());
+    symtab.enter_signature (node.method->signature ());
+    symtab.enter_symbol (node.method->return_parameter ());
     receiver_parameter = node.method->methodType->receiver_parameter;
-    node.body ()->Accept (*this);
+    node.body->accept (*this);
+    symtab.close_scope ();
   }
 
-  void visit (ast_list_statement_t& node)
+  void visit (ListStatement& node)
   {
-    node.VisitChildren (*this);
+    symtab.open_scope ();
+    node.visit_children (*this);
+    symtab.close_scope ();
   }
 
-  void visit (ast_expression_statement_t& node)
+  void visit (ExpressionStatement& node)
   {
-    node.VisitChildren (*this);
-    require_value_or_variable (node.child ());
+    node.visit_children (*this);
+    require_value_or_variable (node.child);
   }
 
-  void visit (ast_return_statement_t& node)
+  void visit (ReturnStatement& node)
   {
     // Check the expression.
-    node.VisitChildren (*this);
+    node.visit_children (*this);
 
     // Get the return symbol.
-    node.return_symbol = SymbolCast<ParameterSymbol> (node.FindGlobalSymbol (ReturnSymbol));
+    node.return_symbol = SymbolCast<ParameterSymbol> (symtab.find_global_symbol (ReturnSymbol));
     assert (node.return_symbol != NULL);
 
-    if (!assignable (node.child ()->type, node.child ()->value, node.return_symbol->type))
+    if (!assignable (node.child->type, node.child->value, node.return_symbol->type))
       {
         error_at_line (-1, 0, node.location.File.c_str (),
                        node.location.Line, "cannot convert %s to %s in return (E160)",
-                       node.child ()->type->ToString ().c_str (), node.return_symbol->type->ToString ().c_str ());
+                       node.child->type->ToString ().c_str (), node.return_symbol->type->ToString ().c_str ());
       }
-    convert (node.child (), node.return_symbol->type);
+    convert (node.child, node.return_symbol->type);
 
-    require_value_or_variable (node.child ());
+    require_value_or_variable (node.child);
   }
 
-  void visit (ast_if_statement_t& node)
+  void visit (IfStatement& node)
   {
-    node.VisitChildren (*this);
-    check_condition (node.condition ());
+    node.visit_children (*this);
+    check_condition (node.condition);
   }
 
-  void visit (ast_while_statement_t& node)
+  void visit (WhileStatement& node)
   {
-    node.VisitChildren (*this);
-    check_condition (node.condition ());
+    node.visit_children (*this);
+    check_condition (node.condition);
   }
 
-  void visit (ast_for_iota_statement_t& node)
+  void visit (ForIotaStatement& node)
   {
-    const std::string& identifier = ast_get_identifier (node.identifier ());
-    node.limit = process_array_dimension (node.limit_node ());
-    node.symbol = new VariableSymbol (identifier, node.identifier (), Int::Instance (), Immutable, Immutable);
-    enter_symbol (node, node.symbol);
-    node.body ()->Accept (*this);
+    const std::string& identifier = node.identifier->identifier;
+    node.limit = process_array_dimension (node.limit_node);
+    node.symbol = new VariableSymbol (identifier, node.identifier->location, Int::Instance (), Immutable, Immutable);
+    symtab.open_scope ();
+    symtab.enter_symbol (node.symbol);
+    node.body->accept (*this);
+    symtab.close_scope ();
   }
 
-  void visit (ast_change_statement_t& node)
+  void visit (ChangeStatement& node)
   {
-    node.expr ()->Accept (*this);
+    node.expr->accept (*this);
 
-    const type::Type* root_type = type_change (node.expr ()->type);
+    const type::Type* root_type = type_change (node.expr->type);
     if (root_type == NULL)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "cannot change expression of type %s (E96)", node.expr ()->type->ToString ().c_str ());
+                       "cannot change expression of type %s (E96)", node.expr->type->ToString ().c_str ());
       }
 
-    require_value_or_variable (node.expr ());
+    require_value_or_variable (node.expr);
 
     // Enter all parameters and variables in scope that are pointers as pointers to foreign.
-    node.Change ();
+    symtab.open_scope ();
+    symtab.change ();
 
     // Enter the new heap root.
-    const std::string& identifier = ast_get_identifier (node.identifier ());
+    const std::string& identifier = node.identifier->identifier;
     // Don't know dereference mutability yet.
-    VariableSymbol* symbol = new VariableSymbol (identifier, &node, root_type, Immutable, Foreign);
-    node.root_symbol = enter_symbol (node, symbol);
+    node.root_symbol = new VariableSymbol (identifier, node.location, root_type, Immutable, Foreign);
+    symtab.enter_symbol (node.root_symbol);
 
     // Check the body.
-    node.body ()->Accept (*this);
+    node.body->accept (*this);
+    symtab.close_scope ();
   }
 
-  void visit (ast_activate_statement_t& node)
+  void visit (ActivateStatement& node)
   {
     // Check the activations.
-    node.expr_list ()->Accept (*this);
+    node.expr_list->accept (*this);
     // Re-insert this as a pointer to mutable.
-    node.Activate ();
+    symtab.open_scope ();
+    symtab.activate ();
     // Check the body.
-    node.body ()->Accept (*this);
+    node.body->accept (*this);
+    symtab.close_scope ();
   }
 
-  void visit (ast_const_t& node)
+  void visit (Const& node)
   {
     if (!node.done)
       {
-        process_types_and_constants (&node);
+        process_types_and_constants (&node, symtab);
       }
   }
 
-  void visit (ast_empty_statement_t& node)
+  void visit (EmptyStatement& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_var_statement_t& node)
+  void visit (VarStatement& node)
   {
-    ast::Node* identifier_list = node.identifier_list ();
-    ast::Node* type_spec = node.type_spec ();
-    ast::Node* expression_list = node.expression_list ();
+    ast::List* identifier_list = node.identifier_list;
+    ast::Node* type_spec = node.type_spec;
+    ast::List* expression_list = node.expression_list;
 
-    if (expression_list->Size () != 0 &&
-        identifier_list->Size () != expression_list->Size ())
+    if (expression_list->size () != 0 &&
+        identifier_list->size () != expression_list->size ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "wrong number of initializers (E184)");
       }
 
     // Process the type spec.
-    const type::Type* type = process_type (type_spec, true);
+    const type::Type* type = process_type (type_spec, symtab, true);
 
-    if (expression_list->Size () == 0)
+    if (expression_list->size () == 0)
       {
         // Type, no expressions.
 
@@ -1442,14 +1500,15 @@ struct Visitor : public ast::DefaultVisitor
           }
 
         // Enter each symbol.
-        for (Node::Iterator id_pos = identifier_list->Begin (),
-             id_limit = identifier_list->End ();
+        for (List::ConstIterator id_pos = identifier_list->begin (),
+             id_limit = identifier_list->end ();
              id_pos != id_limit;
              ++id_pos)
           {
-            const std::string& name = ast_get_identifier (*id_pos);
-            VariableSymbol* symbol = new VariableSymbol (name, *id_pos, type, node.mutability, node.dereferenceMutability);
-            node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
+            const std::string& name = ast_cast<Identifier> (*id_pos)->identifier;
+            VariableSymbol* symbol = new VariableSymbol (name, (*id_pos)->location, type, node.mutability, node.dereferenceMutability);
+            symtab.enter_symbol (symbol);
+            node.symbols.push_back (symbol);
           }
 
         return;
@@ -1460,14 +1519,14 @@ struct Visitor : public ast::DefaultVisitor
         // Type, expressions.
 
         // Enter each symbol.
-        for (Node::Iterator id_pos = identifier_list->Begin (),
-             id_limit = identifier_list->End (),
-             init_pos = expression_list->Begin ();
+        for (List::ConstIterator id_pos = identifier_list->begin (),
+             id_limit = identifier_list->end (),
+             init_pos = expression_list->begin ();
              id_pos != id_limit;
              ++id_pos, ++init_pos)
           {
             Node* n = *init_pos;
-            n->Accept (*this);
+            n->accept (*this);
 
             if (!assignable (n->type, n->value, type))
               {
@@ -1477,9 +1536,10 @@ struct Visitor : public ast::DefaultVisitor
             convert (n, type);
             require_value_or_variable (n);
 
-            const std::string& name = ast_get_identifier (*id_pos);
-            VariableSymbol* symbol = new VariableSymbol (name, *id_pos, type, node.intrinsic_mutability, node.dereferenceMutability);
-            node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
+            const std::string& name = ast_cast<Identifier> (*id_pos)->identifier;
+            VariableSymbol* symbol = new VariableSymbol (name, (*id_pos)->location, type, node.intrinsic_mutability, node.dereferenceMutability);
+            symtab.enter_symbol (symbol);
+            node.symbols.push_back (symbol);
           }
 
         return;
@@ -1488,14 +1548,14 @@ struct Visitor : public ast::DefaultVisitor
     // No type, expressions.
 
     // Enter each symbol.
-    for (Node::Iterator id_pos = identifier_list->Begin (),
-         id_limit = identifier_list->End (),
-         init_pos = expression_list->Begin ();
+    for (List::ConstIterator id_pos = identifier_list->begin (),
+         id_limit = identifier_list->end (),
+         init_pos = expression_list->begin ();
          id_pos != id_limit;
          ++id_pos, ++init_pos)
       {
         Node* n = *init_pos;
-        n->Accept (*this);
+        n->accept (*this);
 
         if (n->type->IsUntyped ())
           {
@@ -1504,18 +1564,19 @@ struct Visitor : public ast::DefaultVisitor
           }
         require_value_or_variable (n);
 
-        const std::string& name = ast_get_identifier (*id_pos);
-        VariableSymbol* symbol = new VariableSymbol (name, *id_pos, n->type, node.intrinsic_mutability, node.dereferenceMutability);
-        node.symbols.push_back (enter_symbol (*node.GetParent (), symbol));
+        const std::string& name = ast_cast<Identifier> (*id_pos)->identifier;
+        VariableSymbol* symbol = new VariableSymbol (name, (*id_pos)->location, n->type, node.intrinsic_mutability, node.dereferenceMutability);
+        symtab.enter_symbol (symbol);
+        node.symbols.push_back (symbol);
       }
   }
 
-  void visit (ast_assign_statement_t& node)
+  void visit (AssignStatement& node)
   {
-    node.VisitChildren (*this);
-    const type::Type* to = node.left ()->type;
-    const type::Type*& from = node.right ()->type;
-    Value& val = node.right ()->value;
+    node.visit_children (*this);
+    const type::Type* to = node.left->type;
+    const type::Type*& from = node.right->type;
+    Value& val = node.right->value;
     if (!assignable (from, val, to))
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -1523,18 +1584,18 @@ struct Visitor : public ast::DefaultVisitor
                        from->ToString ().c_str (),
                        to->ToString ().c_str ());
       }
-    convert (node.right (), to);
-    require_variable (node.left ());
-    require_value_or_variable (node.right ());
+    convert (node.right, to);
+    require_variable (node.left);
+    require_value_or_variable (node.right);
   }
 
-  void visit (ast_add_assign_statement_t& node)
+  void visit (AddAssignStatement& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
 
-    const type::Type* to = node.left ()->type;
-    const type::Type*& from = node.right ()->type;
-    Value& val = node.right ()->value;
+    const type::Type* to = node.left->type;
+    const type::Type*& from = node.right->type;
+    Value& val = node.right->value;
     if (!arithmetic (to))
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -1548,47 +1609,47 @@ struct Visitor : public ast::DefaultVisitor
                        from->ToString ().c_str (),
                        to->ToString ().c_str ());
       }
-    convert (node.right (), to);
-    require_variable (node.left ());
-    require_value_or_variable (node.right ());
+    convert (node.right, to);
+    require_variable (node.left);
+    require_value_or_variable (node.right);
   }
 
-  void visit (ast_increment_statement_t& node)
+  void visit (IncrementStatement& node)
   {
-    node.VisitChildren (*this);
-    if (!arithmetic (node.child ()->type))
+    node.visit_children (*this);
+    if (!arithmetic (node.child->type))
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "++ cannot be applied to %s (E77)",
-                       node.child ()->type->ToString ().c_str ());
+                       node.child->type->ToString ().c_str ());
       }
-    require_variable (node.child ());
+    require_variable (node.child);
   }
 
-  void visit (ast_bind_push_port_statement_t& node)
+  void visit (BindPushPortStatement& node)
   {
-    node.VisitChildren (*this);
-    bind (node, node.left (), node.right ());
+    node.visit_children (*this);
+    bind (node, node.left, node.right);
   }
 
-  void visit (ast_bind_push_port_param_statement_t& node)
+  void visit (BindPushPortParamStatement& node)
   {
-    node.VisitChildren (*this);
-    const reaction_t* reaction = bind (node, node.left (), node.right ());
+    node.visit_children (*this);
+    const reaction_t* reaction = bind (node, node.left, node.right);
     if (!reaction->has_dimension ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "parameter specified for non-parameterized reaction (E41)");
       }
     type::Int::ValueType dimension = reaction->dimension ();
-    check_array_index (reaction->reaction_type->GetArray (dimension), node.param (), false);
+    check_array_index (reaction->reaction_type->GetArray (dimension), node.param, false);
   }
 
-  void visit (ast_bind_pull_port_statement_t& node)
+  void visit (BindPullPortStatement& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
 
-    const type::Function* pull_port_type = type_cast<type::Function> (node.left ()->type);
+    const type::Function* pull_port_type = type_cast<type::Function> (node.left->type);
 
     if (pull_port_type == NULL || pull_port_type->function_kind != type::Function::PULL_PORT)
       {
@@ -1596,9 +1657,9 @@ struct Visitor : public ast::DefaultVisitor
                        "target of bind is not a pull port (E193)");
       }
 
-    require_variable (node.left ());
+    require_variable (node.left);
 
-    const type::Method* getter_type = type_cast<type::Method> (node.right ()->type);
+    const type::Method* getter_type = type_cast<type::Method> (node.right->type);
 
     if (getter_type == NULL || getter_type->method_kind != type::Method::GETTER)
       {
@@ -1606,7 +1667,7 @@ struct Visitor : public ast::DefaultVisitor
                        "source of bind is not a getter (E192)");
       }
 
-    require_variable (node.right ());
+    require_variable (node.right);
 
     type::Function g (type::Function::FUNCTION, getter_type->signature, getter_type->return_parameter);
     if (!type_is_equal (pull_port_type, &g))
@@ -1616,35 +1677,35 @@ struct Visitor : public ast::DefaultVisitor
       }
   }
 
-  void visit (ast_dereference_expr_t& node)
+  void visit (DereferenceExpr& node)
   {
-    node.VisitChildren (*this);
-    const type::Type* t = node.child ()->type;
+    node.visit_children (*this);
+    const type::Type* t = node.child->type;
     const Pointer* p = type_cast<Pointer> (t->UnderlyingType ());
     if (p == NULL)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "* cannot be applied to %s (E21)", t->ToString ().c_str ());
       }
-    require_value_or_variable (node.child ());
+    require_value_or_variable (node.child);
     node.type = p->Base ();
     node.expression_kind = kVariable;
   }
 
-  void visit (ast_address_of_expr_t& node)
+  void visit (AddressOfExpr& node)
   {
-    node.VisitChildren (*this);
-    require_variable (node.child ());
-    node.type = node.child ()->type->GetPointer ();
+    node.visit_children (*this);
+    require_variable (node.child);
+    node.type = node.child->type->GetPointer ();
     node.expression_kind = kValue;
   }
 
-  void visit (ast_select_expr_t& node)
+  void visit (SelectExpr& node)
   {
-    const std::string& identifier = ast_get_identifier (node.identifier ());
-    node.base ()->Accept (*this);
-    const type::Type* base_type = node.base ()->type;
-    require_value_or_variable (node.base ());
+    const std::string& identifier = node.identifier->identifier;
+    node.base->accept (*this);
+    const type::Type* base_type = node.base->type;
+    require_value_or_variable (node.base);
 
     if (type_dereference (base_type))
       {
@@ -1654,7 +1715,7 @@ struct Visitor : public ast::DefaultVisitor
     else
       {
         // Otherwise, use the base kind.
-        node.expression_kind = node.base ()->expression_kind;
+        node.expression_kind = node.base->expression_kind;
       }
 
     node.field = base_type->select_field (identifier);
@@ -1728,21 +1789,21 @@ struct Visitor : public ast::DefaultVisitor
     require_value_or_variable (index);
   }
 
-  void visit (ast_index_expr_t& node)
+  void visit (IndexExpr& node)
   {
-    node.VisitChildren (*this);
-    const type::Type* base_type = node.base ()->type;
-    Node* index_node = node.index ();
+    node.visit_children (*this);
+    const type::Type* base_type = node.base->type;
+    Node* index_node = node.index;
     Value& index_value = index_node->value;
-    const type::Type*& index_type = node.index ()->type;
+    const type::Type*& index_type = node.index->type;
 
     node.array_type = type_cast<Array> (base_type->UnderlyingType ());
     if (node.array_type != NULL)
       {
-        check_array_index (node.array_type, node.index (), false);
-        require_value_or_variable (node.base ());
+        check_array_index (node.array_type, node.index, false);
+        require_value_or_variable (node.base);
         node.type = node.array_type->Base ();
-        node.expression_kind = node.base ()->expression_kind;
+        node.expression_kind = node.base->expression_kind;
         return;
       }
 
@@ -1783,8 +1844,8 @@ struct Visitor : public ast::DefaultVisitor
                            "slice index is not an integer (E205)");
           }
 
-        require_value_or_variable (node.base ());
-        require_value_or_variable (node.index ());
+        require_value_or_variable (node.base);
+        require_value_or_variable (node.index);
 
         node.type = node.slice_type->Base ();
         node.expression_kind = kVariable;
@@ -1796,15 +1857,15 @@ struct Visitor : public ast::DefaultVisitor
                    base_type->ToString ().c_str ());
   }
 
-  void visit (ast_slice_expr_t& node)
+  void visit (SliceExpr& node)
   {
-    node.VisitChildren (*this);
-    Node* base = node.base ();
-    const type::Type* base_type = node.base ()->type;
-    Node* low_node = node.low ();
+    node.visit_children (*this);
+    Node* base = node.base;
+    const type::Type* base_type = node.base->type;
+    Node* low_node = node.low;
     const type::Type*& low_type = low_node->type;
     Value& low_value = low_node->value;
-    Node* high_node = node.high ();
+    Node* high_node = node.high;
     const type::Type*& high_type = high_node->type;
     Value& high_value = high_node->value;
 
@@ -1857,14 +1918,14 @@ struct Visitor : public ast::DefaultVisitor
 
   void visit (TypeExpression& node)
   {
-    node.type = process_type (node.type_spec (), true);
+    node.type = process_type (node.type_spec, symtab, true);
     node.expression_kind = kType;
   }
 
-  void visit (ast_push_port_call_expr_t& node)
+  void visit (PushPortCallExpr& node)
   {
     node.receiver_parameter = receiver_parameter;
-    const std::string& port_identifier = ast_get_identifier (node.identifier ());
+    const std::string& port_identifier = node.identifier->identifier;
     const type::Type* this_type = receiver_parameter->type;
     node.field = this_type->select_field (port_identifier);
     if (node.field == NULL)
@@ -1879,15 +1940,15 @@ struct Visitor : public ast::DefaultVisitor
                        "no port named %s (E195)", port_identifier.c_str ());
       }
 
-    node.args ()->Accept (*this);
-    check_types_arguments (node.args (), push_port_type->GetSignature ());
-    require_value_or_variable_list (node.args ());
+    node.args->accept (*this);
+    check_types_arguments (node.args, push_port_type->GetSignature ());
+    require_value_or_variable_list (node.args);
   }
 
-  void visit (ast_indexed_port_call_expr_t& node)
+  void visit (IndexedPushPortCallExpr& node)
   {
     node.receiver_parameter = receiver_parameter;
-    const std::string& port_identifier = ast_get_identifier (node.identifier ());
+    const std::string& port_identifier = node.identifier->identifier;
     const type::Type* this_type = receiver_parameter->type;
     node.field = this_type->select_field (port_identifier);
     if (node.field == NULL)
@@ -1908,25 +1969,25 @@ struct Visitor : public ast::DefaultVisitor
                        "%s is not an array of ports (E17)", port_identifier.c_str ());
       }
 
-    node.index ()->Accept (*this);
-    check_array_index (node.array_type, node.index (), false);
+    node.index->accept (*this);
+    check_array_index (node.array_type, node.index, false);
 
-    node.args ()->Accept (*this);
-    check_types_arguments (node.args (), push_port_type->GetSignature ());
-    require_value_or_variable_list (node.args ());
+    node.args->accept (*this);
+    check_types_arguments (node.args, push_port_type->GetSignature ());
+    require_value_or_variable_list (node.args);
   }
 
-  void visit (ast_composite_literal_t& node)
+  void visit (CompositeLiteral& node)
   {
-    node.type = process_type (node.literal_type (), true);
+    node.type = process_type (node.literal_type, symtab, true);
     node.expression_kind = kVariable;
 
     switch (node.type->underlying_kind ())
       {
       case kStruct:
       {
-        for (ast::Node::Iterator pos = node.literal_value ()->Begin (),
-             limit = node.literal_value ()->End ();
+        for (List::ConstIterator pos = node.literal_value->begin (),
+             limit = node.literal_value->end ();
              pos != limit;
              ++pos)
           {
@@ -1952,18 +2013,16 @@ struct Visitor : public ast::DefaultVisitor
 };
 }
 
-void check_types_arguments (ast::Node* node, const type::Signature* signature)
+void check_types_arguments (ast::List* args, const type::Signature* signature)
 {
-  ast_list_expr_t* args = ast_cast<ast_list_expr_t> (node);
-
-  if (args->Size () != signature->Arity ())
+  if (args->size () != signature->Arity ())
     {
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                     "call expects %lu arguments but given %lu (E150)", signature->Arity (), args->Size ());
+      error_at_line (-1, 0, args->location.File.c_str (), args->location.Line,
+                     "call expects %lu arguments but given %lu (E150)", signature->Arity (), args->size ());
     }
 
   size_t i = 0;
-  for (Node::ConstIterator pos = args->Begin (), limit = args->End ();
+  for (List::ConstIterator pos = args->begin (), limit = args->end ();
        pos != limit;
        ++pos, ++i)
     {
@@ -1988,9 +2047,9 @@ void require_type (const Node* node)
     }
 }
 
-void require_value_or_variable_list (const Node* node)
+void require_value_or_variable_list (const List* node)
 {
-  for (Node::ConstIterator pos = node->Begin (), limit = node->End ();
+  for (List::ConstIterator pos = node->begin (), limit = node->end ();
        pos != limit;
        ++pos)
     {
@@ -1998,9 +2057,9 @@ void require_value_or_variable_list (const Node* node)
     }
 }
 
-void check_types (ast::Node* root)
+void check_types (ast::Node* root, decl::SymbolTable& symtab)
 {
-  Visitor visitor;
-  root->Accept (visitor);
+  Visitor visitor (symtab);
+  root->accept (visitor);
 }
 }

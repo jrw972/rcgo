@@ -240,7 +240,7 @@ ESCAPED \\[abfnrtv\\\"]
 ";"                    { return *yytext; }
 ":"                    { return *yytext; }
 
-[_a-zA-Z][_a-zA-Z0-9]* { yylval.node = new ast_identifier_t (yylloc, yytext);
+[_a-zA-Z][_a-zA-Z0-9]* { yylval.node = new Identifier (yylloc, yytext);
                          return IDENTIFIER; }
 
 "`"[^`]*"`"            { char* begin = yytext + 1;
@@ -269,7 +269,7 @@ ESCAPED \\[abfnrtv\\\"]
                          Value value;
                          value.string_value = v;
                          value.present = true;
-                         yylval.node = new ast_literal_expr_t (yylloc, String::Instance (), value);
+                         yylval.node = new LiteralExpr (yylloc, String::Instance (), value);
                          return LITERAL; }
 
 \"([^\"]|{OCTAL}|{HEX}|{LITTLEU}|{BIGU}|{ESCAPED})*\" {
@@ -286,7 +286,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.string_value = v;
   value.present = true;
-  yylval.node = new ast_literal_expr_t (yylloc, String::Instance (), value);
+  yylval.node = new LiteralExpr (yylloc, String::Instance (), value);
   return LITERAL;
 }
 
@@ -294,7 +294,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.integer_value = strtol (yytext, NULL, 10);
   value.present = true;
-  yylval.node = new ast_literal_expr_t (yylloc, Integer::Instance (), value);
+  yylval.node = new LiteralExpr (yylloc, Integer::Instance (), value);
   return LITERAL;
 }
 
@@ -302,7 +302,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.integer_value = strtol (yytext, NULL, 8);
   value.present = true;
-  yylval.node = new ast_literal_expr_t (yylloc, Integer::Instance (), value);
+  yylval.node = new LiteralExpr (yylloc, Integer::Instance (), value);
   return LITERAL;
 }
 
@@ -310,7 +310,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.integer_value = strtol (yytext, NULL, 16);
   value.present = true;
-  yylval.node = new ast_literal_expr_t (yylloc, Integer::Instance (), value);
+  yylval.node = new LiteralExpr (yylloc, Integer::Instance (), value);
   return LITERAL;
 }
 
@@ -318,7 +318,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.float_value = strtod (yytext, NULL);
   value.present = true;
-  yylval.node = new ast_literal_expr_t (yylloc, Float::Instance (), value);
+  yylval.node = new LiteralExpr (yylloc, Float::Instance (), value);
   return LITERAL;
 }
 
@@ -326,7 +326,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.complex_value = Complex::ValueType::make (0, strtod (yytext, NULL));
   value.present = true;
-  yylval.node = new ast_literal_expr_t (yylloc, Complex::Instance (), value);
+  yylval.node = new LiteralExpr (yylloc, Complex::Instance (), value);
   return LITERAL;
 }
 
@@ -334,7 +334,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.rune_value = yytext[1];
   value.present = true;
-  yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
+  yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
   return LITERAL;
 }
 
@@ -344,39 +344,39 @@ ESCAPED \\[abfnrtv\\\"]
   switch (yytext[2]) {
   case 'a':
     value.rune_value = '\a';
-    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
+    yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
     break;
   case 'b':
     value.rune_value = '\b';
-    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
+    yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
     break;
   case 'f':
     value.rune_value = '\f';
-    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
+    yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
     break;
   case 'n':
     value.rune_value = '\n';
-    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
+    yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
     break;
   case 'r':
     value.rune_value = '\r';
-    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
+    yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
     break;
   case 't':
     value.rune_value = '\t';
-    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
+    yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
     break;
   case 'v':
     value.rune_value = '\v';
-    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
+    yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
     break;
   case '\\':
     value.rune_value = '\\';
-    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
+    yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
     break;
   case '\'':
     value.rune_value = '\'';
-    yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
+    yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
     break;
   default:
     NOT_REACHED;
@@ -389,7 +389,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.rune_value = parseOctal (yylloc, yytext + 2);
   value.present = true;
-  yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
+  yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
   return LITERAL;
 }
 
@@ -397,7 +397,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.rune_value = parseHex (yylloc, yytext + 3);
   value.present = true;
-  yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
+  yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
   return LITERAL;
 }
 
@@ -405,7 +405,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.rune_value = parseU4 (yylloc, yytext + 3);
   value.present = true;
-  yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
+  yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
   return LITERAL;
 }
 
@@ -413,7 +413,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.rune_value = parseU8 (yylloc, yytext + 3);
   value.present = true;
-  yylval.node = new ast_literal_expr_t (yylloc, Rune::Instance (), value);
+  yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
   return LITERAL;
 }
 

@@ -2,6 +2,7 @@
 
 #include <error.h>
 
+#include "ast.hpp"
 #include "ast_visitor.hpp"
 
 namespace semantic
@@ -34,7 +35,7 @@ struct Visitor : public ast::DefaultVisitor
 
   void visit (SourceFile& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
   void visit (ast::Type& node)
@@ -42,137 +43,137 @@ struct Visitor : public ast::DefaultVisitor
     // Do nothing.
   }
 
-  void visit (ast_instance_t& node)
+  void visit (Instance& node)
   {
-    node.expression_list ()->Accept (*this);
+    node.expression_list->accept (*this);
   }
 
-  void visit (ast_const_t& node)
+  void visit (Const& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_initializer_t& node)
+  void visit (ast::Initializer& node)
   {
     Visitor v (*this);
     v.context = Initializer;
-    node.body ()->Accept (v);
+    node.body->accept (v);
   }
 
-  void visit (ast_getter_t& node)
+  void visit (ast::Getter& node)
   {
     Visitor v (*this);
     v.context = Getter;
-    node.body ()->Accept (v);
+    node.body->accept (v);
   }
 
-  void visit (ast_action_t& node)
+  void visit (ast::Action& node)
   {
     Visitor v (*this);
     v.context = Action;
-    node.precondition ()->Accept (v);
-    node.body ()->Accept (v);
+    node.precondition->accept (v);
+    node.body->accept (v);
   }
 
-  void visit (ast_dimensioned_action_t& node)
+  void visit (DimensionedAction& node)
   {
     Visitor v (*this);
     v.context = Action;
-    node.precondition ()->Accept (v);
-    node.body ()->Accept (v);
+    node.precondition->accept (v);
+    node.body->accept (v);
   }
 
-  void visit (ast_reaction_t& node)
+  void visit (ast::Reaction& node)
   {
     Visitor v (*this);
     v.context = Reaction;
-    node.body ()->Accept (v);
+    node.body->accept (v);
   }
 
-  void visit (ast_dimensioned_reaction_t& node)
+  void visit (DimensionedReaction& node)
   {
     Visitor v (*this);
     v.context = Reaction;
-    node.body ()->Accept (v);
+    node.body->accept (v);
   }
 
-  void visit (ast_bind_t& node)
+  void visit (Bind& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_function_t& node)
+  void visit (Function& node)
   {
-    node.body ()->Accept (*this);
+    node.body->accept (*this);
   }
 
-  void visit (ast_method_t& node)
+  void visit (Method& node)
   {
-    node.body ()->Accept (*this);
+    node.body->accept (*this);
   }
 
-  void visit (ast_list_statement_t& node)
+  void visit (ListStatement& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_expression_statement_t& node)
+  void visit (ExpressionStatement& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_return_statement_t& node)
+  void visit (ReturnStatement& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_if_statement_t& node)
+  void visit (IfStatement& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_while_statement_t& node)
+  void visit (WhileStatement& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_for_iota_statement_t& node)
+  void visit (ForIotaStatement& node)
   {
-    node.body ()->Accept (*this);
+    node.body->accept (*this);
   }
 
-  void visit (ast_var_statement_t& node)
+  void visit (VarStatement& node)
   {
-    node.expression_list ()->Accept (*this);
+    node.expression_list->accept (*this);
   }
 
-  void visit (ast_empty_statement_t& node)
+  void visit (EmptyStatement& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_assign_statement_t& node)
+  void visit (AssignStatement& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_add_assign_statement_t& node)
+  void visit (AddAssignStatement& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_increment_statement_t& node)
+  void visit (IncrementStatement& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_change_statement_t& node)
+  void visit (ChangeStatement& node)
   {
-    node.expr ()->Accept (*this);
-    node.body ()->Accept (*this);
+    node.expr->accept (*this);
+    node.body->accept (*this);
   }
 
-  void visit (ast_activate_statement_t& node)
+  void visit (ActivateStatement& node)
   {
     if (!(context == Action ||
           context == Reaction))
@@ -187,16 +188,16 @@ struct Visitor : public ast::DefaultVisitor
                        "activations within activations are not allowed (E54)");
       }
 
-    node.expr_list ()->Accept (*this);
+    node.expr_list->accept (*this);
     Visitor v (*this);
     v.in_mutable_phase = true;
-    node.body ()->Accept (v);
+    node.body->accept (v);
     node.in_action = context == Action;
   }
 
-  void visit (ast_call_expr_t& node)
+  void visit (CallExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
     if (node.function_type)
       {
         switch (node.function_type->function_kind)
@@ -274,59 +275,59 @@ struct Visitor : public ast::DefaultVisitor
     NOT_REACHED;
   }
 
-  void visit (ast_conversion_expr_t& node)
+  void visit (ConversionExpr& node)
   {
-    node.expr ()->Accept (*this);
+    node.expr->accept (*this);
   }
 
-  void visit (ast_identifier_expr_t& node)
+  void visit (IdentifierExpr& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_list_expr_t& node)
+  void visit (ListExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_literal_expr_t& node)
+  void visit (LiteralExpr& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_dereference_expr_t& node)
+  void visit (DereferenceExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_address_of_expr_t& node)
+  void visit (AddressOfExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_select_expr_t& node)
+  void visit (SelectExpr& node)
   {
-    node.base ()->Accept (*this);
+    node.base->accept (*this);
   }
 
-  void visit (ast_index_expr_t& node)
+  void visit (IndexExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_slice_expr_t& node)
+  void visit (SliceExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_unary_arithmetic_expr_t& node)
+  void visit (UnaryArithmeticExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
-  void visit (ast_binary_arithmetic_expr_t& node)
+  void visit (BinaryArithmeticExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
   void visit (TypeExpression& node)
@@ -334,25 +335,25 @@ struct Visitor : public ast::DefaultVisitor
     // Do nothing.
   }
 
-  void visit (ast_push_port_call_expr_t& node)
+  void visit (PushPortCallExpr& node)
   {
-    node.args ()->Accept (*this);
+    node.args->accept (*this);
   }
 
-  void visit (ast_indexed_port_call_expr_t& node)
+  void visit (IndexedPushPortCallExpr& node)
   {
-    node.index ()->Accept (*this);
-    node.args ()->Accept (*this);
+    node.index->accept (*this);
+    node.args->accept (*this);
   }
 
-  void visit (ast_composite_literal_t& node)
+  void visit (CompositeLiteral& node)
   {
-    node.literal_value ()->Accept (*this);
+    node.literal_value->accept (*this);
   }
 
-  void visit (ast_element_list_t& node)
+  void visit (ElementList& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 };
 }
@@ -360,6 +361,6 @@ struct Visitor : public ast::DefaultVisitor
 void check_control (ast::Node* root)
 {
   Visitor v;
-  root->Accept (v);
+  root->accept (v);
 }
 }

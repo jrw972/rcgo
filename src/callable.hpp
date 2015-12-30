@@ -24,10 +24,10 @@ public:
   virtual size_t receiver_size () const = 0;
   virtual size_t arguments_size () const = 0;
   virtual size_t locals_size () const = 0;
-  virtual void check_types (ast::Node* args) const;
-  virtual void check_references (ast::Node* args) const;
-  virtual void check_mutability (ast::Node* args) const;
-  virtual void compute_receiver_access (ast::Node* args, ReceiverAccess& receiver_access, bool& flag) const;
+  virtual void check_types (ast::List* args) const;
+  virtual void check_references (ast::List* args) const;
+  virtual void check_mutability (ast::List* args) const;
+  virtual void compute_receiver_access (ast::List* args, ReceiverAccess& receiver_access, bool& flag) const;
 };
 /*
  * TODO:  I debate whether or not the return symbols should be recorded here.
@@ -36,7 +36,7 @@ public:
 struct Function : public Callable, public decl::Symbol
 {
   // TODO:  Remove duplication with Symbol.
-  Function (ast::ast_function_t& node, const type::Function* type);
+  Function (ast::Function& node, const type::Function* type);
 
   // Callable
   virtual void call (runtime::executor_base_t& exec) const;
@@ -53,7 +53,7 @@ struct Function : public Callable, public decl::Symbol
     return "Function";
   }
 
-  ast::ast_function_t& node;
+  ast::Function& node;
   runtime::MemoryModel memoryModel;
 
   virtual size_t return_size () const
@@ -76,6 +76,10 @@ struct Function : public Callable, public decl::Symbol
   {
     return functionType_->GetSignature ();
   }
+  ParameterSymbol* return_parameter () const
+  {
+    return functionType_->GetReturnParameter ();
+  }
 
 private:
   const type::Function* functionType_;
@@ -83,7 +87,7 @@ private:
 
 struct Method : public Callable
 {
-  Method (ast::ast_method_t* n,
+  Method (ast::Method* n,
           const std::string& na,
           const type::Method* method_type_)
     : node (n)
@@ -96,6 +100,14 @@ struct Method : public Callable
   virtual const type::Signature* signature () const
   {
     return methodType->signature;
+  }
+  decl::ParameterSymbol* return_parameter () const
+  {
+    return methodType->return_parameter;
+  }
+  decl::ParameterSymbol* receiver_parameter () const
+  {
+    return methodType->receiver_parameter;
   }
 
   virtual const type::Type* type () const
@@ -120,7 +132,7 @@ struct Method : public Callable
     return memoryModel.LocalsSize ();
   }
 
-  ast::ast_method_t* const node;
+  ast::Method* const node;
   std::string const name;
   const type::Method * const methodType;
   size_t const returnSize;
@@ -129,7 +141,7 @@ struct Method : public Callable
 
 struct Initializer : public Callable
 {
-  Initializer (ast::ast_initializer_t* n,
+  Initializer (ast::Initializer* n,
                const std::string& na,
                const type::Method* initializer_type_)
     : node (n)
@@ -164,8 +176,15 @@ struct Initializer : public Callable
   {
     return initializerType->signature;
   }
-
-  ast::ast_initializer_t* const node;
+  decl::ParameterSymbol* return_parameter () const
+  {
+    return initializerType->return_parameter;
+  }
+  decl::ParameterSymbol* receiver_parameter () const
+  {
+    return initializerType->receiver_parameter;
+  }
+  ast::Initializer* const node;
   std::string const name;
   const type::Method * const initializerType;
   size_t const returnSize;
@@ -174,7 +193,7 @@ struct Initializer : public Callable
 
 struct Getter : public Callable
 {
-  Getter (ast::ast_getter_t* n,
+  Getter (ast::Getter* n,
           const std::string& na,
           const type::Method* getter_type_)
     : node (n)
@@ -184,7 +203,7 @@ struct Getter : public Callable
   { }
 
   virtual void call (runtime::executor_base_t& exec) const;
-  void call (runtime::executor_base_t& exec, const ast::ast_call_expr_t& node, component_t* thisPtr) const;
+  void call (runtime::executor_base_t& exec, const ast::CallExpr& node, component_t* thisPtr) const;
   virtual const type::Type* type () const
   {
     return getterType;
@@ -211,7 +230,16 @@ struct Getter : public Callable
     return getterType->signature;
   }
 
-  ast::ast_getter_t* const node;
+  decl::ParameterSymbol* return_parameter () const
+  {
+    return getterType->return_parameter;
+  }
+  decl::ParameterSymbol* receiver_parameter () const
+  {
+    return getterType->receiver_parameter;
+  }
+
+  ast::Getter* const node;
   std::string const name;
   const type::Method * const getterType;
   size_t const returnSize;

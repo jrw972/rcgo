@@ -2,10 +2,11 @@
 
 #include <error.h>
 
+#include "ast.hpp"
+#include "ast_visitor.hpp"
 #include "callable.hpp"
 #include "symbol_visitor.hpp"
 #include "types.hpp"
-#include "ast_visitor.hpp"
 #include "reaction.hpp"
 #include "field.hpp"
 #include "composition.hpp"
@@ -139,18 +140,18 @@ initialize (executor_base_t& exec, composition::Instance* instance)
 
 template <typename T>
 static void
-evaluate (executor_base_t& exec, const MemoryModel& memoryModel, const ast_binary_expr_t& node, const T& op)
+evaluate (executor_base_t& exec, const MemoryModel& memoryModel, const ast::Binary& node, const T& op)
 {
   struct visitor : public type::DefaultVisitor
   {
     executor_base_t& exec;
     const MemoryModel& memoryModel;
-    const ast_binary_expr_t& node;
+    const ast::Binary& node;
     const T& op;
 
     visitor (executor_base_t& e,
              const MemoryModel& mm,
-             const ast_binary_expr_t& n,
+             const ast::Binary& n,
              const T& o) : exec (e), memoryModel (mm), node (n), op (o) { }
 
     void default_action (const type::Type& t)
@@ -216,7 +217,7 @@ evaluate (executor_base_t& exec, const MemoryModel& memoryModel, const ast_binar
 struct RetvalDispatch
 {
   const type::Type*
-  dispatch_type (const ast_binary_expr_t& node) const
+  dispatch_type (const ast::Binary& node) const
   {
     UNIMPLEMENTED;
     //return node.typed_value.type;
@@ -226,7 +227,7 @@ struct RetvalDispatch
 struct LeftDispatch
 {
   const type::Type*
-  dispatch_type (const ast_binary_expr_t& node) const
+  dispatch_type (const ast::Binary& node) const
   {
     UNIMPLEMENTED;
     //return node.left ()->typed_value.type;
@@ -238,7 +239,7 @@ struct Divide : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int&) const
   {
     UNIMPLEMENTED;
@@ -254,7 +255,7 @@ struct Divide : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const Float64&) const
   {
     UNIMPLEMENTED;
@@ -270,7 +271,7 @@ struct Divide : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -282,7 +283,7 @@ struct Modulus : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int&) const
   {
     UNIMPLEMENTED;
@@ -298,7 +299,7 @@ struct Modulus : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -310,11 +311,11 @@ struct LeftShiftVisitor : public type::DefaultVisitor
 {
   executor_base_t& exec;
   const MemoryModel& memoryModel;
-  const ast_binary_expr_t& node;
+  const ast::Binary& node;
 
   LeftShiftVisitor (executor_base_t& e,
                     const MemoryModel& mm,
-                    const ast_binary_expr_t& n)
+                    const ast::Binary& n)
     : exec (e)
     , memoryModel (mm)
     , node (n)
@@ -365,7 +366,7 @@ struct LeftShift : public RetvalDispatch
   void
   doit (executor_base_t& exec,
         const MemoryModel& memoryModel,
-        const ast_binary_expr_t& node,
+        const ast::Binary& node,
         const T&) const
   {
     LeftShiftVisitor<T> v (exec, memoryModel, node);
@@ -376,7 +377,7 @@ struct LeftShift : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int& t) const
   {
     doit (exec, memoryModel, node, t);
@@ -385,7 +386,7 @@ struct LeftShift : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const Uint64& t) const
   {
     doit (exec, memoryModel, node, t);
@@ -394,7 +395,7 @@ struct LeftShift : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -406,18 +407,18 @@ struct RightShift : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int&) const
   {
     struct visitor : public type::DefaultVisitor
     {
       executor_base_t& exec;
       const MemoryModel& memoryModel;
-      const ast_binary_expr_t& node;
+      const ast::Binary& node;
 
       visitor (executor_base_t& e,
                const MemoryModel& mm,
-               const ast_binary_expr_t& n)
+               const ast::Binary& n)
         : exec (e)
         , memoryModel (mm)
         , node (n)
@@ -466,7 +467,7 @@ struct RightShift : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -478,7 +479,7 @@ struct BitAnd : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int&) const
   {
     UNIMPLEMENTED;
@@ -494,7 +495,7 @@ struct BitAnd : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -506,7 +507,7 @@ struct BitAndNot : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int&) const
   {
     UNIMPLEMENTED;
@@ -522,7 +523,7 @@ struct BitAndNot : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -534,7 +535,7 @@ struct Add : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int& type) const
   {
     doit (exec, memoryModel, node, type);
@@ -543,7 +544,7 @@ struct Add : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const Uint& type) const
   {
     doit (exec, memoryModel, node, type);
@@ -553,7 +554,7 @@ struct Add : public RetvalDispatch
   void
   doit (executor_base_t& exec,
         const MemoryModel& memoryModel,
-        const ast_binary_expr_t& node,
+        const ast::Binary& node,
         const T&) const
   {
     UNIMPLEMENTED;
@@ -569,7 +570,7 @@ struct Add : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -581,7 +582,7 @@ struct Subtract : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int&) const
   {
     UNIMPLEMENTED;
@@ -597,7 +598,7 @@ struct Subtract : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -609,7 +610,7 @@ struct BitOr : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int&) const
   {
     UNIMPLEMENTED;
@@ -625,7 +626,7 @@ struct BitOr : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -637,7 +638,7 @@ struct BitXor : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int&) const
   {
     UNIMPLEMENTED;
@@ -653,7 +654,7 @@ struct BitXor : public RetvalDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -665,7 +666,7 @@ struct Equal : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const Bool& type) const
   {
     doit (exec, memoryModel, node, type);
@@ -674,7 +675,7 @@ struct Equal : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const Boolean& type) const
   {
     doit (exec, memoryModel, node, type);
@@ -683,7 +684,7 @@ struct Equal : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int& type) const
   {
     doit (exec, memoryModel, node, type);
@@ -692,7 +693,7 @@ struct Equal : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const Uint& type) const
   {
     doit (exec, memoryModel, node, type);
@@ -701,7 +702,7 @@ struct Equal : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const Uint8& type) const
   {
     doit (exec, memoryModel, node, type);
@@ -710,7 +711,7 @@ struct Equal : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const Pointer& type) const
   {
     doit (exec, memoryModel, node, type);
@@ -719,7 +720,7 @@ struct Equal : public LeftDispatch
   template <typename T>
   void doit (executor_base_t& exec,
              const MemoryModel& memoryModel,
-             const ast_binary_expr_t& node,
+             const ast::Binary& node,
              const T&) const
   {
     UNIMPLEMENTED;
@@ -735,7 +736,7 @@ struct Equal : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -747,7 +748,7 @@ struct NotEqual : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const Bool&) const
   {
     doit<Bool> (exec, memoryModel, node);
@@ -756,7 +757,7 @@ struct NotEqual : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int&) const
   {
     doit<type::Int> (exec, memoryModel, node);
@@ -765,7 +766,7 @@ struct NotEqual : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const Uint&) const
   {
     doit<Uint> (exec, memoryModel, node);
@@ -774,7 +775,7 @@ struct NotEqual : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const Uint64&) const
   {
     doit<Uint64> (exec, memoryModel, node);
@@ -783,7 +784,7 @@ struct NotEqual : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const Pointer&) const
   {
     doit<Pointer> (exec, memoryModel, node);
@@ -791,7 +792,7 @@ struct NotEqual : public LeftDispatch
 
   template <typename T>
   void
-  doit (executor_base_t& exec, const MemoryModel& memoryModel, const ast_binary_expr_t& node) const
+  doit (executor_base_t& exec, const MemoryModel& memoryModel, const ast::Binary& node) const
   {
     UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
@@ -806,7 +807,7 @@ struct NotEqual : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -818,7 +819,7 @@ struct LessThan : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int&) const
   {
     UNIMPLEMENTED;
@@ -834,7 +835,7 @@ struct LessThan : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const Int8&) const
   {
     UNIMPLEMENTED;
@@ -850,7 +851,7 @@ struct LessThan : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -862,7 +863,7 @@ struct LessEqual : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int&) const
   {
     UNIMPLEMENTED;
@@ -878,7 +879,7 @@ struct LessEqual : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -890,7 +891,7 @@ struct MoreThan : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int&) const
   {
     UNIMPLEMENTED;
@@ -906,7 +907,7 @@ struct MoreThan : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -918,7 +919,7 @@ struct MoreEqual : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Int&) const
   {
     UNIMPLEMENTED;
@@ -934,7 +935,7 @@ struct MoreEqual : public LeftDispatch
   void
   operator() (executor_base_t& exec,
               const MemoryModel& memoryModel,
-              const ast_binary_expr_t& node,
+              const ast::Binary& node,
               const type::Type& t) const
   {
     TYPE_NOT_REACHED (t);
@@ -983,7 +984,7 @@ struct MoreEqual : public LeftDispatch
 //     AST_NOT_REACHED (node);
 //   }
 
-//   void visit (const ast_indexed_port_call_expr_t& node)
+//   void visit (const IndexedPortCallExpr& node)
 //   {
 //     // Determine the push port index.
 //     node.index_op->execute (exec, memoryModel);
@@ -998,12 +999,12 @@ struct MoreEqual : public LeftDispatch
 //     push_port_call (node, node.args (), memoryModel, node.field, idx * node.array_type->UnitSize ());
 //   }
 
-//   void visit (const ast_index_expr_t& node)
+//   void visit (const IndexExpr& node)
 //   {
 //     node.operation->execute (exec, memoryModel);
 //   }
 
-//   void visit (const ast_slice_expr_t& node)
+//   void visit (const SliceExpr& node)
 //   {
 //     evaluate_expression (exec, memoryModel, node.base ());
 //     typed_Value base_tv = node.base ()->typed_value;
@@ -1054,7 +1055,7 @@ struct MoreEqual : public LeftDispatch
 //       }
 //   }
 
-//   void visit (const ast_address_of_expr_t& node)
+//   void visit (const AddressOfExpr& node)
 //   {
 //     if (!node.address_of_dereference)
 //       {
@@ -1066,7 +1067,7 @@ struct MoreEqual : public LeftDispatch
 //       }
 //   }
 
-//   void visit (const ast_call_expr_t& node)
+//   void visit (const CallExpr& node)
 //   {
 //     if (node.IsCall)
 //       {
@@ -1141,12 +1142,12 @@ struct MoreEqual : public LeftDispatch
 //       }
 //   }
 
-//   void visit (const ast_push_port_call_expr_t& node)
+//   void visit (const PushPortCallExpr& node)
 //   {
 //     push_port_call (node, node.args (), memoryModel, node.field);
 //   }
 
-//   void visit (const ast_list_expr_t& node)
+//   void visit (const ListExpr& node)
 //   {
 //     for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
 //          pos != limit;
@@ -1156,7 +1157,7 @@ struct MoreEqual : public LeftDispatch
 //       }
 //   }
 
-//   void visit (const ast_select_expr_t& node)
+//   void visit (const SelectExpr& node)
 //   {
 //     evaluate_expression (exec, memoryModel, node.base ());
 //     char* ptr = static_cast<char*> (exec.stack ().pop_pointer ());
@@ -1165,7 +1166,7 @@ struct MoreEqual : public LeftDispatch
 //     exec.stack ().push_pointer (ptr + tv.offset);
 //   }
 
-//   void visit (const ast_identifier_expr_t& node)
+//   void visit (const IdentifierExpr& node)
 //   {
 //     // Get the address of the identifier.
 //     Symbol* symbol = node.symbol;
@@ -1173,7 +1174,7 @@ struct MoreEqual : public LeftDispatch
 //     exec.stack ().push_address (offset);
 //   }
 
-//   void visit (const ast_unary_arithmetic_expr_t& node)
+//   void visit (const UnaryArithmeticExpr& node)
 //   {
 //     evaluate_expression (exec, memoryModel, node.child ());
 //     switch (node.arithmetic)
@@ -1191,25 +1192,7 @@ struct MoreEqual : public LeftDispatch
 //     NOT_REACHED;
 //   }
 
-//   void visit (const ast_implicit_dereference_expr_t& node)
-//   {
-//     evaluate_expression (exec, memoryModel, node.child ());
-//     void* ptr = exec.stack ().pop_pointer ();
-//     if (ptr == NULL)
-//       {
-//         std::cout << node;
-//         UNIMPLEMENTED;
-//       }
-//     typed_Value tv = node.typed_value;
-//     exec.stack ().load (ptr, tv.type->Size ());
-//   }
-
-//   void visit (const ast_implicit_conversion_expr_t& node)
-//   {
-//     evaluate_expression (exec, memoryModel, node.child ());
-//   }
-
-//   void visit (const ast_binary_arithmetic_expr_t& node)
+//   void visit (const BinaryArithmeticExpr& node)
 //   {
 //     switch (node.arithmetic)
 //       {
@@ -1289,13 +1272,13 @@ struct MoreEqual : public LeftDispatch
 //       AST_NOT_REACHED (node);
 //     }
 
-//     void visit (const ast_const_t& node)
+//     void visit (const Const& node)
 //     { }
 
-//     void visit (const ast_empty_statement_t& node)
+//     void visit (const EmptyStatement& node)
 //     { }
 
-//     void visit (const ast_assign_statement_t& node)
+//     void visit (const AssignStatement& node)
 //     {
 //       UNIMPLEMENTED;
 //       // ast::Node* left = node.left ();
@@ -1311,7 +1294,7 @@ struct MoreEqual : public LeftDispatch
 //       // exec.stack ().store (ptr, size);
 //     }
 
-//     void visit (const ast_change_statement_t& node)
+//     void visit (const ChangeStatement& node)
 //     {
 //       UNIMPLEMENTED;
 //       // ast::Node* expr = node.expr ();
@@ -1355,7 +1338,7 @@ struct MoreEqual : public LeftDispatch
 //       // pthread_mutex_unlock (&hl->mutex);
 //     }
 
-//     void visit (const ast_expression_statement_t& node)
+//     void visit (const ExpressionStatement& node)
 //     {
 //       UNIMPLEMENTED;
 //       // ast::Node* child = node.child ();
@@ -1367,7 +1350,7 @@ struct MoreEqual : public LeftDispatch
 //       // exec.stack ().popn (size);
 //     }
 
-//     void visit (const ast_if_statement_t& node)
+//     void visit (const IfStatement& node)
 //     {
 //       UNIMPLEMENTED;
 //       // evaluate_expression (exec, memoryModel, node.condition ());
@@ -1391,7 +1374,7 @@ struct MoreEqual : public LeftDispatch
 //       //   }
 //     }
 
-//     void visit (const ast_while_statement_t& node)
+//     void visit (const WhileStatement& node)
 //     {
 //       UNIMPLEMENTED;
 //       // for (;;)
@@ -1414,7 +1397,7 @@ struct MoreEqual : public LeftDispatch
 //       //   }
 //     }
 
-//     void visit (const ast_for_iota_statement_t& node)
+//     void visit (const ForIotaStatement& node)
 //     {
 //       for (type::Int::ValueType idx = 0, limit = node.limit.integral_value ();
 //            idx != limit;
@@ -1429,7 +1412,7 @@ struct MoreEqual : public LeftDispatch
 //         }
 //     }
 
-//     void visit (const ast_add_assign_statement_t& node)
+//     void visit (const AddAssignStatement& node)
 //     {
 //       UNIMPLEMENTED;
 //       // // Determine the size of the value being assigned.
@@ -1474,7 +1457,7 @@ struct MoreEqual : public LeftDispatch
 //       // type->Accept (v);
 //     }
 
-//     void visit (const ast_subtract_assign_statement_t& node)
+//     void visit (const SubtractAssignStatement& node)
 //     {
 //       UNIMPLEMENTED;
 //       // // Determine the size of the value being assigned.
@@ -1512,7 +1495,7 @@ struct MoreEqual : public LeftDispatch
 //       // type->Accept (v);
 //     }
 
-//     void visit (const ast_list_statement_t& node)
+//     void visit (const ListStatement& node)
 //     {
 //       for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
 //            pos != limit;
@@ -1526,7 +1509,7 @@ struct MoreEqual : public LeftDispatch
 //         }
 //     }
 
-//     void visit (const ast_return_statement_t& node)
+//     void visit (const ReturnStatement& node)
 //     {
 //       UNIMPLEMENTED;
 //       // // Evaluate the expression.
@@ -1538,7 +1521,7 @@ struct MoreEqual : public LeftDispatch
 //       // // return;
 //     }
 
-//     void visit (const ast_increment_statement_t& node)
+//     void visit (const IncrementStatement& node)
 //     {
 //       UNIMPLEMENTED;
 //       // evaluate_expression (exec, memoryModel, node.child ());
@@ -1574,7 +1557,7 @@ struct MoreEqual : public LeftDispatch
 //       // node.child ()->typed_value.type->Accept (v);
 //     }
 
-//     void visit (const ast_activate_statement_t& node)
+//     void visit (const ActivateStatement& node)
 //     {
 //       UNIMPLEMENTED;
 //       // // Need to keep track of the largest base pointer so we can process the mutable section.
@@ -1596,7 +1579,7 @@ struct MoreEqual : public LeftDispatch
 //       // return;
 //     }
 
-//     void visit (const ast_var_statement_t& node)
+//     void visit (const VarStatement& node)
 //     {
 //       ast::Node* expression_list = node.expression_list ();
 
@@ -1640,7 +1623,7 @@ struct MoreEqual : public LeftDispatch
 bool
 enabled (executor_base_t& exec,
          component_t* instance,
-         const Action* action,
+         const decl::Action* action,
          type::Int::ValueType iota)
 {
   assert (exec.stack ().empty ());
@@ -1675,7 +1658,7 @@ enabled (executor_base_t& exec,
 
 static void
 execute (executor_base_t& exec,
-         const Action* action,
+         const decl::Action* action,
          component_t* instance)
 {
   // Reset the mutable phase base pointer.
@@ -1709,7 +1692,7 @@ execute (executor_base_t& exec,
     }
 }
 
-bool execute (executor_base_t& exec, component_t* instance, const Action* action, type::Int::ValueType iota)
+bool execute (executor_base_t& exec, component_t* instance, const decl::Action* action, type::Int::ValueType iota)
 {
   if (enabled (exec, instance, action, iota))
     {
@@ -1719,7 +1702,7 @@ bool execute (executor_base_t& exec, component_t* instance, const Action* action
   return false;
 }
 
-bool execute_no_check (executor_base_t& exec, component_t* instance, const Action* action, type::Int::ValueType iota)
+bool execute_no_check (executor_base_t& exec, component_t* instance, const decl::Action* action, type::Int::ValueType iota)
 {
   assert (exec.stack ().empty ());
 
@@ -1751,11 +1734,11 @@ bool execute_no_check (executor_base_t& exec, component_t* instance, const Actio
 
 struct NewImpl : public Callable
 {
-  NewImpl (const type::Type* t, ast::Node* definingNode)
+  NewImpl (const type::Type* t, const util::Location& loc)
     : type_ (t)
-    , function_type_ (makeFunctionType (t, definingNode))
+    , function_type_ (makeFunctionType (t, loc))
   {
-    allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
+    allocate_parameters (memory_model, function_type_->GetSignature ());
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
@@ -1790,11 +1773,11 @@ struct NewImpl : public Callable
   const type::Type* const type_;
   const type::Function* const function_type_;
   MemoryModel memory_model;
-  static const type::Function* makeFunctionType (const type::Type* type, ast::Node* definingNode)
+  static const type::Function* makeFunctionType (const type::Type* type, const util::Location& loc)
   {
     const type::Type* return_type = type->GetPointer ();
     return new type::Function (type::Function::FUNCTION, (new Signature ()),
-                               ParameterSymbol::makeReturn (definingNode, ReturnSymbol, return_type, Mutable));
+                               ParameterSymbol::makeReturn (loc, ReturnSymbol, return_type, Mutable));
   }
 
   virtual size_t return_size () const
@@ -1817,28 +1800,28 @@ struct NewImpl : public Callable
   {
     NOT_REACHED;
   }
-  virtual void check_types (ast::Node* args) const
+  virtual void check_types (ast::List* args) const
   {
     // Do nothing.
   }
-  virtual void check_references (ast::Node* args) const
+  virtual void check_references (ast::List* args) const
   {
-    semantic::require_type (args->At (0));
+    semantic::require_type (args->at (0));
   }
-  virtual void check_mutability (ast::Node* args) const
+  virtual void check_mutability (ast::List* args) const
   {
     // Do nothing.
   }
-  virtual void compute_receiver_access (ast::Node* args, ReceiverAccess& receiver_access, bool& flag) const
+  virtual void compute_receiver_access (ast::List* args, ReceiverAccess& receiver_access, bool& flag) const
   {
     // Do nothing.
   }
 
 };
 
-New::New (ast::Node* dn)
+New::New (const util::Location& loc)
   : Template ("new",
-              dn,
+              loc,
               new type::Template ())
 { }
 
@@ -1847,7 +1830,7 @@ New::instantiate (const std::vector<const type::Type*>& argument_types) const
 {
   if (argument_types.size () != 1)
     {
-      error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "new expects one argument (E220)");
     }
 
@@ -1860,22 +1843,22 @@ New::instantiate (const std::vector<const type::Type*>& argument_types) const
   //                    "new expects a type (E219)");
   //   }
 
-  return new NewImpl (type, definingNode);
+  return new NewImpl (type, location);
 }
 
 struct MoveImpl : public Callable
 {
-  MoveImpl (const type::Type* in, const type::Type* out, ast::Node* definingNode)
-    : function_type_ (makeFunctionType (in, out, definingNode))
+  MoveImpl (const type::Type* in, const type::Type* out, const util::Location& loc)
+    : function_type_ (makeFunctionType (in, out, loc))
   {
-    allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
+    allocate_parameters (memory_model, function_type_->GetSignature ());
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
   virtual void call (executor_base_t& exec) const
   {
     heap_link_t** r = static_cast<heap_link_t**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-    ParameterSymbol* p = *function_type_->GetSignature ()->Begin ();
+    ParameterSymbol* p = *function_type_->GetSignature ()->begin ();
     heap_link_t* hl = static_cast<heap_link_t*> (exec.stack ().read_pointer (p->offset ()));
     if (hl != NULL)
       {
@@ -1917,12 +1900,12 @@ struct MoveImpl : public Callable
   }
   const type::Function* const function_type_;
   MemoryModel memory_model;
-  static const type::Function* makeFunctionType (const type::Type* in, const type::Type* out, ast::Node* definingNode)
+  static const type::Function* makeFunctionType (const type::Type* in, const type::Type* out, const util::Location& loc)
   {
     // TODO:  The mutabilities may need to be adjusted.
     return new type::Function (type::Function::FUNCTION, (new Signature ())
-                               ->Append (ParameterSymbol::make (definingNode, "h", in, Mutable, Foreign)),
-                               ParameterSymbol::makeReturn (definingNode, ReturnSymbol, out, Mutable));
+                               ->Append (ParameterSymbol::make (loc, "h", in, Mutable, Foreign)),
+                               ParameterSymbol::makeReturn (loc, ReturnSymbol, out, Mutable));
   }
 
   virtual size_t return_size () const
@@ -1947,9 +1930,9 @@ struct MoveImpl : public Callable
   }
 };
 
-Move::Move (ast::Node* dn)
+Move::Move (const util::Location& loc)
   : Template ("move",
-              dn,
+              loc,
               new type::Template ())
 { }
 
@@ -1958,7 +1941,7 @@ Move::instantiate (const std::vector<const type::Type*>& argument_types) const
 {
   if (argument_types.size () != 1)
     {
-      error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "move expects one argument (E218)");
     }
 
@@ -1966,26 +1949,26 @@ Move::instantiate (const std::vector<const type::Type*>& argument_types) const
   const type::Type* out = type_move (in);
   if (out == NULL)
     {
-      error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "cannot move expression of type %s (E217)", in->ToString ().c_str ());
     }
 
-  return new MoveImpl (in, out, definingNode);
+  return new MoveImpl (in, out, location);
 }
 
 struct MergeImpl : public Callable
 {
-  MergeImpl (const type::Type* in, const type::Type* out, ast::Node* definingNode)
-    : function_type_ (makeFunctionType (in, out, definingNode))
+  MergeImpl (const type::Type* in, const type::Type* out, const util::Location& loc)
+    : function_type_ (makeFunctionType (in, out, loc))
   {
-    allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
+    allocate_parameters (memory_model, function_type_->GetSignature ());
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
   virtual void call (executor_base_t& exec) const
   {
     char** r = static_cast<char**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-    ParameterSymbol* p = *function_type_->GetSignature ()->Begin ();
+    ParameterSymbol* p = *function_type_->GetSignature ()->begin ();
     heap_link_t* hl = static_cast<heap_link_t*> (exec.stack ().read_pointer (p->offset ()));
     if (hl != NULL)
       {
@@ -2027,12 +2010,12 @@ struct MergeImpl : public Callable
   }
   const type::Function* const function_type_;
   MemoryModel memory_model;
-  static const type::Function* makeFunctionType (const type::Type* in, const type::Type* out, ast::Node* definingNode)
+  static const type::Function* makeFunctionType (const type::Type* in, const type::Type* out, const util::Location& loc)
   {
     // TODO:  Adjust mutability.
     return new type::Function (type::Function::FUNCTION, (new Signature ())
-                               ->Append (ParameterSymbol::make (definingNode, "h", in, Mutable, Foreign)),
-                               ParameterSymbol::makeReturn (definingNode, ReturnSymbol, out, Mutable));
+                               ->Append (ParameterSymbol::make (loc, "h", in, Mutable, Foreign)),
+                               ParameterSymbol::makeReturn (loc, ReturnSymbol, out, Mutable));
   }
 
   virtual size_t return_size () const
@@ -2057,9 +2040,9 @@ struct MergeImpl : public Callable
   }
 };
 
-Merge::Merge (ast::Node* dn)
+Merge::Merge (const util::Location& loc)
   : Template ("merge",
-              dn,
+              loc,
               new type::Template ())
 { }
 
@@ -2068,7 +2051,7 @@ Merge::instantiate (const std::vector<const type::Type*>& argument_types) const
 {
   if (argument_types.size () != 1)
     {
-      error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "merge expects one argument (E216)");
     }
 
@@ -2076,19 +2059,19 @@ Merge::instantiate (const std::vector<const type::Type*>& argument_types) const
   const type::Type* out = type_merge (in);
   if (out == NULL)
     {
-      error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "cannot merge expression of type %s (E215)", in->ToString ().c_str ());
     }
 
-  return new MergeImpl (in, out, definingNode);
+  return new MergeImpl (in, out, location);
 }
 
 struct CopyImpl : public Callable
 {
-  CopyImpl (const type::Type* in, ast::Node* definingNode)
-    : function_type_ (makeFunctionType (in, definingNode))
+  CopyImpl (const type::Type* in, const util::Location& loc)
+    : function_type_ (makeFunctionType (in, loc))
   {
-    allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
+    allocate_parameters (memory_model, function_type_->GetSignature ());
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
@@ -2129,11 +2112,11 @@ struct CopyImpl : public Callable
   }
   const type::Function* const function_type_;
   MemoryModel memory_model;
-  static const type::Function* makeFunctionType (const type::Type* in, ast::Node* definingNode)
+  static const type::Function* makeFunctionType (const type::Type* in, const util::Location& loc)
   {
     return new type::Function (type::Function::FUNCTION, (new Signature ())
-                               ->Append (ParameterSymbol::make (definingNode, "h", in, Immutable, Foreign)),
-                               ParameterSymbol::makeReturn (definingNode, ReturnSymbol, in, Mutable));
+                               ->Append (ParameterSymbol::make (loc, "h", in, Immutable, Foreign)),
+                               ParameterSymbol::makeReturn (loc, ReturnSymbol, in, Mutable));
   }
 
   virtual size_t return_size () const
@@ -2158,9 +2141,9 @@ struct CopyImpl : public Callable
   }
 };
 
-Copy::Copy (ast::Node* dn)
+Copy::Copy (const util::Location& loc)
   : Template ("copy",
-              dn,
+              loc,
               new type::Template ())
 { }
 
@@ -2169,7 +2152,7 @@ Copy::instantiate (const std::vector<const type::Type*>& argument_types) const
 {
   if (argument_types.size () != 1)
     {
-      error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "copy expects one argument (E123)");
     }
 
@@ -2177,7 +2160,7 @@ Copy::instantiate (const std::vector<const type::Type*>& argument_types) const
 
   if (type_strip_cast<Component> (in) != NULL)
     {
-      error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "cannot copy components (E94)");
     }
 
@@ -2187,7 +2170,7 @@ Copy::instantiate (const std::vector<const type::Type*>& argument_types) const
       {
         if (type_contains_pointer (st->Base ()))
           {
-            error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+            error_at_line (-1, 0, location.File.c_str (), location.Line,
                            "copy leaks pointers (E95)");
 
           }
@@ -2207,15 +2190,15 @@ Copy::instantiate (const std::vector<const type::Type*>& argument_types) const
       }
   }
 
-  return new CopyImpl (in, definingNode);
+  return new CopyImpl (in, location);
 }
 
 struct PrintlnImpl : public Callable
 {
-  PrintlnImpl (const TypeList& type_list)
-    : function_type_ (makeFunctionType (type_list))
+  PrintlnImpl (const util::Location& loc, const TypeList& type_list)
+    : function_type_ (makeFunctionType (loc, type_list))
   {
-    allocate_parameter (memory_model, function_type_->GetSignature ()->Begin (), function_type_->GetSignature ()->End ());
+    allocate_parameters (memory_model, function_type_->GetSignature ());
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
@@ -2298,7 +2281,7 @@ struct PrintlnImpl : public Callable
     };
 
     exec.lock_stdout ();
-    for (type::Signature::const_iterator pos = function_type_->GetSignature ()->Begin (), limit = function_type_->GetSignature ()->End ();
+    for (type::Signature::const_iterator pos = function_type_->GetSignature ()->begin (), limit = function_type_->GetSignature ()->end ();
          pos != limit;
          ++pos)
       {
@@ -2318,7 +2301,7 @@ struct PrintlnImpl : public Callable
   const type::Function* const function_type_;
   MemoryModel memory_model;
 
-  static const type::Function* makeFunctionType (const TypeList& argument_types)
+  static const type::Function* makeFunctionType (const util::Location& loc, const TypeList& argument_types)
   {
     Signature* sig = new Signature ();
     for (TypeList::const_iterator pos = argument_types.begin (), limit = argument_types.end ();
@@ -2327,11 +2310,11 @@ struct PrintlnImpl : public Callable
       {
         const type::Type* t = *pos;
         t = t->DefaultType ();
-        sig->Append (ParameterSymbol::make (NULL, "", t, Immutable, Foreign));
+        sig->Append (ParameterSymbol::make (loc, "", t, Immutable, Foreign));
       }
 
     return new type::Function (type::Function::FUNCTION, sig,
-                               ParameterSymbol::makeReturn (NULL, ReturnSymbol, Void::Instance (), Foreign));
+                               ParameterSymbol::makeReturn (loc, ReturnSymbol, Void::Instance (), Foreign));
 
   }
 
@@ -2357,16 +2340,16 @@ struct PrintlnImpl : public Callable
   }
 };
 
-Println::Println (ast::Node* dn)
+Println::Println (const util::Location& loc)
   : Template ("println",
-              dn,
+              loc,
               new type::Template ())
 { }
 
 Callable*
 Println::instantiate (const TypeList& argument_types) const
 {
-  return new PrintlnImpl (argument_types);
+  return new PrintlnImpl (location, argument_types);
 }
 
 OpReturn
@@ -3338,13 +3321,13 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
     }
 }
 
-  OpReturn
-  Popn::execute (executor_base_t& exec) const
-  {
-    OpReturn r = child->execute (exec);
-    exec.stack ().popn (size);
-    return r;
-  }
+OpReturn
+Popn::execute (executor_base_t& exec) const
+{
+  OpReturn r = child->execute (exec);
+  exec.stack ().popn (size);
+  return r;
+}
 }
 
 // void

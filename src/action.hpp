@@ -17,17 +17,22 @@ struct Action
     StaticFalse,
   };
 
-  Action (ast::Node* a_body,
+  Action (decl::ParameterSymbol* receiver_parameter,
+          ast::Node* a_body,
           const std::string& a_name);
 
-  Action (ast::Node* a_body,
+  Action (decl::ParameterSymbol* receiver_parameter,
+          ast::Node* a_body,
           const std::string& a_name,
+          decl::ParameterSymbol* iota_parameter,
           type::Int::ValueType a_dimension);
 
+  decl::ParameterSymbol* const receiver_parameter;
   // TODO:  Make this const and initialize upon construction.
   ast::Node* precondition;
   ast::Node* const body;
   std::string const name;
+  decl::ParameterSymbol* const iota_parameter;
   type::Int::ValueType const dimension;
   PreconditionKind precondition_kind;
   ReceiverAccess precondition_access;

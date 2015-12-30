@@ -1271,8 +1271,8 @@ Method::make_function_type (ParameterSymbol* this_parameter,
   Signature* sig = new Signature ();
 
   sig->Append (this_parameter);
-  for (Signature::const_iterator pos = signature->Begin (),
-       limit = signature->End ();
+  for (Signature::const_iterator pos = signature->begin (),
+       limit = signature->end ();
        pos != limit;
        ++pos)
     {
@@ -1404,7 +1404,7 @@ Signature::Append (ParameterSymbol* p)
 void
 Signature::check_foreign_safe () const
 {
-  for (const_iterator pos = Begin (), limit = End ();
+  for (const_iterator pos = begin (), limit = end ();
        pos != limit;
        ++pos)
     {

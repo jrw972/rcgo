@@ -46,7 +46,7 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
   //     AST_NOT_REACHED (node);
   //   }
 
-  //   void visit (const ast_binary_arithmetic_expr_t& node)
+  //   void visit (const BinaryArithmeticExpr& node)
   //   {
   //     switch (node.arithmetic)
   //       {
@@ -86,7 +86,7 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
   //       }
   //   }
 
-  //   void visit (const ast_literal_expr_t& node)
+  //   void visit (const LiteralExpr& node)
   //   {
   //     typed_Value tv = node.typed_value;
   //     struct visitor : public Type::DefaultVisitor
@@ -112,7 +112,7 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
   //     result = v.result;
   //   }
 
-  //   void visit (const ast_index_expr_t& node)
+  //   void visit (const IndexExpr& node)
   //   {
   //     static_Value base = EvaluateStatic (node.base (), memory);
   //     static_Value index = EvaluateStatic (node.index (), memory);
@@ -121,7 +121,7 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
   //     result = static_Value::index (base, array_type, index);
   //   }
 
-  //   void visit (const ast_select_expr_t& node)
+  //   void visit (const SelectExpr& node)
   //   {
   //     typed_Value tv = node.typed_value;
   //     assert (tv.has_offset);
@@ -129,25 +129,19 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
   //     result = static_Value::select (v, tv.offset);
   //   }
 
-  //   void visit (const ast_dereference_expr_t& node)
+  //   void visit (const DereferenceExpr& node)
   //   {
   //     static_Value v = EvaluateStatic (node.child (), memory);
   //     result = static_Value::dereference (v);
   //   }
 
-  //   void visit (const ast_implicit_dereference_expr_t& node)
-  //   {
-  //     static_Value v = EvaluateStatic (node.child (), memory);
-  //     result = static_Value::implicit_dereference (v, memory);
-  //   }
-
-  //   void visit (const ast_identifier_expr_t& node)
+  //   void visit (const IdentifierExpr& node)
   //   {
   //     ptrdiff_t offset = node.symbol->offset ();
   //     result = static_Value::make_stack_offset (offset);
   //   }
 
-  //   void visit (const ast_address_of_expr_t& node)
+  //   void visit (const AddressOfExpr& node)
   //   {
   //     static_Value v = EvaluateStatic (node.child (), memory);
   //     result = static_Value::address_of (v);

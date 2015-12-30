@@ -231,7 +231,7 @@ private:
       decl::Initializer* initializer,
       size_t address,
       unsigned int line,
-      ast::ast_instance_t* node,
+      ast::Instance* node,
       const std::string& name);
   void add_instance (Instance* instance);
   void add_push_port (size_t address,

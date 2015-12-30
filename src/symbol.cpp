@@ -31,11 +31,11 @@ ParameterSymbol::check_foreign_safe () const
         case OrdinaryDuplicate:
         case Receiver:
         case ReceiverDuplicate:
-          error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+          error_at_line (-1, 0, location.File.c_str (), location.Line,
                          "parameter is not foreign safe (E106)");
           break;
         case Return:
-          error_at_line (-1, 0, definingNode->location.File.c_str (), definingNode->location.Line,
+          error_at_line (-1, 0, location.File.c_str (), location.Line,
                          "return parameter is not foreign safe (E107)");
           break;
         }

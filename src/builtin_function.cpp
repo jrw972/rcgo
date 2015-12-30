@@ -27,12 +27,12 @@ using namespace ast;
 using namespace semantic;
 
 BuiltinFunction::BuiltinFunction (const std::string& id,
-                                  ast::Node* dn,
+                                  const util::Location& loc,
                                   const type::Function* type)
-  : Symbol (id, dn)
+  : Symbol (id, loc)
   , type_ (type)
 {
-  allocate_parameter (memory_model_, type_->GetSignature ()->Begin (), type_->GetSignature ()->End ());
+  allocate_parameters (memory_model_, type_->GetSignature ());
   allocate_symbol (memory_model_, type_->GetReturnParameter ());
 }
 
@@ -48,12 +48,12 @@ BuiltinFunction::accept (decl::ConstSymbolVisitor& visitor) const
   visitor.visit (*this);
 }
 
-Readable::Readable (ast::Node* dn)
+Readable::Readable (const util::Location& loc)
   : BuiltinFunction ("readable",
-                     dn,
+                     loc,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, Immutable, Foreign)),
-                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedBool, Immutable)))
+                                         ->Append (ParameterSymbol::make (loc, "fd", &type::NamedFileDescriptor, Immutable, Foreign)),
+                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::NamedBool, Immutable)))
 { }
 
 void
@@ -78,13 +78,13 @@ Readable::call (runtime::executor_base_t& exec) const
   *r = (pfd.revents & POLLIN) != 0;
 }
 
-Read::Read (ast::Node* dn)
+Read::Read (const util::Location& loc)
   : BuiltinFunction ("read",
-                     dn,
+                     loc,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, Immutable, Mutable))
-                                         ->Append (ParameterSymbol::make (dn, "buf", type::NamedByte.GetSlice (), Immutable, Mutable)),
-                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, Int::Instance (), Immutable)))
+                                         ->Append (ParameterSymbol::make (loc, "fd", &type::NamedFileDescriptor, Immutable, Mutable))
+                                         ->Append (ParameterSymbol::make (loc, "buf", type::NamedByte.GetSlice (), Immutable, Mutable)),
+                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable)))
 { }
 
 void
@@ -96,12 +96,12 @@ Read::call (runtime::executor_base_t& exec) const
   *r = read ((*fd)->fd (), buf->ptr, buf->length);
 }
 
-Writable::Writable (ast::Node* dn)
+Writable::Writable (const util::Location& loc)
   : BuiltinFunction ("writable",
-                     dn,
+                     loc,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, Immutable, Foreign)),
-                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedBool, Immutable)))
+                                         ->Append (ParameterSymbol::make (loc, "fd", &type::NamedFileDescriptor, Immutable, Foreign)),
+                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::NamedBool, Immutable)))
 { }
 
 void
@@ -126,11 +126,11 @@ Writable::call (runtime::executor_base_t& exec) const
   *r = (pfd.revents & POLLOUT) != 0;
 }
 
-TimerfdCreate::TimerfdCreate (ast::Node* dn)
+TimerfdCreate::TimerfdCreate (const util::Location& loc)
   : BuiltinFunction ("timerfd_create",
-                     dn,
+                     loc,
                      new type::Function (type::Function::FUNCTION, new Signature (),
-                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedFileDescriptor, Mutable)))
+                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::NamedFileDescriptor, Mutable)))
 { }
 
 void
@@ -148,13 +148,13 @@ TimerfdCreate::call (runtime::executor_base_t& exec) const
     }
 }
 
-TimerfdSettime::TimerfdSettime (ast::Node* dn)
+TimerfdSettime::TimerfdSettime (const util::Location& loc)
   : BuiltinFunction ("timerfd_settime",
-                     dn,
+                     loc,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, Immutable, Mutable))
-                                         ->Append (ParameterSymbol::make (dn, "s", &type::NamedUint64, Immutable, Immutable)),
-                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedInt, Immutable)))
+                                         ->Append (ParameterSymbol::make (loc, "fd", &type::NamedFileDescriptor, Immutable, Mutable))
+                                         ->Append (ParameterSymbol::make (loc, "s", &type::NamedUint64, Immutable, Immutable)),
+                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::NamedInt, Immutable)))
 { }
 
 void
@@ -172,11 +172,11 @@ TimerfdSettime::call (runtime::executor_base_t& exec) const
   *r = timerfd_settime ((*fd)->fd (), 0, &spec, NULL);
 }
 
-UdpSocket::UdpSocket (ast::Node* dn)
+UdpSocket::UdpSocket (const util::Location& loc)
   : BuiltinFunction ("udp_socket",
-                     dn,
+                     loc,
                      new type::Function (type::Function::FUNCTION, new Signature (),
-                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, &type::NamedFileDescriptor, Mutable)))
+                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::NamedFileDescriptor, Mutable)))
 { }
 
 void
@@ -201,15 +201,15 @@ UdpSocket::call (runtime::executor_base_t& exec) const
   *ret = exec.allocateFileDescriptor (fd);
 }
 
-Sendto::Sendto (ast::Node* dn)
+Sendto::Sendto (const util::Location& loc)
   : BuiltinFunction ("sendto",
-                     dn,
+                     loc,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (dn, "fd", &type::NamedFileDescriptor, Immutable, Mutable))
-                                         ->Append (ParameterSymbol::make (dn, "host", &type::NamedString, Immutable, Foreign))
-                                         ->Append (ParameterSymbol::make (dn, "port", &type::NamedUint16, Immutable, Immutable))
-                                         ->Append (ParameterSymbol::make (dn, "buf", type::NamedByte.GetSlice (), Immutable, Foreign)),
-                                         ParameterSymbol::makeReturn (dn, ReturnSymbol, Int::Instance (), Immutable)))
+                                         ->Append (ParameterSymbol::make (loc, "fd", &type::NamedFileDescriptor, Immutable, Mutable))
+                                         ->Append (ParameterSymbol::make (loc, "host", &type::NamedString, Immutable, Foreign))
+                                         ->Append (ParameterSymbol::make (loc, "port", &type::NamedUint16, Immutable, Immutable))
+                                         ->Append (ParameterSymbol::make (loc, "buf", type::NamedByte.GetSlice (), Immutable, Foreign)),
+                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable)))
 { }
 
 void

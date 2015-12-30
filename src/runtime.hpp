@@ -44,31 +44,31 @@ enum ControlAction
 
 struct New : public decl::Template
 {
-  New (ast::Node* dn);
+  New (const util::Location& loc);
   virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
 };
 
 struct Move : public decl::Template
 {
-  Move (ast::Node* dn);
+  Move (const util::Location& loc);
   virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
 };
 
 struct Merge : public decl::Template
 {
-  Merge (ast::Node* dn);
+  Merge (const util::Location& loc);
   virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
 };
 
 struct Copy : public decl::Template
 {
-  Copy (ast::Node* dn);
+  Copy (const util::Location& loc);
   virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
 };
 
 struct Println : public decl::Template
 {
-  Println (ast::Node* dn);
+  Println (const util::Location& loc);
   virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
 };
 
@@ -267,7 +267,15 @@ struct ListOperation : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    UNIMPLEMENTED;
+    std::cout << "List(";
+    for (ListType::const_iterator pos = list.begin (), limit = list.end ();
+         pos != limit;
+         ++pos)
+      {
+        (*pos)->dump ();
+        std::cout << ",";
+      }
+    std::cout << ")";
   }
   typedef std::vector<Operation*> ListType;
   ListType list;
@@ -291,7 +299,11 @@ struct MethodCall : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    UNIMPLEMENTED;
+    std::cout << "Method(";
+    receiver->dump ();
+    std::cout << ", ";
+    arguments->dump ();
+    std::cout << ")";
   }
   const decl::Callable* const callable;
   Operation* const receiver;
@@ -317,7 +329,7 @@ struct Instance : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    UNIMPLEMENTED;
+    std::cout << "Instance(" << instance << ")";
   }
   decl::InstanceSymbol* instance;
 };
@@ -328,7 +340,9 @@ struct SetRestoreCurrentInstance : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    UNIMPLEMENTED;
+    std::cout << "SetRestoreCurrentInstance(";
+    child->dump ();
+    std::cout << "," << receiver_offset << ")";
   }
   Operation* const child;
   ptrdiff_t const receiver_offset;

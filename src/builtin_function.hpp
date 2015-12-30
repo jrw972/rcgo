@@ -13,7 +13,7 @@ namespace decl
 struct BuiltinFunction : public decl::Callable, public decl::Symbol
 {
   BuiltinFunction (const std::string& id,
-                   ast::Node* dn,
+                   const util::Location& loc,
                    const type::Function* type);
 
   // Symbol
@@ -56,43 +56,43 @@ protected:
 
 struct Readable : public BuiltinFunction
 {
-  Readable (ast::Node* dn);
+  Readable (const util::Location& loc);
   virtual void call (runtime::executor_base_t& exec) const;
 };
 
 struct Read : public BuiltinFunction
 {
-  Read (ast::Node* dn);
+  Read (const util::Location& loc);
   virtual void call (runtime::executor_base_t& exec) const;
 };
 
 struct Writable : public BuiltinFunction
 {
-  Writable (ast::Node* dn);
+  Writable (const util::Location& loc);
   virtual void call (runtime::executor_base_t& exec) const;
 };
 
 struct TimerfdCreate : public BuiltinFunction
 {
-  TimerfdCreate (ast::Node* dn);
+  TimerfdCreate (const util::Location& loc);
   virtual void call (runtime::executor_base_t& exec) const;
 };
 
 struct TimerfdSettime : public BuiltinFunction
 {
-  TimerfdSettime (ast::Node* dn);
+  TimerfdSettime (const util::Location& loc);
   virtual void call (runtime::executor_base_t& exec) const;
 };
 
 struct UdpSocket : public BuiltinFunction
 {
-  UdpSocket (ast::Node* dn);
+  UdpSocket (const util::Location& loc);
   virtual void call (runtime::executor_base_t& exec) const;
 };
 
 struct Sendto : public BuiltinFunction
 {
-  Sendto (ast::Node* dn);
+  Sendto (const util::Location& loc);
   virtual void call (runtime::executor_base_t& exec) const;
 };
 

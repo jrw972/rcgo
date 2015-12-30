@@ -1,0 +1,35 @@
+#ifndef RC_SRC_SYMBOL_TABLE_HPP
+#define RC_SRC_SYMBOL_TABLE_HPP
+
+#include "types.hpp"
+
+namespace decl
+{
+
+struct SymbolTable
+{
+
+  SymbolTable ()
+    : current_scope_ (NULL)
+  { }
+
+  void open_scope ();
+  void close_scope ();
+
+  void enter_symbol (decl::Symbol* s);
+  void enter_signature (const type::Signature* type);
+
+  void change ();
+  void activate ();
+
+  Symbol* find_global_symbol (const std::string& identifier) const;
+  Symbol* find_local_symbol (const std::string& identifier) const;
+
+private:
+  struct Scope;
+  Scope* current_scope_;
+};
+
+}
+
+#endif // RC_SRC_SYMBOL_TABLE_HPP

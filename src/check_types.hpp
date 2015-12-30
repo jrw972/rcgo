@@ -5,10 +5,10 @@
 
 namespace semantic
 {
-void check_types_arguments (ast::Node* node, const type::Signature* signature);
+void check_types_arguments (ast::List* node, const type::Signature* signature);
 void require_type (const ast::Node* node);
-void require_value_or_variable_list (const ast::Node* node);
-void check_types (ast::Node* root);
+void require_value_or_variable_list (const ast::List* node);
+void check_types (ast::Node* root, decl::SymbolTable& symtab);
 }
 
 #endif // RC_SRC_CHECK_TYPES_HPP

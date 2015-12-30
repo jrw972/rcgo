@@ -1,5 +1,6 @@
 #include "compute_receiver_access.hpp"
 
+#include "ast.hpp"
 #include "ast_visitor.hpp"
 #include "symbol_visitor.hpp"
 #include "action.hpp"
@@ -14,9 +15,9 @@ using namespace decl;
 namespace
 {
 
-void process_list (Node& node, Node* list)
+void process_list (Node& node, List* list)
 {
-  for (Node::ConstIterator pos = list->Begin (), limit = list->End ();
+  for (List::ConstIterator pos = list->begin (), limit = list->end ();
        pos != limit;
        ++pos)
     {
@@ -33,7 +34,7 @@ struct Visitor : public ast::DefaultVisitor
 
   void visit (SourceFile& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
   }
 
   void visit (ast::Type& node)
@@ -41,176 +42,177 @@ struct Visitor : public ast::DefaultVisitor
     // Do nothing.
   }
 
-  void visit (ast_const_t& node)
+  void visit (Const& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_initializer_t& node)
+  void visit (ast::Initializer& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_getter_t& node)
+  void visit (ast::Getter& node)
   {
-    node.body ()->Accept (*this);
-    node.getter->immutable_phase_access = node.body ()->receiver_access;
+    node.body->accept (*this);
+    node.getter->immutable_phase_access = node.body->receiver_access;
   }
 
-  void visit (ast_action_t& node)
+  void visit (ast::Action& node)
   {
-    node.precondition ()->Accept (*this);
-    node.body ()->Accept (*this);
-    node.action->precondition_access = node.precondition ()->receiver_access;
-    node.action->immutable_phase_access = node.body ()->receiver_access;
+    node.precondition->accept (*this);
+    node.body->accept (*this);
+    node.action->precondition_access = node.precondition->receiver_access;
+    node.action->immutable_phase_access = node.body->receiver_access;
   }
 
-  void visit (ast_dimensioned_action_t& node)
+  void visit (DimensionedAction& node)
   {
-    node.precondition ()->Accept (*this);
-    node.body ()->Accept (*this);
-    node.action->precondition_access = node.precondition ()->receiver_access;
-    node.action->immutable_phase_access = node.body ()->receiver_access;
+    node.precondition->accept (*this);
+    node.body->accept (*this);
+    node.action->precondition_access = node.precondition->receiver_access;
+    node.action->immutable_phase_access = node.body->receiver_access;
   }
 
-  void visit (ast_reaction_t& node)
+  void visit (Reaction& node)
   {
-    node.body ()->Accept (*this);
-    node.reaction->immutable_phase_access = node.body ()->receiver_access;
+    node.body->accept (*this);
+    node.reaction->immutable_phase_access = node.body->receiver_access;
   }
 
-  void visit (ast_dimensioned_reaction_t& node)
+  void visit (DimensionedReaction& node)
   {
-    node.body ()->Accept (*this);
-    node.reaction->immutable_phase_access = node.body ()->receiver_access;
+    node.body->accept (*this);
+    node.reaction->immutable_phase_access = node.body->receiver_access;
   }
 
-  void visit (ast_bind_t& node)
+  void visit (Bind& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_function_t& node)
+  void visit (ast::Function& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_method_t& node)
+  void visit (ast::Method& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_list_statement_t& node)
+  void visit (ListStatement& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
     node.receiver_access = AccessNone;
     process_list (node, &node);
   }
 
-  void visit (ast_expression_statement_t& node)
+  void visit (ExpressionStatement& node)
   {
-    node.VisitChildren (*this);
-    node.receiver_access = node.child ()->receiver_access;
+    node.visit_children (*this);
+    node.receiver_access = node.child->receiver_access;
   }
 
-  void visit (ast_var_statement_t& node)
+  void visit (VarStatement& node)
   {
-    node.expression_list ()->Accept (*this);
+    node.expression_list->accept (*this);
     node.receiver_access = AccessNone;
-    process_list (node, node.expression_list ());
+    process_list (node, node.expression_list);
   }
 
-  void visit (ast_empty_statement_t& node)
+  void visit (EmptyStatement& node)
   {
     node.receiver_access = AccessNone;
   }
 
-  void visit (ast_if_statement_t& node)
+  void visit (IfStatement& node)
   {
-    node.VisitChildren (*this);
-    node.receiver_access = AccessNone;
-    process_list (node, &node);
+    node.visit_children (*this);
+    node.receiver_access = node.statement->receiver_access;
+    node.receiver_access = std::max (node.receiver_access, node.true_branch->receiver_access);
+    node.receiver_access = std::max (node.receiver_access, node.false_branch->receiver_access);
   }
 
-  void visit (ast_assign_statement_t& node)
+  void visit (AssignStatement& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
     // Straight write.
-    if (node.left ()->receiver_state)
+    if (node.left->receiver_state)
       {
         node.receiver_access = AccessWrite;
         return;
       }
     // Check if a mutable pointer escapes.
     // Consevatively assume that is is written.
-    if (node.right ()->receiver_state &&
-        type_contains_pointer (node.right ()->type) &&
-        node.right ()->dereference_mutability == Mutable)
+    if (node.right->receiver_state &&
+        type_contains_pointer (node.right->type) &&
+        node.right->indirection_mutability == Mutable)
       {
         node.receiver_access = AccessWrite;
         return;
       }
-    node.receiver_access = std::max (node.left ()->receiver_access, node.right ()->receiver_access);
+    node.receiver_access = std::max (node.left->receiver_access, node.right->receiver_access);
   }
 
-  void visit (ast_increment_statement_t& node)
+  void visit (IncrementStatement& node)
   {
-    node.VisitChildren (*this);
-    node.receiver_access = node.child ()->receiver_access;
-    if (node.child ()->receiver_state)
+    node.visit_children (*this);
+    node.receiver_access = node.child->receiver_access;
+    if (node.child->receiver_state)
       {
         node.receiver_access = AccessWrite;
       }
   }
 
-  void visit (ast_return_statement_t& node)
+  void visit (ReturnStatement& node)
   {
-    node.VisitChildren (*this);
-    node.receiver_access = node.child ()->receiver_access;
+    node.visit_children (*this);
+    node.receiver_access = node.child->receiver_access;
   }
 
-  void visit (ast_activate_statement_t& node)
+  void visit (ActivateStatement& node)
   {
-    node.VisitChildren (*this);
-    node.receiver_access = node.expr_list ()->receiver_access;
-    node.mutable_phase_access = node.body ()->receiver_access;
+    node.visit_children (*this);
+    node.receiver_access = node.expr_list->receiver_access;
+    node.mutable_phase_access = node.body->receiver_access;
   }
 
-  void visit (ast_change_statement_t& node)
+  void visit (ChangeStatement& node)
   {
-    node.expr ()->Accept (*this);
-    node.body ()->Accept (*this);
-    process_list (node, &node);
+    node.expr->accept (*this);
+    node.body->accept (*this);
+    node.receiver_access = std::max (node.expr->receiver_access, node.body->receiver_access);
   }
 
-  void visit (ast_call_expr_t& node)
+  void visit (CallExpr& node)
   {
-    if (node.expr ()->expression_kind == kType)
+    if (node.expr->expression_kind == kType)
       {
         // Conversion.
-        node.args ()->Accept (*this);
-        node.receiver_access = node.args ()->At (0)->receiver_access;
-        node.receiver_state = node.args ()->At (0)->receiver_state;
+        node.args->accept (*this);
+        node.receiver_access = node.args->at (0)->receiver_access;
+        node.receiver_state = node.args->at (0)->receiver_state;
         return;
       }
 
-    node.VisitChildren (*this);
+    node.visit_children (*this);
 
     // Check if a mutable pointer goes into a function.
     bool flag = false;
     if (node.callable != NULL)
       {
-        node.callable->compute_receiver_access (node.args (), node.receiver_access, flag);
+        node.callable->compute_receiver_access (node.args, node.receiver_access, flag);
       }
     else
       {
-        compute_receiver_access_arguments (node.args (), node.signature, node.receiver_access, flag);
+        compute_receiver_access_arguments (node.args, node.signature, node.receiver_access, flag);
       }
 
     // Extend the check to the receiver if invoking a method.
-    node.receiver_access = std::max (node.receiver_access, node.expr ()->receiver_access);
+    node.receiver_access = std::max (node.receiver_access, node.expr->receiver_access);
     if (node.method_type != NULL &&
-        node.expr ()->receiver_state &&
+        node.expr->receiver_state &&
         type_contains_pointer (node.method_type->receiver_type ()) &&
         node.method_type->receiver_parameter->dereference_mutability == Mutable)
       {
@@ -219,7 +221,7 @@ struct Visitor : public ast::DefaultVisitor
 
     // Check if a mutable pointer containing receiver state is returned.
     if (type_contains_pointer (node.type) &&
-        node.dereference_mutability == Mutable)
+        node.indirection_mutability == Mutable)
       {
         node.receiver_state = flag;
       }
@@ -229,7 +231,7 @@ struct Visitor : public ast::DefaultVisitor
       }
   }
 
-  void visit (ast_identifier_expr_t& node)
+  void visit (IdentifierExpr& node)
   {
     node.receiver_state = false;
     node.receiver_access = AccessNone;
@@ -241,57 +243,57 @@ struct Visitor : public ast::DefaultVisitor
       }
   }
 
-  void visit (ast_list_expr_t& node)
+  void visit (ListExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
     node.receiver_access = AccessNone;
     process_list (node, &node);
   }
 
-  void visit (ast_literal_expr_t& node)
+  void visit (LiteralExpr& node)
   {
     node.receiver_state = false;
     node.receiver_access = AccessNone;
   }
 
-  void visit (ast_unary_arithmetic_expr_t& node)
+  void visit (UnaryArithmeticExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
     node.receiver_state = false;
-    node.receiver_access = node.child ()->receiver_access;
+    node.receiver_access = node.child->receiver_access;
   }
 
-  void visit (ast_binary_arithmetic_expr_t& node)
+  void visit (BinaryArithmeticExpr& node)
   {
-    node.VisitChildren (*this);
+    node.visit_children (*this);
     node.receiver_state = false;
-    node.receiver_access = std::max (node.left ()->receiver_access,
-                                     node.right ()->receiver_access);
+    node.receiver_access = std::max (node.left->receiver_access,
+                                     node.right->receiver_access);
   }
 
-  void visit (ast_instance_t& node)
+  void visit (Instance& node)
   {
-    node.expression_list ()->Accept (*this);
+    node.expression_list->accept (*this);
   }
 
-  void visit (ast_select_expr_t& node)
+  void visit (SelectExpr& node)
   {
-    node.base ()->Accept (*this);
-    node.receiver_state = node.base ()->receiver_state;
-    node.receiver_access = node.base ()->receiver_access;
+    node.base->accept (*this);
+    node.receiver_state = node.base->receiver_state;
+    node.receiver_access = node.base->receiver_access;
   }
 
-  void visit (ast_push_port_call_expr_t& node)
+  void visit (PushPortCallExpr& node)
   {
-    node.args ()->Accept (*this);
-    process_list (node, node.args ());
+    node.args->accept (*this);
+    process_list (node, node.args);
   }
 
-  void visit (ast_indexed_port_call_expr_t& node)
+  void visit (IndexedPushPortCallExpr& node)
   {
-    node.index ()->Accept (*this);
-    node.args ()->Accept (*this);
-    process_list (node, node.args ());
+    node.index->accept (*this);
+    node.args->accept (*this);
+    process_list (node, node.args);
   }
 
   void visit (TypeExpression& node)
@@ -299,35 +301,37 @@ struct Visitor : public ast::DefaultVisitor
     // Do nothing.
   }
 
-  void visit (ast_dereference_expr_t& node)
+  void visit (DereferenceExpr& node)
   {
-    node.VisitChildren (*this);
-    node.receiver_state = node.child ()->receiver_state;
-    node.receiver_access = node.child ()->receiver_access;
+    node.visit_children (*this);
+    node.receiver_state = node.child->receiver_state;
+    node.receiver_access = node.child->receiver_access;
   }
 
-  void visit (ast_index_expr_t& node)
+  void visit (IndexExpr& node)
   {
-    node.VisitChildren (*this);
-    process_list (node, &node);
+    node.visit_children (*this);
+    node.receiver_state = node.base->receiver_state;
+    node.receiver_access = std::max (node.base->receiver_access, node.index->receiver_access);
   }
 
-  void visit (ast_slice_expr_t& node)
+  void visit (SliceExpr& node)
   {
-    node.VisitChildren (*this);
-    process_list (node, &node);
+    node.visit_children (*this);
+    UNIMPLEMENTED;
+    //process_list (node, &node);
   }
 };
 }
 
-void compute_receiver_access_arguments (Node* args, const type::Signature* signature, ReceiverAccess& receiver_access, bool& flag)
+void compute_receiver_access_arguments (List* args, const type::Signature* signature, ReceiverAccess& receiver_access, bool& flag)
 {
   // Check if a mutable pointer escapes.
   receiver_access = AccessNone;
   flag = false;
   size_t i = 0;
-  for (Node::ConstIterator pos = args->Begin (),
-       limit = args->End ();
+  for (List::ConstIterator pos = args->begin (),
+       limit = args->end ();
        pos != limit;
        ++pos)
     {
@@ -347,6 +351,6 @@ void compute_receiver_access_arguments (Node* args, const type::Signature* signa
 void compute_receiver_access (ast::Node* root)
 {
   Visitor visitor;
-  root->Accept (visitor);
+  root->accept (visitor);
 }
 }

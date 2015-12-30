@@ -27,7 +27,7 @@ type_check_statement (Node * node)
       AST_NOT_REACHED (node);
     }
 
-    void visit (ast_bind_pull_port_statement_t& node)
+    void visit (BindPullPortStatement& node)
     {
       UNIMPLEMENTED;
       // typed_Value pull_port_tv = CheckExpectReference (node.left ());
@@ -57,57 +57,9 @@ type_check_statement (Node * node)
       //   }
     }
 
-    static void arithmetic_assign (ast_binary_t* node, const char* symbol)
+    void visit (ListStatement& node)
     {
-      UNIMPLEMENTED;
-      // typed_Value left_tv = check_assignment_target (node->left ());
-      // typed_Value right_tv = CheckAndImplicitlyDereference (node->right_ref ());
-      // if (!type_is_equal (left_tv.type, right_tv.type))
-      //   {
-      //     error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-      //                    "incompatible types (%s) %s (%s) (E46)", left_tv.type->ToString ().c_str (), symbol, right_tv.type->ToString ().c_str ());
-      //   }
-
-      // struct visitor : public Type::DefaultVisitor
-      // {
-      //   ast::Node* node;
-      //   const char* symbol;
-
-      //   visitor (ast::Node* n, const char* s) : node (n), symbol (s) { }
-
-      //   void visit (const NamedType& type)
-      //   {
-      //     type.UnderlyingType ()->Accept (*this);
-      //   }
-
-      //   void visit (const Int& type)
-      //   {
-      //     // Okay.
-      //   }
-
-      //   void visit (const Uint& type)
-      //   {
-      //     // Okay.
-      //   }
-
-      //   void default_action (const Type::Type& type)
-      //   {
-      //     error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-      //                    "incompatible types (%s) %s (%s) (E47)", type.ToString ().c_str (), symbol, type.ToString ().c_str ());
-      //   }
-      // };
-      // visitor v (node, symbol);
-      // left_tv.type->Accept (v);
-    }
-
-    void visit (ast_subtract_assign_statement_t& node)
-    {
-      arithmetic_assign (&node, "-=");
-    }
-
-    void visit (ast_list_statement_t& node)
-    {
-      for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
+      for (List::ConstIterator pos = node.begin (), limit = node.end ();
            pos != limit;
            ++pos)
         {
@@ -115,38 +67,14 @@ type_check_statement (Node * node)
         }
     }
 
-    void visit (ast_decrement_statement_t& node)
+    void visit (DecrementStatement& node)
     {
       UNIMPLEMENTED;
     }
   };
 
   visitor v;
-  node->Accept (v);
-}
-
-// TODO: Replace node with its symbol table.
-void
-enter_signature (Node& node, const Signature * type)
-{
-  for (Signature::ParametersType::const_iterator pos = type->Begin (), limit = type->End ();
-       pos != limit; ++pos)
-    {
-      ParameterSymbol* x = *pos;
-      // Check if the symbol is defined locally.
-      const std::string& identifier = x->identifier;
-      Symbol* s = node.FindLocalSymbol (identifier);
-      if (s == NULL)
-        {
-          node.EnterSymbol (x);
-        }
-      else
-        {
-          error_at_line (-1, 0, x->definingNode->location.File.c_str (), x->definingNode->location.Line,
-                         "%s is already defined in this scope (E55)",
-                         identifier.c_str ());
-        }
-    }
+  node->accept (v);
 }
 
 }

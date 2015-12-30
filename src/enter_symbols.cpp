@@ -6,6 +6,7 @@
 #include "builtin_function.hpp"
 #include "template.hpp"
 #include "runtime.hpp"
+#include "symbol_table.hpp"
 
 namespace semantic
 {
@@ -15,72 +16,73 @@ using namespace semantic;
 using namespace decl;
 
 void
-enter_symbols (Node * node)
+enter_symbols (SymbolTable& symtab)
 {
-  /* Insert types. */
-  node->EnterSymbol (new TypeSymbol ("bool", node, &type::NamedBool));
+  util::Location loc;
+  // Insert types.
+  symtab.enter_symbol (new TypeSymbol ("bool", loc, &type::NamedBool));
 
-  node->EnterSymbol (new TypeSymbol ("uint8", node, &type::NamedUint8));
-  node->EnterSymbol (new TypeSymbol ("uint16", node, &type::NamedUint16));
-  node->EnterSymbol (new TypeSymbol ("uint32", node, &type::NamedUint32));
-  node->EnterSymbol (new TypeSymbol ("uint64", node, &type::NamedUint64));
+  symtab.enter_symbol (new TypeSymbol ("uint8", loc, &type::NamedUint8));
+  symtab.enter_symbol (new TypeSymbol ("uint16", loc, &type::NamedUint16));
+  symtab.enter_symbol (new TypeSymbol ("uint32", loc, &type::NamedUint32));
+  symtab.enter_symbol (new TypeSymbol ("uint64", loc, &type::NamedUint64));
 
-  node->EnterSymbol (new TypeSymbol ("int8", node, &type::NamedInt8));
-  node->EnterSymbol (new TypeSymbol ("int16", node, &type::NamedInt16));
-  node->EnterSymbol (new TypeSymbol ("int32", node, &type::NamedInt32));
-  node->EnterSymbol (new TypeSymbol ("int64", node, &type::NamedInt64));
+  symtab.enter_symbol (new TypeSymbol ("int8", loc, &type::NamedInt8));
+  symtab.enter_symbol (new TypeSymbol ("int16", loc, &type::NamedInt16));
+  symtab.enter_symbol (new TypeSymbol ("int32", loc, &type::NamedInt32));
+  symtab.enter_symbol (new TypeSymbol ("int64", loc, &type::NamedInt64));
 
-  node->EnterSymbol (new TypeSymbol ("float32", node, &type::NamedFloat32));
-  node->EnterSymbol (new TypeSymbol ("float64", node, &type::NamedFloat64));
+  symtab.enter_symbol (new TypeSymbol ("float32", loc, &type::NamedFloat32));
+  symtab.enter_symbol (new TypeSymbol ("float64", loc, &type::NamedFloat64));
 
-  node->EnterSymbol (new TypeSymbol ("complex64", node, &type::NamedComplex64));
-  node->EnterSymbol (new TypeSymbol ("complex128", node, &type::NamedComplex128));
+  symtab.enter_symbol (new TypeSymbol ("complex64", loc, &type::NamedComplex64));
+  symtab.enter_symbol (new TypeSymbol ("complex128", loc, &type::NamedComplex128));
 
-  node->EnterSymbol (new TypeSymbol ("byte", node, &type::NamedByte));
-  node->EnterSymbol (new TypeSymbol ("rune", node, &type::NamedRune));
+  symtab.enter_symbol (new TypeSymbol ("byte", loc, &type::NamedByte));
+  symtab.enter_symbol (new TypeSymbol ("rune", loc, &type::NamedRune));
 
-  node->EnterSymbol (new TypeSymbol ("uint", node, &type::NamedUint));
-  node->EnterSymbol (new TypeSymbol ("int", node, &type::NamedInt));
-  node->EnterSymbol (new TypeSymbol ("uintptr", node, &type::NamedUintptr));
+  symtab.enter_symbol (new TypeSymbol ("uint", loc, &type::NamedUint));
+  symtab.enter_symbol (new TypeSymbol ("int", loc, &type::NamedInt));
+  symtab.enter_symbol (new TypeSymbol ("uintptr", loc, &type::NamedUintptr));
 
-  node->EnterSymbol (new TypeSymbol ("string", node, &type::NamedString));
+  symtab.enter_symbol (new TypeSymbol ("string", loc, &type::NamedString));
 
   // Insert builtin-in functions.
-  node->EnterSymbol (new runtime::New (node));
-  node->EnterSymbol (new runtime::Move (node));
-  node->EnterSymbol (new runtime::Merge (node));
-  node->EnterSymbol (new runtime::Copy (node));
-  node->EnterSymbol (new runtime::Println (node));
+  symtab.enter_symbol (new runtime::New (loc));
+  symtab.enter_symbol (new runtime::Move (loc));
+  symtab.enter_symbol (new runtime::Merge (loc));
+  symtab.enter_symbol (new runtime::Copy (loc));
+  symtab.enter_symbol (new runtime::Println (loc));
 
-  /* I/O facilities. */
-  node->EnterSymbol (new TypeSymbol ("FileDescriptor", node, &type::NamedFileDescriptor));
-  node->EnterSymbol (new Readable (node));
-  node->EnterSymbol (new Read (node));
-  node->EnterSymbol (new Writable (node));
-  node->EnterSymbol (new TimerfdCreate (node));
-  node->EnterSymbol (new TimerfdSettime (node));
-  node->EnterSymbol (new UdpSocket (node));
-  node->EnterSymbol (new Sendto (node));
+  // I/O facilities.
+  symtab.enter_symbol (new TypeSymbol ("FileDescriptor", loc, &type::NamedFileDescriptor));
+  symtab.enter_symbol (new Readable (loc));
+  symtab.enter_symbol (new Read (loc));
+  symtab.enter_symbol (new Writable (loc));
+  symtab.enter_symbol (new TimerfdCreate (loc));
+  symtab.enter_symbol (new TimerfdSettime (loc));
+  symtab.enter_symbol (new UdpSocket (loc));
+  symtab.enter_symbol (new Sendto (loc));
 
-  /* Insert zero constant. */
+  // Insert zero constant.
   Value v;
   v.present = true;
-  node->EnterSymbol (new ConstantSymbol ("nil",
-                                         node,
-                                         type::Nil::Instance (),
-                                         v));
+  symtab.enter_symbol (new ConstantSymbol ("nil",
+                       loc,
+                       type::Nil::Instance (),
+                       v));
 
-  /* Insert untyped boolean constants. */
+  // Insert untyped boolean constants.
   v.bool_value = true;
-  node->EnterSymbol (new ConstantSymbol ("true",
-                                         node,
-                                         type::Boolean::Instance (),
-                                         v));
+  symtab.enter_symbol (new ConstantSymbol ("true",
+                       loc,
+                       type::Boolean::Instance (),
+                       v));
   v.bool_value = false;
-  node->EnterSymbol (new ConstantSymbol ("false",
-                                         node,
-                                         type::Boolean::Instance (),
-                                         v));
+  symtab.enter_symbol (new ConstantSymbol ("false",
+                       loc,
+                       type::Boolean::Instance (),
+                       v));
 }
 
 }

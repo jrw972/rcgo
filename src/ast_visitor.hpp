@@ -1,386 +1,149 @@
 #ifndef RC_SRC_AST_VISITOR_HPP
 #define RC_SRC_AST_VISITOR_HPP
 
-#include "ast.hpp"
+#include "types.hpp"
 
 namespace ast
 {
 
 struct Visitor
 {
-  virtual void visit (ast_identifier_t& node) = 0;
-  virtual void visit (ast_identifier_list_t& node) = 0;
-  virtual void visit (ast_receiver_t& node) = 0;
-  virtual void visit (ast_array_type_spec_t& node) = 0;
-  virtual void visit (ast_slice_type_spec_t& node) = 0;
-  virtual void visit (ast_map_type_spec_t& node) = 0;
-  virtual void visit (ast_empty_type_spec_t& node) = 0;
-  virtual void visit (ast_field_list_type_spec_t& node) = 0;
-  virtual void visit (ast_heap_type_spec_t& node) = 0;
-  virtual void visit (ast_identifier_list_type_spec_t& node) = 0;
-  virtual void visit (ast_identifier_type_spec_t& node) = 0;
-  virtual void visit (ast_pointer_type_spec_t& node) = 0;
-  virtual void visit (ast_push_port_type_spec_t& node) = 0;
-  virtual void visit (ast_pull_port_type_spec_t& node) = 0;
-  virtual void visit (ast_signature_type_spec_t& node) = 0;
-  virtual void visit (ast_implicit_conversion_expr_t& node) = 0;
+  virtual void visit (Identifier& node) = 0;
+  virtual void visit (IdentifierList& node) = 0;
+  virtual void visit (Receiver& node) = 0;
+  virtual void visit (ArrayTypeSpec& node) = 0;
+  virtual void visit (SliceTypeSpec& node) = 0;
+  virtual void visit (MapTypeSpec& node) = 0;
+  virtual void visit (EmptyTypeSpec& node) = 0;
+  virtual void visit (FieldListTypeSpec& node) = 0;
+  virtual void visit (HeapTypeSpec& node) = 0;
+  virtual void visit (IdentifierListTypeSpec& node) = 0;
+  virtual void visit (IdentifierTypeSpec& node) = 0;
+  virtual void visit (PointerTypeSpec& node) = 0;
+  virtual void visit (PushPortTypeSpec& node) = 0;
+  virtual void visit (PullPortTypeSpec& node) = 0;
+  virtual void visit (SignatureTypeSpec& node) = 0;
   virtual void visit (TypeExpression& node) = 0;
-  virtual void visit (ast_binary_arithmetic_expr_t& node) = 0;
-  virtual void visit (ast_address_of_expr_t& node) = 0;
-  virtual void visit (ast_call_expr_t& node) = 0;
-  virtual void visit (ast_conversion_expr_t& node) = 0;
-  virtual void visit (ast_dereference_expr_t& node) = 0;
-  virtual void visit (ast_implicit_dereference_expr_t& node) = 0;
-  virtual void visit (ast_identifier_expr_t& node) = 0;
-  virtual void visit (ast_index_expr_t& node) = 0;
-  virtual void visit (ast_slice_expr_t& node) = 0;
-  virtual void visit (ast_auto_expr_t& node) = 0;
-  virtual void visit (ast_indexed_port_call_expr_t& node) = 0;
-  virtual void visit (ast_list_expr_t& node) = 0;
-  virtual void visit (ast_literal_expr_t& node) = 0;
-  virtual void visit (ast_unary_arithmetic_expr_t& node) = 0;
-  virtual void visit (ast_push_port_call_expr_t& node) = 0;
-  virtual void visit (ast_select_expr_t& node) = 0;
-  virtual void visit (ast_empty_statement_t& node) = 0;
-  virtual void visit (ast_add_assign_statement_t& node) = 0;
-  virtual void visit (ast_change_statement_t& node) = 0;
-  virtual void visit (ast_assign_statement_t& node) = 0;
-  virtual void visit (ast_expression_statement_t& node) = 0;
-  virtual void visit (ast_if_statement_t& node) = 0;
-  virtual void visit (ast_while_statement_t& node) = 0;
-  virtual void visit (ast_list_statement_t& node) = 0;
-  virtual void visit (ast_return_statement_t& node) = 0;
-  virtual void visit (ast_increment_statement_t& node) = 0;
-  virtual void visit (ast_decrement_statement_t& node) = 0;
-  virtual void visit (ast_subtract_assign_statement_t& node) = 0;
-  virtual void visit (ast_activate_statement_t& node) = 0;
-  virtual void visit (ast_var_statement_t& node) = 0;
-  virtual void visit (ast_bind_push_port_statement_t& node) = 0;
-  virtual void visit (ast_bind_push_port_param_statement_t& node) = 0;
-  virtual void visit (ast_bind_pull_port_statement_t& node) = 0;
-  virtual void visit (ast_for_iota_statement_t& node) = 0;
-  virtual void visit (ast_action_t& node) = 0;
-  virtual void visit (ast_const_t& node) = 0;
-  virtual void visit (ast_dimensioned_action_t& node) = 0;
-  virtual void visit (ast_bind_t& node) = 0;
-  virtual void visit (ast_function_t& node) = 0;
-  virtual void visit (ast_getter_t& node) = 0;
-  virtual void visit (ast_initializer_t& node) = 0;
-  virtual void visit (ast_instance_t& node) = 0;
-  virtual void visit (ast_method_t& node) = 0;
-  virtual void visit (ast_reaction_t& node) = 0;
-  virtual void visit (ast_dimensioned_reaction_t& node) = 0;
+  virtual void visit (BinaryArithmeticExpr& node) = 0;
+  virtual void visit (AddressOfExpr& node) = 0;
+  virtual void visit (CallExpr& node) = 0;
+  virtual void visit (ConversionExpr& node) = 0;
+  virtual void visit (DereferenceExpr& node) = 0;
+  virtual void visit (IdentifierExpr& node) = 0;
+  virtual void visit (IndexExpr& node) = 0;
+  virtual void visit (SliceExpr& node) = 0;
+  virtual void visit (EmptyExpr& node) = 0;
+  virtual void visit (IndexedPushPortCallExpr& node) = 0;
+  virtual void visit (ListExpr& node) = 0;
+  virtual void visit (LiteralExpr& node) = 0;
+  virtual void visit (UnaryArithmeticExpr& node) = 0;
+  virtual void visit (PushPortCallExpr& node) = 0;
+  virtual void visit (SelectExpr& node) = 0;
+  virtual void visit (EmptyStatement& node) = 0;
+  virtual void visit (AddAssignStatement& node) = 0;
+  virtual void visit (ChangeStatement& node) = 0;
+  virtual void visit (AssignStatement& node) = 0;
+  virtual void visit (ExpressionStatement& node) = 0;
+  virtual void visit (IfStatement& node) = 0;
+  virtual void visit (WhileStatement& node) = 0;
+  virtual void visit (ListStatement& node) = 0;
+  virtual void visit (ReturnStatement& node) = 0;
+  virtual void visit (IncrementStatement& node) = 0;
+  virtual void visit (DecrementStatement& node) = 0;
+  virtual void visit (SubtractAssignStatement& node) = 0;
+  virtual void visit (ActivateStatement& node) = 0;
+  virtual void visit (VarStatement& node) = 0;
+  virtual void visit (BindPushPortStatement& node) = 0;
+  virtual void visit (BindPushPortParamStatement& node) = 0;
+  virtual void visit (BindPullPortStatement& node) = 0;
+  virtual void visit (ForIotaStatement& node) = 0;
+  virtual void visit (Action& node) = 0;
+  virtual void visit (Const& node) = 0;
+  virtual void visit (DimensionedAction& node) = 0;
+  virtual void visit (Bind& node) = 0;
+  virtual void visit (Function& node) = 0;
+  virtual void visit (Getter& node) = 0;
+  virtual void visit (Initializer& node) = 0;
+  virtual void visit (Instance& node) = 0;
+  virtual void visit (Method& node) = 0;
+  virtual void visit (Reaction& node) = 0;
+  virtual void visit (DimensionedReaction& node) = 0;
   virtual void visit (Type& node) = 0;
   virtual void visit (SourceFile& node) = 0;
-  virtual void visit (ast_element_list_t& node) = 0;
-  virtual void visit (ast_element_t& node) = 0;
-  virtual void visit (ast_composite_literal_t& node) = 0;
+  virtual void visit (ElementList& node) = 0;
+  virtual void visit (Element& node) = 0;
+  virtual void visit (CompositeLiteral& node) = 0;
 };
 
 struct DefaultVisitor : public Visitor
 {
-  virtual void visit (ast_identifier_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_identifier_list_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_receiver_t& node)
-  {
-    default_action (node);
-  }
-
-  virtual void visit (ast_array_type_spec_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_slice_type_spec_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_map_type_spec_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_empty_type_spec_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_field_list_type_spec_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_heap_type_spec_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_identifier_list_type_spec_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_identifier_type_spec_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_pointer_type_spec_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_push_port_type_spec_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_pull_port_type_spec_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_signature_type_spec_t& node)
-  {
-    default_action (node);
-  }
-
-  virtual void visit (ast_implicit_conversion_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (TypeExpression& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_binary_arithmetic_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_address_of_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_call_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_conversion_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_dereference_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_implicit_dereference_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_identifier_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_index_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_slice_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_auto_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_indexed_port_call_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_list_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_literal_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_unary_arithmetic_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_push_port_call_expr_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_select_expr_t& node)
-  {
-    default_action (node);
-  }
-
-  virtual void visit (ast_empty_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_add_assign_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_change_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_assign_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_expression_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_if_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_while_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_list_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_return_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_increment_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_decrement_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_subtract_assign_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_activate_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_var_statement_t& node)
-  {
-    default_action (node);
-  }
-
-  virtual void visit (ast_bind_push_port_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_bind_push_port_param_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_bind_pull_port_statement_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_for_iota_statement_t& node)
-  {
-    default_action (node);
-  }
-
-  virtual void visit (ast_action_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_const_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_dimensioned_action_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_bind_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_function_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_getter_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_initializer_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_instance_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_method_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_reaction_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (ast_dimensioned_reaction_t& node)
-  {
-    default_action (node);
-  }
-  virtual void visit (Type& node)
-  {
-    default_action (node);
-  }
-
-  virtual void visit (SourceFile& node)
-  {
-    default_action (node);
-  }
-
-  virtual void visit (ast_element_list_t& node)
-  {
-    default_action (node);
-  }
-
-  virtual void visit (ast_element_t& node)
-  {
-    default_action (node);
-  }
-
-  virtual void visit (ast_composite_literal_t& node)
-  {
-    default_action (node);
-  }
-
+  virtual void visit (Identifier& node);
+  virtual void visit (IdentifierList& node);
+  virtual void visit (Receiver& node);
+  virtual void visit (ArrayTypeSpec& node);
+  virtual void visit (SliceTypeSpec& node);
+  virtual void visit (MapTypeSpec& node);
+  virtual void visit (EmptyTypeSpec& node);
+  virtual void visit (FieldListTypeSpec& node);
+  virtual void visit (HeapTypeSpec& node);
+  virtual void visit (IdentifierListTypeSpec& node);
+  virtual void visit (IdentifierTypeSpec& node);
+  virtual void visit (PointerTypeSpec& node);
+  virtual void visit (PushPortTypeSpec& node);
+  virtual void visit (PullPortTypeSpec& node);
+  virtual void visit (SignatureTypeSpec& node);
+  virtual void visit (TypeExpression& node);
+  virtual void visit (BinaryArithmeticExpr& node);
+  virtual void visit (AddressOfExpr& node);
+  virtual void visit (CallExpr& node);
+  virtual void visit (ConversionExpr& node);
+  virtual void visit (DereferenceExpr& node);
+  virtual void visit (IdentifierExpr& node);
+  virtual void visit (IndexExpr& node);
+  virtual void visit (SliceExpr& node);
+  virtual void visit (EmptyExpr& node);
+  virtual void visit (IndexedPushPortCallExpr& node);
+  virtual void visit (ListExpr& node);
+  virtual void visit (LiteralExpr& node);
+  virtual void visit (UnaryArithmeticExpr& node);
+  virtual void visit (PushPortCallExpr& node);
+  virtual void visit (SelectExpr& node);
+  virtual void visit (EmptyStatement& node);
+  virtual void visit (AddAssignStatement& node);
+  virtual void visit (ChangeStatement& node);
+  virtual void visit (AssignStatement& node);
+  virtual void visit (ExpressionStatement& node);
+  virtual void visit (IfStatement& node);
+  virtual void visit (WhileStatement& node);
+  virtual void visit (ListStatement& node);
+  virtual void visit (ReturnStatement& node);
+  virtual void visit (IncrementStatement& node);
+  virtual void visit (DecrementStatement& node);
+  virtual void visit (SubtractAssignStatement& node);
+  virtual void visit (ActivateStatement& node);
+  virtual void visit (VarStatement& node);
+  virtual void visit (BindPushPortStatement& node);
+  virtual void visit (BindPushPortParamStatement& node);
+  virtual void visit (BindPullPortStatement& node);
+  virtual void visit (ForIotaStatement& node);
+  virtual void visit (Action& node);
+  virtual void visit (Const& node);
+  virtual void visit (DimensionedAction& node);
+  virtual void visit (Bind& node);
+  virtual void visit (Function& node);
+  virtual void visit (Getter& node);
+  virtual void visit (Initializer& node);
+  virtual void visit (Instance& node);
+  virtual void visit (Method& node);
+  virtual void visit (Reaction& node);
+  virtual void visit (DimensionedReaction& node);
+  virtual void visit (Type& node);
+  virtual void visit (SourceFile& node);
+  virtual void visit (ElementList& node);
+  virtual void visit (Element& node);
+  virtual void visit (CompositeLiteral& node);
   virtual void default_action (Node& node) { }
 };
-
-template<typename T>
-T*
-ast_cast (Node* node)
-{
-  if (node == NULL) return NULL;
-
-  struct visitor : public DefaultVisitor
-  {
-    T* retval;
-
-    visitor () : retval (NULL) { }
-
-    void visit (T& type)
-    {
-      retval = &type;
-    }
-  };
-  visitor v;
-  node->Accept (v);
-  return v.retval;
-}
 
 }
 

@@ -7,7 +7,6 @@
 #include "action.hpp"
 #include "reaction.hpp"
 #include "type.hpp"
-#include "field.hpp"
 #include "symbol.hpp"
 #include "memory_model.hpp"
 #include "bind.hpp"
@@ -19,8 +18,6 @@ namespace semantic
 
 using namespace ast;
 using namespace decl;
-
-// TODO:  Replace interacting with type_t* with typed_Value.
 
 void
 allocate_symbol (runtime::MemoryModel& memory_model,
@@ -83,18 +80,6 @@ allocate_symbol (runtime::MemoryModel& memory_model,
 }
 
 static void
-allocate_symtab (ast::Node* node, runtime::MemoryModel& memory_model)
-{
-  // Allocate the parameters.
-  for (Node::SymbolsType::const_iterator pos = node->SymbolsBegin (), limit = node->SymbolsEnd ();
-       pos != limit;
-       ++pos)
-    {
-      allocate_symbol (memory_model, *pos);
-    }
-}
-
-static void
 allocate_statement_stack_variables (ast::Node* node, runtime::MemoryModel& memory_model)
 {
   struct visitor : public DefaultVisitor
@@ -108,123 +93,123 @@ allocate_statement_stack_variables (ast::Node* node, runtime::MemoryModel& memor
       AST_NOT_REACHED (node);
     }
 
-    void visit (ast_const_t& node)
+    void visit (Const& node)
     {
       // Do nothing.
     }
 
-    void visit (ast_empty_statement_t& node)
+    void visit (EmptyStatement& node)
     { }
 
-    void visit (ast_for_iota_statement_t& node)
+    void visit (ForIotaStatement& node)
     {
       ptrdiff_t offset_before = memory_model.LocalsOffset ();
-      allocate_symtab (&node, memory_model);
+      allocate_symbol (memory_model, node.symbol);
       ptrdiff_t offset_after = memory_model.LocalsOffset ();
-      allocate_statement_stack_variables (node.body (), memory_model);
+      allocate_statement_stack_variables (node.body, memory_model);
       memory_model.LocalsPop (offset_after - offset_before);
       assert (memory_model.LocalsOffset () == offset_before);
     }
 
-    void visit (ast_bind_push_port_statement_t& node)
+    void visit (BindPushPortStatement& node)
     {
       // Do nothing.
     }
 
-    void visit (ast_bind_push_port_param_statement_t& node)
+    void visit (BindPushPortParamStatement& node)
     {
       // Do nothing.
     }
 
-    void visit (ast_bind_pull_port_statement_t& node)
+    void visit (BindPullPortStatement& node)
     {
       // Do nothing.
     }
 
-    void visit (ast_assign_statement_t& node)
+    void visit (AssignStatement& node)
     {
       // Do nothing.
     }
 
-    void visit (ast_change_statement_t& node)
+    void visit (ChangeStatement& node)
     {
       ptrdiff_t offset_before = memory_model.LocalsOffset ();
-      allocate_symtab (&node, memory_model);
+      allocate_symbol (memory_model, node.root_symbol);
       ptrdiff_t offset_after = memory_model.LocalsOffset ();
-      allocate_statement_stack_variables (node.body (), memory_model);
+      allocate_statement_stack_variables (node.body, memory_model);
       memory_model.LocalsPop (offset_after - offset_before);
       assert (memory_model.LocalsOffset () == offset_before);
     }
 
-    void visit (ast_expression_statement_t& node)
+    void visit (ExpressionStatement& node)
     {
       // Do nothing.
     }
 
-    void visit (ast_if_statement_t& node)
+    void visit (IfStatement& node)
     {
-      allocate_statement_stack_variables (node.true_branch (), memory_model);
-      allocate_statement_stack_variables (node.false_branch (), memory_model);
+      allocate_statement_stack_variables (node.true_branch, memory_model);
+      allocate_statement_stack_variables (node.false_branch, memory_model);
     }
 
-    void visit (ast_while_statement_t& node)
+    void visit (WhileStatement& node)
     {
-      allocate_statement_stack_variables (node.body (), memory_model);
+      allocate_statement_stack_variables (node.body, memory_model);
     }
 
-    void visit (ast_add_assign_statement_t& node)
-    {
-      // Do nothing.
-    }
-
-    void visit (ast_subtract_assign_statement_t& node)
+    void visit (AddAssignStatement& node)
     {
       // Do nothing.
     }
 
-    void visit (ast_list_statement_t& node)
+    void visit (SubtractAssignStatement& node)
+    {
+      // Do nothing.
+    }
+
+    void visit (ListStatement& node)
     {
       ptrdiff_t offset_before = memory_model.LocalsOffset ();
-      allocate_symtab (&node, memory_model);
-      ptrdiff_t offset_after = memory_model.LocalsOffset ();
-      for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
+      for (List::ConstIterator pos = node.begin (), limit = node.end ();
            pos != limit;
            ++pos)
         {
           allocate_statement_stack_variables (*pos, memory_model);
         }
-      memory_model.LocalsPop (offset_after - offset_before);
-      assert (memory_model.LocalsOffset () == offset_before);
-    }
-
-    void visit (ast_return_statement_t& node)
-    {
-      // Do nothing.
-    }
-
-    void visit (ast_increment_statement_t& node)
-    {
-      // Do nothing.
-    }
-
-    void visit (ast_activate_statement_t& node)
-    {
-      ptrdiff_t offset_before = memory_model.LocalsOffset ();
-      allocate_symtab (&node, memory_model);
       ptrdiff_t offset_after = memory_model.LocalsOffset ();
-      allocate_statement_stack_variables (node.body (), memory_model);
       memory_model.LocalsPop (offset_after - offset_before);
       assert (memory_model.LocalsOffset () == offset_before);
-      node.memoryModel = &memory_model;
     }
 
-    void visit (ast_var_statement_t& node)
+    void visit (ReturnStatement& node)
     {
-      // Do nothing.  The variables are allocated in the StmtList containing this.
+      // Do nothing.
+    }
+
+    void visit (IncrementStatement& node)
+    {
+      // Do nothing.
+    }
+
+    void visit (ActivateStatement& node)
+    {
+      allocate_statement_stack_variables (node.body, memory_model);
+      node.memory_model = &memory_model;
+    }
+
+    void visit (VarStatement& node)
+    {
+      for (VarStatement::SymbolsType::const_iterator pos = node.symbols.begin (),
+           limit = node.symbols.end ();
+           pos != limit;
+           ++pos)
+        {
+          allocate_symbol (memory_model, *pos);
+        }
     }
   };
   visitor v (memory_model);
-  node->Accept (v);
+  node->accept (v);
 }
 
 void
@@ -232,75 +217,100 @@ allocate_stack_variables (ast::Node* node)
 {
   struct visitor : public DefaultVisitor
   {
-    void visit (ast_action_t& node)
+    void visit (ast::Action& node)
     {
-      allocate_stack_variables_helper (node.action->memory_model, node, node.body ());
+      allocate_symbol (node.action->memory_model, node.action->receiver_parameter);
+      allocate_statement_stack_variables (node.body, node.action->memory_model);
+      assert (node.action->memory_model.LocalsEmpty ());
     }
 
-    void visit (ast_dimensioned_action_t& node)
+    void visit (DimensionedAction& node)
     {
-      allocate_stack_variables_helper (node.action->memory_model, node, node.body ());
+      allocate_symbol (node.action->memory_model, node.action->iota_parameter);
+      allocate_symbol (node.action->memory_model, node.action->receiver_parameter);
+      allocate_statement_stack_variables (node.body, node.action->memory_model);
+      assert (node.action->memory_model.LocalsEmpty ());
     }
 
-    void visit (ast_bind_t& node)
+    void visit (Bind& node)
     {
-      allocate_stack_variables_helper (node.bind->memory_model, node, node.body ());
+      allocate_symbol (node.bind->memory_model, node.bind->receiver_parameter);
+      allocate_statement_stack_variables (node.body, node.bind->memory_model);
+      assert (node.bind->memory_model.LocalsEmpty ());
     }
 
-    void visit (ast_function_t& node)
+    void visit (ast::Function& node)
     {
-      allocate_stack_variables_helper (node.function->memoryModel, node, node.body ());
+      allocate_parameters (node.function->memoryModel, node.function->signature ());
+      allocate_symbol (node.function->memoryModel, node.function->return_parameter ());
+      allocate_statement_stack_variables (node.body, node.function->memoryModel);
+      assert (node.function->memoryModel.LocalsEmpty ());
     }
 
-    void visit (ast_method_t& node)
+    void visit (ast::Method& node)
     {
-      allocate_stack_variables_helper (node.method->memoryModel, node, node.body ());
+      allocate_parameters (node.method->memoryModel, node.method->signature ());
+      allocate_symbol (node.method->memoryModel, node.method->receiver_parameter ());
+      allocate_symbol (node.method->memoryModel, node.method->return_parameter ());
+      allocate_statement_stack_variables (node.body, node.method->memoryModel);
+      assert (node.method->memoryModel.LocalsEmpty ());
     }
 
-    void visit (ast_initializer_t& node)
+    void visit (ast::Initializer& node)
     {
-      allocate_stack_variables_helper (node.initializer->memoryModel, node, node.body ());
+      allocate_parameters (node.initializer->memoryModel, node.initializer->signature ());
+      allocate_symbol (node.initializer->memoryModel, node.initializer->receiver_parameter ());
+      allocate_symbol (node.initializer->memoryModel, node.initializer->return_parameter ());
+      allocate_statement_stack_variables (node.body, node.initializer->memoryModel);
+      assert (node.initializer->memoryModel.LocalsEmpty ());
     }
 
-    void visit (ast_getter_t& node)
+    void visit (ast::Getter& node)
     {
-      allocate_stack_variables_helper (node.getter->memoryModel, node, node.body ());
+      allocate_parameters (node.getter->memoryModel, node.getter->signature ());
+      allocate_symbol (node.getter->memoryModel, node.getter->receiver_parameter ());
+      allocate_symbol (node.getter->memoryModel, node.getter->return_parameter ());
+      allocate_statement_stack_variables (node.body, node.getter->memoryModel);
+      assert (node.getter->memoryModel.LocalsEmpty ());
     }
 
-    void visit (ast_reaction_t& node)
+    void visit (Reaction& node)
     {
-      allocate_stack_variables_helper (node.reaction->memory_model, node, node.body ());
+      allocate_parameters (node.reaction->memory_model, node.reaction->signature ());
+      allocate_symbol (node.reaction->memory_model, node.reaction->receiver);
+      allocate_statement_stack_variables (node.body, node.reaction->memory_model);
+      assert (node.reaction->memory_model.LocalsEmpty ());
     }
 
-    void visit (ast_dimensioned_reaction_t& node)
+    void visit (DimensionedReaction& node)
     {
-      allocate_stack_variables_helper (node.reaction->memory_model, node, node.body ());
+      allocate_parameters (node.reaction->memory_model, node.reaction->signature ());
+      allocate_symbol (node.reaction->memory_model, node.reaction->iota);
+      allocate_symbol (node.reaction->memory_model, node.reaction->receiver);
+      allocate_statement_stack_variables (node.body, node.reaction->memory_model);
+      assert (node.reaction->memory_model.LocalsEmpty ());
     }
 
     void visit (SourceFile& node)
     {
-      node.VisitChildren (*this);
+      node.visit_children (*this);
     }
-
-    // Return the size of the locals.
-    void
-    allocate_stack_variables_helper (runtime::MemoryModel& memoryModel,
-                                     ast::Node& node,
-                                     ast::Node* child)
-    {
-      // Allocate the parameters.
-      Node::SymbolsType::const_iterator pos = node.SymbolsBegin ();
-      Node::SymbolsType::const_iterator limit = node.SymbolsEnd ();
-      allocate_parameter (memoryModel, pos, limit);
-      // Allocate the locals.
-      allocate_statement_stack_variables (child, memoryModel);
-      assert (memoryModel.LocalsEmpty ());
-    }
-
   };
 
   visitor v;
-  node->Accept (v);
+  node->accept (v);
+}
+
+void
+allocate_parameters (runtime::MemoryModel& memory_model,
+                     const type::Signature* signature)
+{
+  for (type::Signature::const_reverse_iterator pos = signature->rbegin (), limit = signature->rend ();
+       pos != limit;
+       ++pos)
+    {
+      allocate_symbol (memory_model, *pos);
+    }
 }
 
 }

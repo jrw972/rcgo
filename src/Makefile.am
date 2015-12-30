@@ -14,7 +14,8 @@ rc_SOURCES = main.cpp \
 action.hpp action.cpp \
 arch.hpp arch.cpp \
 ast.hpp ast.cpp \
-ast_visitor.hpp \
+ast_cast.hpp \
+ast_visitor.hpp ast_visitor.cpp \
 bind.hpp \
 builtin_function.hpp builtin_function.cpp \
 callable.hpp callable.cpp \
@@ -45,6 +46,7 @@ scheduler.hpp \
 semantic.hpp semantic.cpp \
 stack.hpp stack.cpp \
 symbol.hpp symbol.cpp \
+symbol_table.hpp symbol_table.cpp \
 symbol_visitor.hpp \
 template.hpp template.cpp \
 type.hpp type.cpp \

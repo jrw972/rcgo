@@ -1,9 +1,12 @@
 #include "process_types_and_constants.hpp"
 
+#include "ast.hpp"
 #include "ast_visitor.hpp"
+#include "ast_cast.hpp"
 #include "symbol.hpp"
 #include "semantic.hpp"
 #include "check_types.hpp"
+#include "symbol_table.hpp"
 
 namespace semantic
 {
@@ -15,6 +18,12 @@ namespace
 {
 struct Visitor : public ast::DefaultVisitor
 {
+  SymbolTable& symtab;
+
+  Visitor (SymbolTable& st)
+    : symtab (st)
+  { }
+
   void default_action (Node& node)
   {
     AST_NOT_REACHED (node);
@@ -22,46 +31,47 @@ struct Visitor : public ast::DefaultVisitor
 
   void visit (SourceFile& node)
   {
-    node.VisitChildren (*this);
+    symtab.open_scope ();
+    node.visit_children (*this);
   }
 
   void visit (ast::Type& node)
   {
-    const std::string& name = ast_get_identifier (node.identifier ());
+    const std::string& name = node.identifier->identifier;
     NamedType* type = new NamedType (name);
-    enter_symbol (*node.GetParent (), new TypeSymbol (name, node.identifier (), type));
-    type->UnderlyingType (process_type (node.type_spec (), true));
+    symtab.enter_symbol (new TypeSymbol (name, node.identifier->location, type));
+    type->UnderlyingType (process_type (node.type_spec, symtab, true));
   }
 
-  void visit (ast_const_t& node)
+  void visit (Const& node)
   {
-    ast::Node* identifier_list = node.identifier_list ();
-    ast::Node* type_spec = node.type_spec ();
-    ast::Node* expression_list = node.expression_list ();
+    ast::List* identifier_list = node.identifier_list;
+    ast::Node* type_spec = node.type_spec;
+    ast::List* expression_list = node.expression_list;
 
-    if (expression_list->Size () != 0 &&
-        identifier_list->Size () != expression_list->Size ())
+    if (expression_list->size () != 0 &&
+        identifier_list->size () != expression_list->size ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "wrong number of initializers (E88)");
       }
 
     // Process the type spec.
-    const type::Type* type = process_type (type_spec, true);
+    const type::Type* type = process_type (type_spec, symtab, true);
 
     if (type_cast<Void> (type) == NULL)
       {
         // Type, expressions.
 
         // Enter each symbol.
-        for (Node::Iterator id_pos = identifier_list->Begin (),
-             id_limit = identifier_list->End (),
-             init_pos = expression_list->Begin ();
+        for (List::ConstIterator id_pos = identifier_list->begin (),
+             id_limit = identifier_list->end (),
+             init_pos = expression_list->begin ();
              id_pos != id_limit;
              ++id_pos, ++init_pos)
           {
             Node* n = *init_pos;
-            check_types (n);
+            check_types (n, symtab);
             if (!n->value.present)
               {
                 error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -76,9 +86,9 @@ struct Visitor : public ast::DefaultVisitor
             n->value.convert (n->type, type);
             n->type = type;
 
-            const std::string& name = ast_get_identifier (*id_pos);
-            Symbol* symbol = new ConstantSymbol (name, *id_pos, type, n->value);
-            enter_symbol (*node.GetParent (), symbol);
+            const std::string& name = ast_cast<Identifier> (*id_pos)->identifier;
+            Symbol* symbol = new ConstantSymbol (name, (*id_pos)->location, type, n->value);
+            symtab.enter_symbol (symbol);
           }
 
         node.done = true;
@@ -88,73 +98,73 @@ struct Visitor : public ast::DefaultVisitor
     // No type, expressions.
 
     // Enter each symbol.
-    for (Node::Iterator id_pos = identifier_list->Begin (),
-         id_limit = identifier_list->End (),
-         init_pos = expression_list->Begin ();
+    for (List::ConstIterator id_pos = identifier_list->begin (),
+         id_limit = identifier_list->end (),
+         init_pos = expression_list->begin ();
          id_pos != id_limit;
          ++id_pos, ++init_pos)
       {
         Node* n = *init_pos;
-        check_types (n);
+        check_types (n, symtab);
         if (!n->value.present)
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                            "expression is not constant (E89)");
           }
 
-        const std::string& name = ast_get_identifier (*id_pos);
-        Symbol* symbol = new ConstantSymbol (name, *id_pos, n->type, n->value);
-        enter_symbol (*node.GetParent (), symbol);
+        const std::string& name = ast_cast<Identifier> (*id_pos)->identifier;
+        Symbol* symbol = new ConstantSymbol (name, (*id_pos)->location, n->type, n->value);
+        symtab.enter_symbol (symbol);
       }
     node.done = true;
   }
 
-  void visit (ast_function_t& node)
+  void visit (ast::Function& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_method_t& node)
+  void visit (ast::Method& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_initializer_t& node)
+  void visit (ast::Initializer& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_action_t& node)
+  void visit (ast::Action& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_dimensioned_action_t& node)
+  void visit (DimensionedAction& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_reaction_t& node)
+  void visit (Reaction& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_dimensioned_reaction_t& node)
+  void visit (DimensionedReaction& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_getter_t& node)
+  void visit (ast::Getter& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_bind_t& node)
+  void visit (Bind& node)
   {
     // Do nothing.
   }
 
-  void visit (ast_instance_t& node)
+  void visit (Instance& node)
   {
     // Do nothing.
   }
@@ -162,9 +172,9 @@ struct Visitor : public ast::DefaultVisitor
 };
 }
 
-void process_types_and_constants (ast::Node* root)
+void process_types_and_constants (ast::Node* root, SymbolTable& symtab)
 {
-  Visitor v;
-  root->Accept (v);
+  Visitor v (symtab);
+  root->accept (v);
 }
 }

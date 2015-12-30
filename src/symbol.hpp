@@ -2,6 +2,7 @@
 #define RC_SRC_SYMBOL_HPP
 
 #include "types.hpp"
+#include "location.hpp"
 #include "value.hpp"
 
 namespace decl
@@ -16,9 +17,9 @@ extern std::string const ReturnSymbol;
  */
 struct Symbol
 {
-  Symbol (const std::string& id, ast::Node* dn)
+  Symbol (const std::string& id, const util::Location& loc)
     : identifier (id)
-    , definingNode (dn)
+    , location (loc)
     , inProgress (false)
     , offset_ (0)
   { }
@@ -39,7 +40,7 @@ struct Symbol
   }
 
   std::string const identifier;
-  ast::Node* const definingNode;
+  util::Location const location;
   bool inProgress;
 
 private:
@@ -48,8 +49,8 @@ private:
 
 struct InstanceSymbol : public Symbol
 {
-  InstanceSymbol (const std::string& id, ast::Node* dn, const type::NamedType* t, Initializer* init)
-    : Symbol (id, dn)
+  InstanceSymbol (const std::string& id, const util::Location& loc, const type::NamedType* t, Initializer* init)
+    : Symbol (id, loc)
     , type (t)
     , initializer (init)
     , instance (NULL)
@@ -73,8 +74,8 @@ struct ParameterSymbol : public Symbol
     Return,
   };
 
-  ParameterSymbol (const std::string& id, ast::Node* dn, const type::Type* t, Mutability im, Mutability dm, Kind k)
-    : Symbol (id, dn)
+  ParameterSymbol (const std::string& id, const util::Location& loc, const type::Type* t, Mutability im, Mutability dm, Kind k)
+    : Symbol (id, loc)
     , type (t)
     , intrinsic_mutability (im)
     , dereference_mutability (is_typed_string (t) ? std::max (dm, Immutable) : dm)
@@ -82,30 +83,30 @@ struct ParameterSymbol : public Symbol
     , original_ (NULL)
   { }
 
-  static ParameterSymbol* make (ast::Node* defining_node,
+  static ParameterSymbol* make (const util::Location& loc,
                                 const std::string& name,
                                 const type::Type* type,
                                 Mutability intrinsic_mutability,
                                 Mutability dereference_mutability)
   {
-    return new ParameterSymbol (name, defining_node, type, intrinsic_mutability, dereference_mutability, Ordinary);
+    return new ParameterSymbol (name, loc, type, intrinsic_mutability, dereference_mutability, Ordinary);
   }
 
-  static ParameterSymbol* makeReturn (ast::Node* defining_node,
+  static ParameterSymbol* makeReturn (const util::Location& loc,
                                       const std::string& name,
                                       const type::Type* type,
                                       Mutability dereference_mutability)
   {
-    return new ParameterSymbol (name, defining_node, type, Mutable, dereference_mutability, Return);
+    return new ParameterSymbol (name, loc, type, Mutable, dereference_mutability, Return);
   }
 
-  static ParameterSymbol* makeReceiver (ast::Node* defining_node,
+  static ParameterSymbol* makeReceiver (const util::Location& loc,
                                         const std::string& name,
                                         const type::Type* type,
                                         Mutability intrinsic_mutability,
                                         Mutability dereference_mutability)
   {
-    return new ParameterSymbol (name, defining_node, type, intrinsic_mutability, dereference_mutability, Receiver);
+    return new ParameterSymbol (name, loc, type, intrinsic_mutability, dereference_mutability, Receiver);
   }
 
   ParameterSymbol* duplicate (Mutability dereferenceMutability)
@@ -158,8 +159,8 @@ private:
 
 struct TypeSymbol : public Symbol
 {
-  TypeSymbol (const std::string& id, ast::Node* dn, type::NamedType* t)
-    : Symbol (id, dn)
+  TypeSymbol (const std::string& id, const util::Location& loc, type::NamedType* t)
+    : Symbol (id, loc)
     , type (t)
   { }
 
@@ -175,8 +176,8 @@ struct TypeSymbol : public Symbol
 
 struct ConstantSymbol : public Symbol
 {
-  ConstantSymbol (const std::string& id, ast::Node* dn, const type::Type* t, const semantic::Value& v)
-    : Symbol (id, dn)
+  ConstantSymbol (const std::string& id, const util::Location& loc, const type::Type* t, const semantic::Value& v)
+    : Symbol (id, loc)
     , type (t)
     , value (v)
   { }
@@ -188,8 +189,8 @@ struct ConstantSymbol : public Symbol
 
 struct VariableSymbol : public Symbol
 {
-  VariableSymbol (const std::string& id, ast::Node* dn, const type::Type* t, Mutability im, Mutability dm)
-    : Symbol (id, dn)
+  VariableSymbol (const std::string& id, const util::Location& loc, const type::Type* t, Mutability im, Mutability dm)
+    : Symbol (id, loc)
     , type (t)
     , intrinsic_mutability (im)
     , dereference_mutability (is_typed_string (t) ? std::max (dm, Immutable) : dm)
@@ -213,7 +214,7 @@ struct VariableSymbol : public Symbol
 
   VariableSymbol* duplicate()
   {
-    VariableSymbol* s = new VariableSymbol (this->identifier, this->definingNode, this->type, Foreign, Foreign);
+    VariableSymbol* s = new VariableSymbol (this->identifier, this->location, this->type, Foreign, Foreign);
     s->original_ = this;
     return s;
   }
@@ -227,8 +228,8 @@ private:
 
 struct HiddenSymbol : public Symbol
 {
-  HiddenSymbol (const Symbol* s, ast::Node* dn)
-    : Symbol (s->identifier, dn)
+  HiddenSymbol (const Symbol* s, const util::Location& loc)
+    : Symbol (s->identifier, loc)
   { }
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;

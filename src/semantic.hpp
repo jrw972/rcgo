@@ -6,8 +6,8 @@
 #include <utility>
 
 #include "types.hpp"
-#include "ast.hpp"
 #include "symbol_visitor.hpp"
+#include "symbol_table.hpp"
 
 namespace semantic
 {
@@ -187,46 +187,22 @@ struct Negater
   }
 };
 
-/* Enter all symbols except vars and parameters. */
-void enter_symbols (ast::Node* node);
-
-// Enter a symbol.
-template <typename T>
-T*
-enter_symbol (ast::Node& node, T* symbol)
-{
-  // Check if the symbol is defined locally.
-  const std::string& identifier = symbol->identifier;
-  decl::Symbol *s = node.FindLocalSymbol (identifier);
-  if (s == NULL)
-    {
-      node.EnterSymbol (symbol);
-    }
-  else
-    {
-      const ast::Node* node = symbol->definingNode;
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                     "%s is already defined in this scope (E113)", identifier.c_str ());
-    }
-  return symbol;
-}
-
-// Enter a signature.
-void enter_signature (ast::Node& node, const type::Signature * type);
+// Enter builtin types, constants, etc.
+void enter_symbols (decl::SymbolTable& symtab);
 
 // Look up a symbol.  If it is not defined, process its definition.
 template<typename T>
-T* processAndLookup (ast::Node * node, const std::string& identifier)
+T* processAndLookup (decl::SymbolTable& symtab, const std::string& identifier, const util::Location& location)
 {
-  decl::Symbol *symbol = node->FindGlobalSymbol (identifier);
+  decl::Symbol *symbol = symtab.find_global_symbol (identifier);
   if (symbol == NULL)
     {
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "%s was not declared in this scope (E114)", identifier.c_str ());
     }
   if (symbol->inProgress)
     {
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "%s is defined recursively (E115)", identifier.c_str ());
     }
   if (!symbol->defined ())
@@ -245,7 +221,7 @@ type::Int::ValueType process_array_dimension (ast::Node* ptr);
 void CheckForForeignSafe (const type::Signature* signature, const decl::ParameterSymbol* return_parameter);
 
 // Process a type specification.
-const type::Type * process_type (ast::Node* node, bool force);
+const type::Type * process_type (ast::Node* node, const decl::SymbolTable& symtab, bool force);
 
 // Type check the expression, insert an implicit dereference if necessary, and convert to the given type if necessary.
 typed_Value
@@ -270,18 +246,9 @@ void
 allocate_symbol (runtime::MemoryModel& memory_model,
                  decl::Symbol* symbol);
 
-template <typename Iterator>
 void
-allocate_parameter (runtime::MemoryModel& memory_model,
-                    Iterator pos,
-                    Iterator limit)
-{
-  if (pos != limit)
-    {
-      allocate_parameter (memory_model, pos + 1, limit);
-      allocate_symbol (memory_model, *pos);
-    }
-}
+allocate_parameters (runtime::MemoryModel& memory_model,
+                     const type::Signature* signature);
 
 }
 

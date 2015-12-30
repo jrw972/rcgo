@@ -12,9 +12,9 @@ namespace decl
 struct Template : public Symbol
 {
   Template (const std::string& id,
-            ast::Node* dn,
+            const util::Location& loc,
             const type::Type* type)
-    : Symbol (id, dn)
+    : Symbol (id, loc)
     , type_ (type)
     // type () is called here
   { }

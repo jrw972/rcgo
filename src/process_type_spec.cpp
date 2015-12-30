@@ -4,8 +4,9 @@
 
 #include "type.hpp"
 #include "ast.hpp"
-#include "symbol.hpp"
 #include "ast_visitor.hpp"
+#include "ast_cast.hpp"
+#include "symbol.hpp"
 
 namespace semantic
 {
@@ -24,13 +25,13 @@ process_constant_expression (ast::Node* node)
       AST_NOT_REACHED (node);
     }
 
-    void visit (ast_literal_expr_t& node)
+    void visit (LiteralExpr& node)
     {
       // Do nothing.
     }
   };
   visitor v;
-  node->Accept (v);
+  node->accept (v);
 }
 
 type::Int::ValueType
@@ -67,14 +68,16 @@ CheckForForeignSafe (const Signature* signature, const ParameterSymbol* return_p
 }
 
 const type::Type *
-process_type (Node* node, bool force)
+process_type (Node* node, const decl::SymbolTable& symtab, bool force)
 {
   struct Visitor : public ast::DefaultVisitor
   {
+    const decl::SymbolTable& symtab;
     const type::Type* type;
 
-    Visitor ()
-      : type (NULL)
+    Visitor (const decl::SymbolTable& st)
+      : symtab (st)
+      , type (NULL)
     { }
 
     void default_action (Node& node)
@@ -82,28 +85,28 @@ process_type (Node* node, bool force)
       AST_NOT_REACHED (node);
     }
 
-    void visit (ast_array_type_spec_t& node)
+    void visit (ArrayTypeSpec& node)
     {
-      type::Int::ValueType dimension = process_array_dimension (node.dimension ());
-      const type::Type* base_type = process_type (node.base_type (), true);
+      type::Int::ValueType dimension = process_array_dimension (node.dimension);
+      const type::Type* base_type = process_type (node.base_type, symtab, true);
       type = base_type->GetArray (dimension);
     }
 
-    void visit (ast_slice_type_spec_t& node)
+    void visit (SliceTypeSpec& node)
     {
-      const type::Type* base_type = process_type (node.child (), false);
+      const type::Type* base_type = process_type (node.child, symtab, false);
       type = base_type->GetSlice ();
     }
 
-    void visit (ast_empty_type_spec_t& node)
+    void visit (EmptyTypeSpec& node)
     {
       type = Void::Instance ();
     }
 
-    void visit (ast_field_list_type_spec_t& node)
+    void visit (FieldListTypeSpec& node)
     {
       Struct* field_list;
-      if (node.IsComponent)
+      if (node.is_component)
         {
           field_list = new Component ();
         }
@@ -112,22 +115,22 @@ process_type (Node* node, bool force)
           field_list = new Struct ();
         }
 
-      for (Node::ConstIterator pos = node.Begin (), limit = node.End ();
+      for (List::ConstIterator pos = node.begin (), limit = node.end ();
            pos != limit;
            ++pos)
         {
           ast::Node* child = *pos;
-          ast_identifier_list_type_spec_t* c = static_cast<ast_identifier_list_type_spec_t*> (child);
-          Node *identifier_list = c->identifier_list ();
-          Node *type_spec = c->type_spec ();
-          const type::Type *type = process_type (type_spec, true);
-          for (Node::ConstIterator pos2 = identifier_list->Begin (),
-               limit2 = identifier_list->End ();
+          IdentifierListTypeSpec* c = static_cast<IdentifierListTypeSpec*> (child);
+          List *identifier_list = c->identifier_list;
+          Node *type_spec = c->type_spec;
+          const type::Type *type = process_type (type_spec, symtab, true);
+          for (List::ConstIterator pos2 = identifier_list->begin (),
+               limit2 = identifier_list->end ();
                pos2 != limit2;
                ++pos2)
             {
               ast::Node* id = *pos2;
-              const std::string& identifier = ast_get_identifier (id);
+              const std::string& identifier = ast_cast<Identifier> (id)->identifier;
               const type::Type *field = type_select (field_list, identifier);
               if (field == NULL)
                 {
@@ -143,16 +146,16 @@ process_type (Node* node, bool force)
       type = field_list;
     }
 
-    void visit (ast_heap_type_spec_t& node)
+    void visit (HeapTypeSpec& node)
     {
-      type = process_type (node.child (), false)->GetHeap ();
+      type = process_type (node.child, symtab, false)->GetHeap ();
     }
 
-    void visit (ast_identifier_type_spec_t& node)
+    void visit (IdentifierTypeSpec& node)
     {
-      Node *child = node.child ();
-      const std::string& identifier = ast_get_identifier (child);
-      Symbol* s = node.FindGlobalSymbol (identifier);
+      Identifier *child = node.child;
+      const std::string& identifier = child->identifier;
+      Symbol* s = symtab.find_global_symbol (identifier);
       if (s == NULL)
         {
           error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -167,16 +170,16 @@ process_type (Node* node, bool force)
       type = symbol->type;
     }
 
-    void visit (ast_pointer_type_spec_t& node)
+    void visit (PointerTypeSpec& node)
     {
-      const type::Type* base_type = process_type (node.child (), false);
+      const type::Type* base_type = process_type (node.child, symtab, false);
       type = base_type->GetPointer ();
     }
 
-    void visit (ast_push_port_type_spec_t& node)
+    void visit (PushPortTypeSpec& node)
     {
-      const Signature* signature = type_cast<Signature> (process_type (node.signature (), true));
-      ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (&node,
+      const Signature* signature = type_cast<Signature> (process_type (node.signature, symtab, true));
+      ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (node.location,
                                           ReturnSymbol,
                                           type::Void::Instance (),
                                           Immutable);
@@ -185,39 +188,39 @@ process_type (Node* node, bool force)
       type = new type::Function (type::Function::PUSH_PORT, signature, return_parameter);
     }
 
-    void visit (ast_pull_port_type_spec_t& node)
+    void visit (PullPortTypeSpec& node)
     {
-      const Signature* signature = type_cast<Signature> (process_type (node.signature (), true));
-      const type::Type* return_type = process_type (node.return_type (), true);
-      ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (&node,
+      const Signature* signature = type_cast<Signature> (process_type (node.signature, symtab, true));
+      const type::Type* return_type = process_type (node.return_type, symtab, true);
+      ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (node.location,
                                           ReturnSymbol,
                                           return_type,
-                                          node.dereferenceMutability);
+                                          node.indirection_mutability);
       CheckForForeignSafe (signature, return_parameter);
       type = new type::Function (type::Function::PULL_PORT, signature, return_parameter);
     }
 
-    void visit (ast_signature_type_spec_t& node)
+    void visit (SignatureTypeSpec& node)
     {
       Signature *signature = new Signature ();
-      for (Node::Iterator pos1 = node.Begin (), limit1 = node.End ();
+      for (List::ConstIterator pos1 = node.begin (), limit1 = node.end ();
            pos1 != limit1;
            ++pos1)
         {
-          ast_identifier_list_type_spec_t* child = static_cast<ast_identifier_list_type_spec_t*> (*pos1);
-          Node *identifier_list = child->identifier_list ();
-          Node *type_spec = child->type_spec ();
-          const type::Type* type = process_type (type_spec, true);
-          for (Node::Iterator pos2 = identifier_list->Begin (), limit2 = identifier_list->End ();
+          IdentifierListTypeSpec* child = static_cast<IdentifierListTypeSpec*> (*pos1);
+          List *identifier_list = child->identifier_list;
+          Node *type_spec = child->type_spec;
+          const type::Type* type = process_type (type_spec, symtab, true);
+          for (List::ConstIterator pos2 = identifier_list->begin (), limit2 = identifier_list->end ();
                pos2 != limit2;
                ++pos2)
             {
               ast::Node* id = *pos2;
-              const std::string& identifier = ast_get_identifier (id);
+              const std::string& identifier = ast_cast<Identifier> (id)->identifier;
               const ParameterSymbol* parameter = signature->Find (identifier);
               if (parameter == NULL)
                 {
-                  signature->Append (ParameterSymbol::make (id, identifier, type, child->mutability, child->dereferenceMutability));
+                  signature->Append (ParameterSymbol::make (id->location, identifier, type, child->mutability, child->indirection_mutability));
                 }
               else
                 {
@@ -232,8 +235,8 @@ process_type (Node* node, bool force)
 
   };
 
-  Visitor type_spec_visitor;
-  node->Accept (type_spec_visitor);
+  Visitor type_spec_visitor (symtab);
+  node->accept (type_spec_visitor);
 
   if (force && type_spec_visitor.type->UnderlyingType () == NULL)
     {

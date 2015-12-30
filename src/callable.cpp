@@ -13,31 +13,31 @@ namespace decl
 using namespace ast;
 
 void
-Callable::check_types (ast::Node* args) const
+Callable::check_types (ast::List* args) const
 {
   semantic::check_types_arguments (args, signature ());
 }
 
 void
-Callable::check_references (ast::Node* args) const
+Callable::check_references (ast::List* args) const
 {
   semantic::require_value_or_variable_list (args);
 }
 
 void
-Callable::check_mutability (ast::Node* args) const
+Callable::check_mutability (ast::List* args) const
 {
   semantic::check_mutability_arguments (args, signature ());
 }
 
 void
-Callable::compute_receiver_access (ast::Node* args, ReceiverAccess& receiver_access, bool& flag) const
+Callable::compute_receiver_access (ast::List* args, ReceiverAccess& receiver_access, bool& flag) const
 {
   semantic::compute_receiver_access_arguments (args, signature (), receiver_access, flag);
 }
 
-Function::Function (ast_function_t& node_, const type::Function* ft)
-  : Symbol (ast_get_identifier (node_.identifier ()), node_.identifier ())
+Function::Function (ast::Function& node_, const type::Function* ft)
+  : Symbol (node_.identifier->identifier, node_.identifier->location)
   , node (node_)
   , functionType_ (ft)
 { }
@@ -56,12 +56,12 @@ Function::accept (ConstSymbolVisitor& visitor) const
 
 void Function::call (runtime::executor_base_t& exec) const
 {
-  this->node.body ()->operation->execute (exec);
+  this->node.body->operation->execute (exec);
 }
 
 void Method::call (runtime::executor_base_t& exec) const
 {
-  this->node->body ()->operation->execute (exec);
+  this->node->body->operation->execute (exec);
 }
 
 void Initializer::call (runtime::executor_base_t& exec) const
@@ -74,7 +74,7 @@ void Getter::call (runtime::executor_base_t& exec) const
   this->node->operation->execute (exec);
 }
 
-void Getter::call (runtime::executor_base_t& exec, const ast_call_expr_t& node, component_t* thisPtr) const
+void Getter::call (runtime::executor_base_t& exec, const CallExpr& node, component_t* thisPtr) const
 {
   UNIMPLEMENTED;
   // // Create space for the return.

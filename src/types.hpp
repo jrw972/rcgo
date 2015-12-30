@@ -11,16 +11,74 @@
 
 namespace ast
 {
-class ast_receiver_t;
-class ast_activate_statement_t;
 class Node;
-class ast_call_expr_t;
-class ast_function_t;
-class ast_getter_t;
-class ast_initializer_t;
-class ast_instance_t;
-class ast_method_t;
-class ast_list_expr_t;
+class List;
+
+class Identifier;
+class IdentifierList;
+class Receiver;
+class ArrayTypeSpec;
+class SliceTypeSpec;
+class MapTypeSpec;
+class EmptyTypeSpec;
+class FieldListTypeSpec;
+class HeapTypeSpec;
+class IdentifierListTypeSpec;
+class IdentifierTypeSpec;
+class PointerTypeSpec;
+class PushPortTypeSpec;
+class PullPortTypeSpec;
+class SignatureTypeSpec;
+class TypeExpression;
+class BinaryArithmeticExpr;
+class AddressOfExpr;
+class CallExpr;
+class ConversionExpr;
+class DereferenceExpr;
+class IdentifierExpr;
+class IndexExpr;
+class SliceExpr;
+class EmptyExpr;
+class IndexedPushPortCallExpr;
+class ListExpr;
+class LiteralExpr;
+class UnaryArithmeticExpr;
+class PushPortCallExpr;
+class SelectExpr;
+class EmptyStatement;
+class AddAssignStatement;
+class ChangeStatement;
+class AssignStatement;
+class ExpressionStatement;
+class IfStatement;
+class WhileStatement;
+class ListStatement;
+class ReturnStatement;
+class IncrementStatement;
+class DecrementStatement;
+class SubtractAssignStatement;
+class ActivateStatement;
+class VarStatement;
+class BindPushPortStatement;
+class BindPushPortParamStatement;
+class BindPullPortStatement;
+class ForIotaStatement;
+class Action;
+class Const;
+class DimensionedAction;
+class Bind;
+class Function;
+class Getter;
+class Initializer;
+class Instance;
+class Method;
+class Reaction;
+class DimensionedReaction;
+class Type;
+class SourceFile;
+class ElementList;
+class Element;
+class CompositeLiteral;
 
 class Visitor;
 }
@@ -40,6 +98,7 @@ class field_t;
 
 namespace decl
 {
+class SymbolTable;
 class Action;
 class reaction_t;
 class Template;

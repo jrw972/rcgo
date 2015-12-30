@@ -751,6 +751,7 @@ public:
 
   typedef std::vector<decl::ParameterSymbol*> ParametersType;
   typedef ParametersType::const_iterator const_iterator;
+  typedef ParametersType::const_reverse_iterator const_reverse_iterator;
   void Accept (Visitor& visitor) const;
   std::string ToString () const;
   size_t Alignment () const
@@ -777,13 +778,21 @@ public:
   {
     return parameters_.at (idx);
   }
-  const_iterator Begin () const
+  const_iterator begin () const
   {
     return parameters_.begin ();
   }
-  const_iterator End () const
+  const_iterator end () const
   {
     return parameters_.end ();
+  }
+  const_reverse_iterator rbegin () const
+  {
+    return parameters_.rbegin ();
+  }
+  const_reverse_iterator rend () const
+  {
+    return parameters_.rend ();
   }
   decl::ParameterSymbol* Find (const std::string& name) const;
   Signature* Append (decl::ParameterSymbol* p);
