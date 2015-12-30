@@ -18,7 +18,6 @@
 #include "generate_code.hpp"
 #include "check_types.hpp"
 #include "check_mutability.hpp"
-#include "check_control.hpp"
 #include "compute_receiver_access.hpp"
 #include "process_types_and_constants.hpp"
 #include "process_functions_and_methods.hpp"
@@ -146,7 +145,6 @@ main (int argc, char **argv)
   semantic::process_functions_and_methods (root, symtab);
   semantic::check_types (root, symtab);
   semantic::check_mutability (root);
-  semantic::check_control (root);
   semantic::compute_receiver_access (root);
 
   // Calculate the offsets of all stack variables.

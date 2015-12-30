@@ -771,12 +771,26 @@ static void process_logic_and (Binary& node)
 // Determine the type of an expression.
 struct Visitor : public ast::DefaultVisitor
 {
+  enum Context
+  {
+    Other,
+    Action,
+    Reaction,
+    Initializer,
+    Getter,
+  };
+
   decl::SymbolTable& symtab;
   ParameterSymbol* receiver_parameter;
+  Context context;
+  bool in_mutable_phase;
 
   Visitor (decl::SymbolTable& st)
     : symtab (st)
-    , receiver_parameter (NULL) { }
+    , receiver_parameter (NULL)
+    , context (Other)
+    , in_mutable_phase (false)
+  { }
 
   void default_action (Node& node)
   {
@@ -812,11 +826,77 @@ struct Visitor : public ast::DefaultVisitor
 
     if (node.function_type)
       {
+        switch (node.function_type->function_kind)
+          {
+          case type::Function::FUNCTION:
+            // No restrictions on caller.
+            break;
+
+          case type::Function::PUSH_PORT:
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "push ports cannot be called (E202)");
+            break;
+
+          case type::Function::PULL_PORT:
+            // Must be called from either a getter, an action, or reaction.
+            if (!(context == Getter ||
+                  context == Action ||
+                  context == Reaction))
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "pull ports may only be called from a getter, an action, or a reaction (E201)");
+              }
+            if (in_mutable_phase)
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "cannot call pull port in mutable section (E198)");
+              }
+            break;
+          }
+
         node.signature = node.function_type->GetSignature ();
         node.return_parameter = node.function_type->GetReturnParameter ();
       }
     else if (node.method_type)
       {
+        switch (node.method_type->method_kind)
+          {
+          case type::Method::METHOD:
+            // No restrictions on caller.
+            break;
+          case type::Method::INITIALIZER:
+            // Caller must be an initializer.
+            if (context != Initializer)
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "initializers may only be called from initializers (E197)");
+              }
+            break;
+          case type::Method::GETTER:
+          {
+            // Must be called from either a getter, action, reaction, or initializer.
+            if (!(context == Getter ||
+                  context == Action ||
+                  context == Reaction ||
+                  context == Initializer))
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "getters may only be called from a getter, an action, a reaction, or an initializer (E196)");
+              }
+            if (in_mutable_phase)
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "cannot call getter in mutable section (E34)");
+              }
+          }
+          break;
+          case type::Method::REACTION:
+          {
+            UNIMPLEMENTED;
+          }
+          break;
+          }
+
         node.signature = node.method_type->signature;
         node.return_parameter = node.method_type->return_parameter;
       }
@@ -1243,8 +1323,10 @@ struct Visitor : public ast::DefaultVisitor
     symtab.enter_symbol (node.initializer->receiver_parameter ());
     symtab.enter_signature (node.initializer->signature ());
     symtab.enter_symbol (node.initializer->return_parameter ());
-    receiver_parameter = node.initializer->initializerType->receiver_parameter;
-    node.body->accept (*this);
+    Visitor v (*this);
+    v.receiver_parameter = node.initializer->initializerType->receiver_parameter;
+    v.context = Initializer;
+    node.body->accept (v);
     symtab.close_scope ();
   }
 
@@ -1254,8 +1336,10 @@ struct Visitor : public ast::DefaultVisitor
     symtab.enter_symbol (node.getter->receiver_parameter ());
     symtab.enter_signature (node.getter->signature ());
     symtab.enter_symbol (node.getter->return_parameter ());
-    receiver_parameter = node.getter->getterType->receiver_parameter;
-    node.body->accept (*this);
+    Visitor v (*this);
+    v.receiver_parameter = node.getter->getterType->receiver_parameter;
+    v.context = Getter;
+    node.body->accept (v);
     symtab.close_scope ();
   }
 
@@ -1263,10 +1347,12 @@ struct Visitor : public ast::DefaultVisitor
   {
     symtab.open_scope ();
     symtab.enter_symbol (node.action->receiver_parameter);
-    receiver_parameter = node.action->receiver_parameter;
-    node.precondition->accept (*this);
+    Visitor v (*this);
+    v.receiver_parameter = node.action->receiver_parameter;
+    v.context = Action;
+    node.precondition->accept (v);
     check_condition (node.precondition);
-    node.body->accept (*this);
+    node.body->accept (v);
     node.action->precondition = node.precondition;
 
     if (node.precondition->value.present)
@@ -1288,11 +1374,12 @@ struct Visitor : public ast::DefaultVisitor
     symtab.open_scope ();
     symtab.enter_symbol (node.action->receiver_parameter);
     symtab.enter_symbol (node.action->iota_parameter);
-
-    receiver_parameter = node.action->receiver_parameter;
-    node.precondition->accept (*this);
+    Visitor v (*this);
+    v.receiver_parameter = node.action->receiver_parameter;
+    v.context = Action;
+    node.precondition->accept (v);
     check_condition (node.precondition);
-    node.body->accept (*this);
+    node.body->accept (v);
     node.action->precondition = node.precondition;
 
     if (node.precondition->value.present)
@@ -1309,15 +1396,16 @@ struct Visitor : public ast::DefaultVisitor
     symtab.close_scope ();
   }
 
-  void visit (Reaction& node)
+  void visit (ast::Reaction& node)
   {
     symtab.open_scope ();
     symtab.enter_symbol (node.reaction->receiver);
     symtab.enter_signature (node.reaction->signature ());
     // No return type.
-
-    receiver_parameter = node.reaction->reaction_type->receiver_parameter;
-    node.body->accept (*this);
+    Visitor v (*this);
+    v.receiver_parameter = node.reaction->reaction_type->receiver_parameter;
+    v.context = Reaction;
+    node.body->accept (v);
     symtab.close_scope ();
   }
 
@@ -1329,9 +1417,10 @@ struct Visitor : public ast::DefaultVisitor
     symtab.enter_signature (node.reaction->signature ());
 
     // No return type.
-
-    receiver_parameter = node.reaction->reaction_type->receiver_parameter;
-    node.body->accept (*this);
+    Visitor v (*this);
+    v.receiver_parameter = node.reaction->reaction_type->receiver_parameter;
+    v.context = Reaction;
+    node.body->accept (v);
     symtab.close_scope ();
   }
 
@@ -1358,8 +1447,9 @@ struct Visitor : public ast::DefaultVisitor
     symtab.enter_symbol (node.method->receiver_parameter ());
     symtab.enter_signature (node.method->signature ());
     symtab.enter_symbol (node.method->return_parameter ());
-    receiver_parameter = node.method->methodType->receiver_parameter;
-    node.body->accept (*this);
+    Visitor v (*this);
+    v.receiver_parameter = node.method->methodType->receiver_parameter;
+    node.body->accept (v);
     symtab.close_scope ();
   }
 
@@ -1449,14 +1539,33 @@ struct Visitor : public ast::DefaultVisitor
 
   void visit (ActivateStatement& node)
   {
+    if (!(context == Action ||
+          context == Reaction))
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "activation outside of action or reaction (E53)");
+      }
+
+    if (in_mutable_phase)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "activations within activations are not allowed (E54)");
+      }
+
     // Check the activations.
     node.expr_list->accept (*this);
+
+    Visitor v (*this);
+    v.in_mutable_phase = true;
+
     // Re-insert this as a pointer to mutable.
     symtab.open_scope ();
     symtab.activate ();
     // Check the body.
-    node.body->accept (*this);
+    node.body->accept (v);
     symtab.close_scope ();
+
+    node.in_action = context == Action;
   }
 
   void visit (Const& node)
