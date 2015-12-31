@@ -1646,14 +1646,18 @@ struct Visitor : public ast::DefaultVisitor
 
   void visit (IfStatement& node)
   {
+    symtab.open_scope ();
     node.visit_children (*this);
     check_condition (node.condition);
+    symtab.close_scope ();
   }
 
   void visit (WhileStatement& node)
   {
+    symtab.open_scope ();
     node.visit_children (*this);
     check_condition (node.condition);
+    symtab.close_scope ();
   }
 
   void visit (ForIotaStatement& node)
