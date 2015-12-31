@@ -4,7 +4,6 @@
 #include "runtime.hpp"
 #include "symbol_visitor.hpp"
 #include "check_types.hpp"
-#include "check_mutability.hpp"
 #include "compute_receiver_access.hpp"
 
 namespace decl

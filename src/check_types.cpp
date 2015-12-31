@@ -26,6 +26,117 @@ using namespace decl;
 
 namespace
 {
+
+/*
+  A reference has:
+  - a type
+  - a region
+  - an intrinsic mutability
+  - a dereference mutability
+  - the value of the data to which this reference refers (possibly)
+
+  A value has:
+  - a type
+  - an intrinsic mutability
+  - a dereference mutability
+  - an actual value (possibly)
+
+  The four operations that contributed to the "const correctness" of
+  the language are implicit dereference, dereference (*), address of
+  (&), and assignment (=).
+
+  Implicit Dereference
+  --------------------
+
+  This operation converts a reference to a value.  The type,
+  intrinsic mutability, dereference mutability, and actual value of
+  the reference are passed on to the value.
+
+  | REFERENCE | VALUE |
+  -----------------------+-----------+-------+
+  Intrinsic Mutability |         A |     A |
+  Dereference Mutability |         B |     B |
+
+
+  Dereference (*)
+  ---------------
+
+  This operation converts a value to a reference and must be applied
+  to a pointer.  The region of the reference is assumed to be the
+  heap.  (This is points-to analysis which is undecidable in the
+  general case.)  The intrinsic mutability and dereference
+  mutability of the reference is determined by dereference
+  mutability of the value.  The only actual values for a value with
+  pointer type is nil but this could be improved.  Similarly, it is
+  not defined how the actual value passes to the reference.
+
+  | VALUE | REFERENCE |
+  -----------------------+-------+-----------+
+  Intrinsic Mutability |     A |         B |
+  Dereference Mutability |     B |         B |
+
+
+  Address Of (&)
+  --------------
+
+  This operation converts a reference to a pointer value.  The type
+  and mutability of the pointer is determined by the mutability of
+  the reference.
+
+  | REFERENCE | VALUE |
+  -----------------------+-----------+-------+
+  Intrinsic Mutability |         A |     A |
+  Dereference Mutability |         B |     B |
+
+  Assignment (=)
+  --------------
+
+  Assignment must check if a value can be copied to the location
+  indicated by a reference.  The two simple checks are (1) the types
+  must be equivalent and (2) the reference should be mutable.  (All
+  references to constant data should be immutable.)
+
+  If the type being assigned does not contain a pointer, then no
+  further checks are necessary as new references cannot be generated
+  from the value.  However, if the type being assigned does contain
+  a pointer, then we must be careful to ensure that any generated
+  reference has the correct mutability.  To this end, we check the
+  dereference mutability of the reference with the intrinsic
+  mutability of the value.
+
+  MUTABLE | IMMUTABLE | FOREIGN (VALUE)
+  +---------+-----------+--------
+  MUTABLE     |   OK    |     NO    |    NO
+  IMMUTABLE   |   OK    |     OK    |    NO
+  FOREIGN     |   OK    |     OK    |    OK
+  (REFERENCE)
+
+  If the value has FOREIGN dereference mutability then we require that
+  the reference refer to the STACK.
+
+  (This check is currently checked externally.)
+
+  Port Calls and Getters
+  ----------------------
+
+  Getters (component methods) can only be defined on immutable
+  components and can only be called in the immutable phase.  There
+  is no restriction on the values going in but the return values
+  must have FOREIGN intrinsic mutability.  This allows a component
+  to return pointers but prevents them from being saved in the heap.
+
+  Parameters to ports and reactions must have FOREIGN dereference
+  mutability if the associated type contains a pointer.
+*/
+
+static void fix (Node& node)
+{
+  if (node.type->underlying_kind () == type::kStringU)
+    {
+      node.indirection_mutability = std::max (node.indirection_mutability, Immutable);
+    }
+}
+
 static void require_value_or_variable (const Node* node)
 {
   if (!(node->expression_kind == kValue ||
@@ -911,6 +1022,7 @@ struct Visitor : public ast::DefaultVisitor
         // TODO:  Merge check_references into check_types.
         node.callable->check_types (args);
         node.callable->check_references (node.args);
+        node.callable->check_mutability (node.args);
       }
     else
       {
@@ -918,10 +1030,14 @@ struct Visitor : public ast::DefaultVisitor
         check_types_arguments (args, node.signature);
         require_value_or_variable (node.expr);
         require_value_or_variable_list (node.args);
+        check_mutability_arguments (node.args, node.signature);
       }
 
     node.type = node.return_parameter->type;
     node.expression_kind = kValue;
+    node.intrinsic_mutability = Immutable;
+    node.indirection_mutability = node.return_parameter->dereference_mutability;
+    fix (node);
   }
 
   void visit (ConversionExpr& node)
@@ -1013,6 +1129,13 @@ struct Visitor : public ast::DefaultVisitor
 
     node.type = to;
     node.expression_kind = kValue;
+    node.intrinsic_mutability = Immutable;
+    node.indirection_mutability = node.expr->indirection_mutability;
+    if (node.reset_mutability)
+      {
+        node.indirection_mutability = Mutable;
+      }
+    fix (node);
   }
 
   void visit (ListExpr& node)
@@ -1024,6 +1147,9 @@ struct Visitor : public ast::DefaultVisitor
   {
     assert (node.value.present);
     node.expression_kind = kValue;
+    node.intrinsic_mutability = Immutable;
+    node.indirection_mutability = Immutable;
+    fix (node);
   }
 
   void visit (IdentifierExpr& node)
@@ -1056,6 +1182,9 @@ struct Visitor : public ast::DefaultVisitor
         node.type = symbol.type ();
         node.callable = &symbol;
         node.expression_kind = kValue;
+        node.intrinsic_mutability = Immutable;
+        node.indirection_mutability = Immutable;
+        fix (node);
       }
 
       void visit (const decl::Template& symbol)
@@ -1063,6 +1192,9 @@ struct Visitor : public ast::DefaultVisitor
         node.type = symbol.type ();
         node.temp = &symbol;
         node.expression_kind = kValue;
+        node.intrinsic_mutability = Immutable;
+        node.indirection_mutability = Immutable;
+        fix (node);
       }
 
       void visit (const decl::Function& symbol)
@@ -1070,12 +1202,18 @@ struct Visitor : public ast::DefaultVisitor
         node.type = symbol.type ();
         node.callable = &symbol;
         node.expression_kind = kValue;
+        node.intrinsic_mutability = Immutable;
+        node.indirection_mutability = Immutable;
+        fix (node);
       }
 
       void visit (const ParameterSymbol& symbol)
       {
         node.type = symbol.type;
         node.expression_kind = kVariable;
+        node.intrinsic_mutability = symbol.intrinsic_mutability;
+        node.indirection_mutability = symbol.dereference_mutability;
+        fix (node);
       }
 
       void visit (const TypeSymbol& symbol)
@@ -1090,12 +1228,18 @@ struct Visitor : public ast::DefaultVisitor
         node.value = symbol.value;
         assert (node.value.present);
         node.expression_kind = kValue;
+        node.intrinsic_mutability = Immutable;
+        node.indirection_mutability = Immutable;
+        fix (node);
       }
 
       void visit (const VariableSymbol& symbol)
       {
         node.type = symbol.type;
         node.expression_kind = kVariable;
+        node.intrinsic_mutability = symbol.intrinsic_mutability;
+        node.indirection_mutability = symbol.dereference_mutability;
+        fix (node);
       }
 
       void visit (const HiddenSymbol& symbol)
@@ -1228,6 +1372,9 @@ struct Visitor : public ast::DefaultVisitor
 
     require_value_or_variable (node.child);
     node.expression_kind = kValue;
+    node.intrinsic_mutability = Immutable;
+    node.indirection_mutability = Immutable;
+    fix (node);
   }
 
   void visit (BinaryArithmeticExpr& node)
@@ -1295,8 +1442,11 @@ struct Visitor : public ast::DefaultVisitor
       }
 
     require_value_or_variable (node.left);
-    require_value_or_variable (node.left);
+    require_value_or_variable (node.right);
     node.expression_kind = kValue;
+    node.intrinsic_mutability = Immutable;
+    node.indirection_mutability = Immutable;
+    fix (node);
   }
 
   void visit (SourceFile& node)
@@ -1315,6 +1465,7 @@ struct Visitor : public ast::DefaultVisitor
     node.expression_list->accept (*this);
     check_types_arguments (node.expression_list, node.symbol->initializer->initializerType->signature);
     require_value_or_variable_list (node.expression_list);
+    check_mutability_arguments (node.expression_list, node.symbol->initializer->initializerType->signature);
   }
 
   void visit (ast::Initializer& node)
@@ -1484,6 +1635,13 @@ struct Visitor : public ast::DefaultVisitor
     convert (node.child, node.return_symbol->type);
 
     require_value_or_variable (node.child);
+
+    if (type_contains_pointer (node.child->type) &&
+        node.return_symbol->dereference_mutability < node.child->indirection_mutability)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "return casts away +const or +foreign (E149)");
+      }
   }
 
   void visit (IfStatement& node)
@@ -1530,6 +1688,7 @@ struct Visitor : public ast::DefaultVisitor
     const std::string& identifier = node.identifier->identifier;
     // Don't know dereference mutability yet.
     node.root_symbol = new VariableSymbol (identifier, node.location, root_type, Immutable, Foreign);
+    node.root_symbol->dereference_mutability = node.expr->indirection_mutability;
     symtab.enter_symbol (node.root_symbol);
 
     // Check the body.
@@ -1651,7 +1810,7 @@ struct Visitor : public ast::DefaultVisitor
             node.symbols.push_back (symbol);
           }
 
-        return;
+        goto done;
       }
 
     // No type, expressions.
@@ -1678,6 +1837,26 @@ struct Visitor : public ast::DefaultVisitor
         symtab.enter_symbol (symbol);
         node.symbols.push_back (symbol);
       }
+
+done:
+    if (!node.expression_list->empty ())
+      {
+        size_t idx = 0;
+        for (List::ConstIterator pos = node.expression_list->begin (), limit = node.expression_list->end ();
+             pos != limit;
+             ++pos, ++idx)
+          {
+            Node* n = *pos;
+            VariableSymbol* symbol = node.symbols[idx];
+
+            if (type_contains_pointer (n->type) &&
+                symbol->dereference_mutability < n->indirection_mutability)
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "assignment casts away +const or +foreign (E92)");
+              }
+          }
+      }
   }
 
   void visit (AssignStatement& node)
@@ -1696,6 +1875,19 @@ struct Visitor : public ast::DefaultVisitor
     convert (node.right, to);
     require_variable (node.left);
     require_value_or_variable (node.right);
+
+    if (node.left->intrinsic_mutability != Mutable)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "target of assignment is not mutable (E86)");
+      }
+
+    if (type_contains_pointer (node.right->type) &&
+        node.left->indirection_mutability < node.right->indirection_mutability)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "assignment casts away +const or +foreign (E161)");
+      }
   }
 
   void visit (AddAssignStatement& node)
@@ -1721,6 +1913,12 @@ struct Visitor : public ast::DefaultVisitor
     convert (node.right, to);
     require_variable (node.left);
     require_value_or_variable (node.right);
+
+    if (node.left->intrinsic_mutability != Mutable)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "target of assignment is not mutable (E15)");
+      }
   }
 
   void visit (IncrementStatement& node)
@@ -1733,6 +1931,12 @@ struct Visitor : public ast::DefaultVisitor
                        node.child->type->ToString ().c_str ());
       }
     require_variable (node.child);
+
+    if (node.child->intrinsic_mutability != Mutable)
+      {
+        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                       "target of increment is not mutable (E177)");
+      }
   }
 
   void visit (BindPushPortStatement& node)
@@ -1799,6 +2003,9 @@ struct Visitor : public ast::DefaultVisitor
     require_value_or_variable (node.child);
     node.type = p->Base ();
     node.expression_kind = kVariable;
+    node.intrinsic_mutability = node.child->indirection_mutability;
+    node.indirection_mutability = node.child->indirection_mutability;
+    fix (node);
   }
 
   void visit (AddressOfExpr& node)
@@ -1807,6 +2014,9 @@ struct Visitor : public ast::DefaultVisitor
     require_variable (node.child);
     node.type = node.child->type->GetPointer ();
     node.expression_kind = kValue;
+    node.intrinsic_mutability = node.child->intrinsic_mutability;
+    node.indirection_mutability = std::max (node.child->intrinsic_mutability, node.child->indirection_mutability);
+    fix (node);
   }
 
   void visit (SelectExpr& node)
@@ -1815,17 +2025,6 @@ struct Visitor : public ast::DefaultVisitor
     node.base->accept (*this);
     const type::Type* base_type = node.base->type;
     require_value_or_variable (node.base);
-
-    if (type_dereference (base_type))
-      {
-        // Selecting through pointer always yields a variable.
-        node.expression_kind = kVariable;
-      }
-    else
-      {
-        // Otherwise, use the base kind.
-        node.expression_kind = node.base->expression_kind;
-      }
 
     node.field = base_type->select_field (identifier);
     node.callable = base_type->select_callable (identifier);
@@ -1836,13 +2035,29 @@ struct Visitor : public ast::DefaultVisitor
     else if (node.callable != NULL)
       {
         node.type = node.callable->type ();
-        return;
       }
     else
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "cannot select %s from expression of type %s (E154)",
                        identifier.c_str (), base_type->ToString ().c_str ());
+      }
+
+    if (type_dereference (base_type))
+      {
+        // Selecting through pointer always yields a variable.
+        node.expression_kind = kVariable;
+        node.intrinsic_mutability = node.base->indirection_mutability;
+        node.indirection_mutability = node.base->indirection_mutability;
+        fix (node);
+      }
+    else
+      {
+        // Otherwise, use the base kind.
+        node.expression_kind = node.base->expression_kind;
+        node.intrinsic_mutability = node.base->intrinsic_mutability;
+        node.indirection_mutability = node.base->indirection_mutability;
+        fix (node);
       }
   }
 
@@ -1913,6 +2128,9 @@ struct Visitor : public ast::DefaultVisitor
         require_value_or_variable (node.base);
         node.type = node.array_type->Base ();
         node.expression_kind = node.base->expression_kind;
+        node.intrinsic_mutability = node.base->intrinsic_mutability;
+        node.indirection_mutability = node.base->indirection_mutability;
+        fix (node);
         return;
       }
 
@@ -1958,6 +2176,9 @@ struct Visitor : public ast::DefaultVisitor
 
         node.type = node.slice_type->Base ();
         node.expression_kind = kVariable;
+        node.intrinsic_mutability = node.base->intrinsic_mutability;
+        node.indirection_mutability = node.base->indirection_mutability;
+        fix (node);
         return;
       }
 
@@ -1996,6 +2217,9 @@ struct Visitor : public ast::DefaultVisitor
         require_value_or_variable (high_node);
         node.type = node.array_type->Base ()->GetSlice ();
         node.expression_kind = kValue;
+        node.intrinsic_mutability = Immutable;
+        node.indirection_mutability = node.base->indirection_mutability;
+        fix (node);
         return;
       }
 
@@ -2003,6 +2227,9 @@ struct Visitor : public ast::DefaultVisitor
     if (node.slice_type != NULL)
       {
         UNIMPLEMENTED;
+        node.intrinsic_mutability = Immutable;
+        node.indirection_mutability = node.base->indirection_mutability;
+        fix (node);
         return;
       }
 
@@ -2171,4 +2398,26 @@ void check_types (ast::Node* root, decl::SymbolTable& symtab)
   Visitor visitor (symtab);
   root->accept (visitor);
 }
+
+void check_mutability_arguments (ast::Node* node, const type::Signature* signature)
+{
+  ListExpr* args = ast_cast<ListExpr> (node);
+
+  size_t i = 0;
+  for (List::ConstIterator pos = args->begin (), limit = args->end ();
+       pos != limit;
+       ++pos, ++i)
+    {
+      const type::Type* arg = (*pos)->type;
+      if (type_contains_pointer (arg))
+        {
+          if (signature->At (i)->dereference_mutability < (*pos)->indirection_mutability)
+            {
+              error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
+                             "argument %zd casts away +const or +foreign (E85)", i + 1);
+            }
+        }
+    }
+}
+
 }

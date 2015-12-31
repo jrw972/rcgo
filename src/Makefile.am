@@ -20,7 +20,6 @@ bind.hpp \
 builtin_function.hpp builtin_function.cpp \
 callable.hpp callable.cpp \
 check_types.hpp check_types.cpp \
-check_mutability.hpp check_mutability.cpp \
 compute_receiver_access.hpp compute_receiver_access.cpp \
 composition.hpp composition.cpp \
 debug.hpp \
