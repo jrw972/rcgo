@@ -793,6 +793,11 @@ struct Composer::ElaborationVisitor : public ast::DefaultVisitor
     AST_NOT_REACHED (node);
   }
 
+  void visit (ConversionExpr& node)
+  {
+    node.expr->accept (*this);
+  }
+
   void visit (ListStatement& node)
   {
     node.visit_children (*this);

@@ -1725,6 +1725,16 @@ bool is_any_boolean (const Type* type)
   return is_typed_boolean (type) || is_untyped_boolean (type);
 }
 
+const Pointer*
+pointer_to_array (const Type* type)
+{
+  const Pointer* p = type_cast<Pointer> (type->UnderlyingType ());
+  if (p != NULL && p->Base ()->underlying_kind () == kArray) {
+    return p;
+  }
+  return NULL;
+}
+
 NamedType NamedBool ("bool", Bool::Instance ());
 
 NamedType NamedUint8 ("uint8", Uint8::Instance ());

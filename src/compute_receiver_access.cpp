@@ -32,6 +32,13 @@ struct Visitor : public ast::DefaultVisitor
     AST_NOT_REACHED (node);
   }
 
+  void visit (ConversionExpr& node)
+  {
+    node.expr->accept (*this);
+    node.receiver_state = node.expr->receiver_state;
+    node.receiver_access = node.expr->receiver_access;
+  }
+
   void visit (SourceFile& node)
   {
     node.visit_children (*this);
@@ -317,9 +324,21 @@ struct Visitor : public ast::DefaultVisitor
 
   void visit (SliceExpr& node)
   {
-    node.visit_children (*this);
-    UNIMPLEMENTED;
-    //process_list (node, &node);
+    node.base->accept (*this);
+    node.receiver_state = node.base->receiver_state;
+    node.receiver_access = node.base->receiver_access;
+    if (node.low_present) {
+      node.low->accept (*this);
+      node.receiver_access = std::max (node.receiver_access, node.low->receiver_access);
+    }
+    if (node.high_present) {
+      node.high->accept (*this);
+      node.receiver_access = std::max (node.receiver_access, node.high->receiver_access);
+    }
+    if (node.max_present) {
+      node.max->accept (*this);
+      node.receiver_access = std::max (node.receiver_access, node.max->receiver_access);
+    }
   }
 };
 }

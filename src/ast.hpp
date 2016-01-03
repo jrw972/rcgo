@@ -21,6 +21,7 @@ struct Node
   const type::Type* type;
   semantic::Value value;
   type::field_t* field;
+  bool reset_mutability;
   const decl::Callable* callable;
   const decl::Template* temp;
   ExpressionKind expression_kind;
@@ -264,8 +265,6 @@ struct ConversionExpr : public Node
 
   Node* const type_expr;
   Node* const expr;
-
-  bool reset_mutability;
 };
 
 struct DereferenceExpr : public Unary<>
@@ -307,15 +306,20 @@ struct SliceExpr : public Node
              Node* b,
              Node* l,
              Node* h,
-             Node* c);
+             Node* m);
   virtual void accept (Visitor& visitor);
   virtual void visit_children (Visitor& visitor);
 
   Node* const base;
   Node* const low;
+  bool const low_present;
   Node* const high;
-  Node* const capacity;
+  bool const high_present;
+  Node* const max;
+  bool const max_present;
 
+  const type::String* string_type;
+  const type::Pointer* pointer_to_array_type;
   const type::Array* array_type;
   const type::Slice* slice_type;
 };

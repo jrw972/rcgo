@@ -2580,6 +2580,10 @@ type_strip_cast (const Type* type)
   return type_cast<T> (type_strip (type));
 }
 
+  // Return a Pointer if a pointer to an array or NULL.
+const Pointer*
+pointer_to_array (const Type* type);
+
 inline C64 operator* (const C64&, const C64&)
 {
   UNIMPLEMENTED;

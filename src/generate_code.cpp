@@ -307,6 +307,12 @@ struct CodeGenVisitor : public ast::DefaultVisitor
 
   void visit (CallExpr& node)
   {
+    if (node.expr->expression_kind == kType) {
+      node.args->at (0)->accept (*this);
+      node.operation = make_conversion (node.args->at (0)->operation, node.args->at (0)->type, node.type);
+      return;
+    }
+
     node.args->accept (*this);
 
     if (node.callable != NULL)
@@ -583,27 +589,46 @@ struct CodeGenVisitor : public ast::DefaultVisitor
 
   void visit (SliceExpr& node)
   {
-    node.visit_children (*this);
+    node.base->accept (*this);
 
-    Operation* low = node.low->operation;
-    if (node.low->expression_kind == kVariable)
-      {
-        low = new Load (low, node.low->type);
-      }
-    low = MakeConvertToInt (low, node.low->type);
+    Operation* low = NULL;
+    if (node.low_present) {
+      node.low->accept (*this);
+      low = node.low->operation;
+      if (node.low->expression_kind == kVariable)
+        {
+          low = new Load (low, node.low->type);
+        }
+      low = MakeConvertToInt (low, node.low->type);
+    }
 
-    Operation* high = node.high->operation;
-    if (node.high->expression_kind == kVariable)
-      {
-        high = new Load (high, node.high->type);
-      }
-    high = MakeConvertToInt (high, node.high->type);
+    Operation* high = NULL;
+    if (node.high_present) {
+      node.high->accept (*this);
+      high = node.high->operation;
+      if (node.high->expression_kind == kVariable)
+        {
+          high = new Load (high, node.high->type);
+        }
+      high = MakeConvertToInt (high, node.high->type);
+    }
+
+    Operation* max = NULL;
+    if (node.max_present) {
+      node.max->accept (*this);
+      max = node.max->operation;
+      if (node.max->expression_kind == kVariable)
+        {
+          max = new Load (max, node.max->type);
+        }
+      max = MakeConvertToInt (max, node.max->type);
+    }
 
     if (node.array_type != NULL)
       {
         if (node.base->expression_kind == kVariable)
           {
-            node.operation = new SliceArray (node.location, node.base->operation, low, high, node.array_type);
+            node.operation = new SliceArray (node.location, node.base->operation, low, high, max, node.array_type);
             return;
           }
         else

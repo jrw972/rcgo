@@ -2953,16 +2953,27 @@ SliceArray::execute (executor_base_t& exec) const
 {
   base->execute (exec);
   char* ptr = static_cast<char*> (exec.stack ().pop_pointer ());
-  low->execute (exec);
-  Int::ValueType low_val;
-  exec.stack ().pop (low_val);
-  high->execute (exec);
-  Int::ValueType high_val;
-  exec.stack ().pop (high_val);
+  Int::ValueType low_val = 0;
+  if (low) {
+    low->execute (exec);
+    exec.stack ().pop (low_val);
+  }
+  Int::ValueType high_val = type->dimension;
+  if (high) {
+    high->execute (exec);
+    exec.stack ().pop (high_val);
+  }
+  Int::ValueType max_val = type->dimension;
+  if (max) {
+    max->execute (exec);
+    exec.stack ().pop (max_val);
+  }
+
   // Bounds check.
   if (!(0 <= low_val &&
         low_val <= high_val &&
-        high_val <= type->dimension))
+        high_val <= max_val &&
+        max_val <= type->dimension))
     {
       error_at_line (-1, 0, location.File.c_str (), location.Line,
                      "slice index is out of range (E223)");
@@ -2970,7 +2981,7 @@ SliceArray::execute (executor_base_t& exec) const
 
   Slice::ValueType slice_val;
   slice_val.length = high_val - low_val;
-  slice_val.capacity = type->dimension - low_val;
+  slice_val.capacity = max_val - low_val;
   slice_val.ptr = slice_val.length ? ptr + low_val * type->UnitSize () : NULL;
   exec.stack ().push (slice_val);
 

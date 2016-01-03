@@ -912,6 +912,19 @@ struct Visitor : public ast::DefaultVisitor
   {
     node.visit_children (*this);
 
+    if (node.expr->expression_kind == kType) {
+      // Conversion.
+      if (node.args->size () != 1) {
+        error_at_line (-1, 0, node.location.File.c_str (),
+                       node.location.Line,
+                       "conversion requires one argument (E8)");
+
+      }
+
+      conversion (node, node.expr, node.args->at (0));
+      return;
+    }
+
     // Collect the argument types.
     TypeList argument_types;
     List* args = node.args;
@@ -1040,16 +1053,16 @@ struct Visitor : public ast::DefaultVisitor
     fix (node);
   }
 
-  void visit (ConversionExpr& node)
+  void conversion (Node& node,
+                   Node* type_expr,
+                   Node* expr)
   {
-    node.visit_children (*this);
+    require_type (type_expr);
+    require_value_or_variable (expr);
 
-    require_type (node.type_expr);
-    require_value_or_variable (node.expr);
-
-    const type::Type* to = node.type_expr->type;
-    const type::Type*& from = node.expr->type;
-    Value& x = node.expr->value;
+    const type::Type* to = type_expr->type;
+    const type::Type*& from = expr->type;
+    Value& x = expr->value;
 
     if (x.present)
       {
@@ -1130,12 +1143,18 @@ struct Visitor : public ast::DefaultVisitor
     node.type = to;
     node.expression_kind = kValue;
     node.intrinsic_mutability = Immutable;
-    node.indirection_mutability = node.expr->indirection_mutability;
+    node.indirection_mutability = expr->indirection_mutability;
     if (node.reset_mutability)
       {
         node.indirection_mutability = Mutable;
       }
     fix (node);
+  }
+
+  void visit (ConversionExpr& node)
+  {
+    node.visit_children (*this);
+    conversion (node, node.type_expr, node.expr);
   }
 
   void visit (ListExpr& node)
@@ -2193,21 +2212,63 @@ done:
 
   void visit (SliceExpr& node)
   {
-    node.visit_children (*this);
     Node* base = node.base;
+    base->accept (*this);
     const type::Type* base_type = node.base->type;
+
     Node* low_node = node.low;
+    if (node.low_present) {
+      low_node->accept (*this);
+    }
     const type::Type*& low_type = low_node->type;
     Value& low_value = low_node->value;
+
     Node* high_node = node.high;
+    if (node.high_present) {
+      high_node->accept (*this);
+    }
     const type::Type*& high_type = high_node->type;
     Value& high_value = high_node->value;
+
+    Node* max_node = node.max;
+    if (node.max_present) {
+      max_node->accept (*this);
+    }
+    const type::Type*& max_type = max_node->type;
+    Value& max_value = max_node->value;
+
+    node.string_type = type_cast<String> (base_type->UnderlyingType ());
+    if (node.string_type != NULL)
+      {
+        UNIMPLEMENTED;
+        return;
+      }
+
+    node.pointer_to_array_type = pointer_to_array (base_type->UnderlyingType ());
+    if (node.pointer_to_array_type)
+      {
+        UNIMPLEMENTED;
+        return;
+      }
 
     node.array_type = type_cast<Array> (base_type->UnderlyingType ());
     if (node.array_type != NULL)
       {
-        check_array_index (node.array_type, low_node, true);
-        check_array_index (node.array_type, high_node, true);
+        require_value_or_variable (base);
+
+        if (node.low_present) {
+          check_array_index (node.array_type, low_node, true);
+          require_value_or_variable (low_node);
+        }
+        if (node.high_present) {
+          check_array_index (node.array_type, high_node, true);
+          require_value_or_variable (high_node);
+        }
+        if (node.max_present) {
+          check_array_index (node.array_type, max_node, true);
+          require_value_or_variable (max_node);
+        }
+
         if (low_value.present && high_value.present)
           {
             if (!(low_value.to_int (low_type) <= high_value.to_int (high_type)))
@@ -2216,9 +2277,25 @@ done:
                                "slice indices are out of range (E224)");
               }
           }
-        require_value_or_variable (base);
-        require_value_or_variable (low_node);
-        require_value_or_variable (high_node);
+
+        if (low_value.present && max_value.present)
+          {
+            if (!(low_value.to_int (low_type) <= max_value.to_int (max_type)))
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "slice indices are out of range (E6)");
+              }
+          }
+
+        if (high_value.present && max_value.present)
+          {
+            if (!(high_value.to_int (high_type) <= max_value.to_int (max_type)))
+              {
+                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                               "slice indices are out of range (E7)");
+              }
+          }
+
         node.type = node.array_type->Base ()->GetSlice ();
         node.expression_kind = kValue;
         node.intrinsic_mutability = Immutable;
@@ -2231,6 +2308,7 @@ done:
     if (node.slice_type != NULL)
       {
         UNIMPLEMENTED;
+        return;
         node.intrinsic_mutability = Immutable;
         node.indirection_mutability = node.base->indirection_mutability;
         fix (node);
@@ -2240,20 +2318,6 @@ done:
     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                    "cannot slice expression of type %s (E225)",
                    base_type->ToString ().c_str ());
-
-    //     typed_Value base_tv = CheckExpectReference (node.base_ref ());
-    //     typed_Value low_tv = CheckAndImplicitlyDereference (node.low_ref ());
-    //     typed_Value high_tv = CheckAndImplicitlyDereference (node.high_ref ());
-    //     typed_Value result = typed_Value::slice (node.location, base_tv, low_tv, high_tv);
-    //     if (result.IsError ())
-    //       {
-    //         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-    //                        "incompatible types (%s)[%s : %s] (E36)",
-    //                        base_tv.type->ToString ().c_str (),
-    //                        low_tv.type->ToString ().c_str (),
-    //                        high_tv.type->ToString ().c_str ());
-    //       }
-    //     node.typed_value = result;
   }
 
   void visit (TypeExpression& node)

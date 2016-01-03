@@ -1,6 +1,7 @@
 #include "ast.hpp"
 
 #include "ast_visitor.hpp"
+#include "ast_cast.hpp"
 
 namespace ast
 {
@@ -269,7 +270,7 @@ operator<< (std::ostream& out, Node& node)
     void visit (EmptyExpr& node)
     {
       print_indent (node);
-      out << "auto_expr";
+      out << "EmptyExpr";
       print_common (node);
       print_children (node);
     }
@@ -676,6 +677,7 @@ Node::Node (unsigned int line_)
   : location (line_)
   , type (NULL)
   , field (NULL)
+  , reset_mutability (false)
   , callable (NULL)
   , temp (NULL)
   , receiver_state (false)
@@ -872,7 +874,6 @@ ConversionExpr::ConversionExpr (unsigned int line, Node* te, Node* e)
   : Node (line)
   , type_expr (te)
   , expr (e)
-  , reset_mutability (false)
 { }
 void ConversionExpr::visit_children (Visitor& visitor)
 {
@@ -910,12 +911,17 @@ SliceExpr::SliceExpr (unsigned int line,
                       Node* b,
                       Node* l,
                       Node* h,
-                      Node* c)
+                      Node* m)
   : Node (line)
   , base (b)
-  , low (b)
+  , low (l)
+  , low_present (ast_cast<EmptyExpr> (low) == NULL)
   , high (h)
-  , capacity (c)
+  , high_present (ast_cast<EmptyExpr> (high) == NULL)
+  , max (m)
+  , max_present (ast_cast<EmptyExpr> (max) == NULL)
+  , string_type (NULL)
+  , pointer_to_array_type (NULL)
   , array_type (NULL)
   , slice_type (NULL)
 { }
@@ -925,7 +931,7 @@ void SliceExpr::visit_children (Visitor& visitor)
   base->accept (visitor);
   low->accept (visitor);
   high->accept (visitor);
-  capacity->accept (visitor);
+  max->accept (visitor);
 }
 
 EmptyExpr::EmptyExpr (unsigned int line)

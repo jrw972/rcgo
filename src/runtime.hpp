@@ -141,7 +141,19 @@ struct IndexSlice : public Operation
 
 struct SliceArray : public Operation
 {
-  SliceArray (const util::Location& loc, Operation* b, Operation* l, Operation* h, const type::Array* t) : location (loc), base (b), low (l), high (h), type (t) { }
+  SliceArray (const util::Location& loc,
+              Operation* b,
+              Operation* l,
+              Operation* h,
+              Operation* m,
+              const type::Array* t)
+    : location (loc)
+    , base (b)
+    , low (l)
+    , high (h)
+    , max (m)
+    , type (t)
+  { }
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
@@ -151,6 +163,7 @@ struct SliceArray : public Operation
   Operation* const base;
   Operation* const low;
   Operation* const high;
+  Operation* const max;
   const type::Array* type;
 };
 
