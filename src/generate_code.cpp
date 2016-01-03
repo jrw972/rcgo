@@ -309,7 +309,12 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   {
     if (node.expr->expression_kind == kType) {
       node.args->at (0)->accept (*this);
-      node.operation = make_conversion (node.args->at (0)->operation, node.args->at (0)->type, node.type);
+      Operation* o = node.args->at (0)->operation;
+      if (node.args->at (0)->expression_kind == kVariable)
+        {
+          o = new Load (o, node.args->at (0)->type);
+        }
+      node.operation = make_conversion (o, node.args->at (0)->type, node.type);
       return;
     }
 
@@ -412,7 +417,12 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   void visit (ConversionExpr& node)
   {
     node.expr->accept (*this);
-    node.operation = make_conversion (node.expr->operation, node.expr->type, node.type);
+    Operation* o = node.expr->operation;
+    if (node.expr->expression_kind == kVariable)
+      {
+        o = new Load (o, node.expr->type);
+      }
+    node.operation = make_conversion (o, node.expr->type, node.type);
   }
 
   void visit (ListExpr& node)

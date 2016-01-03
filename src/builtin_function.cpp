@@ -126,6 +126,22 @@ Writable::call (runtime::executor_base_t& exec) const
   *r = (pfd.revents & POLLOUT) != 0;
 }
 
+ClockGettime::ClockGettime (const util::Location& loc)
+  : BuiltinFunction ("clock_gettime",
+                     loc,
+                     new type::Function (type::Function::FUNCTION, (new Signature ())
+                                         ->Append (ParameterSymbol::make (loc, "tp", type::NamedTimespec.GetPointer (), Immutable, Foreign)),
+                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::NamedInt, Immutable)))
+{ }
+
+void
+ClockGettime::call (runtime::executor_base_t& exec) const
+{
+  struct timespec* ts = *static_cast< struct timespec**> (exec.stack ().get_address (type_->GetSignature ()->At (0)->offset ()));
+  Int::ValueType* r = static_cast<Int::ValueType*> (exec.stack ().get_address (type_->GetReturnParameter ()->offset ()));
+  *r = clock_gettime (CLOCK_REALTIME, ts);
+}
+
 TimerfdCreate::TimerfdCreate (const util::Location& loc)
   : BuiltinFunction ("timerfd_create",
                      loc,

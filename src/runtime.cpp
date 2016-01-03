@@ -2254,6 +2254,11 @@ struct PrintlnImpl : public Callable
         printf ("%u", *static_cast<Uint16::ValueType*> (ptr));
       }
 
+      void visit (const Uint32& type)
+      {
+        printf ("%u", *static_cast<Uint32::ValueType*> (ptr));
+      }
+
       void visit (const Uint64& type)
       {
         printf ("%lu", *static_cast<Uint64::ValueType*> (ptr));
@@ -2663,6 +2668,11 @@ struct MakeLiteralVisitor : public type::DefaultVisitor
   void visit (const Int& type)
   {
     op = make_literal (value.int_value);
+  }
+
+  void visit (const Float64& type)
+  {
+    op = make_literal (value.float64_value);
   }
 
   void visit (const StringU& type)
@@ -3282,6 +3292,61 @@ struct ConvertSliceOfBytesToString : public Operation
   Operation* const child;
 };
 
+  template<typename FromType, typename ToType>
+struct Conversion : public Operation
+{
+  Conversion (Operation* c) : child (c) { }
+  virtual OpReturn execute (executor_base_t& exec) const
+  {
+    child->execute (exec);
+    FromType x;
+    exec.stack ().pop (x);
+    ToType y = x;
+    exec.stack ().push (y);
+    return kContinue;
+  }
+  virtual void dump () const
+  {
+    UNIMPLEMENTED;
+  }
+  Operation* const child;
+};
+
+
+  template <typename T1>
+  static Operation* make_conversion1 (Operation* c, const type::Type* to)
+  {
+    switch (to->underlying_kind ()) {
+    case kUint8:
+      return new Conversion<T1, Uint8::ValueType> (c);
+    case kUint16:
+      return new Conversion<T1, Uint16::ValueType> (c);
+    case kUint32:
+      return new Conversion<T1, Uint32::ValueType> (c);
+    case kUint64:
+      return new Conversion<T1, Uint64::ValueType> (c);
+    case kInt8:
+      return new Conversion<T1, Int8::ValueType> (c);
+    case kInt16:
+      return new Conversion<T1, Int16::ValueType> (c);
+    case kInt32:
+      return new Conversion<T1, Int32::ValueType> (c);
+    case kInt64:
+      return new Conversion<T1, Int64::ValueType> (c);
+    case kFloat32:
+      return new Conversion<T1, Float32::ValueType> (c);
+    case kFloat64:
+      return new Conversion<T1, Float64::ValueType> (c);
+    case kUint:
+      return new Conversion<T1, Uint::ValueType> (c);
+    case kInt:
+      return new Conversion<T1, Int::ValueType> (c);
+    default:
+      break;
+    }
+    NOT_REACHED;
+  }
+
 Operation* make_conversion (Operation* c, const type::Type* from, const type::Type* to)
 {
   if (Identical (from->UnderlyingType (), to->UnderlyingType ()))
@@ -3297,9 +3362,37 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
       UNIMPLEMENTED;
     }
   else if ((is_typed_integer (from) || is_typed_float (from)) &&
-           (is_typed_integer (to) || is_typed_float (from)))
+           (is_typed_integer (to) || is_typed_float (to)))
     {
-      UNIMPLEMENTED;
+      switch (from->underlying_kind ()) {
+      case kUint8:
+        return make_conversion1<Uint8::ValueType> (c, to);
+      case kUint16:
+        return make_conversion1<Uint16::ValueType> (c, to);
+      case kUint32:
+        return make_conversion1<Uint32::ValueType> (c, to);
+      case kUint64:
+        return make_conversion1<Uint64::ValueType> (c, to);
+      case kInt8:
+        return make_conversion1<Int8::ValueType> (c, to);
+      case kInt16:
+        return make_conversion1<Int16::ValueType> (c, to);
+      case kInt32:
+        return make_conversion1<Int32::ValueType> (c, to);
+      case kInt64:
+        return make_conversion1<Int64::ValueType> (c, to);
+      case kFloat32:
+        return make_conversion1<Float32::ValueType> (c, to);
+      case kFloat64:
+        return make_conversion1<Float64::ValueType> (c, to);
+      case kUint:
+        return make_conversion1<Uint::ValueType> (c, to);
+      case kInt:
+        return make_conversion1<Int::ValueType> (c, to);
+      default:
+        break;
+      }
+      NOT_REACHED;
     }
   else if (is_typed_complex (from) && is_typed_complex (to))
     {

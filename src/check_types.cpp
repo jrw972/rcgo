@@ -1114,7 +1114,7 @@ struct Visitor : public ast::DefaultVisitor
             // Okay.
           }
         else if ((is_typed_integer (from) || is_typed_float (from)) &&
-                 (is_typed_integer (to) || is_typed_float (from)))
+                 (is_typed_integer (to) || is_typed_float (to)))
           {
             // Okay.
           }

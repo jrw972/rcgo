@@ -423,7 +423,7 @@ struct C64
     return real;
   }
 
-  C64& operator= (const Int64::ValueType& x)
+  C64& operator= (const Float64::ValueType& x)
   {
     this->real = x;
     this->imag = 0;
@@ -461,7 +461,7 @@ struct C128
     return real;
   }
 
-  C128& operator= (const Int64::ValueType& x)
+  C128& operator= (const Float64::ValueType& x)
   {
     this->real = x;
     this->imag = 0;
@@ -721,7 +721,7 @@ public:
   {
     return fields_.end ();
   }
-  void Append (const std::string& field_name, const Type* field_type);
+  Struct* Append (const std::string& field_name, const Type* field_type);
   field_t* Find (const std::string& name) const;
   virtual field_t* select_field (const std::string& name) const;
 private:
@@ -1056,7 +1056,7 @@ public:
       return this->real == other.real && this->imag == other.imag;
     }
 
-    ValueType& operator= (const Int::ValueType& x)
+    ValueType& operator= (const Float::ValueType& x)
     {
       this->real = x;
       this->imag = 0;
@@ -2678,6 +2678,7 @@ extern NamedType NamedByte;
 extern NamedType NamedString;
 
 extern NamedType NamedFileDescriptor;
+extern NamedType NamedTimespec;
 
 inline std::ostream& operator<< (std::ostream& out, const StringRep& s)
 {

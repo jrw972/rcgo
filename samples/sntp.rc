@@ -1,3 +1,47 @@
+type Timestamp struct {
+  // 0h on 1 January 1900
+  seconds uint32;
+  fractionalSeconds uint32;
+};
+
+const RESERVED = 0;
+const SYMMETRIC_ACTIVE = 1;
+const SYMMETRIC_PASSIVE = 2;
+const CLIENT = 3;
+const SERVER = 4;
+const BROADCAST = 5;
+const NTP_CONTROL = 6;
+const PRIVATE = 7;
+
+const V4 = 4;
+
+type SntpMessage struct {
+  leapIndicator uint8;
+  versionNumber uint8;
+  mode uint8;
+  stratum uint8;
+  poll uint8;
+  precision uint8;
+  rootDelay uint32;
+  rootDispersion uint32;
+  referenceIdentifier uint32;
+  reference Timestamp;
+  originate Timestamp;
+  receive   Timestamp;
+  transmit  Timestamp;
+};
+
+// http://waitingkuo.blogspot.com/2012/06/conversion-between-ntp-time-and-unix.html
+func (this *SntpMessage) initialize () {
+    this.mode = CLIENT;
+    this.versionNumber = V4;
+    var ts timespec;
+    clock_gettime (&ts);
+    this.transmit.seconds = uint32 (ts.tv_sec + 0x83AA7E80);
+    this.transmit.fractionalSeconds = uint32 (float64 (ts.tv_nsec) * 1e-9 * (1 << 32));
+    println (this.transmit.seconds, ".", this.transmit.fractionalSeconds);
+}
+
 type Timer component {
      fd FileDescriptor;
      Alarm push ();
@@ -125,6 +169,9 @@ init (this *System) Init () {
 }
 
 reaction (this $const * System) Alarm () {
+     var s SntpMessage;
+     s.initialize ();
+
      var msg $foreign UdpMessage;
      msg.host = `localhost`;
      msg.port = 7;

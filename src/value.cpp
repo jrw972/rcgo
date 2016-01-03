@@ -251,6 +251,11 @@ static void convert_numeric (Value& value, Complex::ValueType x, const type::Typ
     {
       value.integer_value = x;
     }
+
+    void visit (const Float& type)
+    {
+      value.float_value = x;
+    }
   };
 
   visitor v (value, x);

@@ -18,6 +18,10 @@ using namespace decl;
 void
 enter_symbols (SymbolTable& symtab)
 {
+  // TODO:  Do not use dynamic allocation.
+  // Eliminate TypeSymbol.  Let a NamedType by a Symbol.
+  // Use statically allocated instances where possible.
+
   util::Location loc;
   // Insert types.
   symtab.enter_symbol (new TypeSymbol ("bool", loc, &type::NamedBool));
@@ -56,9 +60,11 @@ enter_symbols (SymbolTable& symtab)
 
   // I/O facilities.
   symtab.enter_symbol (new TypeSymbol ("FileDescriptor", loc, &type::NamedFileDescriptor));
+  symtab.enter_symbol (new TypeSymbol ("timespec", loc, &type::NamedTimespec));
   symtab.enter_symbol (new Readable (loc));
   symtab.enter_symbol (new Read (loc));
   symtab.enter_symbol (new Writable (loc));
+  symtab.enter_symbol (new ClockGettime (loc));
   symtab.enter_symbol (new TimerfdCreate (loc));
   symtab.enter_symbol (new TimerfdSettime (loc));
   symtab.enter_symbol (new UdpSocket (loc));

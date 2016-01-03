@@ -72,6 +72,12 @@ struct Writable : public BuiltinFunction
   virtual void call (runtime::executor_base_t& exec) const;
 };
 
+struct ClockGettime : public BuiltinFunction
+{
+  ClockGettime (const util::Location& loc);
+  virtual void call (runtime::executor_base_t& exec) const;
+};
+
 struct TimerfdCreate : public BuiltinFunction
 {
   TimerfdCreate (const util::Location& loc);

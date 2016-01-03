@@ -199,7 +199,7 @@ NamedType::GetBind (const std::string& identifier) const
   return NULL;
 }
 
-void
+Struct*
 Struct::Append (const std::string& field_name, const Type* field_type)
 {
   size_t alignment = field_type->Alignment ();
@@ -213,6 +213,8 @@ Struct::Append (const std::string& field_name, const Type* field_type)
     {
       alignment_ = alignment;
     }
+
+  return this;
 }
 
 field_t *
@@ -1763,4 +1765,6 @@ NamedType NamedUintptr ("uintptr", Uintptr::Instance ());
 NamedType NamedString ("string", StringU::Instance ());
 
 NamedType NamedFileDescriptor ("FileDescriptor", FileDescriptor::Instance ());
+NamedType NamedTimespec ("timespec", (new Struct ())->Append ("tv_sec", &NamedUint64)->Append ("tv_nsec", &NamedUint64));
+
 }
