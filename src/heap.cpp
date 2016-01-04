@@ -639,11 +639,7 @@ Heap::collect_garbage (bool force)
       free_list_head_ = NULL;
       allocated_size_ = Heap::Block::sweep (&block_, &free_list_head_) * SLOT_SIZE;
       next_collection_size_ = allocated_size_ * 2;
-
-      if (block_ == NULL)
-        {
-          next_block_size_ = 0;
-        }
+      next_block_size_ = allocated_size_;
 
       Heap** child = &this->child_;
       while (*child != NULL)
