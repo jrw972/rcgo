@@ -9,205 +9,79 @@ In this chapter, we present a programming language for reactive components.
 We state the motivation for the language, our assumptions for tractability, and the features that guided our design.
 We then show how reactive components are expressed in the language and we conclude with illustrative examples.
 
-\section{Introduction}
-
-An implementation of the reactive component model presented in chapter~\ref{model} is necessary for at least three reasons.
+\section{Challenges}
+An implementation of the reactive component model presented in chapter~\ref{model} is necessary for at least two reasons.
 First and foremost, an implementation tests the practicality of the model.
 The act of implementing the model can help to evaluate whether the assumptions upon which the model is founded can be realized using existing techniques.
 Conversely, an implementation can suggest restrictions to the model that are necessary to produce an effective implementation.
-An example of this was seen in section~\ref{propcomp} where the component instance was used as proxy for its state variables for the purpose of determining which variables were involved in a transaction.
+An example of this was seen in section~\ref{propcomp} where the component instance was used as a proxy for its state variables for the purpose of determining which variables were involved in a transaction.
 Implementation forces one to supply and consider details that can either qualify or disqualify a model as a practical engineering tool.
-This is consistent with the emerging attitude in systems research that all new ideas and techniques must be accompanied by relevant tools and evaluations to show their feasibility.
+This is consistent with the emerging attitude in systems research that all new ideas and techniques must be accompanied by relevant tools and evaluations to show their feasibility~\cite{Krishnamurthi:2015:RSC:2739250.2658987}.
 
-Second, language support for a model is beneficial because it closes the semantic gap between reasoning and implementation.
-The importance of language support can be seen in techniques like structured programming~\cite{dahl1972structured} and object-oriented programming~\cite{booch1982object}.
-While these techniques can be applied in virtually any setting, their lasting utility is derived from their implementation in a variety of programming languages.
-Providing language support for a model raises the level of abstraction and allows reasoning about a system directly from its specification instead of reasoning in one set of semantics while implementing in another which can be tedious and error-prone.
-Language support allows developers to rely on the consistent application of the semantics of the model through strict enforcement, e.g., checking by a compiler.
-
-Third, an implementation is necessary to demonstrate that the model can be applied successfully to real-world design and implementation problems.
+Second, an implementation is necessary to demonstrate that the model can be applied successfully to real-world design and implementation problems.
 That is, given a platform for reactive components, we can design, construct, and evaluate systems based on the reactive component paradigm.
 Furthermore, we can evaluate critically the design and implementation processes that the model and platform encourage.
-By comparing implementations of similar systems in two different models, we can gain insight into the strengths and weaknesses of the model.
+By comparing implementations of similar systems in different models, we also can gain insight into the strengths and weaknesses of each model.
 These ideas will be explored further in chapter~\ref{evaluation}.
 
-\section{Technical Agenda}
+\section{Constraints}
 
-Through the process of designing and implementing a language for reactive components, we seek to answer the following questions.
-
-\paragraph{What techniques, assumptions, and approximations are necessary to organize and enforce the semantics of reactive components?}
-An implementation of reactive components should provide three things.
-First, an implementation should provide a mechanism for declaring and defining the various elements of the reactive component model.
-One way of doing this is to define a language with syntax for actions, reactions, getters, activations, etc.
-Another way is to programmatically assemble the reactive components using a library in another language.
-As previously discussed, this approach forces one to reason about a system using one set of semantics while implementing it under a different set of semantics which can be tedious and error prone.
-
-Second, an implementation should provide the checks necessary to enforce the semantics of reactive components.
+\paragraph{Strict enforcement of the reactive component model.}
+An implementation should provide the checks necessary to enforce the semantics of reactive components.
 The checks of interest are 1) the separation of the immutable and mutable phase, 2) the binding state of pull ports, 3) the binding state of reactions, and 4) the detection of non-deterministic state transitions arising from composition.
-These checks may be carried out by a compiler/interpreter or developers or not performed at all.
-Not performing the checks is unacceptable due to the subtlety associated with developing correct reactive programs.
+Not performing these checks is unacceptable due to the subtlety associated with developing correct reactive programs.
 In this scenario, the semantics of reactive components would be enforced through convention which is easily violated.
 Similarly, placing the burden on developers is unacceptable due to the amount of detail that must be considered.
 Thus, the implementation must enforce the semantics of reactive components through adequate checking.
 
-To enforce the semantics of reactive components, the compiler or interpreter must have sufficient semantic knowledge to distinguish correct programs from potentially incorrect programs.
-To illustrate, consider the problem of ensuring that the state of a component does not change during the immutable phase of a transition.
-We observe that that an action/reaction is similar to a method.
-Based on this observation, checking the immutability of a component in the immutable phase should be similar to checking for \verb+const+ correctness in C++.
-In C++, the \verb+const+ correctness check is performed early in the compilation process when the program is represented as an abstract syntax tree (AST) with full semantic information, as opposed to late in the process where the program is represented by machine instructions with very limited semantic information.
-From this, we observe that checking is made possible or easier by 1) adding features to the language which provide the necessary semantic information and 2) performing the checks early in the translation process.
-An existing language or code might not provide enough detail to facilitate the necessary checks while a lack of detail may prevent efficient checking.
-Along the same lines, an implementation may have to make conservative assumptions to enforce the semantics of reactive components.
-As was seen in section~\ref{propcomp}, allowing a component instance to serve as a proxy for all of its state variables allows the check for non-deterministic state transitions to be implemented using known techniques.
-
-The final basic feature that should be supplied is a scheduler that executes the system described by the user's program.
-The scheduler will be discussed in chapter~\ref{implementation}.
-
-\paragraph{What techniques, assumptions, and approximations are necessary to allow the use of reference semantics and linked data structures in the state and transitions of reactive components?}
-Formal models for reactive systems typically use mathematically friendly data-types to make proofs easier.
+\paragraph{Support for reference semantics and linked data structures.}
+Formal models for reactive systems typically use mathematically friendly data-types, i.e., those that do not introduce aliasing, to make proofs easier.
 However, reference semantics and the linked data structures they make possible are a critical part of modern software engineering.
-As two of our objectives are practicality and utility, a language for reactive components must support reference semantics and linked data structures.
+As two of our objectives are practicality and utility, our language for reactive components must support reference semantics and linked data structures.
 The potential hazard created by reference semantics is that the state of one component becomes accessible in another component.
 This means that the state of a component may not be solely under the control of the transitions for that component.
-Consequently, the properties associated with that component carry no weight as they could be violated by the other components manipulating that state.
-Furthermore, an implementation that chooses to concurrently execute seemingly independent transactions may cause data corruption as two transactions may manipulate the same state in an uncoordinated fashion.
-Thus, an implementation of reactive components must take special care to preserve the isolation of state among reactive components when supporting references and linked data structures.
+Consequently, the properties associated with that component could be violated by the other components manipulating that state.
+Furthermore, an implementation that chooses to execute seemingly independent transactions concurrently may cause data corruption as two transactions may manipulate the same state in an uncoordinated fashion.
+Thus, our implementation of reactive components takes special care to preserve isolation of state among reactive components when supporting references and linked data structures.
 
-\paragraph{What techniques, assumptions, and approximations are necessary to facilitate efficient communication between reactive components?}
+\paragraph{Efficient inter-component communication.}
 Linked data structures create the opportunity for efficient communication between components.
-=======
-\section{Requirements and Assumptions}
-\paragraph{Terminology.}
-An implementation of reactive components must provide facilities for declaring and defining the features of the model depicted in figure~\ref{reactive_component}.
-The
-
-\paragraph{Strict enforcement of the reactive component model.}
-
-\paragraph{How do we enforce the immutable/mutable phase split?}
-
-\paragraph{Direct implementation.}
-
-\paragraph{Static system assumption.}
-
-\paragraph{Efficient communication.}
-
-\paragraph{Can scheduling be efficient?}
-
-\paragraph{Can we interact with POSIX?}
-
-\paragraph{Generality.}
-
-\paragraph{Approachability.}
-
-
-
-
-
-\section{Design Sketch}
-
-question -> requirement
-
-How does the
-
-practicality
-
-directness
-
-design problems
-
-
-
-
-\section{Requirements}
-
-What questions do we want to answer?
-- efficiency of scheduler
-- interaction of reactive component semantics on transformation parts
-
-
-
-\section{Approach}
-Our approach to implementing reactive components is to define a high-level programming language for reactive components and implement that language in an interpreter.
-The two alternatives to a high-level programming language are a low-level byte-code and a coordination language.
-The main purpose of byte-code is to describe a transformation computation for a real or virtual machine.
-Many of the interesting elements of reactive components, like actions, reactions, getters, push ports, pull ports, activations, and bindings are more declarative in nature.
-Thus, the initial effort should be to capture these elements using a high-level language.
-The choice to implement an interpreter made the task more tractable as it avoids code generation, linking, and loading.
-However, in moving from the interpreter to a compiler, the processes of code generation, linking, and loading must provide the same guarantees that are enforced by the high-level language.
-We describe the challenges of moving from interpreter to compiler in chapter~\ref{future_work}.
-
-We elected to not implement reactive components as a coordination language due to the interplay between reactive and transformational semantics.
-The coordination language approach involves two completely separate languages.
-The reactive language would encode systems using the elements of the reactive component model, e.g., components, actions, push ports, etc. while the transformation language would define all of the types and computation performed on those types.
-For this approach to be viable, the transformational language must guarantee that no component changes state during the immutable phase of a transition and that the state of each component remain isolated.
-An ordinary programmer with a sufficiently powerful transformational language, like C, C++, or Java, can easily violate these requirements.
-Based on this observation, we elected to define a language for reactive components that includes a \emph{transformational basis} that has been modified to provide the guarantees necessary for reactive component semantics.
-
-The Go programming language~\cite{go} was adopted as the transformational basis of the language due to its simplicity.
-That is, we will defer to Go's syntax and semantics for types,declarations, statements, and expressions when they are not in conflict with the semantics of reactive components.
-Go is an imperative programming language that supports methods but places no emphasis on an inheritance hierarchy.
-In the same vein, Go does not have constructors, destructors, function overloading, and operator overloading.
-Go's type system is straightforward and the syntax of expressions and statements resemble C.
-This combination, in our opinion, makes Go an attractive transformational basis in terms of being tractable in implementation and approachable by a general audience.
-We will not discuss the syntax and semantics of Go except when they interact with the semantics of reactive components.
-Our implementation of Go is intentionally incomplete as a full implementation is beyond the scope of this project.
-
-\paragraph{Static system assumption.}
-To make implementation more tractable, we will assume that the systems to be implemented have a static topology meaning that all reactive components are statically allocated.
-Both finite state and infinite state (subject to system resource limits) reactive components are permitted, but both the number and configurations of reactive components in a system are fixed.
-This is equivalent to systems that assume a fixed number of actors and is roughly equivalent to systems that assume a fixed number of threads.
-These assumptions are common in embedded and real-time systems due to the combination of limited resources and a need for predictability.
-We also believe these assumptions are common in less constrained environments as the number of threads is often fixed by the design, e.g., only a fixed number of concurrent activities is needed, or the number of threads is limited by the number of available physical cores.
-Thus, even with the static system assumption, an implementation of the model is still applicable to many systems of interest.
-We leave implementation of extensions that facilitate the dynamic creation and binding of reactive components for future work.
-
-\paragraph{Efficient communication.}
-One of the goals of the implementation was to allow components to communicate efficiently.
->>>>>>> develop
 There are three modes by which a component (sender) can share information with another component (receiver) as they interact through push ports and pull ports.
 First, the sender may use \emph{value semantics} where it provides a complete copy of the value to be communicated.
 This approach is reasonable for values like numbers and small records.
 Second, a sender may use \emph{reference semantics} where it provides a pointer (reference) to the data to be communicated.
 The approach is reasonable when the sender offers up a large data structure.
 The receiver is responsible for copying any data that needs to be retained.
-When using reference semantics, receivers may read the data structure represented by the pointer but may not alter or remember the original data structure in any way.
+When using such reference semantics, receivers may read and copy the data structure represented by the pointer but may not alter or remember the original data structure in any way.
 Third, a sender may use \emph{move semantics} where it provides a pointer to a data structure that the receiver may adopt as its own.
 In this case, the sender promises to ``forget'' the data structure as the receiver is the new owner of the data structure.
 Move semantics are appropriate when the size of the data to be communicated is large, there is a single receiver, and the sender does not need to retain the data.
-These conditions arise is situations like network stacks and pipelines.
+These conditions may arise in situations like network stacks and pipelines.
 Without move semantics, the practicality of the reactive component model is greatly diminished.
 
-%% \paragraph{Direct implementation and strict enforcement.}
-%% The language should facilitate the construction of reactive systems through the direct definition and composition of reactive components.
-%% The obvious alternative is to encode reactive components in another language or set of languages.
-%% As previously mentioned, we feel that this alternative is unacceptable as it forces one to implement a system in one language and set of semantics while reasoning about the system in another set of semantics.
-%% Defining a new language admits opportunities to introduce language features that allow the semantics of the model to be strictly enforced.
-%% An existing language may lack these features which means that the model would be enforced through convention and programmer effort.
-%% We view this alternative to be unacceptable given the subtlety associated with developing correct reactive programs.
-%% As a matter of personal preference, we will attempt to check reactive component semantics at ``compile-time.''
-%% So what?  What important question does this answer?
+\section{Approach}
 
-%% \section{Approach}
-%% Our approach to implementing reactive components is to define a high-level programming language for reactive components and implement that language in an interpreter.
-%% The two alternatives to a high-level programming language are a low-level byte-code and a coordination language.
-%% The main purpose of byte-code is to describe a transformation computation for a real or virtual machine.
-%% Many of the interesting elements of reactive components, like actions, reactions, getters, push ports, pull ports, activations, and bindings are more declarative in nature.
-%% Thus, the initial effort should be to capture these elements using a high-level language.
-%% The choice to implement an interpreter made the task more tractable as it avoids code generation, linking, and loading.
-%% However, in moving from the interpreter to a compiler, the processes of code generation, linking, and loading must provide the same guarantees that are enforced by the high-level language.
-%% We describe the challenges of moving from interpreter to compiler in chapter~\ref{future_work}.
+Our approach to implementing the model is to define a programming language that facilitates the direct expression of reactive components.
+Language support for the model is beneficial because it closes the semantic gap between reasoning and implementation.
+The importance of language support can be seen in techniques like structured programming~\cite{dahl1972structured} and object-oriented programming~\cite{booch1982object}.
+While these techniques can be applied in virtually any setting, their lasting utility is derived from their implementation in a variety of programming languages.
+Providing language support for reactive components raises the level of abstraction and allows reasoning about a system directly from its specification instead of reasoning in one set of semantics while implementing in another which can be tedious and error-prone.
 
-%% We elected to not implement reactive components as a coordination language due to the interplay between reactive and transformational semantics.
-%% The coordination language approach involves two completely separate languages.
-%% The reactive language would encode systems using the elements of the reactive component model, e.g., components, actions, push ports, etc. while the transformation language would define all of the types and computation performed on those types.
-%% For this approach to be viable, the transformational language must guarantee that no component changes state during the immutable phase of a transition and that the state of each component remain isolated.
-%% An ordinary programmer with a sufficiently powerful transformational language, like C, C++, or Java, can easily violate these requirements.
-%% Based on this observation, we elected to define a language for reactive components that includes a \emph{transformational basis} that has been modified to provide the guarantees necessary for reactive component semantics.
+Language support allows developers to rely on the consistent application of the semantics of the model through strict enforcement.
+Crafting a new language specifically for reactive components creates an opportunity to introduce syntax and semantics that allow a compiler or interpreter to distinguish correct programs from even \emph{potentially} incorrect programs.
+To illustrate, consider the problem of ensuring that the state of a component does not change during the immutable phase of a transition.
+We observe that an action/reaction is similar to a method.
+Based on this observation, checking the immutability of a component in the immutable phase should be similar to checking for \verb+const+ correctness in C++.
+In C++, the \verb+const+ correctness check is performed early in the compilation process when the program is represented as an abstract syntax tree (AST) with full semantic information, as opposed to late in the process where the program is represented by machine instructions with very limited semantic information.
+From this, we observe that checking is supported by 1) adding features to the language which provide the necessary semantic information and 2) performing the checks early in the translation process.
+An existing language might not provide enough detail to enable the necessary checks or to achieve them efficiently.
+Along these same lines, an implementation may have to make conservative assumptions to enforce the semantics of reactive components.
+As was seen in section~\ref{propcomp}, allowing a component instance to serve as a proxy for all of its state variables allows the check for non-deterministic state transitions to be implemented using known techniques.
 
 \section{Preliminaries}
 
-\paragraph{Design sketch.}
-We adopt the Go~\cite{go} programming language as the foundation for a programming language based on reactive components.
+\paragraph{Go.}
+Rather than start from scratch, we adopt Go~\cite{go} as the foundation for a programming language for reactive components.
 Actions, reactions, getters, initializers, and bindings are expressed using Go's syntax for methods.
 Component types are constructed using the syntax of structs.
 Push ports and pull ports are fields of a component.
@@ -217,31 +91,31 @@ Move semantics are realized through a new \emph{heap} type and associated operat
 
 Go is an imperative programming language with a straightforward type system and expressions and statements resembling C.
 Go supports methods but places no emphasis on an inheritance hierarchy.
-In the same vein, Go does not have constructors, destructors, function overloading, and operator overloading.
-This combination, in our opinion, makes Go an attractive foundation for a language for reactive components since it is tractable in implementation and approachable by a general audience.
+In the same vein, Go does not have constructors, destructors, function overloading, or operator overloading.
+This combination, makes Go an attractive foundation for a language for reactive components since it is tractable in implementation and approachable by a general audience.
 We defer to Go's syntax and semantics for types, declarations, statements, and expressions.
 We will not discuss the syntax and semantics of Go except when they interact with the semantics of reactive components.
-Our implementation of Go is intentionally incomplete as a full implementation is beyond the scope of this project.
+Our implementation of Go is intentionally only as broad as is needed to demonstrate the contributions of this dissertation.
 
 \paragraph{Static system assumption.}
-To make implementation more tractable, we will assume that the systems to be implemented have a static topology meaning that all reactive components are statically allocated.
+To make implementation more tractable, we will assume that the systems to be implemented have a static topology, meaning that all reactive components are statically allocated.
 Both finite state and infinite state (subject to system resource limits) reactive components are permitted, but both the number and configurations of reactive components in a system are fixed.
 This is equivalent to systems that assume a fixed number of actors and is roughly equivalent to systems that assume a fixed number of threads.
 These assumptions are common in embedded and real-time systems due to the combination of limited resources and a need for predictability.
-We also believe these assumptions are common in less constrained environments as the number of threads is often fixed by the design, e.g., only a fixed number of concurrent activities is needed, or the number of threads is limited by the number of available physical cores.
+These assumptions also are common in many other less constrained environments, as the number of threads is often fixed by the design, e.g., only a fixed number of concurrent activities is needed, or the number of threads is limited by the number of available physical cores.
 Thus, even with the static system assumption, an implementation of the model is still applicable to many systems of interest.
 We leave the implementation of extensions that facilitate the dynamic creation and binding of reactive components for future work.
 
 \paragraph{Memory model.}
 A memory address may refer to a location in the constant segment, a stack, the static component segment, or a heap.
-The constant segment is used to store aggregate literals like string constants.
+As implied by the name, the constant segment is used to store constants like string literals.
 Function parameters and local variables are allocated on a call stack as they are in C or C++.
 The static component segment contains statically allocated components.
 
-Let $f(c)$ be a function that returns the set of addresses $[c,c+sizeof(T))$ if $c$ is a pointer and $\emptyset$ otherwise.
+Let $f(c)$ be a function that returns an address range $[c,c+sizeof(T))$ if $c$ is a pointer and $\emptyset$ otherwise.
 Let $c$ be a pointer to a component of type $T$.
-Assuming statically allocated components, the set of addresses $S = f(c)$ refers to a block of addresses with the same size as $T$ in the static component segment.
-That is $S$ contains the addresses for the \emph{statically} allocated state of the component indicated by $c$.
+Assuming statically allocated components, the range of addresses $S = f(c)$ refers to a block of locations with the same size as $T$ in the static component segment.
+That is $S$ contains the range of addresses for the \emph{statically} allocated state of the component indicated by $c$.
 Let $F(A) = \cup_{a \in A} f(a)$.
 Let $C$ be the transitive closure of $F$ applied to $S$.
 $C$ contains the set of memory addresses that contain the state of component $c$.
@@ -254,7 +128,7 @@ Mutable state outside of a component, e.g., a global variable, is prohibited as 
 
 Part of our approach to maintaining disjoint state is preventing the formation of arbitrary pointers that would allow one component to access the state of another component.
 Consequently, pointer arithmetic and casts from numeric values are not allowed.
-Manually deallocating memory may result in dangling pointers~\cite{dangle} that may point to state in another component.
+Manually deallocating memory may result in dangling pointers which, as memory is recycled, may point to the state of another component.
 Consequently, some form of automatic memory management is necessary with the two primary candidates being reference counting and garbage collection.
 Our implementation uses garbage collection and is described in chapter~\ref{implementation}.
 %% Logically, then, each component has its own heap from which it can allocate memory.
@@ -265,10 +139,10 @@ Our implementation uses garbage collection and is described in chapter~\ref{impl
 %% Provisional features are elements that are not in the reactive component model but are necessary to enforce the semantics of the model or a desired feature.
 %% This chapter focuses on the syntax and semantics of a programming language based on reactive components while chapter~\ref{implementation} focuses on the techniques used to implement the features.
 
-\section{Programming Language}
+\section{Reactive Component Programming Language}
 
 \paragraph{Components.}
-A component resembles a \verb+struct+ in Go since it is a group of named state variables.
+A reactive component resembles a \verb+struct+ in Go since it is a group of named state variables.
 A component, then, is defined with the following syntax:
 \begin{verbatim}
 type identifier component { field list };
@@ -293,7 +167,7 @@ The first form operates on a copy of a value of type \verb+typeName+.
 The second form operates on a pointer to a value of type \verb+typeName+.
 The parameter \verb+identifier+ performs the same function as the \verb+this+ keyword in C++ and Java.
 The syntax \verb+(identifier typeName)+ is called a receiver and the syntax \verb+(identifier *typeName)+ is called a pointer receiver.
-Many of the syntactic elements introduced for reactive components use a pointer receiver.
+Actions, reactions, getters, and initializers use a pointer receiver.
 
 \paragraph{Intrinsic and dereference mutability.}
 Variables and parameters may be declared with an \emph{intrinsic mutability} and a \emph{dereference mutability}.
@@ -386,7 +260,7 @@ The following checks are applied to assignment statements:
     Immutable & Yes     & Yes       & No      \\
     Foreign   & Yes     & Yes       & Yes     \\
     \end{tabular}
-  \caption{Dereference mutability compatibility for assignment.\label{assignmut}.  The rows represent the dereference mutability of the lvalue and the columns represent the dereference mutability of the rvalue.}
+  \caption{Dereference mutability compatibility for assignment.  The rows represent the dereference mutability of the lvalue and the columns represent the dereference mutability of the rvalue.\label{assignmut}}
 \end{table}
 
 A parameter is \emph{foreign safe} if (1) the type of the parameter does not contain pointers or slices or (2) the parameter is declared with foreign dereference immutability.

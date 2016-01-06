@@ -206,6 +206,11 @@ Tom Knight.
 \newblock In {\em Proceedings of the 1986 ACM conference on LISP and functional
   programming}, LFP '86, pages 105--112, New York, NY, USA, 1986. ACM.
 
+\bibitem{Krishnamurthi:2015:RSC:2739250.2658987}
+Shriram Krishnamurthi and Jan Vitek.
+\newblock The real software crisis: Repeatability as a core value.
+\newblock {\em Commun. ACM}, 58(3):34--36, February 2015.
+
 \bibitem{Landi:1992:USA:161494.161501}
 William Landi.
 \newblock Undecidability of static analysis.
