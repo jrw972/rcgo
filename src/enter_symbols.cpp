@@ -55,6 +55,8 @@ enter_symbols (SymbolTable& symtab)
   symtab.enter_symbol (new runtime::New (loc));
   symtab.enter_symbol (new runtime::Move (loc));
   symtab.enter_symbol (new runtime::Merge (loc));
+  symtab.enter_symbol (new runtime::Len (loc));
+  symtab.enter_symbol (new runtime::Append (loc));
   symtab.enter_symbol (new runtime::Copy (loc));
   symtab.enter_symbol (new runtime::Println (loc));
 

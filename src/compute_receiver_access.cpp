@@ -32,6 +32,13 @@ struct Visitor : public ast::DefaultVisitor
     AST_NOT_REACHED (node);
   }
 
+  void visit (AddressOfExpr& node)
+  {
+    node.child->accept (*this);
+    node.receiver_state = node.child->receiver_state;
+    node.receiver_access = node.child->receiver_access;
+  }
+
   void visit (ConversionExpr& node)
   {
     node.expr->accept (*this);
@@ -327,18 +334,21 @@ struct Visitor : public ast::DefaultVisitor
     node.base->accept (*this);
     node.receiver_state = node.base->receiver_state;
     node.receiver_access = node.base->receiver_access;
-    if (node.low_present) {
-      node.low->accept (*this);
-      node.receiver_access = std::max (node.receiver_access, node.low->receiver_access);
-    }
-    if (node.high_present) {
-      node.high->accept (*this);
-      node.receiver_access = std::max (node.receiver_access, node.high->receiver_access);
-    }
-    if (node.max_present) {
-      node.max->accept (*this);
-      node.receiver_access = std::max (node.receiver_access, node.max->receiver_access);
-    }
+    if (node.low_present)
+      {
+        node.low->accept (*this);
+        node.receiver_access = std::max (node.receiver_access, node.low->receiver_access);
+      }
+    if (node.high_present)
+      {
+        node.high->accept (*this);
+        node.receiver_access = std::max (node.receiver_access, node.high->receiver_access);
+      }
+    if (node.max_present)
+      {
+        node.max->accept (*this);
+        node.receiver_access = std::max (node.receiver_access, node.max->receiver_access);
+      }
   }
 };
 }

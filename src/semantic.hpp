@@ -215,13 +215,13 @@ T* processAndLookup (decl::SymbolTable& symtab, const std::string& identifier, c
 }
 
 // Extract an array dimension or error.
-type::Int::ValueType process_array_dimension (ast::Node* ptr);
+type::Int::ValueType process_array_dimension (ast::Node* ptr, decl::SymbolTable& symtab);
 
 // Check that a signature has +foreign where needed.
 void CheckForForeignSafe (const type::Signature* signature, const decl::ParameterSymbol* return_parameter);
 
 // Process a type specification.
-const type::Type * process_type (ast::Node* node, const decl::SymbolTable& symtab, bool force);
+const type::Type * process_type (ast::Node* node, decl::SymbolTable& symtab, bool force);
 
 // Type check the expression, insert an implicit dereference if necessary, and convert to the given type if necessary.
 typed_Value

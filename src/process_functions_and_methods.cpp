@@ -117,7 +117,7 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
 }
 
 static void
-processSignatureReturn (const decl::SymbolTable& symtab,
+processSignatureReturn (decl::SymbolTable& symtab,
                         ast::Node* signatureNode,
                         ast::Node* returnType,
                         Mutability dereferenceMutability,
@@ -143,7 +143,7 @@ processSignatureReturn (const decl::SymbolTable& symtab,
 }
 
 static void
-process_signature_return (const decl::SymbolTable& symtab,
+process_signature_return (decl::SymbolTable& symtab,
                           ast::Node* signatureNode,
                           ast::Node* returnType,
                           Mutability dereferenceMutability,
@@ -265,7 +265,7 @@ struct Visitor : public ast::DefaultVisitor
     ParameterSymbol* receiver_parameter;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, receiver_parameter, true, true);
     ParameterSymbol* iota_parameter = ParameterSymbol::make (node.dimension->location, "IOTA", type::Int::Instance (), Immutable, Immutable);
-    type::Int::ValueType dimension = process_array_dimension (node.dimension);
+    type::Int::ValueType dimension = process_array_dimension (node.dimension, symtab);
     decl::Action *action = new decl::Action (receiver_parameter, node.body, node.identifier->identifier, iota_parameter, dimension);
     type->Add (action);
     node.action = action;
@@ -304,7 +304,7 @@ struct Visitor : public ast::DefaultVisitor
                             signature, return_symbol);
 
     ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension->location, "IOTA", type::Int::Instance (), Immutable, Immutable);
-    type::Int::ValueType dimension = process_array_dimension (node.dimension);
+    type::Int::ValueType dimension = process_array_dimension (node.dimension, symtab);
 
     type::Method* reaction_type = new type::Method (type::Method::REACTION, type,
         thisSymbol,

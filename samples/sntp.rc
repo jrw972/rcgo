@@ -1,8 +1,22 @@
-type Timestamp struct {
-  // 0h on 1 January 1900
-  seconds uint32;
-  fractionalSeconds uint32;
-};
+func append32 (buf []byte; x uint32) []byte {
+    buf = append (buf, byte ((x & 0xFF000000) >> 24));
+    buf = append (buf, byte ((x & 0x00FF0000) >> 16));
+    buf = append (buf, byte ((x & 0x0000FF00) >> 8));
+    buf = append (buf, byte ((x & 0x000000FF) >> 0));
+    return buf;
+}
+
+func append64 (buf []byte; x uint64) []byte {
+    buf = append (buf, byte ((x & 0xFF00000000000000) >> 56));
+    buf = append (buf, byte ((x & 0x00FF000000000000) >> 48));
+    buf = append (buf, byte ((x & 0x0000FF0000000000) >> 40));
+    buf = append (buf, byte ((x & 0x000000FF00000000) >> 32));
+    buf = append (buf, byte ((x & 0x00000000FF000000) >> 24));
+    buf = append (buf, byte ((x & 0x0000000000FF0000) >> 16));
+    buf = append (buf, byte ((x & 0x000000000000FF00) >> 8));
+    buf = append (buf, byte ((x & 0x00000000000000FF) >> 0));
+    return buf;
+}
 
 const RESERVED = 0;
 const SYMMETRIC_ACTIVE = 1;
@@ -25,10 +39,12 @@ type SntpMessage struct {
   rootDelay uint32;
   rootDispersion uint32;
   referenceIdentifier uint32;
-  reference Timestamp;
-  originate Timestamp;
-  receive   Timestamp;
-  transmit  Timestamp;
+  // Upper 32 bits are seconds.
+  // Lower 32 bits are fractional seconds.
+  reference uint64;
+  originate uint64;
+  receive   uint64;
+  transmit  uint64;
 };
 
 // http://waitingkuo.blogspot.com/2012/06/conversion-between-ntp-time-and-unix.html
@@ -37,9 +53,78 @@ func (this *SntpMessage) initialize () {
     this.versionNumber = V4;
     var ts timespec;
     clock_gettime (&ts);
-    this.transmit.seconds = uint32 (ts.tv_sec + 0x83AA7E80);
-    this.transmit.fractionalSeconds = uint32 (float64 (ts.tv_nsec) * 1e-9 * (1 << 32));
-    println (this.transmit.seconds, ".", this.transmit.fractionalSeconds);
+    this.transmit = (uint64 (ts.tv_sec + 0x83AA7E80) << 32) |
+                    (uint64 (float64 (ts.tv_nsec) * 1e-9 * (1 << 32)) << 0);
+}
+
+func (this *SntpMessage) serialize (buf []byte) []byte {
+     buf = append (buf, ((this.mode & 0x7) << 0)
+                      | ((this.versionNumber & 0x7) << 3)
+                      | ((this.leapIndicator) & 0x3) << 6);
+     buf = append (buf, this.stratum);
+     buf = append (buf, this.poll);
+     buf = append (buf, this.precision);
+     buf = append32 (buf, this.rootDelay);
+     buf = append32 (buf, this.rootDispersion);
+     buf = append32 (buf, this.referenceIdentifier);
+     buf = append64 (buf, this.reference);
+     buf = append64 (buf, this.originate);
+     buf = append64 (buf, this.receive);
+     buf = append64 (buf, this.transmit);
+     return buf;
+}
+
+func (this *SntpMessage) deserialize (buf []byte) {
+     if len (buf) >= 1 {
+            this.mode = buf[0] & 0x7;
+            this.versionNumber = buf[0] >> 3 & 0x7;
+            this.leapIndicator = buf[0] >> 6 & 0x3;
+            buf = buf[1:];
+     }
+     if len (buf) >= 1 {
+            this.stratum = buf[0];
+            buf = buf[1:];
+     }
+     if len (buf) >= 1 {
+            this.poll = buf[0];
+            buf = buf[1:];
+     }
+     if len (buf) >= 1 {
+            this.precision = buf[0];
+            buf = buf[1:];
+     }
+     if len (buf) >= 4 {
+            this.rootDelay = uint32 (buf[0]) << 24 | uint32 (buf[1]) << 16 | uint32 (buf[2]) << 8 | uint32 (buf[3]);
+            buf = buf[4:];
+     }
+     if len (buf) >= 4 {
+            this.rootDispersion = uint32 (buf[0]) << 24 | uint32 (buf[1]) << 16 | uint32 (buf[2]) << 8 | uint32 (buf[3]);
+            buf = buf[4:];
+     }
+     if len (buf) >= 4 {
+            this.referenceIdentifier = uint32 (buf[0]) << 24 | uint32 (buf[1]) << 16 | uint32 (buf[2]) << 8 | uint32 (buf[3]);
+            buf = buf[4:];
+     }
+     if len (buf) >= 8 {
+            this.reference = uint64 (buf[0]) << 56 | uint64 (buf[1]) << 48 | uint64 (buf[2]) << 40 | uint64 (buf[3]) << 32 |
+                             uint64 (buf[4]) << 24 | uint64 (buf[5]) << 16 | uint64 (buf[6]) <<  8 | uint64 (buf[7]) <<  0;
+            buf = buf[8:];
+     }
+     if len (buf) >= 8 {
+            this.originate = uint64 (buf[0]) << 56 | uint64 (buf[1]) << 48 | uint64 (buf[2]) << 40 | uint64 (buf[3]) << 32 |
+                             uint64 (buf[4]) << 24 | uint64 (buf[5]) << 16 | uint64 (buf[6]) <<  8 | uint64 (buf[7]) <<  0;
+            buf = buf[8:];
+     }
+     if len (buf) >= 8 {
+            this.receive = uint64 (buf[0]) << 56 | uint64 (buf[1]) << 48 | uint64 (buf[2]) << 40 | uint64 (buf[3]) << 32 |
+                           uint64 (buf[4]) << 24 | uint64 (buf[5]) << 16 | uint64 (buf[6]) <<  8 | uint64 (buf[7]) <<  0;
+            buf = buf[8:];
+     }
+     if len (buf) >= 8 {
+            this.transmit = uint64 (buf[0]) << 56 | uint64 (buf[1]) << 48 | uint64 (buf[2]) << 40 | uint64 (buf[3]) << 32 |
+                            uint64 (buf[4]) << 24 | uint64 (buf[5]) << 16 | uint64 (buf[6]) <<  8 | uint64 (buf[7]) <<  0;
+            buf = buf[8:];
+     }
 }
 
 type Timer component {
@@ -141,10 +226,32 @@ action (this $const * UdpParticipant) _send (!this.queue.Empty () && writable (t
 }
 
 action (this $const * UdpParticipant) _receive (readable (this.fd)) {
+    var ts timespec;
+    clock_gettime (&ts);
+    destination := (uint64 (ts.tv_sec + 0x83AA7E80) << 32) |
+                   (uint64 (float64 (ts.tv_nsec) * 1e-9 * (1 << 32)) << 0);
+
        activate {
-          var buf [128]byte;
-          var r int = read(this.fd, buf[0:128]);
-          println (string (buf[0:r]));
+          var buf [12 * 4]byte;
+          var r int = read(this.fd, buf[:]);
+          var s SntpMessage;
+          s.deserialize (buf[:]);
+          println ("leapIndicator = ", s.leapIndicator);
+          println ("versionNumber = ", s.versionNumber);
+          println ("mode = ", s.mode);
+          println ("stratum = ", s.stratum);
+          println ("poll = ", s.poll);
+          println ("precision = ", s.precision);
+          println ("rootDelay = ", s.rootDelay);
+          println ("rootDispersion = ", s.rootDispersion);
+          println ("referenceIdentifier = ", s.referenceIdentifier);
+          println ("reference = ", s.reference);
+          println ("originate = ", s.originate);
+          println ("receive = ", s.receive);
+          println ("transmit = ", s.transmit);
+          println ((destination - s.originate) - (s.transmit - s.receive));
+          println (int64((s.receive - s.originate) + (s.transmit - destination)) / 2);
+          //      d = (T4 - T1) - (T3 - T2)     t = ((T2 - T1) + (T3 - T4)) / 2.
        }
 }
 
@@ -164,7 +271,7 @@ bind (this *System) _bind {
 }
 
 init (this *System) Init () {
-     this.timer.Init(1);
+     this.timer.Init(60);
      this.udp.Init();
 }
 
@@ -172,10 +279,12 @@ reaction (this $const * System) Alarm () {
      var s SntpMessage;
      s.initialize ();
 
-     var msg $foreign UdpMessage;
-     msg.host = `localhost`;
-     msg.port = 7;
-     msg.msg = []byte(`hello, world`);
+     var msg UdpMessage;
+     //msg.host = "localhost";
+     msg.host = "ntp.ubuntu.com";
+     //msg.port = 7;
+     msg.port = 123;
+     msg.msg = s.serialize (nil);
      activate Send (msg) { };
 }
 

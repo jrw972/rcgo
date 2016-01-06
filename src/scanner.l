@@ -292,7 +292,12 @@ ESCAPED \\[abfnrtv\\\"]
 
 [1-9][0-9]* {
   Value value;
-  value.integer_value = strtol (yytext, NULL, 10);
+  errno = 0;
+  value.integer_value = strtoull (yytext, NULL, 10);
+  if (errno == ERANGE) {
+    error_at_line (-1, 0, Location::StaticFile.c_str (), yylloc,
+      "integer literal '%s' is out of range (E11)", yytext);
+  }
   value.present = true;
   yylval.node = new LiteralExpr (yylloc, Integer::Instance (), value);
   return LITERAL;
@@ -300,7 +305,12 @@ ESCAPED \\[abfnrtv\\\"]
 
 0{OCTAL_DIGIT}* {
   Value value;
-  value.integer_value = strtol (yytext, NULL, 8);
+  errno = 0;
+  value.integer_value = strtoull (yytext, NULL, 8);
+  if (errno == ERANGE) {
+    error_at_line (-1, 0, Location::StaticFile.c_str (), yylloc,
+      "octal literal '%s' is out of range (E12)", yytext);
+  }
   value.present = true;
   yylval.node = new LiteralExpr (yylloc, Integer::Instance (), value);
   return LITERAL;
@@ -308,7 +318,12 @@ ESCAPED \\[abfnrtv\\\"]
 
 0[xX]{HEXADECIMAL_DIGIT}+ {
   Value value;
-  value.integer_value = strtol (yytext, NULL, 16);
+  errno = 0;
+  value.integer_value = strtoull (yytext, NULL, 16);
+  if (errno == ERANGE) {
+    error_at_line (-1, 0, Location::StaticFile.c_str (), yylloc,
+      "hex literal '%s' is out of range (E13)", yytext);
+  }
   value.present = true;
   yylval.node = new LiteralExpr (yylloc, Integer::Instance (), value);
   return LITERAL;

@@ -2066,6 +2066,188 @@ Merge::instantiate (const std::vector<const type::Type*>& argument_types) const
   return new MergeImpl (in, out, location);
 }
 
+struct LenImpl : public Callable
+{
+  LenImpl (const type::Type* type, const util::Location& loc)
+    : function_type_ (makeFunctionType (type, loc))
+  {
+    allocate_parameters (memory_model, function_type_->GetSignature ());
+    allocate_symbol (memory_model, function_type_->GetReturnParameter ());
+  }
+
+  virtual void call (executor_base_t& exec) const
+  {
+    Int::ValueType* retval = static_cast<Int::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
+    Slice::ValueType* slice = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetSignature ()->At (0)->offset ()));
+    *retval = slice->length;
+  }
+
+  virtual const type::Type* type () const
+  {
+    return function_type_;
+  }
+  const type::Function* const function_type_;
+  MemoryModel memory_model;
+  static const type::Function* makeFunctionType (const type::Type* type,
+      const util::Location& loc)
+  {
+    return new type::Function (type::Function::FUNCTION, (new Signature ())
+                               ->Append (ParameterSymbol::make (loc, "s", type, Foreign, Foreign)),
+                               ParameterSymbol::makeReturn (loc, ReturnSymbol, &NamedInt, Immutable));
+  }
+
+  virtual size_t return_size () const
+  {
+    return function_type_->GetReturnType ()->Size ();
+  }
+  virtual size_t receiver_size () const
+  {
+    return 0;
+  }
+  virtual size_t arguments_size () const
+  {
+    return function_type_->GetSignature ()->Size ();
+  }
+  virtual size_t locals_size () const
+  {
+    return 0;
+  }
+  virtual const type::Signature* signature () const
+  {
+    return function_type_->GetSignature ();
+  }
+};
+
+Len::Len (const util::Location& loc)
+  : Template ("len",
+              loc,
+              new type::Template ())
+{ }
+
+Callable*
+Len::instantiate (const std::vector<const type::Type*>& argument_types) const
+{
+  if (argument_types.size () != 1)
+    {
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
+                     "len expects one argument (E18)");
+    }
+
+  const type::Type* type = argument_types[0];
+
+  if (type->underlying_kind () != kSlice)
+    {
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
+                     "argument to len must be a slice (E19)");
+    }
+
+  return new LenImpl (type, location);
+}
+
+struct AppendImpl : public Callable
+{
+  AppendImpl (const type::Slice* slice_type,
+              const type::Type* element_type, const util::Location& loc)
+    : function_type_ (makeFunctionType (slice_type, element_type, loc))
+    , unit_size_ (slice_type->UnitSize ())
+  {
+    allocate_parameters (memory_model, function_type_->GetSignature ());
+    allocate_symbol (memory_model, function_type_->GetReturnParameter ());
+  }
+
+  virtual void call (executor_base_t& exec) const
+  {
+    Slice::ValueType* retval = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
+    Slice::ValueType* slice = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetSignature ()->At (0)->offset ()));
+    const void* el = exec.stack ().get_address (function_type_->GetSignature ()->At (1)->offset ());
+
+    const Uint::ValueType new_length = slice->length + 1;
+    if (new_length > slice->capacity)
+      {
+        const Uint::ValueType new_capacity = 2 * new_length;
+        void* ptr = exec.heap ()->allocate (new_capacity * unit_size_);
+        memcpy (ptr, slice->ptr, slice->length * unit_size_);
+        slice->ptr = ptr;
+        slice->capacity = new_capacity;
+      }
+    memcpy (static_cast<char*> (slice->ptr) + slice->length * unit_size_, el, unit_size_);
+    slice->length = new_length;
+    *retval = *slice;
+  }
+
+  virtual const type::Type* type () const
+  {
+    return function_type_;
+  }
+  const type::Function* const function_type_;
+  size_t const unit_size_;
+  MemoryModel memory_model;
+  static const type::Function* makeFunctionType (const type::Type* slice_type,
+      const type::Type* element_type,
+      const util::Location& loc)
+  {
+    return new type::Function (type::Function::FUNCTION, (new Signature ())
+                               ->Append (ParameterSymbol::make (loc, "s", slice_type, Mutable, Mutable))
+                               ->Append (ParameterSymbol::make (loc, "x", element_type, Immutable, Mutable)),
+                               ParameterSymbol::makeReturn (loc, ReturnSymbol, slice_type, Mutable));
+  }
+
+  virtual size_t return_size () const
+  {
+    return function_type_->GetReturnType ()->Size ();
+  }
+  virtual size_t receiver_size () const
+  {
+    return 0;
+  }
+  virtual size_t arguments_size () const
+  {
+    return function_type_->GetSignature ()->Size ();
+  }
+  virtual size_t locals_size () const
+  {
+    return 0;
+  }
+  virtual const type::Signature* signature () const
+  {
+    return function_type_->GetSignature ();
+  }
+};
+
+Append::Append (const util::Location& loc)
+  : Template ("append",
+              loc,
+              new type::Template ())
+{ }
+
+Callable*
+Append::instantiate (const std::vector<const type::Type*>& argument_types) const
+{
+  if (argument_types.size () != 2)
+    {
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
+                     "append expects two arguments (E23)");
+    }
+
+  const type::Type* slice_type = argument_types[0];
+  const type::Type* element_type = argument_types[1];
+
+  if (slice_type->underlying_kind () != kSlice)
+    {
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
+                     "first argument to append must be a slice (E9)");
+    }
+
+  const type::Slice* st = type_cast<type::Slice> (slice_type->UnderlyingType ());
+  if (!identical (st->Base (), element_type))
+    {
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
+                     "second argument to append is not element type of slice (E10)");
+    }
+
+  return new AppendImpl (st, element_type, location);
+}
+
 struct CopyImpl : public Callable
 {
   CopyImpl (const type::Type* in, const util::Location& loc)
@@ -2082,8 +2264,8 @@ struct CopyImpl : public Callable
       {
         Slice::ValueType* in = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetSignature ()->At (0)->offset ()));
         Slice::ValueType* out = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-        size_t sz = slice_type->Base ()->Size () * in->length;
-        out->ptr = malloc (sz);
+        size_t sz = slice_type->UnitSize () * in->length;
+        out->ptr = exec.heap ()->allocate (sz);
         memcpy (out->ptr, in->ptr, sz);
         out->length = in->length;
         out->capacity = in->length;
@@ -2095,7 +2277,7 @@ struct CopyImpl : public Callable
       {
         StringU::ValueType* in = static_cast<StringU::ValueType*> (exec.stack ().get_address (function_type_->GetSignature ()->At (0)->offset ()));
         StringU::ValueType* out = static_cast<StringU::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-        out->ptr = malloc (in->length);
+        out->ptr = exec.heap ()->allocate (in->length);
         memcpy (out->ptr, in->ptr, in->length);
         out->length = in->length;
         return;
@@ -2274,6 +2456,11 @@ struct PrintlnImpl : public Callable
         printf ("%d", *static_cast<Int8::ValueType*> (ptr));
       }
 
+      void visit (const Int64& type)
+      {
+        printf ("%ld", *static_cast<Int64::ValueType*> (ptr));
+      }
+
       void visit (const Float64& type)
       {
         printf ("%g", *static_cast<Float64::ValueType*> (ptr));
@@ -2361,7 +2548,7 @@ OpReturn
 Load::execute (executor_base_t& exec) const
 {
   child->execute (exec);
-  void * ptr = exec.stack ().pop_pointer ();
+  void* ptr = exec.stack ().pop_pointer ();
   exec.stack ().load (ptr, type->Size ());
   return make_continue ();
 }
@@ -2383,7 +2570,9 @@ IndexSlice::execute (executor_base_t& exec) const
                      "slice index is out of bounds (E35)");
 
     }
+
   exec.stack ().push_pointer (static_cast<char*> (s.ptr) + i * type->UnitSize ());
+
   return make_continue ();
 }
 
@@ -2531,7 +2720,9 @@ struct ConvertToUint : public Operation
   }
   virtual void dump () const
   {
-    UNIMPLEMENTED;
+    std::cout << "ConvertToUint(";
+    child->dump ();
+    std::cout << ")";
   }
   const Operation* const child;
 };
@@ -2683,6 +2874,11 @@ struct MakeLiteralVisitor : public type::DefaultVisitor
   void visit (const Pointer& type)
   {
     op = make_literal (value.pointer_value);
+  }
+
+  void visit (const Slice& type)
+  {
+    op = make_literal (value.slice_value);
   }
 };
 
@@ -2964,20 +3160,23 @@ SliceArray::execute (executor_base_t& exec) const
   base->execute (exec);
   char* ptr = static_cast<char*> (exec.stack ().pop_pointer ());
   Int::ValueType low_val = 0;
-  if (low) {
-    low->execute (exec);
-    exec.stack ().pop (low_val);
-  }
+  if (low)
+    {
+      low->execute (exec);
+      exec.stack ().pop (low_val);
+    }
   Int::ValueType high_val = type->dimension;
-  if (high) {
-    high->execute (exec);
-    exec.stack ().pop (high_val);
-  }
+  if (high)
+    {
+      high->execute (exec);
+      exec.stack ().pop (high_val);
+    }
   Int::ValueType max_val = type->dimension;
-  if (max) {
-    max->execute (exec);
-    exec.stack ().pop (max_val);
-  }
+  if (max)
+    {
+      max->execute (exec);
+      exec.stack ().pop (max_val);
+    }
 
   // Bounds check.
   if (!(0 <= low_val &&
@@ -2994,6 +3193,49 @@ SliceArray::execute (executor_base_t& exec) const
   slice_val.capacity = max_val - low_val;
   slice_val.ptr = slice_val.length ? ptr + low_val * type->UnitSize () : NULL;
   exec.stack ().push (slice_val);
+
+  return make_continue ();
+}
+
+OpReturn
+SliceSlice::execute (executor_base_t& exec) const
+{
+  base->execute (exec);
+  Slice::ValueType s;
+  exec.stack ().pop (s);
+  Int::ValueType low_val = 0;
+  if (low)
+    {
+      low->execute (exec);
+      exec.stack ().pop (low_val);
+    }
+  Int::ValueType high_val = s.length;
+  if (high)
+    {
+      high->execute (exec);
+      exec.stack ().pop (high_val);
+    }
+  Int::ValueType max_val = s.capacity;
+  if (max)
+    {
+      max->execute (exec);
+      exec.stack ().pop (max_val);
+    }
+
+  // Bounds check.
+  if (!(0 <= low_val &&
+        low_val <= high_val &&
+        high_val <= max_val &&
+        max_val <= static_cast<Int::ValueType> (s.capacity)))
+    {
+      error_at_line (-1, 0, location.File.c_str (), location.Line,
+                     "slice index is out of range (E22)");
+    }
+
+  s.length = high_val - low_val;
+  s.capacity = max_val - low_val;
+  s.ptr = s.length ? static_cast<char*> (s.ptr) + low_val * type->UnitSize () : NULL;
+  exec.stack ().push (s);
 
   return make_continue ();
 }
@@ -3287,12 +3529,14 @@ struct ConvertSliceOfBytesToString : public Operation
 
   virtual void dump () const
   {
-    UNIMPLEMENTED;
+    std::cout << "ConvertSliceOfBytesToString(";
+    child->dump ();
+    std::cout << ")";
   }
   Operation* const child;
 };
 
-  template<typename FromType, typename ToType>
+template<typename FromType, typename ToType>
 struct Conversion : public Operation
 {
   Conversion (Operation* c) : child (c) { }
@@ -3307,16 +3551,19 @@ struct Conversion : public Operation
   }
   virtual void dump () const
   {
-    UNIMPLEMENTED;
+    std::cout << "Conversion(";
+    child->dump ();
+    std::cout << ")";
   }
   Operation* const child;
 };
 
 
-  template <typename T1>
-  static Operation* make_conversion1 (Operation* c, const type::Type* to)
-  {
-    switch (to->underlying_kind ()) {
+template <typename T1>
+static Operation* make_conversion1 (Operation* c, const type::Type* to)
+{
+  switch (to->underlying_kind ())
+    {
     case kUint8:
       return new Conversion<T1, Uint8::ValueType> (c);
     case kUint16:
@@ -3344,54 +3591,55 @@ struct Conversion : public Operation
     default:
       break;
     }
-    NOT_REACHED;
-  }
+  NOT_REACHED;
+}
 
 Operation* make_conversion (Operation* c, const type::Type* from, const type::Type* to)
 {
-  if (Identical (from->UnderlyingType (), to->UnderlyingType ()))
+  if (identical (from->UnderlyingType (), to->UnderlyingType ()))
     {
-      UNIMPLEMENTED;
+      return c;
     }
   else if (from->Level () == type::Type::UNNAMED &&
            to->Level () == type::Type::UNNAMED &&
            from->underlying_kind () == kPointer &&
            to->underlying_kind () == kPointer &&
-           Identical (from->pointer_base_type (), to->pointer_base_type ()))
+           identical (from->pointer_base_type (), to->pointer_base_type ()))
     {
       UNIMPLEMENTED;
     }
   else if ((is_typed_integer (from) || is_typed_float (from)) &&
            (is_typed_integer (to) || is_typed_float (to)))
     {
-      switch (from->underlying_kind ()) {
-      case kUint8:
-        return make_conversion1<Uint8::ValueType> (c, to);
-      case kUint16:
-        return make_conversion1<Uint16::ValueType> (c, to);
-      case kUint32:
-        return make_conversion1<Uint32::ValueType> (c, to);
-      case kUint64:
-        return make_conversion1<Uint64::ValueType> (c, to);
-      case kInt8:
-        return make_conversion1<Int8::ValueType> (c, to);
-      case kInt16:
-        return make_conversion1<Int16::ValueType> (c, to);
-      case kInt32:
-        return make_conversion1<Int32::ValueType> (c, to);
-      case kInt64:
-        return make_conversion1<Int64::ValueType> (c, to);
-      case kFloat32:
-        return make_conversion1<Float32::ValueType> (c, to);
-      case kFloat64:
-        return make_conversion1<Float64::ValueType> (c, to);
-      case kUint:
-        return make_conversion1<Uint::ValueType> (c, to);
-      case kInt:
-        return make_conversion1<Int::ValueType> (c, to);
-      default:
-        break;
-      }
+      switch (from->underlying_kind ())
+        {
+        case kUint8:
+          return make_conversion1<Uint8::ValueType> (c, to);
+        case kUint16:
+          return make_conversion1<Uint16::ValueType> (c, to);
+        case kUint32:
+          return make_conversion1<Uint32::ValueType> (c, to);
+        case kUint64:
+          return make_conversion1<Uint64::ValueType> (c, to);
+        case kInt8:
+          return make_conversion1<Int8::ValueType> (c, to);
+        case kInt16:
+          return make_conversion1<Int16::ValueType> (c, to);
+        case kInt32:
+          return make_conversion1<Int32::ValueType> (c, to);
+        case kInt64:
+          return make_conversion1<Int64::ValueType> (c, to);
+        case kFloat32:
+          return make_conversion1<Float32::ValueType> (c, to);
+        case kFloat64:
+          return make_conversion1<Float64::ValueType> (c, to);
+        case kUint:
+          return make_conversion1<Uint::ValueType> (c, to);
+        case kInt:
+          return make_conversion1<Int::ValueType> (c, to);
+        default:
+          break;
+        }
       NOT_REACHED;
     }
   else if (is_typed_complex (from) && is_typed_complex (to))

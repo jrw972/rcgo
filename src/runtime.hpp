@@ -60,6 +60,18 @@ struct Merge : public decl::Template
   virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
 };
 
+struct Len : public decl::Template
+{
+  Len (const util::Location& loc);
+  virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
+};
+
+struct Append : public decl::Template
+{
+  Append (const util::Location& loc);
+  virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
+};
+
 struct Copy : public decl::Template
 {
   Copy (const util::Location& loc);
@@ -131,7 +143,11 @@ struct IndexSlice : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    UNIMPLEMENTED;
+    std::cout << "IndexSlice(";
+    base->dump ();
+    std::cout << ",";
+    index->dump ();
+    std::cout << ")";
   }
   util::Location const location;
   const Operation* const base;
@@ -157,7 +173,24 @@ struct SliceArray : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    UNIMPLEMENTED;
+    std::cout << "SliceArray(";
+    base->dump ();
+    std::cout << ",";
+    if (low)
+      {
+        low->dump ();
+      }
+    std::cout << ",";
+    if (high)
+      {
+        high->dump ();
+      }
+    std::cout << ",";
+    if (max)
+      {
+        max->dump ();
+      }
+    std::cout << ")";
   }
   util::Location const location;
   Operation* const base;
@@ -165,6 +198,51 @@ struct SliceArray : public Operation
   Operation* const high;
   Operation* const max;
   const type::Array* type;
+};
+
+struct SliceSlice : public Operation
+{
+  SliceSlice (const util::Location& loc,
+              Operation* b,
+              Operation* l,
+              Operation* h,
+              Operation* m,
+              const type::Slice* t)
+    : location (loc)
+    , base (b)
+    , low (l)
+    , high (h)
+    , max (m)
+    , type (t)
+  { }
+  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual void dump () const
+  {
+    std::cout << "SliceSlice(";
+    base->dump ();
+    std::cout << ",";
+    if (low)
+      {
+        low->dump ();
+      }
+    std::cout << ",";
+    if (high)
+      {
+        high->dump ();
+      }
+    std::cout << ",";
+    if (max)
+      {
+        max->dump ();
+      }
+    std::cout << ")";
+  }
+  util::Location const location;
+  Operation* const base;
+  Operation* const low;
+  Operation* const high;
+  Operation* const max;
+  const type::Slice* type;
 };
 
 Operation* MakeConvertToInt (const Operation* c, const type::Type* type);
@@ -219,62 +297,6 @@ struct LogicAnd : public Operation
   const Operation* const right;
 };
 
-// template <typename O, typename T>
-// struct Binary : public Operation
-// {
-//   Binary (const util::Location& loc, const Operation* l, const Operation* r) : location (loc), left (l), right (r) { }
-//   virtual OpReturn execute (executor_base_t& exec) const
-//   {
-//     left->execute (exec);
-//     typename T::ValueType left;
-//     exec.stack ().pop (left);
-//     right->execute (exec);
-//     typename T::ValueType right;
-//     exec.stack ().pop (right);
-//     exec.stack ().push (O () (location, left, right));
-//   }
-
-//   util::Location const location;
-//   const Operation* const left;
-//   const Operation* const right;
-// };
-
-// template <typename O>
-// struct BinaryGenerator
-// {
-//   const util::Location& location;
-//   const Operation* left;
-//   const Operation* right;
-
-//   BinaryGenerator (const util::Location& loc, const Operation* l, const Operation* r) : location (loc), left (l), right (r) { }
-//   Operation* operation;
-
-//   template <typename T>
-//   void operator() (const T& type)
-//   {
-//     operation = new Binary<O, T> (location, left, right);
-//   }
-
-//   void NotArithmetic (const type::Type& type)
-//   {
-//     TYPE_NOT_REACHED (type);
-//   }
-
-//   void NotIntegral (const type::Type& t)
-//   {
-//     TYPE_NOT_REACHED (t);
-//   }
-// };
-
-// template <template <typename S> class Visitor, typename T>
-// Operation* make_binary (const type::Type* type, const util::Location& location, const Operation* left, const Operation* right)
-// {
-//   BinaryGenerator<T> g (location, left, right);
-//   Visitor<BinaryGenerator<T> > visitor (g);
-//   type->Accept (visitor);
-//   return g.operation;
-// }
-
 struct ListOperation : public Operation
 {
   virtual OpReturn execute (executor_base_t& exec) const;
@@ -300,7 +322,9 @@ struct FunctionCall : public Operation
   virtual OpReturn execute (executor_base_t& exec) const;
   virtual void dump () const
   {
-    UNIMPLEMENTED;
+    std::cout << "Function(";
+    arguments->dump ();
+    std::cout << ")";
   }
   const decl::Callable* const callable;
   Operation* const arguments;
@@ -529,7 +553,11 @@ struct Binary : public Operation
   }
   virtual void dump () const
   {
-    UNIMPLEMENTED;
+    std::cout << "Binary(";
+    left->dump ();
+    std::cout << ",";
+    right->dump ();
+    std::cout << ")";
   }
   Operation* const left;
   Operation* const right;
@@ -552,7 +580,11 @@ struct Shift : public Operation
   }
   virtual void dump () const
   {
-    UNIMPLEMENTED;
+    std::cout << "Shift(";
+    left->dump ();
+    std::cout << ",";
+    right->dump ();
+    std::cout << ")";
   }
   Operation* const left;
   Operation* const right;
@@ -743,7 +775,7 @@ struct Noop : public Operation
   }
   virtual void dump () const
   {
-    UNIMPLEMENTED;
+    std::cout << "Noop()";
   }
 };
 

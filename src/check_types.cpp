@@ -197,7 +197,7 @@ static const reaction_t* bind (Node& node, ast::Node* port_node, ast::Node* reac
 
   require_variable (reaction_node);
 
-  if (!type_is_equal (push_port_type->GetSignature (), reaction_type->signature))
+  if (!identical (push_port_type->GetSignature (), reaction_type->signature))
     {
       error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                      "cannot bind %s to %s (E40)", push_port_type->ToString ().c_str (), reaction_type->ToString ().c_str ());
@@ -912,18 +912,20 @@ struct Visitor : public ast::DefaultVisitor
   {
     node.visit_children (*this);
 
-    if (node.expr->expression_kind == kType) {
-      // Conversion.
-      if (node.args->size () != 1) {
-        error_at_line (-1, 0, node.location.File.c_str (),
-                       node.location.Line,
-                       "conversion requires one argument (E8)");
+    if (node.expr->expression_kind == kType)
+      {
+        // Conversion.
+        if (node.args->size () != 1)
+          {
+            error_at_line (-1, 0, node.location.File.c_str (),
+                           node.location.Line,
+                           "conversion requires one argument (E8)");
 
+          }
+
+        conversion (node, node.expr, node.args->at (0));
+        return;
       }
-
-      conversion (node, node.expr, node.args->at (0));
-      return;
-    }
 
     // Collect the argument types.
     TypeList argument_types;
@@ -1101,7 +1103,7 @@ struct Visitor : public ast::DefaultVisitor
           {
             // Okay.
           }
-        else if (Identical (from->UnderlyingType (), to->UnderlyingType ()))
+        else if (identical (from->UnderlyingType (), to->UnderlyingType ()))
           {
             // Okay.
           }
@@ -1109,7 +1111,7 @@ struct Visitor : public ast::DefaultVisitor
                  to->Level () == type::Type::UNNAMED &&
                  from->underlying_kind () == kPointer &&
                  to->underlying_kind () == kPointer &&
-                 Identical (from->pointer_base_type (), to->pointer_base_type ()))
+                 identical (from->pointer_base_type (), to->pointer_base_type ()))
           {
             // Okay.
           }
@@ -1248,7 +1250,7 @@ struct Visitor : public ast::DefaultVisitor
         assert (node.value.present);
         node.expression_kind = kValue;
         node.intrinsic_mutability = Immutable;
-        node.indirection_mutability = Immutable;
+        node.indirection_mutability = Mutable;
         fix (node);
       }
 
@@ -1682,7 +1684,7 @@ struct Visitor : public ast::DefaultVisitor
   void visit (ForIotaStatement& node)
   {
     const std::string& identifier = node.identifier->identifier;
-    node.limit = process_array_dimension (node.limit_node);
+    node.limit = process_array_dimension (node.limit_node, symtab);
     node.symbol = new VariableSymbol (identifier, node.identifier->location, Int::Instance (), Immutable, Immutable);
     symtab.open_scope ();
     symtab.enter_symbol (node.symbol);
@@ -2006,7 +2008,7 @@ done:
     require_variable (node.right);
 
     type::Function g (type::Function::FUNCTION, getter_type->signature, getter_type->return_parameter);
-    if (!type_is_equal (pull_port_type, &g))
+    if (!identical (pull_port_type, &g))
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "cannot bind %s to %s (E191)", pull_port_type->ToString ().c_str (), getter_type->ToString ().c_str ());
@@ -2104,11 +2106,14 @@ done:
             error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
                            "array index is negative (E162)");
           }
-        if ((!allow_equal && idx >= array_type->dimension) ||
-            (allow_equal && idx > array_type->dimension))
+        if (array_type)
           {
-            error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
-                           "array index is out of bounds (E163)");
+            if ((!allow_equal && idx >= array_type->dimension) ||
+                (allow_equal && idx > array_type->dimension))
+              {
+                error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
+                               "array index is out of bounds (E163)");
+              }
           }
       }
     else if (is_typed_integer (index_type))
@@ -2121,10 +2126,13 @@ done:
                 error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
                                "array index is negative (E164)");
               }
-            if (idx >= array_type->dimension)
+            if (array_type)
               {
-                error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
-                               "array index is out of bounds (E165)");
+                if (idx >= array_type->dimension)
+                  {
+                    error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
+                                   "array index is out of bounds (E165)");
+                  }
               }
           }
       }
@@ -2214,26 +2222,30 @@ done:
   {
     Node* base = node.base;
     base->accept (*this);
+    require_value_or_variable (base);
     const type::Type* base_type = node.base->type;
 
     Node* low_node = node.low;
-    if (node.low_present) {
-      low_node->accept (*this);
-    }
+    if (node.low_present)
+      {
+        low_node->accept (*this);
+      }
     const type::Type*& low_type = low_node->type;
     Value& low_value = low_node->value;
 
     Node* high_node = node.high;
-    if (node.high_present) {
-      high_node->accept (*this);
-    }
+    if (node.high_present)
+      {
+        high_node->accept (*this);
+      }
     const type::Type*& high_type = high_node->type;
     Value& high_value = high_node->value;
 
     Node* max_node = node.max;
-    if (node.max_present) {
-      max_node->accept (*this);
-    }
+    if (node.max_present)
+      {
+        max_node->accept (*this);
+      }
     const type::Type*& max_type = max_node->type;
     Value& max_value = max_node->value;
 
@@ -2254,46 +2266,17 @@ done:
     node.array_type = type_cast<Array> (base_type->UnderlyingType ());
     if (node.array_type != NULL)
       {
-        require_value_or_variable (base);
-
-        if (node.low_present) {
-          check_array_index (node.array_type, low_node, true);
-          require_value_or_variable (low_node);
-        }
-        if (node.high_present) {
-          check_array_index (node.array_type, high_node, true);
-          require_value_or_variable (high_node);
-        }
-        if (node.max_present) {
-          check_array_index (node.array_type, max_node, true);
-          require_value_or_variable (max_node);
-        }
-
-        if (low_value.present && high_value.present)
+        if (node.low_present)
           {
-            if (!(low_value.to_int (low_type) <= high_value.to_int (high_type)))
-              {
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "slice indices are out of range (E224)");
-              }
+            check_array_index (node.array_type, low_node, true);
           }
-
-        if (low_value.present && max_value.present)
+        if (node.high_present)
           {
-            if (!(low_value.to_int (low_type) <= max_value.to_int (max_type)))
-              {
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "slice indices are out of range (E6)");
-              }
+            check_array_index (node.array_type, high_node, true);
           }
-
-        if (high_value.present && max_value.present)
+        if (node.max_present)
           {
-            if (!(high_value.to_int (high_type) <= max_value.to_int (max_type)))
-              {
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "slice indices are out of range (E7)");
-              }
+            check_array_index (node.array_type, max_node, true);
           }
 
         node.type = node.array_type->Base ()->GetSlice ();
@@ -2301,23 +2284,64 @@ done:
         node.intrinsic_mutability = Immutable;
         node.indirection_mutability = node.base->indirection_mutability;
         fix (node);
-        return;
+        goto done;
       }
 
     node.slice_type = type_cast<Slice> (base_type->UnderlyingType ());
     if (node.slice_type != NULL)
       {
-        UNIMPLEMENTED;
-        return;
+        if (node.low_present)
+          {
+            check_array_index (NULL, low_node, true);
+          }
+        if (node.high_present)
+          {
+            check_array_index (NULL, high_node, true);
+          }
+        if (node.max_present)
+          {
+            check_array_index (NULL, max_node, true);
+          }
+
+        node.type = node.slice_type;
+        node.expression_kind = kValue;
         node.intrinsic_mutability = Immutable;
         node.indirection_mutability = node.base->indirection_mutability;
         fix (node);
-        return;
+        goto done;
       }
 
     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                    "cannot slice expression of type %s (E225)",
                    base_type->ToString ().c_str ());
+
+done:
+    if (low_value.present && high_value.present)
+      {
+        if (!(low_value.to_int (low_type) <= high_value.to_int (high_type)))
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "slice indices are out of range (E224)");
+          }
+      }
+
+    if (low_value.present && max_value.present)
+      {
+        if (!(low_value.to_int (low_type) <= max_value.to_int (max_type)))
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "slice indices are out of range (E6)");
+          }
+      }
+
+    if (high_value.present && max_value.present)
+      {
+        if (!(high_value.to_int (high_type) <= max_value.to_int (max_type)))
+          {
+            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                           "slice indices are out of range (E7)");
+          }
+      }
   }
 
   void visit (TypeExpression& node)

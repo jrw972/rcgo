@@ -536,171 +536,6 @@ ACCEPT(Array)
 ACCEPT(Slice)
 ACCEPT(Template)
 
-static bool
-structurally_equal (const Type* x, const Type* y)
-{
-  struct visitor : public DefaultVisitor
-  {
-    bool flag;
-    const Type* other;
-
-    visitor (const Type* o) : flag (false), other (o) { }
-
-    void visit (const Pointer& type)
-    {
-      const Pointer* t = type_cast<Pointer> (other);
-      if (t != NULL)
-        {
-          flag = type_is_equal (type.Base (), t->Base ());
-        }
-    }
-
-    void visit (const Heap& type)
-    {
-      const Heap* t = type_cast<Heap> (other);
-      if (t != NULL)
-        {
-          flag = type_is_equal (type.Base (), t->Base ());
-        }
-    }
-
-    void visit (const Bool& type)
-    {
-      flag = &type == other;
-    }
-
-    void visit (const Uint& type)
-    {
-      flag = &type == other;
-    }
-
-    void visit (const Uint8& type)
-    {
-      flag = &type == other;
-    }
-
-    void visit (const Uint16& type)
-    {
-      flag = &type == other;
-    }
-
-    void visit (const Uint32& type)
-    {
-      flag = &type == other;
-    }
-
-    void visit (const Uint64& type)
-    {
-      flag = &type == other;
-    }
-
-    void visit (const Int& type)
-    {
-      flag = &type == other;
-    }
-
-    void visit (const Int8& type)
-    {
-      flag = &type == other;
-    }
-
-    void visit (const Float64& type)
-    {
-      flag = &type == other;
-    }
-
-    void visit (const Nil& type)
-    {
-      flag = &type == other;
-    }
-
-    void visit (const Signature& type)
-    {
-      const Signature* x = &type;
-      const Signature* y = type_cast<Signature> (other);
-      if (y)
-        {
-          size_t x_arity = x->Arity ();
-          size_t y_arity = y->Arity ();
-          if (x_arity != y_arity)
-            {
-              return;
-            }
-
-          for (size_t idx = 0; idx != x_arity; ++idx)
-            {
-              const ParameterSymbol* x_parameter = x->At (idx);
-              const Type* x_parameter_type = x_parameter->type;
-              const ParameterSymbol* y_parameter = y->At (idx);
-              const Type* y_parameter_type = y_parameter->type;
-
-              if (!type_is_equal (x_parameter_type, y_parameter_type))
-                {
-                  return;
-                }
-            }
-
-          flag = true;
-        }
-    }
-
-    void visit (const Array& type)
-    {
-      const Array* x = &type;
-      const Array* y = type_cast<Array> (other);
-      if (y)
-        {
-          flag = x->dimension == y->dimension && type_is_equal (x->Base (), y->Base ());
-        }
-    }
-
-    void visit (const Slice& type)
-    {
-      const Slice* x = &type;
-      const Slice* y = type_cast<Slice> (other);
-      if (y)
-        {
-          flag = type_is_equal (x->Base (), y->Base ());
-        }
-    }
-
-    void visit (const Function& type)
-    {
-      const Function* x = &type;
-      const Function* y = type_cast<Function> (other);
-      if (y)
-        {
-          flag = type_is_equal (x->GetSignature (), y->GetSignature ()) &&
-                 type_is_equal (x->GetReturnParameter ()->type, y->GetReturnParameter ()->type);
-        }
-    }
-  };
-
-  visitor v (y);
-  x->Accept (v);
-  return v.flag;
-}
-
-// Returns true if two types are equal.
-// If one type is a named type, then the other must be the same named type.
-// Otherwise, the types must have the same structure.
-bool
-type_is_equal (const Type* x, const Type* y)
-{
-  if (x == y)
-    {
-      return true;
-    }
-
-  if (type_cast<NamedType> (x) && type_cast<NamedType> (y))
-    {
-      // Named types must be exactly the same.
-      return false;
-    }
-
-  return structurally_equal (type_strip (x), type_strip (y));
-}
-
 struct IdenticalImpl
 {
   bool retval;
@@ -714,7 +549,7 @@ struct IdenticalImpl
 
   void operator() (const Slice& type1, const Slice& type2)
   {
-    retval = Identical (type1.Base (), type2.Base ());
+    retval = identical (type1.Base (), type2.Base ());
   }
 
   void operator() (const Struct& type1, const Struct& type2)
@@ -727,9 +562,37 @@ struct IdenticalImpl
     UNIMPLEMENTED;
   }
 
+  void operator() (const Signature& type1, const Signature& type2)
+  {
+    retval = true;
+    size_t x_arity = type1.Arity ();
+    size_t y_arity = type2.Arity ();
+    if (x_arity != y_arity)
+      {
+        return;
+      }
+
+    for (size_t idx = 0; idx != x_arity; ++idx)
+      {
+        const ParameterSymbol* x_parameter = type1.At (idx);
+        const Type* x_parameter_type = x_parameter->type;
+        const ParameterSymbol* y_parameter = type2.At (idx);
+        const Type* y_parameter_type = y_parameter->type;
+
+        if (!identical (x_parameter_type, y_parameter_type))
+          {
+            return;
+          }
+      }
+
+    retval = true;
+  }
+
   void operator() (const Function& type1, const Function& type2)
   {
-    UNIMPLEMENTED;
+    retval =
+      identical (type1.GetSignature (), type2.GetSignature ()) &&
+      identical (type1.GetReturnParameter ()->type, type2.GetReturnParameter ()->type);
   }
 
   // TODO:  Interfaces
@@ -750,17 +613,23 @@ struct IdenticalImpl
 };
 
 bool
-Identical (const Type* x, const Type* y)
+identical (const Type* x, const Type* y)
 {
+  if ((x == &NamedUint8 && y == &NamedByte) ||
+      (x == &NamedByte &&  y == &NamedUint8))
+    {
+      return true;
+    }
+
   if (x == y)
     {
       return true;
     }
 
-  if (type_cast<NamedType> (x) != NULL ||
-      type_cast<NamedType> (y) != NULL)
+  if (x->Level () == Type::NAMED ||
+      y->Level () == Type::NAMED)
     {
-      return x == y;
+      return false;
     }
 
   IdenticalImpl i;
@@ -1363,12 +1232,12 @@ assignable (const Type* from, const Value& from_value, const Type* to)
       return false;
     }
 
-  if (Identical (from, to))
+  if (identical (from, to))
     {
       return true;
     }
 
-  if (Identical (from->UnderlyingType (), to->UnderlyingType ()) &&
+  if (identical (from->UnderlyingType (), to->UnderlyingType ()) &&
       (from->Level () != Type::NAMED || to->Level () != Type::NAMED))
     {
       return true;
@@ -1731,9 +1600,10 @@ const Pointer*
 pointer_to_array (const Type* type)
 {
   const Pointer* p = type_cast<Pointer> (type->UnderlyingType ());
-  if (p != NULL && p->Base ()->underlying_kind () == kArray) {
-    return p;
-  }
+  if (p != NULL && p->Base ()->underlying_kind () == kArray)
+    {
+      return p;
+    }
   return NULL;
 }
 

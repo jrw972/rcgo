@@ -473,59 +473,59 @@ Expression: OrExpression { $$ = $1; }
 OrExpression:
   AndExpression
 { $$ = $1; }
-| AndExpression LOGIC_OR OrExpression
+| OrExpression LOGIC_OR AndExpression
 { $$ = new BinaryArithmeticExpr (@1, LogicOr, $1, $3); }
 
 AndExpression:
   CompareExpression
 { $$ = $1; }
-| CompareExpression LOGIC_AND AndExpression
+| AndExpression LOGIC_AND CompareExpression
 { $$ = new BinaryArithmeticExpr (@1, LogicAnd, $1, $3); }
 
 CompareExpression:
   AddExpression
 { $$ = $1; }
-| AddExpression EQUAL CompareExpression
+| CompareExpression EQUAL AddExpression
 { $$ = new BinaryArithmeticExpr (@1, Equal, $1, $3); }
-| AddExpression NOT_EQUAL CompareExpression
+| CompareExpression NOT_EQUAL AddExpression
 { $$ = new BinaryArithmeticExpr (@1, NotEqual, $1, $3); }
-| AddExpression '<' CompareExpression
+| CompareExpression '<' AddExpression
 { $$ = new BinaryArithmeticExpr (@1, LessThan, $1, $3); }
-| AddExpression LESS_EQUAL CompareExpression
+| CompareExpression LESS_EQUAL AddExpression
 { $$ = new BinaryArithmeticExpr (@1, LessEqual, $1, $3); }
-| AddExpression '>' CompareExpression
+| CompareExpression '>' AddExpression
 { $$ = new BinaryArithmeticExpr (@1, MoreThan, $1, $3); }
-| AddExpression MORE_EQUAL CompareExpression
+| CompareExpression MORE_EQUAL AddExpression
 { $$ = new BinaryArithmeticExpr (@1, MoreEqual, $1, $3); }
 
 AddExpression:
   MultiplyExpression
 { $$ = $1; }
-| MultiplyExpression '+' AddExpression
+| AddExpression '+' MultiplyExpression
 { $$ = new BinaryArithmeticExpr (@1, Add, $1, $3); }
-| MultiplyExpression '-' AddExpression
+| AddExpression '-' MultiplyExpression
 { $$ = new BinaryArithmeticExpr (@1, Subtract, $1, $3); }
-| MultiplyExpression '|' AddExpression
+| AddExpression '|' MultiplyExpression
 { $$ = new BinaryArithmeticExpr (@1, BitOr, $1, $3); }
-| MultiplyExpression '^' AddExpression
+| AddExpression '^' MultiplyExpression
 { $$ = new BinaryArithmeticExpr (@1, BitXor, $1, $3); }
 
 MultiplyExpression:
   UnaryExpression
 { $$ = $1; }
-| UnaryExpression '*' MultiplyExpression
+| MultiplyExpression '*' UnaryExpression
 { $$ = new BinaryArithmeticExpr (@1, Multiply, $1, $3); }
-| UnaryExpression '/' MultiplyExpression
+| MultiplyExpression '/' UnaryExpression
 { $$ = new BinaryArithmeticExpr (@1, Divide, $1, $3); }
-| UnaryExpression '%' MultiplyExpression
+| MultiplyExpression '%' UnaryExpression
 { $$ = new BinaryArithmeticExpr (@1, Modulus, $1, $3); }
-| UnaryExpression LEFT_SHIFT MultiplyExpression
+| MultiplyExpression LEFT_SHIFT UnaryExpression
 { $$ = new BinaryArithmeticExpr (@1, LeftShift, $1, $3); }
-| UnaryExpression RIGHT_SHIFT MultiplyExpression
+| MultiplyExpression RIGHT_SHIFT UnaryExpression
 { $$ = new BinaryArithmeticExpr (@1, RightShift, $1, $3); }
-| UnaryExpression '&' MultiplyExpression
+| MultiplyExpression '&' UnaryExpression
 { $$ = new BinaryArithmeticExpr (@1, BitAnd, $1, $3); }
-| UnaryExpression AND_NOT MultiplyExpression
+| MultiplyExpression AND_NOT UnaryExpression
 { $$ = new BinaryArithmeticExpr (@1, BitAndNot, $1, $3); }
 
 UnaryExpression:

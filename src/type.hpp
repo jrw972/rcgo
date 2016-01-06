@@ -627,6 +627,12 @@ private:
   Slice (const Type* base) : BaseType (base) { }
 };
 
+inline std::ostream& operator<< (std::ostream& out, const Slice::ValueType& s)
+{
+  out << '{' << s.ptr << ',' << s.length << ',' << s.capacity << '}';
+  return out;
+}
+
 class Array : public Type, public BaseType
 {
 public:
@@ -2279,6 +2285,17 @@ struct visitor2 : public DefaultVisitor
   {
     t (type1, type2);
   }
+
+  void visit (const Function& type2)
+  {
+    t (type1, type2);
+  }
+
+  void visit (const Signature& type2)
+  {
+    t (type1, type2);
+  }
+
 };
 
 template <typename T, typename T1>
@@ -2368,6 +2385,11 @@ struct visitor1 : public DefaultVisitor
     doubleDispatchHelper (type, type2, t);
   }
 
+  void visit (const Array& type)
+  {
+    doubleDispatchHelper (type, type2, t);
+  }
+
   void visit (const StringU& type)
   {
     doubleDispatchHelper (type, type2, t);
@@ -2402,6 +2424,16 @@ struct visitor1 : public DefaultVisitor
   }
 
   void visit (const Nil& type)
+  {
+    doubleDispatchHelper (type, type2, t);
+  }
+
+  void visit (const Function& type)
+  {
+    doubleDispatchHelper (type, type2, t);
+  }
+
+  void visit (const Signature& type)
   {
     doubleDispatchHelper (type, type2, t);
   }
@@ -2460,12 +2492,8 @@ type_merge (const Type* type);
 const Type*
 type_change (const Type* type);
 
-// True if the types are equal (strict).
 bool
-type_is_equal (const Type* x, const Type* y);
-
-bool
-Identical (const Type* x, const Type* y);
+identical (const Type* x, const Type* y);
 
 bool
 assignable (const Type* from, const semantic::Value& from_value, const Type* to);
@@ -2580,7 +2608,7 @@ type_strip_cast (const Type* type)
   return type_cast<T> (type_strip (type));
 }
 
-  // Return a Pointer if a pointer to an array or NULL.
+// Return a Pointer if a pointer to an array or NULL.
 const Pointer*
 pointer_to_array (const Type* type);
 

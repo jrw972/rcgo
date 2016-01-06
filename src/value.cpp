@@ -506,6 +506,13 @@ Value::convert (const type::Type* from, const type::Type* to)
           value.pointer_value = NULL;
           return;
         }
+
+      if (type::type_cast<type::Slice> (to))
+        {
+          value.slice_value = Slice::ValueType ();
+          return;
+        }
+
       NOT_REACHED;
     }
 

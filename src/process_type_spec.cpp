@@ -7,6 +7,7 @@
 #include "ast_visitor.hpp"
 #include "ast_cast.hpp"
 #include "symbol.hpp"
+#include "check_types.hpp"
 
 namespace semantic
 {
@@ -16,28 +17,21 @@ using namespace ast;
 using namespace decl;
 
 static void
-process_constant_expression (ast::Node* node)
+process_constant_expression (ast::Node* node, decl::SymbolTable& symtab)
 {
-  struct visitor : public ast::DefaultVisitor
-  {
-    void default_action (Node& node)
+  check_types (node, symtab);
+  if (!node->value.present)
     {
-      AST_NOT_REACHED (node);
-    }
+      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+                     "expression must constant (E14)");
 
-    void visit (LiteralExpr& node)
-    {
-      // Do nothing.
     }
-  };
-  visitor v;
-  node->accept (v);
 }
 
 type::Int::ValueType
-process_array_dimension (ast::Node* node)
+process_array_dimension (ast::Node* node, decl::SymbolTable& symtab)
 {
-  process_constant_expression (node);
+  process_constant_expression (node, symtab);
   // Convert to an int.
   if (!node->value.representable (node->type, &NamedInt))
     {
@@ -68,14 +62,14 @@ CheckForForeignSafe (const Signature* signature, const ParameterSymbol* return_p
 }
 
 const type::Type *
-process_type (Node* node, const decl::SymbolTable& symtab, bool force)
+process_type (Node* node, decl::SymbolTable& symtab, bool force)
 {
   struct Visitor : public ast::DefaultVisitor
   {
-    const decl::SymbolTable& symtab;
+    decl::SymbolTable& symtab;
     const type::Type* type;
 
-    Visitor (const decl::SymbolTable& st)
+    Visitor (decl::SymbolTable& st)
       : symtab (st)
       , type (NULL)
     { }
@@ -87,7 +81,7 @@ process_type (Node* node, const decl::SymbolTable& symtab, bool force)
 
     void visit (ArrayTypeSpec& node)
     {
-      type::Int::ValueType dimension = process_array_dimension (node.dimension);
+      type::Int::ValueType dimension = process_array_dimension (node.dimension, symtab);
       const type::Type* base_type = process_type (node.base_type, symtab, true);
       type = base_type->GetArray (dimension);
     }
