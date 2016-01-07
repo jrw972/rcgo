@@ -203,7 +203,7 @@ struct Getter : public Callable
   { }
 
   virtual void call (runtime::executor_base_t& exec) const;
-  void call (runtime::executor_base_t& exec, const ast::CallExpr& node, component_t* thisPtr) const;
+
   virtual const type::Type* type () const
   {
     return getterType;

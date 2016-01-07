@@ -73,36 +73,4 @@ void Getter::call (runtime::executor_base_t& exec) const
   this->node->operation->execute (exec);
 }
 
-void Getter::call (runtime::executor_base_t& exec, const CallExpr& node, component_t* thisPtr) const
-{
-  UNIMPLEMENTED;
-  // // Create space for the return.
-  // exec.stack ().reserve (this->returnSize);
-
-  // // Sample the top of the stack.
-  // char* top_before = exec.stack ().top ();
-
-  // // Push this.
-  // exec.stack ().push_pointer (thisPtr);
-
-  // // Push the arguments.
-  // runtime::evaluate_expression (exec, memoryModel, node.args ());
-
-  // // Push a fake instruction pointer.
-  // exec.stack ().push_pointer (NULL);
-
-  // // Sample the top.
-  // char* top_after = exec.stack ().top ();
-
-  // // Do the call.
-  // exec.stack ().setup (this->memoryModel.LocalsSize ());
-  // component_t* old_this = exec.current_instance (thisPtr);
-  // runtime::evaluate_statement (exec, this->memoryModel, this->node->body ());
-  // exec.current_instance (old_this);
-  // exec.stack ().teardown ();
-
-  // // Pop the arguments.
-  // exec.stack ().popn (top_after - top_before);
-}
-
 }
