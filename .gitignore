@@ -33,3 +33,7 @@ build-aux
 *.log
 *.trs
 .deps
+*.gcno
+*.gcda
+*.info
+html
