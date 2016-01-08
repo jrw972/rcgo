@@ -25,3 +25,6 @@ popd
 lcov --capture --base-directory src --directory src --directory src/.libs --output-file ftest_after.info --no-external
 lcov --add-tracefile ftest_before.info --add-tracefile ftest_after.info --output-file ftest.info --no-external
 genhtml -o html/ftest ftest.info
+
+echo "file://$(PWD)/html/utest/index.html"
+echo "file://$(PWD)/html/ftest/index.html"
