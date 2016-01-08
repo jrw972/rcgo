@@ -19,7 +19,7 @@
 
 namespace semantic
 {
-
+using namespace util;
 using namespace ast;
 using namespace type;
 using namespace decl;
@@ -891,13 +891,16 @@ struct Visitor : public ast::DefaultVisitor
     Getter,
   };
 
-  decl::SymbolTable& symtab;
+  ErrorReporter& er;
+  SymbolTable& symtab;
   ParameterSymbol* receiver_parameter;
   Context context;
   bool in_mutable_phase;
 
-  Visitor (decl::SymbolTable& st)
-    : symtab (st)
+  Visitor (ErrorReporter& a_er,
+           SymbolTable& st)
+    : er (a_er)
+    , symtab (st)
     , receiver_parameter (NULL)
     , context (Other)
     , in_mutable_phase (false)
@@ -939,7 +942,7 @@ struct Visitor : public ast::DefaultVisitor
 
     if (node.expr->temp != NULL)
       {
-        node.callable = node.expr->temp->instantiate (argument_types);
+        node.callable = node.expr->temp->instantiate (er, argument_types);
         node.expr->type = node.callable->type ();
       }
     else
@@ -1684,7 +1687,7 @@ struct Visitor : public ast::DefaultVisitor
   void visit (ForIotaStatement& node)
   {
     const std::string& identifier = node.identifier->identifier;
-    node.limit = process_array_dimension (node.limit_node, symtab);
+    node.limit = process_array_dimension (node.limit_node, er, symtab);
     node.symbol = new VariableSymbol (identifier, node.identifier->location, Int::Instance (), Immutable, Immutable);
     symtab.open_scope ();
     symtab.enter_symbol (node.symbol);
@@ -1756,7 +1759,7 @@ struct Visitor : public ast::DefaultVisitor
   {
     if (!node.done)
       {
-        process_types_and_constants (&node, symtab);
+        process_types_and_constants (&node, er, symtab);
       }
   }
 
@@ -1779,7 +1782,7 @@ struct Visitor : public ast::DefaultVisitor
       }
 
     // Process the type spec.
-    const type::Type* type = process_type (type_spec, symtab, true);
+    const type::Type* type = process_type (type_spec, er, symtab, true);
 
     if (expression_list->size () == 0)
       {
@@ -2346,7 +2349,7 @@ done:
 
   void visit (TypeExpression& node)
   {
-    node.type = process_type (node.type_spec, symtab, true);
+    node.type = process_type (node.type_spec, er, symtab, true);
     node.expression_kind = kType;
   }
 
@@ -2407,7 +2410,7 @@ done:
 
   void visit (CompositeLiteral& node)
   {
-    node.type = process_type (node.literal_type, symtab, true);
+    node.type = process_type (node.literal_type, er, symtab, true);
     node.expression_kind = kVariable;
 
     switch (node.type->underlying_kind ())
@@ -2485,9 +2488,9 @@ void require_value_or_variable_list (const List* node)
     }
 }
 
-void check_types (ast::Node* root, decl::SymbolTable& symtab)
+void check_types (ast::Node* root, ErrorReporter& er, SymbolTable& symtab)
 {
-  Visitor visitor (symtab);
+  Visitor visitor (er, symtab);
   root->accept (visitor);
 }
 

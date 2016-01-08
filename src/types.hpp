@@ -9,6 +9,12 @@
 
 #include "debug.hpp"
 
+namespace util
+{
+class Location;
+class ErrorReporter;
+}
+
 namespace ast
 {
 class Node;

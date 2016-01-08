@@ -75,6 +75,8 @@ enum Kind
 
   // Named types.
   kNamed,
+
+  kError,
 };
 
 struct Type
@@ -84,6 +86,7 @@ struct Type
     UNTYPED, // Represent untyped literals.
     UNNAMED, // Types constructed through type literals and the "builtin" types.
     NAMED,   // Types named with a type declaration.
+    ERROR,
   };
   Type () : pointer_ (NULL), slice_ (NULL), heap_ (NULL) { }
   virtual ~Type () { }
@@ -152,6 +155,38 @@ private:
 
 std::ostream&
 operator<< (std::ostream& o, const Type& type);
+
+struct Error : public Type
+{
+  virtual void Accept (Visitor& visitor) const
+  {
+    UNIMPLEMENTED;
+  }
+  virtual std::string ToString () const
+  {
+    UNIMPLEMENTED;
+  }
+  virtual size_t Alignment () const
+  {
+    UNIMPLEMENTED;
+  }
+  virtual size_t Size () const
+  {
+    UNIMPLEMENTED;
+  }
+  virtual Kind kind () const
+  {
+    return kError;
+  }
+  virtual TypeLevel Level () const
+  {
+    return ERROR;
+  }
+
+  static const Error* Instance ();
+private:
+  Error () { }
+};
 
 class NamedType : public Type
 {

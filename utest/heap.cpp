@@ -1,32 +1,5 @@
-#include <iostream>
-
-struct Tap
-{
-  Tap () : test_number_ (0) { }
-  void tassert (const char* description,
-                bool ok)
-  {
-    ++test_number_;
-    if (ok)
-      {
-        std::cout << "ok " << test_number_ << " - " << description << '\n';
-      }
-    else
-      {
-        std::cout << "not ok " << test_number_ << " - " << description << '\n';
-      }
-  }
-
-  void print_plan () const
-  {
-    std::cout << "1.." << test_number_ << '\n';
-  }
-
-private:
-  int test_number_;
-};
-
 #include "heap.hpp"
+#include "tap.hpp"
 
 using namespace runtime;
 

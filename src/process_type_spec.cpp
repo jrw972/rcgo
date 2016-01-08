@@ -11,15 +11,17 @@
 
 namespace semantic
 {
-
+using namespace util;
 using namespace type;
 using namespace ast;
 using namespace decl;
 
 static void
-process_constant_expression (ast::Node* node, decl::SymbolTable& symtab)
+process_constant_expression (ast::Node* node,
+                             ErrorReporter& er,
+                             decl::SymbolTable& symtab)
 {
-  check_types (node, symtab);
+  check_types (node, er, symtab);
   if (!node->value.present)
     {
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
@@ -29,9 +31,9 @@ process_constant_expression (ast::Node* node, decl::SymbolTable& symtab)
 }
 
 type::Int::ValueType
-process_array_dimension (ast::Node* node, decl::SymbolTable& symtab)
+process_array_dimension (ast::Node* node, ErrorReporter& er, decl::SymbolTable& symtab)
 {
-  process_constant_expression (node, symtab);
+  process_constant_expression (node, er, symtab);
   // Convert to an int.
   if (!node->value.representable (node->type, &NamedInt))
     {
@@ -62,15 +64,18 @@ CheckForForeignSafe (const Signature* signature, const ParameterSymbol* return_p
 }
 
 const type::Type *
-process_type (Node* node, decl::SymbolTable& symtab, bool force)
+process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool force)
 {
   struct Visitor : public ast::DefaultVisitor
   {
+    ErrorReporter& er;
     decl::SymbolTable& symtab;
     const type::Type* type;
 
-    Visitor (decl::SymbolTable& st)
-      : symtab (st)
+    Visitor (ErrorReporter& a_er,
+             decl::SymbolTable& st)
+      : er (a_er)
+      , symtab (st)
       , type (NULL)
     { }
 
@@ -81,14 +86,14 @@ process_type (Node* node, decl::SymbolTable& symtab, bool force)
 
     void visit (ArrayTypeSpec& node)
     {
-      type::Int::ValueType dimension = process_array_dimension (node.dimension, symtab);
-      const type::Type* base_type = process_type (node.base_type, symtab, true);
+      type::Int::ValueType dimension = process_array_dimension (node.dimension, er, symtab);
+      const type::Type* base_type = process_type (node.base_type, er, symtab, true);
       type = base_type->GetArray (dimension);
     }
 
     void visit (SliceTypeSpec& node)
     {
-      const type::Type* base_type = process_type (node.child, symtab, false);
+      const type::Type* base_type = process_type (node.child, er, symtab, false);
       type = base_type->GetSlice ();
     }
 
@@ -117,7 +122,7 @@ process_type (Node* node, decl::SymbolTable& symtab, bool force)
           IdentifierListTypeSpec* c = static_cast<IdentifierListTypeSpec*> (child);
           List *identifier_list = c->identifier_list;
           Node *type_spec = c->type_spec;
-          const type::Type *type = process_type (type_spec, symtab, true);
+          const type::Type *type = process_type (type_spec, er, symtab, true);
           for (List::ConstIterator pos2 = identifier_list->begin (),
                limit2 = identifier_list->end ();
                pos2 != limit2;
@@ -142,7 +147,7 @@ process_type (Node* node, decl::SymbolTable& symtab, bool force)
 
     void visit (HeapTypeSpec& node)
     {
-      type = process_type (node.child, symtab, false)->GetHeap ();
+      type = process_type (node.child, er, symtab, false)->GetHeap ();
     }
 
     void visit (IdentifierTypeSpec& node)
@@ -166,13 +171,13 @@ process_type (Node* node, decl::SymbolTable& symtab, bool force)
 
     void visit (PointerTypeSpec& node)
     {
-      const type::Type* base_type = process_type (node.child, symtab, false);
+      const type::Type* base_type = process_type (node.child, er, symtab, false);
       type = base_type->GetPointer ();
     }
 
     void visit (PushPortTypeSpec& node)
     {
-      const Signature* signature = type_cast<Signature> (process_type (node.signature, symtab, true));
+      const Signature* signature = type_cast<Signature> (process_type (node.signature, er, symtab, true));
       ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (node.location,
                                           ReturnSymbol,
                                           type::Void::Instance (),
@@ -184,8 +189,8 @@ process_type (Node* node, decl::SymbolTable& symtab, bool force)
 
     void visit (PullPortTypeSpec& node)
     {
-      const Signature* signature = type_cast<Signature> (process_type (node.signature, symtab, true));
-      const type::Type* return_type = process_type (node.return_type, symtab, true);
+      const Signature* signature = type_cast<Signature> (process_type (node.signature, er, symtab, true));
+      const type::Type* return_type = process_type (node.return_type, er, symtab, true);
       ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (node.location,
                                           ReturnSymbol,
                                           return_type,
@@ -204,7 +209,7 @@ process_type (Node* node, decl::SymbolTable& symtab, bool force)
           IdentifierListTypeSpec* child = static_cast<IdentifierListTypeSpec*> (*pos1);
           List *identifier_list = child->identifier_list;
           Node *type_spec = child->type_spec;
-          const type::Type* type = process_type (type_spec, symtab, true);
+          const type::Type* type = process_type (type_spec, er, symtab, true);
           for (List::ConstIterator pos2 = identifier_list->begin (), limit2 = identifier_list->end ();
                pos2 != limit2;
                ++pos2)
@@ -229,7 +234,7 @@ process_type (Node* node, decl::SymbolTable& symtab, bool force)
 
   };
 
-  Visitor type_spec_visitor (symtab);
+  Visitor type_spec_visitor (er, symtab);
   node->accept (type_spec_visitor);
 
   if (force && type_spec_visitor.type->UnderlyingType () == NULL)

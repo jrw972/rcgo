@@ -22,6 +22,7 @@
 #include "process_functions_and_methods.hpp"
 #include "scheduler.hpp"
 #include "symbol_table.hpp"
+#include "error_reporter.hpp"
 
 static void
 print_version (void)
@@ -137,12 +138,13 @@ main (int argc, char **argv)
 
   arch::set_stack_alignment (sizeof (void*));
 
+  util::ErrorReporter er (3);
   decl::SymbolTable symtab;
   symtab.open_scope ();
   semantic::enter_symbols (symtab);
-  semantic::process_types_and_constants (root, symtab);
-  semantic::process_functions_and_methods (root, symtab);
-  semantic::check_types (root, symtab);
+  semantic::process_types_and_constants (root, er, symtab);
+  semantic::process_functions_and_methods (root, er, symtab);
+  semantic::check_types (root, er, symtab);
   semantic::compute_receiver_access (root);
 
   // Calculate the offsets of all stack variables.

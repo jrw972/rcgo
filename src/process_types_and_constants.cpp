@@ -10,6 +10,7 @@
 
 namespace semantic
 {
+using namespace util;
 using namespace ast;
 using namespace type;
 using namespace decl;
@@ -18,10 +19,13 @@ namespace
 {
 struct Visitor : public ast::DefaultVisitor
 {
+  ErrorReporter& er;
   SymbolTable& symtab;
 
-  Visitor (SymbolTable& st)
-    : symtab (st)
+  Visitor (ErrorReporter& a_er,
+           SymbolTable& st)
+    : er (a_er)
+    , symtab (st)
   { }
 
   void default_action (Node& node)
@@ -40,7 +44,7 @@ struct Visitor : public ast::DefaultVisitor
     const std::string& name = node.identifier->identifier;
     NamedType* type = new NamedType (name);
     symtab.enter_symbol (new TypeSymbol (name, node.identifier->location, type));
-    type->UnderlyingType (process_type (node.type_spec, symtab, true));
+    type->UnderlyingType (process_type (node.type_spec, er, symtab, true));
   }
 
   void visit (Const& node)
@@ -57,7 +61,7 @@ struct Visitor : public ast::DefaultVisitor
       }
 
     // Process the type spec.
-    const type::Type* type = process_type (type_spec, symtab, true);
+    const type::Type* type = process_type (type_spec, er, symtab, true);
 
     if (type_cast<Void> (type) == NULL)
       {
@@ -71,7 +75,7 @@ struct Visitor : public ast::DefaultVisitor
              ++id_pos, ++init_pos)
           {
             Node* n = *init_pos;
-            check_types (n, symtab);
+            check_types (n, er, symtab);
             if (!n->value.present)
               {
                 error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -105,7 +109,7 @@ struct Visitor : public ast::DefaultVisitor
          ++id_pos, ++init_pos)
       {
         Node* n = *init_pos;
-        check_types (n, symtab);
+        check_types (n, er, symtab);
         if (!n->value.present)
           {
             error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -172,9 +176,9 @@ struct Visitor : public ast::DefaultVisitor
 };
 }
 
-void process_types_and_constants (ast::Node* root, SymbolTable& symtab)
+void process_types_and_constants (ast::Node* root, ErrorReporter& er, SymbolTable& symtab)
 {
-  Visitor v (symtab);
+  Visitor v (er, symtab);
   root->accept (v);
 }
 }

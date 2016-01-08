@@ -19,7 +19,8 @@ struct Template : public Symbol
     // type () is called here
   { }
 
-  virtual Callable* instantiate (const std::vector<const type::Type*>& argument_types) const = 0;
+  virtual Callable* instantiate (util::ErrorReporter& er,
+                                 const std::vector<const type::Type*>& argument_types) const = 0;
 
   // Symbol
   virtual void accept (SymbolVisitor& visitor);

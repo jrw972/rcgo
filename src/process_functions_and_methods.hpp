@@ -5,7 +5,7 @@
 
 namespace semantic
 {
-void process_functions_and_methods (ast::Node* root, decl::SymbolTable& symtab);
+void process_functions_and_methods (ast::Node* root, util::ErrorReporter& er, decl::SymbolTable& symtab);
 }
 
 #endif // RC_SRC_PROCESS_FUNCTIONS_AND_METHODS_HPP

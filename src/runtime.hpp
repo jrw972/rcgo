@@ -45,43 +45,50 @@ enum ControlAction
 struct New : public decl::Template
 {
   New (const util::Location& loc);
-  virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
+  virtual decl::Callable* instantiate (util::ErrorReporter& er,
+                                       const std::vector<const type::Type*>& argument_types) const;
 };
 
 struct Move : public decl::Template
 {
   Move (const util::Location& loc);
-  virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
+  virtual decl::Callable* instantiate (util::ErrorReporter& er,
+                                       const std::vector<const type::Type*>& argument_types) const;
 };
 
 struct Merge : public decl::Template
 {
   Merge (const util::Location& loc);
-  virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
+  virtual decl::Callable* instantiate (util::ErrorReporter& er,
+                                       const std::vector<const type::Type*>& argument_types) const;
 };
 
 struct Len : public decl::Template
 {
   Len (const util::Location& loc);
-  virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
+  virtual decl::Callable* instantiate (util::ErrorReporter& er,
+                                       const std::vector<const type::Type*>& argument_types) const;
 };
 
 struct Append : public decl::Template
 {
   Append (const util::Location& loc);
-  virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
+  virtual decl::Callable* instantiate (util::ErrorReporter& er,
+                                       const std::vector<const type::Type*>& argument_types) const;
 };
 
 struct Copy : public decl::Template
 {
   Copy (const util::Location& loc);
-  virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
+  virtual decl::Callable* instantiate (util::ErrorReporter& er,
+                                       const std::vector<const type::Type*>& argument_types) const;
 };
 
 struct Println : public decl::Template
 {
   Println (const util::Location& loc);
-  virtual decl::Callable* instantiate (const std::vector<const type::Type*>& argument_types) const;
+  virtual decl::Callable* instantiate (util::ErrorReporter& er,
+                                       const std::vector<const type::Type*>& argument_types) const;
 };
 
 

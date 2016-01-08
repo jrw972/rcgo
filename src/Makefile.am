@@ -12,7 +12,6 @@ parser.hpp parser.cpp: parser.y
 bin_PROGRAMS = rc
 rc_SOURCES = main.cpp \
 action.hpp action.cpp \
-arch.hpp arch.cpp \
 ast.hpp ast.cpp \
 ast_cast.hpp \
 ast_visitor.hpp ast_visitor.cpp \
@@ -29,7 +28,6 @@ executor_base.hpp \
 field.hpp \
 generate_code.hpp generate_code.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
-location.hpp location.cpp \
 memory_model.hpp \
 parser.hpp parser.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
@@ -43,17 +41,20 @@ scanner.hpp scanner.cpp \
 scheduler.hpp \
 semantic.hpp semantic.cpp \
 stack.hpp stack.cpp \
-symbol.hpp symbol.cpp \
 symbol_table.hpp symbol_table.cpp \
 symbol_visitor.hpp \
 template.hpp template.cpp \
-type.hpp type.cpp \
 types.hpp \
 util.hpp \
-value.hpp value.cpp \
 yyparse.hpp yyparse.cpp
 rc_LDADD=librc.la
 
 noinst_LTLIBRARIES=librc.la
-librc_la_SOURCES = heap.hpp heap.cpp
+librc_la_SOURCES = arch.hpp arch.cpp \
+error_reporter.hpp error_reporter.cpp \
+heap.hpp heap.cpp \
+location.hpp location.cpp \
+symbol.hpp symbol.cpp \
+type.hpp type.cpp \
+value.hpp value.cpp
 librc_la_LIBADD=-lpthread

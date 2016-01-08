@@ -667,6 +667,7 @@ type::Instance () \
   return i; \
 }
 
+INSTANCE(Error)
 INSTANCE(Void)
 INSTANCE(FileDescriptor)
 INSTANCE(Nil)

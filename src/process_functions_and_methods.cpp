@@ -12,6 +12,7 @@
 
 namespace semantic
 {
+using namespace util;
 using namespace ast;
 using namespace type;
 using namespace decl;
@@ -117,7 +118,8 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
 }
 
 static void
-processSignatureReturn (decl::SymbolTable& symtab,
+processSignatureReturn (ErrorReporter& er,
+                        decl::SymbolTable& symtab,
                         ast::Node* signatureNode,
                         ast::Node* returnType,
                         Mutability dereferenceMutability,
@@ -126,10 +128,10 @@ processSignatureReturn (decl::SymbolTable& symtab,
                         ParameterSymbol*& returnSymbol)
 {
   /* Process the signature. */
-  signature = type_cast<Signature> (process_type (signatureNode, symtab, true));
+  signature = type_cast<Signature> (process_type (signatureNode, er, symtab, true));
 
   /* Process the return type. */
-  const type::Type* return_type = process_type (returnType, symtab, true);
+  const type::Type* return_type = process_type (returnType, er, symtab, true);
 
   returnSymbol = ParameterSymbol::makeReturn (returnType->location,
                  ReturnSymbol,
@@ -143,7 +145,8 @@ processSignatureReturn (decl::SymbolTable& symtab,
 }
 
 static void
-process_signature_return (decl::SymbolTable& symtab,
+process_signature_return (ErrorReporter& er,
+                          decl::SymbolTable& symtab,
                           ast::Node* signatureNode,
                           ast::Node* returnType,
                           Mutability dereferenceMutability,
@@ -152,10 +155,10 @@ process_signature_return (decl::SymbolTable& symtab,
                           ParameterSymbol*& returnSymbol)
 {
   /* Process the signature. */
-  signature = type_cast<Signature> (process_type (signatureNode, symtab, true));
+  signature = type_cast<Signature> (process_type (signatureNode, er, symtab, true));
 
   /* Process the return type. */
-  const type::Type* return_type = process_type (returnType, symtab, true);
+  const type::Type* return_type = process_type (returnType, er, symtab, true);
 
   returnSymbol = ParameterSymbol::makeReturn (returnType->location,
                  ReturnSymbol,
@@ -170,10 +173,13 @@ process_signature_return (decl::SymbolTable& symtab,
 
 struct Visitor : public ast::DefaultVisitor
 {
+  ErrorReporter& er;
   decl::SymbolTable& symtab;
 
-  Visitor (decl::SymbolTable& st)
-    : symtab (st)
+  Visitor (ErrorReporter& a_er,
+           decl::SymbolTable& st)
+    : er (a_er)
+    , symtab (st)
   { }
 
   void default_action (Node& node)
@@ -200,7 +206,7 @@ struct Visitor : public ast::DefaultVisitor
   {
     const Signature* signature;
     ParameterSymbol* return_symbol;
-    process_signature_return (symtab, node.signature, node.return_type, node.indirection_mutability, false,
+    process_signature_return (er, symtab, node.signature, node.return_type, node.indirection_mutability, false,
                               signature, return_symbol);
     const type::Function* function_type = new type::Function (type::Function::FUNCTION, signature, return_symbol);
     node.function = new decl::Function (node, function_type);
@@ -215,7 +221,7 @@ struct Visitor : public ast::DefaultVisitor
 
     const Signature* signature;
     ParameterSymbol* return_symbol;
-    processSignatureReturn (symtab, node.signature, node.return_type, node.return_indirection_mutability, false,
+    processSignatureReturn (er, symtab, node.signature, node.return_type, node.return_indirection_mutability, false,
                             signature, return_symbol);
 
     type::Method* method_type = new type::Method (type::Method::METHOD, type,
@@ -235,7 +241,7 @@ struct Visitor : public ast::DefaultVisitor
 
     const Signature* signature;
     ParameterSymbol* return_symbol;
-    processSignatureReturn (symtab, node.signature, node.return_type, node.return_indirection_mutability, true,
+    processSignatureReturn (er, symtab, node.signature, node.return_type, node.return_indirection_mutability, true,
                             signature, return_symbol);
 
     type::Method* initializer_type =
@@ -265,7 +271,7 @@ struct Visitor : public ast::DefaultVisitor
     ParameterSymbol* receiver_parameter;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, receiver_parameter, true, true);
     ParameterSymbol* iota_parameter = ParameterSymbol::make (node.dimension->location, "IOTA", type::Int::Instance (), Immutable, Immutable);
-    type::Int::ValueType dimension = process_array_dimension (node.dimension, symtab);
+    type::Int::ValueType dimension = process_array_dimension (node.dimension, er, symtab);
     decl::Action *action = new decl::Action (receiver_parameter, node.body, node.identifier->identifier, iota_parameter, dimension);
     type->Add (action);
     node.action = action;
@@ -279,7 +285,7 @@ struct Visitor : public ast::DefaultVisitor
 
     const Signature* signature;
     ParameterSymbol* return_symbol;
-    processSignatureReturn (symtab, node.signature, node.return_type, Foreign, true,
+    processSignatureReturn (er, symtab, node.signature, node.return_type, Foreign, true,
                             signature, return_symbol);
 
     type::Method* reaction_type = new type::Method (type::Method::REACTION, type,
@@ -300,11 +306,11 @@ struct Visitor : public ast::DefaultVisitor
 
     const Signature* signature;
     ParameterSymbol* return_symbol;
-    processSignatureReturn (symtab, node.signature, node.return_type, Foreign, true,
+    processSignatureReturn (er, symtab, node.signature, node.return_type, Foreign, true,
                             signature, return_symbol);
 
     ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension->location, "IOTA", type::Int::Instance (), Immutable, Immutable);
-    type::Int::ValueType dimension = process_array_dimension (node.dimension, symtab);
+    type::Int::ValueType dimension = process_array_dimension (node.dimension, er, symtab);
 
     type::Method* reaction_type = new type::Method (type::Method::REACTION, type,
         thisSymbol,
@@ -324,7 +330,7 @@ struct Visitor : public ast::DefaultVisitor
 
     const Signature* signature;
     ParameterSymbol* return_symbol;
-    processSignatureReturn (symtab, node.signature, node.return_type, node.indirection_mutability, true,
+    processSignatureReturn (er, symtab, node.signature, node.return_type, node.indirection_mutability, true,
                             signature, return_symbol);
 
     type::Method* getter_type = new type::Method (type::Method::GETTER, type,
@@ -352,7 +358,7 @@ struct Visitor : public ast::DefaultVisitor
     const std::string& identifier = node.identifier->identifier;
     const std::string& initializer_identifier = node.initializer->identifier;
 
-    const type::NamedType* type = type_cast<NamedType> (process_type (node.type_name, symtab, true));
+    const type::NamedType* type = type_cast<NamedType> (process_type (node.type_name, er, symtab, true));
 
     if (type_cast<Component> (type_strip (type)) == NULL)
       {
@@ -377,9 +383,9 @@ struct Visitor : public ast::DefaultVisitor
 };
 }
 
-void process_functions_and_methods (ast::Node* root, decl::SymbolTable& symtab)
+void process_functions_and_methods (ast::Node* root, ErrorReporter& er, decl::SymbolTable& symtab)
 {
-  Visitor visitor (symtab);
+  Visitor visitor (er, symtab);
   root->accept (visitor);
 }
 }
