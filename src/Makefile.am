@@ -12,14 +12,9 @@ parser.hpp parser.cpp: parser.y
 bin_PROGRAMS = rc
 rc_SOURCES = main.cpp \
 action.hpp action.cpp \
-ast.hpp ast.cpp \
 ast_cast.hpp \
-ast_visitor.hpp ast_visitor.cpp \
 bind.hpp \
 builtin_function.hpp builtin_function.cpp \
-callable.hpp callable.cpp \
-check_types.hpp check_types.cpp \
-compute_receiver_access.hpp compute_receiver_access.cpp \
 composition.hpp composition.cpp \
 debug.hpp \
 enter_symbols.cpp \
@@ -32,17 +27,11 @@ memory_model.hpp \
 parser.hpp parser.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
 process_definitions.cpp \
-process_type_spec.cpp \
 process_functions_and_methods.hpp process_functions_and_methods.cpp \
-process_types_and_constants.hpp process_types_and_constants.cpp \
-reaction.hpp reaction.cpp \
 runtime.hpp runtime.cpp \
 scanner.hpp scanner.cpp \
 scheduler.hpp \
-semantic.hpp semantic.cpp \
 stack.hpp stack.cpp \
-symbol_table.hpp symbol_table.cpp \
-symbol_visitor.hpp \
 template.hpp template.cpp \
 types.hpp \
 util.hpp \
@@ -51,10 +40,21 @@ rc_LDADD=librc.la
 
 noinst_LTLIBRARIES=librc.la
 librc_la_SOURCES = arch.hpp arch.cpp \
+ast.hpp ast.cpp \
+ast_visitor.hpp ast_visitor.cpp \
+callable.hpp callable.cpp \
+check_types.hpp check_types.cpp \
+compute_receiver_access.hpp compute_receiver_access.cpp \
 error_reporter.hpp error_reporter.cpp \
 heap.hpp heap.cpp \
 location.hpp location.cpp \
+process_type_spec.cpp \
+process_types_and_constants.hpp process_types_and_constants.cpp \
+reaction.hpp reaction.cpp \
+semantic.hpp semantic.cpp \
 symbol.hpp symbol.cpp \
+symbol_table.hpp symbol_table.cpp \
+symbol_visitor.hpp \
 type.hpp type.cpp \
 value.hpp value.cpp
 librc_la_LIBADD=-lpthread

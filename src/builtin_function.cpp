@@ -52,8 +52,8 @@ Readable::Readable (const util::Location& loc)
   : BuiltinFunction ("readable",
                      loc,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (loc, "fd", &type::NamedFileDescriptor, Immutable, Foreign)),
-                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::NamedBool, Immutable)))
+                                         ->Append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
+                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable)))
 { }
 
 void
@@ -82,8 +82,8 @@ Read::Read (const util::Location& loc)
   : BuiltinFunction ("read",
                      loc,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (loc, "fd", &type::NamedFileDescriptor, Immutable, Mutable))
-                                         ->Append (ParameterSymbol::make (loc, "buf", type::NamedByte.GetSlice (), Immutable, Mutable)),
+                                         ->Append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
+                                         ->Append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Mutable)),
                                          ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable)))
 { }
 
@@ -100,8 +100,8 @@ Writable::Writable (const util::Location& loc)
   : BuiltinFunction ("writable",
                      loc,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (loc, "fd", &type::NamedFileDescriptor, Immutable, Foreign)),
-                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::NamedBool, Immutable)))
+                                         ->Append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
+                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable)))
 { }
 
 void
@@ -130,8 +130,8 @@ ClockGettime::ClockGettime (const util::Location& loc)
   : BuiltinFunction ("clock_gettime",
                      loc,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (loc, "tp", type::NamedTimespec.GetPointer (), Immutable, Foreign)),
-                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::NamedInt, Immutable)))
+                                         ->Append (ParameterSymbol::make (loc, "tp", type::named_timespec.get_pointer (), Immutable, Foreign)),
+                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable)))
 { }
 
 void
@@ -146,7 +146,7 @@ TimerfdCreate::TimerfdCreate (const util::Location& loc)
   : BuiltinFunction ("timerfd_create",
                      loc,
                      new type::Function (type::Function::FUNCTION, new Signature (),
-                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::NamedFileDescriptor, Mutable)))
+                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable)))
 { }
 
 void
@@ -168,9 +168,9 @@ TimerfdSettime::TimerfdSettime (const util::Location& loc)
   : BuiltinFunction ("timerfd_settime",
                      loc,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (loc, "fd", &type::NamedFileDescriptor, Immutable, Mutable))
-                                         ->Append (ParameterSymbol::make (loc, "s", &type::NamedUint64, Immutable, Immutable)),
-                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::NamedInt, Immutable)))
+                                         ->Append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
+                                         ->Append (ParameterSymbol::make (loc, "s", &type::named_uint64, Immutable, Immutable)),
+                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable)))
 { }
 
 void
@@ -192,7 +192,7 @@ UdpSocket::UdpSocket (const util::Location& loc)
   : BuiltinFunction ("udp_socket",
                      loc,
                      new type::Function (type::Function::FUNCTION, new Signature (),
-                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::NamedFileDescriptor, Mutable)))
+                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable)))
 { }
 
 void
@@ -221,10 +221,10 @@ Sendto::Sendto (const util::Location& loc)
   : BuiltinFunction ("sendto",
                      loc,
                      new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (loc, "fd", &type::NamedFileDescriptor, Immutable, Mutable))
-                                         ->Append (ParameterSymbol::make (loc, "host", &type::NamedString, Immutable, Foreign))
-                                         ->Append (ParameterSymbol::make (loc, "port", &type::NamedUint16, Immutable, Immutable))
-                                         ->Append (ParameterSymbol::make (loc, "buf", type::NamedByte.GetSlice (), Immutable, Foreign)),
+                                         ->Append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
+                                         ->Append (ParameterSymbol::make (loc, "host", &type::named_string, Immutable, Foreign))
+                                         ->Append (ParameterSymbol::make (loc, "port", &type::named_uint16, Immutable, Immutable))
+                                         ->Append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Foreign)),
                                          ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable)))
 { }
 

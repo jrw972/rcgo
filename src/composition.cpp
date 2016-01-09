@@ -168,7 +168,7 @@ Action::getname (Instance* i, decl::Action* a, type::Int::ValueType p)
   return str.str ();
 }
 
-ReactionKey::ReactionKey (Instance* i, const reaction_t* a, type::Int::ValueType p)
+ReactionKey::ReactionKey (Instance* i, const decl::Reaction* a, type::Int::ValueType p)
   : instance (i)
   , reaction (a)
   , iota (p)
@@ -189,7 +189,7 @@ ReactionKey::operator< (const ReactionKey& other) const
 }
 
 Reaction::Reaction (Instance* i,
-                    reaction_t* a,
+                    decl::Reaction* a,
                     type::Int::ValueType p)
   : Node (getname (i, a, p))
   , instance (i)
@@ -233,7 +233,7 @@ Reaction::instance_set ()
 }
 
 std::string
-Reaction::getname (Instance* i, reaction_t* a, type::Int::ValueType p)
+Reaction::getname (Instance* i, decl::Reaction* a, type::Int::ValueType p)
 {
   std::stringstream str;
   str << i->name << '.' << a->name;
@@ -581,7 +581,7 @@ Composer::elaborate_bindings ()
                   exec.stack ().load (reaction_component, sb->type->Size ());
                   reaction_component = exec.stack ().pop_pointer ();
                 }
-              const reaction_t* reaction = static_cast<const reaction_t*> (right->callable);
+              const decl::Reaction* reaction = static_cast<const decl::Reaction*> (right->callable);
               PushPortsType::const_iterator pp_pos = table.push_ports_.find (reinterpret_cast<size_t> (port));
               assert (pp_pos != table.push_ports_.end ());
               PushPort* pp = pp_pos->second;
@@ -1023,7 +1023,7 @@ Composer::enumerate_reactions ()
            pos != limit;
            ++pos)
         {
-          reaction_t* reaction = *pos;
+          decl::Reaction* reaction = *pos;
           if (reaction->has_dimension ())
             {
               for (type::Int::ValueType idx = 0; idx != reaction->dimension (); ++idx)

@@ -1,3 +1,4 @@
 arch
-heap
 error_reporter
+heap
+type

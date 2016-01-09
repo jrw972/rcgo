@@ -100,7 +100,7 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
   const type::Type* receiver_type;
   if (node->is_pointer)
     {
-      receiver_type = type->GetPointer ();
+      receiver_type = type->get_pointer ();
     }
   else
     {
@@ -278,7 +278,7 @@ struct Visitor : public ast::DefaultVisitor
     node.type = type;
   }
 
-  void visit (Reaction& node)
+  void visit (ast::Reaction& node)
   {
     ParameterSymbol* thisSymbol;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, thisSymbol, true, true);
@@ -293,9 +293,9 @@ struct Visitor : public ast::DefaultVisitor
         signature,
         return_symbol);
 
-    reaction_t* reaction = new reaction_t (&node, thisSymbol, node.body, node.identifier->identifier, reaction_type);
+    decl::Reaction* reaction = new decl::Reaction (&node, thisSymbol, node.body, node.identifier->identifier, reaction_type);
 
-    type->Add (reaction);
+    type->insert_reaction (reaction);
     node.reaction = reaction;
   }
 
@@ -317,9 +317,9 @@ struct Visitor : public ast::DefaultVisitor
         signature,
         return_symbol);
 
-    reaction_t* reaction = new reaction_t (&node, thisSymbol, node.body, node.identifier->identifier, reaction_type, iotaSymbol, dimension);
+    decl::Reaction* reaction = new decl::Reaction (&node, thisSymbol, node.body, node.identifier->identifier, reaction_type, iotaSymbol, dimension);
 
-    type->Add (reaction);
+    type->insert_reaction (reaction);
     node.reaction = reaction;
   }
 

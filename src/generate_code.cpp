@@ -85,7 +85,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
     node.body->operation = new SetRestoreCurrentInstance (node.body->operation, node.action->memory_model.ReceiverOffset ());
   }
 
-  void visit (Reaction& node)
+  void visit (ast::Reaction& node)
   {
     node.body->accept (*this);
     node.operation = new SetRestoreCurrentInstance (node.body->operation, node.reaction->memory_model.ReceiverOffset ());
@@ -543,7 +543,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
         Value v;
         v.present = true;
         v.pointer_value = const_cast<void*> (static_cast<const void*> (node.callable));
-        node.operation = make_literal (Int::Instance ()->GetPointer (), v);
+        node.operation = make_literal (Int::Instance ()->get_pointer (), v);
       }
   }
 

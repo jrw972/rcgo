@@ -92,30 +92,30 @@ private:
 struct ReactionKey
 {
   ReactionKey (Instance* instance,
-               const decl::reaction_t* reaction,
+               const decl::Reaction* reaction,
                type::Int::ValueType iota = 0);
   bool operator< (const ReactionKey& other) const;
   Instance* instance;
-  const decl::reaction_t* reaction;
+  const decl::Reaction* reaction;
   type::Int::ValueType iota;
 };
 
 struct Reaction : public Node
 {
   Reaction (Instance* instance,
-            decl::reaction_t* reaction,
+            decl::Reaction* reaction,
             type::Int::ValueType iota = 0);
   virtual size_t outgoing_count () const;
   virtual Node* outgoing_node (size_t i) const;
   const InstanceSet& instance_set ();
   Instance* const instance;
-  decl::reaction_t* const reaction;
+  decl::Reaction* const reaction;
   type::Int::ValueType const iota;
   NodesType nodes;
   std::vector<PushPort*> push_ports;
 private:
   static std::string getname (Instance* instance,
-                              decl::reaction_t* reaction,
+                              decl::Reaction* reaction,
                               type::Int::ValueType iota);
 };
 

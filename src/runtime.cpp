@@ -27,11 +27,11 @@ using namespace semantic;
 struct port_t
 {
   component_t* instance;
-  const reaction_t* reaction;
+  const decl::Reaction* reaction;
   type::Int::ValueType parameter;
   port_t* next;
 
-  port_t (component_t* i, const reaction_t* r, type::Int::ValueType p) : instance (i), reaction (r), parameter (p), next (NULL) { }
+  port_t (component_t* i, const decl::Reaction* r, type::Int::ValueType p) : instance (i), reaction (r), parameter (p), next (NULL) { }
 };
 
 struct heap_link_t
@@ -67,7 +67,7 @@ allocate_instances (composition::Composer& instance_table)
 }
 
 static void
-bind (port_t** output_port, component_t* input_instance, const reaction_t* reaction, type::Int::ValueType parameter)
+bind (port_t** output_port, component_t* input_instance, const decl::Reaction* reaction, type::Int::ValueType parameter)
 {
   port_t* port = new port_t (input_instance, reaction, parameter);
   port->next = *output_port;
@@ -1099,7 +1099,7 @@ struct NewImpl : public Callable
   MemoryModel memory_model;
   static const type::Function* makeFunctionType (const type::Type* type, const util::Location& loc)
   {
-    const type::Type* return_type = type->GetPointer ();
+    const type::Type* return_type = type->get_pointer ();
     return new type::Function (type::Function::FUNCTION, (new Signature ()),
                                ParameterSymbol::makeReturn (loc, ReturnSymbol, return_type, Mutable));
   }
@@ -1425,7 +1425,7 @@ struct LenImpl : public Callable
   {
     return new type::Function (type::Function::FUNCTION, (new Signature ())
                                ->Append (ParameterSymbol::make (loc, "s", type, Foreign, Foreign)),
-                               ParameterSymbol::makeReturn (loc, ReturnSymbol, &NamedInt, Immutable));
+                               ParameterSymbol::makeReturn (loc, ReturnSymbol, &named_int, Immutable));
   }
 
   virtual size_t return_size () const

@@ -758,7 +758,7 @@ struct Reaction : public Node
   Node* const return_type;
   Node* const body;
 
-  decl::reaction_t* reaction;
+  decl::Reaction* reaction;
 };
 
 struct DimensionedReaction : public Node
@@ -779,7 +779,7 @@ struct DimensionedReaction : public Node
   Node* const return_type;
   Node* const body;
 
-  decl::reaction_t* reaction;
+  decl::Reaction* reaction;
 };
 
 struct Type : public Node

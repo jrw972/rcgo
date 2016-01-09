@@ -91,7 +91,7 @@ struct Type
   Type () : pointer_ (NULL), slice_ (NULL), heap_ (NULL) { }
   virtual ~Type () { }
   virtual void Accept (Visitor& visitor) const = 0;
-  virtual std::string ToString () const = 0;
+  virtual std::string to_string () const = 0;
   virtual size_t Alignment () const = 0;
   virtual size_t Size () const = 0;
   virtual Kind kind () const = 0;
@@ -125,14 +125,10 @@ struct Type
   {
     return false;
   }
-  virtual bool IsString () const;
-  virtual bool IsComplex () const;
-  virtual bool IsSliceOfBytes () const;
-  virtual bool IsSliceOfRunes () const;
-  const Pointer* GetPointer () const;
-  const Slice* GetSlice () const;
-  const Array* GetArray (UintValueType dimension) const;
-  const Heap* GetHeap () const;
+  const Pointer* get_pointer () const;
+  const Slice* get_slice () const;
+  const Array* get_array (IntValueType dimension) const;
+  const Heap* get_heap () const;
   virtual field_t* select_field (const std::string& name) const
   {
     return NULL;
@@ -148,7 +144,7 @@ struct Type
 private:
   const Pointer* pointer_;
   const Slice* slice_;
-  typedef std::map<UintValueType, const Array*> ArraysType;
+  typedef std::map<IntValueType, const Array*> ArraysType;
   ArraysType arrays_;
   const Heap* heap_;
 };
@@ -162,7 +158,7 @@ struct Error : public Type
   {
     UNIMPLEMENTED;
   }
-  virtual std::string ToString () const
+  virtual std::string to_string () const
   {
     UNIMPLEMENTED;
   }
@@ -193,7 +189,7 @@ class NamedType : public Type
 public:
   typedef std::vector<decl::Getter*> GettersType;
   typedef std::vector<decl::Action*> ActionsType;
-  typedef std::vector<decl::reaction_t*> ReactionsType;
+  typedef std::vector<decl::Reaction*> ReactionsType;
   typedef std::vector<decl::bind_t*> BindsType;
 
   NamedType (const std::string& name)
@@ -205,7 +201,7 @@ public:
              const Type* underlyingType);
 
   void Accept (Visitor& visitor) const;
-  std::string ToString () const
+  std::string to_string () const
   {
     return name_;
   }
@@ -246,10 +242,6 @@ public:
   {
     return underlyingType_->IsInteger ();
   }
-  virtual bool IsString () const
-  {
-    return underlyingType_->IsString ();
-  }
   void Add (decl::Method* method)
   {
     methods_.push_back (method);
@@ -286,11 +278,11 @@ public:
   {
     return actions_.end ();
   }
-  void Add (decl::reaction_t* reaction)
+  void insert_reaction (decl::Reaction* reaction)
   {
     reactions_.push_back (reaction);
   }
-  decl::reaction_t* GetReaction (const std::string& identifier) const;
+  decl::Reaction* get_reaction (const std::string& identifier) const;
   ReactionsType::const_iterator ReactionsBegin () const
   {
     return reactions_.begin ();
@@ -337,7 +329,7 @@ class Void : public Type
 {
 public:
   void Accept (Visitor& visitor) const;
-  std::string ToString () const
+  std::string to_string () const
   {
     return "<void>";
   }
@@ -368,7 +360,7 @@ class Scalar : public Type
 public:
   typedef T ValueType;
   void Accept (Visitor& visitor) const;
-  std::string ToString () const
+  std::string to_string () const
   {
     return S () ();
   }
@@ -586,9 +578,9 @@ class Pointer : public Type, public BaseType
 public:
   typedef void* ValueType;
   void Accept (Visitor& visitor) const;
-  std::string ToString () const
+  std::string to_string () const
   {
-    return "*" + base_->ToString ();
+    return "*" + base_->to_string ();
   }
   size_t Alignment () const
   {
@@ -633,9 +625,9 @@ public:
     Uint::ValueType capacity;
   };
   virtual void Accept (Visitor& visitor) const;
-  virtual std::string ToString () const
+  virtual std::string to_string () const
   {
-    return "[]" + base_->ToString ();
+    return "[]" + base_->to_string ();
   }
   virtual size_t Alignment () const
   {
@@ -672,7 +664,7 @@ class Array : public Type, public BaseType
 {
 public:
   void Accept (Visitor& visitor) const;
-  std::string ToString () const;
+  std::string to_string () const;
   size_t Alignment () const
   {
     return base_->Alignment ();
@@ -702,9 +694,9 @@ private:
 struct Heap : public Type, public BaseType
 {
   void Accept (Visitor& visitor) const;
-  std::string ToString () const
+  std::string to_string () const
   {
-    return "heap " + base_->ToString ();
+    return "heap " + base_->to_string ();
   }
   size_t Alignment () const
   {
@@ -738,7 +730,7 @@ public:
   {
     return kStruct;
   }
-  std::string ToString () const
+  std::string to_string () const
   {
     UNIMPLEMENTED;
   }
@@ -779,7 +771,7 @@ struct Component : public Struct
     return kComponent;
   }
   void Accept (Visitor& visitor) const;
-  std::string ToString () const
+  std::string to_string () const
   {
     UNIMPLEMENTED;
   }
@@ -794,7 +786,7 @@ public:
   typedef ParametersType::const_iterator const_iterator;
   typedef ParametersType::const_reverse_iterator const_reverse_iterator;
   void Accept (Visitor& visitor) const;
-  std::string ToString () const;
+  std::string to_string () const;
   size_t Alignment () const
   {
     NOT_REACHED;
@@ -860,7 +852,7 @@ public:
     , return_parameter_ (return_parameter)
   { }
   void Accept (Visitor& visitor) const;
-  std::string ToString () const;
+  std::string to_string () const;
   size_t Alignment () const
   {
     return sizeof (void*);
@@ -912,7 +904,7 @@ public:
           const Signature * signature_,
           decl::ParameterSymbol* return_parameter_);
   void Accept (Visitor& visitor) const;
-  std::string ToString () const;
+  std::string to_string () const;
   size_t Alignment () const
   {
     return sizeof (void*);
@@ -968,7 +960,7 @@ public:
     return kNil;
   }
   void Accept (Visitor& visitor) const;
-  std::string ToString () const
+  std::string to_string () const
   {
     return "<<nil>>";
   }
@@ -987,7 +979,7 @@ public:
   }
   virtual const Type* DefaultType () const;
   void Accept (Visitor& visitor) const;
-  std::string ToString () const
+  std::string to_string () const
   {
     return "<<boolean>>";
   }
@@ -1014,7 +1006,7 @@ public:
     return true;
   }
   void Accept (Visitor& visitor) const;
-  std::string ToString () const
+  std::string to_string () const
   {
     return "<<rune>>";
   }
@@ -1041,7 +1033,7 @@ public:
     return true;
   }
   void Accept (Visitor& visitor) const;
-  std::string ToString () const
+  std::string to_string () const
   {
     return "<<integer>>";
   }
@@ -1068,7 +1060,7 @@ public:
     return true;
   }
   void Accept (Visitor& visitor) const;
-  std::string ToString () const
+  std::string to_string () const
   {
     return "<<float>>";
   }
@@ -1133,7 +1125,7 @@ public:
     return true;
   }
   void Accept (Visitor& visitor) const;
-  std::string ToString () const
+  std::string to_string () const
   {
     return "<<complex>>";
   }
@@ -1152,7 +1144,7 @@ public:
   }
   virtual const Type* DefaultType () const;
   void Accept (Visitor& visitor) const;
-  std::string ToString () const
+  std::string to_string () const
   {
     return "<<string>>";
   }
@@ -1165,7 +1157,7 @@ class Template : public Type
 {
 public:
   void Accept (Visitor& visitor) const;
-  virtual std::string ToString () const
+  virtual std::string to_string () const
   {
     return "<<template>>";
   }
@@ -1190,7 +1182,7 @@ public:
 struct FileDescriptor : public Type
 {
   void Accept (Visitor& visitor) const;
-  std::string ToString () const
+  std::string to_string () const
   {
     return "<FileDescriptor>";
   }
@@ -2494,7 +2486,7 @@ type_select_initializer (const Type* type, const std::string& identifier);
 decl::Getter*
 type_select_getter (const Type* type, const std::string& identifier);
 
-decl::reaction_t*
+decl::Reaction*
 type_select_reaction (const Type* type, const std::string& identifier);
 
 decl::Action*
@@ -2714,34 +2706,34 @@ inline Complex::ValueType operator- (const Complex::ValueType&)
   UNIMPLEMENTED;
 }
 
-extern NamedType NamedBool;
+extern NamedType named_bool;
 
-extern NamedType NamedUint8;
-extern NamedType NamedUint16;
-extern NamedType NamedUint32;
-extern NamedType NamedUint64;
+extern NamedType named_uint8;
+extern NamedType named_uint16;
+extern NamedType named_uint32;
+extern NamedType named_uint64;
 
-extern NamedType NamedInt8;
-extern NamedType NamedInt16;
-extern NamedType NamedInt32;
-extern NamedType NamedInt64;
+extern NamedType named_int8;
+extern NamedType named_int16;
+extern NamedType named_int32;
+extern NamedType named_int64;
 
-extern NamedType NamedFloat32;
-extern NamedType NamedFloat64;
+extern NamedType named_float32;
+extern NamedType named_float64;
 
-extern NamedType NamedComplex64;
-extern NamedType NamedComplex128;
+extern NamedType named_complex64;
+extern NamedType named_complex128;
 
-extern NamedType NamedUint;
-extern NamedType NamedInt;
-extern NamedType NamedUintptr;
+extern NamedType named_uint;
+extern NamedType named_int;
+extern NamedType named_uintptr;
 
-extern NamedType NamedRune;
-extern NamedType NamedByte;
-extern NamedType NamedString;
+extern NamedType named_rune;
+extern NamedType named_byte;
+extern NamedType named_string;
 
-extern NamedType NamedFileDescriptor;
-extern NamedType NamedTimespec;
+extern NamedType named_file_descriptor;
+extern NamedType named_timespec;
 
 inline std::ostream& operator<< (std::ostream& out, const StringRep& s)
 {

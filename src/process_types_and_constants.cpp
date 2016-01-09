@@ -84,7 +84,7 @@ struct Visitor : public ast::DefaultVisitor
             if (!assignable (n->type, n->value, type))
               {
                 error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "cannot assign %s to %s in initialization (E131)", n->type->ToString ().c_str (), type->ToString ().c_str ());
+                               "cannot assign %s to %s in initialization (E131)", n->type->to_string ().c_str (), type->to_string ().c_str ());
               }
 
             n->value.convert (n->type, type);
@@ -148,7 +148,7 @@ struct Visitor : public ast::DefaultVisitor
     // Do nothing.
   }
 
-  void visit (Reaction& node)
+  void visit (ast::Reaction& node)
   {
     // Do nothing.
   }

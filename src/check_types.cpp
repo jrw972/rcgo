@@ -176,7 +176,7 @@ static void convert (ast::Node* node, const type::Type* type)
     }
 }
 
-static const reaction_t* bind (Node& node, ast::Node* port_node, ast::Node* reaction_node)
+static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* reaction_node)
 {
   const type::Function* push_port_type = type::type_cast<type::Function> (port_node->type);
 
@@ -200,10 +200,10 @@ static const reaction_t* bind (Node& node, ast::Node* port_node, ast::Node* reac
   if (!identical (push_port_type->GetSignature (), reaction_type->signature))
     {
       error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                     "cannot bind %s to %s (E40)", push_port_type->ToString ().c_str (), reaction_type->ToString ().c_str ());
+                     "cannot bind %s to %s (E40)", push_port_type->to_string ().c_str (), reaction_type->to_string ().c_str ());
     }
 
-  return static_cast<const reaction_t*> (reaction_node->callable);
+  return static_cast<const decl::Reaction*> (reaction_node->callable);
 }
 
 static void check_condition (Node* node)
@@ -289,8 +289,8 @@ static void process_comparable (const char* s, Binary& node, void (*func) (Value
                          node.location.Line,
                          "%s cannot be applied to %s and %s (E206)",
                          s,
-                         left_type->ToString ().c_str (),
-                         right_type->ToString ().c_str ());
+                         left_type->to_string ().c_str (),
+                         right_type->to_string ().c_str ());
         }
       convert (node.left, t);
       convert (node.right, t);
@@ -306,8 +306,8 @@ static void process_comparable (const char* s, Binary& node, void (*func) (Value
                      node.location.Line,
                      "%s cannot be applied to %s and %s (E207)",
                      s,
-                     left_type->ToString ().c_str (),
-                     right_type->ToString ().c_str ());
+                     left_type->to_string ().c_str (),
+                     right_type->to_string ().c_str ());
     }
 
   const type::Type* in_type = Choose (left_type, right_type);
@@ -320,8 +320,8 @@ static void process_comparable (const char* s, Binary& node, void (*func) (Value
                      node.location.Line,
                      "%s cannot be applied to %s and %s (E124)",
                      s,
-                     left_type->ToString ().c_str (),
-                     right_type->ToString ().c_str ());
+                     left_type->to_string ().c_str (),
+                     right_type->to_string ().c_str ());
     }
 
   if (left_value.present &&
@@ -400,8 +400,8 @@ static void process_orderable (const char* s, Binary& node, void (*func) (Value&
                          node.location.Line,
                          "%s cannot be applied to %s and %s (E208)",
                          s,
-                         left_type->ToString ().c_str (),
-                         right_type->ToString ().c_str ());
+                         left_type->to_string ().c_str (),
+                         right_type->to_string ().c_str ());
         }
       convert (node.left, t);
       convert (node.right, t);
@@ -417,8 +417,8 @@ static void process_orderable (const char* s, Binary& node, void (*func) (Value&
                      node.location.Line,
                      "%s cannot be applied to %s and %s (E209)",
                      s,
-                     left_type->ToString ().c_str (),
-                     right_type->ToString ().c_str ());
+                     left_type->to_string ().c_str (),
+                     right_type->to_string ().c_str ());
     }
 
   const type::Type* in_type = Choose (left_type, right_type);
@@ -431,8 +431,8 @@ static void process_orderable (const char* s, Binary& node, void (*func) (Value&
                      node.location.Line,
                      "%s cannot be applied to %s and %s (E170)",
                      s,
-                     left_type->ToString ().c_str (),
-                     right_type->ToString ().c_str ());
+                     left_type->to_string ().c_str (),
+                     right_type->to_string ().c_str ());
     }
 
   if (left_value.present &&
@@ -510,8 +510,8 @@ static void process_arithmetic (const char* s, Binary& node, void (*func) (Value
                          node.location.Line,
                          "%s cannot be applied to %s and %s (E210)",
                          s,
-                         left_type->ToString ().c_str (),
-                         right_type->ToString ().c_str ());
+                         left_type->to_string ().c_str (),
+                         right_type->to_string ().c_str ());
         }
       convert (node.left, t);
       convert (node.right, t);
@@ -527,8 +527,8 @@ static void process_arithmetic (const char* s, Binary& node, void (*func) (Value
                      node.location.Line,
                      "%s cannot be applied to %s and %s (E211)",
                      s,
-                     left_type->ToString ().c_str (),
-                     right_type->ToString ().c_str ());
+                     left_type->to_string ().c_str (),
+                     right_type->to_string ().c_str ());
     }
 
   const type::Type* in_type = Choose (left_type, right_type);
@@ -541,8 +541,8 @@ static void process_arithmetic (const char* s, Binary& node, void (*func) (Value
                      node.location.Line,
                      "%s cannot be applied to %s and %s (E171)",
                      s,
-                     left_type->ToString ().c_str (),
-                     right_type->ToString ().c_str ());
+                     left_type->to_string ().c_str (),
+                     right_type->to_string ().c_str ());
     }
 
   if (left_value.present &&
@@ -615,8 +615,8 @@ static void process_integral (const char* s, Binary& node, void (*func) (Value&,
                          node.location.Line,
                          "%s cannot be applied to %s and %s (E212)",
                          s,
-                         left_type->ToString ().c_str (),
-                         right_type->ToString ().c_str ());
+                         left_type->to_string ().c_str (),
+                         right_type->to_string ().c_str ());
         }
       convert (node.left, t);
       convert (node.right, t);
@@ -632,8 +632,8 @@ static void process_integral (const char* s, Binary& node, void (*func) (Value&,
                      node.location.Line,
                      "%s cannot be applied to %s and %s (E213)",
                      s,
-                     left_type->ToString ().c_str (),
-                     right_type->ToString ().c_str ());
+                     left_type->to_string ().c_str (),
+                     right_type->to_string ().c_str ());
     }
 
   const type::Type* in_type = Choose (left_type, right_type);
@@ -646,8 +646,8 @@ static void process_integral (const char* s, Binary& node, void (*func) (Value&,
                      node.location.Line,
                      "%s cannot be applied to %s and %s (E172)",
                      s,
-                     left_type->ToString ().c_str (),
-                     right_type->ToString ().c_str ());
+                     left_type->to_string ().c_str (),
+                     right_type->to_string ().c_str ());
     }
 
   if (left_value.present &&
@@ -670,7 +670,7 @@ static void process_shift (Binary& node)
       error_at_line (-1, 0, node.location.File.c_str (),
                      node.location.Line,
                      "%s is not integral (E65)",
-                     node.right->type->ToString ().c_str ());
+                     node.right->type->to_string ().c_str ());
     }
 
   if (node.right->value.present)
@@ -680,7 +680,7 @@ static void process_shift (Binary& node)
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
                          "shift amount %s is not a uint (E90)",
-                         node.right->type->ToString ().c_str ());
+                         node.right->type->to_string ().c_str ());
         }
       node.right->value.convert (node.right->type, type::Uint::Instance ());
       node.right->type = type::Uint::Instance ();
@@ -691,7 +691,7 @@ static void process_shift (Binary& node)
       error_at_line (-1, 0, node.location.File.c_str (),
                      node.location.Line,
                      "%s is not integral (E125)",
-                     node.left->type->ToString ().c_str ());
+                     node.left->type->to_string ().c_str ());
     }
 
   node.type = node.left->type;
@@ -764,8 +764,8 @@ static void process_logic_or (Binary& node)
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
                          "|| cannot be applied to %s and %s (E63)",
-                         left_type->ToString ().c_str (),
-                         right_type->ToString ().c_str ());
+                         left_type->to_string ().c_str (),
+                         right_type->to_string ().c_str ());
         }
       type = Boolean::Instance ();
       value.present = true;
@@ -779,8 +779,8 @@ static void process_logic_or (Binary& node)
       error_at_line (-1, 0, node.location.File.c_str (),
                      node.location.Line,
                      "|| cannot be applied to %s and %s (E178)",
-                     left_type->ToString ().c_str (),
-                     right_type->ToString ().c_str ());
+                     left_type->to_string ().c_str (),
+                     right_type->to_string ().c_str ());
     }
 
   const type::Type* in_type = Choose (left_type, right_type);
@@ -792,8 +792,8 @@ static void process_logic_or (Binary& node)
       error_at_line (-1, 0, node.location.File.c_str (),
                      node.location.Line,
                      "|| cannot be applied to %s and %s (E179)",
-                     left_type->ToString ().c_str (),
-                     right_type->ToString ().c_str ());
+                     left_type->to_string ().c_str (),
+                     right_type->to_string ().c_str ());
     }
 
   if (left_value.present &&
@@ -830,8 +830,8 @@ static void process_logic_and (Binary& node)
           error_at_line (-1, 0, node.location.File.c_str (),
                          node.location.Line,
                          "&& cannot be applied to %s and %s (E180)",
-                         left_type->ToString ().c_str (),
-                         right_type->ToString ().c_str ());
+                         left_type->to_string ().c_str (),
+                         right_type->to_string ().c_str ());
         }
       type = Boolean::Instance ();
       value.present = true;
@@ -845,8 +845,8 @@ static void process_logic_and (Binary& node)
       error_at_line (-1, 0, node.location.File.c_str (),
                      node.location.Line,
                      "&& cannot be applied to %s and %s (E181)",
-                     left_type->ToString ().c_str (),
-                     right_type->ToString ().c_str ());
+                     left_type->to_string ().c_str (),
+                     right_type->to_string ().c_str ());
     }
 
   const type::Type* in_type = Choose (left_type, right_type);
@@ -858,8 +858,8 @@ static void process_logic_and (Binary& node)
       error_at_line (-1, 0, node.location.File.c_str (),
                      node.location.Line,
                      "&& cannot be applied to %s and %s (E182)",
-                     left_type->ToString ().c_str (),
-                     right_type->ToString ().c_str ());
+                     left_type->to_string ().c_str (),
+                     right_type->to_string ().c_str ());
     }
 
   if (left_value.present &&
@@ -1289,7 +1289,7 @@ struct Visitor : public ast::DefaultVisitor
             error_at_line (-1, 0, node.location.File.c_str (),
                            node.location.Line,
                            "! cannot be applied to %s (E158)",
-                           node.child->type->ToString ().c_str ());
+                           node.child->type->to_string ().c_str ());
           }
         node.type = node.child->type;
         if (node.child->value.present)
@@ -1319,7 +1319,7 @@ struct Visitor : public ast::DefaultVisitor
             error_at_line (-1, 0, node.location.File.c_str (),
                            node.location.Line,
                            "- cannot be applied to %s (E159)",
-                           node.child->type->ToString ().c_str ());
+                           node.child->type->to_string ().c_str ());
           }
         node.type = node.child->type;
         if (node.child->value.present)
@@ -1654,7 +1654,7 @@ struct Visitor : public ast::DefaultVisitor
       {
         error_at_line (-1, 0, node.location.File.c_str (),
                        node.location.Line, "cannot convert %s to %s in return (E160)",
-                       node.child->type->ToString ().c_str (), node.return_symbol->type->ToString ().c_str ());
+                       node.child->type->to_string ().c_str (), node.return_symbol->type->to_string ().c_str ());
       }
     convert (node.child, node.return_symbol->type);
 
@@ -1703,7 +1703,7 @@ struct Visitor : public ast::DefaultVisitor
     if (root_type == NULL)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "cannot change expression of type %s (E96)", node.expr->type->ToString ().c_str ());
+                       "cannot change expression of type %s (E96)", node.expr->type->to_string ().c_str ());
       }
 
     require_value_or_variable (node.expr);
@@ -1827,7 +1827,7 @@ struct Visitor : public ast::DefaultVisitor
             if (!assignable (n->type, n->value, type))
               {
                 error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "cannot assign %s to %s in initialization (E62)", n->type->ToString ().c_str (), type->ToString ().c_str ());
+                               "cannot assign %s to %s in initialization (E62)", n->type->to_string ().c_str (), type->to_string ().c_str ());
               }
             convert (n, type);
             require_value_or_variable (n);
@@ -1897,8 +1897,8 @@ done:
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "cannot assign value of type %s to variable of type %s (E199)",
-                       from->ToString ().c_str (),
-                       to->ToString ().c_str ());
+                       from->to_string ().c_str (),
+                       to->to_string ().c_str ());
       }
     convert (node.right, to);
     require_variable (node.left);
@@ -1929,14 +1929,14 @@ done:
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "+= cannot be applied to %s (E200)",
-                       to->ToString ().c_str ());
+                       to->to_string ().c_str ());
       }
     if (!assignable (from, val, to))
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "cannot assign value of type %s to variable of type %s (E76)",
-                       from->ToString ().c_str (),
-                       to->ToString ().c_str ());
+                       from->to_string ().c_str (),
+                       to->to_string ().c_str ());
       }
     convert (node.right, to);
     require_variable (node.left);
@@ -1956,7 +1956,7 @@ done:
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "++ cannot be applied to %s (E77)",
-                       node.child->type->ToString ().c_str ());
+                       node.child->type->to_string ().c_str ());
       }
     require_variable (node.child);
 
@@ -1976,14 +1976,14 @@ done:
   void visit (BindPushPortParamStatement& node)
   {
     node.visit_children (*this);
-    const reaction_t* reaction = bind (node, node.left, node.right);
+    const decl::Reaction* reaction = bind (node, node.left, node.right);
     if (!reaction->has_dimension ())
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "parameter specified for non-parameterized reaction (E41)");
       }
     type::Int::ValueType dimension = reaction->dimension ();
-    check_array_index (reaction->reaction_type->GetArray (dimension), node.param, false);
+    check_array_index (reaction->reaction_type->get_array (dimension), node.param, false);
   }
 
   void visit (BindPullPortStatement& node)
@@ -2014,7 +2014,7 @@ done:
     if (!identical (pull_port_type, &g))
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "cannot bind %s to %s (E191)", pull_port_type->ToString ().c_str (), getter_type->ToString ().c_str ());
+                       "cannot bind %s to %s (E191)", pull_port_type->to_string ().c_str (), getter_type->to_string ().c_str ());
       }
   }
 
@@ -2026,7 +2026,7 @@ done:
     if (p == NULL)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "* cannot be applied to %s (E21)", t->ToString ().c_str ());
+                       "* cannot be applied to %s (E21)", t->to_string ().c_str ());
       }
     require_value_or_variable (node.child);
     node.type = p->Base ();
@@ -2040,7 +2040,7 @@ done:
   {
     node.visit_children (*this);
     require_variable (node.child);
-    node.type = node.child->type->GetPointer ();
+    node.type = node.child->type->get_pointer ();
     node.expression_kind = kValue;
     node.intrinsic_mutability = node.child->intrinsic_mutability;
     node.indirection_mutability = std::max (node.child->intrinsic_mutability, node.child->indirection_mutability);
@@ -2068,7 +2068,7 @@ done:
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "cannot select %s from expression of type %s (E154)",
-                       identifier.c_str (), base_type->ToString ().c_str ());
+                       identifier.c_str (), base_type->to_string ().c_str ());
       }
 
     if (type_dereference (base_type))
@@ -2218,7 +2218,7 @@ done:
 
     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                    "cannot index expression of type %s (E168)",
-                   base_type->ToString ().c_str ());
+                   base_type->to_string ().c_str ());
   }
 
   void visit (SliceExpr& node)
@@ -2282,7 +2282,7 @@ done:
             check_array_index (node.array_type, max_node, true);
           }
 
-        node.type = node.array_type->Base ()->GetSlice ();
+        node.type = node.array_type->Base ()->get_slice ();
         node.expression_kind = kValue;
         node.intrinsic_mutability = Immutable;
         node.indirection_mutability = node.base->indirection_mutability;
@@ -2316,7 +2316,7 @@ done:
 
     error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                    "cannot slice expression of type %s (E225)",
-                   base_type->ToString ().c_str ());
+                   base_type->to_string ().c_str ());
 
 done:
     if (low_value.present && high_value.present)
@@ -2438,7 +2438,7 @@ done:
 
       default:
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "cannot define composite literals for %s (E5)", node.type->ToString ().c_str ());
+                       "cannot define composite literals for %s (E5)", node.type->to_string ().c_str ());
       }
   }
 };
@@ -2463,7 +2463,7 @@ void check_types_arguments (ast::List* args, const type::Signature* signature)
       if (!type::assignable (arg, val, param))
         {
           error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
-                         "cannot assign %s to %s in call (E151)", arg->ToString ().c_str (), param->ToString ().c_str ());
+                         "cannot assign %s to %s in call (E151)", arg->to_string ().c_str (), param->to_string ().c_str ());
         }
       convert ((*pos), param);
     }

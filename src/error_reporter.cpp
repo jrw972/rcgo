@@ -51,7 +51,7 @@ ErrorReporter::func_expects_arg (const Location& loc,
                                  const type::Type* expect,
                                  const type::Type* given)
 {
-  out_ << loc << ": function " << func << " expects argument " << idx << " to be of type " << expect->ToString () << " but given " << given->ToString () << ' ' << Func_Expects_Arg << '\n';
+  out_ << loc << ": function " << func << " expects argument " << idx << " to be of type " << expect->to_string () << " but given " << given->to_string () << ' ' << Func_Expects_Arg << '\n';
   bump ();
   return Func_Expects_Arg;
 }
@@ -61,7 +61,7 @@ ErrorReporter::cannot_be_applied (const Location& loc,
                                   const std::string& op,
                                   const type::Type* type)
 {
-  out_ << loc << ": " << op << " cannot be applied to an expression of type " << type->ToString () << Cannot_Be_Applied << '\n';
+  out_ << loc << ": " << op << " cannot be applied to an expression of type " << type->to_string () << Cannot_Be_Applied << '\n';
   bump ();
   return Cannot_Be_Applied;
 }

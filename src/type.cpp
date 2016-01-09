@@ -15,28 +15,11 @@ using namespace semantic;
 std::ostream&
 operator<< (std::ostream& o, const Type& type)
 {
-  return o << type.ToString ();
-}
-
-bool Type::IsString () const
-{
-  UNIMPLEMENTED;
-}
-bool Type::IsComplex () const
-{
-  UNIMPLEMENTED;
-}
-bool Type::IsSliceOfBytes () const
-{
-  UNIMPLEMENTED;
-}
-bool Type::IsSliceOfRunes () const
-{
-  UNIMPLEMENTED;
+  return o << type.to_string ();
 }
 
 const Pointer*
-Type::GetPointer () const
+Type::get_pointer () const
 {
   if (pointer_ == NULL)
     {
@@ -46,7 +29,7 @@ Type::GetPointer () const
 }
 
 const Slice*
-Type::GetSlice () const
+Type::get_slice () const
 {
   if (slice_ == NULL)
     {
@@ -56,8 +39,9 @@ Type::GetSlice () const
 }
 
 const Array*
-Type::GetArray (UintValueType dimension) const
+Type::get_array (IntValueType dimension) const
 {
+  assert (dimension >= 0);
   const Array* a;
   ArraysType::const_iterator pos = arrays_.find (dimension);
   if (pos != arrays_.end ())
@@ -73,7 +57,7 @@ Type::GetArray (UintValueType dimension) const
 }
 
 const Heap*
-Type::GetHeap () const
+Type::get_heap () const
 {
   if (heap_ == NULL)
     {
@@ -83,7 +67,7 @@ Type::GetHeap () const
 }
 
 std::string
-Array::ToString () const
+Array::to_string () const
 {
   std::stringstream str;
   str << '[' << dimension << ']' << *base_;
@@ -91,15 +75,15 @@ Array::ToString () const
 }
 
 
-reaction_t *
-NamedType::GetReaction (const std::string& identifier) const
+Reaction *
+NamedType::get_reaction (const std::string& identifier) const
 {
-  for (std::vector<reaction_t*>::const_iterator pos = reactions_.begin (),
+  for (std::vector<Reaction*>::const_iterator pos = reactions_.begin (),
        limit = reactions_.end ();
        pos != limit;
        ++pos)
     {
-      reaction_t *a = *pos;
+      Reaction *a = *pos;
       if (a->name == identifier)
         {
           return a;
@@ -320,18 +304,18 @@ type_select_getter (const Type* type, const std::string& identifier)
   return v.retval;
 }
 
-reaction_t *
+Reaction *
 type_select_reaction (const Type* type, const std::string& identifier)
 {
   struct visitor : public DefaultVisitor
   {
-    reaction_t* retval;
+    Reaction* retval;
     const std::string& identifier;
     visitor (const std::string& id) : retval (NULL), identifier (id) { }
 
     void visit (const NamedType& type)
     {
-      retval = type.GetReaction (identifier);
+      retval = type.get_reaction (identifier);
     }
   };
   visitor v (identifier);
@@ -404,7 +388,7 @@ type_select (const Type* type, const std::string& identifier)
       return g->getterType;
     }
 
-  reaction_t* r = type_select_reaction (type, identifier);
+  Reaction* r = type_select_reaction (type, identifier);
   if (r)
     {
       return r->reaction_type;
@@ -450,7 +434,7 @@ type_move (const Type* type)
       const Heap* h = type_cast<Heap> (ptf->Base ());
       if (h)
         {
-          return ptf->Base ()->GetPointer ();
+          return ptf->Base ()->get_pointer ();
         }
     }
 
@@ -466,7 +450,7 @@ const Type* type_merge (const Type* type)
       const Heap* h = type_cast<Heap> (ptf->Base ());
       if (h)
         {
-          return h->Base ()->GetPointer ();
+          return h->Base ()->get_pointer ();
         }
     }
 
@@ -483,7 +467,7 @@ type_change (const Type* type)
       const Heap* h = type_cast<Heap> (ptf->Base ());
       if (h)
         {
-          return h->Base ()->GetPointer ();
+          return h->Base ()->get_pointer ();
         }
     }
 
@@ -615,8 +599,8 @@ struct IdenticalImpl
 bool
 identical (const Type* x, const Type* y)
 {
-  if ((x == &NamedUint8 && y == &NamedByte) ||
-      (x == &NamedByte &&  y == &NamedUint8))
+  if ((x == &named_uint8 && y == &named_byte) ||
+      (x == &named_byte &&  y == &named_uint8))
     {
       return true;
     }
@@ -638,7 +622,7 @@ identical (const Type* x, const Type* y)
 }
 
 std::string
-Signature::ToString () const
+Signature::to_string () const
 {
   std::stringstream str;
   str << '(';
@@ -653,7 +637,7 @@ Signature::ToString () const
           str << ", ";
         }
 
-      str << (*ptr)->type->ToString ();
+      str << (*ptr)->type->to_string ();
       flag = true;
     }
   str << ')';
@@ -683,7 +667,7 @@ Struct::Struct (bool insert_runtime) : offset_ (0), alignment_ (0)
   if (insert_runtime)
     {
       /* Prepend the field list with a pointer for the runtime. */
-      Append ("0runtime", Void::Instance ()->GetPointer ());
+      Append ("0runtime", Void::Instance ()->get_pointer ());
     }
 }
 
@@ -1095,7 +1079,7 @@ type_is_castable (const Type* x, const Type* y)
 }
 
 std::string
-Function::ToString () const
+Function::to_string () const
 {
   std::stringstream str;
   switch (function_kind)
@@ -1114,7 +1098,7 @@ Function::ToString () const
 }
 
 std::string
-Method::ToString () const
+Method::to_string () const
 {
   std::stringstream str;
   switch (method_kind)
@@ -1186,37 +1170,37 @@ Method::Method (MethodKind k, const NamedType* named_type_,
 const Type*
 Boolean::DefaultType () const
 {
-  return &NamedBool;
+  return &named_bool;
 }
 
 const Type*
 Rune::DefaultType () const
 {
-  return &NamedRune;
+  return &named_rune;
 }
 
 const Type*
 Integer::DefaultType () const
 {
-  return &NamedInt;
+  return &named_int;
 }
 
 const Type*
 Float::DefaultType () const
 {
-  return &NamedFloat64;
+  return &named_float64;
 }
 
 const Type*
 Complex::DefaultType () const
 {
-  return &NamedComplex128;
+  return &named_complex128;
 }
 
 const Type*
 String::DefaultType () const
 {
-  return &NamedString;
+  return &named_string;
 }
 
 const Type*
@@ -1311,7 +1295,7 @@ NamedType::select_callable (const std::string& name) const
       return g;
     }
 
-  reaction_t* r = type_select_reaction (this, name);
+  Reaction* r = type_select_reaction (this, name);
   if (r)
     {
       return r;
@@ -1608,34 +1592,34 @@ pointer_to_array (const Type* type)
   return NULL;
 }
 
-NamedType NamedBool ("bool", Bool::Instance ());
+NamedType named_bool ("bool", Bool::Instance ());
 
-NamedType NamedUint8 ("uint8", Uint8::Instance ());
-NamedType NamedUint16 ("uint16", Uint16::Instance ());
-NamedType NamedUint32 ("uint32", Uint32::Instance ());
-NamedType NamedUint64 ("uint64", Uint64::Instance ());
+NamedType named_uint8 ("uint8", Uint8::Instance ());
+NamedType named_uint16 ("uint16", Uint16::Instance ());
+NamedType named_uint32 ("uint32", Uint32::Instance ());
+NamedType named_uint64 ("uint64", Uint64::Instance ());
 
-NamedType NamedInt8 ("int8", Int8::Instance ());
-NamedType NamedInt16 ("int16", Int16::Instance ());
-NamedType NamedInt32 ("int32", Int32::Instance ());
-NamedType NamedInt64 ("int64", Int64::Instance ());
+NamedType named_int8 ("int8", Int8::Instance ());
+NamedType named_int16 ("int16", Int16::Instance ());
+NamedType named_int32 ("int32", Int32::Instance ());
+NamedType named_int64 ("int64", Int64::Instance ());
 
-NamedType NamedFloat32 ("float32", Float32::Instance ());
-NamedType NamedFloat64 ("float64", Float64::Instance ());
+NamedType named_float32 ("float32", Float32::Instance ());
+NamedType named_float64 ("float64", Float64::Instance ());
 
-NamedType NamedComplex64 ("complex64", Complex64::Instance ());
-NamedType NamedComplex128 ("complex128", Complex128::Instance ());
+NamedType named_complex64 ("complex64", Complex64::Instance ());
+NamedType named_complex128 ("complex128", Complex128::Instance ());
 
-NamedType NamedByte ("byte", Uint8::Instance ());
-NamedType NamedRune ("rune", Int::Instance ());
+NamedType named_byte ("byte", Uint8::Instance ());
+NamedType named_rune ("rune", Int::Instance ());
 
-NamedType NamedUint ("uint", Uint::Instance ());
-NamedType NamedInt ("int", Int::Instance ());
-NamedType NamedUintptr ("uintptr", Uintptr::Instance ());
+NamedType named_uint ("uint", Uint::Instance ());
+NamedType named_int ("int", Int::Instance ());
+NamedType named_uintptr ("uintptr", Uintptr::Instance ());
 
-NamedType NamedString ("string", StringU::Instance ());
+NamedType named_string ("string", StringU::Instance ());
 
-NamedType NamedFileDescriptor ("FileDescriptor", FileDescriptor::Instance ());
-NamedType NamedTimespec ("timespec", (new Struct ())->Append ("tv_sec", &NamedUint64)->Append ("tv_nsec", &NamedUint64));
+NamedType named_file_descriptor ("FileDescriptor", FileDescriptor::Instance ());
+NamedType named_timespec ("timespec", (new Struct ())->Append ("tv_sec", &named_uint64)->Append ("tv_nsec", &named_uint64));
 
 }

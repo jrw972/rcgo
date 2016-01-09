@@ -274,7 +274,7 @@ allocate_stack_variables (ast::Node* node)
       assert (node.getter->memoryModel.LocalsEmpty ());
     }
 
-    void visit (Reaction& node)
+    void visit (ast::Reaction& node)
     {
       allocate_parameters (node.reaction->memory_model, node.reaction->signature ());
       allocate_symbol (node.reaction->memory_model, node.reaction->receiver);

@@ -88,7 +88,7 @@ struct Visitor : public ast::DefaultVisitor
     node.action->immutable_phase_access = node.body->receiver_access;
   }
 
-  void visit (Reaction& node)
+  void visit (ast::Reaction& node)
   {
     node.body->accept (*this);
     node.reaction->immutable_phase_access = node.body->receiver_access;

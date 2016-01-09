@@ -51,7 +51,7 @@ main (int argc, char** argv)
     Location loc;
     std::stringstream ss;
     ErrorReporter er (0, ss);
-    int code = er.func_expects_arg (loc, "myfunc", 1, &type::NamedInt, &type::NamedUint);
+    int code = er.func_expects_arg (loc, "myfunc", 1, &type::named_int, &type::named_uint);
     check (tap, "ErrorReporter::func_expects_arg", loc, ss, er, code);
   }
 
@@ -59,7 +59,7 @@ main (int argc, char** argv)
     Location loc;
     std::stringstream ss;
     ErrorReporter er (0, ss);
-    int code = er.cannot_be_applied (loc, "somefunc", &type::NamedInt);
+    int code = er.cannot_be_applied (loc, "somefunc", &type::named_int);
     check (tap, "ErrorReporter::cannot_be_applied", loc, ss, er, code);
   }
 

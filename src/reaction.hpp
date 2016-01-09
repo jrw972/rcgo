@@ -6,10 +6,10 @@
 namespace decl
 {
 
-class reaction_t : public Callable
+class Reaction : public Callable
 {
 public:
-  reaction_t (ast::Node* a_node, decl::Symbol* a_receiver, ast::Node* body_, const std::string& name_, const type::Method* rt)
+  Reaction (ast::Node* a_node, decl::Symbol* a_receiver, ast::Node* body_, const std::string& name_, const type::Method* rt)
     : node (a_node)
     , receiver (a_receiver)
     , body (body_)
@@ -19,7 +19,7 @@ public:
     , reaction_type (rt)
   { }
 
-  reaction_t (ast::Node* a_node, decl::Symbol* a_receiver, ast::Node* body_, const std::string& name_, const type::Method* rt, decl::Symbol* a_iota, type::Int::ValueType dimension)
+  Reaction (ast::Node* a_node, decl::Symbol* a_receiver, ast::Node* body_, const std::string& name_, const type::Method* rt, decl::Symbol* a_iota, type::Int::ValueType dimension)
     : node (a_node)
     , receiver (a_receiver)
     , body (body_)

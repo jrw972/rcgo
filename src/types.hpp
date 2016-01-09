@@ -106,7 +106,7 @@ namespace decl
 {
 class SymbolTable;
 class Action;
-class reaction_t;
+class Reaction;
 class Template;
 class Symbol;
 class ParameterSymbol;

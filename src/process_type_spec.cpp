@@ -35,14 +35,14 @@ process_array_dimension (ast::Node* node, ErrorReporter& er, decl::SymbolTable& 
 {
   process_constant_expression (node, er, symtab);
   // Convert to an int.
-  if (!node->value.representable (node->type, &NamedInt))
+  if (!node->value.representable (node->type, &named_int))
     {
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
                      "array dimension is not an integer (E108)");
     }
 
-  node->value.convert (node->type, &NamedInt);
-  node->type = &NamedInt;
+  node->value.convert (node->type, &named_int);
+  node->type = &named_int;
   type::Int::ValueType dim = node->value.int_value;
   if (dim < 0)
     {
@@ -88,13 +88,13 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
     {
       type::Int::ValueType dimension = process_array_dimension (node.dimension, er, symtab);
       const type::Type* base_type = process_type (node.base_type, er, symtab, true);
-      type = base_type->GetArray (dimension);
+      type = base_type->get_array (dimension);
     }
 
     void visit (SliceTypeSpec& node)
     {
       const type::Type* base_type = process_type (node.child, er, symtab, false);
-      type = base_type->GetSlice ();
+      type = base_type->get_slice ();
     }
 
     void visit (EmptyTypeSpec& node)
@@ -147,7 +147,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
 
     void visit (HeapTypeSpec& node)
     {
-      type = process_type (node.child, er, symtab, false)->GetHeap ();
+      type = process_type (node.child, er, symtab, false)->get_heap ();
     }
 
     void visit (IdentifierTypeSpec& node)
@@ -172,7 +172,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
     void visit (PointerTypeSpec& node)
     {
       const type::Type* base_type = process_type (node.child, er, symtab, false);
-      type = base_type->GetPointer ();
+      type = base_type->get_pointer ();
     }
 
     void visit (PushPortTypeSpec& node)
