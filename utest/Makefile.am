@@ -2,8 +2,11 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver
 
 AM_CXXFLAGS = -I $(top_srcdir)/src
 
-TESTS = heap error_reporter
+TESTS = arch heap error_reporter
 check_PROGRAMS = $(TESTS)
+
+arch_SOURCES = arch.cpp tap.hpp
+arch_LDADD = $(top_builddir)/src/librc.la
 
 heap_SOURCES = heap.cpp tap.hpp
 heap_LDADD = $(top_builddir)/src/librc.la

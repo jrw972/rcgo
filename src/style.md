@@ -34,9 +34,8 @@ Namespaces
 Names
 =====
 1. Types are CamelCase.
-2. Constants including enum values are CamelCase.
-3. Every other identifier is lowercase with underscores.
-4. Private and protected members have a trailing underscore.
+2. Every other identifier is lowercase with underscores.
+3. Private and protected members have a trailing underscore.
 
 Forward Declarations
 ====================
