@@ -106,38 +106,116 @@ These assumptions also are common in many other less constrained environments, a
 Thus, even with the static system assumption, an implementation of the model is still applicable to many systems of interest.
 We leave the implementation of extensions that facilitate the dynamic creation and binding of reactive components for future work.
 
+\begin{figure}
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}
+[
+  >=stealth',
+  punkt/.style={
+    rectangle,
+    rounded corners,
+    draw=black, very thick,
+    text width=6.5em,
+    minimum height=2em,
+    text centered
+  },
+  pil/.style={
+    ->,
+    thick,
+    %%shorten <=2pt,
+    %%shorten >=2pt,
+  }
+]
+
+\node[align=center] (center) at (0,0) {};
+
+%% components
+
+\node[punkt,left=1.5cm of center] (component2) {Component 2};
+\node[punkt,below=1cm of component2] (component1) {Component 1};
+\node[punkt,above=1cm of component2] (componentn) {Component N};
+\node[above=.5cm of componentn] (component) {Components};
+\draw[rounded corners,dashed] ($(component1.south west) + (-1,-.5)$) rectangle ($(componentn.north east) + (1,1.5)$);
+
+%% heaps
+\node[punkt,right=1.5cm of center] (heap2) {Heap 2};
+\node[punkt,below=1cm of heap2] (heap1) {Heap 1};
+\node[punkt,above=1cm of heap2] (heapn) {Heap N};
+\node[above=.5cm of heapn] (heap) {Heaps};
+\draw[rounded corners,dashed] ($(heap1.south west) + (-1,-.5)$) rectangle ($(heapn.north east) + (1,1.5)$);
+
+%% stacks
+\node[punkt,above=6cm of center] (stack2) {Stack 2};
+\node[punkt,left=1cm of stack2] (stack1) {Stack 1};
+\node[punkt,right=1cm of stack2] (stackn) {Stack N};
+\node[below=.5cm of stack2] (stack) {Stacks};
+\draw[rounded corners,dashed] ($(stack1.south west) + (-1,-1.5)$) node (stackll) {} rectangle ($(stackn.north east) + (1,.5)$) node (stackur) {};
+
+\draw[rounded corners,very thick] ($(stackll) + (0,-9)$) rectangle ($(stackur) + (0,-11)$) node[pos=.5] {Constants};
+
+\draw[pil,<->] (component1.east) -- (heap1.west);
+\draw[pil,<->] (component2.east) -- (heap2.west);
+\draw[pil,<->] (componentn.east) -- (heapn.west);
+
+\draw[pil,->] (stack) -- (component);
+\draw[pil,->] (stack) -- (heap);
+
+\path[pil] (heapn.east) edge [loop right, out=45, in=-45, min distance=1.5cm] (heapn.east);
+\path[pil] (componentn.west) edge [loop left, out=135, in=-135, min distance=1.5cm] (componentn.west);
+
+\path[pil] (heap1.east) edge [loop right, out=45, in=-45, min distance=1.5cm] (heap1.east);
+\path[pil] (component1.west) edge [loop left, out=135, in=-135, min distance=1.5cm] (component1.west);
+
+\path[pil] (heap2.east) edge [loop right, out=45, in=-45, min distance=1.5cm] (heap2.east);
+\path[pil] (component2.west) edge [loop left, out=135, in=-135, min distance=1.5cm] (component2.west);
+
+\end{tikzpicture}
+}%
+\caption{Memory model\label{memory_model}.  An edge from one segment to another indicates that a pointer in the source segment may refer to a location in the target segment.  All pointers may refer to the constant segment.  These edges are omitted.}
+\end{figure}
+
 \paragraph{Memory model.}
-A memory address may refer to a location in the constant segment, a stack, the static component segment, or a heap.
+Figure~\ref{memory_model} shows the memory model for the reactive component programming language.
+A pointer may refer to a location in the constant segment, a stack segment, a component segment, or a heap segment.
+The edges in the figure indicate that a pointer in one segment may refer to a location in another segment.
 As implied by the name, the constant segment is used to store constants like string literals.
+A pointer in any segment may refer to the constant segment.
+These edges are not shown shown in the figure.
+
 Function parameters and local variables are allocated on a call stack as they are in C or C++.
-The static component segment contains statically allocated components.
+Multiple stacks may be present if multiple transactions are executed in parallel.
+As indicated by the figure, a pointer in a stack segment may refer to a component segment, a heap segment, or the constant segment.
+A pointer referring to a location on a call stack becomes invalid after the transaction is complete and the call stack is cleared.
+Consequently, it is not safe to allow static or dynamic component state to refer to a location in a stack as it may create a dangling pointer.
+It is permissible to allow a pointer in a stack to refer to a location in the same stack, however, it is difficult to ensure that such a pointer does not escape.
+Therefore, user-level pointers to call stack locations are prohibited.
 
-Let $f(c)$ be a function that returns an address range $[c,c+sizeof(T))$ if $c$ is a pointer and $\emptyset$ otherwise.
-Let $c$ be a pointer to a component of type $T$.
-Assuming statically allocated components, the range of addresses $S = f(c)$ refers to a block of locations with the same size as $T$ in the static component segment.
-That is $S$ contains the range of addresses for the \emph{statically} allocated state of the component indicated by $c$.
-Let $F(A) = \cup_{a \in A} f(a)$.
-Let $C$ be the transitive closure of $F$ applied to $S$.
-$C$ contains the set of memory addresses that contain the state of component $c$.
-The set $H = C \setminus S$ contains the \emph{dynamically} allocated state of the component indicated by $c$.
-Dynamically allocated state is contained in a heap.
-Let $c_x$ and $c_y$ be two different components and their corresponding state $C_x$ and $C_y$.
-The semantics of reactive components require that the state of each component be disjoint or $C_x \cap C_y = \emptyset$.
-The static component segment and the heaps contain all of the mutable state in the system.
-Mutable state outside of a component, e.g., a global variable, is prohibited as it may introduce a data race.
-
+As shown in figure~\ref{memory_model}, the other two types of segments are component segments which contain the statically allocated state of components and heap segments which contain the dynamically allocated state of components.
+The semantics of reactive components require the state of each component to remain disjoint.
+In terms of pointers, a pointer in the component/heap segment of a component may refer to a location in the component/heap segment of the same component or the constant segment.
 Part of our approach to maintaining disjoint state is preventing the formation of arbitrary pointers that would allow one component to access the state of another component.
 Consequently, pointer arithmetic and casts from numeric values are not allowed.
 Manually deallocating memory may result in dangling pointers which, as memory is recycled, may point to the state of another component.
 Consequently, some form of automatic memory management is necessary with the two primary candidates being reference counting and garbage collection.
 Our implementation uses garbage collection and is described in chapter~\ref{implementation}.
+The component segments and their corresponding heap segments contain all of the mutable state in the system.
+Mutable state outside of a component, e.g., a global variable, is prohibited as it may introduce a data race.
 %% Logically, then, each component has its own heap from which it can allocate memory.
 
-%% A feature in the language is loosely classified as either \emph{reactive}, \emph{transformational}, or \emph{provisional}.
-%% The features of the reactive component model, e.g., actions, reactions, etc., have corresponding features in the language.
-%% The features used for describing state and state transformations, e.g., types, expressions, statements, functions, methods, etc., are generally useful in transformational programs.
-%% Provisional features are elements that are not in the reactive component model but are necessary to enforce the semantics of the model or a desired feature.
-%% This chapter focuses on the syntax and semantics of a programming language based on reactive components while chapter~\ref{implementation} focuses on the techniques used to implement the features.
+%% Let $f(c)$ be a function that returns an address range $[c,c+sizeof(T))$ if $c$ is a pointer and $\emptyset$ otherwise.
+%% Let $c$ be a pointer to a component of type $T$.
+%% Assuming statically allocated components, the range of addresses $S = f(c)$ refers to a block of locations with the same size as $T$ in the static component segment.
+%% That is $S$ contains the range of addresses for the \emph{statically} allocated state of the component indicated by $c$.
+%% Let $F(A) = \cup_{a \in A} f(a)$.
+%% Let $C$ be the transitive closure of $F$ applied to $S$.
+%% $C$ contains the set of memory addresses that contain the state of component $c$.
+%% The set $H = C \setminus S$ contains the \emph{dynamically} allocated state of the component indicated by $c$.
+%% Dynamically allocated state is contained in a heap.
+%% Let $c_x$ and $c_y$ be two different components and their corresponding state $C_x$ and $C_y$.
+%% The semantics of reactive components require that the state of each component be disjoint or $C_x \cap C_y = \emptyset$.
+%% The static component segment and the heaps contain all of the mutable state in the system.
+%% Mutable state outside of a component, e.g., a global variable, is prohibited as it may introduce a data race.
 
 \section{Reactive Component Programming Language}
 
