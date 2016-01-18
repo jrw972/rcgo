@@ -596,190 +596,461 @@ Thus, \verb+change+, \verb+move+, and \verb+merge+ are atomic with respect to ea
 These operations return \verb+nil+ indicating a failure.
 For example, if two components attempt to \verb+move+ the same heap, one will succeed and the other will fail.
 
-\section{TODO: Examples}
+\section{Examples}
 
-\section{TODO: Summary}
+\subsection{Shared Variable System}
 
-Revisit technical agenda and provide answers to the questions that were asked.
+In this example, we rewrite the shared variable I/O automaton on pages 240 and 242 of~\cite{nancy1996distributed} as a reactive component.
+The example consists of four kinds of components.
+First, there is a \verb+Variable+ component which represents a shared variable.
+\verb+Process+ components access the shared variable and report the status of the shared variable to \verb+User+ components.
+A top-level \verb+System+ component instantiates the shared variable, three processes, and three users to create a complete system.
 
-%% \section{BEGINNING OF UNADOPTED MATERIAL FROM PROPOSAL}
+\begin{figure}
+\begin{verbatim}
+type Variable component {
+    value int;
+};
 
-%% \paragraph{Compilation.}
-%% To facilitate a design and development process based on composition and decomposition, we require a high-level language that resembles the model and examples presented in section~\ref{model}.
-%% The goal of the compiler, then, is to translate the high-level language to the language of the $\alpha$-machine.
-%% %% Complication typically consists of five phases corresponding to scanning, parsing, semantic analysis, optimization, and code generation.
-%% In addition to conventional semantic analysis, e.g., type checking, the compiler will check that the reactive system is well-defined and provide a concurrency analysis to be used during scheduling.
-%% %% Optimization is beyond the scope of this research.
+init (this *Variable) Init () {
+    this.value = -1;
+}
 
-%% Substitutional equivalence provides the logical foundation for testing well-definedness.
-%% A system is represented as a top-level reactive component.
-%% The input and output ports original to the top-level component can be converted to internal ports since the top-level component does not need an external interface.
-%% Substitutional equivalence allows the declarations of member components to be replaced with their definitions according to the procedure outlined in section~\ref{model}.
-%% This process can be repeated until all member components are ``inlined'' resulting in a top-level component that only contains state variables, internal ports, $\alpha$-statements, $\beta$-statements, and $\gamma$-statements.
-%% At this point, all internal ports, $\gamma$-statements, and $\beta$-statements can be eliminated by substituting definitions.
-%% The resulting top-level component only contains state variables and $\alpha$-statements.
-%% To be a faithful implementation of the model, each $\alpha$-statement must be a deterministic state transformation.
-%% The main challenge, then, lies in the co-design of a transformational language and checks for deterministic assignment.
+[3] reaction (this $const * Variable) Set (v int) {
+    activate {
+        this.value = v;
+    }
+}
 
-%% At a high level, we desire to treat the transformation specified by an $\alpha$-statement as a function that maps a value representing the current state to a value representing the next state because it leads to a simple decidable check.
-%% An $\alpha$-statement then consists of five parts:  a precondition list, a precondition function, an assignment list, an argument list, and an effect function.
-%% The precondition list and argument list are lists of readable objects that form the arguments of the precondition function and effect function, respectively.
-%% The assignment list is a list of writable objects that are assigned the values produced by the effect function (state variables that are not named in the assignment list retain their previous values and ports that are not named in the assignment list are undefined).
-%% There is no notion of state or assignment inside the effect function, which thus resembles a pure functional or applicative program.
-%% A conservative but decidable check, then, is to ensure that a writable object appears at most once in the assignment list.
+getter (this $const * Variable) Get () int {
+    return this.value;
+}
+\end{verbatim}
+\cprotect\caption{Code listing for \verb+Variable+ component \label{variable}}
+\end{figure}
 
-%% %%Another concept implicit in the semantics of functional languages and their data structures is freedom from aliasing.
-%% The approach outlined above hinges on the semantics of writable objects.
-%% We define a writable object to be the name for an implied set of storage locations.
-%% All elements in the set of storage locations for a scalar variable are updated in an assignment to the variable.
-%% In contrast, only a subset of the set of storage locations for aggregate variables such as arrays and records may be updated in an assignment.
-%% Variables can also name linked data structures where the set of locations is the transitive closure of a points-to analysis~\cite{hind2001pointer}.
+Figure~\ref{variable} contains the listing for the \verb+Variable+ component.
+A \verb+Variable+ component has a single integer state variable named \verb+value+.
+This variable is initialized to the sentinel value -1 in the initializer \verb+Init+.
+Notice that the initializer has a pointer receiver \verb+(this *Variable)+.
+The receiver \verb+this+ has mutable dereference mutability so that the state variable can be assigned.
+The value of the \verb+Variable+ is set in the dimensioned reaction \verb+Set+.
+The reaction has a dimension of three as three \verb+Process+ actions will be bound to this reaction.
+The new value for the variable is communicated via the parameter \verb+v+.
+Notice that the receiver for the reaction \verb+(this $const * Variable)+ has immutable dereference mutability.
+In the body of the activate statement, the receiver is implicitly converted to have mutable dereference mutability.
+The final element of the \verb+Variable+ component is the getter \verb+Get+ that returns the value of the variable.
+Since getters are not allowed to change the state of the component, they must be declared with immutable dereference mutability \verb+(this $const * Variable)+.
 
-%% For well-definedness, we require that the implied sets of storage locations for all writable objects be disjoint.
-%% Thus, an assignment to two different variables in an $\alpha$-statement cannot update the same memory location.
-%% The challenge then is to show that this condition holds initially and that it holds after the execution of each $\alpha$-statement.
-%% This is the subject of pointer analysis~\cite{hind2001pointer} which is undecidable in general.
-%% Components that communicate by passing data by reference as opposed to by value obviously violate this condition since multiple components may then reference the same memory locations.
-%% Thus, data passed by reference through ports must have semantics that prevent concurrent updates, e.g., constant (read-only), copy-on-write, etc.
-%% The goal then is to place appropriate restrictions on the language so as to make pointer analysis feasible and enable the safe sharing of data across ports.
+\begin{figure}
+\begin{verbatim}
+type ProcessStatus int;
+const PROCESS_IDLE = 0;
+const PROCESS_ACCESS = 1;
+const PROCESS_DECIDE = 2;
+const PROCESS_DONE = 3;
 
-%% To achieve the general approach outlined above, an approach to persistent data structures~\cite{driscoll1989making} and copy elimination~\cite{gopinath1989copy} is needed.
-%% A persistent data structure is one in which updates and queries can be made to any version, e.g., lists in LISP, Scheme, Haskell, etc.
-%% Persistent data structures match the semantics of existing functional programming languages since they allow variables to be treated as immutable values.
-%% In contrast, an ephemeral data structure is one in which updates and queries can only be to the most recent version.
-%% Ephemeral data structures are common in imperative languages and typically have simpler designs~\cite{okasaki1999purely}.
-%% Copy elimination attempts to replace copying with in-place modification when it can be shown that the old value of a variable is no longer needed.
-%% Copy elimination is often used for large aggregate data structures, e.g., arrays, that resist efficient persistent implementations.
+type Process component {
+    status ProcessStatus;
+    input int;
+    output int;
+    get_x pull () int;
+    set_x push (v int);
+    Decide push (v int);
+};
 
-%% An approach that to our knowledge has not been attempted is to restrict a functional language solely to ephemeral data structures.
-%% We define an \emph{ephemeral function} to be a function with an implementation (i.e., \emph{schedule of operations}) that allows all data structures to be treated as ephemeral.
-%% This approach has the potential to be more efficient since variables may be updated without copying.
-%% Functions with no ephemeral schedule must explicitly introduce copying, which is beneficial since it makes the developer aware of such potentially costly operations.
-%% Ephemeral functions may \emph{compose}, meaning that ephemerality may be established solely from the definition of a function and the signatures of any called functions.
-%% The challenge then is to develop an analysis to determine if a function is ephemeral and design the language of $\alpha$-statement transformations based on this analysis.
+init (this *Process) Init () {
+    this.status = PROCESS_IDLE;
+    this.input = -1;
+    this.output = -1;
+}
 
-%% The goal of concurrency analysis is to determine which $\alpha$-statements are independent and therefore can be executed concurrently.
-%% Using the formulation above, we associate with each $\alpha$-statement a set of objects given by forming the union of the precondition list, assignment list, and argument list (called the $\alpha$-statement's \emph{implied objects}).
-%% Two $\alpha$-statements are independent if their sets of implied objects are disjoint.
+reaction (this $const * Process) initr (v int) {
+    activate {
+        this.input = v;
+        if this.status == PROCESS_IDLE {
+            this.status = PROCESS_ACCESS;
+        }
+    }
+}
 
-%% %% One idea is to treat $\alpha$-statements as ``pure'' data-flow programs which have properties that are conducive to analysis.
-%% %% The structure present when compiling can also provide insights into the pointer analysis problem.
-%% %% For example, one could envision a heap-per-component strategy where each heap is considered as an extra variable.
-%% %% Passing a pointer through a port involves transferring the ownership of an object from one heap to another heap or set of heaps.
-%% %% Thus, the language might include two pointer types corresponding to the pointers ability to be passed to another component.
-%% %% This idea might be extended resulting in multiple heaps per component.
+action (this $const * Process) _access (this.status == PROCESS_ACCESS) {
+    x := this.get_x ();
+    if x == -1 {
+        activate set_x (this.input) {
+            println (`x set to `, this.input);
+            this.output = this.input;
+            this.status = PROCESS_DECIDE;
+        }
+    }
+    else {
+        activate {
+            this.output = x;
+            this.status = PROCESS_DECIDE;
+        }
+    }
+}
 
-%% %% To be a faithful implementation of the model, each $\alpha$-statement must be a deterministic state transformation.
-%% %% Thus, a compiler or verifier of $\alpha$-machine bytecode must be able to prove this property and the language of $\alpha$-statements must be designed around this constraint.
-%% %% A conservative but straightforward approach to proving determinism for variables in static storage is to check that a state variable is written at most once in all possible executions of an $\alpha$-statement.
-%% %% Existing techniques, e.g., control flow analysis, are adequate for this purpose.
-%% %% Proving determinism for variables allocated on the heap requires pointer analysis, e.g., shape analysis~\cite{larus1988detecting}, an area of ongoing research.
-%% %% Most likely, the language of $\alpha$-statements will need to be restricted to make pointer analysis feasible.
+action (this $const * Process) _decide (this.status == PROCESS_DECIDE) {
+    activate Decide (this.output) {
+        this.status = PROCESS_DONE;
+    }
+}
+\end{verbatim}
+\cprotect\caption{Code listing for \verb+Process+ component \label{process}}
+\end{figure}
 
-%% %% A compiler for this language takes as input reactive components constituting the system and uses the aforementioned techniques based on substitutional equivalence and simplification to produce an $\alpha$-machine program.
-%% %% In addition to the aforementioned determinism check, the compiler should check for appropriate port usage, e.g., input ports are read while output ports are written, and port consistency (static versus dynamic).
-%% %% The additional structure present when compiling from a high-level language will be useful when reporting errors related to non-deterministic assignment statements, perhaps by indicating the error using the same information presented in the block diagram of figure~\ref{clocksys_component_graphic} or the $\alpha$-forest diagram of \ref{clocksys_component_alpha}.
-%% %% The compiler can also help in design as it can perform concurrency analysis which the developer might use to identify bottlenecks and reactive components or systems that are good candidates for redesign.
+Figure~\ref{process} contains the listing for the \verb+Process+ component.
+The listing begins by defining the states for a process, that is, a process is either idle, ready to access the shared variable, ready to decide, or done.
+A \verb+Process+ component consists of three state variables:  \verb+status+ contains the state of the process, \verb+input+ contains a value received from the \verb+User+, and \verb+output+ contains the value that will be sent to the \verb+User+.
+The \verb+Process+ component contains a pull port \verb+get_x+ that will be bound to the shared variable's \verb+Get+ getter so that the \verb+Process+ may access the shared variable.
+Similarly, the \verb+Process+ component contains a \verb+set_x+ push port that will be bound to the shared variable's \verb+Set+ reaction to set the value of the variable.
+To communicate with the \verb+User+, the \verb+Process+ component contains a push port \verb+Decide+ that communicates the value of the shared variable.
 
+Like the \verb+Variable+ component, the \verb+Process+ component contains an initializer \verb+Init+ that sets the initial value of the state variables.
+From the listing, \verb+Process+ components are initialized to the idle state and the \verb+input+ and \verb+output+ variables are initialized to the sentinel value of -1.
+The \verb+initr+ reaction allows a \verb+User+ to asynchronously initialize the \verb+Process+ component.
+From the listing, this reaction sets the \verb+input+ variable to the value supplied in the argument \verb+v+ and causes the \verb+Process+ to prepare to access the shared variable if the \verb+Process+ was previously idle.
 
-%% %% The $\alpha$-machine processes a low-level language similar to Java bytecode.
-%% %% The reactive program given to an $\alpha$-machine lacks the structural elements, i.e., components, ports, $\beta$-statements, and $\gamma$-statements, needed to facilitate a design and development process based on composition and decomposition.
+The most interesting part of the \verb+Process+ component is the \verb+_access+ action.
+Like reactions, actions honor the immutable phase by requiring a receiver with immutable dereference mutability \verb+(this $const * Process)+.
+The precondition for \verb+_access+ tests that the \verb+Process+ is ready to access the shared variable.
+When executed, the \verb+_access+ action samples the state of the shared variable by calling the \verb+get_x+ pull port and assigns this to the local variable \verb+x+.
+Note that pull ports may only be called in the immutable phase.
+If the shared variable has not been set as indicated by the sentinel value -1, the process sets it to the value requested by the \verb+User+ (\verb+this.input+) by activating the \verb+set_x+ push port.
+Once the mutable phase begins, the \verb+Process+ outputs a message, copies the \verb+input+ variable to the \verb+output+ variable, and then changes state to prepare to decide.
+If the shared variable has been set, i.e., another process executed its \verb+_access+ action first, the process sets its \verb+output+ variable to the value of the shared variable as stored in \verb+x+ and prepares to decide.
 
-%% %% We believe that the gross structure for reactive components presented in the examples of section~\ref{model} is adequate for structuring systems.
-%% %% The main challenge lies in the design of a transformational language that will facilitate the determinism checks.
-%% %% One idea is to treat $\alpha$-statements as ``pure'' data-flow programs which have properties that are conducive to analysis.
-%% %% The structure present when compiling can also provide insights into the pointer analysis problem.
-%% %% For example, one could envision a heap-per-component strategy where each heap is considered as an extra variable.
-%% %% Passing a pointer through a port involves transferring the ownership of an object from one heap to another heap or set of heaps.
-%% %% Thus, the language might include two pointer types corresponding to the pointers ability to be passed to another component.
-%% %% This idea might be extended resulting in multiple heaps per component.
+The final element in the \verb+Process+ component is the \verb+_decide+ action which activates the \verb+Decide+ push port with the value of the shared variable stored in the \verb+output+ variable and transitions to the done state.
 
-%% %% A system is represented as a top-level reactive component.
-%% %% Substitutional equivalence allows the declarations of member components to be replaced with their definitions according to the procedure outlined in section~\ref{formalization}.
-%% %% This process can be repeated until all member components are ``inlined'' resulting in a top-level component that only contains state variables.
-%% %% The input and output ports original to the top-level component can be converted to internal ports since the top-level component does not need an external interface.
-%% %% At this point, all internal ports, $\gamma$-statements, and $\beta$-statements can be eliminated by substituting definitions.
-%% %% The resulting top-level component only contains state variables and $\alpha$-statements.
+The interface of the \verb+Process+ component gives hints as to its contextual dependencies and intended use.
+The \verb+Process+ component expects an initialization message (\verb+initr+ reaction) from the \verb+User+ and will report back to the \verb+User+ (\verb+Decide+ push port).
+The \verb+Process+ component requires the ability to interrogate the value of the shared variable (\verb+get_x+ pull port) and the ability to the set the shared variable (\verb+set_x+ push port).
 
-%% %% \begin{figure}
-%% %% {
-%% %% \input workflow.tex
-%% %% \centerline{\box\graph}
-%% %% }
-%% %% \caption{A compilation workflow for reactive components\label{workflow}}
-%% %% \end{figure}
+The state transitions of a \verb+Process+ component can be determined by tracing the \verb+status+ variable.
+A \verb+Process+ component starts in the idle state according to the \verb+Init+ initializer.
+The \verb+Process+ will stay idle until its \verb+initr+ reaction is activated at which point it will enter the access state.
+Given the weak fairness guarantees of the scheduler, the \verb+_access+ action will eventually be selected and executed as the \verb+Process+ is in the access state.
+The execution of \verb+_access+ is governed by an \verb+if+ statement but both branches set the state of the \verb+Process+ component to decide.
+Given the same weak fairness guarantees, the \verb+_decide+ action will eventually be selected and executed as the \verb+Process+ is in the decide state.
+The \verb+_decide+ action unconditionally sets the state of the component to done.
+There is no way for a \verb+Process+ component to leave the done state as all of its actions are conditioned on the \verb+Process+ being in either the access or decide state.
+Similarly, the \verb+initr+ reaction only moves the \verb+Process+ from the idle to the access state.
+Thus, the state of the component logically flows from idle, to access, to decide, to done assuming that the \verb+User+ does indeed activate the \verb+initr+ reaction.
 
-%% %% Figure~\ref{workflow} shows our proposed compilation workflow for reactive components.
-%% %% The goal of the workflow is to transla
+\begin{figure}
+\begin{verbatim}
+type UserStatus int;
+const USER_REQUEST = 0;
+const USER_WAIT = 1;
+const USER_DONE = 2;
 
-%% %% The workflow begins with the definition of the components and the designation (*) of one component as the top-level component that will represent the system.
-%% %% Substitutional equivalence allows the declarations of member components to be replaced with their definitions according to the procedure outlined in section~\ref{formalization}.
-%% %% This process can be repeated until all member components are ``inlined'' resulting in a top-level component that only contains state variables.
-%% %% The input and output ports original to the top-level component can be converted to internal ports since the top-level component does not need an external interface.
-%% %% At this point, all internal ports, $\gamma$-statements, and $\beta$-statements can be eliminated by substituting definitions.
-%% %% The resulting top-level component only contains state variables and $\alpha$-statements.
+type User component {
+    v int;
+    status UserStatus;
+    decision int;
+    error bool;
+    initp push (v int);
+};
 
-%% %% The top-level component is then subjected to semantic analysis to determine if the system is well-defined.
+init (this *User) Init (v int) {
+    this.v = v;
+    this.status = USER_REQUEST;
+    this.decision = -1;
+    this.error = false;
+}
 
-%% %% The final step of compilation generates an $\alpha$-machine image which contains static allocated variables, executable code for realizing the $\alpha$-statements, and schedule analysis indicating which $\alpha$-statements can be executed concurrently.
-%% %% The $\alpha$-machine image can then be instantiated to produce an executing instance of the reactive system.
+action (this $const * User) _init (this.status == USER_REQUEST || this.error) {
+    activate initp (this.v) {
+        if !this.error {
+            this.status = USER_WAIT;
+        }
+    }
+}
 
-%% \paragraph{$\alpha$-machine.}
-%% We propose a virtual machine, called an $\alpha$-machine, capable of executing systems expressed as a single top-level component containing only state variables and $\alpha$-statements.
-%% An $\alpha$-machine has five parts:
-%% \begin{enumerate}
-%% \item The \emph{data section} contains all of the statically allocated state variables.
-%% \item The \emph{heap} contains dynamically allocated state variables.
-%% \item The \emph{program} contains the code necessary to implement the $\alpha$-statements.
-%% \item The \emph{stack} contains dynamic storage for function calls and expression evaluation.
-%% \item The \emph{scheduler} selects and executes $\alpha$-statements.
-%% \end{enumerate}
-%% For simplicity, we will limit the design to a stack-based machine since code generation for stack-based machines is straightforward.
-%% Our approach to dynamic allocation, garbage collection, etc. will be shaped by the transformational language used to encode $\alpha$-statements.
+action (this $const * User) _dummy (this.error) { }
 
+reaction (this $const * User) Decide (v int) {
+    println (this, ` decided value is `, v);
+    activate {
+        if !this.error {
+            if this.status == USER_WAIT {
+                this.decision = v;
+                this.status = USER_DONE;
+            } else {
+                this.error = true;
+            }
+        }
+    }
+}
+\end{verbatim}
+\cprotect\caption{Code listing for \verb+User+ component \label{user}}
+\end{figure}
 
-%% %% \paragraph{Program.}
-%% %% To be a faithful implementation of the model, each $\alpha$-statement must be a deterministic state transformation.
-%% %% Thus, a compiler or verifier of $\alpha$-machine bytecode must be able to prove this property and the language of $\alpha$-statements must be designed around this constraint.
-%% %% A conservative but straightforward approach to proving determinism for variables in the data section is to check that a state variable is written at most once in all possible executions of an $\alpha$-statement.
-%% %% Existing techniques, e.g., control flow analysis, are adequate for this purpose.
-%% %% Proving determinism for variables allocated on the heap requires pointer analysis, e.g., shape analysis~\cite{larus1988detecting}, an area of ongoing research.
-%% %% Most likely, the language of $\alpha$-statements will need to be restricted to make pointer analysis feasible.
+Figure~\ref{user} contains the listing for the \verb+User+ component.
+The \verb+User+ component has three states indicating the user is waiting to make a request, waiting for a response, or done.
+The first state variable \verb+v+ contains the value sent in the request to a \verb+User+.
+The \verb+status+ state variable contains the state of the \verb+User+.
+The \verb+decision+ state variable contains the value of the response.
+The \verb+error+ state variable is a flag indicating that an error has occurred.
+\verb+User+ components contain a push port \verb+initp+ that sends the requested value to the corresponding \verb+Process+.
 
-%% %% \paragraph{Scheduler.}
-%% Of primary interest to this research is the scheduler.
-%% The scheduler selects $\alpha$-statements and executes them based on their preconditions.
-%% Furthermore, the scheduler must be fair meaning that it cannot indefinitely postpone the selection of an $\alpha$-statement.
-%% One way of measuring the efficiency of a scheduler is to compare the number of preconditions that evaluate to true to the total number of evaluated preconditions.
-%% Similarly, one could measure the time spent evaluating and reevaluating preconditions to the time spent evaluating effects.
-%% Schedulers can also be compared using other criteria such as responsiveness, fairness, cache-awareness, context-switches, etc.
-%% %% Using the pointer analysis techniques outlined above, one can also analyze the relationships between $\alpha$-statements to determine which $\alpha$-statements are independent meaning that they operate on disjoint sets of state variables (read and write).
-%% Independent $\alpha$-statements can be executed concurrently prompting the development of a concurrent $\alpha$-machine and concurrent schedulers.
-%% A concurrent scheduler should take advantage of the static structure latent in reactive components and the dynamic behavior of the system being executed when making scheduling decisions.
+The \verb+Init+ initializer sets the requested value to the supplied parameter, the state of the \verb+User+ to request, the \verb+decision+ variable to the sentinel value of -1, and the \verb+error+ flag to false.
+The \verb+_init+ action moves the \verb+User+ component from the request state to the waiting state while initializing the corresponding \verb+Process+ component via the \verb+initp+ push port.
+The \verb+_dummy+ action and the treatment of the \verb+error+ flag by the \verb+_init+ action are for consistency with~\cite{nancy1996distributed}.
+The \verb+Decide+ reaction prints out the identity of the \verb+User+ and the value received by the \verb+User+.
+If the \verb+User+ is not in an error condition and waiting for a response, then the value of the decision is recorded and the \verb+User+ changes to the done state.
+Otherwise, the \verb+error+ flag is set meaning that the corresponding \verb+Process+ activated the \verb+Decide+ reaction before the \verb+_init+ action.
 
-%% %% \paragraph{Compilation.}
-%% %% The $\alpha$-machine processes a low-level language similar to Java bytecode or assembly language.
-%% %% The reactive program given to an $\alpha$-machine lacks the structural elements, i.e., components, ports, $\beta$-statements, and $\gamma$-statements, needed to facilitate a design and development process based on composition and decomposition.
-%% %% Thus, to make developing reactive programs easier, we also require a high-level language that more closely resembles the model and examples presented in section~\ref{model}.
-%% %% A compiler for this language takes as input reactive components constituting the system and uses the aforementioned techniques based on substitutional equivalence and simplification to produce an $\alpha$-machine program.
-%% %% In addition to the aforementioned determinism check, the compiler should check for appropriate port usage, e.g., input ports are read while output ports are written, and port consistency (static versus dynamic).
-%% %% The additional structure present when compiling from a high-level language will be useful when reporting errors related to non-deterministic assignment statements, perhaps by indicating the error using the same information presented in the block diagram of figure~\ref{clocksys_component_graphic} or the $\alpha$-forest diagram of \ref{clocksys_component_alpha}.
-%% %% The compiler can also help in design as it can perform concurrency analysis which the developer might use to identify bottlenecks and reactive components or systems that are good candidates for redesign.
+\begin{figure}
+\begin{verbatim}
+type System component {
+    x Variable;
+    process [3]Process;
+    user [3]User;
+};
 
-%% %% We believe that the gross structure for reactive components presented in the examples of section~\ref{model} is adequate for structuring systems.
-%% %% The main challenge lies in the design of a transformational language that will facilitate the determinism checks.
-%% %% One idea is to treat $\alpha$-statements as ``pure'' data-flow programs which have properties that are conducive to analysis.
-%% %% The structure present when compiling can also provide insights into the pointer analysis problem.
-%% %% For example, one could envision a heap-per-component strategy where each heap is considered as an extra variable.
-%% %% Passing a pointer through a port involves transferring the ownership of an object from one heap to another heap or set of heaps.
-%% %% Thus, the language might include two pointer types corresponding to the pointers ability to be passed to another component.
-%% %% This idea might be extended resulting in multiple heaps per component.
+init (this *System) Init () {
+    this.x.Init ();
+    for i ... 3 {
+        this.process[i].Init ();
+        this.user[i].Init (i + 100);
+    }
+}
 
-%% \paragraph{Summary.}
-%% In this section, we have proposed to implement the model described in section~\ref{model} for systems with static topologies.
-%% We proposed to develop a virtual machine called an $\alpha$-machine that executes a reactive component consisting solely of state variables and $\alpha$-statements.
-%% The $\alpha$-machine will be a concurrent $\alpha$-machine.
-%% We also proposed to develop a high-level language for specifying reactive components and a compiler that translates the specifications into an $\alpha$-machine program.
-%% The main challenge is the design of the high-level language, which must be subject to an analysis for deterministic assignment.
+bind (this *System) _bind {
+    for i ... 3 {
+        this.process[i].get_x <- this.x.Get;
+        this.process[i].set_x -> this.x.Set ... i;
+        this.user[i].initp -> this.process[i].initr;
+        this.process[i].Decide -> this.user[i].Decide;
+    }
+}
 
-%% %% POSIX environment, possibly bare metal
+instance s System Init ();
+\end{verbatim}
+\cprotect\caption{Code listing for \verb+System+ component \label{system}}
+\end{figure}
+
+Figure~\ref{system} contains the listing for the \verb+System+ component.
+The system component contains a \verb+Variable+ sub-component, three \verb+Process+ sub-components, and three \verb+User+ sub-components.
+The \verb+Init+ initializer initializes all of the sub-components.
+The \verb+User+ processes are initialized with the values 100, 101, and 102.
+Thus, \verb+User+ 0 will attempt to set the \verb+Variable+ to 100, \verb+User+ 1 will attempt to set the \verb+Variable+ to 101, and \verb+User+ 2 will attempt to set the \verb+Variable+ to 102.
+The \verb+_bind+ binder ``wires'' the system.
+The first line of the \verb+for+ loop binds the \verb+get_x+ pull port of each \verb+Process+ to the \verb+Get+ getter of the \verb+Variable+.
+The second line of the \verb+for+ loop binds the \verb+set_x+ push port of each \verb+Process+ to the \verb+Set+ reaction of the \verb+Variable+.
+Notice that the \verb+Set+ reaction is indexed to avoid binding the same input multiple times.
+The third line of the \verb+for+ loop binds the \verb+initp+ push port of each \verb+User+ to the \verb+initr+ reaction of each \verb+Process+.
+The fourth line of the \verb+for+ loop binds the \verb+Decide+ push port of each \verb+Process+ to the \verb+Decide+ reaction of each \verb+User+.
+The final line of the listing creates an instance of the \verb+System+ component named \verb+s+ and initializes it with the \verb+Init+ initializer.
+Figure~\ref{system_instance} shows a graphical representation of a \verb+System+ component.
+
+\begin{figure}
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}
+
+%% User 0
+\draw (2,7.5) rectangle (5,10);
+\node[below] at (3.5,10) {User 0};
+\rapush[5,9,2.2,.5,u0i,ignore]{initp(v int)};
+\rppush[5,8,2.6,.5,u0d,ignore]{Decide(v int)};
+
+%% User 1
+\draw (2,4) rectangle (5,6.5);
+\node[below] at (3.5,6.5) {User 1};
+\rapush[5,5.5,2.2,.5,u1i,ignore]{initp(v int)};
+\rppush[5,4.5,2.6,.5,u1d,ignore]{Decide(v int)};
+
+%% User 2
+\draw (2,.5) rectangle (5,3);
+\node[below] at (3.5,3) {User 2};
+\rapush[5,2,2.2,.5,u2i,ignore]{initp(v int)};
+\rppush[5,1,2.6,.5,u2d,ignore]{Decide(v int)};
+
+%% Process 0
+\draw(6,7.5) rectangle (11,10);
+\node[below] at (8.5,10) {Process 0};
+\lppush[6,9,2.3,.5,p0i,ignore]{initr(v int)};
+\lapush[6,8,2.4,.5,p0d,ignore]{Decide(v int)};
+
+\rapull[11,9,2.3,.5,p0g,ignore]{get\_x() int)};
+\rapush[11,8,2.2,.5,p0s,ignore]{set\_x(v int)};
+
+%% Process 1
+\draw(6,4) rectangle (11,6.5);
+\node[below] at (8.5,6.5) {Process 1};
+\lppush[6,5.5,2.3,.5,p1i,ignore]{initr(v int)};
+\lapush[6,4.5,2.4,.5,p1d,ignore]{Decide(v int)};
+
+\rapull[11,5.5,2.3,.5,p1g,ignore]{get\_x() int)};
+\rapush[11,4.5,2.2,.5,p1s,ignore]{set\_x(v int)};
+
+%% Process 2
+\draw(6,.5) rectangle (11,3);
+\node[below] at (8.5,3) {Process 2};
+\lppush[6,2,2.3,.5,p2i,ignore]{initr(v int)};
+\lapush[6,1,2.4,.5,p2d,ignore]{Decide(v int)};
+
+\rapull[11,2,2.3,.5,p2g,ignore]{get\_x() int)};
+\rapush[11,1,2.2,.5,p2s,ignore]{set\_x(v int)};
+
+%% Variable
+\draw (12,.5) rectangle (15,10);
+\node[below] at (13.5,10) {Variable};
+\lppull[12,5.5,2,.5,vg,ignore]{Get() int};
+\lppush[12,8,2.5,.5,vs0,ignore]{[0] Set(v int)};
+\lppush[12,4.5,2.5,.5,vs1,ignore]{[1] Set(v int)};
+\lppush[12,1,2.5,.5,vs2,ignore]{[2] Set(v int)};
+
+\draw (u0i.center) -- (p0i.center);
+\draw (u1i.center) -- (p1i.center);
+\draw (u2i.center) -- (p2i.center);
+
+\draw (u0d.center) -- (p0d.center);
+\draw (u1d.center) -- (p1d.center);
+\draw (u2d.center) -- (p2d.center);
+
+\draw (p1g.center) -- (vg.center);
+\draw (p0g.center) -- +(.25,0) -- (vg.center);
+\draw (p2g.center) -- +(.25,0) -- (vg.center);
+
+\draw (p0s.center) -- (vs0.center);
+\draw (p1s.center) -- (vs1.center);
+\draw (p2s.center) -- (vs2.center);
+
+\draw(1,-.5) rectangle (16,11);
+\node[below] at (8.5,11) {System};
+
+\end{tikzpicture}
+}%
+\cprotect\caption{Diagram of a \verb+System+ instance\label{system_instance}}
+\end{figure}
+
+\begin{figure}
+\begin{verbatim}
+x set to 102
+0x1fd7258 decided value is 102
+0x1fd71f8 decided value is 102
+0x1fd7228 decided value is 102
+\end{verbatim}
+\cprotect\caption{Sample output for a \verb+System+ instance\label{system_output}}
+\end{figure}
+
+Figure~\ref{system_output} shows sample output for an execution of a \verb+System+ component.
+The first line of output is generated by the \verb+_access+ action of the \verb+Process+ component.
+In the sample, \verb+Process+ 2 is the first process to set the \verb+Variable+.
+As expected, only one \verb+Process+ sets the variable.
+The final three lines of output show the identity of each \verb+User+ and the value returned to it.
+As expected, the value returned to each \verb+User+ is consistent with how the \verb+Variable+ was set.
+
+\subsection{Heap Channel System}
+
+In this example, we demonstrate how the \verb+heap+ data type may be used to transfer objects between components for efficient communciation.
+The example consists of two components:  a top-level \verb+System+ component and a \verb+Channel+ component.
+The \verb+Channel+ component is a reliable FIFO channel based on the Channel Automaton of~\cite{nancy1996distributed}.
+The \verb+System+ component transfers 100 messages to the \verb+Channel+ component which then transfers the same 100 messages back to the \verb+System+.
+The messages consists of a \verb+heap+ with a \verb+uint+ root object.
+
+\begin{figure}
+\begin{verbatim}
+type Channel component {
+  queue Queue;
+  receive push (message $foreign *heap uint);
+};
+
+reaction (this $const * Channel) send (message $foreign *heap uint) {
+  var x *heap uint = move (message);
+  activate {
+    this.queue.Push (x);
+  };
+}
+
+action (this $const * Channel) _receive (!this.queue.Empty ()) {
+  activate receive (this.queue.Front ()) {
+    this.queue.Pop ();
+  };
+}
+\end{verbatim}
+\cprotect\caption{Listing for a \verb+Channel+ component\label{channel_listing}}
+\end{figure}
+
+Figure~\ref{channel_listing} contains the listing of the \verb+Channel+ component.
+A \verb+Channel+ component consists of a queue of messages and a push port named \verb+receive+ which offers up a pointer to a heap with a \verb+uint+ root.
+Since the parameter contains (is) a pointer, it must be declared with \verb+$foreign+ dereference mutability.
+The elements of the \verb+Channel+ are named from the perspective of the process that uses the \verb+Channel+.
+
+The \verb+send+ reaction moves the heap which makes the \verb+Channel+ the new owner of the heap.
+Any heap operations on \verb+message+ after the move statement will return \verb+nil+.
+The move occurs outside of the activation because the \verb+message+ parameter is not available in the body of the activation.
+Parameters and variables with types that contain pointers and have foreign dereference mutability are not available in the body of an activation statement because they may represent the state of another component which must be assumed to be invalid in the mutable phase of a transaction.
+After a move, the state contained in a heap is no longer available to the component that offered it up as an argument to a reaction.
+Thus, the result of the move does not have foreign dereference mutability and is available in the body of the activation statement.
+
+\begin{figure}
+\begin{verbatim}
+type System component {
+  channel Channel;
+  send_count uint;
+  send push (message $foreign *heap uint);
+};
+
+init (this *System) Initially () { }
+
+action (this $const * System) _send (this.send_count != 100) {
+  var x *heap uint = new (heap uint);
+  change (x, y) {
+    *y = this.send_count;
+  };
+  activate send (x) {
+    println (`Sent `, this.send_count);
+    this.send_count++;
+  };
+}
+
+reaction (this $const * System) receive (message $foreign *heap uint) {
+  var x *uint = merge (message);
+  println (`Received `, *x);
+}
+
+bind (this *System) Bind {
+  this.send -> this.channel.send;
+  this.channel.receive -> this.receive;
+}
+
+instance s System Initially ();
+\end{verbatim}
+\cprotect\caption{Listing for a \verb+System+ component that transfers heaps to and from a \verb+Channel+ component\label{channel_system_listing}}
+\end{figure}
+
+Figure~\ref{channel_system_listing} contains the listing for the \verb+System+ component that exercises the \verb+Channel+.
+A \verb+System+ component consists of a \verb+Channel+ sub-component, a counter, and a push port for sending messages.
+The \verb+_send+ action checks if the desired number of messages (100) has been sent.
+If not, the \verb+System+ creates a new heap with a \verb+uint+ root.
+It then makes the new heap the current heap via the \verb+change+ statement which also makes the root of the heap available in the variable \verb+y+.
+The heap root is initialized with the number of messages sent so far.
+The heap is then sent to the \verb+Channel+, a message is printed, and the number of sent messages is incremented.
+
+The \verb+receive+ reaction receives a message back from the \verb+Channel+.
+The \verb+System+ merges the message which moves the root object of a heap to the current heap and returns a pointer to the root object of the heap.
+Recall that all components have a default heap which is the current heap upon entering an action, reaction, initializer, or getter.
+The final statement in the reaction prints a message.
+
+The system consists of two transactions:  one that creates and transfers the heap from the \verb+System+ to the \verb+Channel+ and another that transfers the heap from the \verb+Channel+ to the \verb+System+.
+The output of the program, then, consists of 100 lines indicating that a message was sent and 100 lines indicating that a message was received.
+Each line of output contains the message number.
+Based on the weak fairness of the scheduler we expect 1) the 100 send lines to be in order, 2)~the 100 receive lines to be in order, and 3) the send line for message $n$ appears before the receive line for message $n$.
+
+\section{Summary}
+
+This chapter presents a programming language for reactive components.
+An implementation of reactive components tests if the assumptions upon which the model rests are practical.
+Our approach is to design a new programming language whose syntax and semantics  capture and enforce the semantics of reactive components.
+As a matter of practicality, we impose support for reference semantics which allow developers to use linked data structures and the ability to transfer data structures from one component to another.
+The corresponding features are a declarable dereference mutability that allows components to treat pointers as foreign and a heap data type that represents a self-contained linked data structure.
+The programming language is based on Go.
+Components are expressed as a collection of fields; similar to a \verb+struct+.
+Ports (push and pull) are expressed as fields of a component.
+Actions and reactions are expressed as method-like elements.
+Composition is accomplished via binders and instances.

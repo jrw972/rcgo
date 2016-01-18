@@ -34,19 +34,19 @@ Unlike I/O Automata in which transactions have limited depth, a transaction amon
   \node [right, align=left] at (#1,#2) {#7};
 }
 
-%% left passive pull port
-%% x, y, width, height, label
-\def\lppull[#1,#2,#3,#4,#5,#6]#7{
-  \draw [fill=lightgray] (#1,#2) -- ++(${#4*.5}*(-1,0) + {#4*.5}*(0,-1)$) -- ++($#3*(1,0)$) -- ++($#4*(0,1)$) -- ++($#3*(-1,0)$) -- cycle;
-  \node (#5) at (#1,#2) {};
-  \node [left] (#6) at ($(#1,#2) + {#3 - .5*#4}*(1,0)$) {};
-  \node [right, align=left] at (#1,#2) {#7};
-}
-
 %% left active push port
 %% x, y, width, height, label
 \def\lapush[#1,#2,#3,#4,#5,#6]#7{
   \draw [fill=white] ($(#1,#2) + {#4*.5}*(-1,0)$) -- ++(${#4*.5}*(1,0) + {#4*.5}*(0,-1)$) -- ++($#3*(1,0)$) -- ++($#4*(0,1)$) -- ++($#3*(-1,0)$) -- cycle;
+  \node (#5) at ($(#1,#2) - .5*#4*(1,0)$) {};
+  \node (#6) at ($(#1,#2) + {#3}*(1,0)$) {};
+  \node [right, align=left] at (#1,#2) {#7};
+}
+
+%% left passive pull port
+%% x, y, width, height, label
+\def\lppull[#1,#2,#3,#4,#5,#6]#7{
+  \draw [fill=lightgray] ($(#1,#2) + {#4*.5}*(-1,0)$) -- ++(${#4*.5}*(1,0) + {#4*.5}*(0,-1)$) -- ++($#3*(1,0)$) -- ++($#4*(0,1)$) -- ++($#3*(-1,0)$) -- cycle;
   \node (#5) at ($(#1,#2) - .5*#4*(1,0)$) {};
   \node (#6) at ($(#1,#2) + {#3}*(1,0)$) {};
   \node [right, align=left] at (#1,#2) {#7};
@@ -83,6 +83,15 @@ Unlike I/O Automata in which transactions have limited depth, a transaction amon
 %% x, y, width, height, label
 \def\rppush[#1,#2,#3,#4,#5,#6]#7{
   \draw [fill=white] (#1,#2) -- ++(${#4*.5}*(1,0) + {#4*.5}*(0,-1)$) -- ++($#3*(-1,0)$) -- ++($#4*(0,1)$) -- ++($#3*(1,0)$) -- cycle;
+  \node (#5) at (#1,#2) {};
+  \node (#6) at ($(#1,#2) + {#3 - .5*#4}*(-1,0)$) {};
+  \node [left] at (#1,#2) {#7};
+}
+
+%% right active pull port
+%% x, y, width, height, label
+\def\rapull[#1,#2,#3,#4,#5,#6]#7{
+  \draw [fill=lightgray] (#1,#2) -- ++(${#4*.5}*(1,0) + {#4*.5}*(0,-1)$) -- ++($#3*(-1,0)$) -- ++($#4*(0,1)$) -- ++($#3*(1,0)$) -- cycle;
   \node (#5) at (#1,#2) {};
   \node (#6) at ($(#1,#2) + {#3 - .5*#4}*(-1,0)$) {};
   \node [left] at (#1,#2) {#7};
@@ -179,13 +188,13 @@ The ability to publicize behavior and state and the ability to assemble well-def
 \begin{tikzpicture}
 \draw (0,6.5) rectangle (5,10);
 \node[below] at (2.5,10) {Web Server};
-\rppull[5,9,3.2,.5,ex1a,ignore]{verify(HttpHeader)};
+\rapull[5,9,3.4,.5,ex1a,ignore]{verify(HttpHeader)};
 \rapush[5,8,3.6,.5,ex2a,ignore]{request(HttpRequest)};
 \rppush[5,7,4.2,.5,ex3a,ignore]{respond(HttpResponse)};
 
 \draw(6,2.5) rectangle (11,10);
 \node[below] at (8.5,10) {Application Logic};
-\lapull[6,9,3.4,.5,ex1b,ignore]{verify(HttpHeader)};
+\lppull[6,9,3.4,.5,ex1b,ignore]{verify(HttpHeader)};
 \lppush[6,8,3.8,.5,ex2b,ignore]{request(HttpRequest)};
 \lapush[6,7,3.9,.5,ex3b,ignore]{respond(HttpResponse)};
 
