@@ -130,10 +130,10 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
             {
               ast::Node* id = *pos2;
               const std::string& identifier = ast_cast<Identifier> (id)->identifier;
-              const type::Type *field = type_select (field_list, identifier);
+              const type::Type *field = field_list->select (identifier);
               if (field == NULL)
                 {
-                  field_list->Append (identifier, type);
+                  field_list->append_field (identifier, type);
                 }
               else
                 {

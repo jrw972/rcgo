@@ -51,8 +51,7 @@ type Channel component
 
 reaction (this $const * Channel) send (message $foreign *heap uint)
 {
-  var x *heap uint;
-  x = move (message);
+  var x *heap uint = move (message);
   activate
   {
     this.queue.Push (x);
@@ -79,8 +78,7 @@ init (this *System) Initially ()
 
 action (this $const * System) _send (this.send_count != 100)
 {
-  var x *heap uint;
-  x = new (heap uint);
+  var x *heap uint = new (heap uint);
   change (x, y)
   {
     *y = this.send_count;

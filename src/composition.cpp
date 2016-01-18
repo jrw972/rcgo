@@ -357,7 +357,7 @@ Activation::getname (Activation* a)
   return str.str ();
 }
 
-PushPort::PushPort (size_t a, Instance* oi, field_t* of, const std::string& name)
+PushPort::PushPort (size_t a, Instance* oi, Field* of, const std::string& name)
   : Node (name)
   , address (a)
   , instance (oi)
@@ -404,7 +404,7 @@ PushPort::instance_set ()
   return instance_set_;
 }
 
-PullPort::PullPort (size_t a, Instance* oi, field_t* of, const std::string& name)
+PullPort::PullPort (size_t a, Instance* oi, Field* of, const std::string& name)
   : Node (name)
   , address (a)
   , instance (oi)
@@ -460,7 +460,7 @@ Composer::add_instance (Instance* instance)
 void
 Composer::add_push_port (size_t address,
                          Instance* output_instance,
-                         field_t* output_field,
+                         Field* output_field,
                          const std::string& name)
 {
   push_ports_[address] = new PushPort (address, output_instance, output_field, name);
@@ -469,7 +469,7 @@ Composer::add_push_port (size_t address,
 void
 Composer::add_pull_port (size_t address,
                          Instance* input_instance,
-                         field_t* input_field,
+                         Field* input_field,
                          const std::string& name)
 {
   pull_ports_[address] = new PullPort (address, input_instance, input_field, name);
@@ -514,7 +514,7 @@ Composer::elaborate_bindings ()
             Composer& table;
             Executor exec;
 
-            visitor (Composer& t, size_t receiver_address, const bind_t* b) : table (t)
+            visitor (Composer& t, size_t receiver_address, const decl::Bind* b) : table (t)
             {
               // Build a stack frame.
               exec.stack ().push_pointer(reinterpret_cast<void*> (receiver_address));
@@ -564,7 +564,7 @@ Composer::elaborate_bindings ()
                 }
             }
 
-            void visit (Bind& node)
+            void visit (ast::Bind& node)
             {
               node.body->accept (*this);
             }
@@ -1274,7 +1274,7 @@ Composer::instantiate_contained_instances (const type::Type * type,
     composition::Instance* const parent;
     decl::Initializer* const initializer;
     size_t const address;
-    field_t* const field;
+    Field* const field;
     unsigned int const line;
     ast::Instance* const node;
     std::string const name;
@@ -1283,7 +1283,7 @@ Composer::instantiate_contained_instances (const type::Type * type,
 
     composition::Instance* instance;
 
-    visitor (composition::Composer& it, composition::Instance* p, decl::Initializer* i, size_t a, field_t* f, unsigned int l, ast::Instance* n, const std::string& aName)
+    visitor (composition::Composer& it, composition::Instance* p, decl::Initializer* i, size_t a, Field* f, unsigned int l, ast::Instance* n, const std::string& aName)
       : instance_table (it)
       , parent (p)
       , initializer (i)

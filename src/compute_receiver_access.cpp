@@ -100,7 +100,7 @@ struct Visitor : public ast::DefaultVisitor
     node.reaction->immutable_phase_access = node.body->receiver_access;
   }
 
-  void visit (Bind& node)
+  void visit (ast::Bind& node)
   {
     // Do nothing.
   }

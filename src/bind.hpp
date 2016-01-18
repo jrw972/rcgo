@@ -6,10 +6,10 @@
 namespace decl
 {
 
-class bind_t
+class Bind
 {
 public:
-  bind_t (ast::Node* node, const std::string& name_, decl::ParameterSymbol* rp)
+  Bind (ast::Node* node, const std::string& name_, decl::ParameterSymbol* rp)
     : node_ (node)
     , name (name_)
     , receiver_parameter (rp)
@@ -25,7 +25,7 @@ public:
 private:
   ast::Node* node_;
 public:
-  const std::string& name;
+  std::string const name;
   decl::ParameterSymbol* receiver_parameter;
 };
 

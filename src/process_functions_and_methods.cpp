@@ -84,7 +84,7 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
 
   {
     const std::string& identifier = identifierNode->identifier;
-    const type::Type *t = type_select (type, identifier);
+    const type::Type *t = type->select (identifier);
     if (t != NULL)
       {
         error_at_line (-1, 0, identifierNode->location.File.c_str (),
@@ -230,7 +230,7 @@ struct Visitor : public ast::DefaultVisitor
         return_symbol);
     decl::Method* method = new decl::Method (&node, node.identifier->identifier, method_type);
 
-    type->Add (method);
+    type->insert_method (method);
     node.method = method;
   }
 
@@ -252,7 +252,7 @@ struct Visitor : public ast::DefaultVisitor
 
     decl::Initializer* initializer = new decl::Initializer (&node, node.identifier->identifier, initializer_type);
 
-    type->Add (initializer);
+    type->insert_initializer (initializer);
     node.initializer = initializer;
   }
 
@@ -261,7 +261,7 @@ struct Visitor : public ast::DefaultVisitor
     ParameterSymbol* receiver_parameter;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, receiver_parameter, true, true);
     decl::Action *action = new decl::Action (receiver_parameter, node.body, node.identifier->identifier);
-    type->Add (action);
+    type->insert_action (action);
     node.action = action;
     node.type = type;
   }
@@ -273,7 +273,7 @@ struct Visitor : public ast::DefaultVisitor
     ParameterSymbol* iota_parameter = ParameterSymbol::make (node.dimension->location, "IOTA", type::Int::Instance (), Immutable, Immutable);
     type::Int::ValueType dimension = process_array_dimension (node.dimension, er, symtab);
     decl::Action *action = new decl::Action (receiver_parameter, node.body, node.identifier->identifier, iota_parameter, dimension);
-    type->Add (action);
+    type->insert_action (action);
     node.action = action;
     node.type = type;
   }
@@ -293,7 +293,7 @@ struct Visitor : public ast::DefaultVisitor
         signature,
         return_symbol);
 
-    decl::Reaction* reaction = new decl::Reaction (&node, thisSymbol, node.body, node.identifier->identifier, reaction_type);
+    decl::Reaction* reaction = new decl::Reaction (thisSymbol, node.body, node.identifier->identifier, reaction_type);
 
     type->insert_reaction (reaction);
     node.reaction = reaction;
@@ -317,7 +317,7 @@ struct Visitor : public ast::DefaultVisitor
         signature,
         return_symbol);
 
-    decl::Reaction* reaction = new decl::Reaction (&node, thisSymbol, node.body, node.identifier->identifier, reaction_type, iotaSymbol, dimension);
+    decl::Reaction* reaction = new decl::Reaction (thisSymbol, node.body, node.identifier->identifier, reaction_type, iotaSymbol, dimension);
 
     type->insert_reaction (reaction);
     node.reaction = reaction;
@@ -340,16 +340,16 @@ struct Visitor : public ast::DefaultVisitor
 
     decl::Getter* getter = new decl::Getter (&node, node.identifier->identifier, getter_type);
 
-    type->Add (getter);
+    type->insert_getter (getter);
     node.getter = getter;
   }
 
-  void visit (Bind& node)
+  void visit (ast::Bind& node)
   {
     ParameterSymbol* thisSymbol;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, thisSymbol, true, false);
-    bind_t* bind = new bind_t (&node, node.identifier->identifier, thisSymbol);
-    type->Add (bind);
+    decl::Bind* bind = new decl::Bind (&node, node.identifier->identifier, thisSymbol);
+    type->insert_bind (bind);
     node.bind = bind;
   }
 
@@ -367,7 +367,7 @@ struct Visitor : public ast::DefaultVisitor
                        "type does not refer to a component (E64)");
       }
 
-    decl::Initializer* initializer = type->GetInitializer (initializer_identifier);
+    decl::Initializer* initializer = type->get_initializer (initializer_identifier);
     if (initializer == NULL)
       {
         error_at_line (-1, 0, node.initializer->location.File.c_str (),

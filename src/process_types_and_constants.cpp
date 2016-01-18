@@ -163,7 +163,7 @@ struct Visitor : public ast::DefaultVisitor
     // Do nothing.
   }
 
-  void visit (Bind& node)
+  void visit (ast::Bind& node)
   {
     // Do nothing.
   }

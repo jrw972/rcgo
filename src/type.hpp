@@ -129,7 +129,7 @@ struct Type
   const Slice* get_slice () const;
   const Array* get_array (IntValueType dimension) const;
   const Heap* get_heap () const;
-  virtual field_t* select_field (const std::string& name) const
+  virtual Field* select_field (const std::string& name) const
   {
     return NULL;
   }
@@ -141,6 +141,38 @@ struct Type
   {
     return NULL;
   }
+  Field* get_field (const std::string& name) const
+  {
+    return UnderlyingType ()->get_field_i (name);
+  }
+  virtual decl::Method* get_method (const std::string& identifier) const
+  {
+    return NULL;
+  }
+  virtual decl::Initializer* get_initializer (const std::string& identifier) const
+  {
+    return NULL;
+  }
+  virtual decl::Getter* get_getter (const std::string& identifier) const
+  {
+    return NULL;
+  }
+  virtual decl::Action* get_action (const std::string& identifier) const
+  {
+    return NULL;
+  }
+  virtual decl::Reaction* get_reaction (const std::string& identifier) const
+  {
+    return NULL;
+  }
+  virtual decl::Bind* get_bind (const std::string& identifier) const
+  {
+    return NULL;
+  }
+  // Return type of selected field, method, or reaction.
+  const Type* select (const std::string& identifier) const;
+protected:
+  virtual Field* get_field_i (const std::string& name) const { return NULL; }
 private:
   const Pointer* pointer_;
   const Slice* slice_;
@@ -190,7 +222,7 @@ public:
   typedef std::vector<decl::Getter*> GettersType;
   typedef std::vector<decl::Action*> ActionsType;
   typedef std::vector<decl::Reaction*> ReactionsType;
-  typedef std::vector<decl::bind_t*> BindsType;
+  typedef std::vector<decl::Bind*> BindsType;
 
   NamedType (const std::string& name)
     : name_ (name)
@@ -242,21 +274,21 @@ public:
   {
     return underlyingType_->IsInteger ();
   }
-  void Add (decl::Method* method)
+  void insert_method (decl::Method* method)
   {
     methods_.push_back (method);
   }
-  decl::Method* GetMethod (const std::string& identifier) const;
-  void Add (decl::Initializer* initializer)
+  decl::Method* get_method (const std::string& identifier) const;
+  void insert_initializer (decl::Initializer* initializer)
   {
     initializers_.push_back (initializer);
   }
-  decl::Initializer* GetInitializer (const std::string& identifier) const;
-  void Add (decl::Getter* getter)
+  decl::Initializer* get_initializer (const std::string& identifier) const;
+  void insert_getter (decl::Getter* getter)
   {
     getters_.push_back (getter);
   }
-  decl::Getter* GetGetter (const std::string& identifier) const;
+  decl::Getter* get_getter (const std::string& identifier) const;
   GettersType::const_iterator GettersBegin () const
   {
     return getters_.begin ();
@@ -265,11 +297,11 @@ public:
   {
     return getters_.end ();
   }
-  void Add (decl::Action* action)
+  void insert_action (decl::Action* action)
   {
     actions_.push_back (action);
   }
-  decl::Action* GetAction (const std::string& identifier) const;
+  decl::Action* get_action (const std::string& identifier) const;
   ActionsType::const_iterator ActionsBegin () const
   {
     return actions_.begin ();
@@ -291,11 +323,11 @@ public:
   {
     return reactions_.end ();
   }
-  void Add (decl::bind_t* bind)
+  void insert_bind (decl::Bind* bind)
   {
     binds_.push_back (bind);
   }
-  decl::bind_t* GetBind (const std::string& identifier) const;
+  decl::Bind* get_bind (const std::string& identifier) const;
   BindsType::const_iterator BindsBegin () const
   {
     return binds_.begin ();
@@ -304,7 +336,7 @@ public:
   {
     return binds_.end ();
   }
-  virtual field_t* select_field (const std::string& name) const
+  virtual Field* select_field (const std::string& name) const
   {
     return underlyingType_->select_field (name);
   }
@@ -598,7 +630,7 @@ public:
   {
     return UNNAMED;
   }
-  virtual field_t* select_field (const std::string& name) const
+  virtual Field* select_field (const std::string& name) const
   {
     return base_->select_field (name);
   }
@@ -722,7 +754,7 @@ private:
 class Struct : public Type
 {
 public:
-  typedef std::vector<field_t*> FieldsType;
+  typedef std::vector<Field*> FieldsType;
   typedef FieldsType::const_iterator const_iterator;
   Struct (bool insert_runtime = false);
   void Accept (Visitor& visitor) const;
@@ -754,9 +786,9 @@ public:
   {
     return fields_.end ();
   }
-  Struct* Append (const std::string& field_name, const Type* field_type);
-  field_t* Find (const std::string& name) const;
-  virtual field_t* select_field (const std::string& name) const;
+  Struct* append_field (const std::string& field_name, const Type* field_type);
+  Field* get_field_i (const std::string& name) const;
+  virtual Field* select_field (const std::string& name) const;
 private:
   FieldsType fields_;
   ptrdiff_t offset_;
@@ -2472,32 +2504,6 @@ static void DoubleDispatch (const Type* type1, const Type* type2, T& t)
   visitor1<T> v (type2, t);
   type1->Accept (v);
 }
-
-// Select the appropriate object.
-field_t*
-type_select_field (const Type* type, const std::string& identifier);
-
-decl::Method*
-type_select_method (const Type* type, const std::string& identifier);
-
-decl::Initializer*
-type_select_initializer (const Type* type, const std::string& identifier);
-
-decl::Getter*
-type_select_getter (const Type* type, const std::string& identifier);
-
-decl::Reaction*
-type_select_reaction (const Type* type, const std::string& identifier);
-
-decl::Action*
-type_select_action (const Type* type, const std::string& identifier);
-
-decl::bind_t*
-type_select_bind (const Type* type, const std::string& identifier);
-
-// Return type of selected field, method, or reaction.
-const Type*
-type_select (const Type* type, const std::string& identifier);
 
 // Return the type of indexing into the other type.
 const Type*

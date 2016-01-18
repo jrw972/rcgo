@@ -9,7 +9,7 @@ namespace decl
 void
 Reaction::call (runtime::executor_base_t& exec) const
 {
-  node->operation->execute (exec);
+  operation->execute (exec);
 }
 
 }

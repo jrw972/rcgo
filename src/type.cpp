@@ -94,7 +94,7 @@ NamedType::get_reaction (const std::string& identifier) const
 }
 
 decl::Method*
-NamedType::GetMethod (const std::string& identifier) const
+NamedType::get_method (const std::string& identifier) const
 {
   for (std::vector< decl::Method*>::const_iterator pos = this->methods_.begin (),
        limit = this->methods_.end ();
@@ -112,7 +112,7 @@ NamedType::GetMethod (const std::string& identifier) const
 }
 
 Initializer*
-NamedType::GetInitializer (const std::string& identifier) const
+NamedType::get_initializer (const std::string& identifier) const
 {
   for (std::vector<Initializer*>::const_iterator pos = this->initializers_.begin (),
        limit = this->initializers_.end ();
@@ -130,7 +130,7 @@ NamedType::GetInitializer (const std::string& identifier) const
 }
 
 Getter*
-NamedType::GetGetter (const std::string& identifier) const
+NamedType::get_getter (const std::string& identifier) const
 {
   for (std::vector<Getter*>::const_iterator pos = this->getters_.begin (),
        limit = this->getters_.end ();
@@ -148,7 +148,7 @@ NamedType::GetGetter (const std::string& identifier) const
 }
 
 Action*
-NamedType::GetAction (const std::string& identifier) const
+NamedType::get_action (const std::string& identifier) const
 {
   for (ActionsType::const_iterator pos = this->actions_.begin (),
        limit = this->actions_.end ();
@@ -165,15 +165,15 @@ NamedType::GetAction (const std::string& identifier) const
   return NULL;
 }
 
-bind_t*
-NamedType::GetBind (const std::string& identifier) const
+Bind*
+NamedType::get_bind (const std::string& identifier) const
 {
   for (BindsType::const_iterator pos = this->binds_.begin (),
        limit = this->binds_.end ();
        pos != limit;
        ++pos)
     {
-      bind_t* a = *pos;
+      Bind* a = *pos;
       if (a->name == identifier)
         {
           return a;
@@ -184,12 +184,12 @@ NamedType::GetBind (const std::string& identifier) const
 }
 
 Struct*
-Struct::Append (const std::string& field_name, const Type* field_type)
+Struct::append_field (const std::string& field_name, const Type* field_type)
 {
   size_t alignment = field_type->Alignment ();
   offset_ = util::align_up (offset_, alignment);
 
-  field_t *field = new field_t (field_name, field_type, offset_);
+  Field *field = new Field (field_name, field_type, offset_);
   fields_.push_back (field);
 
   offset_ += field_type->Size ();
@@ -201,10 +201,10 @@ Struct::Append (const std::string& field_name, const Type* field_type)
   return this;
 }
 
-field_t *
-Struct::Find (const std::string& name) const
+Field *
+Struct::get_field_i (const std::string& name) const
 {
-  for (std::vector<field_t*>::const_iterator field = fields_.begin (),
+  for (std::vector<Field*>::const_iterator field = fields_.begin (),
        limit = fields_.end ();
        field != limit;
        ++field)
@@ -217,190 +217,46 @@ Struct::Find (const std::string& name) const
   return NULL;
 }
 
-field_t *
-type_select_field (const Type* type, const std::string& identifier)
-{
-  struct visitor : public DefaultVisitor
-  {
-    field_t* retval;
-    const std::string& identifier;
-    visitor (const std::string& id) : retval (NULL), identifier (id) { }
-
-    void visit (const NamedType& type)
-    {
-      type.UnderlyingType ()->Accept (*this);
-    }
-
-    void visit (const Component& type)
-    {
-      retval = type.Find (identifier);
-    }
-
-    void visit (const Struct& type)
-    {
-      retval = type.Find (identifier);
-    }
-
-  };
-  visitor v (identifier);
-  type->Accept (v);
-  return v.retval;
-}
-
-decl::Method*
-type_select_method (const Type* type, const std::string& identifier)
-{
-  struct visitor : public DefaultVisitor
-  {
-    decl::Method* retval;
-    const std::string& identifier;
-    visitor (const std::string& id) : retval (NULL), identifier (id) { }
-
-    void visit (const NamedType& type)
-    {
-      retval = type.GetMethod (identifier);
-    }
-  };
-  visitor v (identifier);
-  type->Accept (v);
-  return v.retval;
-}
-
-Initializer*
-type_select_initializer (const Type* type, const std::string& identifier)
-{
-  struct visitor : public DefaultVisitor
-  {
-    Initializer* retval;
-    const std::string& identifier;
-    visitor (const std::string& id) : retval (NULL), identifier (id) { }
-
-    void visit (const NamedType& type)
-    {
-      retval = type.GetInitializer (identifier);
-    }
-  };
-  visitor v (identifier);
-  type->Accept (v);
-  return v.retval;
-}
-
-Getter*
-type_select_getter (const Type* type, const std::string& identifier)
-{
-  struct visitor : public DefaultVisitor
-  {
-    Getter* retval;
-    const std::string& identifier;
-    visitor (const std::string& id) : retval (NULL), identifier (id) { }
-
-    void visit (const NamedType& type)
-    {
-      retval = type.GetGetter (identifier);
-    }
-  };
-  visitor v (identifier);
-  type->Accept (v);
-  return v.retval;
-}
-
-Reaction *
-type_select_reaction (const Type* type, const std::string& identifier)
-{
-  struct visitor : public DefaultVisitor
-  {
-    Reaction* retval;
-    const std::string& identifier;
-    visitor (const std::string& id) : retval (NULL), identifier (id) { }
-
-    void visit (const NamedType& type)
-    {
-      retval = type.get_reaction (identifier);
-    }
-  };
-  visitor v (identifier);
-  type->Accept (v);
-  return v.retval;
-}
-
-Action *
-type_select_action (const Type* type, const std::string& identifier)
-{
-  struct visitor : public DefaultVisitor
-  {
-    Action* retval;
-    const std::string& identifier;
-    visitor (const std::string& id) : retval (NULL), identifier (id) { }
-
-    void visit (const NamedType& type)
-    {
-      retval = type.GetAction (identifier);
-    }
-  };
-  visitor v (identifier);
-  type->Accept (v);
-  return v.retval;
-}
-
-bind_t *
-type_select_bind (const Type* type, const std::string& identifier)
-{
-  struct visitor : public DefaultVisitor
-  {
-    bind_t* retval;
-    const std::string& identifier;
-    visitor (const std::string& id) : retval (NULL), identifier (id) { }
-
-    void visit (const NamedType& type)
-    {
-      retval = type.GetBind (identifier);
-    }
-  };
-  visitor v (identifier);
-  type->Accept (v);
-  return v.retval;
-}
-
 const Type*
-type_select (const Type* type, const std::string& identifier)
+Type::select (const std::string& identifier) const
 {
-  field_t* f = type_select_field (type, identifier);
+  Field* f = this->get_field (identifier);
   if (f)
     {
       return f->type;
     }
 
-  decl::Method* m = type_select_method (type, identifier);
+  decl::Method* m = this->get_method (identifier);
   if (m)
     {
       return m->methodType;
     }
 
-  Initializer* i = type_select_initializer (type, identifier);
+  Initializer* i = this->get_initializer (identifier);
   if (i)
     {
       return i->initializerType;
     }
 
-  Getter* g = type_select_getter (type, identifier);
+  Getter* g = this->get_getter (identifier);
   if (g)
     {
       return g->getterType;
     }
 
-  Reaction* r = type_select_reaction (type, identifier);
+  Reaction* r = this->get_reaction (identifier);
   if (r)
     {
       return r->reaction_type;
     }
 
-  Action* a = type_select_action (type, identifier);
+  Action* a = this->get_action (identifier);
   if (a)
     {
       return Void::Instance ();
     }
 
-  bind_t* b = type_select_bind (type, identifier);
+  Bind* b = this->get_bind (identifier);
   if (b)
     {
       return Void::Instance ();
@@ -667,7 +523,7 @@ Struct::Struct (bool insert_runtime) : offset_ (0), alignment_ (0)
   if (insert_runtime)
     {
       /* Prepend the field list with a pointer for the runtime. */
-      Append ("0runtime", Void::Instance ()->get_pointer ());
+      append_field ("0runtime", Void::Instance ()->get_pointer ());
     }
 }
 
@@ -1268,34 +1124,34 @@ Signature::check_foreign_safe () const
     }
 }
 
-field_t*
+Field*
 Struct::select_field (const std::string& name) const
 {
-  return Find (name);
+  return get_field (name);
 }
 
 Callable*
 NamedType::select_callable (const std::string& name) const
 {
-  decl::Method* m = type_select_method (this, name);
+  decl::Method* m = this->get_method (name);
   if (m)
     {
       return m;
     }
 
-  Initializer* i = type_select_initializer (this, name);
+  Initializer* i = this->get_initializer (name);
   if (i)
     {
       return i;
     }
 
-  Getter* g = type_select_getter (this, name);
+  Getter* g = this->get_getter (name);
   if (g)
     {
       return g;
     }
 
-  Reaction* r = type_select_reaction (this, name);
+  Reaction* r = this->get_reaction (name);
   if (r)
     {
       return r;
@@ -1620,6 +1476,6 @@ NamedType named_uintptr ("uintptr", Uintptr::Instance ());
 NamedType named_string ("string", StringU::Instance ());
 
 NamedType named_file_descriptor ("FileDescriptor", FileDescriptor::Instance ());
-NamedType named_timespec ("timespec", (new Struct ())->Append ("tv_sec", &named_uint64)->Append ("tv_nsec", &named_uint64));
+NamedType named_timespec ("timespec", (new Struct ())->append_field ("tv_sec", &named_uint64)->append_field ("tv_nsec", &named_uint64));
 
 }

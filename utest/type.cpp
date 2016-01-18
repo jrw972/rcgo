@@ -1,7 +1,9 @@
 #include "type.hpp"
 
 #include "tap.hpp"
+#include "action.hpp"
 #include "reaction.hpp"
+#include "bind.hpp"
 
 using namespace type;
 using namespace decl;
@@ -49,11 +51,123 @@ main (int argc, char** argv)
 
   {
     NamedType foo ("foo", new Component ());
+    Action* r1 = foo.get_action ("r");
+    Action* r = new Action (NULL, NULL, "r");
+    foo.insert_action (r);
+    Action* r2 = foo.get_action ("r");
+    tap.tassert ("NamedType::get_action", r1 == NULL && r2 == r);
+  }
+
+  {
+    NamedType foo ("foo", new Component ());
     Reaction* r1 = foo.get_reaction ("r");
-    Reaction* r = new Reaction (NULL, NULL, NULL, "r", NULL);
+    Reaction* r = new Reaction (NULL, NULL, "r", NULL);
     foo.insert_reaction (r);
     Reaction* r2 = foo.get_reaction ("r");
     tap.tassert ("NamedType::get_reaction", r1 == NULL && r2 == r);
+  }
+
+  {
+    NamedType foo ("foo", new Component ());
+    Bind* r1 = foo.get_bind ("r");
+    Bind* r = new Bind (NULL, "r", NULL);
+    foo.insert_bind (r);
+    Bind* r2 = foo.get_bind ("r");
+    tap.tassert ("NamedType::get_bind", r1 == NULL && r2 == r);
+  }
+
+  {
+    util::Location loc;
+    NamedType foo ("foo", new Component ());
+    decl::Method* r1 = foo.get_method ("r");
+    decl::Method* r = new decl::Method (NULL, "r", new type::Method (type::Method::METHOD, &foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), new Signature (), ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable)));
+    foo.insert_method (r);
+    decl::Method* r2 = foo.get_method ("r");
+    tap.tassert ("NamedType::get_method", r1 == NULL && r2 == r);
+  }
+
+  {
+    util::Location loc;
+    NamedType foo ("foo", new Component ());
+    Initializer* r1 = foo.get_initializer ("r");
+    Initializer* r = new Initializer (NULL, "r", new type::Method (type::Method::INITIALIZER, &foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), new Signature (), ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable)));
+    foo.insert_initializer (r);
+    Initializer* r2 = foo.get_initializer ("r");
+    tap.tassert ("NamedType::get_initializer", r1 == NULL && r2 == r);
+  }
+
+  {
+    util::Location loc;
+    NamedType foo ("foo", new Component ());
+    Getter* r1 = foo.get_getter ("r");
+    Getter* r = new Getter (NULL, "r", new type::Method (type::Method::GETTER, &foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), new Signature (), ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable)));
+    foo.insert_getter (r);
+    Getter* r2 = foo.get_getter ("r");
+    tap.tassert ("NamedType::get_getter", r1 == NULL && r2 == r);
+  }
+
+  {
+    Struct s;
+    Field* f1 = s.get_field ("r");
+    s.append_field ("r", &named_int);
+    Field* f2 = s.get_field ("r");
+    tap.tassert ("Struct::get_field", f1 == NULL && f2 != NULL);
+  }
+
+  {
+    util::Location loc;
+
+    Struct s;
+    s.append_field ("field", &named_int);
+
+    NamedType nt ("foo", &s);
+
+    decl::Method* method = new decl::Method (NULL, "method", new type::Method (type::Method::METHOD, &nt, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), new Signature (), ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable)));
+    Initializer* initializer = new Initializer (NULL, "initializer", new type::Method (type::Method::INITIALIZER, &nt, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), new Signature (), ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable)));
+    Getter* getter = new Getter (NULL, "getter", new type::Method (type::Method::GETTER, &nt, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), new Signature (), ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable)));
+    Action* action = new Action (NULL, NULL, "action");
+    Reaction* reaction = new Reaction (NULL, NULL, "reaction", NULL);
+    Bind* bind = new Bind (NULL, "bind", NULL);
+
+    nt.insert_method (method);
+    nt.insert_initializer (initializer);
+    nt.insert_getter (getter);
+    nt.insert_action (action);
+    nt.insert_reaction (reaction);
+    nt.insert_bind (bind);
+
+    {
+      const Type* t = nt.select ("field");
+      tap.tassert ("Type::select (field)", t == &named_int);
+    }
+    {
+      const Type* t = nt.select ("method");
+      tap.tassert ("Type::select (method)", t == method->type ());
+    }
+    {
+      const Type* t = nt.select ("initializer");
+      tap.tassert ("Type::select (initializer)", t == initializer->type ());
+    }
+    {
+      const Type* t = nt.select ("getter");
+      tap.tassert ("Type::select (getter)", t == getter->type ());
+    }
+    {
+      const Type* t = nt.select ("action");
+      tap.tassert ("Type::select (action)", t == Void::Instance ());
+    }
+    {
+      const Type* t = nt.select ("reaction");
+      tap.tassert ("Type::select (reaction)", t == reaction->type ());
+    }
+    {
+      const Type* t = nt.select ("bind");
+      tap.tassert ("Type::select (bind)", t == Void::Instance ());
+    }
+    {
+      const Type* t = nt.select ("not there");
+      tap.tassert ("Type::select (NULL)", t == NULL);
+    }
   }
 
   tap.print_plan ();

@@ -99,7 +99,7 @@ namespace type
 class Type;
 class NamedType;
 class Signature;
-class field_t;
+class Field;
 }
 
 namespace decl
@@ -119,7 +119,7 @@ class Function;
 class Getter;
 class Initializer;
 class Method;
-class bind_t;
+class Bind;
 }
 
 namespace composition

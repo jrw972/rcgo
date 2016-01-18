@@ -6,13 +6,13 @@
 namespace type
 {
 
-struct field_t
+struct Field
 {
   std::string const name;
   const type::Type* const type;
   ptrdiff_t const offset;
 
-  field_t (const std::string& n, const type::Type* t, ptrdiff_t o)
+  Field (const std::string& n, const type::Type* t, ptrdiff_t o)
     : name (n)
     , type (t)
     , offset (o)

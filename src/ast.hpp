@@ -20,7 +20,7 @@ struct Node
 
   const type::Type* type;
   semantic::Value value;
-  type::field_t* field;
+  type::Field* field;
   bool reset_mutability;
   const decl::Callable* callable;
   const decl::Template* temp;
@@ -348,7 +348,7 @@ struct PushPortCallExpr : public Node
   Identifier* const identifier;
   List* const args;
 
-  type::field_t* field;
+  type::Field* field;
   decl::ParameterSymbol* receiver_parameter;
 };
 
@@ -365,7 +365,7 @@ struct IndexedPushPortCallExpr : public Node
   Node* const index;
   List* const args;
 
-  type::field_t* field;
+  type::Field* field;
   decl::ParameterSymbol* receiver_parameter;
   const type::Array* array_type;
 };
@@ -619,7 +619,7 @@ struct Bind : public Node
   Identifier* const identifier;
   Node* const body;
 
-  decl::bind_t* bind;
+  decl::Bind* bind;
 };
 
 struct Function : public Node

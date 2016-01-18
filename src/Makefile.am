@@ -11,7 +11,6 @@ parser.hpp parser.cpp: parser.y
 #AM_YFLAGS = -v -d
 bin_PROGRAMS = rc
 rc_SOURCES = main.cpp \
-action.hpp action.cpp \
 ast_cast.hpp \
 bind.hpp \
 builtin_function.hpp builtin_function.cpp \
@@ -31,7 +30,6 @@ process_functions_and_methods.hpp process_functions_and_methods.cpp \
 runtime.hpp runtime.cpp \
 scanner.hpp scanner.cpp \
 scheduler.hpp \
-stack.hpp stack.cpp \
 template.hpp template.cpp \
 types.hpp \
 util.hpp \
@@ -39,7 +37,8 @@ yyparse.hpp yyparse.cpp
 rc_LDADD=librc.la
 
 noinst_LTLIBRARIES=librc.la
-librc_la_SOURCES = arch.hpp arch.cpp \
+librc_la_SOURCES = action.hpp action.cpp \
+arch.hpp arch.cpp \
 ast.hpp ast.cpp \
 ast_visitor.hpp ast_visitor.cpp \
 callable.hpp callable.cpp \
@@ -52,6 +51,7 @@ process_type_spec.cpp \
 process_types_and_constants.hpp process_types_and_constants.cpp \
 reaction.hpp reaction.cpp \
 semantic.hpp semantic.cpp \
+stack.hpp stack.cpp \
 symbol.hpp symbol.cpp \
 symbol_table.hpp symbol_table.cpp \
 symbol_visitor.hpp \

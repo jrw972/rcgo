@@ -232,7 +232,7 @@ allocate_stack_variables (ast::Node* node)
       assert (node.action->memory_model.LocalsEmpty ());
     }
 
-    void visit (Bind& node)
+    void visit (ast::Bind& node)
     {
       allocate_symbol (node.bind->memory_model, node.bind->receiver_parameter);
       allocate_statement_stack_variables (node.body, node.bind->memory_model);

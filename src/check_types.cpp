@@ -1599,7 +1599,7 @@ struct Visitor : public ast::DefaultVisitor
     symtab.close_scope ();
   }
 
-  void visit (Bind& node)
+  void visit (ast::Bind& node)
   {
     symtab.open_scope ();
     symtab.enter_symbol (node.bind->receiver_parameter);
