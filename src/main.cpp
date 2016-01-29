@@ -67,7 +67,7 @@ main (int argc, char **argv)
         {0, 0, 0, 0}
       };
 
-      int c = getopt_long (argc, argv, "chvt:", long_options, NULL);
+      int c = getopt_long (argc, argv, "chvt:s:", long_options, NULL);
 
       if (c == -1)
         break;
