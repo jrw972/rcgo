@@ -20,69 +20,23 @@ namespace runtime
 class MemoryModel
 {
 public:
-  MemoryModel ()
-    : argumentsOffset (-(ptrdiff_t)sizeof (void*))
-    , localsOffset (sizeof (void*))
-    , localsSize (0)
-  { }
-
-  bool ArgumentsEmpty () const
-  {
-    return argumentsOffset == -(ptrdiff_t)sizeof (void*);
-  }
-
-  void ArgumentsPush (size_t size)
-  {
-    argumentsOffset -= util::align_up (size, arch::stack_alignment ());
-  }
-
-  bool LocalsEmpty () const
-  {
-    return localsOffset == sizeof (void*);
-  }
-
-  void LocalsPush (size_t size)
-  {
-    size = util::align_up (size, arch::stack_alignment ());
-    localsOffset += size;
-    localsSize += size;
-  }
-
-  void LocalsPop (size_t size)
-  {
-    localsOffset -= util::align_up (size, arch::stack_alignment ());
-  }
-
-  ptrdiff_t ArgumentsOffset () const
-  {
-    return argumentsOffset;
-  }
-
-  ptrdiff_t LocalsOffset () const
-  {
-    return localsOffset;
-  }
-
-  size_t LocalsSize () const
-  {
-    return localsSize;
-  }
-
-  void SetReceiverOffset ()
-  {
-    receiverOffset = ArgumentsOffset ();
-  }
-
-  ptrdiff_t ReceiverOffset () const
-  {
-    return receiverOffset;
-  }
+  MemoryModel ();
+  bool arguments_empty () const;
+  void arguments_push (size_t size);
+  bool locals_empty () const;
+  void locals_push (size_t size);
+  void locals_pop (size_t size);
+  ptrdiff_t arguments_offset () const;
+  ptrdiff_t locals_offset () const;
+  size_t locals_size () const;
+  void set_receiver_offset ();
+  ptrdiff_t receiver_offset () const;
 
 private:
-  ptrdiff_t argumentsOffset;
-  ptrdiff_t localsOffset;
-  size_t localsSize;
-  ptrdiff_t receiverOffset;
+  ptrdiff_t arguments_offset_;
+  ptrdiff_t locals_offset_;
+  size_t locals_size_;
+  ptrdiff_t receiver_offset_;
 };
 
 }

@@ -266,7 +266,7 @@ Type::select (const std::string& identifier) const
 }
 
 ParameterSymbol*
-Signature::Find (const std::string& name) const
+Signature::find (const std::string& name) const
 {
   for (ParametersType::const_iterator ptr = parameters_.begin (),
        limit = parameters_.end ();
@@ -282,31 +282,15 @@ Signature::Find (const std::string& name) const
 }
 
 const Type*
-type_move (const Type* type)
+Type::move () const
 {
-  const Pointer* ptf = type_cast<Pointer> (type);
+  const Pointer* ptf = type_cast<Pointer> (this);
   if (ptf)
     {
       const Heap* h = type_cast<Heap> (ptf->Base ());
       if (h)
         {
-          return ptf->Base ()->get_pointer ();
-        }
-    }
-
-  return NULL;
-}
-
-const Type* type_merge (const Type* type)
-{
-  const Pointer* ptf = type_cast<Pointer> (type);
-
-  if (ptf)
-    {
-      const Heap* h = type_cast<Heap> (ptf->Base ());
-      if (h)
-        {
-          return h->Base ()->get_pointer ();
+          return ptf;
         }
     }
 
@@ -314,9 +298,9 @@ const Type* type_merge (const Type* type)
 }
 
 const Type*
-type_change (const Type* type)
+Type::merge_change () const
 {
-  const Pointer* ptf = type_cast<Pointer> (type);
+  const Pointer* ptf = type_cast<Pointer> (this);
 
   if (ptf)
     {

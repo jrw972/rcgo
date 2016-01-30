@@ -70,7 +70,7 @@ struct Function : public Callable, public decl::Symbol
   }
   virtual size_t locals_size () const
   {
-    return memoryModel.LocalsSize ();
+    return memoryModel.locals_size ();
   }
   virtual const type::Signature* signature () const
   {
@@ -129,7 +129,7 @@ struct Method : public Callable
   }
   virtual size_t locals_size () const
   {
-    return memoryModel.LocalsSize ();
+    return memoryModel.locals_size ();
   }
 
   ast::Method* const node;
@@ -170,7 +170,7 @@ struct Initializer : public Callable
   }
   virtual size_t locals_size () const
   {
-    return memoryModel.LocalsSize ();
+    return memoryModel.locals_size ();
   }
   virtual const type::Signature* signature () const
   {
@@ -223,7 +223,7 @@ struct Getter : public Callable
   }
   virtual size_t locals_size () const
   {
-    return memoryModel.LocalsSize ();
+    return memoryModel.locals_size ();
   }
   virtual const type::Signature* signature () const
   {

@@ -1,5 +1,7 @@
+action
 arch
 error_reporter
 heap
+memory_model
 reaction
 type

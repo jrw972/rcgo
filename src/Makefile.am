@@ -22,7 +22,6 @@ executor_base.hpp \
 field.hpp \
 generate_code.hpp generate_code.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
-memory_model.hpp \
 parser.hpp parser.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
 process_definitions.cpp \
@@ -47,6 +46,7 @@ compute_receiver_access.hpp compute_receiver_access.cpp \
 error_reporter.hpp error_reporter.cpp \
 heap.hpp heap.cpp \
 location.hpp location.cpp \
+memory_model.hpp memory_model.cpp \
 process_type_spec.cpp \
 process_types_and_constants.hpp process_types_and_constants.cpp \
 reaction.hpp reaction.cpp \

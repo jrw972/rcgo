@@ -988,7 +988,7 @@ execute (executor_base_t& exec,
   // Reset the mutable phase base pointer.
   exec.mutable_phase_base_pointer (0);
 
-  exec.stack ().setup (action->memory_model.LocalsSize ());
+  exec.stack ().setup (action->memory_model.locals_size ());
 
   action->body->operation->execute (exec);
 
@@ -1272,7 +1272,7 @@ Move::instantiate (util::ErrorReporter& er,
       er.func_expects_count (location, "move", 1, argument_types.size ());
     }
 
-  const type::Type* out = type_move (in);
+  const type::Type* out = in->move ();
   if (in->underlying_kind () != kError &&
       out->underlying_kind () == kError)
     {
@@ -1388,7 +1388,7 @@ Merge::instantiate (util::ErrorReporter& er,
       er.func_expects_count (location, "merge", 1, argument_types.size ());
     }
 
-  const type::Type* out = type_merge (in);
+  const type::Type* out = in->merge_change ();
   if (in->underlying_kind () != kError &&
       out->underlying_kind () == kError)
     {
@@ -2780,7 +2780,7 @@ static void push_port_call (executor_base_t& exec, Operation* args, ptrdiff_t re
       // Jump to the last frame.
       exec.stack ().base_pointer (exec.mutable_phase_base_pointer ());
 
-      exec.stack ().setup (port->reaction->memory_model.LocalsSize ());
+      exec.stack ().setup (port->reaction->memory_model.locals_size ());
 
       port->reaction->call (exec);
 

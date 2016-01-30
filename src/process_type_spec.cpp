@@ -216,7 +216,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
             {
               ast::Node* id = *pos2;
               const std::string& identifier = ast_cast<Identifier> (id)->identifier;
-              const ParameterSymbol* parameter = signature->Find (identifier);
+              const ParameterSymbol* parameter = signature->find (identifier);
               if (parameter == NULL)
                 {
                   signature->Append (ParameterSymbol::make (id->location, identifier, type, child->mutability, child->indirection_mutability));

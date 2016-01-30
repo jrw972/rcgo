@@ -18,12 +18,7 @@ struct Location
   std::string const File;
   unsigned int const Line;
 
-  Location ()
-    : File (StaticFile)
-    , Line (0)
-  { }
-
-  Location (unsigned int aLine)
+  Location (unsigned int aLine = 0)
     : File (StaticFile)
     , Line (aLine)
   { }

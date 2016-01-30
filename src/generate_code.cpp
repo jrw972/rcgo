@@ -50,13 +50,13 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   void visit (ast::Initializer& node)
   {
     node.body->accept (*this);
-    node.operation = new SetRestoreCurrentInstance (node.body->operation, node.initializer->memoryModel.ReceiverOffset ());
+    node.operation = new SetRestoreCurrentInstance (node.body->operation, node.initializer->memoryModel.receiver_offset ());
   }
 
   void visit (ast::Getter& node)
   {
     node.body->accept (*this);
-    node.operation = new SetRestoreCurrentInstance (node.body->operation, node.getter->memoryModel.ReceiverOffset ());
+    node.operation = new SetRestoreCurrentInstance (node.body->operation, node.getter->memoryModel.receiver_offset ());
   }
 
   void visit (ast::Action& node)
@@ -67,9 +67,9 @@ struct CodeGenVisitor : public ast::DefaultVisitor
       {
         p = new Load (p, node.precondition->type);
       }
-    node.precondition->operation = new SetRestoreCurrentInstance (p, node.action->memory_model.ReceiverOffset ());
+    node.precondition->operation = new SetRestoreCurrentInstance (p, node.action->memory_model.receiver_offset ());
     node.body->accept (*this);
-    node.body->operation = new SetRestoreCurrentInstance (node.body->operation, node.action->memory_model.ReceiverOffset ());
+    node.body->operation = new SetRestoreCurrentInstance (node.body->operation, node.action->memory_model.receiver_offset ());
   }
 
   void visit (DimensionedAction& node)
@@ -80,21 +80,21 @@ struct CodeGenVisitor : public ast::DefaultVisitor
       {
         p = new Load (p, node.precondition->type);
       }
-    node.precondition->operation = new SetRestoreCurrentInstance (p, node.action->memory_model.ReceiverOffset ());
+    node.precondition->operation = new SetRestoreCurrentInstance (p, node.action->memory_model.receiver_offset ());
     node.body->accept (*this);
-    node.body->operation = new SetRestoreCurrentInstance (node.body->operation, node.action->memory_model.ReceiverOffset ());
+    node.body->operation = new SetRestoreCurrentInstance (node.body->operation, node.action->memory_model.receiver_offset ());
   }
 
   void visit (ast::Reaction& node)
   {
     node.body->accept (*this);
-    node.reaction->operation = new SetRestoreCurrentInstance (node.body->operation, node.reaction->memory_model.ReceiverOffset ());
+    node.reaction->operation = new SetRestoreCurrentInstance (node.body->operation, node.reaction->memory_model.receiver_offset ());
   }
 
   void visit (DimensionedReaction& node)
   {
     node.body->accept (*this);
-    node.operation = new SetRestoreCurrentInstance (node.body->operation, node.reaction->memory_model.ReceiverOffset ());
+    node.operation = new SetRestoreCurrentInstance (node.body->operation, node.reaction->memory_model.receiver_offset ());
   }
 
   void visit (ast::Bind& node)
@@ -286,7 +286,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
       {
         b = new Push (b);
       }
-    b = new SetRestoreCurrentInstance (b, node.memory_model->ReceiverOffset ());
+    b = new SetRestoreCurrentInstance (b, node.memory_model->receiver_offset ());
     node.operation = new Activate (node.expr_list->operation, b);
   }
 

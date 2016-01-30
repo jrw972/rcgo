@@ -171,6 +171,11 @@ struct Type
   }
   // Return type of selected field, method, or reaction.
   const Type* select (const std::string& identifier) const;
+
+  // Heap operations.
+  const Type* move () const;
+  const Type* merge_change () const;
+
 protected:
   virtual Field* get_field_i (const std::string& name) const { return NULL; }
 private:
@@ -859,7 +864,7 @@ public:
   {
     return parameters_.rend ();
   }
-  decl::ParameterSymbol* Find (const std::string& name) const;
+  decl::ParameterSymbol* find (const std::string& name) const;
   Signature* Append (decl::ParameterSymbol* p);
   void check_foreign_safe () const;
 private:
@@ -907,7 +912,7 @@ public:
   }
   decl::ParameterSymbol* GetParameter (const std::string& name) const
   {
-    return signature_->Find (name);
+    return signature_->find (name);
   }
   decl::ParameterSymbol* GetReturnParameter () const
   {
@@ -2512,18 +2517,6 @@ type_index (const Type* base, const Type* index);
 // Return type after applying dereference or NULL.
 const Type*
 type_dereference (const Type* type);
-
-// Return type after applying move or NULL.
-const Type*
-type_move (const Type* type);
-
-// Return type after applying merge or NULL.
-const Type*
-type_merge (const Type* type);
-
-// Return type after applying change or NULL.
-const Type*
-type_change (const Type* type);
 
 bool
 identical (const Type* x, const Type* y);

@@ -519,7 +519,7 @@ Composer::elaborate_bindings ()
               // Build a stack frame.
               exec.stack ().push_pointer(reinterpret_cast<void*> (receiver_address));
               exec.stack ().push_pointer (NULL);
-              exec.stack ().setup (b->memory_model.LocalsSize ());
+              exec.stack ().setup (b->memory_model.locals_size ());
             }
 
             void default_action (const Node& node)
@@ -718,7 +718,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultVisitor
         exec.stack ().push (action->iota);
       }
     exec.stack ().push_pointer (NULL);
-    exec.stack ().setup (action->action->memory_model.LocalsSize ());
+    exec.stack ().setup (action->action->memory_model.locals_size ());
   }
 
   ElaborationVisitor (Composer& t, Reaction* r)

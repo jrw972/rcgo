@@ -168,6 +168,27 @@ main (int argc, char** argv)
       const Type* t = nt.select ("not there");
       tap.tassert ("Type::select (NULL)", t == NULL);
     }
+    {
+      util::Location loc;
+      ParameterSymbol* p = ParameterSymbol::make (loc, "there", &named_int, Immutable, Immutable);
+      Signature sig;
+      sig.Append (p);
+      tap.tassert ("Signature::find (NULL)", sig.find ("not there") == NULL && sig.find ("there") == p);
+    }
+  }
+  {
+    const Type* t = named_int.get_heap ()->get_pointer ();
+    tap.tassert ("Type::move", t->move () == t);
+  }
+  {
+    tap.tassert ("Type::move", named_int.move () == NULL);
+  }
+  {
+    const Type* t = named_int.get_heap ()->get_pointer ();
+    tap.tassert ("Type::merge", t->merge_change () == named_int.get_pointer ());
+  }
+  {
+    tap.tassert ("Type::merge", named_int.merge_change () == NULL);
   }
 
   tap.print_plan ();

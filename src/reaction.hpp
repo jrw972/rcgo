@@ -67,7 +67,7 @@ public:
   }
   size_t locals_size () const
   {
-    return memory_model.LocalsSize ();
+    return memory_model.locals_size ();
   }
   virtual const type::Signature* signature () const
   {
