@@ -9,7 +9,7 @@ The scanner and parser are unremarkable.
 The semantic checks include type checking and checks to support the enforcement of \verb+const+ and \verb+foreign+ intrinsic and dereference mutability.
 The implementation of these checks follow the requirements set forth in chapter~\ref{language}.
 The code generation phase converts the AST into a tree of stack operations.
-The execution phase begins by initializing the instances by calling the initializer associated with each instances.
+The execution phase begins by initializing the instances by calling the initializer associated with each instance.
 The scheduler then proceeds by selecting and executing actions with weak fairness.
 
 \section{Enforcing Sound Composition}
@@ -200,7 +200,7 @@ When executing a transaction, the run-time must execute the immutable phase of a
 To accomplish this, the run-time uses a novel calling convention to create a list of deferred contexts and statements that represent the mutable phase of each state transition.
 The immutable phase constructs the list and the mutable phase processes the list.
 To present the calling convention, we first present some details about the run-time such as the ordinary calling convention and push ports.
-We then describe the behavior of the calling convention and illustrate its behavior using a number of examples.
+We then describe the behavior of the calling convention and illustrate its behavior using an illustrative example.
 
 \paragraph{Ordinary calling convention.}
 The ordinary call mechanism in the run-time is based on the C-decl calling convention.
@@ -391,273 +391,414 @@ Figure~\ref{activation_ex_1} shows a diagram of the stack after the immutable ph
 The stack contains two frames, one corresponding to the action and one corresponding to the reaction.
 The $head$ variable points to the reaction frame which in turn points to the action frame using the previous base pointer slot.
 The action frame points to nil indicating that it is the last frame in the list.
-The previous instruction pointers point the bodies of the activation statements.
-Between the frames are the push port arguments which duplicated for the call to the reaction.
+The previous instruction pointers point to the bodies of the activation statements.
+Between the frames are the push port arguments which are duplicated for the call to the reaction.
+If the push port had been bound to multiple reactions, then the reaction portion of the diagram would be replicated to match the number of bound reactions.
+If multiple push ports were activated by the activation statement, then additional push port arguments and reactions would appear on the stack.
 
 \section{Heaps}
 
+In this section, we describe the implementation of the heap data type introduced in chapter~\ref{language} and our approach to garbage collection.
+Our approach to implementing dynamic memory allocation and garbage collection was shaped by the independence of state required by the semantics of reactive components.
+Thus, instead of relying on a single global heap, the implementation contains a heap for each component that can be garbage collected independently of the others.
+
+\paragraph{Blocks.}
+A \emph{slot} is the smallest unit of memory that can be dynamically allocated.
+Typically, a slot is the size of two pointers.
+A \emph{block} is an extent of memory and a set of bits indicating the allocation status of each slot in the extent.
+The status bits indicate if a slot is allocated, if a slot is the beginning of an object, and if the slot has been marked by the mark-and-sweep algorithm.
+Blocks also contain left and right pointers that allow them to be formed into a binary tree sorted by the address of the extent.
+
+\paragraph{Mark-and-sweep garbage collection.}
+We implemented a simple mark-and-sweep algorithm to collect garbage in a tree of blocks.
+The core of the marking phase involves scanning extents for pointers to objects.
+When the algorithm comes across a slot that is allocated, marked, and which contains a pointer that points to a location in the tree of blocks, it marks the object indicated by the pointer which must also be allocated.
+The algorithm is bootstrapped by marking all slots in a designated root object.
+The algorithm repeatedly scans the extents in the tree of blocks until no new marks can be added.
+At this point, the sweep phase resets the allocated bit for all slots that are allocated but not marked and resets the marked bit for the next run of the algorithm.
+A block that is not marked, meaning that none of its slots were marked, is removed from the tree of blocks and deallocated.
+
+\paragraph{Heaps.}
+A \emph{heap} contains a root block, a list of unallocated chunks of memory (free list), and pointers to create a tree structure.
+When allocating an object from a heap, the heap attempts to find an adequate chunk using the free list using a first fit policy.
+If this fails, the heap allocates a new block, inserts it into the tree and free list, and then allocates again using the newly inserted chunk.
+The sweep phase of the mark-and-sweep algorithm reconstructs the free list.
+
+As described in chapter~\ref{language}, every component has an associated heap.
+A heap of this kind is called an \emph{implicit heaps}.
+Heaps that are created via \verb+new+ and passed to \verb+move+, \verb+merge+, and \verb+change+ and called \emph{explicit heaps}.
+All heaps have a distinguished root object.
+The marking phase of the mark-and-sweep algorithm is seeded with this root object.
+The root object of an implicit heap is the static component state of the component that owns the heap.
+The root object of an explicit heap is an object that is allocated in the same heap.
+
+The semantics of reactive components allow heaps to form strict hierarchies, i.e., a tree structure where the root of the tree is an implicit heap and the internal nodes and leaves of the tree are explicit heaps.
+A strict hierarchy gives a graphical interpretation to merge and move operations.
+A move operation moves a sub-tree from one location to another location.
+ Merging a heap $h$ into another heap $p$ involves removing $h$ from the tree, inserting the blocks of $h$ into the tree of blocks of $p$, merging the free list of $h$ into the free list of $p$, and inserting the children of $h$ as children of $p$.
+
+\paragraph{The active heap.}
+Logically, the run-time maintains a stack of heaps where the top of the stack represents the \emph{active heap}.
+The active heap is used to satisfy all dynamic memory requests, e.g., calls to \verb+new+.
+The implicit heap that is associated with the receiving component is pushed/popped upon entering/leaving an action, reaction, getter, or initializer.
+\verb+change+ statements are used to push and pop explicit heaps.
+Thus, the call stack, specifically, the change statements that are active on the call stack, implement the stack of heaps.
+When a new heap is created, it is inserted as a child of the active heap.
+
+\paragraph{Atomicity.}
+Chapter~\ref{language} describes how the semantics of reactive components permit concurrent access to heaps.
+The first scenario where this may occur is when a heap is passed to a push port that is bound to multiple reactions.
+The semantics of reactive components allow the reactions to be executed concurrently.
+Thus, two different threads may be attempt to move/merge the same heap at the same time.
+The second scenario occurs when a component is concurrently accessed in multiple transactions that don't mutate the state of the component.
+The action, reaction, or getter is allowed to allocate memory which means that heaps must correctly handle concurrent access.
+Our implementation of heaps uses the Thread Safe Interface pattern~\cite{schmidt2000pattern} to synchronize access to heaps when allocating, moving, and merging.
+
+\paragraph{Heap links.}
+Heaps are exposed to users via pointers to heaps, e.g., \verb+*heap int+.
+These pointers to heaps can be stored in objects allocated in another heap.
+The semantics of \verb+change+, \verb+merge+, and \verb+move+ ensure that the parent-child relationships formed by pointers to heaps match exactly those known by the run-time system.
+The two rules that enforce this behavior are 1) \verb+merge+ and \verb+move+ fail for any heap that is already on the stack of active heaps and 2) all pointers in scope become foreign in the body of a change statement.
+The second rule forces the user to \verb+move+ heaps if they desire to change the hierarchy because pointers with foreign dereference mutability cannot be stored.
+Recall that the stack of active heaps is setup by active \verb+change+ statements.
+Using the inductive argument that the parent-child relationship was previously correct, then the ancestors of the active heap must all appear in the stack of active heaps.
+Thus, failing to \verb+merge+ and \verb+move+ heaps on the active stack prevents the formation of cycles.
+
+\begin{figure}
+\centering
+%%\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}
+\node [rectangle, draw] (p1) at (0,1) {0x12345678};
+\node [rectangle, draw] (p2) at (0,0) {0x12345678};
+\node [rectangle, draw] (p3) at (0,-1) {0x12345678};
+\node at (0,-2) {pointer to heap};
+\node [rectangle, draw] (hl) at (4,0) {0x90ABCDEF};
+\node at (4,-2) {heap link};
+\node [rectangle, draw] (heap) at (8,0) {0x0A1B2C3D};
+\node at (8,-2) {heap};
+\draw [->] (p1) -- (hl);
+\draw [->] (p2) -- (hl);
+\draw [->] (p3) -- (hl);
+\draw [->] (hl) -- (heap);
+\draw [dashed] (6, -2) -- (6, 2);
+\end{tikzpicture}
+%%}%
+\caption{Example illustrating heap links\label{heap_link}.  The objects on the far left represent user-level pointers to heap.  The middle object is a heap link which contains the address of the child heap which appears on the far right.}
+\end{figure}
+
+As illustrated in figure~\ref{heap_link}, a user-level pointer to a heap points to an object called a heap link which in turn points to a heap.
+The objects on the left side of the diagram are objects in the parent heap and the object on the right is the child heap.
+The extra level of indirection introduced by the heap link concentrates all references to the child heap into one location.
+Moving a heap involves reading the pointer out of the heap link and replacing it with \verb+nil+.
+This makes the heap inaccessible to the previous owner, i.e., parent, which maintains the isolation of state between reactive components.
+The marking phase of the mark-and-sweep algorithm is aware of heap links and marks heaps as being reachable from another heap.
+Unreachable heaps are pruned from the hierarchy during garbage collection.
+
+\paragraph{Embarrassingly parallel garbage collection.}
+Two features of reactive components permit concurrent garbage collection.
+First, the state of each reactive component is isolated which allows garbage collection to be performed on different components at the same time without conflict.
+Second, garbage collection can be framed as action to be executed by the scheduler.
+Thus, associated with each component is an action that invokes the garbage collector on the implicit and explicit heaps of the corresponding component.
+Furthermore, the action is considered to modify the state of the component which prevents all transactions involving the component from executing concurrently with the garbage collection action.
+We assume that the scheduler selects the garbage collection action often enough that no additional invocations of the garbage collector are necessary.
+More plainly, we do not trigger the garbage collector in the allocation routine which is the approach taken by most systems using garbage collection.
+Most garbage collection algorithms scan the call stack to determine the root objects in the heap.
+In our approach, such scanning is useless since the call stack is empty when executing the garbage collection action and the root object is embedded in the implicit heap that is being collected.
+
 \section{Scheduler}
 
+A scheduler is responsible for selecting and executing transactions according to the weak fairness criteria set forth in chapter~\ref{model}.
+Of interest to us is the design and implementation of general-purpose multi-threaded schedulers that are capable of executing actions in parallel.
+The main inputs to a scheduler are the concrete instances $I$ and concrete actions $A$ enumerated by the composition analysis.
+The instance sets calculated for each concrete action are used in multi-threaded schedulers to avoid non-deterministic state transitions.
+We introduce some the issues when designing and implementing a scheduler for reactive components through a series of increasingly complex scheduler designs.
+The two concrete implementations described later will draw upon the designs of these schedulers.
+
+\paragraph{Scheduler criteria.}
+A scheduler is \emph{fair} if it meets the weak-fairness criteria set forth in chapter~\ref{model}.
+A scheduler is \emph{safe} if it avoids conditions where one transaction is changing the state of the component while another transaction is reading or writing the same state.
+A scheduler is \emph{responsible} if it only terminates when the precondition for every action is false.
+Obviously, we are interesting in fair, safe, and responsible schedulers as these schedulers enforce the semantics of reactive components.
+The final criteria for a scheduler is efficiency which typically refers to either the computational complexity or storage complexity associated with its operation.
+Of primary interest is the \emph{selection efficiency} or the amount of computation required for the scheduler to determine the next action to execute.
+
+\paragraph{Single-threaded round-robin scheduler.}
+Perhaps the simplest scheduler that can be implemented is a single-threaded round-robin scheduler.
+This design may be appropriate in the context of uniprocessor embedded systems with tight resource constraints.
+The scheduler repeatedly cycles through the list of concrete actions, evaluating the precondition of each action and executing the body if the precondition was true.
+If no action is executed in a cycle, then the scheduler terminates.
+This scheduling algorithm is fair by virtue of the strict round-robin policy, safe from the fact that it is single-threaded, and responsible by definition.
+The selection efficiency of this algorithm is $O(|A|)$ as illustrated by a system where one action that is perpetually enabled while all of the other actions are perpetually disabled.
+
+\paragraph{Single-threaded scheduler with an action work queue.}
+The perceived weakness of the single-threaded round-robin scheduler is the overhead of evaluating preconditions that evaluate to false.
+So, instead of cycling through the list of actions, this scheduler maintains a work queue of actions whose preconditions are true.
+At initialization time, the scheduler populates the queue by evaluating the precondition for all actions in the system.
+The scheduler then repeatedly takes an action from the queue, executes it, and then inserts any newly enabled actions.
+To find newly enabled actions, the scheduler uses the instance set generated during composition analysis.
+That is, after executing an action, the scheduler can then test all of the actions for the components in the instance set and add them to the queue if necessary.
+The scheduler terminates when the work queue is empty.
+This scheduling algorithm is fair if the work queue is processed in first-in first-out (FIFO) order, safe because the algorithm is single-threaded, and responsible since an empty work queue implies no action is enabled.
+
+The pathological scenario of the single-threaded round-robin scheduler applies to the scheduler so worst-case selection efficiency of the algorithm is $O(|A|)$.
+Assume that the most complex transaction in the system involves $c$ components and some component has a system maximum action count of $a$.
+In worst case, the scheduler must execute $c \times a$ preconditions for every action that it executes.
+Thus, the overhead associated with this scheduler is related to the compositional structure of the system which it is executing.
+This overhead may be acceptable for systems where $c$ and $a$ are small or for systems whose average work queue size is small compared to the total number of actions in the system.
+This suggests that the average number of enabled actions compared to the total number of actions may be useful way to analyze systems and schedulers.
+For example, the single-threaded round-robin scheduler would be appropriate for a \emph{heavily enabled} system while the single-threaded with an action work queue would be appropriate for a \emph{lightly enabled} system.
+
+\paragraph{Single-threaded scheduler with an instance work queue.}
+This scheduling algorithm attempts to squeeze a little more performance from the single-threaded scheduler with an action work queue.
+This significant difference is that after the scheduler executes an action, it places the component instances that might have changed state into the work queue.
+The work queue is initialized with all of the components in the system.
+When processing a component on the work queue, the scheduler cycles through all of the actions for that particular component.
+The increase in performance comes from deferring the evaluations of the preconditions until absolutely necessary.
+The behavior on which this scheduler attempts to capitalize is components that are rarely involved in transactions.
+An instance is \emph{enabled} if at least one of its actions is enabled.
+Thus, this scheduler is appropriate for systems that are lightly enabled from the instance perspective.
+
+\paragraph{Multi-threaded global round-robin scheduler.}
+This scheduler runs $P > 1$ copies of a round-robin scheduler in parallel.
+To be safe, we must devise a protocol that allows the threads to avoid concurrently executing actions that may mutate the same state.
+Using the assumption that a component instance is a proxy for its state variables, the scheduler locks all instances in the instance set before evaluating the precondition and executing the action.
+Recall that composition analysis determines the set of components that are involved in a transaction and how they are accessed (read or write).
+The acquired lock corresponds to the access type which allows multiple threads to be reading a component but only one thread to be writing.
+The locks are acquired in a determined order to avoid deadlock (Havender's Principle).
+The global mutli-threaded roud-robin scheduler is fair so long as the underlying locking mechanism is fair, i.e., there is no reader or writer starvation.
+The algorithm is also responsible as each thread proves to itself that there are no enabled actions left in the system.
+
+The obvious feature of this algorithm is the locking required to coordinate access to component instances.
+One negative characteristic caused by the locking is that processors may become idle while waiting for a lock.
+Thus, we might look for alternatives that allow a processor to do useful work while waiting for a lock.
+Another goal might be to look for ways to coordinate access to component instances without using locks at all.
+Chapter~\ref{future_work} describes some ideas toward these goals.
+
+\paragraph{Multi-threaded partitioned round-robin scheduler.}
+Rather than have each thread process the entire list of actions, the multi-threaded partitioned round-robin scheduler divides the list of actions among the available threads.
+Like the global version, this algorithm is fair if the underlying locking mechanism is fair.
+Similarly, this algorithm is safe as locks are used to coordinate access to component state.
+However, for this algorithm to be responsible, we must add a protocol that allows the threads to detect that the system has reached the termination condition.
+
+The termination protocol consists of a barrier synchronization and then a check to establish the termination condition.
+The termination protocol begins when a scheduler thread sends a termination request to the \emph{manager thread}.
+To process a termination request, the manager thread stops each scheduler thread and then checks that all actions are disabled.
+If all of the actions are disabled, the system terminates.
+Otherwise, the manager thread restarts the scheduler threads.
+A scheduler thread may choose to request termination at any time and different heuristics may be used to determine when a scheduler thread makes the termination request.
+Deferring the request has the advantage of avoiding the termination protocol overhead.
+For example, a scheduler thread might wait until it makes a complete pass through its list of action without executing an action before making the request.
+
+The proposed termination protocol is rather disruptive as it must stop the system to check for termination.
+Thus, one goal may be to let a thread idle itself and be woken up by active neighbors.
+Similarly, the scheduler threads can check for the termination condition in parallel and wake up all of their neighbors if an action is enabled.
+Finally, the manager thread may be done away with entirely and the protocol be rewritten as a distributed protocol.
+
+\paragraph{Multi-threaded scheduler with a global instance work queue.}
+The first scheduler that we implemented was a multi-threaded scheduler with a global instance work queue.
+The work queue is initialized to contain all of the instances in the system.
+The scheduler threads take an instance from the work queue, select and execute all actions in the instance, and insert any instances that might have changed state back into the work queue.
+Fairness is achieved by processing the queue in LIFO order and safety is achieved through the aforementioned locking scheme.
+The termination protocol for this scheduler involves counting the number of instances that are currently in the queue and the number of instances currently being processed by the scheduler threads.
+When this count drops to zero, there are no enabled instances in the system and the system may terminate responsibly.
+
+One potential weakness of this scheduler is that it is based on a global work queue.
+The synchronization required to coordinate access to the queue adds a communication overhead and may create contention if the scheduler threads are lightly loaded, i.e., they frequently return to the queue looking for work.
+Thus, the scalability of this scheduler is a concern.
+
+\paragraph{Multi-threaded partitioned round-robin scheduler with asynchronous locking and distributed termination.}
+One of the goals when designing this scheduler was to avoid the system call overhead of locking observed with the multi-threaded scheduler with a global instance work queue.
+The reader/writer locks used to protect each component instance were replaced by asynchronous read/writer locks implemented in user-space.
+The asynchronous locks consist of a spin lock, variables indicating the status of the lock, and a queue of requests.
+To acquire a lock for a component, a scheduler thread first acquires the spin lock and then checks if the lock can be acquired immediately.
+The lock can be acquired immediately if 1) the lock has no owner or 2) the threads is a reader, i.e., it is requesting a read lock, the lock has already been locked by another reader, and there are no writers in the queue.
+Otherwise, the request is placed on the queue.
+A scheduler thread failing to acquire the lock can either idle itself or attempt to execute a different action.
+When a lock is unlocked, the thread at the front of the queue is notified so it may resume processing of the action that it was attempting to execute.
+The protocol avoids reader and writer starvation and ensures fairness since the queue is processed in LIFO order.
+
+The aforementioned centralized termination protocol has the potential to be disruptive.
+Thus, the motivation for a distributed termination protocol is to keep the scheduler threads as busy as possible meaning that the termination protocol is started infrequently and the termination protocol itself aborts as early as possible if the termination condition has not been reached.
+For this scheduler, the threads are arranged in a ring and communicate using asynchronous message queues.
+Messages are stamped with the id of the originating thread.
+Some parts of the protocol forward messages around the ring so a thread receiving a message from itself knows that all of the threads have processed that message.
+
+Like the centralized version, the ring-based distributed termination protocol consists of a synchronization phase and checking phase.
+Scheduler threads begin in the RUN state where they are actively cycling through their list of actions.
+When a scheduler thread determines that termination may be possible, it sends a message to its neighbor indicating that it is entering the SYNC state.
+If the neighbor thread is in the RUN state, it resolves to send a reset message the next time it executes an action which means that the termination condition has not been established.
+Otherwise, the neighbor thread itself is already in the SYNC state and forwards the message.
+Reset messages are unconditionally forwarded around the ring and cause all threads to enter the RUN state.
+Synchronization messages are only forwarded if the thread receiving the message is in the SYNC state.
+Thus, if a thread receives its own synchronization message, all other threads in the scheduler are in the SYNC state.
+Multiple threads may receive their own synchronization message at the same time.
+
+The goal of the synchronization phase is to establish a common point of reference for determining if any action is enabled.
+When a thread receives its own synchronization message, it sends a message to its neighbor that it is entering the CHECK state.
+This message is forwarded around the ring causing all of the threads to enter the CHECK state.
+The CHECK state is like the modified RUN state in that any executed action causes a reset message to circulate around the ring.
+A thread that cycles through its list of actions and finds no enabled actions sends a wait message to its neighbor and enters the WAIT state.
+If the neighbor is in the WAIT state, it forwards the message.
+If a thread receives its own wait message, then all of the threads are in the WAIT state and the termination condition has been established.
+Upon receiving its own wait message, a thread sends a termination message causing all threads to terminate.
+
+\paragraph{Scheduler evaluation.}
+The utility of the reactive component model rests on the ability to effectively execute reactive programs.
+The challenge, then, is to design and implement effective schedulers subject to the constraints and limitations imposed by the model.
+The exercise of developing and evaluating schedulers may suggest possible improvements to the model or provide evidence that core features of the model resist efficient implementation.
+The definition of an effective scheduler will vary by platform and problem domain.
+For example, embedded systems may prefer a single-threaded scheduler with minimal memory requirements and power-awareness.
+Our focus in this work is to make progress on a general purpose multi-threaded scheduler.
+
+We propose the use of standard queueing metrics for the evaluation of a general-purpose scheduler:
+\begin{itemize}
+\item Throughput - the number of actions executed per second.
+\item Latency - the amount of time between an action becoming enabled and being executed.
+\item Utilization - the fraction of the CPU used.
+\end{itemize}
+Given the same system, a scheduler with higher throughput is preferable to a system with lower throughput as it is accomplishing more work per unit time.
+The goal in measuring the latency between an action becoming enabled and its execution is to quantify the fairness of the scheduler.
+Both throughput and latency may be considered for individual actions or aggregated over all actions in the system.
+Utilization is a measure of how efficiently the scheduler is using the CPUs and can be used to qualify an improvement in throughput or latency.
+For example, a 10\% increase in throughput accompanied by a 10\% increase in utilization is acceptable while a 10\% increase in throughput with a 100\% increase in utilization is not acceptable.
+
+\begin{figure}
+\centering
+\resizebox{.5\textwidth}{!}{%
+\begin{tikzpicture}
+
+\node[draw, ellipse] (Request) at (0,0) {Request};
+\node[draw, ellipse] (Response) at (3,0) {Response};
+\node[draw, ellipse] (Tick) at (1.5,-1) {Tick};
+
+\draw (Request) -- (Response);
+\draw (Tick) -- (Response);
+
+\end{tikzpicture}
+}%
+\caption{Mutex graph for the clock system.  Each node is a transaction.  Nodes sharing an edge cannot be executed concurrently due to shared state. \label{clock_system_mutex}}
+\end{figure}
+
+We used the fully-factored clock system of chapter~\ref{model} to evaluate the two scheduler implementations.
+In this system, there are three components of interest which we will designate the Client, the Server, and the Counter.
+This system has three actions:
+\begin{itemize}
+  \item Request - The client requests the time from the server.  This involves the Client and the Server.
+  \item Response - The server responds with the time.  This involves the Client, the Server, and the Counter.
+  \item Tick - The counter increments the current time.  This involves the Counter.
+\end{itemize}
+Figure~\ref{clock_system_mutex} shows the \emph{mutex graph} for the clock system.
+Each node in the graph is a transaction.
+Nodes sharing an edge cannot be executed concurrently due to shared state.
+Conversely, nodes that are not linked by an edge can be executed concurrently.
+For the purpose of evaluating schedulers, the clock system has the important characteristic that Request and Tick can be executed concurrently while Response must be executed independently.
+Another useful feature of this system is that each component has exactly one action, thus, a  work queue of instances may also be viewed as a work queue of actions.
+The system was executed on a machine with two cores using two scheduler threads.
+
+For comparison, we implemented the clock system using the POSIX threads library (pthreads).
+To preserve the spirit of the original design, the custom implementation uses three threads corresponding to the Request, Response, and Tick transactions.
+The Request and Response threads share a flag variable that is protected by a mutex and conditional variable to implement the asynchronous request/response protocol.
+The Response and Tick threads share a counter variable that is protected by a mutex.
+For convenience, custom clock implementation will be called the \emph{clock scheduler}, the multi-threaded scheduler with a global instance work queue will be called will be called the \emph{instance scheduler}, and the multi-threaded partitioned  round-robin scheduler with asynchronous locking and distributed termination will be called the \emph{partitioned scheduler}.
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{clock_throughput_cdf.png}
+\caption{Cumulative distribution function for the throughput of the clock scheduler. \label{clock_throughput}}
+\end{figure}
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{instance_throughput_cdf.png}
+\caption{Cumulative distribution function for the throughput of the instance scheduler. \label{instance_throughput}}
+\end{figure}
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{partitioned_throughput_cdf.png}
+\caption{Cumulative distribution function for the throughput of the partitioned scheduler. \label{partitioned_throughput}}
+\end{figure}
+
+The throughput of each scheduler was determined by executing the clock system for approximately 10 seconds and counting the number of executed transactions to compute the throughput.
+The number of transactions was determined from the program output and does not include the garbage collection actions.
+The 10 seconds includes parsing the source file, performing the semantic checks, etc.
+However, it is long enough to establish a steady state.
+The experiment was repeated 10 times.
+The cumulative distribution function for the throughput of each scheduler is shown in figures~\ref{instance_throughput} and~\ref{partitioned_throughput}.
+The graphs show that the partitioned scheduler achieves a higher average throughput for the clock system.
+The average throughput for the instance scheduler was 481340.3 transactions/s while the average throughput for the partitioned scheduler was 496106.7 transactions/s; an increase of 3\%.
+
+Figure~\ref{partitioned_throughput} shows that the partitioned scheduler is bi-modal for the clock system.
+The partitioned scheduler randomly and statically allocates transactions to scheduler threads.
+This results in four equally possible allocations with two kinds of behavior.
+The first allocation is when all transactions are allocated to one thread.
+The second allocation is when Request and Tick are allocated to one thread while Response is allocated to the other.
+In both of these allocations, the potential concurrency between Request and Tick cannot be exploited.
+The third allocation is when Request and Response are allocate to one thread while Tick is allocated to the other.
+The fourth allocation is when Response and Tick are allocated to one thread while Request is allocated to the other.
+In both of these allocations, the potential concurrency between Request and Tick can be exploited.
+Thus, one mode represents configurations where the scheduler is able to take advantage of the potential concurrency in the system leading to higher throughput while the other mode represents configurations where the scheduler is unable to take advantage of the potential concurrency in the system.
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{instance_throughput_utilization.png}
+\caption{Throughput vs. utilization for the instance scheduler. \label{instance_throughput_utilization}}
+\end{figure}
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{partitioned_throughput_utilization.png}
+\caption{Throughput vs. utilization for the partitioned scheduler. \label{partitioned_throughput_utilization}}
+\end{figure}
+
+Figures~\ref{instance_throughput_utilization} and~\ref{partitioned_throughput_utilization} show plots of utilization against throughput for the instance and partitioned scheduler.
+The utilization was calculated as the ratio of the total CPU time (user and system) to the wall clock time.
+The utilization includes the time spent executing transactions, scheduler overhead, system call overhead, and overhead for the garbage collection actions.
+The maximum utilization for this experiments is 2.0 since the system contains 2 CPUs.
+The average utilization for the instance scheduler was 1.497 and the average utilization for the partitioned scheduler was 1.718; an increase of 15\%.
+Thus, the question is whether or not a 3\% increase in throughput is worth a 15\% increase in utilization?
+Alternatively, we may attempt to reduce the utilization caused by the scheduler through more efficient selection.
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{instance_latency_cdf.png}
+\caption{Cumulative distribution function for the latency of the instance scheduler. \label{instance_latency}}
+\end{figure}
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{partitioned_latency_cdf.png}
+\caption{Cumulative distribution function for the latency of the partitioned scheduler. \label{partitioned_latency}}
+\end{figure}
+
+The latency of each scheduler was determined by executing the clock system for approximately 10 seconds and measuring the elapsed time between the transaction becoming enabled and being executed.
+In the clock system, Request enables Response, Response enables Request, and Tick is always enabled.
+Thus, it was sufficient to capture the time that each transaction was executed and use the relationships in the system to calculate the latency.
+The experiments used to measure latency are independent from the experiments used to measure throughput.
+Figures~\ref{instance_latency} and~\ref{partitioned_latency} show the cumulative distribution of the average latency for the instance scheduler and partitioned scheduler, respectively.
+Ignoring outliers, a visual approximation of the latency for the instance scheduler and partitioned scheduler is 8us and 5.05us, respectively.
 
 
+%% \begin{itemize}
+%% \item pre-computing enabled bits
+%% \item partitioning to avoid locking
+%% \item cache awareness
+%% \item balancing
+%% % Centralized scheduler
+%% % partitioning?
+%% % rings?
+%% \item flow control
+%% \item termination
+%% \item long running actions
+%% \item simple transactions
+%% \item inlining
+%% \item groups
+%% \item active - terminating - idling (most servers have 10\% utilization)
+%% \item granularity of actions
+%% \end{itemize}
+
+\section{I/O}
 
 
-
-
-
-\section{Motivation}
-
-An implementation of reactive components is necessary for at least three reasons.
-First and foremost, an implementation tests the practicality of the model.
-The act of implementing the model will reveal whether the assumptions upon which the model is founded can be realized using existing techniques.
-Conversely, an implementation can suggest restrictions to the model that are necessary to produce an effective implementation.
-An example of this was seen in chapter~\ref{model} where the component instance was used as proxy for its state variables for the purpose of determining which variables were involved in a transaction.
-Implementation forces one to supply and consider details that can either qualify or disqualify a model as a practical engineering tool.
-This is consistent with the emerging attitude in systems research that all new ideas and techniques must be accompanied by relevant tools and evaluations to show their feasibility.
-
-Second, language support for a model is beneficial because it closes the semantic gap between reasoning and implementation.
-The importance of language support can be seen in techniques like structured programming~\cite{dahl1972structured} and object-oriented programming~\cite{booch1982object}.
-While these techniques can be applied in virtually any setting, their lasting utility is derived from their implementation in a variety of programming languages.
-Providing language support for a model raises the level of abstraction and allows reasoning about a system directly from its specification instead of reasoning in one set of semantics while implementing in another which can be tedious and error-prone.
-Language support allows developers to rely on the consistent application of the semantics of the model through strict enforcement, e.g., checking by a compiler.
-
-Third, an implementation is necessary to demonstrate that the model can be applied successfully to real-world design and implementation problems.
-That is, given a platform for reactive components, we can design, construct, and evaluate systems based on the reactive component paradigm.
-Furthermore, we can evaluate critically the design and implementation processes that the model and platform encourage.
-By comparing implementations of similar systems in two different models, we can gain insight into the strengths and weaknesses of the model.
-These ideas will be explored further in section~\ref{evaluation}.
-
-\section{Approach}
-Our approach to implementing reactive components is to define a programming language for reactive components and implement that language in an interpreter.
-The choice to implement an interpreter instead of a byte-code interpretation, i.e., a virtual machine, or a compiler was a matter of convenience as it avoids the code generation step.
-However, this choice revealed something.
-The programming language provides the syntax necessary to express all of the reactive component concepts:  state variables, actions, reactions, bindings, push ports, pull ports, and activation.
-
-The development workflow, then, consists of three steps.
-First, the developer defines a reactive system as a set of components in source files using a high-level language similar to the one used in the listings of section~\ref{model}.
-Then the developer designates a top-level component that represents the system and compiles the source files to produce an $\alpha$-machine image.
-Finally, the developer runs the system by loading an $\alpha$-machine with the image created in the previous step.
-
-This approach has two desirable characteristics.
-First, the virtual machine facilitates a separation of concerns between syntax and operational semantics.
-The issues of compilation and execution can be divided by the interface provided by the virtual machine.
-Thus, we can focus on implementing an $\alpha$-machine without considering the high-level language used to encode component definitions.
-Similarly, we can focus on the translation of a high-level language for component definitions to the language of the virtual machine without considering the details of how the virtual machine is implemented.
-Second, writing a compiler for a virtual machine is often easier than writing a compiler for a physical machine.
-The target provided by a virtual machine is often at a higher-level of abstraction than a physical machine and can contain features and instructions that simplify or optimize certain tasks.
-%% For example, the Java virtual machine contains an instruction for creating new objects.
-A design based on a virtual machine will allow us to focus on the semantics of reactive programs instead of the complexities of processor architecture.
-
-\paragraph{Static system assumption.}
-To make implementation tractable, we will assume that the systems to be implemented have a static topology meaning that all reactive components are statically allocated.
-Both finite state and infinite state (subject to system resource limits) reactive components are permitted, but both the number and configurations of reactive components in a system are fixed.
-This is equivalent to systems that assume a fixed number of actors and is roughly equivalent to systems that assume a fixed number of threads.
-These assumptions are common in embedded and real-time systems due the combination of limited resources and a need for predictability.
-We also believe these assumptions are common in less constrained environments as the number of threads is often fixed by the design, e.g., only a fixed number of concurrent activities is needed, or the number of threads is limited by the number of available physical cores.
-Thus, even with the static system assumption, an implementation of the model is still applicable to many systems of interest.
-We leave implementation of extensions that facilitate the dynamic creation and binding of reactive components for future work.
-
-\section{Programming Language}
-Describe the reactive/transformational split and dismiss the transformational.
-Assignment.
-Describe how actions, reactions, etc. appear in the language.
-Enforcing the immutable/mutable phase split.
-
-\section{Semantic Checking}
-Describe the algorithms used to enforce the semantics of reactive components.
-\begin{enumerate}
-\item Enumerate instances
-\item Enumerate bindings
-\item Enumerate concrete actions
-\item Check for non-determinism
-\item Check that all pull ports are satisfied
-\end{enumerate}
-
-\section{Runtime}
-Activations
-Scheduler
-Garbage collector should be deferred to advance features
-
-
-
-\section{BEGINNING OF UNADOPTED MATERIAL FROM PROPOSAL}
-
-\paragraph{Compilation.}
-To facilitate a design and development process based on composition and decomposition, we require a high-level language that resembles the model and examples presented in section~\ref{model}.
-The goal of the compiler, then, is to translate the high-level language to the language of the $\alpha$-machine.
-%% Complication typically consists of five phases corresponding to scanning, parsing, semantic analysis, optimization, and code generation.
-In addition to conventional semantic analysis, e.g., type checking, the compiler will check that the reactive system is well-defined and provide a concurrency analysis to be used during scheduling.
-%% Optimization is beyond the scope of this research.
-
-Substitutional equivalence provides the logical foundation for testing well-definedness.
-A system is represented as a top-level reactive component.
-The input and output ports original to the top-level component can be converted to internal ports since the top-level component does not need an external interface.
-Substitutional equivalence allows the declarations of member components to be replaced with their definitions according to the procedure outlined in section~\ref{model}.
-This process can be repeated until all member components are ``inlined'' resulting in a top-level component that only contains state variables, internal ports, $\alpha$-statements, $\beta$-statements, and $\gamma$-statements.
-At this point, all internal ports, $\gamma$-statements, and $\beta$-statements can be eliminated by substituting definitions.
-The resulting top-level component only contains state variables and $\alpha$-statements.
-To be a faithful implementation of the model, each $\alpha$-statement must be a deterministic state transformation.
-The main challenge, then, lies in the co-design of a transformational language and checks for deterministic assignment.
-
-At a high level, we desire to treat the transformation specified by an $\alpha$-statement as a function that maps a value representing the current state to a value representing the next state because it leads to a simple decidable check.
-An $\alpha$-statement then consists of five parts:  a precondition list, a precondition function, an assignment list, an argument list, and an effect function.
-The precondition list and argument list are lists of readable objects that form the arguments of the precondition function and effect function, respectively.
-The assignment list is a list of writable objects that are assigned the values produced by the effect function (state variables that are not named in the assignment list retain their previous values and ports that are not named in the assignment list are undefined).
-There is no notion of state or assignment inside the effect function, which thus resembles a pure functional or applicative program.
-A conservative but decidable check, then, is to ensure that a writable object appears at most once in the assignment list.
-
-%%Another concept implicit in the semantics of functional languages and their data structures is freedom from aliasing.
-The approach outlined above hinges on the semantics of writable objects.
-We define a writable object to be the name for an implied set of storage locations.
-All elements in the set of storage locations for a scalar variable are updated in an assignment to the variable.
-In contrast, only a subset of the set of storage locations for aggregate variables such as arrays and records may be updated in an assignment.
-Variables can also name linked data structures where the set of locations is the transitive closure of a points-to analysis~\cite{hind2001pointer}.
-
-For well-definedness, we require that the implied sets of storage locations for all writable objects be disjoint.
-Thus, an assignment to two different variables in an $\alpha$-statement cannot update the same memory location.
-The challenge then is to show that this condition holds initially and that it holds after the execution of each $\alpha$-statement.
-This is the subject of pointer analysis~\cite{hind2001pointer} which is undecidable in general.
-Components that communicate by passing data by reference as opposed to by value obviously violate this condition since multiple components may then reference the same memory locations.
-Thus, data passed by reference through ports must have semantics that prevent concurrent updates, e.g., constant (read-only), copy-on-write, etc.
-The goal then is to place appropriate restrictions on the language so as to make pointer analysis feasible and enable the safe sharing of data across ports.
-
-To achieve the general approach outlined above, an approach to persistent data structures~\cite{driscoll1989making} and copy elimination~\cite{gopinath1989copy} is needed.
-A persistent data structure is one in which updates and queries can be made to any version, e.g., lists in LISP, Scheme, Haskell, etc.
-Persistent data structures match the semantics of existing functional programming languages since they allow variables to be treated as immutable values.
-In contrast, an ephemeral data structure is one in which updates and queries can only be to the most recent version.
-Ephemeral data structures are common in imperative languages and typically have simpler designs~\cite{okasaki1999purely}.
-Copy elimination attempts to replace copying with in-place modification when it can be shown that the old value of a variable is no longer needed.
-Copy elimination is often used for large aggregate data structures, e.g., arrays, that resist efficient persistent implementations.
-
-An approach that to our knowledge has not been attempted is to restrict a functional language solely to ephemeral data structures.
-We define an \emph{ephemeral function} to be a function with an implementation (i.e., \emph{schedule of operations}) that allows all data structures to be treated as ephemeral.
-This approach has the potential to be more efficient since variables may be updated without copying.
-Functions with no ephemeral schedule must explicitly introduce copying, which is beneficial since it makes the developer aware of such potentially costly operations.
-Ephemeral functions may \emph{compose}, meaning that ephemerality may be established solely from the definition of a function and the signatures of any called functions.
-The challenge then is to develop an analysis to determine if a function is ephemeral and design the language of $\alpha$-statement transformations based on this analysis.
-
-The goal of concurrency analysis is to determine which $\alpha$-statements are independent and therefore can be executed concurrently.
-Using the formulation above, we associate with each $\alpha$-statement a set of objects given by forming the union of the precondition list, assignment list, and argument list (called the $\alpha$-statement's \emph{implied objects}).
-Two $\alpha$-statements are independent if their sets of implied objects are disjoint.
-
-%% One idea is to treat $\alpha$-statements as ``pure'' data-flow programs which have properties that are conducive to analysis.
-%% The structure present when compiling can also provide insights into the pointer analysis problem.
-%% For example, one could envision a heap-per-component strategy where each heap is considered as an extra variable.
-%% Passing a pointer through a port involves transferring the ownership of an object from one heap to another heap or set of heaps.
-%% Thus, the language might include two pointer types corresponding to the pointers ability to be passed to another component.
-%% This idea might be extended resulting in multiple heaps per component.
-
-%% To be a faithful implementation of the model, each $\alpha$-statement must be a deterministic state transformation.
-%% Thus, a compiler or verifier of $\alpha$-machine bytecode must be able to prove this property and the language of $\alpha$-statements must be designed around this constraint.
-%% A conservative but straightforward approach to proving determinism for variables in static storage is to check that a state variable is written at most once in all possible executions of an $\alpha$-statement.
-%% Existing techniques, e.g., control flow analysis, are adequate for this purpose.
-%% Proving determinism for variables allocated on the heap requires pointer analysis, e.g., shape analysis~\cite{larus1988detecting}, an area of ongoing research.
-%% Most likely, the language of $\alpha$-statements will need to be restricted to make pointer analysis feasible.
-
-%% A compiler for this language takes as input reactive components constituting the system and uses the aforementioned techniques based on substitutional equivalence and simplification to produce an $\alpha$-machine program.
-%% In addition to the aforementioned determinism check, the compiler should check for appropriate port usage, e.g., input ports are read while output ports are written, and port consistency (static versus dynamic).
-%% The additional structure present when compiling from a high-level language will be useful when reporting errors related to non-deterministic assignment statements, perhaps by indicating the error using the same information presented in the block diagram of figure~\ref{clocksys_component_graphic} or the $\alpha$-forest diagram of \ref{clocksys_component_alpha}.
-%% The compiler can also help in design as it can perform concurrency analysis which the developer might use to identify bottlenecks and reactive components or systems that are good candidates for redesign.
-
-
-%% The $\alpha$-machine processes a low-level language similar to Java bytecode.
-%% The reactive program given to an $\alpha$-machine lacks the structural elements, i.e., components, ports, $\beta$-statements, and $\gamma$-statements, needed to facilitate a design and development process based on composition and decomposition.
-
-%% We believe that the gross structure for reactive components presented in the examples of section~\ref{model} is adequate for structuring systems.
-%% The main challenge lies in the design of a transformational language that will facilitate the determinism checks.
-%% One idea is to treat $\alpha$-statements as ``pure'' data-flow programs which have properties that are conducive to analysis.
-%% The structure present when compiling can also provide insights into the pointer analysis problem.
-%% For example, one could envision a heap-per-component strategy where each heap is considered as an extra variable.
-%% Passing a pointer through a port involves transferring the ownership of an object from one heap to another heap or set of heaps.
-%% Thus, the language might include two pointer types corresponding to the pointers ability to be passed to another component.
-%% This idea might be extended resulting in multiple heaps per component.
-
-%% A system is represented as a top-level reactive component.
-%% Substitutional equivalence allows the declarations of member components to be replaced with their definitions according to the procedure outlined in section~\ref{formalization}.
-%% This process can be repeated until all member components are ``inlined'' resulting in a top-level component that only contains state variables.
-%% The input and output ports original to the top-level component can be converted to internal ports since the top-level component does not need an external interface.
-%% At this point, all internal ports, $\gamma$-statements, and $\beta$-statements can be eliminated by substituting definitions.
-%% The resulting top-level component only contains state variables and $\alpha$-statements.
-
-%% \begin{figure}
-%% {
-%% \input workflow.tex
-%% \centerline{\box\graph}
-%% }
-%% \caption{A compilation workflow for reactive components\label{workflow}}
-%% \end{figure}
-
-%% Figure~\ref{workflow} shows our proposed compilation workflow for reactive components.
-%% The goal of the workflow is to transla
-
-%% The workflow begins with the definition of the components and the designation (*) of one component as the top-level component that will represent the system.
-%% Substitutional equivalence allows the declarations of member components to be replaced with their definitions according to the procedure outlined in section~\ref{formalization}.
-%% This process can be repeated until all member components are ``inlined'' resulting in a top-level component that only contains state variables.
-%% The input and output ports original to the top-level component can be converted to internal ports since the top-level component does not need an external interface.
-%% At this point, all internal ports, $\gamma$-statements, and $\beta$-statements can be eliminated by substituting definitions.
-%% The resulting top-level component only contains state variables and $\alpha$-statements.
-
-%% The top-level component is then subjected to semantic analysis to determine if the system is well-defined.
-
-%% The final step of compilation generates an $\alpha$-machine image which contains static allocated variables, executable code for realizing the $\alpha$-statements, and schedule analysis indicating which $\alpha$-statements can be executed concurrently.
-%% The $\alpha$-machine image can then be instantiated to produce an executing instance of the reactive system.
-
-\paragraph{$\alpha$-machine.}
-We propose a virtual machine, called an $\alpha$-machine, capable of executing systems expressed as a single top-level component containing only state variables and $\alpha$-statements.
-An $\alpha$-machine has five parts:
-\begin{enumerate}
-\item The \emph{data section} contains all of the statically allocated state variables.
-\item The \emph{heap} contains dynamically allocated state variables.
-\item The \emph{program} contains the code necessary to implement the $\alpha$-statements.
-\item The \emph{stack} contains dynamic storage for function calls and expression evaluation.
-\item The \emph{scheduler} selects and executes $\alpha$-statements.
-\end{enumerate}
-For simplicity, we will limit the design to a stack-based machine since code generation for stack-based machines is straightforward.
-Our approach to dynamic allocation, garbage collection, etc. will be shaped by the transformational language used to encode $\alpha$-statements.
-
-
-%% \paragraph{Program.}
-%% To be a faithful implementation of the model, each $\alpha$-statement must be a deterministic state transformation.
-%% Thus, a compiler or verifier of $\alpha$-machine bytecode must be able to prove this property and the language of $\alpha$-statements must be designed around this constraint.
-%% A conservative but straightforward approach to proving determinism for variables in the data section is to check that a state variable is written at most once in all possible executions of an $\alpha$-statement.
-%% Existing techniques, e.g., control flow analysis, are adequate for this purpose.
-%% Proving determinism for variables allocated on the heap requires pointer analysis, e.g., shape analysis~\cite{larus1988detecting}, an area of ongoing research.
-%% Most likely, the language of $\alpha$-statements will need to be restricted to make pointer analysis feasible.
-
-%% \paragraph{Scheduler.}
-Of primary interest to this research is the scheduler.
-The scheduler selects $\alpha$-statements and executes them based on their preconditions.
-Furthermore, the scheduler must be fair meaning that it cannot indefinitely postpone the selection of an $\alpha$-statement.
-One way of measuring the efficiency of a scheduler is to compare the number of preconditions that evaluate to true to the total number of evaluated preconditions.
-Similarly, one could measure the time spent evaluating and reevaluating preconditions to the time spent evaluating effects.
-Schedulers can also be compared using other criteria such as responsiveness, fairness, cache-awareness, context-switches, etc.
-%% Using the pointer analysis techniques outlined above, one can also analyze the relationships between $\alpha$-statements to determine which $\alpha$-statements are independent meaning that they operate on disjoint sets of state variables (read and write).
-Independent $\alpha$-statements can be executed concurrently prompting the development of a concurrent $\alpha$-machine and concurrent schedulers.
-A concurrent scheduler should take advantage of the static structure latent in reactive components and the dynamic behavior of the system being executed when making scheduling decisions.
-
-%% \paragraph{Compilation.}
-%% The $\alpha$-machine processes a low-level language similar to Java bytecode or assembly language.
-%% The reactive program given to an $\alpha$-machine lacks the structural elements, i.e., components, ports, $\beta$-statements, and $\gamma$-statements, needed to facilitate a design and development process based on composition and decomposition.
-%% Thus, to make developing reactive programs easier, we also require a high-level language that more closely resembles the model and examples presented in section~\ref{model}.
-%% A compiler for this language takes as input reactive components constituting the system and uses the aforementioned techniques based on substitutional equivalence and simplification to produce an $\alpha$-machine program.
-%% In addition to the aforementioned determinism check, the compiler should check for appropriate port usage, e.g., input ports are read while output ports are written, and port consistency (static versus dynamic).
-%% The additional structure present when compiling from a high-level language will be useful when reporting errors related to non-deterministic assignment statements, perhaps by indicating the error using the same information presented in the block diagram of figure~\ref{clocksys_component_graphic} or the $\alpha$-forest diagram of \ref{clocksys_component_alpha}.
-%% The compiler can also help in design as it can perform concurrency analysis which the developer might use to identify bottlenecks and reactive components or systems that are good candidates for redesign.
-
-%% We believe that the gross structure for reactive components presented in the examples of section~\ref{model} is adequate for structuring systems.
-%% The main challenge lies in the design of a transformational language that will facilitate the determinism checks.
-%% One idea is to treat $\alpha$-statements as ``pure'' data-flow programs which have properties that are conducive to analysis.
-%% The structure present when compiling can also provide insights into the pointer analysis problem.
-%% For example, one could envision a heap-per-component strategy where each heap is considered as an extra variable.
-%% Passing a pointer through a port involves transferring the ownership of an object from one heap to another heap or set of heaps.
-%% Thus, the language might include two pointer types corresponding to the pointers ability to be passed to another component.
-%% This idea might be extended resulting in multiple heaps per component.
-
-\paragraph{Summary.}
-In this section, we have proposed to implement the model described in section~\ref{model} for systems with static topologies.
-We proposed to develop a virtual machine called an $\alpha$-machine that executes a reactive component consisting solely of state variables and $\alpha$-statements.
-The $\alpha$-machine will be a concurrent $\alpha$-machine.
-We also proposed to develop a high-level language for specifying reactive components and a compiler that translates the specifications into an $\alpha$-machine program.
-The main challenge is the design of the high-level language, which must be subject to an analysis for deterministic assignment.
 
 %% POSIX environment, possibly bare metal

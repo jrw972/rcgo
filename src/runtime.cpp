@@ -1026,9 +1026,21 @@ bool execute (executor_base_t& exec, component_t* instance, const decl::Action* 
   return false;
 }
 
+#ifdef PROFILE_LATENCY
+  FILE* latency_file;
+#endif
+
 bool execute_no_check (executor_base_t& exec, component_t* instance, const decl::Action* action, type::Int::ValueType iota)
 {
   assert (exec.stack ().empty ());
+
+#ifdef PROFILE_LATENCY
+  {
+    struct timespec ts;
+    clock_gettime (CLOCK_MONOTONIC, &ts);
+    fprintf (latency_file, "%s %ld.%09ld\n", action->name.c_str (), ts.tv_sec, ts.tv_nsec);
+  }
+#endif
 
   // Push the instance.
   exec.stack ().push_pointer (instance);

@@ -117,11 +117,6 @@ E.W. Dijkstra.
 \newblock Technical report, Technological University, Eindhoven, The
   Netherlands, September 1965.
 
-\bibitem{driscoll1989making}
-J.R. Driscoll, N.~Sarnak, D.D. Sleator, and R.E. Tarjan.
-\newblock Making data structures persistent.
-\newblock {\em Journal of computer and system sciences}, 38(1):86--124, 1989.
-
 \bibitem{Eswaran:1976:NCP:360363.360369}
 K.~P. Eswaran, J.~N. Gray, R.~A. Lorie, and I.~L. Traiger.
 \newblock The notions of consistency and predicate locks in a database system.
@@ -142,12 +137,6 @@ C.~Georgiou, N.~Lynch, P.~Mavrommatis, and J.A. Tauber.
 K.J. Goldman.
 \newblock Distributed algorithm simulation using input/output automata.
 \newblock Technical report, DTIC Document, 1990.
-
-\bibitem{gopinath1989copy}
-K.~Gopinath and J.L. Hennessy.
-\newblock Copy elimination in functional languages.
-\newblock In {\em Proceedings of the 16th ACM SIGPLAN-SIGACT symposium on
-  Principles of programming languages}, pages 303--314. ACM, 1989.
 
 \bibitem{GZH03}
 A.~Granicz, D.~Zimmerman, and J.~Hickey.
@@ -176,13 +165,6 @@ C.~Hewitt, P.~Bishop, and R.~Steiger.
 \newblock In {\em Proceedings of the 3rd international joint conference on
   Artificial intelligence}, pages 235--245. Morgan Kaufmann Publishers Inc.,
   1973.
-
-\bibitem{hind2001pointer}
-M.~Hind.
-\newblock Pointer analysis: haven't we solved this problem yet?
-\newblock In {\em Proceedings of the 2001 ACM SIGPLAN-SIGSOFT workshop on
-  Program analysis for software tools and engineering}, pages 54--61. ACM,
-  2001.
 
 \bibitem{hoare1978communicating}
 C.A.R. Hoare.
@@ -241,11 +223,6 @@ Z.~Manna and A.~Pnueli.
 R.~Milner.
 \newblock {\em A calculus of communicating systems}.
 \newblock Springer-Verlag New York, Inc., 1982.
-
-\bibitem{okasaki1999purely}
-C.~Okasaki.
-\newblock {\em Purely functional data structures}.
-\newblock Cambridge Univ Pr, 1999.
 
 \bibitem{ousterhout1996threads}
 J.~Ousterhout.

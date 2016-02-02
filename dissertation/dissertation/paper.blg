@@ -10,45 +10,45 @@ Warning--to sort, need author or key in go
 Warning--empty author and editor in 1983proceedings
 Warning--empty journal in armstrong1996concurrent
 Warning--can't use both volume and number fields in blumofe1995cilk
-You've used 62 entries,
+You've used 58 entries,
             2118 wiz_defined-function locations,
-            847 strings with 12205 characters,
-and the built_in function-call counts, 18717 in all, are:
-= -- 1869
-> -- 729
-< -- 15
-+ -- 310
-- -- 233
-* -- 1195
-:= -- 3067
-add.period$ -- 192
-call.type$ -- 62
-change.case$ -- 285
+            825 strings with 11581 characters,
+and the built_in function-call counts, 17260 in all, are:
+= -- 1716
+> -- 679
+< -- 13
++ -- 290
+- -- 217
+* -- 1109
+:= -- 2844
+add.period$ -- 178
+call.type$ -- 58
+change.case$ -- 266
 chr.to.int$ -- 0
-cite$ -- 69
-duplicate$ -- 773
-empty$ -- 1605
-format.name$ -- 233
-if$ -- 3973
+cite$ -- 65
+duplicate$ -- 706
+empty$ -- 1478
+format.name$ -- 217
+if$ -- 3646
 int.to.chr$ -- 0
-int.to.str$ -- 62
-missing$ -- 67
-newline$ -- 308
-num.names$ -- 118
-pop$ -- 366
+int.to.str$ -- 58
+missing$ -- 62
+newline$ -- 288
+num.names$ -- 110
+pop$ -- 338
 preamble$ -- 1
-purify$ -- 239
+purify$ -- 223
 quote$ -- 0
-skip$ -- 519
+skip$ -- 472
 stack$ -- 0
-substring$ -- 1121
-swap$ -- 150
-text.length$ -- 15
+substring$ -- 1023
+swap$ -- 128
+text.length$ -- 13
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 216
+type$ -- 202
 warning$ -- 7
-while$ -- 189
-width$ -- 64
-write$ -- 665
+while$ -- 173
+width$ -- 60
+write$ -- 620
 (There were 7 warnings)

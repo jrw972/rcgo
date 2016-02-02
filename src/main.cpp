@@ -182,6 +182,10 @@ main (int argc, char **argv)
       error (EXIT_FAILURE, 0, "unknown scheduler type '%s'", scheduler_type.c_str ());
     }
 
+#ifdef PROFILE_LATENCY
+  runtime::latency_file = fopen ("latency", "w");
+#endif
+
   scheduler->run (instance_table, 8 * 1024, thread_count);
 
   return 0;
