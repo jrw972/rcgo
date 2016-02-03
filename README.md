@@ -1,5 +1,6 @@
 # rc
 Reactive Components
 
-https://travis-ci.org/jrw972/rc.svg?branch=master
+[![Build Status](https://travis-ci.org/jrw972/rc.svg?branch=master)](https://travis-ci.org/jrw972/rc)
+
 
