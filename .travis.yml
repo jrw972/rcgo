@@ -1,15 +1,1 @@
 language: cpp
-
-compiler:
-  - gcc
-
-branches:
-  only:
-    - master
-
-before_script:
-  - ./configure
-
-script:
-  - make
-  - make check
