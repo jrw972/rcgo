@@ -8,8 +8,6 @@ branches:
     - master
 
 before_script:
-  - libtoolize
-  - autoreconf
   - ./configure
 
 script:
