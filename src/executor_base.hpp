@@ -21,7 +21,7 @@ private:
     : fd_ (fd)
   { }
   int const fd_;
-  friend executor_base_t;
+  friend class executor_base_t;
 };
 
 class executor_base_t
