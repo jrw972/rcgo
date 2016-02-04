@@ -18,6 +18,7 @@ AM_PROG_LEX()
 AC_PROG_YACC()
 
 # Checks for libraries.
+AC_SEARCH_LIBS([clock_gettime],[rt])
 
 # Checks for header files.
 
