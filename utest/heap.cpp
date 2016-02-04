@@ -6,13 +6,13 @@
 
 using namespace runtime;
 
-struct link
+struct Link
 {
   int value;
   Heap* heap;
-  link* next;
+  Link* next;
 
-  link () : heap (NULL), next (NULL) { }
+  Link () : heap (NULL), next (NULL) { }
 };
 
 bool BlockSorter (const Block* x, const Block* y)
@@ -26,24 +26,24 @@ main (int argc, char** argv)
   Tap tap;
 
   {
-    link root;
-    Heap* h = new Heap (&root, sizeof (link));
+    Link root;
+    Heap* h = new Heap (&root, sizeof (Link));
     tap.tassert ("Heap::Heap root is root", h->root () == &root);
     tap.tassert ("Heap::Heap root not in heap", h->contains (&root) == false);
     delete h;
   }
 
   {
-    link root;
-    Heap* h = new Heap (&root, sizeof (link));
+    Link root;
+    Heap* h = new Heap (&root, sizeof (Link));
     tap.tassert ("Heap::is_object NULL", h->is_object (NULL) == false);
     tap.tassert ("Heap::is_allocated NULL", h->is_allocated (NULL) == false);
     delete h;
   }
 
   {
-    Heap* h = new Heap (sizeof (link));
-    link* root = static_cast<link*> (h->root ());
+    Heap* h = new Heap (sizeof (Link));
+    Link* root = static_cast<Link*> (h->root ());
     tap.tassert ("Heap::Heap root is not null", root != NULL);
     tap.tassert ("Heap::Heap root is root", h->root () == root);
     tap.tassert ("Heap::Heap root in heap", h->contains (root) == true);
@@ -53,9 +53,9 @@ main (int argc, char** argv)
   }
 
   {
-    link root;
-    Heap* h = new Heap (&root, sizeof (link));
-    link* obj = static_cast<link*> (h->allocate (sizeof (link)));
+    Link root;
+    Heap* h = new Heap (&root, sizeof (Link));
+    Link* obj = static_cast<Link*> (h->allocate (sizeof (Link)));
     tap.tassert ("Heap::allocate not null", obj != NULL);
     tap.tassert ("Heap::allocate obj in heap", h->contains (obj) == true);
     tap.tassert ("Heap::allocate obj is object", h->is_object (obj) == true);
@@ -64,18 +64,18 @@ main (int argc, char** argv)
   }
 
   {
-    link root;
-    Heap* h = new Heap (&root, sizeof (link));
-    link* obj = static_cast<link*> (h->allocate (0));
+    Link root;
+    Heap* h = new Heap (&root, sizeof (Link));
+    Link* obj = static_cast<Link*> (h->allocate (0));
     tap.tassert ("Heap::allocate 0 -> NULL", obj == NULL);
     delete h;
   }
 
   {
-    link root;
-    Heap* h = new Heap (&root, sizeof (link));
-    link* obj1 = static_cast<link*> (h->allocate (sizeof (link)));
-    link* obj2 = static_cast<link*> (h->allocate (sizeof (link)));
+    Link root;
+    Heap* h = new Heap (&root, sizeof (Link));
+    Link* obj1 = static_cast<Link*> (h->allocate (sizeof (Link)));
+    Link* obj2 = static_cast<Link*> (h->allocate (sizeof (Link)));
     root.next = obj2;
     bool r = h->collect_garbage (true);
     tap.tassert ("Heap::collect_garbage was performed", r == true);
@@ -85,19 +85,19 @@ main (int argc, char** argv)
   }
 
   {
-    link root1;
-    Heap* h1 = new Heap (&root1, sizeof (link));
-    Heap* h2 = new Heap (sizeof (link));
+    Link root1;
+    Heap* h1 = new Heap (&root1, sizeof (Link));
+    Heap* h2 = new Heap (sizeof (Link));
     h1->insert_child (h2);
     tap.tassert ("Heap::collect_garbage of children", h1->collect_garbage ());
     delete h1;
   }
 
   {
-    link root1;
-    Heap* h1 = new Heap (&root1, sizeof (link));
-    Heap* h2 = new Heap (sizeof (link));
-    link* obj = static_cast<link*> (h2->allocate (sizeof (link)));
+    Link root1;
+    Heap* h1 = new Heap (&root1, sizeof (Link));
+    Heap* h2 = new Heap (sizeof (Link));
+    Link* obj = static_cast<Link*> (h2->allocate (sizeof (Link)));
     h1->merge (h2);
     tap.tassert ("Heap::merge obj in heap", h1->contains (obj) == true);
     tap.tassert ("Heap::merge obj is object", h1->is_object (obj) == true);
@@ -108,11 +108,11 @@ main (int argc, char** argv)
   }
 
   {
-    link root1;
-    Heap* h1 = new Heap (&root1, sizeof (link));
-    Heap* h2 = new Heap (sizeof (link));
-    link* root2 = static_cast<link*> (h2->root ());
-    link* obj = static_cast<link*> (h2->allocate (sizeof (link)));
+    Link root1;
+    Heap* h1 = new Heap (&root1, sizeof (Link));
+    Heap* h2 = new Heap (sizeof (Link));
+    Link* root2 = static_cast<Link*> (h2->root ());
+    Link* obj = static_cast<Link*> (h2->allocate (sizeof (Link)));
     root2->next = obj;
     h1->insert_child (h2);
     tap.tassert ("Heap::insert_child child heap inserted", h1->is_child (h2) == true);
@@ -130,10 +130,10 @@ main (int argc, char** argv)
   }
 
   {
-    link root1;
-    Heap* h1 = new Heap (&root1, sizeof (link));
-    Heap* h2 = new Heap (sizeof (link));
-    Heap* h3 = new Heap (sizeof (link));
+    Link root1;
+    Heap* h1 = new Heap (&root1, sizeof (Link));
+    Heap* h2 = new Heap (sizeof (Link));
+    Heap* h3 = new Heap (sizeof (Link));
     h1->insert_child (h2);
     h1->insert_child (h3);
     h2->remove_from_parent ();
@@ -144,22 +144,22 @@ main (int argc, char** argv)
   // Tests for better coverage.
   {
     // Collect garbage in children.
-    link root;
-    Heap* h = new Heap (&root, sizeof (link));
-    link* obj1 = static_cast<link*> (h->allocate (5 * sizeof (link)));
-    link* obj2 = static_cast<link*> (h->allocate (sizeof (link)));
+    Link root;
+    Heap* h = new Heap (&root, sizeof (Link));
+    Link* obj1 = static_cast<Link*> (h->allocate (5 * sizeof (Link)));
+    Link* obj2 = static_cast<Link*> (h->allocate (sizeof (Link)));
     root.next = obj2;
     h->collect_garbage (true);
-    obj1 = static_cast<link*> (h->allocate (sizeof (link)));
+    obj1 = static_cast<Link*> (h->allocate (sizeof (Link)));
     delete h;
   }
 
   {
     // Check structure with internal pointers.
-    link root;
-    Heap* h = new Heap (&root, sizeof (link));
-    link* obj1 = static_cast<link*> (h->allocate (5 * sizeof (link)));
-    link* obj2 = static_cast<link*> (h->allocate (sizeof (link)));
+    Link root;
+    Heap* h = new Heap (&root, sizeof (Link));
+    Link* obj1 = static_cast<Link*> (h->allocate (5 * sizeof (Link)));
+    Link* obj2 = static_cast<Link*> (h->allocate (sizeof (Link)));
     root.next = obj2;
     obj2->next = &obj1[2];
     h->collect_garbage (true);
