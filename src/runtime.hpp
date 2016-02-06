@@ -18,7 +18,7 @@ void
 initialize (executor_base_t& exec, composition::Instance* instance);
 
 #ifdef PROFILE_LATENCY
-  extern FILE* latency_file;
+extern FILE* latency_file;
 #endif
 
 // Returns true if the action is enabled.

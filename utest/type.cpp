@@ -190,6 +190,33 @@ main (int argc, char** argv)
   {
     tap.tassert ("Type::merge", named_int.merge_change () == NULL);
   }
+  {
+    tap.tassert ("type::are_identical - two named types true", are_identical (&named_int, &named_int));
+  }
+  {
+    tap.tassert ("type::are_identical - two named types false", !are_identical (&named_int, &named_float32));
+  }
+  {
+    tap.tassert ("type::are_identical - named, unnamed", !are_identical (&named_int, named_int.UnderlyingType ()));
+  }
+  {
+    tap.tassert ("type::are_identical - array same type same length", are_identical (named_int.get_array (3), named_int.get_array (3)));
+  }
+  {
+    tap.tassert ("type::are_identical - array same type different length", !are_identical (named_int.get_array (3), named_int.get_array (4)));
+  }
+  {
+    tap.tassert ("type::are_identical - array different type same length", !are_identical (named_int.get_array (3), named_float32.get_array (3)));
+  }
+  {
+    tap.tassert ("type::are_identical - array different type different length", !are_identical (named_int.get_array (3), named_float32.get_array (4)));
+  }
+  {
+    tap.tassert ("type::are_identical - slice same type", are_identical (named_int.get_slice (), named_int.get_slice ()));
+  }
+  {
+    tap.tassert ("type::are_identical - slice different type", !are_identical (named_int.get_slice (), named_float32.get_slice ()));
+  }
 
   tap.print_plan ();
 

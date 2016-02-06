@@ -6,7 +6,8 @@
 
 using namespace decl;
 
-struct MockOperation : public runtime::Operation {
+struct MockOperation : public runtime::Operation
+{
   MockOperation ()
     : was_executed (false)
   { }
@@ -21,11 +22,15 @@ struct MockOperation : public runtime::Operation {
   bool was_executed;
 };
 
-struct MockExecutor : public runtime::executor_base_t {
+struct MockExecutor : public runtime::executor_base_t
+{
   MockExecutor ()
     : executor_base_t (0, NULL)
   { }
-  virtual runtime::Heap* heap () const { return NULL; }
+  virtual runtime::Heap* heap () const
+  {
+    return NULL;
+  }
   virtual void heap (runtime::Heap* heap) { }
   virtual void push () { }
 };

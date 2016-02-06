@@ -17,7 +17,7 @@ main (int argc, char** argv)
     tap.tassert ("MemoryModel::MemoryModel", mm.arguments_empty () && mm.locals_empty ());
   }
 
- {
+  {
     MemoryModel mm;
     ptrdiff_t ao = mm.arguments_offset ();
     mm.arguments_push (32);
@@ -26,7 +26,7 @@ main (int argc, char** argv)
     tap.tassert ("MemoryModel::arguments_push", mm.receiver_offset () == ao - 32);
   }
 
- {
+  {
     MemoryModel mm;
     ptrdiff_t lo = mm.locals_offset ();
     mm.locals_push (32);

@@ -177,7 +177,10 @@ struct Type
   const Type* merge_change () const;
 
 protected:
-  virtual Field* get_field_i (const std::string& name) const { return NULL; }
+  virtual Field* get_field_i (const std::string& name) const
+  {
+    return NULL;
+  }
 private:
   const Pointer* pointer_;
   const Slice* slice_;
@@ -2243,6 +2246,11 @@ struct visitor2 : public DefaultVisitor
     TYPE_NOT_REACHED (type);
   }
 
+  void visit (const Array& type2)
+  {
+    t (type1, type2);
+  }
+
   void visit (const Bool& type2)
   {
     t (type1, type2);
@@ -2519,7 +2527,7 @@ const Type*
 type_dereference (const Type* type);
 
 bool
-identical (const Type* x, const Type* y);
+are_identical (const Type* x, const Type* y);
 
 bool
 assignable (const Type* from, const semantic::Value& from_value, const Type* to);

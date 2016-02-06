@@ -1027,7 +1027,7 @@ bool execute (executor_base_t& exec, component_t* instance, const decl::Action* 
 }
 
 #ifdef PROFILE_LATENCY
-  FILE* latency_file;
+FILE* latency_file;
 #endif
 
 bool execute_no_check (executor_base_t& exec, component_t* instance, const decl::Action* action, type::Int::ValueType iota)
@@ -1597,7 +1597,7 @@ Append::instantiate (util::ErrorReporter& er,
   const type::Slice* st = type_cast<type::Slice> (slice_type->UnderlyingType ());
   if (st != NULL &&
       element_type->underlying_kind () != kError &&
-      !identical (st->Base (), element_type))
+      !are_identical (st->Base (), element_type))
     {
       er.func_expects_arg (location, "append", 2, st->Base (), element_type);
     }
@@ -2955,7 +2955,7 @@ static Operation* make_conversion1 (Operation* c, const type::Type* to)
 
 Operation* make_conversion (Operation* c, const type::Type* from, const type::Type* to)
 {
-  if (identical (from->UnderlyingType (), to->UnderlyingType ()))
+  if (are_identical (from->UnderlyingType (), to->UnderlyingType ()))
     {
       return c;
     }
@@ -2963,7 +2963,7 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
            to->Level () == type::Type::UNNAMED &&
            from->underlying_kind () == kPointer &&
            to->underlying_kind () == kPointer &&
-           identical (from->pointer_base_type (), to->pointer_base_type ()))
+           are_identical (from->pointer_base_type (), to->pointer_base_type ()))
     {
       UNIMPLEMENTED;
     }

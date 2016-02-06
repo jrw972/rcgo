@@ -368,12 +368,13 @@ struct IdenticalImpl
 
   void operator() (const Array& type1, const Array& type2)
   {
-    UNIMPLEMENTED;
+    retval = are_identical (type1.Base (), type2.Base ()) &&
+             type1.dimension == type2.dimension;
   }
 
   void operator() (const Slice& type1, const Slice& type2)
   {
-    retval = identical (type1.Base (), type2.Base ());
+    retval = are_identical (type1.Base (), type2.Base ());
   }
 
   void operator() (const Struct& type1, const Struct& type2)
@@ -403,7 +404,7 @@ struct IdenticalImpl
         const ParameterSymbol* y_parameter = type2.At (idx);
         const Type* y_parameter_type = y_parameter->type;
 
-        if (!identical (x_parameter_type, y_parameter_type))
+        if (!are_identical (x_parameter_type, y_parameter_type))
           {
             return;
           }
@@ -415,8 +416,8 @@ struct IdenticalImpl
   void operator() (const Function& type1, const Function& type2)
   {
     retval =
-      identical (type1.GetSignature (), type2.GetSignature ()) &&
-      identical (type1.GetReturnParameter ()->type, type2.GetReturnParameter ()->type);
+      are_identical (type1.GetSignature (), type2.GetSignature ()) &&
+      are_identical (type1.GetReturnParameter ()->type, type2.GetReturnParameter ()->type);
   }
 
   // TODO:  Interfaces
@@ -437,7 +438,7 @@ struct IdenticalImpl
 };
 
 bool
-identical (const Type* x, const Type* y)
+are_identical (const Type* x, const Type* y)
 {
   if ((x == &named_uint8 && y == &named_byte) ||
       (x == &named_byte &&  y == &named_uint8))
@@ -1057,12 +1058,12 @@ assignable (const Type* from, const Value& from_value, const Type* to)
       return false;
     }
 
-  if (identical (from, to))
+  if (are_identical (from, to))
     {
       return true;
     }
 
-  if (identical (from->UnderlyingType (), to->UnderlyingType ()) &&
+  if (are_identical (from->UnderlyingType (), to->UnderlyingType ()) &&
       (from->Level () != Type::NAMED || to->Level () != Type::NAMED))
     {
       return true;

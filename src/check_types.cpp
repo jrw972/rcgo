@@ -197,7 +197,7 @@ static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* 
 
   require_variable (reaction_node);
 
-  if (!identical (push_port_type->GetSignature (), reaction_type->signature))
+  if (!are_identical (push_port_type->GetSignature (), reaction_type->signature))
     {
       error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                      "cannot bind %s to %s (E40)", push_port_type->to_string ().c_str (), reaction_type->to_string ().c_str ());
@@ -1106,7 +1106,7 @@ struct Visitor : public ast::DefaultVisitor
           {
             // Okay.
           }
-        else if (identical (from->UnderlyingType (), to->UnderlyingType ()))
+        else if (are_identical (from->UnderlyingType (), to->UnderlyingType ()))
           {
             // Okay.
           }
@@ -1114,7 +1114,7 @@ struct Visitor : public ast::DefaultVisitor
                  to->Level () == type::Type::UNNAMED &&
                  from->underlying_kind () == kPointer &&
                  to->underlying_kind () == kPointer &&
-                 identical (from->pointer_base_type (), to->pointer_base_type ()))
+                 are_identical (from->pointer_base_type (), to->pointer_base_type ()))
           {
             // Okay.
           }
@@ -2011,7 +2011,7 @@ done:
     require_variable (node.right);
 
     type::Function g (type::Function::FUNCTION, getter_type->signature, getter_type->return_parameter);
-    if (!identical (pull_port_type, &g))
+    if (!are_identical (pull_port_type, &g))
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "cannot bind %s to %s (E191)", pull_port_type->to_string ().c_str (), getter_type->to_string ().c_str ());
