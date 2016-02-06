@@ -26,6 +26,8 @@ AC_SEARCH_LIBS([clock_gettime],[rt])
 
 # Checks for library functions.
 
+AC_LCOV()
+
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  ftest/Makefile

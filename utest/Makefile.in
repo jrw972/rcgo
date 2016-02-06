@@ -86,10 +86,10 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/build-aux/depcomp \
 	$(top_srcdir)/build-aux/test-driver
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/lcov.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -99,31 +99,53 @@ CONFIG_CLEAN_VPATH_FILES =
 am__EXEEXT_1 = action$(EXEEXT) arch$(EXEEXT) heap$(EXEEXT) \
 	error_reporter$(EXEEXT) memory_model$(EXEEXT) \
 	reaction$(EXEEXT) type$(EXEEXT)
-am_action_OBJECTS = action.$(OBJEXT)
+am_action_OBJECTS = action-action.$(OBJEXT)
 action_OBJECTS = $(am_action_OBJECTS)
 action_DEPENDENCIES = $(top_builddir)/src/librc.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-am_arch_OBJECTS = arch.$(OBJEXT)
+action_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(action_CXXFLAGS) \
+	$(CXXFLAGS) $(action_LDFLAGS) $(LDFLAGS) -o $@
+am_arch_OBJECTS = arch-arch.$(OBJEXT)
 arch_OBJECTS = $(am_arch_OBJECTS)
 arch_DEPENDENCIES = $(top_builddir)/src/librc.la
-am_error_reporter_OBJECTS = error_reporter.$(OBJEXT)
+arch_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(arch_CXXFLAGS) \
+	$(CXXFLAGS) $(arch_LDFLAGS) $(LDFLAGS) -o $@
+am_error_reporter_OBJECTS = error_reporter-error_reporter.$(OBJEXT)
 error_reporter_OBJECTS = $(am_error_reporter_OBJECTS)
 error_reporter_DEPENDENCIES = $(top_builddir)/src/librc.la
-am_heap_OBJECTS = heap.$(OBJEXT)
+error_reporter_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(error_reporter_CXXFLAGS) $(CXXFLAGS) \
+	$(error_reporter_LDFLAGS) $(LDFLAGS) -o $@
+am_heap_OBJECTS = heap-heap.$(OBJEXT)
 heap_OBJECTS = $(am_heap_OBJECTS)
 heap_DEPENDENCIES = $(top_builddir)/src/librc.la
-am_memory_model_OBJECTS = memory_model.$(OBJEXT)
+heap_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(heap_CXXFLAGS) \
+	$(CXXFLAGS) $(heap_LDFLAGS) $(LDFLAGS) -o $@
+am_memory_model_OBJECTS = memory_model-memory_model.$(OBJEXT)
 memory_model_OBJECTS = $(am_memory_model_OBJECTS)
 memory_model_DEPENDENCIES = $(top_builddir)/src/librc.la
-am_reaction_OBJECTS = reaction.$(OBJEXT)
+memory_model_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(memory_model_CXXFLAGS) \
+	$(CXXFLAGS) $(memory_model_LDFLAGS) $(LDFLAGS) -o $@
+am_reaction_OBJECTS = reaction-reaction.$(OBJEXT)
 reaction_OBJECTS = $(am_reaction_OBJECTS)
 reaction_DEPENDENCIES = $(top_builddir)/src/librc.la
-am_type_OBJECTS = type.$(OBJEXT)
+reaction_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(reaction_CXXFLAGS) \
+	$(CXXFLAGS) $(reaction_LDFLAGS) $(LDFLAGS) -o $@
+am_type_OBJECTS = type-type.$(OBJEXT)
 type_OBJECTS = $(am_type_OBJECTS)
 type_DEPENDENCIES = $(top_builddir)/src/librc.la
+type_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(type_CXXFLAGS) \
+	$(CXXFLAGS) $(type_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -421,6 +443,8 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+COVERAGE_CXXFLAGS = @COVERAGE_CXXFLAGS@
+COVERAGE_LDFLAGS = @COVERAGE_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
@@ -539,18 +563,32 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver
 AM_CXXFLAGS = -I $(top_srcdir)/src
 action_SOURCES = action.cpp tap.hpp
 action_LDADD = $(top_builddir)/src/librc.la
+action_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+action_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 arch_SOURCES = arch.cpp tap.hpp
 arch_LDADD = $(top_builddir)/src/librc.la
+arch_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+arch_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 heap_SOURCES = heap.cpp tap.hpp
 heap_LDADD = $(top_builddir)/src/librc.la
+heap_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+heap_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 error_reporter_SOURCES = error_reporter.cpp tap.hpp
 error_reporter_LDADD = $(top_builddir)/src/librc.la
+error_reporter_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+error_reporter_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 memory_model_SOURCES = memory_model.cpp tap.hpp
 memory_model_LDADD = $(top_builddir)/src/librc.la
+memory_model_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+memory_model_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 reaction_SOURCES = reaction.cpp tap.hpp
 reaction_LDADD = $(top_builddir)/src/librc.la
+reaction_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+reaction_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 type_SOURCES = type.cpp tap.hpp
 type_LDADD = $(top_builddir)/src/librc.la
+type_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+type_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -597,31 +635,31 @@ clean-checkPROGRAMS:
 
 action$(EXEEXT): $(action_OBJECTS) $(action_DEPENDENCIES) $(EXTRA_action_DEPENDENCIES) 
 	@rm -f action$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(action_OBJECTS) $(action_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(action_LINK) $(action_OBJECTS) $(action_LDADD) $(LIBS)
 
 arch$(EXEEXT): $(arch_OBJECTS) $(arch_DEPENDENCIES) $(EXTRA_arch_DEPENDENCIES) 
 	@rm -f arch$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(arch_OBJECTS) $(arch_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(arch_LINK) $(arch_OBJECTS) $(arch_LDADD) $(LIBS)
 
 error_reporter$(EXEEXT): $(error_reporter_OBJECTS) $(error_reporter_DEPENDENCIES) $(EXTRA_error_reporter_DEPENDENCIES) 
 	@rm -f error_reporter$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(error_reporter_OBJECTS) $(error_reporter_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(error_reporter_LINK) $(error_reporter_OBJECTS) $(error_reporter_LDADD) $(LIBS)
 
 heap$(EXEEXT): $(heap_OBJECTS) $(heap_DEPENDENCIES) $(EXTRA_heap_DEPENDENCIES) 
 	@rm -f heap$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(heap_OBJECTS) $(heap_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(heap_LINK) $(heap_OBJECTS) $(heap_LDADD) $(LIBS)
 
 memory_model$(EXEEXT): $(memory_model_OBJECTS) $(memory_model_DEPENDENCIES) $(EXTRA_memory_model_DEPENDENCIES) 
 	@rm -f memory_model$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(memory_model_OBJECTS) $(memory_model_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(memory_model_LINK) $(memory_model_OBJECTS) $(memory_model_LDADD) $(LIBS)
 
 reaction$(EXEEXT): $(reaction_OBJECTS) $(reaction_DEPENDENCIES) $(EXTRA_reaction_DEPENDENCIES) 
 	@rm -f reaction$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(reaction_OBJECTS) $(reaction_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(reaction_LINK) $(reaction_OBJECTS) $(reaction_LDADD) $(LIBS)
 
 type$(EXEEXT): $(type_OBJECTS) $(type_DEPENDENCIES) $(EXTRA_type_DEPENDENCIES) 
 	@rm -f type$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(type_OBJECTS) $(type_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(type_LINK) $(type_OBJECTS) $(type_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -629,13 +667,13 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/action.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arch.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/error_reporter.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/heap.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory_model.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reaction.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/type.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/action-action.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arch-arch.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/error_reporter-error_reporter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/heap-heap.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory_model-memory_model.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reaction-reaction.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/type-type.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -657,6 +695,104 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
+
+action-action.o: action.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(action_CXXFLAGS) $(CXXFLAGS) -MT action-action.o -MD -MP -MF $(DEPDIR)/action-action.Tpo -c -o action-action.o `test -f 'action.cpp' || echo '$(srcdir)/'`action.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/action-action.Tpo $(DEPDIR)/action-action.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='action.cpp' object='action-action.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(action_CXXFLAGS) $(CXXFLAGS) -c -o action-action.o `test -f 'action.cpp' || echo '$(srcdir)/'`action.cpp
+
+action-action.obj: action.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(action_CXXFLAGS) $(CXXFLAGS) -MT action-action.obj -MD -MP -MF $(DEPDIR)/action-action.Tpo -c -o action-action.obj `if test -f 'action.cpp'; then $(CYGPATH_W) 'action.cpp'; else $(CYGPATH_W) '$(srcdir)/action.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/action-action.Tpo $(DEPDIR)/action-action.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='action.cpp' object='action-action.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(action_CXXFLAGS) $(CXXFLAGS) -c -o action-action.obj `if test -f 'action.cpp'; then $(CYGPATH_W) 'action.cpp'; else $(CYGPATH_W) '$(srcdir)/action.cpp'; fi`
+
+arch-arch.o: arch.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arch_CXXFLAGS) $(CXXFLAGS) -MT arch-arch.o -MD -MP -MF $(DEPDIR)/arch-arch.Tpo -c -o arch-arch.o `test -f 'arch.cpp' || echo '$(srcdir)/'`arch.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/arch-arch.Tpo $(DEPDIR)/arch-arch.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='arch.cpp' object='arch-arch.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arch_CXXFLAGS) $(CXXFLAGS) -c -o arch-arch.o `test -f 'arch.cpp' || echo '$(srcdir)/'`arch.cpp
+
+arch-arch.obj: arch.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arch_CXXFLAGS) $(CXXFLAGS) -MT arch-arch.obj -MD -MP -MF $(DEPDIR)/arch-arch.Tpo -c -o arch-arch.obj `if test -f 'arch.cpp'; then $(CYGPATH_W) 'arch.cpp'; else $(CYGPATH_W) '$(srcdir)/arch.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/arch-arch.Tpo $(DEPDIR)/arch-arch.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='arch.cpp' object='arch-arch.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arch_CXXFLAGS) $(CXXFLAGS) -c -o arch-arch.obj `if test -f 'arch.cpp'; then $(CYGPATH_W) 'arch.cpp'; else $(CYGPATH_W) '$(srcdir)/arch.cpp'; fi`
+
+error_reporter-error_reporter.o: error_reporter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(error_reporter_CXXFLAGS) $(CXXFLAGS) -MT error_reporter-error_reporter.o -MD -MP -MF $(DEPDIR)/error_reporter-error_reporter.Tpo -c -o error_reporter-error_reporter.o `test -f 'error_reporter.cpp' || echo '$(srcdir)/'`error_reporter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/error_reporter-error_reporter.Tpo $(DEPDIR)/error_reporter-error_reporter.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='error_reporter.cpp' object='error_reporter-error_reporter.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(error_reporter_CXXFLAGS) $(CXXFLAGS) -c -o error_reporter-error_reporter.o `test -f 'error_reporter.cpp' || echo '$(srcdir)/'`error_reporter.cpp
+
+error_reporter-error_reporter.obj: error_reporter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(error_reporter_CXXFLAGS) $(CXXFLAGS) -MT error_reporter-error_reporter.obj -MD -MP -MF $(DEPDIR)/error_reporter-error_reporter.Tpo -c -o error_reporter-error_reporter.obj `if test -f 'error_reporter.cpp'; then $(CYGPATH_W) 'error_reporter.cpp'; else $(CYGPATH_W) '$(srcdir)/error_reporter.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/error_reporter-error_reporter.Tpo $(DEPDIR)/error_reporter-error_reporter.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='error_reporter.cpp' object='error_reporter-error_reporter.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(error_reporter_CXXFLAGS) $(CXXFLAGS) -c -o error_reporter-error_reporter.obj `if test -f 'error_reporter.cpp'; then $(CYGPATH_W) 'error_reporter.cpp'; else $(CYGPATH_W) '$(srcdir)/error_reporter.cpp'; fi`
+
+heap-heap.o: heap.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(heap_CXXFLAGS) $(CXXFLAGS) -MT heap-heap.o -MD -MP -MF $(DEPDIR)/heap-heap.Tpo -c -o heap-heap.o `test -f 'heap.cpp' || echo '$(srcdir)/'`heap.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/heap-heap.Tpo $(DEPDIR)/heap-heap.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='heap.cpp' object='heap-heap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(heap_CXXFLAGS) $(CXXFLAGS) -c -o heap-heap.o `test -f 'heap.cpp' || echo '$(srcdir)/'`heap.cpp
+
+heap-heap.obj: heap.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(heap_CXXFLAGS) $(CXXFLAGS) -MT heap-heap.obj -MD -MP -MF $(DEPDIR)/heap-heap.Tpo -c -o heap-heap.obj `if test -f 'heap.cpp'; then $(CYGPATH_W) 'heap.cpp'; else $(CYGPATH_W) '$(srcdir)/heap.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/heap-heap.Tpo $(DEPDIR)/heap-heap.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='heap.cpp' object='heap-heap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(heap_CXXFLAGS) $(CXXFLAGS) -c -o heap-heap.obj `if test -f 'heap.cpp'; then $(CYGPATH_W) 'heap.cpp'; else $(CYGPATH_W) '$(srcdir)/heap.cpp'; fi`
+
+memory_model-memory_model.o: memory_model.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(memory_model_CXXFLAGS) $(CXXFLAGS) -MT memory_model-memory_model.o -MD -MP -MF $(DEPDIR)/memory_model-memory_model.Tpo -c -o memory_model-memory_model.o `test -f 'memory_model.cpp' || echo '$(srcdir)/'`memory_model.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/memory_model-memory_model.Tpo $(DEPDIR)/memory_model-memory_model.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='memory_model.cpp' object='memory_model-memory_model.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(memory_model_CXXFLAGS) $(CXXFLAGS) -c -o memory_model-memory_model.o `test -f 'memory_model.cpp' || echo '$(srcdir)/'`memory_model.cpp
+
+memory_model-memory_model.obj: memory_model.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(memory_model_CXXFLAGS) $(CXXFLAGS) -MT memory_model-memory_model.obj -MD -MP -MF $(DEPDIR)/memory_model-memory_model.Tpo -c -o memory_model-memory_model.obj `if test -f 'memory_model.cpp'; then $(CYGPATH_W) 'memory_model.cpp'; else $(CYGPATH_W) '$(srcdir)/memory_model.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/memory_model-memory_model.Tpo $(DEPDIR)/memory_model-memory_model.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='memory_model.cpp' object='memory_model-memory_model.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(memory_model_CXXFLAGS) $(CXXFLAGS) -c -o memory_model-memory_model.obj `if test -f 'memory_model.cpp'; then $(CYGPATH_W) 'memory_model.cpp'; else $(CYGPATH_W) '$(srcdir)/memory_model.cpp'; fi`
+
+reaction-reaction.o: reaction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(reaction_CXXFLAGS) $(CXXFLAGS) -MT reaction-reaction.o -MD -MP -MF $(DEPDIR)/reaction-reaction.Tpo -c -o reaction-reaction.o `test -f 'reaction.cpp' || echo '$(srcdir)/'`reaction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/reaction-reaction.Tpo $(DEPDIR)/reaction-reaction.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='reaction.cpp' object='reaction-reaction.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(reaction_CXXFLAGS) $(CXXFLAGS) -c -o reaction-reaction.o `test -f 'reaction.cpp' || echo '$(srcdir)/'`reaction.cpp
+
+reaction-reaction.obj: reaction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(reaction_CXXFLAGS) $(CXXFLAGS) -MT reaction-reaction.obj -MD -MP -MF $(DEPDIR)/reaction-reaction.Tpo -c -o reaction-reaction.obj `if test -f 'reaction.cpp'; then $(CYGPATH_W) 'reaction.cpp'; else $(CYGPATH_W) '$(srcdir)/reaction.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/reaction-reaction.Tpo $(DEPDIR)/reaction-reaction.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='reaction.cpp' object='reaction-reaction.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(reaction_CXXFLAGS) $(CXXFLAGS) -c -o reaction-reaction.obj `if test -f 'reaction.cpp'; then $(CYGPATH_W) 'reaction.cpp'; else $(CYGPATH_W) '$(srcdir)/reaction.cpp'; fi`
+
+type-type.o: type.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(type_CXXFLAGS) $(CXXFLAGS) -MT type-type.o -MD -MP -MF $(DEPDIR)/type-type.Tpo -c -o type-type.o `test -f 'type.cpp' || echo '$(srcdir)/'`type.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/type-type.Tpo $(DEPDIR)/type-type.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='type.cpp' object='type-type.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(type_CXXFLAGS) $(CXXFLAGS) -c -o type-type.o `test -f 'type.cpp' || echo '$(srcdir)/'`type.cpp
+
+type-type.obj: type.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(type_CXXFLAGS) $(CXXFLAGS) -MT type-type.obj -MD -MP -MF $(DEPDIR)/type-type.Tpo -c -o type-type.obj `if test -f 'type.cpp'; then $(CYGPATH_W) 'type.cpp'; else $(CYGPATH_W) '$(srcdir)/type.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/type-type.Tpo $(DEPDIR)/type-type.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='type.cpp' object='type-type.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(type_CXXFLAGS) $(CXXFLAGS) -c -o type-type.obj `if test -f 'type.cpp'; then $(CYGPATH_W) 'type.cpp'; else $(CYGPATH_W) '$(srcdir)/type.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

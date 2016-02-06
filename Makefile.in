@@ -92,10 +92,10 @@ DIST_COMMON = INSTALL NEWS README AUTHORS ChangeLog \
 	$(top_srcdir)/build-aux/missing \
 	$(top_srcdir)/build-aux/tap-driver.sh
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/lcov.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -214,6 +214,8 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+COVERAGE_CXXFLAGS = @COVERAGE_CXXFLAGS@
+COVERAGE_LDFLAGS = @COVERAGE_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
@@ -813,6 +815,27 @@ uninstall-am:
 
 .PHONY: test
 test: check
+
+@COVERAGE_TRUE@coverage:
+@COVERAGE_TRUE@	if ! [ -e src/parser.cpp ] ; then ln -s $(abs_top_srcdir)/src/parser.cpp src/parser.cpp ; fi
+@COVERAGE_TRUE@	if ! [ -e src/parser.y ] ; then ln -s $(abs_top_srcdir)/src/parser.y src/parser.y ; fi
+@COVERAGE_TRUE@	if ! [ -e src/scanner.cpp ] ; then ln -s $(abs_top_srcdir)/src/scanner.cpp src/scanner.cpp ; fi
+@COVERAGE_TRUE@	if ! [ -e src/scanner.l ] ; then ln -s $(abs_top_srcdir)/src/scanner.l src/scanner.l ; fi
+@COVERAGE_TRUE@	-rm -rf utest.info ftest.info html
+@COVERAGE_TRUE@	lcov --zerocounters --directory src --directory src/.libs
+@COVERAGE_TRUE@	cd utest && make check
+@COVERAGE_TRUE@	lcov --capture --directory src --directory src/.libs --output-file utest.info
+@COVERAGE_TRUE@	lcov --extract utest.info '*rc/*src/*' --output-file utest.filtered.info
+@COVERAGE_TRUE@	sed -i -e 's@$(abs_builddir)@$(realpath $(abs_top_srcdir))@g' utest.filtered.info
+@COVERAGE_TRUE@	genhtml -o html/utest utest.filtered.info
+@COVERAGE_TRUE@	lcov --zerocounters --directory src --directory src/.libs
+@COVERAGE_TRUE@	cd ftest && make check
+@COVERAGE_TRUE@	lcov --capture --directory src --directory src/.libs --output-file ftest.info
+@COVERAGE_TRUE@	lcov --extract ftest.info '*rc/*src/*' --output-file ftest.filtered.info
+@COVERAGE_TRUE@	sed -i -e 's@$(abs_builddir)@$(realpath $(abs_top_srcdir))@g' ftest.filtered.info
+@COVERAGE_TRUE@	genhtml -o html/ftest ftest.filtered.info
+@COVERAGE_TRUE@	@echo "file://$(PWD)/html/utest/index.html"
+@COVERAGE_TRUE@	@echo "file://$(PWD)/html/ftest/index.html"
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

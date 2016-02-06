@@ -2,6 +2,7 @@
 #define RC_SRC_HEAP_HPP
 
 #include "types.hpp"
+#include <config.h>
 
 namespace runtime
 {

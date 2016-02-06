@@ -636,6 +636,10 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+COVERAGE_FALSE
+COVERAGE_TRUE
+COVERAGE_LDFLAGS
+COVERAGE_CXXFLAGS
 YFLAGS
 YACC
 LEXLIB
@@ -776,6 +780,7 @@ enable_dependency_tracking
 with_gnu_ld
 with_sysroot
 enable_libtool_lock
+enable_lcov
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1425,6 +1430,7 @@ Optional Features:
   --disable-dependency-tracking
                           speeds up one-time build
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-lcov           enable code coverage with lcov
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -15395,6 +15401,41 @@ fi
 
 # Checks for library functions.
 
+
+  # Check whether --enable-lcov was given.
+if test "${enable_lcov+set}" = set; then :
+  enableval=$enable_lcov;
+fi
+
+
+  if test "x$enable_lcov" = "xyes"; then :
+
+
+
+    CXXFLAGS=`echo "$CXXFLAGS" | $SED -e 's/-O[0-9]*//g'`
+
+
+    COVERAGE_CXXFLAGS="--coverage"
+    COVERAGE_LDFLAGS="--coverage -lgcov"
+
+
+$as_echo "#define COVERAGE 1" >>confdefs.h
+
+
+
+
+fi
+
+   if test "x$enable_lcov" = "xyes"; then
+  COVERAGE_TRUE=
+  COVERAGE_FALSE='#'
+else
+  COVERAGE_TRUE='#'
+  COVERAGE_FALSE=
+fi
+
+
+
 ac_config_files="$ac_config_files Makefile src/Makefile ftest/Makefile utest/Makefile"
 
 cat >confcache <<\_ACEOF
@@ -15536,6 +15577,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCXX_TRUE}" && test -z "${am__fastdepCXX_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepCXX\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COVERAGE_TRUE}" && test -z "${COVERAGE_FALSE}"; then
+  as_fn_error $? "conditional \"COVERAGE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 

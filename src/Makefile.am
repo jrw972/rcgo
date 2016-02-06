@@ -2,10 +2,14 @@ EXTRA_DIST = scanner.l parser.y
 BUILT_SOURCES = scanner.hpp scanner.cpp parser.hpp parser.cpp
 
 scanner.hpp scanner.cpp: scanner.l
-	flex --header-file=scanner.hpp --outfile=scanner.cpp scanner.l
+	flex --header-file=$(srcdir)/scanner.hpp --outfile=$(srcdir)/scanner.cpp $(srcdir)/scanner.l
+	sed -i -e '/#line/ { s@\.\./@@g ; s@src/@@g  }' $(srcdir)/scanner.hpp
+	sed -i -e '/#line/ { s@\.\./@@g ; s@src/@@g  }' $(srcdir)/scanner.cpp
 
 parser.hpp parser.cpp: parser.y
-	bison --defines=parser.hpp --output=parser.cpp -v -d parser.y
+	bison --defines=$(srcdir)/parser.hpp --output=$(srcdir)/parser.cpp -v -d $(srcdir)/parser.y
+	sed -i -e '/#line/ { s@\.\./@@g ; s@src/@@g  }' $(srcdir)/parser.hpp
+	sed -i -e '/#line/ { s@\.\./@@g ; s@src/@@g  }' $(srcdir)/parser.cpp
 
 #AM_LFLAGS = --header=$(addsuffix .hpp,$(basename $@))
 #AM_YFLAGS = -v -d
@@ -34,6 +38,8 @@ types.hpp \
 util.hpp \
 yyparse.hpp yyparse.cpp
 rc_LDADD=librc.la
+rc_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+rc_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
 noinst_LTLIBRARIES=librc.la
 librc_la_SOURCES = action.hpp action.cpp \
@@ -58,3 +64,5 @@ symbol_visitor.hpp \
 type.hpp type.cpp \
 value.hpp value.cpp
 librc_la_LIBADD=-lpthread
+librc_la_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+librc_la_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
