@@ -64,10 +64,11 @@ main (int argc, char **argv)
         {"scheduler", required_argument, NULL, 's'},
         {"threads", required_argument, NULL, 't'},
         {"version", no_argument, NULL, 'v'},
+        {"srand", required_argument, NULL, 'r'},
         {0, 0, 0, 0}
       };
 
-      int c = getopt_long (argc, argv, "chvt:s:", long_options, NULL);
+      int c = getopt_long (argc, argv, "chvt:s:r:", long_options, NULL);
 
       if (c == -1)
         break;
@@ -87,6 +88,7 @@ main (int argc, char **argv)
                     "  -c, --composition            print composition analysis and exit\n"
                     "  -s SCHED, --scheduler=SCHED  select a scheduler (instance, partitioned)\n"
                     "  -t NUM, --threads=NUM        use NUM threads\n"
+                    "  -r NUM, --srand=NUM          initialize the random number generator with NUM\n"
                     "  --help                       display this help and exit\n"
                     "  --version                    display version information and exit\n"
                     "\n"
@@ -98,6 +100,9 @@ main (int argc, char **argv)
           break;
         case 't':
           thread_count = atoi (optarg);
+          break;
+        case 'r':
+          srand (atoi (optarg));
           break;
         case 'v':
           print_version ();
