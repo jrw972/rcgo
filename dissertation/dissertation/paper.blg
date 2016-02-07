@@ -3,6 +3,8 @@ Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
 The top-level auxiliary file: paper.aux
 The style file: plain.bst
 Database file #1: paper.bib
+Warning--string name "june" is undefined
+--line 843 of file paper.bib
 Warning--to sort, need author, editor, or key in 1983proceedings
 Warning--to sort, need author or key in cxx11
 Warning--to sort, need author or key in ioatoolkit
@@ -10,45 +12,45 @@ Warning--to sort, need author or key in go
 Warning--empty author and editor in 1983proceedings
 Warning--empty journal in armstrong1996concurrent
 Warning--can't use both volume and number fields in blumofe1995cilk
-You've used 58 entries,
+You've used 59 entries,
             2118 wiz_defined-function locations,
-            825 strings with 11581 characters,
-and the built_in function-call counts, 17260 in all, are:
-= -- 1716
-> -- 679
+            829 strings with 11670 characters,
+and the built_in function-call counts, 17557 in all, are:
+= -- 1748
+> -- 686
 < -- 13
-+ -- 290
-- -- 217
-* -- 1109
-:= -- 2844
-add.period$ -- 178
-call.type$ -- 58
-change.case$ -- 266
++ -- 293
+- -- 219
+* -- 1131
+:= -- 2893
+add.period$ -- 181
+call.type$ -- 59
+change.case$ -- 270
 chr.to.int$ -- 0
-cite$ -- 65
-duplicate$ -- 706
-empty$ -- 1478
-format.name$ -- 217
-if$ -- 3646
+cite$ -- 66
+duplicate$ -- 717
+empty$ -- 1505
+format.name$ -- 219
+if$ -- 3707
 int.to.chr$ -- 0
-int.to.str$ -- 58
-missing$ -- 62
-newline$ -- 288
-num.names$ -- 110
-pop$ -- 338
+int.to.str$ -- 59
+missing$ -- 63
+newline$ -- 293
+num.names$ -- 112
+pop$ -- 340
 preamble$ -- 1
-purify$ -- 223
+purify$ -- 226
 quote$ -- 0
-skip$ -- 472
+skip$ -- 479
 stack$ -- 0
-substring$ -- 1023
-swap$ -- 128
+substring$ -- 1053
+swap$ -- 129
 text.length$ -- 13
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 202
+type$ -- 206
 warning$ -- 7
-while$ -- 173
-width$ -- 60
-write$ -- 620
-(There were 7 warnings)
+while$ -- 177
+width$ -- 61
+write$ -- 631
+(There were 8 warnings)

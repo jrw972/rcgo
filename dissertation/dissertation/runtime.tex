@@ -1,21 +1,42 @@
 \chapter{Implementation \label{implementation}}
 
-In this chapter, we present an overview of an interpreter designed for the language presented in chapter~\ref{language}.
-The algorithm for checking composition, the implementation of activations, the implementation of heaps, and the scheduler are presented in detail.
+This chapter presents the algorithm for checking composition, the implementation of activations, the implementation of heaps, and the implementation of two schedulers for an interpreter designed for the language presented in chapter~\ref{language}.
 
-\paragraph{Interpreter organization.}
-The interpreter has an orthodox design consisting of a scanner, a parser, a sequence of semantic checks, a code generation phase, composition checks, and a execution phase.
-The scanner and parser are unremarkable.
+\paragraph{Interpreter organization and implementation.}
+The interpreter has an orthodox design consisting of a scanner, a parser, a sequence of semantic checks, a code generation phase, composition checks, and an execution phase.
+The interpretter is implemented in C++.
+Flex and Bison were used to implement the scanner and parser, respectively.
 The semantic checks include type checking and checks to support the enforcement of \verb+const+ and \verb+foreign+ intrinsic and dereference mutability.
 The implementation of these checks follow the requirements set forth in chapter~\ref{language}.
 The code generation phase converts the AST into a tree of stack operations.
 The execution phase begins by initializing the instances by calling the initializer associated with each instance.
 The scheduler then proceeds by selecting and executing actions with weak fairness.
+Scheduler implementations use the POSIX threads (pthreads) library for concurrent execution and synchronization.
 
 \section{Enforcing Sound Composition}
 
-In this section, we outline the algorithm for checking the composition semantics of reactive components.
-The algorithm leverages the static system assumption.
+\subsection{Background}
+
+This section outlines the algorithm for checking the composition semantics of reactive components.
+As described in chapter~\ref{model}, one of the goals for the reactive component model is to facilitate the construction of complex reactive systems by composition.
+The composition semantics of reactive components overcome the limitations of I/O automata and UNITY but introduce concurrency hazards that may result in systems that are not well defined.
+The two hazards to be avoided are non-deterministic transactions arising from the same state being updated by multiple transitions within the transaction and recursive transactions arising from cycles in composition.
+The goal of the composition check is to determine if a system is free of these hazards.
+
+The check for sound composition is a holistic problem.
+Ports facilitate third-party composition by being opaque meaning that the action or reaction activating a port cannot know or care about the state transitions executed as a result of activating the port.
+The state involved in a transaction is not known until the components are instantiated and the ports bound.
+Thus, the check for sound composition requires a complete understanding of the system.
+To this end, the algorithm described in this section leverages the static system assumption.
+We leave relaxing the static system assumption, which will require extending the model and proposed check, as future work.
+
+The language semantics of chapter~\ref{model} enforce a number of assumptions that allow the composition check to be formulated as set of simple graph- and set-theoretic problems.
+Activation statements are limited to the bodies of actions and reactions and port calls are limited to activation statements.
+Activation statements terminate the execution of an action or reaction meaning at most one will be called per action or reaction body.
+Thus, a transaction can be viewed as a directed graph where each node is an action or reaction and edges indicate that the source action or reaction activates the target reaction.
+With this graph in place, the state involved in a transaction can be deduced by treating the component instances as a proxies for their state variables by creating sets of instances and evaluating the sets for compatibility.
+
+\subsection{Algorithm Sketch}
 
 \paragraph{Enumerate instances and ports.}
 The first step to analyzing composition is to enumerate the components in the system.
@@ -28,39 +49,41 @@ Let $I$ be a component instance of type $T$.
 Associated with $T$ is a set of binders $B$.
 Each binder $b \in B$ is evaluated for $I$ to create a set of bindings.
 A binding either binds a push port to a reaction or a getter to a pull port.
-The result of this calculation is two functions.
+The result of enumerating the bindings is two tabular functions.
 The function $reactions: (I,Push) \to \{(I,Reaction)\}$ maps an instance/push port pair to a set of instance/reaction pairs.
-The function $getter: (I,Pull) \to \{(I,Getter)\}$ map an instance/pull port pair to a set of instance/getter pairs.
+The function $getter: (I,Pull) \to \{(I,Getter)\}$ maps an instance/pull port pair to a set of instance/getter pairs.
 
 \paragraph{Check bindings.}
 Inverting $reactions$ yields a function that maps an instance/reaction pair to a set of instance/push port pairs $reactions^{-1}: (I,Reaction) \to \{(I,Push)\}$.
-A reaction can be bound to at most one push port:
+The $reactions^{-1}$ function is used to ensure that a reaction is bound to one push port or not bound:
 \begin{displaymath}
 \forall (I,Reaction) : |reactions^{-1} (I,Reaction)| \leq 1
 \end{displaymath}
-A pull port must be bound to exactly one getter:
+The $getter$ function is used to ensure that a pull port is bound to exactly one getter:
 \begin{displaymath}
 \forall (I,Pull) : |getters (I,Pull)| = 1
 \end{displaymath}
 
-\paragraph{Enumerate concrete actions.}
+\paragraph{Enumerate transactions.}
 Let $I$ be a component instance of type $T$.
 Associated with $T$ is a set of actions $A$.
-Each action $a \in A$ is evaluated for $I$ to create a concrete action.
-A concrete action is a directed graph constructed as follows:
+Each action $a \in A$ is evaluated for $I$ to create a transaction.
+A \emph{transaction} is a directed graph constructed as follows:
 \begin{enumerate}
 \item The root is $(I,a)$.
 \item The descendants of the root are the activations in $a$.
 \item The descendants of the activations are the push ports named in each activation.
 \item The descendants of the push ports are the reactions bound to the push ports given by $reactions$.
-\item This process is the repeated for each instance/reaction leaf.
+\item This process is then repeated for each instance/reaction leaf.
 \end{enumerate}
-Figure~\ref{concrete_action} shows an example concrete action depicted as a tree.
+Figure~\ref{transaction} shows an example transaction.
 
 \begin{figure}
 \centering
 %%\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
+    arrowstyle/.style={draw, -stealth},
+    edge from parent/.style={draw, -stealth},
     reaction/.style={rectangle, draw, rounded corners=1mm, text width=2cm,
         text centered, anchor=north},
     activation/.style={rectangle, draw, rounded corners=1mm, dashed, text width=2cm,
@@ -85,7 +108,7 @@ Figure~\ref{concrete_action} shows an example concrete action depicted as a tree
       }
     }
     child {
-      node (Push02) [push] {Instance1 Push2}
+      node (Push02) [push] {Instance1 Push2\textdollar}
     }
   }
   child {
@@ -108,11 +131,11 @@ Figure~\ref{concrete_action} shows an example concrete action depicted as a tree
   }
 ;
 
-\draw (Activation02) -- (Push01);
+\draw[arrowstyle] (Activation02) -- (Push01);
 
 \end{tikzpicture}
 %%}%
-\caption{Example concrete action\label{concrete_action}}
+\caption{Example transaction\label{transaction}}
 \end{figure}
 
 \begin{figure}
@@ -173,26 +196,57 @@ Figure~\ref{concrete_action} shows an example concrete action depicted as a tree
 \caption{Example instance set calculation\label{instance_sets}}
 \end{figure}
 
-The first step in analyzing a concrete action is to ensure that the directed graph is acyclic.
-A cycle forms when a reaction activates itself through the set of concrete bindings or a getter calls itself.
-In the example, the Instance1/Push1 is activated by both Activation1 and Activation2.
+A recursive transaction is formed when a reaction activates itself through the set of bindings or a getter calls itself which appears as a cycle in the transaction graph.
+The interpreter contains an implementation of Tarjan's algorithm~\cite{tarjan1976} to detect cycles.
 
-The second step in analyzing a concrete action is to determine which activations mutate the state of a component.
+A non-deterministic transaction occurs when the same state is manipulated by multiple transitions.
+Thus, the interpreter must determine what state is manipulated in a transaction to determine if the constituent transitions are compatible.
+The interpreter uses a component instance as a proxy for its state variables and determines how the state is accessed in each transition.
+The possible access patterns include:
+\begin{description}
+  \item[WRITE] at least one state variable may be mutated (* in figure~\ref{transaction})
+  \item[READ] at least one state variable is accessed but no state variables are mutated
+  \item[NONE] no state variables are accessed
+\end{description}
 The current implementation uses a conservative static analysis of the body of an activate statement to determine if the activation mutates the state of the component.
-These activations are marked with an asterisk (*) in figure~\ref{concrete_action}.
+For composition analysis, state variable access need only be determined for the mutable phase.
+However, performing a parallel analysis for the immutable phase provides a complete description of state access in a transaction.
+State variable access is used by multi-threaded schedulers to determine which transactions can be executed in parallel.
 
-The third step is to compute a set of instances for each node in the concrete action.
-If the node is not an activation, the set of instances is the union of the instances of its children.
-If the node is an activation, the set of instances is the union of the instances of its children and the instance implied by the activation.
-Figure~\ref{instance_sets} shows the instance set calculation for the concrete action in figure~\ref{concrete_action}.
-The root shows that Instance1 does not change in at least one activation and may change in at least one activation, that Instance2 may change in every activation, and that Instance3 is ``read-only'' in this concrete action.
+The check for non-deterministic transactions continues by determining that all possible executions of a transaction are deterministic.
+This check is performed in two steps.
+First, a set of instances/access pairs is computed for each node in the transaction.
+If the node is not an activation, then the set of instances is the union of the instances of its children.
+If the node is an activation, then the set of instances is the union of the instances of its children and the instance implied by the activation excluding instances with NONE access.
+Figure~\ref{instance_sets} shows the instance set calculation for the transaction in figure~\ref{transaction}.
+The root shows that Instance1 does not change in at least one activation (Instance1) and may change in at least one activation (Instance1*), that Instance2 may change in every activation (Instance2*), and that Instance3 is read-only in this transaction (Instance3).
+The empty node in figure~\ref{instance_sets} comes from an unbound push port.
 
-The fourth step is to check that a mutated instance appears in at most one child node instance set for the activation and push port nodes.
-This check succeeds everywhere but Activation2 in figures~\ref{concrete_action}~and~\ref{instance_sets} as Instance2* appears in both children.
+The second step of the check for non-deterministic transactions is to verify that a mutated instance appears in at most one child node instance set for the activation and push port nodes.
+This check succeeds everywhere but Activation2 in figures~\ref{transaction}~and~\ref{instance_sets} as Instance2* appears in both children.
 The activation and push port nodes represent activities that will be performed together.
 That is, once control passes to an activation statement, all push ports and their bound reactions are activated.
 In contrast, activations, as children of action and reaction nodes, represent mutually exclusive alternatives, i.e., at most one activation statement is executed per action/reaction body.
-Thus, a mutated instance appearing in two or more children of an activation node or push port node indicates that the state of a component may be mutated in disparate ways leading to a non-deterministic state transition.
+Thus, a mutated instance appearing in two or more children of an activation node or push port node indicates that the state of a component may be mutated in disparate ways leading to a non-deterministic transaction.
+
+\paragraph{Complexity.}
+One of the goals of implementing reactive components was to determine if the check for non-determinism has a reasonably efficient implementation.
+Maintaining appropriate forward and reverse hash maps of the bindings allow the binding check to be performed in $O(N)$ time where $N$ is the number of ports in the system.
+Similarly, the construction of a transaction graph can be performed in $O(|N| + |V|)$ time where $|N|$ is the number of nodes in the transaction and $|V|$ is the number of edges.
+Proving that a transaction is acyclic can be performed in $O(|N| + |V|)$ where $|N|$ is the number of nodes and $|V|$ is the number of edges.
+
+A loose upper-bound on the complexity of the instance set calculation for the non-determinism check is $O(k |N|^2 \log (|N|))$ where $|N|$ represents the number of nodes in a transaction and $k$ represents the maximum branching factor in the transaction.
+The size of the instance set for the root is $|N|$.
+Assuming a naive set implementation, the complexity of computing the instance set for the root is $O(|N| \log (|N|))$.
+This must be repeated $k$ times for all nodes in the graph resulting in a final complexity of $O(k |N|^2 \log (|N|))$.
+
+A loose upper-bound on the complexity of the compatibility check for the non-determinism check is also $O(k |N|^2 \log (|N|))$.
+Assume that the size of the instance set at each node is $|N|$.
+A tree-based set lookup can be performed in $O(\log(|N|))$ time.
+The lookup must be performed $k |N|$ times by the parent.
+The lookup must repeated for each of the $|N|$ nodes for a combined complexity of $O(k |N|^2 \log (|N|))$.
+
+The complexity of these algorithms has not presented a problem in practice as most of the systems we have implemented have small numbers for $|N|$, $|V|$, and $k$.
 
 \section{Activations}
 
@@ -396,13 +450,24 @@ Between the frames are the push port arguments which are duplicated for the call
 If the push port had been bound to multiple reactions, then the reaction portion of the diagram would be replicated to match the number of bound reactions.
 If multiple push ports were activated by the activation statement, then additional push port arguments and reactions would appear on the stack.
 
+\paragraph{Calling convention efficiency.}
+The synchronized two-phase calling convention has the potential to be as efficient as function call and method call.
+The proposed calling convention can be implemented directly on modern hardware.
+Popular modern architectures like x86 and x86\_64 contain all of the registers and instructions necessary to support the synchronized two-phase calling convention.
+The synchronized two-phase calling convention relies solely on the stack which means that the underlying operating system must setup the stack, back it with memory pages, etc.
+More importantly, it avoids the overhead of heap allocation.
+Port calls resemble virtual method calls in that the reactions must be looked up before they can be executed.
+However, this lookup could be avoided by inlining the body of each reaction using the substitutional equivalence property.
+This could be performed prior to execution or during execution using just-in-time compilation techniques.
+
 \section{Heaps}
 
 In this section, we describe the implementation of the heap data type introduced in chapter~\ref{language} and our approach to garbage collection.
 Our approach to implementing dynamic memory allocation and garbage collection was shaped by the independence of state required by the semantics of reactive components.
 Thus, instead of relying on a single global heap, the implementation contains a heap for each component that can be garbage collected independently of the others.
+This independence allows garbage collection to be performed concurrently with other activities using simple, single-threaded algorithms.
 
-\paragraph{Blocks.}
+\paragraph{Slots and blocks.}
 A \emph{slot} is the smallest unit of memory that can be dynamically allocated.
 Typically, a slot is the size of two pointers.
 A \emph{block} is an extent of memory and a set of bits indicating the allocation status of each slot in the extent.
@@ -420,13 +485,13 @@ A block that is not marked, meaning that none of its slots were marked, is remov
 
 \paragraph{Heaps.}
 A \emph{heap} contains a root block, a list of unallocated chunks of memory (free list), and pointers to create a tree structure.
-When allocating an object from a heap, the heap attempts to find an adequate chunk using the free list using a first fit policy.
+When allocating an object from a heap, the heap attempts to find an adequate chunk using the free list using a first-fit policy.
 If this fails, the heap allocates a new block, inserts it into the tree and free list, and then allocates again using the newly inserted chunk.
 The sweep phase of the mark-and-sweep algorithm reconstructs the free list.
 
 As described in chapter~\ref{language}, every component has an associated heap.
-A heap of this kind is called an \emph{implicit heaps}.
-Heaps that are created via \verb+new+ and passed to \verb+move+, \verb+merge+, and \verb+change+ and called \emph{explicit heaps}.
+A heap of this kind is called an \emph{implicit heap}.
+Heaps that are created via \verb+new+ and passed to \verb+move+, \verb+merge+, and \verb+change+ are called \emph{explicit heaps}.
 All heaps have a distinguished root object.
 The marking phase of the mark-and-sweep algorithm is seeded with this root object.
 The root object of an implicit heap is the static component state of the component that owns the heap.
@@ -474,7 +539,7 @@ Thus, failing to \verb+merge+ and \verb+move+ heaps on the active stack prevents
 \node at (0,-2) {pointer to heap};
 \node [rectangle, draw] (hl) at (4,0) {0x90ABCDEF};
 \node at (4,-2) {heap link};
-\node [rectangle, draw] (heap) at (8,0) {0x0A1B2C3D};
+\node [rectangle, draw] (heap) at (8,0) {heap object};
 \node at (8,-2) {heap};
 \draw [->] (p1) -- (hl);
 \draw [->] (p2) -- (hl);
@@ -483,7 +548,7 @@ Thus, failing to \verb+merge+ and \verb+move+ heaps on the active stack prevents
 \draw [dashed] (6, -2) -- (6, 2);
 \end{tikzpicture}
 %%}%
-\caption{Example illustrating heap links\label{heap_link}.  The objects on the far left represent user-level pointers to heap.  The middle object is a heap link which contains the address of the child heap which appears on the far right.}
+\cprotect\caption{Example illustrating heap links\label{heap_link}.  The objects on the far left represent user-level pointers to heaps, e.g., \verb+* heap int+.  The middle object is a heap link which contains the address of the child heap which appears on the far right.}
 \end{figure}
 
 As illustrated in figure~\ref{heap_link}, a user-level pointer to a heap points to an object called a heap link which in turn points to a heap.
@@ -497,7 +562,7 @@ Unreachable heaps are pruned from the hierarchy during garbage collection.
 \paragraph{Embarrassingly parallel garbage collection.}
 Two features of reactive components permit concurrent garbage collection.
 First, the state of each reactive component is isolated which allows garbage collection to be performed on different components at the same time without conflict.
-Second, garbage collection can be framed as action to be executed by the scheduler.
+Second, garbage collection can be framed as an action to be executed by the scheduler.
 Thus, associated with each component is an action that invokes the garbage collector on the implicit and explicit heaps of the corresponding component.
 Furthermore, the action is considered to modify the state of the component which prevents all transactions involving the component from executing concurrently with the garbage collection action.
 We assume that the scheduler selects the garbage collection action often enough that no additional invocations of the garbage collector are necessary.
@@ -509,23 +574,25 @@ In our approach, such scanning is useless since the call stack is empty when exe
 
 A scheduler is responsible for selecting and executing transactions according to the weak fairness criteria set forth in chapter~\ref{model}.
 Of interest to us is the design and implementation of general-purpose multi-threaded schedulers that are capable of executing actions in parallel.
-The main inputs to a scheduler are the concrete instances $I$ and concrete actions $A$ enumerated by the composition analysis.
-The instance sets calculated for each concrete action are used in multi-threaded schedulers to avoid non-deterministic state transitions.
+The main inputs to a scheduler are the instances $I$ and transactions $A$ enumerated by the composition analysis.
+The instance sets calculated for each transaction are used in multi-threaded schedulers to avoid non-deterministic state transitions.
 We introduce some the issues when designing and implementing a scheduler for reactive components through a series of increasingly complex scheduler designs.
 The two concrete implementations described later will draw upon the designs of these schedulers.
+
+\subsection{Scheduler Design}
 
 \paragraph{Scheduler criteria.}
 A scheduler is \emph{fair} if it meets the weak-fairness criteria set forth in chapter~\ref{model}.
 A scheduler is \emph{safe} if it avoids conditions where one transaction is changing the state of the component while another transaction is reading or writing the same state.
 A scheduler is \emph{responsible} if it only terminates when the precondition for every action is false.
-Obviously, we are interesting in fair, safe, and responsible schedulers as these schedulers enforce the semantics of reactive components.
+Obviously, we are interested in fair, safe, and responsible schedulers as these schedulers enforce the semantics of reactive components.
 The final criteria for a scheduler is efficiency which typically refers to either the computational complexity or storage complexity associated with its operation.
 Of primary interest is the \emph{selection efficiency} or the amount of computation required for the scheduler to determine the next action to execute.
 
 \paragraph{Single-threaded round-robin scheduler.}
 Perhaps the simplest scheduler that can be implemented is a single-threaded round-robin scheduler.
 This design may be appropriate in the context of uniprocessor embedded systems with tight resource constraints.
-The scheduler repeatedly cycles through the list of concrete actions, evaluating the precondition of each action and executing the body if the precondition was true.
+The scheduler repeatedly cycles through the list of transactions, evaluating the precondition of each action and executing the body if the precondition was true.
 If no action is executed in a cycle, then the scheduler terminates.
 This scheduling algorithm is fair by virtue of the strict round-robin policy, safe from the fact that it is single-threaded, and responsible by definition.
 The selection efficiency of this algorithm is $O(|A|)$ as illustrated by a system where one action that is perpetually enabled while all of the other actions are perpetually disabled.
@@ -536,17 +603,17 @@ So, instead of cycling through the list of actions, this scheduler maintains a w
 At initialization time, the scheduler populates the queue by evaluating the precondition for all actions in the system.
 The scheduler then repeatedly takes an action from the queue, executes it, and then inserts any newly enabled actions.
 To find newly enabled actions, the scheduler uses the instance set generated during composition analysis.
-That is, after executing an action, the scheduler can then test all of the actions for the components in the instance set and add them to the queue if necessary.
+That is, after executing an action, the scheduler tests all of the actions for the components in the instance set and adds them to the queue if necessary.
 The scheduler terminates when the work queue is empty.
 This scheduling algorithm is fair if the work queue is processed in first-in first-out (FIFO) order, safe because the algorithm is single-threaded, and responsible since an empty work queue implies no action is enabled.
 
-The pathological scenario of the single-threaded round-robin scheduler applies to the scheduler so worst-case selection efficiency of the algorithm is $O(|A|)$.
+The pathological scenario of the single-threaded round-robin scheduler applies to this scheduler as well so the worst-case selection efficiency of the algorithm is $O(|A|)$.
 Assume that the most complex transaction in the system involves $c$ components and some component has a system maximum action count of $a$.
-In worst case, the scheduler must execute $c \times a$ preconditions for every action that it executes.
+In the worst case, the scheduler must execute $c \times a$ preconditions for every action that it executes.
 Thus, the overhead associated with this scheduler is related to the compositional structure of the system which it is executing.
 This overhead may be acceptable for systems where $c$ and $a$ are small or for systems whose average work queue size is small compared to the total number of actions in the system.
 This suggests that the average number of enabled actions compared to the total number of actions may be useful way to analyze systems and schedulers.
-For example, the single-threaded round-robin scheduler would be appropriate for a \emph{heavily enabled} system while the single-threaded with an action work queue would be appropriate for a \emph{lightly enabled} system.
+For example, the single-threaded round-robin scheduler would be appropriate for a \emph{heavily enabled} system while the single-threaded scheduler with an action work queue would be appropriate for a \emph{lightly enabled} system.
 
 \paragraph{Single-threaded scheduler with an instance work queue.}
 This scheduling algorithm attempts to squeeze a little more performance from the single-threaded scheduler with an action work queue.
@@ -562,7 +629,7 @@ Thus, this scheduler is appropriate for systems that are lightly enabled from th
 This scheduler runs $P > 1$ copies of a round-robin scheduler in parallel.
 To be safe, we must devise a protocol that allows the threads to avoid concurrently executing actions that may mutate the same state.
 Using the assumption that a component instance is a proxy for its state variables, the scheduler locks all instances in the instance set before evaluating the precondition and executing the action.
-Recall that composition analysis determines the set of components that are involved in a transaction and how they are accessed (read or write).
+Recall that composition analysis determines the set of components that are involved in a transaction and how they are accessed (WRITE, READ, or NONE).
 The acquired lock corresponds to the access type which allows multiple threads to be reading a component but only one thread to be writing.
 The locks are acquired in a determined order to avoid deadlock (Havender's Principle).
 The global mutli-threaded roud-robin scheduler is fair so long as the underlying locking mechanism is fair, i.e., there is no reader or writer starvation.
@@ -575,24 +642,26 @@ Another goal might be to look for ways to coordinate access to component instanc
 Chapter~\ref{future_work} describes some ideas toward these goals.
 
 \paragraph{Multi-threaded partitioned round-robin scheduler.}
-Rather than have each thread process the entire list of actions, the multi-threaded partitioned round-robin scheduler divides the list of actions among the available threads.
+Rather than have each thread process the entire list of transactions, the multi-threaded partitioned round-robin scheduler divides the list of transactions among the available threads.
 Like the global version, this algorithm is fair if the underlying locking mechanism is fair.
 Similarly, this algorithm is safe as locks are used to coordinate access to component state.
 However, for this algorithm to be responsible, we must add a protocol that allows the threads to detect that the system has reached the termination condition.
 
 The termination protocol consists of a barrier synchronization and then a check to establish the termination condition.
 The termination protocol begins when a scheduler thread sends a termination request to the \emph{manager thread}.
-To process a termination request, the manager thread stops each scheduler thread and then checks that all actions are disabled.
-If all of the actions are disabled, the system terminates.
+To process a termination request, the manager thread stops each scheduler thread and then checks that all transactions are disabled.
+If all of the transactions are disabled, the system terminates.
 Otherwise, the manager thread restarts the scheduler threads.
 A scheduler thread may choose to request termination at any time and different heuristics may be used to determine when a scheduler thread makes the termination request.
 Deferring the request has the advantage of avoiding the termination protocol overhead.
-For example, a scheduler thread might wait until it makes a complete pass through its list of action without executing an action before making the request.
+For example, a scheduler thread might wait until it makes a complete pass through its list of transactions without executing one before making the request.
 
 The proposed termination protocol is rather disruptive as it must stop the system to check for termination.
 Thus, one goal may be to let a thread idle itself and be woken up by active neighbors.
 Similarly, the scheduler threads can check for the termination condition in parallel and wake up all of their neighbors if an action is enabled.
 Finally, the manager thread may be done away with entirely and the protocol be rewritten as a distributed protocol.
+
+\subsection{Scheduler Implementation}
 
 \paragraph{Multi-threaded scheduler with a global instance work queue.}
 The first scheduler that we implemented was a multi-threaded scheduler with a global instance work queue.
@@ -611,10 +680,10 @@ One of the goals when designing this scheduler was to avoid the system call over
 The reader/writer locks used to protect each component instance were replaced by asynchronous read/writer locks implemented in user-space.
 The asynchronous locks consist of a spin lock, variables indicating the status of the lock, and a queue of requests.
 To acquire a lock for a component, a scheduler thread first acquires the spin lock and then checks if the lock can be acquired immediately.
-The lock can be acquired immediately if 1) the lock has no owner or 2) the threads is a reader, i.e., it is requesting a read lock, the lock has already been locked by another reader, and there are no writers in the queue.
+The lock can be acquired immediately if 1) the lock has no owner or 2) the thread is a reader, i.e., it is requesting a read lock, the lock has already been locked by another reader, and there are no writers in the queue.
 Otherwise, the request is placed on the queue.
 A scheduler thread failing to acquire the lock can either idle itself or attempt to execute a different action.
-When a lock is unlocked, the thread at the front of the queue is notified so it may resume processing of the action that it was attempting to execute.
+When a lock is unlocked, the thread at the front of the queue is notified so it may resume processing the action that it was attempting to execute.
 The protocol avoids reader and writer starvation and ensures fairness since the queue is processed in LIFO order.
 
 The aforementioned centralized termination protocol has the potential to be disruptive.
@@ -642,7 +711,8 @@ If the neighbor is in the WAIT state, it forwards the message.
 If a thread receives its own wait message, then all of the threads are in the WAIT state and the termination condition has been established.
 Upon receiving its own wait message, a thread sends a termination message causing all threads to terminate.
 
-\paragraph{Scheduler evaluation.}
+\subsection{Scheduler Evaluation}
+
 The utility of the reactive component model rests on the ability to effectively execute reactive programs.
 The challenge, then, is to design and implement effective schedulers subject to the constraints and limitations imposed by the model.
 The exercise of developing and evaluating schedulers may suggest possible improvements to the model or provide evidence that core features of the model resist efficient implementation.
@@ -650,14 +720,14 @@ The definition of an effective scheduler will vary by platform and problem domai
 For example, embedded systems may prefer a single-threaded scheduler with minimal memory requirements and power-awareness.
 Our focus in this work is to make progress on a general purpose multi-threaded scheduler.
 
-We propose the use of standard queueing metrics for the evaluation of a general-purpose scheduler:
-\begin{itemize}
-\item Throughput - the number of actions executed per second.
-\item Latency - the amount of time between an action becoming enabled and being executed.
-\item Utilization - the fraction of the CPU used.
-\end{itemize}
+We propose the following standard queueing metrics for the evaluation of a general-purpose scheduler:
+\begin{description}
+\item[Throughput] the number of actions executed per second.
+\item[Latency] the amount of time between an action becoming enabled and being executed.
+\item[Utilization] the fraction of the CPU used.
+\end{description}
 Given the same system, a scheduler with higher throughput is preferable to a system with lower throughput as it is accomplishing more work per unit time.
-The goal in measuring the latency between an action becoming enabled and its execution is to quantify the fairness of the scheduler.
+The goal in measuring the latency between an action becoming enabled and its execution is to quantify the responsiveness of the scheduler.
 Both throughput and latency may be considered for individual actions or aggregated over all actions in the system.
 Utilization is a measure of how efficiently the scheduler is using the CPUs and can be used to qualify an improvement in throughput or latency.
 For example, a 10\% increase in throughput accompanied by a 10\% increase in utilization is acceptable while a 10\% increase in throughput with a 100\% increase in utilization is not acceptable.
@@ -681,7 +751,7 @@ For example, a 10\% increase in throughput accompanied by a 10\% increase in uti
 
 We used the fully-factored clock system of chapter~\ref{model} to evaluate the two scheduler implementations.
 In this system, there are three components of interest which we will designate the Client, the Server, and the Counter.
-This system has three actions:
+This system has three transactions:
 \begin{itemize}
   \item Request - The client requests the time from the server.  This involves the Client and the Server.
   \item Response - The server responds with the time.  This involves the Client, the Server, and the Counter.
@@ -693,13 +763,31 @@ Nodes sharing an edge cannot be executed concurrently due to shared state.
 Conversely, nodes that are not linked by an edge can be executed concurrently.
 For the purpose of evaluating schedulers, the clock system has the important characteristic that Request and Tick can be executed concurrently while Response must be executed independently.
 Another useful feature of this system is that each component has exactly one action, thus, a  work queue of instances may also be viewed as a work queue of actions.
-The system was executed on a machine with two cores using two scheduler threads.
 
 For comparison, we implemented the clock system using the POSIX threads library (pthreads).
 To preserve the spirit of the original design, the custom implementation uses three threads corresponding to the Request, Response, and Tick transactions.
-The Request and Response threads share a flag variable that is protected by a mutex and conditional variable to implement the asynchronous request/response protocol.
+The Request and Response threads share a flag variable that is protected by a mutex and condition variable to implement the asynchronous request/response protocol.
 The Response and Tick threads share a counter variable that is protected by a mutex.
-For convenience, custom clock implementation will be called the \emph{clock scheduler}, the multi-threaded scheduler with a global instance work queue will be called will be called the \emph{instance scheduler}, and the multi-threaded partitioned  round-robin scheduler with asynchronous locking and distributed termination will be called the \emph{partitioned scheduler}.
+For convenience, the custom clock implementation will be called the \emph{clock scheduler}, the multi-threaded scheduler with a global instance work queue will be called will be called the \emph{instance scheduler}, and the multi-threaded partitioned  round-robin scheduler with asynchronous locking and distributed termination will be called the \emph{partitioned scheduler}.
+Table~\ref{environment} lists the environment used to perform the scheduler experiments.
+
+\begin{table}
+\center
+\begin{tabular}{rl}
+Machine Model:    & Lenovo G570 Laptop \\
+Operating System: & Ubuntu 14.04 \\
+Processor:        & Intel Pentium B960 2.20GHz \\
+Architecture:     & 64-bit \\
+Cores:            & 2 \\
+Memory:           & 4GB \\
+Kernel:           & 3.13.0-76-generic \#120-Ubuntu SMP \\
+Compiler:         & g++ 4.8.4 \\
+C library:        & glibc 2.19 \\
+POSIX threads:    & glibc 2.19 \\
+C++ library:      & glibc++ 3.4.19 \\
+\end{tabular}
+\caption{Experimental environment used for scheduler testing.\label{environment}}
+\end{table}
 
 \begin{figure}
 \center
@@ -721,10 +809,12 @@ For convenience, custom clock implementation will be called the \emph{clock sche
 
 The throughput of each scheduler was determined by executing the clock system for approximately 10 seconds and counting the number of executed transactions to compute the throughput.
 The number of transactions was determined from the program output and does not include the garbage collection actions.
-The 10 seconds includes parsing the source file, performing the semantic checks, etc.
+For the instance and partitioned schedulers, the 10 seconds includes parsing the source file, performing the semantic checks, etc.
 However, it is long enough to establish a steady state.
-The experiment was repeated 10 times.
-The cumulative distribution function for the throughput of each scheduler is shown in figures~\ref{instance_throughput} and~\ref{partitioned_throughput}.
+The experiment was repeated 1,000 times.
+The cumulative distribution function for the throughput of each scheduler is shown in figures~\ref{clock_throughput}, \ref{instance_throughput} and~\ref{partitioned_throughput}.
+Based on the shape of distributions, we select the median as the metric for comparison.
+
 The graphs show that the partitioned scheduler achieves a higher average throughput for the clock system.
 The average throughput for the instance scheduler was 481340.3 transactions/s while the average throughput for the partitioned scheduler was 496106.7 transactions/s; an increase of 3\%.
 

@@ -290,6 +290,11 @@ H.~Sutter and J.~Larus.
 \newblock Software and the concurrency revolution.
 \newblock {\em Queue}, 3(7):54--62, 2005.
 
+\bibitem{tarjan1976}
+Robert~Endre Tarjan.
+\newblock Edge-disjoint spanning trees and depth-first search.
+\newblock {\em Acta Informatica}, 6(2):171--185, 1976.
+
 \bibitem{turing1936computable}
 A.~Turing.
 \newblock On computable numbers, with an application to the
