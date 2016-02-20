@@ -26,17 +26,17 @@ public:
     pthread_mutex_init (&stdout_mutex_, NULL);
   }
 
-  void run (composition::Composer& instance_table, size_t stack_size, size_t thread_count);
+  void init (composition::Composer& instance_table, size_t stack_size, size_t thread_count, size_t profile);
+  void run ();
+  void fini (FILE* profile_out);
   void dump_schedule () const;
 
 private:
 
-  struct instance_info_t
+  struct instance_info_t : public ComponentInfoBase
   {
     // Scheduling lock.
     pthread_rwlock_t lock;
-    composition::Instance* instance;
-    Heap* heap;
     // Next instance on the schedule.
     // 0 means this instance is not on the schedule.
     // 1 means this instance is the end of the schedule.
@@ -44,57 +44,30 @@ private:
     instance_info_t* next;
 
     instance_info_t (composition::Instance* instance)
-      : instance (instance)
-      , heap (new Heap (instance->component, instance->type->Size ()))
+      : ComponentInfoBase (instance)
       , next (NULL)
     {
       pthread_rwlock_init (&lock, NULL);
-      // Link the instance to its scheduling information.
-      *((instance_info_t**)instance->component) = this;
-    }
-
-    char* get_ptr () const
-    {
-      return static_cast<char*> (heap->root ());
-    }
-
-    void collect_garbage ()
-    {
-      pthread_rwlock_wrlock (&lock);
-      heap->collect_garbage ();
-      pthread_rwlock_unlock (&lock);
     }
   };
 
-  class instance_executor_t : public executor_base_t
+  class instance_executor_t : public ExecutorBase
   {
   private:
     instance_scheduler_t& scheduler_;
     pthread_t thread_;
 
   public:
-    instance_executor_t (instance_scheduler_t& s, size_t stack_size)
-      : executor_base_t (stack_size, &s.stdout_mutex_)
+    instance_executor_t (instance_scheduler_t& s, size_t stack_size, size_t profile)
+      : ExecutorBase (stack_size, &s.stdout_mutex_, profile)
       , scheduler_ (s)
     { }
 
-    virtual Heap* heap () const
+    virtual void push ()
     {
-      instance_info_t* info = *reinterpret_cast<instance_info_t**> (current_instance ());
-      return info->heap;
-    }
-
-    virtual void heap (Heap* heap)
-    {
-      instance_info_t* info = *reinterpret_cast<instance_info_t**> (current_instance ());
-      info->heap = heap;
-    }
-
-    void push ()
-    {
-      component_t* c = current_instance ();
-      assert (c != NULL);
-      scheduler_.push (*reinterpret_cast<instance_info_t**> (current_instance ()));
+      instance_info_t* info = static_cast<instance_info_t*> (current_info ());
+      assert (info != NULL);
+      scheduler_.push (info);
     }
 
     void spawn ()
@@ -121,6 +94,7 @@ private:
   void lock (const composition::InstanceSet& set);
   void unlock (const composition::InstanceSet& set);
 
+  std::vector<instance_executor_t*> executors_;
   instance_info_t* head_;
   instance_info_t** tail_;
   size_t pending_;
@@ -128,7 +102,8 @@ private:
   pthread_cond_t list_cond_;
   pthread_mutex_t stdout_mutex_;
   // TODO:  Replace this datastructure by translating once.
-  std::map<composition::Instance*, instance_info_t*> info_map_;
+  typedef std::map<composition::Instance*, instance_info_t*> InfoMapType;
+  InfoMapType info_map_;
 };
 
 }

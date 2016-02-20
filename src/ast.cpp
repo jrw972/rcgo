@@ -47,6 +47,9 @@ operator<< (std::ostream& out, Node& node)
           out << ' ';
           switch (node.expression_kind)
             {
+            case kUnknown:
+              out << "unknown";
+              break;
             case kValue:
               out << "value";
               break;
@@ -680,6 +683,7 @@ Node::Node (unsigned int line_)
   , reset_mutability (false)
   , callable (NULL)
   , temp (NULL)
+  , expression_kind (kUnknown)
   , receiver_state (false)
   , receiver_access (AccessNone)
   , operation (NULL)

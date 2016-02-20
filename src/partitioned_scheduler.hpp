@@ -27,42 +27,26 @@ public:
     pthread_mutex_init (&stdout_mutex_, NULL);
   }
 
-  void run (composition::Composer& instance_table,
-            size_t stack_size,
-            size_t thread_count);
+  void init (composition::Composer& instance_table,
+             size_t stack_size,
+             size_t thread_count,
+             size_t profile);
+  void run ();
+  void fini (FILE* profile_out);
 
 private:
   class task_t;
 
-  class info_t
+  class info_t : public ComponentInfoBase
   {
   public:
     info_t (composition::Instance* instance)
-      : instance_ (instance)
-      , heap_ (new Heap (instance->component, instance->type->Size ()))
+      : ComponentInfoBase (instance)
       , lock_ (0)
       , count_ (0)
       , head_ (NULL)
       , tail_ (&head_)
-    {
-      // Link the instance to its scheduling information.
-      *((info_t**)instance->component) = this;
-    }
-
-    component_t* ptr () const
-    {
-      return instance_->component;
-    }
-
-    Heap* heap () const
-    {
-      return heap_;
-    }
-
-    void heap (Heap* heap)
-    {
-      heap_ = heap;
-    }
+    { }
 
     bool read_lock (task_t* task)
     {
@@ -178,8 +162,6 @@ private:
         }
     }
 
-    composition::Instance* instance_;
-    Heap* heap_;
     volatile size_t lock_;
     ssize_t count_;
     task_t* head_;
@@ -255,7 +237,7 @@ private:
     }
     virtual bool execute_i () const
     {
-      return runtime::execute (*executor, action->instance->component, action->action, action->iota);
+      return executor->execute (action);
     }
   };
 
@@ -273,19 +255,20 @@ private:
     }
     virtual bool execute_i () const
     {
-      return runtime::execute_no_check (*executor, action->instance->component, action->action, action->iota);
+      executor->execute_no_check (action);
+      return true;
     }
   };
 
   struct gc_task_t : public task_t
   {
-    gc_task_t (composition::Instance* i)
-      : instance (i)
+    gc_task_t (ComponentInfoBase* i)
+      : info (i)
     {
-      set_.insert (std::make_pair (instance, AccessWrite));
+      set_.insert (std::make_pair (i->instance (), AccessWrite));
     }
 
-    composition::Instance* instance;
+    ComponentInfoBase* info;
     composition::InstanceSet set_;
 
     const composition::InstanceSet& set () const
@@ -294,20 +277,20 @@ private:
     }
     virtual bool execute_i () const
     {
-      executor->current_instance (instance->component);
-      return executor->heap ()->collect_garbage ();
+      return executor->collect_garbage (info);
     }
   };
 
-  class executor_t : public executor_base_t
+  class executor_t : public ExecutorBase
   {
   public:
     executor_t (partitioned_scheduler_t& scheduler,
                 size_t id,
                 size_t neighbor_id,
                 size_t stack_size,
-                pthread_mutex_t* stdout_mutex)
-      : executor_base_t (stack_size, stdout_mutex)
+                pthread_mutex_t* stdout_mutex,
+                size_t profile)
+      : ExecutorBase (stack_size, stdout_mutex, profile)
       , scheduler_ (scheduler)
       , id_ (id)
       , neighbor_id_ (neighbor_id)
@@ -366,23 +349,6 @@ private:
     void join ()
     {
       pthread_join (thread_, NULL);
-    }
-
-    virtual Heap* heap () const
-    {
-      info_t* info = *reinterpret_cast<info_t**> (current_instance ());
-      return info->heap ();
-    }
-
-    virtual void heap (Heap* heap)
-    {
-      info_t* info = *reinterpret_cast<info_t**> (current_instance ());
-      info->heap (heap);
-    }
-
-    virtual void push ()
-    {
-      /*dirty_flag_ = true;*/
     }
 
     void add_task ()

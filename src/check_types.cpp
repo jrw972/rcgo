@@ -139,6 +139,7 @@ static void fix (Node& node)
 
 static void require_value_or_variable (const Node* node)
 {
+  assert (node->expression_kind != kUnknown);
   if (!(node->expression_kind == kValue ||
         node->expression_kind == kVariable))
     {
@@ -149,6 +150,7 @@ static void require_value_or_variable (const Node* node)
 
 static void require_variable (const Node* node)
 {
+  assert (node->expression_kind != kUnknown);
   if (!(node->expression_kind == kVariable))
     {
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
@@ -914,7 +916,7 @@ struct Visitor : public ast::DefaultVisitor
   void visit (CallExpr& node)
   {
     node.visit_children (*this);
-
+    assert (node.expr->expression_kind != kUnknown);
     if (node.expr->expression_kind == kType)
       {
         // Conversion.
@@ -2374,6 +2376,11 @@ done:
     node.args->accept (*this);
     check_types_arguments (node.args, push_port_type->GetSignature ());
     require_value_or_variable_list (node.args);
+
+    node.type = type::Void::Instance ();
+    node.expression_kind = kValue;
+    node.intrinsic_mutability = Immutable;
+    node.indirection_mutability = Immutable;
   }
 
   void visit (IndexedPushPortCallExpr& node)
@@ -2406,6 +2413,11 @@ done:
     node.args->accept (*this);
     check_types_arguments (node.args, push_port_type->GetSignature ());
     require_value_or_variable_list (node.args);
+
+    node.type = type::Void::Instance ();
+    node.expression_kind = kValue;
+    node.intrinsic_mutability = Immutable;
+    node.indirection_mutability = Immutable;
   }
 
   void visit (CompositeLiteral& node)
@@ -2471,6 +2483,7 @@ void check_types_arguments (ast::List* args, const type::Signature* signature)
 
 void require_type (const Node* node)
 {
+  assert (node->expression_kind != kUnknown);
   if (!(node->expression_kind == kType))
     {
       error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,

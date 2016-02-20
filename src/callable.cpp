@@ -53,22 +53,22 @@ Function::accept (ConstSymbolVisitor& visitor) const
   visitor.visit (*this);
 }
 
-void Function::call (runtime::executor_base_t& exec) const
+void Function::call (runtime::ExecutorBase& exec) const
 {
   this->node.body->operation->execute (exec);
 }
 
-void Method::call (runtime::executor_base_t& exec) const
+void Method::call (runtime::ExecutorBase& exec) const
 {
   this->node->body->operation->execute (exec);
 }
 
-void Initializer::call (runtime::executor_base_t& exec) const
+void Initializer::call (runtime::ExecutorBase& exec) const
 {
   this->node->operation->execute (exec);
 }
 
-void Getter::call (runtime::executor_base_t& exec) const
+void Getter::call (runtime::ExecutorBase& exec) const
 {
   this->node->operation->execute (exec);
 }

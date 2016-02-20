@@ -7,7 +7,7 @@ namespace decl
 {
 
 void
-Reaction::call (runtime::executor_base_t& exec) const
+Reaction::call (runtime::ExecutorBase& exec) const
 {
   operation->execute (exec);
 }

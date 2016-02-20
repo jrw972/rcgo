@@ -25,9 +25,10 @@ partitioned_scheduler_t::initialize_task (task_t* t, size_t thread_count)
 }
 
 void
-partitioned_scheduler_t::run (composition::Composer& instance_table,
-                              size_t stack_size,
-                              size_t thread_count)
+partitioned_scheduler_t::init (composition::Composer& instance_table,
+                               size_t stack_size,
+                               size_t thread_count,
+                               size_t profile)
 {
   // Set up data structures.
   for (composition::Composer::InstancesType::const_iterator pos = instance_table.instances_begin (),
@@ -41,20 +42,20 @@ partitioned_scheduler_t::run (composition::Composer& instance_table,
 
   {
     // Initialize.
-    executor_t exec (*this, 0, 0, stack_size, &stdout_mutex_);
+    executor_t exec (*this, 0, 0, stack_size, &stdout_mutex_, 0);
     for (composition::Composer::InstancesType::const_iterator pos = instance_table.instances_begin (),
          limit = instance_table.instances_end ();
          pos != limit;
          ++pos)
       {
         composition::Instance* instance = pos->second;
-        runtime::initialize (exec, instance);
+        runtime::initialize (exec, component_to_info (instance->component));
       }
   }
 
   for (size_t i = 0; i != thread_count; ++i)
     {
-      executors_.push_back (new executor_t (*this, i, (i + 1) % thread_count, stack_size, &stdout_mutex_));
+      executors_.push_back (new executor_t (*this, i, (i + 1) % thread_count, stack_size, &stdout_mutex_, profile));
     }
 
   // Create tasks.
@@ -85,21 +86,30 @@ partitioned_scheduler_t::run (composition::Composer& instance_table,
             }
         }
 
-      initialize_task (new gc_task_t (instance), thread_count);
+      initialize_task (new gc_task_t (component_to_info (instance->component)), thread_count);
     }
+}
 
-  for (size_t i = 0; i != thread_count; ++i)
+void
+partitioned_scheduler_t::run ()
+{
+  for (size_t i = 0; i != executors_.size (); ++i)
     {
       executors_[i]->spawn ();
     }
 
-  for (size_t i = 0; i != thread_count; ++i)
+  for (size_t i = 0; i != executors_.size (); ++i)
     {
       executors_[i]->join ();
     }
+}
 
-  for (size_t i = 0; i != thread_count; ++i)
+void
+partitioned_scheduler_t::fini (FILE* profile_out)
+{
+  for (size_t i = 0; i != executors_.size (); ++i)
     {
+      executors_[i]->fini (profile_out, i);
       delete executors_[i];
     }
 

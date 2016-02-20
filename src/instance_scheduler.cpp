@@ -75,7 +75,7 @@ instance_scheduler_t::dump_schedule () const
            record != reinterpret_cast<instance_info_t*> (1);
            record = record->next)
         {
-          std::cout << record << " instance=" << record->heap->root () << " type=" << record->instance->type << '\n';
+          std::cout << record << " instance=" << record->heap ()->root () << " type=" << record->instance ()->type << '\n';
         }
     }
 }
@@ -115,19 +115,21 @@ instance_scheduler_t::instance_executor_t::run_i ()
       pthread_mutex_unlock (&scheduler_.list_mutex_);
 
       // Try all the actions.
-      for (composition::ActionsType::const_iterator pos = record->instance->actions.begin (),
-           limit = record->instance->actions.end ();
+      for (composition::ActionsType::const_iterator pos = record->instance ()->actions.begin (),
+             limit = record->instance ()->actions.end ();
            pos != limit;
            ++pos)
         {
           const Action* action = *pos;
           scheduler_.lock (action->instance_set ());
-          runtime::execute (*this, record->instance->component, action->action, action->iota);
+          this->execute (action);
           scheduler_.unlock (action->instance_set ());
         }
 
       // Collect garbage.
-      record->collect_garbage ();
+      pthread_rwlock_wrlock (&record->lock);
+      this->collect_garbage (record);
+      pthread_rwlock_unlock (&record->lock);
 
       pthread_mutex_lock (&scheduler_.list_mutex_);
       --scheduler_.pending_;
@@ -137,9 +139,10 @@ instance_scheduler_t::instance_executor_t::run_i ()
 }
 
 void
-instance_scheduler_t::run (Composer& instance_table,
-                           size_t stack_size,
-                           size_t thread_count)
+instance_scheduler_t::init (Composer& instance_table,
+                            size_t stack_size,
+                            size_t thread_count,
+                            size_t profile)
 {
   // Set up data structures.
   for (Composer::InstancesType::const_iterator pos = instance_table.instances_begin (),
@@ -157,31 +160,44 @@ instance_scheduler_t::run (Composer& instance_table,
 
   {
     // Initialize.
-    instance_executor_t exec (*this, stack_size);
-    for (Composer::InstancesType::const_iterator pos = instance_table.instances_begin (),
-         limit = instance_table.instances_end ();
+    instance_executor_t exec (*this, stack_size, 0);
+    for (InfoMapType::const_iterator pos = info_map_.begin (),
+           limit = info_map_.end ();
          pos != limit;
          ++pos)
       {
-        composition::Instance* instance = pos->second;
-        runtime::initialize (exec, instance);
+        runtime::initialize (exec, pos->second);
       }
   }
 
-  std::vector<instance_executor_t*> executors;
   for (size_t idx = 0; idx != thread_count; ++idx)
     {
-      instance_executor_t* exec = new instance_executor_t (*this, stack_size);
-      executors.push_back (exec);
-      exec->spawn ();
-    }
-
-  for (size_t idx = 0; idx != thread_count; ++idx)
-    {
-      instance_executor_t* exec = executors[idx];
-      exec->join ();
-      delete exec;
+      instance_executor_t* exec = new instance_executor_t (*this, stack_size, profile);
+      executors_.push_back (exec);
     }
 }
+
+  void instance_scheduler_t::run ()
+  {
+    for (size_t idx = 0; idx != executors_.size (); ++idx)
+      {
+        executors_[idx]->spawn ();
+      }
+
+    for (size_t idx = 0; idx != executors_.size (); ++idx)
+      {
+        executors_[idx]->join ();
+      }
+  }
+
+  void
+  instance_scheduler_t::fini (FILE* profile_out)
+  {
+    for (size_t idx = 0; idx != executors_.size (); ++idx)
+    {
+      executors_[idx]->fini (profile_out, idx);
+      delete executors_[idx];
+    }
+  }
 
 }

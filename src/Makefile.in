@@ -117,9 +117,9 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_rc_OBJECTS = rc-main.$(OBJEXT) rc-builtin_function.$(OBJEXT) \
 	rc-composition.$(OBJEXT) rc-enter_symbols.$(OBJEXT) \
-	rc-evaluate_static.$(OBJEXT) rc-generate_code.$(OBJEXT) \
-	rc-instance_scheduler.$(OBJEXT) rc-parser.$(OBJEXT) \
-	rc-partitioned_scheduler.$(OBJEXT) \
+	rc-evaluate_static.$(OBJEXT) rc-executor_base.$(OBJEXT) \
+	rc-generate_code.$(OBJEXT) rc-instance_scheduler.$(OBJEXT) \
+	rc-parser.$(OBJEXT) rc-partitioned_scheduler.$(OBJEXT) \
 	rc-process_definitions.$(OBJEXT) \
 	rc-process_functions_and_methods.$(OBJEXT) \
 	rc-runtime.$(OBJEXT) rc-scanner.$(OBJEXT) \
@@ -345,7 +345,7 @@ composition.hpp composition.cpp \
 debug.hpp \
 enter_symbols.cpp \
 evaluate_static.hpp evaluate_static.cpp \
-executor_base.hpp \
+executor_base.hpp executor_base.cpp \
 field.hpp \
 generate_code.hpp generate_code.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
@@ -523,6 +523,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rc-composition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rc-enter_symbols.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rc-evaluate_static.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rc-executor_base.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rc-generate_code.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rc-instance_scheduler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rc-main.Po@am__quote@
@@ -765,6 +766,20 @@ rc-evaluate_static.obj: evaluate_static.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='evaluate_static.cpp' object='rc-evaluate_static.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rc_CXXFLAGS) $(CXXFLAGS) -c -o rc-evaluate_static.obj `if test -f 'evaluate_static.cpp'; then $(CYGPATH_W) 'evaluate_static.cpp'; else $(CYGPATH_W) '$(srcdir)/evaluate_static.cpp'; fi`
+
+rc-executor_base.o: executor_base.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rc_CXXFLAGS) $(CXXFLAGS) -MT rc-executor_base.o -MD -MP -MF $(DEPDIR)/rc-executor_base.Tpo -c -o rc-executor_base.o `test -f 'executor_base.cpp' || echo '$(srcdir)/'`executor_base.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rc-executor_base.Tpo $(DEPDIR)/rc-executor_base.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='executor_base.cpp' object='rc-executor_base.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rc_CXXFLAGS) $(CXXFLAGS) -c -o rc-executor_base.o `test -f 'executor_base.cpp' || echo '$(srcdir)/'`executor_base.cpp
+
+rc-executor_base.obj: executor_base.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rc_CXXFLAGS) $(CXXFLAGS) -MT rc-executor_base.obj -MD -MP -MF $(DEPDIR)/rc-executor_base.Tpo -c -o rc-executor_base.obj `if test -f 'executor_base.cpp'; then $(CYGPATH_W) 'executor_base.cpp'; else $(CYGPATH_W) '$(srcdir)/executor_base.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rc-executor_base.Tpo $(DEPDIR)/rc-executor_base.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='executor_base.cpp' object='rc-executor_base.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rc_CXXFLAGS) $(CXXFLAGS) -c -o rc-executor_base.obj `if test -f 'executor_base.cpp'; then $(CYGPATH_W) 'executor_base.cpp'; else $(CYGPATH_W) '$(srcdir)/executor_base.cpp'; fi`
 
 rc-generate_code.o: generate_code.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rc_CXXFLAGS) $(CXXFLAGS) -MT rc-generate_code.o -MD -MP -MF $(DEPDIR)/rc-generate_code.Tpo -c -o rc-generate_code.o `test -f 'generate_code.cpp' || echo '$(srcdir)/'`generate_code.cpp

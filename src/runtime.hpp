@@ -15,27 +15,16 @@ void
 create_bindings (composition::Composer& instance_table);
 
 void
-initialize (executor_base_t& exec, composition::Instance* instance);
-
-#ifdef PROFILE_LATENCY
-extern FILE* latency_file;
-#endif
+initialize (ExecutorBase& exec, ComponentInfoBase* info);
 
 // Returns true if the action is enabled.
-bool enabled (executor_base_t& exec,
-              component_t* instance,
-              const decl::Action* action,
-              type::Int::ValueType iota);
-
-// Returns true if the action was executed.
-bool execute (executor_base_t& exec,
+bool enabled (ExecutorBase& exec,
               component_t* instance,
               const decl::Action* action,
               type::Int::ValueType iota);
 
 // Execute the action without checking the precondition.
-// Returns true.
-bool execute_no_check (executor_base_t& exec,
+void execute_no_check (ExecutorBase& exec,
                        component_t* instance,
                        const decl::Action* action,
                        type::Int::ValueType iota);
@@ -112,14 +101,14 @@ inline OpReturn make_return ()
 struct Operation
 {
   virtual ~Operation() { }
-  virtual OpReturn execute (executor_base_t& exec) const = 0;
+  virtual OpReturn execute (ExecutorBase& exec) const = 0;
   virtual void dump () const = 0;
 };
 
 struct Load : public Operation
 {
   Load (const Operation* c, const type::Type* t) : child (c), type (t) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     std::cout << "Load(";
@@ -133,7 +122,7 @@ struct Load : public Operation
 struct IndexArray : public Operation
 {
   IndexArray (const util::Location& l, Operation* b, Operation* i, const type::Array* t) : location (l), base (b), index (i), type (t) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     std::cout << "IndexArray (";
@@ -151,7 +140,7 @@ struct IndexArray : public Operation
 struct IndexSlice : public Operation
 {
   IndexSlice (const util::Location& l, const Operation* b, const Operation* i, const type::Slice* t) : location (l), base (b), index (i), type (t) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     std::cout << "IndexSlice(";
@@ -181,7 +170,7 @@ struct SliceArray : public Operation
     , max (m)
     , type (t)
   { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     std::cout << "SliceArray(";
@@ -226,7 +215,7 @@ struct SliceSlice : public Operation
     , max (m)
     , type (t)
   { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     std::cout << "SliceSlice(";
@@ -263,7 +252,7 @@ template <typename T>
 struct Literal : public Operation
 {
   Literal (T v) : value (v) { }
-  virtual OpReturn execute (executor_base_t& exec) const
+  virtual OpReturn execute (ExecutorBase& exec) const
   {
     exec.stack ().push (value);
     return make_continue ();
@@ -287,7 +276,7 @@ Operation* make_literal (const type::Type* type, const semantic::Value& value);
 struct LogicOr : public Operation
 {
   LogicOr (const Operation* l, const Operation* r) : left (l), right (r) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
@@ -299,7 +288,7 @@ struct LogicOr : public Operation
 struct LogicAnd : public Operation
 {
   LogicAnd (const Operation* l, const Operation* r) : left (l), right (r) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
@@ -310,7 +299,7 @@ struct LogicAnd : public Operation
 
 struct ListOperation : public Operation
 {
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     std::cout << "List(";
@@ -330,7 +319,7 @@ struct ListOperation : public Operation
 struct FunctionCall : public Operation
 {
   FunctionCall (const decl::Callable* c, Operation* o) : callable (c), arguments (o) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     std::cout << "Function(";
@@ -344,7 +333,7 @@ struct FunctionCall : public Operation
 struct MethodCall : public Operation
 {
   MethodCall (const decl::Callable* c, Operation* r, Operation* o) : callable (c), receiver (r), arguments (o) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     std::cout << "Method(";
@@ -361,7 +350,7 @@ struct MethodCall : public Operation
 struct DynamicFunctionCall : public Operation
 {
   DynamicFunctionCall (const type::Function* t, Operation* f, Operation* a) : type (t), func (f), arguments (a) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
@@ -374,7 +363,7 @@ struct DynamicFunctionCall : public Operation
 struct Instance : public Operation
 {
   Instance (decl::InstanceSymbol* i) : instance (i) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     std::cout << "Instance(" << instance << ")";
@@ -385,7 +374,7 @@ struct Instance : public Operation
 struct SetRestoreCurrentInstance : public Operation
 {
   SetRestoreCurrentInstance (Operation* c, ptrdiff_t o) : child (c), receiver_offset (o) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     std::cout << "SetRestoreCurrentInstance(";
@@ -399,7 +388,7 @@ struct SetRestoreCurrentInstance : public Operation
 struct Clear : public Operation
 {
   Clear (ptrdiff_t o, size_t s) : offset (o), size (s) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
@@ -415,7 +404,7 @@ struct Assign : public Operation
     assert (left != NULL);
     assert (right != NULL);
   }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
@@ -430,7 +419,7 @@ Operation* make_add_assign (Operation* l, Operation* r, const type::Type* t);
 struct Reference : public Operation
 {
   Reference (ptrdiff_t o) : offset (o) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     std::cout << "Reference offset=" << offset << '\n';
@@ -441,7 +430,7 @@ struct Reference : public Operation
 struct Select : public Operation
 {
   Select (Operation* b, ptrdiff_t o) : base (b), offset (o) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     std::cout << "Select (";
@@ -455,7 +444,7 @@ struct Select : public Operation
 struct Return : public Operation
 {
   Return (Operation* c, const decl::ParameterSymbol* r) : child (c), return_offset (r->offset ()), return_size (r->type->Size ()) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
@@ -468,7 +457,7 @@ struct Return : public Operation
 struct If : public Operation
 {
   If (Operation* c, Operation* t, Operation* f) : condition (c), true_branch (t), false_branch (f) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
@@ -481,7 +470,7 @@ struct If : public Operation
 struct While : public Operation
 {
   While (Operation* c, Operation* b) : condition (c), body (b) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
@@ -493,7 +482,7 @@ struct While : public Operation
 struct ForIota : public Operation
 {
   ForIota (const decl::VariableSymbol* symbol, type::Int::ValueType l, Operation* b) : offset (symbol->offset ()), limit (l), body (b) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
@@ -507,7 +496,7 @@ template <typename T>
 struct Unary : public Operation
 {
   Unary (Operation* c) : child (c) { }
-  virtual OpReturn execute (executor_base_t& exec) const
+  virtual OpReturn execute (ExecutorBase& exec) const
   {
     typename T::ValueType x;
     child->execute (exec);
@@ -551,7 +540,7 @@ template <typename V, typename T>
 struct Binary : public Operation
 {
   Binary (Operation* l, Operation* r) : left (l), right (r) { }
-  virtual OpReturn execute (executor_base_t& exec) const
+  virtual OpReturn execute (ExecutorBase& exec) const
   {
     V x;
     V y;
@@ -578,7 +567,7 @@ template <typename V, typename T>
 struct Shift : public Operation
 {
   Shift (Operation* l, Operation* r) : left (l), right (r) { }
-  virtual OpReturn execute (executor_base_t& exec) const
+  virtual OpReturn execute (ExecutorBase& exec) const
   {
     V x;
     type::Uint::ValueType y;
@@ -715,7 +704,7 @@ Operation* make_shift (const type::Type* type, Operation* left, Operation* right
 struct Change : public Operation
 {
   Change (Operation* r, ptrdiff_t o, Operation* b) : root (r), root_offset (o), body (b) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
@@ -730,7 +719,7 @@ Operation* make_increment (Operation* child, const type::Type* type);
 struct Activate : public Operation
 {
   Activate (Operation* pc, Operation* b) : port_calls (pc), body (b) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
@@ -742,7 +731,7 @@ struct Activate : public Operation
 struct PushPortCall : public Operation
 {
   PushPortCall (ptrdiff_t ro, ptrdiff_t po, Operation* o) : receiver_offset (ro), port_offset (po), args (o) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
@@ -755,7 +744,7 @@ struct PushPortCall : public Operation
 struct IndexedPushPortCall : public Operation
 {
   IndexedPushPortCall (ptrdiff_t ro, ptrdiff_t po, Operation* i, Operation* o, const type::Array* a) : receiver_offset (ro), port_offset (po), index (i), args (o), array_type (a) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
@@ -770,7 +759,7 @@ struct IndexedPushPortCall : public Operation
 struct Push : public Operation
 {
   Push (Operation* b) : body (b) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
@@ -780,7 +769,7 @@ struct Push : public Operation
 
 struct Noop : public Operation
 {
-  virtual OpReturn execute (executor_base_t& exec) const
+  virtual OpReturn execute (ExecutorBase& exec) const
   {
     return make_continue ();
   }
@@ -795,7 +784,7 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
 struct Popn : public Operation
 {
   Popn (Operation* c, size_t s) : child (c), size (s) { }
-  virtual OpReturn execute (executor_base_t& exec) const;
+  virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;

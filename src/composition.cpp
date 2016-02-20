@@ -475,9 +475,9 @@ Composer::add_pull_port (size_t address,
   pull_ports_[address] = new PullPort (address, input_instance, input_field, name);
 }
 
-struct Executor : public executor_base_t
+struct Executor : public ExecutorBase
 {
-  Executor () : executor_base_t (1024, NULL) { }
+  Executor () : ExecutorBase (1024, NULL, 0) { }
   virtual runtime::Heap* heap () const
   {
     UNIMPLEMENTED;
@@ -530,6 +530,7 @@ Composer::elaborate_bindings ()
             void visit (IfStatement& node)
             {
               node.condition->operation->execute (exec);
+              assert (node.condition->expression_kind != kUnknown);
               if (node.condition->expression_kind == kVariable)
                 {
                   void* ptr = exec.stack ().pop_pointer ();
@@ -603,6 +604,7 @@ Composer::elaborate_bindings ()
             void visit (BindPushPortParamStatement& node)
             {
               node.param->operation->execute (exec);
+              assert (node.param->expression_kind != kUnknown);
               if (node.param->expression_kind == kVariable)
                 {
                   void* ptr = exec.stack ().pop_pointer ();
@@ -850,6 +852,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultVisitor
   void visit (IndexedPushPortCallExpr& node)
   {
     node.index->operation->execute (exec);
+    assert (node.index->expression_kind != kUnknown);
     if (node.index->expression_kind == kVariable)
       {
         void* ptr = exec.stack ().pop_pointer ();
@@ -880,6 +883,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultVisitor
 
   void visit (CallExpr& node)
   {
+    assert (node.expr->expression_kind != kUnknown);
     if (node.expr->expression_kind != kType)
       {
         // Are we calling a getter or pull port.
@@ -888,6 +892,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultVisitor
           {
             ast::Node* sb = ast_cast<SelectExpr> (node.expr)->base;
             sb->operation->execute (exec);
+            assert (sb->expression_kind != kUnknown);
             if (sb->expression_kind == kVariable &&
                 type_dereference (sb->type))
               {

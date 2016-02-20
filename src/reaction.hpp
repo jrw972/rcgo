@@ -45,7 +45,7 @@ private:
 public:
   const type::Method* const reaction_type;
 
-  void call (runtime::executor_base_t& exec) const;
+  void call (runtime::ExecutorBase& exec) const;
 
   const type::Type* type () const
   {

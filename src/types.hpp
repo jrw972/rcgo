@@ -141,11 +141,12 @@ class Operation;
 class Stack;
 class MemoryModel;
 class Heap;
-class executor_base_t;
+class ExecutorBase;
 }
 
 enum ExpressionKind
 {
+  kUnknown,
   kValue,
   kVariable,
   kType

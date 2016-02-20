@@ -127,31 +127,31 @@ create_bindings (composition::Composer& instance_table)
 }
 
 void
-initialize (executor_base_t& exec, composition::Instance* instance)
+initialize (ExecutorBase& exec, ComponentInfoBase* info)
 {
-  if (instance->is_top_level ())
+  if (info->instance ()->is_top_level ())
     {
       // Set up the heap.
-      exec.current_instance (instance->component);
+      exec.current_info (info);
       // Call the initializer.
-      instance->operation->execute (exec);
+      info->instance ()->operation->execute (exec);
       // Clean up any return value.
-      exec.stack ().popn (instance->initializer->return_size ());
+      exec.stack ().popn (info->instance ()->initializer->return_size ());
     }
 }
 
 template <typename T>
 static void
-evaluate (executor_base_t& exec, const MemoryModel& memoryModel, const ast::Binary& node, const T& op)
+evaluate (ExecutorBase& exec, const MemoryModel& memoryModel, const ast::Binary& node, const T& op)
 {
   struct visitor : public type::DefaultVisitor
   {
-    executor_base_t& exec;
+    ExecutorBase& exec;
     const MemoryModel& memoryModel;
     const ast::Binary& node;
     const T& op;
 
-    visitor (executor_base_t& e,
+    visitor (ExecutorBase& e,
              const MemoryModel& mm,
              const ast::Binary& n,
              const T& o) : exec (e), memoryModel (mm), node (n), op (o) { }
@@ -239,7 +239,7 @@ struct LeftDispatch
 struct Divide : public RetvalDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int&) const
@@ -255,7 +255,7 @@ struct Divide : public RetvalDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const Float64&) const
@@ -271,7 +271,7 @@ struct Divide : public RetvalDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -283,7 +283,7 @@ struct Divide : public RetvalDispatch
 struct Modulus : public RetvalDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int&) const
@@ -299,7 +299,7 @@ struct Modulus : public RetvalDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -311,11 +311,11 @@ struct Modulus : public RetvalDispatch
 template <typename T>
 struct LeftShiftVisitor : public type::DefaultVisitor
 {
-  executor_base_t& exec;
+  ExecutorBase& exec;
   const MemoryModel& memoryModel;
   const ast::Binary& node;
 
-  LeftShiftVisitor (executor_base_t& e,
+  LeftShiftVisitor (ExecutorBase& e,
                     const MemoryModel& mm,
                     const ast::Binary& n)
     : exec (e)
@@ -366,7 +366,7 @@ struct LeftShift : public RetvalDispatch
 {
   template <typename T>
   void
-  doit (executor_base_t& exec,
+  doit (ExecutorBase& exec,
         const MemoryModel& memoryModel,
         const ast::Binary& node,
         const T&) const
@@ -377,7 +377,7 @@ struct LeftShift : public RetvalDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int& t) const
@@ -386,7 +386,7 @@ struct LeftShift : public RetvalDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const Uint64& t) const
@@ -395,7 +395,7 @@ struct LeftShift : public RetvalDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -407,18 +407,18 @@ struct LeftShift : public RetvalDispatch
 struct RightShift : public RetvalDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int&) const
   {
     struct visitor : public type::DefaultVisitor
     {
-      executor_base_t& exec;
+      ExecutorBase& exec;
       const MemoryModel& memoryModel;
       const ast::Binary& node;
 
-      visitor (executor_base_t& e,
+      visitor (ExecutorBase& e,
                const MemoryModel& mm,
                const ast::Binary& n)
         : exec (e)
@@ -467,7 +467,7 @@ struct RightShift : public RetvalDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -479,7 +479,7 @@ struct RightShift : public RetvalDispatch
 struct BitAnd : public RetvalDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int&) const
@@ -495,7 +495,7 @@ struct BitAnd : public RetvalDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -507,7 +507,7 @@ struct BitAnd : public RetvalDispatch
 struct BitAndNot : public RetvalDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int&) const
@@ -523,7 +523,7 @@ struct BitAndNot : public RetvalDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -535,7 +535,7 @@ struct BitAndNot : public RetvalDispatch
 struct Add : public RetvalDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int& type) const
@@ -544,7 +544,7 @@ struct Add : public RetvalDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const Uint& type) const
@@ -554,7 +554,7 @@ struct Add : public RetvalDispatch
 
   template <typename T>
   void
-  doit (executor_base_t& exec,
+  doit (ExecutorBase& exec,
         const MemoryModel& memoryModel,
         const ast::Binary& node,
         const T&) const
@@ -570,7 +570,7 @@ struct Add : public RetvalDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -582,7 +582,7 @@ struct Add : public RetvalDispatch
 struct Subtract : public RetvalDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int&) const
@@ -598,7 +598,7 @@ struct Subtract : public RetvalDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -610,7 +610,7 @@ struct Subtract : public RetvalDispatch
 struct BitOr : public RetvalDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int&) const
@@ -626,7 +626,7 @@ struct BitOr : public RetvalDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -638,7 +638,7 @@ struct BitOr : public RetvalDispatch
 struct BitXor : public RetvalDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int&) const
@@ -654,7 +654,7 @@ struct BitXor : public RetvalDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -666,7 +666,7 @@ struct BitXor : public RetvalDispatch
 struct Equal : public LeftDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const Bool& type) const
@@ -675,7 +675,7 @@ struct Equal : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const Boolean& type) const
@@ -684,7 +684,7 @@ struct Equal : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int& type) const
@@ -693,7 +693,7 @@ struct Equal : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const Uint& type) const
@@ -702,7 +702,7 @@ struct Equal : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const Uint8& type) const
@@ -711,7 +711,7 @@ struct Equal : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const Pointer& type) const
@@ -720,7 +720,7 @@ struct Equal : public LeftDispatch
   }
 
   template <typename T>
-  void doit (executor_base_t& exec,
+  void doit (ExecutorBase& exec,
              const MemoryModel& memoryModel,
              const ast::Binary& node,
              const T&) const
@@ -736,7 +736,7 @@ struct Equal : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -748,7 +748,7 @@ struct Equal : public LeftDispatch
 struct NotEqual : public LeftDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const Bool&) const
@@ -757,7 +757,7 @@ struct NotEqual : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int&) const
@@ -766,7 +766,7 @@ struct NotEqual : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const Uint&) const
@@ -775,7 +775,7 @@ struct NotEqual : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const Uint64&) const
@@ -784,7 +784,7 @@ struct NotEqual : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const Pointer&) const
@@ -794,7 +794,7 @@ struct NotEqual : public LeftDispatch
 
   template <typename T>
   void
-  doit (executor_base_t& exec, const MemoryModel& memoryModel, const ast::Binary& node) const
+  doit (ExecutorBase& exec, const MemoryModel& memoryModel, const ast::Binary& node) const
   {
     UNIMPLEMENTED;
     // evaluate_expression (exec, memoryModel, node.left ());
@@ -807,7 +807,7 @@ struct NotEqual : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -819,7 +819,7 @@ struct NotEqual : public LeftDispatch
 struct LessThan : public LeftDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int&) const
@@ -835,7 +835,7 @@ struct LessThan : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const Int8&) const
@@ -851,7 +851,7 @@ struct LessThan : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -863,7 +863,7 @@ struct LessThan : public LeftDispatch
 struct LessEqual : public LeftDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int&) const
@@ -879,7 +879,7 @@ struct LessEqual : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -891,7 +891,7 @@ struct LessEqual : public LeftDispatch
 struct MoreThan : public LeftDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int&) const
@@ -907,7 +907,7 @@ struct MoreThan : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -919,7 +919,7 @@ struct MoreThan : public LeftDispatch
 struct MoreEqual : public LeftDispatch
 {
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Int&) const
@@ -935,7 +935,7 @@ struct MoreEqual : public LeftDispatch
   }
 
   void
-  operator() (executor_base_t& exec,
+  operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
               const type::Type& t) const
@@ -945,7 +945,7 @@ struct MoreEqual : public LeftDispatch
 };
 
 bool
-enabled (executor_base_t& exec,
+enabled (ExecutorBase& exec,
          component_t* instance,
          const decl::Action* action,
          type::Int::ValueType iota)
@@ -981,7 +981,7 @@ enabled (executor_base_t& exec,
 }
 
 static void
-execute (executor_base_t& exec,
+execute (ExecutorBase& exec,
          const decl::Action* action,
          component_t* instance)
 {
@@ -1016,31 +1016,9 @@ execute (executor_base_t& exec,
     }
 }
 
-bool execute (executor_base_t& exec, component_t* instance, const decl::Action* action, type::Int::ValueType iota)
-{
-  if (enabled (exec, instance, action, iota))
-    {
-      return execute_no_check (exec, instance, action, iota);
-    }
-
-  return false;
-}
-
-#ifdef PROFILE_LATENCY
-FILE* latency_file;
-#endif
-
-bool execute_no_check (executor_base_t& exec, component_t* instance, const decl::Action* action, type::Int::ValueType iota)
+void execute_no_check (ExecutorBase& exec, component_t* instance, const decl::Action* action, type::Int::ValueType iota)
 {
   assert (exec.stack ().empty ());
-
-#ifdef PROFILE_LATENCY
-  {
-    struct timespec ts;
-    clock_gettime (CLOCK_MONOTONIC, &ts);
-    fprintf (latency_file, "%s %ld.%09ld\n", action->name.c_str (), ts.tv_sec, ts.tv_nsec);
-  }
-#endif
 
   // Push the instance.
   exec.stack ().push_pointer (instance);
@@ -1065,7 +1043,6 @@ bool execute_no_check (executor_base_t& exec, component_t* instance, const decl:
   exec.stack ().pop_pointer ();
 
   assert (exec.stack ().empty ());
-  return true;
 }
 
 struct NewImpl : public Callable
@@ -1078,7 +1055,7 @@ struct NewImpl : public Callable
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
-  virtual void call (executor_base_t& exec) const
+  virtual void call (ExecutorBase& exec) const
   {
     // Allocate a new instance of the type.
     const type::Heap* heap_type = type_cast<type::Heap> (type_);
@@ -1187,7 +1164,7 @@ struct MoveImpl : public Callable
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
-  virtual void call (executor_base_t& exec) const
+  virtual void call (ExecutorBase& exec) const
   {
     heap_link_t** r = static_cast<heap_link_t**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
     ParameterSymbol* p = *function_type_->GetSignature ()->begin ();
@@ -1303,7 +1280,7 @@ struct MergeImpl : public Callable
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
-  virtual void call (executor_base_t& exec) const
+  virtual void call (ExecutorBase& exec) const
   {
     char** r = static_cast<char**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
     ParameterSymbol* p = *function_type_->GetSignature ()->begin ();
@@ -1419,7 +1396,7 @@ struct LenImpl : public Callable
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
-  virtual void call (executor_base_t& exec) const
+  virtual void call (ExecutorBase& exec) const
   {
     Int::ValueType* retval = static_cast<Int::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
     Slice::ValueType* slice = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetSignature ()->At (0)->offset ()));
@@ -1504,7 +1481,7 @@ struct AppendImpl : public Callable
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
-  virtual void call (executor_base_t& exec) const
+  virtual void call (ExecutorBase& exec) const
   {
     Slice::ValueType* retval = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
     Slice::ValueType* slice = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetSignature ()->At (0)->offset ()));
@@ -1614,7 +1591,7 @@ struct CopyImpl : public Callable
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
-  virtual void call (executor_base_t& exec) const
+  virtual void call (ExecutorBase& exec) const
   {
     const Slice* slice_type = type_strip_cast<Slice>(function_type_->GetReturnParameter ()->type);
     if (slice_type != NULL)
@@ -1742,14 +1719,14 @@ struct PrintlnImpl : public Callable
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
-  virtual void call (executor_base_t& exec) const
+  virtual void call (ExecutorBase& exec) const
   {
     struct visitor : public type::DefaultVisitor
     {
-      executor_base_t& exec;
+      ExecutorBase& exec;
       void* ptr;
 
-      visitor (executor_base_t& e, void* p) : exec (e), ptr (p) { }
+      visitor (ExecutorBase& e, void* p) : exec (e), ptr (p) { }
 
       void default_action (const type::Type& type)
       {
@@ -1904,7 +1881,7 @@ Println::instantiate (util::ErrorReporter& er,
 }
 
 OpReturn
-Load::execute (executor_base_t& exec) const
+Load::execute (ExecutorBase& exec) const
 {
   child->execute (exec);
   void* ptr = exec.stack ().pop_pointer ();
@@ -1914,7 +1891,7 @@ Load::execute (executor_base_t& exec) const
 
 
 OpReturn
-IndexSlice::execute (executor_base_t& exec) const
+IndexSlice::execute (ExecutorBase& exec) const
 {
   base->execute (exec);
   Slice::ValueType s;
@@ -1939,7 +1916,7 @@ template<typename T>
 struct ConvertToInt : public Operation
 {
   ConvertToInt (const Operation* c) : child (c) { }
-  OpReturn execute (executor_base_t& exec) const
+  OpReturn execute (ExecutorBase& exec) const
   {
     child->execute (exec);
     typename T::ValueType in;
@@ -2068,7 +2045,7 @@ template<typename T>
 struct ConvertToUint : public Operation
 {
   ConvertToUint (const Operation* c) : child (c) { }
-  OpReturn execute (executor_base_t& exec) const
+  OpReturn execute (ExecutorBase& exec) const
   {
     child->execute (exec);
     typename T::ValueType in;
@@ -2120,7 +2097,7 @@ MakeConvertToUint (const Operation* c, const type::Type* type)
 }
 
 OpReturn
-LogicOr::execute (executor_base_t& exec) const
+LogicOr::execute (ExecutorBase& exec) const
 {
   left->execute (exec);
   Bool::ValueType b;
@@ -2137,7 +2114,7 @@ LogicOr::execute (executor_base_t& exec) const
 }
 
 OpReturn
-LogicAnd::execute (executor_base_t& exec) const
+LogicAnd::execute (ExecutorBase& exec) const
 {
   left->execute (exec);
   Bool::ValueType b;
@@ -2250,7 +2227,7 @@ Operation* make_literal (const type::Type* type, const Value& value)
 }
 
 OpReturn
-ListOperation::execute (executor_base_t& exec) const
+ListOperation::execute (ExecutorBase& exec) const
 {
   for (ListType::const_iterator pos = list.begin (), limit = list.end ();
        pos != limit;
@@ -2266,7 +2243,7 @@ ListOperation::execute (executor_base_t& exec) const
 }
 
 OpReturn
-FunctionCall::execute (executor_base_t& exec) const
+FunctionCall::execute (ExecutorBase& exec) const
 {
   // Create space for the return.
   exec.stack ().reserve (callable->return_size ());
@@ -2296,7 +2273,7 @@ FunctionCall::execute (executor_base_t& exec) const
 }
 
 OpReturn
-MethodCall::execute (executor_base_t& exec) const
+MethodCall::execute (ExecutorBase& exec) const
 {
   // Create space for the return.
   exec.stack ().reserve (callable->return_size ());
@@ -2331,7 +2308,7 @@ MethodCall::execute (executor_base_t& exec) const
 }
 
 OpReturn
-DynamicFunctionCall::execute (executor_base_t& exec) const
+DynamicFunctionCall::execute (ExecutorBase& exec) const
 {
   switch (type->function_kind)
     {
@@ -2380,31 +2357,31 @@ DynamicFunctionCall::execute (executor_base_t& exec) const
 }
 
 OpReturn
-Instance::execute (executor_base_t& exec) const
+Instance::execute (ExecutorBase& exec) const
 {
   exec.stack ().push_pointer (instance->instance->component);
   return make_continue ();
 }
 
 OpReturn
-SetRestoreCurrentInstance::execute (executor_base_t& exec) const
+SetRestoreCurrentInstance::execute (ExecutorBase& exec) const
 {
-  component_t* new_receiver = static_cast<component_t*> (exec.stack ().read_pointer (receiver_offset));
-  component_t* old_receiver = exec.current_instance (new_receiver);
+  ComponentInfoBase* new_info = component_to_info (static_cast<component_t*> (exec.stack ().read_pointer (receiver_offset)));
+  ComponentInfoBase* old_info = exec.current_info (new_info);
   OpReturn ca = child->execute (exec);
-  exec.current_instance (old_receiver);
+  exec.current_info (old_info);
   return ca;
 }
 
 OpReturn
-Clear::execute (executor_base_t& exec) const
+Clear::execute (ExecutorBase& exec) const
 {
   exec.stack ().clear (offset, size);
   return make_continue ();
 }
 
 OpReturn
-Assign::execute (executor_base_t& exec) const
+Assign::execute (ExecutorBase& exec) const
 {
   left->execute (exec);
   void* ptr = exec.stack ().pop_pointer ();
@@ -2422,7 +2399,7 @@ struct AddAssign : public Operation
     assert (right != NULL);
   }
   OpReturn
-  execute (executor_base_t& exec) const
+  execute (ExecutorBase& exec) const
   {
     left->execute (exec);
     T* ptr = static_cast<T*> (exec.stack ().pop_pointer ());
@@ -2480,14 +2457,14 @@ Operation* make_add_assign (Operation* l, Operation* r, const type::Type* t)
 }
 
 OpReturn
-Reference::execute (executor_base_t& exec) const
+Reference::execute (ExecutorBase& exec) const
 {
   exec.stack ().push_address (offset);
   return make_continue ();
 }
 
 OpReturn
-Select::execute (executor_base_t& exec) const
+Select::execute (ExecutorBase& exec) const
 {
   base->execute (exec);
   char* ptr = static_cast<char*> (exec.stack ().pop_pointer ());
@@ -2497,7 +2474,7 @@ Select::execute (executor_base_t& exec) const
 }
 
 OpReturn
-IndexArray::execute (executor_base_t& exec) const
+IndexArray::execute (ExecutorBase& exec) const
 {
   base->execute (exec);
   void* ptr = exec.stack ().pop_pointer ();
@@ -2514,7 +2491,7 @@ IndexArray::execute (executor_base_t& exec) const
 }
 
 OpReturn
-SliceArray::execute (executor_base_t& exec) const
+SliceArray::execute (ExecutorBase& exec) const
 {
   base->execute (exec);
   char* ptr = static_cast<char*> (exec.stack ().pop_pointer ());
@@ -2557,7 +2534,7 @@ SliceArray::execute (executor_base_t& exec) const
 }
 
 OpReturn
-SliceSlice::execute (executor_base_t& exec) const
+SliceSlice::execute (ExecutorBase& exec) const
 {
   base->execute (exec);
   Slice::ValueType s;
@@ -2600,7 +2577,7 @@ SliceSlice::execute (executor_base_t& exec) const
 }
 
 OpReturn
-Return::execute (executor_base_t& exec) const
+Return::execute (ExecutorBase& exec) const
 {
   child->execute (exec);
   exec.stack ().move (return_offset, return_size);
@@ -2608,7 +2585,7 @@ Return::execute (executor_base_t& exec) const
 }
 
 OpReturn
-If::execute (executor_base_t& exec) const
+If::execute (ExecutorBase& exec) const
 {
   condition->execute (exec);
   Bool::ValueType c;
@@ -2624,7 +2601,7 @@ If::execute (executor_base_t& exec) const
 }
 
 OpReturn
-While::execute (executor_base_t& exec) const
+While::execute (ExecutorBase& exec) const
 {
   for (;;)
     {
@@ -2647,7 +2624,7 @@ While::execute (executor_base_t& exec) const
 }
 
 OpReturn
-Change::execute (executor_base_t& exec) const
+Change::execute (ExecutorBase& exec) const
 {
   root->execute (exec);
   heap_link_t* hl = static_cast<heap_link_t*> (exec.stack ().pop_pointer ());
@@ -2686,7 +2663,7 @@ template <typename T>
 struct Increment : public Operation
 {
   Increment (Operation* c) : child (c) { }
-  virtual OpReturn execute (executor_base_t& exec) const
+  virtual OpReturn execute (ExecutorBase& exec) const
   {
     child->execute (exec);
     T* ptr = static_cast<T*> (exec.stack ().pop_pointer ());
@@ -2740,7 +2717,7 @@ Operation* make_increment (Operation* child, const type::Type* type)
 }
 
 OpReturn
-Activate::execute (executor_base_t& exec) const
+Activate::execute (ExecutorBase& exec) const
 {
   // Save the base pointer to return to.
   // Currently, this is done in the port call.
@@ -2759,7 +2736,7 @@ Activate::execute (executor_base_t& exec) const
   return make_return ();
 }
 
-static void push_port_call (executor_base_t& exec, Operation* args, ptrdiff_t receiver_offset, ptrdiff_t port_offset, ptrdiff_t array_offset)
+static void push_port_call (ExecutorBase& exec, Operation* args, ptrdiff_t receiver_offset, ptrdiff_t port_offset, ptrdiff_t array_offset)
 {
   // TODO:  The port knows the size of the arguments.  No need to measure.
   // Push all of the arguments first and measure their size.
@@ -2804,14 +2781,14 @@ static void push_port_call (executor_base_t& exec, Operation* args, ptrdiff_t re
 }
 
 OpReturn
-PushPortCall::execute (executor_base_t& exec) const
+PushPortCall::execute (ExecutorBase& exec) const
 {
   push_port_call (exec, args, receiver_offset, port_offset, 0);
   return make_continue ();
 }
 
 OpReturn
-IndexedPushPortCall::execute (executor_base_t& exec) const
+IndexedPushPortCall::execute (ExecutorBase& exec) const
 {
   index->execute (exec);
   Int::ValueType idx;
@@ -2821,7 +2798,7 @@ IndexedPushPortCall::execute (executor_base_t& exec) const
 }
 
 OpReturn
-Push::execute (executor_base_t& exec) const
+Push::execute (ExecutorBase& exec) const
 {
   OpReturn ca = body->execute (exec);
   exec.push ();
@@ -2829,7 +2806,7 @@ Push::execute (executor_base_t& exec) const
 }
 
 OpReturn
-ForIota::execute (executor_base_t& exec) const
+ForIota::execute (ExecutorBase& exec) const
 {
   for (Int::ValueType idx = 0; idx != limit; ++idx)
     {
@@ -2848,7 +2825,7 @@ struct ConvertStringToSliceOfBytes : public Operation
 {
   ConvertStringToSliceOfBytes (Operation* c) : child (c) { }
   OpReturn
-  execute (executor_base_t& exec) const
+  execute (ExecutorBase& exec) const
   {
     child->execute (exec);
     StringU::ValueType in;
@@ -2873,7 +2850,7 @@ struct ConvertSliceOfBytesToString : public Operation
 {
   ConvertSliceOfBytesToString (Operation* c) : child (c) { }
   OpReturn
-  execute (executor_base_t& exec) const
+  execute (ExecutorBase& exec) const
   {
     child->execute (exec);
     Slice::ValueType in;
@@ -2899,7 +2876,7 @@ template<typename FromType, typename ToType>
 struct Conversion : public Operation
 {
   Conversion (Operation* c) : child (c) { }
-  virtual OpReturn execute (executor_base_t& exec) const
+  virtual OpReturn execute (ExecutorBase& exec) const
   {
     child->execute (exec);
     FromType x;
@@ -3033,7 +3010,7 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
 }
 
 OpReturn
-Popn::execute (executor_base_t& exec) const
+Popn::execute (ExecutorBase& exec) const
 {
   OpReturn r = child->execute (exec);
   exec.stack ().popn (size);

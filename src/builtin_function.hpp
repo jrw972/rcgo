@@ -57,49 +57,49 @@ protected:
 struct Readable : public BuiltinFunction
 {
   Readable (const util::Location& loc);
-  virtual void call (runtime::executor_base_t& exec) const;
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
 struct Read : public BuiltinFunction
 {
   Read (const util::Location& loc);
-  virtual void call (runtime::executor_base_t& exec) const;
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
 struct Writable : public BuiltinFunction
 {
   Writable (const util::Location& loc);
-  virtual void call (runtime::executor_base_t& exec) const;
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
 struct ClockGettime : public BuiltinFunction
 {
   ClockGettime (const util::Location& loc);
-  virtual void call (runtime::executor_base_t& exec) const;
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
 struct TimerfdCreate : public BuiltinFunction
 {
   TimerfdCreate (const util::Location& loc);
-  virtual void call (runtime::executor_base_t& exec) const;
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
 struct TimerfdSettime : public BuiltinFunction
 {
   TimerfdSettime (const util::Location& loc);
-  virtual void call (runtime::executor_base_t& exec) const;
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
 struct UdpSocket : public BuiltinFunction
 {
   UdpSocket (const util::Location& loc);
-  virtual void call (runtime::executor_base_t& exec) const;
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
 struct Sendto : public BuiltinFunction
 {
   Sendto (const util::Location& loc);
-  virtual void call (runtime::executor_base_t& exec) const;
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
 }

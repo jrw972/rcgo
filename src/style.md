@@ -23,7 +23,7 @@ Include Order
 
 Macros
 ======
-Macros are all-caps with underscores.
+Macros are ALL_CAPS_WITH_UNDERSCORES.
 
 Namespaces
 ==========
@@ -34,7 +34,8 @@ Namespaces
 Names
 =====
 1. Types are CamelCase.
-2. Every other identifier is lowercase with underscores.
+2. Enums and constants are CamelCase_With_Underscores.
+2. Every other identifier is lowercase_with_underscores.
 3. Private and protected members have a trailing underscore.
 
 Forward Declarations

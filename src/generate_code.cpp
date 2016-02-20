@@ -19,6 +19,16 @@ using namespace type;
 using namespace semantic;
 using namespace decl;
 
+  static Operation* load (Node* node, Operation* op)
+  {
+    assert (node->expression_kind != kUnknown);
+    if (node->expression_kind == kVariable)
+      {
+        return new Load (op, node->type);
+      }
+    return op;
+  }
+
 struct CodeGenVisitor : public ast::DefaultVisitor
 {
   void default_action (Node& node)
@@ -63,10 +73,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   {
     node.precondition->accept (*this);
     Operation* p = node.precondition->operation;
-    if (node.precondition->expression_kind == kVariable)
-      {
-        p = new Load (p, node.precondition->type);
-      }
+    p = load (node.precondition, p);
     node.precondition->operation = new SetRestoreCurrentInstance (p, node.action->memory_model.receiver_offset ());
     node.body->accept (*this);
     node.body->operation = new SetRestoreCurrentInstance (node.body->operation, node.action->memory_model.receiver_offset ());
@@ -76,10 +83,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   {
     node.precondition->accept (*this);
     Operation* p = node.precondition->operation;
-    if (node.precondition->expression_kind == kVariable)
-      {
-        p = new Load (p, node.precondition->type);
-      }
+    p = load (node.precondition, p);
     node.precondition->operation = new SetRestoreCurrentInstance (p, node.action->memory_model.receiver_offset ());
     node.body->accept (*this);
     node.body->operation = new SetRestoreCurrentInstance (node.body->operation, node.action->memory_model.receiver_offset ());
@@ -94,7 +98,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   void visit (DimensionedReaction& node)
   {
     node.body->accept (*this);
-    node.operation = new SetRestoreCurrentInstance (node.body->operation, node.reaction->memory_model.receiver_offset ());
+    node.reaction->operation = new SetRestoreCurrentInstance (node.body->operation, node.reaction->memory_model.receiver_offset ());
   }
 
   void visit (ast::Bind& node)
@@ -145,10 +149,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   {
     node.visit_children (*this);
     Operation* c = node.child->operation;
-    if (node.child->expression_kind == kVariable)
-      {
-        c = new Load (c, node.child->type);
-      }
+    c = load (node.child, c);
     node.operation = new Return (c, node.return_symbol);
   }
 
@@ -169,10 +170,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
     else
       {
         Operation* c = node.condition->operation;
-        if (node.condition->expression_kind == kVariable)
-          {
-            c = new Load (c, node.condition->type);
-          }
+        c = load (node.condition, c);
         node.operation = new If (c, node.true_branch->operation, node.false_branch->operation);
       }
   }
@@ -181,10 +179,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   {
     node.visit_children (*this);
     Operation* c = node.condition->operation;
-    if (node.condition->expression_kind == kVariable)
-      {
-        c = new Load (c, node.condition->type);
-      }
+    c = load (node.condition, c);
     node.operation = new While (c, node.body->operation);
   }
 
@@ -219,10 +214,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
           {
             VariableSymbol* symbol = node.symbols[idx];
             Operation* right = (*pos)->operation;
-            if ((*pos)->expression_kind == kVariable)
-              {
-                right = new Load (right, (*pos)->type);
-              }
+            right = load (*pos, right);
             op->list.push_back (new Assign (new Reference (symbol->offset ()), right, symbol->type));
           }
       }
@@ -239,10 +231,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
     node.visit_children (*this);
     Operation* left = node.left->operation;
     Operation* right = node.right->operation;
-    if (node.right->expression_kind == kVariable)
-      {
-        right = new Load (right, node.right->type);
-      }
+    right = load (node.right, right);
     node.operation = new Assign (left, right, node.left->type);
   }
 
@@ -251,10 +240,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
     node.visit_children (*this);
     Operation* left = node.left->operation;
     Operation* right = node.right->operation;
-    if (node.right->expression_kind == kVariable)
-      {
-        right = new Load (right, node.right->type);
-      }
+    right = load (node.right, right);
     node.operation = make_add_assign (left, right, node.left->type);
   }
 
@@ -269,10 +255,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
     node.expr->accept (*this);
     node.body->accept (*this);
     Operation* root = node.expr->operation;
-    if (node.expr->expression_kind == kVariable)
-      {
-        root = new Load (root, node.expr->type);
-      }
+    root = load (node.expr, root);
     node.operation = new Change (root, node.root_symbol->offset (), node.body->operation);
   }
 
@@ -307,14 +290,12 @@ struct CodeGenVisitor : public ast::DefaultVisitor
 
   void visit (CallExpr& node)
   {
+    assert (node.expr->expression_kind != kUnknown);
     if (node.expr->expression_kind == kType)
       {
         node.args->at (0)->accept (*this);
         Operation* o = node.args->at (0)->operation;
-        if (node.args->at (0)->expression_kind == kVariable)
-          {
-            o = new Load (o, node.args->at (0)->type);
-          }
+        o = load (node.args->at (0), o);
         node.operation = make_conversion (o, node.args->at (0)->type, node.type);
         return;
       }
@@ -335,6 +316,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
               {
                 if (type_dereference (node.method_type->receiver_type ()))
                   {
+                    assert (sb->expression_kind != kUnknown);
                     if (sb->expression_kind == kVariable)
                       {
                         // Got a pointer.  Expecting a pointer.  Load the pointer.
@@ -349,6 +331,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
                 else
                   {
                     // Got a pointer.  Expecting a value.  Load the variable and then the pointer.
+                    assert (sb->expression_kind != kUnknown);
                     if (sb->expression_kind == kVariable)
                       {
                         node.operation = new MethodCall (node.callable, new Load (new Load (sb->operation, sb->type), node.method_type->receiver_type ()), node.args->operation);
@@ -363,6 +346,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
               {
                 if (type_dereference (node.method_type->receiver_type ()))
                   {
+                    assert (sb->expression_kind != kUnknown);
                     if (sb->expression_kind == kVariable)
                       {
                         // Got a value.  Expected a pointer.  Use variable as pointer.
@@ -375,6 +359,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
                   }
                 else
                   {
+                    assert (sb->expression_kind != kUnknown);
                     if (sb->expression_kind == kVariable)
                       {
                         // Got a value.  Expected a value.  Load the variable.
@@ -398,10 +383,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
           {
             node.expr->accept (*this);
             Operation* r = node.expr->operation;
-            if (node.expr->expression_kind == kVariable)
-              {
-                r = new Load (r, node.expr->type);
-              }
+            r = load (node.expr, r);
             node.operation = new DynamicFunctionCall (node.function_type, r, node.args->operation);
           }
         else if (node.method_type)
@@ -419,10 +401,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   {
     node.expr->accept (*this);
     Operation* o = node.expr->operation;
-    if (node.expr->expression_kind == kVariable)
-      {
-        o = new Load (o, node.expr->type);
-      }
+    o = load (node.expr, o);
     node.operation = make_conversion (o, node.expr->type, node.type);
   }
 
@@ -434,16 +413,11 @@ struct CodeGenVisitor : public ast::DefaultVisitor
          pos != limit;
          ++pos)
       {
-        if ((*pos)->operation != NULL)
+        Node* n = *pos;
+        Operation* o = n->operation;
+        if (o != NULL)
           {
-            if ((*pos)->expression_kind == kVariable)
-              {
-                op->list.push_back (new Load ((*pos)->operation, (*pos)->type));
-              }
-            else
-              {
-                op->list.push_back ((*pos)->operation);
-              }
+            op->list.push_back (load (n, o));
           }
       }
     node.operation = op;
@@ -495,11 +469,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   void visit (DereferenceExpr& node)
   {
     node.visit_children (*this);
-    node.operation = node.child->operation;
-    if (node.child->expression_kind == kVariable)
-      {
-        node.operation = new Load (node.operation, node.child->type);
-      }
+    node.operation = load (node.child, node.child->operation);
   }
 
   void visit (AddressOfExpr& node)
@@ -516,6 +486,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
       {
         if (type_dereference (node.base->type))
           {
+            assert (node.base->expression_kind != kUnknown);
             if (node.base->expression_kind == kVariable)
               {
                 node.operation = new Select (new Load (node.base->operation, node.base->type), node.field->offset);
@@ -527,6 +498,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
           }
         else
           {
+            assert (node.base->expression_kind != kUnknown);
             if (node.base->expression_kind == kVariable)
               {
                 node.operation = new Select (node.base->operation, node.field->offset);
@@ -554,13 +526,9 @@ struct CodeGenVisitor : public ast::DefaultVisitor
     if (node.array_type != NULL)
       {
         Operation* index_op = node.index->operation;
-        if (node.index->expression_kind == kVariable)
-          {
-            index_op = new Load (index_op, node.index->type);
-          }
-
+        index_op = load (node.index, index_op);
         index_op = MakeConvertToInt (index_op, node.index->type);
-
+        assert (node.base->expression_kind != kUnknown);
         if (node.base->expression_kind == kVariable)
           {
             node.operation = new IndexArray (node.location, node.base->operation, index_op, node.array_type);
@@ -576,13 +544,9 @@ struct CodeGenVisitor : public ast::DefaultVisitor
     if (node.slice_type != NULL)
       {
         Operation* index_op = node.index->operation;
-        if (node.index->expression_kind == kVariable)
-          {
-            index_op = new Load (index_op, node.index->type);
-          }
-
+        index_op = load (node.index, index_op);
         index_op = MakeConvertToInt (index_op, node.index->type);
-
+        assert (node.base->expression_kind != kUnknown);
         if (node.base->expression_kind == kVariable)
           {
             node.operation = new IndexSlice (node.location, new Load (node.base->operation, node.slice_type), index_op, node.slice_type);
@@ -607,10 +571,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
       {
         node.low->accept (*this);
         low = node.low->operation;
-        if (node.low->expression_kind == kVariable)
-          {
-            low = new Load (low, node.low->type);
-          }
+        low = load (node.low, low);
         low = MakeConvertToInt (low, node.low->type);
       }
 
@@ -619,10 +580,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
       {
         node.high->accept (*this);
         high = node.high->operation;
-        if (node.high->expression_kind == kVariable)
-          {
-            high = new Load (high, node.high->type);
-          }
+        high = load (node.high, high);
         high = MakeConvertToInt (high, node.high->type);
       }
 
@@ -631,15 +589,13 @@ struct CodeGenVisitor : public ast::DefaultVisitor
       {
         node.max->accept (*this);
         max = node.max->operation;
-        if (node.max->expression_kind == kVariable)
-          {
-            max = new Load (max, node.max->type);
-          }
+        max = load (node.max, max);
         max = MakeConvertToInt (max, node.max->type);
       }
 
     if (node.array_type != NULL)
       {
+        assert (node.base->expression_kind != kUnknown);
         if (node.base->expression_kind == kVariable)
           {
             node.operation = new SliceArray (node.location, node.base->operation, low, high, max, node.array_type);
@@ -655,10 +611,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
     if (node.slice_type != NULL)
       {
         Operation* base = node.base->operation;
-        if (node.base->expression_kind == kVariable)
-          {
-            base = new Load (base, node.slice_type);
-          }
+        base = load (node.base, base);
         node.operation = new SliceSlice (node.location, base, low, high, max, node.slice_type);
         return;
       }
@@ -676,10 +629,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
       {
         node.visit_children (*this);
         Operation* c = node.child->operation;
-        if (node.child->expression_kind == kVariable)
-          {
-            c = new Load (c, node.child->type);
-          }
+        c = load (node.child, c);
         switch (node.arithmetic)
           {
           case LogicNot:
@@ -706,15 +656,9 @@ struct CodeGenVisitor : public ast::DefaultVisitor
       {
         node.visit_children (*this);
         Operation* left = node.left->operation;
-        if (node.left->expression_kind == kVariable)
-          {
-            left = new Load (left, node.left->type);
-          }
+        left = load (node.left, left);
         Operation* right = node.right->operation;
-        if (node.right->expression_kind == kVariable)
-          {
-            right = new Load (right, node.right->type);
-          }
+        right = load (node.right, right);
 
         switch (node.arithmetic)
           {
@@ -794,10 +738,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   {
     node.index->accept (*this);
     Operation* i = node.index->operation;
-    if (node.index->expression_kind == kVariable)
-      {
-        i = new Load (i, node.index->type);
-      }
+    i = load (node.index, i);
     node.args->accept (*this);
     node.operation = new IndexedPushPortCall (node.receiver_parameter->offset (), node.field->offset, i, node.args->operation, node.array_type);
   }

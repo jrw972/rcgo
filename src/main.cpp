@@ -42,12 +42,22 @@ try_help (void)
   exit (EXIT_FAILURE);
 }
 
+#define SCHEDULER_OPTION 256
+#define THREADS_OPTION 257
+#define SRAND_OPTION 258
+#define PROFILE_OPTION 259
+#define PROFILE_OUT_OPTION 260
+
 int
 main (int argc, char **argv)
 {
   int show_composition = 0;
   int thread_count = 2;
   std::string scheduler_type = "partitioned";
+  // Profile stores the number of points to record per thread.
+  // It must be a power of two.  This makes the ring buffer index calculation easier because the modulus can be replaced by bit-and.
+  size_t profile = 0;
+  FILE* profile_out = stderr;
 
   const char* s = getenv ("RC_SCHEDULER");
   if (s != NULL)
@@ -59,16 +69,21 @@ main (int argc, char **argv)
     {
       static struct option long_options[] =
       {
+        {"help",        no_argument, NULL, 'h'},
+        {"version",     no_argument, NULL, 'v'},
+
         {"composition", no_argument, &show_composition, 1},
-        {"help", no_argument, NULL, 'h'},
-        {"scheduler", required_argument, NULL, 's'},
-        {"threads", required_argument, NULL, 't'},
-        {"version", no_argument, NULL, 'v'},
-        {"srand", required_argument, NULL, 'r'},
+
+        {"scheduler",   required_argument, NULL, SCHEDULER_OPTION},
+        {"threads",     required_argument, NULL, THREADS_OPTION},
+        {"srand",       required_argument, NULL, SRAND_OPTION},
+        {"profile",     optional_argument, NULL, PROFILE_OPTION},
+        {"profile-out", required_argument, NULL, PROFILE_OUT_OPTION},
+
         {0, 0, 0, 0}
       };
 
-      int c = getopt_long (argc, argv, "chvt:s:r:", long_options, NULL);
+      int c = getopt_long (argc, argv, "hv", long_options, NULL);
 
       if (c == -1)
         break;
@@ -77,37 +92,51 @@ main (int argc, char **argv)
         {
         case 0:
           break;
-        case 'c':
-          show_composition = 1;
-          break;
         case 'h':
           std::cout << "Usage: " << program_invocation_short_name << " OPTION... FILE\n"
                     <<
                     "Compile " PACKAGE_NAME " source code.\n"
                     "\n"
-                    "  -c, --composition            print composition analysis and exit\n"
-                    "  -s SCHED, --scheduler=SCHED  select a scheduler (instance, partitioned)\n"
-                    "  -t NUM, --threads=NUM        use NUM threads\n"
-                    "  -r NUM, --srand=NUM          initialize the random number generator with NUM\n"
-                    "  --help                       display this help and exit\n"
-                    "  --version                    display version information and exit\n"
+                    "  --composition       print composition analysis and exit\n"
+                    "  --scheduler=SCHED   select a scheduler (instance, partitioned)\n"
+                    "  --threads=NUM       use NUM threads\n"
+                    "  --srand=NUM         initialize the random number generator with NUM\n"
+                    "  --profile[=SIZE]    enable profiling and store at least SIZE points per thread when profiling (4096)\n"
+                    "  --profile-out=FILE  write profiling data to FILE (stderr)\n"
+                    "  -h, --help          display this help and exit\n"
+                    "  -v, --version       display version information and exit\n"
                     "\n"
                     "Report bugs to: " PACKAGE_BUGREPORT "\n";
           exit (EXIT_SUCCESS);
-          break;
-        case 's':
-          scheduler_type = optarg;
-          break;
-        case 't':
-          thread_count = atoi (optarg);
-          break;
-        case 'r':
-          srand (atoi (optarg));
           break;
         case 'v':
           print_version ();
           exit (EXIT_SUCCESS);
           break;
+
+        case SCHEDULER_OPTION:
+          scheduler_type = optarg;
+          break;
+        case THREADS_OPTION:
+          thread_count = atoi (optarg);
+          break;
+        case SRAND_OPTION:
+          srand (atoi (optarg));
+          break;
+        case PROFILE_OPTION:
+          if (optarg) {
+            profile = atoi (optarg);
+          } else {
+            profile = 4096;
+          }
+          break;
+        case PROFILE_OUT_OPTION:
+          profile_out = fopen (optarg, "w");
+          if (profile_out == NULL) {
+            error (EXIT_FAILURE, errno, "Could not open %s for writing", optarg);
+          }
+          break;
+
         default:
           try_help ();
           break;
@@ -125,6 +154,28 @@ main (int argc, char **argv)
       error (EXIT_FAILURE, 0, "Illegal thread count: %d", thread_count);
     }
 
+  if (profile) {
+    fprintf (profile_out, "BEGIN profile\n");
+    fprintf (profile_out, "scheduler %s\n", scheduler_type.c_str ());
+
+    int e = 1;
+    while ((1 << e) < profile && e < 31) {
+      ++e;
+    }
+    profile = 1 << e;
+    fprintf (profile_out, "points_per_thread %zd\n", profile);
+
+    struct timespec res;
+    clock_getres (CLOCK_MONOTONIC, &res);
+    fprintf (profile_out, "resolution %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  }
+
+  if (profile) {
+    struct timespec res;
+    clock_gettime (CLOCK_MONOTONIC, &res);
+    fprintf (profile_out, "BEGIN parse %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  }
+
   util::Location::StaticFile = argv[optind];
 
   // Open the input file.
@@ -141,6 +192,18 @@ main (int argc, char **argv)
     }
   assert (root != NULL);
 
+  if (profile) {
+    struct timespec res;
+    clock_gettime (CLOCK_MONOTONIC, &res);
+    fprintf (profile_out, "END parse %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  }
+
+  if (profile) {
+    struct timespec res;
+    clock_gettime (CLOCK_MONOTONIC, &res);
+    fprintf (profile_out, "BEGIN semantic_analysis %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  }
+
   arch::set_stack_alignment (sizeof (void*));
 
   util::ErrorReporter er (3);
@@ -152,12 +215,36 @@ main (int argc, char **argv)
   semantic::check_types (root, er, symtab);
   semantic::compute_receiver_access (root);
 
+  if (profile) {
+    struct timespec res;
+    clock_gettime (CLOCK_MONOTONIC, &res);
+    fprintf (profile_out, "END semantic_analysis %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  }
+
+  if (profile) {
+    struct timespec res;
+    clock_gettime (CLOCK_MONOTONIC, &res);
+    fprintf (profile_out, "BEGIN code_generation %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  }
+
   // Calculate the offsets of all stack variables.
   // Do this so we can execute some code statically when checking composition.
   semantic::allocate_stack_variables (root);
 
   // Generate code.
   code::generate_code (root);
+
+  if (profile) {
+    struct timespec res;
+    clock_gettime (CLOCK_MONOTONIC, &res);
+    fprintf (profile_out, "END code_generation %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  }
+
+  if (profile) {
+    struct timespec res;
+    clock_gettime (CLOCK_MONOTONIC, &res);
+    fprintf (profile_out, "BEGIN composition_check %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  }
 
   // Check composition.
   composition::Composer instance_table;
@@ -169,6 +256,18 @@ main (int argc, char **argv)
       return 0;
     }
   instance_table.analyze ();
+
+  if (profile) {
+    struct timespec res;
+    clock_gettime (CLOCK_MONOTONIC, &res);
+    fprintf (profile_out, "END composition_check %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  }
+
+  if (profile) {
+    struct timespec res;
+    clock_gettime (CLOCK_MONOTONIC, &res);
+    fprintf (profile_out, "BEGIN scheduler_init %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  }
 
   runtime::allocate_instances (instance_table);
   runtime::create_bindings (instance_table);
@@ -187,11 +286,33 @@ main (int argc, char **argv)
       error (EXIT_FAILURE, 0, "unknown scheduler type '%s'", scheduler_type.c_str ());
     }
 
-#ifdef PROFILE_LATENCY
-  runtime::latency_file = fopen ("latency", "w");
-#endif
+  scheduler->init (instance_table, 8 * 1024, thread_count, profile);
 
-  scheduler->run (instance_table, 8 * 1024, thread_count);
+  if (profile) {
+    struct timespec res;
+    clock_gettime (CLOCK_MONOTONIC, &res);
+    fprintf (profile_out, "END scheduler_init %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  }
+
+  if (profile) {
+    struct timespec res;
+    clock_gettime (CLOCK_MONOTONIC, &res);
+    fprintf (profile_out, "BEGIN scheduler_run %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  }
+
+  scheduler->run ();
+
+  if (profile) {
+    struct timespec res;
+    clock_gettime (CLOCK_MONOTONIC, &res);
+    fprintf (profile_out, "END scheduler_run %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  }
+
+  scheduler->fini (profile_out);
+
+  if (profile) {
+    fprintf (profile_out, "END profile\n");
+  }
 
   return 0;
 }

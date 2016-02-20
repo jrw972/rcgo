@@ -140,12 +140,30 @@ struct Visitor : public ast::DefaultVisitor
     node.receiver_access = AccessNone;
   }
 
+  void visit (WhileStatement& node)
+  {
+    node.visit_children (*this);
+    node.receiver_access = node.body->receiver_access;
+  }
+
   void visit (IfStatement& node)
   {
     node.visit_children (*this);
     node.receiver_access = node.statement->receiver_access;
     node.receiver_access = std::max (node.receiver_access, node.true_branch->receiver_access);
     node.receiver_access = std::max (node.receiver_access, node.false_branch->receiver_access);
+  }
+
+  void visit (AddAssignStatement& node)
+  {
+    node.visit_children (*this);
+    // Straight write.
+    if (node.left->receiver_state)
+      {
+        node.receiver_access = AccessWrite;
+        return;
+      }
+    node.receiver_access = std::max (node.left->receiver_access, node.right->receiver_access);
   }
 
   void visit (AssignStatement& node)
@@ -201,6 +219,7 @@ struct Visitor : public ast::DefaultVisitor
 
   void visit (CallExpr& node)
   {
+    assert (node.expr->expression_kind != kUnknown);
     if (node.expr->expression_kind == kType)
       {
         // Conversion.

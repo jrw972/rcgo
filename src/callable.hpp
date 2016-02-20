@@ -17,7 +17,7 @@ class Callable
 {
 public:
   virtual ~Callable () { }
-  virtual void call (runtime::executor_base_t& exec) const = 0;
+  virtual void call (runtime::ExecutorBase& exec) const = 0;
   virtual const type::Signature* signature () const = 0;
   virtual const type::Type* type () const = 0;
   virtual size_t return_size () const = 0;
@@ -39,7 +39,7 @@ struct Function : public Callable, public decl::Symbol
   Function (ast::Function& node, const type::Function* type);
 
   // Callable
-  virtual void call (runtime::executor_base_t& exec) const;
+  virtual void call (runtime::ExecutorBase& exec) const;
   virtual const type::Type* type () const
   {
     return functionType_;
@@ -96,7 +96,7 @@ struct Method : public Callable
     , returnSize (method_type_->return_type ()->Size ())
   { }
 
-  virtual void call (runtime::executor_base_t& exec) const;
+  virtual void call (runtime::ExecutorBase& exec) const;
   virtual const type::Signature* signature () const
   {
     return methodType->signature;
@@ -150,7 +150,7 @@ struct Initializer : public Callable
     , returnSize (initializer_type_->return_type ()->Size ())
   { }
 
-  virtual void call (runtime::executor_base_t& exec) const;
+  virtual void call (runtime::ExecutorBase& exec) const;
   virtual const type::Type* type () const
   {
     return initializerType;
@@ -202,7 +202,7 @@ struct Getter : public Callable
     , returnSize (getter_type_->return_type ()->Size ())
   { }
 
-  virtual void call (runtime::executor_base_t& exec) const;
+  virtual void call (runtime::ExecutorBase& exec) const;
 
   virtual const type::Type* type () const
   {

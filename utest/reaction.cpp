@@ -12,7 +12,7 @@ struct MockOperation : public runtime::Operation
     : was_executed (false)
   { }
 
-  virtual runtime::OpReturn execute (runtime::executor_base_t& exec) const
+  virtual runtime::OpReturn execute (runtime::ExecutorBase& exec) const
   {
     const_cast<MockOperation*> (this)->was_executed = true;
   }
@@ -22,10 +22,10 @@ struct MockOperation : public runtime::Operation
   bool was_executed;
 };
 
-struct MockExecutor : public runtime::executor_base_t
+struct MockExecutor : public runtime::ExecutorBase
 {
   MockExecutor ()
-    : executor_base_t (0, NULL)
+    : ExecutorBase (0, NULL, 0)
   { }
   virtual runtime::Heap* heap () const
   {

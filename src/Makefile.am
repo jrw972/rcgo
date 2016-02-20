@@ -22,7 +22,7 @@ composition.hpp composition.cpp \
 debug.hpp \
 enter_symbols.cpp \
 evaluate_static.hpp evaluate_static.cpp \
-executor_base.hpp \
+executor_base.hpp executor_base.cpp \
 field.hpp \
 generate_code.hpp generate_code.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \

@@ -57,7 +57,7 @@ Readable::Readable (const util::Location& loc)
 { }
 
 void
-Readable::call (runtime::executor_base_t& exec) const
+Readable::call (runtime::ExecutorBase& exec) const
 {
   runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->GetSignature ()->At (0)->offset ()));
   Bool::ValueType* r = static_cast<Bool::ValueType*> (exec.stack ().get_address (type_->GetReturnParameter ()->offset ()));
@@ -88,7 +88,7 @@ Read::Read (const util::Location& loc)
 { }
 
 void
-Read::call (runtime::executor_base_t& exec) const
+Read::call (runtime::ExecutorBase& exec) const
 {
   runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->GetSignature ()->At (0)->offset ()));
   Slice::ValueType* buf = static_cast<Slice::ValueType*> (exec.stack ().get_address (type_->GetSignature ()->At (1)->offset ()));
@@ -105,7 +105,7 @@ Writable::Writable (const util::Location& loc)
 { }
 
 void
-Writable::call (runtime::executor_base_t& exec) const
+Writable::call (runtime::ExecutorBase& exec) const
 {
   runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->GetSignature ()->At (0)->offset ()));
   Bool::ValueType* r = static_cast<Bool::ValueType*> (exec.stack ().get_address (type_->GetReturnParameter ()->offset ()));
@@ -135,7 +135,7 @@ ClockGettime::ClockGettime (const util::Location& loc)
 { }
 
 void
-ClockGettime::call (runtime::executor_base_t& exec) const
+ClockGettime::call (runtime::ExecutorBase& exec) const
 {
   struct timespec* ts = *static_cast< struct timespec**> (exec.stack ().get_address (type_->GetSignature ()->At (0)->offset ()));
   Int::ValueType* r = static_cast<Int::ValueType*> (exec.stack ().get_address (type_->GetReturnParameter ()->offset ()));
@@ -150,7 +150,7 @@ TimerfdCreate::TimerfdCreate (const util::Location& loc)
 { }
 
 void
-TimerfdCreate::call (runtime::executor_base_t& exec) const
+TimerfdCreate::call (runtime::ExecutorBase& exec) const
 {
   runtime::FileDescriptor** ret = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->GetReturnParameter ()->offset ()));
   int fd = timerfd_create (CLOCK_MONOTONIC, TFD_NONBLOCK);
@@ -174,7 +174,7 @@ TimerfdSettime::TimerfdSettime (const util::Location& loc)
 { }
 
 void
-TimerfdSettime::call (runtime::executor_base_t& exec) const
+TimerfdSettime::call (runtime::ExecutorBase& exec) const
 {
   runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->GetSignature ()->At (0)->offset ()));
   Uint64::ValueType* v = static_cast<Uint64::ValueType*> (exec.stack ().get_address (type_->GetSignature ()->At (1)->offset ()));
@@ -196,7 +196,7 @@ UdpSocket::UdpSocket (const util::Location& loc)
 { }
 
 void
-UdpSocket::call (runtime::executor_base_t& exec) const
+UdpSocket::call (runtime::ExecutorBase& exec) const
 {
   runtime::FileDescriptor** ret = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->GetReturnParameter ()->offset ()));
 
@@ -229,7 +229,7 @@ Sendto::Sendto (const util::Location& loc)
 { }
 
 void
-Sendto::call (runtime::executor_base_t& exec) const
+Sendto::call (runtime::ExecutorBase& exec) const
 {
   runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->GetSignature ()->At (0)->offset ()));
   StringU::ValueType* host = static_cast<StringU::ValueType*> (exec.stack ().get_address (type_->GetSignature ()->At (1)->offset ()));
