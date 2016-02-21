@@ -74,7 +74,7 @@ func (this *SntpMessage) serialize (buf []byte) []byte {
      return buf;
 }
 
-func (this *SntpMessage) deserialize (buf []byte) {
+func (this *SntpMessage) deserialize (buf $foreign []byte) {
      if len (buf) >= 1 {
             this.mode = buf[0] & 0x7;
             this.versionNumber = buf[0] >> 3 & 0x7;
@@ -207,75 +207,64 @@ func (this *Queue) Front () UdpMessage
 
 type UdpParticipant component {
      fd FileDescriptor;
-     queue Queue;
+     outQueue Queue;
+     inQueue Queue;
+     Receive push (msg $foreign UdpMessage);
 };
 
 reaction (this $const * UdpParticipant) Send (msg $foreign UdpMessage) {
      var m UdpMessage = msg.Copy ();
      activate {
-          this.queue.Push (m);
+          this.outQueue.Push (m);
      };
 }
 
-action (this $const * UdpParticipant) _send (!this.queue.Empty () && writable (this.fd)) {
+action (this $const * UdpParticipant) _send (!this.outQueue.Empty () && writable (this.fd)) {
        activate {
-              var m UdpMessage = this.queue.Front ();
+              var m UdpMessage = this.outQueue.Front ();
               sendto (this.fd, m.host, m.port, m.msg);
-              this.queue.Pop ();
+              this.outQueue.Pop ();
        }
 }
 
-action (this $const * UdpParticipant) _receive (readable (this.fd)) {
-    var ts timespec;
-    clock_gettime (&ts);
-    destination := (uint64 (ts.tv_sec + 0x83AA7E80) << 32) |
-                   (uint64 (float64 (ts.tv_nsec) * 1e-9 * (1 << 32)) << 0);
-
+action (this $const * UdpParticipant) _pre_receive (readable (this.fd)) {
        activate {
-          var buf [12 * 4]byte;
-          var r int = read(this.fd, buf[:]);
-          var s SntpMessage;
-          s.deserialize (buf[:]);
-          println ("leapIndicator = ", s.leapIndicator);
-          println ("versionNumber = ", s.versionNumber);
-          println ("mode = ", s.mode);
-          println ("stratum = ", s.stratum);
-          println ("poll = ", s.poll);
-          println ("precision = ", s.precision);
-          println ("rootDelay = ", s.rootDelay);
-          println ("rootDispersion = ", s.rootDispersion);
-          println ("referenceIdentifier = ", s.referenceIdentifier);
-          println ("reference = ", s.reference);
-          println ("originate = ", s.originate);
-          println ("receive = ", s.receive);
-          println ("transmit = ", s.transmit);
-          println ((destination - s.originate) - (s.transmit - s.receive));
-          println (int64((s.receive - s.originate) + (s.transmit - destination)) / 2);
-          //      d = (T4 - T1) - (T3 - T2)     t = ((T2 - T1) + (T3 - T4)) / 2.
+         var buf [64]byte;
+         var r int = read(this.fd, buf[:]);
+         var m UdpMessage;
+         m.msg = copy(buf[0:r]);
+         this.inQueue.Push (m);
        }
+}
+
+action (this $const *UdpParticipant) _receive (!this.inQueue.Empty ()) {
+  activate Receive (this.inQueue.Front ()) {
+    this.inQueue.Pop ();
+  }
 }
 
 init (this *UdpParticipant) Init () {
      this.fd = udp_socket();
 }
 
-type System component {
+type Sntp component {
      timer Timer;
      udp UdpParticipant;
      Send push (msg $foreign UdpMessage);
 };
 
-bind (this *System) _bind {
+bind (this *Sntp) _bind {
      this.timer.Alarm -> this.Alarm;
      this.Send -> this.udp.Send;
+     this.udp.Receive -> this.Receive;
 }
 
-init (this *System) Init () {
+init (this *Sntp) Init () {
      this.timer.Init(60);
      this.udp.Init();
 }
 
-reaction (this $const * System) Alarm () {
+reaction (this $const * Sntp) Alarm () {
      var s SntpMessage;
      s.initialize ();
 
@@ -288,4 +277,30 @@ reaction (this $const * System) Alarm () {
      activate Send (msg) { };
 }
 
-instance s System Init ();
+reaction (this $const * Sntp) Receive (msg $foreign UdpMessage) {
+    var ts timespec;
+    clock_gettime (&ts);
+    destination := (uint64 (ts.tv_sec + 0x83AA7E80) << 32) |
+                   (uint64 (float64 (ts.tv_nsec) * 1e-9 * (1 << 32)) << 0);
+
+    var s SntpMessage;
+    s.deserialize (msg.msg);
+    println ("leapIndicator = ", s.leapIndicator);
+    println ("versionNumber = ", s.versionNumber);
+    println ("mode = ", s.mode);
+    println ("stratum = ", s.stratum);
+    println ("poll = ", s.poll);
+    println ("precision = ", s.precision);
+    println ("rootDelay = ", s.rootDelay);
+    println ("rootDispersion = ", s.rootDispersion);
+    println ("referenceIdentifier = ", s.referenceIdentifier);
+    println ("reference = ", s.reference);
+    println ("originate = ", s.originate);
+    println ("receive = ", s.receive);
+    println ("transmit = ", s.transmit);
+    println ("roundtrip delay = ", (destination - s.originate) - (s.transmit - s.receive));
+    println ("clock offset = ", int64((s.receive - s.originate) + (s.transmit - destination)) / 2);
+    //      d = (T4 - T1) - (T3 - T2)     t = ((T2 - T1) + (T3 - T4)) / 2.
+}
+
+instance s Sntp Init ();
