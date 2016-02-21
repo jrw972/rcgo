@@ -1,17 +1,18 @@
 \chapter{Implementation \label{implementation}}
 
-This chapter presents the algorithm for checking composition, the implementation of activations, the implementation of heaps, and the implementation of two schedulers for an interpreter designed for the language presented in chapter~\ref{language}.
+This chapter presents the algorithm for checking composition, the implementation of activations, the implementation of heaps, the implementation of two schedulers, and I/O facilities for an interpreter designed for the language presented in chapter~\ref{language}.
 
 \paragraph{Interpreter organization and implementation.}
 The interpreter has an orthodox design consisting of a scanner, a parser, a sequence of semantic checks, a code generation phase, composition checks, and an execution phase.
 The interpretter is implemented in C++.
 Flex and Bison were used to implement the scanner and parser, respectively.
-The semantic checks include type checking and checks to support the enforcement of \verb+const+ and \verb+foreign+ intrinsic and dereference mutability.
+The semantic checks include type checking and enforcement of \verb+const+ and \verb+foreign+ intrinsic and dereference mutability.
 The implementation of these checks follow the requirements set forth in chapter~\ref{language}.
 The code generation phase converts the AST into a tree of stack operations.
 The execution phase begins by initializing the instances by calling the initializer associated with each instance.
 The scheduler then proceeds by selecting and executing actions with weak fairness.
 Scheduler implementations use the POSIX threads (pthreads) library for concurrent execution and synchronization.
+The code is available on GitHub~\footnote{https://github.com/jrw972/rc}.
 
 \section{Enforcing Sound Composition}
 
@@ -30,7 +31,7 @@ Thus, the check for sound composition requires a complete understanding of the s
 To this end, the algorithm described in this section leverages the static system assumption.
 We leave relaxing the static system assumption, which will require extending the model and proposed check, as future work.
 
-The language semantics of chapter~\ref{model} enforce a number of assumptions that allow the composition check to be formulated as set of simple graph- and set-theoretic problems.
+The language semantics of chapter~\ref{model} enforce a number of assumptions that allow the composition check to be formulated as a set of simple graph- and set-theoretic problems.
 Activation statements are limited to the bodies of actions and reactions and port calls are limited to activation statements.
 Activation statements terminate the execution of an action or reaction meaning at most one will be called per action or reaction body.
 Thus, a transaction can be viewed as a directed graph where each node is an action or reaction and edges indicate that the source action or reaction activates the target reaction.
@@ -49,7 +50,7 @@ Let $I$ be a component instance of type $T$.
 Associated with $T$ is a set of binders $B$.
 Each binder $b \in B$ is evaluated for $I$ to create a set of bindings.
 A binding either binds a push port to a reaction or a getter to a pull port.
-The result of enumerating the bindings is two tabular functions.
+The result of enumerating the bindings is two functions (look-up tables).
 The function $reactions: (I,Push) \to \{(I,Reaction)\}$ maps an instance/push port pair to a set of instance/reaction pairs.
 The function $getter: (I,Pull) \to \{(I,Getter)\}$ maps an instance/pull port pair to a set of instance/getter pairs.
 
@@ -222,7 +223,7 @@ Figure~\ref{instance_sets} shows the instance set calculation for the transactio
 The root shows that Instance1 does not change in at least one activation (Instance1) and may change in at least one activation (Instance1*), that Instance2 may change in every activation (Instance2*), and that Instance3 is read-only in this transaction (Instance3).
 The empty node in figure~\ref{instance_sets} comes from an unbound push port.
 
-The second step of the check for non-deterministic transactions is to verify that a mutated instance appears in at most one child node instance set for the activation and push port nodes.
+The second step of the check for a non-deterministic transaction is to verify that a mutated instance appears in at most one child node instance set for the activation and push port nodes.
 This check succeeds everywhere but Activation2 in figures~\ref{transaction}~and~\ref{instance_sets} as Instance2* appears in both children.
 The activation and push port nodes represent activities that will be performed together.
 That is, once control passes to an activation statement, all push ports and their bound reactions are activated.
@@ -514,7 +515,7 @@ When a new heap is created, it is inserted as a child of the active heap.
 Chapter~\ref{language} describes how the semantics of reactive components permit concurrent access to heaps.
 The first scenario where this may occur is when a heap is passed to a push port that is bound to multiple reactions.
 The semantics of reactive components allow the reactions to be executed concurrently.
-Thus, two different threads may be attempt to move/merge the same heap at the same time.
+Thus, two different threads may attempt to move/merge the same heap at the same time.
 The second scenario occurs when a component is concurrently accessed in multiple transactions that don't mutate the state of the component.
 The action, reaction, or getter is allowed to allocate memory which means that heaps must correctly handle concurrent access.
 Our implementation of heaps uses the Thread Safe Interface pattern~\cite{schmidt2000pattern} to synchronize access to heaps when allocating, moving, and merging.
@@ -587,14 +588,16 @@ A scheduler is \emph{safe} if it avoids conditions where one transaction is chan
 A scheduler is \emph{responsible} if it only terminates when the precondition for every action is false.
 Obviously, we are interested in fair, safe, and responsible schedulers as these schedulers enforce the semantics of reactive components.
 The final criteria for a scheduler is efficiency which typically refers to either the computational complexity or storage complexity associated with its operation.
-Of primary interest is the \emph{selection efficiency} or the amount of computation required for the scheduler to determine the next action to execute.
+% Of primary interest is the \emph{selection efficiency} or the amount of computation required for the scheduler to determine the next action to execute.
 
 \paragraph{Single-threaded round-robin scheduler.}
 Perhaps the simplest scheduler that can be implemented is a single-threaded round-robin scheduler.
 This design may be appropriate in the context of uniprocessor embedded systems with tight resource constraints.
 The scheduler repeatedly cycles through the list of transactions, evaluating the precondition of each action and executing the body if the precondition was true.
 If no action is executed in a cycle, then the scheduler terminates.
-This scheduling algorithm is fair by virtue of the strict round-robin policy, safe from the fact that it is single-threaded, and responsible by definition.
+This scheduler is \emph{non-preemptive} meaning that it does not interrupt the execution of a transaction, i.e., transactions are physically atomic.
+Preemptive schedulers are left for future work.
+This scheduling algorithm is fair by virtue of the strict round-robin policy, safe from the fact that it is single-threaded and non-preemptive, and responsible by definition.
 The selection efficiency of this algorithm is $O(|A|)$ as illustrated by a system where one action that is perpetually enabled while all of the other actions are perpetually disabled.
 
 \paragraph{Single-threaded scheduler with an action work queue.}
@@ -604,8 +607,9 @@ At initialization time, the scheduler populates the queue by evaluating the prec
 The scheduler then repeatedly takes an action from the queue, executes it, and then inserts any newly enabled actions.
 To find newly enabled actions, the scheduler uses the instance set generated during composition analysis.
 That is, after executing an action, the scheduler tests all of the actions for the components in the instance set and adds them to the queue if necessary.
+Alternatively, the scheduler may assume that the precondition is true and insert the action knowing that the precondition will be re-evaluated when the action is selected.
 The scheduler terminates when the work queue is empty.
-This scheduling algorithm is fair if the work queue is processed in first-in first-out (FIFO) order, safe because the algorithm is single-threaded, and responsible since an empty work queue implies no action is enabled.
+This scheduling algorithm is fair if the work queue is processed in first-in first-out (FIFO) order, safe because the algorithm is single-threaded and non-preemptive, and responsible since an empty work queue implies no action is enabled.
 
 The pathological scenario of the single-threaded round-robin scheduler applies to this scheduler as well so the worst-case selection efficiency of the algorithm is $O(|A|)$.
 Assume that the most complex transaction in the system involves $c$ components and some component has a system maximum action count of $a$.
@@ -617,7 +621,7 @@ For example, the single-threaded round-robin scheduler would be appropriate for 
 
 \paragraph{Single-threaded scheduler with an instance work queue.}
 This scheduling algorithm attempts to squeeze a little more performance from the single-threaded scheduler with an action work queue.
-This significant difference is that after the scheduler executes an action, it places the component instances that might have changed state into the work queue.
+The significant difference is that after the scheduler executes an action, it places the component instances that might have changed state into the work queue.
 The work queue is initialized with all of the components in the system.
 When processing a component on the work queue, the scheduler cycles through all of the actions for that particular component.
 The increase in performance comes from deferring the evaluations of the preconditions until absolutely necessary.
@@ -639,7 +643,7 @@ The obvious feature of this algorithm is the locking required to coordinate acce
 One negative characteristic caused by the locking is that processors may become idle while waiting for a lock.
 Thus, we might look for alternatives that allow a processor to do useful work while waiting for a lock.
 Another goal might be to look for ways to coordinate access to component instances without using locks at all.
-Chapter~\ref{future_work} describes some ideas toward these goals.
+Some of these ideas are explored later in this chapter.
 
 \paragraph{Multi-threaded partitioned round-robin scheduler.}
 Rather than have each thread process the entire list of transactions, the multi-threaded partitioned round-robin scheduler divides the list of transactions among the available threads.
@@ -685,6 +689,8 @@ Otherwise, the request is placed on the queue.
 A scheduler thread failing to acquire the lock can either idle itself or attempt to execute a different action.
 When a lock is unlocked, the thread at the front of the queue is notified so it may resume processing the action that it was attempting to execute.
 The protocol avoids reader and writer starvation and ensures fairness since the queue is processed in LIFO order.
+This scheduler is \emph{work conserving} since a scheduler thread continues to execute actions instead of blocking.
+However, scheduler threads do not steal work from other threads.
 
 The aforementioned centralized termination protocol has the potential to be disruptive.
 Thus, the motivation for a distributed termination protocol is to keep the scheduler threads as busy as possible meaning that the termination protocol is started infrequently and the termination protocol itself aborts as early as possible if the termination condition has not been reached.
@@ -723,14 +729,25 @@ Our focus in this work is to make progress on a general purpose multi-threaded s
 We propose the following standard queueing metrics for the evaluation of a general-purpose scheduler:
 \begin{description}
 \item[Throughput] the number of actions executed per second.
-\item[Latency] the amount of time between an action becoming enabled and being executed.
-\item[Utilization] the fraction of the CPU used.
-\end{description}
 Given the same system, a scheduler with higher throughput is preferable to a system with lower throughput as it is accomplishing more work per unit time.
+\item[Latency] the amount of time between an action becoming enabled and being executed.
 The goal in measuring the latency between an action becoming enabled and its execution is to quantify the responsiveness of the scheduler.
-Both throughput and latency may be considered for individual actions or aggregated over all actions in the system.
+An interactive application may prefer a scheduler that executes enabled actions promptly to aid in providing a good user experience.
+\item[Utilization] the fraction of the CPU used.
 Utilization is a measure of how efficiently the scheduler is using the CPUs and can be used to qualify an improvement in throughput or latency.
-For example, a 10\% increase in throughput accompanied by a 10\% increase in utilization is acceptable while a 10\% increase in throughput with a 100\% increase in utilization is not acceptable.
+For example, a 10\% increase in throughput accompanied by a 10\% increase in utilization may be acceptable while a 10\% increase in throughput with a 100\% increase in utilization may not be acceptable.
+\end{description}
+Both throughput and latency may be considered for individual actions or aggregated over all actions in the system.
+
+\paragraph{Materials and methods.}
+We used a variant of the fully-factored clock system of chapter~\ref{model} to evaluate the two scheduler implementations\footnote{See /samples/clock3.rc in the source code.}.
+In this system, there are three components of interest which we will designate the Client, the Server, and the Counter.
+This system has three transactions:
+\begin{itemize}
+  \item Request - The client requests the time from the server.  This involves the Client and the Server.
+  \item Response - The server responds with the time.  This involves the Client, the Server, and the Counter.
+  \item Tick - The counter increments the current time.  This involves the Counter.
+\end{itemize}
 
 \begin{figure}
 \centering
@@ -746,30 +763,41 @@ For example, a 10\% increase in throughput accompanied by a 10\% increase in uti
 
 \end{tikzpicture}
 }%
-\caption{Mutex graph for the clock system.  Each node is a transaction.  Nodes sharing an edge cannot be executed concurrently due to shared state. \label{clock_system_mutex}}
+\caption{Interference graph for the clock system.  Each node is a transaction.  Nodes sharing an edge cannot be executed concurrently due to shared state. \label{clock_system_mutex}}
 \end{figure}
 
-We used the fully-factored clock system of chapter~\ref{model} to evaluate the two scheduler implementations.
-In this system, there are three components of interest which we will designate the Client, the Server, and the Counter.
-This system has three transactions:
-\begin{itemize}
-  \item Request - The client requests the time from the server.  This involves the Client and the Server.
-  \item Response - The server responds with the time.  This involves the Client, the Server, and the Counter.
-  \item Tick - The counter increments the current time.  This involves the Counter.
-\end{itemize}
-Figure~\ref{clock_system_mutex} shows the \emph{mutex graph} for the clock system.
+Figure~\ref{clock_system_mutex} shows the \emph{interference graph} for the clock system.
 Each node in the graph is a transaction.
 Nodes sharing an edge cannot be executed concurrently due to shared state.
 Conversely, nodes that are not linked by an edge can be executed concurrently.
 For the purpose of evaluating schedulers, the clock system has the important characteristic that Request and Tick can be executed concurrently while Response must be executed independently.
 Another useful feature of this system is that each component has exactly one action, thus, a  work queue of instances may also be viewed as a work queue of actions.
 
-For comparison, we implemented the clock system using the POSIX threads library (pthreads).
-To preserve the spirit of the original design, the custom implementation uses three threads corresponding to the Request, Response, and Tick transactions.
+For comparison, we implemented two versions of the clock system using the POSIX threads library (pthreads).
+The first design attempts to preserve the spirit of the clock system by being as asynchronous as possible.
+The implementation uses three threads corresponding to the Request, Response, and Tick transactions.
 The Request and Response threads share a flag variable that is protected by a mutex and condition variable to implement the asynchronous request/response protocol.
 The Response and Tick threads share a counter variable that is protected by a mutex.
-For convenience, the custom clock implementation will be called the \emph{clock scheduler}, the multi-threaded scheduler with a global instance work queue will be called will be called the \emph{instance scheduler}, and the multi-threaded partitioned  round-robin scheduler with asynchronous locking and distributed termination will be called the \emph{partitioned scheduler}.
-Table~\ref{environment} lists the environment used to perform the scheduler experiments.
+The second design simplifies the asynchronous aspects of the clock system in an attempt to be more conducive to a pthreads implementation.
+In this design, there is one thread implementing the Request/Response cycle and another thread incrementing the counter.
+The two threads synchronize access to the counter through a single mutex.
+For convenience, the asynchronous threaded implementation will be called the \emph{AsyncClock scheduler}, the synchronous threaded implementation will be called the \emph{SyncClock scheduler}, the multi-threaded scheduler with a global instance work queue will be called will be called the \emph{Instance scheduler}, and the multi-threaded partitioned  round-robin scheduler with asynchronous locking and distributed termination will be called the \emph{Partitioned scheduler}.
+
+The clock system was executed 1,000 times to profile the performance of each scheduler.
+The programs are instrumented with profiling code that records the total execution time and timestamps for each action.
+The timestamps are stored in memory and written after the scheduler terminates to avoid disruptions in timing due to output.
+The Request and Tick actions are limited to 10,000 executions.
+The relationship between Request and Response causes Response to be executed 10,000 times as well.
+Thus, each run generates 30,000 data points describing the actions that were executed.
+The throughput for a single run is determined by dividing the total number of actions (30,000) by the total real time used for execution.
+The latency for each action is determined by computing the difference between the action start time and the end time of the enabling action, i.e., (Request start - Response end), (Response start - Request end), and (Tick start - Tick end).
+For each scheduler, $1,000 \times 30,000 = 30,000,000$ latency points were collected.
+The utilization was determined using the \verb+time+ utility.
+Let all actions in a run be placed on a timeline according to their start time.
+We define the \emph{entanglement} of a run to be the number of adjacent actions on the timeline that were executed in different threads.
+The entanglement is used to measure the granularity of the concurrency between the scheduler threads.
+Given that each run executes the same number of actions, a high entanglement indicates ``fine'' concurrency, i.e., threads are executing actions in parallel or execution is rapidly alternating between the threads, while a low entanglement indicates ``coarse'' concurrency.
+Entanglement may be forced by the scheduler, occur opportunistically, or not at all.
 
 \begin{table}
 \center
@@ -780,7 +808,7 @@ Processor:        & Intel Pentium B960 2.20GHz \\
 Architecture:     & 64-bit \\
 Cores:            & 2 \\
 Memory:           & 4GB \\
-Kernel:           & 3.13.0-76-generic \#120-Ubuntu SMP \\
+Kernel:           & 3.13.0-77-generic \#121-Ubuntu SMP \\
 Compiler:         & g++ 4.8.4 \\
 C library:        & glibc 2.19 \\
 POSIX threads:    & glibc 2.19 \\
@@ -789,106 +817,546 @@ C++ library:      & glibc++ 3.4.19 \\
 \caption{Experimental environment used for scheduler testing.\label{environment}}
 \end{table}
 
+Table~\ref{environment} lists the environment used to perform the scheduler experiments\footnote{These experiments reported in this evaluation were performed using revision d88b5b57a96733b5511922e47dfd46b1d059b495 of the code.}.
+The timestamp resolution reported by the operating system was 1 ns.
+The Instance and Partitioned schedulers were configured to use two threads.
+The SyncClock and AsyncClock schedulers were designed to use two and three threads, respectively.
+The data for the experiments can be obtained by emailing the author~\footnote{jrw972@gmail.com}.
+
+%% BEGIN SYNC CLOCK
+%% \begin{figure}
+%% \center
+%% \includegraphics[width=\textwidth]{sync_clock_throughput_cdf.png}
+%% \caption{Cumulative distribution function for the throughput of the SyncClock scheduler. \label{sync_clock_throughput}}
+%% \end{figure}
+
 \begin{figure}
 \center
-\includegraphics[width=\textwidth]{clock_throughput_cdf.png}
-\caption{Cumulative distribution function for the throughput of the clock scheduler. \label{clock_throughput}}
+\includegraphics[width=\textwidth]{sync_clock_throughput_hist.png}
+\caption{\label{sync_clock_throughput}}
 \end{figure}
 
 \begin{figure}
 \center
-\includegraphics[width=\textwidth]{instance_throughput_cdf.png}
-\caption{Cumulative distribution function for the throughput of the instance scheduler. \label{instance_throughput}}
+\includegraphics[width=\textwidth]{sync_clock_throughput_utilization.png}
+\caption{\label{sync_clock_throughput_utilization}}
 \end{figure}
 
 \begin{figure}
 \center
-\includegraphics[width=\textwidth]{partitioned_throughput_cdf.png}
-\caption{Cumulative distribution function for the throughput of the partitioned scheduler. \label{partitioned_throughput}}
+\includegraphics[width=\textwidth]{sync_clock_throughput_entanglement.png}
+\caption{\label{sync_clock_throughput_entanglement}}
 \end{figure}
 
-The throughput of each scheduler was determined by executing the clock system for approximately 10 seconds and counting the number of executed transactions to compute the throughput.
-The number of transactions was determined from the program output and does not include the garbage collection actions.
-For the instance and partitioned schedulers, the 10 seconds includes parsing the source file, performing the semantic checks, etc.
-However, it is long enough to establish a steady state.
-The experiment was repeated 1,000 times.
-The cumulative distribution function for the throughput of each scheduler is shown in figures~\ref{clock_throughput}, \ref{instance_throughput} and~\ref{partitioned_throughput}.
-Based on the shape of distributions, we select the median as the metric for comparison.
+%% \begin{figure}
+%% \center
+%% \includegraphics[width=\textwidth]{sync_clock_latency_cdf.png}
+%% \caption{Cumulative distribution function for the latency of the SyncClock scheduler. \label{sync_clock_latency}}
+%% \end{figure}
 
-The graphs show that the partitioned scheduler achieves a higher average throughput for the clock system.
-The average throughput for the instance scheduler was 481340.3 transactions/s while the average throughput for the partitioned scheduler was 496106.7 transactions/s; an increase of 3\%.
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{sync_clock_latency_hist.png}
+\caption{\label{sync_clock_latency}}
+\end{figure}
 
-Figure~\ref{partitioned_throughput} shows that the partitioned scheduler is bi-modal for the clock system.
-The partitioned scheduler randomly and statically allocates transactions to scheduler threads.
-This results in four equally possible allocations with two kinds of behavior.
-The first allocation is when all transactions are allocated to one thread.
-The second allocation is when Request and Tick are allocated to one thread while Response is allocated to the other.
-In both of these allocations, the potential concurrency between Request and Tick cannot be exploited.
-The third allocation is when Request and Response are allocate to one thread while Tick is allocated to the other.
-The fourth allocation is when Response and Tick are allocated to one thread while Request is allocated to the other.
-In both of these allocations, the potential concurrency between Request and Tick can be exploited.
-Thus, one mode represents configurations where the scheduler is able to take advantage of the potential concurrency in the system leading to higher throughput while the other mode represents configurations where the scheduler is unable to take advantage of the potential concurrency in the system.
+\clearpage
+%% END SYNC CLOCK
+
+%% BEGIN ASYNC CLOCK
+%% \begin{figure}
+%% \center
+%% \includegraphics[width=\textwidth]{async_clock_throughput_cdf.png}
+%% \caption{Cumulative distribution function for the throughput of the AsyncClock scheduler. \label{async_clock_throughput}}
+%% \end{figure}
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{async_clock_throughput_hist.png}
+\caption{\label{async_clock_throughput}}
+\end{figure}
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{async_clock_throughput_utilization.png}
+\caption{\label{async_clock_throughput_utilization}}
+\end{figure}
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{async_clock_throughput_entanglement.png}
+\caption{\label{async_clock_throughput_entanglement}}
+\end{figure}
+
+%% \begin{figure}
+%% \center
+%% \includegraphics[width=\textwidth]{async_clock_latency_cdf.png}
+%% \caption{Cumulative distribution function for the latency of the AsyncClock scheduler. \label{async_clock_latency}}
+%% \end{figure}
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{async_clock_latency_hist.png}
+\caption{\label{async_clock_latency}}
+\end{figure}
+
+\clearpage
+%% END ASYNC CLOCK
+
+%% BEGIN INSTANCE
+%% \begin{figure}
+%% \center
+%% \includegraphics[width=\textwidth]{instance_throughput_cdf.png}
+%% \caption{Cumulative distribution function for the throughput of the Instance scheduler. \label{instance_throughput}}
+%% \end{figure}
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{instance_throughput_hist.png}
+\caption{\label{instance_throughput}}
+\end{figure}
 
 \begin{figure}
 \center
 \includegraphics[width=\textwidth]{instance_throughput_utilization.png}
-\caption{Throughput vs. utilization for the instance scheduler. \label{instance_throughput_utilization}}
+\caption{\label{instance_throughput_utilization}}
+\end{figure}
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{instance_throughput_entanglement.png}
+\caption{\label{instance_throughput_entanglement}}
+\end{figure}
+
+%% \begin{figure}
+%% \center
+%% \includegraphics[width=\textwidth]{instance_latency_cdf.png}
+%% \caption{Cumulative distribution function for the latency of the Instance scheduler. \label{instance_latency}}
+%% \end{figure}
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{instance_latency_hist.png}
+\caption{\label{instance_latency}}
+\end{figure}
+
+\clearpage
+%% END INSTANCE
+
+%% BEGIN PARTITIONED
+%% \begin{figure}
+%% \center
+%% \includegraphics[width=\textwidth]{partitioned_throughput_cdf.png}
+%% \caption{Cumulative distribution function for the throughput of the Partitioned scheduler. \label{partitioned_throughput}}
+%% \end{figure}
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{partitioned_throughput_hist.png}
+\caption{\label{partitioned_throughput}}
 \end{figure}
 
 \begin{figure}
 \center
 \includegraphics[width=\textwidth]{partitioned_throughput_utilization.png}
-\caption{Throughput vs. utilization for the partitioned scheduler. \label{partitioned_throughput_utilization}}
-\end{figure}
-
-Figures~\ref{instance_throughput_utilization} and~\ref{partitioned_throughput_utilization} show plots of utilization against throughput for the instance and partitioned scheduler.
-The utilization was calculated as the ratio of the total CPU time (user and system) to the wall clock time.
-The utilization includes the time spent executing transactions, scheduler overhead, system call overhead, and overhead for the garbage collection actions.
-The maximum utilization for this experiments is 2.0 since the system contains 2 CPUs.
-The average utilization for the instance scheduler was 1.497 and the average utilization for the partitioned scheduler was 1.718; an increase of 15\%.
-Thus, the question is whether or not a 3\% increase in throughput is worth a 15\% increase in utilization?
-Alternatively, we may attempt to reduce the utilization caused by the scheduler through more efficient selection.
-
-\begin{figure}
-\center
-\includegraphics[width=\textwidth]{instance_latency_cdf.png}
-\caption{Cumulative distribution function for the latency of the instance scheduler. \label{instance_latency}}
+\caption{\label{partitioned_throughput_utilization}}
 \end{figure}
 
 \begin{figure}
 \center
-\includegraphics[width=\textwidth]{partitioned_latency_cdf.png}
-\caption{Cumulative distribution function for the latency of the partitioned scheduler. \label{partitioned_latency}}
+\includegraphics[width=\textwidth]{partitioned_throughput_entanglement.png}
+\caption{\label{partitioned_throughput_entanglement}}
 \end{figure}
 
-The latency of each scheduler was determined by executing the clock system for approximately 10 seconds and measuring the elapsed time between the transaction becoming enabled and being executed.
-In the clock system, Request enables Response, Response enables Request, and Tick is always enabled.
-Thus, it was sufficient to capture the time that each transaction was executed and use the relationships in the system to calculate the latency.
-The experiments used to measure latency are independent from the experiments used to measure throughput.
-Figures~\ref{instance_latency} and~\ref{partitioned_latency} show the cumulative distribution of the average latency for the instance scheduler and partitioned scheduler, respectively.
-Ignoring outliers, a visual approximation of the latency for the instance scheduler and partitioned scheduler is 8us and 5.05us, respectively.
+%% \begin{figure}
+%% \center
+%% \includegraphics[width=\textwidth]{partitioned_latency_cdf.png}
+%% \caption{Cumulative distribution function for the latency of the Partitioned scheduler. \label{partitioned_latency}}
+%% \end{figure}
 
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{partitioned_latency_hist.png}
+\caption{\label{partitioned_latency}}
+\end{figure}
 
-%% \begin{itemize}
-%% \item pre-computing enabled bits
-%% \item partitioning to avoid locking
-%% \item cache awareness
-%% \item balancing
-%% % Centralized scheduler
-%% % partitioning?
-%% % rings?
-%% \item flow control
-%% \item termination
-%% \item long running actions
-%% \item simple transactions
-%% \item inlining
-%% \item groups
-%% \item active - terminating - idling (most servers have 10\% utilization)
-%% \item granularity of actions
-%% \end{itemize}
+\clearpage
+%% END PARTITIONED
+
+\paragraph{Results.}
+Figure~\ref{sync_clock_throughput} shows a histogram of the throughput for the SyncClock scheduler.
+The throughput appears to be a combination of two distributions.
+Figure~\ref{sync_clock_throughput_utilization} shows a plot of utilization versus throughput for the SyncClock scheduler.
+A utilization greater than 100\% is only achieved for runs belonging to the left distribution.
+Figure~\ref{sync_clock_throughput_entanglement} shows a plot of entanglement versus throughput for the SyncClock scheduler.
+The plot of entanglement shows that the distribution on the left has higher entanglement, i.e., both threads were active at the same time, while the distribution on the right has lower entanglement, i.e., the threads were run sequentially.
+The maximum entanglement for the SyncClock scheduler is 20,000.
+The scheduling of the threads is determined by the Linux kernel.
+Executing the threads sequentially is acceptable as it does not violate weak fairness.
+Figure~\ref{sync_clock_latency} shows a histogram of the latency for the SyncClock scheduler.
+All plots of latency use a logarithmic x-axis as the latency distributions have very long tails.
+The SyncClock scheduler results show that the overhead of synchronization plays a significant role in the performance of the scheduler.
+So much so that it is more efficient to serialize the execution of the threads to avoid the synchronization overhead.
+
+Figure~\ref{async_clock_throughput} shows a histogram of the throughput for the AsyncClock scheduler.
+Again, the throughput appears to be a combination of two distributions.
+Figure~\ref{async_clock_throughput_utilization} shows a plot of utilization versus throughput for the AsyncClock scheduler.
+Most of the runs achieve a utilization greater than 100\%.
+Figure~\ref{async_clock_throughput_entanglement} shows a plot of entanglement versus throughput for the AsyncClock scheduler.
+The minimum entanglement of 20,000 is caused by the forced interleaving of the Request and Response threads.
+Thus, the lowest ``band'' in the figure corresponds to no entanglement with the Tick thread.
+The maximum entanglement for the AsyncClock scheduler is 30,000.
+The AsyncClock scheduler is subject to a performance hit caused by context switches since it contains three threads but the test machine only has two cores.
+This may explain the low entanglement with the Tick thread.
+Unlike the SyncClock scheduler, there appears to be no relationship between entanglement and throughput.
+We hypothesize that the two distributions of throughput correspond to executing the tick thread first or last.
+However, it is unclear why this ordering would influence the throughput.
+Figure~\ref{sync_clock_latency} shows a histogram of the latency for the AsyncClock scheduler.
+The performance of the AsyncClock scheduler is an order of magnitude worse than the SyncClock scheduler as indicated by the shift in throughput and latency.
+Given that there is virtually no computation being performed, the degradation in performance must be caused by the additional thread and additional synchronization overhead.
+
+Figure~\ref{instance_throughput} shows a histogram of the throughput for the Instance scheduler.
+Figure~\ref{instance_throughput_utilization} shows a plot of utilization versus throughput for the Instance scheduler.
+Most of the runs achieve a utilization greater than 100\%.
+Figure~\ref{instance_throughput_entanglement} shows a plot of entanglement versus throughput for the Instance scheduler.
+The minimum entanglement is 0 and the maximum entanglement is 30,000\footnote{Let Action(Thread) indicate that the action was executed by the corresponding thread.  The following pattern when repeated 5,000 times generates an entanglement of 30,000:  Request(0) Tick(1) Response(0) Request(1) Tick (0) Response (1).}.
+This plot perhaps shows a trend where throughput increases with decreasing entanglement.
+This is logical given that synchronization appears to dominate the simple calculations being performed in the clock system.
+Figure~\ref{instance_latency} shows a histogram of the latency for the Instance scheduler.
+
+Figure~\ref{partitioned_throughput} shows a histogram of the throughput for the Partitioned scheduler.
+The throughput for the Partitioned scheduler varies considerably when compared to the AsyncClock scheduler and Instance scheduler.
+Transactions are randomly and statically allocated to execution threads in the Partitioned scheduler.
+In the clock system, there are six transactions where three correspond to Request, Response, and Tick, and the other three correspond to garbage collection actions for the three components.
+Thus, there are $2^6 = 64$ equally likely mappings of transactions to execution threads.
+Given the symmetry of threads, this results in 32 possible arrangements.
+One of these arrangements will place all transactions on one thread leading to improved or degraded performance.
+Some arrangements will place Request and Action on different threads allowing the potential concurrency among these actions to be exploited.
+Some arrangements will place the Tick transaction and garbage collection action for the counter on different threads creating lock contention.
+Figure~\ref{partitioned_throughput_utilization} shows a plot of utilization versus throughput for the Partitioned scheduler.
+Again, most of the runs achieve a utilization greater than 100\%.
+Figure~\ref{partitioned_throughput_entanglement} shows a plot of entanglement versus throughput for the Partitioned scheduler.
+This plot contains a ``band'' at 20,000 which contains roughly half of the samples (513/1000).
+These correspond to arrangements where Request and Response are mapped to different execution threads which forces an entanglement of 20,000.
+Half of the remaining samples have an entanglement of 0 meaning no entanglement (246/1000).
+These correspond to arrangements where the Request, Response, and Tick are mapped to the same execution thread where no entanglement is possible.
+The remaining quarter of the samples (241/1000) correspond to arrangements where Request and Response are on one execution thread while Tick is on the other.
+These show varying degrees of entanglement with perhaps a slight trend toward increasing throughput with entanglement.
+This is logical because the concurrency between Request and Tick can be exploited in these arrangements.
+Figure~\ref{partitioned_latency} shows a histogram of the latency for the Partitioned scheduler.
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{throughput_box.png}
+\caption{Box plot of throughput for each scheduler \label{throughput_box}}
+\end{figure}
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{throughput_box_no_sync.png}
+\caption{Box plot of throughput for the SyncClock, Instance, and Partitioned schedulers \label{throughput_box_no_sync}}
+\end{figure}
+
+\begin{table}
+\begin{tabular}{crrrrr}
+Scheduler &       0\%  &    25\%  &    50\%  &    75\%  &   100\% \\
+\hline
+SyncClock   & 3,534,960.0 & 8,296,365.0 & 8,833,855.0 & 9,430,495.0 & 15,956,600.0 \\
+AsyncClock  &   272,641.0 &   315,686.0 &   330,794.5 &   443,619.0 &    495,043.0 \\
+Instance    &   349,320.0 &   388,461.0 &   402,015.0 &   445,511.0 &    668,045.0 \\
+Partitioned &   239,324.0 &   461,578.8 &   558,673.5 &   666,964.8 &    941,850.0 \\
+\end{tabular}
+\caption{Quantiles for the throughput (transactions/s) of schedulers. \label{throughput_quantiles}}
+\end{table}
+
+\begin{figure}
+\center
+\includegraphics[width=\textwidth]{latency_box.png}
+\caption{Box plot of the latency for each scheduler \label{latency_box}}
+\end{figure}
+
+\begin{table}
+\begin{tabular}{crrrrr}
+Scheduler &       0\%  &    25\%  &    50\%  &    75\%  &   100\% \\
+\hline
+SyncClock   & 27  &    33 &    66 &    95 &  2,644,420 \\
+AsyncClock  & 51  &   160 & 3,270 & 4,772 &  9,195,890 \\
+Instance    & 437 & 1,824 & 2,599 & 4,526 &  4,124,580 \\
+Partitioned & 299 &   994 & 1,663 & 2,738 & 16,665,100 \\
+\end{tabular}
+\caption{Quantiles for the latency (ns) of schedulers. \label{latency_quantiles}}
+\end{table}
+
+\clearpage
+
+Figure~\ref{throughput_box} shows a box plot of the throughput for each scheduler while figure~\ref{throughput_box_no_sync} shows the same box plots without the SyncClock scheduler.
+Table~\ref{throughput_quantiles} shows the quantiles of the throughput for each scheduler.
+The figures and table clearly show that the SyncClock scheduler is the most performant scheduler by one or two orders of magnitude.
+The other three schedulers have comparable performance.
+Figure~\ref{latency_box} shows a box plot of the latency for each scheduler.
+Table~\ref{latency_quantiles} shows the quantiles for the latency of each scheduler.
+Again, the figure and table show that SyncClock scheduler is the most performant scheduler by two orders of magnitude while the other scheduler have comparable performance.
+
+Both the Instance and Partitioned schedulers contain actions for performing garbage collection.
+Since the clock system transactions do not allocate memory, these actions do not actually perform any work.
+The Instance scheduler executed an average of 32,425 garbage collection actions per run while the Partitioned scheduler executed an average of 105,638 garbage collection actions per run.
+The excessive number of collections performed by the Partitioned scheduler show a potential problem between the garbage-collection-as-an-action idea and work conserving schedulers as a work conserving scheduler can always find more work in garbage collection.
+Ideally, a scheduler would be designed to not even select a garbage collection action until it has a high probability of actually collecting garbage.
+
+\subsection{Observations}
+
+The main goal of designing, implementing, and evaluating schedulers is to determine if a weakly-fair scheduler for reactive components can be implemented efficiently or if some feature of the model precludes an efficient implementation.
+The Instance and Partitioned schedulers must improve by two orders of magnitude to be comparable with custom pthreads implementations.
+There are three main areas that may be addressed to improve the performance of the Instance and Partitioned schedulers.
+First, we may attempt to improve the efficiency of the schedulers through better design and implementation.
+The evaluation in this section can serve as a basis for future improvements.
+Second, we may attempt to eliminate the overhead of the Linux scheduler.
+In Linux, the threads made available via the pthreads library are scheduled by the Linux kernel.
+The Instance and Partitioned schedulers, then, are themselves scheduled by the Linux kernel.
+Thus, it may be necessary to implement a scheduler for reactive components at the kernel level to eliminate this source of overhead.
+Third, we may move from interpretation to compilation.
+To test this idea, we timed a loop to sum the numbers in the range [0, 1,000,000) and averaged it over 1,000 runs for a C++ implementation and a reactive component implementation.
+The average time for the reactive component implementation was 0.1304896 seconds and the average time for the C++ implementation was 0.0009984909 seconds; a speed-up of 131.
+This number is very much a ``back of the envelope'' calculation; the actual improvement in moving from interpretation to compilation will be less than this.
+
+We selected the clock system to evaluate the schedulers because it is small enough to understand but complex enough to show interesting behavior.
+The actual computation performed by the clock system is minimal, i.e., setting boolean flags and incrementing a counter.
+Most likely, these operations can be performed in a single clock cycle (for compiled programs).
+One obvious direction for future work, then, is to experiment with complex transactions and varied workloads.
+However, it is important to consider the possibility that real workloads will contain computationally simple transactions such as those found in the clock system.
+Furthermore, one of the motivations for decomposing systems is to break up complex systems into smaller, reusable, and easier to understand systems.
+The results in this section demonstrate the diminishing return where the transactions become so simple that execution is dominated by overhead, i.e., it is more efficient to serialize execution than execute actions in parallel.
+Simple transactions are a foreseeable consequence of decomposition and designers should not be penalized for decomposing complex systems.
+Thus, one of the goals of scheduler design is to push the horizon of the diminishing return as far as possible.
+When coupled with responsiveness, the desired property in a scheduler is one whose throughput does not diminish with entanglement.
+Of the four schedulers evaluated in this section, the Partitioned scheduler is the only one that may show this property.
+
+Figures~\ref{throughput_box_no_sync} and \ref{latency_box} indicate that the Partitioned scheduler is better than the Instance scheduler for both throughput and latency.
+There are two factors in the design of the Partitioned scheduler that may explain this performance gain.
+First, the Partitioned scheduler is work conserving due to its asynchronous locking scheme while the Instance scheduler is not work conserving.
+Consequently, the Partitioned scheduler can realize more of the potential concurrency leading to higher throughput and lower latency.
+Second, the Partitioned scheduler avoids the synchronization overhead associated with a global work queue.
+
+A number of improvements to the partitioned scheduler are apparent.
+Better handling of garbage collection actions has already been mentioned.
+An alternative approach to garbage collection may be to perform it after the mutable phase of an action.
+Another improvement is better partitioning using the interference graph.
+For example, the interference graph for the clock system clearly shows that Request and Tick should be allocated to different threads.
+Annotating the interference graph with the component instances shows that Request and Response should most likely be allocated to the same scheduler thread to avoid lock contention.
+
+Designing, implementing, and evaluating schedulers has generated a number of ideas for future work.
+Most of these ideas are based on the information provided by the reactive component model:
+\begin{description}
+\item[Components as state.]  Allowing the component instance to serve as a proxy for its state variables is the basis of analysis.  Furthermore, features like getters facilitate arbitrary decomposition.
+\item[Instance sets.]  All components involved in a transaction are known.
+\item[Access.]  The composition analysis can determine how the state of the component is accessed in an action or reaction.  This facilitates better locking strategies, i.e., reader/writer locks as opposed to generic mutexes.
+\item[The interference graph.]  The combination of instance sets and access patterns yields a graph which shows which action can be executed in parallel.
+\end{description}
+
+One challenge for a reactive component scheduler is determining which actions are enabled.
+A conventional thread scheduler maintains a list of threads that are ready to run and a list of threads that are blocked.
+A running thread that is preempted by the scheduler is returned to the ready list.
+A running thread that executes a blocking call, e.g., attempting to acquire a mutex owned by another thread, causes the thread to be place on the blocked list.
+Once the blocking condition is eliminated, the thread is moved from the blocked list to the ready list.
+This occurs through direct communication with the scheduler.
+For example, a thread that is blocked on a mutex will be unblocked when the thread owning the mutex unlocks it.
+Thus, a conventional thread scheduler always has complete knowledge of which threads are ready and which threads are blocked.
+Users communicate with the scheduler via system calls which implicitly manipulate the ready and blocked list.
+
+In the reactive component model, a transaction is either enabled or disabled which has strong similarity to being ready or blocked.
+The main difference is that the status of a transaction is determined by its precondition which is an arbitrary boolean expression.
+In general, there is no way of determining if a transaction is enabled or disabled without evaluating the precondition.
+Both the Instance and Partitioned schedulers delay evaluation of the precondition until selection.
+As mentioned in the design section, a more eager strategy would evaluate all relevant preconditions after a transaction to maintain a true ready list.
+Such a computation could be performed at the end of a mutable section.
+One idea may be to eliminate preconditions and replace them with explicit scheduling instructions, however, this may become tedious and error prone.
+A compromise solution may involve restricting the complexity of a preconditions to simple boolean expressions.
+With this restriction, it becomes possible to determine which transitions enable/disable an action.
+
+To be safe, all multi-threaded scheduler require a synchronization mechanism to protect the mutable state in a transition.
+The approach taken by the Instance and Partitioned scheduler is to acquire locks protecting the state of each involved component before executing a transaction.
+The Partitioned scheduler demonstrates how asynchronous locking can be used to create a work-conserving scheduler.
+As indicated by the results in this section, a major challenge is to make the locking protocol as efficient as possible.
+
+Another direction for future work is to explore options that accomplish synchronization without locking or with minimal locking.
+Partitioning combined with non-preemption may create opportunities to synchronize without locking.
+Let $t$ be a transaction assigned to a specific scheduler thread and let $I$ be the set of instances involved in $t$.
+Furthermore, let all transactions involving any component in $I$ be mapped to the same scheduler thread.
+(The single-threaded schedulers described in this section do this by virtue of their design.)
+In this scenario, no locks are needed for a safe execution of $t$ because all other transactions that could change the relevant component state are excluded from executing due to the non-preemptive nature of the scheduler.
+This phenomenon is illustrated graphically by coloring the nodes in an interference graph according to the thread to which they have been assigned.
+A transaction whose immediate neighbors all share the same color as the transaction itself can execute without acquiring locks.
+This suggests that algorithms that detect clusters of transactions in the interference graph may be used to optimize the assignment of transactions to scheduler threads.
+
+Locking may also be optimized by performing operations on the interference graph.
+For example, adjacent transactions in the interference graph can be merged and executed under the same set of locks.
+This procedure can be used to create complex transactions that amortize the locking overhead.
+Most likely, the merging algorithm would make use of some heuristic that measures the perceived benefit of merging the transactions.
+For example, the edges in the interference graph could be weighted with the Jacquard Index of the instance sets, i.e., the edges are weighted with a score indicating that the set of locks are similar.
+The merging algorithm must balance the goal of simplifying the locking with the goal of exploiting concurrency.
+For example, merging Request and Response eliminates the potential concurrency between Request and Tick in the clock system.
+
+Similarity between instance sets suggests the idea that locks may be eliminated by fusing them together.
+To illustrate, the clock system contains three locks corresponding to the three components.
+Suppose that the same lock is used to protect both the Client and the Server.
+This reduces the number of locks needed to execute the Request transaction from two to one and the number of locks needed to execute the Response transaction from three to two.
+
+The challenges associated with locking invite us to step back and consider the fundamental aspects of the problem that necessitate a locking protocol.
+The scheduler designs put forth so far are distributed in the sense that each scheduler thread is making an independent decision about the next transaction to execute.
+Locking is the means by which the scheduler thread discovers the decisions made by the other scheduler threads to determine if the transaction under consideration is compatible with the transactions already chosen by the other threads.
+The locking protocol becomes unnecessary if the decisions made by the other threads are already available.
+This suggests that orchestration may be used to ensure safety in a multi-threaded scheduler without locking.
+In this model, a manager thread assigns transactions to scheduler threads who execute the transactions without acquiring locks.
+The primary job of the manager thread is to enforce safety by only allowing the concurrent execution of disconnected transactions in the interference graph.
+This approach may make use of a dedicated manager thread or use the Leader-Follower pattern~\cite{schmidt2000pattern}.
+An efficient implementation of the scheduler state, especially if it is shared through the Leader-Follower pattern, is a concern for this scheduler.
+
+Cache awareness and migration are two concerns that reactive component schedulers share with thread schedulers.
+Cache awareness attempts to improve the performance of a system by scheduling a computation on the same processor core because the state required for the computation may already be available in the cache.
+Thus, a reactive component scheduler may attempt to create an affinity between a transaction and a scheduler thread or processor core.
+Partitioning on the basis of shared component state satisfies this implicitly.
+Migration reassigns a computation to a different core to balance the load among the cores or free a core so that it may be shutdown.
+The challenge with respect to migration is to defining load imbalance in a meaningful way.
+The migration algorithm will most likely be expressed as an optimization problem that attempts to find a global optimum for the throughput and latency of each action.
+
+Another design dimension for a reactive component scheduler is preemption.
+The main use of preemption is to share a physical core among many computations that are ready to execute.
+A reactive component scheduler may wish to preempt a long-running transaction to execute other enabled transactions.
+A preemptive scheduler for reactive components can take advantage of existing work on thread preemption.
 
 \section{I/O}
 
+A bottom-up approach which may lead to the adoption of reactive components is to write a kernel for reactive components, i.e., a scheduler and memory manager, and proceed to replace the operating system and applications.
+This approach is impractical and risky given the expense of developing software for an unproven technology.
+A top-down approach involves proving the utility of reactive components at the application layer and then proceeding to lower layers when appropriate.
+This approach far less risky and the one taken in this chapter.
+To develop and evaluate real-world applications, the input/output facilities of the host operating system must be exposed to reactive components so that they may communicate and interact with other processes and systems.
+This section describes our approach to exposing the input/output (I/O) facilities of a Linux/GNU system to reactive components.
 
+A Linux/GNU system offers a variety of I/O and communication mechanisms including pipes, sockets, shared memory, and message queues.
+For our purposes, we focused on mechanisms that are available through a file descriptor interface.
+Our approach consists of two steps.
+The first step is to add file descriptors and operations for manipulating them, such as read and write, to the language.
+The second step was to wrap file descriptors in reactive components to make their functionality available via a conventional reactive component interface.
+
+The main consideration when supporting file descriptors was to ensure that reads and writes were non-blocking as a blocking read or write may violate weak fairness.
+A transaction that blocks on a read or write would adversely affect the latency and throughput of the scheduler as the scheduler thread would be blocked and not able to service other transactions.
+Furthermore, a blocking transaction holds the locks for all components involved in that transaction and other enabled transactions that also involve those components would be denied service which violates the weak fairness requirement of the scheduler.
+To prevent these problems, all file descriptors when they are created are set to be non-blocking.
+Thus, all subsequent reads and writes are also non-blocking.
+
+Threaded programs using non-blocking I/O typically use some kind of synchronous I/O multiplexing which allows a thread to determine which file descriptors are ready for reading and/or writing.
+The goal in doing so is to allow a thread to service multiple file descriptors and yield the processor if no file descriptors are ready.
+To map this concept into reactive components, we introduced a \verb+readable+ function that tests if a file descriptor is ready for reading and a \verb+writable+ function that tests if a file descriptor is ready for writing.
+These functions are intended to be used in preconditions so that an action becomes enabled when the corresponding file descriptor is ready.
+
+The \verb+readable+ and \verb+writable+ functions are also used as part of the termination protocol.
+When the termination protocol enters the checking phase where it attempts to prove that every precondition is false, it records which file descriptors are being checking for readability and writability.
+If the termination protocol proves that all preconditions are false but some preconditions depend on readability or writability, it enters a state where it waits for one of the file descriptors to become ready.
+This allows a system of reactive components to sleep while it waits for external input like a message from a remote host or a timer.
+Currently, the Partitioned scheduler is the only scheduler that supports this behavior.
+
+Conceptually, a file descriptor contains component state and should be subject to all of the constraints of normal component state.
+The two main constraints are 1) it cannot be shared by another component and 2) it cannot change in the immutable phase of a transaction.
+To enforce the first constraint, file descriptors are implemented as dynamically allocated opaque data structures.
+Forcing dynamic allocation makes file descriptors subject to the pointer sharing rules, i.e., they can only be shared via foreign dereference mutability in the immutable phase.
+Making the data structure opaque prevents sharing through copying.
+The normal immutable phase rules in concert with properly declared builtin functions prevent file descriptors from changing in the immutable phase.
+That is, functions like \verb+read+ and \verb+write+ require a pointer to a file descriptor with mutable dereference mutability.
+
+To test these ideas, we implemented a Simple Network Time Protocol (SNTP) client.
+SNTP attempts to acquire the current time from a server while simultaneously measuring a round-trip latency to determine an accurate local time.
+The client timestamps the request with the local time and sends it to the server.
+The server timestamps the request when it arrives and again when it sends it back to the client.
+Finally, the client timestamps the request when it receives it back from server.
+The client uses the timestamps to determine the offset of the local clock from the clock on the server.
+This procedure is repeated periodically to resynchronize the local clock.
+The messages are exchanged using the User Datagram Protocol (UDP).
+
+\begin{figure}
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}
+\draw (2,7.5) rectangle (4,9);
+\node[below] at (3,9) {Timer};
+\rapush[4,8,1.8,.5,alarma,ignore]{Alarm()};
+
+\draw (1.5,6) rectangle (16.5,10);
+\node[below] at (8.5,10) {Sntp};
+\lppush[5,8,1.8,.5,alarmb,ignore]{Alarm()};
+\rapush[11,8,3.5,.5,senda,ignore]{Send(UdpMessage)};
+\rppush[11,7,4.1,.5,receivea,ignore]{Receive(UdpMessage)};
+
+\draw (12,6.5) rectangle (16,9);
+\node[below] at (14,9) {UdpParticipant};
+\lppush[12,8,3.7,.5,sendb,ignore]{Send(UdpMessage)};
+\lapush[12,7,3.8,.5,receiveb,ignore]{Receive(UdpMessage)};
+
+\draw (alarma.center) -- (alarmb.center);
+\draw (senda.center) -- (sendb.center);
+\draw (receivea.center) -- (receiveb.center);
+
+\end{tikzpicture}
+}%
+\caption{Diagram of a Simple Network Time Protocol (SNTP) client\label{sntp}}
+\end{figure}
+
+Figure~\ref{sntp} shows a diagram of the SNTP client application.
+The top-level Sntp component contains two sub-components:  Timer and UdpParticipant.
+The Timer component is a periodic timer implemented by wrapping a ``timerfd'' file descriptor.
+The UdpParticipant component wraps a UDP socket file descriptor and is capable of sending and receiving UDP messages.
+The Sntp component uses these components to implement an SNTP client.
+Whenever the Timer fires the alarm, the UdpParticipant creates an SNTP request and sends it using the UdpParticipant.
+This all happens as part of one atomic transaction.
+Whenever the UdpParticipant receives a message, it passes it to the Sntp component which deserializes it, timestamps it, and interprets it to compute the local clock offset.
+
+The Sntp component demonstrates how composition can be used to construct systems.
+The Timer and UdpParticipant components are generic since they do not contain any SNTP related logic.
+Furthermore, they have well-defined concurrency semantics that will be enforced when they are composed in other systems.
+Thus, it is possible to use the reactive component model to produce reusable \emph{reactive} software.
+
+\section{Conclusion}
+
+The goal of implementing reactive components was to test the practicality of the reactive component model.
+Specifically, we desired to know how the various features of the model could be implemented, which features were troublesome, and how the implementation utilizes various assumptions.
+Flexibility in the reactive component model necessitates a check for sound composition.
+The sound composition algorithm described in this chapter uses the static system assumption and the component proxy assumption to generate a graphical model of each transition and check it for determinism.
+A cursory analysis yielded an upper bound of $O(k n^2 \log (n))$ where $n$ is the number of instances involved in the transaction.
+
+To implement activation statements, we developed the synchronized two-phase calling convention which executes the immutable phase of a transaction in the first phase and preserves the context necessary for the second phase which corresponds to the mutable phase.
+The synchronized two-phase calling convention was implemented using standard function call and stack manipulation facilities.
+
+The isolation of component state is enforced in two ways.
+First, the type system prevents components from sharing pointers directly via \verb+$const+ and \verb+$foreign+ modifiers.
+Second, the implementation uses garbage collection to prevent indirect sharing through dangling pointers.
+In this chapter, we describe the implementation of heaps and how they are used for dynamic memory allocation.
+Heaps are designed so that they can be merged and moved.
+At the user level, all references to a heap are concentrated into a ``link'' which is used to enforce atomic moves and merges.
+The independence of state between components allows each component to have its own heap (or tree of heaps) that can be garbage collected independently of other components.
+Garbage collection can be conducted in parallel by associating a garbage collection action with each component.
+
+Perhaps the most interesting part of the implementation is the scheduler.
+Fairness, safety, and responsibility are identified as the three correctness requirements for any scheduler and we illustrate how these may be accomplished in a variety of designs.
+Two multi-threaded schedulers were implemented.
+The Instance scheduler is based on a shared work queue of instances while the Partitioned scheduler is based on partitioning transactions among different scheduler threads.
+We propose throughput, latency, and utilization as three metrics for evaluation schedulers for reactive components and collected these metrics for the Instance and Partitioned schedulers by executing the clock system.
+The reactive component schedulers were compared to two custom implementations of the clock system using the pthreads library.
+The results show that the reactive component schedulers will require significant improvement to become competitive with threads.
+Moving from interpretation to compilation, reducing locking overhead, and reducing the overhead of precondition evaluation seem to be promising areas for improvement.
+
+To enhance the practicality of the reactive component implementation, we introduced file descriptor I/O that allows reactive components to interact with a variety of operating system facilities.
+All I/O is non-blocking to preserve the fairness of the scheduler.
+Components may use the \verb+readable+ and \verb+writable+ functions to test file descriptors.
+The scheduler uses these functions as part of the termination protocol to sleep while waiting for external inputs.
+File descriptors are treated as component state and therefore cannot be shared between components or mutated during the immutable phase.
+Using file descriptor I/O, we implemented an SNTP client which demonstrates how systems can be built up from simple components.
 
 %% POSIX environment, possibly bare metal
+
+
+%% \item termination
+%% \item active - terminating - idling (most servers have 10\% utilization)
+%% \item flow control
+%% \item always enabled actions
+%% \item reactive components in hardware
+%% \item long running actions
