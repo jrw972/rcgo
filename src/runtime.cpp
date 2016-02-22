@@ -1066,7 +1066,7 @@ struct NewImpl : public Callable
       }
     else
       {
-        const type::Type* t = heap_type->Base ();
+        const type::Type* t = heap_type->base_type;
         // Allocate a new heap and root object.
         Heap* h = new Heap (t->Size ());
         // Insert it into its parent.
@@ -1574,9 +1574,9 @@ Append::instantiate (util::ErrorReporter& er,
   const type::Slice* st = type_cast<type::Slice> (slice_type->UnderlyingType ());
   if (st != NULL &&
       element_type->underlying_kind () != kError &&
-      !are_identical (st->Base (), element_type))
+      !are_identical (st->base_type, element_type))
     {
-      er.func_expects_arg (location, "append", 2, st->Base (), element_type);
+      er.func_expects_arg (location, "append", 2, st->base_type, element_type);
     }
 
   return new AppendImpl (st, element_type, location);
@@ -1685,7 +1685,7 @@ Copy::instantiate (util::ErrorReporter& er,
     const Slice* st = type_strip_cast<Slice> (in);
     if (st != NULL)
       {
-        if (type_contains_pointer (st->Base ()))
+        if (type_contains_pointer (st->base_type))
           {
             error_at_line (-1, 0, location.File.c_str (), location.Line,
                            "copy leaks pointers (E95)");

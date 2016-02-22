@@ -2031,7 +2031,7 @@ done:
                        "* cannot be applied to %s (E21)", t->to_string ().c_str ());
       }
     require_value_or_variable (node.child);
-    node.type = p->Base ();
+    node.type = p->base_type;
     node.expression_kind = kVariable;
     node.intrinsic_mutability = node.child->indirection_mutability;
     node.indirection_mutability = node.child->indirection_mutability;
@@ -2162,7 +2162,7 @@ done:
       {
         check_array_index (node.array_type, node.index, false);
         require_value_or_variable (node.base);
-        node.type = node.array_type->Base ();
+        node.type = node.array_type->base_type;
         node.expression_kind = node.base->expression_kind;
         node.intrinsic_mutability = node.base->intrinsic_mutability;
         node.indirection_mutability = node.base->indirection_mutability;
@@ -2210,7 +2210,7 @@ done:
         require_value_or_variable (node.base);
         require_value_or_variable (node.index);
 
-        node.type = node.slice_type->Base ();
+        node.type = node.slice_type->base_type;
         node.expression_kind = kVariable;
         node.intrinsic_mutability = node.base->intrinsic_mutability;
         node.indirection_mutability = node.base->indirection_mutability;
@@ -2284,7 +2284,7 @@ done:
             check_array_index (node.array_type, max_node, true);
           }
 
-        node.type = node.array_type->Base ()->get_slice ();
+        node.type = node.array_type->base_type->get_slice ();
         node.expression_kind = kValue;
         node.intrinsic_mutability = Immutable;
         node.indirection_mutability = node.base->indirection_mutability;
@@ -2400,7 +2400,7 @@ done:
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                        "%s is not an array of ports (E16)", port_identifier.c_str ());
       }
-    const type::Function* push_port_type = type::type_cast<type::Function> (node.array_type->Base ());
+    const type::Function* push_port_type = type::type_cast<type::Function> (node.array_type->base_type);
     if (push_port_type == NULL || push_port_type->function_kind != type::Function::PUSH_PORT)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,

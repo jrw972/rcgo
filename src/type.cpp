@@ -70,7 +70,7 @@ std::string
 Array::to_string () const
 {
   std::stringstream str;
-  str << '[' << dimension << ']' << *base_;
+  str << '[' << dimension << ']' << *base_type;
   return str.str ();
 }
 
@@ -303,7 +303,7 @@ Type::move () const
   const Pointer* ptf = type_cast<Pointer> (this);
   if (ptf)
     {
-      const Heap* h = type_cast<Heap> (ptf->Base ());
+      const Heap* h = type_cast<Heap> (ptf->base_type);
       if (h)
         {
           return ptf;
@@ -320,10 +320,10 @@ Type::merge_change () const
 
   if (ptf)
     {
-      const Heap* h = type_cast<Heap> (ptf->Base ());
+      const Heap* h = type_cast<Heap> (ptf->base_type);
       if (h)
         {
-          return h->Base ()->get_pointer ();
+          return h->base_type->get_pointer ();
         }
     }
 
@@ -384,13 +384,13 @@ struct IdenticalImpl
 
   void operator() (const Array& type1, const Array& type2)
   {
-    retval = are_identical (type1.Base (), type2.Base ()) &&
+    retval = are_identical (type1.base_type, type2.base_type) &&
              type1.dimension == type2.dimension;
   }
 
   void operator() (const Slice& type1, const Slice& type2)
   {
-    retval = are_identical (type1.Base (), type2.Base ());
+    retval = are_identical (type1.base_type, type2.base_type);
   }
 
   void operator() (const Struct& type1, const Struct& type2)
@@ -437,7 +437,7 @@ struct IdenticalImpl
 
   void operator() (const Pointer& type1, const Pointer& type2)
   {
-    UNIMPLEMENTED;
+    retval = are_identical (type1.base_type, type2.base_type);
   }
 
   void operator() (const Signature& type1, const Signature& type2)
@@ -577,7 +577,7 @@ const Type* type_dereference (const Type* type)
 
     void visit (const Pointer& type)
     {
-      retval = type.Base ();
+      retval = type.base_type;
     }
   };
   visitor v;
@@ -654,7 +654,7 @@ type_contains_pointer (const Type* type)
 
     void visit (const Array& type)
     {
-      type.Base ()->Accept (*this);
+      type.base_type->Accept (*this);
     }
 
     void visit (const Pointer& type)
@@ -664,7 +664,7 @@ type_contains_pointer (const Type* type)
 
     void visit (const Heap& type)
     {
-      type.Base ()->Accept (*this);
+      type.base_type->Accept (*this);
     }
 
     void visit (const Slice& type)
@@ -929,12 +929,12 @@ type_index (const Type* base, const Type* index)
 
         void visit (const Uint& type)
         {
-          result = array_type.Base ();
+          result = array_type.base_type;
         }
 
         void visit (const Int& type)
         {
-          result = array_type.Base ();
+          result = array_type.base_type;
         }
       };
       visitor v (type);
@@ -1369,7 +1369,7 @@ bool is_slice_of_bytes (const Type* type)
     {
       return false;
     }
-  return type_cast<Uint8> (slice_type->Base ()->UnderlyingType ()) != NULL;
+  return type_cast<Uint8> (slice_type->base_type->UnderlyingType ()) != NULL;
 }
 
 bool is_slice_of_runes (const Type* type)
@@ -1379,7 +1379,7 @@ bool is_slice_of_runes (const Type* type)
     {
       return false;
     }
-  return type_cast<Int32> (slice_type->Base ()->UnderlyingType ()) != NULL;
+  return type_cast<Int32> (slice_type->base_type->UnderlyingType ()) != NULL;
 }
 
 bool orderable (const Type* type)
@@ -1481,7 +1481,7 @@ const Pointer*
 pointer_to_array (const Type* type)
 {
   const Pointer* p = type_cast<Pointer> (type->UnderlyingType ());
-  if (p != NULL && p->Base ()->underlying_kind () == kArray)
+  if (p != NULL && p->base_type->underlying_kind () == kArray)
     {
       return p;
     }

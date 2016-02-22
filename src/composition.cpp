@@ -1347,7 +1347,7 @@ Composer::instantiate_contained_instances (const type::Type * type,
           std::stringstream newname;
           newname << name << '[' << idx << ']';
           visitor v (instance_table, parent, NULL, address + idx * type.UnitSize (), field, line, NULL, newname.str ());
-          type.Base ()->Accept (v);
+          type.base_type->Accept (v);
         }
     }
 

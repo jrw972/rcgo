@@ -263,6 +263,18 @@ main (int argc, char** argv)
     tap.tassert ("type::are_identical - struct different package with private field", !are_identical (s1, s2));
   }
 
+  {
+    const Pointer* p1 = (new Struct ())->get_pointer ();
+    const Pointer* p2 = (new Struct ())->get_pointer ();
+    tap.tassert ("type::are_identical - pointers same", are_identical (p1, p2));
+  }
+
+  {
+    const Pointer* p1 = (new Struct ())->get_pointer ();
+    const Pointer* p2 = (new Struct ())->append_field (NULL, false, "x", &named_int, TagSet ())->get_pointer ();
+    tap.tassert ("type::are_identical - pointers different", !are_identical (p1, p2));
+  }
+
   tap.print_plan ();
 
   return 0;

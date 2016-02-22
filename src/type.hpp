@@ -601,16 +601,10 @@ struct StringRep
 typedef Scalar<StringRep, StringUString, false, false, false, kStringU> StringU;
 
 // Helper class for types that have a base type.
-class BaseType
+struct BaseType
 {
-public:
-  BaseType (const Type* base) : base_ (base) { }
-  const Type* Base () const
-  {
-    return base_;
-  }
-protected:
-  const Type* const base_;
+  BaseType (const Type* a_base_type) : base_type (a_base_type) { }
+  const Type* const base_type;
 };
 
 class Pointer : public Type, public BaseType
@@ -620,7 +614,7 @@ public:
   void Accept (Visitor& visitor) const;
   std::string to_string () const
   {
-    return "*" + base_->to_string ();
+    return "*" + base_type->to_string ();
   }
   size_t Alignment () const
   {
@@ -640,15 +634,15 @@ public:
   }
   virtual Field* select_field (const std::string& name) const
   {
-    return base_->select_field (name);
+    return base_type->select_field (name);
   }
   virtual decl::Callable* select_callable (const std::string& name) const
   {
-    return base_->select_callable (name);
+    return base_type->select_callable (name);
   }
   virtual const Type* pointer_base_type () const
   {
-    return base_;
+    return base_type;
   }
 private:
   friend class Type;
@@ -667,7 +661,7 @@ public:
   virtual void Accept (Visitor& visitor) const;
   virtual std::string to_string () const
   {
-    return "[]" + base_->to_string ();
+    return "[]" + base_type->to_string ();
   }
   virtual size_t Alignment () const
   {
@@ -687,7 +681,7 @@ public:
   }
   size_t UnitSize () const
   {
-    return util::align_up (base_->Size (), base_->Alignment ());
+    return util::align_up (base_type->Size (), base_type->Alignment ());
   }
 private:
   friend class Type;
@@ -707,7 +701,7 @@ public:
   std::string to_string () const;
   size_t Alignment () const
   {
-    return base_->Alignment ();
+    return base_type->Alignment ();
   }
   size_t Size () const
   {
@@ -724,7 +718,7 @@ public:
   const Int::ValueType dimension;
   size_t UnitSize () const
   {
-    return util::align_up (base_->Size (), base_->Alignment ());
+    return util::align_up (base_type->Size (), base_type->Alignment ());
   }
 private:
   friend class Type;
@@ -736,7 +730,7 @@ struct Heap : public Type, public BaseType
   void Accept (Visitor& visitor) const;
   std::string to_string () const
   {
-    return "heap " + base_->to_string ();
+    return "heap " + base_type->to_string ();
   }
   size_t Alignment () const
   {
