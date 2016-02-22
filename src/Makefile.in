@@ -349,6 +349,7 @@ executor_base.hpp executor_base.cpp \
 field.hpp \
 generate_code.hpp generate_code.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
+package.hpp \
 parser.hpp parser.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
 process_definitions.cpp \

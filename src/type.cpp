@@ -183,13 +183,29 @@ NamedType::get_bind (const std::string& identifier) const
   return NULL;
 }
 
+std::string
+Struct::to_string () const
+{
+  std::stringstream ss;
+  ss << '{';
+  for (FieldsType::const_iterator pos = fields_.begin (), limit = fields_.end ();
+       pos != limit;
+       ++pos)
+    {
+      Field* f = *pos;
+      ss << f->name << ' ' << *(f->type) << ';';
+    }
+  ss << '}';
+  return ss.str ();
+}
+
 Struct*
-Struct::append_field (const std::string& field_name, const Type* field_type)
+Struct::append_field (Package* package, bool is_anonymous, const std::string& field_name, const Type* field_type, const TagSet& tags)
 {
   size_t alignment = field_type->Alignment ();
   offset_ = util::align_up (offset_, alignment);
 
-  Field *field = new Field (field_name, field_type, offset_);
+  Field *field = new Field (package, is_anonymous, field_name, field_type, tags, offset_);
   fields_.push_back (field);
 
   offset_ += field_type->Size ();
@@ -379,7 +395,44 @@ struct IdenticalImpl
 
   void operator() (const Struct& type1, const Struct& type2)
   {
-    UNIMPLEMENTED;
+    retval = false;
+    if (type1.field_count () != type2.field_count ())
+      {
+        return;
+      }
+
+    Struct::const_iterator pos1 = type1.Begin ();
+    Struct::const_iterator limit1 = type1.End ();
+    Struct::const_iterator pos2 = type2.Begin ();
+    Struct::const_iterator limit2 = type2.End ();
+
+    for (; pos1 != limit1 && pos2 != limit2; ++pos1, ++pos2)
+      {
+        Field* f1 = *pos1;
+        Field* f2 = *pos2;
+        if (f1->is_anonymous != f2->is_anonymous)
+          {
+            return;
+          }
+        if (!f1->is_anonymous && f1->name != f2->name)
+          {
+            return;
+          }
+        if (!f1->is_anonymous && util::is_lowercase (f1->name) && f1->package != f2->package)
+          {
+            return;
+          }
+        if (!are_identical (f1->type, f2->type))
+          {
+            return;
+          }
+        if (f1->tags != f2->tags)
+          {
+            return;
+          }
+      }
+
+    retval = true;
   }
 
   void operator() (const Pointer& type1, const Pointer& type2)
@@ -503,13 +556,15 @@ INSTANCE(Float)
 INSTANCE(Complex)
 INSTANCE(String)
 
-Struct::Struct (bool insert_runtime) : offset_ (0), alignment_ (0)
+Struct::Struct () : offset_ (0), alignment_ (0)
 {
-  if (insert_runtime)
-    {
-      /* Prepend the field list with a pointer for the runtime. */
-      append_field ("0runtime", Void::Instance ()->get_pointer ());
-    }
+}
+
+Component::Component (Package* package)
+  : Struct ()
+{
+  /* Prepend the field list with a pointer for the runtime. */
+  append_field (package, true, "0runtime", Void::Instance ()->get_pointer (), TagSet ());
 }
 
 const Type* type_dereference (const Type* type)
@@ -1461,6 +1516,6 @@ NamedType named_uintptr ("uintptr", Uintptr::Instance ());
 NamedType named_string ("string", StringU::Instance ());
 
 NamedType named_file_descriptor ("FileDescriptor", FileDescriptor::Instance ());
-NamedType named_timespec ("timespec", (new Struct ())->append_field ("tv_sec", &named_uint64)->append_field ("tv_nsec", &named_uint64));
+NamedType named_timespec ("timespec", (new Struct ())->append_field (NULL, false, "tv_sec", &named_uint64, TagSet ())->append_field (NULL, false, "tv_nsec", &named_uint64, TagSet ()));
 
 }

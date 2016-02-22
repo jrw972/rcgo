@@ -116,7 +116,7 @@ instance_scheduler_t::instance_executor_t::run_i ()
 
       // Try all the actions.
       for (composition::ActionsType::const_iterator pos = record->instance ()->actions.begin (),
-             limit = record->instance ()->actions.end ();
+           limit = record->instance ()->actions.end ();
            pos != limit;
            ++pos)
         {
@@ -162,7 +162,7 @@ instance_scheduler_t::init (Composer& instance_table,
     // Initialize.
     instance_executor_t exec (*this, stack_size, 0);
     for (InfoMapType::const_iterator pos = info_map_.begin (),
-           limit = info_map_.end ();
+         limit = info_map_.end ();
          pos != limit;
          ++pos)
       {
@@ -177,27 +177,27 @@ instance_scheduler_t::init (Composer& instance_table,
     }
 }
 
-  void instance_scheduler_t::run ()
-  {
-    for (size_t idx = 0; idx != executors_.size (); ++idx)
-      {
-        executors_[idx]->spawn ();
-      }
+void instance_scheduler_t::run ()
+{
+  for (size_t idx = 0; idx != executors_.size (); ++idx)
+    {
+      executors_[idx]->spawn ();
+    }
 
-    for (size_t idx = 0; idx != executors_.size (); ++idx)
-      {
-        executors_[idx]->join ();
-      }
-  }
+  for (size_t idx = 0; idx != executors_.size (); ++idx)
+    {
+      executors_[idx]->join ();
+    }
+}
 
-  void
-  instance_scheduler_t::fini (FILE* profile_out)
-  {
-    for (size_t idx = 0; idx != executors_.size (); ++idx)
+void
+instance_scheduler_t::fini (FILE* profile_out)
+{
+  for (size_t idx = 0; idx != executors_.size (); ++idx)
     {
       executors_[idx]->fini (profile_out, idx);
       delete executors_[idx];
     }
-  }
+}
 
 }

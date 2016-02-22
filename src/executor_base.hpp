@@ -24,15 +24,25 @@ private:
   friend class ExecutorBase;
 };
 
-  struct ComponentInfoBase {
-    ComponentInfoBase (composition::Instance* instance);
-    composition::Instance* instance () const { return instance_; }
-    Heap* heap () const { return heap_; }
-    void heap (Heap* h) { heap_ = h; }
-  private:
-    composition::Instance* instance_;
-    Heap* heap_;
-  };
+struct ComponentInfoBase
+{
+  ComponentInfoBase (composition::Instance* instance);
+  composition::Instance* instance () const
+  {
+    return instance_;
+  }
+  Heap* heap () const
+  {
+    return heap_;
+  }
+  void heap (Heap* h)
+  {
+    heap_ = h;
+  }
+private:
+  composition::Instance* instance_;
+  Heap* heap_;
+};
 
 class ExecutorBase
 {
@@ -53,8 +63,14 @@ public:
   {
     return stack_;
   }
-  runtime::Heap* heap () const { return current_info_->heap (); }
-  void heap (runtime::Heap* heap) { current_info_->heap (heap); }
+  runtime::Heap* heap () const
+  {
+    return current_info_->heap ();
+  }
+  void heap (runtime::Heap* heap)
+  {
+    current_info_->heap (heap);
+  }
   ComponentInfoBase* current_info () const
   {
     return current_info_;
@@ -103,15 +119,18 @@ public:
   void fini (FILE* profile_out, size_t thread);
 
 private:
-  struct Event {
-    enum Type {
+  struct Event
+  {
+    enum Type
+    {
       Precondition_True,
       Precondition_False,
       Action,
       Garbage_Collection_True,
       Garbage_Collection_False,
     } type;
-    union {
+    union
+    {
       const composition::Action* action;
       ComponentInfoBase* info;
     };
@@ -122,31 +141,34 @@ private:
   Event* begin_event ()
   {
     Event* e = NULL;
-    if (!events_.empty ()) {
-      e = &events_[event_idx_];
-      event_idx_ = (event_idx_ + 1) & (events_.size () - 1);
-      event_full_ = event_full_ || (event_idx_ == 0);
-      clock_gettime (CLOCK_MONOTONIC, &e->begin);
-    }
+    if (!events_.empty ())
+      {
+        e = &events_[event_idx_];
+        event_idx_ = (event_idx_ + 1) & (events_.size () - 1);
+        event_full_ = event_full_ || (event_idx_ == 0);
+        clock_gettime (CLOCK_MONOTONIC, &e->begin);
+      }
     return e;
   }
 
   void end_event (Event* e, Event::Type type, const composition::Action* action)
   {
-    if (e) {
-      clock_gettime (CLOCK_MONOTONIC, &e->end);
-      e->type = type;
-      e->action = action;
-    }
+    if (e)
+      {
+        clock_gettime (CLOCK_MONOTONIC, &e->end);
+        e->type = type;
+        e->action = action;
+      }
   }
 
   void end_event (Event* e, Event::Type type, ComponentInfoBase* info)
   {
-    if (e) {
-      clock_gettime (CLOCK_MONOTONIC, &e->end);
-      e->type = type;
-      e->info = info;
-    }
+    if (e)
+      {
+        clock_gettime (CLOCK_MONOTONIC, &e->end);
+        e->type = type;
+        e->info = info;
+      }
   }
 
   runtime::Stack stack_;
@@ -159,10 +181,10 @@ private:
   bool event_full_;
 };
 
-  inline ComponentInfoBase* component_to_info (component_t* component)
-  {
-    return *reinterpret_cast<ComponentInfoBase**> (component);
-  }
+inline ComponentInfoBase* component_to_info (component_t* component)
+{
+  return *reinterpret_cast<ComponentInfoBase**> (component);
+}
 
 }
 

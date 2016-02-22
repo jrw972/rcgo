@@ -4,6 +4,7 @@
 #include "action.hpp"
 #include "reaction.hpp"
 #include "bind.hpp"
+#include "package.hpp"
 
 using namespace type;
 using namespace decl;
@@ -50,7 +51,7 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType foo ("foo", new Component ());
+    NamedType foo ("foo", new Component (NULL));
     Action* r1 = foo.get_action ("r");
     Action* r = new Action (NULL, NULL, "r");
     foo.insert_action (r);
@@ -59,7 +60,7 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType foo ("foo", new Component ());
+    NamedType foo ("foo", new Component (NULL));
     Reaction* r1 = foo.get_reaction ("r");
     Reaction* r = new Reaction (NULL, NULL, "r", NULL);
     foo.insert_reaction (r);
@@ -68,7 +69,7 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType foo ("foo", new Component ());
+    NamedType foo ("foo", new Component (NULL));
     Bind* r1 = foo.get_bind ("r");
     Bind* r = new Bind (NULL, "r", NULL);
     foo.insert_bind (r);
@@ -78,7 +79,7 @@ main (int argc, char** argv)
 
   {
     util::Location loc;
-    NamedType foo ("foo", new Component ());
+    NamedType foo ("foo", new Component (NULL));
     decl::Method* r1 = foo.get_method ("r");
     decl::Method* r = new decl::Method (NULL, "r", new type::Method (type::Method::METHOD, &foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), new Signature (), ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable)));
     foo.insert_method (r);
@@ -88,7 +89,7 @@ main (int argc, char** argv)
 
   {
     util::Location loc;
-    NamedType foo ("foo", new Component ());
+    NamedType foo ("foo", new Component (NULL));
     Initializer* r1 = foo.get_initializer ("r");
     Initializer* r = new Initializer (NULL, "r", new type::Method (type::Method::INITIALIZER, &foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), new Signature (), ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable)));
     foo.insert_initializer (r);
@@ -98,7 +99,7 @@ main (int argc, char** argv)
 
   {
     util::Location loc;
-    NamedType foo ("foo", new Component ());
+    NamedType foo ("foo", new Component (NULL));
     Getter* r1 = foo.get_getter ("r");
     Getter* r = new Getter (NULL, "r", new type::Method (type::Method::GETTER, &foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), new Signature (), ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable)));
     foo.insert_getter (r);
@@ -108,8 +109,14 @@ main (int argc, char** argv)
 
   {
     Struct s;
+    s.append_field (NULL, false, "r", &named_int, TagSet ());
+    tap.tassert ("Struct::to_string", s.to_string () == "{r int;}");
+  }
+
+  {
+    Struct s;
     Field* f1 = s.get_field ("r");
-    s.append_field ("r", &named_int);
+    s.append_field (NULL, false, "r", &named_int, TagSet ());
     Field* f2 = s.get_field ("r");
     tap.tassert ("Struct::get_field", f1 == NULL && f2 != NULL);
   }
@@ -118,7 +125,7 @@ main (int argc, char** argv)
     util::Location loc;
 
     Struct s;
-    s.append_field ("field", &named_int);
+    s.append_field (NULL, false, "field", &named_int, TagSet ());
 
     NamedType nt ("foo", &s);
 
@@ -216,6 +223,44 @@ main (int argc, char** argv)
   }
   {
     tap.tassert ("type::are_identical - slice different type", !are_identical (named_int.get_slice (), named_float32.get_slice ()));
+  }
+
+  {
+    Struct* s1 = (new Struct ())->append_field (NULL, false, "x", &named_int, TagSet ());
+    Struct* s2 = (new Struct ())->append_field (NULL, false, "x", &named_int, TagSet ());
+    tap.tassert ("type::are_identical - struct same", are_identical (s1, s2));
+  }
+  {
+    Struct* s1 = (new Struct ())->append_field (NULL, true, "T", &named_int, TagSet ());
+    Struct* s2 = (new Struct ())->append_field (NULL, true, "T", &named_int, TagSet ());
+    tap.tassert ("type::are_identical - struct same anonymous field", are_identical (s1, s2));
+  }
+  {
+    Struct* s1 = (new Struct ())->append_field (NULL, false, "T", &named_int, TagSet ());
+    Struct* s2 = (new Struct ())->append_field (NULL, true, "T", &named_int, TagSet ());
+    tap.tassert ("type::are_identical - struct different anonymous field", !are_identical (s1, s2));
+  }
+  {
+    Struct* s1 = (new Struct ())->append_field (NULL, false, "x", &named_int, TagSet ());
+    Struct* s2 = (new Struct ())->append_field (NULL, false, "y", &named_int, TagSet ());
+    tap.tassert ("type::are_identical - struct different field name", !are_identical (s1, s2));
+  }
+  {
+    Struct* s1 = (new Struct ())->append_field (NULL, false, "x", &named_int, TagSet ());
+    Struct* s2 = (new Struct ())->append_field (NULL, false, "x", &named_float32, TagSet ());
+    tap.tassert ("type::are_identical - struct different field type", !are_identical (s1, s2));
+  }
+  {
+    TagSet ts;
+    ts.insert ("some tag");
+    Struct* s1 = (new Struct ())->append_field (NULL, false, "x", &named_int, ts);
+    Struct* s2 = (new Struct ())->append_field (NULL, false, "x", &named_int, TagSet ());
+    tap.tassert ("type::are_identical - struct different field tags", !are_identical (s1, s2));
+  }
+  {
+    Struct* s1 = (new Struct ())->append_field (new Package (), false, "x", &named_int, TagSet ());
+    Struct* s2 = (new Struct ())->append_field (new Package (), false, "x", &named_int, TagSet ());
+    tap.tassert ("type::are_identical - struct different package with private field", !are_identical (s1, s2));
   }
 
   tap.print_plan ();

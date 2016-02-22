@@ -764,16 +764,13 @@ class Struct : public Type
 public:
   typedef std::vector<Field*> FieldsType;
   typedef FieldsType::const_iterator const_iterator;
-  Struct (bool insert_runtime = false);
+  Struct ();
   void Accept (Visitor& visitor) const;
   virtual Kind kind () const
   {
     return kStruct;
   }
-  std::string to_string () const
-  {
-    UNIMPLEMENTED;
-  }
+  std::string to_string () const;
   size_t Alignment () const
   {
     return alignment_;
@@ -794,9 +791,13 @@ public:
   {
     return fields_.end ();
   }
-  Struct* append_field (const std::string& field_name, const Type* field_type);
+  Struct* append_field (decl::Package* package, bool is_anonymous, const std::string& field_name, const Type* field_type, const TagSet& tags);
   Field* get_field_i (const std::string& name) const;
   virtual Field* select_field (const std::string& name) const;
+  size_t field_count () const
+  {
+    return fields_.size ();
+  }
 private:
   FieldsType fields_;
   ptrdiff_t offset_;
@@ -805,7 +806,8 @@ private:
 
 struct Component : public Struct
 {
-  Component () : Struct (true) { }
+  Component (decl::Package* package);
+
   virtual Kind kind () const
   {
     return kComponent;
@@ -2331,6 +2333,11 @@ struct visitor2 : public DefaultVisitor
     t (type1, type2);
   }
 
+  void visit (const Struct& type2)
+  {
+    t (type1, type2);
+  }
+
   void visit (const Boolean& type2)
   {
     t (type1, type2);
@@ -2468,6 +2475,11 @@ struct visitor1 : public DefaultVisitor
   }
 
   void visit (const Slice& type)
+  {
+    doubleDispatchHelper (type, type2, t);
+  }
+
+  void visit (const Struct& type)
   {
     doubleDispatchHelper (type, type2, t);
   }

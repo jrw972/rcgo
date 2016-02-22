@@ -19,15 +19,15 @@ using namespace type;
 using namespace semantic;
 using namespace decl;
 
-  static Operation* load (Node* node, Operation* op)
-  {
-    assert (node->expression_kind != kUnknown);
-    if (node->expression_kind == kVariable)
-      {
-        return new Load (op, node->type);
-      }
-    return op;
-  }
+static Operation* load (Node* node, Operation* op)
+{
+  assert (node->expression_kind != kUnknown);
+  if (node->expression_kind == kVariable)
+    {
+      return new Load (op, node->type);
+    }
+  return op;
+}
 
 struct CodeGenVisitor : public ast::DefaultVisitor
 {

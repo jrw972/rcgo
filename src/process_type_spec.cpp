@@ -107,7 +107,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
       Struct* field_list;
       if (node.is_component)
         {
-          field_list = new Component ();
+          field_list = new Component (symtab.package ());
         }
       else
         {
@@ -133,7 +133,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
               const type::Type *field = field_list->select (identifier);
               if (field == NULL)
                 {
-                  field_list->append_field (identifier, type);
+                  field_list->append_field (symtab.package (), false, identifier, type, TagSet ());
                 }
               else
                 {

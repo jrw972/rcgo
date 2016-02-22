@@ -4,8 +4,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <map>
 #include <vector>
+#include <set>
+#include <map>
 
 #include "debug.hpp"
 
@@ -100,6 +101,7 @@ class Type;
 class NamedType;
 class Signature;
 class Field;
+typedef std::set<std::string> TagSet;
 }
 
 namespace decl
@@ -120,6 +122,7 @@ class Getter;
 class Initializer;
 class Method;
 class Bind;
+class Package;
 }
 
 namespace composition

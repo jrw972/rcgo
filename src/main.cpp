@@ -124,17 +124,21 @@ main (int argc, char **argv)
           srand (atoi (optarg));
           break;
         case PROFILE_OPTION:
-          if (optarg) {
-            profile = atoi (optarg);
-          } else {
-            profile = 4096;
-          }
+          if (optarg)
+            {
+              profile = atoi (optarg);
+            }
+          else
+            {
+              profile = 4096;
+            }
           break;
         case PROFILE_OUT_OPTION:
           profile_out = fopen (optarg, "w");
-          if (profile_out == NULL) {
-            error (EXIT_FAILURE, errno, "Could not open %s for writing", optarg);
-          }
+          if (profile_out == NULL)
+            {
+              error (EXIT_FAILURE, errno, "Could not open %s for writing", optarg);
+            }
           break;
 
         default:
@@ -154,27 +158,30 @@ main (int argc, char **argv)
       error (EXIT_FAILURE, 0, "Illegal thread count: %d", thread_count);
     }
 
-  if (profile) {
-    fprintf (profile_out, "BEGIN profile\n");
-    fprintf (profile_out, "scheduler %s\n", scheduler_type.c_str ());
+  if (profile)
+    {
+      fprintf (profile_out, "BEGIN profile\n");
+      fprintf (profile_out, "scheduler %s\n", scheduler_type.c_str ());
 
-    int e = 1;
-    while ((1 << e) < profile && e < 31) {
-      ++e;
+      int e = 1;
+      while ((1 << e) < profile && e < 31)
+        {
+          ++e;
+        }
+      profile = 1 << e;
+      fprintf (profile_out, "points_per_thread %zd\n", profile);
+
+      struct timespec res;
+      clock_getres (CLOCK_MONOTONIC, &res);
+      fprintf (profile_out, "resolution %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
     }
-    profile = 1 << e;
-    fprintf (profile_out, "points_per_thread %zd\n", profile);
 
-    struct timespec res;
-    clock_getres (CLOCK_MONOTONIC, &res);
-    fprintf (profile_out, "resolution %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-  }
-
-  if (profile) {
-    struct timespec res;
-    clock_gettime (CLOCK_MONOTONIC, &res);
-    fprintf (profile_out, "BEGIN parse %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-  }
+  if (profile)
+    {
+      struct timespec res;
+      clock_gettime (CLOCK_MONOTONIC, &res);
+      fprintf (profile_out, "BEGIN parse %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+    }
 
   util::Location::StaticFile = argv[optind];
 
@@ -192,17 +199,19 @@ main (int argc, char **argv)
     }
   assert (root != NULL);
 
-  if (profile) {
-    struct timespec res;
-    clock_gettime (CLOCK_MONOTONIC, &res);
-    fprintf (profile_out, "END parse %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-  }
+  if (profile)
+    {
+      struct timespec res;
+      clock_gettime (CLOCK_MONOTONIC, &res);
+      fprintf (profile_out, "END parse %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+    }
 
-  if (profile) {
-    struct timespec res;
-    clock_gettime (CLOCK_MONOTONIC, &res);
-    fprintf (profile_out, "BEGIN semantic_analysis %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-  }
+  if (profile)
+    {
+      struct timespec res;
+      clock_gettime (CLOCK_MONOTONIC, &res);
+      fprintf (profile_out, "BEGIN semantic_analysis %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+    }
 
   arch::set_stack_alignment (sizeof (void*));
 
@@ -215,17 +224,19 @@ main (int argc, char **argv)
   semantic::check_types (root, er, symtab);
   semantic::compute_receiver_access (root);
 
-  if (profile) {
-    struct timespec res;
-    clock_gettime (CLOCK_MONOTONIC, &res);
-    fprintf (profile_out, "END semantic_analysis %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-  }
+  if (profile)
+    {
+      struct timespec res;
+      clock_gettime (CLOCK_MONOTONIC, &res);
+      fprintf (profile_out, "END semantic_analysis %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+    }
 
-  if (profile) {
-    struct timespec res;
-    clock_gettime (CLOCK_MONOTONIC, &res);
-    fprintf (profile_out, "BEGIN code_generation %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-  }
+  if (profile)
+    {
+      struct timespec res;
+      clock_gettime (CLOCK_MONOTONIC, &res);
+      fprintf (profile_out, "BEGIN code_generation %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+    }
 
   // Calculate the offsets of all stack variables.
   // Do this so we can execute some code statically when checking composition.
@@ -234,17 +245,19 @@ main (int argc, char **argv)
   // Generate code.
   code::generate_code (root);
 
-  if (profile) {
-    struct timespec res;
-    clock_gettime (CLOCK_MONOTONIC, &res);
-    fprintf (profile_out, "END code_generation %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-  }
+  if (profile)
+    {
+      struct timespec res;
+      clock_gettime (CLOCK_MONOTONIC, &res);
+      fprintf (profile_out, "END code_generation %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+    }
 
-  if (profile) {
-    struct timespec res;
-    clock_gettime (CLOCK_MONOTONIC, &res);
-    fprintf (profile_out, "BEGIN composition_check %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-  }
+  if (profile)
+    {
+      struct timespec res;
+      clock_gettime (CLOCK_MONOTONIC, &res);
+      fprintf (profile_out, "BEGIN composition_check %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+    }
 
   // Check composition.
   composition::Composer instance_table;
@@ -257,17 +270,19 @@ main (int argc, char **argv)
     }
   instance_table.analyze ();
 
-  if (profile) {
-    struct timespec res;
-    clock_gettime (CLOCK_MONOTONIC, &res);
-    fprintf (profile_out, "END composition_check %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-  }
+  if (profile)
+    {
+      struct timespec res;
+      clock_gettime (CLOCK_MONOTONIC, &res);
+      fprintf (profile_out, "END composition_check %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+    }
 
-  if (profile) {
-    struct timespec res;
-    clock_gettime (CLOCK_MONOTONIC, &res);
-    fprintf (profile_out, "BEGIN scheduler_init %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-  }
+  if (profile)
+    {
+      struct timespec res;
+      clock_gettime (CLOCK_MONOTONIC, &res);
+      fprintf (profile_out, "BEGIN scheduler_init %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+    }
 
   runtime::allocate_instances (instance_table);
   runtime::create_bindings (instance_table);
@@ -288,31 +303,35 @@ main (int argc, char **argv)
 
   scheduler->init (instance_table, 8 * 1024, thread_count, profile);
 
-  if (profile) {
-    struct timespec res;
-    clock_gettime (CLOCK_MONOTONIC, &res);
-    fprintf (profile_out, "END scheduler_init %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-  }
+  if (profile)
+    {
+      struct timespec res;
+      clock_gettime (CLOCK_MONOTONIC, &res);
+      fprintf (profile_out, "END scheduler_init %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+    }
 
-  if (profile) {
-    struct timespec res;
-    clock_gettime (CLOCK_MONOTONIC, &res);
-    fprintf (profile_out, "BEGIN scheduler_run %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-  }
+  if (profile)
+    {
+      struct timespec res;
+      clock_gettime (CLOCK_MONOTONIC, &res);
+      fprintf (profile_out, "BEGIN scheduler_run %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+    }
 
   scheduler->run ();
 
-  if (profile) {
-    struct timespec res;
-    clock_gettime (CLOCK_MONOTONIC, &res);
-    fprintf (profile_out, "END scheduler_run %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-  }
+  if (profile)
+    {
+      struct timespec res;
+      clock_gettime (CLOCK_MONOTONIC, &res);
+      fprintf (profile_out, "END scheduler_run %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+    }
 
   scheduler->fini (profile_out);
 
-  if (profile) {
-    fprintf (profile_out, "END profile\n");
-  }
+  if (profile)
+    {
+      fprintf (profile_out, "END profile\n");
+    }
 
   return 0;
 }
