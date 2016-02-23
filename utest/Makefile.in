@@ -79,7 +79,7 @@ build_triplet = @build@
 host_triplet = @host@
 TESTS = action$(EXEEXT) arch$(EXEEXT) heap$(EXEEXT) \
 	error_reporter$(EXEEXT) memory_model$(EXEEXT) \
-	reaction$(EXEEXT) type$(EXEEXT)
+	parameter_list$(EXEEXT) reaction$(EXEEXT) type$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = utest
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
@@ -98,7 +98,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__EXEEXT_1 = action$(EXEEXT) arch$(EXEEXT) heap$(EXEEXT) \
 	error_reporter$(EXEEXT) memory_model$(EXEEXT) \
-	reaction$(EXEEXT) type$(EXEEXT)
+	parameter_list$(EXEEXT) reaction$(EXEEXT) type$(EXEEXT)
 am_action_OBJECTS = action-action.$(OBJEXT)
 action_OBJECTS = $(am_action_OBJECTS)
 action_DEPENDENCIES = $(top_builddir)/src/librc.la
@@ -134,6 +134,13 @@ memory_model_DEPENDENCIES = $(top_builddir)/src/librc.la
 memory_model_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(memory_model_CXXFLAGS) \
 	$(CXXFLAGS) $(memory_model_LDFLAGS) $(LDFLAGS) -o $@
+am_parameter_list_OBJECTS = parameter_list-parameter_list.$(OBJEXT)
+parameter_list_OBJECTS = $(am_parameter_list_OBJECTS)
+parameter_list_DEPENDENCIES = $(top_builddir)/src/librc.la
+parameter_list_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(parameter_list_CXXFLAGS) $(CXXFLAGS) \
+	$(parameter_list_LDFLAGS) $(LDFLAGS) -o $@
 am_reaction_OBJECTS = reaction-reaction.$(OBJEXT)
 reaction_OBJECTS = $(am_reaction_OBJECTS)
 reaction_DEPENDENCIES = $(top_builddir)/src/librc.la
@@ -199,11 +206,12 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(action_SOURCES) $(arch_SOURCES) $(error_reporter_SOURCES) \
-	$(heap_SOURCES) $(memory_model_SOURCES) $(reaction_SOURCES) \
-	$(type_SOURCES)
+	$(heap_SOURCES) $(memory_model_SOURCES) \
+	$(parameter_list_SOURCES) $(reaction_SOURCES) $(type_SOURCES)
 DIST_SOURCES = $(action_SOURCES) $(arch_SOURCES) \
 	$(error_reporter_SOURCES) $(heap_SOURCES) \
-	$(memory_model_SOURCES) $(reaction_SOURCES) $(type_SOURCES)
+	$(memory_model_SOURCES) $(parameter_list_SOURCES) \
+	$(reaction_SOURCES) $(type_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -581,6 +589,10 @@ memory_model_SOURCES = memory_model.cpp tap.hpp
 memory_model_LDADD = $(top_builddir)/src/librc.la
 memory_model_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 memory_model_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+parameter_list_SOURCES = parameter_list.cpp tap.hpp
+parameter_list_LDADD = $(top_builddir)/src/librc.la
+parameter_list_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+parameter_list_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 reaction_SOURCES = reaction.cpp tap.hpp
 reaction_LDADD = $(top_builddir)/src/librc.la
 reaction_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -653,6 +665,10 @@ memory_model$(EXEEXT): $(memory_model_OBJECTS) $(memory_model_DEPENDENCIES) $(EX
 	@rm -f memory_model$(EXEEXT)
 	$(AM_V_CXXLD)$(memory_model_LINK) $(memory_model_OBJECTS) $(memory_model_LDADD) $(LIBS)
 
+parameter_list$(EXEEXT): $(parameter_list_OBJECTS) $(parameter_list_DEPENDENCIES) $(EXTRA_parameter_list_DEPENDENCIES) 
+	@rm -f parameter_list$(EXEEXT)
+	$(AM_V_CXXLD)$(parameter_list_LINK) $(parameter_list_OBJECTS) $(parameter_list_LDADD) $(LIBS)
+
 reaction$(EXEEXT): $(reaction_OBJECTS) $(reaction_DEPENDENCIES) $(EXTRA_reaction_DEPENDENCIES) 
 	@rm -f reaction$(EXEEXT)
 	$(AM_V_CXXLD)$(reaction_LINK) $(reaction_OBJECTS) $(reaction_LDADD) $(LIBS)
@@ -672,6 +688,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/error_reporter-error_reporter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/heap-heap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory_model-memory_model.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parameter_list-parameter_list.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reaction-reaction.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/type-type.Po@am__quote@
 
@@ -765,6 +782,20 @@ memory_model-memory_model.obj: memory_model.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='memory_model.cpp' object='memory_model-memory_model.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(memory_model_CXXFLAGS) $(CXXFLAGS) -c -o memory_model-memory_model.obj `if test -f 'memory_model.cpp'; then $(CYGPATH_W) 'memory_model.cpp'; else $(CYGPATH_W) '$(srcdir)/memory_model.cpp'; fi`
+
+parameter_list-parameter_list.o: parameter_list.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(parameter_list_CXXFLAGS) $(CXXFLAGS) -MT parameter_list-parameter_list.o -MD -MP -MF $(DEPDIR)/parameter_list-parameter_list.Tpo -c -o parameter_list-parameter_list.o `test -f 'parameter_list.cpp' || echo '$(srcdir)/'`parameter_list.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/parameter_list-parameter_list.Tpo $(DEPDIR)/parameter_list-parameter_list.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='parameter_list.cpp' object='parameter_list-parameter_list.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(parameter_list_CXXFLAGS) $(CXXFLAGS) -c -o parameter_list-parameter_list.o `test -f 'parameter_list.cpp' || echo '$(srcdir)/'`parameter_list.cpp
+
+parameter_list-parameter_list.obj: parameter_list.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(parameter_list_CXXFLAGS) $(CXXFLAGS) -MT parameter_list-parameter_list.obj -MD -MP -MF $(DEPDIR)/parameter_list-parameter_list.Tpo -c -o parameter_list-parameter_list.obj `if test -f 'parameter_list.cpp'; then $(CYGPATH_W) 'parameter_list.cpp'; else $(CYGPATH_W) '$(srcdir)/parameter_list.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/parameter_list-parameter_list.Tpo $(DEPDIR)/parameter_list-parameter_list.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='parameter_list.cpp' object='parameter_list-parameter_list.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(parameter_list_CXXFLAGS) $(CXXFLAGS) -c -o parameter_list-parameter_list.obj `if test -f 'parameter_list.cpp'; then $(CYGPATH_W) 'parameter_list.cpp'; else $(CYGPATH_W) '$(srcdir)/parameter_list.cpp'; fi`
 
 reaction-reaction.o: reaction.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(reaction_CXXFLAGS) $(CXXFLAGS) -MT reaction-reaction.o -MD -MP -MF $(DEPDIR)/reaction-reaction.Tpo -c -o reaction-reaction.o `test -f 'reaction.cpp' || echo '$(srcdir)/'`reaction.cpp
@@ -1024,6 +1055,13 @@ error_reporter.log: error_reporter$(EXEEXT)
 memory_model.log: memory_model$(EXEEXT)
 	@p='memory_model$(EXEEXT)'; \
 	b='memory_model'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+parameter_list.log: parameter_list$(EXEEXT)
+	@p='parameter_list$(EXEEXT)'; \
+	b='parameter_list'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

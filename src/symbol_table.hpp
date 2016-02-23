@@ -17,7 +17,7 @@ struct SymbolTable
   void close_scope ();
 
   void enter_symbol (decl::Symbol* s);
-  void enter_signature (const type::Signature* type);
+  void enter_signature (const decl::ParameterList* type);
 
   void change ();
   void activate ();

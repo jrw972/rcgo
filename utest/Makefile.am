@@ -2,7 +2,7 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver
 
 AM_CXXFLAGS = -I $(top_srcdir)/src
 
-TESTS = action arch heap error_reporter memory_model reaction type
+TESTS = action arch heap error_reporter memory_model parameter_list reaction type
 check_PROGRAMS = $(TESTS)
 
 action_SOURCES = action.cpp tap.hpp
@@ -29,6 +29,11 @@ memory_model_SOURCES = memory_model.cpp tap.hpp
 memory_model_LDADD = $(top_builddir)/src/librc.la
 memory_model_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 memory_model_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+
+parameter_list_SOURCES = parameter_list.cpp tap.hpp
+parameter_list_LDADD = $(top_builddir)/src/librc.la
+parameter_list_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+parameter_list_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
 reaction_SOURCES = reaction.cpp tap.hpp
 reaction_LDADD = $(top_builddir)/src/librc.la

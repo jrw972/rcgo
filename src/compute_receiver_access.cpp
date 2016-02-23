@@ -5,6 +5,7 @@
 #include "symbol_visitor.hpp"
 #include "action.hpp"
 #include "reaction.hpp"
+#include "parameter_list.hpp"
 
 namespace semantic
 {
@@ -372,7 +373,7 @@ struct Visitor : public ast::DefaultVisitor
 };
 }
 
-void compute_receiver_access_arguments (List* args, const type::Signature* signature, ReceiverAccess& receiver_access, bool& flag)
+void compute_receiver_access_arguments (List* args, const decl::ParameterList* signature, ReceiverAccess& receiver_access, bool& flag)
 {
   // Check if a mutable pointer escapes.
   receiver_access = AccessNone;
@@ -384,7 +385,7 @@ void compute_receiver_access_arguments (List* args, const type::Signature* signa
        ++pos)
     {
       Node* arg = *pos;
-      ParameterSymbol* param = signature->At (i);
+      ParameterSymbol* param = signature->at (i);
       receiver_access = std::max (receiver_access, arg->receiver_access);
       if (arg->receiver_state &&
           type_contains_pointer (param->type) &&

@@ -101,7 +101,7 @@ am_librc_la_OBJECTS = librc_la-action.lo librc_la-arch.lo \
 	librc_la-check_types.lo librc_la-compute_receiver_access.lo \
 	librc_la-error_reporter.lo librc_la-heap.lo \
 	librc_la-location.lo librc_la-memory_model.lo \
-	librc_la-process_type_spec.lo \
+	librc_la-parameter_list.lo librc_la-process_type_spec.lo \
 	librc_la-process_types_and_constants.lo librc_la-reaction.lo \
 	librc_la-semantic.lo librc_la-stack.lo librc_la-symbol.lo \
 	librc_la-symbol_table.lo librc_la-type.lo librc_la-value.lo
@@ -377,6 +377,7 @@ error_reporter.hpp error_reporter.cpp \
 heap.hpp heap.cpp \
 location.hpp location.cpp \
 memory_model.hpp memory_model.cpp \
+parameter_list.hpp parameter_list.cpp \
 process_type_spec.cpp \
 process_types_and_constants.hpp process_types_and_constants.cpp \
 reaction.hpp reaction.cpp \
@@ -511,6 +512,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-heap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-location.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-memory_model.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-parameter_list.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-process_type_spec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-process_types_and_constants.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-reaction.Plo@am__quote@
@@ -634,6 +636,13 @@ librc_la-memory_model.lo: memory_model.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='memory_model.cpp' object='librc_la-memory_model.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -c -o librc_la-memory_model.lo `test -f 'memory_model.cpp' || echo '$(srcdir)/'`memory_model.cpp
+
+librc_la-parameter_list.lo: parameter_list.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -MT librc_la-parameter_list.lo -MD -MP -MF $(DEPDIR)/librc_la-parameter_list.Tpo -c -o librc_la-parameter_list.lo `test -f 'parameter_list.cpp' || echo '$(srcdir)/'`parameter_list.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librc_la-parameter_list.Tpo $(DEPDIR)/librc_la-parameter_list.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='parameter_list.cpp' object='librc_la-parameter_list.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -c -o librc_la-parameter_list.lo `test -f 'parameter_list.cpp' || echo '$(srcdir)/'`parameter_list.cpp
 
 librc_la-process_type_spec.lo: process_type_spec.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -MT librc_la-process_type_spec.lo -MD -MP -MF $(DEPDIR)/librc_la-process_type_spec.Tpo -c -o librc_la-process_type_spec.lo `test -f 'process_type_spec.cpp' || echo '$(srcdir)/'`process_type_spec.cpp

@@ -66,7 +66,6 @@ enum Kind
   kSlice,
   kHeap,
 
-  kSignature,
   kFunction,
   kMethod,
   kTemplate,
@@ -813,64 +812,6 @@ struct Component : public Struct
   }
 };
 
-class Signature : public Type
-{
-public:
-  Signature () : size_ (0) { }
-
-  typedef std::vector<decl::ParameterSymbol*> ParametersType;
-  typedef ParametersType::const_iterator const_iterator;
-  typedef ParametersType::const_reverse_iterator const_reverse_iterator;
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const;
-  size_t Alignment () const
-  {
-    NOT_REACHED;
-  }
-  size_t Size () const
-  {
-    return size_;
-  }
-  virtual Kind kind () const
-  {
-    return kSignature;
-  }
-  virtual TypeLevel Level () const
-  {
-    return UNNAMED;
-  }
-  size_t Arity () const
-  {
-    return parameters_.size ();
-  }
-  decl::ParameterSymbol* At (size_t idx) const
-  {
-    return parameters_.at (idx);
-  }
-  const_iterator begin () const
-  {
-    return parameters_.begin ();
-  }
-  const_iterator end () const
-  {
-    return parameters_.end ();
-  }
-  const_reverse_iterator rbegin () const
-  {
-    return parameters_.rbegin ();
-  }
-  const_reverse_iterator rend () const
-  {
-    return parameters_.rend ();
-  }
-  decl::ParameterSymbol* find (const std::string& name) const;
-  Signature* Append (decl::ParameterSymbol* p);
-  void check_foreign_safe () const;
-private:
-  ParametersType parameters_;
-  size_t size_;
-};
-
 class Function : public Type
 {
 public:
@@ -881,11 +822,11 @@ public:
     PULL_PORT
   };
   Function (FunctionKind k,
-            const Signature * signature,
-            decl::ParameterSymbol* return_parameter)
+            const decl::ParameterList* a_parameter_list,
+            const decl::ParameterList* a_return_parameter_list)
     : function_kind (k)
-    , signature_ (signature)
-    , return_parameter_ (return_parameter)
+    , parameter_list (a_parameter_list)
+    , return_parameter_list (a_return_parameter_list)
   { }
   void Accept (Visitor& visitor) const;
   std::string to_string () const;
@@ -905,23 +846,12 @@ public:
   {
     return UNNAMED;
   }
-  const Signature* GetSignature () const
-  {
-    return signature_;
-  }
-  decl::ParameterSymbol* GetParameter (const std::string& name) const
-  {
-    return signature_->find (name);
-  }
-  decl::ParameterSymbol* GetReturnParameter () const
-  {
-    return return_parameter_;
-  }
+  decl::ParameterSymbol* GetParameter (const std::string& name) const;
+  decl::ParameterSymbol* GetReturnParameter () const;
   const Type* GetReturnType () const;
   FunctionKind const function_kind;
-private:
-  const Signature* const signature_;
-  decl::ParameterSymbol* const return_parameter_;
+  const decl::ParameterList* const parameter_list;
+  const decl::ParameterList* const return_parameter_list;
 };
 
 class Method : public Type
@@ -937,8 +867,8 @@ public:
   Method (MethodKind k,
           const NamedType* named_type_,
           decl::ParameterSymbol* receiver_parameter_,
-          const Signature * signature_,
-          decl::ParameterSymbol* return_parameter_);
+          const decl::ParameterList* parameter_list,
+          const decl::ParameterList* return_parameter_list);
   void Accept (Visitor& visitor) const;
   std::string to_string () const;
   size_t Alignment () const
@@ -962,13 +892,13 @@ public:
   const Type* receiver_type () const;
   decl::ParameterSymbol* const receiver_parameter;
   const Function* const function_type;
-  const Signature* const signature;
-  decl::ParameterSymbol* const return_parameter;
+  const decl::ParameterList* const parameter_list;
+  const decl::ParameterList* const return_parameter_list;
   const Type* return_type () const;
 private:
   static Function* make_function_type (decl::ParameterSymbol* receiver_parameter,
-                                       const Signature* signature,
-                                       decl::ParameterSymbol* return_parameter);
+                                       const decl::ParameterList* parameter_list,
+                                       const decl::ParameterList* return_parameter_list);
 };
 
 class Untyped : public Type
@@ -1256,7 +1186,6 @@ struct Visitor
   virtual void visit (const FileDescriptor& type) = 0;
   virtual void visit (const NamedType& type) = 0;
   virtual void visit (const Pointer& type) = 0;
-  virtual void visit (const Signature& type) = 0;
   virtual void visit (const Struct& type) = 0;
   virtual void visit (const Int& type) = 0;
   virtual void visit (const Int8& type) = 0;
@@ -1332,10 +1261,6 @@ struct ComparableVisitor : public Visitor
   virtual void visit (const Pointer& type)
   {
     t (type);
-  }
-  virtual void visit (const Signature& type)
-  {
-    t.NotComparable (type);
   }
   virtual void visit (const Struct& type)
   {
@@ -1488,10 +1413,6 @@ struct OrderableVisitor : public Visitor
     type.UnderlyingType ()->Accept (*this);
   }
   virtual void visit (const Pointer& type)
-  {
-    t.NotOrderable (type);
-  }
-  virtual void visit (const Signature& type)
   {
     t.NotOrderable (type);
   }
@@ -1649,10 +1570,6 @@ struct ArithmeticVisitor : public Visitor
   {
     t.NotArithmetic (type);
   }
-  virtual void visit (const Signature& type)
-  {
-    t.NotArithmetic (type);
-  }
   virtual void visit (const Struct& type)
   {
     t.NotArithmetic (type);
@@ -1804,10 +1721,6 @@ struct IntegralVisitor : public Visitor
     type.UnderlyingType ()->Accept (*this);
   }
   virtual void visit (const Pointer& type)
-  {
-    t.NotIntegral (type);
-  }
-  virtual void visit (const Signature& type)
   {
     t.NotIntegral (type);
   }
@@ -1965,10 +1878,6 @@ struct LogicalVisitor : public Visitor
   {
     t.NotLogical (type);
   }
-  virtual void visit (const Signature& type)
-  {
-    t.NotLogical (type);
-  }
   virtual void visit (const Struct& type)
   {
     t.NotLogical (type);
@@ -2114,10 +2023,6 @@ struct DefaultVisitor : public Visitor
     default_action (type);
   }
   virtual void visit (const Pointer& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Signature& type)
   {
     default_action (type);
   }
@@ -2363,12 +2268,6 @@ struct visitor2 : public DefaultVisitor
   {
     t (type1, type2);
   }
-
-  void visit (const Signature& type2)
-  {
-    t (type1, type2);
-  }
-
 };
 
 template <typename T, typename T1>
@@ -2507,11 +2406,6 @@ struct visitor1 : public DefaultVisitor
   }
 
   void visit (const Function& type)
-  {
-    doubleDispatchHelper (type, type2, t);
-  }
-
-  void visit (const Signature& type)
   {
     doubleDispatchHelper (type, type2, t);
   }
@@ -2752,6 +2646,7 @@ inline std::ostream& operator<< (std::ostream& out, const StringRep& s)
 {
   return out << std::string (static_cast<const char*> (s.ptr), s.length);
 }
+
 }
 
 #endif // RC_SRC_TYPE_HPP

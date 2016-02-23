@@ -99,7 +99,6 @@ namespace type
 {
 class Type;
 class NamedType;
-class Signature;
 class Field;
 typedef std::set<std::string> TagSet;
 }
@@ -123,6 +122,7 @@ class Initializer;
 class Method;
 class Bind;
 class Package;
+class ParameterList;
 }
 
 namespace composition

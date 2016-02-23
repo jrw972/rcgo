@@ -8,6 +8,7 @@
 #include "ast_cast.hpp"
 #include "symbol.hpp"
 #include "check_types.hpp"
+#include "parameter_list.hpp"
 
 namespace semantic
 {
@@ -53,7 +54,7 @@ process_array_dimension (ast::Node* node, ErrorReporter& er, decl::SymbolTable& 
 }
 
 void
-CheckForForeignSafe (const Signature* signature, const ParameterSymbol* return_parameter)
+CheckForForeignSafe (const ParameterList* signature, const ParameterSymbol* return_parameter)
 {
   // TODO:  Move this up to the function/method type.
   signature->check_foreign_safe ();
@@ -61,6 +62,68 @@ CheckForForeignSafe (const Signature* signature, const ParameterSymbol* return_p
     {
       return_parameter->check_foreign_safe ();
     }
+}
+
+const decl::ParameterList*
+process_signature (Node* node, ErrorReporter& er, decl::SymbolTable& symtab)
+{
+  struct Visitor : public ast::DefaultVisitor
+  {
+    ErrorReporter& er;
+    decl::SymbolTable& symtab;
+    const decl::ParameterList* signature;
+
+    Visitor (ErrorReporter& a_er,
+             decl::SymbolTable& st)
+      : er (a_er)
+      , symtab (st)
+      , signature (NULL)
+    { }
+
+    void default_action (Node& node)
+    {
+      AST_NOT_REACHED (node);
+    }
+
+    void visit (SignatureTypeSpec& node)
+    {
+      ParameterList* sig = new ParameterList ();
+      for (List::ConstIterator pos1 = node.begin (), limit1 = node.end ();
+           pos1 != limit1;
+           ++pos1)
+        {
+          IdentifierListTypeSpec* child = static_cast<IdentifierListTypeSpec*> (*pos1);
+          List *identifier_list = child->identifier_list;
+          Node *type_spec = child->type_spec;
+          const type::Type* type = process_type (type_spec, er, symtab, true);
+          for (List::ConstIterator pos2 = identifier_list->begin (), limit2 = identifier_list->end ();
+               pos2 != limit2;
+               ++pos2)
+            {
+              ast::Node* id = *pos2;
+              const std::string& identifier = ast_cast<Identifier> (id)->identifier;
+              const ParameterSymbol* parameter = sig->find (identifier);
+              if (parameter == NULL)
+                {
+                  sig->append (ParameterSymbol::make (id->location, identifier, type, child->mutability, child->indirection_mutability));
+                }
+              else
+                {
+                  error_at_line (-1, 0, id->location.File.c_str (), id->location.Line,
+                                 "duplicate parameter name %s (E111)",
+                                 identifier.c_str ());
+                }
+            }
+        }
+      signature = sig;
+    }
+
+  };
+
+  Visitor v (er, symtab);
+  node->accept (v);
+
+  return v.signature;
 }
 
 const type::Type *
@@ -177,61 +240,27 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
 
     void visit (PushPortTypeSpec& node)
     {
-      const Signature* signature = type_cast<Signature> (process_type (node.signature, er, symtab, true));
+      const ParameterList* signature = process_signature (node.signature, er, symtab);
       ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (node.location,
                                           ReturnSymbol,
                                           type::Void::Instance (),
                                           Immutable);
 
       CheckForForeignSafe (signature, return_parameter);
-      type = new type::Function (type::Function::PUSH_PORT, signature, return_parameter);
+      type = new type::Function (type::Function::PUSH_PORT, signature, (new ParameterList ())->append (return_parameter));
     }
 
     void visit (PullPortTypeSpec& node)
     {
-      const Signature* signature = type_cast<Signature> (process_type (node.signature, er, symtab, true));
+      const ParameterList* signature = process_signature (node.signature, er, symtab);
       const type::Type* return_type = process_type (node.return_type, er, symtab, true);
       ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (node.location,
                                           ReturnSymbol,
                                           return_type,
                                           node.indirection_mutability);
       CheckForForeignSafe (signature, return_parameter);
-      type = new type::Function (type::Function::PULL_PORT, signature, return_parameter);
+      type = new type::Function (type::Function::PULL_PORT, signature, (new ParameterList ())->append (return_parameter));
     }
-
-    void visit (SignatureTypeSpec& node)
-    {
-      Signature *signature = new Signature ();
-      for (List::ConstIterator pos1 = node.begin (), limit1 = node.end ();
-           pos1 != limit1;
-           ++pos1)
-        {
-          IdentifierListTypeSpec* child = static_cast<IdentifierListTypeSpec*> (*pos1);
-          List *identifier_list = child->identifier_list;
-          Node *type_spec = child->type_spec;
-          const type::Type* type = process_type (type_spec, er, symtab, true);
-          for (List::ConstIterator pos2 = identifier_list->begin (), limit2 = identifier_list->end ();
-               pos2 != limit2;
-               ++pos2)
-            {
-              ast::Node* id = *pos2;
-              const std::string& identifier = ast_cast<Identifier> (id)->identifier;
-              const ParameterSymbol* parameter = signature->find (identifier);
-              if (parameter == NULL)
-                {
-                  signature->Append (ParameterSymbol::make (id->location, identifier, type, child->mutability, child->indirection_mutability));
-                }
-              else
-                {
-                  error_at_line (-1, 0, id->location.File.c_str (), id->location.Line,
-                                 "duplicate parameter name %s (E111)",
-                                 identifier.c_str ());
-                }
-            }
-        }
-      type = signature;
-    }
-
   };
 
   Visitor type_spec_visitor (er, symtab);

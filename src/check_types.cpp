@@ -16,6 +16,7 @@
 #include "action.hpp"
 #include "reaction.hpp"
 #include "bind.hpp"
+#include "parameter_list.hpp"
 
 namespace semantic
 {
@@ -199,7 +200,8 @@ static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* 
 
   require_variable (reaction_node);
 
-  if (!are_identical (push_port_type->GetSignature (), reaction_type->signature))
+  type::Function f (type::Function::PUSH_PORT, reaction_type->parameter_list, reaction_type->return_parameter_list);
+  if (!are_identical (push_port_type, &f))
     {
       error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
                      "cannot bind %s to %s (E40)", push_port_type->to_string ().c_str (), reaction_type->to_string ().c_str ());
@@ -985,7 +987,7 @@ struct Visitor : public ast::DefaultVisitor
             break;
           }
 
-        node.signature = node.function_type->GetSignature ();
+        node.signature = node.function_type->parameter_list;
         node.return_parameter = node.function_type->GetReturnParameter ();
       }
     else if (node.method_type)
@@ -1028,8 +1030,8 @@ struct Visitor : public ast::DefaultVisitor
           break;
           }
 
-        node.signature = node.method_type->signature;
-        node.return_parameter = node.method_type->return_parameter;
+        node.signature = node.method_type->parameter_list;
+        node.return_parameter = node.method_type->return_parameter_list->at (0);
       }
     else
       {
@@ -1489,9 +1491,9 @@ struct Visitor : public ast::DefaultVisitor
   {
     // Check the arguments.
     node.expression_list->accept (*this);
-    check_types_arguments (node.expression_list, node.symbol->initializer->initializerType->signature);
+    check_types_arguments (node.expression_list, node.symbol->initializer->initializerType->parameter_list);
     require_value_or_variable_list (node.expression_list);
-    check_mutability_arguments (node.expression_list, node.symbol->initializer->initializerType->signature);
+    check_mutability_arguments (node.expression_list, node.symbol->initializer->initializerType->parameter_list);
   }
 
   void visit (ast::Initializer& node)
@@ -2012,7 +2014,7 @@ done:
 
     require_variable (node.right);
 
-    type::Function g (type::Function::FUNCTION, getter_type->signature, getter_type->return_parameter);
+    type::Function g (type::Function::PULL_PORT, getter_type->parameter_list, getter_type->return_parameter_list);
     if (!are_identical (pull_port_type, &g))
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
@@ -2374,7 +2376,7 @@ done:
       }
 
     node.args->accept (*this);
-    check_types_arguments (node.args, push_port_type->GetSignature ());
+    check_types_arguments (node.args, push_port_type->parameter_list);
     require_value_or_variable_list (node.args);
 
     node.type = type::Void::Instance ();
@@ -2411,7 +2413,7 @@ done:
     check_array_index (node.array_type, node.index, false);
 
     node.args->accept (*this);
-    check_types_arguments (node.args, push_port_type->GetSignature ());
+    check_types_arguments (node.args, push_port_type->parameter_list);
     require_value_or_variable_list (node.args);
 
     node.type = type::Void::Instance ();
@@ -2456,12 +2458,12 @@ done:
 };
 }
 
-void check_types_arguments (ast::List* args, const type::Signature* signature)
+void check_types_arguments (ast::List* args, const decl::ParameterList* signature)
 {
-  if (args->size () != signature->Arity ())
+  if (args->size () != signature->size ())
     {
       error_at_line (-1, 0, args->location.File.c_str (), args->location.Line,
-                     "call expects %lu arguments but given %lu (E150)", signature->Arity (), args->size ());
+                     "call expects %lu arguments but given %lu (E150)", signature->size (), args->size ());
     }
 
   size_t i = 0;
@@ -2471,7 +2473,7 @@ void check_types_arguments (ast::List* args, const type::Signature* signature)
     {
       const type::Type*& arg = (*pos)->type;
       Value& val = (*pos)->value;
-      const type::Type* param = signature->At (i)->type;
+      const type::Type* param = signature->at (i)->type;
       if (!type::assignable (arg, val, param))
         {
           error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
@@ -2507,7 +2509,7 @@ void check_types (ast::Node* root, ErrorReporter& er, SymbolTable& symtab)
   root->accept (visitor);
 }
 
-void check_mutability_arguments (ast::Node* node, const type::Signature* signature)
+void check_mutability_arguments (ast::Node* node, const decl::ParameterList* signature)
 {
   ListExpr* args = ast_cast<ListExpr> (node);
 
@@ -2519,7 +2521,7 @@ void check_mutability_arguments (ast::Node* node, const type::Signature* signatu
       const type::Type* arg = (*pos)->type;
       if (type_contains_pointer (arg))
         {
-          if (signature->At (i)->dereference_mutability < (*pos)->indirection_mutability)
+          if (signature->at (i)->dereference_mutability < (*pos)->indirection_mutability)
             {
               error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
                              "argument %zd casts away +const or +foreign (E85)", i + 1);

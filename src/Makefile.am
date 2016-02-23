@@ -54,6 +54,7 @@ error_reporter.hpp error_reporter.cpp \
 heap.hpp heap.cpp \
 location.hpp location.cpp \
 memory_model.hpp memory_model.cpp \
+parameter_list.hpp parameter_list.cpp \
 process_type_spec.cpp \
 process_types_and_constants.hpp process_types_and_constants.cpp \
 reaction.hpp reaction.cpp \

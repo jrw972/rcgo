@@ -28,9 +28,9 @@ struct BuiltinFunction : public decl::Callable, public decl::Symbol
   {
     return type_;
   }
-  virtual const type::Signature* signature () const
+  virtual const decl::ParameterList* signature () const
   {
-    return type_->GetSignature ();
+    return type_->parameter_list;
   }
   virtual size_t return_size () const
   {
@@ -44,10 +44,7 @@ struct BuiltinFunction : public decl::Callable, public decl::Symbol
   {
     return 0;
   }
-  virtual size_t arguments_size () const
-  {
-    return type_->GetSignature ()->Size ();
-  }
+  virtual size_t arguments_size () const;
 
 protected:
   const type::Function* const type_;

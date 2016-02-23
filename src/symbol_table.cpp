@@ -4,6 +4,7 @@
 
 #include "symbol.hpp"
 #include "symbol_visitor.hpp"
+#include "parameter_list.hpp"
 
 namespace decl
 {
@@ -187,9 +188,9 @@ SymbolTable::enter_symbol (Symbol* symbol)
 }
 
 void
-SymbolTable::enter_signature (const Signature* type)
+SymbolTable::enter_signature (const ParameterList* type)
 {
-  for (Signature::ParametersType::const_iterator pos = type->begin (), limit = type->end ();
+  for (ParameterList::ParametersType::const_iterator pos = type->begin (), limit = type->end ();
        pos != limit; ++pos)
     {
       ParameterSymbol* x = *pos;

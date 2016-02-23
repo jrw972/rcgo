@@ -16,6 +16,7 @@
 #include "reaction.hpp"
 #include "stack.hpp"
 #include "runtime.hpp"
+#include "parameter_list.hpp"
 
 namespace composition
 {
@@ -735,7 +736,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultVisitor
       {
         exec.stack ().push (reaction->iota);
       }
-    exec.stack ().reserve (reaction->reaction->signature ()->Size ());
+    exec.stack ().reserve (reaction->reaction->signature ()->allocation_size ());
     exec.stack ().push_pointer (NULL);
     exec.stack ().setup (reaction->reaction->locals_size ());
   }
@@ -748,7 +749,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultVisitor
     , activation (NULL)
   {
     exec.stack ().push_pointer (reinterpret_cast<void*> (getter->instance->address));
-    exec.stack ().reserve (getter->getter->signature ()->Size ());
+    exec.stack ().reserve (getter->getter->signature ()->allocation_size ());
     exec.stack ().push_pointer (NULL);
     exec.stack ().setup (getter->getter->locals_size ());
   }

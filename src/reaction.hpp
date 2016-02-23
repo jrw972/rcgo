@@ -69,9 +69,9 @@ public:
   {
     return memory_model.locals_size ();
   }
-  virtual const type::Signature* signature () const
+  virtual const decl::ParameterList* signature () const
   {
-    return reaction_type->signature;
+    return reaction_type->parameter_list;
   }
 
   runtime::MemoryModel memory_model;

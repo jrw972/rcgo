@@ -15,6 +15,7 @@
 #include "semantic.hpp"
 #include "check_types.hpp"
 #include "error_reporter.hpp"
+#include "parameter_list.hpp"
 
 namespace runtime
 {
@@ -1051,7 +1052,7 @@ struct NewImpl : public Callable
     : type_ (t)
     , function_type_ (makeFunctionType (t, loc))
   {
-    allocate_parameters (memory_model, function_type_->GetSignature ());
+    allocate_parameters (memory_model, function_type_->parameter_list);
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
@@ -1089,8 +1090,8 @@ struct NewImpl : public Callable
   static const type::Function* makeFunctionType (const type::Type* type, const util::Location& loc)
   {
     const type::Type* return_type = type->get_pointer ();
-    return new type::Function (type::Function::FUNCTION, (new Signature ()),
-                               ParameterSymbol::makeReturn (loc, ReturnSymbol, return_type, Mutable));
+    return new type::Function (type::Function::FUNCTION, (new ParameterList ()),
+                               (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, return_type, Mutable)));
   }
 
   virtual size_t return_size () const
@@ -1103,13 +1104,13 @@ struct NewImpl : public Callable
   }
   virtual size_t arguments_size () const
   {
-    return function_type_->GetSignature ()->Size ();
+    return function_type_->parameter_list->allocation_size ();
   }
   virtual size_t locals_size () const
   {
     return 0;
   }
-  virtual const type::Signature* signature () const
+  virtual const decl::ParameterList* signature () const
   {
     NOT_REACHED;
   }
@@ -1160,14 +1161,14 @@ struct MoveImpl : public Callable
   MoveImpl (const type::Type* in, const type::Type* out, const util::Location& loc)
     : function_type_ (makeFunctionType (in, out, loc))
   {
-    allocate_parameters (memory_model, function_type_->GetSignature ());
+    allocate_parameters (memory_model, function_type_->parameter_list);
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
   virtual void call (ExecutorBase& exec) const
   {
     heap_link_t** r = static_cast<heap_link_t**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-    ParameterSymbol* p = *function_type_->GetSignature ()->begin ();
+    ParameterSymbol* p = *function_type_->parameter_list->begin ();
     heap_link_t* hl = static_cast<heap_link_t*> (exec.stack ().read_pointer (p->offset ()));
     if (hl != NULL)
       {
@@ -1212,9 +1213,9 @@ struct MoveImpl : public Callable
   static const type::Function* makeFunctionType (const type::Type* in, const type::Type* out, const util::Location& loc)
   {
     // TODO:  The mutabilities may need to be adjusted.
-    return new type::Function (type::Function::FUNCTION, (new Signature ())
-                               ->Append (ParameterSymbol::make (loc, "h", in, Mutable, Foreign)),
-                               ParameterSymbol::makeReturn (loc, ReturnSymbol, out, Mutable));
+    return new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                               ->append (ParameterSymbol::make (loc, "h", in, Mutable, Foreign)),
+                               (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, out, Mutable)));
   }
 
   virtual size_t return_size () const
@@ -1227,15 +1228,15 @@ struct MoveImpl : public Callable
   }
   virtual size_t arguments_size () const
   {
-    return function_type_->GetSignature ()->Size ();
+    return function_type_->parameter_list->allocation_size ();
   }
   virtual size_t locals_size () const
   {
     return 0;
   }
-  virtual const type::Signature* signature () const
+  virtual const decl::ParameterList* signature () const
   {
-    return function_type_->GetSignature ();
+    return function_type_->parameter_list;
   }
 };
 
@@ -1276,14 +1277,14 @@ struct MergeImpl : public Callable
   MergeImpl (const type::Type* in, const type::Type* out, const util::Location& loc)
     : function_type_ (makeFunctionType (in, out, loc))
   {
-    allocate_parameters (memory_model, function_type_->GetSignature ());
+    allocate_parameters (memory_model, function_type_->parameter_list);
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
   virtual void call (ExecutorBase& exec) const
   {
     char** r = static_cast<char**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-    ParameterSymbol* p = *function_type_->GetSignature ()->begin ();
+    ParameterSymbol* p = *function_type_->parameter_list->begin ();
     heap_link_t* hl = static_cast<heap_link_t*> (exec.stack ().read_pointer (p->offset ()));
     if (hl != NULL)
       {
@@ -1328,9 +1329,9 @@ struct MergeImpl : public Callable
   static const type::Function* makeFunctionType (const type::Type* in, const type::Type* out, const util::Location& loc)
   {
     // TODO:  Adjust mutability.
-    return new type::Function (type::Function::FUNCTION, (new Signature ())
-                               ->Append (ParameterSymbol::make (loc, "h", in, Mutable, Foreign)),
-                               ParameterSymbol::makeReturn (loc, ReturnSymbol, out, Mutable));
+    return new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                               ->append (ParameterSymbol::make (loc, "h", in, Mutable, Foreign)),
+                               (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, out, Mutable)));
   }
 
   virtual size_t return_size () const
@@ -1343,15 +1344,15 @@ struct MergeImpl : public Callable
   }
   virtual size_t arguments_size () const
   {
-    return function_type_->GetSignature ()->Size ();
+    return function_type_->parameter_list->allocation_size ();
   }
   virtual size_t locals_size () const
   {
     return 0;
   }
-  virtual const type::Signature* signature () const
+  virtual const decl::ParameterList* signature () const
   {
-    return function_type_->GetSignature ();
+    return function_type_->parameter_list;
   }
 };
 
@@ -1392,14 +1393,14 @@ struct LenImpl : public Callable
   LenImpl (const type::Type* type, const util::Location& loc)
     : function_type_ (makeFunctionType (type, loc))
   {
-    allocate_parameters (memory_model, function_type_->GetSignature ());
+    allocate_parameters (memory_model, function_type_->parameter_list);
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
   virtual void call (ExecutorBase& exec) const
   {
     Int::ValueType* retval = static_cast<Int::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-    Slice::ValueType* slice = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetSignature ()->At (0)->offset ()));
+    Slice::ValueType* slice = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->parameter_list->at (0)->offset ()));
     *retval = slice->length;
   }
 
@@ -1412,9 +1413,9 @@ struct LenImpl : public Callable
   static const type::Function* makeFunctionType (const type::Type* type,
       const util::Location& loc)
   {
-    return new type::Function (type::Function::FUNCTION, (new Signature ())
-                               ->Append (ParameterSymbol::make (loc, "s", type, Foreign, Foreign)),
-                               ParameterSymbol::makeReturn (loc, ReturnSymbol, &named_int, Immutable));
+    return new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                               ->append (ParameterSymbol::make (loc, "s", type, Foreign, Foreign)),
+                               (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &named_int, Immutable)));
   }
 
   virtual size_t return_size () const
@@ -1427,15 +1428,15 @@ struct LenImpl : public Callable
   }
   virtual size_t arguments_size () const
   {
-    return function_type_->GetSignature ()->Size ();
+    return function_type_->parameter_list->allocation_size ();
   }
   virtual size_t locals_size () const
   {
     return 0;
   }
-  virtual const type::Signature* signature () const
+  virtual const decl::ParameterList* signature () const
   {
-    return function_type_->GetSignature ();
+    return function_type_->parameter_list;
   }
 };
 
@@ -1477,15 +1478,15 @@ struct AppendImpl : public Callable
     : function_type_ (makeFunctionType (slice_type, element_type, loc))
     , unit_size_ (slice_type->UnitSize ())
   {
-    allocate_parameters (memory_model, function_type_->GetSignature ());
+    allocate_parameters (memory_model, function_type_->parameter_list);
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
   virtual void call (ExecutorBase& exec) const
   {
     Slice::ValueType* retval = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-    Slice::ValueType* slice = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetSignature ()->At (0)->offset ()));
-    const void* el = exec.stack ().get_address (function_type_->GetSignature ()->At (1)->offset ());
+    Slice::ValueType* slice = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->parameter_list->at (0)->offset ()));
+    const void* el = exec.stack ().get_address (function_type_->parameter_list->at (1)->offset ());
 
     const Uint::ValueType new_length = slice->length + 1;
     if (new_length > slice->capacity)
@@ -1512,10 +1513,10 @@ struct AppendImpl : public Callable
       const type::Type* element_type,
       const util::Location& loc)
   {
-    return new type::Function (type::Function::FUNCTION, (new Signature ())
-                               ->Append (ParameterSymbol::make (loc, "s", slice_type, Mutable, Mutable))
-                               ->Append (ParameterSymbol::make (loc, "x", element_type, Immutable, Mutable)),
-                               ParameterSymbol::makeReturn (loc, ReturnSymbol, slice_type, Mutable));
+    return new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                               ->append (ParameterSymbol::make (loc, "s", slice_type, Mutable, Mutable))
+                               ->append (ParameterSymbol::make (loc, "x", element_type, Immutable, Mutable)),
+                               (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, slice_type, Mutable)));
   }
 
   virtual size_t return_size () const
@@ -1528,15 +1529,15 @@ struct AppendImpl : public Callable
   }
   virtual size_t arguments_size () const
   {
-    return function_type_->GetSignature ()->Size ();
+    return function_type_->parameter_list->allocation_size ();
   }
   virtual size_t locals_size () const
   {
     return 0;
   }
-  virtual const type::Signature* signature () const
+  virtual const decl::ParameterList* signature () const
   {
-    return function_type_->GetSignature ();
+    return function_type_->parameter_list;
   }
 };
 
@@ -1587,7 +1588,7 @@ struct CopyImpl : public Callable
   CopyImpl (const type::Type* in, const util::Location& loc)
     : function_type_ (makeFunctionType (in, loc))
   {
-    allocate_parameters (memory_model, function_type_->GetSignature ());
+    allocate_parameters (memory_model, function_type_->parameter_list);
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
@@ -1596,7 +1597,7 @@ struct CopyImpl : public Callable
     const Slice* slice_type = type_strip_cast<Slice>(function_type_->GetReturnParameter ()->type);
     if (slice_type != NULL)
       {
-        Slice::ValueType* in = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetSignature ()->At (0)->offset ()));
+        Slice::ValueType* in = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->parameter_list->at (0)->offset ()));
         Slice::ValueType* out = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
         size_t sz = slice_type->UnitSize () * in->length;
         out->ptr = exec.heap ()->allocate (sz);
@@ -1609,7 +1610,7 @@ struct CopyImpl : public Callable
     const StringU* string_type = type_strip_cast<StringU>(function_type_->GetReturnParameter ()->type);
     if (string_type != NULL)
       {
-        StringU::ValueType* in = static_cast<StringU::ValueType*> (exec.stack ().get_address (function_type_->GetSignature ()->At (0)->offset ()));
+        StringU::ValueType* in = static_cast<StringU::ValueType*> (exec.stack ().get_address (function_type_->parameter_list->at (0)->offset ()));
         StringU::ValueType* out = static_cast<StringU::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
         out->ptr = exec.heap ()->allocate (in->length);
         memcpy (out->ptr, in->ptr, in->length);
@@ -1617,7 +1618,7 @@ struct CopyImpl : public Callable
         return;
       }
 
-    void* in = exec.stack ().get_address (function_type_->GetSignature ()->At (0)->offset ());
+    void* in = exec.stack ().get_address (function_type_->parameter_list->at (0)->offset ());
     void* out = exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ());
     memcpy (out, in, function_type_->GetReturnType ()->Size ());
   }
@@ -1630,9 +1631,9 @@ struct CopyImpl : public Callable
   MemoryModel memory_model;
   static const type::Function* makeFunctionType (const type::Type* in, const util::Location& loc)
   {
-    return new type::Function (type::Function::FUNCTION, (new Signature ())
-                               ->Append (ParameterSymbol::make (loc, "h", in, Immutable, Foreign)),
-                               ParameterSymbol::makeReturn (loc, ReturnSymbol, in, Mutable));
+    return new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                               ->append (ParameterSymbol::make (loc, "h", in, Immutable, Foreign)),
+                               (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, in, Mutable)));
   }
 
   virtual size_t return_size () const
@@ -1645,15 +1646,15 @@ struct CopyImpl : public Callable
   }
   virtual size_t arguments_size () const
   {
-    return function_type_->GetSignature ()->Size ();
+    return function_type_->parameter_list->allocation_size ();
   }
   virtual size_t locals_size () const
   {
     return 0;
   }
-  virtual const type::Signature* signature () const
+  virtual const decl::ParameterList* signature () const
   {
-    return function_type_->GetSignature ();
+    return function_type_->parameter_list;
   }
 };
 
@@ -1715,7 +1716,7 @@ struct PrintlnImpl : public Callable
   PrintlnImpl (const util::Location& loc, const TypeList& type_list)
     : function_type_ (makeFunctionType (loc, type_list))
   {
-    allocate_parameters (memory_model, function_type_->GetSignature ());
+    allocate_parameters (memory_model, function_type_->parameter_list);
     allocate_symbol (memory_model, function_type_->GetReturnParameter ());
   }
 
@@ -1808,7 +1809,7 @@ struct PrintlnImpl : public Callable
     };
 
     exec.lock_stdout ();
-    for (type::Signature::const_iterator pos = function_type_->GetSignature ()->begin (), limit = function_type_->GetSignature ()->end ();
+    for (decl::ParameterList::const_iterator pos = function_type_->parameter_list->begin (), limit = function_type_->parameter_list->end ();
          pos != limit;
          ++pos)
       {
@@ -1830,18 +1831,18 @@ struct PrintlnImpl : public Callable
 
   static const type::Function* makeFunctionType (const util::Location& loc, const TypeList& argument_types)
   {
-    Signature* sig = new Signature ();
+    ParameterList* sig = new ParameterList ();
     for (TypeList::const_iterator pos = argument_types.begin (), limit = argument_types.end ();
          pos != limit;
          ++pos)
       {
         const type::Type* t = *pos;
         t = t->DefaultType ();
-        sig->Append (ParameterSymbol::make (loc, "", t, Immutable, Foreign));
+        sig->append (ParameterSymbol::make (loc, "", t, Immutable, Foreign));
       }
 
     return new type::Function (type::Function::FUNCTION, sig,
-                               ParameterSymbol::makeReturn (loc, ReturnSymbol, Void::Instance (), Foreign));
+                               (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Void::Instance (), Foreign)));
 
   }
 
@@ -1855,15 +1856,15 @@ struct PrintlnImpl : public Callable
   }
   virtual size_t arguments_size () const
   {
-    return function_type_->GetSignature ()->Size ();
+    return function_type_->parameter_list->allocation_size ();
   }
   virtual size_t locals_size () const
   {
     return 0;
   }
-  virtual const type::Signature* signature () const
+  virtual const decl::ParameterList* signature () const
   {
-    return function_type_->GetSignature ();
+    return function_type_->parameter_list;
   }
 };
 

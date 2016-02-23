@@ -12,6 +12,7 @@
 #include "bind.hpp"
 #include "callable.hpp"
 #include "ast_visitor.hpp"
+#include "parameter_list.hpp"
 
 namespace semantic
 {
@@ -303,9 +304,9 @@ allocate_stack_variables (ast::Node* node)
 
 void
 allocate_parameters (runtime::MemoryModel& memory_model,
-                     const type::Signature* signature)
+                     const decl::ParameterList* signature)
 {
-  for (type::Signature::const_reverse_iterator pos = signature->rbegin (), limit = signature->rend ();
+  for (decl::ParameterList::const_reverse_iterator pos = signature->rbegin (), limit = signature->rend ();
        pos != limit;
        ++pos)
     {

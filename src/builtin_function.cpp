@@ -18,6 +18,7 @@
 #include "ast.hpp"
 #include "runtime.hpp"
 #include "semantic.hpp"
+#include "parameter_list.hpp"
 
 namespace decl
 {
@@ -32,7 +33,7 @@ BuiltinFunction::BuiltinFunction (const std::string& id,
   : Symbol (id, loc)
   , type_ (type)
 {
-  allocate_parameters (memory_model_, type_->GetSignature ());
+  allocate_parameters (memory_model_, type_->parameter_list);
   allocate_symbol (memory_model_, type_->GetReturnParameter ());
 }
 
@@ -48,18 +49,23 @@ BuiltinFunction::accept (decl::ConstSymbolVisitor& visitor) const
   visitor.visit (*this);
 }
 
+size_t BuiltinFunction::arguments_size () const
+{
+  return type_->parameter_list->allocation_size ();
+}
+
 Readable::Readable (const util::Location& loc)
   : BuiltinFunction ("readable",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
-                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable)))
+                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                                         ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable))))
 { }
 
 void
 Readable::call (runtime::ExecutorBase& exec) const
 {
-  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->GetSignature ()->At (0)->offset ()));
+  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->parameter_list->at (0)->offset ()));
   Bool::ValueType* r = static_cast<Bool::ValueType*> (exec.stack ().get_address (type_->GetReturnParameter ()->offset ()));
 
   struct pollfd pfd;
@@ -81,17 +87,17 @@ Readable::call (runtime::ExecutorBase& exec) const
 Read::Read (const util::Location& loc)
   : BuiltinFunction ("read",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
-                                         ->Append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Mutable)),
-                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable)))
+                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                                         ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
+                                         ->append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Mutable)),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable))))
 { }
 
 void
 Read::call (runtime::ExecutorBase& exec) const
 {
-  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->GetSignature ()->At (0)->offset ()));
-  Slice::ValueType* buf = static_cast<Slice::ValueType*> (exec.stack ().get_address (type_->GetSignature ()->At (1)->offset ()));
+  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->parameter_list->at (0)->offset ()));
+  Slice::ValueType* buf = static_cast<Slice::ValueType*> (exec.stack ().get_address (type_->parameter_list->at (1)->offset ()));
   Int::ValueType* r = static_cast<Int::ValueType*> (exec.stack ().get_address (type_->GetReturnParameter ()->offset ()));
   *r = read ((*fd)->fd (), buf->ptr, buf->length);
 }
@@ -99,15 +105,15 @@ Read::call (runtime::ExecutorBase& exec) const
 Writable::Writable (const util::Location& loc)
   : BuiltinFunction ("writable",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
-                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable)))
+                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                                         ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable))))
 { }
 
 void
 Writable::call (runtime::ExecutorBase& exec) const
 {
-  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->GetSignature ()->At (0)->offset ()));
+  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->parameter_list->at (0)->offset ()));
   Bool::ValueType* r = static_cast<Bool::ValueType*> (exec.stack ().get_address (type_->GetReturnParameter ()->offset ()));
 
   struct pollfd pfd;
@@ -129,15 +135,15 @@ Writable::call (runtime::ExecutorBase& exec) const
 ClockGettime::ClockGettime (const util::Location& loc)
   : BuiltinFunction ("clock_gettime",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (loc, "tp", type::named_timespec.get_pointer (), Immutable, Foreign)),
-                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable)))
+                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                                         ->append (ParameterSymbol::make (loc, "tp", type::named_timespec.get_pointer (), Immutable, Foreign)),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable))))
 { }
 
 void
 ClockGettime::call (runtime::ExecutorBase& exec) const
 {
-  struct timespec* ts = *static_cast< struct timespec**> (exec.stack ().get_address (type_->GetSignature ()->At (0)->offset ()));
+  struct timespec* ts = *static_cast< struct timespec**> (exec.stack ().get_address (type_->parameter_list->at (0)->offset ()));
   Int::ValueType* r = static_cast<Int::ValueType*> (exec.stack ().get_address (type_->GetReturnParameter ()->offset ()));
   *r = clock_gettime (CLOCK_REALTIME, ts);
 }
@@ -145,8 +151,8 @@ ClockGettime::call (runtime::ExecutorBase& exec) const
 TimerfdCreate::TimerfdCreate (const util::Location& loc)
   : BuiltinFunction ("timerfd_create",
                      loc,
-                     new type::Function (type::Function::FUNCTION, new Signature (),
-                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable)))
+                     new type::Function (type::Function::FUNCTION, new ParameterList (),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable))))
 { }
 
 void
@@ -167,17 +173,17 @@ TimerfdCreate::call (runtime::ExecutorBase& exec) const
 TimerfdSettime::TimerfdSettime (const util::Location& loc)
   : BuiltinFunction ("timerfd_settime",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
-                                         ->Append (ParameterSymbol::make (loc, "s", &type::named_uint64, Immutable, Immutable)),
-                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable)))
+                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                                         ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
+                                         ->append (ParameterSymbol::make (loc, "s", &type::named_uint64, Immutable, Immutable)),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable))))
 { }
 
 void
 TimerfdSettime::call (runtime::ExecutorBase& exec) const
 {
-  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->GetSignature ()->At (0)->offset ()));
-  Uint64::ValueType* v = static_cast<Uint64::ValueType*> (exec.stack ().get_address (type_->GetSignature ()->At (1)->offset ()));
+  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->parameter_list->at (0)->offset ()));
+  Uint64::ValueType* v = static_cast<Uint64::ValueType*> (exec.stack ().get_address (type_->parameter_list->at (1)->offset ()));
   Int::ValueType* r = static_cast<Int::ValueType*> (exec.stack ().get_address (type_->GetReturnParameter ()->offset ()));
 
   struct itimerspec spec;
@@ -191,8 +197,8 @@ TimerfdSettime::call (runtime::ExecutorBase& exec) const
 UdpSocket::UdpSocket (const util::Location& loc)
   : BuiltinFunction ("udp_socket",
                      loc,
-                     new type::Function (type::Function::FUNCTION, new Signature (),
-                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable)))
+                     new type::Function (type::Function::FUNCTION, new ParameterList (),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable))))
 { }
 
 void
@@ -220,21 +226,21 @@ UdpSocket::call (runtime::ExecutorBase& exec) const
 Sendto::Sendto (const util::Location& loc)
   : BuiltinFunction ("sendto",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new Signature ())
-                                         ->Append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
-                                         ->Append (ParameterSymbol::make (loc, "host", &type::named_string, Immutable, Foreign))
-                                         ->Append (ParameterSymbol::make (loc, "port", &type::named_uint16, Immutable, Immutable))
-                                         ->Append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Foreign)),
-                                         ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable)))
+                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                                         ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
+                                         ->append (ParameterSymbol::make (loc, "host", &type::named_string, Immutable, Foreign))
+                                         ->append (ParameterSymbol::make (loc, "port", &type::named_uint16, Immutable, Immutable))
+                                         ->append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Foreign)),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable))))
 { }
 
 void
 Sendto::call (runtime::ExecutorBase& exec) const
 {
-  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->GetSignature ()->At (0)->offset ()));
-  StringU::ValueType* host = static_cast<StringU::ValueType*> (exec.stack ().get_address (type_->GetSignature ()->At (1)->offset ()));
-  Uint16::ValueType* port = static_cast<Uint16::ValueType*> (exec.stack ().get_address (type_->GetSignature ()->At (2)->offset ()));
-  Slice::ValueType* buf = static_cast<Slice::ValueType*> (exec.stack ().get_address (type_->GetSignature ()->At (3)->offset ()));
+  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type_->parameter_list->at (0)->offset ()));
+  StringU::ValueType* host = static_cast<StringU::ValueType*> (exec.stack ().get_address (type_->parameter_list->at (1)->offset ()));
+  Uint16::ValueType* port = static_cast<Uint16::ValueType*> (exec.stack ().get_address (type_->parameter_list->at (2)->offset ()));
+  Slice::ValueType* buf = static_cast<Slice::ValueType*> (exec.stack ().get_address (type_->parameter_list->at (3)->offset ()));
   Int::ValueType* ret = static_cast<Int::ValueType*> (exec.stack ().get_address (type_->GetReturnParameter ()->offset ()));
 
   std::string host2 (static_cast<const char*> (host->ptr), host->length);

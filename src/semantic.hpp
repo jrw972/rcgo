@@ -218,10 +218,14 @@ T* processAndLookup (decl::SymbolTable& symtab, const std::string& identifier, c
 type::Int::ValueType process_array_dimension (ast::Node* ptr, util::ErrorReporter& er, decl::SymbolTable& symtab);
 
 // Check that a signature has +foreign where needed.
-void CheckForForeignSafe (const type::Signature* signature, const decl::ParameterSymbol* return_parameter);
+void CheckForForeignSafe (const decl::ParameterList* signature, const decl::ParameterSymbol* return_parameter);
 
 // Process a type specification.
 const type::Type * process_type (ast::Node* node, util::ErrorReporter& er, decl::SymbolTable& symtab, bool force);
+
+// Process a signature.
+const decl::ParameterList*
+process_signature (ast::Node* node, util::ErrorReporter& er, decl::SymbolTable& symtab);
 
 // Type check the expression, insert an implicit dereference if necessary, and convert to the given type if necessary.
 typed_Value
@@ -248,7 +252,7 @@ allocate_symbol (runtime::MemoryModel& memory_model,
 
 void
 allocate_parameters (runtime::MemoryModel& memory_model,
-                     const type::Signature* signature);
+                     const decl::ParameterList* signature);
 
 }
 

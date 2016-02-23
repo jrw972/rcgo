@@ -18,7 +18,7 @@ class Callable
 public:
   virtual ~Callable () { }
   virtual void call (runtime::ExecutorBase& exec) const = 0;
-  virtual const type::Signature* signature () const = 0;
+  virtual const decl::ParameterList* signature () const = 0;
   virtual const type::Type* type () const = 0;
   virtual size_t return_size () const = 0;
   virtual size_t receiver_size () const = 0;
@@ -64,17 +64,14 @@ struct Function : public Callable, public decl::Symbol
   {
     return 0;
   }
-  virtual size_t arguments_size () const
-  {
-    return functionType_->GetSignature ()->Size ();
-  }
+  virtual size_t arguments_size () const;
   virtual size_t locals_size () const
   {
     return memoryModel.locals_size ();
   }
-  virtual const type::Signature* signature () const
+  virtual const decl::ParameterList* signature () const
   {
-    return functionType_->GetSignature ();
+    return functionType_->parameter_list;
   }
   ParameterSymbol* return_parameter () const
   {
@@ -97,14 +94,11 @@ struct Method : public Callable
   { }
 
   virtual void call (runtime::ExecutorBase& exec) const;
-  virtual const type::Signature* signature () const
+  virtual const decl::ParameterList* signature () const
   {
-    return methodType->signature;
+    return methodType->parameter_list;
   }
-  decl::ParameterSymbol* return_parameter () const
-  {
-    return methodType->return_parameter;
-  }
+  decl::ParameterSymbol* return_parameter () const;
   decl::ParameterSymbol* receiver_parameter () const
   {
     return methodType->receiver_parameter;
@@ -123,10 +117,7 @@ struct Method : public Callable
   {
     return methodType->receiver_type ()->Size ();
   }
-  virtual size_t arguments_size () const
-  {
-    return methodType->signature->Size ();
-  }
+  virtual size_t arguments_size () const;
   virtual size_t locals_size () const
   {
     return memoryModel.locals_size ();
@@ -164,22 +155,16 @@ struct Initializer : public Callable
   {
     return initializerType->receiver_type ()->Size ();
   }
-  virtual size_t arguments_size () const
-  {
-    return initializerType->signature->Size ();
-  }
+  virtual size_t arguments_size () const;
   virtual size_t locals_size () const
   {
     return memoryModel.locals_size ();
   }
-  virtual const type::Signature* signature () const
+  virtual const decl::ParameterList* signature () const
   {
-    return initializerType->signature;
+    return initializerType->parameter_list;
   }
-  decl::ParameterSymbol* return_parameter () const
-  {
-    return initializerType->return_parameter;
-  }
+  decl::ParameterSymbol* return_parameter () const;
   decl::ParameterSymbol* receiver_parameter () const
   {
     return initializerType->receiver_parameter;
@@ -217,23 +202,17 @@ struct Getter : public Callable
   {
     return getterType->receiver_type ()->Size ();
   }
-  virtual size_t arguments_size () const
-  {
-    return getterType->signature->Size ();
-  }
+  virtual size_t arguments_size () const;
   virtual size_t locals_size () const
   {
     return memoryModel.locals_size ();
   }
-  virtual const type::Signature* signature () const
+  virtual const decl::ParameterList* signature () const
   {
-    return getterType->signature;
+    return getterType->parameter_list;
   }
 
-  decl::ParameterSymbol* return_parameter () const
-  {
-    return getterType->return_parameter;
-  }
+  decl::ParameterSymbol* return_parameter () const;
   decl::ParameterSymbol* receiver_parameter () const
   {
     return getterType->receiver_parameter;

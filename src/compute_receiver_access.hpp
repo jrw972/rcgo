@@ -5,7 +5,7 @@
 
 namespace semantic
 {
-void compute_receiver_access_arguments (ast::List* args, const type::Signature* signature, ReceiverAccess& receiver_access, bool& flag);
+void compute_receiver_access_arguments (ast::List* args, const decl::ParameterList* signature, ReceiverAccess& receiver_access, bool& flag);
 void compute_receiver_access (ast::Node* root);
 }
 

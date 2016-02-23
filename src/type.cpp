@@ -6,6 +6,7 @@
 #include "callable.hpp"
 #include "bind.hpp"
 #include "arch.hpp"
+#include "parameter_list.hpp"
 
 namespace type
 {
@@ -281,22 +282,6 @@ Type::select (const std::string& identifier) const
   return NULL;
 }
 
-ParameterSymbol*
-Signature::find (const std::string& name) const
-{
-  for (ParametersType::const_iterator ptr = parameters_.begin (),
-       limit = parameters_.end ();
-       ptr != limit;
-       ++ptr)
-    {
-      if ((*ptr)->identifier == name)
-        {
-          return *ptr;
-        }
-    }
-  return NULL;
-}
-
 const Type*
 Type::move () const
 {
@@ -347,7 +332,6 @@ ACCEPT(Method)
 ACCEPT(Heap)
 ACCEPT(FileDescriptor)
 ACCEPT(Pointer)
-ACCEPT(Signature)
 T_ACCEPT(Int)
 T_ACCEPT(Int8)
 T_ACCEPT(Int16)
@@ -440,37 +424,57 @@ struct IdenticalImpl
     retval = are_identical (type1.base_type, type2.base_type);
   }
 
-  void operator() (const Signature& type1, const Signature& type2)
+  void operator() (const Function& type1, const Function& type2)
   {
-    retval = true;
-    size_t x_arity = type1.Arity ();
-    size_t y_arity = type2.Arity ();
-    if (x_arity != y_arity)
+    retval = false;
+
+    if (type1.function_kind != type2.function_kind)
       {
         return;
       }
 
-    for (size_t idx = 0; idx != x_arity; ++idx)
+    if (type1.parameter_list->size () != type2.parameter_list->size ())
       {
-        const ParameterSymbol* x_parameter = type1.At (idx);
-        const Type* x_parameter_type = x_parameter->type;
-        const ParameterSymbol* y_parameter = type2.At (idx);
-        const Type* y_parameter_type = y_parameter->type;
+        return;
+      }
 
-        if (!are_identical (x_parameter_type, y_parameter_type))
+    if (type1.return_parameter_list->size () != type2.return_parameter_list->size ())
+      {
+        return;
+      }
+
+    if (type1.return_parameter_list->is_variadic () != type2.return_parameter_list->is_variadic ())
+      {
+        return;
+      }
+
+    for (ParameterList::const_iterator pos1 = type1.parameter_list->begin (),
+         limit1 = type1.parameter_list->end (),
+         pos2 = type2.parameter_list->begin (),
+         limit2 = type2.parameter_list->end ();
+         pos1 != limit1 && pos2 != limit2;
+         ++pos1, ++pos2)
+      {
+        if (!are_identical ((*pos1)->type, (*pos2)->type))
+          {
+            return;
+          }
+      }
+
+    for (ParameterList::const_iterator pos1 = type1.return_parameter_list->begin (),
+         limit1 = type1.return_parameter_list->end (),
+         pos2 = type2.return_parameter_list->begin (),
+         limit2 = type2.return_parameter_list->end ();
+         pos1 != limit1 && pos2 != limit2;
+         ++pos1, ++pos2)
+      {
+        if (!are_identical ((*pos1)->type, (*pos2)->type))
           {
             return;
           }
       }
 
     retval = true;
-  }
-
-  void operator() (const Function& type1, const Function& type2)
-  {
-    retval =
-      are_identical (type1.GetSignature (), type2.GetSignature ()) &&
-      are_identical (type1.GetReturnParameter ()->type, type2.GetReturnParameter ()->type);
   }
 
   // TODO:  Interfaces
@@ -513,29 +517,6 @@ are_identical (const Type* x, const Type* y)
   IdenticalImpl i;
   DoubleDispatch (x, y, i);
   return i.retval;
-}
-
-std::string
-Signature::to_string () const
-{
-  std::stringstream str;
-  str << '(';
-  bool flag = false;
-  for (ParametersType::const_iterator ptr = parameters_.begin (),
-       limit = parameters_.end ();
-       ptr != limit;
-       ++ptr)
-    {
-      if (flag)
-        {
-          str << ", ";
-        }
-
-      str << (*ptr)->type->to_string ();
-      flag = true;
-    }
-  str << ')';
-  return str.str ();
 }
 
 #define INSTANCE(type) const type* \
@@ -981,13 +962,13 @@ Function::to_string () const
   switch (function_kind)
     {
     case FUNCTION:
-      str << "func " << *GetSignature () << ' ' << *GetReturnParameter ()->type;
+      str << "func " << *parameter_list << ' ' << *GetReturnParameter ()->type;
       break;
     case PUSH_PORT:
-      str << "push " << *GetSignature ();
+      str << "push " << *parameter_list;
       break;
     case PULL_PORT:
-      str << "pull " << *GetSignature () << ' ' << *GetReturnParameter ()->type;
+      str << "pull " << *parameter_list << ' ' << *GetReturnParameter ()->type;
       break;
     }
   return str.str ();
@@ -1000,16 +981,16 @@ Method::to_string () const
   switch (method_kind)
     {
     case METHOD:
-      str << '(' << *receiver_type () << ')' << " func " << *signature << ' ' << *return_type ();
+      str << '(' << *receiver_type () << ')' << " func " << *parameter_list << ' ' << *return_type ();
       break;
     case INITIALIZER:
-      str << '(' << *receiver_type () << ')' << " init " << *signature << ' ' << *return_type ();
+      str << '(' << *receiver_type () << ')' << " init " << *parameter_list << ' ' << *return_type ();
       break;
     case GETTER:
-      str << '(' << *receiver_type () << ')' << " getter " << *signature << ' ' << *return_type ();
+      str << '(' << *receiver_type () << ')' << " getter " << *parameter_list << ' ' << *return_type ();
       break;
     case REACTION:
-      str << '(' << *receiver_type () << ')' << " reaction " << *signature;
+      str << '(' << *receiver_type () << ')' << " reaction " << *parameter_list;
       break;
     }
   return str.str ();
@@ -1017,26 +998,26 @@ Method::to_string () const
 
 Function*
 Method::make_function_type (ParameterSymbol* this_parameter,
-                            const Signature* signature,
-                            ParameterSymbol* return_parameter)
+                            const ParameterList* parameter_list,
+                            const ParameterList* return_parameter_list)
 {
-  Signature* sig = new Signature ();
+  ParameterList* sig = new ParameterList ();
 
-  sig->Append (this_parameter);
-  for (Signature::const_iterator pos = signature->begin (),
-       limit = signature->end ();
+  sig->append (this_parameter);
+  for (ParameterList::const_iterator pos = parameter_list->begin (),
+       limit = parameter_list->end ();
        pos != limit;
        ++pos)
     {
-      sig->Append (*pos);
+      sig->append (*pos);
     }
-  return new Function (Function::FUNCTION, sig, return_parameter);
+  return new Function (Function::FUNCTION, sig, return_parameter_list);
 }
 
 const Type*
 Function::GetReturnType () const
 {
-  return return_parameter_->type;
+  return return_parameter_list->at (0)->type;
 }
 
 const Type*
@@ -1048,18 +1029,19 @@ Method::receiver_type () const
 const Type*
 Method::return_type () const
 {
-  return return_parameter->type;
+  return return_parameter_list->at (0)->type;
 }
 
 Method::Method (MethodKind k, const NamedType* named_type_,
                 ParameterSymbol* receiver_parameter_,
-                const Signature * signature_,
-                ParameterSymbol* return_parameter_)
-  : method_kind (k), named_type (named_type_)
+                const ParameterList* a_parameter_list,
+                const ParameterList* a_return_parameter_list)
+  : method_kind (k)
+  , named_type (named_type_)
   , receiver_parameter (receiver_parameter_)
-  , function_type (make_function_type (receiver_parameter_, signature_, return_parameter_))
-  , signature (signature_)
-  , return_parameter (return_parameter_)
+  , function_type (make_function_type (receiver_parameter_, a_parameter_list, a_return_parameter_list))
+  , parameter_list (a_parameter_list)
+  , return_parameter_list (a_return_parameter_list)
 {
 }
 
@@ -1143,25 +1125,6 @@ assignable (const Type* from, const Value& from_value, const Type* to)
     }
 
   return false;
-}
-
-Signature*
-Signature::Append (ParameterSymbol* p)
-{
-  parameters_.push_back (p);
-  size_ += util::align_up (p->type->Size (), arch::stack_alignment ());
-  return this;
-}
-
-void
-Signature::check_foreign_safe () const
-{
-  for (const_iterator pos = begin (), limit = end ();
-       pos != limit;
-       ++pos)
-    {
-      (*pos)->check_foreign_safe ();
-    }
 }
 
 Field*
@@ -1517,5 +1480,15 @@ NamedType named_string ("string", StringU::Instance ());
 
 NamedType named_file_descriptor ("FileDescriptor", FileDescriptor::Instance ());
 NamedType named_timespec ("timespec", (new Struct ())->append_field (NULL, false, "tv_sec", &named_uint64, TagSet ())->append_field (NULL, false, "tv_nsec", &named_uint64, TagSet ()));
+
+decl::ParameterSymbol* Function::GetParameter (const std::string& name) const
+{
+  return parameter_list->find (name);
+}
+
+decl::ParameterSymbol* Function::GetReturnParameter () const
+{
+  return return_parameter_list->at (0);
+}
 
 }

@@ -253,7 +253,7 @@ struct CallExpr : public Node
 
   const type::Function* function_type;
   const type::Method* method_type;
-  const type::Signature* signature;
+  const decl::ParameterList* signature;
   const decl::ParameterSymbol* return_parameter;
 };
 
