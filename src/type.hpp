@@ -61,6 +61,7 @@ enum Kind
   kStruct,
   kComponent,
   kArray,
+  kInterface,
 
   kPointer,
   kSlice,
@@ -901,6 +902,41 @@ private:
                                        const decl::ParameterList* return_parameter_list);
 };
 
+struct Interface : public Type
+{
+  Interface (decl::Package* a_package)
+    : package (a_package)
+  { }
+
+  virtual void Accept (Visitor& visitor) const;
+  virtual std::string to_string () const;
+  virtual size_t Alignment () const
+  {
+    UNIMPLEMENTED;
+  }
+  virtual size_t Size () const
+  {
+    UNIMPLEMENTED;
+  }
+  virtual Kind kind () const
+  {
+    return kInterface;
+  }
+  virtual TypeLevel Level () const
+  {
+    return UNNAMED;
+  }
+  void insert (const std::string& name,
+               const Function* func)
+  {
+    methods[name] = func;
+  }
+
+  decl::Package* const package;
+  typedef std::map<std::string, const Function*> MethodsType;
+  MethodsType methods;
+};
+
 class Untyped : public Type
 {
 public:
@@ -1177,41 +1213,42 @@ struct Visitor
 {
   virtual ~Visitor () { }
   virtual void visit (const Array& type) = 0;
-  virtual void visit (const Slice& type) = 0;
   virtual void visit (const Bool& type) = 0;
+  virtual void visit (const Boolean& type) = 0;
+  virtual void visit (const Complex& type) = 0;
+  virtual void visit (const Complex128& type) = 0;
+  virtual void visit (const Complex64& type) = 0;
   virtual void visit (const Component& type) = 0;
-  virtual void visit (const Function& type) = 0;
-  virtual void visit (const Method& type) = 0;
-  virtual void visit (const Heap& type) = 0;
   virtual void visit (const FileDescriptor& type) = 0;
-  virtual void visit (const NamedType& type) = 0;
-  virtual void visit (const Pointer& type) = 0;
-  virtual void visit (const Struct& type) = 0;
+  virtual void visit (const Float& type) = 0;
+  virtual void visit (const Float32& type) = 0;
+  virtual void visit (const Float64& type) = 0;
+  virtual void visit (const Function& type) = 0;
+  virtual void visit (const Heap& type) = 0;
   virtual void visit (const Int& type) = 0;
-  virtual void visit (const Int8& type) = 0;
   virtual void visit (const Int16& type) = 0;
   virtual void visit (const Int32& type) = 0;
   virtual void visit (const Int64& type) = 0;
+  virtual void visit (const Int8& type) = 0;
+  virtual void visit (const Integer& type) = 0;
+  virtual void visit (const Interface& type) = 0;
+  virtual void visit (const Method& type) = 0;
+  virtual void visit (const NamedType& type) = 0;
+  virtual void visit (const Nil& type) = 0;
+  virtual void visit (const Pointer& type) = 0;
+  virtual void visit (const Rune& type) = 0;
+  virtual void visit (const Slice& type) = 0;
+  virtual void visit (const String& type) = 0;
+  virtual void visit (const StringU& type) = 0;
+  virtual void visit (const Struct& type) = 0;
+  virtual void visit (const Template& type) = 0;
   virtual void visit (const Uint& type) = 0;
-  virtual void visit (const Uint8& type) = 0;
   virtual void visit (const Uint16& type) = 0;
   virtual void visit (const Uint32& type) = 0;
   virtual void visit (const Uint64& type) = 0;
-  virtual void visit (const Float32& type) = 0;
-  virtual void visit (const Float64& type) = 0;
-  virtual void visit (const Complex64& type) = 0;
-  virtual void visit (const Complex128& type) = 0;
-  virtual void visit (const StringU& type) = 0;
-  virtual void visit (const Nil& type) = 0;
-  virtual void visit (const Boolean& type) = 0;
-  virtual void visit (const Rune& type) = 0;
-  virtual void visit (const Integer& type) = 0;
-  virtual void visit (const Float& type) = 0;
-  virtual void visit (const Complex& type) = 0;
-  virtual void visit (const String& type) = 0;
-  virtual void visit (const Void& type) = 0;
-  virtual void visit (const Template& type) = 0;
+  virtual void visit (const Uint8& type) = 0;
   virtual void visit (const Uintptr& type) = 0;
+  virtual void visit (const Void& type) = 0;
 };
 
 template <typename T>
@@ -1990,6 +2027,10 @@ struct DefaultVisitor : public Visitor
   {
     default_action (type);
   }
+  virtual void visit (const Interface& type)
+  {
+    default_action (type);
+  }
   virtual void visit (const Slice& type)
   {
     default_action (type);
@@ -2147,6 +2188,11 @@ struct visitor2 : public DefaultVisitor
     TYPE_NOT_REACHED (type);
   }
 
+  void visit (const Interface& type2)
+  {
+    t (type1, type2);
+  }
+
   void visit (const Array& type2)
   {
     t (type1, type2);
@@ -2287,6 +2333,11 @@ struct visitor1 : public DefaultVisitor
   void default_action (const Type& type)
   {
     TYPE_NOT_REACHED (type);
+  }
+
+  void visit (const Interface& type)
+  {
+    doubleDispatchHelper (type, type2, t);
   }
 
   void visit (const Bool& type)

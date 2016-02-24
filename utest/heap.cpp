@@ -80,7 +80,7 @@ main (int argc, char** argv)
     bool r = h->collect_garbage (true);
     tap.tassert ("Heap::collect_garbage was performed", r == true);
     tap.tassert ("Heap::collect_garbage obj1 is collected", h->contains (obj1) == false || h->is_allocated (obj1) == false);
-    tap.tassert ("Heap::collect_garbage obj2 is not collected", h->contains (obj2) == true || h->is_allocated (obj2) == true && h->is_object (obj2));
+    tap.tassert ("Heap::collect_garbage obj2 is not collected", h->contains (obj2) == true || (h->is_allocated (obj2) == true && h->is_object (obj2)));
     delete h;
   }
 

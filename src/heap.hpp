@@ -30,7 +30,7 @@ struct Block
   void* begin () const;
   bool is_object (void* address) const;
   bool is_allocated (void* address) const;
-  bool set_mark ()
+  void set_mark ()
   {
     marked_ = true;
   }

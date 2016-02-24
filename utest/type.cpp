@@ -395,6 +395,50 @@ main (int argc, char** argv)
     tap.tassert ("type::are_identical - functions different variadic", !are_identical (&f1, &f2));
   }
 
+  {
+    util::Location loc;
+    Interface i1 (NULL);
+    i1.insert ("func1", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    i1.insert ("Func2", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    Interface i2 (NULL);
+    i2.insert ("func1", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    i2.insert ("Func2", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    tap.tassert ("type::are_identical - interfaces same", are_identical (&i1, &i2));
+  }
+
+  {
+    util::Location loc;
+    Interface i1 (NULL);
+    i1.insert ("func1", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    i1.insert ("Func2", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    Interface i2 (NULL);
+    i2.insert ("skunk1", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    i2.insert ("Func2", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    tap.tassert ("type::are_identical - interfaces different method names", !are_identical (&i1, &i2));
+  }
+
+  {
+    util::Location loc;
+    Interface i1 (NULL);
+    i1.insert ("func1", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    i1.insert ("Func2", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    Interface i2 (NULL);
+    i2.insert ("func1", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    i2.insert ("Func2", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_float32, Immutable)));
+    tap.tassert ("type::are_identical - interfaces different signatures", !are_identical (&i1, &i2));
+  }
+
+  {
+    util::Location loc;
+    Interface i1 (new Package ());
+    i1.insert ("func1", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    i1.insert ("Func2", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    Interface i2 (new Package ());
+    i2.insert ("func1", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    i2.insert ("Func2", new type::Function (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable)));
+    tap.tassert ("type::are_identical - interfaces different packages", !are_identical (&i1, &i2));
+  }
+
   tap.print_plan ();
 
   return 0;

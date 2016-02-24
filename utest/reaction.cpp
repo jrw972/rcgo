@@ -15,6 +15,7 @@ struct MockOperation : public runtime::Operation
   virtual runtime::OpReturn execute (runtime::ExecutorBase& exec) const
   {
     const_cast<MockOperation*> (this)->was_executed = true;
+    return runtime::kContinue;
   }
 
   virtual void dump () const { }

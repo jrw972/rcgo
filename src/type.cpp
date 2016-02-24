@@ -357,6 +357,7 @@ ACCEPT(Float)
 ACCEPT(Complex)
 ACCEPT(String)
 ACCEPT(Array)
+ACCEPT(Interface)
 ACCEPT(Slice)
 ACCEPT(Template)
 
@@ -477,10 +478,38 @@ struct IdenticalImpl
     retval = true;
   }
 
-  // TODO:  Interfaces
-  // void operator() (const Function& type1, const Function& type2) {
-  //   UNIMPLEMENTED;
-  // }
+  void operator() (const Interface& type1, const Interface& type2)
+  {
+    retval = false;
+
+    if (type1.methods.size () != type2.methods.size ())
+      {
+        return;
+      }
+
+    for (Interface::MethodsType::const_iterator pos1 = type1.methods.begin (), limit1 = type1.methods.end (),
+         pos2 = type2.methods.begin (), limit2 = type2.methods.end ();
+         pos1 != limit1 && pos2 != limit2;
+         ++pos1, ++pos2)
+      {
+        if (pos1->first != pos2->first)
+          {
+            return;
+          }
+
+        if (util::is_lowercase (pos1->first) && type1.package != type2.package)
+          {
+            return;
+          }
+
+        if (!are_identical (pos1->second, pos2->second))
+          {
+            return;
+          }
+      }
+
+    retval = true;
+  }
 
   // TODO:  Maps
   // void operator() (const Function& type1, const Function& type2) {
@@ -1489,6 +1518,20 @@ decl::ParameterSymbol* Function::GetParameter (const std::string& name) const
 decl::ParameterSymbol* Function::GetReturnParameter () const
 {
   return return_parameter_list->at (0);
+}
+
+std::string Interface::to_string () const
+{
+  std::stringstream ss;
+  ss << "interface {";
+  for (MethodsType::const_iterator pos = methods.begin (), limit = methods.end ();
+       pos != limit;
+       ++pos)
+    {
+      ss << pos->first << ' ' << *pos->second << ';';
+    }
+  ss << '}';
+  return ss.str ();
 }
 
 }

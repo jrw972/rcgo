@@ -10,7 +10,7 @@ main (int argc, char** argv)
   Tap tap;
 
   {
-    int x = rand ();
+    unsigned int x = rand ();
     set_stack_alignment (x);
     tap.tassert ("set_stack_alignment", x == stack_alignment ());
   }

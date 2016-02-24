@@ -163,8 +163,8 @@ main (int argc, char **argv)
       fprintf (profile_out, "BEGIN profile\n");
       fprintf (profile_out, "scheduler %s\n", scheduler_type.c_str ());
 
-      int e = 1;
-      while ((1 << e) < profile && e < 31)
+      unsigned int e = 1;
+      while ((1U << e) < profile && e < 31)
         {
           ++e;
         }

@@ -8,7 +8,7 @@
 
 using namespace util;
 
-static bool check (Tap& tap,
+static void check (Tap& tap,
                    const char* name,
                    const Location& loc,
                    const std::stringstream& ss,
