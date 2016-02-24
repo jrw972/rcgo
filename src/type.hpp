@@ -61,7 +61,7 @@ enum Kind
   kStruct,
   kComponent,
   kArray,
-  kInterface,
+  kMap,
 
   kPointer,
   kSlice,
@@ -69,6 +69,7 @@ enum Kind
 
   kFunction,
   kMethod,
+  kInterface,
   kTemplate,
 
   kFileDescriptor,
@@ -725,6 +726,36 @@ private:
   Array (Int::ValueType d, const Type* base) : BaseType (base), dimension (d) { }
 };
 
+struct Map : public Type
+{
+  Map (const Type* a_key_type,
+       const Type* a_value_type)
+    : key_type (a_key_type)
+    , value_type (a_value_type)
+  { }
+  virtual void Accept (Visitor& visitor) const;
+  virtual std::string to_string () const;
+  virtual size_t Alignment () const
+  {
+    UNIMPLEMENTED;
+  }
+  virtual size_t Size () const
+  {
+    UNIMPLEMENTED;
+  }
+  virtual Kind kind () const
+  {
+    return kMap;
+  }
+  virtual TypeLevel Level () const
+  {
+    return UNNAMED;
+  }
+
+  const Type* const key_type;
+  const Type* const value_type;
+};
+
 struct Heap : public Type, public BaseType
 {
   void Accept (Visitor& visitor) const;
@@ -1232,6 +1263,7 @@ struct Visitor
   virtual void visit (const Int8& type) = 0;
   virtual void visit (const Integer& type) = 0;
   virtual void visit (const Interface& type) = 0;
+  virtual void visit (const Map& type) = 0;
   virtual void visit (const Method& type) = 0;
   virtual void visit (const NamedType& type) = 0;
   virtual void visit (const Nil& type) = 0;
@@ -2027,6 +2059,10 @@ struct DefaultVisitor : public Visitor
   {
     default_action (type);
   }
+  virtual void visit (const Map& type)
+  {
+    default_action (type);
+  }
   virtual void visit (const Interface& type)
   {
     default_action (type);
@@ -2188,6 +2224,11 @@ struct visitor2 : public DefaultVisitor
     TYPE_NOT_REACHED (type);
   }
 
+  void visit (const Map& type2)
+  {
+    t (type1, type2);
+  }
+
   void visit (const Interface& type2)
   {
     t (type1, type2);
@@ -2333,6 +2374,11 @@ struct visitor1 : public DefaultVisitor
   void default_action (const Type& type)
   {
     TYPE_NOT_REACHED (type);
+  }
+
+  void visit (const Map& type)
+  {
+    doubleDispatchHelper (type, type2, t);
   }
 
   void visit (const Interface& type)

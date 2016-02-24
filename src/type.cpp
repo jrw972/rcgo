@@ -323,43 +323,44 @@ type::Accept (Visitor& visitor) const \
 
 #define T_ACCEPT(type) template<> void type::Accept (Visitor& visitor) const { visitor.visit (*this); }
 
-ACCEPT(NamedType)
+ACCEPT(Array)
+ACCEPT(Boolean)
+ACCEPT(Complex)
 ACCEPT(Component)
-ACCEPT(Struct)
-T_ACCEPT(Bool)
-ACCEPT(Function)
-ACCEPT(Method)
-ACCEPT(Heap)
 ACCEPT(FileDescriptor)
+ACCEPT(Float)
+ACCEPT(Function)
+ACCEPT(Heap)
+ACCEPT(Integer)
+ACCEPT(Interface)
+ACCEPT(Map)
+ACCEPT(Method)
+ACCEPT(NamedType)
+ACCEPT(Nil)
 ACCEPT(Pointer)
+ACCEPT(Rune)
+ACCEPT(Slice)
+ACCEPT(String)
+ACCEPT(Struct)
+ACCEPT(Template)
+ACCEPT(Void)
+T_ACCEPT(Bool)
+T_ACCEPT(Complex128)
+T_ACCEPT(Complex64)
+T_ACCEPT(Float32)
+T_ACCEPT(Float64)
 T_ACCEPT(Int)
-T_ACCEPT(Int8)
 T_ACCEPT(Int16)
 T_ACCEPT(Int32)
 T_ACCEPT(Int64)
+T_ACCEPT(Int8)
+T_ACCEPT(StringU)
 T_ACCEPT(Uint)
-T_ACCEPT(Uint8)
 T_ACCEPT(Uint16)
 T_ACCEPT(Uint32)
 T_ACCEPT(Uint64)
-T_ACCEPT(Float32)
-T_ACCEPT(Float64)
-T_ACCEPT(Complex64)
-T_ACCEPT(Complex128)
-T_ACCEPT(StringU)
+T_ACCEPT(Uint8)
 T_ACCEPT(Uintptr)
-ACCEPT(Void)
-ACCEPT(Nil)
-ACCEPT(Boolean)
-ACCEPT(Rune)
-ACCEPT(Integer)
-ACCEPT(Float)
-ACCEPT(Complex)
-ACCEPT(String)
-ACCEPT(Array)
-ACCEPT(Interface)
-ACCEPT(Slice)
-ACCEPT(Template)
 
 struct IdenticalImpl
 {
@@ -511,10 +512,10 @@ struct IdenticalImpl
     retval = true;
   }
 
-  // TODO:  Maps
-  // void operator() (const Function& type1, const Function& type2) {
-  //   UNIMPLEMENTED;
-  // }
+  void operator() (const Map& type1, const Map& type2)
+  {
+    retval = are_identical (type1.key_type, type2.key_type) && are_identical (type1.value_type, type2.value_type);
+  }
 
   template <typename T1, typename T2>
   void operator() (const T1& type1, const T2& type2)
@@ -1531,6 +1532,13 @@ std::string Interface::to_string () const
       ss << pos->first << ' ' << *pos->second << ';';
     }
   ss << '}';
+  return ss.str ();
+}
+
+std::string Map::to_string () const
+{
+  std::stringstream ss;
+  ss << "map[" << *key_type << ']' << *value_type;
   return ss.str ();
 }
 

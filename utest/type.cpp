@@ -449,6 +449,24 @@ main (int argc, char** argv)
     tap.tassert ("type::are_identical - interfaces different packages", !are_identical (&i1, &i2));
   }
 
+  {
+    Map m1 (&named_int, &named_float32);
+    Map m2 (&named_int, &named_float32);
+    tap.tassert ("type::are_identical - maps same", are_identical (&m1, &m2));
+  }
+
+  {
+    Map m1 (&named_float32, &named_float32);
+    Map m2 (&named_int, &named_float32);
+    tap.tassert ("type::are_identical - maps different keys", !are_identical (&m1, &m2));
+  }
+
+  {
+    Map m1 (&named_int, &named_int);
+    Map m2 (&named_int, &named_float32);
+    tap.tassert ("type::are_identical - maps different values", !are_identical (&m1, &m2));
+  }
+
   tap.print_plan ();
 
   return 0;
