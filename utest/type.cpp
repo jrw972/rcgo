@@ -467,6 +467,10 @@ main (int argc, char** argv)
     tap.tassert ("type::are_identical - maps different values", !are_identical (&m1, &m2));
   }
 
+  {
+    tap.tassert ("type::are_identical - bytes alias for uint8", are_identical (&named_byte, &named_uint8) && are_identical (&named_uint8, &named_byte));
+  }
+
   tap.print_plan ();
 
   return 0;
