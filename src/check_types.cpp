@@ -1114,11 +1114,9 @@ struct Visitor : public ast::DefaultVisitor
           {
             // Okay.
           }
-        else if (from->Level () == type::Type::UNNAMED &&
-                 to->Level () == type::Type::UNNAMED &&
-                 from->underlying_kind () == kPointer &&
-                 to->underlying_kind () == kPointer &&
-                 are_identical (from->pointer_base_type (), to->pointer_base_type ()))
+        else if (from->to_pointer () &&
+                 to->to_pointer () &&
+                 are_identical (from->to_pointer (), to->to_pointer ()))
           {
             // Okay.
           }
@@ -2075,7 +2073,7 @@ done:
                        identifier.c_str (), base_type->to_string ().c_str ());
       }
 
-    if (type_dereference (base_type))
+    if (base_type->u_to_pointer ())
       {
         // Selecting through pointer always yields a variable.
         node.expression_kind = kVariable;

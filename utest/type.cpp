@@ -471,6 +471,16 @@ main (int argc, char** argv)
     tap.tassert ("type::are_identical - bytes alias for uint8", are_identical (&named_byte, &named_uint8) && are_identical (&named_uint8, &named_byte));
   }
 
+  {
+    NamedType x ("x", named_int.get_pointer ());
+    tap.tassert ("type::to_pointer", named_int.to_pointer () == NULL && named_int.get_pointer ()->to_pointer () != NULL && x.to_pointer () == NULL);
+  }
+
+  {
+    NamedType x ("x", named_int.get_pointer ());
+    tap.tassert ("type::u_to_pointer", named_int.u_to_pointer () == NULL && named_int.get_pointer ()->u_to_pointer () != NULL && x.u_to_pointer () != NULL);
+  }
+
   tap.print_plan ();
 
   return 0;

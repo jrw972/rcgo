@@ -578,7 +578,7 @@ Composer::elaborate_bindings ()
               ast::Node* sb = ast_cast<SelectExpr> (right)->base;
               sb->operation->execute (exec);
               void* reaction_component = exec.stack ().pop_pointer ();
-              if (type_dereference (sb->type))
+              if (sb->type->u_to_pointer ())
                 {
                   exec.stack ().load (reaction_component, sb->type->Size ());
                   reaction_component = exec.stack ().pop_pointer ();
@@ -895,7 +895,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultVisitor
             sb->operation->execute (exec);
             assert (sb->expression_kind != kUnknown);
             if (sb->expression_kind == kVariable &&
-                type_dereference (sb->type))
+                sb->type->u_to_pointer ())
               {
                 void* ptr = exec.stack ().pop_pointer ();
                 exec.stack ().load (ptr, sb->type->Size ());

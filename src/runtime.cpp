@@ -2937,11 +2937,9 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
     {
       return c;
     }
-  else if (from->Level () == type::Type::UNNAMED &&
-           to->Level () == type::Type::UNNAMED &&
-           from->underlying_kind () == kPointer &&
-           to->underlying_kind () == kPointer &&
-           are_identical (from->pointer_base_type (), to->pointer_base_type ()))
+  else if (from->to_pointer () &&
+           to->to_pointer () &&
+           are_identical (from->to_pointer (), to->to_pointer ()))
     {
       UNIMPLEMENTED;
     }

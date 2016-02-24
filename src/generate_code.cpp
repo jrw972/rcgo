@@ -312,9 +312,9 @@ struct CodeGenVisitor : public ast::DefaultVisitor
           {
             node.expr->accept (*this);
             Node* sb = ast_cast<SelectExpr> (node.expr)->base;
-            if (type_dereference (sb->type))
+            if (sb->type->u_to_pointer ())
               {
-                if (type_dereference (node.method_type->receiver_type ()))
+                if (node.method_type->receiver_type ()->u_to_pointer ())
                   {
                     assert (sb->expression_kind != kUnknown);
                     if (sb->expression_kind == kVariable)
@@ -344,7 +344,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
               }
             else
               {
-                if (type_dereference (node.method_type->receiver_type ()))
+                if (node.method_type->receiver_type ()->u_to_pointer ())
                   {
                     assert (sb->expression_kind != kUnknown);
                     if (sb->expression_kind == kVariable)
@@ -484,7 +484,7 @@ struct CodeGenVisitor : public ast::DefaultVisitor
 
     if (node.field != NULL)
       {
-        if (type_dereference (node.base->type))
+        if (node.base->type->u_to_pointer ())
           {
             assert (node.base->expression_kind != kUnknown);
             if (node.base->expression_kind == kVariable)

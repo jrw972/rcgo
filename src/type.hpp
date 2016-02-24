@@ -138,9 +138,13 @@ struct Type
   {
     return NULL;
   }
-  virtual const Type* pointer_base_type () const
+  const Pointer* to_pointer () const
   {
-    return NULL;
+    return to_pointer_i ();
+  }
+  const Pointer* u_to_pointer () const
+  {
+    return UnderlyingType ()->to_pointer_i ();
   }
   Field* get_field (const std::string& name) const
   {
@@ -179,6 +183,10 @@ struct Type
 
 protected:
   virtual Field* get_field_i (const std::string& name) const
+  {
+    return NULL;
+  }
+  virtual const Pointer* to_pointer_i () const
   {
     return NULL;
   }
@@ -350,10 +358,6 @@ public:
     return underlyingType_->select_field (name);
   }
   virtual decl::Callable* select_callable (const std::string& name) const;
-  virtual const Type* pointer_base_type () const
-  {
-    return underlyingType_->pointer_base_type ();
-  }
 
 private:
   std::string const name_;
@@ -641,9 +645,9 @@ public:
   {
     return base_type->select_callable (name);
   }
-  virtual const Type* pointer_base_type () const
+  virtual const Pointer* to_pointer_i () const
   {
-    return base_type;
+    return this;
   }
 private:
   friend class Type;
@@ -2518,10 +2522,6 @@ static void DoubleDispatch (const Type* type1, const Type* type2, T& t)
 // Return the type of indexing into the other type.
 const Type*
 type_index (const Type* base, const Type* index);
-
-// Return type after applying dereference or NULL.
-const Type*
-type_dereference (const Type* type);
 
 bool
 are_identical (const Type* x, const Type* y);

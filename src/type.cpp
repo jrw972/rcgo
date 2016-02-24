@@ -578,24 +578,6 @@ Component::Component (Package* package)
   append_field (package, true, "0runtime", Void::Instance ()->get_pointer (), TagSet ());
 }
 
-const Type* type_dereference (const Type* type)
-{
-  struct visitor : public DefaultVisitor
-  {
-    const Type* retval;
-
-    visitor () : retval (NULL) { }
-
-    void visit (const Pointer& type)
-    {
-      retval = type.base_type;
-    }
-  };
-  visitor v;
-  type->Accept (v);
-  return v.retval;
-}
-
 bool
 type_contains_pointer (const Type* type)
 {
