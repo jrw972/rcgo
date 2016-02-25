@@ -270,6 +270,18 @@ main (int argc, char** argv)
   }
 
   {
+    const Heap* p1 = (new Struct ())->get_heap ();
+    const Heap* p2 = (new Struct ())->get_heap ();
+    tap.tassert ("type::are_identical - heaps same", are_identical (p1, p2));
+  }
+
+  {
+    const Heap* p1 = (new Struct ())->get_heap ();
+    const Heap* p2 = (new Struct ())->append_field (NULL, false, "x", &named_int, TagSet ())->get_heap ();
+    tap.tassert ("type::are_identical - heaps different", !are_identical (p1, p2));
+  }
+
+  {
     util::Location loc;
     type::Function f1 (type::Function::FUNCTION,
                        ParameterList::make ()
@@ -472,6 +484,11 @@ main (int argc, char** argv)
   }
 
   {
+    tap.tassert ("type::are_identical - simple types same", are_identical (Int::Instance (), Int::Instance ()));
+    tap.tassert ("type::are_identical - simple types different", !are_identical (Int::Instance (), Int32::Instance ()));
+  }
+
+  {
     NamedType x ("x", named_int.get_pointer ());
     tap.tassert ("type::to_pointer", named_int.to_pointer () == NULL && named_int.get_pointer ()->to_pointer () != NULL && x.to_pointer () == NULL);
   }
@@ -479,6 +496,39 @@ main (int argc, char** argv)
   {
     NamedType x ("x", named_int.get_pointer ());
     tap.tassert ("type::u_to_pointer", named_int.u_to_pointer () == NULL && named_int.get_pointer ()->u_to_pointer () != NULL && x.u_to_pointer () != NULL);
+  }
+
+  {
+    tap.tassert ("type::to_named_type", named_int.to_named_type () != NULL && Int::Instance ()->to_named_type () == NULL);
+  }
+
+  {
+    tap.tassert ("type::to_array", named_int.to_array () == NULL && named_int.get_array (3)->to_array () != NULL);
+  }
+
+  {
+    tap.tassert ("type::to_slice", named_int.to_slice () == NULL && named_int.get_slice ()->to_slice () != NULL);
+  }
+
+  {
+    Struct s;
+    tap.tassert ("type::to_struct", named_int.to_struct () == NULL && s.to_struct () != NULL);
+  }
+
+  {
+    util::Location loc;
+    type::Function f (type::Function::FUNCTION, ParameterList::make (), ParameterList::make ()->append (loc, "", &named_int, Immutable));
+    tap.tassert ("type::to_function", named_int.to_function () == NULL && f.to_function () != NULL);
+  }
+
+  {
+    Interface i (NULL);
+    tap.tassert ("type::to_interface", named_int.to_interface () == NULL && i.to_interface () != NULL);
+  }
+
+  {
+    Map m (&named_int, &named_int);
+    tap.tassert ("type::to_map", named_int.to_map () == NULL && m.to_map () != NULL);
   }
 
   tap.print_plan ();

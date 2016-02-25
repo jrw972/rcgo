@@ -362,168 +362,6 @@ T_ACCEPT(Uint64)
 T_ACCEPT(Uint8)
 T_ACCEPT(Uintptr)
 
-struct IdenticalImpl
-{
-  bool retval;
-
-  IdenticalImpl () : retval (false) { }
-
-  void operator() (const Array& type1, const Array& type2)
-  {
-    retval = are_identical (type1.base_type, type2.base_type) &&
-             type1.dimension == type2.dimension;
-  }
-
-  void operator() (const Slice& type1, const Slice& type2)
-  {
-    retval = are_identical (type1.base_type, type2.base_type);
-  }
-
-  void operator() (const Struct& type1, const Struct& type2)
-  {
-    retval = false;
-    if (type1.field_count () != type2.field_count ())
-      {
-        return;
-      }
-
-    Struct::const_iterator pos1 = type1.Begin ();
-    Struct::const_iterator limit1 = type1.End ();
-    Struct::const_iterator pos2 = type2.Begin ();
-    Struct::const_iterator limit2 = type2.End ();
-
-    for (; pos1 != limit1 && pos2 != limit2; ++pos1, ++pos2)
-      {
-        Field* f1 = *pos1;
-        Field* f2 = *pos2;
-        if (f1->is_anonymous != f2->is_anonymous)
-          {
-            return;
-          }
-        if (!f1->is_anonymous && f1->name != f2->name)
-          {
-            return;
-          }
-        if (!f1->is_anonymous && util::is_lowercase (f1->name) && f1->package != f2->package)
-          {
-            return;
-          }
-        if (!are_identical (f1->type, f2->type))
-          {
-            return;
-          }
-        if (f1->tags != f2->tags)
-          {
-            return;
-          }
-      }
-
-    retval = true;
-  }
-
-  void operator() (const Pointer& type1, const Pointer& type2)
-  {
-    retval = are_identical (type1.base_type, type2.base_type);
-  }
-
-  void operator() (const Function& type1, const Function& type2)
-  {
-    retval = false;
-
-    if (type1.function_kind != type2.function_kind)
-      {
-        return;
-      }
-
-    if (type1.parameter_list->size () != type2.parameter_list->size ())
-      {
-        return;
-      }
-
-    if (type1.return_parameter_list->size () != type2.return_parameter_list->size ())
-      {
-        return;
-      }
-
-    if (type1.return_parameter_list->is_variadic () != type2.return_parameter_list->is_variadic ())
-      {
-        return;
-      }
-
-    for (ParameterList::const_iterator pos1 = type1.parameter_list->begin (),
-         limit1 = type1.parameter_list->end (),
-         pos2 = type2.parameter_list->begin (),
-         limit2 = type2.parameter_list->end ();
-         pos1 != limit1 && pos2 != limit2;
-         ++pos1, ++pos2)
-      {
-        if (!are_identical ((*pos1)->type, (*pos2)->type))
-          {
-            return;
-          }
-      }
-
-    for (ParameterList::const_iterator pos1 = type1.return_parameter_list->begin (),
-         limit1 = type1.return_parameter_list->end (),
-         pos2 = type2.return_parameter_list->begin (),
-         limit2 = type2.return_parameter_list->end ();
-         pos1 != limit1 && pos2 != limit2;
-         ++pos1, ++pos2)
-      {
-        if (!are_identical ((*pos1)->type, (*pos2)->type))
-          {
-            return;
-          }
-      }
-
-    retval = true;
-  }
-
-  void operator() (const Interface& type1, const Interface& type2)
-  {
-    retval = false;
-
-    if (type1.methods.size () != type2.methods.size ())
-      {
-        return;
-      }
-
-    for (Interface::MethodsType::const_iterator pos1 = type1.methods.begin (), limit1 = type1.methods.end (),
-         pos2 = type2.methods.begin (), limit2 = type2.methods.end ();
-         pos1 != limit1 && pos2 != limit2;
-         ++pos1, ++pos2)
-      {
-        if (pos1->first != pos2->first)
-          {
-            return;
-          }
-
-        if (util::is_lowercase (pos1->first) && type1.package != type2.package)
-          {
-            return;
-          }
-
-        if (!are_identical (pos1->second, pos2->second))
-          {
-            return;
-          }
-      }
-
-    retval = true;
-  }
-
-  void operator() (const Map& type1, const Map& type2)
-  {
-    retval = are_identical (type1.key_type, type2.key_type) && are_identical (type1.value_type, type2.value_type);
-  }
-
-  template <typename T1, typename T2>
-  void operator() (const T1& type1, const T2& type2)
-  {
-    retval = static_cast<const Type*> (&type1) == static_cast<const Type*> (&type2);
-  }
-};
-
 bool
 are_identical (const Type* x, const Type* y)
 {
@@ -538,15 +376,186 @@ are_identical (const Type* x, const Type* y)
       return true;
     }
 
-  if (x->Level () == Type::NAMED ||
-      y->Level () == Type::NAMED)
+  if (x->to_named_type () ||
+      y->to_named_type ())
     {
       return false;
     }
 
-  IdenticalImpl i;
-  DoubleDispatch (x, y, i);
-  return i.retval;
+  if (x->kind () != y->kind ())
+    {
+      return false;
+    }
+
+  switch (x->kind ())
+    {
+    case kArray:
+    {
+      const Array* type1 = x->to_array ();
+      const Array* type2 = y->to_array ();
+      return are_identical (type1->base_type, type2->base_type) && type1->dimension == type2->dimension;
+    }
+    case kSlice:
+    {
+      const Slice* type1 = x->to_slice ();
+      const Slice* type2 = y->to_slice ();
+      return are_identical (type1->base_type, type2->base_type);
+    }
+    case kStruct:
+    case kComponent:
+    {
+      const Struct* type1 = x->to_struct ();
+      const Struct* type2 = y->to_struct ();
+
+      if (type1->field_count () != type2->field_count ())
+        {
+          return false;
+        }
+
+      Struct::const_iterator pos1 = type1->Begin ();
+      Struct::const_iterator limit1 = type1->End ();
+      Struct::const_iterator pos2 = type2->Begin ();
+      Struct::const_iterator limit2 = type2->End ();
+
+      for (; pos1 != limit1 && pos2 != limit2; ++pos1, ++pos2)
+        {
+          Field* f1 = *pos1;
+          Field* f2 = *pos2;
+          if (f1->is_anonymous != f2->is_anonymous)
+            {
+              return false;
+            }
+          if (!f1->is_anonymous && f1->name != f2->name)
+            {
+              return false;
+            }
+          if (!f1->is_anonymous && util::is_lowercase (f1->name) && f1->package != f2->package)
+            {
+              return false;
+            }
+          if (!are_identical (f1->type, f2->type))
+            {
+              return false;
+            }
+          if (f1->tags != f2->tags)
+            {
+              return false;
+            }
+        }
+
+      return true;
+    }
+    case kPointer:
+    {
+      const Pointer* type1 = x->to_pointer ();
+      const Pointer* type2 = y->to_pointer ();
+      return are_identical (type1->base_type, type2->base_type);
+    }
+    case kFunction:
+    {
+      const Function* type1 = x->to_function ();
+      const Function* type2 = y->to_function ();
+
+      if (type1->function_kind != type2->function_kind)
+        {
+          return false;
+        }
+
+      if (type1->parameter_list->size () != type2->parameter_list->size ())
+        {
+          return false;
+        }
+
+      if (type1->return_parameter_list->size () != type2->return_parameter_list->size ())
+        {
+          return false;
+        }
+
+      if (type1->return_parameter_list->is_variadic () != type2->return_parameter_list->is_variadic ())
+        {
+          return false;
+        }
+
+      for (ParameterList::const_iterator pos1 = type1->parameter_list->begin (),
+           limit1 = type1->parameter_list->end (),
+           pos2 = type2->parameter_list->begin (),
+           limit2 = type2->parameter_list->end ();
+           pos1 != limit1 && pos2 != limit2;
+           ++pos1, ++pos2)
+        {
+          if (!are_identical ((*pos1)->type, (*pos2)->type))
+            {
+              return false;
+            }
+        }
+
+      for (ParameterList::const_iterator pos1 = type1->return_parameter_list->begin (),
+           limit1 = type1->return_parameter_list->end (),
+           pos2 = type2->return_parameter_list->begin (),
+           limit2 = type2->return_parameter_list->end ();
+           pos1 != limit1 && pos2 != limit2;
+           ++pos1, ++pos2)
+        {
+          if (!are_identical ((*pos1)->type, (*pos2)->type))
+            {
+              return false;
+            }
+        }
+
+      return true;
+    }
+    case kInterface:
+    {
+      const Interface* type1 = x->to_interface ();
+      const Interface* type2 = y->to_interface ();
+
+      if (type1->methods.size () != type2->methods.size ())
+        {
+          return false;
+        }
+
+      for (Interface::MethodsType::const_iterator pos1 = type1->methods.begin (), limit1 = type1->methods.end (),
+           pos2 = type2->methods.begin (), limit2 = type2->methods.end ();
+           pos1 != limit1 && pos2 != limit2;
+           ++pos1, ++pos2)
+        {
+          if (pos1->first != pos2->first)
+            {
+              return false;
+            }
+
+          if (util::is_lowercase (pos1->first) && type1->package != type2->package)
+            {
+              return false;
+            }
+
+          if (!are_identical (pos1->second, pos2->second))
+            {
+              return false;
+            }
+        }
+
+      return true;
+    }
+    case kMap:
+    {
+      const Map* type1 = x->to_map ();
+      const Map* type2 = y->to_map ();
+      return are_identical (type1->key_type, type2->key_type) && are_identical (type1->value_type, type2->value_type);
+    }
+
+    case kHeap:
+    {
+      const Heap* type1 = x->to_heap ();
+      const Heap* type2 = y->to_heap ();
+      return are_identical (type1->base_type, type2->base_type);
+    }
+
+    default:
+      break;
+    }
+
+  NOT_REACHED;
 }
 
 #define INSTANCE(type) const type* \

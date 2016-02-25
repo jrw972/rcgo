@@ -18,9 +18,14 @@ namespace type
 {
 
 class Visitor;
-class Pointer;
-class Slice;
+
 class Array;
+class Slice;
+class Struct;
+class Pointer;
+class Function;
+class Interface;
+class Map;
 class Heap;
 
 typedef uint64_t UintValueType;
@@ -138,6 +143,22 @@ struct Type
   {
     return NULL;
   }
+  virtual const NamedType* to_named_type () const
+  {
+    return NULL;
+  }
+  virtual const Array* to_array () const
+  {
+    return NULL;
+  }
+  virtual const Slice* to_slice () const
+  {
+    return NULL;
+  }
+  virtual const Struct* to_struct () const
+  {
+    return NULL;
+  }
   const Pointer* to_pointer () const
   {
     return to_pointer_i ();
@@ -145,6 +166,22 @@ struct Type
   const Pointer* u_to_pointer () const
   {
     return UnderlyingType ()->to_pointer_i ();
+  }
+  virtual const Function* to_function () const
+  {
+    return NULL;
+  }
+  virtual const Interface* to_interface () const
+  {
+    return NULL;
+  }
+  virtual const Map* to_map () const
+  {
+    return NULL;
+  }
+  virtual const Heap* to_heap () const
+  {
+    return NULL;
   }
   Field* get_field (const std::string& name) const
   {
@@ -358,6 +395,11 @@ public:
     return underlyingType_->select_field (name);
   }
   virtual decl::Callable* select_callable (const std::string& name) const;
+
+  virtual const NamedType* to_named_type () const
+  {
+    return this;
+  }
 
 private:
   std::string const name_;
@@ -688,6 +730,10 @@ public:
   {
     return util::align_up (base_type->Size (), base_type->Alignment ());
   }
+  virtual const Slice* to_slice () const
+  {
+    return this;
+  }
 private:
   friend class Type;
   Slice (const Type* base) : BaseType (base) { }
@@ -725,6 +771,10 @@ public:
   {
     return util::align_up (base_type->Size (), base_type->Alignment ());
   }
+  virtual const Array* to_array () const
+  {
+    return this;
+  }
 private:
   friend class Type;
   Array (Int::ValueType d, const Type* base) : BaseType (base), dimension (d) { }
@@ -755,6 +805,10 @@ struct Map : public Type
   {
     return UNNAMED;
   }
+  virtual const Map* to_map () const
+  {
+    return this;
+  }
 
   const Type* const key_type;
   const Type* const value_type;
@@ -782,6 +836,10 @@ struct Heap : public Type, public BaseType
   virtual TypeLevel Level () const
   {
     return UNNAMED;
+  }
+  virtual const Heap* to_heap () const
+  {
+    return this;
   }
 private:
   friend class Type;
@@ -826,6 +884,10 @@ public:
   size_t field_count () const
   {
     return fields_.size ();
+  }
+  virtual const Struct* to_struct () const
+  {
+    return this;
   }
 private:
   FieldsType fields_;
@@ -881,6 +943,10 @@ public:
   virtual TypeLevel Level () const
   {
     return UNNAMED;
+  }
+  virtual const Function* to_function () const
+  {
+    return this;
   }
   decl::ParameterSymbol* GetParameter (const std::string& name) const;
   decl::ParameterSymbol* GetReturnParameter () const;
@@ -965,6 +1031,10 @@ struct Interface : public Type
                const Function* func)
   {
     methods[name] = func;
+  }
+  virtual const Interface* to_interface () const
+  {
+    return this;
   }
 
   decl::Package* const package;
