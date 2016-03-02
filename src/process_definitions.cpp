@@ -66,11 +66,6 @@ type_check_statement (Node * node)
           type_check_statement (*pos);
         }
     }
-
-    void visit (DecrementStatement& node)
-    {
-      UNIMPLEMENTED;
-    }
   };
 
   visitor v;

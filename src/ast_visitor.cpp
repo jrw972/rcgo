@@ -168,11 +168,7 @@ void DefaultVisitor::visit (ReturnStatement& node)
 {
   default_action (node);
 }
-void DefaultVisitor::visit (IncrementStatement& node)
-{
-  default_action (node);
-}
-void DefaultVisitor::visit (DecrementStatement& node)
+void DefaultVisitor::visit (IncrementDecrementStatement& node)
 {
   default_action (node);
 }

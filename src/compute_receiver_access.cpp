@@ -188,7 +188,7 @@ struct Visitor : public ast::DefaultVisitor
     node.receiver_access = std::max (node.left->receiver_access, node.right->receiver_access);
   }
 
-  void visit (IncrementStatement& node)
+  void visit (IncrementDecrementStatement& node)
   {
     node.visit_children (*this);
     node.receiver_access = node.child->receiver_access;

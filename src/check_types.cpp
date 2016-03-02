@@ -1951,21 +1951,31 @@ done:
       }
   }
 
-  void visit (IncrementStatement& node)
+  void visit (IncrementDecrementStatement& node)
   {
+    const char* op = "";
+    switch (node.kind) {
+    case IncrementDecrementStatement::Increment:
+      op = "++";
+      break;
+    case IncrementDecrementStatement::Decrement:
+      op = "--";
+      break;
+    }
+
     node.visit_children (*this);
     if (!arithmetic (node.child->type))
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "++ cannot be applied to %s (E77)",
-                       node.child->type->to_string ().c_str ());
+                       "%s cannot be applied to %s (E77)",
+                       op, node.child->type->to_string ().c_str ());
       }
     require_variable (node.child);
 
     if (node.child->intrinsic_mutability != Mutable)
       {
         error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "target of increment is not mutable (E177)");
+                       "target of %s is not mutable (E177)", op);
       }
   }
 

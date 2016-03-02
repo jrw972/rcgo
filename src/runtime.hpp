@@ -715,6 +715,7 @@ struct Change : public Operation
 };
 
 Operation* make_increment (Operation* child, const type::Type* type);
+Operation* make_decrement (Operation* child, const type::Type* type);
 
 struct Activate : public Operation
 {

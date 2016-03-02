@@ -48,8 +48,7 @@ struct Visitor
   virtual void visit (WhileStatement& node) = 0;
   virtual void visit (ListStatement& node) = 0;
   virtual void visit (ReturnStatement& node) = 0;
-  virtual void visit (IncrementStatement& node) = 0;
-  virtual void visit (DecrementStatement& node) = 0;
+  virtual void visit (IncrementDecrementStatement& node) = 0;
   virtual void visit (SubtractAssignStatement& node) = 0;
   virtual void visit (ActivateStatement& node) = 0;
   virtual void visit (VarStatement& node) = 0;
@@ -117,8 +116,7 @@ struct DefaultVisitor : public Visitor
   virtual void visit (WhileStatement& node);
   virtual void visit (ListStatement& node);
   virtual void visit (ReturnStatement& node);
-  virtual void visit (IncrementStatement& node);
-  virtual void visit (DecrementStatement& node);
+  virtual void visit (IncrementDecrementStatement& node);
   virtual void visit (SubtractAssignStatement& node);
   virtual void visit (ActivateStatement& node);
   virtual void visit (VarStatement& node);

@@ -2678,6 +2678,24 @@ struct Increment : public Operation
   Operation* const child;
 };
 
+template <typename T>
+struct Decrement : public Operation
+{
+  Decrement (Operation* c) : child (c) { }
+  virtual OpReturn execute (ExecutorBase& exec) const
+  {
+    child->execute (exec);
+    T* ptr = static_cast<T*> (exec.stack ().pop_pointer ());
+    --*ptr;
+    return make_continue ();
+  }
+  virtual void dump () const
+  {
+    UNIMPLEMENTED;
+  }
+  Operation* const child;
+};
+
 Operation* make_increment (Operation* child, const type::Type* type)
 {
   switch (type->underlying_kind ())
@@ -2712,6 +2730,45 @@ Operation* make_increment (Operation* child, const type::Type* type)
       return new Increment<Int::ValueType> (child);
     case kUintptr:
       return new Increment<Uintptr::ValueType> (child);
+    default:
+      TYPE_NOT_REACHED (*type);
+    }
+}
+
+Operation* make_decrement (Operation* child, const type::Type* type)
+{
+  switch (type->underlying_kind ())
+    {
+    case kUint8:
+      return new Decrement<Uint8::ValueType> (child);
+    case kUint16:
+      return new Decrement<Uint16::ValueType> (child);
+    case kUint32:
+      return new Decrement<Uint32::ValueType> (child);
+    case kUint64:
+      return new Decrement<Uint64::ValueType> (child);
+    case kInt8:
+      return new Decrement<Int8::ValueType> (child);
+    case kInt16:
+      return new Decrement<Int16::ValueType> (child);
+    case kInt32:
+      return new Decrement<Int32::ValueType> (child);
+    case kInt64:
+      return new Decrement<Int64::ValueType> (child);
+    case kFloat32:
+      return new Decrement<Float32::ValueType> (child);
+    case kFloat64:
+      return new Decrement<Float64::ValueType> (child);
+    case kComplex64:
+      return new Decrement<Complex64::ValueType> (child);
+    case kComplex128:
+      return new Decrement<Complex128::ValueType> (child);
+    case kUint:
+      return new Decrement<Uint::ValueType> (child);
+    case kInt:
+      return new Decrement<Int::ValueType> (child);
+    case kUintptr:
+      return new Decrement<Uintptr::ValueType> (child);
     default:
       TYPE_NOT_REACHED (*type);
     }

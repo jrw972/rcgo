@@ -464,16 +464,15 @@ struct ReturnStatement : public Unary<>
   const decl::ParameterSymbol* return_symbol;
 };
 
-struct IncrementStatement : public Unary<>
+struct IncrementDecrementStatement : public Unary<>
 {
-  IncrementStatement (unsigned int line, Node* child);
+  enum Kind {
+    Increment,
+    Decrement
+  };
+  IncrementDecrementStatement (unsigned int line, Node* child, Kind a_kind);
   virtual void accept (Visitor& visitor);
-};
-
-struct DecrementStatement : public Unary<>
-{
-  DecrementStatement (unsigned int line, Node* child);
-  virtual void accept (Visitor& visitor);
+  Kind const kind;
 };
 
 struct ListStatement : public List

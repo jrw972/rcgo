@@ -244,10 +244,17 @@ struct CodeGenVisitor : public ast::DefaultVisitor
     node.operation = make_add_assign (left, right, node.left->type);
   }
 
-  void visit (IncrementStatement& node)
+  void visit (IncrementDecrementStatement& node)
   {
     node.visit_children (*this);
-    node.operation = make_increment (node.child->operation, node.child->type);
+    switch (node.kind) {
+    case IncrementDecrementStatement::Increment:
+      node.operation = make_increment (node.child->operation, node.child->type);
+      break;
+    case IncrementDecrementStatement::Decrement:
+      node.operation = make_decrement (node.child->operation, node.child->type);
+      break;
+    }
   }
 
   void visit (ChangeStatement& node)
@@ -286,6 +293,13 @@ struct CodeGenVisitor : public ast::DefaultVisitor
   void visit (BindPullPortStatement& node)
   {
     node.visit_children (*this);
+
+    ast::Node* n = ast_cast<SelectExpr> (node.right)->base;
+    if (n->expression_kind == kVariable &&
+        n->type->to_pointer ())
+      {
+        n->operation = load (n, n->operation);
+      }
   }
 
   void visit (CallExpr& node)

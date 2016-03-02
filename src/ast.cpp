@@ -382,17 +382,10 @@ operator<< (std::ostream& out, Node& node)
       print_common (node);
       print_children (node);
     }
-    void visit (IncrementStatement& node)
+    void visit (IncrementDecrementStatement& node)
     {
       print_indent (node);
-      out << "increment_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (DecrementStatement& node)
-    {
-      print_indent (node);
-      out << "decrement_statement";
+      out << "increment_decrement_statement";
       print_common (node);
       print_children (node);
     }
@@ -612,8 +605,7 @@ ACCEPT (IfStatement)
 ACCEPT (WhileStatement)
 ACCEPT (ListStatement)
 ACCEPT (ReturnStatement)
-ACCEPT (IncrementStatement)
-ACCEPT (DecrementStatement)
+ACCEPT (IncrementDecrementStatement)
 ACCEPT (SubtractAssignStatement)
 ACCEPT (ActivateStatement)
 ACCEPT (VarStatement)
@@ -1062,12 +1054,9 @@ ReturnStatement::ReturnStatement (unsigned int line, Node* child)
   , return_symbol (NULL)
 { }
 
-IncrementStatement::IncrementStatement (unsigned int line, Node* child)
+  IncrementDecrementStatement::IncrementDecrementStatement (unsigned int line, Node* child, Kind a_kind)
   : Unary (line, child)
-{ }
-
-DecrementStatement::DecrementStatement (unsigned int line, Node* child)
-  : Unary (line, child)
+  , kind (a_kind)
 { }
 
 ListStatement::ListStatement (unsigned int line)

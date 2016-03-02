@@ -313,9 +313,9 @@ ReturnStatement:
 
 IncrementStatement:
   Expression INCREMENT ';'
-{ $$ = new IncrementStatement (@1, $1); }
+{ $$ = new IncrementDecrementStatement (@1, $1, IncrementDecrementStatement::Increment); }
 | Expression DECREMENT ';'
-{ $$ = new DecrementStatement (@1, $1); }
+{ $$ = new IncrementDecrementStatement (@1, $1, IncrementDecrementStatement::Decrement); }
 
 OptionalPushPortCallList:
   /* Empty. */

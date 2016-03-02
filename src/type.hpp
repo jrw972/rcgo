@@ -550,6 +550,12 @@ struct C64
     return *this;
   }
 
+  C64& operator-- ()
+  {
+    this->real -= 1;
+    return *this;
+  }
+
   C64& operator+= (const C64& x)
   {
     this->real += x.real;
@@ -585,6 +591,12 @@ struct C128
   C128& operator++ ()
   {
     this->real += 1;
+    return *this;
+  }
+
+  C128& operator-- ()
+  {
+    this->real -= 1;
     return *this;
   }
 

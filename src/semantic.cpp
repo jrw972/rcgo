@@ -187,7 +187,7 @@ allocate_statement_stack_variables (ast::Node* node, runtime::MemoryModel& memor
       // Do nothing.
     }
 
-    void visit (IncrementStatement& node)
+    void visit (IncrementDecrementStatement& node)
     {
       // Do nothing.
     }
