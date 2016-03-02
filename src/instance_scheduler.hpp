@@ -68,6 +68,15 @@ private:
       instance_info_t* info = static_cast<instance_info_t*> (current_info ());
       assert (info != NULL);
       scheduler_.push (info);
+
+      for (composition::Instance::LinkedInstancesType::const_iterator pos = current_info ()->instance ()->linked_instances.begin (),
+             limit = current_info ()->instance ()->linked_instances.end ();
+           pos != limit;
+           ++pos)
+        {
+          instance_info_t* info = static_cast<instance_info_t*> (component_to_info ((*pos)->component));
+          scheduler_.push (info);
+        }
     }
 
     void spawn ()

@@ -35,6 +35,9 @@ struct Instance
   }
 
   size_t offset () const;
+  // When this instance changes, preconditions in these instances may change.
+  typedef std::set<Instance*> LinkedInstancesType;
+  LinkedInstancesType linked_instances;
 };
 
 struct InstanceSet : public std::map<Instance*, ReceiverAccess>
@@ -83,6 +86,7 @@ struct Action : public Node
     return instance_set_;
   }
   NodesType nodes;
+  NodesType precondition_nodes;
 private:
   static std::string getname (Instance* instance,
                               decl::Action* action,
@@ -249,6 +253,7 @@ private:
   void enumerate_getters ();
   void elaborate_getters ();
   void elaborate_bindings ();
+  void compute_dependent_instances ();
   void check_structure ();
   void compute_instance_sets ();
 };

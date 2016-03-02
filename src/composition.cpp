@@ -643,6 +643,39 @@ Composer::elaborate_bindings ()
     }
 }
 
+  void Composer::compute_dependent_instances ()
+  {
+    // Determine which components influence other components via precondition.
+    for (InstancesType::const_iterator ipos = instances_.begin (),
+           ilimit = instances_.end ();
+         ipos != ilimit;
+         ++ipos)
+      {
+        Instance* instance = ipos->second;
+        for (ActionsType::const_iterator apos = instance->actions.begin (),
+               alimit = instance->actions.end ();
+             apos != alimit;
+             ++apos)
+          {
+            Action* action = *apos;
+            for (NodesType::const_iterator npos = action->precondition_nodes.begin (),
+                   nlimit = action->precondition_nodes.end ();
+                 npos != nlimit;
+                 ++npos)
+              {
+                Node* node = *npos;
+                for (InstanceSet::const_iterator pos = node->instance_set ().begin (),
+                       limit = node->instance_set ().end ();
+                     pos != limit;
+                     ++pos)
+                  {
+                    pos->first->linked_instances.insert (instance);
+                  }
+              }
+          }
+      }
+  }
+
 static void tarjan (Node* n)
 {
   switch (n->state)
@@ -704,13 +737,15 @@ struct Composer::ElaborationVisitor : public ast::DefaultVisitor
   Executor exec;
   Composer& table;
   Action* action;
+  bool in_precondition;
   Reaction* reaction;
   Getter* getter;
   Activation* activation;
 
-  ElaborationVisitor (Composer& t, Action* a)
+  ElaborationVisitor (Composer& t, Action* a, bool in_pre = false)
     : table (t)
     , action (a)
+    , in_precondition (in_pre)
     , reaction (NULL)
     , getter (NULL)
     , activation (NULL)
@@ -776,6 +811,9 @@ struct Composer::ElaborationVisitor : public ast::DefaultVisitor
     if (action != NULL)
       {
         action->nodes.push_back (n);
+        if (in_precondition) {
+          action->precondition_nodes.push_back (n);
+        }
       }
     else if (reaction != NULL)
       {
@@ -1008,8 +1046,14 @@ Composer::elaborate_actions ()
            ++pos)
         {
           Action* action = *pos;
-          ElaborationVisitor v (*this, action);
-          action->action->body->accept (v);
+          {
+            ElaborationVisitor v (*this, action, true);
+            action->action->precondition->accept (v);
+          }
+          {
+            ElaborationVisitor v (*this, action);
+            action->action->body->accept (v);
+          }
         }
     }
 }
@@ -1177,6 +1221,7 @@ Composer::elaborate ()
   // The edges from actions and reactions to activations are present.
   // The edges from activations to push ports are present.
   elaborate_bindings ();
+  compute_dependent_instances ();
 }
 
 void
