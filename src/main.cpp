@@ -1,6 +1,7 @@
 #include <error.h>
 #include <getopt.h>
 #include <errno.h>
+#include <sys/resource.h>
 
 #include <cstdlib>
 #include <cassert>
@@ -312,9 +313,11 @@ main (int argc, char **argv)
 
   if (profile)
     {
+      struct rusage usage;
+      getrusage (RUSAGE_SELF, &usage);
       struct timespec res;
       clock_gettime (CLOCK_MONOTONIC, &res);
-      fprintf (profile_out, "BEGIN scheduler_run %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+      fprintf (profile_out, "BEGIN scheduler_run %ld.%.09ld %ld %ld\n", res.tv_sec, res.tv_nsec, usage.ru_nvcsw, usage.ru_nivcsw);
     }
 
   scheduler->run ();
@@ -323,7 +326,9 @@ main (int argc, char **argv)
     {
       struct timespec res;
       clock_gettime (CLOCK_MONOTONIC, &res);
-      fprintf (profile_out, "END scheduler_run %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+      struct rusage usage;
+      getrusage (RUSAGE_SELF, &usage);
+      fprintf (profile_out, "END scheduler_run %ld.%.09ld %ld %ld\n", res.tv_sec, res.tv_nsec, usage.ru_nvcsw, usage.ru_nivcsw);
     }
 
   scheduler->fini (profile_out);
