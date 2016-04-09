@@ -85,11 +85,6 @@ W.D. Clinger.
 \newblock {\em Foundations of actor semantics}.
 \newblock PhD thesis, Massachusetts Institute of Technology, 1981.
 
-\bibitem{corbet2005linux}
-J.~Corbet, A.~Rubini, and G.~Kroah-Hartman.
-\newblock {\em Linux device drivers}.
-\newblock O'Reilly Media, 2005.
-
 \bibitem{culler1993parallel}
 D.E. Culler, A.~Dusseau, S.C. Goldstein, A.~Krishnamurthy, S.~Lumetta,
   T.~Von~Eicken, and K.~Yelick.
@@ -121,10 +116,6 @@ E.W. Dijkstra.
 K.~P. Eswaran, J.~N. Gray, R.~A. Lorie, and I.~L. Traiger.
 \newblock The notions of consistency and predicate locks in a database system.
 \newblock {\em Commun. ACM}, 19(11):624--633, November 1976.
-
-\bibitem{apache}
-The Apache~Software Foundation.
-\newblock \url{http://www.apache.org}.
 
 \bibitem{georgiou2009automated}
 C.~Georgiou, N.~Lynch, P.~Mavrommatis, and J.A. Tauber.

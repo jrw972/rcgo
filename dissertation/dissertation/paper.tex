@@ -32,30 +32,31 @@
 
 \input runtime.tex
 
-\input advanced.tex
-
-\input evaluation.tex
-
 \input conclusion.tex
-
-\emph{TODO: Add outline of rest of disseration with chapters, sections, and sub-sections.}
-
-%% 1 Introduction
-%% 2 Background and Related Work
-%% 3 Model Notation and Semantics
-%% 4 Design and Implementation (for core features)
-%% 5 Advanced Features and Scenarios
-%%   getters DONE
-%%   automatic port and reactions
-%%   multi-threaded scheduler (high-level, thread per trigger)
-%%   pointers and transferrable objects, garbage collection DONE
-%%     so what:  Efficient state transfer (move semantics)
-%%               Efficient read only state (deep-copy snap shot)
-%%               Delayering component bounderies for query execution
-%% 6 Discussion and Evaluation
-%% 7 Conclusion and Future Work
 
 \bibliographystyle{plain}
 \bibliography{paper}{}
+
+\appendix
+
+\chapter{Partition Tables}
+
+\begin{longtable}{ccccccccr}
+Symbol & System & Server & Counter & Client & Response & Tick & Request & Count \\
+\hline
+\endhead
+\input{async_partitions.tex}
+\caption{Partitions for the AsyncClock system.  The Symbol column contains the symbol used to represent this partition on plots.  The System, Server, Counter, and Client columns indicate the thread used for the garbage collection action for the respective component.  The Response, Tick, and Request columns indicate the thread used for the respective transaction.  The Count column indicates the number of samples for this partition.}
+\label{async_partitions}
+\end{longtable}
+
+\begin{longtable}{ccccccccr}
+Symbol & System & Counter & Request & Tick & Count \\
+\hline
+\endhead
+\input{sync_partitions.tex}
+\caption{Partitions for the SyncClock system.  The Symbol column contains the symbol used to represent this partition on plots.  The System and Counter columns indicate the thread used for the garbage collection action for the respective component.  The Request and Tick columns indicate the thread used for the respective transaction.  The Count column indicates the number of samples for this partition.}
+\label{sync_partitions}
+\end{longtable}
 
 \end{document}
