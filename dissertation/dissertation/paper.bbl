@@ -168,6 +168,11 @@ M.~Huber.
 \newblock \url{ftp://sanfrancisco.ira.uka.de/pub/maspar/maspar_unity.tar.Z},
   1992.
 
+\bibitem{Jones:1983:TST:69575.69577}
+C.~B. Jones.
+\newblock Tentative steps toward a development method for interfering programs.
+\newblock {\em ACM Trans. Program. Lang. Syst.}, 5(4):596--619, October 1983.
+
 \bibitem{kahn1974semantics}
 G.~Kahn.
 \newblock The semantics of a simple language for parallel programming.
@@ -220,6 +225,13 @@ J.~Ousterhout.
 \newblock Why threads are a bad idea (for most purposes).
 \newblock In {\em Presentation given at the 1996 Usenix Annual Technical
   Conference}, 1996.
+
+\bibitem{Park:1992:EAL:143095.143125}
+Young~Gil Park and Benjamin Goldberg.
+\newblock Escape analysis on lists.
+\newblock In {\em Proceedings of the ACM SIGPLAN 1992 Conference on Programming
+  Language Design and Implementation}, PLDI '92, pages 116--127, New York, NY,
+  USA, 1992. ACM.
 
 \bibitem{parnas1972criteria}
 D.L. Parnas.

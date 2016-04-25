@@ -10,11 +10,11 @@ We state the motivation for the language, our assumptions for tractability, and 
 We then show how reactive components are expressed in the language and we conclude with illustrative examples.
 
 \section{Challenges}
-An implementation of the reactive component model presented in chapter~\ref{model} is necessary for at least two reasons.
+An implementation of the reactive component model presented in Chapter~\ref{model} is necessary for at least two reasons.
 First and foremost, an implementation tests the practicality of the model.
 The act of implementing the model can help to evaluate whether the assumptions upon which the model is founded can be realized using existing techniques.
 Conversely, an implementation can suggest restrictions to the model that are necessary to produce an effective implementation.
-An example of this was seen in section~\ref{propcomp} where the component instance was used as a proxy for its state variables for the purpose of determining which variables were involved in a transaction.
+An example of this was seen in Section~\ref{propcomp} where a component instance was used as a proxy for its state variables, for the purpose of determining which variables were involved in a transaction.
 Implementation forces one to supply and consider details that can either qualify or disqualify a model as a practical engineering tool.
 This is consistent with the emerging attitude in systems research that all new ideas and techniques must be accompanied by relevant tools and evaluations to show their feasibility~\cite{Krishnamurthi:2015:RSC:2739250.2658987}.
 
@@ -22,35 +22,39 @@ Second, an implementation is necessary to demonstrate that the model can be appl
 That is, given a platform for reactive components, we can design, construct, and evaluate systems based on the reactive component paradigm.
 Furthermore, we can evaluate critically the design and implementation processes that the model and platform encourage.
 By comparing implementations of similar systems in different models, we also can gain insight into the strengths and weaknesses of each model.
-These ideas will be explored further in chapter~\ref{evaluation}.
+These ideas will be explored further in Chapter~\ref{implementation}.
 
 \section{Constraints}
 
+Our implementation of the reactive component model is shaped by a number of practical concerns.
+First, the implementation must enforce the semantics of the model to avoid subtle errors caused by reasoning about a system using one set of semantics and implementing it using another set of semantics.
+Second, the implementation must permit the use of linked data structures as they are fundamental to the efficient implementation of many algorithms.
+Third, the implementation must support reference and move semantics for efficient communication.
+
 \paragraph{Strict enforcement of the reactive component model.}
 An implementation should provide the checks necessary to enforce the semantics of reactive components.
-The checks of interest are 1) the separation of the immutable and mutable phase, 2) the binding state of pull ports, 3) the binding state of reactions, and 4) the detection of non-deterministic state transitions arising from composition.
-Not performing these checks is unacceptable due to the subtlety associated with developing correct reactive programs.
-In this scenario, the semantics of reactive components would be enforced through convention which is easily violated.
+The checks of interest are 1) the separation of the immutable and mutable phase (Section~\ref{execution}), 2) the binding state of pull ports (Section~\ref{decomposition}), and 3) the detection of non-deterministic state transitions arising from composition (Section~\ref{determinism}).
+Not performing these checks is unacceptable due to the subtlety associated with developing correct reactive programs:  the semantics of reactive components would be enforced only through convention which is easily violated.
 Similarly, placing the burden on developers is unacceptable due to the amount of detail that must be considered.
 Thus, the implementation must enforce the semantics of reactive components through adequate checking.
 
 \paragraph{Support for reference semantics and linked data structures.}
-Formal models for reactive systems typically use mathematically friendly data-types, i.e., those that do not introduce aliasing, to make proofs easier.
+Formal models for reactive systems typically use \emph{logic friendly} data-types, i.e., those that do not introduce aliasing, to make proofs easier.
 However, reference semantics and the linked data structures they make possible are a critical part of modern software engineering.
 As two of our objectives are practicality and utility, our language for reactive components must support reference semantics and linked data structures.
 The potential hazard created by reference semantics is that the state of one component becomes accessible in another component.
 This means that the state of a component may not be solely under the control of the transitions for that component.
 Consequently, the properties associated with that component could be violated by the other components manipulating that state.
 Furthermore, an implementation that chooses to execute seemingly independent transactions concurrently may cause data corruption as two transactions may manipulate the same state in an uncoordinated fashion.
-Thus, our implementation of reactive components takes special care to preserve isolation of state among reactive components when supporting references and linked data structures.
+Thus, our implementation of reactive components must take special care to preserve isolation of state among reactive components when supporting references and linked data structures.
 
 \paragraph{Efficient inter-component communication.}
-Linked data structures create the opportunity for efficient communication between components.
+Linked data structures also create an opportunity for efficient communication between components.
 There are three modes by which a component (sender) can share information with another component (receiver) as they interact through push ports and pull ports.
 First, the sender may use \emph{value semantics} where it provides a complete copy of the value to be communicated.
 This approach is reasonable for values like numbers and small records.
 Second, a sender may use \emph{reference semantics} where it provides a pointer (reference) to the data to be communicated.
-The approach is reasonable when the sender offers up a large data structure.
+This approach is reasonable when the sender offers up a large data structure.
 The receiver is responsible for copying any data that needs to be retained.
 When using such reference semantics, receivers may read and copy the data structure represented by the pointer but may not alter or remember the original data structure in any way.
 Third, a sender may use \emph{move semantics} where it provides a pointer to a data structure that the receiver may adopt as its own.
@@ -61,22 +65,22 @@ Without move semantics, the practicality of the reactive component model is grea
 
 \section{Approach}
 
-Our approach to implementing the model is to define a programming language that facilitates the direct expression of reactive components.
+Our approach to implementing the reactive component model defined in Chapter~\ref{model} is to define a programming language that facilitates the direct expression of reactive components.
 Language support for the model is beneficial because it closes the semantic gap between reasoning and implementation.
 The importance of language support can be seen in techniques like structured programming~\cite{dahl1972structured} and object-oriented programming~\cite{booch1982object}.
 While these techniques can be applied in virtually any setting, their lasting utility is derived from their implementation in a variety of programming languages.
-Providing language support for reactive components raises the level of abstraction and allows reasoning about a system directly from its specification instead of reasoning in one set of semantics while implementing in another which can be tedious and error-prone.
+Providing language support for reactive components raises the level of abstraction and allows reasoning about a system consisting of them directly from its specification instead of reasoning in one set of semantics while implementing in another which can be tedious and error-prone.
 
 Language support allows developers to rely on the consistent application of the semantics of the model through strict enforcement.
-Crafting a new language specifically for reactive components creates an opportunity to introduce syntax and semantics that allow a compiler or interpreter to distinguish correct programs from even \emph{potentially} incorrect programs.
+Crafting a new language specifically for reactive components creates an opportunity to introduce syntax and semantics that allow a compiler or interpreter to distinguish programs that conform to the semantics of reactive components from those that \emph{potentially} may not.
 To illustrate, consider the problem of ensuring that the state of a component does not change during the immutable phase of a transition.
 We observe that an action/reaction is similar to a method.
 Based on this observation, checking the immutability of a component in the immutable phase should be similar to checking for \verb+const+ correctness in C++.
 In C++, the \verb+const+ correctness check is performed early in the compilation process when the program is represented as an abstract syntax tree (AST) with full semantic information, as opposed to late in the process where the program is represented by machine instructions with very limited semantic information.
-From this, we observe that checking is supported by 1) adding features to the language which provide the necessary semantic information and 2) performing the checks early in the translation process.
+From this, we observe that such checking is supported by 1) adding features to the language which provide the necessary semantic information and 2) performing the checks early in the translation process.
 An existing language might not provide enough detail to enable the necessary checks or to achieve them efficiently.
 Along these same lines, an implementation may have to make conservative assumptions to enforce the semantics of reactive components.
-As was seen in section~\ref{propcomp}, allowing a component instance to serve as a proxy for all of its state variables allows the check for non-deterministic state transitions to be implemented using known techniques.
+As was seen in Section~\ref{propcomp}, allowing a component instance to serve as a proxy for all of its state variables allows the check for non-deterministic state transitions to be implemented using known techniques.
 
 \section{Preliminaries}
 
@@ -86,21 +90,21 @@ Actions, reactions, getters, initializers, and bindings are expressed using Go's
 Component types are constructed using the syntax of structs.
 Push ports and pull ports are fields of a component.
 To enforce the immutable phase and facilitate checks for reference semantics, we introduced syntax that prevents the abuse of pointers.
-Activations in the model correspond to an activation statement that activates push ports and contains the mutable phase of a state transition.
-Move semantics are realized through a new \emph{heap} type and associated operations.
+Activations in the model correspond to activate statements which activate push ports and contain the mutable phase of a state transitions.
+Move semantics are realized through a new \emph{tranferrable heap} type and associated operations.
 
 Go is an imperative programming language with a straightforward type system and expressions and statements resembling C.
 Go supports methods but places no emphasis on an inheritance hierarchy.
 In the same vein, Go does not have constructors, destructors, function overloading, or operator overloading.
 This combination, makes Go an attractive foundation for a language for reactive components since it is tractable in implementation and approachable by a general audience.
-We defer to Go's syntax and semantics for types, declarations, statements, and expressions.
+We defer to Go's syntax and semantics for our definitions of types, declarations, statements, and expressions.
 We will not discuss the syntax and semantics of Go except when they interact with the semantics of reactive components.
-Our implementation of Go is intentionally only as broad as is needed to demonstrate the contributions of this dissertation.
+Our implementation of Go's types, declarations, statements, and expressions is intentionally only as broad as is needed to demonstrate the contributions of this dissertation.
 
 \paragraph{Static system assumption.}
 To make implementation more tractable, we will assume that the systems to be implemented have a static topology, meaning that all reactive components are statically allocated.
 Both finite state and infinite state (subject to system resource limits) reactive components are permitted, but both the number and configurations of reactive components in a system are fixed.
-This is equivalent to systems that assume a fixed number of actors and is roughly equivalent to systems that assume a fixed number of threads.
+This is roughly equivalent to systems that assume a fixed number of actors or threads.
 These assumptions are common in embedded and real-time systems due to the combination of limited resources and a need for predictability.
 These assumptions also are common in many other less constrained environments, as the number of threads is often fixed by the design, e.g., only a fixed number of concurrent activities is needed, or the number of threads is limited by the number of available physical cores.
 Thus, even with the static system assumption, an implementation of the model is still applicable to many systems of interest.
@@ -128,78 +132,96 @@ We leave the implementation of extensions that facilitate the dynamic creation a
   }
 ]
 
-\node[align=center] (center) at (0,0) {};
-
-%% components
-
-\node[punkt,left=1.5cm of center] (component2) {Component 2};
-\node[punkt,below=1cm of component2] (component1) {Component 1};
-\node[punkt,above=1cm of component2] (componentn) {Component N};
-\node[above=.5cm of componentn] (component) {Components};
-\draw[rounded corners,dashed] ($(component1.south west) + (-1,-.5)$) rectangle ($(componentn.north east) + (1,1.5)$);
-
-%% heaps
-\node[punkt,right=1.5cm of center] (heap2) {Heap 2};
-\node[punkt,below=1cm of heap2] (heap1) {Heap 1};
-\node[punkt,above=1cm of heap2] (heapn) {Heap N};
-\node[above=.5cm of heapn] (heap) {Heaps};
-\draw[rounded corners,dashed] ($(heap1.south west) + (-1,-.5)$) rectangle ($(heapn.north east) + (1,1.5)$);
+\node[punkt] (constants) at (0,0) {Constant Segment};
 
 %% stacks
-\node[punkt,above=6cm of center] (stack2) {Stack 2};
-\node[punkt,left=1cm of stack2] (stack1) {Stack 1};
-\node[punkt,right=1cm of stack2] (stackn) {Stack N};
-\node[below=.5cm of stack2] (stack) {Stacks};
-\draw[rounded corners,dashed] ($(stack1.south west) + (-1,-1.5)$) node (stackll) {} rectangle ($(stackn.north east) + (1,.5)$) node (stackur) {};
+\node[punkt,right=2cm of constants] (stack1) {Stack 1};
+\node[punkt,below=4cm of stack1] (stack2) {Stack 2};
+\node[below=1cm of stack2] (stackdots) {...};
+\node[punkt,below=1cm of stackdots] (stacks) {Stack S};
 
-\draw[rounded corners,very thick] ($(stackll) + (0,-9)$) rectangle ($(stackur) + (0,-11)$) node[pos=.5] {Constants};
+%% components
+\node[punkt,right=1cm of stack1] (component1) {Component 1};
+\node[punkt,below=4cm of component1] (component2) {Component 2};
+\node[below=1cm of component2] (componentdots) {...};
+\node[punkt,below=1cm of componentdots] (componentc) {Component C};
 
-\draw[pil,<->] (component1.east) -- (heap1.west);
-\draw[pil,<->] (component2.east) -- (heap2.west);
-\draw[pil,<->] (componentn.east) -- (heapn.west);
+%% heaps
+\node[punkt, text width=4.5em,below=1cm of component1] (heap1) {Heap 1};
+\node[punkt] (heap2) at ($(component1) + (6,3)$) {Transferable Heap 1};
+\node[punkt, below=1cm of heap2] (heap3) {Transferable Heap 2};
+\node[below=1cm of heap3] (heapdots) {...};
+\node[punkt, below=1cm of heapdots] (heaph) {Transferable Heap H};
 
-\draw[pil,->] (stack) -- (component);
-\draw[pil,->] (stack) -- (heap);
+\node[punkt] (heap21) at ($(heaph) + (-2,-2)$) {Transferable Heap H.1};
+\node[punkt] (heap22) at ($(heaph) + (2,-2)$) {Transferable Heap H.2};
 
-\path[pil] (heapn.east) edge [loop right, out=45, in=-45, min distance=1.5cm] (heapn.east);
-\path[pil] (componentn.west) edge [loop left, out=135, in=-135, min distance=1.5cm] (componentn.west);
+\draw[pil,->] (stack1) -- (component1);
+\draw[pil,->] (stack1) -- (component2.north west);
+\draw[pil,->] (stack1) -- (heap1.north west);
+\draw[pil,->] (stack1) -- (heap2.west);
 
-\path[pil] (heap1.east) edge [loop right, out=45, in=-45, min distance=1.5cm] (heap1.east);
-\path[pil] (component1.west) edge [loop left, out=135, in=-135, min distance=1.5cm] (component1.west);
+\draw[pil,<->] (component1.south) -- (heap1.north);
+\draw[pil,->] (component1.east) -- (heap2.west);
+\draw[pil,->] (component1.east) -- (heap3.west);
+\draw[pil,->] (heap1.east) -- (heaph.west);
 
-\path[pil] (heap2.east) edge [loop right, out=45, in=-45, min distance=1.5cm] (heap2.east);
-\path[pil] (component2.west) edge [loop left, out=135, in=-135, min distance=1.5cm] (component2.west);
+\draw[pil,->] (heaph) -- (heap21.north);
+\draw[pil,->] (heaph) -- (heap22.north);
+
+\path[pil] (stack1.west) edge [loop above, out=-135, in=135, min distance=1.5cm] (stack1.west);
+\path[pil] (stack2.west) edge [loop above, out=-135, in=135, min distance=1.5cm] (stack2.west);
+\path[pil] (stacks.west) edge [loop above, out=-135, in=135, min distance=1.5cm] (stacks.west);
+
+\path[pil] (component1.north) edge [loop above, out=135, in=45, min distance=1.5cm] (component1.north);
+\path[pil] (component2.north) edge [loop above, out=135, in=45, min distance=1.5cm] (component2.north);
+\path[pil] (componentc.north) edge [loop above, out=135, in=45, min distance=1.5cm] (componentc.north);
+
+\path[pil] (heap1.south) edge [loop above, out=-45, in=-135, min distance=1.5cm] (heap1.south);
+\path[pil] (heap2.east) edge [loop above, out=45, in=-45, min distance=1.5cm] (heap2.east);
+\path[pil] (heap3.east) edge [loop above, out=45, in=-45, min distance=1.5cm] (heap3.east);
+\path[pil] (heaph.east) edge [loop above, out=45, in=-45, min distance=1.5cm] (heaph.east);
+
+\path[pil] (heap21.east) edge [loop above, out=45, in=-45, min distance=1.5cm] (heap21.east);
+\path[pil] (heap22.east) edge [loop above, out=45, in=-45, min distance=1.5cm] (heap22.east);
 
 \end{tikzpicture}
 }%
-\caption{Memory model\label{memory_model}.  An edge from one segment to another indicates that a pointer in the source segment may refer to a location in the target segment.  All pointers may refer to the constant segment.  These edges are omitted.}
+\caption{Memory model.
+An edge from one segment to another indicates that a pointer in one segment (source) may refer to a location in another segment (target).
+Any pointer may refer to a location in the constant segment (these edges are not shown).}
+\label{memory_model}
 \end{figure}
 
 \paragraph{Memory model.}
 Figure~\ref{memory_model} shows the memory model for the reactive component programming language.
-A pointer may refer to a location in the constant segment, a stack segment, a component segment, or a heap segment.
+A pointer may refer to a location in the constant segment, a stack segment, a component segment, a heap segment, or a transferable heap segment.
 The edges in the figure indicate that a pointer in one segment may refer to a location in another segment.
 As implied by the name, the constant segment is used to store constants like string literals.
 A pointer in any segment may refer to the constant segment.
 These edges are not shown shown in the figure.
 
 Function parameters and local variables are allocated on a call stack as they are in C or C++.
-Multiple stacks may be present if multiple transactions are executed in parallel.
-As indicated by the figure, a pointer in a stack segment may refer to a component segment, a heap segment, or the constant segment.
-A pointer referring to a location on a call stack becomes invalid after the transaction is complete and the call stack is cleared.
+Multiple stacks may be present if multiple transactions are executed concurrently.
+As indicated by the figure, a pointer in a stack segment may refer to a component segment, a heap segment, a transferable heap segment, or the constant segment.
+A pointer referring to a location on a call stack becomes invalid after the corresponding transaction is complete and the call stack is cleared.
 Consequently, it is not safe to allow static or dynamic component state to refer to a location in a stack as it may create a dangling pointer.
-It is permissible to allow a pointer in a stack to refer to a location in the same stack, however, it is difficult to ensure that such a pointer does not escape.
-Therefore, user-level pointers to call stack locations are prohibited.
+Escape analysis~\cite{Park:1992:EAL:143095.143125} can be used to determine if an object should be dynamically allocated to avoid this problem.
+It is permissible to allow a pointer in a stack to refer to a location in the same stack.
 
-As shown in figure~\ref{memory_model}, the other two types of segments are component segments which contain the statically allocated state of components and heap segments which contain the dynamically allocated state of components.
+As shown in Figure~\ref{memory_model}, the other three types of segments are component segments, heap segments, and transferable heap segments.
+A component segment contains the statically allocated state of a component while a heap segment contains the dynamically allocated state.
+A transferable heap segment is a dynamically allocated and self-contained group of objects that can be used to extend the state of a component and make such state transferable.
 The semantics of reactive components require the state of each component to remain disjoint.
-In terms of pointers, a pointer in the component/heap segment of a component may refer to a location in the component/heap segment of the same component or the constant segment.
+In terms of pointers, a pointer in a component segment may only refer to 1)~a location in the constant segment, 2)~a location in the same component segment, 3)~a location in the corresponding heap segment, or 4)~a transferable heap segment.
+Similarly, a pointer in a heap segment may only refer to 1)~a location in the constant segment, 2)~a location in the same heap segment, 3)~a location in the corresponding component segment, or 4)~another heap segment.
+A pointer in a transferable heap segment may only refer to 1)~a location in the constant segment, 2)~a location in the same transferable heap segment, or 3)~another heap segment.
 Part of our approach to maintaining disjoint state is preventing the formation of arbitrary pointers that would allow one component to access the state of another component.
 Consequently, pointer arithmetic and casts from numeric values are not allowed.
 Manually deallocating memory may result in dangling pointers which, as memory is recycled, may point to the state of another component.
 Consequently, some form of automatic memory management is necessary with the two primary candidates being reference counting and garbage collection.
-Our implementation uses garbage collection and is described in chapter~\ref{implementation}.
-The component segments and their corresponding heap segments contain all of the mutable state in the system.
+Our implementation uses garbage collection and is described in Chapter~\ref{implementation}.
+The component segments and heap segments contain all of the mutable state in the system.
 Mutable state outside of a component, e.g., a global variable, is prohibited as it may introduce a data race.
 %% Logically, then, each component has its own heap from which it can allocate memory.
 
@@ -218,6 +240,12 @@ Mutable state outside of a component, e.g., a global variable, is prohibited as 
 %% Mutable state outside of a component, e.g., a global variable, is prohibited as it may introduce a data race.
 
 \section{Reactive Component Programming Language}
+
+This section describes the syntax and semantics for a programming language for reactive components.
+Many concepts, e.g., components, ports, actions, and reactions, have a natural mapping into the Go language as types and method-like constructs.
+A major divergence from Go is the introduction of attributes that change the mutability of variables as this was necessary to maintain the isolation between components while supporting reference semantics.
+The separation between the immutable phase and mutable phase is accomplished via an \verb+activate+ statement that contains a closure to be executed in the mutable phase.
+To support move semantics, we introduce a new type called a \emph{transferable heap} which allows one component to safely transfer a collection of objects to another component.
 
 \paragraph{Components.}
 A reactive component resembles a \verb+struct+ in Go since it is a group of named state variables.
@@ -249,7 +277,7 @@ Actions, reactions, getters, and initializers use a pointer receiver.
 
 \paragraph{Intrinsic and dereference mutability.}
 Variables and parameters may be declared with an \emph{intrinsic mutability} and a \emph{dereference mutability}.
-Intrinsic mutability limits the operations that can be performed on an lvalue of the variable or parameter while dereference mutability limits the operations that can be performed on lvalues derived from the rvalue of the variable or parameter.
+Intrinsic mutability limits the operations that can be performed on the lvalue of the variable or parameter while dereference mutability limits the operations that can be performed on lvalues derived from the rvalue of the variable or parameter.
 By default, variables and parameters have mutable intrinsic and dereference mutability.
 The following code is legal and sets \verb+z+ to 6.
 \begin{verbatim}
@@ -284,12 +312,12 @@ var y $const *uint = *x; // Legal
 var z *uint = *x;        // Illegal
 \end{verbatim}
 The second line honors the guarantee that all of the memory accessible through \verb+x+ is immutable.
-Dereference mutability is checked in assignment and calls.
-Dereference mutability affects type from which lvalues can be derived, namely, pointers and slices (indexable pointers).
+Dereference mutability is checked in assignments and calls.
+Dereference mutability affects types from which lvalues can be derived, namely, pointers and slices\footnote{A \emph{slice} represents a portion of an array and consists of a pointer, a size, and a capacity.}.
 Immutable dereference mutability is one of the techniques that is used to enforce the immutable phase of state transitions.
 
 The second kind of mutability is called \emph{foreign} mutability.
-Foreign mutability is like immutable mutability with the added condition that an address with foreign mutability cannot be stored in a heap.
+Foreign mutability is like immutable mutability with the added condition that an address with foreign mutability cannot be stored in a component segment or heap segment.
 The primary application of foreign mutability is to support reference semantics for communication while enforcing the isolation of heaps.
 \begin{verbatim}
 var x $foreign *uint = ...;
@@ -299,10 +327,10 @@ var y **uint = new (*uint);
 var z $foreign *uint = x;          // Legal
 \end{verbatim}
 The third line is illegal because the lvalue given by \verb+*x+ is immutable.
-The fourth line is illegal because it casts away the \verb|$foreign| of \verb+x+.
+The fourth line is illegal because it casts away the \verb|$foreign| attribute of \verb+x+.
 (Notice that declaring \verb+y+ with \verb|$foreign| would cause the lvalue to be immutable.)
-The fifth line is legal because the lvalue is mutable and the \verb|$foreign| is preserved.
-The consequence of these semantics is that variables that contain pointers that are declared \verb|$foreign| may only be stored on the stack.
+The fifth line is legal because the lvalue is mutable and the \verb|$foreign| attribute is preserved.
+The consequence of these semantics is that variables that contain pointers that are declared \verb|$foreign| may only be stored in stack segments.
 
 %% Table~\ref{mutability} describes how the intrinsic and dereference mutability is computed for various expressions.
 %% The operation of interest is the dereference operation which shows how dereference mutability is ``sticky'' and conservatively assumes that all pointers refer to an address on the heap.
@@ -311,7 +339,7 @@ The following checks are applied to assignment statements:
 \begin{enumerate}
 \item The lvalue and rvalue must be type compatible.
 \item The lvalue must have mutable intrinsic mutability.
-\item If the type involved contains a pointer or slice, check for compatible dereference mutability in table~\ref{assignmut}.
+\item If the type involved contains a pointer, check for compatible dereference mutability (see Table~\ref{assignmut}).
   Essentially, the dereference mutability of the lvalue must be at least as ``weak'' as the dereference mutability of the rvalue.
   This enforces the ``stickiness'' of dereference mutability.
 \end{enumerate}
@@ -341,12 +369,13 @@ The following checks are applied to assignment statements:
   \caption{Dereference mutability compatibility for assignment.  The rows represent the dereference mutability of the lvalue and the columns represent the dereference mutability of the rvalue.\label{assignmut}}
 \end{table}
 
-A parameter is \emph{foreign safe} if (1) the type of the parameter does not contain pointers or slices or (2) the parameter is declared with foreign dereference immutability.
+A parameter is \emph{foreign safe} if 1) the type of the parameter does not contain pointers or slices or 2) the parameter is declared with foreign dereference immutability.
 A parameter list is foreign safe if all parameters in the list are foreign safe.
 A signature (a parameter list with a return parameter) is foreign safe if the parameter list and return parameter are both foreign safe.
+Signatures used in inter-component communication, such as push ports and reactions, must be foreign safe to permit reference semantics while enforcing the isolation of state between components.
 
 \paragraph{Initializers.}
-A initializer is used to initialize the fields of a reactive component.
+An initializer is used to initialize the fields of a reactive component.
 This allows one to initialize components before the scheduler starts.
 This is necessary for establishing invariants as is commonly done in formal models, e.g., the \verb+initially+ section of UNITY~\cite{chandy1989parallel}.
 An initializer has the form:
@@ -380,6 +409,7 @@ Actions may only be defined for component types.
 The Boolean expression is the precondition of the action.
 The receiver variable is in scope for the evaluation of the precondition.
 The body contains the state transitions associated with the action.
+Actions set the heap on entry and reset the heap on exit so that all allocated memory is attributed to the receiver.
 
 \paragraph{Reactions.}
 A reaction has the form:
@@ -387,15 +417,16 @@ A reaction has the form:
 reaction (id $const *typeName) identifier (parameterList) body
 \end{verbatim}
 As with actions, the immutable dereference mutability of the receiver enforces the immutable phase of transactions.
-Reaction may only be defined for component types.
-The name of a reaction is used when binding.
+Reactions may only be defined for component types.
+The name of a reaction is used when binding to push ports.
 The parameter list declares the parameters that are passed to the reaction.
 The parameter list must be foreign safe.
 This prevents the reaction from storing memory addresses from the component that activated the reaction.
 The body contains the state transitions associated with the reaction.
+Reactions set the heap on entry and reset the heap on exit so that all allocated memory is attributed to the receiver.
 
 \paragraph{Push ports.}
-A push port is declared as a field of a component with push port type.
+A push port is declared as a field (of a component) with push port type.
 A push port type has the form:
 \begin{verbatim}
 push (parameterList)
@@ -411,7 +442,7 @@ type Clock component {
 \end{verbatim}
 
 \paragraph{Getters.}
-A getter has the form:
+A getter, which provides a safe way of obtaining information from a component, has the form:
 \begin{verbatim}
 getter (id $const *typeName) identifier signature body
 \end{verbatim}
@@ -419,12 +450,12 @@ A getter is similar to a method but has additional semantics:
 \begin{itemize}
 \item A getter must have a pointer receiver to a component type declared with immutable dereference mutability.
 \item The signature must be foreign safe.
-\item A getter may only be invoked by another getter or an action or reaction in the immutable phase.
-\item An getter sets the heap on entry and resets the heap on exit so that all allocated memory is attributed to the receiver.
+\item A getter may only be invoked by an initializer, another getter, or an action or reaction in the immutable phase.
+\item A getter sets the heap on entry and resets the heap on exit so that all allocated memory is attributed to the receiver.
 \end{itemize}
 
 \paragraph{Pull ports.}
-A pull port is declared as a field of a component with pull port type.
+A pull port is declared as a field (of a component) with pull port type.
 A pull port type has the form:
 \begin{verbatim}
 pull (parameterList) returnParameter
@@ -439,7 +470,7 @@ type Producer component {
   isOutputBufferFull pull () bool;
 };
 \end{verbatim}
-In this example, the intent of the pull port is to allow a \verb+Producer+ to interrogate the status of a down stream buffer to implement flow control.
+In this example, the intent of the pull port is to allow a \verb+Producer+ to interrogate the status of a downstream buffer to implement flow control.
 
 \paragraph{Binders.}
 Binders allow reactions to be associated with push ports and getters to be associated with pull ports.
@@ -462,7 +493,7 @@ The first statement of the example binds the \verb+Out+ push port of the \verb+S
 The second statement of the example binds the \verb+isOutputBufferFull+ pull port of the \verb+System+'s \verb+producer+ to the \verb+isInputBufferFull+ getter of the \verb+System+'s \verb+consumer+.
 The left side of a bind statement always refers to a port while the right side refers to a getter or action.
 The direction of the arrow indicates the logical flow of information.
-Thus, information flows from the push port to a reaction (\verb+->+) and information flows from the getter to a pull port (\verb+<-+).
+Thus, information flows from a push port to a reaction (\verb+->+) and information flows from a getter to a pull port (\verb+<-+).
 A pull port must be bound to exactly one getter.
 A reaction may be bound to at most one push port.
 Binders are associated with a component type and evaluated for each instance of that component type.
@@ -470,24 +501,25 @@ Binders are associated with a component type and evaluated for each instance of 
 \paragraph{Activations.}
 Activations are the mechanism by which transactions extend to other components via push port/reaction bindings.
 Activations also serve as the boundary between the immutable and mutable phases of a transaction.
-An activation statement has the form:
+An activate statement has the form:
 \begin{verbatim}
 activate portName (arguments) ... {
   statements
 };
 \end{verbatim}
-Activation statements can only occur in the body of an action or a reaction.
-Assume that the receiver of the action or reaction is named \verb+this+.
+Activate statements can only occur in the body of an action or a reaction.
+Assume that the receiver of the action or reaction is named \verb+this+\footnote{\verb+this+ is not a keyword in Go.}.
 The expression \verb+this.portName+ must refer to a push port and the arguments passed to the push port must agree with its signature.
 The list of push ports in an activate statement is optional.
-When an activation statement is executed, the named push ports are activated meaning that the reactions bound to those push ports are activated with the given arguments.
-This chaining of activations forms a transaction that resembles a tree where the root of the tree is a component/action pair, the other nodes are component/reaction pairs, and the links represent port activations.
-Once all of the actions and reactions in the transaction have activated their last push port, they proceed to execute the body of the activate statements.
-Recall that \verb+this+ has immutable dereference mutability.
+When an activate statement is executed, the named push ports are activated meaning that the reactions bound to those push ports are executed with the given arguments.
+These reactions, in turn, may execute other activate statements.
+%% This chaining of activations forms a transaction that resembles a tree where the root of the tree is a component/action pair, the other nodes are component/reaction pairs, and the links represent port activations.
+Once all of the actions and reactions in the transaction have activated their last push ports, they proceed to execute the bodies of the activate statements.
+Recall that the receiver \verb+this+ has immutable dereference mutability.
 Thus, all computation up to and including the last port activation constitutes the immutable phase of the transaction since the state of the components is not allowed to change.
-Within the scope of the body, \verb+this+ changes to mutable dereference mutability which allows the state of a component to be changed.
-Thus, the bodies of activation statements form the mutable phase of the transaction.
-Actions and reactions return, i.e., the flow of control is halted, after the execution of the body of a activation statement.
+Within the scope of the body, the receiver \verb+this+ changes to mutable dereference mutability which then allows the state of a component to be changed.
+Thus, the bodies of activate statements form the mutable phase of the transaction.
+Actions and reactions return, i.e., their flow of control is halted, after the execution of the body of a activate statement.
 Activate statements guarded by \verb+if+ statements facilitate \emph{conditional activation}.
 An activate statement may not appear in another activate statement.
 
@@ -534,16 +566,16 @@ bind (this *System) {
 }
 \end{verbatim}
 
-\paragraph{Transferrable heaps.}
+\paragraph{Transferable heaps.}
 A key requirement for implementing reactive components is that the state of each component remain disjoint.
 Foreign dereference mutability allows components to safely communicate with pointers because it ensures that those pointers are forgotten after the transaction.
-For efficient communication, we also desire the ability to transfer a data structure (the heap) from one component (the sender) to another component (the receiver).
+For efficient communication, we also desire the ability to transfer a data structure (a heap) from one component (the sender) to another component (the receiver).
 The sender offers the heap to its receivers and one of the receivers may claim the heap.
 If the heap is accepted, the sender must forget all references to the heap.
 
-A heap is a type so named because it resembles a heap used for dynamic memory allocation.
+The heap type is so named because it resembles a heap used for dynamic memory allocation.
 A heap has a distinguished root that contains the data structure that will be transferred.
-A heap is entirely self-contained, that is, any pointer found in the heap may only point to an address in the heap.
+A heap is entirely self-contained, that is, any pointer found in the heap may only point to an address in the heap or another transferable heap segment.
 This ensures that the receiver may not access state in the sender after a transfer.
 Heaps may form hierarchies.
 
@@ -567,10 +599,10 @@ The root variable will be set to \verb+nil+ if the heap is no longer valid.
 Within the scope of the \verb+change+ statement, all other variables and parameters are re-entered with foreign dereference immutability.
 This enforces the isolation of heaps by preventing the heap from storing a pointer that refers to a location in another heap.
 
-Heaps are treated like a stack.
+Logically, the runtime maintains a stack of heaps.
+The top of the stack is called the \emph{active heap} and is used to service all memory allocation requests.
 On entering an action or reaction, the stack of heaps contains a single heap:  the heap associated with the receiver component.
 A \verb+change+ statement pushes a new heap on the stack.
-All memory allocations are performed using the current heap.
 
 A \verb+move+ expression allows a receiver to take ownership of a heap being offered by a sender.
 For example:
@@ -580,7 +612,7 @@ var z *heap int = move (x);
 If \verb+x+ refers to a heap that has already been moved, i.e., claimed by this component or another component, then the result of the \verb+move+ is a \verb+nil+ pointer.
 A \verb+change+ statement can be used to access the data in the heap after a successful \verb+move+.
 
-A \verb+merge+ expression allows one to merge a heap into the current heap.
+A \verb+merge+ expression allows one to merge a heap into the active heap.
 For example:
 \begin{verbatim}
 var x *uint = merge (z);
@@ -597,6 +629,13 @@ These operations return \verb+nil+ indicating a failure.
 For example, if two components attempt to \verb+move+ the same heap, one will succeed and the other will fail.
 
 \section{Examples}
+
+To demonstrate our reactive component programming language, we present two examples.
+The first example simulates three users using three processes which communicate using a shared variable.
+This example shows all of the major syntactic elements such as component types, initializers, action, reactions, getters, push ports, pull ports, binders, activate statements, arrays, and \verb+$const+.
+The second example consists of a system and a channel.
+The system sends an object to the channel and then receives the object from the channel.
+This example demonstrates the heap type, \verb+$foreign+, \verb+new+, \verb+change+, \verb+move+, and \verb+merge+.
 
 \subsection{Shared Variable System}
 
@@ -737,6 +776,12 @@ The \verb+_decide+ action unconditionally sets the state of the component to don
 There is no way for a \verb+Process+ component to leave the done state as all of its actions are conditioned on the \verb+Process+ being in either the access or decide state.
 Similarly, the \verb+initr+ reaction only moves the \verb+Process+ from the idle to the access state.
 Thus, the state of the component logically flows from idle, to access, to decide, to done assuming that the \verb+User+ does indeed activate the \verb+initr+ reaction.
+
+The preceding two paragraphs illustrate how the reactive component model and the proposed programming language achieve principled composition.
+The behavior of a component can be determined by only examining the text of the component.
+The is possible due to the strong guarantees that 1) component state cannot be manipulated outside of an action or reaction, 2) actions and reactions are logically atomic, and 3) the scheduler will eventually select and execute all enabled actions.
+For compositional reasoning, the behavior of a component can be abstracted and stated in terms of assumptions and guarantees~\cite{Jones:1983:TST:69575.69577} about its interface elements, namely, push ports, reaction, pull ports, and getters.
+For example, a \verb+Process+ component will decide the value of the shared variable when initialized via the \verb+initr+ reaction.
 
 \begin{figure}
 \begin{verbatim}
@@ -984,9 +1029,9 @@ The elements of the \verb+Channel+ are named from the perspective of the process
 The \verb+send+ reaction moves the heap which makes the \verb+Channel+ the new owner of the heap.
 Any heap operations on \verb+message+ after the move statement will return \verb+nil+.
 The move occurs outside of the activation because the \verb+message+ parameter is not available in the body of the activation.
-Parameters and variables with types that contain pointers and have foreign dereference mutability are not available in the body of an activation statement because they may represent the state of another component which must be assumed to be invalid in the mutable phase of a transaction.
+Parameters and variables with types that contain pointers and have foreign dereference mutability are not available in the body of an activate statement because they may represent the state of another component which must be assumed to be invalid in the mutable phase of a transaction.
 After a move, the state contained in a heap is no longer available to the component that offered it up as an argument to a reaction.
-Thus, the result of the move does not have foreign dereference mutability and is available in the body of the activation statement.
+Thus, the result of the move does not have foreign dereference mutability and is available in the body of the activate statement.
 
 \begin{figure}
 \begin{verbatim}
@@ -1028,13 +1073,13 @@ Figure~\ref{channel_system_listing} contains the listing for the \verb+System+ c
 A \verb+System+ component consists of a \verb+Channel+ sub-component, a counter, and a push port for sending messages.
 The \verb+_send+ action checks if the desired number of messages (100) has been sent.
 If not, the \verb+System+ creates a new heap with a \verb+uint+ root.
-It then makes the new heap the current heap via the \verb+change+ statement which also makes the root of the heap available in the variable \verb+y+.
+It then makes the new heap the active heap via the \verb+change+ statement which also makes the root of the heap available in the variable \verb+y+.
 The heap root is initialized with the number of messages sent so far.
 The heap is then sent to the \verb+Channel+, a message is printed, and the number of sent messages is incremented.
 
 The \verb+receive+ reaction receives a message back from the \verb+Channel+.
-The \verb+System+ merges the message which moves the root object of a heap to the current heap and returns a pointer to the root object of the heap.
-Recall that all components have a default heap which is the current heap upon entering an action, reaction, initializer, or getter.
+The \verb+System+ merges the message which moves the root object of a heap to the active heap and returns a pointer to the root object of the heap.
+Recall that all components have a default heap which is the active heap upon entering an action, reaction, initializer, or getter.
 The final statement in the reaction prints a message.
 
 The system consists of two transactions:  one that creates and transfers the heap from the \verb+System+ to the \verb+Channel+ and another that transfers the heap from the \verb+Channel+ to the \verb+System+.
@@ -1054,3 +1099,13 @@ Components are expressed as a collection of fields; similar to a \verb+struct+.
 Ports (push and pull) are expressed as fields of a component.
 Actions and reactions are expressed as method-like elements.
 Composition is accomplished via binders and instances.
+
+The programming language presented in this chapter allow developers to take a principled approach to developing general purpose reactive programs.
+First, a developer need not identify shared state and add appropriate locking because state is not shared between components and each action/reaction is atomic.
+Second, a developer need not ``worry'' about the consequences of composition.
+In paradigms where composition is accomplished through synchronous function call, developers must determine the conditions in which it is safe to transfer control to a function.
+In the reactive component paradigm, the semantics of active statements and ports provide strong guarantees when composing and checking for illegal composition becomes the responsibility of the runtime environment (see Chapter~\ref{implementation}).
+Third, developers are no longer burdened with mapping an inherently non-deterministic sequence of events onto one or more sequential threads of control.
+Thus, using a programming language for reactive components allows developers to move from explicit atomicity, sequential composition, and deterministic sequencing to \emph{implicit atomicity}, \emph{non-sequential composition}, and \emph{non-deterministic sequencing}.
+Combined, the features of the model and language allow developers to reason about the behavior of individual components by only examining their text.
+This, in turn, allows the behavior of a component to be abstracted which facilitates reasoning about components is the context of composition by using assume-guarantee reasoning~\cite{Jones:1983:TST:69575.69577}.

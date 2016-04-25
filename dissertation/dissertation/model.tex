@@ -237,7 +237,7 @@ Furthermore, one can imagine developing three stateless components surrounding t
 The application logic, then, is completely isolated from the surrounding libraries and may be tested by providing mock components for the web server, database, and logging service.
 The application logic itself has a well-defined interface and could be reused, say, by implementing a graphical front-end to drive the application instead of a web service.
 
-\paragraph{State variables.}
+\subsection{State Variables}
 A key part of the internal core of a reactive component is a set of state variables.
 When modeling, the state variables are the subject of the various propositions that demonstrate the behavior of the system.
 When implementing, the state variables are manipulated by the various assignment statements that constitute the transitions.
@@ -248,7 +248,7 @@ The type of a state variable may be a reactive component type which facilitates 
 For modeling purposes, state variables typically have \emph{value semantics} meaning we need not reason about references.
 As a practical concession, however, we will introduce pointers for building arbitrary linked data structures since we advocate an imperative state-based implementation and describe the issues of introducing pointers into the reactive component model.
 
-\paragraph{Atomic state transitions.}
+\subsection{Atomic State Transitions}
 The rest of the internal core of a reactive component is a set of atomic state transitions that manipulate the state variables.
 A precise definition of the atomicity of state transitions will be deferred to the discussion of composition and execution.
 State variables and state transitions are private, meaning that transitions can only refer to the state variables of the associated reactive component and a transition in one reactive component can only be linked to a transition in another component through the composition mechanisms.
@@ -266,7 +266,7 @@ This furthers our goal of making reactive components approachable by a general s
 %% which aims to allow models to be incorporated directly into standard software environments.
 %% This isn't accurate.  Compatibility with existing software is not the goal nor should it be a goal as existing software is based on threads which cannot reasonably be integrated with reactive components.
 
-\paragraph{Actions, reactions, push ports, and composition.}
+\subsection{Actions, Reactions, Push Ports, and Composition}
 A state transition is either part of an action or reaction.
 An \emph{action} is a state transition whose execution is under the control of the component to which it belongs.
 The action is guarded by a \emph{precondition} that is guaranteed to be true when the action is executed.
@@ -279,7 +279,8 @@ To do this, we introduce the notion of a \emph{push port}.
 A push port is a typed interaction point consisting of an active side that conditionally \emph{activates} the port and provides arguments to the port, and a passive side that \emph{reacts} to the port and may access the arguments provided by the active side.
 The transition associated with a passive push port is executed atomically with the transition that activates the active push port.
 
-\paragraph{Execution.}
+\subsection{Execution}
+\label{execution}
 As with UNITY~\cite{chandy1989parallel} and I/O Automata~\cite{nancy1996distributed}, we assume the existence of a weakly fair scheduler that \emph{selects} and \emph{executes} enabled instance/action pairs.
 Selection is \emph{serial}, meaning that one action is considered (and therefore executed) at a time.
 Thus, each action is atomic with respect to all other actions.
@@ -384,14 +385,15 @@ component System {
 \caption{Definition of a system component\label{system_component}}
 \end{figure}
 
-\section{Properties of Composition\label{propcomp}}
+\section{Properties of Composition}
+\label{propcomp}
 In this section, we examine various features related to reactive components and composition.
 Substitutional equivalence for reactive components is demonstrated by outlining a procedure for in-lining sub-components.
 Hazards of composition, namely, non-deterministic state transitions resulting from conflicting and recursive composition, are identified and a means of detecting them is proposed.
 The issue of decomposition is considered and \emph{pull ports} are introduced as a mechanism for decomposition.
 Finally, the points of principled composition presented in chapter~\ref{introduction} are evaluated for reactive components.
 
-\paragraph{Substitutional equivalence.}
+\subsection{Substitutional Equivalence}
 Substitutional equivalence means that an instance of a component can be replaced with its definition and the result is a well-defined entity in the model.
 To this end, a procedure for substituting the definition of a component for an instance involves:
 \begin{enumerate}
@@ -452,7 +454,8 @@ component System {
 \caption{Simplification of ports, bindings, and transitions in expanded system component\label{se2}}
 \end{figure}
 
-\paragraph{Determinism and composition.}
+\subsection{Determinism and Composition}
+\label{determinism}
 The result of composing two well-defined reactive components may yield a system that is non-deterministic.
 The two ``hazards'' that must be avoided are non-deterministic assignment to state variables and recursively activated reactions.
 To illustrate these hazards, we model an individual transaction as a directed graph $G = (N,V)$ where each node $N=(i,t)$ is an instance/transition pair and the edges are modeled as a function $V: N \to N$ that encodes the causal relationships induced by port activations and bindings.
@@ -482,7 +485,8 @@ That is, an implementation of reactive components may require that $NDA(G)$ be f
 Similarly, an implementation may restrict composition to prevent the formation of cycles.
 Both of these approaches are used by the implementation described in chapter~\ref{implementation}.
 
-\paragraph{Decomposition, getters, and pull ports.}
+\subsection{Decomposition, Getters, and Pull Ports}
+\label{decomposition}
 Substitutional equivalence implies that the process of composition may be reversed and that sub-components may be ``factored out'' of an existing component, e.g., for reuse with other components.
 %% One motivation for extracting sub-components is to support the software engineering practice of refactoring where common code is extracted so that it can be reused in various places.
 
@@ -592,7 +596,7 @@ A cycle in the graph of composed pull ports is equivalent to a recursively defin
 The recursion may be bounded but this is undecidable in the general case.
 Consequently, an implementation may reject recursively defined push ports.
 
-\paragraph{Principled composition.}
+\subsection{Principled Composition}
 The goal of this section is to describe how reactive components satisfy principled composition.
 \begin{enumerate}
 \item The reactive component model defines a reactive component as the basic unit of composition.
