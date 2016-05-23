@@ -5,6 +5,7 @@
 #include "type.hpp"
 #include "memory_model.hpp"
 #include "symbol.hpp"
+#include "expression_value.hpp"
 
 namespace decl
 {
@@ -19,7 +20,7 @@ public:
   virtual ~Callable () { }
   virtual void call (runtime::ExecutorBase& exec) const = 0;
   virtual const decl::ParameterList* signature () const = 0;
-  virtual const type::Type* type () const = 0;
+  virtual const type::Type* callable_type () const = 0;
   virtual size_t return_size () const = 0;
   virtual size_t receiver_size () const = 0;
   virtual size_t arguments_size () const = 0;
@@ -27,8 +28,9 @@ public:
   virtual void check_types (ast::List* args) const;
   virtual void check_references (ast::List* args) const;
   virtual void check_mutability (ast::List* args) const;
-  virtual void compute_receiver_access (ast::List* args, ReceiverAccess& receiver_access, bool& flag) const;
+  virtual void compute_receiver_access (const semantic::ExpressionValueList& args, ReceiverAccess& receiver_access, bool& flag) const;
 };
+
 /*
  * TODO:  I debate whether or not the return symbols should be recorded here.
  */
@@ -36,13 +38,13 @@ public:
 struct Function : public Callable, public decl::Symbol
 {
   // TODO:  Remove duplication with Symbol.
-  Function (ast::Function& node, const type::Function* type);
+  Function (ast::Function* node, const type::Function* type);
 
   // Callable
   virtual void call (runtime::ExecutorBase& exec) const;
-  virtual const type::Type* type () const
+  virtual const type::Type* callable_type () const
   {
-    return functionType_;
+    return type;
   }
 
   // Symbol
@@ -52,13 +54,17 @@ struct Function : public Callable, public decl::Symbol
   {
     return "Function";
   }
+  virtual const type::Type* symbol_type () const
+  {
+    return type;
+  }
 
-  ast::Function& node;
+  ast::Function* const node;
   runtime::MemoryModel memoryModel;
 
   virtual size_t return_size () const
   {
-    return functionType_->GetReturnType ()->Size ();
+    return type->GetReturnType ()->Size ();
   }
   virtual size_t receiver_size () const
   {
@@ -71,15 +77,14 @@ struct Function : public Callable, public decl::Symbol
   }
   virtual const decl::ParameterList* signature () const
   {
-    return functionType_->parameter_list;
+    return type->parameter_list;
   }
   ParameterSymbol* return_parameter () const
   {
-    return functionType_->GetReturnParameter ();
+    return type->GetReturnParameter ();
   }
 
-private:
-  const type::Function* functionType_;
+  const type::Function* type;
 };
 
 struct Method : public Callable
@@ -104,7 +109,7 @@ struct Method : public Callable
     return methodType->receiver_parameter;
   }
 
-  virtual const type::Type* type () const
+  virtual const type::Type* callable_type () const
   {
     return methodType;
   }
@@ -142,7 +147,7 @@ struct Initializer : public Callable
   { }
 
   virtual void call (runtime::ExecutorBase& exec) const;
-  virtual const type::Type* type () const
+  virtual const type::Type* callable_type () const
   {
     return initializerType;
   }
@@ -189,7 +194,7 @@ struct Getter : public Callable
 
   virtual void call (runtime::ExecutorBase& exec) const;
 
-  virtual const type::Type* type () const
+  virtual const type::Type* callable_type () const
   {
     return getterType;
   }

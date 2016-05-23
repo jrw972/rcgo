@@ -15,12 +15,8 @@ parser.hpp parser.cpp: parser.y
 #AM_YFLAGS = -v -d
 bin_PROGRAMS = rc
 rc_SOURCES = main.cpp \
-ast_cast.hpp \
 bind.hpp \
-builtin_function.hpp builtin_function.cpp \
-composition.hpp composition.cpp \
 debug.hpp \
-enter_symbols.cpp \
 evaluate_static.hpp evaluate_static.cpp \
 executor_base.hpp executor_base.cpp \
 field.hpp \
@@ -31,10 +27,8 @@ parser.hpp parser.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
 process_definitions.cpp \
 process_functions_and_methods.hpp process_functions_and_methods.cpp \
-runtime.hpp runtime.cpp \
 scanner.hpp scanner.cpp \
 scheduler.hpp \
-template.hpp template.cpp \
 types.hpp \
 util.hpp \
 yyparse.hpp yyparse.cpp
@@ -45,24 +39,32 @@ rc_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 noinst_LTLIBRARIES=librc.la
 librc_la_SOURCES = action.hpp action.cpp \
 arch.hpp arch.cpp \
-ast.hpp ast.cpp \
-ast_visitor.hpp ast_visitor.cpp \
+builtin_function.hpp builtin_function.cpp \
 callable.hpp callable.cpp \
 check_types.hpp check_types.cpp \
+composition.hpp composition.cpp \
 compute_receiver_access.hpp compute_receiver_access.cpp \
+enter_symbols.cpp \
 error_reporter.hpp error_reporter.cpp \
+expression_value.hpp expression_value.cpp \
 heap.hpp heap.cpp \
 location.hpp location.cpp \
 memory_model.hpp memory_model.cpp \
+node.hpp node.cpp \
+node_cast.hpp \
+node_visitor.hpp node_visitor.cpp \
 parameter_list.hpp parameter_list.cpp \
 process_type_spec.cpp \
 process_types_and_constants.hpp process_types_and_constants.cpp \
 reaction.hpp reaction.cpp \
+runtime.hpp runtime.cpp \
 semantic.hpp semantic.cpp \
 stack.hpp stack.cpp \
 symbol.hpp symbol.cpp \
+symbol_cast.hpp \
 symbol_table.hpp symbol_table.cpp \
-symbol_visitor.hpp \
+symbol_visitor.hpp symbol_visitor.cpp \
+template.hpp template.cpp \
 type.hpp type.cpp \
 value.hpp value.cpp
 librc_la_LIBADD=-lpthread

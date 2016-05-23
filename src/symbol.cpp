@@ -3,7 +3,9 @@
 #include <error.h>
 
 #include "symbol_visitor.hpp"
-#include "ast.hpp"
+#include "node.hpp"
+#include "builtin_function.hpp"
+#include "template.hpp"
 
 namespace decl
 {
@@ -31,11 +33,11 @@ ParameterSymbol::check_foreign_safe () const
         case OrdinaryDuplicate:
         case Receiver:
         case ReceiverDuplicate:
-          error_at_line (-1, 0, location.File.c_str (), location.Line,
+          error_at_line (-1, 0, location.file.c_str (), location.line,
                          "parameter is not foreign safe (E106)");
           break;
         case Return:
-          error_at_line (-1, 0, location.File.c_str (), location.Line,
+          error_at_line (-1, 0, location.file.c_str (), location.line,
                          "return parameter is not foreign safe (E107)");
           break;
         }
@@ -51,7 +53,7 @@ operator<< (std::ostream& out, const Symbol& s)
 
     Visitor (std::ostream& o) : out (o) { }
 
-    void defaultAction (const Symbol& s)
+    void default_action (const Symbol& s)
     {
       NOT_REACHED;
     }
@@ -60,7 +62,7 @@ operator<< (std::ostream& out, const Symbol& s)
     {
       out << "BuiltinFunction " << s.identifier << '\n';
     }
-    virtual void visit (const decl::Template& s)
+    virtual void visit (const decl::TemplateSymbol& s)
     {
       out << "Template " << s.identifier << '\n';
     }

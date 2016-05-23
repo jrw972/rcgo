@@ -20,7 +20,7 @@ static void check (Tap& tap,
   std::string loc_str;
   {
     std::stringstream x;
-    x << loc.File << ':' << loc.Line;
+    x << loc.file << ':' << loc.line;
     loc_str = x.str ();
   }
   std::string code_str;

@@ -5,16 +5,32 @@
 namespace decl
 {
 
+TemplateSymbol::TemplateSymbol (const std::string& id,
+                                const util::Location& loc,
+                                const type::Type* a_type)
+  : Symbol (id, loc)
+  , type (a_type)
+{ }
+
 void
-Template::accept (SymbolVisitor& visitor)
+TemplateSymbol::accept (SymbolVisitor& visitor)
 {
   visitor.visit (*this);
 }
 
 void
-Template::accept (ConstSymbolVisitor& visitor) const
+TemplateSymbol::accept (ConstSymbolVisitor& visitor) const
 {
   visitor.visit (*this);
+}
+
+const char* TemplateSymbol::kindString () const
+{
+  return "Template";
+}
+const type::Type* TemplateSymbol::symbol_type () const
+{
+  return type;
 }
 
 }

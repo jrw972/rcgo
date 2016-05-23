@@ -3,8 +3,11 @@
 
 #include "types.hpp"
 #include "template.hpp"
+#include "builtin_function.hpp"
 #include "executor_base.hpp"
 #include "location.hpp"
+#include "error_reporter.hpp"
+#include "semantic.hpp"
 
 namespace runtime
 {
@@ -35,55 +38,53 @@ enum ControlAction
   kContinue,
 };
 
-struct New : public decl::Template
+struct Readable : public decl::BuiltinFunction
 {
-  New (const util::Location& loc);
-  virtual decl::Callable* instantiate (util::ErrorReporter& er,
-                                       const std::vector<const type::Type*>& argument_types) const;
+  Readable (const util::Location& loc);
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
-struct Move : public decl::Template
+struct Read : public decl::BuiltinFunction
 {
-  Move (const util::Location& loc);
-  virtual decl::Callable* instantiate (util::ErrorReporter& er,
-                                       const std::vector<const type::Type*>& argument_types) const;
+  Read (const util::Location& loc);
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
-struct Merge : public decl::Template
+struct Writable : public decl::BuiltinFunction
 {
-  Merge (const util::Location& loc);
-  virtual decl::Callable* instantiate (util::ErrorReporter& er,
-                                       const std::vector<const type::Type*>& argument_types) const;
+  Writable (const util::Location& loc);
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
-struct Len : public decl::Template
+struct ClockGettime : public decl::BuiltinFunction
 {
-  Len (const util::Location& loc);
-  virtual decl::Callable* instantiate (util::ErrorReporter& er,
-                                       const std::vector<const type::Type*>& argument_types) const;
+  ClockGettime (const util::Location& loc);
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
-struct Append : public decl::Template
+struct TimerfdCreate : public decl::BuiltinFunction
 {
-  Append (const util::Location& loc);
-  virtual decl::Callable* instantiate (util::ErrorReporter& er,
-                                       const std::vector<const type::Type*>& argument_types) const;
+  TimerfdCreate (const util::Location& loc);
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
-struct Copy : public decl::Template
+struct TimerfdSettime : public decl::BuiltinFunction
 {
-  Copy (const util::Location& loc);
-  virtual decl::Callable* instantiate (util::ErrorReporter& er,
-                                       const std::vector<const type::Type*>& argument_types) const;
+  TimerfdSettime (const util::Location& loc);
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
-struct Println : public decl::Template
+struct UdpSocket : public decl::BuiltinFunction
 {
-  Println (const util::Location& loc);
-  virtual decl::Callable* instantiate (util::ErrorReporter& er,
-                                       const std::vector<const type::Type*>& argument_types) const;
+  UdpSocket (const util::Location& loc);
+  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
+struct Sendto : public decl::BuiltinFunction
+{
+  Sendto (const util::Location& loc);
+  virtual void call (runtime::ExecutorBase& exec) const;
+};
 
 typedef ControlAction OpReturn;
 
@@ -792,6 +793,85 @@ struct Popn : public Operation
   }
   Operation* const child;
   size_t const size;
+};
+
+struct PrintlnOp : public Operation
+{
+  PrintlnOp (const semantic::ExpressionValueList& a_evals, Operation* a_args)
+    : evals (a_evals)
+    , args (a_args)
+  { }
+  virtual OpReturn execute (ExecutorBase& exec) const;
+  virtual void dump () const
+  {
+    UNIMPLEMENTED;
+  }
+
+  semantic::ExpressionValueList const evals;
+  Operation* const args;
+};
+
+struct NewOp : public Operation
+{
+  NewOp (const type::Type* a_type)
+    : type (a_type)
+  { }
+  virtual OpReturn execute (ExecutorBase& exec) const;
+  virtual void dump () const
+  {
+    UNIMPLEMENTED;
+  }
+
+  const type::Type* const type;
+};
+
+struct MoveOp : public Operation
+{
+  MoveOp (Operation* a_arg) : arg (a_arg) { }
+  virtual OpReturn execute (ExecutorBase& exec) const;
+  virtual void dump () const
+  {
+    UNIMPLEMENTED;
+  }
+  Operation* const arg;
+};
+
+struct MergeOp : public Operation
+{
+  MergeOp (Operation* a_arg) : arg (a_arg) { }
+  virtual OpReturn execute (ExecutorBase& exec) const;
+  virtual void dump () const
+  {
+    UNIMPLEMENTED;
+  }
+  Operation* const arg;
+};
+
+struct LenOp : public Operation
+{
+  LenOp (Operation* a_arg) : arg (a_arg) { }
+  virtual OpReturn execute (ExecutorBase& exec) const;
+  virtual void dump () const
+  {
+    UNIMPLEMENTED;
+  }
+  Operation* const arg;
+};
+
+Operation* make_append (const type::Slice* slice_type, Operation* args);
+
+struct CopyOp : public Operation
+{
+  CopyOp (const type::Type* a_type, Operation* a_arg)
+    : type (a_type)
+    , arg (a_arg) { }
+  virtual OpReturn execute (ExecutorBase& exec) const;
+  virtual void dump () const
+  {
+    UNIMPLEMENTED;
+  }
+  const type::Type* const type;
+  Operation* const arg;
 };
 
 }

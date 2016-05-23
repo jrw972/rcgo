@@ -26,6 +26,7 @@ struct Symbol
   virtual ~Symbol() { }
   virtual void accept (SymbolVisitor& visitor) = 0;
   virtual void accept (ConstSymbolVisitor& visitor) const = 0;
+  virtual const type::Type* symbol_type () const = 0;
   virtual bool defined () const
   {
     NOT_REACHED;
@@ -57,6 +58,10 @@ struct InstanceSymbol : public Symbol
   { }
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
+  virtual const type::Type* symbol_type () const
+  {
+    return type;
+  }
 
   const type::NamedType* const type;
   Initializer* const initializer;
@@ -82,6 +87,11 @@ struct ParameterSymbol : public Symbol
     , kind (k)
     , original_ (NULL)
   { }
+
+  virtual const type::Type* symbol_type () const
+  {
+    return type;
+  }
 
   static ParameterSymbol* make (const util::Location& loc,
                                 const std::string& name,
@@ -171,6 +181,11 @@ struct TypeSymbol : public Symbol
     return type->UnderlyingType () != NULL;
   }
 
+  virtual const type::Type* symbol_type () const
+  {
+    return type;
+  }
+
   type::NamedType* const type;
 };
 
@@ -183,6 +198,10 @@ struct ConstantSymbol : public Symbol
   { }
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
+  virtual const type::Type* symbol_type () const
+  {
+    return type;
+  }
   const type::Type* const type;
   semantic::Value const value;
 };
@@ -199,6 +218,11 @@ struct VariableSymbol : public Symbol
 
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
+
+  virtual const type::Type* symbol_type () const
+  {
+    return type;
+  }
 
   virtual ptrdiff_t offset () const
   {
@@ -233,6 +257,10 @@ struct HiddenSymbol : public Symbol
   { }
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
+  virtual const type::Type* symbol_type () const
+  {
+    return NULL;
+  }
 };
 
 std::ostream&

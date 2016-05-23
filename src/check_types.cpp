@@ -2,9 +2,9 @@
 
 #include <error.h>
 
-#include "ast.hpp"
-#include "ast_visitor.hpp"
-#include "ast_cast.hpp"
+#include "node.hpp"
+#include "node_visitor.hpp"
+#include "node_cast.hpp"
 #include "template.hpp"
 #include "callable.hpp"
 #include "symbol_visitor.hpp"
@@ -17,6 +17,8 @@
 #include "reaction.hpp"
 #include "bind.hpp"
 #include "parameter_list.hpp"
+#include "builtin_function.hpp"
+#include "error_reporter.hpp"
 
 namespace semantic
 {
@@ -130,71 +132,42 @@ namespace
   mutability if the associated type contains a pointer.
 */
 
-static void fix (Node& node)
-{
-  if (node.type->underlying_kind () == type::kStringU)
-    {
-      node.indirection_mutability = std::max (node.indirection_mutability, Immutable);
-    }
-}
-
 static void require_value_or_variable (const Node* node)
 {
-  assert (node->expression_kind != kUnknown);
-  if (!(node->expression_kind == kValue ||
-        node->expression_kind == kVariable))
+  assert (!node->eval.is_unknown ());
+  if (!node->eval.is_value_or_variable ())
     {
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+      error_at_line (-1, 0, node->location.file.c_str (), node->location.line,
                      "required a value (E78)");
     }
 }
 
 static void require_variable (const Node* node)
 {
-  assert (node->expression_kind != kUnknown);
-  if (!(node->expression_kind == kVariable))
+  assert (node->eval.expression_kind != UnknownExpressionKind);
+  if (!(node->eval.expression_kind == VariableExpressionKind))
     {
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+      error_at_line (-1, 0, node->location.file.c_str (), node->location.line,
                      "required a variable (E2)");
-    }
-}
-
-// static void require_variable_list (const Node* node) {
-//   for (Node::ConstIterator pos = node->Begin (), limit = node->End ();
-//        pos != limit;
-//        ++pos) {
-//     require_variable (*pos);
-//   }
-// }
-
-static void convert (ast::Node* node, const type::Type* type)
-{
-  if (node->type != type)
-    {
-      if (node->value.present)
-        {
-          node->value.convert (node->type, type);
-        }
-      node->type = type;
     }
 }
 
 static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* reaction_node)
 {
-  const type::Function* push_port_type = type::type_cast<type::Function> (port_node->type);
+  const type::Function* push_port_type = type::type_cast<type::Function> (port_node->eval.type);
 
   if (push_port_type == NULL || push_port_type->function_kind != type::Function::PUSH_PORT)
     {
-      error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                      "source of bind is not a port (E38)");
     }
 
   require_variable (port_node);
 
-  const type::Method* reaction_type = type::type_cast<type::Method> (reaction_node->type);
+  const type::Method* reaction_type = type::type_cast<type::Method> (reaction_node->eval.type);
   if (reaction_type == NULL || reaction_type->method_kind != type::Method::REACTION)
     {
-      error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                      "target of bind is not a reaction (E39)");
     }
 
@@ -203,7 +176,7 @@ static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* 
   type::Function f (type::Function::PUSH_PORT, reaction_type->parameter_list, reaction_type->return_parameter_list);
   if (!are_identical (push_port_type, &f))
     {
-      error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+      error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                      "cannot bind %s to %s (E40)", push_port_type->to_string ().c_str (), reaction_type->to_string ().c_str ());
     }
 
@@ -212,679 +185,20 @@ static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* 
 
 static void check_condition (Node* node)
 {
-  const type::Type* condition = node->type;
+  const type::Type* condition = node->eval.type;
   if (!(is_any_boolean (condition)))
     {
       error_at_line (-1, 0,
-                     node->location.File.c_str (),
-                     node->location.Line,
+                     node->location.file.c_str (),
+                     node->location.line,
                      "condition is not boolean (E155)");
     }
-  convert (node, condition->DefaultType ());
+  node->eval.convert (condition->DefaultType ());
   require_value_or_variable (node);
 }
 
-// Select the type for == and !=.
-// NULL means no suitable type.
-static const type::Type* comparable (const type::Type* left_type, const type::Type* right_type)
-{
-  switch (left_type->underlying_kind ())
-    {
-    case kNil:
-    case kBoolean:
-    case kString:
-    case kBool:
-    case kUint8:
-    case kUint16:
-    case kUint32:
-    case kUint64:
-    case kInt8:
-    case kInt16:
-    case kInt32:
-    case kInt64:
-    case kFloat32:
-    case kFloat64:
-    case kComplex64:
-    case kComplex128:
-    case kUint:
-    case kInt:
-    case kUintptr:
-    case kStringU:
-    case kPointer:
-      if (left_type == right_type)
-        {
-          return left_type;
-        }
-      break;
-
-    case kRune:
-    case kInteger:
-    case kFloat:
-    case kComplex:
-      if (is_untyped_numeric (right_type))
-        {
-          return Choose (left_type, right_type);
-        }
-      break;
-
-    default:
-      break;
-    }
-
-  return NULL;
-}
-
-static void process_comparable (const char* s, Binary& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
-{
-  const type::Type*& left_type = node.left->type;
-  Value& left_value = node.left->value;
-  const type::Type*& right_type = node.right->type;
-  Value& right_value = node.right->value;
-  const type::Type*& type = node.type;
-  Value& value = node.value;
-
-  if (left_type->IsUntyped () &&
-      right_type->IsUntyped ())
-    {
-      const type::Type* t = comparable (left_type, right_type);
-      if (t == NULL)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (),
-                         node.location.Line,
-                         "%s cannot be applied to %s and %s (E206)",
-                         s,
-                         left_type->to_string ().c_str (),
-                         right_type->to_string ().c_str ());
-        }
-      convert (node.left, t);
-      convert (node.right, t);
-      type = Boolean::Instance ();
-      func (value, t, left_value, right_value);
-      return;
-    }
-
-  if (!(assignable (left_type, left_value, right_type) ||
-        assignable (right_type, right_value, left_type)))
-    {
-      error_at_line (-1, 0, node.location.File.c_str (),
-                     node.location.Line,
-                     "%s cannot be applied to %s and %s (E207)",
-                     s,
-                     left_type->to_string ().c_str (),
-                     right_type->to_string ().c_str ());
-    }
-
-  const type::Type* in_type = Choose (left_type, right_type);
-  convert (node.left, in_type);
-  convert (node.right, in_type);
-
-  if (comparable (in_type, in_type) == NULL)
-    {
-      error_at_line (-1, 0, node.location.File.c_str (),
-                     node.location.Line,
-                     "%s cannot be applied to %s and %s (E124)",
-                     s,
-                     left_type->to_string ().c_str (),
-                     right_type->to_string ().c_str ());
-    }
-
-  if (left_value.present &&
-      right_value.present)
-    {
-      type = Boolean::Instance ();
-      func (value, in_type, left_value, right_value);
-    }
-  else
-    {
-      node.type = Bool::Instance ();
-    }
-}
-
-// Select the type for <, <=, >, and >=.
-// NULL means no suitable type.
-static const type::Type* orderable (const type::Type* left_type, const type::Type* right_type)
-{
-  switch (left_type->underlying_kind ())
-    {
-    case kString:
-    case kUint8:
-    case kUint16:
-    case kUint32:
-    case kUint64:
-    case kInt8:
-    case kInt16:
-    case kInt32:
-    case kInt64:
-    case kFloat32:
-    case kFloat64:
-    case kUint:
-    case kInt:
-    case kUintptr:
-    case kStringU:
-      if (left_type == right_type)
-        {
-          return left_type;
-        }
-      break;
-
-    case kRune:
-    case kInteger:
-    case kFloat:
-      if (right_type->underlying_kind () == kRune ||
-          right_type->underlying_kind () == kInteger ||
-          right_type->underlying_kind () == kFloat)
-        {
-          return Choose (left_type, right_type);
-        }
-      break;
-
-    default:
-      break;
-    }
-
-  return NULL;
-}
-
-static void process_orderable (const char* s, Binary& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
-{
-  const type::Type*& left_type = node.left->type;
-  Value& left_value = node.left->value;
-  const type::Type*& right_type = node.right->type;
-  Value& right_value = node.right->value;
-  const type::Type*& type = node.type;
-  Value& value = node.value;
-
-  if (left_type->IsUntyped () &&
-      right_type->IsUntyped ())
-    {
-      const type::Type* t = orderable (left_type, right_type);
-      if (t == NULL)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (),
-                         node.location.Line,
-                         "%s cannot be applied to %s and %s (E208)",
-                         s,
-                         left_type->to_string ().c_str (),
-                         right_type->to_string ().c_str ());
-        }
-      convert (node.left, t);
-      convert (node.right, t);
-      type = Boolean::Instance ();
-      func (value, t, left_value, right_value);
-      return;
-    }
-
-  if (!(assignable (left_type, left_value, right_type) ||
-        assignable (right_type, right_value, left_type)))
-    {
-      error_at_line (-1, 0, node.location.File.c_str (),
-                     node.location.Line,
-                     "%s cannot be applied to %s and %s (E209)",
-                     s,
-                     left_type->to_string ().c_str (),
-                     right_type->to_string ().c_str ());
-    }
-
-  const type::Type* in_type = Choose (left_type, right_type);
-  convert (node.left, in_type);
-  convert (node.right, in_type);
-
-  if (orderable (in_type, in_type) == NULL)
-    {
-      error_at_line (-1, 0, node.location.File.c_str (),
-                     node.location.Line,
-                     "%s cannot be applied to %s and %s (E170)",
-                     s,
-                     left_type->to_string ().c_str (),
-                     right_type->to_string ().c_str ());
-    }
-
-  if (left_value.present &&
-      right_value.present)
-    {
-      type = Boolean::Instance ();
-      func (value, in_type, left_value, right_value);
-    }
-  else
-    {
-      node.type = Bool::Instance ();
-    }
-}
-
-// Select the type for *, /, +, -.
-// NULL means no suitable type.
-static const type::Type* arithmetic (const type::Type* left_type, const type::Type* right_type)
-{
-  switch (left_type->underlying_kind ())
-    {
-    case kUint8:
-    case kUint16:
-    case kUint32:
-    case kUint64:
-    case kInt8:
-    case kInt16:
-    case kInt32:
-    case kInt64:
-    case kFloat32:
-    case kFloat64:
-    case kComplex64:
-    case kComplex128:
-    case kUint:
-    case kInt:
-    case kUintptr:
-      if (left_type == right_type)
-        {
-          return left_type;
-        }
-      break;
-
-    case kRune:
-    case kInteger:
-    case kFloat:
-    case kComplex:
-      if (is_untyped_numeric (right_type))
-        {
-          return Choose (left_type, right_type);
-        }
-      break;
-
-    default:
-      break;
-    }
-
-  return NULL;
-}
-
-static void process_arithmetic (const char* s, Binary& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
-{
-  const type::Type*& left_type = node.left->type;
-  Value& left_value = node.left->value;
-  const type::Type*& right_type = node.right->type;
-  Value& right_value = node.right->value;
-  const type::Type*& type = node.type;
-  Value& value = node.value;
-
-  if (left_type->IsUntyped () &&
-      right_type->IsUntyped ())
-    {
-      const type::Type* t = arithmetic (left_type, right_type);
-      if (t == NULL)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (),
-                         node.location.Line,
-                         "%s cannot be applied to %s and %s (E210)",
-                         s,
-                         left_type->to_string ().c_str (),
-                         right_type->to_string ().c_str ());
-        }
-      convert (node.left, t);
-      convert (node.right, t);
-      type = t;
-      func (value, t, left_value, right_value);
-      return;
-    }
-
-  if (!(assignable (left_type, left_value, right_type) ||
-        assignable (right_type, right_value, left_type)))
-    {
-      error_at_line (-1, 0, node.location.File.c_str (),
-                     node.location.Line,
-                     "%s cannot be applied to %s and %s (E211)",
-                     s,
-                     left_type->to_string ().c_str (),
-                     right_type->to_string ().c_str ());
-    }
-
-  const type::Type* in_type = Choose (left_type, right_type);
-  convert (node.left, in_type);
-  convert (node.right, in_type);
-
-  if (arithmetic (in_type, in_type) == NULL)
-    {
-      error_at_line (-1, 0, node.location.File.c_str (),
-                     node.location.Line,
-                     "%s cannot be applied to %s and %s (E171)",
-                     s,
-                     left_type->to_string ().c_str (),
-                     right_type->to_string ().c_str ());
-    }
-
-  if (left_value.present &&
-      right_value.present)
-    {
-      type = in_type;
-      func (value, in_type, left_value, right_value);
-    }
-  else
-    {
-      node.type = in_type;
-    }
-}
-
-// Select the type for %.
-// NULL means no suitable type.
-static const type::Type* integral (const type::Type* left_type, const type::Type* right_type)
-{
-  switch (left_type->underlying_kind ())
-    {
-    case kUint8:
-    case kUint16:
-    case kUint32:
-    case kUint64:
-    case kInt8:
-    case kInt16:
-    case kInt32:
-    case kInt64:
-    case kUint:
-    case kInt:
-    case kUintptr:
-      if (left_type == right_type)
-        {
-          return left_type;
-        }
-      break;
-
-    case kRune:
-    case kInteger:
-      if (right_type->underlying_kind () == kRune ||
-          right_type->underlying_kind () == kInteger)
-        {
-          return Choose (left_type, right_type);
-        }
-      break;
-
-    default:
-      break;
-    }
-
-  return NULL;
-}
-
-static void process_integral (const char* s, Binary& node, void (*func) (Value&, const type::Type*, const Value&, const Value&))
-{
-  const type::Type*& left_type = node.left->type;
-  Value& left_value = node.left->value;
-  const type::Type*& right_type = node.right->type;
-  Value& right_value = node.right->value;
-  const type::Type*& type = node.type;
-  Value& value = node.value;
-
-  if (left_type->IsUntyped () &&
-      right_type->IsUntyped ())
-    {
-      const type::Type* t = integral (left_type, right_type);
-      if (t == NULL)
-        {
-          error_at_line (-1, 0, node.location.File.c_str (),
-                         node.location.Line,
-                         "%s cannot be applied to %s and %s (E212)",
-                         s,
-                         left_type->to_string ().c_str (),
-                         right_type->to_string ().c_str ());
-        }
-      convert (node.left, t);
-      convert (node.right, t);
-      type = t;
-      func (value, t, left_value, right_value);
-      return;
-    }
-
-  if (!(assignable (left_type, left_value, right_type) ||
-        assignable (right_type, right_value, left_type)))
-    {
-      error_at_line (-1, 0, node.location.File.c_str (),
-                     node.location.Line,
-                     "%s cannot be applied to %s and %s (E213)",
-                     s,
-                     left_type->to_string ().c_str (),
-                     right_type->to_string ().c_str ());
-    }
-
-  const type::Type* in_type = Choose (left_type, right_type);
-  convert (node.left, in_type);
-  convert (node.right, in_type);
-
-  if (integral (in_type, in_type) == NULL)
-    {
-      error_at_line (-1, 0, node.location.File.c_str (),
-                     node.location.Line,
-                     "%s cannot be applied to %s and %s (E172)",
-                     s,
-                     left_type->to_string ().c_str (),
-                     right_type->to_string ().c_str ());
-    }
-
-  if (left_value.present &&
-      right_value.present)
-    {
-      type = in_type;
-      func (value, in_type, left_value, right_value);
-    }
-  else
-    {
-      node.type = in_type;
-    }
-}
-
-template <typename T>
-static void process_shift (Binary& node)
-{
-  if (!(is_typed_unsigned_integer (node.right->type) || is_untyped_numeric (node.right->type)))
-    {
-      error_at_line (-1, 0, node.location.File.c_str (),
-                     node.location.Line,
-                     "%s is not integral (E65)",
-                     node.right->type->to_string ().c_str ());
-    }
-
-  if (node.right->value.present)
-    {
-      if (!node.right->value.representable (node.right->type, type::Uint::Instance ()))
-        {
-          error_at_line (-1, 0, node.location.File.c_str (),
-                         node.location.Line,
-                         "shift amount %s is not a uint (E90)",
-                         node.right->type->to_string ().c_str ());
-        }
-      node.right->value.convert (node.right->type, type::Uint::Instance ());
-      node.right->type = type::Uint::Instance ();
-    }
-
-  if (!integral (node.left->type))
-    {
-      error_at_line (-1, 0, node.location.File.c_str (),
-                     node.location.Line,
-                     "%s is not integral (E125)",
-                     node.left->type->to_string ().c_str ());
-    }
-
-  node.type = node.left->type;
-
-  if (node.left->value.present &&
-      node.right->value.present)
-    {
-      node.value.present = true;
-      switch (node.type->underlying_kind ())
-        {
-        case kUint8:
-          node.value.uint8_value = T () (node.left->value.uint8_value, node.right->value.uint_value);
-          break;
-        case kUint16:
-          node.value.uint16_value = T () (node.left->value.uint16_value, node.right->value.uint_value);
-          break;
-        case kUint32:
-          node.value.uint32_value = T () (node.left->value.uint32_value, node.right->value.uint_value);
-          break;
-        case kUint64:
-          node.value.uint64_value = T () (node.left->value.uint64_value, node.right->value.uint_value);
-          break;
-        case kInt8:
-          node.value.int8_value = T () (node.left->value.int8_value, node.right->value.uint_value);
-          break;
-        case kInt16:
-          node.value.int16_value = T () (node.left->value.int16_value, node.right->value.uint_value);
-          break;
-        case kInt32:
-          node.value.int32_value = T () (node.left->value.int32_value, node.right->value.uint_value);
-          break;
-        case kInt64:
-          node.value.int64_value = T () (node.left->value.int64_value, node.right->value.uint_value);
-          break;
-        case kUint:
-          node.value.uint_value = T () (node.left->value.uint_value, node.right->value.uint_value);
-          break;
-        case kInt:
-          node.value.int_value = T () (node.left->value.int_value, node.right->value.uint_value);
-          break;
-        case kUintptr:
-          node.value.uintptr_value = T () (node.left->value.uintptr_value, node.right->value.uint_value);
-          break;
-        case kRune:
-          node.value.rune_value = T () (node.left->value.rune_value, node.right->value.uint_value);
-          break;
-        case kInteger:
-          node.value.integer_value = T () (node.left->value.integer_value, node.right->value.uint_value);
-          break;
-        default:
-          TYPE_NOT_REACHED (*node.type);
-        }
-    }
-}
-
-static void process_logic_or (Binary& node)
-{
-  const type::Type*& left_type = node.left->type;
-  Value& left_value = node.left->value;
-  const type::Type*& right_type = node.right->type;
-  Value& right_value = node.right->value;
-  const type::Type*& type = node.type;
-  Value& value = node.value;
-
-  if (left_type->IsUntyped () &&
-      right_type->IsUntyped ())
-    {
-      if (!(is_untyped_boolean (left_type) && is_untyped_boolean (right_type)))
-        {
-          error_at_line (-1, 0, node.location.File.c_str (),
-                         node.location.Line,
-                         "|| cannot be applied to %s and %s (E63)",
-                         left_type->to_string ().c_str (),
-                         right_type->to_string ().c_str ());
-        }
-      type = Boolean::Instance ();
-      value.present = true;
-      value.boolean_value = left_value.boolean_value || right_value.boolean_value;
-      return;
-    }
-
-  if (!(assignable (left_type, left_value, right_type) ||
-        assignable (right_type, right_value, left_type)))
-    {
-      error_at_line (-1, 0, node.location.File.c_str (),
-                     node.location.Line,
-                     "|| cannot be applied to %s and %s (E178)",
-                     left_type->to_string ().c_str (),
-                     right_type->to_string ().c_str ());
-    }
-
-  const type::Type* in_type = Choose (left_type, right_type);
-  convert (node.left, in_type);
-  convert (node.right, in_type);
-
-  if (in_type->underlying_kind () != kBool)
-    {
-      error_at_line (-1, 0, node.location.File.c_str (),
-                     node.location.Line,
-                     "|| cannot be applied to %s and %s (E179)",
-                     left_type->to_string ().c_str (),
-                     right_type->to_string ().c_str ());
-    }
-
-  if (left_value.present &&
-      left_value.bool_value)
-    {
-      type = Boolean::Instance ();
-      value.boolean_value = true;
-    }
-  else if (right_value.present)
-    {
-      type = Boolean::Instance ();
-      value.boolean_value = right_value.bool_value;
-    }
-  else
-    {
-      node.type = Bool::Instance ();
-    }
-}
-
-static void process_logic_and (Binary& node)
-{
-  const type::Type*& left_type = node.left->type;
-  Value& left_value = node.left->value;
-  const type::Type*& right_type = node.right->type;
-  Value& right_value = node.right->value;
-  const type::Type*& type = node.type;
-  Value& value = node.value;
-
-  if (left_type->IsUntyped () &&
-      right_type->IsUntyped ())
-    {
-      if (!(is_untyped_boolean (left_type) && is_untyped_boolean (right_type)))
-        {
-          error_at_line (-1, 0, node.location.File.c_str (),
-                         node.location.Line,
-                         "&& cannot be applied to %s and %s (E180)",
-                         left_type->to_string ().c_str (),
-                         right_type->to_string ().c_str ());
-        }
-      type = Boolean::Instance ();
-      value.present = true;
-      value.boolean_value = left_value.boolean_value && right_value.boolean_value;
-      return;
-    }
-
-  if (!(assignable (left_type, left_value, right_type) ||
-        assignable (right_type, right_value, left_type)))
-    {
-      error_at_line (-1, 0, node.location.File.c_str (),
-                     node.location.Line,
-                     "&& cannot be applied to %s and %s (E181)",
-                     left_type->to_string ().c_str (),
-                     right_type->to_string ().c_str ());
-    }
-
-  const type::Type* in_type = Choose (left_type, right_type);
-  convert (node.left, in_type);
-  convert (node.right, in_type);
-
-  if (in_type->underlying_kind () != kBool)
-    {
-      error_at_line (-1, 0, node.location.File.c_str (),
-                     node.location.Line,
-                     "&& cannot be applied to %s and %s (E182)",
-                     left_type->to_string ().c_str (),
-                     right_type->to_string ().c_str ());
-    }
-
-  if (left_value.present &&
-      !left_value.bool_value)
-    {
-      type = Boolean::Instance ();
-      value.boolean_value = false;
-    }
-  else if (right_value.present)
-    {
-      type = Boolean::Instance ();
-      value.boolean_value = right_value.bool_value;
-    }
-  else
-    {
-      node.type = Bool::Instance ();
-    }
-}
-
 // Determine the type of an expression.
-struct Visitor : public ast::DefaultVisitor
+struct Visitor : public ast::DefaultNodeVisitor
 {
   enum Context
   {
@@ -918,14 +232,14 @@ struct Visitor : public ast::DefaultVisitor
   void visit (CallExpr& node)
   {
     node.visit_children (*this);
-    assert (node.expr->expression_kind != kUnknown);
-    if (node.expr->expression_kind == kType)
+    assert (node.expr->eval.expression_kind != UnknownExpressionKind);
+    if (node.expr->eval.expression_kind == TypeExpressionKind)
       {
         // Conversion.
         if (node.args->size () != 1)
           {
-            error_at_line (-1, 0, node.location.File.c_str (),
-                           node.location.Line,
+            error_at_line (-1, 0, node.location.file.c_str (),
+                           node.location.line,
                            "conversion requires one argument (E8)");
 
           }
@@ -934,28 +248,38 @@ struct Visitor : public ast::DefaultVisitor
         return;
       }
 
-    // Collect the argument types.
-    TypeList argument_types;
+    // Collect the arguments.
+    ExpressionValueList arguments;
     List* args = node.args;
     for (List::ConstIterator pos = args->begin (), limit = args->end ();
          pos != limit;
          ++pos)
       {
-        argument_types.push_back ((*pos)->type);
+        arguments.push_back ((*pos)->eval);
       }
 
     if (node.expr->temp != NULL)
       {
-        node.callable = node.expr->temp->instantiate (er, argument_types);
-        node.expr->type = node.callable->type ();
+        node.temp = node.expr->temp;
+        node.temp->check (er, node.location, node.eval, arguments);
+        List::ConstIterator pos, limit;
+        ExpressionValueList::const_iterator pos2;
+        for (pos = args->begin (), limit = args->end (), pos2 = arguments.begin ();
+             pos != limit;
+             ++pos, ++pos2)
+          {
+            (*pos)->eval = *pos2;
+          }
+
+        return;
       }
     else
       {
         node.callable = node.expr->callable;
       }
 
-    node.function_type = type_cast<type::Function> (node.expr->type);
-    node.method_type = type_cast<type::Method> (node.expr->type);
+    node.function_type = type_cast<type::Function> (node.expr->eval.type);
+    node.method_type = type_cast<type::Method> (node.expr->eval.type);
 
     if (node.function_type)
       {
@@ -966,7 +290,7 @@ struct Visitor : public ast::DefaultVisitor
             break;
 
           case type::Function::PUSH_PORT:
-            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+            error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "push ports cannot be called (E202)");
             break;
 
@@ -976,12 +300,12 @@ struct Visitor : public ast::DefaultVisitor
                   context == Action ||
                   context == Reaction))
               {
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                                "pull ports may only be called from a getter, an action, or a reaction (E201)");
               }
             if (in_mutable_phase)
               {
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                                "cannot call pull port in mutable section (E198)");
               }
             break;
@@ -1001,7 +325,7 @@ struct Visitor : public ast::DefaultVisitor
             // Caller must be an initializer.
             if (context != Initializer)
               {
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                                "initializers may only be called from initializers (E197)");
               }
             break;
@@ -1013,12 +337,12 @@ struct Visitor : public ast::DefaultVisitor
                   context == Reaction ||
                   context == Initializer))
               {
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                                "getters may only be called from a getter, an action, a reaction, or an initializer (E196)");
               }
             if (in_mutable_phase)
               {
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                                "cannot call getter in mutable section (E34)");
               }
           }
@@ -1055,23 +379,26 @@ struct Visitor : public ast::DefaultVisitor
         check_mutability_arguments (node.args, node.signature);
       }
 
-    node.type = node.return_parameter->type;
-    node.expression_kind = kValue;
-    node.intrinsic_mutability = Immutable;
-    node.indirection_mutability = node.return_parameter->dereference_mutability;
-    fix (node);
+    node.eval.type = node.return_parameter->type;
+    node.eval.expression_kind = ValueExpressionKind;
+    node.eval.intrinsic_mutability = Immutable;
+    node.eval.indirection_mutability = node.return_parameter->dereference_mutability;
+    node.eval.fix_string_indirection_mutability ();
   }
 
   void conversion (Node& node,
                    Node* type_expr,
                    Node* expr)
   {
-    require_type (type_expr);
+    if (!require_type (er, node.location, node.eval, type_expr->eval))
+      {
+        return;
+      }
     require_value_or_variable (expr);
 
-    const type::Type* to = type_expr->type;
-    const type::Type*& from = expr->type;
-    Value& x = expr->value;
+    const type::Type* to = type_expr->eval.type;
+    const type::Type*& from = expr->eval.type;
+    Value& x = expr->eval.value;
 
     if (x.present)
       {
@@ -1099,8 +426,8 @@ struct Visitor : public ast::DefaultVisitor
           }
         else
           {
-            error_at_line (-1, 0, node.location.File.c_str (),
-                           node.location.Line,
+            error_at_line (-1, 0, node.location.file.c_str (),
+                           node.location.line,
                            "illegal conversion (E156)");
           }
       }
@@ -1141,21 +468,21 @@ struct Visitor : public ast::DefaultVisitor
           }
         else
           {
-            error_at_line (-1, 0, node.location.File.c_str (),
-                           node.location.Line,
+            error_at_line (-1, 0, node.location.file.c_str (),
+                           node.location.line,
                            "illegal conversion (E122)");
           }
       }
 
-    node.type = to;
-    node.expression_kind = kValue;
-    node.intrinsic_mutability = Immutable;
-    node.indirection_mutability = expr->indirection_mutability;
+    node.eval.type = to;
+    node.eval.expression_kind = ValueExpressionKind;
+    node.eval.intrinsic_mutability = Immutable;
+    node.eval.indirection_mutability = expr->eval.indirection_mutability;
     if (node.reset_mutability)
       {
-        node.indirection_mutability = Mutable;
+        node.eval.indirection_mutability = Mutable;
       }
-    fix (node);
+    node.eval.fix_string_indirection_mutability ();
   }
 
   void visit (ConversionExpr& node)
@@ -1171,308 +498,140 @@ struct Visitor : public ast::DefaultVisitor
 
   void visit (LiteralExpr& node)
   {
-    assert (node.value.present);
-    node.expression_kind = kValue;
-    node.intrinsic_mutability = Immutable;
-    node.indirection_mutability = Immutable;
-    fix (node);
+    assert (node.eval.value.present);
+    node.eval.expression_kind = ValueExpressionKind;
+    node.eval.intrinsic_mutability = Immutable;
+    node.eval.indirection_mutability = Immutable;
   }
 
   void visit (IdentifierExpr& node)
   {
-    Identifier *identifier_node = node.child;
+    Identifier* identifier_node = node.child;
     const std::string& identifier = identifier_node->identifier;
     node.symbol = symtab.find_global_symbol (identifier);
     if (node.symbol == NULL)
       {
-        error_at_line (-1, 0, identifier_node->location.File.c_str (),
-                       identifier_node->location.Line, "%s is not defined (E214)",
-                       identifier.c_str ());
+        er.undefined (node.location, identifier);
+        node.eval.expression_kind = ErrorExpressionKind;
+        return;
       }
+
+    node.eval.type = node.symbol->symbol_type ();
 
     struct visitor : public ConstSymbolVisitor
     {
       IdentifierExpr& node;
+      ErrorReporter& er;
 
-      visitor (IdentifierExpr& n)
+      visitor (IdentifierExpr& n,
+               ErrorReporter& a_er)
         : node (n)
+        , er (a_er)
       { }
 
-      void defaultAction (const Symbol& symbol)
+      void default_action (const Symbol& symbol)
       {
         NOT_REACHED;
       }
 
       void visit (const BuiltinFunction& symbol)
       {
-        node.type = symbol.type ();
         node.callable = &symbol;
-        node.expression_kind = kValue;
-        node.intrinsic_mutability = Immutable;
-        node.indirection_mutability = Immutable;
-        fix (node);
+        node.eval.expression_kind = ValueExpressionKind;
+        node.eval.intrinsic_mutability = Immutable;
+        node.eval.indirection_mutability = Immutable;
       }
 
-      void visit (const decl::Template& symbol)
+      void visit (const decl::TemplateSymbol& symbol)
       {
-        node.type = symbol.type ();
         node.temp = &symbol;
-        node.expression_kind = kValue;
-        node.intrinsic_mutability = Immutable;
-        node.indirection_mutability = Immutable;
-        fix (node);
+        node.eval.expression_kind = ValueExpressionKind;
+        node.eval.intrinsic_mutability = Immutable;
+        node.eval.indirection_mutability = Immutable;
       }
 
       void visit (const decl::Function& symbol)
       {
-        node.type = symbol.type ();
         node.callable = &symbol;
-        node.expression_kind = kValue;
-        node.intrinsic_mutability = Immutable;
-        node.indirection_mutability = Immutable;
-        fix (node);
+        node.eval.expression_kind = ValueExpressionKind;
+        node.eval.intrinsic_mutability = Immutable;
+        node.eval.indirection_mutability = Immutable;
       }
 
       void visit (const ParameterSymbol& symbol)
       {
-        node.type = symbol.type;
-        node.expression_kind = kVariable;
-        node.intrinsic_mutability = symbol.intrinsic_mutability;
-        node.indirection_mutability = symbol.dereference_mutability;
-        fix (node);
+        node.eval.expression_kind = VariableExpressionKind;
+        node.eval.intrinsic_mutability = symbol.intrinsic_mutability;
+        node.eval.indirection_mutability = symbol.dereference_mutability;
       }
 
       void visit (const TypeSymbol& symbol)
       {
-        node.type = symbol.type;
-        node.expression_kind = kType;
+        node.eval.expression_kind = TypeExpressionKind;
       }
 
       void visit (const ConstantSymbol& symbol)
       {
-        node.type = symbol.type;
-        node.value = symbol.value;
-        assert (node.value.present);
-        node.expression_kind = kValue;
-        node.intrinsic_mutability = Immutable;
-        node.indirection_mutability = Mutable;
-        fix (node);
+        node.eval.value = symbol.value;
+        assert (node.eval.value.present);
+        node.eval.expression_kind = ValueExpressionKind;
+        node.eval.intrinsic_mutability = Immutable;
+        node.eval.indirection_mutability = Mutable;
       }
 
       void visit (const VariableSymbol& symbol)
       {
-        node.type = symbol.type;
-        node.expression_kind = kVariable;
-        node.intrinsic_mutability = symbol.intrinsic_mutability;
-        node.indirection_mutability = symbol.dereference_mutability;
-        fix (node);
+        node.eval.expression_kind = VariableExpressionKind;
+        node.eval.intrinsic_mutability = symbol.intrinsic_mutability;
+        node.eval.indirection_mutability = symbol.dereference_mutability;
       }
 
       void visit (const HiddenSymbol& symbol)
       {
-        error_at_line (-1, 0, node.location.File.c_str (),
-                       node.location.Line, "%s is not accessible in this scope (E157)",
-                       symbol.identifier.c_str ());
+        er.hidden (symbol.location, symbol.identifier);
+        node.eval.expression_kind = ErrorExpressionKind;
       }
     };
-    visitor v (node);
+    visitor v (node, er);
     node.symbol->accept (v);
+    node.eval.fix_string_indirection_mutability ();
   }
 
   void visit (UnaryArithmeticExpr& node)
   {
     node.visit_children (*this);
-    switch (node.arithmetic)
+
+    if (node.child->eval.expression_kind == ErrorExpressionKind)
       {
-      case LogicNot:
-      {
-        if (!(is_any_boolean (node.child->type)))
-          {
-            error_at_line (-1, 0, node.location.File.c_str (),
-                           node.location.Line,
-                           "! cannot be applied to %s (E158)",
-                           node.child->type->to_string ().c_str ());
-          }
-        node.type = node.child->type;
-        if (node.child->value.present)
-          {
-            node.value.present = true;
-            switch (node.type->underlying_kind ())
-              {
-              case kBool:
-                node.value.bool_value = !node.child->value.bool_value;
-                break;
-              case kBoolean:
-                node.value.boolean_value = !node.child->value.boolean_value;
-                break;
-              default:
-                NOT_REACHED;
-              }
-          }
-      }
-      break;
-      case Posate:
-        UNIMPLEMENTED;
-      case Negate:
-      {
-        if (!(is_typed_numeric (node.child->type) ||
-              is_untyped_numeric (node.child->type)))
-          {
-            error_at_line (-1, 0, node.location.File.c_str (),
-                           node.location.Line,
-                           "- cannot be applied to %s (E159)",
-                           node.child->type->to_string ().c_str ());
-          }
-        node.type = node.child->type;
-        if (node.child->value.present)
-          {
-            node.value.present = true;
-            switch (node.type->underlying_kind ())
-              {
-              case kUint8:
-                node.value.uint8_value = -node.child->value.uint8_value;
-                break;
-              case kUint16:
-                node.value.uint16_value = -node.child->value.uint16_value;
-                break;
-              case kUint32:
-                node.value.uint32_value = -node.child->value.uint32_value;
-                break;
-              case kUint64:
-                node.value.uint32_value = -node.child->value.uint32_value;
-                break;
-              case kInt8:
-                node.value.int8_value = -node.child->value.int8_value;
-                break;
-              case kInt16:
-                node.value.int16_value = -node.child->value.int16_value;
-                break;
-              case kInt32:
-                node.value.int32_value = -node.child->value.int32_value;
-                break;
-              case kInt64:
-                node.value.int64_value = -node.child->value.int64_value;
-                break;
-              case kFloat32:
-                node.value.float32_value = -node.child->value.float32_value;
-                break;
-              case kFloat64:
-                node.value.float64_value = -node.child->value.float64_value;
-                break;
-              case kComplex64:
-                node.value.complex64_value = -node.child->value.complex64_value;
-                break;
-              case kComplex128:
-                node.value.complex128_value = -node.child->value.complex128_value;
-                break;
-              case kUint:
-                node.value.uint_value = -node.child->value.uint_value;
-                break;
-              case kInt:
-                node.value.int_value = -node.child->value.int_value;
-                break;
-              case kUintptr:
-                node.value.uintptr_value = -node.child->value.uintptr_value;
-                break;
-              case kRune:
-                node.value.rune_value = -node.child->value.rune_value;
-                break;
-              case kInteger:
-                node.value.integer_value = -node.child->value.integer_value;
-                break;
-              case kFloat:
-                node.value.float_value = -node.child->value.float_value;
-                break;
-              case kComplex:
-                node.value.complex_value = -node.child->value.complex_value;
-                break;
-              default:
-                NOT_REACHED;
-              }
-          }
-      }
-      break;
-      case Complement:
-        UNIMPLEMENTED;
+        node.eval.expression_kind = ErrorExpressionKind;
+        return;
       }
 
-    require_value_or_variable (node.child);
-    node.expression_kind = kValue;
-    node.intrinsic_mutability = Immutable;
-    node.indirection_mutability = Immutable;
-    fix (node);
+    ExpressionValueList evals;
+    evals.push_back (node.child->eval);
+
+    node.temp->check (er, node.location, node.eval, evals);
   }
 
   void visit (BinaryArithmeticExpr& node)
   {
     node.visit_children (*this);
-    switch (node.arithmetic)
+
+    if (node.left->eval.expression_kind == ErrorExpressionKind ||
+        node.right->eval.expression_kind == ErrorExpressionKind)
       {
-      case Multiply:
-        process_arithmetic ("*", node, multiply);
-        break;
-      case Divide:
-        process_arithmetic ("/", node, divide);
-        break;
-      case Modulus:
-        process_integral ("%", node, modulus);
-        break;
-      case LeftShift:
-        process_shift<LeftShifter> (node);
-        break;
-      case RightShift:
-        process_shift<RightShifter> (node);
-        break;
-      case BitAnd:
-        process_integral ("&", node, bit_and);
-        break;
-      case BitAndNot:
-        process_integral ("&^", node, bit_and_not);
-        break;
-      case Add:
-        process_arithmetic ("+", node, add);
-        break;
-      case Subtract:
-        process_arithmetic ("-", node, subtract);
-        break;
-      case BitOr:
-        process_integral ("|", node, bit_or);
-        break;
-      case BitXor:
-        process_integral ("^", node, bit_xor);
-        break;
-      case Equal:
-        process_comparable ("==", node, equal);
-        break;
-      case NotEqual:
-        process_comparable ("!=", node, not_equal);
-        break;
-      case LessThan:
-        process_orderable ("<", node, less_than);
-        break;
-      case LessEqual:
-        process_orderable ("<=", node, less_equal);
-        break;
-      case MoreThan:
-        process_orderable (">", node, more_than);
-        break;
-      case MoreEqual:
-        process_orderable (">=", node, more_equal);
-        break;
-      case LogicOr:
-        process_logic_or (node);
-        break;
-      case LogicAnd:
-        process_logic_and (node);
-        break;
+        node.eval.expression_kind = ErrorExpressionKind;
+        return;
       }
 
-    require_value_or_variable (node.left);
-    require_value_or_variable (node.right);
-    node.expression_kind = kValue;
-    node.intrinsic_mutability = Immutable;
-    node.indirection_mutability = Immutable;
-    fix (node);
+    ExpressionValueList evals;
+    evals.push_back (node.left->eval);
+    evals.push_back (node.right->eval);
+
+    node.temp->check (er, node.location, node.eval, evals);
+
+    node.left->eval = evals[0];
+    node.right->eval = evals[1];
   }
 
   void visit (SourceFile& node)
@@ -1532,9 +691,9 @@ struct Visitor : public ast::DefaultVisitor
     node.body->accept (v);
     node.action->precondition = node.precondition;
 
-    if (node.precondition->value.present)
+    if (node.precondition->eval.value.present)
       {
-        if (node.precondition->value.bool_value)
+        if (node.precondition->eval.value.bool_value)
           {
             node.action->precondition_kind = decl::Action::StaticTrue;
           }
@@ -1559,9 +718,9 @@ struct Visitor : public ast::DefaultVisitor
     node.body->accept (v);
     node.action->precondition = node.precondition;
 
-    if (node.precondition->value.present)
+    if (node.precondition->eval.value.present)
       {
-        if (node.precondition->value.bool_value)
+        if (node.precondition->eval.value.bool_value)
           {
             node.action->precondition_kind = decl::Action::StaticTrue;
           }
@@ -1649,23 +808,23 @@ struct Visitor : public ast::DefaultVisitor
     node.visit_children (*this);
 
     // Get the return symbol.
-    node.return_symbol = SymbolCast<ParameterSymbol> (symtab.find_global_symbol (ReturnSymbol));
+    node.return_symbol = symbol_cast<ParameterSymbol> (symtab.find_global_symbol (ReturnSymbol));
     assert (node.return_symbol != NULL);
 
-    if (!assignable (node.child->type, node.child->value, node.return_symbol->type))
+    if (!assignable (node.child->eval.type, node.child->eval.value, node.return_symbol->type))
       {
-        error_at_line (-1, 0, node.location.File.c_str (),
-                       node.location.Line, "cannot convert %s to %s in return (E160)",
-                       node.child->type->to_string ().c_str (), node.return_symbol->type->to_string ().c_str ());
+        error_at_line (-1, 0, node.location.file.c_str (),
+                       node.location.line, "cannot convert %s to %s in return (E160)",
+                       node.child->eval.type->to_string ().c_str (), node.return_symbol->type->to_string ().c_str ());
       }
-    convert (node.child, node.return_symbol->type);
+    node.child->eval.convert (node.return_symbol->type);
 
     require_value_or_variable (node.child);
 
-    if (type_contains_pointer (node.child->type) &&
-        node.return_symbol->dereference_mutability < node.child->indirection_mutability)
+    if (type_contains_pointer (node.child->eval.type) &&
+        node.return_symbol->dereference_mutability < node.child->eval.indirection_mutability)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "return casts away +const or +foreign (E149)");
       }
   }
@@ -1701,11 +860,11 @@ struct Visitor : public ast::DefaultVisitor
   {
     node.expr->accept (*this);
 
-    const type::Type* root_type = node.expr->type->merge_change ();
+    const type::Type* root_type = node.expr->eval.type->merge_change ();
     if (root_type == NULL)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "cannot change expression of type %s (E96)", node.expr->type->to_string ().c_str ());
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
+                       "cannot change expression of type %s (E96)", node.expr->eval.type->to_string ().c_str ());
       }
 
     require_value_or_variable (node.expr);
@@ -1718,7 +877,7 @@ struct Visitor : public ast::DefaultVisitor
     const std::string& identifier = node.identifier->identifier;
     // Don't know dereference mutability yet.
     node.root_symbol = new VariableSymbol (identifier, node.location, root_type, Immutable, Foreign);
-    node.root_symbol->dereference_mutability = node.expr->indirection_mutability;
+    node.root_symbol->dereference_mutability = node.expr->eval.indirection_mutability;
     symtab.enter_symbol (node.root_symbol);
 
     // Check the body.
@@ -1731,13 +890,13 @@ struct Visitor : public ast::DefaultVisitor
     if (!(context == Action ||
           context == Reaction))
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "activation outside of action or reaction (E53)");
       }
 
     if (in_mutable_phase)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "activations within activations are not allowed (E54)");
       }
 
@@ -1779,7 +938,7 @@ struct Visitor : public ast::DefaultVisitor
     if (expression_list->size () != 0 &&
         identifier_list->size () != expression_list->size ())
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "wrong number of initializers (E184)");
       }
 
@@ -1792,7 +951,7 @@ struct Visitor : public ast::DefaultVisitor
 
         if (type_cast<Void> (type) != NULL)
           {
-            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+            error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "missing type (E183)");
 
           }
@@ -1803,7 +962,7 @@ struct Visitor : public ast::DefaultVisitor
              id_pos != id_limit;
              ++id_pos)
           {
-            const std::string& name = ast_cast<Identifier> (*id_pos)->identifier;
+            const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
             VariableSymbol* symbol = new VariableSymbol (name, (*id_pos)->location, type, node.mutability, node.dereferenceMutability);
             symtab.enter_symbol (symbol);
             node.symbols.push_back (symbol);
@@ -1826,16 +985,16 @@ struct Visitor : public ast::DefaultVisitor
             Node* n = *init_pos;
             n->accept (*this);
 
-            if (!assignable (n->type, n->value, type))
+            if (!assignable (n->eval.type, n->eval.value, type))
               {
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "cannot assign %s to %s in initialization (E62)", n->type->to_string ().c_str (), type->to_string ().c_str ());
+                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
+                               "cannot assign %s to %s in initialization (E62)", n->eval.type->to_string ().c_str (), type->to_string ().c_str ());
               }
-            convert (n, type);
+            n->eval.convert (type);
             require_value_or_variable (n);
 
-            const std::string& name = ast_cast<Identifier> (*id_pos)->identifier;
-            VariableSymbol* symbol = new VariableSymbol (name, (*id_pos)->location, type, node.intrinsic_mutability, node.dereferenceMutability);
+            const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
+            VariableSymbol* symbol = new VariableSymbol (name, (*id_pos)->location, type, node.eval.intrinsic_mutability, node.dereferenceMutability);
             symtab.enter_symbol (symbol);
             node.symbols.push_back (symbol);
           }
@@ -1855,15 +1014,15 @@ struct Visitor : public ast::DefaultVisitor
         Node* n = *init_pos;
         n->accept (*this);
 
-        if (n->type->IsUntyped ())
+        if (n->eval.type->IsUntyped ())
           {
-            n->value.convert (n->type, n->type->DefaultType ());
-            n->type = n->type->DefaultType ();
+            n->eval.value.convert (n->eval.type, n->eval.type->DefaultType ());
+            n->eval.type = n->eval.type->DefaultType ();
           }
         require_value_or_variable (n);
 
-        const std::string& name = ast_cast<Identifier> (*id_pos)->identifier;
-        VariableSymbol* symbol = new VariableSymbol (name, (*id_pos)->location, n->type, node.intrinsic_mutability, node.dereferenceMutability);
+        const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
+        VariableSymbol* symbol = new VariableSymbol (name, (*id_pos)->location, n->eval.type, node.eval.intrinsic_mutability, node.dereferenceMutability);
         symtab.enter_symbol (symbol);
         node.symbols.push_back (symbol);
       }
@@ -1879,10 +1038,10 @@ done:
             Node* n = *pos;
             VariableSymbol* symbol = node.symbols[idx];
 
-            if (type_contains_pointer (n->type) &&
-                symbol->dereference_mutability < n->indirection_mutability)
+            if (type_contains_pointer (n->eval.type) &&
+                symbol->dereference_mutability < n->eval.indirection_mutability)
               {
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                                "assignment casts away +const or +foreign (E92)");
               }
           }
@@ -1892,30 +1051,30 @@ done:
   void visit (AssignStatement& node)
   {
     node.visit_children (*this);
-    const type::Type* to = node.left->type;
-    const type::Type*& from = node.right->type;
-    Value& val = node.right->value;
+    const type::Type* to = node.left->eval.type;
+    const type::Type*& from = node.right->eval.type;
+    Value& val = node.right->eval.value;
     if (!assignable (from, val, to))
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "cannot assign value of type %s to variable of type %s (E199)",
                        from->to_string ().c_str (),
                        to->to_string ().c_str ());
       }
-    convert (node.right, to);
+    node.right->eval.convert (to);
     require_variable (node.left);
     require_value_or_variable (node.right);
 
-    if (node.left->intrinsic_mutability != Mutable)
+    if (node.left->eval.intrinsic_mutability != Mutable)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "target of assignment is not mutable (E86)");
       }
 
-    if (type_contains_pointer (node.right->type) &&
-        node.left->indirection_mutability < node.right->indirection_mutability)
+    if (type_contains_pointer (node.right->eval.type) &&
+        node.left->eval.indirection_mutability < node.right->eval.indirection_mutability)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "assignment casts away +const or +foreign (E161)");
       }
   }
@@ -1924,29 +1083,29 @@ done:
   {
     node.visit_children (*this);
 
-    const type::Type* to = node.left->type;
-    const type::Type*& from = node.right->type;
-    Value& val = node.right->value;
+    const type::Type* to = node.left->eval.type;
+    const type::Type*& from = node.right->eval.type;
+    Value& val = node.right->eval.value;
     if (!arithmetic (to))
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "+= cannot be applied to %s (E200)",
                        to->to_string ().c_str ());
       }
     if (!assignable (from, val, to))
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "cannot assign value of type %s to variable of type %s (E76)",
                        from->to_string ().c_str (),
                        to->to_string ().c_str ());
       }
-    convert (node.right, to);
+    node.right->eval.convert (to);
     require_variable (node.left);
     require_value_or_variable (node.right);
 
-    if (node.left->intrinsic_mutability != Mutable)
+    if (node.left->eval.intrinsic_mutability != Mutable)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "target of assignment is not mutable (E15)");
       }
   }
@@ -1954,27 +1113,28 @@ done:
   void visit (IncrementDecrementStatement& node)
   {
     const char* op = "";
-    switch (node.kind) {
-    case IncrementDecrementStatement::Increment:
-      op = "++";
-      break;
-    case IncrementDecrementStatement::Decrement:
-      op = "--";
-      break;
-    }
+    switch (node.kind)
+      {
+      case IncrementDecrementStatement::Increment:
+        op = "++";
+        break;
+      case IncrementDecrementStatement::Decrement:
+        op = "--";
+        break;
+      }
 
     node.visit_children (*this);
-    if (!arithmetic (node.child->type))
+    if (!arithmetic (node.child->eval.type))
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "%s cannot be applied to %s (E77)",
-                       op, node.child->type->to_string ().c_str ());
+                       op, node.child->eval.type->to_string ().c_str ());
       }
     require_variable (node.child);
 
-    if (node.child->intrinsic_mutability != Mutable)
+    if (node.child->eval.intrinsic_mutability != Mutable)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "target of %s is not mutable (E177)", op);
       }
   }
@@ -1991,10 +1151,10 @@ done:
     const decl::Reaction* reaction = bind (node, node.left, node.right);
     if (!reaction->has_dimension ())
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "parameter specified for non-parameterized reaction (E41)");
       }
-    type::Int::ValueType dimension = reaction->dimension ();
+    type::Int::ValueType dimension = reaction->dimension;
     check_array_index (reaction->reaction_type->get_array (dimension), node.param, false);
   }
 
@@ -2002,21 +1162,21 @@ done:
   {
     node.visit_children (*this);
 
-    const type::Function* pull_port_type = type_cast<type::Function> (node.left->type);
+    const type::Function* pull_port_type = type_cast<type::Function> (node.left->eval.type);
 
     if (pull_port_type == NULL || pull_port_type->function_kind != type::Function::PULL_PORT)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "target of bind is not a pull port (E193)");
       }
 
     require_variable (node.left);
 
-    const type::Method* getter_type = type_cast<type::Method> (node.right->type);
+    const type::Method* getter_type = type_cast<type::Method> (node.right->eval.type);
 
     if (getter_type == NULL || getter_type->method_kind != type::Method::GETTER)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "source of bind is not a getter (E192)");
       }
 
@@ -2025,7 +1185,7 @@ done:
     type::Function g (type::Function::PULL_PORT, getter_type->parameter_list, getter_type->return_parameter_list);
     if (!are_identical (pull_port_type, &g))
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "cannot bind %s to %s (E191)", pull_port_type->to_string ().c_str (), getter_type->to_string ().c_str ());
       }
   }
@@ -2033,52 +1193,52 @@ done:
   void visit (DereferenceExpr& node)
   {
     node.visit_children (*this);
-    const type::Type* t = node.child->type;
+    const type::Type* t = node.child->eval.type;
     const Pointer* p = type_cast<Pointer> (t->UnderlyingType ());
     if (p == NULL)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "* cannot be applied to %s (E21)", t->to_string ().c_str ());
       }
     require_value_or_variable (node.child);
-    node.type = p->base_type;
-    node.expression_kind = kVariable;
-    node.intrinsic_mutability = node.child->indirection_mutability;
-    node.indirection_mutability = node.child->indirection_mutability;
-    fix (node);
+    node.eval.type = p->base_type;
+    node.eval.expression_kind = VariableExpressionKind;
+    node.eval.intrinsic_mutability = node.child->eval.indirection_mutability;
+    node.eval.indirection_mutability = node.child->eval.indirection_mutability;
+    node.eval.fix_string_indirection_mutability ();
   }
 
   void visit (AddressOfExpr& node)
   {
     node.visit_children (*this);
     require_variable (node.child);
-    node.type = node.child->type->get_pointer ();
-    node.expression_kind = kValue;
-    node.intrinsic_mutability = node.child->intrinsic_mutability;
-    node.indirection_mutability = std::max (node.child->intrinsic_mutability, node.child->indirection_mutability);
-    fix (node);
+    node.eval.type = node.child->eval.type->get_pointer ();
+    node.eval.expression_kind = ValueExpressionKind;
+    node.eval.intrinsic_mutability = node.child->eval.intrinsic_mutability;
+    node.eval.indirection_mutability = std::max (node.child->eval.intrinsic_mutability, node.child->eval.indirection_mutability);
+    node.eval.fix_string_indirection_mutability ();
   }
 
   void visit (SelectExpr& node)
   {
     const std::string& identifier = node.identifier->identifier;
     node.base->accept (*this);
-    const type::Type* base_type = node.base->type;
+    const type::Type* base_type = node.base->eval.type;
     require_value_or_variable (node.base);
 
     node.field = base_type->select_field (identifier);
     node.callable = base_type->select_callable (identifier);
     if (node.field != NULL)
       {
-        node.type = node.field->type;
+        node.eval.type = node.field->type;
       }
     else if (node.callable != NULL)
       {
-        node.type = node.callable->type ();
+        node.eval.type = node.callable->callable_type ();
       }
     else
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "cannot select %s from expression of type %s (E154)",
                        identifier.c_str (), base_type->to_string ().c_str ());
       }
@@ -2086,31 +1246,31 @@ done:
     if (base_type->u_to_pointer ())
       {
         // Selecting through pointer always yields a variable.
-        node.expression_kind = kVariable;
-        node.intrinsic_mutability = node.base->indirection_mutability;
-        node.indirection_mutability = node.base->indirection_mutability;
-        fix (node);
+        node.eval.expression_kind = VariableExpressionKind;
+        node.eval.intrinsic_mutability = node.base->eval.indirection_mutability;
+        node.eval.indirection_mutability = node.base->eval.indirection_mutability;
+        node.eval.fix_string_indirection_mutability ();
       }
     else
       {
         // Otherwise, use the base kind.
-        node.expression_kind = node.base->expression_kind;
-        node.intrinsic_mutability = node.base->intrinsic_mutability;
-        node.indirection_mutability = node.base->indirection_mutability;
-        fix (node);
+        node.eval.expression_kind = node.base->eval.expression_kind;
+        node.eval.intrinsic_mutability = node.base->eval.intrinsic_mutability;
+        node.eval.indirection_mutability = node.base->eval.indirection_mutability;
+        node.eval.fix_string_indirection_mutability ();
       }
   }
 
   void check_array_index (const Array* array_type, Node* index, bool allow_equal)
   {
-    const type::Type*& index_type = index->type;
-    Value& index_value = index->value;
+    const type::Type*& index_type = index->eval.type;
+    Value& index_value = index->eval.value;
 
     if (is_untyped_numeric (index_type))
       {
         if (!index_value.representable (index_type, Int::Instance ()))
           {
-            error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
+            error_at_line (-1, 0, index->location.file.c_str (), index->location.line,
                            "array index is not an integer (E20)");
           }
         index_value.convert (index_type, Int::Instance ());
@@ -2118,7 +1278,7 @@ done:
         Int::ValueType idx = index_value.int_value;
         if (idx < 0)
           {
-            error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
+            error_at_line (-1, 0, index->location.file.c_str (), index->location.line,
                            "array index is negative (E162)");
           }
         if (array_type)
@@ -2126,7 +1286,7 @@ done:
             if ((!allow_equal && idx >= array_type->dimension) ||
                 (allow_equal && idx > array_type->dimension))
               {
-                error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
+                error_at_line (-1, 0, index->location.file.c_str (), index->location.line,
                                "array index is out of bounds (E163)");
               }
           }
@@ -2138,14 +1298,14 @@ done:
             Int::ValueType idx = index_value.to_int (index_type);
             if (idx < 0)
               {
-                error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
+                error_at_line (-1, 0, index->location.file.c_str (), index->location.line,
                                "array index is negative (E164)");
               }
             if (array_type)
               {
                 if (idx >= array_type->dimension)
                   {
-                    error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
+                    error_at_line (-1, 0, index->location.file.c_str (), index->location.line,
                                    "array index is out of bounds (E165)");
                   }
               }
@@ -2153,7 +1313,7 @@ done:
       }
     else
       {
-        error_at_line (-1, 0, index->location.File.c_str (), index->location.Line,
+        error_at_line (-1, 0, index->location.file.c_str (), index->location.line,
                        "array index is not an integer (E203)");
       }
     require_value_or_variable (index);
@@ -2162,21 +1322,21 @@ done:
   void visit (IndexExpr& node)
   {
     node.visit_children (*this);
-    const type::Type* base_type = node.base->type;
+    const type::Type* base_type = node.base->eval.type;
     Node* index_node = node.index;
-    Value& index_value = index_node->value;
-    const type::Type*& index_type = node.index->type;
+    Value& index_value = index_node->eval.value;
+    const type::Type*& index_type = node.index->eval.type;
 
     node.array_type = type_cast<Array> (base_type->UnderlyingType ());
     if (node.array_type != NULL)
       {
         check_array_index (node.array_type, node.index, false);
         require_value_or_variable (node.base);
-        node.type = node.array_type->base_type;
-        node.expression_kind = node.base->expression_kind;
-        node.intrinsic_mutability = node.base->intrinsic_mutability;
-        node.indirection_mutability = node.base->indirection_mutability;
-        fix (node);
+        node.eval.type = node.array_type->base_type;
+        node.eval.expression_kind = node.base->eval.expression_kind;
+        node.eval.intrinsic_mutability = node.base->eval.intrinsic_mutability;
+        node.eval.indirection_mutability = node.base->eval.indirection_mutability;
+        node.eval.fix_string_indirection_mutability ();
         return;
       }
 
@@ -2187,7 +1347,7 @@ done:
           {
             if (!index_value.representable (index_type, Int::Instance ()))
               {
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                                "slice index is not an integer (E204)");
               }
             index_value.convert (index_type, Int::Instance ());
@@ -2195,7 +1355,7 @@ done:
             Int::ValueType idx = index_value.int_value;
             if (idx < 0)
               {
-                error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
+                error_at_line (-1, 0, index_node->location.file.c_str (), index_node->location.line,
                                "slice index is negative (E166)");
               }
           }
@@ -2206,29 +1366,29 @@ done:
                 Int::ValueType idx = index_value.to_int (index_type);
                 if (idx < 0)
                   {
-                    error_at_line (-1, 0, index_node->location.File.c_str (), index_node->location.Line,
+                    error_at_line (-1, 0, index_node->location.file.c_str (), index_node->location.line,
                                    "slice index is negative (E167)");
                   }
               }
           }
         else
           {
-            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+            error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "slice index is not an integer (E205)");
           }
 
         require_value_or_variable (node.base);
         require_value_or_variable (node.index);
 
-        node.type = node.slice_type->base_type;
-        node.expression_kind = kVariable;
-        node.intrinsic_mutability = node.base->intrinsic_mutability;
-        node.indirection_mutability = node.base->indirection_mutability;
-        fix (node);
+        node.eval.type = node.slice_type->base_type;
+        node.eval.expression_kind = VariableExpressionKind;
+        node.eval.intrinsic_mutability = node.base->eval.intrinsic_mutability;
+        node.eval.indirection_mutability = node.base->eval.indirection_mutability;
+        node.eval.fix_string_indirection_mutability ();
         return;
       }
 
-    error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+    error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                    "cannot index expression of type %s (E168)",
                    base_type->to_string ().c_str ());
   }
@@ -2238,31 +1398,31 @@ done:
     Node* base = node.base;
     base->accept (*this);
     require_value_or_variable (base);
-    const type::Type* base_type = node.base->type;
+    const type::Type* base_type = node.base->eval.type;
 
     Node* low_node = node.low;
     if (node.low_present)
       {
         low_node->accept (*this);
       }
-    const type::Type*& low_type = low_node->type;
-    Value& low_value = low_node->value;
+    const type::Type*& low_type = low_node->eval.type;
+    Value& low_value = low_node->eval.value;
 
     Node* high_node = node.high;
     if (node.high_present)
       {
         high_node->accept (*this);
       }
-    const type::Type*& high_type = high_node->type;
-    Value& high_value = high_node->value;
+    const type::Type*& high_type = high_node->eval.type;
+    Value& high_value = high_node->eval.value;
 
     Node* max_node = node.max;
     if (node.max_present)
       {
         max_node->accept (*this);
       }
-    const type::Type*& max_type = max_node->type;
-    Value& max_value = max_node->value;
+    const type::Type*& max_type = max_node->eval.type;
+    Value& max_value = max_node->eval.value;
 
     node.string_type = type_cast<String> (base_type->UnderlyingType ());
     if (node.string_type != NULL)
@@ -2294,11 +1454,11 @@ done:
             check_array_index (node.array_type, max_node, true);
           }
 
-        node.type = node.array_type->base_type->get_slice ();
-        node.expression_kind = kValue;
-        node.intrinsic_mutability = Immutable;
-        node.indirection_mutability = node.base->indirection_mutability;
-        fix (node);
+        node.eval.type = node.array_type->base_type->get_slice ();
+        node.eval.expression_kind = ValueExpressionKind;
+        node.eval.intrinsic_mutability = Immutable;
+        node.eval.indirection_mutability = node.base->eval.indirection_mutability;
+        node.eval.fix_string_indirection_mutability ();
         goto done;
       }
 
@@ -2318,15 +1478,15 @@ done:
             check_array_index (NULL, max_node, true);
           }
 
-        node.type = node.slice_type;
-        node.expression_kind = kValue;
-        node.intrinsic_mutability = Immutable;
-        node.indirection_mutability = node.base->indirection_mutability;
-        fix (node);
+        node.eval.type = node.slice_type;
+        node.eval.expression_kind = ValueExpressionKind;
+        node.eval.intrinsic_mutability = Immutable;
+        node.eval.indirection_mutability = node.base->eval.indirection_mutability;
+        node.eval.fix_string_indirection_mutability ();
         goto done;
       }
 
-    error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+    error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                    "cannot slice expression of type %s (E225)",
                    base_type->to_string ().c_str ());
 
@@ -2335,7 +1495,7 @@ done:
       {
         if (!(low_value.to_int (low_type) <= high_value.to_int (high_type)))
           {
-            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+            error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "slice indices are out of range (E224)");
           }
       }
@@ -2344,7 +1504,7 @@ done:
       {
         if (!(low_value.to_int (low_type) <= max_value.to_int (max_type)))
           {
-            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+            error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "slice indices are out of range (E6)");
           }
       }
@@ -2353,7 +1513,7 @@ done:
       {
         if (!(high_value.to_int (high_type) <= max_value.to_int (max_type)))
           {
-            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+            error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "slice indices are out of range (E7)");
           }
       }
@@ -2361,8 +1521,8 @@ done:
 
   void visit (TypeExpression& node)
   {
-    node.type = process_type (node.type_spec, er, symtab, true);
-    node.expression_kind = kType;
+    node.eval.type = process_type (node.type_spec, er, symtab, true);
+    node.eval.expression_kind = TypeExpressionKind;
   }
 
   void visit (PushPortCallExpr& node)
@@ -2373,13 +1533,13 @@ done:
     node.field = this_type->select_field (port_identifier);
     if (node.field == NULL)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "no port named %s (E194)", port_identifier.c_str ());
       }
     const type::Function* push_port_type = type::type_cast<type::Function> (node.field->type);
     if (push_port_type == NULL || push_port_type->function_kind != type::Function::PUSH_PORT)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "no port named %s (E195)", port_identifier.c_str ());
       }
 
@@ -2387,10 +1547,10 @@ done:
     check_types_arguments (node.args, push_port_type->parameter_list);
     require_value_or_variable_list (node.args);
 
-    node.type = type::Void::Instance ();
-    node.expression_kind = kValue;
-    node.intrinsic_mutability = Immutable;
-    node.indirection_mutability = Immutable;
+    node.eval.type = type::Void::Instance ();
+    node.eval.expression_kind = ValueExpressionKind;
+    node.eval.intrinsic_mutability = Immutable;
+    node.eval.indirection_mutability = Immutable;
   }
 
   void visit (IndexedPushPortCallExpr& node)
@@ -2401,19 +1561,19 @@ done:
     node.field = this_type->select_field (port_identifier);
     if (node.field == NULL)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "no port named %s (E74)", port_identifier.c_str ());
       }
     node.array_type = type::type_cast<type::Array> (node.field->type);
     if (node.array_type == NULL)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "%s is not an array of ports (E16)", port_identifier.c_str ());
       }
     const type::Function* push_port_type = type::type_cast<type::Function> (node.array_type->base_type);
     if (push_port_type == NULL || push_port_type->function_kind != type::Function::PUSH_PORT)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "%s is not an array of ports (E17)", port_identifier.c_str ());
       }
 
@@ -2424,18 +1584,18 @@ done:
     check_types_arguments (node.args, push_port_type->parameter_list);
     require_value_or_variable_list (node.args);
 
-    node.type = type::Void::Instance ();
-    node.expression_kind = kValue;
-    node.intrinsic_mutability = Immutable;
-    node.indirection_mutability = Immutable;
+    node.eval.type = type::Void::Instance ();
+    node.eval.expression_kind = ValueExpressionKind;
+    node.eval.intrinsic_mutability = Immutable;
+    node.eval.indirection_mutability = Immutable;
   }
 
   void visit (CompositeLiteral& node)
   {
-    node.type = process_type (node.literal_type, er, symtab, true);
-    node.expression_kind = kVariable;
+    node.eval.type = process_type (node.literal_type, er, symtab, true);
+    node.eval.expression_kind = VariableExpressionKind;
 
-    switch (node.type->underlying_kind ())
+    switch (node.eval.type->underlying_kind ())
       {
       case kStruct:
       {
@@ -2459,8 +1619,8 @@ done:
         break;
 
       default:
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                       "cannot define composite literals for %s (E5)", node.type->to_string ().c_str ());
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
+                       "cannot define composite literals for %s (E5)", node.eval.type->to_string ().c_str ());
       }
   }
 };
@@ -2470,7 +1630,7 @@ void check_types_arguments (ast::List* args, const decl::ParameterList* signatur
 {
   if (args->size () != signature->size ())
     {
-      error_at_line (-1, 0, args->location.File.c_str (), args->location.Line,
+      error_at_line (-1, 0, args->location.file.c_str (), args->location.line,
                      "call expects %lu arguments but given %lu (E150)", signature->size (), args->size ());
     }
 
@@ -2479,25 +1639,15 @@ void check_types_arguments (ast::List* args, const decl::ParameterList* signatur
        pos != limit;
        ++pos, ++i)
     {
-      const type::Type*& arg = (*pos)->type;
-      Value& val = (*pos)->value;
+      const type::Type*& arg = (*pos)->eval.type;
+      Value& val = (*pos)->eval.value;
       const type::Type* param = signature->at (i)->type;
       if (!type::assignable (arg, val, param))
         {
-          error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
+          error_at_line (-1, 0, (*pos)->location.file.c_str (), (*pos)->location.line,
                          "cannot assign %s to %s in call (E151)", arg->to_string ().c_str (), param->to_string ().c_str ());
         }
-      convert ((*pos), param);
-    }
-}
-
-void require_type (const Node* node)
-{
-  assert (node->expression_kind != kUnknown);
-  if (!(node->expression_kind == kType))
-    {
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
-                     "required a type (E221)");
+      (*pos)->eval.convert (param);
     }
 }
 
@@ -2519,19 +1669,19 @@ void check_types (ast::Node* root, ErrorReporter& er, SymbolTable& symtab)
 
 void check_mutability_arguments (ast::Node* node, const decl::ParameterList* signature)
 {
-  ListExpr* args = ast_cast<ListExpr> (node);
+  ListExpr* args = node_cast<ListExpr> (node);
 
   size_t i = 0;
   for (List::ConstIterator pos = args->begin (), limit = args->end ();
        pos != limit;
        ++pos, ++i)
     {
-      const type::Type* arg = (*pos)->type;
+      const type::Type* arg = (*pos)->eval.type;
       if (type_contains_pointer (arg))
         {
-          if (signature->at (i)->dereference_mutability < (*pos)->indirection_mutability)
+          if (signature->at (i)->dereference_mutability < (*pos)->eval.indirection_mutability)
             {
-              error_at_line (-1, 0, (*pos)->location.File.c_str (), (*pos)->location.Line,
+              error_at_line (-1, 0, (*pos)->location.file.c_str (), (*pos)->location.line,
                              "argument %zd casts away +const or +foreign (E85)", i + 1);
             }
         }

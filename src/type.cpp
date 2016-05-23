@@ -565,7 +565,6 @@ type::Instance () \
   return i; \
 }
 
-INSTANCE(Error)
 INSTANCE(Void)
 INSTANCE(FileDescriptor)
 INSTANCE(Nil)
@@ -1305,30 +1304,45 @@ bool is_typed_numeric (const Type* type)
 
 bool is_untyped_numeric (const Type* type)
 {
-  struct visitor : DefaultVisitor
-  {
-    bool flag;
-    visitor () : flag (false) { }
-    void visit (const Rune& type)
+  switch (type->underlying_kind ())
     {
-      flag = true;
+    case kRune:
+    case kInteger:
+    case kFloat:
+    case kComplex:
+      return true;
+    default:
+      return false;
     }
-    void visit (const Integer& type)
+}
+
+bool is_any_numeric (const Type* type)
+{
+  switch (type->underlying_kind ())
     {
-      flag = true;
+    case kUint8:
+    case kUint16:
+    case kUint32:
+    case kUint64:
+    case kInt8:
+    case kInt16:
+    case kInt32:
+    case kInt64:
+    case kFloat32:
+    case kFloat64:
+    case kComplex64:
+    case kComplex128:
+    case kUint:
+    case kInt:
+    case kUintptr:
+    case kRune:
+    case kInteger:
+    case kFloat:
+    case kComplex:
+      return true;
+    default:
+      return false;
     }
-    void visit (const Float& type)
-    {
-      flag = true;
-    }
-    void visit (const Complex& type)
-    {
-      flag = true;
-    }
-  };
-  visitor v;
-  type->UnderlyingType ()->Accept (v);
-  return v.flag;
 }
 
 bool is_typed_string (const Type* type)
@@ -1531,6 +1545,189 @@ std::string Map::to_string () const
   std::stringstream ss;
   ss << "map[" << *key_type << ']' << *value_type;
   return ss.str ();
+}
+
+const Type* Arithmetic::pick (const Type* left_type, const Type* right_type)
+{
+  switch (left_type->underlying_kind ())
+    {
+    case kUint8:
+    case kUint16:
+    case kUint32:
+    case kUint64:
+    case kInt8:
+    case kInt16:
+    case kInt32:
+    case kInt64:
+    case kFloat32:
+    case kFloat64:
+    case kComplex64:
+    case kComplex128:
+    case kUint:
+    case kInt:
+    case kUintptr:
+      if (left_type == right_type)
+        {
+          return left_type;
+        }
+      break;
+
+    case kRune:
+    case kInteger:
+    case kFloat:
+    case kComplex:
+      if (is_untyped_numeric (right_type))
+        {
+          return Choose (left_type, right_type);
+        }
+      break;
+
+    default:
+      break;
+    }
+
+  return NULL;
+}
+
+const Type* Integral::pick (const Type* left_type, const Type* right_type)
+{
+  switch (left_type->underlying_kind ())
+    {
+    case kUint8:
+    case kUint16:
+    case kUint32:
+    case kUint64:
+    case kInt8:
+    case kInt16:
+    case kInt32:
+    case kInt64:
+    case kUint:
+    case kInt:
+    case kUintptr:
+      if (left_type == right_type)
+        {
+          return left_type;
+        }
+      break;
+
+    case kRune:
+    case kInteger:
+      if (right_type->underlying_kind () == kRune ||
+          right_type->underlying_kind () == kInteger)
+        {
+          return Choose (left_type, right_type);
+        }
+      break;
+
+    default:
+      break;
+    }
+
+  return NULL;
+}
+
+const type::Type* Comparable::pick (const type::Type* left_type, const type::Type* right_type)
+{
+  switch (left_type->underlying_kind ())
+    {
+    case kNil:
+    case kBoolean:
+    case kString:
+    case kBool:
+    case kUint8:
+    case kUint16:
+    case kUint32:
+    case kUint64:
+    case kInt8:
+    case kInt16:
+    case kInt32:
+    case kInt64:
+    case kFloat32:
+    case kFloat64:
+    case kComplex64:
+    case kComplex128:
+    case kUint:
+    case kInt:
+    case kUintptr:
+    case kStringU:
+    case kPointer:
+      if (left_type == right_type)
+        {
+          return left_type;
+        }
+      break;
+
+    case kRune:
+    case kInteger:
+    case kFloat:
+    case kComplex:
+      if (is_untyped_numeric (right_type))
+        {
+          return Choose (left_type, right_type);
+        }
+      break;
+
+    default:
+      break;
+    }
+
+  return NULL;
+}
+
+const type::Type* Orderable::pick (const type::Type* left_type, const type::Type* right_type)
+{
+  switch (left_type->underlying_kind ())
+    {
+    case kString:
+    case kUint8:
+    case kUint16:
+    case kUint32:
+    case kUint64:
+    case kInt8:
+    case kInt16:
+    case kInt32:
+    case kInt64:
+    case kFloat32:
+    case kFloat64:
+    case kUint:
+    case kInt:
+    case kUintptr:
+    case kStringU:
+      if (left_type == right_type)
+        {
+          return left_type;
+        }
+      break;
+
+    case kRune:
+    case kInteger:
+    case kFloat:
+      if (right_type->underlying_kind () == kRune ||
+          right_type->underlying_kind () == kInteger ||
+          right_type->underlying_kind () == kFloat)
+        {
+          return Choose (left_type, right_type);
+        }
+      break;
+
+    default:
+      break;
+    }
+
+  return NULL;
+}
+
+const type::Type* Logical::pick (const type::Type* left_type, const type::Type* right_type)
+{
+  if ((left_type->underlying_kind () == kBool ||
+       left_type->underlying_kind () == kBoolean) &&
+      (right_type->underlying_kind () == kBool ||
+       right_type->underlying_kind () == kBoolean))
+    {
+      return Choose (left_type, right_type);
+    }
+
+  return NULL;
 }
 
 }

@@ -1,8 +1,8 @@
 #include "process_functions_and_methods.hpp"
 
-#include "ast.hpp"
-#include "ast_visitor.hpp"
-#include "ast_cast.hpp"
+#include "node.hpp"
+#include "node_visitor.hpp"
+#include "node_cast.hpp"
 #include "semantic.hpp"
 #include "symbol.hpp"
 #include "action.hpp"
@@ -46,7 +46,7 @@ static NamedType*
 processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* identifierNode, ParameterSymbol*& receiver_symbol,
                  bool requireComponent, bool requireImmutableDereferenceMutability)
 {
-  Receiver* node = ast_cast<Receiver> (n);
+  Receiver* node = node_cast<Receiver> (n);
   assert (node != NULL);
 
   Identifier* type_identifier_node = node->type_identifier;
@@ -54,7 +54,7 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
   TypeSymbol* symbol = processAndLookup<TypeSymbol> (symtab, type_identifier, type_identifier_node->location);
   if (symbol == NULL)
     {
-      error_at_line (-1, 0, type_identifier_node->location.File.c_str (), type_identifier_node->location.Line,
+      error_at_line (-1, 0, type_identifier_node->location.file.c_str (), type_identifier_node->location.line,
                      "%s does not refer to a type (E57)",
                      type_identifier.c_str ());
     }
@@ -63,7 +63,7 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
 
   if (requireComponent && type_strip_cast<Component> (type) == NULL)
     {
-      error_at_line (-1, 0, type_identifier_node->location.File.c_str (), type_identifier_node->location.Line,
+      error_at_line (-1, 0, type_identifier_node->location.file.c_str (), type_identifier_node->location.line,
                      "%s does not refer to a component (E58)",
                      type_identifier.c_str ());
     }
@@ -71,14 +71,14 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
   if (requireComponent && !node->is_pointer)
     {
       // Components must have pointer receivers.
-      error_at_line (-1, 0, node->location.File.c_str (),
-                     node->location.Line,
+      error_at_line (-1, 0, node->location.file.c_str (),
+                     node->location.line,
                      "component receivers must be pointers (E59)");
     }
 
   if (requireImmutableDereferenceMutability && node->indirection_mutability < Immutable)
     {
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+      error_at_line (-1, 0, node->location.file.c_str (), node->location.line,
                      "receiver must be declared +const or +foreign (E60)");
 
     }
@@ -88,8 +88,8 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
     const type::Type *t = type->select (identifier);
     if (t != NULL)
       {
-        error_at_line (-1, 0, identifierNode->location.File.c_str (),
-                       identifierNode->location.Line,
+        error_at_line (-1, 0, identifierNode->location.file.c_str (),
+                       identifierNode->location.line,
                        "type already contains a member named %s (E61)",
                        identifier.c_str ());
       }
@@ -172,7 +172,7 @@ process_signature_return (ErrorReporter& er,
     }
 }
 
-struct Visitor : public ast::DefaultVisitor
+struct Visitor : public ast::DefaultNodeVisitor
 {
   ErrorReporter& er;
   decl::SymbolTable& symtab;
@@ -210,7 +210,7 @@ struct Visitor : public ast::DefaultVisitor
     process_signature_return (er, symtab, node.signature, node.return_type, node.indirection_mutability, false,
                               signature, return_symbol);
     const type::Function* function_type = new type::Function (type::Function::FUNCTION, signature, (new ParameterList ())->append (return_symbol));
-    node.function = new decl::Function (node, function_type);
+    node.function = new decl::Function (&node, function_type);
 
     symtab.enter_symbol (node.function);
   }
@@ -363,16 +363,16 @@ struct Visitor : public ast::DefaultVisitor
 
     if (type_cast<Component> (type_strip (type)) == NULL)
       {
-        error_at_line (-1, 0, node.type_name->location.File.c_str (),
-                       node.type_name->location.Line,
+        error_at_line (-1, 0, node.type_name->location.file.c_str (),
+                       node.type_name->location.line,
                        "type does not refer to a component (E64)");
       }
 
     decl::Initializer* initializer = type->get_initializer (initializer_identifier);
     if (initializer == NULL)
       {
-        error_at_line (-1, 0, node.initializer->location.File.c_str (),
-                       node.initializer->location.Line,
+        error_at_line (-1, 0, node.initializer->location.file.c_str (),
+                       node.initializer->location.line,
                        "no initializer named %s (E56)",
                        initializer_identifier.c_str ());
       }

@@ -52,6 +52,8 @@ struct Value
   };
 };
 
+typedef std::vector<Value> ValueList;
+
 struct ValuePrinter
 {
   const type::Type* type;

@@ -30,8 +30,8 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-#ifndef YY_YY_SRC_PARSER_HPP_INCLUDED
-# define YY_YY_SRC_PARSER_HPP_INCLUDED
+#ifndef YY_YY_PARSER_HPP_INCLUDED
+# define YY_YY_PARSER_HPP_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -43,69 +43,69 @@ extern int yydebug;
 /* Token type.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
-  enum yytokentype
-  {
-    IDENTIFIER = 258,
-    LITERAL = 259,
-    ACTION = 260,
-    ACTIVATE = 261,
-    BIND = 262,
-    BREAK = 263,
-    CASE = 264,
-    CHANGE = 265,
-    COMPONENT = 266,
-    CONST = 267,
-    CONTINUE = 268,
-    DEFAULT = 269,
-    ELSE = 270,
-    FALLTHROUGH = 271,
-    FOR = 272,
-    FOREIGN = 273,
-    FUNC = 274,
-    GETTER = 275,
-    GOTO = 276,
-    HEAP = 277,
-    IF = 278,
-    INIT = 279,
-    INSTANCE = 280,
-    INTERFACE = 281,
-    MAP = 282,
-    PULL = 283,
-    PUSH = 284,
-    RANGE = 285,
-    REACTION = 286,
-    RETURN = 287,
-    STRUCT = 288,
-    SWITCH = 289,
-    TYPE = 290,
-    VAR = 291,
-    ADD_ASSIGN = 292,
-    AND_ASSIGN = 293,
-    AND_NOT = 294,
-    AND_NOT_ASSIGN = 295,
-    DECREMENT = 296,
-    DIVIDE_ASSIGN = 297,
-    DOTDOTDOT = 298,
-    EQUAL = 299,
-    INCREMENT = 300,
-    LEFT_ARROW = 301,
-    LEFT_SHIFT = 302,
-    LEFT_SHIFT_ASSIGN = 303,
-    LESS_EQUAL = 304,
-    LOGIC_AND = 305,
-    LOGIC_OR = 306,
-    MODULUS_ASSIGN = 307,
-    MORE_EQUAL = 308,
-    MULTIPLY_ASSIGN = 309,
-    NOT_EQUAL = 310,
-    OR_ASSIGN = 311,
-    RIGHT_ARROW = 312,
-    RIGHT_SHIFT = 313,
-    RIGHT_SHIFT_ASSIGN = 314,
-    SHORT_ASSIGN = 315,
-    SUBTRACT_ASSIGN = 316,
-    XOR_ASSIGN = 317
-  };
+enum yytokentype
+{
+  IDENTIFIER = 258,
+  LITERAL = 259,
+  ACTION = 260,
+  ACTIVATE = 261,
+  BIND = 262,
+  BREAK = 263,
+  CASE = 264,
+  CHANGE = 265,
+  COMPONENT = 266,
+  CONST = 267,
+  CONTINUE = 268,
+  DEFAULT = 269,
+  ELSE = 270,
+  FALLTHROUGH = 271,
+  FOR = 272,
+  FOREIGN = 273,
+  FUNC = 274,
+  GETTER = 275,
+  GOTO = 276,
+  HEAP = 277,
+  IF = 278,
+  INIT = 279,
+  INSTANCE = 280,
+  INTERFACE = 281,
+  MAP = 282,
+  PULL = 283,
+  PUSH = 284,
+  RANGE = 285,
+  REACTION = 286,
+  RETURN = 287,
+  STRUCT = 288,
+  SWITCH = 289,
+  TYPE = 290,
+  VAR = 291,
+  ADD_ASSIGN = 292,
+  AND_ASSIGN = 293,
+  AND_NOT = 294,
+  AND_NOT_ASSIGN = 295,
+  DECREMENT = 296,
+  DIVIDE_ASSIGN = 297,
+  DOTDOTDOT = 298,
+  EQUAL = 299,
+  INCREMENT = 300,
+  LEFT_ARROW = 301,
+  LEFT_SHIFT = 302,
+  LEFT_SHIFT_ASSIGN = 303,
+  LESS_EQUAL = 304,
+  LOGIC_AND = 305,
+  LOGIC_OR = 306,
+  MODULUS_ASSIGN = 307,
+  MORE_EQUAL = 308,
+  MULTIPLY_ASSIGN = 309,
+  NOT_EQUAL = 310,
+  OR_ASSIGN = 311,
+  RIGHT_ARROW = 312,
+  RIGHT_SHIFT = 313,
+  RIGHT_SHIFT_ASSIGN = 314,
+  SHORT_ASSIGN = 315,
+  SUBTRACT_ASSIGN = 316,
+  XOR_ASSIGN = 317
+};
 #endif
 
 /* Value type.  */
@@ -113,10 +113,13 @@ extern int yydebug;
 typedef union YYSTYPE YYSTYPE;
 union YYSTYPE
 {
-#line 10 "parser.y" /* yacc.c:1909  */
- ast::Node* node; ast::List* list; ast::Identifier* identifier; Mutability mutability; 
+#line 11 "./parser.y" /* yacc.c:1909  */
+  ast::Node* node;
+  ast::List* list;
+  ast::Identifier* identifier;
+  Mutability mutability;
 
-#line 120 "parser.hpp" /* yacc.c:1909  */
+#line 120 "./parser.hpp" /* yacc.c:1909  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
@@ -141,4 +144,4 @@ extern YYSTYPE yylval;
 extern YYLTYPE yylloc;
 int yyparse (void);
 
-#endif /* !YY_YY_SRC_PARSER_HPP_INCLUDED  */
+#endif /* !YY_YY_PARSER_HPP_INCLUDED  */

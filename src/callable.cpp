@@ -1,6 +1,6 @@
 #include "callable.hpp"
 #include "executor_base.hpp"
-#include "ast.hpp"
+#include "node.hpp"
 #include "runtime.hpp"
 #include "symbol_visitor.hpp"
 #include "check_types.hpp"
@@ -31,15 +31,15 @@ Callable::check_mutability (ast::List* args) const
 }
 
 void
-Callable::compute_receiver_access (ast::List* args, ReceiverAccess& receiver_access, bool& flag) const
+Callable::compute_receiver_access (const semantic::ExpressionValueList& args, ReceiverAccess& receiver_access, bool& flag) const
 {
   semantic::compute_receiver_access_arguments (args, signature (), receiver_access, flag);
 }
 
-Function::Function (ast::Function& node_, const type::Function* ft)
-  : Symbol (node_.identifier->identifier, node_.identifier->location)
+Function::Function (ast::Function* node_, const type::Function* a_type)
+  : Symbol (node_->identifier->identifier, node_->identifier->location)
   , node (node_)
-  , functionType_ (ft)
+  , type (a_type)
 { }
 
 void
@@ -56,12 +56,12 @@ Function::accept (ConstSymbolVisitor& visitor) const
 
 void Function::call (runtime::ExecutorBase& exec) const
 {
-  this->node.body->operation->execute (exec);
+  this->node->body->operation->execute (exec);
 }
 
 size_t Function::arguments_size () const
 {
-  return functionType_->parameter_list->allocation_size ();
+  return type->parameter_list->allocation_size ();
 }
 
 void Method::call (runtime::ExecutorBase& exec) const

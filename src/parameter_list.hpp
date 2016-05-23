@@ -9,10 +9,6 @@ namespace decl
 struct ParameterList
 {
   ParameterList () : size_ (0), variadic_ (false) { }
-  static ParameterList* make ()
-  {
-    return new ParameterList ();
-  }
   typedef std::vector<decl::ParameterSymbol*> ParametersType;
   typedef ParametersType::const_iterator const_iterator;
   typedef ParametersType::const_reverse_iterator const_reverse_iterator;

@@ -24,17 +24,23 @@ struct BuiltinFunction : public decl::Callable, public decl::Symbol
     return "BuiltinFunction";
   }
 
-  virtual const type::Type* type () const
+  const type::Function* const type;
+
+  virtual const type::Type* symbol_type () const
   {
-    return type_;
+    return type;
+  }
+  virtual const type::Type* callable_type () const
+  {
+    return type;
   }
   virtual const decl::ParameterList* signature () const
   {
-    return type_->parameter_list;
+    return type->parameter_list;
   }
   virtual size_t return_size () const
   {
-    return type_->GetReturnType ()->Size ();
+    return type->GetReturnType ()->Size ();
   }
   virtual size_t receiver_size () const
   {
@@ -47,56 +53,7 @@ struct BuiltinFunction : public decl::Callable, public decl::Symbol
   virtual size_t arguments_size () const;
 
 protected:
-  const type::Function* const type_;
   runtime::MemoryModel memory_model_;
-};
-
-struct Readable : public BuiltinFunction
-{
-  Readable (const util::Location& loc);
-  virtual void call (runtime::ExecutorBase& exec) const;
-};
-
-struct Read : public BuiltinFunction
-{
-  Read (const util::Location& loc);
-  virtual void call (runtime::ExecutorBase& exec) const;
-};
-
-struct Writable : public BuiltinFunction
-{
-  Writable (const util::Location& loc);
-  virtual void call (runtime::ExecutorBase& exec) const;
-};
-
-struct ClockGettime : public BuiltinFunction
-{
-  ClockGettime (const util::Location& loc);
-  virtual void call (runtime::ExecutorBase& exec) const;
-};
-
-struct TimerfdCreate : public BuiltinFunction
-{
-  TimerfdCreate (const util::Location& loc);
-  virtual void call (runtime::ExecutorBase& exec) const;
-};
-
-struct TimerfdSettime : public BuiltinFunction
-{
-  TimerfdSettime (const util::Location& loc);
-  virtual void call (runtime::ExecutorBase& exec) const;
-};
-
-struct UdpSocket : public BuiltinFunction
-{
-  UdpSocket (const util::Location& loc);
-  virtual void call (runtime::ExecutorBase& exec) const;
-};
-
-struct Sendto : public BuiltinFunction
-{
-  Sendto (const util::Location& loc);
-  virtual void call (runtime::ExecutorBase& exec) const;
 };
 
 }

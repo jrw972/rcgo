@@ -2,6 +2,12 @@ action
 arch
 error_reporter
 heap
+location
 memory_model
+node_cast
+parameter_list
 reaction
+semantic
+symbol_cast
+symbol_table
 type

@@ -1,14 +1,14 @@
 #include <error.h>
 
 #include "semantic.hpp"
-#include "ast.hpp"
+#include "node.hpp"
 #include "symbol.hpp"
 #include "semantic.hpp"
 #include "action.hpp"
 #include "reaction.hpp"
 #include "field.hpp"
 #include "callable.hpp"
-#include "ast_visitor.hpp"
+#include "node_visitor.hpp"
 
 namespace semantic
 {
@@ -20,7 +20,7 @@ using namespace decl;
 static void
 type_check_statement (Node * node)
 {
-  struct visitor : public ast::DefaultVisitor
+  struct visitor : public ast::DefaultNodeVisitor
   {
     void default_action (Node& node)
     {

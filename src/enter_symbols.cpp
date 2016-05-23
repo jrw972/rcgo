@@ -1,7 +1,7 @@
 #include <error.h>
 
-#include "ast.hpp"
-#include "ast_visitor.hpp"
+#include "node.hpp"
+#include "node_visitor.hpp"
 #include "symbol.hpp"
 #include "builtin_function.hpp"
 #include "template.hpp"
@@ -14,6 +14,7 @@ namespace semantic
 using namespace ast;
 using namespace semantic;
 using namespace decl;
+using namespace runtime;
 
 void
 enter_symbols (SymbolTable& symtab)
@@ -23,6 +24,7 @@ enter_symbols (SymbolTable& symtab)
   // Use statically allocated instances where possible.
 
   util::Location loc;
+  // TODO:  Are named types symbols?
   // Insert types.
   symtab.enter_symbol (new TypeSymbol ("bool", loc, &type::named_bool));
 
@@ -52,13 +54,13 @@ enter_symbols (SymbolTable& symtab)
   symtab.enter_symbol (new TypeSymbol ("string", loc, &type::named_string));
 
   // Insert builtin-in functions.
-  symtab.enter_symbol (new runtime::New (loc));
-  symtab.enter_symbol (new runtime::Move (loc));
-  symtab.enter_symbol (new runtime::Merge (loc));
-  symtab.enter_symbol (new runtime::Len (loc));
-  symtab.enter_symbol (new runtime::Append (loc));
-  symtab.enter_symbol (new runtime::Copy (loc));
-  symtab.enter_symbol (new runtime::Println (loc));
+  symtab.enter_symbol (new New (loc));
+  symtab.enter_symbol (new Move (loc));
+  symtab.enter_symbol (new Merge (loc));
+  symtab.enter_symbol (new Len (loc));
+  symtab.enter_symbol (new Append (loc));
+  symtab.enter_symbol (new Copy (loc));
+  symtab.enter_symbol (new Println (loc));
 
   // I/O facilities.
   symtab.enter_symbol (new TypeSymbol ("FileDescriptor", loc, &type::named_file_descriptor));

@@ -86,12 +86,24 @@ class ElementList;
 class Element;
 class CompositeLiteral;
 
-class Visitor;
+class NodeVisitor;
+class DefaultNodeVisitor;
 }
 
 namespace semantic
 {
 class Value;
+class ExpressionValue;
+
+enum ExpressionKind
+{
+  UnknownExpressionKind,
+  ErrorExpressionKind,
+  ValueExpressionKind,
+  VariableExpressionKind,
+  TypeExpressionKind,
+};
+
 }
 
 namespace type
@@ -104,24 +116,29 @@ typedef std::set<std::string> TagSet;
 
 namespace decl
 {
-class SymbolTable;
 class Action;
-class Reaction;
-class Template;
-class Symbol;
-class ParameterSymbol;
-class VariableSymbol;
-class TypeSymbol;
-class ConstantSymbol;
-class InstanceSymbol;
+class Bind;
+class BuiltinFunction;
 class Callable;
+class ConstantSymbol;
 class Function;
 class Getter;
+class HiddenSymbol;
 class Initializer;
+class InstanceSymbol;
 class Method;
-class Bind;
 class Package;
 class ParameterList;
+class ParameterSymbol;
+class Reaction;
+class Symbol;
+class SymbolTable;
+class Template;
+class TemplateSymbol;
+class TypeSymbol;
+class VariableSymbol;
+
+typedef std::vector<const type::Type*> TypeList;
 }
 
 namespace composition
@@ -145,16 +162,6 @@ class MemoryModel;
 class Heap;
 class ExecutorBase;
 }
-
-enum ExpressionKind
-{
-  kUnknown,
-  kValue,
-  kVariable,
-  kType
-};
-
-typedef std::vector<const type::Type*> TypeList;
 
 class typed_Value;
 class component_t;
@@ -191,7 +198,7 @@ enum UnaryArithmetic
   Complement,
 };
 
-inline const char* unary_arithmetic_symbol (UnaryArithmetic ua)
+inline const char* unary_arithmetic_external_symbol (UnaryArithmetic ua)
 {
   switch (ua)
     {
@@ -235,7 +242,7 @@ enum BinaryArithmetic
   LogicAnd,
 };
 
-inline const char* binary_arithmetic_symbol (BinaryArithmetic ba)
+inline const char* binary_arithmetic_external_symbol (BinaryArithmetic ba)
 {
   switch (ba)
     {

@@ -3,7 +3,7 @@
 #include "tap.hpp"
 #include "action.hpp"
 #include "runtime.hpp"
-#include "ast.hpp"
+#include "node.hpp"
 #include "type.hpp"
 
 using namespace decl;
@@ -29,12 +29,6 @@ main (int argc, char** argv)
     Action a (p, n, "a", i, 3);
     tap.tassert ("Action::Action", a.receiver_parameter == p && a.body == n && a.name == "a" && a.iota_parameter == i && a.dimension == 3);
   }
-
-  // Action (decl::ParameterSymbol* receiver_parameter,
-  //         ast::Node* a_body,
-  //         const std::string& a_name,
-  //         decl::ParameterSymbol* iota_parameter,
-  //         type::Int::ValueType a_dimension);
 
   tap.print_plan ();
 

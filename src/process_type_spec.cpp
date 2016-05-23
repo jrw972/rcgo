@@ -3,9 +3,9 @@
 #include <error.h>
 
 #include "type.hpp"
-#include "ast.hpp"
-#include "ast_visitor.hpp"
-#include "ast_cast.hpp"
+#include "node.hpp"
+#include "node_visitor.hpp"
+#include "node_cast.hpp"
 #include "symbol.hpp"
 #include "check_types.hpp"
 #include "parameter_list.hpp"
@@ -23,9 +23,9 @@ process_constant_expression (ast::Node* node,
                              decl::SymbolTable& symtab)
 {
   check_types (node, er, symtab);
-  if (!node->value.present)
+  if (!node->eval.value.present)
     {
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+      error_at_line (-1, 0, node->location.file.c_str (), node->location.line,
                      "expression must constant (E14)");
 
     }
@@ -36,18 +36,18 @@ process_array_dimension (ast::Node* node, ErrorReporter& er, decl::SymbolTable& 
 {
   process_constant_expression (node, er, symtab);
   // Convert to an int.
-  if (!node->value.representable (node->type, &named_int))
+  if (!node->eval.value.representable (node->eval.type, &named_int))
     {
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+      error_at_line (-1, 0, node->location.file.c_str (), node->location.line,
                      "array dimension is not an integer (E108)");
     }
 
-  node->value.convert (node->type, &named_int);
-  node->type = &named_int;
-  type::Int::ValueType dim = node->value.int_value;
+  node->eval.value.convert (node->eval.type, &named_int);
+  node->eval.type = &named_int;
+  type::Int::ValueType dim = node->eval.value.int_value;
   if (dim < 0)
     {
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+      error_at_line (-1, 0, node->location.file.c_str (), node->location.line,
                      "array dimension is negative (E174)");
     }
   return dim;
@@ -67,7 +67,7 @@ CheckForForeignSafe (const ParameterList* signature, const ParameterSymbol* retu
 const decl::ParameterList*
 process_signature (Node* node, ErrorReporter& er, decl::SymbolTable& symtab)
 {
-  struct Visitor : public ast::DefaultVisitor
+  struct Visitor : public ast::DefaultNodeVisitor
   {
     ErrorReporter& er;
     decl::SymbolTable& symtab;
@@ -101,7 +101,7 @@ process_signature (Node* node, ErrorReporter& er, decl::SymbolTable& symtab)
                ++pos2)
             {
               ast::Node* id = *pos2;
-              const std::string& identifier = ast_cast<Identifier> (id)->identifier;
+              const std::string& identifier = node_cast<Identifier> (id)->identifier;
               const ParameterSymbol* parameter = sig->find (identifier);
               if (parameter == NULL)
                 {
@@ -109,7 +109,7 @@ process_signature (Node* node, ErrorReporter& er, decl::SymbolTable& symtab)
                 }
               else
                 {
-                  error_at_line (-1, 0, id->location.File.c_str (), id->location.Line,
+                  error_at_line (-1, 0, id->location.file.c_str (), id->location.line,
                                  "duplicate parameter name %s (E111)",
                                  identifier.c_str ());
                 }
@@ -129,7 +129,7 @@ process_signature (Node* node, ErrorReporter& er, decl::SymbolTable& symtab)
 const type::Type *
 process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool force)
 {
-  struct Visitor : public ast::DefaultVisitor
+  struct Visitor : public ast::DefaultNodeVisitor
   {
     ErrorReporter& er;
     decl::SymbolTable& symtab;
@@ -192,7 +192,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
                ++pos2)
             {
               ast::Node* id = *pos2;
-              const std::string& identifier = ast_cast<Identifier> (id)->identifier;
+              const std::string& identifier = node_cast<Identifier> (id)->identifier;
               const type::Type *field = field_list->select (identifier);
               if (field == NULL)
                 {
@@ -200,7 +200,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
                 }
               else
                 {
-                  error_at_line (-1, 0, id->location.File.c_str (), id->location.Line,
+                  error_at_line (-1, 0, id->location.file.c_str (), id->location.line,
                                  "duplicate field name %s (E109)", identifier.c_str ());
                 }
             }
@@ -220,13 +220,13 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
       Symbol* s = symtab.find_global_symbol (identifier);
       if (s == NULL)
         {
-          error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+          error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                          "%s was not declared in this scope (E102)", identifier.c_str ());
         }
-      TypeSymbol* symbol = SymbolCast<TypeSymbol> (s);
+      TypeSymbol* symbol = symbol_cast<TypeSymbol> (s);
       if (symbol == NULL)
         {
-          error_at_line (-1, 0, child->location.File.c_str (), child->location.Line,
+          error_at_line (-1, 0, child->location.file.c_str (), child->location.line,
                          "%s does not refer to a type (E110)", identifier.c_str ());
         }
       type = symbol->type;
@@ -268,7 +268,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
 
   if (force && type_spec_visitor.type->UnderlyingType () == NULL)
     {
-      error_at_line (-1, 0, node->location.File.c_str (), node->location.Line,
+      error_at_line (-1, 0, node->location.file.c_str (), node->location.line,
                      "type is defined recursively (E173)");
     }
 

@@ -7,7 +7,6 @@ namespace semantic
 {
 void check_types_arguments (ast::List* node, const decl::ParameterList* signature);
 void check_mutability_arguments (ast::Node* node, const decl::ParameterList* signature);
-void require_type (const ast::Node* node);
 void require_value_or_variable_list (const ast::List* node);
 void check_types (ast::Node* root, util::ErrorReporter& er, decl::SymbolTable& symtab);
 }

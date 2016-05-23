@@ -1,19 +1,19 @@
-#ifndef RC_SRC_AST_CAST_HPP
-#define RC_SRC_AST_CAST_HPP
+#ifndef RC_SRC_NODE_CAST_HPP
+#define RC_SRC_NODE_CAST_HPP
+
+#include "node.hpp"
+#include "node_visitor.hpp"
 
 namespace ast
 {
 
-#include "ast.hpp"
-#include "ast_visitor.hpp"
-
 template<typename T>
 T*
-ast_cast (Node* node)
+node_cast (Node* node)
 {
   if (node == NULL) return NULL;
 
-  struct visitor : public DefaultVisitor
+  struct visitor : public DefaultNodeVisitor
   {
     T* retval;
 
@@ -31,4 +31,4 @@ ast_cast (Node* node)
 
 }
 
-#endif // RC_SRC_AST_CAST_HPP
+#endif // RC_SRC_NODE_CAST_HPP

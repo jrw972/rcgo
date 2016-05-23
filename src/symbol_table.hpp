@@ -25,10 +25,7 @@ struct SymbolTable
   Symbol* find_global_symbol (const std::string& identifier) const;
   Symbol* find_local_symbol (const std::string& identifier) const;
 
-  Package* package () const
-  {
-    return NULL;
-  }
+  Package* package () const;
 
 private:
   struct Scope;

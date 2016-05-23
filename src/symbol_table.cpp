@@ -5,6 +5,7 @@
 #include "symbol.hpp"
 #include "symbol_visitor.hpp"
 #include "parameter_list.hpp"
+#include "symbol_cast.hpp"
 
 namespace decl
 {
@@ -79,7 +80,7 @@ struct SymbolTable::Scope
              ++ptr)
           {
             {
-              ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (*ptr);
+              ParameterSymbol* symbol = symbol_cast<ParameterSymbol> (*ptr);
               if (symbol != NULL)
                 {
                   if (symbol->kind == ParameterSymbol::Receiver)
@@ -98,7 +99,7 @@ struct SymbolTable::Scope
             }
 
             {
-              const VariableSymbol* symbol = SymbolCast<VariableSymbol> (*ptr);
+              const VariableSymbol* symbol = symbol_cast<VariableSymbol> (*ptr);
               if (symbol != NULL)
                 {
                   if (type_contains_pointer (symbol->type) && symbol->dereference_mutability == Foreign)
@@ -124,7 +125,7 @@ struct SymbolTable::Scope
              ++ptr)
           {
             {
-              ParameterSymbol* symbol = SymbolCast<ParameterSymbol> (*ptr);
+              ParameterSymbol* symbol = symbol_cast<ParameterSymbol> (*ptr);
               if (symbol != NULL)
                 {
                   if (type_contains_pointer (symbol->type))
@@ -137,7 +138,7 @@ struct SymbolTable::Scope
             }
 
             {
-              VariableSymbol* symbol = SymbolCast<VariableSymbol> (*ptr);
+              VariableSymbol* symbol = symbol_cast<VariableSymbol> (*ptr);
               if (symbol != NULL)
                 {
                   if (type_contains_pointer (symbol->type))
@@ -182,7 +183,7 @@ SymbolTable::enter_symbol (Symbol* symbol)
     }
   else
     {
-      error_at_line (-1, 0, symbol->location.File.c_str (), symbol->location.Line,
+      error_at_line (-1, 0, symbol->location.file.c_str (), symbol->location.line,
                      "%s is already defined in this scope (E113)", identifier.c_str ());
     }
 }
@@ -203,7 +204,7 @@ SymbolTable::enter_signature (const ParameterList* type)
         }
       else
         {
-          error_at_line (-1, 0, x->location.File.c_str (), x->location.Line,
+          error_at_line (-1, 0, x->location.file.c_str (), x->location.line,
                          "%s is already defined in this scope (E55)",
                          identifier.c_str ());
         }
@@ -232,6 +233,12 @@ Symbol*
 SymbolTable::find_local_symbol (const std::string& identifier) const
 {
   return current_scope_->find_local_symbol (identifier);
+}
+
+Package*
+SymbolTable::package () const
+{
+  return NULL;
 }
 
 }

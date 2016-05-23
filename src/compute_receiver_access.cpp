@@ -1,11 +1,13 @@
 #include "compute_receiver_access.hpp"
 
-#include "ast.hpp"
-#include "ast_visitor.hpp"
+#include "node.hpp"
+#include "node_visitor.hpp"
 #include "symbol_visitor.hpp"
+#include "symbol_cast.hpp"
 #include "action.hpp"
 #include "reaction.hpp"
 #include "parameter_list.hpp"
+#include "semantic.hpp"
 
 namespace semantic
 {
@@ -22,11 +24,11 @@ void process_list (Node& node, List* list)
        pos != limit;
        ++pos)
     {
-      node.receiver_access = std::max (node.receiver_access, (*pos)->receiver_access);
+      node.eval.receiver_access = std::max (node.eval.receiver_access, (*pos)->eval.receiver_access);
     }
 }
 
-struct Visitor : public ast::DefaultVisitor
+struct Visitor : public ast::DefaultNodeVisitor
 {
   void default_action (Node& node)
   {
@@ -36,15 +38,15 @@ struct Visitor : public ast::DefaultVisitor
   void visit (AddressOfExpr& node)
   {
     node.child->accept (*this);
-    node.receiver_state = node.child->receiver_state;
-    node.receiver_access = node.child->receiver_access;
+    node.eval.receiver_state = node.child->eval.receiver_state;
+    node.eval.receiver_access = node.child->eval.receiver_access;
   }
 
   void visit (ConversionExpr& node)
   {
     node.expr->accept (*this);
-    node.receiver_state = node.expr->receiver_state;
-    node.receiver_access = node.expr->receiver_access;
+    node.eval.receiver_state = node.expr->eval.receiver_state;
+    node.eval.receiver_access = node.expr->eval.receiver_access;
   }
 
   void visit (SourceFile& node)
@@ -70,35 +72,35 @@ struct Visitor : public ast::DefaultVisitor
   void visit (ast::Getter& node)
   {
     node.body->accept (*this);
-    node.getter->immutable_phase_access = node.body->receiver_access;
+    node.getter->immutable_phase_access = node.body->eval.receiver_access;
   }
 
   void visit (ast::Action& node)
   {
     node.precondition->accept (*this);
     node.body->accept (*this);
-    node.action->precondition_access = node.precondition->receiver_access;
-    node.action->immutable_phase_access = node.body->receiver_access;
+    node.action->precondition_access = node.precondition->eval.receiver_access;
+    node.action->immutable_phase_access = node.body->eval.receiver_access;
   }
 
   void visit (DimensionedAction& node)
   {
     node.precondition->accept (*this);
     node.body->accept (*this);
-    node.action->precondition_access = node.precondition->receiver_access;
-    node.action->immutable_phase_access = node.body->receiver_access;
+    node.action->precondition_access = node.precondition->eval.receiver_access;
+    node.action->immutable_phase_access = node.body->eval.receiver_access;
   }
 
   void visit (ast::Reaction& node)
   {
     node.body->accept (*this);
-    node.reaction->immutable_phase_access = node.body->receiver_access;
+    node.reaction->immutable_phase_access = node.body->eval.receiver_access;
   }
 
   void visit (DimensionedReaction& node)
   {
     node.body->accept (*this);
-    node.reaction->immutable_phase_access = node.body->receiver_access;
+    node.reaction->immutable_phase_access = node.body->eval.receiver_access;
   }
 
   void visit (ast::Bind& node)
@@ -119,190 +121,196 @@ struct Visitor : public ast::DefaultVisitor
   void visit (ListStatement& node)
   {
     node.visit_children (*this);
-    node.receiver_access = AccessNone;
+    node.eval.receiver_access = AccessNone;
     process_list (node, &node);
   }
 
   void visit (ExpressionStatement& node)
   {
     node.visit_children (*this);
-    node.receiver_access = node.child->receiver_access;
+    node.eval.receiver_access = node.child->eval.receiver_access;
   }
 
   void visit (VarStatement& node)
   {
     node.expression_list->accept (*this);
-    node.receiver_access = AccessNone;
+    node.eval.receiver_access = AccessNone;
     process_list (node, node.expression_list);
   }
 
   void visit (EmptyStatement& node)
   {
-    node.receiver_access = AccessNone;
+    node.eval.receiver_access = AccessNone;
   }
 
   void visit (WhileStatement& node)
   {
     node.visit_children (*this);
-    node.receiver_access = node.body->receiver_access;
+    node.eval.receiver_access = node.body->eval.receiver_access;
   }
 
   void visit (IfStatement& node)
   {
     node.visit_children (*this);
-    node.receiver_access = node.statement->receiver_access;
-    node.receiver_access = std::max (node.receiver_access, node.true_branch->receiver_access);
-    node.receiver_access = std::max (node.receiver_access, node.false_branch->receiver_access);
+    node.eval.receiver_access = node.statement->eval.receiver_access;
+    node.eval.receiver_access = std::max (node.eval.receiver_access, node.true_branch->eval.receiver_access);
+    node.eval.receiver_access = std::max (node.eval.receiver_access, node.false_branch->eval.receiver_access);
   }
 
   void visit (AddAssignStatement& node)
   {
     node.visit_children (*this);
     // Straight write.
-    if (node.left->receiver_state)
+    if (node.left->eval.receiver_state)
       {
-        node.receiver_access = AccessWrite;
+        node.eval.receiver_access = AccessWrite;
         return;
       }
-    node.receiver_access = std::max (node.left->receiver_access, node.right->receiver_access);
+    node.eval.receiver_access = std::max (node.left->eval.receiver_access, node.right->eval.receiver_access);
   }
 
   void visit (AssignStatement& node)
   {
     node.visit_children (*this);
     // Straight write.
-    if (node.left->receiver_state)
+    if (node.left->eval.receiver_state)
       {
-        node.receiver_access = AccessWrite;
+        node.eval.receiver_access = AccessWrite;
         return;
       }
     // Check if a mutable pointer escapes.
     // Consevatively assume that is is written.
-    if (node.right->receiver_state &&
-        type_contains_pointer (node.right->type) &&
-        node.right->indirection_mutability == Mutable)
+    if (node.right->eval.receiver_state &&
+        type_contains_pointer (node.right->eval.type) &&
+        node.right->eval.indirection_mutability == Mutable)
       {
-        node.receiver_access = AccessWrite;
+        node.eval.receiver_access = AccessWrite;
         return;
       }
-    node.receiver_access = std::max (node.left->receiver_access, node.right->receiver_access);
+    node.eval.receiver_access = std::max (node.left->eval.receiver_access, node.right->eval.receiver_access);
   }
 
   void visit (IncrementDecrementStatement& node)
   {
     node.visit_children (*this);
-    node.receiver_access = node.child->receiver_access;
-    if (node.child->receiver_state)
+    node.eval.receiver_access = node.child->eval.receiver_access;
+    if (node.child->eval.receiver_state)
       {
-        node.receiver_access = AccessWrite;
+        node.eval.receiver_access = AccessWrite;
       }
   }
 
   void visit (ReturnStatement& node)
   {
     node.visit_children (*this);
-    node.receiver_access = node.child->receiver_access;
+    node.eval.receiver_access = node.child->eval.receiver_access;
   }
 
   void visit (ActivateStatement& node)
   {
     node.visit_children (*this);
-    node.receiver_access = node.expr_list->receiver_access;
-    node.mutable_phase_access = node.body->receiver_access;
+    node.eval.receiver_access = node.expr_list->eval.receiver_access;
+    node.mutable_phase_access = node.body->eval.receiver_access;
   }
 
   void visit (ChangeStatement& node)
   {
     node.expr->accept (*this);
     node.body->accept (*this);
-    node.receiver_access = std::max (node.expr->receiver_access, node.body->receiver_access);
+    node.eval.receiver_access = std::max (node.expr->eval.receiver_access, node.body->eval.receiver_access);
   }
 
   void visit (CallExpr& node)
   {
-    assert (node.expr->expression_kind != kUnknown);
-    if (node.expr->expression_kind == kType)
+    assert (node.expr->eval.expression_kind != UnknownExpressionKind);
+    if (node.expr->eval.expression_kind == TypeExpressionKind)
       {
         // Conversion.
         node.args->accept (*this);
-        node.receiver_access = node.args->at (0)->receiver_access;
-        node.receiver_state = node.args->at (0)->receiver_state;
+        node.eval.receiver_access = node.args->at (0)->eval.receiver_access;
+        node.eval.receiver_state = node.args->at (0)->eval.receiver_state;
         return;
       }
 
     node.visit_children (*this);
 
+    ExpressionValueList evals = semantic::collect_evals (node.args);
+
     // Check if a mutable pointer goes into a function.
     bool flag = false;
-    if (node.callable != NULL)
+    if (node.temp != NULL)
       {
-        node.callable->compute_receiver_access (node.args, node.receiver_access, flag);
+        node.temp->compute_receiver_access (evals, node.eval.receiver_access, flag);
+      }
+    else if (node.callable != NULL)
+      {
+        node.callable->compute_receiver_access (evals, node.eval.receiver_access, flag);
       }
     else
       {
-        compute_receiver_access_arguments (node.args, node.signature, node.receiver_access, flag);
+        compute_receiver_access_arguments (evals, node.signature, node.eval.receiver_access, flag);
       }
 
     // Extend the check to the receiver if invoking a method.
-    node.receiver_access = std::max (node.receiver_access, node.expr->receiver_access);
+    node.eval.receiver_access = std::max (node.eval.receiver_access, node.expr->eval.receiver_access);
     if (node.method_type != NULL &&
-        node.expr->receiver_state &&
+        node.expr->eval.receiver_state &&
         type_contains_pointer (node.method_type->receiver_type ()) &&
         node.method_type->receiver_parameter->dereference_mutability == Mutable)
       {
-        node.receiver_access = AccessWrite;
+        node.eval.receiver_access = AccessWrite;
       }
 
     // Check if a mutable pointer containing receiver state is returned.
-    if (type_contains_pointer (node.type) &&
-        node.indirection_mutability == Mutable)
+    if (type_contains_pointer (node.eval.type) &&
+        node.eval.indirection_mutability == Mutable)
       {
-        node.receiver_state = flag;
+        node.eval.receiver_state = flag;
       }
     else
       {
-        node.receiver_state = false;
+        node.eval.receiver_state = false;
       }
   }
 
   void visit (IdentifierExpr& node)
   {
-    node.receiver_state = false;
-    node.receiver_access = AccessNone;
-    ParameterSymbol* parameter = SymbolCast<ParameterSymbol> (node.symbol);
+    node.eval.receiver_state = false;
+    node.eval.receiver_access = AccessNone;
+    ParameterSymbol* parameter = symbol_cast<ParameterSymbol> (node.symbol);
     if (parameter != NULL && (parameter->kind == ParameterSymbol::Receiver || parameter->kind == ParameterSymbol::ReceiverDuplicate))
       {
-        node.receiver_state = true;
-        node.receiver_access = AccessRead;
+        node.eval.receiver_state = true;
+        node.eval.receiver_access = AccessRead;
       }
   }
 
   void visit (ListExpr& node)
   {
     node.visit_children (*this);
-    node.receiver_access = AccessNone;
+    node.eval.receiver_access = AccessNone;
     process_list (node, &node);
   }
 
   void visit (LiteralExpr& node)
   {
-    node.receiver_state = false;
-    node.receiver_access = AccessNone;
+    node.eval.receiver_state = false;
+    node.eval.receiver_access = AccessNone;
   }
 
   void visit (UnaryArithmeticExpr& node)
   {
     node.visit_children (*this);
-    node.receiver_state = false;
-    node.receiver_access = node.child->receiver_access;
+    node.eval.receiver_state = false;
+    node.eval.receiver_access = node.child->eval.receiver_access;
   }
 
   void visit (BinaryArithmeticExpr& node)
   {
     node.visit_children (*this);
-    node.receiver_state = false;
-    node.receiver_access = std::max (node.left->receiver_access,
-                                     node.right->receiver_access);
+    node.eval.receiver_state = false;
+    node.eval.receiver_access = std::max (node.left->eval.receiver_access,
+                                          node.right->eval.receiver_access);
   }
 
   void visit (Instance& node)
@@ -313,8 +321,8 @@ struct Visitor : public ast::DefaultVisitor
   void visit (SelectExpr& node)
   {
     node.base->accept (*this);
-    node.receiver_state = node.base->receiver_state;
-    node.receiver_access = node.base->receiver_access;
+    node.eval.receiver_state = node.base->eval.receiver_state;
+    node.eval.receiver_access = node.base->eval.receiver_access;
   }
 
   void visit (PushPortCallExpr& node)
@@ -338,56 +346,59 @@ struct Visitor : public ast::DefaultVisitor
   void visit (DereferenceExpr& node)
   {
     node.visit_children (*this);
-    node.receiver_state = node.child->receiver_state;
-    node.receiver_access = node.child->receiver_access;
+    node.eval.receiver_state = node.child->eval.receiver_state;
+    node.eval.receiver_access = node.child->eval.receiver_access;
   }
 
   void visit (IndexExpr& node)
   {
     node.visit_children (*this);
-    node.receiver_state = node.base->receiver_state;
-    node.receiver_access = std::max (node.base->receiver_access, node.index->receiver_access);
+    node.eval.receiver_state = node.base->eval.receiver_state;
+    node.eval.receiver_access = std::max (node.base->eval.receiver_access, node.index->eval.receiver_access);
   }
 
   void visit (SliceExpr& node)
   {
     node.base->accept (*this);
-    node.receiver_state = node.base->receiver_state;
-    node.receiver_access = node.base->receiver_access;
+    node.eval.receiver_state = node.base->eval.receiver_state;
+    node.eval.receiver_access = node.base->eval.receiver_access;
     if (node.low_present)
       {
         node.low->accept (*this);
-        node.receiver_access = std::max (node.receiver_access, node.low->receiver_access);
+        node.eval.receiver_access = std::max (node.eval.receiver_access, node.low->eval.receiver_access);
       }
     if (node.high_present)
       {
         node.high->accept (*this);
-        node.receiver_access = std::max (node.receiver_access, node.high->receiver_access);
+        node.eval.receiver_access = std::max (node.eval.receiver_access, node.high->eval.receiver_access);
       }
     if (node.max_present)
       {
         node.max->accept (*this);
-        node.receiver_access = std::max (node.receiver_access, node.max->receiver_access);
+        node.eval.receiver_access = std::max (node.eval.receiver_access, node.max->eval.receiver_access);
       }
   }
 };
 }
 
-void compute_receiver_access_arguments (List* args, const decl::ParameterList* signature, ReceiverAccess& receiver_access, bool& flag)
+void
+compute_receiver_access_arguments (const ExpressionValueList& args,
+                                   const decl::ParameterList* signature,
+                                   ReceiverAccess& receiver_access,
+                                   bool& flag)
 {
   // Check if a mutable pointer escapes.
   receiver_access = AccessNone;
   flag = false;
   size_t i = 0;
-  for (List::ConstIterator pos = args->begin (),
-       limit = args->end ();
+  for (ExpressionValueList::const_iterator pos = args.begin (),
+       limit = args.end ();
        pos != limit;
-       ++pos)
+       ++pos, ++i)
     {
-      Node* arg = *pos;
       ParameterSymbol* param = signature->at (i);
-      receiver_access = std::max (receiver_access, arg->receiver_access);
-      if (arg->receiver_state &&
+      receiver_access = std::max (receiver_access, pos->receiver_access);
+      if (pos->receiver_state &&
           type_contains_pointer (param->type) &&
           param->dereference_mutability == Mutable)
         {

@@ -81,8 +81,6 @@ enum Kind
 
   // Named types.
   kNamed,
-
-  kError,
 };
 
 struct Type
@@ -92,7 +90,6 @@ struct Type
     UNTYPED, // Represent untyped literals.
     UNNAMED, // Types constructed through type literals and the "builtin" types.
     NAMED,   // Types named with a type declaration.
-    ERROR,
   };
   Type () : pointer_ (NULL), slice_ (NULL), heap_ (NULL) { }
   virtual ~Type () { }
@@ -237,38 +234,6 @@ private:
 
 std::ostream&
 operator<< (std::ostream& o, const Type& type);
-
-struct Error : public Type
-{
-  virtual void Accept (Visitor& visitor) const
-  {
-    UNIMPLEMENTED;
-  }
-  virtual std::string to_string () const
-  {
-    UNIMPLEMENTED;
-  }
-  virtual size_t Alignment () const
-  {
-    UNIMPLEMENTED;
-  }
-  virtual size_t Size () const
-  {
-    UNIMPLEMENTED;
-  }
-  virtual Kind kind () const
-  {
-    return kError;
-  }
-  virtual TypeLevel Level () const
-  {
-    return ERROR;
-  }
-
-  static const Error* Instance ();
-private:
-  Error () { }
-};
 
 class NamedType : public Type
 {
@@ -2634,6 +2599,7 @@ bool is_typed_complex (const Type* type);
 bool is_typed_numeric (const Type* type);
 // True for untyped numeric types.
 bool is_untyped_numeric (const Type* type);
+bool is_any_numeric (const Type* type);
 bool is_slice_of_bytes (const Type* type);
 bool is_slice_of_runes (const Type* type);
 
@@ -2724,6 +2690,41 @@ type_strip_cast (const Type* type)
 // Return a Pointer if a pointer to an array or NULL.
 const Pointer*
 pointer_to_array (const Type* type);
+
+// Select the type for *, /, +, -.
+// NULL means no suitable type.
+struct Arithmetic
+{
+  static const Type* pick (const Type* left_type, const Type* right_type);
+};
+
+// Select the type for %.
+// NULL means no suitable type.
+struct Integral
+{
+  static const Type* pick (const Type* left_type, const Type* right_type);
+};
+
+// Select the type for == and !=.
+// NULL means no suitable type.
+struct Comparable
+{
+  static const type::Type* pick (const type::Type* left_type, const type::Type* right_type);
+};
+
+// Select the type for <, <=, >, and >=.
+// NULL means no suitable type.
+struct Orderable
+{
+  static const type::Type* pick (const type::Type* left_type, const type::Type* right_type);
+};
+
+// Select the type for || and &&.
+// NULL means no suitable type.
+struct Logical
+{
+  static const type::Type* pick (const type::Type* left_type, const type::Type* right_type);
+};
 
 inline C64 operator* (const C64&, const C64&)
 {

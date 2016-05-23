@@ -4,9 +4,9 @@
 
 #include <set>
 
-#include "ast.hpp"
-#include "ast_visitor.hpp"
-#include "ast_cast.hpp"
+#include "node.hpp"
+#include "node_visitor.hpp"
+#include "node_cast.hpp"
 #include "bind.hpp"
 #include "field.hpp"
 #include "action.hpp"
@@ -510,7 +510,7 @@ Composer::elaborate_bindings ()
            bind_pos != bind_limit;
            ++bind_pos)
         {
-          struct visitor : public ast::DefaultVisitor
+          struct visitor : public ast::DefaultNodeVisitor
           {
             Composer& table;
             Executor exec;
@@ -531,11 +531,11 @@ Composer::elaborate_bindings ()
             void visit (IfStatement& node)
             {
               node.condition->operation->execute (exec);
-              assert (node.condition->expression_kind != kUnknown);
-              if (node.condition->expression_kind == kVariable)
+              assert (node.condition->eval.expression_kind != semantic::UnknownExpressionKind);
+              if (node.condition->eval.expression_kind == semantic::VariableExpressionKind)
                 {
                   void* ptr = exec.stack ().pop_pointer ();
-                  exec.stack ().load (ptr, node.condition->type->Size ());
+                  exec.stack ().load (ptr, node.condition->eval.type->Size ());
                 }
               Bool::ValueType c;
               exec.stack ().pop (c);
@@ -575,12 +575,12 @@ Composer::elaborate_bindings ()
             {
               left->operation->execute (exec);
               void* port = exec.stack ().pop_pointer ();
-              ast::Node* sb = ast_cast<SelectExpr> (right)->base;
+              ast::Node* sb = node_cast<SelectExpr> (right)->base;
               sb->operation->execute (exec);
               void* reaction_component = exec.stack ().pop_pointer ();
-              if (sb->type->u_to_pointer ())
+              if (sb->eval.type->u_to_pointer ())
                 {
-                  exec.stack ().load (reaction_component, sb->type->Size ());
+                  exec.stack ().load (reaction_component, sb->eval.type->Size ());
                   reaction_component = exec.stack ().pop_pointer ();
                 }
               const decl::Reaction* reaction = static_cast<const decl::Reaction*> (right->callable);
@@ -605,11 +605,11 @@ Composer::elaborate_bindings ()
             void visit (BindPushPortParamStatement& node)
             {
               node.param->operation->execute (exec);
-              assert (node.param->expression_kind != kUnknown);
-              if (node.param->expression_kind == kVariable)
+              assert (node.param->eval.expression_kind != semantic::UnknownExpressionKind);
+              if (node.param->eval.expression_kind == semantic::VariableExpressionKind)
                 {
                   void* ptr = exec.stack ().pop_pointer ();
-                  exec.stack ().load (ptr, node.param->type->Size ());
+                  exec.stack ().load (ptr, node.param->eval.type->Size ());
                 }
               Int::ValueType idx;
               exec.stack ().pop (idx);
@@ -620,7 +620,7 @@ Composer::elaborate_bindings ()
             {
               node.left->operation->execute (exec);
               void* port = exec.stack ().pop_pointer ();
-              ast::Node* sb = ast_cast<SelectExpr> (node.right)->base;
+              ast::Node* sb = node_cast<SelectExpr> (node.right)->base;
               sb->operation->execute (exec);
               void* getter_component = exec.stack ().pop_pointer ();
               const decl::Getter* getter = static_cast<const decl::Getter*> (node.right->callable);
@@ -643,38 +643,38 @@ Composer::elaborate_bindings ()
     }
 }
 
-  void Composer::compute_dependent_instances ()
-  {
-    // Determine which components influence other components via precondition.
-    for (InstancesType::const_iterator ipos = instances_.begin (),
-           ilimit = instances_.end ();
-         ipos != ilimit;
-         ++ipos)
-      {
-        Instance* instance = ipos->second;
-        for (ActionsType::const_iterator apos = instance->actions.begin (),
-               alimit = instance->actions.end ();
-             apos != alimit;
-             ++apos)
-          {
-            Action* action = *apos;
-            for (NodesType::const_iterator npos = action->precondition_nodes.begin (),
-                   nlimit = action->precondition_nodes.end ();
-                 npos != nlimit;
-                 ++npos)
-              {
-                Node* node = *npos;
-                for (InstanceSet::const_iterator pos = node->instance_set ().begin (),
-                       limit = node->instance_set ().end ();
-                     pos != limit;
-                     ++pos)
-                  {
-                    pos->first->linked_instances.insert (instance);
-                  }
-              }
-          }
-      }
-  }
+void Composer::compute_dependent_instances ()
+{
+  // Determine which components influence other components via precondition.
+  for (InstancesType::const_iterator ipos = instances_.begin (),
+       ilimit = instances_.end ();
+       ipos != ilimit;
+       ++ipos)
+    {
+      Instance* instance = ipos->second;
+      for (ActionsType::const_iterator apos = instance->actions.begin (),
+           alimit = instance->actions.end ();
+           apos != alimit;
+           ++apos)
+        {
+          Action* action = *apos;
+          for (NodesType::const_iterator npos = action->precondition_nodes.begin (),
+               nlimit = action->precondition_nodes.end ();
+               npos != nlimit;
+               ++npos)
+            {
+              Node* node = *npos;
+              for (InstanceSet::const_iterator pos = node->instance_set ().begin (),
+                   limit = node->instance_set ().end ();
+                   pos != limit;
+                   ++pos)
+                {
+                  pos->first->linked_instances.insert (instance);
+                }
+            }
+        }
+    }
+}
 
 static void tarjan (Node* n)
 {
@@ -732,7 +732,7 @@ Composer::enumerate_actions ()
 // Determine what relationship the given entity has with other entities.
 // These relationships are created through activate statements and calls to
 // getters and pull ports.
-struct Composer::ElaborationVisitor : public ast::DefaultVisitor
+struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
 {
   Executor exec;
   Composer& table;
@@ -811,9 +811,10 @@ struct Composer::ElaborationVisitor : public ast::DefaultVisitor
     if (action != NULL)
       {
         action->nodes.push_back (n);
-        if (in_precondition) {
-          action->precondition_nodes.push_back (n);
-        }
+        if (in_precondition)
+          {
+            action->precondition_nodes.push_back (n);
+          }
       }
     else if (reaction != NULL)
       {
@@ -891,23 +892,23 @@ struct Composer::ElaborationVisitor : public ast::DefaultVisitor
   void visit (IndexedPushPortCallExpr& node)
   {
     node.index->operation->execute (exec);
-    assert (node.index->expression_kind != kUnknown);
-    if (node.index->expression_kind == kVariable)
+    assert (node.index->eval.expression_kind != semantic::UnknownExpressionKind);
+    if (node.index->eval.expression_kind == semantic::VariableExpressionKind)
       {
         void* ptr = exec.stack ().pop_pointer ();
-        exec.stack ().load (ptr, node.index->type->Size ());
+        exec.stack ().load (ptr, node.index->eval.type->Size ());
       }
 
     Int::ValueType idx;
     exec.stack ().pop (idx);
     if (idx < 0)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "port index is negative (E100)");
       }
     if (idx >= node.array_type->dimension)
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "port index is negative (E75)");
       }
 
@@ -922,21 +923,21 @@ struct Composer::ElaborationVisitor : public ast::DefaultVisitor
 
   void visit (CallExpr& node)
   {
-    assert (node.expr->expression_kind != kUnknown);
-    if (node.expr->expression_kind != kType)
+    assert (node.expr->eval.expression_kind != semantic::UnknownExpressionKind);
+    if (node.expr->eval.expression_kind != semantic::TypeExpressionKind)
       {
         // Are we calling a getter or pull port.
         const type::Method* method = node.method_type;
         if (method != NULL && method->method_kind == type::Method::GETTER)
           {
-            ast::Node* sb = ast_cast<SelectExpr> (node.expr)->base;
+            ast::Node* sb = node_cast<SelectExpr> (node.expr)->base;
             sb->operation->execute (exec);
-            assert (sb->expression_kind != kUnknown);
-            if (sb->expression_kind == kVariable &&
-                sb->type->u_to_pointer ())
+            assert (sb->eval.expression_kind != semantic::UnknownExpressionKind);
+            if (sb->eval.expression_kind == semantic::VariableExpressionKind &&
+                sb->eval.type->u_to_pointer ())
               {
                 void* ptr = exec.stack ().pop_pointer ();
-                exec.stack ().load (ptr, sb->type->Size ());
+                exec.stack ().load (ptr, sb->eval.type->Size ());
               }
             size_t inst_addr = reinterpret_cast<size_t> (exec.stack ().pop_pointer ());
             InstancesType::const_iterator i_pos = table.instances_.find (inst_addr);
@@ -1076,7 +1077,7 @@ Composer::enumerate_reactions ()
           decl::Reaction* reaction = *pos;
           if (reaction->has_dimension ())
             {
-              for (type::Int::ValueType idx = 0; idx != reaction->dimension (); ++idx)
+              for (type::Int::ValueType idx = 0; idx != reaction->dimension; ++idx)
                 {
                   reactions_.insert (std::make_pair (ReactionKey (instance, reaction, idx), new Reaction (instance, reaction, idx)));
                 }
@@ -1285,7 +1286,7 @@ Composer::dump_graphviz () const
 void
 Composer::enumerate_instances (ast::Node * node)
 {
-  struct visitor : public ast::DefaultVisitor
+  struct visitor : public ast::DefaultNodeVisitor
   {
     composition::Composer& instance_table;
     size_t address;
@@ -1296,7 +1297,7 @@ Composer::enumerate_instances (ast::Node * node)
     {
       const NamedType *type = node.symbol->type;
       decl::Initializer* initializer = node.symbol->initializer;
-      node.symbol->instance = instance_table.instantiate_contained_instances (type, NULL, initializer, address, node.location.Line, &node, node.identifier->identifier);
+      node.symbol->instance = instance_table.instantiate_contained_instances (type, NULL, initializer, address, node.location.line, &node, node.identifier->identifier);
       address += type->Size ();
     }
 

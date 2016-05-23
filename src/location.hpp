@@ -14,14 +14,11 @@ namespace util
 
 struct Location
 {
-  static std::string StaticFile;
-  std::string const File;
-  unsigned int const Line;
+  static std::string static_file;
+  std::string const file;
+  unsigned int const line;
 
-  Location (unsigned int aLine = 0)
-    : File (StaticFile)
-    , Line (aLine)
-  { }
+  Location (unsigned int a_line = 0);
 };
 
 }

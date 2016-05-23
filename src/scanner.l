@@ -8,7 +8,7 @@
 #include "debug.hpp"
 #include "type.hpp"
 #include "location.hpp"
-#include "ast.hpp"
+#include "node.hpp"
 #include <error.h>
 
   using namespace type;
@@ -35,12 +35,12 @@
 
   static void validUnicode (unsigned int line, int u) {
     if (u > 0x10FFFF) {
-      error_at_line (-1, 0, Location::StaticFile.c_str (), line,
+      error_at_line (-1, 0, Location::static_file.c_str (), line,
                      "Unicode value is out of range (E135)");
     }
 
     if (u >= 0xD800 && u <= 0xDFFF) {
-      error_at_line (-1, 0, Location::StaticFile.c_str (), line,
+      error_at_line (-1, 0, Location::static_file.c_str (), line,
                      "illegal surrogate pair (E136)");
     }
   }
@@ -51,7 +51,7 @@
       (octalvalue (s[1]) << 3) |
       (octalvalue (s[2]) << 0);
     if (x > 255) {
-      error_at_line (-1, 0, Location::StaticFile.c_str (), line,
+      error_at_line (-1, 0, Location::static_file.c_str (), line,
                      "octal escape is out of range (E134)");
     }
     return x;
@@ -295,7 +295,7 @@ ESCAPED \\[abfnrtv\\\"]
   errno = 0;
   value.integer_value = strtoull (yytext, NULL, 10);
   if (errno == ERANGE) {
-    error_at_line (-1, 0, Location::StaticFile.c_str (), yylloc,
+    error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
       "integer literal '%s' is out of range (E11)", yytext);
   }
   value.present = true;
@@ -308,7 +308,7 @@ ESCAPED \\[abfnrtv\\\"]
   errno = 0;
   value.integer_value = strtoull (yytext, NULL, 8);
   if (errno == ERANGE) {
-    error_at_line (-1, 0, Location::StaticFile.c_str (), yylloc,
+    error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
       "octal literal '%s' is out of range (E12)", yytext);
   }
   value.present = true;
@@ -321,7 +321,7 @@ ESCAPED \\[abfnrtv\\\"]
   errno = 0;
   value.integer_value = strtoull (yytext, NULL, 16);
   if (errno == ERANGE) {
-    error_at_line (-1, 0, Location::StaticFile.c_str (), yylloc,
+    error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
       "hex literal '%s' is out of range (E13)", yytext);
   }
   value.present = true;
@@ -435,7 +435,7 @@ ESCAPED \\[abfnrtv\\\"]
 [ \t]+                 /* Discard whitespace */
 [\n]                   { ++yylloc; }
 . {
-error_at_line (-1, 0, Location::StaticFile.c_str (), yylloc,
+error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
                    "unrecognized character '%s' (E66)", yytext);
 }
 

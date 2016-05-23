@@ -1,34 +1,29 @@
-#ifndef RC_SRC_AST_HPP
-#define RC_SRC_AST_HPP
+#ifndef RC_SRC_NODE_HPP
+#define RC_SRC_NODE_HPP
 
 #include <vector>
 
 #include "types.hpp"
 #include "location.hpp"
-#include "value.hpp"
+#include "expression_value.hpp"
 
 namespace ast
 {
 
 struct Node
 {
-  virtual ~Node() { }
-  virtual void accept (Visitor& visitor) = 0;
-  virtual void visit_children (Visitor& visitor) = 0;
+  virtual ~Node();
+  virtual void accept (NodeVisitor& visitor) = 0;
+  virtual void visit_children (NodeVisitor& visitor) = 0;
 
   util::Location const location;
 
-  const type::Type* type;
-  semantic::Value value;
+  semantic::ExpressionValue eval;
+
   type::Field* field;
   bool reset_mutability;
   const decl::Callable* callable;
   const decl::Template* temp;
-  ExpressionKind expression_kind;
-  Mutability intrinsic_mutability;
-  Mutability indirection_mutability;
-  bool receiver_state;
-  ReceiverAccess receiver_access;
   runtime::Operation* operation;
 
 protected:
@@ -40,7 +35,7 @@ struct List : public Node
   typedef std::vector<Node*> ChildrenType;
   typedef ChildrenType::const_iterator ConstIterator;
 
-  virtual void visit_children (Visitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
   size_t size () const;
   size_t empty () const;
   List* append (Node * child);
@@ -51,14 +46,14 @@ struct List : public Node
 private:
   ChildrenType children_;
 protected:
-  List (unsigned int line) : Node (line) { }
+  List (unsigned int line);
 };
 
 struct Identifier : public Node
 {
   Identifier (unsigned int line, const std::string& id);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor) { }
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   std::string const identifier;
 };
@@ -66,7 +61,7 @@ struct Identifier : public Node
 struct IdentifierList : public List
 {
   IdentifierList (unsigned int line);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct Receiver : public Node
@@ -77,8 +72,8 @@ struct Receiver : public Node
             Mutability dm,
             bool isP,
             Identifier* type_id);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const this_identifier;
   Mutability const mutability;
@@ -90,8 +85,8 @@ struct Receiver : public Node
 struct ArrayTypeSpec : public Node
 {
   ArrayTypeSpec (unsigned int line, Node* dim, Node* base);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const dimension;
   Node* const base_type;
@@ -105,7 +100,7 @@ struct Unary : public Node
     , child (c)
   { }
 
-  virtual void visit_children (Visitor& visitor)
+  virtual void visit_children (NodeVisitor& visitor)
   {
     child->accept (visitor);
   }
@@ -116,14 +111,14 @@ struct Unary : public Node
 struct EmptyTypeSpec : public Node
 {
   EmptyTypeSpec (unsigned int line);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor) { }
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 };
 
 struct FieldListTypeSpec : public List
 {
   FieldListTypeSpec (unsigned int line);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 
   bool is_component;
 };
@@ -131,13 +126,13 @@ struct FieldListTypeSpec : public List
 struct HeapTypeSpec : public Unary<>
 {
   HeapTypeSpec (unsigned int line, Node* child);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct IdentifierTypeSpec : public Unary<Identifier>
 {
   IdentifierTypeSpec (unsigned int line, Identifier* child);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct IdentifierListTypeSpec : public Node
@@ -147,8 +142,8 @@ struct IdentifierListTypeSpec : public Node
                           Mutability m,
                           Mutability dm,
                           Node* type_sp);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   List* const identifier_list;
   Mutability const mutability;
@@ -159,20 +154,20 @@ struct IdentifierListTypeSpec : public Node
 struct PointerTypeSpec : public Unary<>
 {
   PointerTypeSpec (unsigned int line, Node* child);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct SliceTypeSpec : public Unary<>
 {
   SliceTypeSpec (unsigned int line, Node* child);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct MapTypeSpec : public Node
 {
   MapTypeSpec (unsigned int line, Node* k, Node* v);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const key;
   Node* const value;
@@ -181,8 +176,8 @@ struct MapTypeSpec : public Node
 struct PushPortTypeSpec : public Node
 {
   PushPortTypeSpec (unsigned int line, Node* sig);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const signature;
 };
@@ -193,8 +188,8 @@ struct PullPortTypeSpec : public Node
                     Node* sig,
                     Mutability dm,
                     Node* rt);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const signature;
   Mutability const indirection_mutability;
@@ -204,14 +199,14 @@ struct PullPortTypeSpec : public Node
 struct SignatureTypeSpec : public List
 {
   SignatureTypeSpec (unsigned int line);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct TypeExpression : public Node
 {
   TypeExpression (unsigned int line, Node* ts);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const type_spec;
 };
@@ -219,7 +214,7 @@ struct TypeExpression : public Node
 struct Binary : public Node
 {
   Binary (unsigned int line, Node* l, Node* r);
-  virtual void visit_children (Visitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const left;
   Node* const right;
@@ -228,25 +223,23 @@ struct Binary : public Node
 struct BinaryArithmeticExpr : public Binary
 {
   BinaryArithmeticExpr (unsigned int line,
-                        BinaryArithmetic a,
+                        decl::Template* temp,
                         Node* left,
                         Node* right);
-  virtual void accept (Visitor& visitor);
-
-  BinaryArithmetic const arithmetic;
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct AddressOfExpr : public Unary<>
 {
   AddressOfExpr (unsigned int line, Node* child);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct CallExpr : public Node
 {
   CallExpr (unsigned int line, Node* e, List* a);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const expr;
   List* const args;
@@ -260,8 +253,8 @@ struct CallExpr : public Node
 struct ConversionExpr : public Node
 {
   ConversionExpr (unsigned int line, Node* te, Node* e);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const type_expr;
   Node* const expr;
@@ -270,19 +263,19 @@ struct ConversionExpr : public Node
 struct DereferenceExpr : public Unary<>
 {
   DereferenceExpr (unsigned int line, Node* child);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct ListExpr : public List
 {
   ListExpr (unsigned int line);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct IdentifierExpr : public Unary<Identifier>
 {
   IdentifierExpr (unsigned int line, Identifier* child);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 
   decl::Symbol* symbol;
 };
@@ -290,8 +283,8 @@ struct IdentifierExpr : public Unary<Identifier>
 struct IndexExpr : public Node
 {
   IndexExpr (unsigned int line, Node* b, Node* i);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const base;
   Node* const index;
@@ -307,8 +300,8 @@ struct SliceExpr : public Node
              Node* l,
              Node* h,
              Node* m);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const base;
   Node* const low;
@@ -327,23 +320,21 @@ struct SliceExpr : public Node
 struct EmptyExpr : public Node
 {
   EmptyExpr (unsigned int line);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor) { }
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 };
 
 struct UnaryArithmeticExpr : public Unary<>
 {
-  UnaryArithmeticExpr (unsigned int line, UnaryArithmetic a, Node* child);
-  virtual void accept (Visitor& visitor);
-
-  const UnaryArithmetic arithmetic;
+  UnaryArithmeticExpr (unsigned int line, decl::Template* temp, Node* child);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct PushPortCallExpr : public Node
 {
   PushPortCallExpr (unsigned int line, Identifier* id, List* a);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
   List* const args;
@@ -358,8 +349,8 @@ struct IndexedPushPortCallExpr : public Node
                            Identifier* id,
                            Node* idx,
                            List* a);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
   Node* const index;
@@ -373,8 +364,8 @@ struct IndexedPushPortCallExpr : public Node
 struct SelectExpr : public Node
 {
   SelectExpr (unsigned int line, Node* b, Identifier* id);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const base;
   Identifier* const identifier;
@@ -385,27 +376,27 @@ struct LiteralExpr : public Node
   LiteralExpr (unsigned int line,
                const type::Type* t,
                const semantic::Value& v);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor) { }
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 };
 
 struct EmptyStatement : public Node
 {
   EmptyStatement (unsigned int line);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor) { }
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 };
 
 struct AddAssignStatement : public Binary
 {
   AddAssignStatement (unsigned int line, Node* left, Node* right);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct AssignStatement : public Binary
 {
   AssignStatement (unsigned int line, Node* left, Node* right);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct ChangeStatement : public Node
@@ -414,8 +405,8 @@ struct ChangeStatement : public Node
                    Node * e,
                    Identifier * id,
                    Node * b);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const expr;
   Identifier* const identifier;
@@ -427,7 +418,7 @@ struct ChangeStatement : public Node
 struct ExpressionStatement : public Unary<>
 {
   ExpressionStatement (unsigned int line, Node* child);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct IfStatement : public Node
@@ -437,8 +428,8 @@ struct IfStatement : public Node
                Node* c,
                Node* tb,
                Node* fb);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const statement;
   Node* const condition;
@@ -449,8 +440,8 @@ struct IfStatement : public Node
 struct WhileStatement : public Node
 {
   WhileStatement (unsigned int line, Node* c, Node* b);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const condition;
   Node* const body;
@@ -459,39 +450,40 @@ struct WhileStatement : public Node
 struct ReturnStatement : public Unary<>
 {
   ReturnStatement (unsigned int line, Node* child);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 
   const decl::ParameterSymbol* return_symbol;
 };
 
 struct IncrementDecrementStatement : public Unary<>
 {
-  enum Kind {
+  enum Kind
+  {
     Increment,
     Decrement
   };
   IncrementDecrementStatement (unsigned int line, Node* child, Kind a_kind);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
   Kind const kind;
 };
 
 struct ListStatement : public List
 {
   ListStatement (unsigned int line);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct SubtractAssignStatement : public Binary
 {
   SubtractAssignStatement (unsigned int line, Node* left, Node* right);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct ActivateStatement : public Node
 {
   ActivateStatement (unsigned int line, List * el, Node * b);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   List* const expr_list;
   Node* const body;
@@ -509,8 +501,8 @@ struct VarStatement : public Node
                 Mutability dm,
                 Node* ts,
                 List* el);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   List* const identifier_list;
   Mutability const mutability;
@@ -525,7 +517,7 @@ struct VarStatement : public Node
 struct BindPushPortStatement : public Binary
 {
   BindPushPortStatement (unsigned int line, Node* left, Node* right);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct BindPushPortParamStatement : public Node
@@ -534,8 +526,8 @@ struct BindPushPortParamStatement : public Node
                               Node* l,
                               Node* r,
                               Node* p);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const left;
   Node* const right;
@@ -545,7 +537,7 @@ struct BindPushPortParamStatement : public Node
 struct BindPullPortStatement : public Binary
 {
   BindPullPortStatement (unsigned int line, Node* left, Node* right);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct ForIotaStatement : public Node
@@ -554,8 +546,8 @@ struct ForIotaStatement : public Node
                     Identifier* id,
                     Node* lim,
                     Node* b);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
   Node* const limit_node;
@@ -572,8 +564,8 @@ struct Action : public Node
           Identifier* i,
           Node* p,
           Node* b);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
   Identifier* const identifier;
@@ -592,8 +584,8 @@ struct DimensionedAction : public Node
                      Identifier* i,
                      Node* p,
                      Node* b);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const dimension;
   Node* const receiver;
@@ -611,8 +603,8 @@ struct Bind : public Node
         Node* r,
         Identifier* i,
         Node* b);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
   Identifier* const identifier;
@@ -629,8 +621,8 @@ struct Function : public Node
             Mutability dm,
             Node* rt,
             Node* b);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
   Node* const signature;
@@ -648,8 +640,8 @@ struct Instance : public Node
             Node* tn,
             Identifier* init,
             List* el);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
   Node* const type_name;
@@ -665,8 +657,8 @@ struct Const : public Node
          List* il,
          Node* ts,
          List* el);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   List* const identifier_list;
   Node* const type_spec;
@@ -684,8 +676,8 @@ struct Method : public Node
           Mutability return_dm,
           Node * rt,
           Node* b);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
   Identifier* const identifier;
@@ -706,8 +698,8 @@ struct Getter : public Node
           Mutability dm,
           Node * rt,
           Node* b);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
   Identifier* const identifier;
@@ -728,8 +720,8 @@ struct Initializer : public Node
                Mutability return_dm,
                Node* rt,
                Node* b);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
   Identifier* const identifier;
@@ -748,8 +740,8 @@ struct Reaction : public Node
             Identifier* i,
             Node* s,
             Node* b);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
   Identifier* const identifier;
@@ -768,8 +760,8 @@ struct DimensionedReaction : public Node
                        Identifier* i,
                        Node* s,
                        Node* b);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const dimension;
   Node* const receiver;
@@ -784,8 +776,8 @@ struct DimensionedReaction : public Node
 struct Type : public Node
 {
   Type (unsigned int line, Identifier* i, Node* ts);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
   Node* const type_spec;
@@ -794,20 +786,20 @@ struct Type : public Node
 struct SourceFile : public List
 {
   SourceFile ();
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct ElementList : public List
 {
   ElementList (unsigned int line);
-  virtual void accept (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
 };
 
 struct Element : public Node
 {
   Element (unsigned int line, Node* k, Node* v);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const key;
   Node* const value;
@@ -818,8 +810,8 @@ struct CompositeLiteral : public Node
   CompositeLiteral (unsigned int line,
                     Node* lt,
                     List* lv);
-  virtual void accept (Visitor& visitor);
-  virtual void visit_children (Visitor& visitor);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void visit_children (NodeVisitor& visitor);
 
   Node* const literal_type;
   List* const literal_value;
@@ -830,4 +822,4 @@ std::ostream& operator<< (std::ostream& out, Node& node);
 
 #define AST_NOT_REACHED(node) do { std::cerr << node; NOT_REACHED; } while (0);
 
-#endif // RC_SRC_AST_HPP
+#endif // RC_SRC_NODE_HPP

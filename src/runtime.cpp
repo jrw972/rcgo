@@ -1,9 +1,19 @@
 #include "runtime.hpp"
 
 #include <error.h>
+#include <errno.h>
+#include <poll.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/timerfd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/udp.h>
+#include <netdb.h>
+#include <unistd.h>
 
-#include "ast.hpp"
-#include "ast_visitor.hpp"
+#include "node.hpp"
+#include "node_visitor.hpp"
 #include "callable.hpp"
 #include "symbol_visitor.hpp"
 #include "types.hpp"
@@ -234,78 +244,6 @@ struct LeftDispatch
   {
     UNIMPLEMENTED;
     //return node.left ()->typed_value.type;
-  }
-};
-
-struct Divide : public RetvalDispatch
-{
-  void
-  operator() (ExecutorBase& exec,
-              const MemoryModel& memoryModel,
-              const ast::Binary& node,
-              const type::Int&) const
-  {
-    UNIMPLEMENTED;
-    // evaluate_expression (exec, memoryModel, node.left ());
-    // type::Int::ValueType left;
-    // exec.stack ().pop (left);
-    // evaluate_expression (exec, memoryModel, node.right ());
-    // type::Int::ValueType right;
-    // exec.stack ().pop (right);
-    // exec.stack ().push (left / right);
-  }
-
-  void
-  operator() (ExecutorBase& exec,
-              const MemoryModel& memoryModel,
-              const ast::Binary& node,
-              const Float64&) const
-  {
-    UNIMPLEMENTED;
-    // evaluate_expression (exec, memoryModel, node.left ());
-    // Float64::ValueType left;
-    // exec.stack ().pop (left);
-    // evaluate_expression (exec, memoryModel, node.right ());
-    // Float64::ValueType right;
-    // exec.stack ().pop (right);
-    // exec.stack ().push (left / right);
-  }
-
-  void
-  operator() (ExecutorBase& exec,
-              const MemoryModel& memoryModel,
-              const ast::Binary& node,
-              const type::Type& t) const
-  {
-    TYPE_NOT_REACHED (t);
-  }
-};
-
-struct Modulus : public RetvalDispatch
-{
-  void
-  operator() (ExecutorBase& exec,
-              const MemoryModel& memoryModel,
-              const ast::Binary& node,
-              const type::Int&) const
-  {
-    UNIMPLEMENTED;
-    // evaluate_expression (exec, memoryModel, node.left ());
-    // type::Int::ValueType left;
-    // exec.stack ().pop (left);
-    // evaluate_expression (exec, memoryModel, node.right ());
-    // type::Int::ValueType right;
-    // exec.stack ().pop (right);
-    // exec.stack ().push (left % right);
-  }
-
-  void
-  operator() (ExecutorBase& exec,
-              const MemoryModel& memoryModel,
-              const ast::Binary& node,
-              const type::Type& t) const
-  {
-    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -1046,839 +984,221 @@ void execute_no_check (ExecutorBase& exec, component_t* instance, const decl::Ac
   assert (exec.stack ().empty ());
 }
 
-struct NewImpl : public Callable
-{
-  NewImpl (const type::Type* t, const util::Location& loc)
-    : type_ (t)
-    , function_type_ (makeFunctionType (t, loc))
-  {
-    allocate_parameters (memory_model, function_type_->parameter_list);
-    allocate_symbol (memory_model, function_type_->GetReturnParameter ());
-  }
+// TODO:  Single instance of Template?
 
-  virtual void call (ExecutorBase& exec) const
-  {
-    // Allocate a new instance of the type.
-    const type::Heap* heap_type = type_cast<type::Heap> (type_);
-    if (heap_type == NULL)
-      {
-        char** r = static_cast<char**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-        *r = static_cast<char*> (exec.heap ()->allocate (type_->Size ()));
-      }
-    else
-      {
-        const type::Type* t = heap_type->base_type;
-        // Allocate a new heap and root object.
-        Heap* h = new Heap (t->Size ());
-        // Insert it into its parent.
-        Heap* h2 = exec.heap ();
-        h2->insert_child (h);
-        // Allocate a new heap link in the parent.
-        heap_link_t* hl = make_heap_link (h, h2);
-        heap_link_t** r = static_cast<heap_link_t**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-        *r = hl;
-      }
-  }
-
-  virtual const type::Type* type () const
-  {
-    return function_type_;
-  }
-  const type::Type* const type_;
-  const type::Function* const function_type_;
-  MemoryModel memory_model;
-  static const type::Function* makeFunctionType (const type::Type* type, const util::Location& loc)
-  {
-    const type::Type* return_type = type->get_pointer ();
-    return new type::Function (type::Function::FUNCTION, (new ParameterList ()),
-                               (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, return_type, Mutable)));
-  }
-
-  virtual size_t return_size () const
-  {
-    return function_type_->GetReturnType ()->Size ();
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const
-  {
-    return function_type_->parameter_list->allocation_size ();
-  }
-  virtual size_t locals_size () const
-  {
-    return 0;
-  }
-  virtual const decl::ParameterList* signature () const
-  {
-    NOT_REACHED;
-  }
-  virtual void check_types (ast::List* args) const
-  {
-    // Do nothing.
-  }
-  virtual void check_references (ast::List* args) const
-  {
-    semantic::require_type (args->at (0));
-  }
-  virtual void check_mutability (ast::List* args) const
-  {
-    // Do nothing.
-  }
-  virtual void compute_receiver_access (ast::List* args, ReceiverAccess& receiver_access, bool& flag) const
-  {
-    // Do nothing.
-  }
-
-};
-
-New::New (const util::Location& loc)
-  : Template ("new",
-              loc,
-              new type::Template ())
+Readable::Readable (const util::Location& loc)
+  : BuiltinFunction ("readable",
+                     loc,
+                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                                         ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable))))
 { }
 
-Callable*
-New::instantiate (ErrorReporter& er,
-                  const std::vector<const type::Type*>& argument_types) const
+void
+Readable::call (runtime::ExecutorBase& exec) const
 {
-  const type::Type* type;
-  if (argument_types.size () == 1)
+  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->parameter_list->at (0)->offset ()));
+  Bool::ValueType* r = static_cast<Bool::ValueType*> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
+
+  struct pollfd pfd;
+  pfd.fd = (*fd)->fd ();
+  pfd.events = POLLIN;
+
+  int s = poll (&pfd, 1, 0);
+
+  if (s < 0)
     {
-      type = argument_types.front ();
+      error (EXIT_FAILURE, errno, "poll");
+    }
+
+  exec.checkedForReadability (*fd);
+
+  *r = (pfd.revents & POLLIN) != 0;
+}
+
+Read::Read (const util::Location& loc)
+  : BuiltinFunction ("read",
+                     loc,
+                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                                         ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
+                                         ->append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Mutable)),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable))))
+{ }
+
+void
+Read::call (runtime::ExecutorBase& exec) const
+{
+  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->parameter_list->at (0)->offset ()));
+  Slice::ValueType* buf = static_cast<Slice::ValueType*> (exec.stack ().get_address (type->parameter_list->at (1)->offset ()));
+  Int::ValueType* r = static_cast<Int::ValueType*> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
+  *r = read ((*fd)->fd (), buf->ptr, buf->length);
+}
+
+Writable::Writable (const util::Location& loc)
+  : BuiltinFunction ("writable",
+                     loc,
+                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                                         ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable))))
+{ }
+
+void
+Writable::call (runtime::ExecutorBase& exec) const
+{
+  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->parameter_list->at (0)->offset ()));
+  Bool::ValueType* r = static_cast<Bool::ValueType*> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
+
+  struct pollfd pfd;
+  pfd.fd = (*fd)->fd ();
+  pfd.events = POLLOUT;
+
+  int s = poll (&pfd, 1, 0);
+
+  if (s < 0)
+    {
+      error (EXIT_FAILURE, errno, "poll");
+    }
+
+  exec.checkedForWritability (*fd);
+
+  *r = (pfd.revents & POLLOUT) != 0;
+}
+
+ClockGettime::ClockGettime (const util::Location& loc)
+  : BuiltinFunction ("clock_gettime",
+                     loc,
+                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                                         ->append (ParameterSymbol::make (loc, "tp", type::named_timespec.get_pointer (), Immutable, Foreign)),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable))))
+{ }
+
+void
+ClockGettime::call (runtime::ExecutorBase& exec) const
+{
+  struct timespec* ts = *static_cast< struct timespec**> (exec.stack ().get_address (type->parameter_list->at (0)->offset ()));
+  Int::ValueType* r = static_cast<Int::ValueType*> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
+  *r = clock_gettime (CLOCK_REALTIME, ts);
+}
+
+TimerfdCreate::TimerfdCreate (const util::Location& loc)
+  : BuiltinFunction ("timerfd_create",
+                     loc,
+                     new type::Function (type::Function::FUNCTION, new ParameterList (),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable))))
+{ }
+
+void
+TimerfdCreate::call (runtime::ExecutorBase& exec) const
+{
+  runtime::FileDescriptor** ret = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
+  int fd = timerfd_create (CLOCK_MONOTONIC, TFD_NONBLOCK);
+  if (fd != -1)
+    {
+      *ret = exec.allocateFileDescriptor (fd);
     }
   else
     {
-      type = type::Error::Instance ();
-      er.func_expects_count (location, "new", 1, argument_types.size ());
+      *ret = NULL;
     }
-  return new NewImpl (type, location);
 }
 
-struct MoveImpl : public Callable
-{
-  MoveImpl (const type::Type* in, const type::Type* out, const util::Location& loc)
-    : function_type_ (makeFunctionType (in, out, loc))
-  {
-    allocate_parameters (memory_model, function_type_->parameter_list);
-    allocate_symbol (memory_model, function_type_->GetReturnParameter ());
-  }
-
-  virtual void call (ExecutorBase& exec) const
-  {
-    heap_link_t** r = static_cast<heap_link_t**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-    ParameterSymbol* p = *function_type_->parameter_list->begin ();
-    heap_link_t* hl = static_cast<heap_link_t*> (exec.stack ().read_pointer (p->offset ()));
-    if (hl != NULL)
-      {
-        pthread_mutex_lock (&hl->mutex);
-        if (hl->heap != NULL && hl->change_count == 0)
-          {
-            // Break the link.
-            Heap* h = hl->heap;
-            hl->heap = NULL;
-            pthread_mutex_unlock (&hl->mutex);
-
-            // Remove from parent.
-            h->remove_from_parent ();
-            // Insert into the new parent.
-            Heap* h2 = exec.heap ();
-            h2->insert_child (h);
-
-            // Allocate a new heap link in the parent.
-            heap_link_t* new_hl = make_heap_link (h, h2);
-
-            // Return the heap link.
-            *r = new_hl;
-          }
-        else
-          {
-            pthread_mutex_unlock (&hl->mutex);
-            *r = NULL;
-          }
-      }
-    else
-      {
-        *r = NULL;
-      }
-  }
-
-  virtual const type::Type* type () const
-  {
-    return function_type_;
-  }
-  const type::Function* const function_type_;
-  MemoryModel memory_model;
-  static const type::Function* makeFunctionType (const type::Type* in, const type::Type* out, const util::Location& loc)
-  {
-    // TODO:  The mutabilities may need to be adjusted.
-    return new type::Function (type::Function::FUNCTION, (new ParameterList ())
-                               ->append (ParameterSymbol::make (loc, "h", in, Mutable, Foreign)),
-                               (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, out, Mutable)));
-  }
-
-  virtual size_t return_size () const
-  {
-    return function_type_->GetReturnType ()->Size ();
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const
-  {
-    return function_type_->parameter_list->allocation_size ();
-  }
-  virtual size_t locals_size () const
-  {
-    return 0;
-  }
-  virtual const decl::ParameterList* signature () const
-  {
-    return function_type_->parameter_list;
-  }
-};
-
-Move::Move (const util::Location& loc)
-  : Template ("move",
-              loc,
-              new type::Template ())
+TimerfdSettime::TimerfdSettime (const util::Location& loc)
+  : BuiltinFunction ("timerfd_settime",
+                     loc,
+                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                                         ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
+                                         ->append (ParameterSymbol::make (loc, "s", &type::named_uint64, Immutable, Immutable)),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable))))
 { }
 
-Callable*
-Move::instantiate (util::ErrorReporter& er,
-                   const std::vector<const type::Type*>& argument_types) const
+void
+TimerfdSettime::call (runtime::ExecutorBase& exec) const
 {
-  const type::Type* in;
+  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->parameter_list->at (0)->offset ()));
+  Uint64::ValueType* v = static_cast<Uint64::ValueType*> (exec.stack ().get_address (type->parameter_list->at (1)->offset ()));
+  Int::ValueType* r = static_cast<Int::ValueType*> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
 
-  if (argument_types.size () == 1)
-    {
-      in = argument_types.front ();
-    }
-  else
-    {
-      in = type::Error::Instance ();
-      er.func_expects_count (location, "move", 1, argument_types.size ());
-    }
-
-  const type::Type* out = in->move ();
-  if (in->underlying_kind () != kError &&
-      out->underlying_kind () == kError)
-    {
-      er.cannot_be_applied (location, "move", in);
-    }
-
-  return new MoveImpl (in, out, location);
+  struct itimerspec spec;
+  spec.it_interval.tv_sec = *v;
+  spec.it_interval.tv_nsec = 0;
+  spec.it_value.tv_sec = *v;
+  spec.it_value.tv_nsec = 0;
+  *r = timerfd_settime ((*fd)->fd (), 0, &spec, NULL);
 }
 
-struct MergeImpl : public Callable
-{
-  MergeImpl (const type::Type* in, const type::Type* out, const util::Location& loc)
-    : function_type_ (makeFunctionType (in, out, loc))
-  {
-    allocate_parameters (memory_model, function_type_->parameter_list);
-    allocate_symbol (memory_model, function_type_->GetReturnParameter ());
-  }
-
-  virtual void call (ExecutorBase& exec) const
-  {
-    char** r = static_cast<char**> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-    ParameterSymbol* p = *function_type_->parameter_list->begin ();
-    heap_link_t* hl = static_cast<heap_link_t*> (exec.stack ().read_pointer (p->offset ()));
-    if (hl != NULL)
-      {
-        pthread_mutex_lock (&hl->mutex);
-        if (hl->heap != NULL && hl->change_count == 0)
-          {
-            // Break the link.
-            Heap* h = hl->heap;
-            hl->heap = NULL;
-            pthread_mutex_unlock (&hl->mutex);
-
-            // Get the heap root.
-            char* root = static_cast<char*> (h->root ());
-
-            // Remove from parent.
-            h->remove_from_parent ();
-
-            // Merge into the new parent.
-            exec.heap ()->merge (h);
-
-            // Return the root.
-            *r = root;
-          }
-        else
-          {
-            pthread_mutex_unlock (&hl->mutex);
-            *r = NULL;
-          }
-      }
-    else
-      {
-        *r = NULL;
-      }
-  }
-
-  virtual const type::Type* type () const
-  {
-    return function_type_;
-  }
-  const type::Function* const function_type_;
-  MemoryModel memory_model;
-  static const type::Function* makeFunctionType (const type::Type* in, const type::Type* out, const util::Location& loc)
-  {
-    // TODO:  Adjust mutability.
-    return new type::Function (type::Function::FUNCTION, (new ParameterList ())
-                               ->append (ParameterSymbol::make (loc, "h", in, Mutable, Foreign)),
-                               (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, out, Mutable)));
-  }
-
-  virtual size_t return_size () const
-  {
-    return function_type_->GetReturnType ()->Size ();
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const
-  {
-    return function_type_->parameter_list->allocation_size ();
-  }
-  virtual size_t locals_size () const
-  {
-    return 0;
-  }
-  virtual const decl::ParameterList* signature () const
-  {
-    return function_type_->parameter_list;
-  }
-};
-
-Merge::Merge (const util::Location& loc)
-  : Template ("merge",
-              loc,
-              new type::Template ())
+UdpSocket::UdpSocket (const util::Location& loc)
+  : BuiltinFunction ("udp_socket",
+                     loc,
+                     new type::Function (type::Function::FUNCTION, new ParameterList (),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable))))
 { }
 
-Callable*
-Merge::instantiate (util::ErrorReporter& er,
-                    const std::vector<const type::Type*>& argument_types) const
+void
+UdpSocket::call (runtime::ExecutorBase& exec) const
 {
-  const type::Type* in;
+  runtime::FileDescriptor** ret = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
 
-  if (argument_types.size () == 1)
+  int fd = socket (AF_INET, SOCK_DGRAM, 0);
+  if (fd == -1)
     {
-      in = argument_types.front ();
-    }
-  else
-    {
-      in = type::Error::Instance ();
-      er.func_expects_count (location, "merge", 1, argument_types.size ());
+      *ret = NULL;
+      return;
     }
 
-  const type::Type* out = in->merge_change ();
-  if (in->underlying_kind () != kError &&
-      out->underlying_kind () == kError)
+  int s = fcntl (fd, F_SETFL, O_NONBLOCK);
+  if (s == -1)
     {
-      er.cannot_be_applied (location, "merge", in);
+      *ret = NULL;
+      return;
     }
 
-  return new MergeImpl (in, out, location);
+  *ret = exec.allocateFileDescriptor (fd);
 }
 
-struct LenImpl : public Callable
-{
-  LenImpl (const type::Type* type, const util::Location& loc)
-    : function_type_ (makeFunctionType (type, loc))
-  {
-    allocate_parameters (memory_model, function_type_->parameter_list);
-    allocate_symbol (memory_model, function_type_->GetReturnParameter ());
-  }
-
-  virtual void call (ExecutorBase& exec) const
-  {
-    Int::ValueType* retval = static_cast<Int::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-    Slice::ValueType* slice = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->parameter_list->at (0)->offset ()));
-    *retval = slice->length;
-  }
-
-  virtual const type::Type* type () const
-  {
-    return function_type_;
-  }
-  const type::Function* const function_type_;
-  MemoryModel memory_model;
-  static const type::Function* makeFunctionType (const type::Type* type,
-      const util::Location& loc)
-  {
-    return new type::Function (type::Function::FUNCTION, (new ParameterList ())
-                               ->append (ParameterSymbol::make (loc, "s", type, Foreign, Foreign)),
-                               (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &named_int, Immutable)));
-  }
-
-  virtual size_t return_size () const
-  {
-    return function_type_->GetReturnType ()->Size ();
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const
-  {
-    return function_type_->parameter_list->allocation_size ();
-  }
-  virtual size_t locals_size () const
-  {
-    return 0;
-  }
-  virtual const decl::ParameterList* signature () const
-  {
-    return function_type_->parameter_list;
-  }
-};
-
-Len::Len (const util::Location& loc)
-  : Template ("len",
-              loc,
-              new type::Template ())
+Sendto::Sendto (const util::Location& loc)
+  : BuiltinFunction ("sendto",
+                     loc,
+                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                                         ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
+                                         ->append (ParameterSymbol::make (loc, "host", &type::named_string, Immutable, Foreign))
+                                         ->append (ParameterSymbol::make (loc, "port", &type::named_uint16, Immutable, Immutable))
+                                         ->append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Foreign)),
+                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable))))
 { }
 
-Callable*
-Len::instantiate (util::ErrorReporter& er,
-                  const std::vector<const type::Type*>& argument_types) const
+void
+Sendto::call (runtime::ExecutorBase& exec) const
 {
-  const type::Type* type;
+  runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->parameter_list->at (0)->offset ()));
+  StringU::ValueType* host = static_cast<StringU::ValueType*> (exec.stack ().get_address (type->parameter_list->at (1)->offset ()));
+  Uint16::ValueType* port = static_cast<Uint16::ValueType*> (exec.stack ().get_address (type->parameter_list->at (2)->offset ()));
+  Slice::ValueType* buf = static_cast<Slice::ValueType*> (exec.stack ().get_address (type->parameter_list->at (3)->offset ()));
+  Int::ValueType* ret = static_cast<Int::ValueType*> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
 
-  if (argument_types.size () == 1)
+  std::string host2 (static_cast<const char*> (host->ptr), host->length);
+  std::stringstream port2;
+  port2 << *port;
+
+  struct addrinfo* info;
+  struct addrinfo hints;
+  memset (&hints, 0, sizeof (struct addrinfo));
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_DGRAM;
+  hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG | AI_NUMERICSERV;
+  int r = getaddrinfo (host2.c_str (), port2.str ().c_str (), &hints, &info);
+  if (r != 0)
     {
-      type = argument_types.front ();
-    }
-  else
-    {
-      type = type::Error::Instance ();
-      er.func_expects_count (location, "len", 1, argument_types.size ());
-    }
-
-  if (type->underlying_kind () != kError &&
-      type->underlying_kind () != kSlice)
-    {
-      er.cannot_be_applied (location, "[:]", type);
-    }
-
-  return new LenImpl (type, location);
-}
-
-struct AppendImpl : public Callable
-{
-  AppendImpl (const type::Slice* slice_type,
-              const type::Type* element_type, const util::Location& loc)
-    : function_type_ (makeFunctionType (slice_type, element_type, loc))
-    , unit_size_ (slice_type->UnitSize ())
-  {
-    allocate_parameters (memory_model, function_type_->parameter_list);
-    allocate_symbol (memory_model, function_type_->GetReturnParameter ());
-  }
-
-  virtual void call (ExecutorBase& exec) const
-  {
-    Slice::ValueType* retval = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-    Slice::ValueType* slice = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->parameter_list->at (0)->offset ()));
-    const void* el = exec.stack ().get_address (function_type_->parameter_list->at (1)->offset ());
-
-    const Uint::ValueType new_length = slice->length + 1;
-    if (new_length > slice->capacity)
-      {
-        const Uint::ValueType new_capacity = 2 * new_length;
-        void* ptr = exec.heap ()->allocate (new_capacity * unit_size_);
-        memcpy (ptr, slice->ptr, slice->length * unit_size_);
-        slice->ptr = ptr;
-        slice->capacity = new_capacity;
-      }
-    memcpy (static_cast<char*> (slice->ptr) + slice->length * unit_size_, el, unit_size_);
-    slice->length = new_length;
-    *retval = *slice;
-  }
-
-  virtual const type::Type* type () const
-  {
-    return function_type_;
-  }
-  const type::Function* const function_type_;
-  size_t const unit_size_;
-  MemoryModel memory_model;
-  static const type::Function* makeFunctionType (const type::Type* slice_type,
-      const type::Type* element_type,
-      const util::Location& loc)
-  {
-    return new type::Function (type::Function::FUNCTION, (new ParameterList ())
-                               ->append (ParameterSymbol::make (loc, "s", slice_type, Mutable, Mutable))
-                               ->append (ParameterSymbol::make (loc, "x", element_type, Immutable, Mutable)),
-                               (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, slice_type, Mutable)));
-  }
-
-  virtual size_t return_size () const
-  {
-    return function_type_->GetReturnType ()->Size ();
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const
-  {
-    return function_type_->parameter_list->allocation_size ();
-  }
-  virtual size_t locals_size () const
-  {
-    return 0;
-  }
-  virtual const decl::ParameterList* signature () const
-  {
-    return function_type_->parameter_list;
-  }
-};
-
-Append::Append (const util::Location& loc)
-  : Template ("append",
-              loc,
-              new type::Template ())
-{ }
-
-Callable*
-Append::instantiate (util::ErrorReporter& er,
-                     const std::vector<const type::Type*>& argument_types) const
-{
-  const type::Type* slice_type;
-  const type::Type* element_type;
-
-  if (argument_types.size () == 2)
-    {
-      slice_type = argument_types[0];
-      element_type = argument_types[1];
-    }
-  else
-    {
-      slice_type = type::Error::Instance ();
-      slice_type = type::Error::Instance ();
-      er.func_expects_count (location, "append", 2, argument_types.size ());
+      UNIMPLEMENTED;
     }
 
-  if (slice_type->underlying_kind () != kError &&
-      slice_type->underlying_kind () != kSlice)
+  ssize_t s = sendto ((*fd)->fd (), buf->ptr, buf->length, 0, info->ai_addr, info->ai_addrlen);
+  if (s != static_cast<ssize_t> (buf->length))
     {
-      er.cannot_be_applied (location, "append", slice_type);
+      UNIMPLEMENTED;
     }
 
-  const type::Slice* st = type_cast<type::Slice> (slice_type->UnderlyingType ());
-  if (st != NULL &&
-      element_type->underlying_kind () != kError &&
-      !are_identical (st->base_type, element_type))
-    {
-      er.func_expects_arg (location, "append", 2, st->base_type, element_type);
-    }
-
-  return new AppendImpl (st, element_type, location);
-}
-
-struct CopyImpl : public Callable
-{
-  CopyImpl (const type::Type* in, const util::Location& loc)
-    : function_type_ (makeFunctionType (in, loc))
-  {
-    allocate_parameters (memory_model, function_type_->parameter_list);
-    allocate_symbol (memory_model, function_type_->GetReturnParameter ());
-  }
-
-  virtual void call (ExecutorBase& exec) const
-  {
-    const Slice* slice_type = type_strip_cast<Slice>(function_type_->GetReturnParameter ()->type);
-    if (slice_type != NULL)
-      {
-        Slice::ValueType* in = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->parameter_list->at (0)->offset ()));
-        Slice::ValueType* out = static_cast<Slice::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-        size_t sz = slice_type->UnitSize () * in->length;
-        out->ptr = exec.heap ()->allocate (sz);
-        memcpy (out->ptr, in->ptr, sz);
-        out->length = in->length;
-        out->capacity = in->length;
-        return;
-      }
-
-    const StringU* string_type = type_strip_cast<StringU>(function_type_->GetReturnParameter ()->type);
-    if (string_type != NULL)
-      {
-        StringU::ValueType* in = static_cast<StringU::ValueType*> (exec.stack ().get_address (function_type_->parameter_list->at (0)->offset ()));
-        StringU::ValueType* out = static_cast<StringU::ValueType*> (exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ()));
-        out->ptr = exec.heap ()->allocate (in->length);
-        memcpy (out->ptr, in->ptr, in->length);
-        out->length = in->length;
-        return;
-      }
-
-    void* in = exec.stack ().get_address (function_type_->parameter_list->at (0)->offset ());
-    void* out = exec.stack ().get_address (function_type_->GetReturnParameter ()->offset ());
-    memcpy (out, in, function_type_->GetReturnType ()->Size ());
-  }
-
-  virtual const type::Type* type () const
-  {
-    return function_type_;
-  }
-  const type::Function* const function_type_;
-  MemoryModel memory_model;
-  static const type::Function* makeFunctionType (const type::Type* in, const util::Location& loc)
-  {
-    return new type::Function (type::Function::FUNCTION, (new ParameterList ())
-                               ->append (ParameterSymbol::make (loc, "h", in, Immutable, Foreign)),
-                               (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, in, Mutable)));
-  }
-
-  virtual size_t return_size () const
-  {
-    return function_type_->GetReturnType ()->Size ();
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const
-  {
-    return function_type_->parameter_list->allocation_size ();
-  }
-  virtual size_t locals_size () const
-  {
-    return 0;
-  }
-  virtual const decl::ParameterList* signature () const
-  {
-    return function_type_->parameter_list;
-  }
-};
-
-Copy::Copy (const util::Location& loc)
-  : Template ("copy",
-              loc,
-              new type::Template ())
-{ }
-
-Callable*
-Copy::instantiate (util::ErrorReporter& er,
-                   const std::vector<const type::Type*>& argument_types) const
-{
-  if (argument_types.size () != 1)
-    {
-      error_at_line (-1, 0, location.File.c_str (), location.Line,
-                     "copy expects one argument (E123)");
-    }
-
-  const type::Type* in = argument_types.front ();
-
-  if (type_strip_cast<Component> (in) != NULL)
-    {
-      error_at_line (-1, 0, location.File.c_str (), location.Line,
-                     "cannot copy components (E94)");
-    }
-
-  {
-    const Slice* st = type_strip_cast<Slice> (in);
-    if (st != NULL)
-      {
-        if (type_contains_pointer (st->base_type))
-          {
-            error_at_line (-1, 0, location.File.c_str (), location.Line,
-                           "copy leaks pointers (E95)");
-
-          }
-        // We will copy so a dereference can mutate the data.
-        //tv.intrinsic_mutability = MUTABLE;
-        //tv.dereference_mutability = MUTABLE;
-      }
-  }
-
-  {
-    const StringU* st = type_strip_cast<StringU> (in);
-    if (st != NULL)
-      {
-        // We will copy so a dereference can mutate the data.
-        //tv.intrinsic_mutability = MUTABLE;
-        //tv.dereference_mutability = IMMUTABLE;
-      }
-  }
-
-  return new CopyImpl (in, location);
-}
-
-struct PrintlnImpl : public Callable
-{
-  PrintlnImpl (const util::Location& loc, const TypeList& type_list)
-    : function_type_ (makeFunctionType (loc, type_list))
-  {
-    allocate_parameters (memory_model, function_type_->parameter_list);
-    allocate_symbol (memory_model, function_type_->GetReturnParameter ());
-  }
-
-  virtual void call (ExecutorBase& exec) const
-  {
-    struct visitor : public type::DefaultVisitor
-    {
-      ExecutorBase& exec;
-      void* ptr;
-
-      visitor (ExecutorBase& e, void* p) : exec (e), ptr (p) { }
-
-      void default_action (const type::Type& type)
-      {
-        TYPE_NOT_REACHED (type);
-      }
-
-      void visit (const Bool& type)
-      {
-        if (*static_cast<Bool::ValueType*> (ptr))
-          {
-            printf ("true");
-          }
-        else
-          {
-            printf ("false");
-          }
-      }
-
-      void visit (const Pointer& type)
-      {
-        printf ("%p", *static_cast<Pointer::ValueType*> (ptr));
-      }
-
-      void visit (const StringU& type)
-      {
-        StringU::ValueType* u = static_cast<StringU::ValueType*> (ptr);
-        fwrite (u->ptr, 1, u->length, stdout);
-      }
-
-      void visit (const Uint& type)
-      {
-        printf ("%lu", *static_cast<Uint::ValueType*> (ptr));
-      }
-
-      void visit (const Uint8& type)
-      {
-        printf ("%u", *static_cast<Uint8::ValueType*> (ptr));
-      }
-
-      void visit (const Uint16& type)
-      {
-        printf ("%u", *static_cast<Uint16::ValueType*> (ptr));
-      }
-
-      void visit (const Uint32& type)
-      {
-        printf ("%u", *static_cast<Uint32::ValueType*> (ptr));
-      }
-
-      void visit (const Uint64& type)
-      {
-        printf ("%lu", *static_cast<Uint64::ValueType*> (ptr));
-      }
-
-      void visit (const type::Int& type)
-      {
-        printf ("%ld", *static_cast<Int::ValueType*> (ptr));
-      }
-
-      void visit (const Int8& type)
-      {
-        printf ("%d", *static_cast<Int8::ValueType*> (ptr));
-      }
-
-      void visit (const Int64& type)
-      {
-        printf ("%ld", *static_cast<Int64::ValueType*> (ptr));
-      }
-
-      void visit (const Float64& type)
-      {
-        printf ("%g", *static_cast<Float64::ValueType*> (ptr));
-      }
-
-      void visit (const Slice& type)
-      {
-        printf ("<slice>");
-      }
-    };
-
-    exec.lock_stdout ();
-    for (decl::ParameterList::const_iterator pos = function_type_->parameter_list->begin (), limit = function_type_->parameter_list->end ();
-         pos != limit;
-         ++pos)
-      {
-        ParameterSymbol* parameter = *pos;
-        void* ptr = exec.stack ().get_address (parameter->offset ());
-        visitor v (exec, ptr);
-        parameter->type->UnderlyingType ()->Accept (v);
-      }
-    printf ("\n");
-    exec.unlock_stdout ();
-  }
-
-  virtual const type::Type* type () const
-  {
-    return function_type_;
-  }
-  const type::Function* const function_type_;
-  MemoryModel memory_model;
-
-  static const type::Function* makeFunctionType (const util::Location& loc, const TypeList& argument_types)
-  {
-    ParameterList* sig = new ParameterList ();
-    for (TypeList::const_iterator pos = argument_types.begin (), limit = argument_types.end ();
-         pos != limit;
-         ++pos)
-      {
-        const type::Type* t = *pos;
-        t = t->DefaultType ();
-        sig->append (ParameterSymbol::make (loc, "", t, Immutable, Foreign));
-      }
-
-    return new type::Function (type::Function::FUNCTION, sig,
-                               (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Void::Instance (), Foreign)));
-
-  }
-
-  virtual size_t return_size () const
-  {
-    return function_type_->GetReturnType ()->Size ();
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const
-  {
-    return function_type_->parameter_list->allocation_size ();
-  }
-  virtual size_t locals_size () const
-  {
-    return 0;
-  }
-  virtual const decl::ParameterList* signature () const
-  {
-    return function_type_->parameter_list;
-  }
-};
-
-Println::Println (const util::Location& loc)
-  : Template ("println",
-              loc,
-              new type::Template ())
-{ }
-
-Callable*
-Println::instantiate (util::ErrorReporter& er,
-                      const TypeList& argument_types) const
-{
-  return new PrintlnImpl (location, argument_types);
+  freeaddrinfo (info);
+  *ret = 0;
 }
 
 OpReturn
@@ -1903,7 +1223,7 @@ IndexSlice::execute (ExecutorBase& exec) const
 
   if (i < 0 || static_cast<type::Uint::ValueType> (i) >= s.length)
     {
-      error_at_line (-1, 0, location.File.c_str (), location.Line,
+      error_at_line (-1, 0, location.file.c_str (), location.line,
                      "slice index is out of bounds (E35)");
 
     }
@@ -2484,7 +1804,7 @@ IndexArray::execute (ExecutorBase& exec) const
   exec.stack ().pop (i);
   if (i < 0 || i >= type->dimension)
     {
-      error_at_line (-1, 0, location.File.c_str (), location.Line,
+      error_at_line (-1, 0, location.file.c_str (), location.line,
                      "array index is out of bounds (E148)");
     }
   exec.stack ().push_pointer (static_cast<char*> (ptr) + i * type->UnitSize ());
@@ -2521,7 +1841,7 @@ SliceArray::execute (ExecutorBase& exec) const
         high_val <= max_val &&
         max_val <= type->dimension))
     {
-      error_at_line (-1, 0, location.File.c_str (), location.Line,
+      error_at_line (-1, 0, location.file.c_str (), location.line,
                      "slice index is out of range (E223)");
     }
 
@@ -2565,7 +1885,7 @@ SliceSlice::execute (ExecutorBase& exec) const
         high_val <= max_val &&
         max_val <= static_cast<Int::ValueType> (s.capacity)))
     {
-      error_at_line (-1, 0, location.File.c_str (), location.Line,
+      error_at_line (-1, 0, location.file.c_str (), location.line,
                      "slice index is out of range (E22)");
     }
 
@@ -3071,6 +2391,376 @@ Popn::execute (ExecutorBase& exec) const
   OpReturn r = child->execute (exec);
   exec.stack ().popn (size);
   return r;
+}
+
+OpReturn PrintlnOp::execute (ExecutorBase& exec) const
+{
+  ListOperation* lop = static_cast<ListOperation*> (args);
+
+  exec.lock_stdout ();
+  for (size_t idx = 0; idx != lop->list.size (); ++idx)
+    {
+      lop->list[idx]->execute (exec);
+
+      switch (evals[idx].type->underlying_kind ())
+        {
+        case kBool:
+        {
+          Bool::ValueType x;
+          exec.stack ().pop (x);
+          if (x)
+            {
+              printf ("true");
+            }
+          else
+            {
+              printf ("false");
+            }
+        }
+        break;
+
+        case kUint8:
+        {
+          Uint8::ValueType x;
+          exec.stack ().pop (x);
+          printf ("%u", x);
+        }
+        break;
+
+        case kUint16:
+        {
+          Uint16::ValueType x;
+          exec.stack ().pop (x);
+          printf ("%u", x);
+        }
+        break;
+
+        case kUint32:
+        {
+          Uint32::ValueType x;
+          exec.stack ().pop (x);
+          printf ("%u", x);
+        }
+        break;
+
+        case kUint64:
+        {
+          Uint64::ValueType x;
+          exec.stack ().pop (x);
+          printf ("%lu", x);
+        }
+        break;
+
+        case kInt8:
+        {
+          Int8::ValueType x;
+          exec.stack ().pop (x);
+          printf ("%d", x);
+        }
+        break;
+
+        case kInt16:
+        {
+          Int16::ValueType x;
+          exec.stack ().pop (x);
+          printf ("%d", x);
+        }
+        break;
+
+        case kInt32:
+        {
+          Int32::ValueType x;
+          exec.stack ().pop (x);
+          printf ("%d", x);
+        }
+        break;
+
+        case kInt64:
+        {
+          Int64::ValueType x;
+          exec.stack ().pop (x);
+          printf ("%ld", x);
+        }
+        break;
+
+        case kFloat32:
+        {
+          Float32::ValueType x;
+          exec.stack ().pop (x);
+          printf ("%g", x);
+        }
+        break;
+
+        case kFloat64:
+        {
+          Float64::ValueType x;
+          exec.stack ().pop (x);
+          printf ("%g", x);
+        }
+        break;
+
+        case kComplex64:
+        case kComplex128:
+          TYPE_NOT_REACHED (*evals[idx].type);
+
+        case kUint:
+        {
+          Uint::ValueType x;
+          exec.stack ().pop (x);
+          printf ("%lu", x);
+        }
+        break;
+
+        case kInt:
+        {
+          Int::ValueType x;
+          exec.stack ().pop (x);
+          printf ("%ld", x);
+        }
+        break;
+
+        case kUintptr:
+        {
+          Uintptr::ValueType x;
+          exec.stack ().pop (x);
+          printf ("%lu", x);
+        }
+        break;
+
+        case kStringU:
+        {
+          StringU::ValueType x;
+          exec.stack ().pop (x);
+          fwrite (x.ptr, 1, x.length, stdout);
+        }
+        break;
+
+        case kPointer:
+        {
+          Pointer::ValueType x;
+          exec.stack ().pop (x);
+          printf ("%p", x);
+        }
+        break;
+
+        default:
+          TYPE_NOT_REACHED (*evals[idx].type);
+        }
+
+    }
+  printf ("\n");
+  exec.unlock_stdout ();
+
+  return kContinue;
+}
+
+OpReturn NewOp::execute (ExecutorBase& exec) const
+{
+  // Allocate a new instance of the type.
+  const type::Heap* heap_type = type_cast<type::Heap> (type);
+  if (heap_type == NULL)
+    {
+      exec.stack ().push (exec.heap ()->allocate (type->Size ()));
+    }
+  else
+    {
+      const type::Type* t = heap_type->base_type;
+      // Allocate a new heap and root object.
+      Heap* h = new Heap (t->Size ());
+      // Insert it into its parent.
+      Heap* h2 = exec.heap ();
+      h2->insert_child (h);
+      // Allocate a new heap link in the parent.
+      heap_link_t* hl = make_heap_link (h, h2);
+      exec.stack ().push (hl);
+    }
+
+  return kContinue;
+}
+
+OpReturn MoveOp::execute (ExecutorBase& exec) const
+{
+  arg->execute (exec);
+
+  heap_link_t* hl;
+  exec.stack ().pop (hl);
+  if (hl != NULL)
+    {
+      pthread_mutex_lock (&hl->mutex);
+      if (hl->heap != NULL && hl->change_count == 0)
+        {
+          // Break the link.
+          Heap* h = hl->heap;
+          hl->heap = NULL;
+          pthread_mutex_unlock (&hl->mutex);
+
+          // Remove from parent.
+          h->remove_from_parent ();
+          // Insert into the new parent.
+          Heap* h2 = exec.heap ();
+          h2->insert_child (h);
+
+          // Allocate a new heap link in the parent.
+          heap_link_t* new_hl = make_heap_link (h, h2);
+
+          // Return the heap link.
+          exec.stack ().push (new_hl);
+        }
+      else
+        {
+          pthread_mutex_unlock (&hl->mutex);
+          exec.stack ().push (NULL);
+        }
+    }
+  else
+    {
+      exec.stack ().push (NULL);
+    }
+
+  return kContinue;
+}
+
+
+OpReturn MergeOp::execute (ExecutorBase& exec) const
+{
+  arg->execute (exec);
+
+  heap_link_t* hl;
+  exec.stack ().pop (hl);
+  if (hl != NULL)
+    {
+      pthread_mutex_lock (&hl->mutex);
+      if (hl->heap != NULL && hl->change_count == 0)
+        {
+          // Break the link.
+          Heap* h = hl->heap;
+          hl->heap = NULL;
+          pthread_mutex_unlock (&hl->mutex);
+
+          // Get the heap root.
+          char* root = static_cast<char*> (h->root ());
+
+          // Remove from parent.
+          h->remove_from_parent ();
+
+          // Merge into the new parent.
+          exec.heap ()->merge (h);
+
+          // Return the root.
+          exec.stack ().push (root);
+        }
+      else
+        {
+          pthread_mutex_unlock (&hl->mutex);
+          exec.stack ().push (NULL);
+        }
+    }
+  else
+    {
+      exec.stack ().push (NULL);
+    }
+
+  return kContinue;
+}
+
+OpReturn LenOp::execute (ExecutorBase& exec) const
+{
+  arg->execute (exec);
+  Slice::ValueType slice;
+  exec.stack ().pop (slice);
+  Int::ValueType retval = slice.length;
+  exec.stack ().push (retval);
+  return make_continue ();
+}
+
+template <typename T>
+struct AppendOp : public Operation
+{
+  AppendOp (const type::Slice* a_slice_type,
+            Operation* a_arg)
+    : slice_type (a_slice_type)
+    , arg (a_arg)
+  { }
+
+  virtual OpReturn execute (ExecutorBase& exec) const
+  {
+    arg->execute (exec);
+
+    // Pop the element.
+    T element;
+    exec.stack ().pop (element);
+
+    // Pop the slice.
+    Slice::ValueType slice;
+    exec.stack ().pop (slice);
+
+    const Uint::ValueType new_length = slice.length + 1;
+    if (new_length > slice.capacity)
+      {
+        const Uint::ValueType new_capacity = 2 * new_length;
+        void* ptr = exec.heap ()->allocate (new_capacity * slice_type->UnitSize ());
+        memcpy (ptr, slice.ptr, slice.length * slice_type->UnitSize ());
+        slice.ptr = ptr;
+        slice.capacity = new_capacity;
+      }
+    memcpy (static_cast<char*> (slice.ptr) + slice.length * slice_type->UnitSize (), &element, slice_type->UnitSize ());
+    slice.length = new_length;
+    exec.stack ().push (slice);
+    return make_continue ();
+  }
+
+  virtual void dump () const
+  {
+    UNIMPLEMENTED;
+  }
+  const type::Slice* const slice_type;
+  Operation* const arg;
+};
+
+Operation* make_append (const type::Slice* slice_type, Operation* args)
+{
+  switch (slice_type->base_type->underlying_kind ())
+    {
+    case kUint8:
+      return new AppendOp<Uint8::ValueType> (slice_type, args);
+    default:
+      TYPE_NOT_REACHED (*slice_type->base_type);
+    }
+}
+
+OpReturn CopyOp::execute (ExecutorBase& exec) const
+{
+  arg->execute (exec);
+
+  const Slice* slice_type = type_strip_cast<Slice>(type);
+  if (slice_type != NULL)
+    {
+      Slice::ValueType in;
+      exec.stack ().pop (in);
+      Slice::ValueType out;
+      size_t sz = slice_type->UnitSize () * in.length;
+      out.ptr = exec.heap ()->allocate (sz);
+      memcpy (out.ptr, in.ptr, sz);
+      out.length = in.length;
+      out.capacity = in.length;
+      exec.stack ().push (out);
+      return make_continue ();
+    }
+
+  const StringU* string_type = type_strip_cast<StringU>(type);
+  if (string_type != NULL)
+    {
+      StringU::ValueType in;
+      exec.stack ().pop (in);
+      StringU::ValueType out;
+      out.ptr = exec.heap ()->allocate (in.length);
+      memcpy (out.ptr, in.ptr, in.length);
+      out.length = in.length;
+      exec.stack ().push (out);
+      return make_continue ();
+    }
+
+  NOT_REACHED;
 }
 }
 

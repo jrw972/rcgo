@@ -2,7 +2,8 @@
 #include "scanner.hpp"
 #include "yyparse.hpp"
 #include "debug.hpp"
-#include "ast.hpp"
+#include "node.hpp"
+#include "semantic.hpp"
 
 using namespace ast;
 %}
@@ -474,66 +475,66 @@ OrExpression:
   AndExpression
 { $$ = $1; }
 | OrExpression LOGIC_OR AndExpression
-{ $$ = new BinaryArithmeticExpr (@1, LogicOr, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::logic_or_temp, $1, $3); }
 
 AndExpression:
   CompareExpression
 { $$ = $1; }
 | AndExpression LOGIC_AND CompareExpression
-{ $$ = new BinaryArithmeticExpr (@1, LogicAnd, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::logic_and_temp, $1, $3); }
 
 CompareExpression:
   AddExpression
 { $$ = $1; }
 | CompareExpression EQUAL AddExpression
-{ $$ = new BinaryArithmeticExpr (@1, Equal, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::equal_temp, $1, $3); }
 | CompareExpression NOT_EQUAL AddExpression
-{ $$ = new BinaryArithmeticExpr (@1, NotEqual, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::not_equal_temp, $1, $3); }
 | CompareExpression '<' AddExpression
-{ $$ = new BinaryArithmeticExpr (@1, LessThan, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::less_than_temp, $1, $3); }
 | CompareExpression LESS_EQUAL AddExpression
-{ $$ = new BinaryArithmeticExpr (@1, LessEqual, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::less_equal_temp, $1, $3); }
 | CompareExpression '>' AddExpression
-{ $$ = new BinaryArithmeticExpr (@1, MoreThan, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::more_than_temp, $1, $3); }
 | CompareExpression MORE_EQUAL AddExpression
-{ $$ = new BinaryArithmeticExpr (@1, MoreEqual, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::more_equal_temp, $1, $3); }
 
 AddExpression:
   MultiplyExpression
 { $$ = $1; }
 | AddExpression '+' MultiplyExpression
-{ $$ = new BinaryArithmeticExpr (@1, Add, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::add_temp, $1, $3); }
 | AddExpression '-' MultiplyExpression
-{ $$ = new BinaryArithmeticExpr (@1, Subtract, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::subtract_temp, $1, $3); }
 | AddExpression '|' MultiplyExpression
-{ $$ = new BinaryArithmeticExpr (@1, BitOr, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::bit_or_temp, $1, $3); }
 | AddExpression '^' MultiplyExpression
-{ $$ = new BinaryArithmeticExpr (@1, BitXor, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::bit_xor_temp, $1, $3); }
 
 MultiplyExpression:
   UnaryExpression
 { $$ = $1; }
 | MultiplyExpression '*' UnaryExpression
-{ $$ = new BinaryArithmeticExpr (@1, Multiply, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::multiply_temp, $1, $3); }
 | MultiplyExpression '/' UnaryExpression
-{ $$ = new BinaryArithmeticExpr (@1, Divide, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::divide_temp, $1, $3); }
 | MultiplyExpression '%' UnaryExpression
-{ $$ = new BinaryArithmeticExpr (@1, Modulus, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::modulus_temp, $1, $3); }
 | MultiplyExpression LEFT_SHIFT UnaryExpression
-{ $$ = new BinaryArithmeticExpr (@1, LeftShift, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::left_shift_temp, $1, $3); }
 | MultiplyExpression RIGHT_SHIFT UnaryExpression
-{ $$ = new BinaryArithmeticExpr (@1, RightShift, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::right_shift_temp, $1, $3); }
 | MultiplyExpression '&' UnaryExpression
-{ $$ = new BinaryArithmeticExpr (@1, BitAnd, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::bit_and_temp, $1, $3); }
 | MultiplyExpression AND_NOT UnaryExpression
-{ $$ = new BinaryArithmeticExpr (@1, BitAndNot, $1, $3); }
+{ $$ = new BinaryArithmeticExpr (@1, &semantic::bit_and_not_temp, $1, $3); }
 
 UnaryExpression:
   PrimaryExpression   { $$ = $1; }
-| '+' UnaryExpression { $$ = new UnaryArithmeticExpr (@1, Posate, $2); }
-| '-' UnaryExpression { $$ = new UnaryArithmeticExpr (@1, Negate, $2); }
-| '!' UnaryExpression { $$ = new UnaryArithmeticExpr (@1, LogicNot, $2); }
-| '^' UnaryExpression { $$ = new UnaryArithmeticExpr (@1, Complement, $2); }
+| '+' UnaryExpression { $$ = new UnaryArithmeticExpr (@1, &semantic::posate_temp, $2); }
+| '-' UnaryExpression { $$ = new UnaryArithmeticExpr (@1, &semantic::negate_temp, $2); }
+| '!' UnaryExpression { $$ = new UnaryArithmeticExpr (@1, &semantic::logic_not_temp, $2); }
+| '^' UnaryExpression { $$ = new UnaryArithmeticExpr (@1, &semantic::complement_temp, $2); }
 | '*' UnaryExpression { $$ = new DereferenceExpr (@1, $2); }
 | '&' UnaryExpression { $$ = new AddressOfExpr (@1, $2); }
 

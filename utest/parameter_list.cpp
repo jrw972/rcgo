@@ -14,6 +14,12 @@ main (int argc, char** argv)
 
   {
     util::Location loc;
+    ParameterList sig;
+    tap.tassert ("ParameterList::ParameterList ()", sig.size () == 0 && sig.allocation_size () == 0 && sig.is_variadic () == false);
+  }
+
+  {
+    util::Location loc;
     ParameterSymbol* p = ParameterSymbol::make (loc, "there", &named_int, Immutable, Immutable);
     ParameterList sig;
     sig.append (p);

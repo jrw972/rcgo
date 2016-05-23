@@ -70,7 +70,7 @@ private:
       scheduler_.push (info);
 
       for (composition::Instance::LinkedInstancesType::const_iterator pos = current_info ()->instance ()->linked_instances.begin (),
-             limit = current_info ()->instance ()->linked_instances.end ();
+           limit = current_info ()->instance ()->linked_instances.end ();
            pos != limit;
            ++pos)
         {

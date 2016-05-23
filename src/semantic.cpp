@@ -3,7 +3,7 @@
 #include <error.h>
 
 #include "debug.hpp"
-#include "ast.hpp"
+#include "node.hpp"
 #include "action.hpp"
 #include "reaction.hpp"
 #include "type.hpp"
@@ -11,14 +11,36 @@
 #include "memory_model.hpp"
 #include "bind.hpp"
 #include "callable.hpp"
-#include "ast_visitor.hpp"
+#include "node_visitor.hpp"
 #include "parameter_list.hpp"
+#include "error_reporter.hpp"
+#include "runtime.hpp"
 
 namespace semantic
 {
 
 using namespace ast;
 using namespace decl;
+using namespace util;
+using namespace type;
+
+ExpressionValueList collect_evals (ast::Node* node)
+{
+  struct visitor : public DefaultNodeVisitor
+  {
+    ExpressionValueList list;
+
+    virtual void default_action (Node& node)
+    {
+      list.push_back (node.eval);
+    }
+  };
+
+  visitor v;
+  node->visit_children (v);
+  return v.list;
+}
+
 
 void
 allocate_symbol (runtime::MemoryModel& memory_model,
@@ -83,7 +105,7 @@ allocate_symbol (runtime::MemoryModel& memory_model,
 static void
 allocate_statement_stack_variables (ast::Node* node, runtime::MemoryModel& memory_model)
 {
-  struct visitor : public DefaultVisitor
+  struct visitor : public DefaultNodeVisitor
   {
     runtime::MemoryModel& memory_model;
 
@@ -216,7 +238,7 @@ allocate_statement_stack_variables (ast::Node* node, runtime::MemoryModel& memor
 void
 allocate_stack_variables (ast::Node* node)
 {
-  struct visitor : public DefaultVisitor
+  struct visitor : public DefaultNodeVisitor
   {
     void visit (ast::Action& node)
     {
@@ -313,5 +335,1253 @@ allocate_parameters (runtime::MemoryModel& memory_model,
       allocate_symbol (memory_model, *pos);
     }
 }
+
+bool
+require_value_or_variable (ErrorReporter& er,
+                           const Location& location,
+                           ExpressionValue& result,
+                           const ExpressionValue& arg)
+{
+  assert (!arg.is_unknown ());
+  if (!arg.is_value_or_variable ())
+    {
+      er.requires_value_or_variable (location);
+      result.expression_kind = ErrorExpressionKind;
+      return false;
+    }
+  return true;
+}
+
+bool
+require_type (ErrorReporter& er,
+              const Location& location,
+              ExpressionValue& result,
+              const ExpressionValue& arg)
+{
+  assert (!arg.is_unknown ());
+  if (!arg.is_type ())
+    {
+      er.requires_type (location);
+      result.expression_kind = TypeExpressionKind;
+      return false;
+    }
+  return true;
+}
+
+void LogicNot::check (ErrorReporter& er,
+                      const Location& location,
+                      ExpressionValue& result,
+                      ExpressionValueList& arguments) const
+{
+  assert (arguments.size () == 1);
+  const ExpressionValue& arg = arguments.front ();
+
+  if (!require_value_or_variable (er, location, result, arg))
+    {
+      return;
+    }
+
+  if (!(is_any_boolean (arg.type)))
+    {
+      er.cannot_be_applied (location, unary_arithmetic_external_symbol (::LogicNot), arg.type);
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  result.expression_kind = ValueExpressionKind;
+  result.type = arg.type;
+  result.intrinsic_mutability = Immutable;
+  result.indirection_mutability = Immutable;
+
+  if (arg.value.present)
+    {
+      result.value.present = true;
+      switch (result.type->underlying_kind ())
+        {
+        case kBool:
+          result.value.bool_value = !arg.value.bool_value;
+          break;
+        case kBoolean:
+          result.value.boolean_value = !arg.value.boolean_value;
+          break;
+        default:
+          NOT_REACHED;
+        }
+    }
+}
+
+runtime::Operation* LogicNot::generate_code (const ExpressionValue& result,
+    const ExpressionValue& arg_val,
+    runtime::Operation* arg_op) const
+{
+  return runtime::make_unary<LogicNotter> (result.type, arg_op);
+}
+
+void Posate::check (ErrorReporter& er,
+                    const util::Location& location,
+                    ExpressionValue& result,
+                    ExpressionValueList& arguments) const
+{
+  assert (arguments.size () == 1);
+  const ExpressionValue& arg = arguments.front ();
+
+  if (!require_value_or_variable (er, location, result, arg))
+    {
+      return;
+    }
+
+  if (!(is_any_numeric (arg.type)))
+    {
+      er.cannot_be_applied (location, unary_arithmetic_external_symbol (::Posate), arg.type);
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  result.expression_kind = ValueExpressionKind;
+  result.type = arg.type;
+  result.intrinsic_mutability = Immutable;
+  result.indirection_mutability = Immutable;
+
+  if (arg.value.present)
+    {
+      result.value = arg.value;
+    }
+}
+
+void Negate::check (ErrorReporter& er,
+                    const util::Location& location,
+                    ExpressionValue& result,
+                    ExpressionValueList& arguments) const
+{
+  assert (arguments.size () == 1);
+  const ExpressionValue& arg = arguments.front ();
+
+  if (!require_value_or_variable (er, location, result, arg))
+    {
+      return;
+    }
+
+  if (!(is_any_numeric (arg.type)))
+    {
+      er.cannot_be_applied (location, unary_arithmetic_external_symbol (::Negate), arg.type);
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  result.expression_kind = ValueExpressionKind;
+  result.type = arg.type;
+  result.intrinsic_mutability = Immutable;
+  result.indirection_mutability = Immutable;
+
+  if (arg.value.present)
+    {
+      result.value.present = true;
+      switch (result.type->underlying_kind ())
+        {
+        case kUint8:
+          result.value.uint8_value = -arg.value.uint8_value;
+          break;
+        case kUint16:
+          result.value.uint16_value = -arg.value.uint16_value;
+          break;
+        case kUint32:
+          result.value.uint32_value = -arg.value.uint32_value;
+          break;
+        case kUint64:
+          result.value.uint32_value = -arg.value.uint32_value;
+          break;
+        case kInt8:
+          result.value.int8_value = -arg.value.int8_value;
+          break;
+        case kInt16:
+          result.value.int16_value = -arg.value.int16_value;
+          break;
+        case kInt32:
+          result.value.int32_value = -arg.value.int32_value;
+          break;
+        case kInt64:
+          result.value.int64_value = -arg.value.int64_value;
+          break;
+        case kFloat32:
+          result.value.float32_value = -arg.value.float32_value;
+          break;
+        case kFloat64:
+          result.value.float64_value = -arg.value.float64_value;
+          break;
+        case kComplex64:
+          result.value.complex64_value = -arg.value.complex64_value;
+          break;
+        case kComplex128:
+          result.value.complex128_value = -arg.value.complex128_value;
+          break;
+        case kUint:
+          result.value.uint_value = -arg.value.uint_value;
+          break;
+        case kInt:
+          result.value.int_value = -arg.value.int_value;
+          break;
+        case kUintptr:
+          result.value.uintptr_value = -arg.value.uintptr_value;
+          break;
+        case kRune:
+          result.value.rune_value = -arg.value.rune_value;
+          break;
+        case kInteger:
+          result.value.integer_value = -arg.value.integer_value;
+          break;
+        case kFloat:
+          result.value.float_value = -arg.value.float_value;
+          break;
+        case kComplex:
+          result.value.complex_value = -arg.value.complex_value;
+          break;
+        default:
+          NOT_REACHED;
+        }
+    }
+}
+
+void Complement::check (ErrorReporter& er,
+                        const Location& location,
+                        ExpressionValue& result,
+                        ExpressionValueList& arguments) const
+{
+  assert (arguments.size () == 1);
+  const ExpressionValue& arg = arguments.front ();
+
+  if (!require_value_or_variable (er, location, result, arg))
+    {
+      return;
+    }
+
+  if (!(integral (arg.type)))
+    {
+      er.cannot_be_applied (location, unary_arithmetic_external_symbol (::Complement), arg.type);
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  result.expression_kind = ValueExpressionKind;
+  result.type = arg.type;
+  result.intrinsic_mutability = Immutable;
+  result.indirection_mutability = Immutable;
+
+  if (arg.value.present)
+    {
+      result.value.present = true;
+      switch (result.type->underlying_kind ())
+        {
+        case kUint8:
+          result.value.uint8_value = ~arg.value.uint8_value;
+          break;
+        case kUint16:
+          result.value.uint16_value = ~arg.value.uint16_value;
+          break;
+        case kUint32:
+          result.value.uint32_value = ~arg.value.uint32_value;
+          break;
+        case kUint64:
+          result.value.uint32_value = ~arg.value.uint32_value;
+          break;
+        case kInt8:
+          result.value.int8_value = ~arg.value.int8_value;
+          break;
+        case kInt16:
+          result.value.int16_value = ~arg.value.int16_value;
+          break;
+        case kInt32:
+          result.value.int32_value = ~arg.value.int32_value;
+          break;
+        case kInt64:
+          result.value.int64_value = ~arg.value.int64_value;
+          break;
+        case kUint:
+          result.value.uint_value = ~arg.value.uint_value;
+          break;
+        case kInt:
+          result.value.int_value = ~arg.value.int_value;
+          break;
+        case kUintptr:
+          result.value.uintptr_value = ~arg.value.uintptr_value;
+          break;
+        case kRune:
+          result.value.rune_value = ~arg.value.rune_value;
+          break;
+        case kInteger:
+          result.value.integer_value = ~arg.value.integer_value;
+          break;
+        default:
+          NOT_REACHED;
+        }
+    }
+}
+
+const type::Type* PassThroughPicker::pick (const type::Type* input_type,
+    const ExpressionValue& left,
+    const ExpressionValue& right)
+{
+  return input_type;
+}
+
+const type::Type* BooleanPicker::pick (const type::Type* input_type,
+                                       const ExpressionValue& left,
+                                       const ExpressionValue& right)
+{
+  if (left.value.present && right.value.present)
+    {
+      return Boolean::Instance ();
+    }
+  else
+    {
+      return Bool::Instance ();
+    }
+}
+
+template <typename Op>
+void BinaryValueComputer<Op>::compute (ExpressionValue& result,
+                                       const type::Type* in_type,
+                                       const ExpressionValue& left,
+                                       const ExpressionValue& right)
+{
+  if (left.value.present &&
+      right.value.present)
+    {
+      Op() (result.value, in_type, left.value, right.value);
+    }
+}
+
+template <typename Op>
+runtime::Operation* BinaryValueComputer<Op>::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return Op::generate_code (result, left_val, left_op, right_val, right_op);
+}
+
+void LogicOrComputer::compute (ExpressionValue& result,
+                               const type::Type* in_type,
+                               const ExpressionValue& left,
+                               const ExpressionValue& right)
+{
+  if (left.value.present)
+    {
+      if (left.value.bool_value)
+        {
+          result.value.present = true;
+          result.value.boolean_value = true;
+        }
+      else if (right.value.present)
+        {
+          result.value.present = true;
+          result.value.boolean_value = right.value.bool_value;
+        }
+    }
+}
+
+runtime::Operation* LogicOrComputer::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return new runtime::LogicOr (left_op, right_op);
+}
+
+void LogicAndComputer::compute (ExpressionValue& result,
+                                const type::Type* in_type,
+                                const ExpressionValue& left,
+                                const ExpressionValue& right)
+{
+  if (left.value.present)
+    {
+      if (!left.value.bool_value)
+        {
+          result.value.present = true;
+          result.value.boolean_value = false;
+        }
+      else if (right.value.present)
+        {
+          result.value.present = true;
+          result.value.boolean_value = right.value.bool_value;
+        }
+    }
+}
+
+runtime::Operation* LogicAndComputer::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return new runtime::LogicAnd (left_op, right_op);
+}
+
+template <typename InputPicker, typename OutputPicker, typename Computer, ::BinaryArithmetic ba>
+void
+BinaryArithmetic<InputPicker, OutputPicker, Computer, ba>::check (ErrorReporter& er,
+    const Location& location,
+    ExpressionValue& result,
+    ExpressionValueList& arguments) const
+{
+  assert (arguments.size () == 2);
+  ExpressionValue& left = arguments[0];
+  ExpressionValue& right = arguments[1];
+
+  if (!require_value_or_variable (er, location, result, left) ||
+      !require_value_or_variable (er, location, result, right))
+    {
+      return;
+    }
+
+  if (left.type->IsUntyped () &&
+      right.type->IsUntyped ())
+    {
+      const type::Type* t = InputPicker::pick (left.type, right.type);
+      if (t == NULL)
+        {
+          er.cannot_be_applied (location, binary_arithmetic_external_symbol (ba), left.type, right.type);
+          result.expression_kind = ErrorExpressionKind;
+          return;
+        }
+      left.convert (t);
+      right.convert (t);
+
+      result.expression_kind = ValueExpressionKind;
+      result.type = OutputPicker::pick (t, left, right);
+      Computer::compute (result, t, left, right);
+      result.intrinsic_mutability = Immutable;
+      result.indirection_mutability = Immutable;
+
+      return;
+    }
+
+  if (!(assignable (left.type, left.value, right.type) ||
+        assignable (right.type, right.value, left.type)))
+    {
+      er.cannot_be_applied (location, binary_arithmetic_external_symbol (ba), left.type, right.type);
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  const type::Type* in_type = Choose (left.type, right.type);
+  left.convert (in_type);
+  right.convert (in_type);
+
+  if (InputPicker::pick (in_type, in_type) == NULL)
+    {
+      er.cannot_be_applied (location, binary_arithmetic_external_symbol (ba), left.type, right.type);
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  result.expression_kind = ValueExpressionKind;
+  result.type = OutputPicker::pick (in_type, left, right);
+  result.intrinsic_mutability = Immutable;
+  result.indirection_mutability = Immutable;
+
+  Computer::compute (result, in_type, left, right);
+}
+
+template <typename InputPicker, typename OutputPicker, typename Computer, ::BinaryArithmetic ba>
+runtime::Operation*
+BinaryArithmetic<InputPicker, OutputPicker, Computer, ba>::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op) const
+{
+  return Computer::generate_code (result, left_val, left_op, right_val, right_op);
+}
+
+template <typename B, ::BinaryArithmetic ba>
+void BinaryShift<B, ba>::check (ErrorReporter& er,
+                                const Location& location,
+                                ExpressionValue& result,
+                                ExpressionValueList& arguments) const
+{
+  assert (arguments.size () == 2);
+  ExpressionValue& left = arguments[0];
+  ExpressionValue& right = arguments[1];
+
+  if (!require_value_or_variable (er, location, result, left) ||
+      !require_value_or_variable (er, location, result, right))
+    {
+      return;
+    }
+
+  if (!(is_typed_unsigned_integer (right.type) || is_untyped_numeric (right.type)))
+    {
+      er.cannot_be_applied (location, binary_arithmetic_external_symbol (ba), left.type, right.type);
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  if (right.value.present)
+    {
+      if (!right.value.representable (right.type, type::Uint::Instance ()))
+        {
+          er.cannot_be_applied (location, binary_arithmetic_external_symbol (ba), left.type, right.type);
+          result.expression_kind = ErrorExpressionKind;
+          return;
+        }
+      right.value.convert (right.type, type::Uint::Instance ());
+      right.type = type::Uint::Instance ();
+    }
+
+  if (!integral (left.type))
+    {
+      er.cannot_be_applied (location, binary_arithmetic_external_symbol (ba), left.type, right.type);
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  result.expression_kind = ValueExpressionKind;
+  result.type = left.type;
+  result.intrinsic_mutability = Immutable;
+  result.indirection_mutability = Immutable;
+
+  if (left.value.present &&
+      right.value.present)
+    {
+      result.value.present = true;
+      switch (result.type->underlying_kind ())
+        {
+        case kUint8:
+          result.value.uint8_value = B () (left.value.uint8_value, right.value.uint_value);
+          break;
+        case kUint16:
+          result.value.uint16_value = B () (left.value.uint16_value, right.value.uint_value);
+          break;
+        case kUint32:
+          result.value.uint32_value = B () (left.value.uint32_value, right.value.uint_value);
+          break;
+        case kUint64:
+          result.value.uint64_value = B () (left.value.uint64_value, right.value.uint_value);
+          break;
+        case kInt8:
+          result.value.int8_value = B () (left.value.int8_value, right.value.uint_value);
+          break;
+        case kInt16:
+          result.value.int16_value = B () (left.value.int16_value, right.value.uint_value);
+          break;
+        case kInt32:
+          result.value.int32_value = B () (left.value.int32_value, right.value.uint_value);
+          break;
+        case kInt64:
+          result.value.int64_value = B () (left.value.int64_value, right.value.uint_value);
+          break;
+        case kUint:
+          result.value.uint_value = B () (left.value.uint_value, right.value.uint_value);
+          break;
+        case kInt:
+          result.value.int_value = B () (left.value.int_value, right.value.uint_value);
+          break;
+        case kUintptr:
+          result.value.uintptr_value = B () (left.value.uintptr_value, right.value.uint_value);
+          break;
+        case kRune:
+          result.value.rune_value = B () (left.value.rune_value, right.value.uint_value);
+          break;
+        case kInteger:
+          result.value.integer_value = B () (left.value.integer_value, right.value.uint_value);
+          break;
+        default:
+          TYPE_NOT_REACHED (*result.type);
+        }
+    }
+}
+
+template <typename B, ::BinaryArithmetic ba>
+runtime::Operation* BinaryShift<B, ba>::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op) const
+{
+  return B::generate_code (result, left_val, left_op, right_val, right_op);
+}
+
+template class BinaryArithmetic<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SMultiply>, ::Multiply>;
+template class BinaryArithmetic<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SDivide>, ::Divide>;
+template class BinaryArithmetic<type::Integral, PassThroughPicker, BinaryValueComputer<SModulus>, ::Modulus>;
+template class BinaryShift <LeftShifter, ::LeftShift>;
+template class BinaryShift <RightShifter, ::RightShift>;
+template class BinaryArithmetic<type::Integral, PassThroughPicker, BinaryValueComputer<SBitAnd>, ::BitAnd>;
+template class BinaryArithmetic<type::Integral, PassThroughPicker, BinaryValueComputer<SBitAndNot>, ::BitAndNot>;
+template class BinaryArithmetic<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SAdd>, ::Add>;
+template class BinaryArithmetic<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SSubtract>, ::Subtract>;
+template class BinaryArithmetic<type::Integral, PassThroughPicker, BinaryValueComputer<SBitOr>, ::BitOr>;
+template class BinaryArithmetic<type::Integral, PassThroughPicker, BinaryValueComputer<SBitXor>, ::BitXor>;
+template class BinaryArithmetic<type::Comparable, BooleanPicker, BinaryValueComputer<SEqual>, ::Equal>;
+template class BinaryArithmetic<type::Comparable, BooleanPicker, BinaryValueComputer<SNotEqual>, ::NotEqual>;
+template class BinaryArithmetic<type::Orderable, BooleanPicker, BinaryValueComputer<SLessThan>, ::LessThan>;
+template class BinaryArithmetic<type::Orderable, BooleanPicker, BinaryValueComputer<SLessEqual>, ::LessEqual>;
+template class BinaryArithmetic<type::Orderable, BooleanPicker, BinaryValueComputer<SMoreThan>, ::MoreThan>;
+template class BinaryArithmetic<type::Orderable, BooleanPicker, BinaryValueComputer<SMoreEqual>, ::MoreEqual>;
+template class BinaryArithmetic<type::Logical, BooleanPicker, LogicOrComputer, ::LogicOr>;
+template class BinaryArithmetic<type::Logical, BooleanPicker, LogicAndComputer, ::LogicAnd>;
+
+void SMultiply::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  multiply (out, type, left, right);
+}
+
+runtime::Operation* SMultiply::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_arithmetic<Multiplier> (result.type, left_op, right_op);
+}
+
+void SDivide::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  divide (out, type, left, right);
+}
+
+runtime::Operation* SDivide::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_arithmetic<Divider> (result.type, left_op, right_op);
+}
+
+void SModulus::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  modulus (out, type, left, right);
+}
+
+runtime::Operation* SModulus::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_integral<Modulizer> (result.type, left_op, right_op);
+}
+
+runtime::Operation*
+LeftShifter::generate_code (const ExpressionValue& result,
+                            const ExpressionValue& left_val,
+                            runtime::Operation* left_op,
+                            const ExpressionValue& right_val,
+                            runtime::Operation* right_op)
+{
+  return runtime::make_shift<LeftShifter> (result.type, left_op, MakeConvertToUint (right_op, right_val.type));
+}
+
+runtime::Operation*
+RightShifter::generate_code (const ExpressionValue& result,
+                             const ExpressionValue& left_val,
+                             runtime::Operation* left_op,
+                             const ExpressionValue& right_val,
+                             runtime::Operation* right_op)
+{
+  return runtime::make_shift<RightShifter> (result.type, left_op, MakeConvertToUint (right_op, right_val.type));
+}
+
+void SBitAnd::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  bit_and (out, type, left, right);
+}
+
+runtime::Operation* SBitAnd::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_integral<BitAnder> (result.type, left_op, right_op);
+}
+
+void SBitAndNot::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  bit_and_not (out, type, left, right);
+}
+
+runtime::Operation* SBitAndNot::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_integral<BitAndNotter> (result.type, left_op, right_op);
+}
+
+void SAdd::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  add (out, type, left, right);
+}
+
+runtime::Operation* SAdd::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_integral<Adder> (result.type, left_op, right_op);
+}
+
+void SSubtract::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  subtract (out, type, left, right);
+}
+
+runtime::Operation* SSubtract::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_arithmetic<Subtracter> (result.type, left_op, right_op);
+}
+
+void SBitOr::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  bit_or (out, type, left, right);
+}
+
+runtime::Operation* SBitOr::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_integral<BitOrer> (result.type, left_op, right_op);
+}
+
+void SBitXor::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  bit_xor (out, type, left, right);
+}
+
+runtime::Operation* SBitXor::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_integral<BitXorer> (result.type, left_op, right_op);
+}
+
+void SEqual::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  equal (out, type, left, right);
+}
+
+runtime::Operation* SEqual::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_arithmetic<Equalizer> (left_val.type, left_op, right_op);
+}
+
+void SNotEqual::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  not_equal (out, type, left, right);
+}
+
+runtime::Operation* SNotEqual::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_arithmetic<NotEqualizer> (left_val.type, left_op, right_op);
+}
+
+void SLessThan::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  less_than (out, type, left, right);
+}
+
+runtime::Operation* SLessThan::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_arithmetic<LessThaner> (left_val.type, left_op, right_op);
+}
+
+void SLessEqual::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  less_equal (out, type, left, right);
+}
+
+runtime::Operation* SLessEqual::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_arithmetic<LessEqualizer> (left_val.type, left_op, right_op);
+}
+
+void SMoreThan::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  more_than (out, type, left, right);
+}
+
+runtime::Operation* SMoreThan::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_arithmetic<MoreThaner> (left_val.type, left_op, right_op);
+}
+
+void SMoreEqual::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
+{
+  more_equal (out, type, left, right);
+}
+
+runtime::Operation* SMoreEqual::generate_code (const ExpressionValue& result,
+    const ExpressionValue& left_val,
+    runtime::Operation* left_op,
+    const ExpressionValue& right_val,
+    runtime::Operation* right_op)
+{
+  return runtime::make_binary_arithmetic<MoreEqualizer> (left_val.type, left_op, right_op);
+}
+
+New::New (const Location& loc)
+  : TemplateSymbol ("new",
+                    loc,
+                    new type::Template ())
+{ }
+
+void
+New::check (ErrorReporter& er,
+            const Location& location,
+            ExpressionValue& result,
+            ExpressionValueList& arguments) const
+{
+  if (arguments.size () != 1)
+    {
+      er.func_expects_count (location, "new", 1, arguments.size ());
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  ExpressionValue& arg = arguments[0];
+
+  if (!require_type (er, location, result, arg))
+    {
+      return;
+    }
+
+  result.expression_kind = ValueExpressionKind;
+  result.type = arg.type->get_pointer ();
+  result.intrinsic_mutability = Immutable;
+  result.indirection_mutability = Mutable;
+}
+
+void New::compute_receiver_access (const semantic::ExpressionValueList& args,
+                                   ReceiverAccess& receiver_access,
+                                   bool& flag) const
+{
+  receiver_access = AccessNone;
+  flag = false;
+}
+
+runtime::Operation* New::generate_code (const semantic::ExpressionValue& result,
+                                        const semantic::ExpressionValueList& arg_vals,
+                                        runtime::Operation* arg_ops) const
+{
+  return new runtime::NewOp (arg_vals.front ().type);
+}
+
+Move::Move (const Location& loc)
+  : TemplateSymbol ("move",
+                    loc,
+                    new type::Template ())
+{ }
+
+void
+Move::check (ErrorReporter& er,
+             const Location& location,
+             ExpressionValue& result,
+             ExpressionValueList& arguments) const
+{
+  if (arguments.size () != 1)
+    {
+      er.func_expects_count (location, "move", 1, arguments.size ());
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  ExpressionValue& arg = arguments[0];
+
+  const type::Type* in = arg.type;
+  const type::Type* out = in->move ();
+  if (out == NULL)
+    {
+      er.cannot_be_applied (location, "move", in);
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  if (!require_value_or_variable (er, location, result, arg))
+    {
+      return;
+    }
+
+  result.expression_kind = ValueExpressionKind;
+  result.type = out;
+  result.intrinsic_mutability = Immutable;
+  result.indirection_mutability = Mutable;
+}
+
+void
+Move::compute_receiver_access (const semantic::ExpressionValueList& args,
+                               ReceiverAccess& receiver_access,
+                               bool& flag) const
+{
+  // Check if a mutable pointer escapes.
+  receiver_access = AccessNone;
+  flag = false;
+  for (ExpressionValueList::const_iterator pos = args.begin (),
+       limit = args.end ();
+       pos != limit;
+       ++pos)
+    {
+      receiver_access = std::max (receiver_access, pos->receiver_access);
+    }
+}
+
+runtime::Operation* Move::generate_code (const semantic::ExpressionValue& result,
+    const semantic::ExpressionValueList& arg_vals,
+    runtime::Operation* arg_ops) const
+{
+  return new runtime::MoveOp (arg_ops);
+}
+
+Merge::Merge (const Location& loc)
+  : TemplateSymbol ("merge",
+                    loc,
+                    new type::Template ())
+{ }
+
+void
+Merge::check (ErrorReporter& er,
+              const Location& location,
+              ExpressionValue& result,
+              ExpressionValueList& arguments) const
+{
+  if (arguments.size () != 1)
+    {
+      er.func_expects_count (location, "merge", 1, arguments.size ());
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  ExpressionValue& arg = arguments[0];
+
+  const type::Type* in = arg.type;
+  const type::Type* out = in->merge_change ();
+  if (out == NULL)
+    {
+      er.cannot_be_applied (location, "merge", in);
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  if (!require_value_or_variable (er, location, result, arg))
+    {
+      return;
+    }
+
+  result.expression_kind = ValueExpressionKind;
+  result.type = out;
+  result.intrinsic_mutability = Immutable;
+  result.indirection_mutability = Mutable;
+}
+
+void Merge::compute_receiver_access (const semantic::ExpressionValueList& args,
+                                     ReceiverAccess& receiver_access,
+                                     bool& flag) const
+{
+  // Check if a mutable pointer escapes.
+  receiver_access = AccessNone;
+  flag = false;
+  for (ExpressionValueList::const_iterator pos = args.begin (),
+       limit = args.end ();
+       pos != limit;
+       ++pos)
+    {
+      receiver_access = std::max (receiver_access, pos->receiver_access);
+    }
+}
+
+runtime::Operation* Merge::generate_code (const semantic::ExpressionValue& result,
+    const semantic::ExpressionValueList& arg_vals,
+    runtime::Operation* arg_ops) const
+{
+  return new runtime::MergeOp (arg_ops);
+}
+
+Len::Len (const Location& loc)
+  : TemplateSymbol ("len",
+                    loc,
+                    new type::Template ())
+{ }
+
+void
+Len::check (ErrorReporter& er,
+            const Location& location,
+            ExpressionValue& result,
+            ExpressionValueList& arguments) const
+{
+  if (arguments.size () != 1)
+    {
+      er.func_expects_count (location, "len", 1, arguments.size ());
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  ExpressionValue& arg = arguments[0];
+
+  if (!require_value_or_variable (er, location, result, arg))
+    {
+      return;
+    }
+
+  const type::Type* type = arg.type;
+  if (type->underlying_kind () != kSlice)
+    {
+      er.cannot_be_applied (location, "[:]", type);
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  result.expression_kind = ValueExpressionKind;
+  result.type = &named_int;
+  result.intrinsic_mutability = Immutable;
+  result.indirection_mutability = Immutable;
+}
+
+runtime::Operation* Len::generate_code (const semantic::ExpressionValue& result,
+                                        const semantic::ExpressionValueList& arg_vals,
+                                        runtime::Operation* arg_ops) const
+{
+  return new runtime::LenOp (arg_ops);
+}
+
+Append::Append (const Location& loc)
+  : TemplateSymbol ("append",
+                    loc,
+                    new type::Template ())
+{ }
+
+void
+Append::check (ErrorReporter& er,
+               const Location& location,
+               ExpressionValue& result,
+               ExpressionValueList& arguments) const
+{
+  if (arguments.size () != 2)
+    {
+      er.func_expects_count (location, "append", 2, arguments.size ());
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  ExpressionValue& slice = arguments[0];
+  ExpressionValue& element = arguments[1];
+
+  if (!require_value_or_variable (er, location, result, slice) ||
+      !require_value_or_variable (er, location, result, element))
+    {
+      return;
+    }
+
+  if (slice.type->underlying_kind () != kSlice)
+    {
+      er.cannot_be_applied (location, "append", slice.type);
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  const type::Slice* st = type_cast<type::Slice> (slice.type->UnderlyingType ());
+  if (st != NULL &&
+      !are_identical (st->base_type, element.type))
+    {
+      er.func_expects_arg (location, "append", 2, st->base_type, element.type);
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  result.expression_kind = ValueExpressionKind;
+  result.type = st;
+  result.intrinsic_mutability = Immutable;
+  result.indirection_mutability = Mutable;
+}
+
+runtime::Operation* Append::generate_code (const semantic::ExpressionValue& result,
+    const semantic::ExpressionValueList& arg_vals,
+    runtime::Operation* arg_ops) const
+{
+  return make_append (type_cast<type::Slice> (arg_vals[0].type->UnderlyingType ()), arg_ops);
+}
+
+Copy::Copy (const Location& loc)
+  : TemplateSymbol ("copy",
+                    loc,
+                    new type::Template ())
+{ }
+
+void
+Copy::check (ErrorReporter& er,
+             const Location& location,
+             ExpressionValue& result,
+             ExpressionValueList& arguments) const
+{
+  if (arguments.size () != 1)
+    {
+      er.func_expects_count (location, "copy", 1, arguments.size ());
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  ExpressionValue& arg = arguments[0];
+
+  if (!require_value_or_variable (er, location, result, arg))
+    {
+      return;
+    }
+
+  switch (arg.type->underlying_kind ())
+    {
+    case kSlice:
+    {
+      const Slice* st = type_strip_cast<Slice> (arg.type);
+      if (type_contains_pointer (st->base_type))
+        {
+          er.leaks_pointers (location);
+          result.expression_kind = ErrorExpressionKind;
+          return;
+        }
+    }
+    break;
+    case kStringU:
+      // Okay.
+      break;
+    default:
+      er.cannot_be_applied (location, "copy", arg.type);
+      result.expression_kind = ErrorExpressionKind;
+      return;
+    }
+
+  result.expression_kind = ValueExpressionKind;
+  result.type = arg.type;
+  result.intrinsic_mutability = Immutable;
+  result.indirection_mutability = Mutable;
+}
+
+void
+Copy::compute_receiver_access (const semantic::ExpressionValueList& args,
+                               ReceiverAccess& receiver_access,
+                               bool& flag) const
+{
+  // Check if a mutable pointer escapes.
+  receiver_access = AccessNone;
+  flag = false;
+  for (ExpressionValueList::const_iterator pos = args.begin (),
+       limit = args.end ();
+       pos != limit;
+       ++pos)
+    {
+      receiver_access = std::max (receiver_access, pos->receiver_access);
+    }
+}
+
+runtime::Operation* Copy::generate_code (const semantic::ExpressionValue& result,
+    const semantic::ExpressionValueList& arg_vals,
+    runtime::Operation* arg_ops) const
+{
+  return new runtime::CopyOp (arg_vals.front ().type, arg_ops);
+}
+
+Println::Println (const Location& loc)
+  : TemplateSymbol ("println",
+                    loc,
+                    new type::Template ())
+{ }
+
+void
+Println::check (ErrorReporter& er,
+                const Location& location,
+                ExpressionValue& result,
+                ExpressionValueList& arguments) const
+{
+  for (ExpressionValueList::iterator pos = arguments.begin (), limit = arguments.end ();
+       pos != limit;
+       ++pos)
+    {
+      pos->convert (pos->type->DefaultType ());
+    }
+
+  result.expression_kind = ValueExpressionKind;
+  result.type = Void::Instance ();
+  result.intrinsic_mutability = Immutable;
+  result.indirection_mutability = Immutable;
+}
+
+void Println::compute_receiver_access (const semantic::ExpressionValueList& args,
+                                       ReceiverAccess& receiver_access,
+                                       bool& flag) const
+{
+  // Check if a mutable pointer escapes.
+  receiver_access = AccessNone;
+  flag = false;
+  for (ExpressionValueList::const_iterator pos = args.begin (),
+       limit = args.end ();
+       pos != limit;
+       ++pos)
+    {
+      receiver_access = std::max (receiver_access, pos->receiver_access);
+    }
+}
+
+runtime::Operation* Println::generate_code (const semantic::ExpressionValue& result,
+    const semantic::ExpressionValueList& arg_vals,
+    runtime::Operation* arg_ops) const
+{
+  return new runtime::PrintlnOp (arg_vals, arg_ops);
+}
+
+Posate posate_temp;
+Negate negate_temp;
+LogicNot logic_not_temp;
+Complement complement_temp;
+
+Multiply multiply_temp;
+Divide divide_temp;
+Modulus modulus_temp;
+LeftShift left_shift_temp;
+RightShift right_shift_temp;
+BitAnd bit_and_temp;
+BitAndNot bit_and_not_temp;
+Add add_temp;
+Subtract subtract_temp;
+BitOr bit_or_temp;
+BitXor bit_xor_temp;
+Equal equal_temp;
+NotEqual not_equal_temp;
+LessThan less_than_temp;
+LessEqual less_equal_temp;
+MoreThan more_than_temp;
+MoreEqual more_equal_temp;
+LogicOr logic_or_temp;
+LogicAnd logic_and_temp;
 
 }

@@ -1,131 +1,40 @@
 #ifndef RC_SRC_SYMBOL_VISITOR_HPP
 #define RC_SRC_SYMBOL_VISITOR_HPP
 
-#include "symbol.hpp"
-#include "builtin_function.hpp"
-#include "template.hpp"
-#include "callable.hpp"
+#include "types.hpp"
 
 namespace decl
 {
 
 struct SymbolVisitor
 {
-  virtual ~SymbolVisitor() { }
-  virtual void visit (BuiltinFunction& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (decl::Template& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (Function& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (InstanceSymbol& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (ParameterSymbol& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (TypeSymbol& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (ConstantSymbol& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (VariableSymbol& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (HiddenSymbol& s)
-  {
-    defaultAction (s);
-  }
-  virtual void defaultAction (Symbol& s) { }
+  virtual ~SymbolVisitor();
+  virtual void visit (BuiltinFunction& s);
+  virtual void visit (TemplateSymbol& s);
+  virtual void visit (Function& s);
+  virtual void visit (InstanceSymbol& s);
+  virtual void visit (ParameterSymbol& s);
+  virtual void visit (TypeSymbol& s);
+  virtual void visit (ConstantSymbol& s);
+  virtual void visit (VariableSymbol& s);
+  virtual void visit (HiddenSymbol& s);
+  virtual void default_action (Symbol& s);
 };
 
 struct ConstSymbolVisitor
 {
-  virtual ~ConstSymbolVisitor() { }
-  virtual void visit (const BuiltinFunction& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (const decl::Template& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (const Function& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (const InstanceSymbol& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (const ParameterSymbol& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (const TypeSymbol& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (const ConstantSymbol& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (const VariableSymbol& s)
-  {
-    defaultAction (s);
-  }
-  virtual void visit (const HiddenSymbol& s)
-  {
-    defaultAction (s);
-  }
-  virtual void defaultAction (const Symbol& s) { }
+  virtual ~ConstSymbolVisitor();
+  virtual void visit (const BuiltinFunction& s);
+  virtual void visit (const TemplateSymbol& s);
+  virtual void visit (const Function& s);
+  virtual void visit (const InstanceSymbol& s);
+  virtual void visit (const ParameterSymbol& s);
+  virtual void visit (const TypeSymbol& s);
+  virtual void visit (const ConstantSymbol& s);
+  virtual void visit (const VariableSymbol& s);
+  virtual void visit (const HiddenSymbol& s);
+  virtual void default_action (const Symbol& s);
 };
-
-template <typename T>
-T* SymbolCast (Symbol* symbol)
-{
-  struct visitor : public SymbolVisitor
-  {
-    T* retval;
-    visitor () : retval (NULL) { }
-    virtual void visit (T& s)
-    {
-      retval = & s;
-    }
-  };
-  visitor v;
-  symbol->accept (v);
-  return v.retval;
-}
-
-template <typename T>
-const T* SymbolCast (const Symbol* symbol)
-{
-  struct visitor : public ConstSymbolVisitor
-  {
-    const T* retval;
-    visitor () : retval (NULL) { }
-    virtual void visit (const T& s)
-    {
-      retval = & s;
-    }
-  };
-  visitor v;
-  symbol->accept (v);
-  return v.retval;
-}
 
 }
 

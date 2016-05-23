@@ -1,8 +1,8 @@
 #include "process_types_and_constants.hpp"
 
-#include "ast.hpp"
-#include "ast_visitor.hpp"
-#include "ast_cast.hpp"
+#include "node.hpp"
+#include "node_visitor.hpp"
+#include "node_cast.hpp"
 #include "symbol.hpp"
 #include "semantic.hpp"
 #include "check_types.hpp"
@@ -17,7 +17,7 @@ using namespace decl;
 
 namespace
 {
-struct Visitor : public ast::DefaultVisitor
+struct Visitor : public ast::DefaultNodeVisitor
 {
   ErrorReporter& er;
   SymbolTable& symtab;
@@ -56,7 +56,7 @@ struct Visitor : public ast::DefaultVisitor
     if (expression_list->size () != 0 &&
         identifier_list->size () != expression_list->size ())
       {
-        error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "wrong number of initializers (E88)");
       }
 
@@ -76,22 +76,22 @@ struct Visitor : public ast::DefaultVisitor
           {
             Node* n = *init_pos;
             check_types (n, er, symtab);
-            if (!n->value.present)
+            if (!n->eval.value.present)
               {
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                                "expression is not constant (E130)");
               }
-            if (!assignable (n->type, n->value, type))
+            if (!assignable (n->eval.type, n->eval.value, type))
               {
-                error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
-                               "cannot assign %s to %s in initialization (E131)", n->type->to_string ().c_str (), type->to_string ().c_str ());
+                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
+                               "cannot assign %s to %s in initialization (E131)", n->eval.type->to_string ().c_str (), type->to_string ().c_str ());
               }
 
-            n->value.convert (n->type, type);
-            n->type = type;
+            n->eval.value.convert (n->eval.type, type);
+            n->eval.type = type;
 
-            const std::string& name = ast_cast<Identifier> (*id_pos)->identifier;
-            Symbol* symbol = new ConstantSymbol (name, (*id_pos)->location, type, n->value);
+            const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
+            Symbol* symbol = new ConstantSymbol (name, (*id_pos)->location, type, n->eval.value);
             symtab.enter_symbol (symbol);
           }
 
@@ -110,14 +110,14 @@ struct Visitor : public ast::DefaultVisitor
       {
         Node* n = *init_pos;
         check_types (n, er, symtab);
-        if (!n->value.present)
+        if (!n->eval.value.present)
           {
-            error_at_line (-1, 0, node.location.File.c_str (), node.location.Line,
+            error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "expression is not constant (E89)");
           }
 
-        const std::string& name = ast_cast<Identifier> (*id_pos)->identifier;
-        Symbol* symbol = new ConstantSymbol (name, (*id_pos)->location, n->type, n->value);
+        const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
+        Symbol* symbol = new ConstantSymbol (name, (*id_pos)->location, n->eval.type, n->eval.value);
         symtab.enter_symbol (symbol);
       }
     node.done = true;

@@ -184,13 +184,13 @@ main (int argc, char **argv)
       fprintf (profile_out, "BEGIN parse %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
     }
 
-  util::Location::StaticFile = argv[optind];
+  util::Location::static_file = argv[optind];
 
   // Open the input file.
-  yyin = fopen (util::Location::StaticFile.c_str (), "r");
+  yyin = fopen (util::Location::static_file.c_str (), "r");
   if (yyin == NULL)
     {
-      error (EXIT_FAILURE, errno, "Could not open '%s'", util::Location::StaticFile.c_str ());
+      error (EXIT_FAILURE, errno, "Could not open '%s'", util::Location::static_file.c_str ());
     }
 
   yylloc = 1;

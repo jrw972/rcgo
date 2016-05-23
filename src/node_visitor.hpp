@@ -1,12 +1,12 @@
-#ifndef RC_SRC_AST_VISITOR_HPP
-#define RC_SRC_AST_VISITOR_HPP
+#ifndef RC_SRC_NODE_VISITOR_HPP
+#define RC_SRC_NODE_VISITOR_HPP
 
 #include "types.hpp"
 
 namespace ast
 {
 
-struct Visitor
+struct NodeVisitor
 {
   virtual void visit (Identifier& node) = 0;
   virtual void visit (IdentifierList& node) = 0;
@@ -74,7 +74,7 @@ struct Visitor
   virtual void visit (CompositeLiteral& node) = 0;
 };
 
-struct DefaultVisitor : public Visitor
+struct DefaultNodeVisitor : public NodeVisitor
 {
   virtual void visit (Identifier& node);
   virtual void visit (IdentifierList& node);
@@ -140,7 +140,7 @@ struct DefaultVisitor : public Visitor
   virtual void visit (ElementList& node);
   virtual void visit (Element& node);
   virtual void visit (CompositeLiteral& node);
-  virtual void default_action (Node& node) { }
+  virtual void default_action (Node& node);
 };
 
 }

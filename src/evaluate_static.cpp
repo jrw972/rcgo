@@ -1,8 +1,8 @@
 #include "evaluate_static.hpp"
 
 #include "type.hpp"
-#include "ast.hpp"
-#include "ast_visitor.hpp"
+#include "node.hpp"
+#include "node_visitor.hpp"
 #include "symbol.hpp"
 
 namespace semantic
