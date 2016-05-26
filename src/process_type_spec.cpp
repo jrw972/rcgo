@@ -9,6 +9,7 @@
 #include "symbol.hpp"
 #include "check_types.hpp"
 #include "parameter_list.hpp"
+#include "error_reporter.hpp"
 
 namespace semantic
 {
@@ -54,13 +55,15 @@ process_array_dimension (ast::Node* node, ErrorReporter& er, decl::SymbolTable& 
 }
 
 void
-CheckForForeignSafe (const ParameterList* signature, const ParameterSymbol* return_parameter)
+CheckForForeignSafe (ErrorReporter& er, const ParameterList* parameters, const ParameterSymbol* return_parameter)
 {
-  // TODO:  Move this up to the function/method type.
-  signature->check_foreign_safe ();
-  if (return_parameter != NULL)
+  if (!parameters->is_foreign_safe ())
     {
-      return_parameter->check_foreign_safe ();
+      er.signature_is_not_foreign_safe (parameters->location);
+    }
+  if (return_parameter != NULL && !return_parameter->is_foreign_safe ())
+    {
+      er.signature_is_not_foreign_safe (return_parameter->location);
     }
 }
 
@@ -87,7 +90,7 @@ process_signature (Node* node, ErrorReporter& er, decl::SymbolTable& symtab)
 
     void visit (SignatureTypeSpec& node)
     {
-      ParameterList* sig = new ParameterList ();
+      ParameterList* sig = new ParameterList (node.location);
       for (List::ConstIterator pos1 = node.begin (), limit1 = node.end ();
            pos1 != limit1;
            ++pos1)
@@ -246,8 +249,8 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
                                           type::Void::Instance (),
                                           Immutable);
 
-      CheckForForeignSafe (signature, return_parameter);
-      type = new type::Function (type::Function::PUSH_PORT, signature, (new ParameterList ())->append (return_parameter));
+      CheckForForeignSafe (er, signature, return_parameter);
+      type = new type::Function (type::Function::PUSH_PORT, signature, (new ParameterList (node.location))->append (return_parameter));
     }
 
     void visit (PullPortTypeSpec& node)
@@ -258,8 +261,8 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
                                           ReturnSymbol,
                                           return_type,
                                           node.indirection_mutability);
-      CheckForForeignSafe (signature, return_parameter);
-      type = new type::Function (type::Function::PULL_PORT, signature, (new ParameterList ())->append (return_parameter));
+      CheckForForeignSafe (er, signature, return_parameter);
+      type = new type::Function (type::Function::PULL_PORT, signature, (new ParameterList (node.location))->append (return_parameter));
     }
   };
 

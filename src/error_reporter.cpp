@@ -102,6 +102,12 @@ ErrorReporter::leaks_pointers (const Location& loc)
   return bump (Leaks_Pointers);
 }
 
+ErrorCode ErrorReporter::signature_is_not_foreign_safe (const Location& loc)
+{
+  out_ << loc << ": signature is not foreign safe " << Signature_Is_Not_Foreign_Safe << '\n';
+  return bump (Signature_Is_Not_Foreign_Safe);
+}
+
 ErrorCode
 ErrorReporter::bump (ErrorCode code)
 {

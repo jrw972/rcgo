@@ -157,7 +157,7 @@ struct ParameterSymbol : public Symbol
       }
   }
 
-  void check_foreign_safe () const;
+  bool is_foreign_safe () const;
 
   const type::Type* const type;
   Mutability const intrinsic_mutability;

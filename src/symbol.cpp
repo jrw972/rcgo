@@ -22,8 +22,8 @@ ACCEPT(ConstantSymbol)
 ACCEPT(VariableSymbol)
 ACCEPT(HiddenSymbol)
 
-void
-ParameterSymbol::check_foreign_safe () const
+bool
+ParameterSymbol::is_foreign_safe () const
 {
   if (type_contains_pointer (type) && dereference_mutability != Foreign)
     {
@@ -33,15 +33,12 @@ ParameterSymbol::check_foreign_safe () const
         case OrdinaryDuplicate:
         case Receiver:
         case ReceiverDuplicate:
-          error_at_line (-1, 0, location.file.c_str (), location.line,
-                         "parameter is not foreign safe (E106)");
-          break;
         case Return:
-          error_at_line (-1, 0, location.file.c_str (), location.line,
-                         "return parameter is not foreign safe (E107)");
-          break;
+          return false;
         }
     }
+
+  return true;
 }
 
 std::ostream&

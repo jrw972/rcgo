@@ -2,7 +2,7 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver
 
 AM_CXXFLAGS = -I $(top_srcdir)/src
 
-TESTS = action arch check_types heap error_reporter location memory_model node_cast parameter_list reaction semantic symbol_cast symbol_table type
+TESTS = action arch check_types expression_value heap error_reporter location memory_model node_cast parameter_list reaction semantic symbol_cast symbol_table type
 check_PROGRAMS = $(TESTS)
 
 action_SOURCES = action.cpp tap.hpp
@@ -19,6 +19,11 @@ check_types_SOURCES = check_types.cpp tap.hpp
 check_types_LDADD = $(top_builddir)/src/librc.la
 check_types_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 check_types_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+
+expression_value_SOURCES = expression_value.cpp tap.hpp
+expression_value_LDADD = $(top_builddir)/src/librc.la
+expression_value_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+expression_value_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
 heap_SOURCES = heap.cpp tap.hpp
 heap_LDADD = $(top_builddir)/src/librc.la

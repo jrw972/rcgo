@@ -9,4 +9,8 @@ Location::Location (unsigned int a_line)
   , line (a_line)
 { }
 
+bool Location::operator== (const Location& other) const
+{
+  return this->file == other.file && this->line == other.line;
+}
 }

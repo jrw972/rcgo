@@ -771,7 +771,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
       {
         exec.stack ().push (reaction->iota);
       }
-    exec.stack ().reserve (reaction->reaction->signature ()->allocation_size ());
+    exec.stack ().reserve (reaction->reaction->signature ()->size_on_stack ());
     exec.stack ().push_pointer (NULL);
     exec.stack ().setup (reaction->reaction->locals_size ());
   }
@@ -784,7 +784,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     , activation (NULL)
   {
     exec.stack ().push_pointer (reinterpret_cast<void*> (getter->instance->address));
-    exec.stack ().reserve (getter->getter->signature ()->allocation_size ());
+    exec.stack ().reserve (getter->getter->signature ()->size_on_stack ());
     exec.stack ().push_pointer (NULL);
     exec.stack ().setup (getter->getter->locals_size ());
   }

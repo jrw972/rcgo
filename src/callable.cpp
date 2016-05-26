@@ -61,7 +61,7 @@ void Function::call (runtime::ExecutorBase& exec) const
 
 size_t Function::arguments_size () const
 {
-  return type->parameter_list->allocation_size ();
+  return type->parameter_list->size_on_stack ();
 }
 
 void Method::call (runtime::ExecutorBase& exec) const
@@ -71,7 +71,7 @@ void Method::call (runtime::ExecutorBase& exec) const
 
 size_t Method::arguments_size () const
 {
-  return methodType->parameter_list->allocation_size ();
+  return methodType->parameter_list->size_on_stack ();
 }
 
 decl::ParameterSymbol* Method::return_parameter () const
@@ -86,7 +86,7 @@ void Initializer::call (runtime::ExecutorBase& exec) const
 
 size_t Initializer::arguments_size () const
 {
-  return initializerType->parameter_list->allocation_size ();
+  return initializerType->parameter_list->size_on_stack ();
 }
 
 decl::ParameterSymbol* Initializer::return_parameter () const
@@ -101,7 +101,7 @@ void Getter::call (runtime::ExecutorBase& exec) const
 
 size_t Getter::arguments_size () const
 {
-  return getterType->parameter_list->allocation_size ();
+  return getterType->parameter_list->size_on_stack ();
 }
 
 decl::ParameterSymbol* Getter::return_parameter () const

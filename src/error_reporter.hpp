@@ -18,6 +18,7 @@ enum ErrorCode
   Requires_Value_Or_Variable = 6,
   Requires_Type = 7,
   Leaks_Pointers = 8,
+  Signature_Is_Not_Foreign_Safe = 9,
 };
 
 struct ErrorReporter
@@ -49,6 +50,7 @@ struct ErrorReporter
   ErrorCode requires_value_or_variable (const Location& loc);
   ErrorCode requires_type (const Location& loc);
   ErrorCode leaks_pointers (const Location& loc);
+  ErrorCode signature_is_not_foreign_safe (const Location& loc);
 
   const ListType& list () const
   {

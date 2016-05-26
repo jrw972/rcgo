@@ -982,13 +982,13 @@ Function::to_string () const
   switch (function_kind)
     {
     case FUNCTION:
-      str << "func " << *parameter_list << ' ' << *GetReturnParameter ()->type;
+      str << "func " << parameter_list->to_string () << ' ' << *GetReturnParameter ()->type;
       break;
     case PUSH_PORT:
-      str << "push " << *parameter_list;
+      str << "push " << parameter_list->to_string ();
       break;
     case PULL_PORT:
-      str << "pull " << *parameter_list << ' ' << *GetReturnParameter ()->type;
+      str << "pull " << parameter_list->to_string () << ' ' << *GetReturnParameter ()->type;
       break;
     }
   return str.str ();
@@ -1001,16 +1001,16 @@ Method::to_string () const
   switch (method_kind)
     {
     case METHOD:
-      str << '(' << *receiver_type () << ')' << " func " << *parameter_list << ' ' << *return_type ();
+      str << '(' << *receiver_type () << ')' << " func " << parameter_list->to_string () << ' ' << *return_type ();
       break;
     case INITIALIZER:
-      str << '(' << *receiver_type () << ')' << " init " << *parameter_list << ' ' << *return_type ();
+      str << '(' << *receiver_type () << ')' << " init " << parameter_list->to_string () << ' ' << *return_type ();
       break;
     case GETTER:
-      str << '(' << *receiver_type () << ')' << " getter " << *parameter_list << ' ' << *return_type ();
+      str << '(' << *receiver_type () << ')' << " getter " << parameter_list->to_string () << ' ' << *return_type ();
       break;
     case REACTION:
-      str << '(' << *receiver_type () << ')' << " reaction " << *parameter_list;
+      str << '(' << *receiver_type () << ')' << " reaction " << parameter_list->to_string ();
       break;
     }
   return str.str ();
@@ -1021,7 +1021,7 @@ Method::make_function_type (ParameterSymbol* this_parameter,
                             const ParameterList* parameter_list,
                             const ParameterList* return_parameter_list)
 {
-  ParameterList* sig = new ParameterList ();
+  ParameterList* sig = new ParameterList (parameter_list->location);
 
   sig->append (this_parameter);
   for (ParameterList::const_iterator pos = parameter_list->begin (),

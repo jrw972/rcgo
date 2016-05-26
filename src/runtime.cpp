@@ -989,9 +989,9 @@ void execute_no_check (ExecutorBase& exec, component_t* instance, const decl::Ac
 Readable::Readable (const util::Location& loc)
   : BuiltinFunction ("readable",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                     new type::Function (type::Function::FUNCTION, (new ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
-                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable))))
+                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable))))
 { }
 
 void
@@ -1019,10 +1019,10 @@ Readable::call (runtime::ExecutorBase& exec) const
 Read::Read (const util::Location& loc)
   : BuiltinFunction ("read",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                     new type::Function (type::Function::FUNCTION, (new ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
                                          ->append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Mutable)),
-                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable))))
+                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable))))
 { }
 
 void
@@ -1037,9 +1037,9 @@ Read::call (runtime::ExecutorBase& exec) const
 Writable::Writable (const util::Location& loc)
   : BuiltinFunction ("writable",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                     new type::Function (type::Function::FUNCTION, (new ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
-                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable))))
+                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable))))
 { }
 
 void
@@ -1067,9 +1067,9 @@ Writable::call (runtime::ExecutorBase& exec) const
 ClockGettime::ClockGettime (const util::Location& loc)
   : BuiltinFunction ("clock_gettime",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                     new type::Function (type::Function::FUNCTION, (new ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "tp", type::named_timespec.get_pointer (), Immutable, Foreign)),
-                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable))))
+                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable))))
 { }
 
 void
@@ -1083,8 +1083,8 @@ ClockGettime::call (runtime::ExecutorBase& exec) const
 TimerfdCreate::TimerfdCreate (const util::Location& loc)
   : BuiltinFunction ("timerfd_create",
                      loc,
-                     new type::Function (type::Function::FUNCTION, new ParameterList (),
-                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable))))
+                     new type::Function (type::Function::FUNCTION, new ParameterList (loc),
+                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable))))
 { }
 
 void
@@ -1105,10 +1105,10 @@ TimerfdCreate::call (runtime::ExecutorBase& exec) const
 TimerfdSettime::TimerfdSettime (const util::Location& loc)
   : BuiltinFunction ("timerfd_settime",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                     new type::Function (type::Function::FUNCTION, (new ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
                                          ->append (ParameterSymbol::make (loc, "s", &type::named_uint64, Immutable, Immutable)),
-                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable))))
+                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable))))
 { }
 
 void
@@ -1129,8 +1129,8 @@ TimerfdSettime::call (runtime::ExecutorBase& exec) const
 UdpSocket::UdpSocket (const util::Location& loc)
   : BuiltinFunction ("udp_socket",
                      loc,
-                     new type::Function (type::Function::FUNCTION, new ParameterList (),
-                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable))))
+                     new type::Function (type::Function::FUNCTION, new ParameterList (loc),
+                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable))))
 { }
 
 void
@@ -1158,12 +1158,12 @@ UdpSocket::call (runtime::ExecutorBase& exec) const
 Sendto::Sendto (const util::Location& loc)
   : BuiltinFunction ("sendto",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new ParameterList ())
+                     new type::Function (type::Function::FUNCTION, (new ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
                                          ->append (ParameterSymbol::make (loc, "host", &type::named_string, Immutable, Foreign))
                                          ->append (ParameterSymbol::make (loc, "port", &type::named_uint16, Immutable, Immutable))
                                          ->append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Foreign)),
-                                         (new ParameterList ())->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable))))
+                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable))))
 { }
 
 void

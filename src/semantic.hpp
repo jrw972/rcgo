@@ -236,7 +236,7 @@ ExpressionValueList collect_evals (ast::Node* node);
 type::Int::ValueType process_array_dimension (ast::Node* ptr, util::ErrorReporter& er, decl::SymbolTable& symtab);
 
 // Check that a signature has +foreign where needed.
-void CheckForForeignSafe (const decl::ParameterList* signature, const decl::ParameterSymbol* return_parameter);
+void CheckForForeignSafe (util::ErrorReporter& er, const decl::ParameterList* signature, const decl::ParameterSymbol* return_parameter);
 
 // Process a type specification.
 const type::Type * process_type (ast::Node* node, util::ErrorReporter& er, decl::SymbolTable& symtab, bool force);

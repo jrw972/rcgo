@@ -31,7 +31,7 @@ BuiltinFunction::accept (decl::ConstSymbolVisitor& visitor) const
 
 size_t BuiltinFunction::arguments_size () const
 {
-  return type->parameter_list->allocation_size ();
+  return type->parameter_list->size_on_stack ();
 }
 
 }

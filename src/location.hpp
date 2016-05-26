@@ -19,6 +19,7 @@ struct Location
   unsigned int const line;
 
   Location (unsigned int a_line = 0);
+  bool operator== (const Location& other) const;
 };
 
 }

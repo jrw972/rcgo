@@ -78,7 +78,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 TESTS = action$(EXEEXT) arch$(EXEEXT) check_types$(EXEEXT) \
-	heap$(EXEEXT) error_reporter$(EXEEXT) location$(EXEEXT) \
+	expression_value$(EXEEXT) heap$(EXEEXT) \
+	error_reporter$(EXEEXT) location$(EXEEXT) \
 	memory_model$(EXEEXT) node_cast$(EXEEXT) \
 	parameter_list$(EXEEXT) reaction$(EXEEXT) semantic$(EXEEXT) \
 	symbol_cast$(EXEEXT) symbol_table$(EXEEXT) type$(EXEEXT)
@@ -99,7 +100,8 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__EXEEXT_1 = action$(EXEEXT) arch$(EXEEXT) check_types$(EXEEXT) \
-	heap$(EXEEXT) error_reporter$(EXEEXT) location$(EXEEXT) \
+	expression_value$(EXEEXT) heap$(EXEEXT) \
+	error_reporter$(EXEEXT) location$(EXEEXT) \
 	memory_model$(EXEEXT) node_cast$(EXEEXT) \
 	parameter_list$(EXEEXT) reaction$(EXEEXT) semantic$(EXEEXT) \
 	symbol_cast$(EXEEXT) symbol_table$(EXEEXT) type$(EXEEXT)
@@ -132,6 +134,14 @@ error_reporter_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(error_reporter_CXXFLAGS) $(CXXFLAGS) \
 	$(error_reporter_LDFLAGS) $(LDFLAGS) -o $@
+am_expression_value_OBJECTS =  \
+	expression_value-expression_value.$(OBJEXT)
+expression_value_OBJECTS = $(am_expression_value_OBJECTS)
+expression_value_DEPENDENCIES = $(top_builddir)/src/librc.la
+expression_value_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(expression_value_CXXFLAGS) $(CXXFLAGS) \
+	$(expression_value_LDFLAGS) $(LDFLAGS) -o $@
 am_heap_OBJECTS = heap-heap.$(OBJEXT)
 heap_OBJECTS = $(am_heap_OBJECTS)
 heap_DEPENDENCIES = $(top_builddir)/src/librc.la
@@ -246,14 +256,15 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(action_SOURCES) $(arch_SOURCES) $(check_types_SOURCES) \
-	$(error_reporter_SOURCES) $(heap_SOURCES) $(location_SOURCES) \
-	$(memory_model_SOURCES) $(node_cast_SOURCES) \
-	$(parameter_list_SOURCES) $(reaction_SOURCES) \
-	$(semantic_SOURCES) $(symbol_cast_SOURCES) \
+	$(error_reporter_SOURCES) $(expression_value_SOURCES) \
+	$(heap_SOURCES) $(location_SOURCES) $(memory_model_SOURCES) \
+	$(node_cast_SOURCES) $(parameter_list_SOURCES) \
+	$(reaction_SOURCES) $(semantic_SOURCES) $(symbol_cast_SOURCES) \
 	$(symbol_table_SOURCES) $(type_SOURCES)
 DIST_SOURCES = $(action_SOURCES) $(arch_SOURCES) \
 	$(check_types_SOURCES) $(error_reporter_SOURCES) \
-	$(heap_SOURCES) $(location_SOURCES) $(memory_model_SOURCES) \
+	$(expression_value_SOURCES) $(heap_SOURCES) \
+	$(location_SOURCES) $(memory_model_SOURCES) \
 	$(node_cast_SOURCES) $(parameter_list_SOURCES) \
 	$(reaction_SOURCES) $(semantic_SOURCES) $(symbol_cast_SOURCES) \
 	$(symbol_table_SOURCES) $(type_SOURCES)
@@ -626,6 +637,10 @@ check_types_SOURCES = check_types.cpp tap.hpp
 check_types_LDADD = $(top_builddir)/src/librc.la
 check_types_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 check_types_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+expression_value_SOURCES = expression_value.cpp tap.hpp
+expression_value_LDADD = $(top_builddir)/src/librc.la
+expression_value_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+expression_value_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 heap_SOURCES = heap.cpp tap.hpp
 heap_LDADD = $(top_builddir)/src/librc.la
 heap_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -730,6 +745,10 @@ error_reporter$(EXEEXT): $(error_reporter_OBJECTS) $(error_reporter_DEPENDENCIES
 	@rm -f error_reporter$(EXEEXT)
 	$(AM_V_CXXLD)$(error_reporter_LINK) $(error_reporter_OBJECTS) $(error_reporter_LDADD) $(LIBS)
 
+expression_value$(EXEEXT): $(expression_value_OBJECTS) $(expression_value_DEPENDENCIES) $(EXTRA_expression_value_DEPENDENCIES) 
+	@rm -f expression_value$(EXEEXT)
+	$(AM_V_CXXLD)$(expression_value_LINK) $(expression_value_OBJECTS) $(expression_value_LDADD) $(LIBS)
+
 heap$(EXEEXT): $(heap_OBJECTS) $(heap_DEPENDENCIES) $(EXTRA_heap_DEPENDENCIES) 
 	@rm -f heap$(EXEEXT)
 	$(AM_V_CXXLD)$(heap_LINK) $(heap_OBJECTS) $(heap_LDADD) $(LIBS)
@@ -780,6 +799,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arch-arch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_types-check_types.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/error_reporter-error_reporter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/expression_value-expression_value.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/heap-heap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/location-location.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory_model-memory_model.Po@am__quote@
@@ -867,6 +887,20 @@ error_reporter-error_reporter.obj: error_reporter.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='error_reporter.cpp' object='error_reporter-error_reporter.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(error_reporter_CXXFLAGS) $(CXXFLAGS) -c -o error_reporter-error_reporter.obj `if test -f 'error_reporter.cpp'; then $(CYGPATH_W) 'error_reporter.cpp'; else $(CYGPATH_W) '$(srcdir)/error_reporter.cpp'; fi`
+
+expression_value-expression_value.o: expression_value.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(expression_value_CXXFLAGS) $(CXXFLAGS) -MT expression_value-expression_value.o -MD -MP -MF $(DEPDIR)/expression_value-expression_value.Tpo -c -o expression_value-expression_value.o `test -f 'expression_value.cpp' || echo '$(srcdir)/'`expression_value.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/expression_value-expression_value.Tpo $(DEPDIR)/expression_value-expression_value.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='expression_value.cpp' object='expression_value-expression_value.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(expression_value_CXXFLAGS) $(CXXFLAGS) -c -o expression_value-expression_value.o `test -f 'expression_value.cpp' || echo '$(srcdir)/'`expression_value.cpp
+
+expression_value-expression_value.obj: expression_value.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(expression_value_CXXFLAGS) $(CXXFLAGS) -MT expression_value-expression_value.obj -MD -MP -MF $(DEPDIR)/expression_value-expression_value.Tpo -c -o expression_value-expression_value.obj `if test -f 'expression_value.cpp'; then $(CYGPATH_W) 'expression_value.cpp'; else $(CYGPATH_W) '$(srcdir)/expression_value.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/expression_value-expression_value.Tpo $(DEPDIR)/expression_value-expression_value.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='expression_value.cpp' object='expression_value-expression_value.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(expression_value_CXXFLAGS) $(CXXFLAGS) -c -o expression_value-expression_value.obj `if test -f 'expression_value.cpp'; then $(CYGPATH_W) 'expression_value.cpp'; else $(CYGPATH_W) '$(srcdir)/expression_value.cpp'; fi`
 
 heap-heap.o: heap.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(heap_CXXFLAGS) $(CXXFLAGS) -MT heap-heap.o -MD -MP -MF $(DEPDIR)/heap-heap.Tpo -c -o heap-heap.o `test -f 'heap.cpp' || echo '$(srcdir)/'`heap.cpp
@@ -1224,6 +1258,13 @@ arch.log: arch$(EXEEXT)
 check_types.log: check_types$(EXEEXT)
 	@p='check_types$(EXEEXT)'; \
 	b='check_types'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+expression_value.log: expression_value$(EXEEXT)
+	@p='expression_value$(EXEEXT)'; \
+	b='expression_value'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

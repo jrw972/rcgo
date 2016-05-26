@@ -141,7 +141,7 @@ processSignatureReturn (ErrorReporter& er,
 
   if (requireForeignSafe)
     {
-      CheckForForeignSafe (signature, returnSymbol);
+      CheckForForeignSafe (er, signature, returnSymbol);
     }
 }
 
@@ -168,7 +168,7 @@ process_signature_return (ErrorReporter& er,
 
   if (requireForeignSafe)
     {
-      CheckForForeignSafe (signature, returnSymbol);
+      CheckForForeignSafe (er, signature, returnSymbol);
     }
 }
 
@@ -209,7 +209,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     ParameterSymbol* return_symbol;
     process_signature_return (er, symtab, node.signature, node.return_type, node.indirection_mutability, false,
                               signature, return_symbol);
-    const type::Function* function_type = new type::Function (type::Function::FUNCTION, signature, (new ParameterList ())->append (return_symbol));
+    const type::Function* function_type = new type::Function (type::Function::FUNCTION, signature, (new ParameterList (node.location))->append (return_symbol));
     node.function = new decl::Function (&node, function_type);
 
     symtab.enter_symbol (node.function);
@@ -228,7 +228,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     type::Method* method_type = new type::Method (type::Method::METHOD, type,
         thisSymbol,
         signature,
-        (new ParameterList ())->append (return_symbol));
+        (new ParameterList (node.location))->append (return_symbol));
     decl::Method* method = new decl::Method (&node, node.identifier->identifier, method_type);
 
     type->insert_method (method);
@@ -249,7 +249,7 @@ struct Visitor : public ast::DefaultNodeVisitor
       new type::Method (type::Method::INITIALIZER, type,
                         thisSymbol,
                         signature,
-                        (new ParameterList ())->append (return_symbol));
+                        (new ParameterList (node.location))->append (return_symbol));
 
     decl::Initializer* initializer = new decl::Initializer (&node, node.identifier->identifier, initializer_type);
 
@@ -292,7 +292,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     type::Method* reaction_type = new type::Method (type::Method::REACTION, type,
         thisSymbol,
         signature,
-        (new ParameterList ())->append (return_symbol));
+        (new ParameterList (node.location))->append (return_symbol));
 
     decl::Reaction* reaction = new decl::Reaction (thisSymbol, node.body, node.identifier->identifier, reaction_type);
 
@@ -316,7 +316,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     type::Method* reaction_type = new type::Method (type::Method::REACTION, type,
         thisSymbol,
         signature,
-        (new ParameterList ())->append (return_symbol));
+        (new ParameterList (node.location))->append (return_symbol));
 
     decl::Reaction* reaction = new decl::Reaction (thisSymbol, node.body, node.identifier->identifier, reaction_type, iotaSymbol, dimension);
 
@@ -337,7 +337,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     type::Method* getter_type = new type::Method (type::Method::GETTER, type,
         thisSymbol,
         signature,
-        (new ParameterList ())->append (return_symbol));
+        (new ParameterList (node.location))->append (return_symbol));
 
     decl::Getter* getter = new decl::Getter (&node, node.identifier->identifier, getter_type);
 
