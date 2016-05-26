@@ -299,7 +299,7 @@ private:
       , ready_head_ (NULL)
       , ready_tail_ (&ready_head_)
       , task_count_ (0)
-      , trackFileDescriptors_ (false)
+      , tracFile_Descriptor_Kinds_ (false)
       , using_eventfd_ (false)
     {
       pthread_mutex_init (&mutex_, NULL);
@@ -359,7 +359,7 @@ private:
     virtual void
     checkedForReadability (FileDescriptor* fd)
     {
-      if (trackFileDescriptors_)
+      if (tracFile_Descriptor_Kinds_)
         {
           std::pair<FileDescriptorMapType::iterator, bool> x =
             fileDescriptorMap_.insert (std::make_pair (fd, 0));
@@ -370,7 +370,7 @@ private:
     virtual void
     checkedForWritability (FileDescriptor* fd)
     {
-      if (trackFileDescriptors_)
+      if (tracFile_Descriptor_Kinds_)
         {
           std::pair<FileDescriptorMapType::iterator, bool> x =
             fileDescriptorMap_.insert (std::make_pair (fd, 0));
@@ -383,13 +383,13 @@ private:
     void
     disableFileDescriptorTracking ()
     {
-      trackFileDescriptors_ = false;
+      tracFile_Descriptor_Kinds_ = false;
     }
 
     void
     enableFileDescriptorTracking ()
     {
-      trackFileDescriptors_ = true;
+      tracFile_Descriptor_Kinds_ = true;
       fileDescriptorMap_.clear ();
     }
 
@@ -533,7 +533,7 @@ private:
     task_t** ready_tail_;
     std::queue<Message> message_queue_;
     size_t task_count_;
-    bool trackFileDescriptors_;
+    bool tracFile_Descriptor_Kinds_;
     typedef std::map<FileDescriptor*, short> FileDescriptorMapType;
     FileDescriptorMapType fileDescriptorMap_;
     bool using_eventfd_;

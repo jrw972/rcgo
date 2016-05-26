@@ -60,13 +60,13 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
   void visit (ast::Initializer& node)
   {
     node.body->accept (*this);
-    node.operation = new SetRestoreCurrentInstance (node.body->operation, node.initializer->memoryModel.receiver_offset ());
+    node.operation = new SetRestoreCurrentInstance (node.body->operation, node.initializer->memory_model.receiver_offset ());
   }
 
   void visit (ast::Getter& node)
   {
     node.body->accept (*this);
-    node.operation = new SetRestoreCurrentInstance (node.body->operation, node.getter->memoryModel.receiver_offset ());
+    node.operation = new SetRestoreCurrentInstance (node.body->operation, node.getter->memory_model.receiver_offset ());
   }
 
   void visit (ast::Action& node)

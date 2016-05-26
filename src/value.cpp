@@ -128,35 +128,35 @@ static bool to_and_back (const T& x, const type::Type* type)
 {
   switch (type->underlying_kind ())
     {
-    case kUint8:
+    case Uint8_Kind:
       return to_and_back_helper<Uint8::ValueType> (x);
-    case kUint16:
+    case Uint16_Kind:
       return to_and_back_helper<Uint16::ValueType> (x);
-    case kUint32:
+    case Uint32_Kind:
       return to_and_back_helper<Uint32::ValueType> (x);
-    case kUint64:
+    case Uint64_Kind:
       return to_and_back_helper<Uint64::ValueType> (x);
-    case kInt8:
+    case Int8_Kind:
       return to_and_back_helper<Int8::ValueType> (x);
-    case kInt16:
+    case Int16_Kind:
       return to_and_back_helper<Int16::ValueType> (x);
-    case kInt32:
+    case Int32_Kind:
       return to_and_back_helper<Int32::ValueType> (x);
-    case kInt64:
+    case Int64_Kind:
       return to_and_back_helper<Int64::ValueType> (x);
-    case kFloat32:
+    case Float32_Kind:
       return to_and_back_helper<Float32::ValueType> (x);
-    case kFloat64:
+    case Float64_Kind:
       return to_and_back_helper<Float64::ValueType> (x);
-    case kComplex64:
+    case Complex64_Kind:
       return to_and_back_helper<Complex64::ValueType> (x);
-    case kComplex128:
+    case Complex128_Kind:
       return to_and_back_helper<Complex128::ValueType> (x);
-    case kUint:
+    case Uint_Kind:
       return to_and_back_helper<Uint::ValueType> (x);
-    case kInt:
+    case Int_Kind:
       return to_and_back_helper<Int::ValueType> (x);
-    case kUintptr:
+    case Uintptr_Kind:
       return to_and_back_helper<Uintptr::ValueType> (x);
     default:
       return false;
@@ -259,34 +259,34 @@ static void convert_numeric (Value& value, Complex::ValueType x, const type::Typ
   };
 
   visitor v (value, x);
-  type->Accept (v);
+  type->accept (v);
 }
 
 bool
 Value::representable (const type::Type* from, const type::Type* to) const
 {
   assert (present);
-  assert (from->IsUntyped ());
-  assert (!to->IsUntyped ());
+  assert (from->is_untyped ());
+  assert (!to->is_untyped ());
 
   switch (from->underlying_kind ())
     {
-    case kNil:
+    case Nil_Kind:
       return
-        to->underlying_kind () == kPointer ||
-        to->underlying_kind () == kSlice;
-    case kBoolean:
-      return to->underlying_kind () == kBool;
-    case kRune:
+        to->underlying_kind () == Pointer_Kind ||
+        to->underlying_kind () == Slice_Kind;
+    case Boolean_Kind:
+      return to->underlying_kind () == Bool_Kind;
+    case Rune_Kind:
       return to_and_back (rune_value, to);
-    case kInteger:
+    case Integer_Kind:
       return to_and_back (integer_value, to);
-    case kFloat:
+    case Float_Kind:
       return to_and_back (float_value, to);
-    case kComplex:
+    case Complex_Kind:
       return to_and_back (complex_value, to);
-    case kString:
-      return to->underlying_kind () == kStringU;
+    case Untyped_String_Kind:
+      return to->underlying_kind () == String_Kind;
     default:
       NOT_REACHED;
     }
@@ -518,7 +518,7 @@ Value::convert (const type::Type* from, const type::Type* to)
 
   } v (*this, to->UnderlyingType ());
 
-  from->UnderlyingType ()->Accept (v);
+  from->UnderlyingType ()->accept (v);
 }
 
 type::Int::ValueType
@@ -527,27 +527,27 @@ Value::to_int (const type::Type* type) const
   assert (is_typed_integer (type));
   switch (type->underlying_kind ())
     {
-    case kUint8:
+    case Uint8_Kind:
       return uint8_value;
-    case kUint16:
+    case Uint16_Kind:
       return uint16_value;
-    case kUint32:
+    case Uint32_Kind:
       return uint32_value;
-    case kUint64:
+    case Uint64_Kind:
       return uint64_value;
-    case kInt8:
+    case Int8_Kind:
       return int8_value;
-    case kInt16:
+    case Int16_Kind:
       return int16_value;
-    case kInt32:
+    case Int32_Kind:
       return int32_value;
-    case kInt64:
+    case Int64_Kind:
       return int64_value;
-    case kUint:
+    case Uint_Kind:
       return uint_value;
-    case kInt:
+    case Int_Kind:
       return int_value;
-    case kUintptr:
+    case Uintptr_Kind:
       return uintptr_value;
     default:
       NOT_REACHED;
@@ -559,79 +559,79 @@ void equal (Value& out, const type::Type* type, const Value& left, const Value& 
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kNil:
+    case Nil_Kind:
       out.boolean_value = true;
       break;
-    case kBoolean:
+    case Boolean_Kind:
       out.boolean_value = left.boolean_value == right.boolean_value;
       break;
-    case kRune:
+    case Rune_Kind:
       out.boolean_value = left.rune_value == right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.boolean_value = left.integer_value == right.integer_value;
       break;
-    case kFloat:
+    case Float_Kind:
       out.boolean_value = left.float_value == right.float_value;
       break;
-    case kComplex:
+    case Complex_Kind:
       out.boolean_value = left.complex_value == right.complex_value;
       break;
-    case kString:
+    case Untyped_String_Kind:
       out.boolean_value = left.string_value == right.string_value;
       break;
-    case kBool:
+    case Bool_Kind:
       out.boolean_value = left.bool_value == right.bool_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.boolean_value = left.uint8_value == right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.boolean_value = left.uint16_value == right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.boolean_value = left.uint32_value == right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.boolean_value = left.uint64_value == right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.boolean_value = left.int8_value == right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.boolean_value = left.int16_value == right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.boolean_value = left.int32_value == right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.boolean_value = left.int64_value == right.int64_value;
       break;
-    case kFloat32:
+    case Float32_Kind:
       out.boolean_value = left.float32_value == right.float32_value;
       break;
-    case kFloat64:
+    case Float64_Kind:
       out.boolean_value = left.float64_value == right.float64_value;
       break;
-    case kComplex64:
+    case Complex64_Kind:
       out.boolean_value = left.complex64_value == right.complex64_value;
       break;
-    case kComplex128:
+    case Complex128_Kind:
       out.boolean_value = left.complex128_value == right.complex128_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.boolean_value = left.uint_value == right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.boolean_value = left.int_value == right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.boolean_value = left.uintptr_value == right.uintptr_value;
       break;
-    case kStringU:
+    case String_Kind:
       out.boolean_value = left.stringu_value == right.stringu_value;
       break;
-    case kPointer:
+    case Pointer_Kind:
       out.boolean_value = left.pointer_value == right.pointer_value;
       break;
     default:
@@ -644,79 +644,79 @@ void not_equal (Value& out, const type::Type* type, const Value& left, const Val
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kNil:
+    case Nil_Kind:
       out.boolean_value = false;
       break;
-    case kBoolean:
+    case Boolean_Kind:
       out.boolean_value = left.boolean_value != right.boolean_value;
       break;
-    case kRune:
+    case Rune_Kind:
       out.boolean_value = left.rune_value != right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.boolean_value = left.integer_value != right.integer_value;
       break;
-    case kFloat:
+    case Float_Kind:
       out.boolean_value = left.float_value != right.float_value;
       break;
-    case kComplex:
+    case Complex_Kind:
       out.boolean_value = left.complex_value != right.complex_value;
       break;
-    case kString:
+    case Untyped_String_Kind:
       out.boolean_value = left.string_value != right.string_value;
       break;
-    case kBool:
+    case Bool_Kind:
       out.boolean_value = left.bool_value != right.bool_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.boolean_value = left.uint8_value != right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.boolean_value = left.uint16_value != right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.boolean_value = left.uint32_value != right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.boolean_value = left.uint64_value != right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.boolean_value = left.int8_value != right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.boolean_value = left.int16_value != right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.boolean_value = left.int32_value != right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.boolean_value = left.int64_value != right.int64_value;
       break;
-    case kFloat32:
+    case Float32_Kind:
       out.boolean_value = left.float32_value != right.float32_value;
       break;
-    case kFloat64:
+    case Float64_Kind:
       out.boolean_value = left.float64_value != right.float64_value;
       break;
-    case kComplex64:
+    case Complex64_Kind:
       out.boolean_value = left.complex64_value != right.complex64_value;
       break;
-    case kComplex128:
+    case Complex128_Kind:
       out.boolean_value = left.complex128_value != right.complex128_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.boolean_value = left.uint_value != right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.boolean_value = left.int_value != right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.boolean_value = left.uintptr_value != right.uintptr_value;
       break;
-    case kStringU:
+    case String_Kind:
       out.boolean_value = left.stringu_value != right.stringu_value;
       break;
-    case kPointer:
+    case Pointer_Kind:
       out.boolean_value = left.pointer_value != right.pointer_value;
       break;
     default:
@@ -729,58 +729,58 @@ void less_than (Value& out, const type::Type* type, const Value& left, const Val
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kRune:
+    case Rune_Kind:
       out.boolean_value = left.rune_value < right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.boolean_value = left.integer_value < right.integer_value;
       break;
-    case kFloat:
+    case Float_Kind:
       out.boolean_value = left.float_value < right.float_value;
       break;
-    case kString:
+    case Untyped_String_Kind:
       out.boolean_value = left.string_value < right.string_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.boolean_value = left.uint8_value < right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.boolean_value = left.uint16_value < right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.boolean_value = left.uint32_value < right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.boolean_value = left.uint64_value < right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.boolean_value = left.int8_value < right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.boolean_value = left.int16_value < right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.boolean_value = left.int32_value < right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.boolean_value = left.int64_value < right.int64_value;
       break;
-    case kFloat32:
+    case Float32_Kind:
       out.boolean_value = left.float32_value < right.float32_value;
       break;
-    case kFloat64:
+    case Float64_Kind:
       out.boolean_value = left.float64_value < right.float64_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.boolean_value = left.uint_value < right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.boolean_value = left.int_value < right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.boolean_value = left.uintptr_value < right.uintptr_value;
       break;
-    case kStringU:
+    case String_Kind:
       out.boolean_value = left.stringu_value < right.stringu_value;
       break;
     default:
@@ -793,58 +793,58 @@ void less_equal (Value& out, const type::Type* type, const Value& left, const Va
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kRune:
+    case Rune_Kind:
       out.boolean_value = left.rune_value <= right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.boolean_value = left.integer_value <= right.integer_value;
       break;
-    case kFloat:
+    case Float_Kind:
       out.boolean_value = left.float_value <= right.float_value;
       break;
-    case kString:
+    case Untyped_String_Kind:
       out.boolean_value = left.string_value <= right.string_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.boolean_value = left.uint8_value <= right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.boolean_value = left.uint16_value <= right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.boolean_value = left.uint32_value <= right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.boolean_value = left.uint64_value <= right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.boolean_value = left.int8_value <= right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.boolean_value = left.int16_value <= right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.boolean_value = left.int32_value <= right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.boolean_value = left.int64_value <= right.int64_value;
       break;
-    case kFloat32:
+    case Float32_Kind:
       out.boolean_value = left.float32_value <= right.float32_value;
       break;
-    case kFloat64:
+    case Float64_Kind:
       out.boolean_value = left.float64_value <= right.float64_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.boolean_value = left.uint_value <= right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.boolean_value = left.int_value <= right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.boolean_value = left.uintptr_value <= right.uintptr_value;
       break;
-    case kStringU:
+    case String_Kind:
       out.boolean_value = left.stringu_value <= right.stringu_value;
       break;
     default:
@@ -857,58 +857,58 @@ void more_than (Value& out, const type::Type* type, const Value& left, const Val
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kRune:
+    case Rune_Kind:
       out.boolean_value = left.rune_value > right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.boolean_value = left.integer_value > right.integer_value;
       break;
-    case kFloat:
+    case Float_Kind:
       out.boolean_value = left.float_value > right.float_value;
       break;
-    case kString:
+    case Untyped_String_Kind:
       out.boolean_value = left.string_value > right.string_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.boolean_value = left.uint8_value > right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.boolean_value = left.uint16_value > right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.boolean_value = left.uint32_value > right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.boolean_value = left.uint64_value > right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.boolean_value = left.int8_value > right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.boolean_value = left.int16_value > right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.boolean_value = left.int32_value > right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.boolean_value = left.int64_value > right.int64_value;
       break;
-    case kFloat32:
+    case Float32_Kind:
       out.boolean_value = left.float32_value > right.float32_value;
       break;
-    case kFloat64:
+    case Float64_Kind:
       out.boolean_value = left.float64_value > right.float64_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.boolean_value = left.uint_value > right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.boolean_value = left.int_value > right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.boolean_value = left.uintptr_value > right.uintptr_value;
       break;
-    case kStringU:
+    case String_Kind:
       out.boolean_value = left.stringu_value > right.stringu_value;
       break;
     default:
@@ -921,58 +921,58 @@ void more_equal (Value& out, const type::Type* type, const Value& left, const Va
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kRune:
+    case Rune_Kind:
       out.boolean_value = left.rune_value >= right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.boolean_value = left.integer_value >= right.integer_value;
       break;
-    case kFloat:
+    case Float_Kind:
       out.boolean_value = left.float_value >= right.float_value;
       break;
-    case kString:
+    case Untyped_String_Kind:
       out.boolean_value = left.string_value >= right.string_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.boolean_value = left.uint8_value >= right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.boolean_value = left.uint16_value >= right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.boolean_value = left.uint32_value >= right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.boolean_value = left.uint64_value >= right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.boolean_value = left.int8_value >= right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.boolean_value = left.int16_value >= right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.boolean_value = left.int32_value >= right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.boolean_value = left.int64_value >= right.int64_value;
       break;
-    case kFloat32:
+    case Float32_Kind:
       out.boolean_value = left.float32_value >= right.float32_value;
       break;
-    case kFloat64:
+    case Float64_Kind:
       out.boolean_value = left.float64_value >= right.float64_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.boolean_value = left.uint_value >= right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.boolean_value = left.int_value >= right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.boolean_value = left.uintptr_value >= right.uintptr_value;
       break;
-    case kStringU:
+    case String_Kind:
       out.boolean_value = left.stringu_value >= right.stringu_value;
       break;
     default:
@@ -985,61 +985,61 @@ void multiply (Value& out, const type::Type* type, const Value& left, const Valu
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kRune:
+    case Rune_Kind:
       out.rune_value = left.rune_value * right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.integer_value = left.integer_value * right.integer_value;
       break;
-    case kFloat:
+    case Float_Kind:
       out.float_value = left.float_value * right.float_value;
       break;
-    case kComplex:
+    case Complex_Kind:
       out.complex_value = left.complex_value * right.complex_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.uint8_value = left.uint8_value * right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.uint16_value = left.uint16_value * right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.uint32_value = left.uint32_value * right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.uint64_value = left.uint64_value * right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.int8_value = left.int8_value * right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.int16_value = left.int16_value * right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.int32_value = left.int32_value * right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.int64_value = left.int64_value * right.int64_value;
       break;
-    case kFloat32:
+    case Float32_Kind:
       out.float32_value = left.float32_value * right.float32_value;
       break;
-    case kFloat64:
+    case Float64_Kind:
       out.float64_value = left.float64_value * right.float64_value;
       break;
-    case kComplex64:
+    case Complex64_Kind:
       out.complex64_value = left.complex64_value * right.complex64_value;
       break;
-    case kComplex128:
+    case Complex128_Kind:
       out.complex128_value = left.complex128_value * right.complex128_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.uint_value = left.uint_value * right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.int_value = left.int_value * right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.uintptr_value = left.uintptr_value * right.uintptr_value;
       break;
     default:
@@ -1052,61 +1052,61 @@ void divide (Value& out, const type::Type* type, const Value& left, const Value&
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kRune:
+    case Rune_Kind:
       out.rune_value = left.rune_value / right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.integer_value = left.integer_value / right.integer_value;
       break;
-    case kFloat:
+    case Float_Kind:
       out.float_value = left.float_value / right.float_value;
       break;
-    case kComplex:
+    case Complex_Kind:
       out.complex_value = left.complex_value / right.complex_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.uint8_value = left.uint8_value / right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.uint16_value = left.uint16_value / right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.uint32_value = left.uint32_value / right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.uint64_value = left.uint64_value / right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.int8_value = left.int8_value / right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.int16_value = left.int16_value / right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.int32_value = left.int32_value / right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.int64_value = left.int64_value / right.int64_value;
       break;
-    case kFloat32:
+    case Float32_Kind:
       out.float32_value = left.float32_value / right.float32_value;
       break;
-    case kFloat64:
+    case Float64_Kind:
       out.float64_value = left.float64_value / right.float64_value;
       break;
-    case kComplex64:
+    case Complex64_Kind:
       out.complex64_value = left.complex64_value / right.complex64_value;
       break;
-    case kComplex128:
+    case Complex128_Kind:
       out.complex128_value = left.complex128_value / right.complex128_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.uint_value = left.uint_value / right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.int_value = left.int_value / right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.uintptr_value = left.uintptr_value / right.uintptr_value;
       break;
     default:
@@ -1119,43 +1119,43 @@ void modulus (Value& out, const type::Type* type, const Value& left, const Value
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kRune:
+    case Rune_Kind:
       out.rune_value = left.rune_value % right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.integer_value = left.integer_value % right.integer_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.uint8_value = left.uint8_value % right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.uint16_value = left.uint16_value % right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.uint32_value = left.uint32_value % right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.uint64_value = left.uint64_value % right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.int8_value = left.int8_value % right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.int16_value = left.int16_value % right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.int32_value = left.int32_value % right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.int64_value = left.int64_value % right.int64_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.uint_value = left.uint_value % right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.int_value = left.int_value % right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.uintptr_value = left.uintptr_value % right.uintptr_value;
       break;
     default:
@@ -1168,61 +1168,61 @@ void add (Value& out, const type::Type* type, const Value& left, const Value& ri
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kRune:
+    case Rune_Kind:
       out.rune_value = left.rune_value + right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.integer_value = left.integer_value + right.integer_value;
       break;
-    case kFloat:
+    case Float_Kind:
       out.float_value = left.float_value + right.float_value;
       break;
-    case kComplex:
+    case Complex_Kind:
       out.complex_value = left.complex_value + right.complex_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.uint8_value = left.uint8_value + right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.uint16_value = left.uint16_value + right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.uint32_value = left.uint32_value + right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.uint64_value = left.uint64_value + right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.int8_value = left.int8_value + right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.int16_value = left.int16_value + right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.int32_value = left.int32_value + right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.int64_value = left.int64_value + right.int64_value;
       break;
-    case kFloat32:
+    case Float32_Kind:
       out.float32_value = left.float32_value + right.float32_value;
       break;
-    case kFloat64:
+    case Float64_Kind:
       out.float64_value = left.float64_value + right.float64_value;
       break;
-    case kComplex64:
+    case Complex64_Kind:
       out.complex64_value = left.complex64_value + right.complex64_value;
       break;
-    case kComplex128:
+    case Complex128_Kind:
       out.complex128_value = left.complex128_value + right.complex128_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.uint_value = left.uint_value + right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.int_value = left.int_value + right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.uintptr_value = left.uintptr_value + right.uintptr_value;
       break;
     default:
@@ -1235,61 +1235,61 @@ void subtract (Value& out, const type::Type* type, const Value& left, const Valu
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kRune:
+    case Rune_Kind:
       out.rune_value = left.rune_value - right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.integer_value = left.integer_value - right.integer_value;
       break;
-    case kFloat:
+    case Float_Kind:
       out.float_value = left.float_value - right.float_value;
       break;
-    case kComplex:
+    case Complex_Kind:
       out.complex_value = left.complex_value - right.complex_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.uint8_value = left.uint8_value - right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.uint16_value = left.uint16_value - right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.uint32_value = left.uint32_value - right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.uint64_value = left.uint64_value - right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.int8_value = left.int8_value - right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.int16_value = left.int16_value - right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.int32_value = left.int32_value - right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.int64_value = left.int64_value - right.int64_value;
       break;
-    case kFloat32:
+    case Float32_Kind:
       out.float32_value = left.float32_value - right.float32_value;
       break;
-    case kFloat64:
+    case Float64_Kind:
       out.float64_value = left.float64_value - right.float64_value;
       break;
-    case kComplex64:
+    case Complex64_Kind:
       out.complex64_value = left.complex64_value - right.complex64_value;
       break;
-    case kComplex128:
+    case Complex128_Kind:
       out.complex128_value = left.complex128_value - right.complex128_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.uint_value = left.uint_value - right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.int_value = left.int_value - right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.uintptr_value = left.uintptr_value - right.uintptr_value;
       break;
     default:
@@ -1302,43 +1302,43 @@ void bit_and (Value& out, const type::Type* type, const Value& left, const Value
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kRune:
+    case Rune_Kind:
       out.rune_value = left.rune_value & right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.integer_value = left.integer_value & right.integer_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.uint8_value = left.uint8_value & right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.uint16_value = left.uint16_value & right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.uint32_value = left.uint32_value & right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.uint64_value = left.uint64_value & right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.int8_value = left.int8_value & right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.int16_value = left.int16_value & right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.int32_value = left.int32_value & right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.int64_value = left.int64_value & right.int64_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.uint_value = left.uint_value & right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.int_value = left.int_value & right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.uintptr_value = left.uintptr_value & right.uintptr_value;
       break;
     default:
@@ -1351,43 +1351,43 @@ void bit_and_not (Value& out, const type::Type* type, const Value& left, const V
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kRune:
+    case Rune_Kind:
       out.rune_value = left.rune_value & ~right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.integer_value = left.integer_value & ~right.integer_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.uint8_value = left.uint8_value & ~right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.uint16_value = left.uint16_value & ~right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.uint32_value = left.uint32_value & ~right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.uint64_value = left.uint64_value & ~right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.int8_value = left.int8_value & ~right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.int16_value = left.int16_value & ~right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.int32_value = left.int32_value & ~right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.int64_value = left.int64_value & ~right.int64_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.uint_value = left.uint_value & ~right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.int_value = left.int_value & ~right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.uintptr_value = left.uintptr_value & ~right.uintptr_value;
       break;
     default:
@@ -1400,43 +1400,43 @@ void bit_xor (Value& out, const type::Type* type, const Value& left, const Value
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kRune:
+    case Rune_Kind:
       out.rune_value = left.rune_value ^ right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.integer_value = left.integer_value ^ right.integer_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.uint8_value = left.uint8_value ^ right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.uint16_value = left.uint16_value ^ right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.uint32_value = left.uint32_value ^ right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.uint64_value = left.uint64_value ^ right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.int8_value = left.int8_value ^ right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.int16_value = left.int16_value ^ right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.int32_value = left.int32_value ^ right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.int64_value = left.int64_value ^ right.int64_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.uint_value = left.uint_value ^ right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.int_value = left.int_value ^ right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.uintptr_value = left.uintptr_value ^ right.uintptr_value;
       break;
     default:
@@ -1449,43 +1449,43 @@ void bit_or (Value& out, const type::Type* type, const Value& left, const Value&
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case kRune:
+    case Rune_Kind:
       out.rune_value = left.rune_value | right.rune_value;
       break;
-    case kInteger:
+    case Integer_Kind:
       out.integer_value = left.integer_value | right.integer_value;
       break;
-    case kUint8:
+    case Uint8_Kind:
       out.uint8_value = left.uint8_value | right.uint8_value;
       break;
-    case kUint16:
+    case Uint16_Kind:
       out.uint16_value = left.uint16_value | right.uint16_value;
       break;
-    case kUint32:
+    case Uint32_Kind:
       out.uint32_value = left.uint32_value | right.uint32_value;
       break;
-    case kUint64:
+    case Uint64_Kind:
       out.uint64_value = left.uint64_value | right.uint64_value;
       break;
-    case kInt8:
+    case Int8_Kind:
       out.int8_value = left.int8_value | right.int8_value;
       break;
-    case kInt16:
+    case Int16_Kind:
       out.int16_value = left.int16_value | right.int16_value;
       break;
-    case kInt32:
+    case Int32_Kind:
       out.int32_value = left.int32_value | right.int32_value;
       break;
-    case kInt64:
+    case Int64_Kind:
       out.int64_value = left.int64_value | right.int64_value;
       break;
-    case kUint:
+    case Uint_Kind:
       out.uint_value = left.uint_value | right.uint_value;
       break;
-    case kInt:
+    case Int_Kind:
       out.int_value = left.int_value | right.int_value;
       break;
-    case kUintptr:
+    case Uintptr_Kind:
       out.uintptr_value = left.uintptr_value | right.uintptr_value;
       break;
     default:
@@ -1651,7 +1651,7 @@ std::ostream& operator<< (std::ostream& out, const ValuePrinter& vp)
         }
       };
       visitor v (vp.value, out);
-      type_strip (vp.type)->Accept (v);
+      type_strip (vp.type)->accept (v);
     }
 
   return out;

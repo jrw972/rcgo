@@ -264,52 +264,52 @@ allocate_stack_variables (ast::Node* node)
 
     void visit (ast::Function& node)
     {
-      allocate_parameters (node.function->memoryModel, node.function->signature ());
-      allocate_symbol (node.function->memoryModel, node.function->return_parameter ());
-      allocate_statement_stack_variables (node.body, node.function->memoryModel);
-      assert (node.function->memoryModel.locals_empty ());
+      allocate_parameters (node.function->memory_model, node.function->parameter_list ());
+      allocate_symbol (node.function->memory_model, node.function->return_parameter ());
+      allocate_statement_stack_variables (node.body, node.function->memory_model);
+      assert (node.function->memory_model.locals_empty ());
     }
 
     void visit (ast::Method& node)
     {
-      allocate_parameters (node.method->memoryModel, node.method->signature ());
-      allocate_symbol (node.method->memoryModel, node.method->receiver_parameter ());
-      allocate_symbol (node.method->memoryModel, node.method->return_parameter ());
-      allocate_statement_stack_variables (node.body, node.method->memoryModel);
-      assert (node.method->memoryModel.locals_empty ());
+      allocate_parameters (node.method->memory_model, node.method->parameter_list ());
+      allocate_symbol (node.method->memory_model, node.method->receiver_parameter ());
+      allocate_symbol (node.method->memory_model, node.method->return_parameter ());
+      allocate_statement_stack_variables (node.body, node.method->memory_model);
+      assert (node.method->memory_model.locals_empty ());
     }
 
     void visit (ast::Initializer& node)
     {
-      allocate_parameters (node.initializer->memoryModel, node.initializer->signature ());
-      allocate_symbol (node.initializer->memoryModel, node.initializer->receiver_parameter ());
-      allocate_symbol (node.initializer->memoryModel, node.initializer->return_parameter ());
-      allocate_statement_stack_variables (node.body, node.initializer->memoryModel);
-      assert (node.initializer->memoryModel.locals_empty ());
+      allocate_parameters (node.initializer->memory_model, node.initializer->parameter_list ());
+      allocate_symbol (node.initializer->memory_model, node.initializer->receiver_parameter ());
+      allocate_symbol (node.initializer->memory_model, node.initializer->return_parameter ());
+      allocate_statement_stack_variables (node.body, node.initializer->memory_model);
+      assert (node.initializer->memory_model.locals_empty ());
     }
 
     void visit (ast::Getter& node)
     {
-      allocate_parameters (node.getter->memoryModel, node.getter->signature ());
-      allocate_symbol (node.getter->memoryModel, node.getter->receiver_parameter ());
-      allocate_symbol (node.getter->memoryModel, node.getter->return_parameter ());
-      allocate_statement_stack_variables (node.body, node.getter->memoryModel);
-      assert (node.getter->memoryModel.locals_empty ());
+      allocate_parameters (node.getter->memory_model, node.getter->parameter_list ());
+      allocate_symbol (node.getter->memory_model, node.getter->receiver_parameter ());
+      allocate_symbol (node.getter->memory_model, node.getter->return_parameter ());
+      allocate_statement_stack_variables (node.body, node.getter->memory_model);
+      assert (node.getter->memory_model.locals_empty ());
     }
 
     void visit (ast::Reaction& node)
     {
-      allocate_parameters (node.reaction->memory_model, node.reaction->signature ());
-      allocate_symbol (node.reaction->memory_model, node.reaction->receiver);
+      allocate_parameters (node.reaction->memory_model, node.reaction->parameter_list ());
+      allocate_symbol (node.reaction->memory_model, node.reaction->reaction_type->receiver_parameter);
       allocate_statement_stack_variables (node.body, node.reaction->memory_model);
       assert (node.reaction->memory_model.locals_empty ());
     }
 
     void visit (DimensionedReaction& node)
     {
-      allocate_parameters (node.reaction->memory_model, node.reaction->signature ());
+      allocate_parameters (node.reaction->memory_model, node.reaction->parameter_list ());
       allocate_symbol (node.reaction->memory_model, node.reaction->iota);
-      allocate_symbol (node.reaction->memory_model, node.reaction->receiver);
+      allocate_symbol (node.reaction->memory_model, node.reaction->reaction_type->receiver_parameter);
       allocate_statement_stack_variables (node.body, node.reaction->memory_model);
       assert (node.reaction->memory_model.locals_empty ());
     }
@@ -398,10 +398,10 @@ void LogicNot::check (ErrorReporter& er,
       result.value.present = true;
       switch (result.type->underlying_kind ())
         {
-        case kBool:
+        case Bool_Kind:
           result.value.bool_value = !arg.value.bool_value;
           break;
-        case kBoolean:
+        case Boolean_Kind:
           result.value.boolean_value = !arg.value.boolean_value;
           break;
         default:
@@ -478,61 +478,61 @@ void Negate::check (ErrorReporter& er,
       result.value.present = true;
       switch (result.type->underlying_kind ())
         {
-        case kUint8:
+        case Uint8_Kind:
           result.value.uint8_value = -arg.value.uint8_value;
           break;
-        case kUint16:
+        case Uint16_Kind:
           result.value.uint16_value = -arg.value.uint16_value;
           break;
-        case kUint32:
+        case Uint32_Kind:
           result.value.uint32_value = -arg.value.uint32_value;
           break;
-        case kUint64:
+        case Uint64_Kind:
           result.value.uint32_value = -arg.value.uint32_value;
           break;
-        case kInt8:
+        case Int8_Kind:
           result.value.int8_value = -arg.value.int8_value;
           break;
-        case kInt16:
+        case Int16_Kind:
           result.value.int16_value = -arg.value.int16_value;
           break;
-        case kInt32:
+        case Int32_Kind:
           result.value.int32_value = -arg.value.int32_value;
           break;
-        case kInt64:
+        case Int64_Kind:
           result.value.int64_value = -arg.value.int64_value;
           break;
-        case kFloat32:
+        case Float32_Kind:
           result.value.float32_value = -arg.value.float32_value;
           break;
-        case kFloat64:
+        case Float64_Kind:
           result.value.float64_value = -arg.value.float64_value;
           break;
-        case kComplex64:
+        case Complex64_Kind:
           result.value.complex64_value = -arg.value.complex64_value;
           break;
-        case kComplex128:
+        case Complex128_Kind:
           result.value.complex128_value = -arg.value.complex128_value;
           break;
-        case kUint:
+        case Uint_Kind:
           result.value.uint_value = -arg.value.uint_value;
           break;
-        case kInt:
+        case Int_Kind:
           result.value.int_value = -arg.value.int_value;
           break;
-        case kUintptr:
+        case Uintptr_Kind:
           result.value.uintptr_value = -arg.value.uintptr_value;
           break;
-        case kRune:
+        case Rune_Kind:
           result.value.rune_value = -arg.value.rune_value;
           break;
-        case kInteger:
+        case Integer_Kind:
           result.value.integer_value = -arg.value.integer_value;
           break;
-        case kFloat:
+        case Float_Kind:
           result.value.float_value = -arg.value.float_value;
           break;
-        case kComplex:
+        case Complex_Kind:
           result.value.complex_value = -arg.value.complex_value;
           break;
         default:
@@ -571,43 +571,43 @@ void Complement::check (ErrorReporter& er,
       result.value.present = true;
       switch (result.type->underlying_kind ())
         {
-        case kUint8:
+        case Uint8_Kind:
           result.value.uint8_value = ~arg.value.uint8_value;
           break;
-        case kUint16:
+        case Uint16_Kind:
           result.value.uint16_value = ~arg.value.uint16_value;
           break;
-        case kUint32:
+        case Uint32_Kind:
           result.value.uint32_value = ~arg.value.uint32_value;
           break;
-        case kUint64:
+        case Uint64_Kind:
           result.value.uint32_value = ~arg.value.uint32_value;
           break;
-        case kInt8:
+        case Int8_Kind:
           result.value.int8_value = ~arg.value.int8_value;
           break;
-        case kInt16:
+        case Int16_Kind:
           result.value.int16_value = ~arg.value.int16_value;
           break;
-        case kInt32:
+        case Int32_Kind:
           result.value.int32_value = ~arg.value.int32_value;
           break;
-        case kInt64:
+        case Int64_Kind:
           result.value.int64_value = ~arg.value.int64_value;
           break;
-        case kUint:
+        case Uint_Kind:
           result.value.uint_value = ~arg.value.uint_value;
           break;
-        case kInt:
+        case Int_Kind:
           result.value.int_value = ~arg.value.int_value;
           break;
-        case kUintptr:
+        case Uintptr_Kind:
           result.value.uintptr_value = ~arg.value.uintptr_value;
           break;
-        case kRune:
+        case Rune_Kind:
           result.value.rune_value = ~arg.value.rune_value;
           break;
-        case kInteger:
+        case Integer_Kind:
           result.value.integer_value = ~arg.value.integer_value;
           break;
         default:
@@ -735,8 +735,8 @@ BinaryArithmetic<InputPicker, OutputPicker, Computer, ba>::check (ErrorReporter&
       return;
     }
 
-  if (left.type->IsUntyped () &&
-      right.type->IsUntyped ())
+  if (left.type->is_untyped () &&
+      right.type->is_untyped ())
     {
       const type::Type* t = InputPicker::pick (left.type, right.type);
       if (t == NULL)
@@ -848,43 +848,43 @@ void BinaryShift<B, ba>::check (ErrorReporter& er,
       result.value.present = true;
       switch (result.type->underlying_kind ())
         {
-        case kUint8:
+        case Uint8_Kind:
           result.value.uint8_value = B () (left.value.uint8_value, right.value.uint_value);
           break;
-        case kUint16:
+        case Uint16_Kind:
           result.value.uint16_value = B () (left.value.uint16_value, right.value.uint_value);
           break;
-        case kUint32:
+        case Uint32_Kind:
           result.value.uint32_value = B () (left.value.uint32_value, right.value.uint_value);
           break;
-        case kUint64:
+        case Uint64_Kind:
           result.value.uint64_value = B () (left.value.uint64_value, right.value.uint_value);
           break;
-        case kInt8:
+        case Int8_Kind:
           result.value.int8_value = B () (left.value.int8_value, right.value.uint_value);
           break;
-        case kInt16:
+        case Int16_Kind:
           result.value.int16_value = B () (left.value.int16_value, right.value.uint_value);
           break;
-        case kInt32:
+        case Int32_Kind:
           result.value.int32_value = B () (left.value.int32_value, right.value.uint_value);
           break;
-        case kInt64:
+        case Int64_Kind:
           result.value.int64_value = B () (left.value.int64_value, right.value.uint_value);
           break;
-        case kUint:
+        case Uint_Kind:
           result.value.uint_value = B () (left.value.uint_value, right.value.uint_value);
           break;
-        case kInt:
+        case Int_Kind:
           result.value.int_value = B () (left.value.int_value, right.value.uint_value);
           break;
-        case kUintptr:
+        case Uintptr_Kind:
           result.value.uintptr_value = B () (left.value.uintptr_value, right.value.uint_value);
           break;
-        case kRune:
+        case Rune_Kind:
           result.value.rune_value = B () (left.value.rune_value, right.value.uint_value);
           break;
-        case kInteger:
+        case Integer_Kind:
           result.value.integer_value = B () (left.value.integer_value, right.value.uint_value);
           break;
         default:
@@ -1155,8 +1155,7 @@ runtime::Operation* SMoreEqual::generate_code (const ExpressionValue& result,
 
 New::New (const Location& loc)
   : TemplateSymbol ("new",
-                    loc,
-                    new type::Template ())
+                    loc)
 { }
 
 void
@@ -1202,8 +1201,7 @@ runtime::Operation* New::generate_code (const semantic::ExpressionValue& result,
 
 Move::Move (const Location& loc)
   : TemplateSymbol ("move",
-                    loc,
-                    new type::Template ())
+                    loc)
 { }
 
 void
@@ -1267,8 +1265,7 @@ runtime::Operation* Move::generate_code (const semantic::ExpressionValue& result
 
 Merge::Merge (const Location& loc)
   : TemplateSymbol ("merge",
-                    loc,
-                    new type::Template ())
+                    loc)
 { }
 
 void
@@ -1331,8 +1328,7 @@ runtime::Operation* Merge::generate_code (const semantic::ExpressionValue& resul
 
 Len::Len (const Location& loc)
   : TemplateSymbol ("len",
-                    loc,
-                    new type::Template ())
+                    loc)
 { }
 
 void
@@ -1356,7 +1352,7 @@ Len::check (ErrorReporter& er,
     }
 
   const type::Type* type = arg.type;
-  if (type->underlying_kind () != kSlice)
+  if (type->underlying_kind () != Slice_Kind)
     {
       er.cannot_be_applied (location, "[:]", type);
       result.expression_kind = ErrorExpressionKind;
@@ -1378,8 +1374,7 @@ runtime::Operation* Len::generate_code (const semantic::ExpressionValue& result,
 
 Append::Append (const Location& loc)
   : TemplateSymbol ("append",
-                    loc,
-                    new type::Template ())
+                    loc)
 { }
 
 void
@@ -1404,7 +1399,7 @@ Append::check (ErrorReporter& er,
       return;
     }
 
-  if (slice.type->underlying_kind () != kSlice)
+  if (slice.type->underlying_kind () != Slice_Kind)
     {
       er.cannot_be_applied (location, "append", slice.type);
       result.expression_kind = ErrorExpressionKind;
@@ -1435,8 +1430,7 @@ runtime::Operation* Append::generate_code (const semantic::ExpressionValue& resu
 
 Copy::Copy (const Location& loc)
   : TemplateSymbol ("copy",
-                    loc,
-                    new type::Template ())
+                    loc)
 { }
 
 void
@@ -1461,7 +1455,7 @@ Copy::check (ErrorReporter& er,
 
   switch (arg.type->underlying_kind ())
     {
-    case kSlice:
+    case Slice_Kind:
     {
       const Slice* st = type_strip_cast<Slice> (arg.type);
       if (type_contains_pointer (st->base_type))
@@ -1472,7 +1466,7 @@ Copy::check (ErrorReporter& er,
         }
     }
     break;
-    case kStringU:
+    case String_Kind:
       // Okay.
       break;
     default:
@@ -1513,8 +1507,7 @@ runtime::Operation* Copy::generate_code (const semantic::ExpressionValue& result
 
 Println::Println (const Location& loc)
   : TemplateSymbol ("println",
-                    loc,
-                    new type::Template ())
+                    loc)
 { }
 
 void

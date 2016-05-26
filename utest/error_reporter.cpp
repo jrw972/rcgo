@@ -63,6 +63,62 @@ main (int argc, char** argv)
     check (tap, "ErrorReporter::cannot_be_applied", loc, ss, er, code);
   }
 
+  {
+    Location loc;
+    std::stringstream ss;
+    ErrorReporter er (0, ss);
+    int code = er.cannot_be_applied (loc, "somefunc", &type::named_int, &type::named_int);
+    check (tap, "ErrorReporter::cannot_be_applied", loc, ss, er, code);
+  }
+
+  {
+    Location loc;
+    std::stringstream ss;
+    ErrorReporter er (0, ss);
+    int code = er.undefined (loc, "somefunc");
+    check (tap, "ErrorReporter::undefined", loc, ss, er, code);
+  }
+
+  {
+    Location loc;
+    std::stringstream ss;
+    ErrorReporter er (0, ss);
+    int code = er.hidden (loc, "somefunc");
+    check (tap, "ErrorReporter::hidden", loc, ss, er, code);
+  }
+
+  {
+    Location loc;
+    std::stringstream ss;
+    ErrorReporter er (0, ss);
+    int code = er.requires_value_or_variable (loc);
+    check (tap, "ErrorReporter::requires_value_or_variable", loc, ss, er, code);
+  }
+
+  {
+    Location loc;
+    std::stringstream ss;
+    ErrorReporter er (0, ss);
+    int code = er.requires_type (loc);
+    check (tap, "ErrorReporter::requires_type", loc, ss, er, code);
+  }
+
+  {
+    Location loc;
+    std::stringstream ss;
+    ErrorReporter er (0, ss);
+    int code = er.leaks_pointers (loc);
+    check (tap, "ErrorReporter::leaks_pointers", loc, ss, er, code);
+  }
+
+  {
+    Location loc;
+    std::stringstream ss;
+    ErrorReporter er (0, ss);
+    int code = er.signature_is_not_foreign_safe (loc);
+    check (tap, "ErrorReporter::signature_is_not_foreign_safe", loc, ss, er, code);
+  }
+
   tap.print_plan ();
 
   return 0;

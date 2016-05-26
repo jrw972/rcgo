@@ -108,6 +108,16 @@ ErrorCode ErrorReporter::signature_is_not_foreign_safe (const Location& loc)
   return bump (Signature_Is_Not_Foreign_Safe);
 }
 
+const ErrorReporter::ListType& ErrorReporter::list () const
+{
+  return list_;
+}
+
+size_t ErrorReporter::count () const
+{
+  return list_.size ();
+}
+
 ErrorCode
 ErrorReporter::bump (ErrorCode code)
 {

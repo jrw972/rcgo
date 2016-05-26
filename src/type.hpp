@@ -17,93 +17,76 @@
 namespace type
 {
 
-class Visitor;
-
-class Array;
-class Slice;
-class Struct;
-class Pointer;
-class Function;
-class Interface;
-class Map;
-class Heap;
-
 typedef uint64_t UintValueType;
 typedef int64_t IntValueType;
 
+// Ordered.  See the choose function.
 enum Kind
 {
   // Untyped types.
-  kNil,
-  kBoolean,
-  kRune,
-  kInteger,
-  kFloat,
-  kComplex,
-  kString,
+  Nil_Kind,  // First
+  Boolean_Kind,
+  Rune_Kind,
+  Integer_Kind,
+  Float_Kind,
+  Complex_Kind,
+  Untyped_String_Kind, // Last
 
   // Typed types.
-  kVoid,
+  Void_Kind, // First
 
-  kBool,
-  kUint8,
-  kUint16,
-  kUint32,
-  kUint64,
-  kInt8,
-  kInt16,
-  kInt32,
-  kInt64,
-  kFloat32,
-  kFloat64,
-  kComplex64,
-  kComplex128,
-  kUint,
-  kInt,
-  kUintptr,
-  kStringU,
+  Bool_Kind,
+  Uint8_Kind,
+  Uint16_Kind,
+  Uint32_Kind,
+  Uint64_Kind,
+  Int8_Kind,
+  Int16_Kind,
+  Int32_Kind,
+  Int64_Kind,
+  Float32_Kind,
+  Float64_Kind,
+  Complex64_Kind,
+  Complex128_Kind,
+  Uint_Kind,
+  Int_Kind,
+  Uintptr_Kind,
+  String_Kind,
 
-  kStruct,
-  kComponent,
-  kArray,
-  kMap,
+  Struct_Kind,
+  Component_Kind,
+  Array_Kind,
+  Map_Kind,
 
-  kPointer,
-  kSlice,
-  kHeap,
+  Pointer_Kind,
+  Slice_Kind,
+  Heap_Kind,
 
-  kFunction,
-  kMethod,
-  kInterface,
-  kTemplate,
+  Function_Kind,
+  Method_Kind,
+  Interface_Kind,
+  Template_Kind,
 
-  kFileDescriptor,
+  File_Descriptor_Kind, // Last
 
   // Named types.
-  kNamed,
+  Named_Kind,
 };
 
 struct Type
 {
-  enum TypeLevel
-  {
-    UNTYPED, // Represent untyped literals.
-    UNNAMED, // Types constructed through type literals and the "builtin" types.
-    NAMED,   // Types named with a type declaration.
-  };
-  Type () : pointer_ (NULL), slice_ (NULL), heap_ (NULL) { }
-  virtual ~Type () { }
-  virtual void Accept (Visitor& visitor) const = 0;
-  virtual std::string to_string () const = 0;
-  virtual size_t Alignment () const = 0;
+  Type ();
+  virtual ~Type ();
+  virtual void accept (Visitor& visitor) const = 0;
+  virtual void print (std::ostream& out = std::cout) const = 0;
+  virtual std::string to_string () const;
+  virtual size_t alignment () const = 0;
   virtual size_t Size () const = 0;
   virtual Kind kind () const = 0;
   virtual Kind underlying_kind () const
   {
     return UnderlyingType ()->kind ();
   }
-  // When give the choice between two types, use the one with high level.
-  virtual TypeLevel Level () const = 0;
   virtual const Type* UnderlyingType () const
   {
     return this;
@@ -111,10 +94,6 @@ struct Type
   virtual const Type* DefaultType () const
   {
     return this;
-  }
-  bool IsUntyped () const
-  {
-    return Level () == UNTYPED;
   }
   virtual bool IsNumeric () const
   {
@@ -128,6 +107,9 @@ struct Type
   {
     return false;
   }
+  bool is_untyped () const;
+  bool is_unnamed () const;
+  bool is_named () const;
   const Pointer* get_pointer () const;
   const Slice* get_slice () const;
   const Array* get_array (IntValueType dimension) const;
@@ -251,23 +233,23 @@ public:
   NamedType (const std::string& name,
              const Type* underlyingType);
 
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const
   {
-    return name_;
+    out << name_;
   }
   void UnderlyingType (const Type* u)
   {
     underlyingType_ = u->UnderlyingType ();
-    assert (underlyingType_->Level () == UNNAMED);
+    assert (underlyingType_->is_unnamed ());
   }
   const Type* UnderlyingType () const
   {
     return underlyingType_;
   }
-  virtual size_t Alignment () const
+  virtual size_t alignment () const
   {
-    return underlyingType_->Alignment ();
+    return underlyingType_->alignment ();
   }
   virtual size_t Size () const
   {
@@ -275,11 +257,7 @@ public:
   }
   virtual Kind kind () const
   {
-    return kNamed;
-  }
-  virtual TypeLevel Level () const
-  {
-    return NAMED;
+    return Named_Kind;
   }
   virtual bool IsNumeric () const
   {
@@ -380,12 +358,12 @@ private:
 class Void : public Type
 {
 public:
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const
   {
-    return "<void>";
+    out << "<void>";
   }
-  size_t Alignment () const
+  size_t alignment () const
   {
     NOT_REACHED;
   }
@@ -395,11 +373,7 @@ public:
   }
   virtual Kind kind () const
   {
-    return kVoid;
-  }
-  virtual TypeLevel Level () const
-  {
-    return UNNAMED;
+    return Void_Kind;
   }
   static const Void* Instance ();
 private:
@@ -411,12 +385,12 @@ class Scalar : public Type
 {
 public:
   typedef T ValueType;
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const
   {
-    return S () ();
+    out << S () ();
   }
-  size_t Alignment () const
+  size_t alignment () const
   {
     return sizeof (T);
   }
@@ -427,10 +401,6 @@ public:
   virtual Kind kind () const
   {
     return k;
-  }
-  virtual TypeLevel Level () const
-  {
-    return UNNAMED;
   }
   virtual bool IsNumeric () const
   {
@@ -454,37 +424,37 @@ private:
 };
 
 STRING_RETURNER(BoolString, "<bool>");
-typedef Scalar<bool, BoolString, false, false, false, kBool> Bool;
+typedef Scalar<bool, BoolString, false, false, false, Bool_Kind> Bool;
 
 STRING_RETURNER(Uint8String, "<uint8>");
-typedef Scalar<uint8_t, Uint8String, true, false, true, kUint8> Uint8;
+typedef Scalar<uint8_t, Uint8String, true, false, true, Uint8_Kind> Uint8;
 
 STRING_RETURNER(Uint16String, "<uint16>");
-typedef Scalar<uint16_t, Uint16String, true, false, true, kUint16> Uint16;
+typedef Scalar<uint16_t, Uint16String, true, false, true, Uint16_Kind> Uint16;
 
 STRING_RETURNER(Uint32String, "<uint32>");
-typedef Scalar<uint32_t, Uint32String, true, false, true, kUint32> Uint32;
+typedef Scalar<uint32_t, Uint32String, true, false, true, Uint32_Kind> Uint32;
 
 STRING_RETURNER(Uint64String, "<uint64>");
-typedef Scalar<uint64_t, Uint64String, true, false, true, kUint64> Uint64;
+typedef Scalar<uint64_t, Uint64String, true, false, true, Uint64_Kind> Uint64;
 
 STRING_RETURNER(Int8String, "<int8>");
-typedef Scalar<int8_t, Int8String, true, false, true, kInt8> Int8;
+typedef Scalar<int8_t, Int8String, true, false, true, Int8_Kind> Int8;
 
 STRING_RETURNER(Int16String, "<int16>");
-typedef Scalar<int16_t, Int16String, true, false, true, kInt16> Int16;
+typedef Scalar<int16_t, Int16String, true, false, true, Int16_Kind> Int16;
 
 STRING_RETURNER(Int32String, "<int32>");
-typedef Scalar<int32_t, Int32String, true, false, true, kInt32> Int32;
+typedef Scalar<int32_t, Int32String, true, false, true, Int32_Kind> Int32;
 
 STRING_RETURNER(Int64String, "<int64>");
-typedef Scalar<int64_t, Int64String, true, false, true, kInt64> Int64;
+typedef Scalar<int64_t, Int64String, true, false, true, Int64_Kind> Int64;
 
 STRING_RETURNER(Float32String, "<float32>");
-typedef Scalar<float, Float32String, true, true, false, kFloat32> Float32;
+typedef Scalar<float, Float32String, true, true, false, Float32_Kind> Float32;
 
 STRING_RETURNER(Float64String, "<float64>");
-typedef Scalar<double, Float64String, true, true, false, kFloat64> Float64;
+typedef Scalar<double, Float64String, true, true, false, Float64_Kind> Float64;
 
 STRING_RETURNER(Complex64String, "<complex64>");
 struct C64
@@ -528,7 +498,7 @@ struct C64
     return *this;
   }
 };
-typedef Scalar<C64, Complex64String, true, false, false, kComplex64> Complex64;
+typedef Scalar<C64, Complex64String, true, false, false, Complex64_Kind> Complex64;
 
 STRING_RETURNER(Complex128String, "<complex128>");
 struct C128
@@ -572,16 +542,16 @@ struct C128
     return *this;
   }
 };
-typedef Scalar<C128, Complex128String, true, false, false, kComplex128> Complex128;
+typedef Scalar<C128, Complex128String, true, false, false, Complex128_Kind> Complex128;
 
 STRING_RETURNER(UintString, "<uint>");
-typedef Scalar<UintValueType, UintString, true, false, true, kUint> Uint;
+typedef Scalar<UintValueType, UintString, true, false, true, Uint_Kind> Uint;
 
 STRING_RETURNER(IntString, "<int>");
-typedef Scalar<IntValueType, IntString, true, false, true, kInt> Int;
+typedef Scalar<IntValueType, IntString, true, false, true, Int_Kind> Int;
 
 STRING_RETURNER(UintptrString, "<uintptr>");
-typedef Scalar<ptrdiff_t, UintptrString, true, false, true, kUintptr> Uintptr;
+typedef Scalar<ptrdiff_t, UintptrString, true, false, true, Uintptr_Kind> Uintptr;
 
 STRING_RETURNER(StringUString, "<string>");
 struct StringRep
@@ -622,7 +592,7 @@ struct StringRep
       }
   }
 };
-typedef Scalar<StringRep, StringUString, false, false, false, kStringU> StringU;
+typedef Scalar<StringRep, StringUString, false, false, false, String_Kind> StringU;
 
 // Helper class for types that have a base type.
 struct BaseType
@@ -635,12 +605,12 @@ class Pointer : public Type, public BaseType
 {
 public:
   typedef void* ValueType;
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const
   {
-    return "*" + base_type->to_string ();
+    out << "*" << *base_type;
   }
-  size_t Alignment () const
+  size_t alignment () const
   {
     return sizeof (ValueType);
   }
@@ -650,11 +620,7 @@ public:
   }
   virtual Kind kind () const
   {
-    return kPointer;
-  }
-  virtual TypeLevel Level () const
-  {
-    return UNNAMED;
+    return Pointer_Kind;
   }
   virtual Field* select_field (const std::string& name) const
   {
@@ -682,12 +648,12 @@ public:
     Uint::ValueType length;
     Uint::ValueType capacity;
   };
-  virtual void Accept (Visitor& visitor) const;
-  virtual std::string to_string () const
+  virtual void accept (Visitor& visitor) const;
+  virtual void print (std::ostream& out = std::cout) const
   {
-    return "[]" + base_type->to_string ();
+    out << "[]" << *base_type;
   }
-  virtual size_t Alignment () const
+  virtual size_t alignment () const
   {
     return sizeof (void*);
   }
@@ -697,15 +663,11 @@ public:
   }
   virtual Kind kind () const
   {
-    return kSlice;
-  }
-  virtual TypeLevel Level () const
-  {
-    return UNNAMED;
+    return Slice_Kind;
   }
   size_t UnitSize () const
   {
-    return util::align_up (base_type->Size (), base_type->Alignment ());
+    return util::align_up (base_type->Size (), base_type->alignment ());
   }
   virtual const Slice* to_slice () const
   {
@@ -725,11 +687,11 @@ inline std::ostream& operator<< (std::ostream& out, const Slice::ValueType& s)
 class Array : public Type, public BaseType
 {
 public:
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const;
-  size_t Alignment () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const;
+  size_t alignment () const
   {
-    return base_type->Alignment ();
+    return base_type->alignment ();
   }
   size_t Size () const
   {
@@ -737,16 +699,12 @@ public:
   }
   virtual Kind kind () const
   {
-    return kArray;
-  }
-  virtual TypeLevel Level () const
-  {
-    return UNNAMED;
+    return Array_Kind;
   }
   const Int::ValueType dimension;
   size_t UnitSize () const
   {
-    return util::align_up (base_type->Size (), base_type->Alignment ());
+    return util::align_up (base_type->Size (), base_type->alignment ());
   }
   virtual const Array* to_array () const
   {
@@ -764,9 +722,9 @@ struct Map : public Type
     : key_type (a_key_type)
     , value_type (a_value_type)
   { }
-  virtual void Accept (Visitor& visitor) const;
-  virtual std::string to_string () const;
-  virtual size_t Alignment () const
+  virtual void accept (Visitor& visitor) const;
+  virtual void print (std::ostream& out = std::cout) const;
+  virtual size_t alignment () const
   {
     UNIMPLEMENTED;
   }
@@ -776,11 +734,7 @@ struct Map : public Type
   }
   virtual Kind kind () const
   {
-    return kMap;
-  }
-  virtual TypeLevel Level () const
-  {
-    return UNNAMED;
+    return Map_Kind;
   }
   virtual const Map* to_map () const
   {
@@ -793,12 +747,12 @@ struct Map : public Type
 
 struct Heap : public Type, public BaseType
 {
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const
   {
-    return "heap " + base_type->to_string ();
+    out << "heap " << *base_type;
   }
-  size_t Alignment () const
+  size_t alignment () const
   {
     NOT_REACHED;
   }
@@ -808,11 +762,7 @@ struct Heap : public Type, public BaseType
   }
   virtual Kind kind () const
   {
-    return kHeap;
-  }
-  virtual TypeLevel Level () const
-  {
-    return UNNAMED;
+    return Heap_Kind;
   }
   virtual const Heap* to_heap () const
   {
@@ -829,23 +779,19 @@ public:
   typedef std::vector<Field*> FieldsType;
   typedef FieldsType::const_iterator const_iterator;
   Struct ();
-  void Accept (Visitor& visitor) const;
+  void accept (Visitor& visitor) const;
   virtual Kind kind () const
   {
-    return kStruct;
+    return Struct_Kind;
   }
-  std::string to_string () const;
-  size_t Alignment () const
+  void print (std::ostream& out = std::cout) const;
+  size_t alignment () const
   {
     return alignment_;
   }
   size_t Size () const
   {
     return offset_;
-  }
-  virtual TypeLevel Level () const
-  {
-    return UNNAMED;
   }
   const_iterator Begin () const
   {
@@ -878,10 +824,10 @@ struct Component : public Struct
 
   virtual Kind kind () const
   {
-    return kComponent;
+    return Component_Kind;
   }
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const
   {
     UNIMPLEMENTED;
   }
@@ -903,9 +849,9 @@ public:
     , parameter_list (a_parameter_list)
     , return_parameter_list (a_return_parameter_list)
   { }
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const;
-  size_t Alignment () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const;
+  size_t alignment () const
   {
     return sizeof (void*);
   }
@@ -915,11 +861,7 @@ public:
   }
   virtual Kind kind () const
   {
-    return kFunction;
-  }
-  virtual TypeLevel Level () const
-  {
-    return UNNAMED;
+    return Function_Kind;
   }
   virtual const Function* to_function () const
   {
@@ -948,9 +890,9 @@ public:
           decl::ParameterSymbol* receiver_parameter_,
           const decl::ParameterList* parameter_list,
           const decl::ParameterList* return_parameter_list);
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const;
-  size_t Alignment () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const;
+  size_t alignment () const
   {
     return sizeof (void*);
   }
@@ -960,11 +902,7 @@ public:
   }
   virtual Kind kind () const
   {
-    return kMethod;
-  }
-  virtual TypeLevel Level () const
-  {
-    return UNNAMED;
+    return Method_Kind;
   }
   MethodKind const method_kind;
   const NamedType* const named_type;
@@ -986,9 +924,9 @@ struct Interface : public Type
     : package (a_package)
   { }
 
-  virtual void Accept (Visitor& visitor) const;
-  virtual std::string to_string () const;
-  virtual size_t Alignment () const
+  virtual void accept (Visitor& visitor) const;
+  virtual void print (std::ostream& out = std::cout) const;
+  virtual size_t alignment () const
   {
     UNIMPLEMENTED;
   }
@@ -998,11 +936,7 @@ struct Interface : public Type
   }
   virtual Kind kind () const
   {
-    return kInterface;
-  }
-  virtual TypeLevel Level () const
-  {
-    return UNNAMED;
+    return Interface_Kind;
   }
   void insert (const std::string& name,
                const Function* func)
@@ -1022,17 +956,13 @@ struct Interface : public Type
 class Untyped : public Type
 {
 public:
-  size_t Alignment () const
+  size_t alignment () const
   {
     NOT_REACHED;
   }
   size_t Size () const
   {
     NOT_REACHED;
-  }
-  virtual TypeLevel Level () const
-  {
-    return UNTYPED;
   }
 };
 
@@ -1041,12 +971,12 @@ class Nil : public Untyped
 public:
   virtual Kind kind () const
   {
-    return kNil;
+    return Nil_Kind;
   }
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const
   {
-    return "<<nil>>";
+    out << "<<nil>>";
   }
   static const Nil* Instance ();
 private:
@@ -1059,13 +989,13 @@ public:
   typedef bool ValueType;
   virtual Kind kind () const
   {
-    return kBoolean;
+    return Boolean_Kind;
   }
   virtual const Type* DefaultType () const;
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const
   {
-    return "<<boolean>>";
+    out << "<<boolean>>";
   }
   static const Boolean* Instance ();
 private:
@@ -1078,7 +1008,7 @@ public:
   typedef int32_t ValueType;
   virtual Kind kind () const
   {
-    return kRune;
+    return Rune_Kind;
   }
   virtual const Type* DefaultType () const;
   virtual bool IsNumeric () const
@@ -1089,10 +1019,10 @@ public:
   {
     return true;
   }
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const
   {
-    return "<<rune>>";
+    out << "<<rune>>";
   }
   static const Rune* Instance ();
 private:
@@ -1105,7 +1035,7 @@ public:
   typedef long long ValueType;
   virtual Kind kind () const
   {
-    return kInteger;
+    return Integer_Kind;
   }
   virtual const Type* DefaultType () const;
   virtual bool IsNumeric () const
@@ -1116,10 +1046,10 @@ public:
   {
     return true;
   }
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const
   {
-    return "<<integer>>";
+    out << "<<integer>>";
   }
   static const Integer* Instance ();
 private:
@@ -1132,7 +1062,7 @@ public:
   typedef double ValueType;
   virtual Kind kind () const
   {
-    return kFloat;
+    return Float_Kind;
   }
   virtual const Type* DefaultType () const;
   virtual bool IsNumeric () const
@@ -1143,10 +1073,10 @@ public:
   {
     return true;
   }
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const
   {
-    return "<<float>>";
+    out << "<<float>>";
   }
   static const Float* Instance ();
 private:
@@ -1201,17 +1131,17 @@ public:
   };
   virtual Kind kind () const
   {
-    return kComplex;
+    return Complex_Kind;
   }
   virtual const Type* DefaultType () const;
   virtual bool IsNumeric () const
   {
     return true;
   }
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const
   {
-    return "<<complex>>";
+    out << "<<complex>>";
   }
   static const Complex* Instance ();
 private:
@@ -1224,13 +1154,13 @@ public:
   typedef StringRep ValueType;
   virtual Kind kind () const
   {
-    return kString;
+    return Untyped_String_Kind;
   }
   virtual const Type* DefaultType () const;
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const
   {
-    return "<<string>>";
+    out << "<<string>>";
   }
   static const String* Instance ();
 private:
@@ -1240,12 +1170,12 @@ private:
 class Template : public Type
 {
 public:
-  void Accept (Visitor& visitor) const;
-  virtual std::string to_string () const
+  void accept (Visitor& visitor) const;
+  virtual void print (std::ostream& out = std::cout) const
   {
-    return "<<template>>";
+    out << "<<template>>";
   }
-  virtual size_t Alignment () const
+  virtual size_t alignment () const
   {
     NOT_REACHED;
   }
@@ -1255,22 +1185,21 @@ public:
   }
   virtual Kind kind () const
   {
-    return kTemplate;
+    return Template_Kind;
   }
-  virtual TypeLevel Level () const
-  {
-    return UNTYPED;
-  }
+  static const Template* Instance ();
+private:
+  Template () { }
 };
 
 struct FileDescriptor : public Type
 {
-  void Accept (Visitor& visitor) const;
-  std::string to_string () const
+  void accept (Visitor& visitor) const;
+  void print (std::ostream& out = std::cout) const
   {
-    return "<FileDescriptor>";
+    out << "<FileDescriptor>";
   }
-  size_t Alignment () const
+  size_t alignment () const
   {
     return sizeof (void*);
   }
@@ -1280,11 +1209,7 @@ struct FileDescriptor : public Type
   }
   virtual Kind kind () const
   {
-    return kFileDescriptor;
-  }
-  virtual TypeLevel Level () const
-  {
-    return UNNAMED;
+    return File_Descriptor_Kind;
   }
   static const FileDescriptor* Instance ();
 private:
@@ -1376,7 +1301,7 @@ struct ComparableVisitor : public Visitor
   }
   virtual void visit (const NamedType& type)
   {
-    type.UnderlyingType ()->Accept (*this);
+    type.UnderlyingType ()->accept (*this);
   }
   virtual void visit (const Pointer& type)
   {
@@ -1530,7 +1455,7 @@ struct OrderableVisitor : public Visitor
   }
   virtual void visit (const NamedType& type)
   {
-    type.UnderlyingType ()->Accept (*this);
+    type.UnderlyingType ()->accept (*this);
   }
   virtual void visit (const Pointer& type)
   {
@@ -1684,7 +1609,7 @@ struct ArithmeticVisitor : public Visitor
   }
   virtual void visit (const NamedType& type)
   {
-    type.UnderlyingType ()->Accept (*this);
+    type.UnderlyingType ()->accept (*this);
   }
   virtual void visit (const Pointer& type)
   {
@@ -1838,7 +1763,7 @@ struct IntegralVisitor : public Visitor
   }
   virtual void visit (const NamedType& type)
   {
-    type.UnderlyingType ()->Accept (*this);
+    type.UnderlyingType ()->accept (*this);
   }
   virtual void visit (const Pointer& type)
   {
@@ -1992,7 +1917,7 @@ struct LogicalVisitor : public Visitor
   }
   virtual void visit (const NamedType& type)
   {
-    type.UnderlyingType ()->Accept (*this);
+    type.UnderlyingType ()->accept (*this);
   }
   virtual void visit (const Pointer& type)
   {
@@ -2412,7 +2337,7 @@ template <typename T, typename T1>
 static void doubleDispatchHelper (const T1& type1, const Type* type2, T& t)
 {
   visitor2<T, T1> v (type1, t);
-  type2->Accept (v);
+  type2->accept (v);
 }
 
 template <typename T>
@@ -2563,7 +2488,7 @@ template <typename T>
 static void DoubleDispatch (const Type* type1, const Type* type2, T& t)
 {
   visitor1<T> v (type2, t);
-  type1->Accept (v);
+  type1->accept (v);
 }
 
 // Return the type of indexing into the other type.
@@ -2675,7 +2600,7 @@ type_cast (const Type * type)
     }
   };
   visitor v;
-  type->Accept (v);
+  type->accept (v);
   return v.retval;
 }
 

@@ -15,7 +15,7 @@ using namespace ast;
 void
 Callable::check_types (ast::List* args) const
 {
-  semantic::check_types_arguments (args, signature ());
+  semantic::check_types_arguments (args, parameter_list ());
 }
 
 void
@@ -27,13 +27,13 @@ Callable::check_references (ast::List* args) const
 void
 Callable::check_mutability (ast::List* args) const
 {
-  semantic::check_mutability_arguments (args, signature ());
+  semantic::check_mutability_arguments (args, parameter_list ());
 }
 
 void
 Callable::compute_receiver_access (const semantic::ExpressionValueList& args, ReceiverAccess& receiver_access, bool& flag) const
 {
-  semantic::compute_receiver_access_arguments (args, signature (), receiver_access, flag);
+  semantic::compute_receiver_access_arguments (args, parameter_list (), receiver_access, flag);
 }
 
 Function::Function (ast::Function* node_, const type::Function* a_type)
@@ -59,7 +59,7 @@ void Function::call (runtime::ExecutorBase& exec) const
   this->node->body->operation->execute (exec);
 }
 
-size_t Function::arguments_size () const
+size_t Function::parameters_size_on_stack () const
 {
   return type->parameter_list->size_on_stack ();
 }
@@ -69,7 +69,7 @@ void Method::call (runtime::ExecutorBase& exec) const
   this->node->body->operation->execute (exec);
 }
 
-size_t Method::arguments_size () const
+size_t Method::parameters_size_on_stack () const
 {
   return methodType->parameter_list->size_on_stack ();
 }
@@ -84,7 +84,7 @@ void Initializer::call (runtime::ExecutorBase& exec) const
   this->node->operation->execute (exec);
 }
 
-size_t Initializer::arguments_size () const
+size_t Initializer::parameters_size_on_stack () const
 {
   return initializerType->parameter_list->size_on_stack ();
 }
@@ -99,7 +99,7 @@ void Getter::call (runtime::ExecutorBase& exec) const
   this->node->operation->execute (exec);
 }
 
-size_t Getter::arguments_size () const
+size_t Getter::parameters_size_on_stack () const
 {
   return getterType->parameter_list->size_on_stack ();
 }

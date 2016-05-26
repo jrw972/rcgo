@@ -33,7 +33,7 @@ main (int argc, char** argv)
     tap.tassert ("MemoryModel::locals_push", mm.locals_offset () == lo + 32);
     mm.locals_pop (32);
     tap.tassert ("MemoryModel::locals_pop", mm.locals_offset () == lo);
-    tap.tassert ("MemoryModel::locals_size", mm.locals_size () == 32);
+    tap.tassert ("MemoryModel::locals_size", mm.locals_size_on_stack () == 32);
   }
 
   tap.print_plan ();

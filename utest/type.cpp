@@ -63,7 +63,7 @@ main (int argc, char** argv)
   {
     NamedType foo ("foo", new Component (NULL));
     Reaction* r1 = foo.get_reaction ("r");
-    Reaction* r = new Reaction (NULL, NULL, "r", NULL);
+    Reaction* r = new Reaction (NULL, "r", NULL);
     foo.insert_reaction (r);
     Reaction* r2 = foo.get_reaction ("r");
     tap.tassert ("NamedType::get_reaction", r1 == NULL && r2 == r);
@@ -134,7 +134,7 @@ main (int argc, char** argv)
     Initializer* initializer = new Initializer (NULL, "initializer", new type::Method (type::Method::INITIALIZER, &nt, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
     Getter* getter = new Getter (NULL, "getter", new type::Method (type::Method::GETTER, &nt, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
     Action* action = new Action (NULL, NULL, "action");
-    Reaction* reaction = new Reaction (NULL, NULL, "reaction", NULL);
+    Reaction* reaction = new Reaction (NULL, "reaction", NULL);
     Bind* bind = new Bind (NULL, "bind", NULL);
 
     nt.insert_method (method);

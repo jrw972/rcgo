@@ -77,12 +77,13 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-TESTS = action$(EXEEXT) arch$(EXEEXT) check_types$(EXEEXT) \
-	expression_value$(EXEEXT) heap$(EXEEXT) \
+TESTS = action$(EXEEXT) arch$(EXEEXT) builtin_function$(EXEEXT) \
+	check_types$(EXEEXT) expression_value$(EXEEXT) heap$(EXEEXT) \
 	error_reporter$(EXEEXT) location$(EXEEXT) \
 	memory_model$(EXEEXT) node_cast$(EXEEXT) \
 	parameter_list$(EXEEXT) reaction$(EXEEXT) semantic$(EXEEXT) \
-	symbol_cast$(EXEEXT) symbol_table$(EXEEXT) type$(EXEEXT)
+	symbol_cast$(EXEEXT) symbol_table$(EXEEXT) template$(EXEEXT) \
+	type$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = utest
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
@@ -99,12 +100,13 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__EXEEXT_1 = action$(EXEEXT) arch$(EXEEXT) check_types$(EXEEXT) \
-	expression_value$(EXEEXT) heap$(EXEEXT) \
+am__EXEEXT_1 = action$(EXEEXT) arch$(EXEEXT) builtin_function$(EXEEXT) \
+	check_types$(EXEEXT) expression_value$(EXEEXT) heap$(EXEEXT) \
 	error_reporter$(EXEEXT) location$(EXEEXT) \
 	memory_model$(EXEEXT) node_cast$(EXEEXT) \
 	parameter_list$(EXEEXT) reaction$(EXEEXT) semantic$(EXEEXT) \
-	symbol_cast$(EXEEXT) symbol_table$(EXEEXT) type$(EXEEXT)
+	symbol_cast$(EXEEXT) symbol_table$(EXEEXT) template$(EXEEXT) \
+	type$(EXEEXT)
 am_action_OBJECTS = action-action.$(OBJEXT)
 action_OBJECTS = $(am_action_OBJECTS)
 action_DEPENDENCIES = $(top_builddir)/src/librc.la
@@ -121,6 +123,14 @@ arch_DEPENDENCIES = $(top_builddir)/src/librc.la
 arch_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(arch_CXXFLAGS) \
 	$(CXXFLAGS) $(arch_LDFLAGS) $(LDFLAGS) -o $@
+am_builtin_function_OBJECTS =  \
+	builtin_function-builtin_function.$(OBJEXT)
+builtin_function_OBJECTS = $(am_builtin_function_OBJECTS)
+builtin_function_DEPENDENCIES = $(top_builddir)/src/librc.la
+builtin_function_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(builtin_function_CXXFLAGS) $(CXXFLAGS) \
+	$(builtin_function_LDFLAGS) $(LDFLAGS) -o $@
 am_check_types_OBJECTS = check_types-check_types.$(OBJEXT)
 check_types_OBJECTS = $(am_check_types_OBJECTS)
 check_types_DEPENDENCIES = $(top_builddir)/src/librc.la
@@ -197,6 +207,12 @@ symbol_table_DEPENDENCIES = $(top_builddir)/src/librc.la
 symbol_table_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(symbol_table_CXXFLAGS) \
 	$(CXXFLAGS) $(symbol_table_LDFLAGS) $(LDFLAGS) -o $@
+am_template_OBJECTS = template-template.$(OBJEXT)
+template_OBJECTS = $(am_template_OBJECTS)
+template_DEPENDENCIES = $(top_builddir)/src/librc.la
+template_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(template_CXXFLAGS) \
+	$(CXXFLAGS) $(template_LDFLAGS) $(LDFLAGS) -o $@
 am_type_OBJECTS = type-type.$(OBJEXT)
 type_OBJECTS = $(am_type_OBJECTS)
 type_DEPENDENCIES = $(top_builddir)/src/librc.la
@@ -255,19 +271,20 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(action_SOURCES) $(arch_SOURCES) $(check_types_SOURCES) \
+SOURCES = $(action_SOURCES) $(arch_SOURCES) \
+	$(builtin_function_SOURCES) $(check_types_SOURCES) \
 	$(error_reporter_SOURCES) $(expression_value_SOURCES) \
 	$(heap_SOURCES) $(location_SOURCES) $(memory_model_SOURCES) \
 	$(node_cast_SOURCES) $(parameter_list_SOURCES) \
 	$(reaction_SOURCES) $(semantic_SOURCES) $(symbol_cast_SOURCES) \
-	$(symbol_table_SOURCES) $(type_SOURCES)
+	$(symbol_table_SOURCES) $(template_SOURCES) $(type_SOURCES)
 DIST_SOURCES = $(action_SOURCES) $(arch_SOURCES) \
-	$(check_types_SOURCES) $(error_reporter_SOURCES) \
-	$(expression_value_SOURCES) $(heap_SOURCES) \
-	$(location_SOURCES) $(memory_model_SOURCES) \
+	$(builtin_function_SOURCES) $(check_types_SOURCES) \
+	$(error_reporter_SOURCES) $(expression_value_SOURCES) \
+	$(heap_SOURCES) $(location_SOURCES) $(memory_model_SOURCES) \
 	$(node_cast_SOURCES) $(parameter_list_SOURCES) \
 	$(reaction_SOURCES) $(semantic_SOURCES) $(symbol_cast_SOURCES) \
-	$(symbol_table_SOURCES) $(type_SOURCES)
+	$(symbol_table_SOURCES) $(template_SOURCES) $(type_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -633,6 +650,10 @@ arch_SOURCES = arch.cpp tap.hpp
 arch_LDADD = $(top_builddir)/src/librc.la
 arch_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 arch_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+builtin_function_SOURCES = builtin_function.cpp tap.hpp
+builtin_function_LDADD = $(top_builddir)/src/librc.la
+builtin_function_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+builtin_function_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 check_types_SOURCES = check_types.cpp tap.hpp
 check_types_LDADD = $(top_builddir)/src/librc.la
 check_types_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -681,6 +702,10 @@ symbol_table_SOURCES = symbol_table.cpp tap.hpp
 symbol_table_LDADD = $(top_builddir)/src/librc.la
 symbol_table_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 symbol_table_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+template_SOURCES = template.cpp tap.hpp
+template_LDADD = $(top_builddir)/src/librc.la
+template_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+template_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 type_SOURCES = type.cpp tap.hpp
 type_LDADD = $(top_builddir)/src/librc.la
 type_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -737,6 +762,10 @@ arch$(EXEEXT): $(arch_OBJECTS) $(arch_DEPENDENCIES) $(EXTRA_arch_DEPENDENCIES)
 	@rm -f arch$(EXEEXT)
 	$(AM_V_CXXLD)$(arch_LINK) $(arch_OBJECTS) $(arch_LDADD) $(LIBS)
 
+builtin_function$(EXEEXT): $(builtin_function_OBJECTS) $(builtin_function_DEPENDENCIES) $(EXTRA_builtin_function_DEPENDENCIES) 
+	@rm -f builtin_function$(EXEEXT)
+	$(AM_V_CXXLD)$(builtin_function_LINK) $(builtin_function_OBJECTS) $(builtin_function_LDADD) $(LIBS)
+
 check_types$(EXEEXT): $(check_types_OBJECTS) $(check_types_DEPENDENCIES) $(EXTRA_check_types_DEPENDENCIES) 
 	@rm -f check_types$(EXEEXT)
 	$(AM_V_CXXLD)$(check_types_LINK) $(check_types_OBJECTS) $(check_types_LDADD) $(LIBS)
@@ -785,6 +814,10 @@ symbol_table$(EXEEXT): $(symbol_table_OBJECTS) $(symbol_table_DEPENDENCIES) $(EX
 	@rm -f symbol_table$(EXEEXT)
 	$(AM_V_CXXLD)$(symbol_table_LINK) $(symbol_table_OBJECTS) $(symbol_table_LDADD) $(LIBS)
 
+template$(EXEEXT): $(template_OBJECTS) $(template_DEPENDENCIES) $(EXTRA_template_DEPENDENCIES) 
+	@rm -f template$(EXEEXT)
+	$(AM_V_CXXLD)$(template_LINK) $(template_OBJECTS) $(template_LDADD) $(LIBS)
+
 type$(EXEEXT): $(type_OBJECTS) $(type_DEPENDENCIES) $(EXTRA_type_DEPENDENCIES) 
 	@rm -f type$(EXEEXT)
 	$(AM_V_CXXLD)$(type_LINK) $(type_OBJECTS) $(type_LDADD) $(LIBS)
@@ -797,6 +830,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/action-action.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arch-arch.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/builtin_function-builtin_function.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_types-check_types.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/error_reporter-error_reporter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/expression_value-expression_value.Po@am__quote@
@@ -809,6 +843,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/semantic-semantic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol_cast-symbol_cast.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol_table-symbol_table.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/template-template.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/type-type.Po@am__quote@
 
 .cpp.o:
@@ -859,6 +894,20 @@ arch-arch.obj: arch.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='arch.cpp' object='arch-arch.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arch_CXXFLAGS) $(CXXFLAGS) -c -o arch-arch.obj `if test -f 'arch.cpp'; then $(CYGPATH_W) 'arch.cpp'; else $(CYGPATH_W) '$(srcdir)/arch.cpp'; fi`
+
+builtin_function-builtin_function.o: builtin_function.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(builtin_function_CXXFLAGS) $(CXXFLAGS) -MT builtin_function-builtin_function.o -MD -MP -MF $(DEPDIR)/builtin_function-builtin_function.Tpo -c -o builtin_function-builtin_function.o `test -f 'builtin_function.cpp' || echo '$(srcdir)/'`builtin_function.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/builtin_function-builtin_function.Tpo $(DEPDIR)/builtin_function-builtin_function.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='builtin_function.cpp' object='builtin_function-builtin_function.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(builtin_function_CXXFLAGS) $(CXXFLAGS) -c -o builtin_function-builtin_function.o `test -f 'builtin_function.cpp' || echo '$(srcdir)/'`builtin_function.cpp
+
+builtin_function-builtin_function.obj: builtin_function.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(builtin_function_CXXFLAGS) $(CXXFLAGS) -MT builtin_function-builtin_function.obj -MD -MP -MF $(DEPDIR)/builtin_function-builtin_function.Tpo -c -o builtin_function-builtin_function.obj `if test -f 'builtin_function.cpp'; then $(CYGPATH_W) 'builtin_function.cpp'; else $(CYGPATH_W) '$(srcdir)/builtin_function.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/builtin_function-builtin_function.Tpo $(DEPDIR)/builtin_function-builtin_function.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='builtin_function.cpp' object='builtin_function-builtin_function.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(builtin_function_CXXFLAGS) $(CXXFLAGS) -c -o builtin_function-builtin_function.obj `if test -f 'builtin_function.cpp'; then $(CYGPATH_W) 'builtin_function.cpp'; else $(CYGPATH_W) '$(srcdir)/builtin_function.cpp'; fi`
 
 check_types-check_types.o: check_types.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_types_CXXFLAGS) $(CXXFLAGS) -MT check_types-check_types.o -MD -MP -MF $(DEPDIR)/check_types-check_types.Tpo -c -o check_types-check_types.o `test -f 'check_types.cpp' || echo '$(srcdir)/'`check_types.cpp
@@ -1027,6 +1076,20 @@ symbol_table-symbol_table.obj: symbol_table.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='symbol_table.cpp' object='symbol_table-symbol_table.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_table_CXXFLAGS) $(CXXFLAGS) -c -o symbol_table-symbol_table.obj `if test -f 'symbol_table.cpp'; then $(CYGPATH_W) 'symbol_table.cpp'; else $(CYGPATH_W) '$(srcdir)/symbol_table.cpp'; fi`
+
+template-template.o: template.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(template_CXXFLAGS) $(CXXFLAGS) -MT template-template.o -MD -MP -MF $(DEPDIR)/template-template.Tpo -c -o template-template.o `test -f 'template.cpp' || echo '$(srcdir)/'`template.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/template-template.Tpo $(DEPDIR)/template-template.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='template.cpp' object='template-template.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(template_CXXFLAGS) $(CXXFLAGS) -c -o template-template.o `test -f 'template.cpp' || echo '$(srcdir)/'`template.cpp
+
+template-template.obj: template.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(template_CXXFLAGS) $(CXXFLAGS) -MT template-template.obj -MD -MP -MF $(DEPDIR)/template-template.Tpo -c -o template-template.obj `if test -f 'template.cpp'; then $(CYGPATH_W) 'template.cpp'; else $(CYGPATH_W) '$(srcdir)/template.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/template-template.Tpo $(DEPDIR)/template-template.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='template.cpp' object='template-template.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(template_CXXFLAGS) $(CXXFLAGS) -c -o template-template.obj `if test -f 'template.cpp'; then $(CYGPATH_W) 'template.cpp'; else $(CYGPATH_W) '$(srcdir)/template.cpp'; fi`
 
 type-type.o: type.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(type_CXXFLAGS) $(CXXFLAGS) -MT type-type.o -MD -MP -MF $(DEPDIR)/type-type.Tpo -c -o type-type.o `test -f 'type.cpp' || echo '$(srcdir)/'`type.cpp
@@ -1255,6 +1318,13 @@ arch.log: arch$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+builtin_function.log: builtin_function$(EXEEXT)
+	@p='builtin_function$(EXEEXT)'; \
+	b='builtin_function'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 check_types.log: check_types$(EXEEXT)
 	@p='check_types$(EXEEXT)'; \
 	b='check_types'; \
@@ -1335,6 +1405,13 @@ symbol_cast.log: symbol_cast$(EXEEXT)
 symbol_table.log: symbol_table$(EXEEXT)
 	@p='symbol_table$(EXEEXT)'; \
 	b='symbol_table'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+template.log: template$(EXEEXT)
+	@p='template$(EXEEXT)'; \
+	b='template'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

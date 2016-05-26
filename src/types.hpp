@@ -108,9 +108,19 @@ enum ExpressionKind
 
 namespace type
 {
-class Type;
-class NamedType;
+class Array;
 class Field;
+class Function;
+class Heap;
+class Interface;
+class Map;
+class NamedType;
+class Pointer;
+class Slice;
+class Struct;
+class Type;
+class Visitor;
+
 typedef std::set<std::string> TagSet;
 }
 

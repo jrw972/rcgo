@@ -6,7 +6,7 @@ namespace runtime
 MemoryModel::MemoryModel ()
   : arguments_offset_ (-(ptrdiff_t)sizeof (void*))
   , locals_offset_ (sizeof (void*))
-  , locals_size_ (0)
+  , locals_size_on_stack_ (0)
 { }
 
 bool MemoryModel::arguments_empty () const
@@ -28,7 +28,7 @@ void MemoryModel::locals_push (size_t size)
 {
   size = util::align_up (size, arch::stack_alignment ());
   locals_offset_ += size;
-  locals_size_ += size;
+  locals_size_on_stack_ += size;
 }
 
 void MemoryModel::locals_pop (size_t size)
@@ -46,9 +46,9 @@ ptrdiff_t MemoryModel::locals_offset () const
   return locals_offset_;
 }
 
-size_t MemoryModel::locals_size () const
+size_t MemoryModel::locals_size_on_stack () const
 {
-  return locals_size_;
+  return locals_size_on_stack_;
 }
 
 void MemoryModel::set_receiver_offset ()

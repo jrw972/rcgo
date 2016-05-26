@@ -294,7 +294,7 @@ struct Visitor : public ast::DefaultNodeVisitor
         signature,
         (new ParameterList (node.location))->append (return_symbol));
 
-    decl::Reaction* reaction = new decl::Reaction (thisSymbol, node.body, node.identifier->identifier, reaction_type);
+    decl::Reaction* reaction = new decl::Reaction (node.body, node.identifier->identifier, reaction_type);
 
     type->insert_reaction (reaction);
     node.reaction = reaction;
@@ -318,7 +318,7 @@ struct Visitor : public ast::DefaultNodeVisitor
         signature,
         (new ParameterList (node.location))->append (return_symbol));
 
-    decl::Reaction* reaction = new decl::Reaction (thisSymbol, node.body, node.identifier->identifier, reaction_type, iotaSymbol, dimension);
+    decl::Reaction* reaction = new decl::Reaction (node.body, node.identifier->identifier, reaction_type, iotaSymbol, dimension);
 
     type->insert_reaction (reaction);
     node.reaction = reaction;

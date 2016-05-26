@@ -7,9 +7,7 @@
 namespace decl
 {
 
-/*
- * Base class for builtin functions.
- */
+// Base class for builtin functions.
 struct BuiltinFunction : public decl::Callable, public decl::Symbol
 {
   BuiltinFunction (const std::string& id,
@@ -19,41 +17,16 @@ struct BuiltinFunction : public decl::Callable, public decl::Symbol
   // Symbol
   virtual void accept (decl::SymbolVisitor& visitor);
   virtual void accept (decl::ConstSymbolVisitor& visitor) const;
-  virtual const char* kindString () const
-  {
-    return "BuiltinFunction";
-  }
+  virtual const type::Type* symbol_type () const;
+
+  // Callable
+  virtual const type::Type* callable_type () const;
+  virtual const decl::ParameterList* parameter_list () const;
+  virtual size_t return_size_on_stack () const;
+  virtual size_t receiver_size_on_stack () const;
+  virtual size_t parameters_size_on_stack () const;
 
   const type::Function* const type;
-
-  virtual const type::Type* symbol_type () const
-  {
-    return type;
-  }
-  virtual const type::Type* callable_type () const
-  {
-    return type;
-  }
-  virtual const decl::ParameterList* signature () const
-  {
-    return type->parameter_list;
-  }
-  virtual size_t return_size () const
-  {
-    return type->GetReturnType ()->Size ();
-  }
-  virtual size_t receiver_size () const
-  {
-    return 0;
-  }
-  virtual size_t locals_size () const
-  {
-    return 0;
-  }
-  virtual size_t arguments_size () const;
-
-protected:
-  runtime::MemoryModel memory_model_;
 };
 
 }

@@ -520,7 +520,7 @@ Composer::elaborate_bindings ()
               // Build a stack frame.
               exec.stack ().push_pointer(reinterpret_cast<void*> (receiver_address));
               exec.stack ().push_pointer (NULL);
-              exec.stack ().setup (b->memory_model.locals_size ());
+              exec.stack ().setup (b->memory_model.locals_size_on_stack ());
             }
 
             void default_action (const Node& node)
@@ -756,7 +756,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
         exec.stack ().push (action->iota);
       }
     exec.stack ().push_pointer (NULL);
-    exec.stack ().setup (action->action->memory_model.locals_size ());
+    exec.stack ().setup (action->action->memory_model.locals_size_on_stack ());
   }
 
   ElaborationVisitor (Composer& t, Reaction* r)
@@ -771,9 +771,9 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
       {
         exec.stack ().push (reaction->iota);
       }
-    exec.stack ().reserve (reaction->reaction->signature ()->size_on_stack ());
+    exec.stack ().reserve (reaction->reaction->parameter_list ()->size_on_stack ());
     exec.stack ().push_pointer (NULL);
-    exec.stack ().setup (reaction->reaction->locals_size ());
+    exec.stack ().setup (reaction->reaction->memory_model.locals_size_on_stack ());
   }
 
   ElaborationVisitor (Composer& t, Getter* g)
@@ -784,9 +784,9 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     , activation (NULL)
   {
     exec.stack ().push_pointer (reinterpret_cast<void*> (getter->instance->address));
-    exec.stack ().reserve (getter->getter->signature ()->size_on_stack ());
+    exec.stack ().reserve (getter->getter->parameter_list ()->size_on_stack ());
     exec.stack ().push_pointer (NULL);
-    exec.stack ().setup (getter->getter->locals_size ());
+    exec.stack ().setup (getter->getter->memory_model.locals_size_on_stack ());
   }
 
   Instance* get_instance () const
@@ -1357,7 +1357,7 @@ Composer::instantiate_contained_instances (const type::Type * type,
     {
       // Save the named typed.
       named_type = &type;
-      type.UnderlyingType ()->Accept (*this);
+      type.UnderlyingType ()->accept (*this);
     }
 
     void visit (const Component& type)
@@ -1382,7 +1382,7 @@ Composer::instantiate_contained_instances (const type::Type * type,
         {
           // Recur changing address (and field).
           visitor v (instance_table, parent, NULL, address + (*pos)->offset, *pos, line, NULL, name + "." + (*pos)->name);
-          (*pos)->type->Accept (v);
+          (*pos)->type->accept (v);
         }
     }
 
@@ -1394,7 +1394,7 @@ Composer::instantiate_contained_instances (const type::Type * type,
           std::stringstream newname;
           newname << name << '[' << idx << ']';
           visitor v (instance_table, parent, NULL, address + idx * type.UnitSize (), field, line, NULL, newname.str ());
-          type.base_type->Accept (v);
+          type.base_type->accept (v);
         }
     }
 
@@ -1435,7 +1435,7 @@ Composer::instantiate_contained_instances (const type::Type * type,
     void visit (const type::FileDescriptor& type) { }
   };
   visitor v (*this, parent, initializer, address, NULL, line, node, name);
-  type->Accept (v);
+  type->accept (v);
   return v.instance;
 }
 

@@ -52,15 +52,8 @@ struct ErrorReporter
   ErrorCode leaks_pointers (const Location& loc);
   ErrorCode signature_is_not_foreign_safe (const Location& loc);
 
-  const ListType& list () const
-  {
-    return list_;
-  }
-
-  size_t count () const
-  {
-    return list_.size ();
-  }
+  const ListType& list () const;
+  size_t count () const;
 
 private:
   ErrorCode bump (ErrorCode code);

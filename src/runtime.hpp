@@ -533,7 +533,7 @@ Operation* make_unary (const type::Type* type, Operation* child)
     }
   };
   visitor v (child);
-  type->UnderlyingType ()->Accept (v);
+  type->UnderlyingType ()->accept (v);
   return v.operation;
 }
 
@@ -596,39 +596,39 @@ Operation* make_binary_arithmetic (const type::Type* type, Operation* left, Oper
 {
   switch (type->underlying_kind ())
     {
-    case type::kBool:
+    case type::Bool_Kind:
       return new Binary<type::Bool::ValueType, T> (left, right);
-    case type::kUint8:
+    case type::Uint8_Kind:
       return new Binary<type::Uint8::ValueType, T> (left, right);
-    case type::kUint16:
+    case type::Uint16_Kind:
       return new Binary<type::Uint16::ValueType, T> (left, right);
-    case type::kUint32:
+    case type::Uint32_Kind:
       return new Binary<type::Uint32::ValueType, T> (left, right);
-    case type::kUint64:
+    case type::Uint64_Kind:
       return new Binary<type::Uint64::ValueType, T> (left, right);
-    case type::kInt8:
+    case type::Int8_Kind:
       return new Binary<type::Int8::ValueType, T> (left, right);
-    case type::kInt16:
+    case type::Int16_Kind:
       return new Binary<type::Int16::ValueType, T> (left, right);
-    case type::kInt32:
+    case type::Int32_Kind:
       return new Binary<type::Int32::ValueType, T> (left, right);
-    case type::kInt64:
+    case type::Int64_Kind:
       return new Binary<type::Int64::ValueType, T> (left, right);
-    case type::kFloat32:
+    case type::Float32_Kind:
       return new Binary<type::Float32::ValueType, T> (left, right);
-    case type::kFloat64:
+    case type::Float64_Kind:
       return new Binary<type::Float64::ValueType, T> (left, right);
-    case type::kComplex64:
+    case type::Complex64_Kind:
       return new Binary<type::Complex64::ValueType, T> (left, right);
-    case type::kComplex128:
+    case type::Complex128_Kind:
       return new Binary<type::Complex128::ValueType, T> (left, right);
-    case type::kUint:
+    case type::Uint_Kind:
       return new Binary<type::Uint::ValueType, T> (left, right);
-    case type::kInt:
+    case type::Int_Kind:
       return new Binary<type::Int::ValueType, T> (left, right);
-    case type::kUintptr:
+    case type::Uintptr_Kind:
       return new Binary<type::Uintptr::ValueType, T> (left, right);
-    case type::kPointer:
+    case type::Pointer_Kind:
       return new Binary<type::Uintptr::ValueType, T> (left, right);
 
     default:
@@ -641,27 +641,27 @@ Operation* make_binary_integral (const type::Type* type, Operation* left, Operat
 {
   switch (type->underlying_kind ())
     {
-    case type::kUint8:
+    case type::Uint8_Kind:
       return new Binary<type::Uint8::ValueType, T> (left, right);
-    case type::kUint16:
+    case type::Uint16_Kind:
       return new Binary<type::Uint16::ValueType, T> (left, right);
-    case type::kUint32:
+    case type::Uint32_Kind:
       return new Binary<type::Uint32::ValueType, T> (left, right);
-    case type::kUint64:
+    case type::Uint64_Kind:
       return new Binary<type::Uint64::ValueType, T> (left, right);
-    case type::kInt8:
+    case type::Int8_Kind:
       return new Binary<type::Int8::ValueType, T> (left, right);
-    case type::kInt16:
+    case type::Int16_Kind:
       return new Binary<type::Int16::ValueType, T> (left, right);
-    case type::kInt32:
+    case type::Int32_Kind:
       return new Binary<type::Int32::ValueType, T> (left, right);
-    case type::kInt64:
+    case type::Int64_Kind:
       return new Binary<type::Int64::ValueType, T> (left, right);
-    case type::kUint:
+    case type::Uint_Kind:
       return new Binary<type::Uint::ValueType, T> (left, right);
-    case type::kInt:
+    case type::Int_Kind:
       return new Binary<type::Int::ValueType, T> (left, right);
-    case type::kUintptr:
+    case type::Uintptr_Kind:
       return new Binary<type::Uintptr::ValueType, T> (left, right);
 
     default:
@@ -674,27 +674,27 @@ Operation* make_shift (const type::Type* type, Operation* left, Operation* right
 {
   switch (type->underlying_kind ())
     {
-    case type::kUint8:
+    case type::Uint8_Kind:
       return new Shift<type::Uint8::ValueType, T> (left, right);
-    case type::kUint16:
+    case type::Uint16_Kind:
       return new Shift<type::Uint16::ValueType, T> (left, right);
-    case type::kUint32:
+    case type::Uint32_Kind:
       return new Shift<type::Uint32::ValueType, T> (left, right);
-    case type::kUint64:
+    case type::Uint64_Kind:
       return new Shift<type::Uint64::ValueType, T> (left, right);
-    case type::kInt8:
+    case type::Int8_Kind:
       return new Shift<type::Int8::ValueType, T> (left, right);
-    case type::kInt16:
+    case type::Int16_Kind:
       return new Shift<type::Int16::ValueType, T> (left, right);
-    case type::kInt32:
+    case type::Int32_Kind:
       return new Shift<type::Int32::ValueType, T> (left, right);
-    case type::kInt64:
+    case type::Int64_Kind:
       return new Shift<type::Int64::ValueType, T> (left, right);
-    case type::kUint:
+    case type::Uint_Kind:
       return new Shift<type::Uint::ValueType, T> (left, right);
-    case type::kInt:
+    case type::Int_Kind:
       return new Shift<type::Int::ValueType, T> (left, right);
-    case type::kUintptr:
+    case type::Uintptr_Kind:
       return new Shift<type::Uintptr::ValueType, T> (left, right);
 
     default:

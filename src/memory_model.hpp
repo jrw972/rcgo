@@ -28,14 +28,14 @@ public:
   void locals_pop (size_t size);
   ptrdiff_t arguments_offset () const;
   ptrdiff_t locals_offset () const;
-  size_t locals_size () const;
+  size_t locals_size_on_stack () const;
   void set_receiver_offset ();
   ptrdiff_t receiver_offset () const;
 
 private:
   ptrdiff_t arguments_offset_;
   ptrdiff_t locals_offset_;
-  size_t locals_size_;
+  size_t locals_size_on_stack_;
   ptrdiff_t receiver_offset_;
 };
 

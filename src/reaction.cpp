@@ -1,13 +1,15 @@
 #include "reaction.hpp"
 
 #include "runtime.hpp"
+#include "parameter_list.hpp"
 
 namespace decl
 {
 
-Reaction::Reaction (decl::Symbol* a_receiver, ast::Node* a_body, const std::string& a_name, const type::Method* a_reaction_type)
+Reaction::Reaction (ast::Node* a_body,
+                    const std::string& a_name,
+                    const type::Method* a_reaction_type)
   : operation (NULL)
-  , receiver (a_receiver)
   , body (a_body)
   , name (a_name)
   , iota (NULL)
@@ -15,9 +17,12 @@ Reaction::Reaction (decl::Symbol* a_receiver, ast::Node* a_body, const std::stri
   , reaction_type (a_reaction_type)
 { }
 
-Reaction::Reaction (decl::Symbol* a_receiver, ast::Node* a_body, const std::string& a_name, const type::Method* a_reaction_type, decl::Symbol* a_iota, type::Int::ValueType a_dimension)
+Reaction::Reaction (ast::Node* a_body,
+                    const std::string& a_name,
+                    const type::Method* a_reaction_type,
+                    Symbol* a_iota,
+                    type::Int::ValueType a_dimension)
   : operation (NULL)
-  , receiver (a_receiver)
   , body (a_body)
   , name (a_name)
   , iota (a_iota)
@@ -38,31 +43,25 @@ bool Reaction::has_dimension () const
 
 const type::Type* Reaction::callable_type () const
 {
-  // This used to the named type.
   return reaction_type;
 }
 
-size_t Reaction::return_size () const
+size_t Reaction::return_size_on_stack () const
 {
-  UNIMPLEMENTED;
+  return reaction_type->return_parameter_list->size_on_stack ();
 }
 
-size_t Reaction::receiver_size () const
+size_t Reaction::receiver_size_on_stack () const
 {
-  return reaction_type->receiver_type ()->Size ();
+  return util::align_up (reaction_type->receiver_type ()->Size (), arch::stack_alignment ());
 }
 
-size_t Reaction::arguments_size () const
+size_t Reaction::parameters_size_on_stack () const
 {
-  UNIMPLEMENTED;
+  return reaction_type->parameter_list->size_on_stack ();
 }
 
-size_t Reaction::locals_size () const
-{
-  return memory_model.locals_size ();
-}
-
-const decl::ParameterList* Reaction::signature () const
+const ParameterList* Reaction::parameter_list () const
 {
   return reaction_type->parameter_list;
 }

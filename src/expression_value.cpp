@@ -28,7 +28,7 @@ bool ExpressionValue::is_value_or_variable () const
 void ExpressionValue::fix_string_indirection_mutability ()
 {
   if (expression_kind != ErrorExpressionKind &&
-      type->underlying_kind () == type::kStringU)
+      type->underlying_kind () == type::String_Kind)
     {
       indirection_mutability = std::max (indirection_mutability, Immutable);
     }

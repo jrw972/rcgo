@@ -14,21 +14,21 @@ namespace decl
  * Base class for things that can be called.
  */
 
-class Callable
+struct Callable
 {
-public:
   virtual ~Callable () { }
   virtual void call (runtime::ExecutorBase& exec) const = 0;
-  virtual const decl::ParameterList* signature () const = 0;
+  virtual const decl::ParameterList* parameter_list () const = 0;
   virtual const type::Type* callable_type () const = 0;
-  virtual size_t return_size () const = 0;
-  virtual size_t receiver_size () const = 0;
-  virtual size_t arguments_size () const = 0;
-  virtual size_t locals_size () const = 0;
+  virtual size_t return_size_on_stack () const = 0;
+  virtual size_t receiver_size_on_stack () const = 0;
+  virtual size_t parameters_size_on_stack () const = 0;
   virtual void check_types (ast::List* args) const;
   virtual void check_references (ast::List* args) const;
   virtual void check_mutability (ast::List* args) const;
   virtual void compute_receiver_access (const semantic::ExpressionValueList& args, ReceiverAccess& receiver_access, bool& flag) const;
+
+  runtime::MemoryModel memory_model;
 };
 
 /*
@@ -50,32 +50,23 @@ struct Function : public Callable, public decl::Symbol
   // Symbol
   virtual void accept (decl::SymbolVisitor& visitor);
   virtual void accept (decl::ConstSymbolVisitor& visitor) const;
-  virtual const char* kindString () const
-  {
-    return "Function";
-  }
   virtual const type::Type* symbol_type () const
   {
     return type;
   }
 
   ast::Function* const node;
-  runtime::MemoryModel memoryModel;
 
-  virtual size_t return_size () const
+  virtual size_t return_size_on_stack () const
   {
-    return type->GetReturnType ()->Size ();
+    return util::align_up (type->GetReturnType ()->Size (), arch::stack_alignment ());
   }
-  virtual size_t receiver_size () const
+  virtual size_t receiver_size_on_stack () const
   {
     return 0;
   }
-  virtual size_t arguments_size () const;
-  virtual size_t locals_size () const
-  {
-    return memoryModel.locals_size ();
-  }
-  virtual const decl::ParameterList* signature () const
+  virtual size_t parameters_size_on_stack () const;
+  virtual const decl::ParameterList* parameter_list () const
   {
     return type->parameter_list;
   }
@@ -95,11 +86,10 @@ struct Method : public Callable
     : node (n)
     , name (na)
     , methodType (method_type_)
-    , returnSize (method_type_->return_type ()->Size ())
   { }
 
   virtual void call (runtime::ExecutorBase& exec) const;
-  virtual const decl::ParameterList* signature () const
+  virtual const decl::ParameterList* parameter_list () const
   {
     return methodType->parameter_list;
   }
@@ -114,25 +104,19 @@ struct Method : public Callable
     return methodType;
   }
 
-  virtual size_t return_size () const
+  virtual size_t return_size_on_stack () const
   {
-    return methodType->return_type ()->Size ();
+    return util::align_up (methodType->return_type ()->Size (), arch::stack_alignment ());
   }
-  virtual size_t receiver_size () const
+  virtual size_t receiver_size_on_stack () const
   {
-    return methodType->receiver_type ()->Size ();
+    return util::align_up (methodType->receiver_type ()->Size (), arch::stack_alignment ());
   }
-  virtual size_t arguments_size () const;
-  virtual size_t locals_size () const
-  {
-    return memoryModel.locals_size ();
-  }
+  virtual size_t parameters_size_on_stack () const;
 
   ast::Method* const node;
   std::string const name;
   const type::Method * const methodType;
-  size_t const returnSize;
-  runtime::MemoryModel memoryModel;
 };
 
 struct Initializer : public Callable
@@ -143,7 +127,6 @@ struct Initializer : public Callable
     : node (n)
     , name (na)
     , initializerType (initializer_type_)
-    , returnSize (initializer_type_->return_type ()->Size ())
   { }
 
   virtual void call (runtime::ExecutorBase& exec) const;
@@ -152,20 +135,16 @@ struct Initializer : public Callable
     return initializerType;
   }
 
-  virtual size_t return_size () const
+  virtual size_t return_size_on_stack () const
   {
-    return returnSize;
+    return util::align_up (initializerType->return_type ()->Size (), arch::stack_alignment ());
   }
-  virtual size_t receiver_size () const
+  virtual size_t receiver_size_on_stack () const
   {
-    return initializerType->receiver_type ()->Size ();
+    return util::align_up (initializerType->receiver_type ()->Size (), arch::stack_alignment ());
   }
-  virtual size_t arguments_size () const;
-  virtual size_t locals_size () const
-  {
-    return memoryModel.locals_size ();
-  }
-  virtual const decl::ParameterList* signature () const
+  virtual size_t parameters_size_on_stack () const;
+  virtual const decl::ParameterList* parameter_list () const
   {
     return initializerType->parameter_list;
   }
@@ -177,8 +156,6 @@ struct Initializer : public Callable
   ast::Initializer* const node;
   std::string const name;
   const type::Method * const initializerType;
-  size_t const returnSize;
-  runtime::MemoryModel memoryModel;
 };
 
 struct Getter : public Callable
@@ -199,20 +176,16 @@ struct Getter : public Callable
     return getterType;
   }
 
-  virtual size_t return_size () const
+  virtual size_t return_size_on_stack () const
   {
-    return getterType->return_type ()->Size ();
+    return util::align_up (getterType->return_type ()->Size (), arch::stack_alignment ());
   }
-  virtual size_t receiver_size () const
+  virtual size_t receiver_size_on_stack () const
   {
-    return getterType->receiver_type ()->Size ();
+    return util::align_up (getterType->receiver_type ()->Size (), arch::stack_alignment ());
   }
-  virtual size_t arguments_size () const;
-  virtual size_t locals_size () const
-  {
-    return memoryModel.locals_size ();
-  }
-  virtual const decl::ParameterList* signature () const
+  virtual size_t parameters_size_on_stack () const;
+  virtual const decl::ParameterList* parameter_list () const
   {
     return getterType->parameter_list;
   }
@@ -228,7 +201,6 @@ struct Getter : public Callable
   const type::Method * const getterType;
   size_t const returnSize;
   ReceiverAccess immutable_phase_access;
-  runtime::MemoryModel memoryModel;
 };
 
 }

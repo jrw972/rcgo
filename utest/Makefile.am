@@ -2,7 +2,7 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver
 
 AM_CXXFLAGS = -I $(top_srcdir)/src
 
-TESTS = action arch check_types expression_value heap error_reporter location memory_model node_cast parameter_list reaction semantic symbol_cast symbol_table type
+TESTS = action arch builtin_function check_types expression_value heap error_reporter location memory_model node_cast parameter_list reaction semantic symbol_cast symbol_table template type
 check_PROGRAMS = $(TESTS)
 
 action_SOURCES = action.cpp tap.hpp
@@ -14,6 +14,11 @@ arch_SOURCES = arch.cpp tap.hpp
 arch_LDADD = $(top_builddir)/src/librc.la
 arch_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 arch_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+
+builtin_function_SOURCES = builtin_function.cpp tap.hpp
+builtin_function_LDADD = $(top_builddir)/src/librc.la
+builtin_function_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+builtin_function_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
 check_types_SOURCES = check_types.cpp tap.hpp
 check_types_LDADD = $(top_builddir)/src/librc.la
@@ -74,6 +79,11 @@ symbol_table_SOURCES = symbol_table.cpp tap.hpp
 symbol_table_LDADD = $(top_builddir)/src/librc.la
 symbol_table_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 symbol_table_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+
+template_SOURCES = template.cpp tap.hpp
+template_LDADD = $(top_builddir)/src/librc.la
+template_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+template_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
 type_SOURCES = type.cpp tap.hpp
 type_LDADD = $(top_builddir)/src/librc.la

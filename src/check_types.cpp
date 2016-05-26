@@ -417,7 +417,7 @@ struct Visitor : public ast::DefaultNodeVisitor
           }
         else if (is_any_string (from) && is_slice_of_bytes (to))
           {
-            if (from->IsUntyped ())
+            if (from->is_untyped ())
               {
                 x.convert (from, from->DefaultType ());
                 from = from->DefaultType ();
@@ -657,7 +657,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     symtab.open_scope ();
     symtab.enter_symbol (node.initializer->receiver_parameter ());
-    symtab.enter_signature (node.initializer->signature ());
+    symtab.enter_signature (node.initializer->parameter_list ());
     symtab.enter_symbol (node.initializer->return_parameter ());
     Visitor v (*this);
     v.receiver_parameter = node.initializer->initializerType->receiver_parameter;
@@ -670,7 +670,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     symtab.open_scope ();
     symtab.enter_symbol (node.getter->receiver_parameter ());
-    symtab.enter_signature (node.getter->signature ());
+    symtab.enter_signature (node.getter->parameter_list ());
     symtab.enter_symbol (node.getter->return_parameter ());
     Visitor v (*this);
     v.receiver_parameter = node.getter->getterType->receiver_parameter;
@@ -735,8 +735,8 @@ struct Visitor : public ast::DefaultNodeVisitor
   void visit (ast::Reaction& node)
   {
     symtab.open_scope ();
-    symtab.enter_symbol (node.reaction->receiver);
-    symtab.enter_signature (node.reaction->signature ());
+    symtab.enter_symbol (node.reaction->reaction_type->receiver_parameter);
+    symtab.enter_signature (node.reaction->parameter_list ());
     // No return type.
     Visitor v (*this);
     v.receiver_parameter = node.reaction->reaction_type->receiver_parameter;
@@ -748,9 +748,9 @@ struct Visitor : public ast::DefaultNodeVisitor
   void visit (DimensionedReaction& node)
   {
     symtab.open_scope ();
-    symtab.enter_symbol (node.reaction->receiver);
+    symtab.enter_symbol (node.reaction->reaction_type->receiver_parameter);
     symtab.enter_symbol (node.reaction->iota);
-    symtab.enter_signature (node.reaction->signature ());
+    symtab.enter_signature (node.reaction->parameter_list ());
 
     // No return type.
     Visitor v (*this);
@@ -771,7 +771,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   void visit (ast::Function& node)
   {
     symtab.open_scope ();
-    symtab.enter_signature (node.function->signature ());
+    symtab.enter_signature (node.function->parameter_list ());
     symtab.enter_symbol (node.function->return_parameter ());
     node.body->accept (*this);
     symtab.close_scope ();
@@ -781,7 +781,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     symtab.open_scope ();
     symtab.enter_symbol (node.method->receiver_parameter ());
-    symtab.enter_signature (node.method->signature ());
+    symtab.enter_signature (node.method->parameter_list ());
     symtab.enter_symbol (node.method->return_parameter ());
     Visitor v (*this);
     v.receiver_parameter = node.method->methodType->receiver_parameter;
@@ -1014,7 +1014,7 @@ struct Visitor : public ast::DefaultNodeVisitor
         Node* n = *init_pos;
         n->accept (*this);
 
-        if (n->eval.type->IsUntyped ())
+        if (n->eval.type->is_untyped ())
           {
             n->eval.value.convert (n->eval.type, n->eval.type->DefaultType ());
             n->eval.type = n->eval.type->DefaultType ();
@@ -1597,7 +1597,7 @@ done:
 
     switch (node.eval.type->underlying_kind ())
       {
-      case kStruct:
+      case Struct_Kind:
       {
         for (List::ConstIterator pos = node.literal_value->begin (),
              limit = node.literal_value->end ();
@@ -1610,11 +1610,11 @@ done:
       }
       break;
 
-      case kArray:
+      case Array_Kind:
         UNIMPLEMENTED;
         break;
 
-      case kSlice:
+      case Slice_Kind:
         UNIMPLEMENTED;
         break;
 

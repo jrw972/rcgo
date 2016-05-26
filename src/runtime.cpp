@@ -147,7 +147,7 @@ initialize (ExecutorBase& exec, ComponentInfoBase* info)
       // Call the initializer.
       info->instance ()->operation->execute (exec);
       // Clean up any return value.
-      exec.stack ().popn (info->instance ()->initializer->return_size ());
+      exec.stack ().popn (info->instance ()->initializer->return_size_on_stack ());
     }
 }
 
@@ -174,7 +174,7 @@ evaluate (ExecutorBase& exec, const MemoryModel& memoryModel, const ast::Binary&
 
     void visit (const NamedType& t)
     {
-      t.UnderlyingType ()->Accept (*this);
+      t.UnderlyingType ()->accept (*this);
     }
 
     void visit (const Bool& t)
@@ -269,7 +269,7 @@ struct LeftShiftVisitor : public type::DefaultVisitor
 
   void visit (const NamedType& t)
   {
-    t.UnderlyingType ()->Accept (*this);
+    t.UnderlyingType ()->accept (*this);
   }
 
   void visit (const type::Int& t)
@@ -372,7 +372,7 @@ struct RightShift : public RetvalDispatch
 
       void visit (const NamedType& t)
       {
-        t.UnderlyingType ()->Accept (*this);
+        t.UnderlyingType ()->accept (*this);
       }
 
       void visit (const type::Int&)
@@ -927,7 +927,7 @@ execute (ExecutorBase& exec,
   // Reset the mutable phase base pointer.
   exec.mutable_phase_base_pointer (0);
 
-  exec.stack ().setup (action->memory_model.locals_size ());
+  exec.stack ().setup (action->memory_model.locals_size_on_stack ());
 
   action->body->operation->execute (exec);
 
@@ -1334,27 +1334,27 @@ MakeConvertToInt (const Operation* c, const type::Type* type)
 {
   switch (type->underlying_kind ())
     {
-    case kUint8:
+    case Uint8_Kind:
       return new ConvertToInt<Uint8> (c);
-    case kUint16:
+    case Uint16_Kind:
       return new ConvertToInt<Uint16> (c);
-    case kUint32:
+    case Uint32_Kind:
       return new ConvertToInt<Uint32> (c);
-    case kUint64:
+    case Uint64_Kind:
       return new ConvertToInt<Uint64> (c);
-    case kInt8:
+    case Int8_Kind:
       return new ConvertToInt<Int8> (c);
-    case kInt16:
+    case Int16_Kind:
       return new ConvertToInt<Int16> (c);
-    case kInt32:
+    case Int32_Kind:
       return new ConvertToInt<Int32> (c);
-    case kInt64:
+    case Int64_Kind:
       return new ConvertToInt<Int64> (c);
-    case kUint:
+    case Uint_Kind:
       return new ConvertToInt<Uint> (c);
-    case kInt:
+    case Int_Kind:
       return new ConvertToInt<Int> (c);
-    case kUintptr:
+    case Uintptr_Kind:
       return new ConvertToInt<Uintptr> (c);
 
     default:
@@ -1389,27 +1389,27 @@ MakeConvertToUint (const Operation* c, const type::Type* type)
 {
   switch (type->underlying_kind ())
     {
-    case kUint8:
+    case Uint8_Kind:
       return new ConvertToUint<Uint8> (c);
-    case kUint16:
+    case Uint16_Kind:
       return new ConvertToUint<Uint16> (c);
-    case kUint32:
+    case Uint32_Kind:
       return new ConvertToUint<Uint32> (c);
-    case kUint64:
+    case Uint64_Kind:
       return new ConvertToUint<Uint64> (c);
-    case kInt8:
+    case Int8_Kind:
       return new ConvertToUint<Int8> (c);
-    case kInt16:
+    case Int16_Kind:
       return new ConvertToUint<Int16> (c);
-    case kInt32:
+    case Int32_Kind:
       return new ConvertToUint<Int32> (c);
-    case kInt64:
+    case Int64_Kind:
       return new ConvertToUint<Int64> (c);
-    case kUint:
+    case Uint_Kind:
       return new ConvertToUint<Uint> (c);
-    case kInt:
+    case Int_Kind:
       return new ConvertToUint<Int> (c);
-    case kUintptr:
+    case Uintptr_Kind:
       return new ConvertToUint<Uintptr> (c);
 
     default:
@@ -1543,7 +1543,7 @@ Operation* make_literal (const type::Type* type, const Value& value)
 {
   assert (value.present);
   MakeLiteralVisitor visitor (value);
-  type->UnderlyingType ()->Accept (visitor);
+  type->UnderlyingType ()->accept (visitor);
   return visitor.op;
 }
 
@@ -1567,7 +1567,7 @@ OpReturn
 FunctionCall::execute (ExecutorBase& exec) const
 {
   // Create space for the return.
-  exec.stack ().reserve (callable->return_size ());
+  exec.stack ().reserve (callable->return_size_on_stack ());
 
   // Push the arguments.
   arguments->execute (exec);
@@ -1576,7 +1576,7 @@ FunctionCall::execute (ExecutorBase& exec) const
   exec.stack ().push_pointer (NULL);
 
   // Setup the frame.
-  exec.stack ().setup (callable->locals_size ());
+  exec.stack ().setup (callable->memory_model.locals_size_on_stack ());
 
   // Do the call.
   callable->call (exec);
@@ -1588,7 +1588,7 @@ FunctionCall::execute (ExecutorBase& exec) const
   exec.stack ().pop_pointer ();
 
   // Pop the arguments.
-  exec.stack ().popn (callable->arguments_size ());
+  exec.stack ().popn (callable->parameters_size_on_stack ());
 
   return make_continue ();
 }
@@ -1597,7 +1597,7 @@ OpReturn
 MethodCall::execute (ExecutorBase& exec) const
 {
   // Create space for the return.
-  exec.stack ().reserve (callable->return_size ());
+  exec.stack ().reserve (callable->return_size_on_stack ());
 
   // Push the receiver.
   receiver->execute (exec);
@@ -1609,7 +1609,7 @@ MethodCall::execute (ExecutorBase& exec) const
   exec.stack ().push_pointer (NULL);
 
   // Setup the frame.
-  exec.stack ().setup (callable->locals_size ());
+  exec.stack ().setup (callable->memory_model.locals_size_on_stack ());
 
   // Do the call.
   callable->call (exec);
@@ -1621,9 +1621,9 @@ MethodCall::execute (ExecutorBase& exec) const
   exec.stack ().pop_pointer ();
 
   // Pop the arguments.
-  exec.stack ().popn (callable->arguments_size ());
+  exec.stack ().popn (callable->parameters_size_on_stack ());
 
-  exec.stack ().popn (callable->receiver_size ());
+  exec.stack ().popn (callable->receiver_size_on_stack ());
 
   return make_continue ();
 }
@@ -1644,7 +1644,7 @@ DynamicFunctionCall::execute (ExecutorBase& exec) const
       exec.stack ().pop (pp);
 
       // Create space for the return.
-      exec.stack ().reserve (pp.getter->return_size ());
+      exec.stack ().reserve (pp.getter->return_size_on_stack ());
 
       // Push the arguments.
       exec.stack ().push_pointer (pp.instance);
@@ -1654,7 +1654,7 @@ DynamicFunctionCall::execute (ExecutorBase& exec) const
       exec.stack ().push_pointer (NULL);
 
       // Setup the frame.
-      exec.stack ().setup (pp.getter->locals_size ());
+      exec.stack ().setup (pp.getter->memory_model.locals_size_on_stack ());
 
       // Do the call.
       pp.getter->call (exec);
@@ -1666,7 +1666,7 @@ DynamicFunctionCall::execute (ExecutorBase& exec) const
       exec.stack ().pop_pointer ();
 
       // Pop the arguments.
-      exec.stack ().popn (pp.getter->arguments_size ());
+      exec.stack ().popn (pp.getter->parameters_size_on_stack ());
       exec.stack ().pop_pointer ();
 
       return make_continue ();
@@ -1742,35 +1742,35 @@ Operation* make_add_assign (Operation* l, Operation* r, const type::Type* t)
 {
   switch (t->underlying_kind ())
     {
-    case kUint8:
+    case Uint8_Kind:
       return new AddAssign<Uint8::ValueType> (l, r);
-    case kUint16:
+    case Uint16_Kind:
       return new AddAssign<Uint16::ValueType> (l, r);
-    case kUint32:
+    case Uint32_Kind:
       return new AddAssign<Uint32::ValueType> (l, r);
-    case kUint64:
+    case Uint64_Kind:
       return new AddAssign<Uint64::ValueType> (l, r);
-    case kInt8:
+    case Int8_Kind:
       return new AddAssign<Int8::ValueType> (l, r);
-    case kInt16:
+    case Int16_Kind:
       return new AddAssign<Int16::ValueType> (l, r);
-    case kInt32:
+    case Int32_Kind:
       return new AddAssign<Int32::ValueType> (l, r);
-    case kInt64:
+    case Int64_Kind:
       return new AddAssign<Int64::ValueType> (l, r);
-    case kFloat32:
+    case Float32_Kind:
       return new AddAssign<Float32::ValueType> (l, r);
-    case kFloat64:
+    case Float64_Kind:
       return new AddAssign<Float64::ValueType> (l, r);
-    case kComplex64:
+    case Complex64_Kind:
       return new AddAssign<Complex64::ValueType> (l, r);
-    case kComplex128:
+    case Complex128_Kind:
       return new AddAssign<Complex128::ValueType> (l, r);
-    case kUint:
+    case Uint_Kind:
       return new AddAssign<Uint::ValueType> (l, r);
-    case kInt:
+    case Int_Kind:
       return new AddAssign<Int::ValueType> (l, r);
-    case kUintptr:
+    case Uintptr_Kind:
       return new AddAssign<Uintptr::ValueType> (l, r);
     default:
       NOT_REACHED;
@@ -2020,35 +2020,35 @@ Operation* make_increment (Operation* child, const type::Type* type)
 {
   switch (type->underlying_kind ())
     {
-    case kUint8:
+    case Uint8_Kind:
       return new Increment<Uint8::ValueType> (child);
-    case kUint16:
+    case Uint16_Kind:
       return new Increment<Uint16::ValueType> (child);
-    case kUint32:
+    case Uint32_Kind:
       return new Increment<Uint32::ValueType> (child);
-    case kUint64:
+    case Uint64_Kind:
       return new Increment<Uint64::ValueType> (child);
-    case kInt8:
+    case Int8_Kind:
       return new Increment<Int8::ValueType> (child);
-    case kInt16:
+    case Int16_Kind:
       return new Increment<Int16::ValueType> (child);
-    case kInt32:
+    case Int32_Kind:
       return new Increment<Int32::ValueType> (child);
-    case kInt64:
+    case Int64_Kind:
       return new Increment<Int64::ValueType> (child);
-    case kFloat32:
+    case Float32_Kind:
       return new Increment<Float32::ValueType> (child);
-    case kFloat64:
+    case Float64_Kind:
       return new Increment<Float64::ValueType> (child);
-    case kComplex64:
+    case Complex64_Kind:
       return new Increment<Complex64::ValueType> (child);
-    case kComplex128:
+    case Complex128_Kind:
       return new Increment<Complex128::ValueType> (child);
-    case kUint:
+    case Uint_Kind:
       return new Increment<Uint::ValueType> (child);
-    case kInt:
+    case Int_Kind:
       return new Increment<Int::ValueType> (child);
-    case kUintptr:
+    case Uintptr_Kind:
       return new Increment<Uintptr::ValueType> (child);
     default:
       TYPE_NOT_REACHED (*type);
@@ -2059,35 +2059,35 @@ Operation* make_decrement (Operation* child, const type::Type* type)
 {
   switch (type->underlying_kind ())
     {
-    case kUint8:
+    case Uint8_Kind:
       return new Decrement<Uint8::ValueType> (child);
-    case kUint16:
+    case Uint16_Kind:
       return new Decrement<Uint16::ValueType> (child);
-    case kUint32:
+    case Uint32_Kind:
       return new Decrement<Uint32::ValueType> (child);
-    case kUint64:
+    case Uint64_Kind:
       return new Decrement<Uint64::ValueType> (child);
-    case kInt8:
+    case Int8_Kind:
       return new Decrement<Int8::ValueType> (child);
-    case kInt16:
+    case Int16_Kind:
       return new Decrement<Int16::ValueType> (child);
-    case kInt32:
+    case Int32_Kind:
       return new Decrement<Int32::ValueType> (child);
-    case kInt64:
+    case Int64_Kind:
       return new Decrement<Int64::ValueType> (child);
-    case kFloat32:
+    case Float32_Kind:
       return new Decrement<Float32::ValueType> (child);
-    case kFloat64:
+    case Float64_Kind:
       return new Decrement<Float64::ValueType> (child);
-    case kComplex64:
+    case Complex64_Kind:
       return new Decrement<Complex64::ValueType> (child);
-    case kComplex128:
+    case Complex128_Kind:
       return new Decrement<Complex128::ValueType> (child);
-    case kUint:
+    case Uint_Kind:
       return new Decrement<Uint::ValueType> (child);
-    case kInt:
+    case Int_Kind:
       return new Decrement<Int::ValueType> (child);
-    case kUintptr:
+    case Uintptr_Kind:
       return new Decrement<Uintptr::ValueType> (child);
     default:
       TYPE_NOT_REACHED (*type);
@@ -2147,7 +2147,7 @@ static void push_port_call (ExecutorBase& exec, Operation* args, ptrdiff_t recei
       // Jump to the last frame.
       exec.stack ().base_pointer (exec.mutable_phase_base_pointer ());
 
-      exec.stack ().setup (port->reaction->memory_model.locals_size ());
+      exec.stack ().setup (port->reaction->memory_model.locals_size_on_stack ());
 
       port->reaction->call (exec);
 
@@ -2278,29 +2278,29 @@ static Operation* make_conversion1 (Operation* c, const type::Type* to)
 {
   switch (to->underlying_kind ())
     {
-    case kUint8:
+    case Uint8_Kind:
       return new Conversion<T1, Uint8::ValueType> (c);
-    case kUint16:
+    case Uint16_Kind:
       return new Conversion<T1, Uint16::ValueType> (c);
-    case kUint32:
+    case Uint32_Kind:
       return new Conversion<T1, Uint32::ValueType> (c);
-    case kUint64:
+    case Uint64_Kind:
       return new Conversion<T1, Uint64::ValueType> (c);
-    case kInt8:
+    case Int8_Kind:
       return new Conversion<T1, Int8::ValueType> (c);
-    case kInt16:
+    case Int16_Kind:
       return new Conversion<T1, Int16::ValueType> (c);
-    case kInt32:
+    case Int32_Kind:
       return new Conversion<T1, Int32::ValueType> (c);
-    case kInt64:
+    case Int64_Kind:
       return new Conversion<T1, Int64::ValueType> (c);
-    case kFloat32:
+    case Float32_Kind:
       return new Conversion<T1, Float32::ValueType> (c);
-    case kFloat64:
+    case Float64_Kind:
       return new Conversion<T1, Float64::ValueType> (c);
-    case kUint:
+    case Uint_Kind:
       return new Conversion<T1, Uint::ValueType> (c);
-    case kInt:
+    case Int_Kind:
       return new Conversion<T1, Int::ValueType> (c);
     default:
       break;
@@ -2325,29 +2325,29 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
     {
       switch (from->underlying_kind ())
         {
-        case kUint8:
+        case Uint8_Kind:
           return make_conversion1<Uint8::ValueType> (c, to);
-        case kUint16:
+        case Uint16_Kind:
           return make_conversion1<Uint16::ValueType> (c, to);
-        case kUint32:
+        case Uint32_Kind:
           return make_conversion1<Uint32::ValueType> (c, to);
-        case kUint64:
+        case Uint64_Kind:
           return make_conversion1<Uint64::ValueType> (c, to);
-        case kInt8:
+        case Int8_Kind:
           return make_conversion1<Int8::ValueType> (c, to);
-        case kInt16:
+        case Int16_Kind:
           return make_conversion1<Int16::ValueType> (c, to);
-        case kInt32:
+        case Int32_Kind:
           return make_conversion1<Int32::ValueType> (c, to);
-        case kInt64:
+        case Int64_Kind:
           return make_conversion1<Int64::ValueType> (c, to);
-        case kFloat32:
+        case Float32_Kind:
           return make_conversion1<Float32::ValueType> (c, to);
-        case kFloat64:
+        case Float64_Kind:
           return make_conversion1<Float64::ValueType> (c, to);
-        case kUint:
+        case Uint_Kind:
           return make_conversion1<Uint::ValueType> (c, to);
-        case kInt:
+        case Int_Kind:
           return make_conversion1<Int::ValueType> (c, to);
         default:
           break;
@@ -2404,7 +2404,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
 
       switch (evals[idx].type->underlying_kind ())
         {
-        case kBool:
+        case Bool_Kind:
         {
           Bool::ValueType x;
           exec.stack ().pop (x);
@@ -2419,7 +2419,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kUint8:
+        case Uint8_Kind:
         {
           Uint8::ValueType x;
           exec.stack ().pop (x);
@@ -2427,7 +2427,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kUint16:
+        case Uint16_Kind:
         {
           Uint16::ValueType x;
           exec.stack ().pop (x);
@@ -2435,7 +2435,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kUint32:
+        case Uint32_Kind:
         {
           Uint32::ValueType x;
           exec.stack ().pop (x);
@@ -2443,7 +2443,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kUint64:
+        case Uint64_Kind:
         {
           Uint64::ValueType x;
           exec.stack ().pop (x);
@@ -2451,7 +2451,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kInt8:
+        case Int8_Kind:
         {
           Int8::ValueType x;
           exec.stack ().pop (x);
@@ -2459,7 +2459,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kInt16:
+        case Int16_Kind:
         {
           Int16::ValueType x;
           exec.stack ().pop (x);
@@ -2467,7 +2467,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kInt32:
+        case Int32_Kind:
         {
           Int32::ValueType x;
           exec.stack ().pop (x);
@@ -2475,7 +2475,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kInt64:
+        case Int64_Kind:
         {
           Int64::ValueType x;
           exec.stack ().pop (x);
@@ -2483,7 +2483,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kFloat32:
+        case Float32_Kind:
         {
           Float32::ValueType x;
           exec.stack ().pop (x);
@@ -2491,7 +2491,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kFloat64:
+        case Float64_Kind:
         {
           Float64::ValueType x;
           exec.stack ().pop (x);
@@ -2499,11 +2499,11 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kComplex64:
-        case kComplex128:
+        case Complex64_Kind:
+        case Complex128_Kind:
           TYPE_NOT_REACHED (*evals[idx].type);
 
-        case kUint:
+        case Uint_Kind:
         {
           Uint::ValueType x;
           exec.stack ().pop (x);
@@ -2511,7 +2511,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kInt:
+        case Int_Kind:
         {
           Int::ValueType x;
           exec.stack ().pop (x);
@@ -2519,7 +2519,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kUintptr:
+        case Uintptr_Kind:
         {
           Uintptr::ValueType x;
           exec.stack ().pop (x);
@@ -2527,7 +2527,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kStringU:
+        case String_Kind:
         {
           StringU::ValueType x;
           exec.stack ().pop (x);
@@ -2535,7 +2535,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
         }
         break;
 
-        case kPointer:
+        case Pointer_Kind:
         {
           Pointer::ValueType x;
           exec.stack ().pop (x);
@@ -2721,7 +2721,7 @@ Operation* make_append (const type::Slice* slice_type, Operation* args)
 {
   switch (slice_type->base_type->underlying_kind ())
     {
-    case kUint8:
+    case Uint8_Kind:
       return new AppendOp<Uint8::ValueType> (slice_type, args);
     default:
       TYPE_NOT_REACHED (*slice_type->base_type);
