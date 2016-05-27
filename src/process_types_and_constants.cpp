@@ -44,7 +44,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     const std::string& name = node.identifier->identifier;
     NamedType* type = new NamedType (name);
     symtab.enter_symbol (new TypeSymbol (name, node.identifier->location, type));
-    type->UnderlyingType (process_type (node.type_spec, er, symtab, true));
+    type->underlying_type (process_type (node.type_spec, er, symtab, true));
   }
 
   void visit (Const& node)

@@ -193,7 +193,7 @@ static void check_condition (Node* node)
                      node->location.line,
                      "condition is not boolean (E155)");
     }
-  node->eval.convert (condition->DefaultType ());
+  node->eval.convert (condition->default_type ());
   require_value_or_variable (node);
 }
 
@@ -419,8 +419,8 @@ struct Visitor : public ast::DefaultNodeVisitor
           {
             if (from->is_untyped ())
               {
-                x.convert (from, from->DefaultType ());
-                from = from->DefaultType ();
+                x.convert (from, from->default_type ());
+                from = from->default_type ();
               }
             node.reset_mutability = true;
           }
@@ -437,7 +437,7 @@ struct Visitor : public ast::DefaultNodeVisitor
           {
             // Okay.
           }
-        else if (are_identical (from->UnderlyingType (), to->UnderlyingType ()))
+        else if (are_identical (from->underlying_type (), to->underlying_type ()))
           {
             // Okay.
           }
@@ -849,7 +849,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     const std::string& identifier = node.identifier->identifier;
     node.limit = process_array_dimension (node.limit_node, er, symtab);
-    node.symbol = new VariableSymbol (identifier, node.identifier->location, Int::Instance (), Immutable, Immutable);
+    node.symbol = new VariableSymbol (identifier, node.identifier->location, Int::instance (), Immutable, Immutable);
     symtab.open_scope ();
     symtab.enter_symbol (node.symbol);
     node.body->accept (*this);
@@ -1016,8 +1016,8 @@ struct Visitor : public ast::DefaultNodeVisitor
 
         if (n->eval.type->is_untyped ())
           {
-            n->eval.value.convert (n->eval.type, n->eval.type->DefaultType ());
-            n->eval.type = n->eval.type->DefaultType ();
+            n->eval.value.convert (n->eval.type, n->eval.type->default_type ());
+            n->eval.type = n->eval.type->default_type ();
           }
         require_value_or_variable (n);
 
@@ -1194,7 +1194,7 @@ done:
   {
     node.visit_children (*this);
     const type::Type* t = node.child->eval.type;
-    const Pointer* p = type_cast<Pointer> (t->UnderlyingType ());
+    const Pointer* p = type_cast<Pointer> (t->underlying_type ());
     if (p == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
@@ -1226,8 +1226,8 @@ done:
     const type::Type* base_type = node.base->eval.type;
     require_value_or_variable (node.base);
 
-    node.field = base_type->select_field (identifier);
-    node.callable = base_type->select_callable (identifier);
+    node.field = base_type->find_field (identifier);
+    node.callable = base_type->find_callable (identifier);
     if (node.field != NULL)
       {
         node.eval.type = node.field->type;
@@ -1243,7 +1243,7 @@ done:
                        identifier.c_str (), base_type->to_string ().c_str ());
       }
 
-    if (base_type->u_to_pointer ())
+    if (base_type->underlying_type ()->to_pointer ())
       {
         // Selecting through pointer always yields a variable.
         node.eval.expression_kind = VariableExpressionKind;
@@ -1268,13 +1268,13 @@ done:
 
     if (is_untyped_numeric (index_type))
       {
-        if (!index_value.representable (index_type, Int::Instance ()))
+        if (!index_value.representable (index_type, Int::instance ()))
           {
             error_at_line (-1, 0, index->location.file.c_str (), index->location.line,
                            "array index is not an integer (E20)");
           }
-        index_value.convert (index_type, Int::Instance ());
-        index_type = Int::Instance ();
+        index_value.convert (index_type, Int::instance ());
+        index_type = Int::instance ();
         Int::ValueType idx = index_value.int_value;
         if (idx < 0)
           {
@@ -1327,7 +1327,7 @@ done:
     Value& index_value = index_node->eval.value;
     const type::Type*& index_type = node.index->eval.type;
 
-    node.array_type = type_cast<Array> (base_type->UnderlyingType ());
+    node.array_type = type_cast<Array> (base_type->underlying_type ());
     if (node.array_type != NULL)
       {
         check_array_index (node.array_type, node.index, false);
@@ -1340,18 +1340,18 @@ done:
         return;
       }
 
-    node.slice_type = type_cast<Slice> (base_type->UnderlyingType ());
+    node.slice_type = type_cast<Slice> (base_type->underlying_type ());
     if (node.slice_type != NULL)
       {
         if (is_untyped_numeric (index_type))
           {
-            if (!index_value.representable (index_type, Int::Instance ()))
+            if (!index_value.representable (index_type, Int::instance ()))
               {
                 error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                                "slice index is not an integer (E204)");
               }
-            index_value.convert (index_type, Int::Instance ());
-            index_type = Int::Instance ();
+            index_value.convert (index_type, Int::instance ());
+            index_type = Int::instance ();
             Int::ValueType idx = index_value.int_value;
             if (idx < 0)
               {
@@ -1424,21 +1424,21 @@ done:
     const type::Type*& max_type = max_node->eval.type;
     Value& max_value = max_node->eval.value;
 
-    node.string_type = type_cast<String> (base_type->UnderlyingType ());
+    node.string_type = type_cast<String> (base_type->underlying_type ());
     if (node.string_type != NULL)
       {
         UNIMPLEMENTED;
         return;
       }
 
-    node.pointer_to_array_type = pointer_to_array (base_type->UnderlyingType ());
+    node.pointer_to_array_type = pointer_to_array (base_type->underlying_type ());
     if (node.pointer_to_array_type)
       {
         UNIMPLEMENTED;
         return;
       }
 
-    node.array_type = type_cast<Array> (base_type->UnderlyingType ());
+    node.array_type = type_cast<Array> (base_type->underlying_type ());
     if (node.array_type != NULL)
       {
         if (node.low_present)
@@ -1462,7 +1462,7 @@ done:
         goto done;
       }
 
-    node.slice_type = type_cast<Slice> (base_type->UnderlyingType ());
+    node.slice_type = type_cast<Slice> (base_type->underlying_type ());
     if (node.slice_type != NULL)
       {
         if (node.low_present)
@@ -1530,7 +1530,7 @@ done:
     node.receiver_parameter = receiver_parameter;
     const std::string& port_identifier = node.identifier->identifier;
     const type::Type* this_type = receiver_parameter->type;
-    node.field = this_type->select_field (port_identifier);
+    node.field = this_type->find_field (port_identifier);
     if (node.field == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
@@ -1547,7 +1547,7 @@ done:
     check_types_arguments (node.args, push_port_type->parameter_list);
     require_value_or_variable_list (node.args);
 
-    node.eval.type = type::Void::Instance ();
+    node.eval.type = type::Void::instance ();
     node.eval.expression_kind = ValueExpressionKind;
     node.eval.intrinsic_mutability = Immutable;
     node.eval.indirection_mutability = Immutable;
@@ -1558,7 +1558,7 @@ done:
     node.receiver_parameter = receiver_parameter;
     const std::string& port_identifier = node.identifier->identifier;
     const type::Type* this_type = receiver_parameter->type;
-    node.field = this_type->select_field (port_identifier);
+    node.field = this_type->find_field (port_identifier);
     if (node.field == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
@@ -1584,7 +1584,7 @@ done:
     check_types_arguments (node.args, push_port_type->parameter_list);
     require_value_or_variable_list (node.args);
 
-    node.eval.type = type::Void::Instance ();
+    node.eval.type = type::Void::instance ();
     node.eval.expression_kind = ValueExpressionKind;
     node.eval.intrinsic_mutability = Immutable;
     node.eval.indirection_mutability = Immutable;

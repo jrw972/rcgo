@@ -505,8 +505,8 @@ Composer::elaborate_bindings ()
       Instance *instance = instance_pos->second;
       const NamedType *type = instance->type;
       // Enumerate the bindings.
-      for (NamedType::BindsType::const_iterator bind_pos = type->BindsBegin (),
-           bind_limit = type->BindsEnd ();
+      for (NamedType::BindsType::const_iterator bind_pos = type->binds_begin (),
+           bind_limit = type->binds_end ();
            bind_pos != bind_limit;
            ++bind_pos)
         {
@@ -535,7 +535,7 @@ Composer::elaborate_bindings ()
               if (node.condition->eval.expression_kind == semantic::VariableExpressionKind)
                 {
                   void* ptr = exec.stack ().pop_pointer ();
-                  exec.stack ().load (ptr, node.condition->eval.type->Size ());
+                  exec.stack ().load (ptr, node.condition->eval.type->size ());
                 }
               Bool::ValueType c;
               exec.stack ().pop (c);
@@ -578,9 +578,9 @@ Composer::elaborate_bindings ()
               ast::Node* sb = node_cast<SelectExpr> (right)->base;
               sb->operation->execute (exec);
               void* reaction_component = exec.stack ().pop_pointer ();
-              if (sb->eval.type->u_to_pointer ())
+              if (sb->eval.type->underlying_type ()->to_pointer ())
                 {
-                  exec.stack ().load (reaction_component, sb->eval.type->Size ());
+                  exec.stack ().load (reaction_component, sb->eval.type->size ());
                   reaction_component = exec.stack ().pop_pointer ();
                 }
               const decl::Reaction* reaction = static_cast<const decl::Reaction*> (right->callable);
@@ -609,7 +609,7 @@ Composer::elaborate_bindings ()
               if (node.param->eval.expression_kind == semantic::VariableExpressionKind)
                 {
                   void* ptr = exec.stack ().pop_pointer ();
-                  exec.stack ().load (ptr, node.param->eval.type->Size ());
+                  exec.stack ().load (ptr, node.param->eval.type->size ());
                 }
               Int::ValueType idx;
               exec.stack ().pop (idx);
@@ -708,8 +708,8 @@ Composer::enumerate_actions ()
     {
       Instance* instance = pos->second;
       const NamedType* type = instance->type;
-      for (NamedType::ActionsType::const_iterator pos = type->ActionsBegin (),
-           limit = type->ActionsEnd ();
+      for (NamedType::ActionsType::const_iterator pos = type->actions_begin (),
+           limit = type->actions_end ();
            pos != limit;
            ++pos)
         {
@@ -896,7 +896,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     if (node.index->eval.expression_kind == semantic::VariableExpressionKind)
       {
         void* ptr = exec.stack ().pop_pointer ();
-        exec.stack ().load (ptr, node.index->eval.type->Size ());
+        exec.stack ().load (ptr, node.index->eval.type->size ());
       }
 
     Int::ValueType idx;
@@ -934,10 +934,10 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
             sb->operation->execute (exec);
             assert (sb->eval.expression_kind != semantic::UnknownExpressionKind);
             if (sb->eval.expression_kind == semantic::VariableExpressionKind &&
-                sb->eval.type->u_to_pointer ())
+                sb->eval.type->underlying_type ()->to_pointer ())
               {
                 void* ptr = exec.stack ().pop_pointer ();
-                exec.stack ().load (ptr, sb->eval.type->Size ());
+                exec.stack ().load (ptr, sb->eval.type->size ());
               }
             size_t inst_addr = reinterpret_cast<size_t> (exec.stack ().pop_pointer ());
             InstancesType::const_iterator i_pos = table.instances_.find (inst_addr);
@@ -1069,8 +1069,8 @@ Composer::enumerate_reactions ()
     {
       Instance* instance = pos->second;
       const NamedType* type = instance->type;
-      for (NamedType::ReactionsType::const_iterator pos = type->ReactionsBegin (),
-           limit = type->ReactionsEnd ();
+      for (NamedType::ReactionsType::const_iterator pos = type->reactions_begin (),
+           limit = type->reactions_end ();
            pos != limit;
            ++pos)
         {
@@ -1114,8 +1114,8 @@ Composer::enumerate_getters ()
     {
       Instance* instance = pos->second;
       const NamedType* type = instance->type;
-      for (NamedType::GettersType::const_iterator pos = type->GettersBegin (),
-           limit = type->GettersEnd ();
+      for (NamedType::GettersType::const_iterator pos = type->getters_begin (),
+           limit = type->getters_end ();
            pos != limit;
            ++pos)
         {
@@ -1298,7 +1298,7 @@ Composer::enumerate_instances (ast::Node * node)
       const NamedType *type = node.symbol->type;
       decl::Initializer* initializer = node.symbol->initializer;
       node.symbol->instance = instance_table.instantiate_contained_instances (type, NULL, initializer, address, node.location.line, &node, node.identifier->identifier);
-      address += type->Size ();
+      address += type->size ();
     }
 
     void visit (SourceFile& node)
@@ -1357,7 +1357,7 @@ Composer::instantiate_contained_instances (const type::Type * type,
     {
       // Save the named typed.
       named_type = &type;
-      type.UnderlyingType ()->accept (*this);
+      type.underlying_type ()->accept (*this);
     }
 
     void visit (const Component& type)

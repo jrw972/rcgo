@@ -1961,7 +1961,7 @@ do_action:	/* This label is used only to access EOF actions. */
           Value value;
           value.string_value = v;
           value.present = true;
-          yylval.node = new LiteralExpr (yylloc, String::Instance (), value);
+          yylval.node = new LiteralExpr (yylloc, String::instance (), value);
           return LITERAL;
         }
         YY_BREAK
@@ -1983,7 +1983,7 @@ do_action:	/* This label is used only to access EOF actions. */
           Value value;
           value.string_value = v;
           value.present = true;
-          yylval.node = new LiteralExpr (yylloc, String::Instance (), value);
+          yylval.node = new LiteralExpr (yylloc, String::instance (), value);
           return LITERAL;
         }
         YY_BREAK
@@ -2000,7 +2000,7 @@ do_action:	/* This label is used only to access EOF actions. */
               "integer literal '%s' is out of range (E11)", yytext);
             }
           value.present = true;
-          yylval.node = new LiteralExpr (yylloc, Integer::Instance (), value);
+          yylval.node = new LiteralExpr (yylloc, Integer::instance (), value);
           return LITERAL;
         }
         YY_BREAK
@@ -2017,7 +2017,7 @@ do_action:	/* This label is used only to access EOF actions. */
               "octal literal '%s' is out of range (E12)", yytext);
             }
           value.present = true;
-          yylval.node = new LiteralExpr (yylloc, Integer::Instance (), value);
+          yylval.node = new LiteralExpr (yylloc, Integer::instance (), value);
           return LITERAL;
         }
         YY_BREAK
@@ -2034,7 +2034,7 @@ do_action:	/* This label is used only to access EOF actions. */
               "hex literal '%s' is out of range (E13)", yytext);
             }
           value.present = true;
-          yylval.node = new LiteralExpr (yylloc, Integer::Instance (), value);
+          yylval.node = new LiteralExpr (yylloc, Integer::instance (), value);
           return LITERAL;
         }
         YY_BREAK
@@ -2045,7 +2045,7 @@ do_action:	/* This label is used only to access EOF actions. */
           Value value;
           value.float_value = strtod (yytext, NULL);
           value.present = true;
-          yylval.node = new LiteralExpr (yylloc, Float::Instance (), value);
+          yylval.node = new LiteralExpr (yylloc, Float::instance (), value);
           return LITERAL;
         }
         YY_BREAK
@@ -2056,7 +2056,7 @@ do_action:	/* This label is used only to access EOF actions. */
           Value value;
           value.complex_value = Complex::ValueType::make (0, strtod (yytext, NULL));
           value.present = true;
-          yylval.node = new LiteralExpr (yylloc, Complex::Instance (), value);
+          yylval.node = new LiteralExpr (yylloc, Complex::instance (), value);
           return LITERAL;
         }
         YY_BREAK
@@ -2067,7 +2067,7 @@ do_action:	/* This label is used only to access EOF actions. */
           Value value;
           value.rune_value = yytext[1];
           value.present = true;
-          yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
+          yylval.node = new LiteralExpr (yylloc, Rune::instance (), value);
           return LITERAL;
         }
         YY_BREAK
@@ -2081,39 +2081,39 @@ do_action:	/* This label is used only to access EOF actions. */
             {
             case 'a':
               value.rune_value = '\a';
-              yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
+              yylval.node = new LiteralExpr (yylloc, Rune::instance (), value);
               break;
             case 'b':
               value.rune_value = '\b';
-              yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
+              yylval.node = new LiteralExpr (yylloc, Rune::instance (), value);
               break;
             case 'f':
               value.rune_value = '\f';
-              yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
+              yylval.node = new LiteralExpr (yylloc, Rune::instance (), value);
               break;
             case 'n':
               value.rune_value = '\n';
-              yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
+              yylval.node = new LiteralExpr (yylloc, Rune::instance (), value);
               break;
             case 'r':
               value.rune_value = '\r';
-              yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
+              yylval.node = new LiteralExpr (yylloc, Rune::instance (), value);
               break;
             case 't':
               value.rune_value = '\t';
-              yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
+              yylval.node = new LiteralExpr (yylloc, Rune::instance (), value);
               break;
             case 'v':
               value.rune_value = '\v';
-              yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
+              yylval.node = new LiteralExpr (yylloc, Rune::instance (), value);
               break;
             case '\\':
               value.rune_value = '\\';
-              yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
+              yylval.node = new LiteralExpr (yylloc, Rune::instance (), value);
               break;
             case '\'':
               value.rune_value = '\'';
-              yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
+              yylval.node = new LiteralExpr (yylloc, Rune::instance (), value);
               break;
             default:
               NOT_REACHED;
@@ -2129,7 +2129,7 @@ do_action:	/* This label is used only to access EOF actions. */
           Value value;
           value.rune_value = parseOctal (yylloc, yytext + 2);
           value.present = true;
-          yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
+          yylval.node = new LiteralExpr (yylloc, Rune::instance (), value);
           return LITERAL;
         }
         YY_BREAK
@@ -2140,7 +2140,7 @@ do_action:	/* This label is used only to access EOF actions. */
           Value value;
           value.rune_value = parseHex (yylloc, yytext + 3);
           value.present = true;
-          yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
+          yylval.node = new LiteralExpr (yylloc, Rune::instance (), value);
           return LITERAL;
         }
         YY_BREAK
@@ -2151,7 +2151,7 @@ do_action:	/* This label is used only to access EOF actions. */
           Value value;
           value.rune_value = parseU4 (yylloc, yytext + 3);
           value.present = true;
-          yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
+          yylval.node = new LiteralExpr (yylloc, Rune::instance (), value);
           return LITERAL;
         }
         YY_BREAK
@@ -2162,7 +2162,7 @@ do_action:	/* This label is used only to access EOF actions. */
           Value value;
           value.rune_value = parseU8 (yylloc, yytext + 3);
           value.present = true;
-          yylval.node = new LiteralExpr (yylloc, Rune::Instance (), value);
+          yylval.node = new LiteralExpr (yylloc, Rune::instance (), value);
           return LITERAL;
         }
         YY_BREAK

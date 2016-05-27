@@ -2,7 +2,8 @@
 
 #include "tap.hpp"
 
-#include "symbol_helpers.hpp"
+#include "visitor_helper.hpp"
+#include "symbol_visitor.hpp"
 
 using namespace decl;
 using namespace util;
@@ -26,22 +27,22 @@ main (int argc, char** argv)
   Tap tap;
 
   {
-    TestSymbolVisitor<TemplateSymbol> visitor;
+    TestVisitor<SymbolVisitor, TemplateSymbol> visitor;
     MyTemplateSymbol ts ("id", Location ());
     ts.accept (visitor);
-    tap.tassert ("TemplateSymbol::visit ()", visitor.sym == &ts);
+    tap.tassert ("TemplateSymbol::visit ()", visitor.item == &ts);
   }
 
   {
-    TestConstSymbolVisitor<TemplateSymbol> visitor;
+    TestConstVisitor<ConstSymbolVisitor, TemplateSymbol> visitor;
     MyTemplateSymbol ts ("id", Location ());
     ts.accept (visitor);
-    tap.tassert ("TemplateSymbol::visit (Const)", visitor.sym == &ts);
+    tap.tassert ("TemplateSymbol::visit (Const)", visitor.item == &ts);
   }
 
   {
     MyTemplateSymbol ts ("id", Location ());
-    tap.tassert ("TemplateSymbol::symbol_type", ts.symbol_type () == type::Template::Instance ());
+    tap.tassert ("TemplateSymbol::symbol_type", ts.symbol_type () == type::Template::instance ());
   }
 
   tap.print_plan ();

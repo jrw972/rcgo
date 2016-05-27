@@ -77,135 +77,58 @@ struct Type
 {
   Type ();
   virtual ~Type ();
+
   virtual void accept (Visitor& visitor) const = 0;
-  virtual void print (std::ostream& out = std::cout) const = 0;
-  virtual std::string to_string () const;
-  virtual size_t alignment () const = 0;
-  virtual size_t Size () const = 0;
   virtual Kind kind () const = 0;
-  virtual Kind underlying_kind () const
-  {
-    return UnderlyingType ()->kind ();
-  }
-  virtual const Type* UnderlyingType () const
-  {
-    return this;
-  }
-  virtual const Type* DefaultType () const
-  {
-    return this;
-  }
-  virtual bool IsNumeric () const
-  {
-    return false;
-  }
-  virtual bool IsFloatingPoint () const
-  {
-    return false;
-  }
-  virtual bool IsInteger () const
-  {
-    return false;
-  }
+
+  // For working with the type under a named type
+  virtual const Type* underlying_type () const;
+  virtual Kind underlying_kind () const;
+  // Debugging
+  virtual void print (std::ostream& out = std::cout) const = 0;
+  std::string to_string () const;
+  // Allocation
+  virtual size_t alignment () const = 0;
+  virtual size_t size () const = 0;
+  // Get the unnamed type for an untyped type
+  virtual const Type* default_type () const;
+  // Various predicates
   bool is_untyped () const;
   bool is_unnamed () const;
   bool is_named () const;
+  bool is_numeric () const;
+  // Get a type making this type the base type
   const Pointer* get_pointer () const;
   const Slice* get_slice () const;
   const Array* get_array (IntValueType dimension) const;
   const Heap* get_heap () const;
-  virtual Field* select_field (const std::string& name) const
-  {
-    return NULL;
-  }
-  virtual decl::Callable* select_callable (const std::string& name) const
-  {
-    return NULL;
-  }
-  virtual const NamedType* to_named_type () const
-  {
-    return NULL;
-  }
-  virtual const Array* to_array () const
-  {
-    return NULL;
-  }
-  virtual const Slice* to_slice () const
-  {
-    return NULL;
-  }
-  virtual const Struct* to_struct () const
-  {
-    return NULL;
-  }
-  const Pointer* to_pointer () const
-  {
-    return to_pointer_i ();
-  }
-  const Pointer* u_to_pointer () const
-  {
-    return UnderlyingType ()->to_pointer_i ();
-  }
-  virtual const Function* to_function () const
-  {
-    return NULL;
-  }
-  virtual const Interface* to_interface () const
-  {
-    return NULL;
-  }
-  virtual const Map* to_map () const
-  {
-    return NULL;
-  }
-  virtual const Heap* to_heap () const
-  {
-    return NULL;
-  }
-  Field* get_field (const std::string& name) const
-  {
-    return UnderlyingType ()->get_field_i (name);
-  }
-  virtual decl::Method* get_method (const std::string& identifier) const
-  {
-    return NULL;
-  }
-  virtual decl::Initializer* get_initializer (const std::string& identifier) const
-  {
-    return NULL;
-  }
-  virtual decl::Getter* get_getter (const std::string& identifier) const
-  {
-    return NULL;
-  }
-  virtual decl::Action* get_action (const std::string& identifier) const
-  {
-    return NULL;
-  }
-  virtual decl::Reaction* get_reaction (const std::string& identifier) const
-  {
-    return NULL;
-  }
-  virtual decl::Bind* get_bind (const std::string& identifier) const
-  {
-    return NULL;
-  }
-  // Return type of selected field, method, or reaction.
-  const Type* select (const std::string& identifier) const;
-
+  // Selecting
+  Field* find_field (const std::string& name) const;
+  virtual decl::Method* find_method (const std::string& identifier) const;
+  virtual decl::Initializer* find_initializer (const std::string& identifier) const;
+  virtual decl::Getter* find_getter (const std::string& identifier) const;
+  virtual decl::Action* find_action (const std::string& identifier) const;
+  virtual decl::Reaction* find_reaction (const std::string& identifier) const;
+  virtual decl::Bind* find_bind (const std::string& identifier) const;
+  virtual decl::Callable* find_callable (const std::string& name) const;
+  const Type* find (const std::string& identifier) const;
   // Heap operations.
   const Type* move () const;
   const Type* merge_change () const;
+  // Casting
+  virtual const NamedType* to_named_type () const;
+  virtual const Array* to_array () const;
+  virtual const Slice* to_slice () const;
+  virtual const Struct* to_struct () const;
+  virtual const Pointer* to_pointer () const;
+  virtual const Function* to_function () const;
+  virtual const Interface* to_interface () const;
+  virtual const Map* to_map () const;
+  virtual const Heap* to_heap () const;
 
 protected:
-  virtual Field* get_field_i (const std::string& name) const
-  {
-    return NULL;
-  }
-  virtual const Pointer* to_pointer_i () const
-  {
-    return NULL;
-  }
+  virtual Field* find_field_i (const std::string& name) const;
+
 private:
   const Pointer* pointer_;
   const Slice* slice_;
@@ -217,132 +140,47 @@ private:
 std::ostream&
 operator<< (std::ostream& o, const Type& type);
 
-class NamedType : public Type
+// A NamedType is created via type name ...
+struct NamedType : public Type
 {
-public:
   typedef std::vector<decl::Getter*> GettersType;
   typedef std::vector<decl::Action*> ActionsType;
   typedef std::vector<decl::Reaction*> ReactionsType;
   typedef std::vector<decl::Bind*> BindsType;
 
-  NamedType (const std::string& name)
-    : name_ (name)
-    , underlyingType_ (NULL)
-  { }
-
+  NamedType (const std::string& name);
   NamedType (const std::string& name,
              const Type* underlyingType);
 
   void accept (Visitor& visitor) const;
-  void print (std::ostream& out = std::cout) const
-  {
-    out << name_;
-  }
-  void UnderlyingType (const Type* u)
-  {
-    underlyingType_ = u->UnderlyingType ();
-    assert (underlyingType_->is_unnamed ());
-  }
-  const Type* UnderlyingType () const
-  {
-    return underlyingType_;
-  }
-  virtual size_t alignment () const
-  {
-    return underlyingType_->alignment ();
-  }
-  virtual size_t Size () const
-  {
-    return underlyingType_->Size ();
-  }
-  virtual Kind kind () const
-  {
-    return Named_Kind;
-  }
-  virtual bool IsNumeric () const
-  {
-    return underlyingType_->IsNumeric ();
-  }
-  virtual bool IsFloatingPoint () const
-  {
-    return underlyingType_->IsFloatingPoint ();
-  }
-  virtual bool IsInteger () const
-  {
-    return underlyingType_->IsInteger ();
-  }
-  void insert_method (decl::Method* method)
-  {
-    methods_.push_back (method);
-  }
-  decl::Method* get_method (const std::string& identifier) const;
-  void insert_initializer (decl::Initializer* initializer)
-  {
-    initializers_.push_back (initializer);
-  }
-  decl::Initializer* get_initializer (const std::string& identifier) const;
-  void insert_getter (decl::Getter* getter)
-  {
-    getters_.push_back (getter);
-  }
-  decl::Getter* get_getter (const std::string& identifier) const;
-  GettersType::const_iterator GettersBegin () const
-  {
-    return getters_.begin ();
-  }
-  GettersType::const_iterator GettersEnd () const
-  {
-    return getters_.end ();
-  }
-  void insert_action (decl::Action* action)
-  {
-    actions_.push_back (action);
-  }
-  decl::Action* get_action (const std::string& identifier) const;
-  ActionsType::const_iterator ActionsBegin () const
-  {
-    return actions_.begin ();
-  }
-  ActionsType::const_iterator ActionsEnd () const
-  {
-    return actions_.end ();
-  }
-  void insert_reaction (decl::Reaction* reaction)
-  {
-    reactions_.push_back (reaction);
-  }
-  decl::Reaction* get_reaction (const std::string& identifier) const;
-  ReactionsType::const_iterator ReactionsBegin () const
-  {
-    return reactions_.begin ();
-  }
-  ReactionsType::const_iterator ReactionsEnd () const
-  {
-    return reactions_.end ();
-  }
-  void insert_bind (decl::Bind* bind)
-  {
-    binds_.push_back (bind);
-  }
-  decl::Bind* get_bind (const std::string& identifier) const;
-  BindsType::const_iterator BindsBegin () const
-  {
-    return binds_.begin ();
-  }
-  BindsType::const_iterator BindsEnd () const
-  {
-    return binds_.end ();
-  }
-  virtual Field* select_field (const std::string& name) const
-  {
-    return underlyingType_->select_field (name);
-  }
-  virtual decl::Callable* select_callable (const std::string& name) const;
-
-  virtual const NamedType* to_named_type () const
-  {
-    return this;
-  }
+  void print (std::ostream& out = std::cout) const;
+  void underlying_type (const Type* u);
+  const Type* underlying_type () const;
+  virtual size_t alignment () const;
+  virtual size_t size () const;
+  virtual Kind kind () const;
+  void insert_method (decl::Method* method);
+  decl::Method* find_method (const std::string& identifier) const;
+  void insert_initializer (decl::Initializer* initializer);
+  decl::Initializer* find_initializer (const std::string& identifier) const;
+  void insert_getter (decl::Getter* getter);
+  decl::Getter* find_getter (const std::string& identifier) const;
+  GettersType::const_iterator getters_begin () const;
+  GettersType::const_iterator getters_end () const;
+  void insert_action (decl::Action* action);
+  decl::Action* find_action (const std::string& identifier) const;
+  ActionsType::const_iterator actions_begin () const;
+  ActionsType::const_iterator actions_end () const;
+  void insert_reaction (decl::Reaction* reaction);
+  decl::Reaction* find_reaction (const std::string& identifier) const;
+  ReactionsType::const_iterator reactions_begin () const;
+  ReactionsType::const_iterator reactions_end () const;
+  void insert_bind (decl::Bind* bind);
+  decl::Bind* find_bind (const std::string& identifier) const;
+  BindsType::const_iterator binds_begin () const;
+  BindsType::const_iterator binds_end () const;
+  virtual decl::Callable* find_callable (const std::string& name) const;
+  virtual const NamedType* to_named_type () const;
 
 private:
   std::string const name_;
@@ -355,32 +193,21 @@ private:
   BindsType binds_;
 };
 
+// Void represents the absence of a type
 class Void : public Type
 {
 public:
   void accept (Visitor& visitor) const;
-  void print (std::ostream& out = std::cout) const
-  {
-    out << "<void>";
-  }
-  size_t alignment () const
-  {
-    NOT_REACHED;
-  }
-  size_t Size () const
-  {
-    return 0;
-  }
-  virtual Kind kind () const
-  {
-    return Void_Kind;
-  }
-  static const Void* Instance ();
+  void print (std::ostream& out = std::cout) const;
+  size_t alignment () const;
+  size_t size () const;
+  virtual Kind kind () const;
+  static const Void* instance ();
 private:
-  Void () { }
+  Void ();
 };
 
-template <typename T, typename S, bool Numeric, bool FloatingPoint, bool Integer, Kind k>
+template <typename T, typename S, Kind k>
 class Scalar : public Type
 {
 public:
@@ -394,7 +221,7 @@ public:
   {
     return sizeof (T);
   }
-  size_t Size () const
+  size_t size () const
   {
     return sizeof (T);
   }
@@ -402,59 +229,47 @@ public:
   {
     return k;
   }
-  virtual bool IsNumeric () const
+  static const Scalar<T, S, k>* instance ()
   {
-    return Numeric;
-  }
-  virtual bool IsFloatingPoint () const
-  {
-    return FloatingPoint;
-  }
-  virtual bool IsInteger () const
-  {
-    return Integer;
-  }
-  static const Scalar<T, S, Numeric, FloatingPoint, Integer, k>* Instance ()
-  {
-    static Scalar<T, S, Numeric, FloatingPoint, Integer, k>* instance_ = new Scalar<T, S, Numeric, FloatingPoint, Integer, k> ();
+    static Scalar<T, S, k>* instance_ = new Scalar<T, S, k> ();
     return instance_;
   }
 private:
-  Scalar<T, S, Numeric, FloatingPoint, Integer, k> () { }
+  Scalar<T, S, k> () { }
 };
 
 STRING_RETURNER(BoolString, "<bool>");
-typedef Scalar<bool, BoolString, false, false, false, Bool_Kind> Bool;
+typedef Scalar<bool, BoolString, Bool_Kind> Bool;
 
 STRING_RETURNER(Uint8String, "<uint8>");
-typedef Scalar<uint8_t, Uint8String, true, false, true, Uint8_Kind> Uint8;
+typedef Scalar<uint8_t, Uint8String, Uint8_Kind> Uint8;
 
 STRING_RETURNER(Uint16String, "<uint16>");
-typedef Scalar<uint16_t, Uint16String, true, false, true, Uint16_Kind> Uint16;
+typedef Scalar<uint16_t, Uint16String, Uint16_Kind> Uint16;
 
 STRING_RETURNER(Uint32String, "<uint32>");
-typedef Scalar<uint32_t, Uint32String, true, false, true, Uint32_Kind> Uint32;
+typedef Scalar<uint32_t, Uint32String, Uint32_Kind> Uint32;
 
 STRING_RETURNER(Uint64String, "<uint64>");
-typedef Scalar<uint64_t, Uint64String, true, false, true, Uint64_Kind> Uint64;
+typedef Scalar<uint64_t, Uint64String, Uint64_Kind> Uint64;
 
 STRING_RETURNER(Int8String, "<int8>");
-typedef Scalar<int8_t, Int8String, true, false, true, Int8_Kind> Int8;
+typedef Scalar<int8_t, Int8String, Int8_Kind> Int8;
 
 STRING_RETURNER(Int16String, "<int16>");
-typedef Scalar<int16_t, Int16String, true, false, true, Int16_Kind> Int16;
+typedef Scalar<int16_t, Int16String, Int16_Kind> Int16;
 
 STRING_RETURNER(Int32String, "<int32>");
-typedef Scalar<int32_t, Int32String, true, false, true, Int32_Kind> Int32;
+typedef Scalar<int32_t, Int32String, Int32_Kind> Int32;
 
 STRING_RETURNER(Int64String, "<int64>");
-typedef Scalar<int64_t, Int64String, true, false, true, Int64_Kind> Int64;
+typedef Scalar<int64_t, Int64String, Int64_Kind> Int64;
 
 STRING_RETURNER(Float32String, "<float32>");
-typedef Scalar<float, Float32String, true, true, false, Float32_Kind> Float32;
+typedef Scalar<float, Float32String, Float32_Kind> Float32;
 
 STRING_RETURNER(Float64String, "<float64>");
-typedef Scalar<double, Float64String, true, true, false, Float64_Kind> Float64;
+typedef Scalar<double, Float64String, Float64_Kind> Float64;
 
 STRING_RETURNER(Complex64String, "<complex64>");
 struct C64
@@ -498,7 +313,7 @@ struct C64
     return *this;
   }
 };
-typedef Scalar<C64, Complex64String, true, false, false, Complex64_Kind> Complex64;
+typedef Scalar<C64, Complex64String, Complex64_Kind> Complex64;
 
 STRING_RETURNER(Complex128String, "<complex128>");
 struct C128
@@ -542,16 +357,16 @@ struct C128
     return *this;
   }
 };
-typedef Scalar<C128, Complex128String, true, false, false, Complex128_Kind> Complex128;
+typedef Scalar<C128, Complex128String, Complex128_Kind> Complex128;
 
 STRING_RETURNER(UintString, "<uint>");
-typedef Scalar<UintValueType, UintString, true, false, true, Uint_Kind> Uint;
+typedef Scalar<UintValueType, UintString, Uint_Kind> Uint;
 
 STRING_RETURNER(IntString, "<int>");
-typedef Scalar<IntValueType, IntString, true, false, true, Int_Kind> Int;
+typedef Scalar<IntValueType, IntString, Int_Kind> Int;
 
 STRING_RETURNER(UintptrString, "<uintptr>");
-typedef Scalar<ptrdiff_t, UintptrString, true, false, true, Uintptr_Kind> Uintptr;
+typedef Scalar<ptrdiff_t, UintptrString, Uintptr_Kind> Uintptr;
 
 STRING_RETURNER(StringUString, "<string>");
 struct StringRep
@@ -592,7 +407,7 @@ struct StringRep
       }
   }
 };
-typedef Scalar<StringRep, StringUString, false, false, false, String_Kind> StringU;
+typedef Scalar<StringRep, StringUString, String_Kind> StringU;
 
 // Helper class for types that have a base type.
 struct BaseType
@@ -614,7 +429,7 @@ public:
   {
     return sizeof (ValueType);
   }
-  size_t Size () const
+  size_t size () const
   {
     return sizeof (ValueType);
   }
@@ -622,15 +437,15 @@ public:
   {
     return Pointer_Kind;
   }
-  virtual Field* select_field (const std::string& name) const
+  virtual Field* find_field_i (const std::string& name) const
   {
-    return base_type->select_field (name);
+    return base_type->find_field (name);
   }
-  virtual decl::Callable* select_callable (const std::string& name) const
+  virtual decl::Callable* find_callable (const std::string& name) const
   {
-    return base_type->select_callable (name);
+    return base_type->find_callable (name);
   }
-  virtual const Pointer* to_pointer_i () const
+  virtual const Pointer* to_pointer () const
   {
     return this;
   }
@@ -657,7 +472,7 @@ public:
   {
     return sizeof (void*);
   }
-  virtual size_t Size () const
+  virtual size_t size () const
   {
     return sizeof (ValueType);
   }
@@ -667,7 +482,7 @@ public:
   }
   size_t UnitSize () const
   {
-    return util::align_up (base_type->Size (), base_type->alignment ());
+    return util::align_up (base_type->size (), base_type->alignment ());
   }
   virtual const Slice* to_slice () const
   {
@@ -693,7 +508,7 @@ public:
   {
     return base_type->alignment ();
   }
-  size_t Size () const
+  size_t size () const
   {
     return UnitSize () * dimension;
   }
@@ -704,7 +519,7 @@ public:
   const Int::ValueType dimension;
   size_t UnitSize () const
   {
-    return util::align_up (base_type->Size (), base_type->alignment ());
+    return util::align_up (base_type->size (), base_type->alignment ());
   }
   virtual const Array* to_array () const
   {
@@ -728,7 +543,7 @@ struct Map : public Type
   {
     UNIMPLEMENTED;
   }
-  virtual size_t Size () const
+  virtual size_t size () const
   {
     UNIMPLEMENTED;
   }
@@ -756,7 +571,7 @@ struct Heap : public Type, public BaseType
   {
     NOT_REACHED;
   }
-  size_t Size () const
+  size_t size () const
   {
     NOT_REACHED;
   }
@@ -789,7 +604,7 @@ public:
   {
     return alignment_;
   }
-  size_t Size () const
+  size_t size () const
   {
     return offset_;
   }
@@ -802,8 +617,7 @@ public:
     return fields_.end ();
   }
   Struct* append_field (decl::Package* package, bool is_anonymous, const std::string& field_name, const Type* field_type, const TagSet& tags);
-  Field* get_field_i (const std::string& name) const;
-  virtual Field* select_field (const std::string& name) const;
+  virtual Field* find_field_i (const std::string& name) const;
   size_t field_count () const
   {
     return fields_.size ();
@@ -855,7 +669,7 @@ public:
   {
     return sizeof (void*);
   }
-  size_t Size () const
+  size_t size () const
   {
     return function_kind == PULL_PORT ? sizeof (pull_port_t) : sizeof (void*);
   }
@@ -896,7 +710,7 @@ public:
   {
     return sizeof (void*);
   }
-  size_t Size () const
+  size_t size () const
   {
     return sizeof (void*);
   }
@@ -930,7 +744,7 @@ struct Interface : public Type
   {
     UNIMPLEMENTED;
   }
-  virtual size_t Size () const
+  virtual size_t size () const
   {
     UNIMPLEMENTED;
   }
@@ -960,7 +774,7 @@ public:
   {
     NOT_REACHED;
   }
-  size_t Size () const
+  size_t size () const
   {
     NOT_REACHED;
   }
@@ -978,7 +792,7 @@ public:
   {
     out << "<<nil>>";
   }
-  static const Nil* Instance ();
+  static const Nil* instance ();
 private:
   Nil () { }
 };
@@ -991,13 +805,13 @@ public:
   {
     return Boolean_Kind;
   }
-  virtual const Type* DefaultType () const;
+  virtual const Type* default_type () const;
   void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const
   {
     out << "<<boolean>>";
   }
-  static const Boolean* Instance ();
+  static const Boolean* instance ();
 private:
   Boolean () { }
 };
@@ -1010,21 +824,13 @@ public:
   {
     return Rune_Kind;
   }
-  virtual const Type* DefaultType () const;
-  virtual bool IsNumeric () const
-  {
-    return true;
-  }
-  virtual bool IsInteger () const
-  {
-    return true;
-  }
+  virtual const Type* default_type () const;
   void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const
   {
     out << "<<rune>>";
   }
-  static const Rune* Instance ();
+  static const Rune* instance ();
 private:
   Rune () { }
 };
@@ -1037,21 +843,13 @@ public:
   {
     return Integer_Kind;
   }
-  virtual const Type* DefaultType () const;
-  virtual bool IsNumeric () const
-  {
-    return true;
-  }
-  virtual bool IsInteger () const
-  {
-    return true;
-  }
+  virtual const Type* default_type () const;
   void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const
   {
     out << "<<integer>>";
   }
-  static const Integer* Instance ();
+  static const Integer* instance ();
 private:
   Integer () { }
 };
@@ -1064,21 +862,13 @@ public:
   {
     return Float_Kind;
   }
-  virtual const Type* DefaultType () const;
-  virtual bool IsNumeric () const
-  {
-    return true;
-  }
-  virtual bool IsFloatingPoint () const
-  {
-    return true;
-  }
+  virtual const Type* default_type () const;
   void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const
   {
     out << "<<float>>";
   }
-  static const Float* Instance ();
+  static const Float* instance ();
 private:
   Float () { }
 };
@@ -1133,17 +923,13 @@ public:
   {
     return Complex_Kind;
   }
-  virtual const Type* DefaultType () const;
-  virtual bool IsNumeric () const
-  {
-    return true;
-  }
+  virtual const Type* default_type () const;
   void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const
   {
     out << "<<complex>>";
   }
-  static const Complex* Instance ();
+  static const Complex* instance ();
 private:
   Complex () { }
 };
@@ -1156,13 +942,13 @@ public:
   {
     return Untyped_String_Kind;
   }
-  virtual const Type* DefaultType () const;
+  virtual const Type* default_type () const;
   void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const
   {
     out << "<<string>>";
   }
-  static const String* Instance ();
+  static const String* instance ();
 private:
   String () { }
 };
@@ -1179,7 +965,7 @@ public:
   {
     NOT_REACHED;
   }
-  virtual size_t Size () const
+  virtual size_t size () const
   {
     NOT_REACHED;
   }
@@ -1187,7 +973,7 @@ public:
   {
     return Template_Kind;
   }
-  static const Template* Instance ();
+  static const Template* instance ();
 private:
   Template () { }
 };
@@ -1203,7 +989,7 @@ struct FileDescriptor : public Type
   {
     return sizeof (void*);
   }
-  size_t Size () const
+  size_t size () const
   {
     return sizeof (void*);
   }
@@ -1211,7 +997,7 @@ struct FileDescriptor : public Type
   {
     return File_Descriptor_Kind;
   }
-  static const FileDescriptor* Instance ();
+  static const FileDescriptor* instance ();
 private:
   FileDescriptor () { }
 };
@@ -1301,7 +1087,7 @@ struct ComparableVisitor : public Visitor
   }
   virtual void visit (const NamedType& type)
   {
-    type.UnderlyingType ()->accept (*this);
+    type.underlying_type ()->accept (*this);
   }
   virtual void visit (const Pointer& type)
   {
@@ -1455,7 +1241,7 @@ struct OrderableVisitor : public Visitor
   }
   virtual void visit (const NamedType& type)
   {
-    type.UnderlyingType ()->accept (*this);
+    type.underlying_type ()->accept (*this);
   }
   virtual void visit (const Pointer& type)
   {
@@ -1609,7 +1395,7 @@ struct ArithmeticVisitor : public Visitor
   }
   virtual void visit (const NamedType& type)
   {
-    type.UnderlyingType ()->accept (*this);
+    type.underlying_type ()->accept (*this);
   }
   virtual void visit (const Pointer& type)
   {
@@ -1763,7 +1549,7 @@ struct IntegralVisitor : public Visitor
   }
   virtual void visit (const NamedType& type)
   {
-    type.UnderlyingType ()->accept (*this);
+    type.underlying_type ()->accept (*this);
   }
   virtual void visit (const Pointer& type)
   {
@@ -1917,7 +1703,7 @@ struct LogicalVisitor : public Visitor
   }
   virtual void visit (const NamedType& type)
   {
-    type.UnderlyingType ()->accept (*this);
+    type.underlying_type ()->accept (*this);
   }
   virtual void visit (const Pointer& type)
   {
@@ -2524,7 +2310,6 @@ bool is_typed_complex (const Type* type);
 bool is_typed_numeric (const Type* type);
 // True for untyped numeric types.
 bool is_untyped_numeric (const Type* type);
-bool is_any_numeric (const Type* type);
 bool is_slice_of_bytes (const Type* type);
 bool is_slice_of_runes (const Type* type);
 
@@ -2550,13 +2335,6 @@ type_is_unsigned_integral (const Type* type);
 // True if type is floating-point.
 bool
 type_is_floating (const Type* type);
-
-// True if type is numeric.
-inline bool
-type_is_numeric (const Type* type)
-{
-  return type_is_integral (type) || type_is_floating (type);
-}
 
 // True if == or != can be applied to values of this type.
 bool

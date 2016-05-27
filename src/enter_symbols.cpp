@@ -79,19 +79,19 @@ enter_symbols (SymbolTable& symtab)
   v.present = true;
   symtab.enter_symbol (new ConstantSymbol ("nil",
                        loc,
-                       type::Nil::Instance (),
+                       type::Nil::instance (),
                        v));
 
   // Insert untyped boolean constants.
   v.bool_value = true;
   symtab.enter_symbol (new ConstantSymbol ("true",
                        loc,
-                       type::Boolean::Instance (),
+                       type::Boolean::instance (),
                        v));
   v.bool_value = false;
   symtab.enter_symbol (new ConstantSymbol ("false",
                        loc,
-                       type::Boolean::Instance (),
+                       type::Boolean::instance (),
                        v));
 }
 

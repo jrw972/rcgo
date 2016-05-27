@@ -66,7 +66,7 @@ allocate_symbol (runtime::MemoryModel& memory_model,
         case ParameterSymbol::Return:
         {
           const type::Type* type = symbol.type;
-          memory_model.arguments_push (type->Size ());
+          memory_model.arguments_push (type->size ());
           static_cast<Symbol&> (symbol).offset (memory_model.arguments_offset ());
           if (symbol.kind == ParameterSymbol::Receiver)
             {
@@ -89,7 +89,7 @@ allocate_symbol (runtime::MemoryModel& memory_model,
     {
       const type::Type* type = symbol.type;
       static_cast<Symbol&>(symbol).offset (memory_model.locals_offset ());
-      memory_model.locals_push (type->Size ());
+      memory_model.locals_push (type->size ());
     }
 
     void visit (HiddenSymbol& symbol)
@@ -430,7 +430,7 @@ void Posate::check (ErrorReporter& er,
       return;
     }
 
-  if (!(is_any_numeric (arg.type)))
+  if (!arg.type->is_numeric ())
     {
       er.cannot_be_applied (location, unary_arithmetic_external_symbol (::Posate), arg.type);
       result.expression_kind = ErrorExpressionKind;
@@ -461,7 +461,7 @@ void Negate::check (ErrorReporter& er,
       return;
     }
 
-  if (!(is_any_numeric (arg.type)))
+  if (!arg.type->is_numeric ())
     {
       er.cannot_be_applied (location, unary_arithmetic_external_symbol (::Negate), arg.type);
       result.expression_kind = ErrorExpressionKind;
@@ -629,11 +629,11 @@ const type::Type* BooleanPicker::pick (const type::Type* input_type,
 {
   if (left.value.present && right.value.present)
     {
-      return Boolean::Instance ();
+      return Boolean::instance ();
     }
   else
     {
-      return Bool::Instance ();
+      return Bool::instance ();
     }
 }
 
@@ -820,14 +820,14 @@ void BinaryShift<B, ba>::check (ErrorReporter& er,
 
   if (right.value.present)
     {
-      if (!right.value.representable (right.type, type::Uint::Instance ()))
+      if (!right.value.representable (right.type, type::Uint::instance ()))
         {
           er.cannot_be_applied (location, binary_arithmetic_external_symbol (ba), left.type, right.type);
           result.expression_kind = ErrorExpressionKind;
           return;
         }
-      right.value.convert (right.type, type::Uint::Instance ());
-      right.type = type::Uint::Instance ();
+      right.value.convert (right.type, type::Uint::instance ());
+      right.type = type::Uint::instance ();
     }
 
   if (!integral (left.type))
@@ -1406,7 +1406,7 @@ Append::check (ErrorReporter& er,
       return;
     }
 
-  const type::Slice* st = type_cast<type::Slice> (slice.type->UnderlyingType ());
+  const type::Slice* st = type_cast<type::Slice> (slice.type->underlying_type ());
   if (st != NULL &&
       !are_identical (st->base_type, element.type))
     {
@@ -1425,7 +1425,7 @@ runtime::Operation* Append::generate_code (const semantic::ExpressionValue& resu
     const semantic::ExpressionValueList& arg_vals,
     runtime::Operation* arg_ops) const
 {
-  return make_append (type_cast<type::Slice> (arg_vals[0].type->UnderlyingType ()), arg_ops);
+  return make_append (type_cast<type::Slice> (arg_vals[0].type->underlying_type ()), arg_ops);
 }
 
 Copy::Copy (const Location& loc)
@@ -1520,11 +1520,11 @@ Println::check (ErrorReporter& er,
        pos != limit;
        ++pos)
     {
-      pos->convert (pos->type->DefaultType ());
+      pos->convert (pos->type->default_type ());
     }
 
   result.expression_kind = ValueExpressionKind;
-  result.type = Void::Instance ();
+  result.type = Void::instance ();
   result.intrinsic_mutability = Immutable;
   result.indirection_mutability = Immutable;
 }

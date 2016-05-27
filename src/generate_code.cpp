@@ -139,9 +139,9 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
     node.visit_children (*this);
     node.operation = node.child->operation;
     // Clean up the stack if necessary.
-    if (node.child->eval.type->Size () != 0)
+    if (node.child->eval.type->size () != 0)
       {
-        node.operation = new Popn (node.operation, node.child->eval.type->Size ());
+        node.operation = new Popn (node.operation, node.child->eval.type->size ());
       }
   }
 
@@ -200,7 +200,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
              ++pos)
           {
             VariableSymbol* symbol = *pos;
-            op->list.push_back (new Clear (symbol->offset (), symbol->type->Size ()));
+            op->list.push_back (new Clear (symbol->offset (), symbol->type->size ()));
           }
       }
     else
@@ -340,9 +340,9 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
           {
             node.expr->accept (*this);
             Node* sb = node_cast<SelectExpr> (node.expr)->base;
-            if (sb->eval.type->u_to_pointer ())
+            if (sb->eval.type->underlying_type ()->to_pointer ())
               {
-                if (node.method_type->receiver_type ()->u_to_pointer ())
+                if (node.method_type->receiver_type ()->underlying_type ()->to_pointer ())
                   {
                     assert (sb->eval.expression_kind != UnknownExpressionKind);
                     if (sb->eval.expression_kind == VariableExpressionKind)
@@ -372,7 +372,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
               }
             else
               {
-                if (node.method_type->receiver_type ()->u_to_pointer ())
+                if (node.method_type->receiver_type ()->underlying_type ()->to_pointer ())
                   {
                     assert (sb->eval.expression_kind != UnknownExpressionKind);
                     if (sb->eval.expression_kind == VariableExpressionKind)
@@ -512,7 +512,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
 
     if (node.field != NULL)
       {
-        if (node.base->eval.type->u_to_pointer ())
+        if (node.base->eval.type->underlying_type ()->to_pointer ())
           {
             assert (node.base->eval.expression_kind != UnknownExpressionKind);
             if (node.base->eval.expression_kind == VariableExpressionKind)
@@ -543,7 +543,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
         Value v;
         v.present = true;
         v.pointer_value = const_cast<void*> (static_cast<const void*> (node.callable));
-        node.operation = make_literal (Int::Instance ()->get_pointer (), v);
+        node.operation = make_literal (Int::instance ()->get_pointer (), v);
       }
   }
 

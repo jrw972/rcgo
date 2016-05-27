@@ -65,7 +65,7 @@ allocate_instances (composition::Composer& instance_table)
       if (instance->is_top_level ())
         {
           const type::Type* type = instance->type;
-          size_t size = type->Size ();
+          size_t size = type->size ();
           ptr = static_cast<component_t*> (malloc (size));
           memset (ptr, 0, size);
         }
@@ -174,7 +174,7 @@ evaluate (ExecutorBase& exec, const MemoryModel& memoryModel, const ast::Binary&
 
     void visit (const NamedType& t)
     {
-      t.UnderlyingType ()->accept (*this);
+      t.underlying_type ()->accept (*this);
     }
 
     void visit (const Bool& t)
@@ -269,7 +269,7 @@ struct LeftShiftVisitor : public type::DefaultVisitor
 
   void visit (const NamedType& t)
   {
-    t.UnderlyingType ()->accept (*this);
+    t.underlying_type ()->accept (*this);
   }
 
   void visit (const type::Int& t)
@@ -372,7 +372,7 @@ struct RightShift : public RetvalDispatch
 
       void visit (const NamedType& t)
       {
-        t.UnderlyingType ()->accept (*this);
+        t.underlying_type ()->accept (*this);
       }
 
       void visit (const type::Int&)
@@ -1022,7 +1022,7 @@ Read::Read (const util::Location& loc)
                      new type::Function (type::Function::FUNCTION, (new ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
                                          ->append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Mutable)),
-                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable))))
+                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::instance (), Immutable))))
 { }
 
 void
@@ -1163,7 +1163,7 @@ Sendto::Sendto (const util::Location& loc)
                                          ->append (ParameterSymbol::make (loc, "host", &type::named_string, Immutable, Foreign))
                                          ->append (ParameterSymbol::make (loc, "port", &type::named_uint16, Immutable, Immutable))
                                          ->append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Foreign)),
-                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::Instance (), Immutable))))
+                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::instance (), Immutable))))
 { }
 
 void
@@ -1206,7 +1206,7 @@ Load::execute (ExecutorBase& exec) const
 {
   child->execute (exec);
   void* ptr = exec.stack ().pop_pointer ();
-  exec.stack ().load (ptr, type->Size ());
+  exec.stack ().load (ptr, type->size ());
   return make_continue ();
 }
 
@@ -1543,7 +1543,7 @@ Operation* make_literal (const type::Type* type, const Value& value)
 {
   assert (value.present);
   MakeLiteralVisitor visitor (value);
-  type->UnderlyingType ()->accept (visitor);
+  type->underlying_type ()->accept (visitor);
   return visitor.op;
 }
 
@@ -2310,7 +2310,7 @@ static Operation* make_conversion1 (Operation* c, const type::Type* to)
 
 Operation* make_conversion (Operation* c, const type::Type* from, const type::Type* to)
 {
-  if (are_identical (from->UnderlyingType (), to->UnderlyingType ()))
+  if (are_identical (from->underlying_type (), to->underlying_type ()))
     {
       return c;
     }
@@ -2560,13 +2560,13 @@ OpReturn NewOp::execute (ExecutorBase& exec) const
   const type::Heap* heap_type = type_cast<type::Heap> (type);
   if (heap_type == NULL)
     {
-      exec.stack ().push (exec.heap ()->allocate (type->Size ()));
+      exec.stack ().push (exec.heap ()->allocate (type->size ()));
     }
   else
     {
       const type::Type* t = heap_type->base_type;
       // Allocate a new heap and root object.
-      Heap* h = new Heap (t->Size ());
+      Heap* h = new Heap (t->size ());
       // Insert it into its parent.
       Heap* h2 = exec.heap ();
       h2->insert_child (h);

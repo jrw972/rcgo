@@ -165,7 +165,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
 
     void visit (EmptyTypeSpec& node)
     {
-      type = Void::Instance ();
+      type = Void::instance ();
     }
 
     void visit (FieldListTypeSpec& node)
@@ -196,7 +196,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
             {
               ast::Node* id = *pos2;
               const std::string& identifier = node_cast<Identifier> (id)->identifier;
-              const type::Type *field = field_list->select (identifier);
+              const type::Type *field = field_list->find (identifier);
               if (field == NULL)
                 {
                   field_list->append_field (symtab.package (), false, identifier, type, TagSet ());
@@ -246,7 +246,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
       const ParameterList* signature = process_signature (node.signature, er, symtab);
       ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (node.location,
                                           ReturnSymbol,
-                                          type::Void::Instance (),
+                                          type::Void::instance (),
                                           Immutable);
 
       CheckForForeignSafe (er, signature, return_parameter);
@@ -269,7 +269,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
   Visitor type_spec_visitor (er, symtab);
   node->accept (type_spec_visitor);
 
-  if (force && type_spec_visitor.type->UnderlyingType () == NULL)
+  if (force && type_spec_visitor.type->underlying_type () == NULL)
     {
       error_at_line (-1, 0, node->location.file.c_str (), node->location.line,
                      "type is defined recursively (E173)");

@@ -28,6 +28,21 @@ std::string Type::to_string () const
   return str.str ();
 }
 
+const Type* Type::underlying_type () const
+{
+  return this;
+}
+
+Kind Type::underlying_kind () const
+{
+  return underlying_type ()->kind ();
+}
+
+const Type* Type::default_type () const
+{
+  return this;
+}
+
 bool Type::is_untyped () const
 {
   return kind () >= Nil_Kind && kind () <= Untyped_String_Kind;
@@ -43,6 +58,58 @@ bool Type::is_named () const
   return kind () == Named_Kind;
 }
 
+bool Type::is_numeric () const
+{
+  switch (underlying_kind ())
+    {
+    case Nil_Kind:
+    case Boolean_Kind:
+      return false;
+    case Rune_Kind:
+    case Integer_Kind:
+    case Float_Kind:
+    case Complex_Kind:
+      return true;
+    case Untyped_String_Kind:
+    case Void_Kind:
+    case Bool_Kind:
+      return false;
+    case Uint8_Kind:
+    case Uint16_Kind:
+    case Uint32_Kind:
+    case Uint64_Kind:
+    case Int8_Kind:
+    case Int16_Kind:
+    case Int32_Kind:
+    case Int64_Kind:
+    case Float32_Kind:
+    case Float64_Kind:
+    case Complex64_Kind:
+    case Complex128_Kind:
+    case Uint_Kind:
+    case Int_Kind:
+    case Uintptr_Kind:
+      return true;
+    case String_Kind:
+    case Struct_Kind:
+    case Component_Kind:
+    case Array_Kind:
+    case Map_Kind:
+    case Pointer_Kind:
+    case Slice_Kind:
+    case Heap_Kind:
+    case Function_Kind:
+    case Method_Kind:
+    case Interface_Kind:
+    case Template_Kind:
+    case File_Descriptor_Kind:
+      return false;
+    case Named_Kind:
+      NOT_REACHED;
+    }
+
+  NOT_REACHED;
+}
 
 std::ostream&
 operator<< (std::ostream& o, const Type& type)
@@ -99,6 +166,83 @@ Type::get_heap () const
   return heap_;
 }
 
+Field* Type::find_field (const std::string& name) const
+{
+  return underlying_type ()->find_field_i (name);
+}
+
+decl::Method* Type::find_method (const std::string& identifier) const
+{
+  return NULL;
+}
+decl::Initializer* Type::find_initializer (const std::string& identifier) const
+{
+  return NULL;
+}
+decl::Getter* Type::find_getter (const std::string& identifier) const
+{
+  return NULL;
+}
+decl::Action* Type::find_action (const std::string& identifier) const
+{
+  return NULL;
+}
+decl::Reaction* Type::find_reaction (const std::string& identifier) const
+{
+  return NULL;
+}
+decl::Bind* Type::find_bind (const std::string& identifier) const
+{
+  return NULL;
+}
+
+decl::Callable* Type::find_callable (const std::string& name) const
+{
+  return NULL;
+}
+
+const NamedType* Type::to_named_type () const
+{
+  return NULL;
+}
+const Array* Type::to_array () const
+{
+  return NULL;
+}
+const Slice* Type::to_slice () const
+{
+  return NULL;
+}
+const Struct* Type::to_struct () const
+{
+  return NULL;
+}
+const Pointer* Type::to_pointer () const
+{
+  return NULL;
+}
+const Function* Type::to_function () const
+{
+  return NULL;
+}
+const Interface* Type::to_interface () const
+{
+  return NULL;
+}
+const Map* Type::to_map () const
+{
+  return NULL;
+}
+const Heap* Type::to_heap () const
+{
+  return NULL;
+}
+
+Field* Type::find_field_i (const std::string& name) const
+{
+  return NULL;
+}
+
 void
 Array::print (std::ostream& out) const
 {
@@ -106,8 +250,9 @@ Array::print (std::ostream& out) const
 }
 
 
+
 Reaction *
-NamedType::get_reaction (const std::string& identifier) const
+NamedType::find_reaction (const std::string& identifier) const
 {
   for (std::vector<Reaction*>::const_iterator pos = reactions_.begin (),
        limit = reactions_.end ();
@@ -125,7 +270,7 @@ NamedType::get_reaction (const std::string& identifier) const
 }
 
 decl::Method*
-NamedType::get_method (const std::string& identifier) const
+NamedType::find_method (const std::string& identifier) const
 {
   for (std::vector< decl::Method*>::const_iterator pos = this->methods_.begin (),
        limit = this->methods_.end ();
@@ -143,7 +288,7 @@ NamedType::get_method (const std::string& identifier) const
 }
 
 Initializer*
-NamedType::get_initializer (const std::string& identifier) const
+NamedType::find_initializer (const std::string& identifier) const
 {
   for (std::vector<Initializer*>::const_iterator pos = this->initializers_.begin (),
        limit = this->initializers_.end ();
@@ -161,7 +306,7 @@ NamedType::get_initializer (const std::string& identifier) const
 }
 
 Getter*
-NamedType::get_getter (const std::string& identifier) const
+NamedType::find_getter (const std::string& identifier) const
 {
   for (std::vector<Getter*>::const_iterator pos = this->getters_.begin (),
        limit = this->getters_.end ();
@@ -179,7 +324,7 @@ NamedType::get_getter (const std::string& identifier) const
 }
 
 Action*
-NamedType::get_action (const std::string& identifier) const
+NamedType::find_action (const std::string& identifier) const
 {
   for (ActionsType::const_iterator pos = this->actions_.begin (),
        limit = this->actions_.end ();
@@ -197,7 +342,7 @@ NamedType::get_action (const std::string& identifier) const
 }
 
 Bind*
-NamedType::get_bind (const std::string& identifier) const
+NamedType::find_bind (const std::string& identifier) const
 {
   for (BindsType::const_iterator pos = this->binds_.begin (),
        limit = this->binds_.end ();
@@ -213,6 +358,25 @@ NamedType::get_bind (const std::string& identifier) const
 
   return NULL;
 }
+
+void Void::print (std::ostream& out) const
+{
+  out << "<void>";
+}
+size_t Void::alignment () const
+{
+  // TODO:  Move alignment and size out of type and into arch.
+  return 0;
+}
+size_t Void::size () const
+{
+  return 0;
+}
+Kind Void::kind () const
+{
+  return Void_Kind;
+}
+Void::Void () { }
 
 void
 Struct::print (std::ostream& out) const
@@ -237,7 +401,7 @@ Struct::append_field (Package* package, bool is_anonymous, const std::string& fi
   Field *field = new Field (package, is_anonymous, field_name, field_type, tags, offset_);
   fields_.push_back (field);
 
-  offset_ += field_type->Size ();
+  offset_ += field_type->size ();
   if (alignment > alignment_)
     {
       alignment_ = alignment;
@@ -247,7 +411,7 @@ Struct::append_field (Package* package, bool is_anonymous, const std::string& fi
 }
 
 Field *
-Struct::get_field_i (const std::string& name) const
+Struct::find_field_i (const std::string& name) const
 {
   for (std::vector<Field*>::const_iterator field = fields_.begin (),
        limit = fields_.end ();
@@ -263,48 +427,48 @@ Struct::get_field_i (const std::string& name) const
 }
 
 const Type*
-Type::select (const std::string& identifier) const
+Type::find (const std::string& identifier) const
 {
-  Field* f = this->get_field (identifier);
+  Field* f = this->find_field (identifier);
   if (f)
     {
       return f->type;
     }
 
-  decl::Method* m = this->get_method (identifier);
+  decl::Method* m = this->find_method (identifier);
   if (m)
     {
       return m->methodType;
     }
 
-  Initializer* i = this->get_initializer (identifier);
+  Initializer* i = this->find_initializer (identifier);
   if (i)
     {
       return i->initializerType;
     }
 
-  Getter* g = this->get_getter (identifier);
+  Getter* g = this->find_getter (identifier);
   if (g)
     {
       return g->getterType;
     }
 
-  Reaction* r = this->get_reaction (identifier);
+  Reaction* r = this->find_reaction (identifier);
   if (r)
     {
       return r->reaction_type;
     }
 
-  Action* a = this->get_action (identifier);
+  Action* a = this->find_action (identifier);
   if (a)
     {
-      return Void::Instance ();
+      return Void::instance ();
     }
 
-  Bind* b = this->get_bind (identifier);
+  Bind* b = this->find_bind (identifier);
   if (b)
     {
-      return Void::Instance ();
+      return Void::instance ();
     }
 
   return NULL;
@@ -587,7 +751,7 @@ are_identical (const Type* x, const Type* y)
 }
 
 #define INSTANCE(type) const type* \
-type::Instance () \
+type::instance () \
 { \
   static type* i = new type ();                 \
   return i; \
@@ -612,7 +776,7 @@ Component::Component (Package* package)
   : Struct ()
 {
   /* Prepend the field list with a pointer for the runtime. */
-  append_field (package, true, "0runtime", Void::Instance ()->get_pointer (), TagSet ());
+  append_field (package, true, "0runtime", Void::instance ()->get_pointer (), TagSet ());
 }
 
 bool
@@ -631,7 +795,7 @@ type_contains_pointer (const Type* type)
 
     void visit (const NamedType& type)
     {
-      type.UnderlyingType ()->accept (*this);
+      type.underlying_type ()->accept (*this);
     }
 
     void visit (const Void& type)
@@ -741,12 +905,106 @@ type_contains_pointer (const Type* type)
   return v.flag;
 }
 
+NamedType::NamedType (const std::string& name)
+  : name_ (name)
+  , underlyingType_ (NULL)
+{ }
+
 NamedType::NamedType (const std::string& name,
                       const Type* subtype)
   : name_ (name)
-  , underlyingType_ (subtype->UnderlyingType ())
+  , underlyingType_ (subtype->underlying_type ())
 {
   assert (underlyingType_->is_unnamed ());
+}
+
+void NamedType::print (std::ostream& out) const
+{
+  out << name_;
+}
+
+void NamedType::underlying_type (const Type* u)
+{
+  underlyingType_ = u->underlying_type ();
+  assert (underlyingType_->is_unnamed ());
+}
+
+const Type* NamedType::underlying_type () const
+{
+  return underlyingType_;
+}
+
+size_t NamedType::alignment () const
+{
+  return underlyingType_->alignment ();
+}
+size_t NamedType::size () const
+{
+  return underlyingType_->size ();
+}
+Kind NamedType::kind () const
+{
+  return Named_Kind;
+}
+void NamedType::insert_method (decl::Method* method)
+{
+  methods_.push_back (method);
+}
+void NamedType::insert_initializer (decl::Initializer* initializer)
+{
+  initializers_.push_back (initializer);
+}
+void NamedType::insert_getter (decl::Getter* getter)
+{
+  getters_.push_back (getter);
+}
+NamedType::GettersType::const_iterator NamedType::getters_begin () const
+{
+  return getters_.begin ();
+}
+NamedType::GettersType::const_iterator NamedType::getters_end () const
+{
+  return getters_.end ();
+}
+void NamedType::insert_action (decl::Action* action)
+{
+  actions_.push_back (action);
+}
+NamedType::ActionsType::const_iterator NamedType::actions_begin () const
+{
+  return actions_.begin ();
+}
+NamedType::ActionsType::const_iterator NamedType::actions_end () const
+{
+  return actions_.end ();
+}
+void NamedType::insert_reaction (decl::Reaction* reaction)
+{
+  reactions_.push_back (reaction);
+}
+NamedType::ReactionsType::const_iterator NamedType::reactions_begin () const
+{
+  return reactions_.begin ();
+}
+NamedType::ReactionsType::const_iterator NamedType::reactions_end () const
+{
+  return reactions_.end ();
+}
+void NamedType::insert_bind (decl::Bind* bind)
+{
+  binds_.push_back (bind);
+}
+NamedType::BindsType::const_iterator NamedType::binds_begin () const
+{
+  return binds_.begin ();
+}
+NamedType::BindsType::const_iterator NamedType::binds_end () const
+{
+  return binds_.end ();
+}
+const NamedType* NamedType::to_named_type () const
+{
+  return this;
 }
 
 bool
@@ -759,7 +1017,7 @@ type_is_integral (const Type* type)
 
     void visit (const NamedType& type)
     {
-      type.UnderlyingType ()->accept (*this);
+      type.underlying_type ()->accept (*this);
     }
 
     void visit (const Int& type)
@@ -817,7 +1075,7 @@ type_is_unsigned_integral (const Type* type)
 
     void visit (const NamedType& type)
     {
-      type.UnderlyingType ()->accept (*this);
+      type.underlying_type ()->accept (*this);
     }
 
     void visit (const Uint& type)
@@ -845,7 +1103,7 @@ type_is_floating (const Type* type)
 
     void visit (const NamedType& type)
     {
-      type.UnderlyingType ()->accept (*this);
+      type.underlying_type ()->accept (*this);
     }
 
     void visit (const Float64& type)
@@ -873,7 +1131,7 @@ type_is_orderable (const Type* type)
 
     void visit (const NamedType& type)
     {
-      type.UnderlyingType ()->accept (*this);
+      type.underlying_type ()->accept (*this);
     }
 
     void visit (const Int& type)
@@ -918,7 +1176,7 @@ type_strip (const Type* type)
 
     void visit (const NamedType& type)
     {
-      retval = type.UnderlyingType ();
+      retval = type.underlying_type ();
     }
   };
   visitor v (type);
@@ -954,7 +1212,7 @@ type_index (const Type* base, const Type* index)
 
         void visit (const NamedType& type)
         {
-          type.UnderlyingType ()->accept (*this);
+          type.underlying_type ()->accept (*this);
         }
 
         void visit (const Uint& type)
@@ -1001,7 +1259,7 @@ type_is_index (const Type* type, Int::ValueType index)
 bool
 type_is_castable (const Type* x, const Type* y)
 {
-  return type_is_numeric (x) && type_is_numeric (y);
+  return x->is_numeric () && y->is_numeric ();
 }
 
 void
@@ -1091,37 +1349,37 @@ Method::Method (MethodKind k, const NamedType* named_type_,
 }
 
 const Type*
-Boolean::DefaultType () const
+Boolean::default_type () const
 {
   return &named_bool;
 }
 
 const Type*
-Rune::DefaultType () const
+Rune::default_type () const
 {
   return &named_rune;
 }
 
 const Type*
-Integer::DefaultType () const
+Integer::default_type () const
 {
   return &named_int;
 }
 
 const Type*
-Float::DefaultType () const
+Float::default_type () const
 {
   return &named_float64;
 }
 
 const Type*
-Complex::DefaultType () const
+Complex::default_type () const
 {
   return &named_complex128;
 }
 
 const Type*
-String::DefaultType () const
+String::default_type () const
 {
   return &named_string;
 }
@@ -1145,7 +1403,7 @@ assignable (const Type* from, const Value& from_value, const Type* to)
       return true;
     }
 
-  if (are_identical (from->UnderlyingType (), to->UnderlyingType ()) &&
+  if (are_identical (from->underlying_type (), to->underlying_type ()) &&
       (!from->is_named () || !to->is_named ()))
     {
       return true;
@@ -1154,11 +1412,11 @@ assignable (const Type* from, const Value& from_value, const Type* to)
   // TODO:  T is an interface type and x implements T.
 
   if (type_cast<Nil> (from) &&
-      (type_cast<Pointer> (to->UnderlyingType ()) ||
-       type_cast<Function> (to->UnderlyingType ()) ||
-       type_cast<Slice> (to->UnderlyingType ())
-       //type_cast<Map> (to->UnderlyingType ()) ||
-       //type_cast<Interface> (to->UnderlyingType ())
+      (type_cast<Pointer> (to->underlying_type ()) ||
+       type_cast<Function> (to->underlying_type ()) ||
+       type_cast<Slice> (to->underlying_type ())
+       //type_cast<Map> (to->underlying_type ()) ||
+       //type_cast<Interface> (to->underlying_type ())
       ))
     {
       return true;
@@ -1172,34 +1430,28 @@ assignable (const Type* from, const Value& from_value, const Type* to)
   return false;
 }
 
-Field*
-Struct::select_field (const std::string& name) const
-{
-  return get_field (name);
-}
-
 Callable*
-NamedType::select_callable (const std::string& name) const
+NamedType::find_callable (const std::string& name) const
 {
-  decl::Method* m = this->get_method (name);
+  decl::Method* m = this->find_method (name);
   if (m)
     {
       return m;
     }
 
-  Initializer* i = this->get_initializer (name);
+  Initializer* i = this->find_initializer (name);
   if (i)
     {
       return i;
     }
 
-  Getter* g = this->get_getter (name);
+  Getter* g = this->find_getter (name);
   if (g)
     {
       return g;
     }
 
-  Reaction* r = this->get_reaction (name);
+  Reaction* r = this->find_reaction (name);
   if (r)
     {
       return r;
@@ -1260,7 +1512,7 @@ bool is_typed_integer (const Type* type)
     }
   };
   visitor v;
-  type->UnderlyingType ()->accept (v);
+  type->underlying_type ()->accept (v);
   return v.flag;
 }
 
@@ -1387,22 +1639,22 @@ bool is_any_string (const Type* type)
 
 bool is_slice_of_bytes (const Type* type)
 {
-  const Slice* slice_type = type_cast<Slice> (type->UnderlyingType ());
+  const Slice* slice_type = type_cast<Slice> (type->underlying_type ());
   if (slice_type == NULL)
     {
       return false;
     }
-  return type_cast<Uint8> (slice_type->base_type->UnderlyingType ()) != NULL;
+  return type_cast<Uint8> (slice_type->base_type->underlying_type ()) != NULL;
 }
 
 bool is_slice_of_runes (const Type* type)
 {
-  const Slice* slice_type = type_cast<Slice> (type->UnderlyingType ());
+  const Slice* slice_type = type_cast<Slice> (type->underlying_type ());
   if (slice_type == NULL)
     {
       return false;
     }
-  return type_cast<Int32> (slice_type->base_type->UnderlyingType ()) != NULL;
+  return type_cast<Int32> (slice_type->base_type->underlying_type ()) != NULL;
 }
 
 bool orderable (const Type* type)
@@ -1503,7 +1755,7 @@ bool is_any_boolean (const Type* type)
 const Pointer*
 pointer_to_array (const Type* type)
 {
-  const Pointer* p = type_cast<Pointer> (type->UnderlyingType ());
+  const Pointer* p = type_cast<Pointer> (type->underlying_type ());
   if (p != NULL && p->base_type->underlying_kind () == Array_Kind)
     {
       return p;
@@ -1511,34 +1763,34 @@ pointer_to_array (const Type* type)
   return NULL;
 }
 
-NamedType named_bool ("bool", Bool::Instance ());
+NamedType named_bool ("bool", Bool::instance ());
 
-NamedType named_uint8 ("uint8", Uint8::Instance ());
-NamedType named_uint16 ("uint16", Uint16::Instance ());
-NamedType named_uint32 ("uint32", Uint32::Instance ());
-NamedType named_uint64 ("uint64", Uint64::Instance ());
+NamedType named_uint8 ("uint8", Uint8::instance ());
+NamedType named_uint16 ("uint16", Uint16::instance ());
+NamedType named_uint32 ("uint32", Uint32::instance ());
+NamedType named_uint64 ("uint64", Uint64::instance ());
 
-NamedType named_int8 ("int8", Int8::Instance ());
-NamedType named_int16 ("int16", Int16::Instance ());
-NamedType named_int32 ("int32", Int32::Instance ());
-NamedType named_int64 ("int64", Int64::Instance ());
+NamedType named_int8 ("int8", Int8::instance ());
+NamedType named_int16 ("int16", Int16::instance ());
+NamedType named_int32 ("int32", Int32::instance ());
+NamedType named_int64 ("int64", Int64::instance ());
 
-NamedType named_float32 ("float32", Float32::Instance ());
-NamedType named_float64 ("float64", Float64::Instance ());
+NamedType named_float32 ("float32", Float32::instance ());
+NamedType named_float64 ("float64", Float64::instance ());
 
-NamedType named_complex64 ("complex64", Complex64::Instance ());
-NamedType named_complex128 ("complex128", Complex128::Instance ());
+NamedType named_complex64 ("complex64", Complex64::instance ());
+NamedType named_complex128 ("complex128", Complex128::instance ());
 
-NamedType named_byte ("byte", Uint8::Instance ());
-NamedType named_rune ("rune", Int::Instance ());
+NamedType named_byte ("byte", Uint8::instance ());
+NamedType named_rune ("rune", Int::instance ());
 
-NamedType named_uint ("uint", Uint::Instance ());
-NamedType named_int ("int", Int::Instance ());
-NamedType named_uintptr ("uintptr", Uintptr::Instance ());
+NamedType named_uint ("uint", Uint::instance ());
+NamedType named_int ("int", Int::instance ());
+NamedType named_uintptr ("uintptr", Uintptr::instance ());
 
-NamedType named_string ("string", StringU::Instance ());
+NamedType named_string ("string", StringU::instance ());
 
-NamedType named_file_descriptor ("FileDescriptor", FileDescriptor::Instance ());
+NamedType named_file_descriptor ("FileDescriptor", FileDescriptor::instance ());
 NamedType named_timespec ("timespec", (new Struct ())->append_field (NULL, false, "tv_sec", &named_uint64, TagSet ())->append_field (NULL, false, "tv_nsec", &named_uint64, TagSet ()));
 
 decl::ParameterSymbol* Function::GetParameter (const std::string& name) const

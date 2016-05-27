@@ -85,7 +85,7 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
 
   {
     const std::string& identifier = identifierNode->identifier;
-    const type::Type *t = type->select (identifier);
+    const type::Type *t = type->find (identifier);
     if (t != NULL)
       {
         error_at_line (-1, 0, identifierNode->location.file.c_str (),
@@ -271,7 +271,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     ParameterSymbol* receiver_parameter;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, receiver_parameter, true, true);
-    ParameterSymbol* iota_parameter = ParameterSymbol::make (node.dimension->location, "IOTA", type::Int::Instance (), Immutable, Immutable);
+    ParameterSymbol* iota_parameter = ParameterSymbol::make (node.dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
     type::Int::ValueType dimension = process_array_dimension (node.dimension, er, symtab);
     decl::Action *action = new decl::Action (receiver_parameter, node.body, node.identifier->identifier, iota_parameter, dimension);
     type->insert_action (action);
@@ -310,7 +310,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     processSignatureReturn (er, symtab, node.signature, node.return_type, Foreign, true,
                             signature, return_symbol);
 
-    ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension->location, "IOTA", type::Int::Instance (), Immutable, Immutable);
+    ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
     type::Int::ValueType dimension = process_array_dimension (node.dimension, er, symtab);
 
     type::Method* reaction_type = new type::Method (type::Method::REACTION, type,
@@ -368,7 +368,7 @@ struct Visitor : public ast::DefaultNodeVisitor
                        "type does not refer to a component (E64)");
       }
 
-    decl::Initializer* initializer = type->get_initializer (initializer_identifier);
+    decl::Initializer* initializer = type->find_initializer (initializer_identifier);
     if (initializer == NULL)
       {
         error_at_line (-1, 0, node.initializer->location.file.c_str (),

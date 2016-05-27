@@ -55,7 +55,7 @@ main (int argc, char** argv)
 
   {
     ExpressionValue ev;
-    ev.type = Boolean::Instance ();
+    ev.type = Boolean::instance ();
     ev.value.present = true;
     ev.convert (&named_bool);
 

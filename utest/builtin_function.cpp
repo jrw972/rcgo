@@ -4,7 +4,7 @@
 #include "parameter_list.hpp"
 #include "symbol_visitor.hpp"
 
-#include "symbol_helpers.hpp"
+#include "visitor_helper.hpp"
 
 using namespace decl;
 using namespace util;
@@ -42,23 +42,23 @@ main (int argc, char** argv)
   }
 
   {
-    TestSymbolVisitor<BuiltinFunction> visitor;
+    TestVisitor<SymbolVisitor, BuiltinFunction> visitor;
     Location loc;
     const type::Function* func = new type::Function (type::Function::FUNCTION, new ParameterList (loc), new ParameterList (loc));
     MyBuiltinFunction bif ("func", loc, func);
     bif.accept (visitor);
     tap.tassert ("BuiltinFunction::accept ()",
-                 visitor.sym == &bif);
+                 visitor.item == &bif);
   }
 
   {
-    TestConstSymbolVisitor<BuiltinFunction> visitor;
+    TestConstVisitor<ConstSymbolVisitor, BuiltinFunction> visitor;
     Location loc;
     const type::Function* func = new type::Function (type::Function::FUNCTION, new ParameterList (loc), new ParameterList (loc));
     MyBuiltinFunction bif ("func", loc, func);
     bif.accept (visitor);
     tap.tassert ("BuiltinFunction::accept (Const)",
-                 visitor.sym == &bif);
+                 visitor.item == &bif);
   }
 
   tap.print_plan ();

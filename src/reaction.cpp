@@ -53,7 +53,7 @@ size_t Reaction::return_size_on_stack () const
 
 size_t Reaction::receiver_size_on_stack () const
 {
-  return util::align_up (reaction_type->receiver_type ()->Size (), arch::stack_alignment ());
+  return util::align_up (reaction_type->receiver_type ()->size (), arch::stack_alignment ());
 }
 
 size_t Reaction::parameters_size_on_stack () const

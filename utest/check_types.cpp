@@ -24,7 +24,7 @@ static LiteralExpr* make_untyped_one ()
   semantic::Value v;
   v.present = true;
   v.integer_value = 1;
-  return new LiteralExpr (1, Integer::Instance (), v);
+  return new LiteralExpr (1, Integer::instance (), v);
 }
 
 static LiteralExpr* make_untyped_false ()
@@ -32,7 +32,7 @@ static LiteralExpr* make_untyped_false ()
   semantic::Value v;
   v.present = true;
   v.boolean_value = false;
-  return new LiteralExpr (1, Boolean::Instance (), v);
+  return new LiteralExpr (1, Boolean::instance (), v);
 }
 
 // static LiteralExpr* make_typed_false ()
@@ -221,7 +221,7 @@ main (int argc, char** argv)
     ErrorReporter er;
     Value v;
     v.present = true;
-    decl::ConstantSymbol* symbol = new ConstantSymbol ("nil", Location (1), type::Nil::Instance (), v);
+    decl::ConstantSymbol* symbol = new ConstantSymbol ("nil", Location (1), type::Nil::instance (), v);
     SymbolTable symtab;
     symtab.open_scope ();
     symtab.enter_symbol (symbol);
@@ -302,7 +302,7 @@ main (int argc, char** argv)
 
     tap.tassert ("semantic::check_types UnaryArithmeticExpr",
                  root->eval.expression_kind == ValueExpressionKind &&
-                 root->eval.type == Boolean::Instance () &&
+                 root->eval.type == Boolean::instance () &&
                  root->eval.value.present &&
                  root->eval.value.bool_value == true &&
                  no_error (er));
@@ -353,7 +353,7 @@ main (int argc, char** argv)
 
     tap.tassert ("semantic::check_types BinaryArithmeticExpr",
                  root->eval.expression_kind == ValueExpressionKind &&
-                 root->eval.type == Integer::Instance () &&
+                 root->eval.type == Integer::instance () &&
                  root->eval.value.present &&
                  root->eval.value.integer_value == 1 &&
                  no_error (er));

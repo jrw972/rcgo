@@ -178,7 +178,7 @@ struct TypeSymbol : public Symbol
   virtual void accept (ConstSymbolVisitor& visitor) const;
   virtual bool defined () const
   {
-    return type->UnderlyingType () != NULL;
+    return type->underlying_type () != NULL;
   }
 
   virtual const type::Type* symbol_type () const

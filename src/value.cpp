@@ -516,9 +516,9 @@ Value::convert (const type::Type* from, const type::Type* to)
       NOT_REACHED;
     }
 
-  } v (*this, to->UnderlyingType ());
+  } v (*this, to->underlying_type ());
 
-  from->UnderlyingType ()->accept (v);
+  from->underlying_type ()->accept (v);
 }
 
 type::Int::ValueType

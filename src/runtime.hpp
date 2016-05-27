@@ -400,7 +400,7 @@ struct Clear : public Operation
 
 struct Assign : public Operation
 {
-  Assign (Operation* l, Operation* r, const type::Type* t) : left (l), right (r), size (t->Size ())
+  Assign (Operation* l, Operation* r, const type::Type* t) : left (l), right (r), size (t->size ())
   {
     assert (left != NULL);
     assert (right != NULL);
@@ -444,7 +444,7 @@ struct Select : public Operation
 
 struct Return : public Operation
 {
-  Return (Operation* c, const decl::ParameterSymbol* r) : child (c), return_offset (r->offset ()), return_size (r->type->Size ()) { }
+  Return (Operation* c, const decl::ParameterSymbol* r) : child (c), return_offset (r->offset ()), return_size (r->type->size ()) { }
   virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
@@ -533,7 +533,7 @@ Operation* make_unary (const type::Type* type, Operation* child)
     }
   };
   visitor v (child);
-  type->UnderlyingType ()->accept (v);
+  type->underlying_type ()->accept (v);
   return v.operation;
 }
 

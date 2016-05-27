@@ -62,7 +62,7 @@ main (int argc, char** argv)
                  && r.has_dimension () == false
                  && r.callable_type () == reaction_type
                  && r.return_size_on_stack () == 0
-                 && r.receiver_size_on_stack () == static_cast<size_t> (util::align_up (receiver->type->Size (), arch::stack_alignment ()))
+                 && r.receiver_size_on_stack () == static_cast<size_t> (util::align_up (receiver->type->size (), arch::stack_alignment ()))
                  && r.parameters_size_on_stack () == 0
                  && r.parameter_list () == parameter_list
                 );

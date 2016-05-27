@@ -6,6 +6,7 @@
 #include "bind.hpp"
 #include "package.hpp"
 #include "parameter_list.hpp"
+#include "visitor_helper.hpp"
 
 using namespace type;
 using namespace decl;
@@ -52,60 +53,143 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType foo ("foo", new Component (NULL));
-    Action* r1 = foo.get_action ("r");
-    Action* r = new Action (NULL, NULL, "r");
-    foo.insert_action (r);
-    Action* r2 = foo.get_action ("r");
-    tap.tassert ("NamedType::get_action", r1 == NULL && r2 == r);
+    NamedType foo ("foo");
+    tap.tassert ("NamedType::NamedType(1)", foo.underlying_type () == NULL);
   }
 
   {
-    NamedType foo ("foo", new Component (NULL));
-    Reaction* r1 = foo.get_reaction ("r");
-    Reaction* r = new Reaction (NULL, "r", NULL);
-    foo.insert_reaction (r);
-    Reaction* r2 = foo.get_reaction ("r");
-    tap.tassert ("NamedType::get_reaction", r1 == NULL && r2 == r);
+    NamedType foo ("foo", Int::instance ());
+    tap.tassert ("NamedType::NamedType(2)", foo.underlying_type () == Int::instance ());
   }
 
   {
-    NamedType foo ("foo", new Component (NULL));
-    Bind* r1 = foo.get_bind ("r");
-    Bind* r = new Bind (NULL, "r", NULL);
-    foo.insert_bind (r);
-    Bind* r2 = foo.get_bind ("r");
-    tap.tassert ("NamedType::get_bind", r1 == NULL && r2 == r);
+    TestConstVisitor <DefaultVisitor, NamedType> visitor;
+    NamedType foo ("foo");
+    foo.accept (visitor);
+    tap.tassert ("NamedType::accept", visitor.item == &foo);
+  }
+
+  {
+    NamedType foo ("foo");
+    std::stringstream str;
+    foo.print (str);
+    tap.tassert ("NamedType::print", str.str () == "foo");
+  }
+
+  {
+    NamedType foo ("foo");
+    foo.underlying_type (&named_int);
+    tap.tassert ("NamedType::underlying_type", foo.underlying_type () == Int::instance ());
+  }
+
+  {
+    NamedType foo ("foo", Int::instance ());
+    tap.tassert ("NamedType::alignment", foo.alignment () == Int::instance ()->alignment ());
+  }
+
+  {
+    NamedType foo ("foo", Int::instance ());
+    tap.tassert ("NamedType::size", foo.size () == Int::instance ()->size ());
+  }
+
+  {
+    NamedType foo ("foo");
+    tap.tassert ("NamedType::kind", foo.kind () == Named_Kind);
   }
 
   {
     util::Location loc;
     NamedType foo ("foo", new Component (NULL));
-    decl::Method* r1 = foo.get_method ("r");
+    decl::Method* r1 = foo.find_method ("r");
     decl::Method* r = new decl::Method (NULL, "r", new type::Method (type::Method::METHOD, &foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
     foo.insert_method (r);
-    decl::Method* r2 = foo.get_method ("r");
-    tap.tassert ("NamedType::get_method", r1 == NULL && r2 == r);
+    decl::Method* r2 = foo.find_method ("r");
+    tap.tassert ("NamedType::find_method", r1 == NULL && r2 == r);
   }
 
   {
     util::Location loc;
     NamedType foo ("foo", new Component (NULL));
-    Initializer* r1 = foo.get_initializer ("r");
+    Initializer* r1 = foo.find_initializer ("r");
     Initializer* r = new Initializer (NULL, "r", new type::Method (type::Method::INITIALIZER, &foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
     foo.insert_initializer (r);
-    Initializer* r2 = foo.get_initializer ("r");
-    tap.tassert ("NamedType::get_initializer", r1 == NULL && r2 == r);
+    Initializer* r2 = foo.find_initializer ("r");
+    tap.tassert ("NamedType::find_initializer", r1 == NULL && r2 == r);
   }
 
   {
     util::Location loc;
     NamedType foo ("foo", new Component (NULL));
-    Getter* r1 = foo.get_getter ("r");
+    Getter* r1 = foo.find_getter ("r");
     Getter* r = new Getter (NULL, "r", new type::Method (type::Method::GETTER, &foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
     foo.insert_getter (r);
-    Getter* r2 = foo.get_getter ("r");
-    tap.tassert ("NamedType::get_getter", r1 == NULL && r2 == r);
+    Getter* r2 = foo.find_getter ("r");
+    tap.tassert ("NamedType::find_getter", r1 == NULL && r2 == r);
+  }
+
+  {
+    NamedType foo ("foo", new Component (NULL));
+    Action* r1 = foo.find_action ("r");
+    Action* r = new Action (NULL, NULL, "r");
+    foo.insert_action (r);
+    Action* r2 = foo.find_action ("r");
+    tap.tassert ("NamedType::find_action", r1 == NULL && r2 == r);
+  }
+
+  {
+    NamedType foo ("foo", new Component (NULL));
+    Reaction* r1 = foo.find_reaction ("r");
+    Reaction* r = new Reaction (NULL, "r", NULL);
+    foo.insert_reaction (r);
+    Reaction* r2 = foo.find_reaction ("r");
+    tap.tassert ("NamedType::find_reaction", r1 == NULL && r2 == r);
+  }
+
+  {
+    NamedType foo ("foo", new Component (NULL));
+    Bind* r1 = foo.find_bind ("r");
+    Bind* r = new Bind (NULL, "r", NULL);
+    foo.insert_bind (r);
+    Bind* r2 = foo.find_bind ("r");
+    tap.tassert ("NamedType::find_bind", r1 == NULL && r2 == r);
+  }
+
+  {
+    util::Location loc;
+    NamedType foo ("foo", new Component (NULL));
+    decl::Method* r = new decl::Method (NULL, "r", new type::Method (type::Method::METHOD, &foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
+    foo.insert_method (r);
+    decl::Callable* r2 = foo.find_callable ("r");
+    tap.tassert ("NamedType::find_callable", r2 == r);
+  }
+
+  {
+    NamedType foo ("foo");
+    tap.tassert ("NamedType::to_named_type", foo.to_named_type () == &foo);
+  }
+
+  {
+    TestConstVisitor <DefaultVisitor, Void> visitor;
+    Void::instance ()->accept (visitor);
+    tap.tassert ("Void::accept", visitor.item == Void::instance ());
+  }
+
+  {
+    std::stringstream str;
+    Void::instance ()->print (str);
+    tap.tassert ("Void::print", str.str () == "<void>");
+  }
+
+  {
+    tap.tassert ("Void::alignment", Void::instance ()->alignment () == 0);
+  }
+
+  {
+    tap.tassert ("Void::size", Void::instance ()->size () == 0);
+  }
+
+  {
+    tap.tassert ("Void::kind", Void::instance ()->kind () == Void_Kind);
   }
 
   {
@@ -116,10 +200,10 @@ main (int argc, char** argv)
 
   {
     Struct s;
-    Field* f1 = s.get_field ("r");
+    Field* f1 = s.find_field ("r");
     s.append_field (NULL, false, "r", &named_int, TagSet ());
-    Field* f2 = s.get_field ("r");
-    tap.tassert ("Struct::get_field", f1 == NULL && f2 != NULL);
+    Field* f2 = s.find_field ("r");
+    tap.tassert ("Struct::find_field", f1 == NULL && f2 != NULL);
   }
 
   {
@@ -145,35 +229,35 @@ main (int argc, char** argv)
     nt.insert_bind (bind);
 
     {
-      const Type* t = nt.select ("field");
+      const Type* t = nt.find ("field");
       tap.tassert ("Type::select (field)", t == &named_int);
     }
     {
-      const Type* t = nt.select ("method");
+      const Type* t = nt.find ("method");
       tap.tassert ("Type::select (method)", t == method->callable_type ());
     }
     {
-      const Type* t = nt.select ("initializer");
+      const Type* t = nt.find ("initializer");
       tap.tassert ("Type::select (initializer)", t == initializer->callable_type ());
     }
     {
-      const Type* t = nt.select ("getter");
+      const Type* t = nt.find ("getter");
       tap.tassert ("Type::select (getter)", t == getter->callable_type ());
     }
     {
-      const Type* t = nt.select ("action");
-      tap.tassert ("Type::select (action)", t == Void::Instance ());
+      const Type* t = nt.find ("action");
+      tap.tassert ("Type::select (action)", t == Void::instance ());
     }
     {
-      const Type* t = nt.select ("reaction");
+      const Type* t = nt.find ("reaction");
       tap.tassert ("Type::select (reaction)", t == reaction->callable_type ());
     }
     {
-      const Type* t = nt.select ("bind");
-      tap.tassert ("Type::select (bind)", t == Void::Instance ());
+      const Type* t = nt.find ("bind");
+      tap.tassert ("Type::select (bind)", t == Void::instance ());
     }
     {
-      const Type* t = nt.select ("not there");
+      const Type* t = nt.find ("not there");
       tap.tassert ("Type::select (NULL)", t == NULL);
     }
   }
@@ -198,7 +282,7 @@ main (int argc, char** argv)
     tap.tassert ("type::are_identical - two named types false", !are_identical (&named_int, &named_float32));
   }
   {
-    tap.tassert ("type::are_identical - named, unnamed", !are_identical (&named_int, named_int.UnderlyingType ()));
+    tap.tassert ("type::are_identical - named, unnamed", !are_identical (&named_int, named_int.underlying_type ()));
   }
   {
     tap.tassert ("type::are_identical - array same type same length", are_identical (named_int.get_array (3), named_int.get_array (3)));
@@ -484,8 +568,8 @@ main (int argc, char** argv)
   }
 
   {
-    tap.tassert ("type::are_identical - simple types same", are_identical (Int::Instance (), Int::Instance ()));
-    tap.tassert ("type::are_identical - simple types different", !are_identical (Int::Instance (), Int32::Instance ()));
+    tap.tassert ("type::are_identical - simple types same", are_identical (Int::instance (), Int::instance ()));
+    tap.tassert ("type::are_identical - simple types different", !are_identical (Int::instance (), Int32::instance ()));
   }
 
   {
@@ -495,11 +579,11 @@ main (int argc, char** argv)
 
   {
     NamedType x ("x", named_int.get_pointer ());
-    tap.tassert ("type::u_to_pointer", named_int.u_to_pointer () == NULL && named_int.get_pointer ()->u_to_pointer () != NULL && x.u_to_pointer () != NULL);
+    tap.tassert ("type::u_to_pointer", named_int.underlying_type ()->to_pointer () == NULL && named_int.get_pointer ()->underlying_type ()->to_pointer () != NULL && x.underlying_type ()->to_pointer () != NULL);
   }
 
   {
-    tap.tassert ("type::to_named_type", named_int.to_named_type () != NULL && Int::Instance ()->to_named_type () == NULL);
+    tap.tassert ("type::to_named_type", named_int.to_named_type () != NULL && Int::instance ()->to_named_type () == NULL);
   }
 
   {

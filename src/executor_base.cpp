@@ -72,7 +72,7 @@ void ExecutorBase::fini (FILE* profile_out, size_t thread)
 
 ComponentInfoBase::ComponentInfoBase (composition::Instance* instance)
   : instance_ (instance)
-  , heap_ (new Heap (instance->component, instance->type->Size ()))
+  , heap_ (new Heap (instance->component, instance->type->size ()))
 {
   // Link the instance to its scheduling information.
   *reinterpret_cast<ComponentInfoBase**> (instance->component) = this;

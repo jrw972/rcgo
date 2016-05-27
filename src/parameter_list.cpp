@@ -90,7 +90,7 @@ ParameterList*
 ParameterList::append (ParameterSymbol* p)
 {
   parameters_.push_back (p);
-  size_on_stack_ += util::align_up (p->type->Size (), arch::stack_alignment ());
+  size_on_stack_ += util::align_up (p->type->size (), arch::stack_alignment ());
   return this;
 }
 

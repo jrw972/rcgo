@@ -59,7 +59,7 @@ struct Function : public Callable, public decl::Symbol
 
   virtual size_t return_size_on_stack () const
   {
-    return util::align_up (type->GetReturnType ()->Size (), arch::stack_alignment ());
+    return util::align_up (type->GetReturnType ()->size (), arch::stack_alignment ());
   }
   virtual size_t receiver_size_on_stack () const
   {
@@ -106,11 +106,11 @@ struct Method : public Callable
 
   virtual size_t return_size_on_stack () const
   {
-    return util::align_up (methodType->return_type ()->Size (), arch::stack_alignment ());
+    return util::align_up (methodType->return_type ()->size (), arch::stack_alignment ());
   }
   virtual size_t receiver_size_on_stack () const
   {
-    return util::align_up (methodType->receiver_type ()->Size (), arch::stack_alignment ());
+    return util::align_up (methodType->receiver_type ()->size (), arch::stack_alignment ());
   }
   virtual size_t parameters_size_on_stack () const;
 
@@ -137,11 +137,11 @@ struct Initializer : public Callable
 
   virtual size_t return_size_on_stack () const
   {
-    return util::align_up (initializerType->return_type ()->Size (), arch::stack_alignment ());
+    return util::align_up (initializerType->return_type ()->size (), arch::stack_alignment ());
   }
   virtual size_t receiver_size_on_stack () const
   {
-    return util::align_up (initializerType->receiver_type ()->Size (), arch::stack_alignment ());
+    return util::align_up (initializerType->receiver_type ()->size (), arch::stack_alignment ());
   }
   virtual size_t parameters_size_on_stack () const;
   virtual const decl::ParameterList* parameter_list () const
@@ -166,7 +166,7 @@ struct Getter : public Callable
     : node (n)
     , name (na)
     , getterType (getter_type_)
-    , returnSize (getter_type_->return_type ()->Size ())
+    , returnSize (getter_type_->return_type ()->size ())
   { }
 
   virtual void call (runtime::ExecutorBase& exec) const;
@@ -178,11 +178,11 @@ struct Getter : public Callable
 
   virtual size_t return_size_on_stack () const
   {
-    return util::align_up (getterType->return_type ()->Size (), arch::stack_alignment ());
+    return util::align_up (getterType->return_type ()->size (), arch::stack_alignment ());
   }
   virtual size_t receiver_size_on_stack () const
   {
-    return util::align_up (getterType->receiver_type ()->Size (), arch::stack_alignment ());
+    return util::align_up (getterType->receiver_type ()->size (), arch::stack_alignment ());
   }
   virtual size_t parameters_size_on_stack () const;
   virtual const decl::ParameterList* parameter_list () const
