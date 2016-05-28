@@ -54,7 +54,7 @@ TemplateSymbol::accept (ConstSymbolVisitor& visitor) const
 
 const type::Type* TemplateSymbol::symbol_type () const
 {
-  return type::Template::instance ();
+  return type::PolymorphicFunction::instance ();
 }
 
 }

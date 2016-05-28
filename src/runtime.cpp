@@ -12,6 +12,8 @@
 #include <netdb.h>
 #include <unistd.h>
 
+#include <sstream>
+
 #include "node.hpp"
 #include "node_visitor.hpp"
 #include "callable.hpp"
@@ -182,7 +184,7 @@ evaluate (ExecutorBase& exec, const MemoryModel& memoryModel, const ast::Binary&
       op (exec, memoryModel, node, t);
     }
 
-    void visit (const Boolean& t)
+    void visit (const UntypedBoolean& t)
     {
       op (exec, memoryModel, node, t);
     }
@@ -617,7 +619,7 @@ struct Equal : public LeftDispatch
   operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
-              const Boolean& type) const
+              const UntypedBoolean& type) const
   {
     doit (exec, memoryModel, node, type);
   }
@@ -989,7 +991,7 @@ void execute_no_check (ExecutorBase& exec, component_t* instance, const decl::Ac
 Readable::Readable (const util::Location& loc)
   : BuiltinFunction ("readable",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new ParameterList (loc))
+                     new type::Function ((new ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
                                          (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable))))
 { }
@@ -998,7 +1000,7 @@ void
 Readable::call (runtime::ExecutorBase& exec) const
 {
   runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->parameter_list->at (0)->offset ()));
-  Bool::ValueType* r = static_cast<Bool::ValueType*> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
+  Bool::ValueType* r = static_cast<Bool::ValueType*> (exec.stack ().get_address (type->return_parameter_list->at (0)->offset ()));
 
   struct pollfd pfd;
   pfd.fd = (*fd)->fd ();
@@ -1019,7 +1021,7 @@ Readable::call (runtime::ExecutorBase& exec) const
 Read::Read (const util::Location& loc)
   : BuiltinFunction ("read",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new ParameterList (loc))
+                     new type::Function ((new ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
                                          ->append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Mutable)),
                                          (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::instance (), Immutable))))
@@ -1030,14 +1032,14 @@ Read::call (runtime::ExecutorBase& exec) const
 {
   runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->parameter_list->at (0)->offset ()));
   Slice::ValueType* buf = static_cast<Slice::ValueType*> (exec.stack ().get_address (type->parameter_list->at (1)->offset ()));
-  Int::ValueType* r = static_cast<Int::ValueType*> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
+  Int::ValueType* r = static_cast<Int::ValueType*> (exec.stack ().get_address (type->return_parameter_list->at (0)->offset ()));
   *r = read ((*fd)->fd (), buf->ptr, buf->length);
 }
 
 Writable::Writable (const util::Location& loc)
   : BuiltinFunction ("writable",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new ParameterList (loc))
+                     new type::Function ((new ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
                                          (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable))))
 { }
@@ -1046,7 +1048,7 @@ void
 Writable::call (runtime::ExecutorBase& exec) const
 {
   runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->parameter_list->at (0)->offset ()));
-  Bool::ValueType* r = static_cast<Bool::ValueType*> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
+  Bool::ValueType* r = static_cast<Bool::ValueType*> (exec.stack ().get_address (type->return_parameter_list->at (0)->offset ()));
 
   struct pollfd pfd;
   pfd.fd = (*fd)->fd ();
@@ -1067,7 +1069,7 @@ Writable::call (runtime::ExecutorBase& exec) const
 ClockGettime::ClockGettime (const util::Location& loc)
   : BuiltinFunction ("clock_gettime",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new ParameterList (loc))
+                     new type::Function ((new ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "tp", type::named_timespec.get_pointer (), Immutable, Foreign)),
                                          (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable))))
 { }
@@ -1076,21 +1078,21 @@ void
 ClockGettime::call (runtime::ExecutorBase& exec) const
 {
   struct timespec* ts = *static_cast< struct timespec**> (exec.stack ().get_address (type->parameter_list->at (0)->offset ()));
-  Int::ValueType* r = static_cast<Int::ValueType*> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
+  Int::ValueType* r = static_cast<Int::ValueType*> (exec.stack ().get_address (type->return_parameter_list->at (0)->offset ()));
   *r = clock_gettime (CLOCK_REALTIME, ts);
 }
 
 TimerfdCreate::TimerfdCreate (const util::Location& loc)
   : BuiltinFunction ("timerfd_create",
                      loc,
-                     new type::Function (type::Function::FUNCTION, new ParameterList (loc),
+                     new type::Function (new ParameterList (loc),
                                          (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable))))
 { }
 
 void
 TimerfdCreate::call (runtime::ExecutorBase& exec) const
 {
-  runtime::FileDescriptor** ret = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
+  runtime::FileDescriptor** ret = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->return_parameter_list->at (0)->offset ()));
   int fd = timerfd_create (CLOCK_MONOTONIC, TFD_NONBLOCK);
   if (fd != -1)
     {
@@ -1105,7 +1107,7 @@ TimerfdCreate::call (runtime::ExecutorBase& exec) const
 TimerfdSettime::TimerfdSettime (const util::Location& loc)
   : BuiltinFunction ("timerfd_settime",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new ParameterList (loc))
+                     new type::Function ((new ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
                                          ->append (ParameterSymbol::make (loc, "s", &type::named_uint64, Immutable, Immutable)),
                                          (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable))))
@@ -1116,7 +1118,7 @@ TimerfdSettime::call (runtime::ExecutorBase& exec) const
 {
   runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->parameter_list->at (0)->offset ()));
   Uint64::ValueType* v = static_cast<Uint64::ValueType*> (exec.stack ().get_address (type->parameter_list->at (1)->offset ()));
-  Int::ValueType* r = static_cast<Int::ValueType*> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
+  Int::ValueType* r = static_cast<Int::ValueType*> (exec.stack ().get_address (type->return_parameter_list->at (0)->offset ()));
 
   struct itimerspec spec;
   spec.it_interval.tv_sec = *v;
@@ -1129,14 +1131,14 @@ TimerfdSettime::call (runtime::ExecutorBase& exec) const
 UdpSocket::UdpSocket (const util::Location& loc)
   : BuiltinFunction ("udp_socket",
                      loc,
-                     new type::Function (type::Function::FUNCTION, new ParameterList (loc),
+                     new type::Function (new ParameterList (loc),
                                          (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable))))
 { }
 
 void
 UdpSocket::call (runtime::ExecutorBase& exec) const
 {
-  runtime::FileDescriptor** ret = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
+  runtime::FileDescriptor** ret = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->return_parameter_list->at (0)->offset ()));
 
   int fd = socket (AF_INET, SOCK_DGRAM, 0);
   if (fd == -1)
@@ -1158,7 +1160,7 @@ UdpSocket::call (runtime::ExecutorBase& exec) const
 Sendto::Sendto (const util::Location& loc)
   : BuiltinFunction ("sendto",
                      loc,
-                     new type::Function (type::Function::FUNCTION, (new ParameterList (loc))
+                     new type::Function ((new ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
                                          ->append (ParameterSymbol::make (loc, "host", &type::named_string, Immutable, Foreign))
                                          ->append (ParameterSymbol::make (loc, "port", &type::named_uint16, Immutable, Immutable))
@@ -1170,10 +1172,10 @@ void
 Sendto::call (runtime::ExecutorBase& exec) const
 {
   runtime::FileDescriptor** fd = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->parameter_list->at (0)->offset ()));
-  StringU::ValueType* host = static_cast<StringU::ValueType*> (exec.stack ().get_address (type->parameter_list->at (1)->offset ()));
+  String::ValueType* host = static_cast<String::ValueType*> (exec.stack ().get_address (type->parameter_list->at (1)->offset ()));
   Uint16::ValueType* port = static_cast<Uint16::ValueType*> (exec.stack ().get_address (type->parameter_list->at (2)->offset ()));
   Slice::ValueType* buf = static_cast<Slice::ValueType*> (exec.stack ().get_address (type->parameter_list->at (3)->offset ()));
-  Int::ValueType* ret = static_cast<Int::ValueType*> (exec.stack ().get_address (type->GetReturnParameter ()->offset ()));
+  Int::ValueType* ret = static_cast<Int::ValueType*> (exec.stack ().get_address (type->return_parameter_list->at (0)->offset ()));
 
   std::string host2 (static_cast<const char*> (host->ptr), host->length);
   std::stringstream port2;
@@ -1228,7 +1230,7 @@ IndexSlice::execute (ExecutorBase& exec) const
 
     }
 
-  exec.stack ().push_pointer (static_cast<char*> (s.ptr) + i * type->UnitSize ());
+  exec.stack ().push_pointer (static_cast<char*> (s.ptr) + i * type->unit_size ());
 
   return make_continue ();
 }
@@ -1523,7 +1525,7 @@ struct MakeLiteralVisitor : public type::DefaultVisitor
     op = make_literal (value.float64_value);
   }
 
-  void visit (const StringU& type)
+  void visit (const String& type)
   {
     op = make_literal (value.stringu_value);
   }
@@ -1629,52 +1631,39 @@ MethodCall::execute (ExecutorBase& exec) const
 }
 
 OpReturn
-DynamicFunctionCall::execute (ExecutorBase& exec) const
+DynamicPullPortCall::execute (ExecutorBase& exec) const
 {
-  switch (type->function_kind)
-    {
-    case type::Function::FUNCTION:
-      UNIMPLEMENTED;
-    case type::Function::PUSH_PORT:
-      UNIMPLEMENTED;
-    case type::Function::PULL_PORT:
-    {
-      func->execute (exec);
-      pull_port_t pp;
-      exec.stack ().pop (pp);
+  func->execute (exec);
+  pull_port_t pp;
+  exec.stack ().pop (pp);
 
-      // Create space for the return.
-      exec.stack ().reserve (pp.getter->return_size_on_stack ());
+  // Create space for the return.
+  exec.stack ().reserve (pp.getter->return_size_on_stack ());
 
-      // Push the arguments.
-      exec.stack ().push_pointer (pp.instance);
-      arguments->execute (exec);
+  // Push the arguments.
+  exec.stack ().push_pointer (pp.instance);
+  arguments->execute (exec);
 
-      // Push a fake instruction pointer.
-      exec.stack ().push_pointer (NULL);
+  // Push a fake instruction pointer.
+  exec.stack ().push_pointer (NULL);
 
-      // Setup the frame.
-      exec.stack ().setup (pp.getter->memory_model.locals_size_on_stack ());
+  // Setup the frame.
+  exec.stack ().setup (pp.getter->memory_model.locals_size_on_stack ());
 
-      // Do the call.
-      pp.getter->call (exec);
+  // Do the call.
+  pp.getter->call (exec);
 
-      // Tear down the frame.
-      exec.stack ().teardown ();
+  // Tear down the frame.
+  exec.stack ().teardown ();
 
-      // Pop the fake instruction pointer.
-      exec.stack ().pop_pointer ();
+  // Pop the fake instruction pointer.
+  exec.stack ().pop_pointer ();
 
-      // Pop the arguments.
-      exec.stack ().popn (pp.getter->parameters_size_on_stack ());
-      exec.stack ().pop_pointer ();
+  // Pop the arguments.
+  exec.stack ().popn (pp.getter->parameters_size_on_stack ());
+  exec.stack ().pop_pointer ();
 
-      return make_continue ();
-    }
-    break;
-    }
-
-  NOT_REACHED;
+  return make_continue ();
 }
 
 OpReturn
@@ -1807,7 +1796,7 @@ IndexArray::execute (ExecutorBase& exec) const
       error_at_line (-1, 0, location.file.c_str (), location.line,
                      "array index is out of bounds (E148)");
     }
-  exec.stack ().push_pointer (static_cast<char*> (ptr) + i * type->UnitSize ());
+  exec.stack ().push_pointer (static_cast<char*> (ptr) + i * type->unit_size ());
   return make_continue ();
 }
 
@@ -1848,7 +1837,7 @@ SliceArray::execute (ExecutorBase& exec) const
   Slice::ValueType slice_val;
   slice_val.length = high_val - low_val;
   slice_val.capacity = max_val - low_val;
-  slice_val.ptr = slice_val.length ? ptr + low_val * type->UnitSize () : NULL;
+  slice_val.ptr = slice_val.length ? ptr + low_val * type->unit_size () : NULL;
   exec.stack ().push (slice_val);
 
   return make_continue ();
@@ -1891,7 +1880,7 @@ SliceSlice::execute (ExecutorBase& exec) const
 
   s.length = high_val - low_val;
   s.capacity = max_val - low_val;
-  s.ptr = s.length ? static_cast<char*> (s.ptr) + low_val * type->UnitSize () : NULL;
+  s.ptr = s.length ? static_cast<char*> (s.ptr) + low_val * type->unit_size () : NULL;
   exec.stack ().push (s);
 
   return make_continue ();
@@ -2171,7 +2160,7 @@ IndexedPushPortCall::execute (ExecutorBase& exec) const
   index->execute (exec);
   Int::ValueType idx;
   exec.stack ().pop (idx);
-  push_port_call (exec, args, receiver_offset, port_offset, idx * array_type->UnitSize ());
+  push_port_call (exec, args, receiver_offset, port_offset, idx * array_type->unit_size ());
   return make_continue ();
 }
 
@@ -2206,7 +2195,7 @@ struct ConvertStringToSliceOfBytes : public Operation
   execute (ExecutorBase& exec) const
   {
     child->execute (exec);
-    StringU::ValueType in;
+    String::ValueType in;
     exec.stack ().pop (in);
     Slice::ValueType out;
     out.ptr = exec.heap ()->allocate (in.length);
@@ -2233,7 +2222,7 @@ struct ConvertSliceOfBytesToString : public Operation
     child->execute (exec);
     Slice::ValueType in;
     exec.stack ().pop (in);
-    StringU::ValueType out;
+    String::ValueType out;
     out.ptr = exec.heap ()->allocate (in.length);
     memcpy (out.ptr, in.ptr, in.length);
     out.length = in.length;
@@ -2529,7 +2518,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
 
         case String_Kind:
         {
-          StringU::ValueType x;
+          String::ValueType x;
           exec.stack ().pop (x);
           fwrite (x.ptr, 1, x.length, stdout);
         }
@@ -2698,12 +2687,12 @@ struct AppendOp : public Operation
     if (new_length > slice.capacity)
       {
         const Uint::ValueType new_capacity = 2 * new_length;
-        void* ptr = exec.heap ()->allocate (new_capacity * slice_type->UnitSize ());
-        memcpy (ptr, slice.ptr, slice.length * slice_type->UnitSize ());
+        void* ptr = exec.heap ()->allocate (new_capacity * slice_type->unit_size ());
+        memcpy (ptr, slice.ptr, slice.length * slice_type->unit_size ());
         slice.ptr = ptr;
         slice.capacity = new_capacity;
       }
-    memcpy (static_cast<char*> (slice.ptr) + slice.length * slice_type->UnitSize (), &element, slice_type->UnitSize ());
+    memcpy (static_cast<char*> (slice.ptr) + slice.length * slice_type->unit_size (), &element, slice_type->unit_size ());
     slice.length = new_length;
     exec.stack ().push (slice);
     return make_continue ();
@@ -2738,7 +2727,7 @@ OpReturn CopyOp::execute (ExecutorBase& exec) const
       Slice::ValueType in;
       exec.stack ().pop (in);
       Slice::ValueType out;
-      size_t sz = slice_type->UnitSize () * in.length;
+      size_t sz = slice_type->unit_size () * in.length;
       out.ptr = exec.heap ()->allocate (sz);
       memcpy (out.ptr, in.ptr, sz);
       out.length = in.length;
@@ -2747,12 +2736,12 @@ OpReturn CopyOp::execute (ExecutorBase& exec) const
       return make_continue ();
     }
 
-  const StringU* string_type = type_strip_cast<StringU>(type);
+  const String* string_type = type_strip_cast<String>(type);
   if (string_type != NULL)
     {
-      StringU::ValueType in;
+      String::ValueType in;
       exec.stack ().pop (in);
-      StringU::ValueType out;
+      String::ValueType out;
       out.ptr = exec.heap ()->allocate (in.length);
       memcpy (out.ptr, in.ptr, in.length);
       out.length = in.length;

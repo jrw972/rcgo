@@ -10,10 +10,10 @@ struct Reaction : public Callable
 {
   Reaction (ast::Node* a_body,
             const std::string& a_name,
-            const type::Method* a_reaction_type);
+            const type::Reaction* a_reaction_type);
   Reaction (ast::Node* a_body,
             const std::string& a_name,
-            const type::Method* a_reaction_type,
+            const type::Reaction* a_reaction_type,
             Symbol* a_iota,
             type::Int::ValueType a_dimension);
 
@@ -23,7 +23,7 @@ struct Reaction : public Callable
   ReceiverAccess immutable_phase_access;
   Symbol* const iota;
   type::Int::ValueType const dimension;
-  const type::Method* const reaction_type;
+  const type::Reaction* const reaction_type;
 
   bool has_dimension () const;
 

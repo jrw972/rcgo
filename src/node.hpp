@@ -245,7 +245,12 @@ struct CallExpr : public Node
   List* const args;
 
   const type::Function* function_type;
+  const type::PushPort* push_port_type;
+  const type::PullPort* pull_port_type;
   const type::Method* method_type;
+  const type::Initializer* initializer_type;
+  const type::Getter* getter_type;
+  const type::Reaction* reaction_type;
   const decl::ParameterList* signature;
   const decl::ParameterSymbol* return_parameter;
 };
@@ -311,7 +316,7 @@ struct SliceExpr : public Node
   Node* const max;
   bool const max_present;
 
-  const type::String* string_type;
+  const type::UntypedString* string_type;
   const type::Pointer* pointer_to_array_type;
   const type::Array* array_type;
   const type::Slice* slice_type;

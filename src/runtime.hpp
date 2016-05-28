@@ -348,15 +348,15 @@ struct MethodCall : public Operation
   Operation* const arguments;
 };
 
-struct DynamicFunctionCall : public Operation
+struct DynamicPullPortCall : public Operation
 {
-  DynamicFunctionCall (const type::Function* t, Operation* f, Operation* a) : type (t), func (f), arguments (a) { }
+  DynamicPullPortCall (const type::PullPort* t, Operation* f, Operation* a) : type (t), func (f), arguments (a) { }
   virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
   }
-  const type::Function* type;
+  const type::PullPort* type;
   Operation* const func;
   Operation* const arguments;
 };

@@ -250,7 +250,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
                                           Immutable);
 
       CheckForForeignSafe (er, signature, return_parameter);
-      type = new type::Function (type::Function::PUSH_PORT, signature, (new ParameterList (node.location))->append (return_parameter));
+      type = new type::PushPort (signature, (new ParameterList (node.location))->append (return_parameter));
     }
 
     void visit (PullPortTypeSpec& node)
@@ -262,7 +262,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
                                           return_type,
                                           node.indirection_mutability);
       CheckForForeignSafe (er, signature, return_parameter);
-      type = new type::Function (type::Function::PULL_PORT, signature, (new ParameterList (node.location))->append (return_parameter));
+      type = new type::PullPort (signature, (new ParameterList (node.location))->append (return_parameter));
     }
   };
 

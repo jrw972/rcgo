@@ -154,9 +154,9 @@ static void require_variable (const Node* node)
 
 static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* reaction_node)
 {
-  const type::Function* push_port_type = type::type_cast<type::Function> (port_node->eval.type);
+  const type::PushPort* push_port_type = type::type_cast<type::PushPort> (port_node->eval.type);
 
-  if (push_port_type == NULL || push_port_type->function_kind != type::Function::PUSH_PORT)
+  if (push_port_type == NULL)
     {
       error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                      "source of bind is not a port (E38)");
@@ -164,8 +164,8 @@ static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* 
 
   require_variable (port_node);
 
-  const type::Method* reaction_type = type::type_cast<type::Method> (reaction_node->eval.type);
-  if (reaction_type == NULL || reaction_type->method_kind != type::Method::REACTION)
+  const type::Reaction* reaction_type = type::type_cast<type::Reaction> (reaction_node->eval.type);
+  if (reaction_type == NULL)
     {
       error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                      "target of bind is not a reaction (E39)");
@@ -173,7 +173,7 @@ static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* 
 
   require_variable (reaction_node);
 
-  type::Function f (type::Function::PUSH_PORT, reaction_type->parameter_list, reaction_type->return_parameter_list);
+  type::PushPort f (reaction_type->parameter_list, reaction_type->return_parameter_list);
   if (!are_identical (push_port_type, &f))
     {
       error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
@@ -279,83 +279,82 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
 
     node.function_type = type_cast<type::Function> (node.expr->eval.type);
+    node.push_port_type = type_cast<type::PushPort> (node.expr->eval.type);
+    node.pull_port_type = type_cast<type::PullPort> (node.expr->eval.type);
     node.method_type = type_cast<type::Method> (node.expr->eval.type);
+    node.initializer_type = type_cast<type::Initializer> (node.expr->eval.type);
+    node.getter_type = type_cast<type::Getter> (node.expr->eval.type);
+    node.reaction_type = type_cast<type::Reaction> (node.expr->eval.type);
 
     if (node.function_type)
       {
-        switch (node.function_type->function_kind)
-          {
-          case type::Function::FUNCTION:
-            // No restrictions on caller.
-            break;
-
-          case type::Function::PUSH_PORT:
-            error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                           "push ports cannot be called (E202)");
-            break;
-
-          case type::Function::PULL_PORT:
-            // Must be called from either a getter, an action, or reaction.
-            if (!(context == Getter ||
-                  context == Action ||
-                  context == Reaction))
-              {
-                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                               "pull ports may only be called from a getter, an action, or a reaction (E201)");
-              }
-            if (in_mutable_phase)
-              {
-                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                               "cannot call pull port in mutable section (E198)");
-              }
-            break;
-          }
-
+        // No restrictions on caller.
         node.signature = node.function_type->parameter_list;
-        node.return_parameter = node.function_type->GetReturnParameter ();
+        node.return_parameter = node.function_type->return_parameter_list->at (0);
+      }
+    else if (node.push_port_type)
+      {
+        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
+                       "push ports cannot be called (E202)");
+
+      }
+    else if (node.pull_port_type)
+      {
+        // Must be called from either a getter, an action, or reaction.
+        if (!(context == Getter ||
+              context == Action ||
+              context == Reaction))
+          {
+            error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
+                           "pull ports may only be called from a getter, an action, or a reaction (E201)");
+          }
+        if (in_mutable_phase)
+          {
+            error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
+                           "cannot call pull port in mutable section (E198)");
+          }
+        node.signature = node.pull_port_type->parameter_list;
+        node.return_parameter = node.pull_port_type->return_parameter_list->at (0);
       }
     else if (node.method_type)
       {
-        switch (node.method_type->method_kind)
-          {
-          case type::Method::METHOD:
-            // No restrictions on caller.
-            break;
-          case type::Method::INITIALIZER:
-            // Caller must be an initializer.
-            if (context != Initializer)
-              {
-                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                               "initializers may only be called from initializers (E197)");
-              }
-            break;
-          case type::Method::GETTER:
-          {
-            // Must be called from either a getter, action, reaction, or initializer.
-            if (!(context == Getter ||
-                  context == Action ||
-                  context == Reaction ||
-                  context == Initializer))
-              {
-                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                               "getters may only be called from a getter, an action, a reaction, or an initializer (E196)");
-              }
-            if (in_mutable_phase)
-              {
-                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                               "cannot call getter in mutable section (E34)");
-              }
-          }
-          break;
-          case type::Method::REACTION:
-          {
-            UNIMPLEMENTED;
-          }
-          break;
-          }
-
+        // No restrictions on caller.
         node.signature = node.method_type->parameter_list;
         node.return_parameter = node.method_type->return_parameter_list->at (0);
+      }
+    else if (node.initializer_type)
+      {
+        // Caller must be an initializer.
+        if (context != Initializer)
+          {
+            error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
+                           "initializers may only be called from initializers (E197)");
+          }
+        node.signature = node.initializer_type->parameter_list;
+        node.return_parameter = node.initializer_type->return_parameter_list->at (0);
+      }
+    else if (node.getter_type)
+      {
+        // Must be called from either a getter, action, reaction, or initializer.
+        if (!(context == Getter ||
+              context == Action ||
+              context == Reaction ||
+              context == Initializer))
+          {
+            error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
+                           "getters may only be called from a getter, an action, a reaction, or an initializer (E196)");
+          }
+        if (in_mutable_phase)
+          {
+            error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
+                           "cannot call getter in mutable section (E34)");
+          }
+        node.signature = node.getter_type->parameter_list;
+        node.return_parameter = node.getter_type->return_parameter_list->at (0);
+      }
+    else if (node.reaction_type)
+      {
+        UNIMPLEMENTED;
       }
     else
       {
@@ -1162,9 +1161,9 @@ done:
   {
     node.visit_children (*this);
 
-    const type::Function* pull_port_type = type_cast<type::Function> (node.left->eval.type);
+    const type::PullPort* pull_port_type = type_cast<type::PullPort> (node.left->eval.type);
 
-    if (pull_port_type == NULL || pull_port_type->function_kind != type::Function::PULL_PORT)
+    if (pull_port_type == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "target of bind is not a pull port (E193)");
@@ -1172,9 +1171,9 @@ done:
 
     require_variable (node.left);
 
-    const type::Method* getter_type = type_cast<type::Method> (node.right->eval.type);
+    const type::Getter* getter_type = type_cast<type::Getter> (node.right->eval.type);
 
-    if (getter_type == NULL || getter_type->method_kind != type::Method::GETTER)
+    if (getter_type == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "source of bind is not a getter (E192)");
@@ -1182,7 +1181,7 @@ done:
 
     require_variable (node.right);
 
-    type::Function g (type::Function::PULL_PORT, getter_type->parameter_list, getter_type->return_parameter_list);
+    type::PullPort g (getter_type->parameter_list, getter_type->return_parameter_list);
     if (!are_identical (pull_port_type, &g))
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
@@ -1424,7 +1423,7 @@ done:
     const type::Type*& max_type = max_node->eval.type;
     Value& max_value = max_node->eval.value;
 
-    node.string_type = type_cast<String> (base_type->underlying_type ());
+    node.string_type = type_cast<UntypedString> (base_type->underlying_type ());
     if (node.string_type != NULL)
       {
         UNIMPLEMENTED;
@@ -1536,8 +1535,8 @@ done:
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "no port named %s (E194)", port_identifier.c_str ());
       }
-    const type::Function* push_port_type = type::type_cast<type::Function> (node.field->type);
-    if (push_port_type == NULL || push_port_type->function_kind != type::Function::PUSH_PORT)
+    const type::PushPort* push_port_type = type::type_cast<type::PushPort> (node.field->type);
+    if (push_port_type == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "no port named %s (E195)", port_identifier.c_str ());
@@ -1570,8 +1569,8 @@ done:
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "%s is not an array of ports (E16)", port_identifier.c_str ());
       }
-    const type::Function* push_port_type = type::type_cast<type::Function> (node.array_type->base_type);
-    if (push_port_type == NULL || push_port_type->function_kind != type::Function::PUSH_PORT)
+    const type::PushPort* push_port_type = type::type_cast<type::PushPort> (node.array_type->base_type);
+    if (push_port_type == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "%s is not an array of ports (E17)", port_identifier.c_str ());

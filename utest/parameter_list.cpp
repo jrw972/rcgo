@@ -5,6 +5,8 @@
 #include "symbol.hpp"
 #include "arch.hpp"
 
+#include <sstream>
+
 using namespace type;
 using namespace decl;
 using namespace util;

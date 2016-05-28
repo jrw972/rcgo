@@ -116,6 +116,8 @@ class Interface;
 class Map;
 class NamedType;
 class Pointer;
+class PullPort;
+class PushPort;
 class Slice;
 class Struct;
 class Type;

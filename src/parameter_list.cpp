@@ -1,5 +1,7 @@
 #include "parameter_list.hpp"
 
+#include <sstream>
+
 #include "symbol.hpp"
 #include "arch.hpp"
 

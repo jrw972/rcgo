@@ -8,7 +8,7 @@ namespace decl
 
 Reaction::Reaction (ast::Node* a_body,
                     const std::string& a_name,
-                    const type::Method* a_reaction_type)
+                    const type::Reaction* a_reaction_type)
   : operation (NULL)
   , body (a_body)
   , name (a_name)
@@ -19,7 +19,7 @@ Reaction::Reaction (ast::Node* a_body,
 
 Reaction::Reaction (ast::Node* a_body,
                     const std::string& a_name,
-                    const type::Method* a_reaction_type,
+                    const type::Reaction* a_reaction_type,
                     Symbol* a_iota,
                     type::Int::ValueType a_dimension)
   : operation (NULL)
@@ -53,7 +53,7 @@ size_t Reaction::return_size_on_stack () const
 
 size_t Reaction::receiver_size_on_stack () const
 {
-  return util::align_up (reaction_type->receiver_type ()->size (), arch::stack_alignment ());
+  return util::align_up (reaction_type->receiver_parameter->type->size (), arch::stack_alignment ());
 }
 
 size_t Reaction::parameters_size_on_stack () const

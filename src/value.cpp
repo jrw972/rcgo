@@ -163,14 +163,14 @@ static bool to_and_back (const T& x, const type::Type* type)
     }
 }
 
-static void convert_numeric (Value& value, Complex::ValueType x, const type::Type* type)
+static void convert_numeric (Value& value, UntypedComplex::ValueType x, const type::Type* type)
 {
   struct visitor : public type::DefaultVisitor
   {
     Value& value;
-    Complex::ValueType x;
+    UntypedComplex::ValueType x;
 
-    visitor (Value& v, Complex::ValueType z) : value (v), x (z) { }
+    visitor (Value& v, UntypedComplex::ValueType z) : value (v), x (z) { }
 
     void default_action (const type::Type& type)
     {
@@ -247,12 +247,12 @@ static void convert_numeric (Value& value, Complex::ValueType x, const type::Typ
       value.complex128_value = x;
     }
 
-    void visit (const Integer& type)
+    void visit (const UntypedInteger& type)
     {
       value.integer_value = x;
     }
 
-    void visit (const Float& type)
+    void visit (const UntypedFloat& type)
     {
       value.float_value = x;
     }
@@ -271,19 +271,19 @@ Value::representable (const type::Type* from, const type::Type* to) const
 
   switch (from->underlying_kind ())
     {
-    case Nil_Kind:
+    case Untyped_Nil_Kind:
       return
         to->underlying_kind () == Pointer_Kind ||
         to->underlying_kind () == Slice_Kind;
-    case Boolean_Kind:
+    case Untyped_Boolean_Kind:
       return to->underlying_kind () == Bool_Kind;
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       return to_and_back (rune_value, to);
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       return to_and_back (integer_value, to);
-    case Float_Kind:
+    case Untyped_Float_Kind:
       return to_and_back (float_value, to);
-    case Complex_Kind:
+    case Untyped_Complex_Kind:
       return to_and_back (complex_value, to);
     case Untyped_String_Kind:
       return to->underlying_kind () == String_Kind;
@@ -368,7 +368,7 @@ Value::convert (const type::Type* from, const type::Type* to)
       TYPE_NOT_REACHED (type);
     }
 
-    void visit (const type::Boolean& type)
+    void visit (const type::UntypedBoolean& type)
     {
       if (type_cast<type::Bool> (to) != NULL)
         {
@@ -376,121 +376,121 @@ Value::convert (const type::Type* from, const type::Type* to)
         }
     }
 
-    void visit (const type::Rune& type)
+    void visit (const type::UntypedRune& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.rune_value;
       convert_numeric (value, x, to);
     }
 
-    void visit (const type::Integer& type)
+    void visit (const type::UntypedInteger& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.integer_value;
       convert_numeric (value, x, to);
     }
 
-    void visit (const type::Float& type)
+    void visit (const type::UntypedFloat& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.float_value;
       convert_numeric (value, x, to);
     }
 
     void visit (const type::Uint8& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.uint8_value;
       convert_numeric (value, x, to);
     }
 
     void visit (const type::Uint16& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.uint16_value;
       convert_numeric (value, x, to);
     }
 
     void visit (const type::Uint32& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.uint32_value;
       convert_numeric (value, x, to);
     }
 
     void visit (const type::Uint64& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.uint64_value;
       convert_numeric (value, x, to);
     }
 
     void visit (const type::Int8& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.int8_value;
       convert_numeric (value, x, to);
     }
 
     void visit (const type::Int16& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.int16_value;
       convert_numeric (value, x, to);
     }
 
     void visit (const type::Int32& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.int32_value;
       convert_numeric (value, x, to);
     }
 
     void visit (const type::Int64& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.int64_value;
       convert_numeric (value, x, to);
     }
 
     void visit (const type::Int& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.int_value;
       convert_numeric (value, x, to);
     }
 
     void visit (const type::Float32& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.float32_value;
       convert_numeric (value, x, to);
     }
 
     void visit (const type::Float64& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.float64_value;
       convert_numeric (value, x, to);
     }
 
     void visit (const type::Complex64& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.complex64_value;
       convert_numeric (value, x, to);
     }
 
     void visit (const type::Complex128& type)
     {
-      Complex::ValueType x;
+      UntypedComplex::ValueType x;
       x = value.complex128_value;
       convert_numeric (value, x, to);
     }
 
-    void visit (const type::String& type)
+    void visit (const type::UntypedString& type)
     {
-      if (type::type_cast<type::StringU> (to))
+      if (type::type_cast<type::String> (to))
         {
           value.stringu_value = value.string_value;
           return;
@@ -499,7 +499,7 @@ Value::convert (const type::Type* from, const type::Type* to)
       NOT_REACHED;
     }
 
-    void visit (const type::Nil& type)
+    void visit (const type::UntypedNil& type)
     {
       if (type::type_cast<type::Pointer> (to))
         {
@@ -559,22 +559,22 @@ void equal (Value& out, const type::Type* type, const Value& left, const Value& 
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Nil_Kind:
+    case Untyped_Nil_Kind:
       out.boolean_value = true;
       break;
-    case Boolean_Kind:
+    case Untyped_Boolean_Kind:
       out.boolean_value = left.boolean_value == right.boolean_value;
       break;
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.boolean_value = left.rune_value == right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.boolean_value = left.integer_value == right.integer_value;
       break;
-    case Float_Kind:
+    case Untyped_Float_Kind:
       out.boolean_value = left.float_value == right.float_value;
       break;
-    case Complex_Kind:
+    case Untyped_Complex_Kind:
       out.boolean_value = left.complex_value == right.complex_value;
       break;
     case Untyped_String_Kind:
@@ -644,22 +644,22 @@ void not_equal (Value& out, const type::Type* type, const Value& left, const Val
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Nil_Kind:
+    case Untyped_Nil_Kind:
       out.boolean_value = false;
       break;
-    case Boolean_Kind:
+    case Untyped_Boolean_Kind:
       out.boolean_value = left.boolean_value != right.boolean_value;
       break;
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.boolean_value = left.rune_value != right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.boolean_value = left.integer_value != right.integer_value;
       break;
-    case Float_Kind:
+    case Untyped_Float_Kind:
       out.boolean_value = left.float_value != right.float_value;
       break;
-    case Complex_Kind:
+    case Untyped_Complex_Kind:
       out.boolean_value = left.complex_value != right.complex_value;
       break;
     case Untyped_String_Kind:
@@ -729,13 +729,13 @@ void less_than (Value& out, const type::Type* type, const Value& left, const Val
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.boolean_value = left.rune_value < right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.boolean_value = left.integer_value < right.integer_value;
       break;
-    case Float_Kind:
+    case Untyped_Float_Kind:
       out.boolean_value = left.float_value < right.float_value;
       break;
     case Untyped_String_Kind:
@@ -793,13 +793,13 @@ void less_equal (Value& out, const type::Type* type, const Value& left, const Va
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.boolean_value = left.rune_value <= right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.boolean_value = left.integer_value <= right.integer_value;
       break;
-    case Float_Kind:
+    case Untyped_Float_Kind:
       out.boolean_value = left.float_value <= right.float_value;
       break;
     case Untyped_String_Kind:
@@ -857,13 +857,13 @@ void more_than (Value& out, const type::Type* type, const Value& left, const Val
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.boolean_value = left.rune_value > right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.boolean_value = left.integer_value > right.integer_value;
       break;
-    case Float_Kind:
+    case Untyped_Float_Kind:
       out.boolean_value = left.float_value > right.float_value;
       break;
     case Untyped_String_Kind:
@@ -921,13 +921,13 @@ void more_equal (Value& out, const type::Type* type, const Value& left, const Va
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.boolean_value = left.rune_value >= right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.boolean_value = left.integer_value >= right.integer_value;
       break;
-    case Float_Kind:
+    case Untyped_Float_Kind:
       out.boolean_value = left.float_value >= right.float_value;
       break;
     case Untyped_String_Kind:
@@ -985,16 +985,16 @@ void multiply (Value& out, const type::Type* type, const Value& left, const Valu
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.rune_value = left.rune_value * right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.integer_value = left.integer_value * right.integer_value;
       break;
-    case Float_Kind:
+    case Untyped_Float_Kind:
       out.float_value = left.float_value * right.float_value;
       break;
-    case Complex_Kind:
+    case Untyped_Complex_Kind:
       out.complex_value = left.complex_value * right.complex_value;
       break;
     case Uint8_Kind:
@@ -1052,16 +1052,16 @@ void divide (Value& out, const type::Type* type, const Value& left, const Value&
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.rune_value = left.rune_value / right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.integer_value = left.integer_value / right.integer_value;
       break;
-    case Float_Kind:
+    case Untyped_Float_Kind:
       out.float_value = left.float_value / right.float_value;
       break;
-    case Complex_Kind:
+    case Untyped_Complex_Kind:
       out.complex_value = left.complex_value / right.complex_value;
       break;
     case Uint8_Kind:
@@ -1119,10 +1119,10 @@ void modulus (Value& out, const type::Type* type, const Value& left, const Value
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.rune_value = left.rune_value % right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.integer_value = left.integer_value % right.integer_value;
       break;
     case Uint8_Kind:
@@ -1168,16 +1168,16 @@ void add (Value& out, const type::Type* type, const Value& left, const Value& ri
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.rune_value = left.rune_value + right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.integer_value = left.integer_value + right.integer_value;
       break;
-    case Float_Kind:
+    case Untyped_Float_Kind:
       out.float_value = left.float_value + right.float_value;
       break;
-    case Complex_Kind:
+    case Untyped_Complex_Kind:
       out.complex_value = left.complex_value + right.complex_value;
       break;
     case Uint8_Kind:
@@ -1235,16 +1235,16 @@ void subtract (Value& out, const type::Type* type, const Value& left, const Valu
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.rune_value = left.rune_value - right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.integer_value = left.integer_value - right.integer_value;
       break;
-    case Float_Kind:
+    case Untyped_Float_Kind:
       out.float_value = left.float_value - right.float_value;
       break;
-    case Complex_Kind:
+    case Untyped_Complex_Kind:
       out.complex_value = left.complex_value - right.complex_value;
       break;
     case Uint8_Kind:
@@ -1302,10 +1302,10 @@ void bit_and (Value& out, const type::Type* type, const Value& left, const Value
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.rune_value = left.rune_value & right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.integer_value = left.integer_value & right.integer_value;
       break;
     case Uint8_Kind:
@@ -1351,10 +1351,10 @@ void bit_and_not (Value& out, const type::Type* type, const Value& left, const V
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.rune_value = left.rune_value & ~right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.integer_value = left.integer_value & ~right.integer_value;
       break;
     case Uint8_Kind:
@@ -1400,10 +1400,10 @@ void bit_xor (Value& out, const type::Type* type, const Value& left, const Value
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.rune_value = left.rune_value ^ right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.integer_value = left.integer_value ^ right.integer_value;
       break;
     case Uint8_Kind:
@@ -1449,10 +1449,10 @@ void bit_or (Value& out, const type::Type* type, const Value& left, const Value&
   out.present = true;
   switch (type->underlying_kind ())
     {
-    case Rune_Kind:
+    case Untyped_Rune_Kind:
       out.rune_value = left.rune_value | right.rune_value;
       break;
-    case Integer_Kind:
+    case Untyped_Integer_Kind:
       out.integer_value = left.integer_value | right.integer_value;
       break;
     case Uint8_Kind:
@@ -1597,7 +1597,7 @@ std::ostream& operator<< (std::ostream& out, const ValuePrinter& vp)
           out << " value=(" << tv.complex128_value.real << ',' << tv.complex128_value.imag << "i)";
         }
 
-        void visit (const Nil& type)
+        void visit (const UntypedNil& type)
         {
           out << " value=" << (void*)NULL;
         }
@@ -1617,9 +1617,9 @@ std::ostream& operator<< (std::ostream& out, const ValuePrinter& vp)
           const Slice::ValueType& s = tv.slice_value;
           out << " value={" << s.ptr << ',' << s.length << ',' << s.capacity << '}';
         }
-        void visit (const StringU& type)
+        void visit (const String& type)
         {
-          const StringU::ValueType& s = tv.stringu_value;
+          const String::ValueType& s = tv.stringu_value;
           out << " value={" << s.ptr << ',' << s.length << '}';
         }
 
@@ -1628,26 +1628,26 @@ std::ostream& operator<< (std::ostream& out, const ValuePrinter& vp)
           out << " value=" << tv.pointer_value;
         }
 
-        void visit (const Boolean& type)
+        void visit (const UntypedBoolean& type)
         {
           out << " value=" << tv.boolean_value;
         }
-        void visit (const Integer& type)
+        void visit (const UntypedInteger& type)
         {
           out << " value=" << tv.integer_value;
         }
-        void visit (const Float& type)
+        void visit (const UntypedFloat& type)
         {
           out << " value=" << tv.float_value;
         }
-        void visit (const String& type)
+        void visit (const UntypedString& type)
         {
-          const String::ValueType& s = tv.string_value;
+          const UntypedString::ValueType& s = tv.string_value;
           out << " value={" << s.ptr << ',' << s.length << '}';
         }
-        void visit (const type::Template& type)
+        void visit (const type::PolymorphicFunction& type)
         {
-          out << " value=<template>";
+          out << " value=<polymorphic function>";
         }
       };
       visitor v (vp.value, out);

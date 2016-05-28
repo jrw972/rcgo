@@ -401,7 +401,7 @@ void LogicNot::check (ErrorReporter& er,
         case Bool_Kind:
           result.value.bool_value = !arg.value.bool_value;
           break;
-        case Boolean_Kind:
+        case Untyped_Boolean_Kind:
           result.value.boolean_value = !arg.value.boolean_value;
           break;
         default:
@@ -523,16 +523,16 @@ void Negate::check (ErrorReporter& er,
         case Uintptr_Kind:
           result.value.uintptr_value = -arg.value.uintptr_value;
           break;
-        case Rune_Kind:
+        case Untyped_Rune_Kind:
           result.value.rune_value = -arg.value.rune_value;
           break;
-        case Integer_Kind:
+        case Untyped_Integer_Kind:
           result.value.integer_value = -arg.value.integer_value;
           break;
-        case Float_Kind:
+        case Untyped_Float_Kind:
           result.value.float_value = -arg.value.float_value;
           break;
-        case Complex_Kind:
+        case Untyped_Complex_Kind:
           result.value.complex_value = -arg.value.complex_value;
           break;
         default:
@@ -604,10 +604,10 @@ void Complement::check (ErrorReporter& er,
         case Uintptr_Kind:
           result.value.uintptr_value = ~arg.value.uintptr_value;
           break;
-        case Rune_Kind:
+        case Untyped_Rune_Kind:
           result.value.rune_value = ~arg.value.rune_value;
           break;
-        case Integer_Kind:
+        case Untyped_Integer_Kind:
           result.value.integer_value = ~arg.value.integer_value;
           break;
         default:
@@ -629,7 +629,7 @@ const type::Type* BooleanPicker::pick (const type::Type* input_type,
 {
   if (left.value.present && right.value.present)
     {
-      return Boolean::instance ();
+      return UntypedBoolean::instance ();
     }
   else
     {
@@ -881,10 +881,10 @@ void BinaryShift<B, ba>::check (ErrorReporter& er,
         case Uintptr_Kind:
           result.value.uintptr_value = B () (left.value.uintptr_value, right.value.uint_value);
           break;
-        case Rune_Kind:
+        case Untyped_Rune_Kind:
           result.value.rune_value = B () (left.value.rune_value, right.value.uint_value);
           break;
-        case Integer_Kind:
+        case Untyped_Integer_Kind:
           result.value.integer_value = B () (left.value.integer_value, right.value.uint_value);
           break;
         default:

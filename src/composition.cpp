@@ -3,6 +3,7 @@
 #include <error.h>
 
 #include <set>
+#include <sstream>
 
 #include "node.hpp"
 #include "node_visitor.hpp"
@@ -912,7 +913,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
                        "port index is negative (E75)");
       }
 
-    size_t port = activation->instance->address + node.field->offset + idx * node.array_type->UnitSize ();
+    size_t port = activation->instance->address + node.field->offset + idx * node.array_type->unit_size ();
 
     // Find what is bound to this port.
     Composer::PushPortsType::const_iterator port_pos = table.push_ports_.find (port);
@@ -927,8 +928,8 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     if (node.expr->eval.expression_kind != semantic::TypeExpressionKind)
       {
         // Are we calling a getter or pull port.
-        const type::Method* method = node.method_type;
-        if (method != NULL && method->method_kind == type::Method::GETTER)
+        const type::Getter* method = node.getter_type;
+        if (method != NULL)
           {
             ast::Node* sb = node_cast<SelectExpr> (node.expr)->base;
             sb->operation->execute (exec);
@@ -950,8 +951,8 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
             addCall (g_pos->second);
           }
 
-        const type::Function* function = node.function_type;
-        if (function != NULL && function->function_kind == type::Function::PULL_PORT)
+        const type::PullPort* function = node.pull_port_type;
+        if (function != NULL)
           {
             size_t port = get_instance ()->address + node.field->offset;
             Composer::PullPortsType::const_iterator port_pos = table.pull_ports_.find (port);
@@ -1375,8 +1376,8 @@ Composer::instantiate_contained_instances (const type::Type * type,
 
     void visit (const Struct& type)
     {
-      for (Struct::const_iterator pos = type.Begin (),
-           limit = type.End ();
+      for (Struct::const_iterator pos = type.begin (),
+           limit = type.end ();
            pos != limit;
            ++pos)
         {
@@ -1393,7 +1394,7 @@ Composer::instantiate_contained_instances (const type::Type * type,
           // Recur changing address.
           std::stringstream newname;
           newname << name << '[' << idx << ']';
-          visitor v (instance_table, parent, NULL, address + idx * type.UnitSize (), field, line, NULL, newname.str ());
+          visitor v (instance_table, parent, NULL, address + idx * type.unit_size (), field, line, NULL, newname.str ());
           type.base_type->accept (v);
         }
     }
@@ -1418,18 +1419,17 @@ Composer::instantiate_contained_instances (const type::Type * type,
 
     void visit (const type::Function& type)
     {
-      switch (type.function_kind)
-        {
-        case type::Function::FUNCTION:
-          // Do nothing.
-          break;
-        case type::Function::PUSH_PORT:
-          instance_table.add_push_port (address, parent, field, name);
-          break;
-        case type::Function::PULL_PORT:
-          instance_table.add_pull_port (address, parent, field, name);
-          break;
-        }
+      // Do nothing.
+    }
+
+    void visit (const type::PushPort& type)
+    {
+      instance_table.add_push_port (address, parent, field, name);
+    }
+
+    void visit (const type::PullPort& type)
+    {
+      instance_table.add_pull_port (address, parent, field, name);
     }
 
     void visit (const type::FileDescriptor& type) { }

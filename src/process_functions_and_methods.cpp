@@ -209,7 +209,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     ParameterSymbol* return_symbol;
     process_signature_return (er, symtab, node.signature, node.return_type, node.indirection_mutability, false,
                               signature, return_symbol);
-    const type::Function* function_type = new type::Function (type::Function::FUNCTION, signature, (new ParameterList (node.location))->append (return_symbol));
+    const type::Function* function_type = new type::Function (signature, (new ParameterList (node.location))->append (return_symbol));
     node.function = new decl::Function (&node, function_type);
 
     symtab.enter_symbol (node.function);
@@ -225,7 +225,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     processSignatureReturn (er, symtab, node.signature, node.return_type, node.return_indirection_mutability, false,
                             signature, return_symbol);
 
-    type::Method* method_type = new type::Method (type::Method::METHOD, type,
+    type::Method* method_type = new type::Method (type,
         thisSymbol,
         signature,
         (new ParameterList (node.location))->append (return_symbol));
@@ -245,11 +245,11 @@ struct Visitor : public ast::DefaultNodeVisitor
     processSignatureReturn (er, symtab, node.signature, node.return_type, node.return_indirection_mutability, true,
                             signature, return_symbol);
 
-    type::Method* initializer_type =
-      new type::Method (type::Method::INITIALIZER, type,
-                        thisSymbol,
-                        signature,
-                        (new ParameterList (node.location))->append (return_symbol));
+    type::Initializer* initializer_type =
+      new type::Initializer (type,
+                             thisSymbol,
+                             signature,
+                             (new ParameterList (node.location))->append (return_symbol));
 
     decl::Initializer* initializer = new decl::Initializer (&node, node.identifier->identifier, initializer_type);
 
@@ -289,7 +289,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     processSignatureReturn (er, symtab, node.signature, node.return_type, Foreign, true,
                             signature, return_symbol);
 
-    type::Method* reaction_type = new type::Method (type::Method::REACTION, type,
+    type::Reaction* reaction_type = new type::Reaction (type,
         thisSymbol,
         signature,
         (new ParameterList (node.location))->append (return_symbol));
@@ -313,7 +313,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
     type::Int::ValueType dimension = process_array_dimension (node.dimension, er, symtab);
 
-    type::Method* reaction_type = new type::Method (type::Method::REACTION, type,
+    type::Reaction* reaction_type = new type::Reaction (type,
         thisSymbol,
         signature,
         (new ParameterList (node.location))->append (return_symbol));
@@ -334,7 +334,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     processSignatureReturn (er, symtab, node.signature, node.return_type, node.indirection_mutability, true,
                             signature, return_symbol);
 
-    type::Method* getter_type = new type::Method (type::Method::GETTER, type,
+    type::Getter* getter_type = new type::Getter (type,
         thisSymbol,
         signature,
         (new ParameterList (node.location))->append (return_symbol));

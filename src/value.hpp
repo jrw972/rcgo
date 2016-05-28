@@ -7,6 +7,9 @@
 namespace semantic
 {
 
+typedef uint64_t UintValueType;
+typedef int64_t IntValueType;
+
 struct Value
 {
   Value () : present (false) { }
@@ -41,18 +44,25 @@ struct Value
 
     type::Pointer::ValueType pointer_value;
     type::Slice::ValueType slice_value;
-    type::StringU::ValueType stringu_value;
+    type::String::ValueType stringu_value;
 
-    type::Boolean::ValueType boolean_value;
-    type::Rune::ValueType rune_value;
-    type::Integer::ValueType integer_value;
-    type::Float::ValueType float_value;
-    type::Complex::ValueType complex_value;
-    type::String::ValueType string_value;
+    type::UntypedBoolean::ValueType boolean_value;
+    type::UntypedRune::ValueType rune_value;
+    type::UntypedInteger::ValueType integer_value;
+    type::UntypedFloat::ValueType float_value;
+    type::UntypedComplex::ValueType complex_value;
+    type::UntypedString::ValueType string_value;
   };
 };
 
 typedef std::vector<Value> ValueList;
+
+inline std::ostream& operator<< (std::ostream& out, const type::Slice::ValueType& s)
+{
+  out << '{' << s.ptr << ',' << s.length << ',' << s.capacity << '}';
+  return out;
+}
+
 
 struct ValuePrinter
 {

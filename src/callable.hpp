@@ -6,6 +6,7 @@
 #include "memory_model.hpp"
 #include "symbol.hpp"
 #include "expression_value.hpp"
+#include "parameter_list.hpp"
 
 namespace decl
 {
@@ -59,7 +60,7 @@ struct Function : public Callable, public decl::Symbol
 
   virtual size_t return_size_on_stack () const
   {
-    return util::align_up (type->GetReturnType ()->size (), arch::stack_alignment ());
+    return type->return_parameter_list->size_on_stack ();
   }
   virtual size_t receiver_size_on_stack () const
   {
@@ -72,7 +73,7 @@ struct Function : public Callable, public decl::Symbol
   }
   ParameterSymbol* return_parameter () const
   {
-    return type->GetReturnParameter ();
+    return type->return_parameter_list->at (0);
   }
 
   const type::Function* type;
@@ -106,11 +107,11 @@ struct Method : public Callable
 
   virtual size_t return_size_on_stack () const
   {
-    return util::align_up (methodType->return_type ()->size (), arch::stack_alignment ());
+    return methodType->return_parameter_list->size_on_stack ();
   }
   virtual size_t receiver_size_on_stack () const
   {
-    return util::align_up (methodType->receiver_type ()->size (), arch::stack_alignment ());
+    return util::align_up (methodType->receiver_parameter->type->size (), arch::stack_alignment ());
   }
   virtual size_t parameters_size_on_stack () const;
 
@@ -123,7 +124,7 @@ struct Initializer : public Callable
 {
   Initializer (ast::Initializer* n,
                const std::string& na,
-               const type::Method* initializer_type_)
+               const type::Initializer* initializer_type_)
     : node (n)
     , name (na)
     , initializerType (initializer_type_)
@@ -137,11 +138,11 @@ struct Initializer : public Callable
 
   virtual size_t return_size_on_stack () const
   {
-    return util::align_up (initializerType->return_type ()->size (), arch::stack_alignment ());
+    return initializerType->return_parameter_list->size_on_stack ();
   }
   virtual size_t receiver_size_on_stack () const
   {
-    return util::align_up (initializerType->receiver_type ()->size (), arch::stack_alignment ());
+    return util::align_up (initializerType->receiver_parameter->type->size (), arch::stack_alignment ());
   }
   virtual size_t parameters_size_on_stack () const;
   virtual const decl::ParameterList* parameter_list () const
@@ -155,18 +156,17 @@ struct Initializer : public Callable
   }
   ast::Initializer* const node;
   std::string const name;
-  const type::Method * const initializerType;
+  const type::Initializer* const initializerType;
 };
 
 struct Getter : public Callable
 {
   Getter (ast::Getter* n,
           const std::string& na,
-          const type::Method* getter_type_)
+          const type::Getter* getter_type_)
     : node (n)
     , name (na)
     , getterType (getter_type_)
-    , returnSize (getter_type_->return_type ()->size ())
   { }
 
   virtual void call (runtime::ExecutorBase& exec) const;
@@ -178,11 +178,11 @@ struct Getter : public Callable
 
   virtual size_t return_size_on_stack () const
   {
-    return util::align_up (getterType->return_type ()->size (), arch::stack_alignment ());
+    return getterType->return_parameter_list->size_on_stack ();
   }
   virtual size_t receiver_size_on_stack () const
   {
-    return util::align_up (getterType->receiver_type ()->size (), arch::stack_alignment ());
+    return util::align_up (getterType->receiver_parameter->type->size (), arch::stack_alignment ());
   }
   virtual size_t parameters_size_on_stack () const;
   virtual const decl::ParameterList* parameter_list () const
@@ -198,8 +198,7 @@ struct Getter : public Callable
 
   ast::Getter* const node;
   std::string const name;
-  const type::Method * const getterType;
-  size_t const returnSize;
+  const type::Getter* const getterType;
   ReceiverAccess immutable_phase_access;
 };
 

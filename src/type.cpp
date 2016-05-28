@@ -1,5 +1,7 @@
 #include "type.hpp"
 
+#include <sstream>
+
 #include "action.hpp"
 #include "reaction.hpp"
 #include "field.hpp"
@@ -45,7 +47,7 @@ const Type* Type::default_type () const
 
 bool Type::is_untyped () const
 {
-  return kind () >= Nil_Kind && kind () <= Untyped_String_Kind;
+  return kind () >= Untyped_Nil_Kind && kind () <= Untyped_String_Kind;
 }
 
 bool Type::is_unnamed () const
@@ -62,13 +64,13 @@ bool Type::is_numeric () const
 {
   switch (underlying_kind ())
     {
-    case Nil_Kind:
-    case Boolean_Kind:
+    case Untyped_Nil_Kind:
+    case Untyped_Boolean_Kind:
       return false;
-    case Rune_Kind:
-    case Integer_Kind:
-    case Float_Kind:
-    case Complex_Kind:
+    case Untyped_Rune_Kind:
+    case Untyped_Integer_Kind:
+    case Untyped_Float_Kind:
+    case Untyped_Complex_Kind:
       return true;
     case Untyped_String_Kind:
     case Void_Kind:
@@ -101,7 +103,7 @@ bool Type::is_numeric () const
     case Function_Kind:
     case Method_Kind:
     case Interface_Kind:
-    case Template_Kind:
+    case Polymorphic_Function_Kind:
     case File_Descriptor_Kind:
       return false;
     case Named_Kind:
@@ -139,7 +141,7 @@ Type::get_slice () const
 }
 
 const Array*
-Type::get_array (IntValueType dimension) const
+Type::get_array (long dimension) const
 {
   assert (dimension >= 0);
   const Array* a;
@@ -225,6 +227,14 @@ const Function* Type::to_function () const
 {
   return NULL;
 }
+const PushPort* Type::to_push_port () const
+{
+  return NULL;
+}
+const PullPort* Type::to_pull_port () const
+{
+  return NULL;
+}
 const Interface* Type::to_interface () const
 {
   return NULL;
@@ -251,15 +261,15 @@ Array::print (std::ostream& out) const
 
 
 
-Reaction *
+decl::Reaction *
 NamedType::find_reaction (const std::string& identifier) const
 {
-  for (std::vector<Reaction*>::const_iterator pos = reactions_.begin (),
+  for (std::vector<decl::Reaction*>::const_iterator pos = reactions_.begin (),
        limit = reactions_.end ();
        pos != limit;
        ++pos)
     {
-      Reaction *a = *pos;
+      decl::Reaction *a = *pos;
       if (a->name == identifier)
         {
           return a;
@@ -287,15 +297,15 @@ NamedType::find_method (const std::string& identifier) const
   return NULL;
 }
 
-Initializer*
+decl::Initializer*
 NamedType::find_initializer (const std::string& identifier) const
 {
-  for (std::vector<Initializer*>::const_iterator pos = this->initializers_.begin (),
+  for (std::vector<decl::Initializer*>::const_iterator pos = this->initializers_.begin (),
        limit = this->initializers_.end ();
        pos != limit;
        ++pos)
     {
-      Initializer* a = *pos;
+      decl::Initializer* a = *pos;
       if (a->name == identifier)
         {
           return a;
@@ -305,15 +315,15 @@ NamedType::find_initializer (const std::string& identifier) const
   return NULL;
 }
 
-Getter*
+decl::Getter*
 NamedType::find_getter (const std::string& identifier) const
 {
-  for (std::vector<Getter*>::const_iterator pos = this->getters_.begin (),
+  for (std::vector<decl::Getter*>::const_iterator pos = this->getters_.begin (),
        limit = this->getters_.end ();
        pos != limit;
        ++pos)
     {
-      Getter* a = *pos;
+      decl::Getter* a = *pos;
       if (a->name == identifier)
         {
           return a;
@@ -381,7 +391,7 @@ Void::Void () { }
 void
 Struct::print (std::ostream& out) const
 {
-  out << '{';
+  out << "struct {";
   for (FieldsType::const_iterator pos = fields_.begin (), limit = fields_.end ();
        pos != limit;
        ++pos)
@@ -441,19 +451,19 @@ Type::find (const std::string& identifier) const
       return m->methodType;
     }
 
-  Initializer* i = this->find_initializer (identifier);
+  decl::Initializer* i = this->find_initializer (identifier);
   if (i)
     {
       return i->initializerType;
     }
 
-  Getter* g = this->find_getter (identifier);
+  decl::Getter* g = this->find_getter (identifier);
   if (g)
     {
       return g->getterType;
     }
 
-  Reaction* r = this->find_reaction (identifier);
+  decl::Reaction* r = this->find_reaction (identifier);
   if (r)
     {
       return r->reaction_type;
@@ -516,25 +526,30 @@ type::accept (Visitor& visitor) const \
 #define T_ACCEPT(type) template<> void type::accept (Visitor& visitor) const { visitor.visit (*this); }
 
 ACCEPT(Array)
-ACCEPT(Boolean)
-ACCEPT(Complex)
+ACCEPT(UntypedBoolean)
+ACCEPT(UntypedComplex)
 ACCEPT(Component)
 ACCEPT(FileDescriptor)
-ACCEPT(Float)
+ACCEPT(UntypedFloat)
 ACCEPT(Function)
+ACCEPT(PushPort)
+ACCEPT(PullPort)
 ACCEPT(Heap)
-ACCEPT(Integer)
+ACCEPT(UntypedInteger)
 ACCEPT(Interface)
 ACCEPT(Map)
 ACCEPT(Method)
+ACCEPT(Initializer)
+ACCEPT(Getter)
+ACCEPT(Reaction)
 ACCEPT(NamedType)
-ACCEPT(Nil)
+ACCEPT(UntypedNil)
 ACCEPT(Pointer)
-ACCEPT(Rune)
+ACCEPT(UntypedRune)
 ACCEPT(Slice)
-ACCEPT(String)
+ACCEPT(UntypedString)
 ACCEPT(Struct)
-ACCEPT(Template)
+ACCEPT(PolymorphicFunction)
 ACCEPT(Void)
 T_ACCEPT(Bool)
 T_ACCEPT(Complex128)
@@ -546,13 +561,61 @@ T_ACCEPT(Int16)
 T_ACCEPT(Int32)
 T_ACCEPT(Int64)
 T_ACCEPT(Int8)
-T_ACCEPT(StringU)
+T_ACCEPT(String)
 T_ACCEPT(Uint)
 T_ACCEPT(Uint16)
 T_ACCEPT(Uint32)
 T_ACCEPT(Uint64)
 T_ACCEPT(Uint8)
 T_ACCEPT(Uintptr)
+
+static bool
+function_base_are_identical (const FunctionBase* type1,
+                             const FunctionBase* type2)
+{
+  if (type1->parameter_list->size () != type2->parameter_list->size ())
+    {
+      return false;
+    }
+
+  if (type1->return_parameter_list->size () != type2->return_parameter_list->size ())
+    {
+      return false;
+    }
+
+  if (type1->return_parameter_list->is_variadic () != type2->return_parameter_list->is_variadic ())
+    {
+      return false;
+    }
+
+  for (ParameterList::const_iterator pos1 = type1->parameter_list->begin (),
+       limit1 = type1->parameter_list->end (),
+       pos2 = type2->parameter_list->begin (),
+       limit2 = type2->parameter_list->end ();
+       pos1 != limit1 && pos2 != limit2;
+       ++pos1, ++pos2)
+    {
+      if (!are_identical ((*pos1)->type, (*pos2)->type))
+        {
+          return false;
+        }
+    }
+
+  for (ParameterList::const_iterator pos1 = type1->return_parameter_list->begin (),
+       limit1 = type1->return_parameter_list->end (),
+       pos2 = type2->return_parameter_list->begin (),
+       limit2 = type2->return_parameter_list->end ();
+       pos1 != limit1 && pos2 != limit2;
+       ++pos1, ++pos2)
+    {
+      if (!are_identical ((*pos1)->type, (*pos2)->type))
+        {
+          return false;
+        }
+    }
+
+  return true;
+}
 
 bool
 are_identical (const Type* x, const Type* y)
@@ -604,10 +667,10 @@ are_identical (const Type* x, const Type* y)
           return false;
         }
 
-      Struct::const_iterator pos1 = type1->Begin ();
-      Struct::const_iterator limit1 = type1->End ();
-      Struct::const_iterator pos2 = type2->Begin ();
-      Struct::const_iterator limit2 = type2->End ();
+      Struct::const_iterator pos1 = type1->begin ();
+      Struct::const_iterator limit1 = type1->end ();
+      Struct::const_iterator pos2 = type2->begin ();
+      Struct::const_iterator limit2 = type2->end ();
 
       for (; pos1 != limit1 && pos2 != limit2; ++pos1, ++pos2)
         {
@@ -647,54 +710,19 @@ are_identical (const Type* x, const Type* y)
     {
       const Function* type1 = x->to_function ();
       const Function* type2 = y->to_function ();
-
-      if (type1->function_kind != type2->function_kind)
-        {
-          return false;
-        }
-
-      if (type1->parameter_list->size () != type2->parameter_list->size ())
-        {
-          return false;
-        }
-
-      if (type1->return_parameter_list->size () != type2->return_parameter_list->size ())
-        {
-          return false;
-        }
-
-      if (type1->return_parameter_list->is_variadic () != type2->return_parameter_list->is_variadic ())
-        {
-          return false;
-        }
-
-      for (ParameterList::const_iterator pos1 = type1->parameter_list->begin (),
-           limit1 = type1->parameter_list->end (),
-           pos2 = type2->parameter_list->begin (),
-           limit2 = type2->parameter_list->end ();
-           pos1 != limit1 && pos2 != limit2;
-           ++pos1, ++pos2)
-        {
-          if (!are_identical ((*pos1)->type, (*pos2)->type))
-            {
-              return false;
-            }
-        }
-
-      for (ParameterList::const_iterator pos1 = type1->return_parameter_list->begin (),
-           limit1 = type1->return_parameter_list->end (),
-           pos2 = type2->return_parameter_list->begin (),
-           limit2 = type2->return_parameter_list->end ();
-           pos1 != limit1 && pos2 != limit2;
-           ++pos1, ++pos2)
-        {
-          if (!are_identical ((*pos1)->type, (*pos2)->type))
-            {
-              return false;
-            }
-        }
-
-      return true;
+      return function_base_are_identical (type1, type2);
+    }
+    case Push_Port_Kind:
+    {
+      const PushPort* type1 = x->to_push_port ();
+      const PushPort* type2 = y->to_push_port ();
+      return function_base_are_identical (type1, type2);
+    }
+    case Pull_Port_Kind:
+    {
+      const PullPort* type1 = x->to_pull_port ();
+      const PullPort* type2 = y->to_pull_port ();
+      return function_base_are_identical (type1, type2);
     }
     case Interface_Kind:
     {
@@ -759,14 +787,14 @@ type::instance () \
 
 INSTANCE(Void)
 INSTANCE(FileDescriptor)
-INSTANCE(Nil)
-INSTANCE(Boolean)
-INSTANCE(Rune)
-INSTANCE(Integer)
-INSTANCE(Float)
-INSTANCE(Complex)
-INSTANCE(String)
-INSTANCE(Template)
+INSTANCE(UntypedNil)
+INSTANCE(UntypedBoolean)
+INSTANCE(UntypedRune)
+INSTANCE(UntypedInteger)
+INSTANCE(UntypedFloat)
+INSTANCE(UntypedComplex)
+INSTANCE(UntypedString)
+INSTANCE(PolymorphicFunction)
 
 Struct::Struct () : offset_ (0), alignment_ (0)
 {
@@ -866,7 +894,7 @@ type_contains_pointer (const Type* type)
       flag = true;
     }
 
-    void visit (const StringU& type)
+    void visit (const String& type)
     {
       flag = true;
     }
@@ -883,7 +911,7 @@ type_contains_pointer (const Type* type)
 
     void visit (const Struct& type)
     {
-      for (Struct::const_iterator pos = type.Begin (), limit = type.End ();
+      for (Struct::const_iterator pos = type.begin (), limit = type.end ();
            pos != limit;
            ++pos)
         {
@@ -891,11 +919,11 @@ type_contains_pointer (const Type* type)
         }
     }
 
-    void visit (const Boolean& type) { }
-    void visit (const Integer& type) { }
-    void visit (const Float& type) { }
-    void visit (const Complex& type) { }
-    void visit (const String& type)
+    void visit (const UntypedBoolean& type) { }
+    void visit (const UntypedInteger& type) { }
+    void visit (const UntypedFloat& type) { }
+    void visit (const UntypedComplex& type) { }
+    void visit (const UntypedString& type)
     {
       flag = true;
     }
@@ -1055,7 +1083,7 @@ type_is_integral (const Type* type)
       flag = true;
     }
 
-    void visit (const Integer& type)
+    void visit (const UntypedInteger& type)
     {
       flag = true;
     }
@@ -1161,8 +1189,8 @@ type_is_pointer_compare (const Type* left, const Type* right)
   const Type* r = type_strip (right);
 
   return
-    (type_cast<Pointer> (l) && type_cast<Nil>(r)) ||
-    (type_cast<Nil> (l) && type_cast<Pointer> (r));
+    (type_cast<Pointer> (l) && type_cast<UntypedNil>(r)) ||
+    (type_cast<UntypedNil> (l) && type_cast<Pointer> (r));
 
 }
 
@@ -1265,44 +1293,49 @@ type_is_castable (const Type* x, const Type* y)
 void
 Function::print (std::ostream& out) const
 {
-  switch (function_kind)
-    {
-    case FUNCTION:
-      out << "func " << *parameter_list << ' ' << *GetReturnParameter ()->type;
-      break;
-    case PUSH_PORT:
-      out << "push " << *parameter_list;
-      break;
-    case PULL_PORT:
-      out << "pull " << *parameter_list << ' ' << *GetReturnParameter ()->type;
-      break;
-    }
+  out << "func " << *parameter_list << ' ' << *return_parameter_list;
+}
+
+void
+PushPort::print (std::ostream& out) const
+{
+  out << "push " << *parameter_list;
+}
+
+void
+PullPort::print (std::ostream& out) const
+{
+  out << "pull " << *parameter_list << ' ' << *return_parameter_list;
 }
 
 void
 Method::print (std::ostream& out) const
 {
-  switch (method_kind)
-    {
-    case METHOD:
-      out << '(' << *receiver_type () << ')' << " func " << *parameter_list << ' ' << *return_type ();
-      break;
-    case INITIALIZER:
-      out << '(' << *receiver_type () << ')' << " init " << *parameter_list << ' ' << *return_type ();
-      break;
-    case GETTER:
-      out << '(' << *receiver_type () << ')' << " getter " << *parameter_list << ' ' << *return_type ();
-      break;
-    case REACTION:
-      out << '(' << *receiver_type () << ')' << " reaction " << *parameter_list;
-      break;
-    }
+  out << '(' << *receiver_parameter->type << ')' << " func " << *parameter_list << ' ' << *return_parameter_list;
+}
+
+void
+Initializer::print (std::ostream& out) const
+{
+  out << '(' << *receiver_parameter->type << ')' << " init " << *parameter_list << ' ' << *return_parameter_list;
+}
+
+void
+Getter::print (std::ostream& out) const
+{
+  out << '(' << *receiver_parameter->type << ')' << " getter " << *parameter_list << ' ' << *return_parameter_list;
+}
+
+void
+Reaction::print (std::ostream& out) const
+{
+  out << '(' << *receiver_parameter->type << ')' << " reaction " << *parameter_list;
 }
 
 Function*
-Method::make_function_type (ParameterSymbol* this_parameter,
-                            const ParameterList* parameter_list,
-                            const ParameterList* return_parameter_list)
+MethodBase::make_function_type (ParameterSymbol* this_parameter,
+                                const ParameterList* parameter_list,
+                                const ParameterList* return_parameter_list)
 {
   ParameterList* sig = new ParameterList (parameter_list->location);
 
@@ -1314,72 +1347,53 @@ Method::make_function_type (ParameterSymbol* this_parameter,
     {
       sig->append (*pos);
     }
-  return new Function (Function::FUNCTION, sig, return_parameter_list);
+  return new Function (sig, return_parameter_list);
 }
 
-const Type*
-Function::GetReturnType () const
-{
-  return return_parameter_list->at (0)->type;
-}
-
-const Type*
-Method::receiver_type () const
-{
-  return receiver_parameter->type;
-}
-
-const Type*
-Method::return_type () const
-{
-  return return_parameter_list->at (0)->type;
-}
-
-Method::Method (MethodKind k, const NamedType* named_type_,
-                ParameterSymbol* receiver_parameter_,
-                const ParameterList* a_parameter_list,
-                const ParameterList* a_return_parameter_list)
-  : method_kind (k)
-  , named_type (named_type_)
+MethodBase::MethodBase (const NamedType* named_type_,
+                        ParameterSymbol* receiver_parameter_,
+                        const ParameterList* a_parameter_list,
+                        const ParameterList* a_return_parameter_list)
+  : named_type (named_type_)
   , receiver_parameter (receiver_parameter_)
-  , function_type (make_function_type (receiver_parameter_, a_parameter_list, a_return_parameter_list))
   , parameter_list (a_parameter_list)
   , return_parameter_list (a_return_parameter_list)
+  , function_type (make_function_type (receiver_parameter_, a_parameter_list, a_return_parameter_list))
 {
 }
 
 const Type*
-Boolean::default_type () const
+UntypedBoolean::default_type () const
 {
   return &named_bool;
 }
 
 const Type*
-Rune::default_type () const
+UntypedRune::default_type () const
 {
   return &named_rune;
 }
 
 const Type*
-Integer::default_type () const
+UntypedInteger::default_type () const
 {
   return &named_int;
 }
 
 const Type*
-Float::default_type () const
+UntypedFloat::default_type () const
 {
   return &named_float64;
 }
 
 const Type*
-Complex::default_type () const
+UntypedComplex::default_type () const
 {
   return &named_complex128;
 }
 
 const Type*
-String::default_type () const
+UntypedString::default_type () const
 {
   return &named_string;
 }
@@ -1411,7 +1425,7 @@ assignable (const Type* from, const Value& from_value, const Type* to)
 
   // TODO:  T is an interface type and x implements T.
 
-  if (type_cast<Nil> (from) &&
+  if (type_cast<UntypedNil> (from) &&
       (type_cast<Pointer> (to->underlying_type ()) ||
        type_cast<Function> (to->underlying_type ()) ||
        type_cast<Slice> (to->underlying_type ())
@@ -1439,19 +1453,19 @@ NamedType::find_callable (const std::string& name) const
       return m;
     }
 
-  Initializer* i = this->find_initializer (name);
+  decl::Initializer* i = this->find_initializer (name);
   if (i)
     {
       return i;
     }
 
-  Getter* g = this->find_getter (name);
+  decl::Getter* g = this->find_getter (name);
   if (g)
     {
       return g;
     }
 
-  Reaction* r = this->find_reaction (name);
+  decl::Reaction* r = this->find_reaction (name);
   if (r)
     {
       return r;
@@ -1583,10 +1597,10 @@ bool is_untyped_numeric (const Type* type)
 {
   switch (type->underlying_kind ())
     {
-    case Rune_Kind:
-    case Integer_Kind:
-    case Float_Kind:
-    case Complex_Kind:
+    case Untyped_Rune_Kind:
+    case Untyped_Integer_Kind:
+    case Untyped_Float_Kind:
+    case Untyped_Complex_Kind:
       return true;
     default:
       return false;
@@ -1612,10 +1626,10 @@ bool is_any_numeric (const Type* type)
     case Uint_Kind:
     case Int_Kind:
     case Uintptr_Kind:
-    case Rune_Kind:
-    case Integer_Kind:
-    case Float_Kind:
-    case Complex_Kind:
+    case Untyped_Rune_Kind:
+    case Untyped_Integer_Kind:
+    case Untyped_Float_Kind:
+    case Untyped_Complex_Kind:
       return true;
     default:
       return false;
@@ -1675,9 +1689,9 @@ bool orderable (const Type* type)
     case Int_Kind:
     case Uintptr_Kind:
     case String_Kind:
-    case Rune_Kind:
-    case Integer_Kind:
-    case Float_Kind:
+    case Untyped_Rune_Kind:
+    case Untyped_Integer_Kind:
+    case Untyped_Float_Kind:
     case Untyped_String_Kind:
       return true;
     default:
@@ -1704,10 +1718,10 @@ bool arithmetic (const Type* type)
     case Uint_Kind:
     case Int_Kind:
     case Uintptr_Kind:
-    case Rune_Kind:
-    case Integer_Kind:
-    case Float_Kind:
-    case Complex_Kind:
+    case Untyped_Rune_Kind:
+    case Untyped_Integer_Kind:
+    case Untyped_Float_Kind:
+    case Untyped_Complex_Kind:
       return true;
     default:
       return false;
@@ -1729,8 +1743,8 @@ bool integral (const Type* type)
     case Uint_Kind:
     case Int_Kind:
     case Uintptr_Kind:
-    case Rune_Kind:
-    case Integer_Kind:
+    case Untyped_Rune_Kind:
+    case Untyped_Integer_Kind:
       return true;
     default:
       return false;
@@ -1744,7 +1758,7 @@ bool is_typed_boolean (const Type* type)
 
 bool is_untyped_boolean (const Type* type)
 {
-  return type->underlying_kind () == Boolean_Kind;
+  return type->underlying_kind () == Untyped_Boolean_Kind;
 }
 
 bool is_any_boolean (const Type* type)
@@ -1788,32 +1802,31 @@ NamedType named_uint ("uint", Uint::instance ());
 NamedType named_int ("int", Int::instance ());
 NamedType named_uintptr ("uintptr", Uintptr::instance ());
 
-NamedType named_string ("string", StringU::instance ());
+NamedType named_string ("string", String::instance ());
 
 NamedType named_file_descriptor ("FileDescriptor", FileDescriptor::instance ());
 NamedType named_timespec ("timespec", (new Struct ())->append_field (NULL, false, "tv_sec", &named_uint64, TagSet ())->append_field (NULL, false, "tv_nsec", &named_uint64, TagSet ()));
 
-decl::ParameterSymbol* Function::GetParameter (const std::string& name) const
+decl::ParameterSymbol* FunctionBase::get_parameter (const std::string& name) const
 {
   return parameter_list->find (name);
 }
 
-decl::ParameterSymbol* Function::GetReturnParameter () const
+decl::ParameterSymbol* FunctionBase::get_return_parameter (const std::string& name) const
 {
-  return return_parameter_list->at (0);
+  return return_parameter_list->find (name);
 }
 
 void Interface::print (std::ostream& out) const
 {
-  std::stringstream ss;
-  ss << "interface {";
+  out << "interface {";
   for (MethodsType::const_iterator pos = methods.begin (), limit = methods.end ();
        pos != limit;
        ++pos)
     {
-      ss << pos->first << ' ' << *pos->second << ';';
+      out << pos->first << ' ' << *pos->second << ';';
     }
-  ss << '}';
+  out << '}';
 }
 
 void Map::print (std::ostream& out) const
@@ -1846,10 +1859,10 @@ const Type* Arithmetic::pick (const Type* left_type, const Type* right_type)
         }
       break;
 
-    case Rune_Kind:
-    case Integer_Kind:
-    case Float_Kind:
-    case Complex_Kind:
+    case Untyped_Rune_Kind:
+    case Untyped_Integer_Kind:
+    case Untyped_Float_Kind:
+    case Untyped_Complex_Kind:
       if (is_untyped_numeric (right_type))
         {
           return Choose (left_type, right_type);
@@ -1884,10 +1897,10 @@ const Type* Integral::pick (const Type* left_type, const Type* right_type)
         }
       break;
 
-    case Rune_Kind:
-    case Integer_Kind:
-      if (right_type->underlying_kind () == Rune_Kind ||
-          right_type->underlying_kind () == Integer_Kind)
+    case Untyped_Rune_Kind:
+    case Untyped_Integer_Kind:
+      if (right_type->underlying_kind () == Untyped_Rune_Kind ||
+          right_type->underlying_kind () == Untyped_Integer_Kind)
         {
           return Choose (left_type, right_type);
         }
@@ -1904,8 +1917,8 @@ const type::Type* Comparable::pick (const type::Type* left_type, const type::Typ
 {
   switch (left_type->underlying_kind ())
     {
-    case Nil_Kind:
-    case Boolean_Kind:
+    case Untyped_Nil_Kind:
+    case Untyped_Boolean_Kind:
     case Untyped_String_Kind:
     case Bool_Kind:
     case Uint8_Kind:
@@ -1931,10 +1944,10 @@ const type::Type* Comparable::pick (const type::Type* left_type, const type::Typ
         }
       break;
 
-    case Rune_Kind:
-    case Integer_Kind:
-    case Float_Kind:
-    case Complex_Kind:
+    case Untyped_Rune_Kind:
+    case Untyped_Integer_Kind:
+    case Untyped_Float_Kind:
+    case Untyped_Complex_Kind:
       if (is_untyped_numeric (right_type))
         {
           return Choose (left_type, right_type);
@@ -1973,12 +1986,12 @@ const type::Type* Orderable::pick (const type::Type* left_type, const type::Type
         }
       break;
 
-    case Rune_Kind:
-    case Integer_Kind:
-    case Float_Kind:
-      if (right_type->underlying_kind () == Rune_Kind ||
-          right_type->underlying_kind () == Integer_Kind ||
-          right_type->underlying_kind () == Float_Kind)
+    case Untyped_Rune_Kind:
+    case Untyped_Integer_Kind:
+    case Untyped_Float_Kind:
+      if (right_type->underlying_kind () == Untyped_Rune_Kind ||
+          right_type->underlying_kind () == Untyped_Integer_Kind ||
+          right_type->underlying_kind () == Untyped_Float_Kind)
         {
           return Choose (left_type, right_type);
         }
@@ -1994,9 +2007,9 @@ const type::Type* Orderable::pick (const type::Type* left_type, const type::Type
 const type::Type* Logical::pick (const type::Type* left_type, const type::Type* right_type)
 {
   if ((left_type->underlying_kind () == Bool_Kind ||
-       left_type->underlying_kind () == Boolean_Kind) &&
+       left_type->underlying_kind () == Untyped_Boolean_Kind) &&
       (right_type->underlying_kind () == Bool_Kind ||
-       right_type->underlying_kind () == Boolean_Kind))
+       right_type->underlying_kind () == Untyped_Boolean_Kind))
     {
       return Choose (left_type, right_type);
     }
@@ -2004,4 +2017,444 @@ const type::Type* Logical::pick (const type::Type* left_type, const type::Type* 
   return NULL;
 }
 
+BaseType::BaseType (const Type* a_base_type)
+  : base_type (a_base_type)
+{ }
+
+void Pointer::print (std::ostream& out) const
+{
+  out << "*" << *base_type;
+}
+size_t Pointer::alignment () const
+{
+  return sizeof (ValueType);
+}
+size_t Pointer::size () const
+{
+  return sizeof (ValueType);
+}
+Kind Pointer::kind () const
+{
+  return Pointer_Kind;
+}
+Field* Pointer::find_field_i (const std::string& name) const
+{
+  return base_type->find_field (name);
+}
+decl::Callable* Pointer::find_callable (const std::string& name) const
+{
+  return base_type->find_callable (name);
+}
+const Pointer* Pointer::to_pointer () const
+{
+  return this;
+}
+Pointer::Pointer (const Type* base) : BaseType (base) { }
+void Slice::print (std::ostream& out) const
+{
+  out << "[]" << *base_type;
+}
+size_t Slice::alignment () const
+{
+  return sizeof (void*);
+}
+size_t Slice::size () const
+{
+  return sizeof (ValueType);
+}
+Kind Slice::kind () const
+{
+  return Slice_Kind;
+}
+size_t Slice::unit_size () const
+{
+  return util::align_up (base_type->size (), base_type->alignment ());
+}
+const Slice* Slice::to_slice () const
+{
+  return this;
+}
+Slice::Slice (const Type* base) : BaseType (base) { }
+size_t Array::alignment () const
+{
+  return base_type->alignment ();
+}
+size_t Array::size () const
+{
+  return unit_size () * dimension;
+}
+Kind Array::kind () const
+{
+  return Array_Kind;
+}
+const Array* Array::to_array () const
+{
+  return this;
+}
+size_t Array::unit_size () const
+{
+  return util::align_up (base_type->size (), base_type->alignment ());
+}
+Array::Array (Int::ValueType d, const Type* base) : BaseType (base), dimension (d) { }
+
+size_t Map::alignment () const
+{
+  return 0;
+}
+size_t Map::size () const
+{
+  return 0;
+}
+Kind Map::kind () const
+{
+  return Map_Kind;
+}
+const Map* Map::to_map () const
+{
+  return this;
+}
+
+Map::Map (const Type* a_key_type,
+          const Type* a_value_type)
+  : key_type (a_key_type)
+  , value_type (a_value_type)
+{ }
+
+const Map* Map::make (const Type* key_type, const Type* value_type)
+{
+  MapType::const_iterator pos = maps_.find (std::make_pair (key_type, value_type));
+  if (pos == maps_.end ())
+    {
+      pos = maps_.insert (std::make_pair (std::make_pair (key_type, value_type), new Map (key_type, value_type))).first;
+    }
+  return pos->second;
+}
+
+Map::MapType Map::maps_;
+
+void Heap::print (std::ostream& out) const
+{
+  out << "heap " << *base_type;
+}
+size_t Heap::alignment () const
+{
+  return 0;
+}
+size_t Heap::size () const
+{
+  return 0;
+}
+Kind Heap::kind () const
+{
+  return Heap_Kind;
+}
+const Heap* Heap::to_heap () const
+{
+  return this;
+}
+Heap::Heap (const Type* base) : BaseType (base) { }
+
+size_t Struct::alignment () const
+{
+  return alignment_;
+}
+size_t Struct::size () const
+{
+  return offset_;
+}
+Kind Struct::kind () const
+{
+  return Struct_Kind;
+}
+const Struct* Struct::to_struct () const
+{
+  return this;
+}
+Struct::const_iterator Struct::begin () const
+{
+  return fields_.begin ();
+}
+Struct::const_iterator Struct::end () const
+{
+  return fields_.end ();
+}
+size_t Struct::field_count () const
+{
+  return fields_.size ();
+}
+void
+Component::print (std::ostream& out) const
+{
+  out << "component {";
+  FieldsType::const_iterator pos = fields_.begin (), limit = fields_.end ();
+  ++pos;
+  for (; pos != limit; ++pos)
+    {
+      Field* f = *pos;
+      out << f->name << ' ' << *(f->type) << ';';
+    }
+  out << '}';
+}
+Kind Component::kind () const
+{
+  return Component_Kind;
+}
+FunctionBase::FunctionBase (const decl::ParameterList* a_parameter_list,
+                            const decl::ParameterList* a_return_parameter_list)
+  : parameter_list (a_parameter_list)
+  , return_parameter_list (a_return_parameter_list)
+{ }
+
+size_t FunctionBase::alignment () const
+{
+  return sizeof (void*);
+}
+size_t Function::size () const
+{
+  return sizeof (void*);
+}
+Kind Function::kind () const
+{
+  return type::Function_Kind;
+}
+const Function* Function::to_function () const
+{
+  return this;
+}
+
+size_t PushPort::size () const
+{
+  return sizeof (void*);
+}
+size_t PullPort::size () const
+{
+  return sizeof (pull_port_t);
+}
+PushPort::PushPort (const decl::ParameterList* a_parameter_list,
+                    const decl::ParameterList* a_return_parameter_list)
+  : FunctionBase (a_parameter_list, a_return_parameter_list)
+{ }
+PullPort::PullPort (const decl::ParameterList* a_parameter_list,
+                    const decl::ParameterList* a_return_parameter_list)
+  : FunctionBase (a_parameter_list, a_return_parameter_list)
+{ }
+Function::Function (const decl::ParameterList* a_parameter_list,
+                    const decl::ParameterList* a_return_parameter_list)
+  : FunctionBase (a_parameter_list, a_return_parameter_list)
+{ }
+Kind PushPort::kind () const
+{
+  return type::Push_Port_Kind;
+}
+Kind PullPort::kind () const
+{
+  return type::Pull_Port_Kind;
+}
+const PushPort* PushPort::to_push_port () const
+{
+  return this;
+}
+const PullPort* PullPort::to_pull_port () const
+{
+  return this;
+}
+
+Method::Method (const NamedType* a_named_type,
+                decl::ParameterSymbol* a_receiver_parameter,
+                const decl::ParameterList* a_parameter_list,
+                const decl::ParameterList* a_return_parameter_list)
+  : MethodBase (a_named_type, a_receiver_parameter, a_parameter_list, a_return_parameter_list)
+{ }
+
+Initializer::Initializer (const NamedType* a_named_type,
+                          decl::ParameterSymbol* a_receiver_parameter,
+                          const decl::ParameterList* a_parameter_list,
+                          const decl::ParameterList* a_return_parameter_list)
+  : MethodBase (a_named_type, a_receiver_parameter, a_parameter_list, a_return_parameter_list)
+{ }
+
+Getter::Getter (const NamedType* a_named_type,
+                decl::ParameterSymbol* a_receiver_parameter,
+                const decl::ParameterList* a_parameter_list,
+                const decl::ParameterList* a_return_parameter_list)
+  : MethodBase (a_named_type, a_receiver_parameter, a_parameter_list, a_return_parameter_list)
+{ }
+
+Reaction::Reaction (const NamedType* a_named_type,
+                    decl::ParameterSymbol* a_receiver_parameter,
+                    const decl::ParameterList* a_parameter_list,
+                    const decl::ParameterList* a_return_parameter_list)
+  : MethodBase (a_named_type, a_receiver_parameter, a_parameter_list, a_return_parameter_list)
+{ }
+
+Kind Method::kind () const
+{
+  return Method_Kind;
+}
+
+Kind Initializer::kind () const
+{
+  return Initializer_Kind;
+}
+
+Kind Getter::kind () const
+{
+  return Getter_Kind;
+}
+
+Kind Reaction::kind () const
+{
+  return Reaction_Kind;
+}
+
+Interface::Interface (decl::Package* a_package)
+  : package (a_package)
+{ }
+
+size_t Interface::alignment () const
+{
+  return 0;
+}
+size_t Interface::size () const
+{
+  return 0;
+}
+Kind Interface::kind () const
+{
+  return Interface_Kind;
+}
+const Interface* Interface::to_interface () const
+{
+  return this;
+}
+
+size_t Untyped::alignment () const
+{
+  return 0;
+}
+size_t Untyped::size () const
+{
+  return 0;
+}
+
+Kind UntypedNil::kind () const
+{
+  return Untyped_Nil_Kind;
+}
+
+void UntypedNil::print (std::ostream& out) const
+{
+  out << "<<nil>>";
+}
+
+UntypedNil::UntypedNil () { }
+
+Kind UntypedBoolean::kind () const
+{
+  return Untyped_Boolean_Kind;
+}
+
+void UntypedBoolean::print (std::ostream& out) const
+{
+  out << "<<boolean>>";
+}
+
+UntypedBoolean::UntypedBoolean () { }
+
+Kind UntypedRune::kind () const
+{
+  return Untyped_Rune_Kind;
+}
+
+void UntypedRune::print (std::ostream& out) const
+{
+  out << "<<rune>>";
+}
+
+UntypedRune::UntypedRune () { }
+
+Kind UntypedInteger::kind () const
+{
+  return Untyped_Integer_Kind;
+}
+
+void UntypedInteger::print (std::ostream& out) const
+{
+  out << "<<integer>>";
+}
+
+UntypedInteger::UntypedInteger () { }
+
+Kind UntypedFloat::kind () const
+{
+  return Untyped_Float_Kind;
+}
+
+void UntypedFloat::print (std::ostream& out) const
+{
+  out << "<<float>>";
+}
+
+UntypedFloat::UntypedFloat () { }
+
+Kind UntypedComplex::kind () const
+{
+  return Untyped_Complex_Kind;
+}
+
+void UntypedComplex::print (std::ostream& out) const
+{
+  out << "<<complex>>";
+}
+
+UntypedComplex::UntypedComplex () { }
+
+Kind UntypedString::kind () const
+{
+  return Untyped_String_Kind;
+}
+
+void UntypedString::print (std::ostream& out) const
+{
+  out << "<<string>>";
+}
+
+UntypedString::UntypedString () { }
+
+  void PolymorphicFunction::print (std::ostream& out) const
+  {
+    out << "<<polymorphic function>>";
+  }
+  size_t PolymorphicFunction::alignment () const
+  {
+    return 0;
+  }
+  size_t PolymorphicFunction::size () const
+  {
+    return 0;
+  }
+  Kind PolymorphicFunction::kind () const
+  {
+    return Polymorphic_Function_Kind;
+  }
+  PolymorphicFunction::PolymorphicFunction () { }
+
+  void FileDescriptor::print (std::ostream& out) const
+  {
+    out << "<FileDescriptor>";
+  }
+  size_t FileDescriptor::alignment () const
+  {
+    return sizeof (void*);
+  }
+  size_t FileDescriptor::size () const
+  {
+    return sizeof (void*);
+  }
+  Kind FileDescriptor::kind () const
+  {
+    return File_Descriptor_Kind;
+  }
+
+  FileDescriptor::FileDescriptor () { }
 }

@@ -42,7 +42,7 @@ main (int argc, char** argv)
 
   {
     MyTemplateSymbol ts ("id", Location ());
-    tap.tassert ("TemplateSymbol::symbol_type", ts.symbol_type () == type::Template::instance ());
+    tap.tassert ("TemplateSymbol::symbol_type", ts.symbol_type () == type::PolymorphicFunction::instance ());
   }
 
   tap.print_plan ();

@@ -255,7 +255,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.eval.receiver_access = std::max (node.eval.receiver_access, node.expr->eval.receiver_access);
     if (node.method_type != NULL &&
         node.expr->eval.receiver_state &&
-        type_contains_pointer (node.method_type->receiver_type ()) &&
+        type_contains_pointer (node.method_type->receiver_parameter->type) &&
         node.method_type->receiver_parameter->dereference_mutability == Mutable)
       {
         node.eval.receiver_access = AccessWrite;

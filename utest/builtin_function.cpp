@@ -28,7 +28,7 @@ main (int argc, char** argv)
 
   {
     Location loc;
-    const type::Function* func = new type::Function (type::Function::FUNCTION, new ParameterList (loc), new ParameterList (loc));
+    const type::Function* func = new type::Function (new ParameterList (loc), new ParameterList (loc));
     MyBuiltinFunction bif ("func", loc, func);
     tap.tassert ("BuiltinFunction::BuiltinFunction ()",
                  bif.identifier == "func" &&
@@ -44,7 +44,7 @@ main (int argc, char** argv)
   {
     TestVisitor<SymbolVisitor, BuiltinFunction> visitor;
     Location loc;
-    const type::Function* func = new type::Function (type::Function::FUNCTION, new ParameterList (loc), new ParameterList (loc));
+    const type::Function* func = new type::Function (new ParameterList (loc), new ParameterList (loc));
     MyBuiltinFunction bif ("func", loc, func);
     bif.accept (visitor);
     tap.tassert ("BuiltinFunction::accept ()",
@@ -54,7 +54,7 @@ main (int argc, char** argv)
   {
     TestConstVisitor<ConstSymbolVisitor, BuiltinFunction> visitor;
     Location loc;
-    const type::Function* func = new type::Function (type::Function::FUNCTION, new ParameterList (loc), new ParameterList (loc));
+    const type::Function* func = new type::Function (new ParameterList (loc), new ParameterList (loc));
     MyBuiltinFunction bif ("func", loc, func);
     bif.accept (visitor);
     tap.tassert ("BuiltinFunction::accept (Const)",

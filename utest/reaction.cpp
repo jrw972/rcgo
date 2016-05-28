@@ -50,9 +50,9 @@ main (int argc, char** argv)
     ast::Node* body = new ast::ListStatement (1);
     const std::string name ("myreaction");
     ParameterList* parameter_list = new ParameterList (loc);
-    const type::Method* reaction_type = new type::Method (type::Method::METHOD, NULL, receiver, parameter_list, new ParameterList (loc));
+    const type::Reaction* reaction_type = new type::Reaction (NULL, receiver, parameter_list, new ParameterList (loc));
 
-    Reaction r (body, name, reaction_type);
+    decl::Reaction r (body, name, reaction_type);
     tap.tassert ("Reaction::Reaction ()",
                  r.operation == NULL
                  && r.body == body
@@ -74,9 +74,9 @@ main (int argc, char** argv)
     ParameterSymbol* iota = ParameterSymbol::make (loc, "there", &named_int, Immutable, Immutable);
     ast::Node* body = new ast::ListStatement (1);
     const std::string name ("myreaction");
-    const type::Method* reaction_type = new type::Method (type::Method::METHOD, NULL, receiver, new ParameterList (loc), new ParameterList (loc));
+    const type::Reaction* reaction_type = new type::Reaction (NULL, receiver, new ParameterList (loc), new ParameterList (loc));
 
-    Reaction r (body, name, reaction_type, iota, 5);
+    decl::Reaction r (body, name, reaction_type, iota, 5);
     tap.tassert ("Reaction::Reaction (dimensioned)",
                  r.operation == NULL &&
                  r.body == body &&
@@ -90,7 +90,7 @@ main (int argc, char** argv)
   {
     MockOperation op;
     MockExecutor exec;
-    Reaction r (NULL, "r", NULL);
+    decl::Reaction r (NULL, "r", NULL);
     r.operation = &op;
     r.call (exec);
     tap.tassert ("Reaction::call", op.was_executed);

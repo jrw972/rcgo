@@ -336,13 +336,18 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
           {
             node.operation = new FunctionCall (node.callable, node.args->operation);
           }
-        else if (node.method_type)
+        else if (node.method_type || node.initializer_type || node.getter_type || node.reaction_type)
           {
+            const MethodBase* mb = node.method_type;
+            mb = mb ? mb : node.initializer_type;
+            mb = mb ? mb : node.getter_type;
+            mb = mb ? mb : node.reaction_type;
+
             node.expr->accept (*this);
             Node* sb = node_cast<SelectExpr> (node.expr)->base;
             if (sb->eval.type->underlying_type ()->to_pointer ())
               {
-                if (node.method_type->receiver_type ()->underlying_type ()->to_pointer ())
+                if (mb->receiver_parameter->type->underlying_type ()->to_pointer ())
                   {
                     assert (sb->eval.expression_kind != UnknownExpressionKind);
                     if (sb->eval.expression_kind == VariableExpressionKind)
@@ -362,7 +367,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
                     assert (sb->eval.expression_kind != UnknownExpressionKind);
                     if (sb->eval.expression_kind == VariableExpressionKind)
                       {
-                        node.operation = new MethodCall (node.callable, new Load (new Load (sb->operation, sb->eval.type), node.method_type->receiver_type ()), node.args->operation);
+                        node.operation = new MethodCall (node.callable, new Load (new Load (sb->operation, sb->eval.type), mb->receiver_parameter->type), node.args->operation);
                       }
                     else
                       {
@@ -372,7 +377,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
               }
             else
               {
-                if (node.method_type->receiver_type ()->underlying_type ()->to_pointer ())
+                if (mb->receiver_parameter->type->underlying_type ()->to_pointer ())
                   {
                     assert (sb->eval.expression_kind != UnknownExpressionKind);
                     if (sb->eval.expression_kind == VariableExpressionKind)
@@ -407,12 +412,12 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
       }
     else
       {
-        if (node.function_type)
+        if (node.pull_port_type)
           {
             node.expr->accept (*this);
             Operation* r = node.expr->operation;
             r = load (node.expr, r);
-            node.operation = new DynamicFunctionCall (node.function_type, r, node.args->operation);
+            node.operation = new DynamicPullPortCall (node.pull_port_type, r, node.args->operation);
           }
         else if (node.method_type)
           {
