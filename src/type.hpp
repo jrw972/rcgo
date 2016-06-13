@@ -78,7 +78,6 @@ struct Type
   Type ();
   virtual ~Type ();
 
-  virtual void accept (Visitor& visitor) const = 0;
   virtual Kind kind () const = 0;
 
   // For working with the type under a named type
@@ -86,7 +85,7 @@ struct Type
   virtual Kind underlying_kind () const;
   // Debugging
   virtual void print (std::ostream& out = std::cout) const = 0;
-  std::string to_string () const;
+  std::string to_error_string () const;
   // Allocation
   virtual size_t alignment () const = 0;
   virtual size_t size () const = 0;
@@ -97,6 +96,8 @@ struct Type
   bool is_unnamed () const;
   bool is_named () const;
   bool is_numeric () const;
+  bool contains_pointer () const;
+  bool is_typed_integer () const;
   // Get a type making this type the base type
   const Pointer* get_pointer () const;
   const Slice* get_slice () const;
@@ -123,13 +124,18 @@ struct Type
   virtual const Pointer* to_pointer () const;
   virtual const Function* to_function () const;
   virtual const PushPort* to_push_port () const;
+  virtual const Reaction* to_reaction () const;
   virtual const PullPort* to_pull_port () const;
   virtual const Interface* to_interface () const;
   virtual const Map* to_map () const;
   virtual const Heap* to_heap () const;
+  virtual const Method* to_method () const;
+  virtual const Initializer* to_initializer () const;
+  virtual const Getter* to_getter () const;
 
 protected:
   virtual Field* find_field_i (const std::string& name) const;
+  virtual bool contains_pointer_i () const;
 
 private:
   const Pointer* pointer_;
@@ -154,7 +160,6 @@ struct NamedType : public Type
   NamedType (const std::string& name,
              const Type* underlyingType);
 
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   void underlying_type (const Type* u);
   const Type* underlying_type () const;
@@ -197,10 +202,8 @@ private:
 
 // Void represents the absence of a type
 // TODO:  Remove Void.
-class Void : public Type
+struct Void : public Type
 {
-public:
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   size_t alignment () const;
   size_t size () const;
@@ -211,11 +214,9 @@ private:
 };
 
 template <typename T, typename S, Kind k>
-class Scalar : public Type
+struct Scalar : public Type
 {
-public:
   typedef T ValueType;
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const
   {
     out << S () ();
@@ -289,8 +290,18 @@ typedef Scalar<long, IntString, Int_Kind> Int;
 STRING_RETURNER(UintptrString, "<uintptr>");
 typedef Scalar<ptrdiff_t, UintptrString, Uintptr_Kind> Uintptr;
 
-STRING_RETURNER(StringString, "<string>");
-typedef Scalar<StringRep, StringString, String_Kind> String;
+struct String : public Type
+{
+  typedef StringRep ValueType;
+  void print (std::ostream& out = std::cout) const;
+  size_t alignment () const;
+  size_t size () const;
+  virtual Kind kind () const;
+  static const String* instance ();
+private:
+  bool contains_pointer_i () const;
+  String ();
+};
 
 // Helper class for types that have a base type.
 struct BaseType
@@ -299,11 +310,9 @@ struct BaseType
   const Type* const base_type;
 };
 
-class Pointer : public Type, public BaseType
+struct Pointer : public Type, public BaseType
 {
-public:
   typedef void* ValueType;
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   size_t alignment () const;
   size_t size () const;
@@ -312,20 +321,19 @@ public:
   virtual decl::Callable* find_callable (const std::string& name) const;
   virtual const Pointer* to_pointer () const;
 private:
+  virtual bool contains_pointer_i () const;
   friend class Type;
   Pointer (const Type* base);
 };
 
-class Slice : public Type, public BaseType
+struct Slice : public Type, public BaseType
 {
-public:
   struct ValueType
   {
     void* ptr;
     Uint::ValueType length;
     Uint::ValueType capacity;
   };
-  virtual void accept (Visitor& visitor) const;
   virtual void print (std::ostream& out = std::cout) const;
   virtual size_t alignment () const;
   virtual size_t size () const;
@@ -333,14 +341,13 @@ public:
   virtual const Slice* to_slice () const;
   size_t unit_size () const;
 private:
+  virtual bool contains_pointer_i () const;
   friend class Type;
   Slice (const Type* base);
 };
 
-class Array : public Type, public BaseType
+struct Array : public Type, public BaseType
 {
-public:
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   size_t alignment () const;
   size_t size () const;
@@ -349,6 +356,7 @@ public:
   const Int::ValueType dimension;
   size_t unit_size () const;
 private:
+  virtual bool contains_pointer_i () const;
   friend class Type;
   Array (Int::ValueType d, const Type* base);
 };
@@ -357,7 +365,6 @@ struct Map : public Type
 {
   typedef std::map<std::pair<const Type*, const Type*>, const Map*> MapType;
   static const Map* make (const Type* key_type, const Type* value_type);
-  virtual void accept (Visitor& visitor) const;
   virtual void print (std::ostream& out = std::cout) const;
   virtual size_t alignment () const;
   virtual size_t size () const;
@@ -375,13 +382,13 @@ private:
 
 struct Heap : public Type, public BaseType
 {
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   size_t alignment () const;
   size_t size () const;
   virtual Kind kind () const;
   virtual const Heap* to_heap () const;
 private:
+  virtual bool contains_pointer_i () const;
   friend class Type;
   Heap (const Type* base);
 };
@@ -391,7 +398,6 @@ struct Struct : public Type
   typedef std::vector<Field*> FieldsType;
   typedef FieldsType::const_iterator const_iterator;
   Struct ();
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   size_t alignment () const;
   size_t size () const;
@@ -409,6 +415,7 @@ struct Struct : public Type
 protected:
   FieldsType fields_;
 private:
+  virtual bool contains_pointer_i () const;
   ptrdiff_t offset_;
   size_t alignment_;
 };
@@ -416,7 +423,6 @@ private:
 struct Component : public Struct
 {
   Component (decl::Package* package);
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   virtual Kind kind () const;
 };
@@ -436,7 +442,6 @@ struct Function : public FunctionBase
 {
   Function (const decl::ParameterList* a_parameter_list,
             const decl::ParameterList* a_return_parameter_list);
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   size_t size () const;
   virtual Kind kind () const;
@@ -447,7 +452,6 @@ struct PushPort : public FunctionBase
 {
   PushPort (const decl::ParameterList* a_parameter_list,
             const decl::ParameterList* a_return_parameter_list);
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   size_t size () const;
   virtual Kind kind () const;
@@ -458,7 +462,6 @@ struct PullPort : public FunctionBase
 {
   PullPort (const decl::ParameterList* a_parameter_list,
             const decl::ParameterList* a_return_parameter_list);
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   size_t size () const;
   virtual Kind kind () const;
@@ -496,9 +499,9 @@ struct Method : public MethodBase
           decl::ParameterSymbol* a_receiver_parameter,
           const decl::ParameterList* a_parameter_list,
           const decl::ParameterList* a_return_parameter_list);
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   virtual Kind kind () const;
+  virtual const Method* to_method () const;
 };
 
 struct Initializer : public MethodBase
@@ -507,9 +510,9 @@ struct Initializer : public MethodBase
                decl::ParameterSymbol* a_receiver_parameter,
                const decl::ParameterList* a_parameter_list,
                const decl::ParameterList* a_return_parameter_list);
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   virtual Kind kind () const;
+  virtual const Initializer* to_initializer () const;
 };
 
 struct Getter : public MethodBase
@@ -518,9 +521,9 @@ struct Getter : public MethodBase
           decl::ParameterSymbol* a_receiver_parameter,
           const decl::ParameterList* a_parameter_list,
           const decl::ParameterList* a_return_parameter_list);
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   virtual Kind kind () const;
+  virtual const Getter* to_getter () const;
 };
 
 struct Reaction : public MethodBase
@@ -529,15 +532,14 @@ struct Reaction : public MethodBase
             decl::ParameterSymbol* a_receiver_parameter,
             const decl::ParameterList* a_parameter_list,
             const decl::ParameterList* a_return_parameter_list);
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   virtual Kind kind () const;
+  virtual const Reaction* to_reaction () const;
 };
 
 struct Interface : public Type
 {
   Interface (decl::Package* a_package);
-  virtual void accept (Visitor& visitor) const;
   virtual void print (std::ostream& out = std::cout) const;
   virtual size_t alignment () const;
   virtual size_t size () const;
@@ -558,7 +560,6 @@ struct Untyped : public Type
 struct UntypedNil : public Untyped
 {
   virtual Kind kind () const;
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   static const UntypedNil* instance ();
 private:
@@ -570,7 +571,6 @@ struct UntypedBoolean : public Untyped
   typedef bool ValueType;
   virtual Kind kind () const;
   virtual const Type* default_type () const;
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   static const UntypedBoolean* instance ();
 private:
@@ -582,7 +582,6 @@ struct UntypedRune : public Untyped
   typedef int32_t ValueType;
   virtual Kind kind () const;
   virtual const Type* default_type () const;
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   static const UntypedRune* instance ();
 private:
@@ -594,7 +593,6 @@ struct UntypedInteger : public Untyped
   typedef long long ValueType;
   virtual Kind kind () const;
   virtual const Type* default_type () const;
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   static const UntypedInteger* instance ();
 private:
@@ -606,7 +604,6 @@ struct UntypedFloat : public Untyped
   typedef double ValueType;
   virtual Kind kind () const;
   virtual const Type* default_type () const;
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   static const UntypedFloat* instance ();
 private:
@@ -618,7 +615,6 @@ struct UntypedComplex : public Untyped
   typedef CU ValueType;
   virtual Kind kind () const;
   virtual const Type* default_type () const;
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   static const UntypedComplex* instance ();
 private:
@@ -630,7 +626,6 @@ struct UntypedString : public Untyped
   typedef StringRep ValueType;
   virtual Kind kind () const;
   virtual const Type* default_type () const;
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   static const UntypedString* instance ();
 private:
@@ -639,7 +634,6 @@ private:
 
 struct PolymorphicFunction : public Type
 {
-  void accept (Visitor& visitor) const;
   virtual void print (std::ostream& out = std::cout) const;
   virtual size_t alignment () const;
   virtual size_t size () const;
@@ -651,549 +645,15 @@ private:
 
 struct FileDescriptor : public Type
 {
-  void accept (Visitor& visitor) const;
   void print (std::ostream& out = std::cout) const;
   size_t alignment () const;
   size_t size () const;
   virtual Kind kind () const;
   static const FileDescriptor* instance ();
 private:
+  virtual bool contains_pointer_i () const;
   FileDescriptor ();
 };
-
-struct Visitor
-{
-  virtual ~Visitor () { }
-  virtual void visit (const Array& type) = 0;
-  virtual void visit (const Bool& type) = 0;
-  virtual void visit (const Complex128& type) = 0;
-  virtual void visit (const Complex64& type) = 0;
-  virtual void visit (const Component& type) = 0;
-  virtual void visit (const FileDescriptor& type) = 0;
-  virtual void visit (const Float32& type) = 0;
-  virtual void visit (const Float64& type) = 0;
-  virtual void visit (const Function& type) = 0;
-  virtual void visit (const Getter& type) = 0;
-  virtual void visit (const Heap& type) = 0;
-  virtual void visit (const Initializer& type) = 0;
-  virtual void visit (const Int& type) = 0;
-  virtual void visit (const Int16& type) = 0;
-  virtual void visit (const Int32& type) = 0;
-  virtual void visit (const Int64& type) = 0;
-  virtual void visit (const Int8& type) = 0;
-  virtual void visit (const Interface& type) = 0;
-  virtual void visit (const Map& type) = 0;
-  virtual void visit (const Method& type) = 0;
-  virtual void visit (const NamedType& type) = 0;
-  virtual void visit (const Pointer& type) = 0;
-  virtual void visit (const PullPort& type) = 0;
-  virtual void visit (const PushPort& type) = 0;
-  virtual void visit (const Reaction& type) = 0;
-  virtual void visit (const Slice& type) = 0;
-  virtual void visit (const String& type) = 0;
-  virtual void visit (const Struct& type) = 0;
-  virtual void visit (const PolymorphicFunction& type) = 0;
-  virtual void visit (const Uint& type) = 0;
-  virtual void visit (const Uint16& type) = 0;
-  virtual void visit (const Uint32& type) = 0;
-  virtual void visit (const Uint64& type) = 0;
-  virtual void visit (const Uint8& type) = 0;
-  virtual void visit (const Uintptr& type) = 0;
-  virtual void visit (const UntypedBoolean& type) = 0;
-  virtual void visit (const UntypedComplex& type) = 0;
-  virtual void visit (const UntypedFloat& type) = 0;
-  virtual void visit (const UntypedInteger& type) = 0;
-  virtual void visit (const UntypedNil& type) = 0;
-  virtual void visit (const UntypedRune& type) = 0;
-  virtual void visit (const UntypedString& type) = 0;
-  virtual void visit (const Void& type) = 0;
-};
-
-struct DefaultVisitor : public Visitor
-{
-  virtual void visit (const Array& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Map& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Interface& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Slice& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Bool& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Component& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Function& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Method& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Heap& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const FileDescriptor& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const NamedType& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Pointer& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Struct& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Int& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Int8& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Int16& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Int32& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Int64& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Uint& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Uint8& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Uint16& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Uint32& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Uint64& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Float32& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Float64& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Complex64& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Complex128& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const String& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const UntypedNil& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const UntypedBoolean& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const UntypedRune& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const UntypedInteger& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const UntypedFloat& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const UntypedComplex& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const UntypedString& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Void& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const PolymorphicFunction& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Uintptr& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const PushPort& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const PullPort& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Initializer& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Getter& type)
-  {
-    default_action (type);
-  }
-  virtual void visit (const Reaction& type)
-  {
-    default_action (type);
-  }
-
-  virtual void default_action (const Type& type) { }
-};
-
-// template <typename T, typename T1>
-// struct visitor2 : public DefaultVisitor
-// {
-//   const T1& type1;
-//   T& t;
-
-//   visitor2 (const T1& t1, T& t_) : type1 (t1), t (t_) { }
-
-//   void default_action (const Type& type)
-//   {
-//     TYPE_NOT_REACHED (type);
-//   }
-
-//   void visit (const Map& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const Interface& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const Array& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const Bool& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const Int& type2)
-//   {
-//     t (type1, type2);
-//   }
-//   void visit (const Int8& type2)
-//   {
-//     t (type1, type2);
-//   }
-//   void visit (const Int16& type2)
-//   {
-//     t (type1, type2);
-//   }
-//   void visit (const Int32& type2)
-//   {
-//     t (type1, type2);
-//   }
-//   void visit (const Int64& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const Uint& type2)
-//   {
-//     t (type1, type2);
-//   }
-//   void visit (const Uint8& type2)
-//   {
-//     t (type1, type2);
-//   }
-//   void visit (const Uint16& type2)
-//   {
-//     t (type1, type2);
-//   }
-//   void visit (const Uint32& type2)
-//   {
-//     t (type1, type2);
-//   }
-//   void visit (const Uint64& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const Float32& type2)
-//   {
-//     t (type1, type2);
-//   }
-//   void visit (const Float64& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const Complex64& type2)
-//   {
-//     t (type1, type2);
-//   }
-//   void visit (const Complex128& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const Pointer& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const Slice& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const String& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const Struct& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const UntypedBoolean& type2)
-//   {
-//     t (type1, type2);
-//   }
-//   void visit (const UntypedRune& type2)
-//   {
-//     t (type1, type2);
-//   }
-//   void visit (const UntypedInteger& type2)
-//   {
-//     t (type1, type2);
-//   }
-//   void visit (const UntypedFloat& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const UntypedString& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const UntypedNil& type2)
-//   {
-//     t (type1, type2);
-//   }
-
-//   void visit (const Function& type2)
-//   {
-//     t (type1, type2);
-//   }
-// };
-
-// template <typename T, typename T1>
-// static void doubleDispatchHelper (const T1& type1, const Type* type2, T& t)
-// {
-//   visitor2<T, T1> v (type1, t);
-//   type2->accept (v);
-// }
-
-// template <typename T>
-// struct visitor1 : public DefaultVisitor
-// {
-//   const Type* type2;
-//   T& t;
-//   visitor1 (const Type* t2, T& t_) : type2 (t2), t (t_) { }
-
-//   void default_action (const Type& type)
-//   {
-//     TYPE_NOT_REACHED (type);
-//   }
-
-//   void visit (const Map& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-
-//   void visit (const Interface& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-
-//   void visit (const Bool& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-
-//   void visit (const Int& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-//   void visit (const Int8& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-//   void visit (const Int16& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-//   void visit (const Int32& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-//   void visit (const Int64& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-
-//   void visit (const Uint& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-//   void visit (const Uint8& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-//   void visit (const Uint16& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-//   void visit (const Uint32& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-//   void visit (const Uint64& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-//   void visit (const Float32& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-//   void visit (const Float64& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-//   void visit (const Complex64& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-//   void visit (const Complex128& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-
-//   void visit (const Pointer& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-
-//   void visit (const Array& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-
-//   void visit (const String& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-
-//   void visit (const Slice& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-
-//   void visit (const Struct& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-
-//   void visit (const UntypedBoolean& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-
-//   void visit (const UntypedRune& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-//   void visit (const UntypedInteger& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-//   void visit (const UntypedFloat& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-
-//   void visit (const UntypedString& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-
-//   void visit (const UntypedNil& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-
-//   void visit (const Function& type)
-//   {
-//     doubleDispatchHelper (type, type2, t);
-//   }
-// };
-
-// template <typename T>
-// static void DoubleDispatch (const Type* type1, const Type* type2, T& t)
-// {
-//   visitor1<T> v (type2, t);
-//   type1->accept (v);
-// }
-
-// Return the type of indexing into the other type.
-const Type*
-type_index (const Type* base, const Type* index);
 
 bool
 are_identical (const Type* x, const Type* y);
@@ -1205,9 +665,6 @@ const Type*
 Choose (const Type* x, const Type* y);
 
 // True if any pointer is accessible.
-bool
-type_contains_pointer (const Type* type);
-
 bool is_typed_boolean (const Type* type);
 bool is_untyped_boolean (const Type* type);
 bool is_any_boolean (const Type* type);
@@ -1216,7 +673,6 @@ bool is_typed_string (const Type* type);
 bool is_untyped_string (const Type* type);
 bool is_any_string (const Type* type);
 
-bool is_typed_integer (const Type* type);
 bool is_typed_unsigned_integer (const Type* type);
 bool is_typed_float (const Type* type);
 bool is_typed_complex (const Type* type);
@@ -1268,41 +724,6 @@ type_is_castable (const Type* x, const Type* y);
 
 bool
 type_is_pointer_compare (const Type* left, const Type* right);
-
-// Remove a NamedType.
-const Type*
-type_strip (const Type* type);
-
-// Cast a type to a specific type.
-template<typename T>
-const T*
-type_cast (const Type * type)
-{
-  if (type == NULL) return NULL;
-
-  struct visitor : public DefaultVisitor
-  {
-    const T* retval;
-
-    visitor () : retval (NULL) { }
-
-    void visit (const T& type)
-    {
-      retval = &type;
-    }
-  };
-  visitor v;
-  type->accept (v);
-  return v.retval;
-}
-
-template<typename T>
-const T*
-type_strip_cast (const Type* type)
-{
-  if (type == NULL) return NULL;
-  return type_cast<T> (type_strip (type));
-}
 
 // Return a Pointer if a pointer to an array or NULL.
 const Pointer*

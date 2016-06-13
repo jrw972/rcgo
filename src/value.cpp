@@ -165,101 +165,59 @@ static bool to_and_back (const T& x, const type::Type* type)
 
 static void convert_numeric (Value& value, UntypedComplex::ValueType x, const type::Type* type)
 {
-  struct visitor : public type::DefaultVisitor
-  {
-    Value& value;
-    UntypedComplex::ValueType x;
-
-    visitor (Value& v, UntypedComplex::ValueType z) : value (v), x (z) { }
-
-    void default_action (const type::Type& type)
+  switch (type->kind ())
     {
-      TYPE_NOT_REACHED (type);
-    }
-
-    void visit (const Uint8& type)
-    {
+    case Uint8_Kind:
       value.uint8_value = x;
-    }
-
-    void visit (const Uint16& type)
-    {
+      break;
+    case Uint16_Kind:
       value.uint16_value = x;
-    }
-
-    void visit (const Uint32& type)
-    {
+      break;
+    case Uint32_Kind:
       value.uint32_value = x;
-    }
-
-    void visit (const Uint64& type)
-    {
+      break;
+    case Uint64_Kind:
       value.uint64_value = x;
-    }
-
-    void visit (const Int8& type)
-    {
+      break;
+    case Int8_Kind:
       value.int8_value = x;
-    }
-
-    void visit (const Int16& type)
-    {
+      break;
+    case Int16_Kind:
       value.int16_value = x;
-    }
-
-    void visit (const Int32& type)
-    {
+      break;
+    case Int32_Kind:
       value.int32_value = x;
-    }
-
-    void visit (const Int64& type)
-    {
+      break;
+    case Int64_Kind:
       value.int64_value = x;
-    }
-
-    void visit (const Uint& type)
-    {
+      break;
+    case Uint_Kind:
       value.uint_value = x;
-    }
-
-    void visit (const Int& type)
-    {
+      break;
+    case Int_Kind:
       value.int_value = x;
-    }
-
-    void visit (const Float32& type)
-    {
+      break;
+    case Float32_Kind:
       value.float32_value = x;
-    }
-
-    void visit (const Float64& type)
-    {
+      break;
+    case Float64_Kind:
       value.float64_value = x;
-    }
-
-    void visit (const Complex64& type)
-    {
+      break;
+    case Complex64_Kind:
       value.complex64_value = x;
-    }
-
-    void visit (const Complex128& type)
-    {
+      break;
+    case Complex128_Kind:
       value.complex128_value = x;
-    }
-
-    void visit (const UntypedInteger& type)
-    {
+      break;
+    case Untyped_Integer_Kind:
       value.integer_value = x;
-    }
-
-    void visit (const UntypedFloat& type)
-    {
+      break;
+    case Untyped_Float_Kind:
       value.float_value = x;
+      break;
+    default:
+      TYPE_NOT_REACHED (*type);
     }
-  };
-
-  visitor v (value, x);
-  type->accept (v);
 }
 
 bool
@@ -355,176 +313,187 @@ void
 Value::convert (const type::Type* from, const type::Type* to)
 {
   assert (present);
+  from = from->underlying_type ();
+  to = to->underlying_type ();
 
-  struct visitor : public type::DefaultVisitor
-  {
-    Value& value;
-    const type::Type* to;
-
-    visitor (Value& v, const type::Type* t) : value (v), to (t) { }
-
-    void default_action (const type::Type& type)
+  switch (from->kind ())
     {
-      TYPE_NOT_REACHED (type);
-    }
-
-    void visit (const type::UntypedBoolean& type)
+    case Untyped_Boolean_Kind:
     {
-      if (type_cast<type::Bool> (to) != NULL)
+      if (to->kind () == Bool_Kind)
         {
-          value.bool_value = value.boolean_value;
+          this->bool_value = this->boolean_value;
         }
     }
+    break;
 
-    void visit (const type::UntypedRune& type)
+    case Untyped_Rune_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.rune_value;
-      convert_numeric (value, x, to);
+      x = this->rune_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::UntypedInteger& type)
+    case Untyped_Integer_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.integer_value;
-      convert_numeric (value, x, to);
+      x = this->integer_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::UntypedFloat& type)
+    case Untyped_Float_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.float_value;
-      convert_numeric (value, x, to);
+      x = this->float_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::Uint8& type)
+    case Uint8_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.uint8_value;
-      convert_numeric (value, x, to);
+      x = this->uint8_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::Uint16& type)
+    case Uint16_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.uint16_value;
-      convert_numeric (value, x, to);
+      x = this->uint16_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::Uint32& type)
+    case Uint32_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.uint32_value;
-      convert_numeric (value, x, to);
+      x = this->uint32_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::Uint64& type)
+    case Uint64_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.uint64_value;
-      convert_numeric (value, x, to);
+      x = this->uint64_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::Int8& type)
+    case Int8_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.int8_value;
-      convert_numeric (value, x, to);
+      x = this->int8_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::Int16& type)
+    case Int16_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.int16_value;
-      convert_numeric (value, x, to);
+      x = this->int16_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::Int32& type)
+    case Int32_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.int32_value;
-      convert_numeric (value, x, to);
+      x = this->int32_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::Int64& type)
+    case Int64_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.int64_value;
-      convert_numeric (value, x, to);
+      x = this->int64_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::Int& type)
+    case Int_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.int_value;
-      convert_numeric (value, x, to);
+      x = this->int_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::Float32& type)
+    case Float32_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.float32_value;
-      convert_numeric (value, x, to);
+      x = this->float32_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::Float64& type)
+    case Float64_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.float64_value;
-      convert_numeric (value, x, to);
+      x = this->float64_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::Complex64& type)
+    case Complex64_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.complex64_value;
-      convert_numeric (value, x, to);
+      x = this->complex64_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::Complex128& type)
+    case Complex128_Kind:
     {
       UntypedComplex::ValueType x;
-      x = value.complex128_value;
-      convert_numeric (value, x, to);
+      x = this->complex128_value;
+      convert_numeric (*this, x, to);
     }
+    break;
 
-    void visit (const type::UntypedString& type)
+    case Untyped_String_Kind:
     {
-      if (type::type_cast<type::String> (to))
+      if (to->kind () == String_Kind)
         {
-          value.stringu_value = value.string_value;
+          this->stringu_value = this->string_value;
           return;
         }
 
       NOT_REACHED;
     }
+    break;
 
-    void visit (const type::UntypedNil& type)
+    case Untyped_Nil_Kind:
     {
-      if (type::type_cast<type::Pointer> (to))
+      if (to->kind () == Pointer_Kind)
         {
-          value.pointer_value = NULL;
+          this->pointer_value = NULL;
           return;
         }
 
-      if (type::type_cast<type::Slice> (to))
+      if (to->kind () == Slice_Kind)
         {
-          value.slice_value = Slice::ValueType ();
+          this->slice_value = Slice::ValueType ();
           return;
         }
 
       NOT_REACHED;
     }
+    break;
 
-  } v (*this, to->underlying_type ());
-
-  from->underlying_type ()->accept (v);
+    default:
+      TYPE_NOT_REACHED (*from);
+    }
 }
 
 type::Int::ValueType
 Value::to_int (const type::Type* type) const
 {
-  assert (is_typed_integer (type));
+  assert (type->is_typed_integer ());
   switch (type->underlying_kind ())
     {
     case Uint8_Kind:
@@ -1502,156 +1471,157 @@ std::ostream& operator<< (std::ostream& out, const ValuePrinter& vp)
 {
   if (vp.value.present)
     {
-      struct visitor : public type::DefaultVisitor
-      {
-        const Value& tv;
-        std::ostream& out;
+      UNIMPLEMENTED;
+      // struct visitor : public type::DefaultVisitor
+      // {
+      //   const Value& tv;
+      //   std::ostream& out;
 
-        visitor (const Value& v, std::ostream& o)
-          : tv (v)
-          , out (o)
-        { }
+      //   visitor (const Value& v, std::ostream& o)
+      //     : tv (v)
+      //     , out (o)
+      //   { }
 
-        void default_action (const type::Type& type)
-        {
-          TYPE_NOT_REACHED(type);
-        }
+      //   void default_action (const type::Type& type)
+      //   {
+      //     TYPE_NOT_REACHED(type);
+      //   }
 
-        void visit (const type::Bool& type)
-        {
-          out << " value=" << tv.bool_value;
-        }
+      //   void visit (const type::Bool& type)
+      //   {
+      //     out << " value=" << tv.bool_value;
+      //   }
 
-        void visit (const Uint8& type)
-        {
-          out << " value=" << (int)tv.uint8_value;
-        }
+      //   void visit (const Uint8& type)
+      //   {
+      //     out << " value=" << (int)tv.uint8_value;
+      //   }
 
-        void visit (const Uint16& type)
-        {
-          out << " value=" << (int)tv.uint16_value;
-        }
+      //   void visit (const Uint16& type)
+      //   {
+      //     out << " value=" << (int)tv.uint16_value;
+      //   }
 
-        void visit (const Uint32& type)
-        {
-          out << " value=" << tv.uint32_value;
-        }
+      //   void visit (const Uint32& type)
+      //   {
+      //     out << " value=" << tv.uint32_value;
+      //   }
 
-        void visit (const Uint64& type)
-        {
-          out << " value=" << tv.uint64_value;
-        }
+      //   void visit (const Uint64& type)
+      //   {
+      //     out << " value=" << tv.uint64_value;
+      //   }
 
-        void visit (const Int8& type)
-        {
-          out << " value=" << (int)tv.int8_value;
-        }
+      //   void visit (const Int8& type)
+      //   {
+      //     out << " value=" << (int)tv.int8_value;
+      //   }
 
-        void visit (const Int16& type)
-        {
-          out << " value=" << (int)tv.int16_value;
-        }
+      //   void visit (const Int16& type)
+      //   {
+      //     out << " value=" << (int)tv.int16_value;
+      //   }
 
-        void visit (const Int32& type)
-        {
-          out << " value=" << tv.int32_value;
-        }
+      //   void visit (const Int32& type)
+      //   {
+      //     out << " value=" << tv.int32_value;
+      //   }
 
-        void visit (const Int64& type)
-        {
-          out << " value=" << tv.int64_value;
-        }
+      //   void visit (const Int64& type)
+      //   {
+      //     out << " value=" << tv.int64_value;
+      //   }
 
-        void visit (const Uint& type)
-        {
-          out << " value=" << tv.uint_value;
-        }
+      //   void visit (const Uint& type)
+      //   {
+      //     out << " value=" << tv.uint_value;
+      //   }
 
-        void visit (const Int& type)
-        {
-          out << " value=" << tv.int_value;
-        }
+      //   void visit (const Int& type)
+      //   {
+      //     out << " value=" << tv.int_value;
+      //   }
 
-        void visit (const Uintptr& type)
-        {
-          out << " value=" << tv.uintptr_value;
-        }
+      //   void visit (const Uintptr& type)
+      //   {
+      //     out << " value=" << tv.uintptr_value;
+      //   }
 
-        void visit (const Float32& type)
-        {
-          out << " value=" << tv.float32_value;
-        }
+      //   void visit (const Float32& type)
+      //   {
+      //     out << " value=" << tv.float32_value;
+      //   }
 
-        void visit (const Float64& type)
-        {
-          out << " value=" << tv.float64_value;
-        }
+      //   void visit (const Float64& type)
+      //   {
+      //     out << " value=" << tv.float64_value;
+      //   }
 
-        void visit (const Complex64& type)
-        {
-          out << " value=(" << tv.complex64_value.real << ',' << tv.complex64_value.imag << "i)";
-        }
+      //   void visit (const Complex64& type)
+      //   {
+      //     out << " value=(" << tv.complex64_value.real << ',' << tv.complex64_value.imag << "i)";
+      //   }
 
-        void visit (const Complex128& type)
-        {
-          out << " value=(" << tv.complex128_value.real << ',' << tv.complex128_value.imag << "i)";
-        }
+      //   void visit (const Complex128& type)
+      //   {
+      //     out << " value=(" << tv.complex128_value.real << ',' << tv.complex128_value.imag << "i)";
+      //   }
 
-        void visit (const UntypedNil& type)
-        {
-          out << " value=" << (void*)NULL;
-        }
+      //   void visit (const UntypedNil& type)
+      //   {
+      //     out << " value=" << (void*)NULL;
+      //   }
 
-        void visit (const type::Function& type)
-        {
-          out << " value=<function>";
-        }
+      //   void visit (const type::Function& type)
+      //   {
+      //     out << " value=<function>";
+      //   }
 
-        void visit (const type::Method& type)
-        {
-          out << " value=<method>";
-        }
+      //   void visit (const type::Method& type)
+      //   {
+      //     out << " value=<method>";
+      //   }
 
-        void visit (const Slice& type)
-        {
-          const Slice::ValueType& s = tv.slice_value;
-          out << " value={" << s.ptr << ',' << s.length << ',' << s.capacity << '}';
-        }
-        void visit (const String& type)
-        {
-          const String::ValueType& s = tv.stringu_value;
-          out << " value={" << s.ptr << ',' << s.length << '}';
-        }
+      //   void visit (const Slice& type)
+      //   {
+      //     const Slice::ValueType& s = tv.slice_value;
+      //     out << " value={" << s.ptr << ',' << s.length << ',' << s.capacity << '}';
+      //   }
+      //   void visit (const String& type)
+      //   {
+      //     const String::ValueType& s = tv.stringu_value;
+      //     out << " value={" << s.ptr << ',' << s.length << '}';
+      //   }
 
-        void visit (const Pointer& type)
-        {
-          out << " value=" << tv.pointer_value;
-        }
+      //   void visit (const Pointer& type)
+      //   {
+      //     out << " value=" << tv.pointer_value;
+      //   }
 
-        void visit (const UntypedBoolean& type)
-        {
-          out << " value=" << tv.boolean_value;
-        }
-        void visit (const UntypedInteger& type)
-        {
-          out << " value=" << tv.integer_value;
-        }
-        void visit (const UntypedFloat& type)
-        {
-          out << " value=" << tv.float_value;
-        }
-        void visit (const UntypedString& type)
-        {
-          const UntypedString::ValueType& s = tv.string_value;
-          out << " value={" << s.ptr << ',' << s.length << '}';
-        }
-        void visit (const type::PolymorphicFunction& type)
-        {
-          out << " value=<polymorphic function>";
-        }
-      };
-      visitor v (vp.value, out);
-      type_strip (vp.type)->accept (v);
+      //   void visit (const UntypedBoolean& type)
+      //   {
+      //     out << " value=" << tv.boolean_value;
+      //   }
+      //   void visit (const UntypedInteger& type)
+      //   {
+      //     out << " value=" << tv.integer_value;
+      //   }
+      //   void visit (const UntypedFloat& type)
+      //   {
+      //     out << " value=" << tv.float_value;
+      //   }
+      //   void visit (const UntypedString& type)
+      //   {
+      //     const UntypedString::ValueType& s = tv.string_value;
+      //     out << " value={" << s.ptr << ',' << s.length << '}';
+      //   }
+      //   void visit (const type::PolymorphicFunction& type)
+      //   {
+      //     out << " value=<polymorphic function>";
+      //   }
+      // };
+      // visitor v (vp.value, out);
+      // vp.type->underlying_type ()->accept (v);
     }
 
   return out;

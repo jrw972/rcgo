@@ -1406,7 +1406,7 @@ Append::check (ErrorReporter& er,
       return;
     }
 
-  const type::Slice* st = type_cast<type::Slice> (slice.type->underlying_type ());
+  const type::Slice* st = slice.type->underlying_type ()->to_slice ();
   if (st != NULL &&
       !are_identical (st->base_type, element.type))
     {
@@ -1425,7 +1425,7 @@ runtime::Operation* Append::generate_code (const semantic::ExpressionValue& resu
     const semantic::ExpressionValueList& arg_vals,
     runtime::Operation* arg_ops) const
 {
-  return make_append (type_cast<type::Slice> (arg_vals[0].type->underlying_type ()), arg_ops);
+  return make_append (arg_vals[0].type->underlying_type ()->to_slice (), arg_ops);
 }
 
 Copy::Copy (const Location& loc)
@@ -1457,8 +1457,8 @@ Copy::check (ErrorReporter& er,
     {
     case Slice_Kind:
     {
-      const Slice* st = type_strip_cast<Slice> (arg.type);
-      if (type_contains_pointer (st->base_type))
+      const Slice* st = arg.type->underlying_type ()->to_slice ();
+      if (st->base_type->contains_pointer ())
         {
           er.leaks_pointers (location);
           result.expression_kind = ErrorExpressionKind;

@@ -236,7 +236,9 @@ private:
       size_t address,
       unsigned int line,
       ast::Instance* node,
-      const std::string& name);
+      const std::string& name,
+      const type::NamedType* named_type = NULL,
+      type::Field* field = NULL);
   void add_instance (Instance* instance);
   void add_push_port (size_t address,
                       Instance* output_instance,

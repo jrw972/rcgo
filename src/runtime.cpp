@@ -153,82 +153,6 @@ initialize (ExecutorBase& exec, ComponentInfoBase* info)
     }
 }
 
-template <typename T>
-static void
-evaluate (ExecutorBase& exec, const MemoryModel& memoryModel, const ast::Binary& node, const T& op)
-{
-  struct visitor : public type::DefaultVisitor
-  {
-    ExecutorBase& exec;
-    const MemoryModel& memoryModel;
-    const ast::Binary& node;
-    const T& op;
-
-    visitor (ExecutorBase& e,
-             const MemoryModel& mm,
-             const ast::Binary& n,
-             const T& o) : exec (e), memoryModel (mm), node (n), op (o) { }
-
-    void default_action (const type::Type& t)
-    {
-      TYPE_NOT_REACHED (t);
-    }
-
-    void visit (const NamedType& t)
-    {
-      t.underlying_type ()->accept (*this);
-    }
-
-    void visit (const Bool& t)
-    {
-      op (exec, memoryModel, node, t);
-    }
-
-    void visit (const UntypedBoolean& t)
-    {
-      op (exec, memoryModel, node, t);
-    }
-
-    void visit (const type::Int& t)
-    {
-      op (exec, memoryModel, node, t);
-    }
-
-    void visit (const Int8& t)
-    {
-      op (exec, memoryModel, node, t);
-    }
-
-    void visit (const Uint& t)
-    {
-      op (exec, memoryModel, node, t);
-    }
-
-    void visit (const Uint8& t)
-    {
-      op (exec, memoryModel, node, t);
-    }
-
-    void visit (const Uint64& t)
-    {
-      op (exec, memoryModel, node, t);
-    }
-
-    void visit (const Float64& t)
-    {
-      op (exec, memoryModel, node, t);
-    }
-
-    void visit (const Pointer& t)
-    {
-      op (exec, memoryModel, node, t);
-    }
-  };
-
-  visitor v (exec, memoryModel, node, op);
-  op.dispatch_type (node)->Accept (v);
-}
-
 struct RetvalDispatch
 {
   const type::Type*
@@ -246,174 +170,6 @@ struct LeftDispatch
   {
     UNIMPLEMENTED;
     //return node.left ()->typed_value.type;
-  }
-};
-
-template <typename T>
-struct LeftShiftVisitor : public type::DefaultVisitor
-{
-  ExecutorBase& exec;
-  const MemoryModel& memoryModel;
-  const ast::Binary& node;
-
-  LeftShiftVisitor (ExecutorBase& e,
-                    const MemoryModel& mm,
-                    const ast::Binary& n)
-    : exec (e)
-    , memoryModel (mm)
-    , node (n)
-  { }
-
-  void default_action (const type::Type& t)
-  {
-    TYPE_NOT_REACHED (t);
-  }
-
-  void visit (const NamedType& t)
-  {
-    t.underlying_type ()->accept (*this);
-  }
-
-  void visit (const type::Int& t)
-  {
-    doit (t);
-  }
-
-  void visit (const Uint& t)
-  {
-    doit (t);
-  }
-
-  void visit (const Uint8& t)
-  {
-    doit (t);
-  }
-
-  template <typename U>
-  void doit (const U&)
-  {
-    UNIMPLEMENTED;
-    // evaluate_expression (exec, memoryModel, node.left ());
-    // typename T::ValueType left;
-    // exec.stack ().pop (left);
-    // evaluate_expression (exec, memoryModel, node.right ());
-    // typename U::ValueType right;
-    // exec.stack ().pop (right);
-    // exec.stack ().push (left << right);
-  }
-};
-
-struct LeftShift : public RetvalDispatch
-{
-  template <typename T>
-  void
-  doit (ExecutorBase& exec,
-        const MemoryModel& memoryModel,
-        const ast::Binary& node,
-        const T&) const
-  {
-    LeftShiftVisitor<T> v (exec, memoryModel, node);
-    UNIMPLEMENTED;
-    //node.right ()->typed_value.type->Accept (v);
-  }
-
-  void
-  operator() (ExecutorBase& exec,
-              const MemoryModel& memoryModel,
-              const ast::Binary& node,
-              const type::Int& t) const
-  {
-    doit (exec, memoryModel, node, t);
-  }
-
-  void
-  operator() (ExecutorBase& exec,
-              const MemoryModel& memoryModel,
-              const ast::Binary& node,
-              const Uint64& t) const
-  {
-    doit (exec, memoryModel, node, t);
-  }
-
-  void
-  operator() (ExecutorBase& exec,
-              const MemoryModel& memoryModel,
-              const ast::Binary& node,
-              const type::Type& t) const
-  {
-    TYPE_NOT_REACHED (t);
-  }
-};
-
-struct RightShift : public RetvalDispatch
-{
-  void
-  operator() (ExecutorBase& exec,
-              const MemoryModel& memoryModel,
-              const ast::Binary& node,
-              const type::Int&) const
-  {
-    struct visitor : public type::DefaultVisitor
-    {
-      ExecutorBase& exec;
-      const MemoryModel& memoryModel;
-      const ast::Binary& node;
-
-      visitor (ExecutorBase& e,
-               const MemoryModel& mm,
-               const ast::Binary& n)
-        : exec (e)
-        , memoryModel (mm)
-        , node (n)
-      { }
-
-      void default_action (const type::Type& t)
-      {
-        TYPE_NOT_REACHED (t);
-      }
-
-      void visit (const NamedType& t)
-      {
-        t.underlying_type ()->accept (*this);
-      }
-
-      void visit (const type::Int&)
-      {
-        UNIMPLEMENTED;
-        // evaluate_expression (exec, memoryModel, node.left ());
-        // type::Int::ValueType left;
-        // exec.stack ().pop (left);
-        // evaluate_expression (exec, memoryModel, node.right ());
-        // Uint::ValueType right;
-        // exec.stack ().pop (right);
-        // exec.stack ().push (left >> right);
-      }
-
-      void visit (const Uint&)
-      {
-        UNIMPLEMENTED;
-        // evaluate_expression (exec, memoryModel, node.left ());
-        // Uint::ValueType left;
-        // exec.stack ().pop (left);
-        // evaluate_expression (exec, memoryModel, node.right ());
-        // Uint::ValueType right;
-        // exec.stack ().pop (right);
-        // exec.stack ().push (left >> right);
-      }
-    };
-
-    visitor v (exec, memoryModel, node);
-    UNIMPLEMENTED;
-    //node.right ()->typed_value.type->Accept (v);
-  }
-
-  void
-  operator() (ExecutorBase& exec,
-              const MemoryModel& memoryModel,
-              const ast::Binary& node,
-              const type::Type& t) const
-  {
-    TYPE_NOT_REACHED (t);
   }
 };
 
@@ -1140,7 +896,7 @@ UdpSocket::call (runtime::ExecutorBase& exec) const
 {
   runtime::FileDescriptor** ret = static_cast< runtime::FileDescriptor**> (exec.stack ().get_address (type->return_parameter_list->at (0)->offset ()));
 
-  int fd = socket (AF_INET, SOCK_DGRAM, 0);
+  int fd = socket (AF_INET6, SOCK_DGRAM, 0);
   if (fd == -1)
     {
       *ret = NULL;
@@ -1181,7 +937,7 @@ Sendto::call (runtime::ExecutorBase& exec) const
   std::stringstream port2;
   port2 << *port;
 
-  struct addrinfo* info;
+  struct addrinfo* info = NULL;
   struct addrinfo hints;
   memset (&hints, 0, sizeof (struct addrinfo));
   hints.ai_family = AF_UNSPEC;
@@ -1192,7 +948,6 @@ Sendto::call (runtime::ExecutorBase& exec) const
     {
       UNIMPLEMENTED;
     }
-
   ssize_t s = sendto ((*fd)->fd (), buf->ptr, buf->length, 0, info->ai_addr, info->ai_addrlen);
   if (s != static_cast<ssize_t> (buf->length))
     {
@@ -1453,100 +1208,45 @@ LogicAnd::execute (ExecutorBase& exec) const
   return make_continue ();
 }
 
-struct MakeLiteralVisitor : public type::DefaultVisitor
-{
-  const Value& value;
-  Operation* op;
-
-  MakeLiteralVisitor (const Value& v) : value (v), op (NULL) { }
-
-  void default_action (const type::Type& type)
-  {
-    TYPE_NOT_REACHED (type);
-  }
-
-  void visit (const Bool& type)
-  {
-    op = make_literal (value.bool_value);
-  }
-
-  void visit (const Uint8& type)
-  {
-    op = make_literal (value.uint8_value);
-  }
-
-  void visit (const Uint16& type)
-  {
-    op = make_literal (value.uint16_value);
-  }
-
-  void visit (const Uint32& type)
-  {
-    op = make_literal (value.uint32_value);
-  }
-
-  void visit (const Uint64& type)
-  {
-    op = make_literal (value.uint64_value);
-  }
-
-  void visit (const Int8& type)
-  {
-    op = make_literal (value.int8_value);
-  }
-
-  void visit (const Int16& type)
-  {
-    op = make_literal (value.int16_value);
-  }
-
-  void visit (const Int32& type)
-  {
-    op = make_literal (value.int32_value);
-  }
-
-  void visit (const Int64& type)
-  {
-    op = make_literal (value.int64_value);
-  }
-
-  void visit (const Uint& type)
-  {
-    op = make_literal (value.uint_value);
-  }
-
-  void visit (const Int& type)
-  {
-    op = make_literal (value.int_value);
-  }
-
-  void visit (const Float64& type)
-  {
-    op = make_literal (value.float64_value);
-  }
-
-  void visit (const String& type)
-  {
-    op = make_literal (value.stringu_value);
-  }
-
-  void visit (const Pointer& type)
-  {
-    op = make_literal (value.pointer_value);
-  }
-
-  void visit (const Slice& type)
-  {
-    op = make_literal (value.slice_value);
-  }
-};
-
 Operation* make_literal (const type::Type* type, const Value& value)
 {
   assert (value.present);
-  MakeLiteralVisitor visitor (value);
-  type->underlying_type ()->accept (visitor);
-  return visitor.op;
+
+  switch (type->underlying_type ()->kind ())
+    {
+    case Bool_Kind:
+      return make_literal (value.bool_value);
+    case Uint8_Kind:
+      return make_literal (value.uint8_value);
+    case Uint16_Kind:
+      return make_literal (value.uint16_value);
+    case Uint32_Kind:
+      return make_literal (value.uint32_value);
+    case Uint64_Kind:
+      return make_literal (value.uint64_value);
+    case Int8_Kind:
+      return make_literal (value.int8_value);
+    case Int16_Kind:
+      return make_literal (value.int16_value);
+    case Int32_Kind:
+      return make_literal (value.int32_value);
+    case Int64_Kind:
+      return make_literal (value.int64_value);
+    case Uint_Kind:
+      return make_literal (value.uint_value);
+    case Int_Kind:
+      return make_literal (value.int_value);
+    case Float64_Kind:
+      return make_literal (value.float64_value);
+    case String_Kind:
+      return make_literal (value.stringu_value);
+    case Pointer_Kind:
+      return make_literal (value.pointer_value);
+    case Slice_Kind:
+      return make_literal (value.slice_value);
+    default:
+      TYPE_NOT_REACHED (*type);
+    }
 }
 
 OpReturn
@@ -2309,8 +2009,8 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
     {
       UNIMPLEMENTED;
     }
-  else if ((is_typed_integer (from) || is_typed_float (from)) &&
-           (is_typed_integer (to) || is_typed_float (to)))
+  else if ((from->is_typed_integer () || is_typed_float (from)) &&
+           (to->is_typed_integer () || is_typed_float (to)))
     {
       switch (from->underlying_kind ())
         {
@@ -2347,7 +2047,7 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
     {
       UNIMPLEMENTED;
     }
-  else if (is_typed_integer (from) && is_typed_string (to))
+  else if (from->is_typed_integer () && is_typed_string (to))
     {
       UNIMPLEMENTED;
     }
@@ -2546,7 +2246,7 @@ OpReturn PrintlnOp::execute (ExecutorBase& exec) const
 OpReturn NewOp::execute (ExecutorBase& exec) const
 {
   // Allocate a new instance of the type.
-  const type::Heap* heap_type = type_cast<type::Heap> (type);
+  const type::Heap* heap_type = type->to_heap ();
   if (heap_type == NULL)
     {
       exec.stack ().push (exec.heap ()->allocate (type->size ()));
@@ -2721,7 +2421,7 @@ OpReturn CopyOp::execute (ExecutorBase& exec) const
 {
   arg->execute (exec);
 
-  const Slice* slice_type = type_strip_cast<Slice>(type);
+  const Slice* slice_type = type->underlying_type ()->to_slice ();
   if (slice_type != NULL)
     {
       Slice::ValueType in;
@@ -2736,8 +2436,7 @@ OpReturn CopyOp::execute (ExecutorBase& exec) const
       return make_continue ();
     }
 
-  const String* string_type = type_strip_cast<String>(type);
-  if (string_type != NULL)
+  if (type->underlying_type ()->kind () == String_Kind)
     {
       String::ValueType in;
       exec.stack ().pop (in);

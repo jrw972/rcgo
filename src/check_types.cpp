@@ -154,7 +154,7 @@ static void require_variable (const Node* node)
 
 static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* reaction_node)
 {
-  const type::PushPort* push_port_type = type::type_cast<type::PushPort> (port_node->eval.type);
+  const type::PushPort* push_port_type = port_node->eval.type->to_push_port ();
 
   if (push_port_type == NULL)
     {
@@ -164,7 +164,7 @@ static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* 
 
   require_variable (port_node);
 
-  const type::Reaction* reaction_type = type::type_cast<type::Reaction> (reaction_node->eval.type);
+  const type::Reaction* reaction_type = reaction_node->eval.type->to_reaction ();
   if (reaction_type == NULL)
     {
       error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
@@ -177,7 +177,7 @@ static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* 
   if (!are_identical (push_port_type, &f))
     {
       error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                     "cannot bind %s to %s (E40)", push_port_type->to_string ().c_str (), reaction_type->to_string ().c_str ());
+                     "cannot bind %s to %s (E40)", push_port_type->to_error_string ().c_str (), reaction_type->to_error_string ().c_str ());
     }
 
   return static_cast<const decl::Reaction*> (reaction_node->callable);
@@ -278,13 +278,13 @@ struct Visitor : public ast::DefaultNodeVisitor
         node.callable = node.expr->callable;
       }
 
-    node.function_type = type_cast<type::Function> (node.expr->eval.type);
-    node.push_port_type = type_cast<type::PushPort> (node.expr->eval.type);
-    node.pull_port_type = type_cast<type::PullPort> (node.expr->eval.type);
-    node.method_type = type_cast<type::Method> (node.expr->eval.type);
-    node.initializer_type = type_cast<type::Initializer> (node.expr->eval.type);
-    node.getter_type = type_cast<type::Getter> (node.expr->eval.type);
-    node.reaction_type = type_cast<type::Reaction> (node.expr->eval.type);
+    node.function_type = node.expr->eval.type->to_function ();
+    node.push_port_type = node.expr->eval.type->to_push_port ();
+    node.pull_port_type = node.expr->eval.type->to_pull_port ();
+    node.method_type = node.expr->eval.type->to_method ();
+    node.initializer_type = node.expr->eval.type->to_initializer ();
+    node.getter_type = node.expr->eval.type->to_getter ();
+    node.reaction_type = node.expr->eval.type->to_reaction ();
 
     if (node.function_type)
       {
@@ -409,7 +409,7 @@ struct Visitor : public ast::DefaultNodeVisitor
           {
             UNIMPLEMENTED;
           }
-        else if (is_typed_integer (from) && is_any_string (to))
+        else if (from->is_typed_integer () && is_any_string (to))
           {
             UNIMPLEMENTED;
             node.reset_mutability = true;
@@ -446,8 +446,8 @@ struct Visitor : public ast::DefaultNodeVisitor
           {
             // Okay.
           }
-        else if ((is_typed_integer (from) || is_typed_float (from)) &&
-                 (is_typed_integer (to) || is_typed_float (to)))
+        else if ((from->is_typed_integer () || is_typed_float (from)) &&
+                 (to->is_typed_integer () || is_typed_float (to)))
           {
             // Okay.
           }
@@ -455,7 +455,7 @@ struct Visitor : public ast::DefaultNodeVisitor
           {
             // Okay.
           }
-        else if ((is_typed_integer (from) || is_slice_of_bytes (from) || is_slice_of_runes (from)) && is_typed_string (to))
+        else if ((from->is_typed_integer () || is_slice_of_bytes (from) || is_slice_of_runes (from)) && is_typed_string (to))
           {
             // Okay.
             node.reset_mutability = true;
@@ -814,13 +814,13 @@ struct Visitor : public ast::DefaultNodeVisitor
       {
         error_at_line (-1, 0, node.location.file.c_str (),
                        node.location.line, "cannot convert %s to %s in return (E160)",
-                       node.child->eval.type->to_string ().c_str (), node.return_symbol->type->to_string ().c_str ());
+                       node.child->eval.type->to_error_string ().c_str (), node.return_symbol->type->to_error_string ().c_str ());
       }
     node.child->eval.convert (node.return_symbol->type);
 
     require_value_or_variable (node.child);
 
-    if (type_contains_pointer (node.child->eval.type) &&
+    if (node.child->eval.type->contains_pointer () &&
         node.return_symbol->dereference_mutability < node.child->eval.indirection_mutability)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
@@ -863,7 +863,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     if (root_type == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                       "cannot change expression of type %s (E96)", node.expr->eval.type->to_string ().c_str ());
+                       "cannot change expression of type %s (E96)", node.expr->eval.type->to_error_string ().c_str ());
       }
 
     require_value_or_variable (node.expr);
@@ -948,7 +948,7 @@ struct Visitor : public ast::DefaultNodeVisitor
       {
         // Type, no expressions.
 
-        if (type_cast<Void> (type) != NULL)
+        if (type->kind () == Void_Kind)
           {
             error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "missing type (E183)");
@@ -970,7 +970,7 @@ struct Visitor : public ast::DefaultNodeVisitor
         return;
       }
 
-    if (type_cast<Void> (type) == NULL)
+    if (type->kind () != Void_Kind)
       {
         // Type, expressions.
 
@@ -987,7 +987,7 @@ struct Visitor : public ast::DefaultNodeVisitor
             if (!assignable (n->eval.type, n->eval.value, type))
               {
                 error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                               "cannot assign %s to %s in initialization (E62)", n->eval.type->to_string ().c_str (), type->to_string ().c_str ());
+                               "cannot assign %s to %s in initialization (E62)", n->eval.type->to_error_string ().c_str (), type->to_error_string ().c_str ());
               }
             n->eval.convert (type);
             require_value_or_variable (n);
@@ -1037,7 +1037,7 @@ done:
             Node* n = *pos;
             VariableSymbol* symbol = node.symbols[idx];
 
-            if (type_contains_pointer (n->eval.type) &&
+            if (n->eval.type->contains_pointer () &&
                 symbol->dereference_mutability < n->eval.indirection_mutability)
               {
                 error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
@@ -1057,8 +1057,8 @@ done:
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "cannot assign value of type %s to variable of type %s (E199)",
-                       from->to_string ().c_str (),
-                       to->to_string ().c_str ());
+                       from->to_error_string ().c_str (),
+                       to->to_error_string ().c_str ());
       }
     node.right->eval.convert (to);
     require_variable (node.left);
@@ -1070,7 +1070,7 @@ done:
                        "target of assignment is not mutable (E86)");
       }
 
-    if (type_contains_pointer (node.right->eval.type) &&
+    if (node.right->eval.type->contains_pointer () &&
         node.left->eval.indirection_mutability < node.right->eval.indirection_mutability)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
@@ -1089,14 +1089,14 @@ done:
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "+= cannot be applied to %s (E200)",
-                       to->to_string ().c_str ());
+                       to->to_error_string ().c_str ());
       }
     if (!assignable (from, val, to))
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "cannot assign value of type %s to variable of type %s (E76)",
-                       from->to_string ().c_str (),
-                       to->to_string ().c_str ());
+                       from->to_error_string ().c_str (),
+                       to->to_error_string ().c_str ());
       }
     node.right->eval.convert (to);
     require_variable (node.left);
@@ -1127,7 +1127,7 @@ done:
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "%s cannot be applied to %s (E77)",
-                       op, node.child->eval.type->to_string ().c_str ());
+                       op, node.child->eval.type->to_error_string ().c_str ());
       }
     require_variable (node.child);
 
@@ -1161,7 +1161,7 @@ done:
   {
     node.visit_children (*this);
 
-    const type::PullPort* pull_port_type = type_cast<type::PullPort> (node.left->eval.type);
+    const type::PullPort* pull_port_type = node.left->eval.type->to_pull_port ();
 
     if (pull_port_type == NULL)
       {
@@ -1171,7 +1171,7 @@ done:
 
     require_variable (node.left);
 
-    const type::Getter* getter_type = type_cast<type::Getter> (node.right->eval.type);
+    const type::Getter* getter_type = node.right->eval.type->to_getter ();
 
     if (getter_type == NULL)
       {
@@ -1185,7 +1185,7 @@ done:
     if (!are_identical (pull_port_type, &g))
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                       "cannot bind %s to %s (E191)", pull_port_type->to_string ().c_str (), getter_type->to_string ().c_str ());
+                       "cannot bind %s to %s (E191)", pull_port_type->to_error_string ().c_str (), getter_type->to_error_string ().c_str ());
       }
   }
 
@@ -1193,11 +1193,11 @@ done:
   {
     node.visit_children (*this);
     const type::Type* t = node.child->eval.type;
-    const Pointer* p = type_cast<Pointer> (t->underlying_type ());
+    const Pointer* p = t->underlying_type ()->to_pointer ();
     if (p == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                       "* cannot be applied to %s (E21)", t->to_string ().c_str ());
+                       "* cannot be applied to %s (E21)", t->to_error_string ().c_str ());
       }
     require_value_or_variable (node.child);
     node.eval.type = p->base_type;
@@ -1239,7 +1239,7 @@ done:
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "cannot select %s from expression of type %s (E154)",
-                       identifier.c_str (), base_type->to_string ().c_str ());
+                       identifier.c_str (), base_type->to_error_string ().c_str ());
       }
 
     if (base_type->underlying_type ()->to_pointer ())
@@ -1290,7 +1290,7 @@ done:
               }
           }
       }
-    else if (is_typed_integer (index_type))
+    else if (index_type->is_typed_integer ())
       {
         if (index_value.present)
           {
@@ -1326,7 +1326,7 @@ done:
     Value& index_value = index_node->eval.value;
     const type::Type*& index_type = node.index->eval.type;
 
-    node.array_type = type_cast<Array> (base_type->underlying_type ());
+    node.array_type = base_type->underlying_type ()->to_array ();
     if (node.array_type != NULL)
       {
         check_array_index (node.array_type, node.index, false);
@@ -1339,7 +1339,7 @@ done:
         return;
       }
 
-    node.slice_type = type_cast<Slice> (base_type->underlying_type ());
+    node.slice_type = base_type->underlying_type ()->to_slice ();
     if (node.slice_type != NULL)
       {
         if (is_untyped_numeric (index_type))
@@ -1358,7 +1358,7 @@ done:
                                "slice index is negative (E166)");
               }
           }
-        else if (is_typed_integer (index_type))
+        else if (index_type->is_typed_integer ())
           {
             if (index_value.present)
               {
@@ -1389,7 +1389,7 @@ done:
 
     error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                    "cannot index expression of type %s (E168)",
-                   base_type->to_string ().c_str ());
+                   base_type->to_error_string ().c_str ());
   }
 
   void visit (SliceExpr& node)
@@ -1423,8 +1423,7 @@ done:
     const type::Type*& max_type = max_node->eval.type;
     Value& max_value = max_node->eval.value;
 
-    node.string_type = type_cast<UntypedString> (base_type->underlying_type ());
-    if (node.string_type != NULL)
+    if (base_type->underlying_type ()->kind () == Untyped_String_Kind)
       {
         UNIMPLEMENTED;
         return;
@@ -1437,7 +1436,7 @@ done:
         return;
       }
 
-    node.array_type = type_cast<Array> (base_type->underlying_type ());
+    node.array_type = base_type->underlying_type ()->to_array ();
     if (node.array_type != NULL)
       {
         if (node.low_present)
@@ -1461,7 +1460,7 @@ done:
         goto done;
       }
 
-    node.slice_type = type_cast<Slice> (base_type->underlying_type ());
+    node.slice_type = base_type->underlying_type ()->to_slice ();
     if (node.slice_type != NULL)
       {
         if (node.low_present)
@@ -1487,7 +1486,7 @@ done:
 
     error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                    "cannot slice expression of type %s (E225)",
-                   base_type->to_string ().c_str ());
+                   base_type->to_error_string ().c_str ());
 
 done:
     if (low_value.present && high_value.present)
@@ -1535,7 +1534,7 @@ done:
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "no port named %s (E194)", port_identifier.c_str ());
       }
-    const type::PushPort* push_port_type = type::type_cast<type::PushPort> (node.field->type);
+    const type::PushPort* push_port_type = node.field->type->to_push_port ();
     if (push_port_type == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
@@ -1563,13 +1562,13 @@ done:
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "no port named %s (E74)", port_identifier.c_str ());
       }
-    node.array_type = type::type_cast<type::Array> (node.field->type);
+    node.array_type = node.field->type->to_array ();
     if (node.array_type == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "%s is not an array of ports (E16)", port_identifier.c_str ());
       }
-    const type::PushPort* push_port_type = type::type_cast<type::PushPort> (node.array_type->base_type);
+    const type::PushPort* push_port_type = node.array_type->base_type->to_push_port ();
     if (push_port_type == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
@@ -1619,7 +1618,7 @@ done:
 
       default:
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                       "cannot define composite literals for %s (E5)", node.eval.type->to_string ().c_str ());
+                       "cannot define composite literals for %s (E5)", node.eval.type->to_error_string ().c_str ());
       }
   }
 };
@@ -1644,7 +1643,7 @@ void check_types_arguments (ast::List* args, const decl::ParameterList* signatur
       if (!type::assignable (arg, val, param))
         {
           error_at_line (-1, 0, (*pos)->location.file.c_str (), (*pos)->location.line,
-                         "cannot assign %s to %s in call (E151)", arg->to_string ().c_str (), param->to_string ().c_str ());
+                         "cannot assign %s to %s in call (E151)", arg->to_error_string ().c_str (), param->to_error_string ().c_str ());
         }
       (*pos)->eval.convert (param);
     }
@@ -1676,7 +1675,7 @@ void check_mutability_arguments (ast::Node* node, const decl::ParameterList* sig
        ++pos, ++i)
     {
       const type::Type* arg = (*pos)->eval.type;
-      if (type_contains_pointer (arg))
+      if (arg->contains_pointer ())
         {
           if (signature->at (i)->dereference_mutability < (*pos)->eval.indirection_mutability)
             {

@@ -23,12 +23,6 @@ scalar_test (Tap& tap,
              type::Kind kind)
 {
   {
-    TestConstVisitor <DefaultVisitor, T> visitor;
-    T::instance ()->accept (visitor);
-    tap.tassert (type + "::accept", visitor.item == T::instance ());
-  }
-
-  {
     std::stringstream str;
     T::instance ()->print (str);
     tap.tassert (type + "::print", str.str () == rep);
@@ -55,7 +49,7 @@ main (int argc, char** argv)
   {
     std::stringstream ss;
     ss << named_int;
-    tap.tassert ("operator<<", ss.str () == named_int.to_string ());
+    tap.tassert ("operator<<", ss.str () == named_int.to_error_string ());
   }
 
   {
@@ -83,12 +77,6 @@ main (int argc, char** argv)
   }
 
   {
-    const Array* p1 = named_int.get_array (2);
-    std::string s = p1->to_string ();
-    tap.tassert ("Array::to_string", s == "[2]int");
-  }
-
-  {
     NamedType foo ("foo");
     tap.tassert ("NamedType::NamedType(1)", foo.underlying_type () == NULL);
   }
@@ -96,13 +84,6 @@ main (int argc, char** argv)
   {
     NamedType foo ("foo", Int::instance ());
     tap.tassert ("NamedType::NamedType(2)", foo.underlying_type () == Int::instance ());
-  }
-
-  {
-    TestConstVisitor <DefaultVisitor, NamedType> visitor;
-    NamedType foo ("foo");
-    foo.accept (visitor);
-    tap.tassert ("NamedType::accept", visitor.item == &foo);
   }
 
   {
@@ -200,12 +181,6 @@ main (int argc, char** argv)
   }
 
   {
-    TestConstVisitor <DefaultVisitor, Void> visitor;
-    Void::instance ()->accept (visitor);
-    tap.tassert ("Void::accept", visitor.item == Void::instance ());
-  }
-
-  {
     std::stringstream str;
     Void::instance ()->print (str);
     tap.tassert ("Void::print", str.str () == "<void>");
@@ -239,7 +214,7 @@ main (int argc, char** argv)
   scalar_test<Uint> (tap, "Uint", "<uint>", 8, 8, Uint_Kind);
   scalar_test<Int> (tap, "Int", "<int>", 8, 8, Int_Kind);
   scalar_test<Uintptr> (tap, "Uintpr", "<uintptr>", 8, 8, Uintptr_Kind);
-  scalar_test<String> (tap, "String", "<string>", 16, 16, String_Kind);
+  scalar_test<String> (tap, "String", "<string>", 8, 16, String_Kind);
 
   scalar_test<UntypedNil> (tap, "UntypedNil", "<<nil>>", 0, 0, Untyped_Nil_Kind);
   scalar_test<UntypedBoolean> (tap, "UntypedBoolean", "<<boolean>>", 0, 0, Untyped_Boolean_Kind);
@@ -250,13 +225,6 @@ main (int argc, char** argv)
   scalar_test<UntypedString> (tap, "UntypedString", "<<string>>", 0, 0, Untyped_String_Kind);
   scalar_test<PolymorphicFunction> (tap, "PolymorphicFunction", "<<polymorphic function>>", 0, 0, Polymorphic_Function_Kind);
   scalar_test<FileDescriptor> (tap, "FileDescriptor", "<FileDescriptor>", 8, 8, File_Descriptor_Kind);
-
-  {
-    TestConstVisitor <DefaultVisitor, Pointer> visitor;
-    const Pointer* p = Int::instance ()->get_pointer ();
-    p->accept (visitor);
-    tap.tassert ("Pointer::accept", visitor.item == p);
-  }
 
   {
     std::stringstream str;
@@ -295,13 +263,6 @@ main (int argc, char** argv)
   }
 
   {
-    TestConstVisitor <DefaultVisitor, Slice> visitor;
-    const Slice* p = Int::instance ()->get_slice ();
-    p->accept (visitor);
-    tap.tassert ("Slice::accept", visitor.item == p);
-  }
-
-  {
     std::stringstream str;
     Int::instance ()->get_slice ()->print (str);
     tap.tassert ("Slice::print", str.str () == "[]<int>");
@@ -321,13 +282,6 @@ main (int argc, char** argv)
 
   {
     tap.tassert ("Slice::unit_size", Int::instance ()->get_slice ()->unit_size () == 8);
-  }
-
-  {
-    TestConstVisitor <DefaultVisitor, Array> visitor;
-    const Array* p = Int::instance ()->get_array (3);
-    p->accept (visitor);
-    tap.tassert ("Array::accept", visitor.item == p);
   }
 
   {
@@ -359,13 +313,6 @@ main (int argc, char** argv)
   }
 
   {
-    TestConstVisitor <DefaultVisitor, Map> visitor;
-    const Map* p = Map::make (Int::instance (), Uint::instance ());
-    p->accept (visitor);
-    tap.tassert ("Map::accept", visitor.item == p);
-  }
-
-  {
     std::stringstream str;
     Map::make (Int::instance (), Uint::instance ())->print (str);
     tap.tassert ("Map::print", str.str () == "map[<int>]<uint>");
@@ -384,13 +331,6 @@ main (int argc, char** argv)
   }
 
   {
-    TestConstVisitor <DefaultVisitor, Heap> visitor;
-    const Heap* p = Int::instance ()->get_heap ();
-    p->accept (visitor);
-    tap.tassert ("Heap::accept", visitor.item == p);
-  }
-
-  {
     std::stringstream str;
     Int::instance ()->get_heap ()->print (str);
     tap.tassert ("Heap::print", str.str () == "heap <int>");
@@ -406,13 +346,6 @@ main (int argc, char** argv)
 
   {
     tap.tassert ("Heap::kind", Int::instance ()->get_heap ()->kind () == Heap_Kind);
-  }
-
-  {
-    TestConstVisitor <DefaultVisitor, Struct> visitor;
-    Struct s;
-    s.accept (visitor);
-    tap.tassert ("Struct::accept", visitor.item == &s);
   }
 
   {
@@ -441,24 +374,11 @@ main (int argc, char** argv)
 
   {
     Struct s;
-    s.append_field (NULL, false, "r", &named_int, TagSet ());
-    tap.tassert ("Struct::to_string", s.to_string () == "struct {r int;}");
-  }
-
-  {
-    Struct s;
     Field* f1 = s.find_field ("r");
     s.append_field (NULL, false, "r", &named_int, TagSet ());
     Field* f2 = s.find_field ("r");
     tap.tassert ("Struct::find_field", f1 == NULL && f2 != NULL);
     tap.tassert ("Struct::field_count", s.field_count () == 1);
-  }
-
-  {
-    TestConstVisitor <DefaultVisitor, Component> visitor;
-    Component s (NULL);
-    s.accept (visitor);
-    tap.tassert ("Component::accept", visitor.item == &s);
   }
 
   {
@@ -471,14 +391,6 @@ main (int argc, char** argv)
   {
     Component s (NULL);
     tap.tassert ("Component::kind", s.kind () == Component_Kind);
-  }
-
-  {
-    util::Location loc;
-    TestConstVisitor <DefaultVisitor, type::Function> visitor;
-    type::Function f (new ParameterList (loc), new ParameterList (loc));
-    f.accept (visitor);
-    tap.tassert ("Function::accept", visitor.item == &f);
   }
 
   {
@@ -509,14 +421,6 @@ main (int argc, char** argv)
 
   {
     util::Location loc;
-    TestConstVisitor <DefaultVisitor, type::PushPort> visitor;
-    type::PushPort f (new ParameterList (loc), new ParameterList (loc));
-    f.accept (visitor);
-    tap.tassert ("PushPort::accept", visitor.item == &f);
-  }
-
-  {
-    util::Location loc;
     std::stringstream str;
     type::PushPort f (new ParameterList (loc), new ParameterList (loc));
     f.print (str);
@@ -539,14 +443,6 @@ main (int argc, char** argv)
     util::Location loc;
     type::PushPort f (new ParameterList (loc), new ParameterList (loc));
     tap.tassert ("PushPort::kind", f.kind () == Push_Port_Kind);
-  }
-
-  {
-    util::Location loc;
-    TestConstVisitor <DefaultVisitor, type::PullPort> visitor;
-    type::PullPort f (new ParameterList (loc), new ParameterList (loc));
-    f.accept (visitor);
-    tap.tassert ("PullPort::accept", visitor.item == &f);
   }
 
   {
@@ -577,14 +473,6 @@ main (int argc, char** argv)
 
   {
     util::Location loc;
-    TestConstVisitor <DefaultVisitor, type::Method> visitor;
-    type::Method f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
-    f.accept (visitor);
-    tap.tassert ("Method::accept", visitor.item == &f);
-  }
-
-  {
-    util::Location loc;
     std::stringstream str;
     type::Method f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     f.print (str);
@@ -595,14 +483,6 @@ main (int argc, char** argv)
     util::Location loc;
     type::Method f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     tap.tassert ("Method::kind", f.kind () == Method_Kind);
-  }
-
-  {
-    util::Location loc;
-    TestConstVisitor <DefaultVisitor, type::Initializer> visitor;
-    type::Initializer f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
-    f.accept (visitor);
-    tap.tassert ("Initializer::accept", visitor.item == &f);
   }
 
   {
@@ -621,14 +501,6 @@ main (int argc, char** argv)
 
   {
     util::Location loc;
-    TestConstVisitor <DefaultVisitor, type::Getter> visitor;
-    type::Getter f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
-    f.accept (visitor);
-    tap.tassert ("Getter::accept", visitor.item == &f);
-  }
-
-  {
-    util::Location loc;
     std::stringstream str;
     type::Getter f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     f.print (str);
@@ -643,14 +515,6 @@ main (int argc, char** argv)
 
   {
     util::Location loc;
-    TestConstVisitor <DefaultVisitor, type::Reaction> visitor;
-    type::Reaction f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
-    f.accept (visitor);
-    tap.tassert ("Reaction::accept", visitor.item == &f);
-  }
-
-  {
-    util::Location loc;
     std::stringstream str;
     type::Reaction f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     f.print (str);
@@ -661,13 +525,6 @@ main (int argc, char** argv)
     util::Location loc;
     type::Reaction f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     tap.tassert ("Reaction::kind", f.kind () == Reaction_Kind);
-  }
-
-  {
-    TestConstVisitor <DefaultVisitor, type::Interface> visitor;
-    type::Interface f (NULL);
-    f.accept (visitor);
-    tap.tassert ("Interface::accept", visitor.item == &f);
   }
 
   {

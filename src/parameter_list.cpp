@@ -74,7 +74,7 @@ ParameterList::print (std::ostream& out) const
           out << ", ";
         }
 
-      out << (*ptr)->type->to_string ();
+      out << (*ptr)->type->to_error_string ();
       flag = true;
     }
   out << ')';

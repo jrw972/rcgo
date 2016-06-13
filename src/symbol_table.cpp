@@ -89,7 +89,7 @@ struct SymbolTable::Scope
                     }
                   else
                     {
-                      if (type_contains_pointer (symbol->type) && symbol->dereference_mutability == Foreign)
+                      if (symbol->type->contains_pointer () && symbol->dereference_mutability == Foreign)
                         {
                           // Hide this parameter.
                           enter_symbol (new HiddenSymbol (symbol, symbol->location));
@@ -102,7 +102,7 @@ struct SymbolTable::Scope
               const VariableSymbol* symbol = symbol_cast<VariableSymbol> (*ptr);
               if (symbol != NULL)
                 {
-                  if (type_contains_pointer (symbol->type) && symbol->dereference_mutability == Foreign)
+                  if (symbol->type->contains_pointer () && symbol->dereference_mutability == Foreign)
                     {
                       // Hide this variable.
                       enter_symbol (new HiddenSymbol (symbol, symbol->location));
@@ -128,7 +128,7 @@ struct SymbolTable::Scope
               ParameterSymbol* symbol = symbol_cast<ParameterSymbol> (*ptr);
               if (symbol != NULL)
                 {
-                  if (type_contains_pointer (symbol->type))
+                  if (symbol->type->contains_pointer ())
                     {
                       // Enter as a duplicate.
                       Symbol* dup = symbol->duplicate (Foreign);
@@ -141,7 +141,7 @@ struct SymbolTable::Scope
               VariableSymbol* symbol = symbol_cast<VariableSymbol> (*ptr);
               if (symbol != NULL)
                 {
-                  if (type_contains_pointer (symbol->type))
+                  if (symbol->type->contains_pointer ())
                     {
                       // Enter as a duplicate.
                       Symbol* dup = symbol->duplicate ();

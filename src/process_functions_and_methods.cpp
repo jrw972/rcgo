@@ -61,7 +61,7 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
 
   NamedType *type = symbol->type;
 
-  if (requireComponent && type_strip_cast<Component> (type) == NULL)
+  if (requireComponent && type->underlying_type ()->kind () != Component_Kind)
     {
       error_at_line (-1, 0, type_identifier_node->location.file.c_str (), type_identifier_node->location.line,
                      "%s does not refer to a component (E58)",
@@ -359,9 +359,9 @@ struct Visitor : public ast::DefaultNodeVisitor
     const std::string& identifier = node.identifier->identifier;
     const std::string& initializer_identifier = node.initializer->identifier;
 
-    const type::NamedType* type = type_cast<NamedType> (process_type (node.type_name, er, symtab, true));
+    const type::NamedType* type = process_type (node.type_name, er, symtab, true)->to_named_type ();
 
-    if (type_cast<Component> (type_strip (type)) == NULL)
+    if (type->underlying_type ()->kind () != Component_Kind)
       {
         error_at_line (-1, 0, node.type_name->location.file.c_str (),
                        node.type_name->location.line,

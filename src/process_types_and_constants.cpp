@@ -63,7 +63,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     // Process the type spec.
     const type::Type* type = process_type (type_spec, er, symtab, true);
 
-    if (type_cast<Void> (type) == NULL)
+    if (type->kind () != Void_Kind)
       {
         // Type, expressions.
 
@@ -84,7 +84,7 @@ struct Visitor : public ast::DefaultNodeVisitor
             if (!assignable (n->eval.type, n->eval.value, type))
               {
                 error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                               "cannot assign %s to %s in initialization (E131)", n->eval.type->to_string ().c_str (), type->to_string ().c_str ());
+                               "cannot assign %s to %s in initialization (E131)", n->eval.type->to_error_string ().c_str (), type->to_error_string ().c_str ());
               }
 
             n->eval.value.convert (n->eval.type, type);

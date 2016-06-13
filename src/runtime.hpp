@@ -515,26 +515,14 @@ struct Unary : public Operation
 template <template <typename S> class T>
 Operation* make_unary (const type::Type* type, Operation* child)
 {
-  struct visitor : public type::DefaultVisitor
-  {
-    Operation* child;
-    Operation* operation;
-
-    visitor (Operation* c) : child (c), operation (NULL) { }
-
-    void default_action (const type::Type& type)
+  if (type->underlying_type ()->kind () == type::Bool_Kind)
     {
-      TYPE_NOT_REACHED (type);
+      return new Unary<T<type::Bool::ValueType> > (child);
     }
-
-    void visit (const type::Bool& type)
+  else
     {
-      operation = new Unary<T<type::Bool::ValueType> > (child);
+      TYPE_NOT_REACHED (*type);
     }
-  };
-  visitor v (child);
-  type->underlying_type ()->accept (v);
-  return v.operation;
 }
 
 template <typename V, typename T>

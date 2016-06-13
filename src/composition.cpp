@@ -1319,124 +1319,67 @@ Composer::instantiate_contained_instances (const type::Type * type,
     size_t address,
     unsigned int line,
     ast::Instance* node,
-    const std::string& name)
+    const std::string& name,
+    const NamedType* named_type,
+    Field* field)
 {
-  struct visitor : public ::type::DefaultVisitor
-  {
-    composition::Composer& instance_table;
-    composition::Instance* const parent;
-    decl::Initializer* const initializer;
-    size_t const address;
-    Field* const field;
-    unsigned int const line;
-    ast::Instance* const node;
-    std::string const name;
-
-    const NamedType* named_type;
-
-    composition::Instance* instance;
-
-    visitor (composition::Composer& it, composition::Instance* p, decl::Initializer* i, size_t a, Field* f, unsigned int l, ast::Instance* n, const std::string& aName)
-      : instance_table (it)
-      , parent (p)
-      , initializer (i)
-      , address (a)
-      , field (f)
-      , line (l)
-      , node (n)
-      , name (aName)
-      , named_type (NULL)
-      , instance (NULL)
-    { }
-
-    void default_action (const type::Type& type)
+  switch (type->kind ())
     {
-      TYPE_NOT_REACHED (type);
-    }
+    case Named_Kind:
+      return instantiate_contained_instances (type->underlying_type (), parent, initializer, address, line, node, name, type->to_named_type ());
 
-    void visit (const NamedType& type)
-    {
-      // Save the named typed.
-      named_type = &type;
-      type.underlying_type ()->accept (*this);
-    }
-
-    void visit (const Component& type)
+    case Component_Kind:
     {
       assert (named_type != NULL);
 
-      composition::Instance* instance = new composition::Instance (parent, address, named_type, initializer, (node != NULL) ? node->operation : NULL, name);
-      this->instance = instance;
-      instance_table.add_instance (instance);
+      parent = new composition::Instance (parent, address, named_type, initializer, (node != NULL) ? node->operation : NULL, name);
+      this->add_instance (parent);
 
       // Recur changing instance.
-      visitor v (instance_table, instance, NULL, address, NULL, line, NULL, name);
-      v.visit (static_cast<const Struct&> (type));
-    }
+      const Struct* s = type->to_struct ();
 
-    void visit (const Struct& type)
-    {
-      for (Struct::const_iterator pos = type.begin (),
-           limit = type.end ();
+      for (Struct::const_iterator pos = s->begin (),
+           limit = s->end ();
            pos != limit;
            ++pos)
         {
           // Recur changing address (and field).
-          visitor v (instance_table, parent, NULL, address + (*pos)->offset, *pos, line, NULL, name + "." + (*pos)->name);
-          (*pos)->type->accept (v);
+          instantiate_contained_instances ((*pos)->type, parent, NULL, address + (*pos)->offset, line, NULL, name + "." + (*pos)->name, NULL, *pos);
         }
-    }
 
-    void visit (const Array& type)
+      return parent;
+    }
+    break;
+
+    case Array_Kind:
     {
-      for (Int::ValueType idx = 0; idx != type.dimension; ++idx)
+      const Array* a = type->to_array ();
+      for (Int::ValueType idx = 0; idx != a->dimension; ++idx)
         {
           // Recur changing address.
           std::stringstream newname;
           newname << name << '[' << idx << ']';
-          visitor v (instance_table, parent, NULL, address + idx * type.unit_size (), field, line, NULL, newname.str ());
-          type.base_type->accept (v);
+
+          instantiate_contained_instances (a->base_type, parent, NULL, address + idx * a->unit_size (), line, NULL, newname.str (), NULL, field);
         }
     }
+    break;
 
-    void visit (const Bool& type) { }
-
-    void visit (const Int& type) { }
-
-    void visit (const Int8& type) { }
-
-    void visit (const Uint& type) { }
-
-    void visit (const Uint8& type) { }
-
-    void visit (const Uint32& type) { }
-
-    void visit (const Uint64& type) { }
-
-    void visit (const Float64& type) { }
-
-    void visit (const Pointer& type) { }
-
-    void visit (const type::Function& type)
+    case Push_Port_Kind:
     {
-      // Do nothing.
+      this->add_push_port (address, parent, field, name);
+    }
+    break;
+
+    case Pull_Port_Kind:
+      this->add_pull_port (address, parent, field, name);
+      break;
+
+    default:
+      break;
     }
 
-    void visit (const type::PushPort& type)
-    {
-      instance_table.add_push_port (address, parent, field, name);
-    }
-
-    void visit (const type::PullPort& type)
-    {
-      instance_table.add_pull_port (address, parent, field, name);
-    }
-
-    void visit (const type::FileDescriptor& type) { }
-  };
-  visitor v (*this, parent, initializer, address, NULL, line, node, name);
-  type->accept (v);
-  return v.instance;
+  return NULL;
 }
 
 }

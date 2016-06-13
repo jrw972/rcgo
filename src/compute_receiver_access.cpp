@@ -181,7 +181,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     // Check if a mutable pointer escapes.
     // Consevatively assume that is is written.
     if (node.right->eval.receiver_state &&
-        type_contains_pointer (node.right->eval.type) &&
+        node.right->eval.type->contains_pointer () &&
         node.right->eval.indirection_mutability == Mutable)
       {
         node.eval.receiver_access = AccessWrite;
@@ -255,14 +255,14 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.eval.receiver_access = std::max (node.eval.receiver_access, node.expr->eval.receiver_access);
     if (node.method_type != NULL &&
         node.expr->eval.receiver_state &&
-        type_contains_pointer (node.method_type->receiver_parameter->type) &&
+        node.method_type->receiver_parameter->type->contains_pointer () &&
         node.method_type->receiver_parameter->dereference_mutability == Mutable)
       {
         node.eval.receiver_access = AccessWrite;
       }
 
     // Check if a mutable pointer containing receiver state is returned.
-    if (type_contains_pointer (node.eval.type) &&
+    if (node.eval.type->contains_pointer () &&
         node.eval.indirection_mutability == Mutable)
       {
         node.eval.receiver_state = flag;
@@ -399,7 +399,7 @@ compute_receiver_access_arguments (const ExpressionValueList& args,
       ParameterSymbol* param = signature->at (i);
       receiver_access = std::max (receiver_access, pos->receiver_access);
       if (pos->receiver_state &&
-          type_contains_pointer (param->type) &&
+          param->type->contains_pointer () &&
           param->dereference_mutability == Mutable)
         {
           receiver_access = std::max (receiver_access, AccessWrite);

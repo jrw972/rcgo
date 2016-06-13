@@ -111,17 +111,22 @@ namespace type
 class Array;
 class Field;
 class Function;
+class Getter;
 class Heap;
+class Initializer;
 class Interface;
 class Map;
+class Method;
 class NamedType;
 class Pointer;
 class PullPort;
 class PushPort;
+class Reaction;
 class Slice;
 class Struct;
 class Type;
-class Visitor;
+class UntypedString;
+class Void;
 
 typedef std::set<std::string> TagSet;
 }

@@ -23,7 +23,7 @@ Type::Type ()
 
 Type::~Type () { }
 
-std::string Type::to_string () const
+std::string Type::to_error_string () const
 {
   std::stringstream str;
   print (str);
@@ -111,6 +111,18 @@ bool Type::is_numeric () const
     }
 
   NOT_REACHED;
+}
+
+bool
+Type::contains_pointer () const
+{
+  return underlying_type ()->contains_pointer_i ();
+}
+
+bool
+Type::contains_pointer_i () const
+{
+  return false;
 }
 
 std::ostream&
@@ -231,6 +243,10 @@ const PushPort* Type::to_push_port () const
 {
   return NULL;
 }
+const Reaction* Type::to_reaction () const
+{
+  return NULL;
+}
 const PullPort* Type::to_pull_port () const
 {
   return NULL;
@@ -244,6 +260,18 @@ const Map* Type::to_map () const
   return NULL;
 }
 const Heap* Type::to_heap () const
+{
+  return NULL;
+}
+const Method* Type::to_method () const
+{
+  return NULL;
+}
+const Initializer* Type::to_initializer () const
+{
+  return NULL;
+}
+const Getter* Type::to_getter () const
 {
   return NULL;
 }
@@ -487,10 +515,10 @@ Type::find (const std::string& identifier) const
 const Type*
 Type::move () const
 {
-  const Pointer* ptf = type_cast<Pointer> (this);
+  const Pointer* ptf = this->to_pointer ();
   if (ptf)
     {
-      const Heap* h = type_cast<Heap> (ptf->base_type);
+      const Heap* h = ptf->base_type->to_heap ();
       if (h)
         {
           return ptf;
@@ -503,11 +531,11 @@ Type::move () const
 const Type*
 Type::merge_change () const
 {
-  const Pointer* ptf = type_cast<Pointer> (this);
+  const Pointer* ptf = this->to_pointer ();
 
   if (ptf)
     {
-      const Heap* h = type_cast<Heap> (ptf->base_type);
+      const Heap* h = ptf->base_type->to_heap ();
       if (h)
         {
           return h->base_type->get_pointer ();
@@ -516,58 +544,6 @@ Type::merge_change () const
 
   return NULL;
 }
-
-#define ACCEPT(type) void \
-type::accept (Visitor& visitor) const \
-{ \
-  visitor.visit (*this); \
-}
-
-#define T_ACCEPT(type) template<> void type::accept (Visitor& visitor) const { visitor.visit (*this); }
-
-ACCEPT(Array)
-ACCEPT(UntypedBoolean)
-ACCEPT(UntypedComplex)
-ACCEPT(Component)
-ACCEPT(FileDescriptor)
-ACCEPT(UntypedFloat)
-ACCEPT(Function)
-ACCEPT(PushPort)
-ACCEPT(PullPort)
-ACCEPT(Heap)
-ACCEPT(UntypedInteger)
-ACCEPT(Interface)
-ACCEPT(Map)
-ACCEPT(Method)
-ACCEPT(Initializer)
-ACCEPT(Getter)
-ACCEPT(Reaction)
-ACCEPT(NamedType)
-ACCEPT(UntypedNil)
-ACCEPT(Pointer)
-ACCEPT(UntypedRune)
-ACCEPT(Slice)
-ACCEPT(UntypedString)
-ACCEPT(Struct)
-ACCEPT(PolymorphicFunction)
-ACCEPT(Void)
-T_ACCEPT(Bool)
-T_ACCEPT(Complex128)
-T_ACCEPT(Complex64)
-T_ACCEPT(Float32)
-T_ACCEPT(Float64)
-T_ACCEPT(Int)
-T_ACCEPT(Int16)
-T_ACCEPT(Int32)
-T_ACCEPT(Int64)
-T_ACCEPT(Int8)
-T_ACCEPT(String)
-T_ACCEPT(Uint)
-T_ACCEPT(Uint16)
-T_ACCEPT(Uint32)
-T_ACCEPT(Uint64)
-T_ACCEPT(Uint8)
-T_ACCEPT(Uintptr)
 
 static bool
 function_base_are_identical (const FunctionBase* type1,
@@ -795,6 +771,7 @@ INSTANCE(UntypedFloat)
 INSTANCE(UntypedComplex)
 INSTANCE(UntypedString)
 INSTANCE(PolymorphicFunction)
+INSTANCE(String)
 
 Struct::Struct () : offset_ (0), alignment_ (0)
 {
@@ -808,129 +785,55 @@ Component::Component (Package* package)
 }
 
 bool
-type_contains_pointer (const Type* type)
+Array::contains_pointer_i () const
 {
-  struct visitor : public DefaultVisitor
-  {
-    bool flag;
+  return base_type->contains_pointer ();
+}
 
-    visitor () : flag (false) { }
+bool
+Heap::contains_pointer_i () const
+{
+  return base_type->contains_pointer ();
+}
 
-    void default_action (const Type& type)
+bool
+Pointer::contains_pointer_i () const
+{
+  return true;
+}
+
+bool
+Slice::contains_pointer_i () const
+{
+  return true;
+}
+
+bool
+String::contains_pointer_i () const
+{
+  return true;
+}
+
+bool
+FileDescriptor::contains_pointer_i () const
+{
+  return true;
+}
+
+bool
+Struct::contains_pointer_i () const
+{
+  for (Struct::const_iterator pos = begin (), limit = end ();
+       pos != limit;
+       ++pos)
     {
-      TYPE_NOT_REACHED (type);
-    }
-
-    void visit (const NamedType& type)
-    {
-      type.underlying_type ()->accept (*this);
-    }
-
-    void visit (const Void& type)
-    { }
-
-    void visit (const Bool& type)
-    { }
-
-    void visit (const Int& type)
-    { }
-
-    void visit (const Int8& type)
-    { }
-
-    void visit (const Int16& type)
-    { }
-
-    void visit (const Int32& type)
-    { }
-
-    void visit (const Int64& type)
-    { }
-
-    void visit (const Uint& type)
-    { }
-
-    void visit (const Uint8& type)
-    { }
-
-    void visit (const Uint16& type)
-    { }
-
-    void visit (const Uint32& type)
-    { }
-
-    void visit (const Uint64& type)
-    { }
-
-    void visit (const Float32& type)
-    { }
-
-    void visit (const Float64& type)
-    { }
-
-    void visit (const Complex64& type)
-    { }
-
-    void visit (const Complex128& type)
-    { }
-
-    void visit (const Array& type)
-    {
-      type.base_type->accept (*this);
-    }
-
-    void visit (const Pointer& type)
-    {
-      flag = true;
-    }
-
-    void visit (const Heap& type)
-    {
-      type.base_type->accept (*this);
-    }
-
-    void visit (const Slice& type)
-    {
-      flag = true;
-    }
-
-    void visit (const String& type)
-    {
-      flag = true;
-    }
-
-    void visit (const FileDescriptor& type)
-    {
-      flag = true;
-    }
-
-    void visit (const Function& type)
-    {
-      // Do nothing.
-    }
-
-    void visit (const Struct& type)
-    {
-      for (Struct::const_iterator pos = type.begin (), limit = type.end ();
-           pos != limit;
-           ++pos)
+      if ((*pos)->type->contains_pointer ())
         {
-          (*pos)->type->accept (*this);
+          return true;
         }
     }
 
-    void visit (const UntypedBoolean& type) { }
-    void visit (const UntypedInteger& type) { }
-    void visit (const UntypedFloat& type) { }
-    void visit (const UntypedComplex& type) { }
-    void visit (const UntypedString& type)
-    {
-      flag = true;
-    }
-  };
-  visitor v;
-  type->accept (v);
-  return v.flag;
+  return false;
 }
 
 NamedType::NamedType (const std::string& name)
@@ -1038,250 +941,184 @@ const NamedType* NamedType::to_named_type () const
 bool
 type_is_integral (const Type* type)
 {
-  struct visitor : public DefaultVisitor
-  {
-    bool flag;
-    visitor () : flag (false) { }
+  UNIMPLEMENTED;
+  // struct visitor : public DefaultVisitor
+  // {
+  //   bool flag;
+  //   visitor () : flag (false) { }
 
-    void visit (const NamedType& type)
-    {
-      type.underlying_type ()->accept (*this);
-    }
+  //   void visit (const NamedType& type)
+  //   {
+  //     type.underlying_type ()->accept (*this);
+  //   }
 
-    void visit (const Int& type)
-    {
-      flag = true;
-    }
+  //   void visit (const Int& type)
+  //   {
+  //     flag = true;
+  //   }
 
-    void visit (const Int8& type)
-    {
-      flag = true;
-    }
+  //   void visit (const Int8& type)
+  //   {
+  //     flag = true;
+  //   }
 
-    void visit (const Int64& type)
-    {
-      flag = true;
-    }
+  //   void visit (const Int64& type)
+  //   {
+  //     flag = true;
+  //   }
 
-    void visit (const Uint& type)
-    {
-      flag = true;
-    }
+  //   void visit (const Uint& type)
+  //   {
+  //     flag = true;
+  //   }
 
-    void visit (const Uint8& type)
-    {
-      flag = true;
-    }
+  //   void visit (const Uint8& type)
+  //   {
+  //     flag = true;
+  //   }
 
-    void visit (const Uint32& type)
-    {
-      flag = true;
-    }
+  //   void visit (const Uint32& type)
+  //   {
+  //     flag = true;
+  //   }
 
-    void visit (const Uint64& type)
-    {
-      flag = true;
-    }
+  //   void visit (const Uint64& type)
+  //   {
+  //     flag = true;
+  //   }
 
-    void visit (const UntypedInteger& type)
-    {
-      flag = true;
-    }
-  };
-  visitor v;
-  type->accept (v);
-  return v.flag;
+  //   void visit (const UntypedInteger& type)
+  //   {
+  //     flag = true;
+  //   }
+  // };
+  // visitor v;
+  // type->accept (v);
+  // return v.flag;
 }
 
 bool
 type_is_unsigned_integral (const Type* type)
 {
-  struct visitor : public DefaultVisitor
-  {
-    bool flag;
-    visitor () : flag (false) { }
+  UNIMPLEMENTED;
+  // struct visitor : public DefaultVisitor
+  // {
+  //   bool flag;
+  //   visitor () : flag (false) { }
 
-    void visit (const NamedType& type)
-    {
-      type.underlying_type ()->accept (*this);
-    }
+  //   void visit (const NamedType& type)
+  //   {
+  //     type.underlying_type ()->accept (*this);
+  //   }
 
-    void visit (const Uint& type)
-    {
-      flag = true;
-    }
+  //   void visit (const Uint& type)
+  //   {
+  //     flag = true;
+  //   }
 
-    void visit (const Uint8& type)
-    {
-      flag = true;
-    }
-  };
-  visitor v;
-  type->accept (v);
-  return v.flag;
+  //   void visit (const Uint8& type)
+  //   {
+  //     flag = true;
+  //   }
+  // };
+  // visitor v;
+  // type->accept (v);
+  // return v.flag;
 }
 
 bool
 type_is_floating (const Type* type)
 {
-  struct visitor : public DefaultVisitor
-  {
-    bool flag;
-    visitor () : flag (false) { }
+  UNIMPLEMENTED;
+  // struct visitor : public DefaultVisitor
+  // {
+  //   bool flag;
+  //   visitor () : flag (false) { }
 
-    void visit (const NamedType& type)
-    {
-      type.underlying_type ()->accept (*this);
-    }
+  //   void visit (const NamedType& type)
+  //   {
+  //     type.underlying_type ()->accept (*this);
+  //   }
 
-    void visit (const Float64& type)
-    {
-      flag = true;
-    }
-  };
-  visitor v;
-  type->accept (v);
-  return v.flag;
+  //   void visit (const Float64& type)
+  //   {
+  //     flag = true;
+  //   }
+  // };
+  // visitor v;
+  // type->accept (v);
+  // return v.flag;
 }
 
 bool
 type_is_orderable (const Type* type)
 {
-  struct visitor : public DefaultVisitor
-  {
-    bool flag;
-    visitor () : flag (false) { }
+  UNIMPLEMENTED;
+  // struct visitor : public DefaultVisitor
+  // {
+  //   bool flag;
+  //   visitor () : flag (false) { }
 
-    void visit (const Pointer& type)
-    {
-      flag = true;
-    }
+  //   void visit (const Pointer& type)
+  //   {
+  //     flag = true;
+  //   }
 
-    void visit (const NamedType& type)
-    {
-      type.underlying_type ()->accept (*this);
-    }
+  //   void visit (const NamedType& type)
+  //   {
+  //     type.underlying_type ()->accept (*this);
+  //   }
 
-    void visit (const Int& type)
-    {
-      flag = true;
-    }
+  //   void visit (const Int& type)
+  //   {
+  //     flag = true;
+  //   }
 
-    void visit (const Int8& type)
-    {
-      flag = true;
-    }
+  //   void visit (const Int8& type)
+  //   {
+  //     flag = true;
+  //   }
 
-    void visit (const Uint& type)
-    {
-      flag = true;
-    }
-  };
-  visitor v;
-  type->accept (v);
-  return v.flag;
+  //   void visit (const Uint& type)
+  //   {
+  //     flag = true;
+  //   }
+  // };
+  // visitor v;
+  // type->accept (v);
+  // return v.flag;
 }
 
 bool
 type_is_pointer_compare (const Type* left, const Type* right)
 {
-  const Type* l = type_strip (left);
-  const Type* r = type_strip (right);
+  const Type* l = left->underlying_type ();
+  const Type* r = right->underlying_type ();
 
   return
-    (type_cast<Pointer> (l) && type_cast<UntypedNil>(r)) ||
-    (type_cast<UntypedNil> (l) && type_cast<Pointer> (r));
-
-}
-
-const Type*
-type_strip (const Type* type)
-{
-  struct visitor : public DefaultVisitor
-  {
-    const Type* retval;
-    visitor (const Type* t) : retval (t) { }
-
-    void visit (const NamedType& type)
-    {
-      retval = type.underlying_type ();
-    }
-  };
-  visitor v (type);
-  type->accept (v);
-  if (type == v.retval)
-    {
-      return type;
-    }
-  else
-    {
-      return type_strip (v.retval);
-    }
-}
-
-const Type*
-type_index (const Type* base, const Type* index)
-{
-  struct visitor : public DefaultVisitor
-  {
-    const Type* index;
-    const Type* result;
-
-    visitor (const Type* i) : index (i), result (NULL) { }
-
-    void visit (const Array& type)
-    {
-      struct visitor : public DefaultVisitor
-      {
-        const Array& array_type;
-        const Type* result;
-
-        visitor (const Array& at) : array_type (at), result (NULL) { }
-
-        void visit (const NamedType& type)
-        {
-          type.underlying_type ()->accept (*this);
-        }
-
-        void visit (const Uint& type)
-        {
-          result = array_type.base_type;
-        }
-
-        void visit (const Int& type)
-        {
-          result = array_type.base_type;
-        }
-      };
-      visitor v (type);
-      index->accept (v);
-      result = v.result;
-    }
-
-  };
-  visitor v (index);
-  base->accept (v);
-  return v.result;
+    (l->kind () == Pointer_Kind && r->kind () == Untyped_Nil_Kind) ||
+    (l->kind () == Untyped_Nil_Kind && r->kind () == Pointer_Kind);
 }
 
 bool
 type_is_index (const Type* type, Int::ValueType index)
 {
-  struct visitor : public DefaultVisitor
-  {
-    Int::ValueType index;
-    bool flag;
+  UNIMPLEMENTED;
+  // struct visitor : public DefaultVisitor
+  // {
+  //   Int::ValueType index;
+  //   bool flag;
 
-    visitor (Int::ValueType i) : index (i), flag (false) { }
+  //   visitor (Int::ValueType i) : index (i), flag (false) { }
 
-    void visit (const Array& type)
-    {
-      flag = index >= 0 && index < type.dimension;
-    }
-  };
-  visitor v (index);
-  type->accept (v);
-  return v.flag;
+  //   void visit (const Array& type)
+  //   {
+  //     flag = index >= 0 && index < type.dimension;
+  //   }
+  // };
+  // visitor v (index);
+  // type->accept (v);
+  // return v.flag;
 }
 
 bool
@@ -1425,10 +1262,10 @@ assignable (const Type* from, const Value& from_value, const Type* to)
 
   // TODO:  T is an interface type and x implements T.
 
-  if (type_cast<UntypedNil> (from) &&
-      (type_cast<Pointer> (to->underlying_type ()) ||
-       type_cast<Function> (to->underlying_type ()) ||
-       type_cast<Slice> (to->underlying_type ())
+  if (from->kind () == Untyped_Nil_Kind &&
+      (to->underlying_type ()->to_pointer () ||
+       to->underlying_type ()->to_function () ||
+       to->underlying_type ()->to_slice ()
        //type_cast<Map> (to->underlying_type ()) ||
        //type_cast<Interface> (to->underlying_type ())
       ))
@@ -1474,60 +1311,25 @@ NamedType::find_callable (const std::string& name) const
   return NULL;
 }
 
-bool is_typed_integer (const Type* type)
+bool Type::is_typed_integer () const
 {
-  struct visitor : DefaultVisitor
-  {
-    bool flag;
-    visitor () : flag (false) { }
-    void visit (const Uint8& type)
+  switch (underlying_type ()->kind ())
     {
-      flag = true;
+    case Uint8_Kind:
+    case Uint16_Kind:
+    case Uint32_Kind:
+    case Uint64_Kind:
+    case Int8_Kind:
+    case Int16_Kind:
+    case Int32_Kind:
+    case Int64_Kind:
+    case Uint_Kind:
+    case Int_Kind:
+    case Uintptr_Kind:
+      return true;
+    default:
+      return false;
     }
-    void visit (const Uint16& type)
-    {
-      flag = true;
-    }
-    void visit (const Uint32& type)
-    {
-      flag = true;
-    }
-    void visit (const Uint64& type)
-    {
-      flag = true;
-    }
-    void visit (const Int8& type)
-    {
-      flag = true;
-    }
-    void visit (const Int16& type)
-    {
-      flag = true;
-    }
-    void visit (const Int32& type)
-    {
-      flag = true;
-    }
-    void visit (const Int64& type)
-    {
-      flag = true;
-    }
-    void visit (const Uint& type)
-    {
-      flag = true;
-    }
-    void visit (const Int& type)
-    {
-      flag = true;
-    }
-    void visit (const Uintptr& type)
-    {
-      flag = true;
-    }
-  };
-  visitor v;
-  type->underlying_type ()->accept (v);
-  return v.flag;
 }
 
 bool is_typed_unsigned_integer (const Type* type)
@@ -1653,22 +1455,22 @@ bool is_any_string (const Type* type)
 
 bool is_slice_of_bytes (const Type* type)
 {
-  const Slice* slice_type = type_cast<Slice> (type->underlying_type ());
+  const Slice* slice_type = type->underlying_type ()->to_slice ();
   if (slice_type == NULL)
     {
       return false;
     }
-  return type_cast<Uint8> (slice_type->base_type->underlying_type ()) != NULL;
+  return slice_type->base_type->underlying_type ()->kind () == Uint8_Kind;
 }
 
 bool is_slice_of_runes (const Type* type)
 {
-  const Slice* slice_type = type_cast<Slice> (type->underlying_type ());
+  const Slice* slice_type = type->underlying_type ()->to_slice ();
   if (slice_type == NULL)
     {
       return false;
     }
-  return type_cast<Int32> (slice_type->base_type->underlying_type ()) != NULL;
+  return slice_type->base_type->underlying_type ()->kind () == Int32_Kind;
 }
 
 bool orderable (const Type* type)
@@ -1769,7 +1571,7 @@ bool is_any_boolean (const Type* type)
 const Pointer*
 pointer_to_array (const Type* type)
 {
-  const Pointer* p = type_cast<Pointer> (type->underlying_type ());
+  const Pointer* p = type->underlying_type ()->to_pointer ();
   if (p != NULL && p->base_type->underlying_kind () == Array_Kind)
     {
       return p;
@@ -2421,40 +2223,83 @@ void UntypedString::print (std::ostream& out) const
 
 UntypedString::UntypedString () { }
 
-  void PolymorphicFunction::print (std::ostream& out) const
-  {
-    out << "<<polymorphic function>>";
-  }
-  size_t PolymorphicFunction::alignment () const
-  {
-    return 0;
-  }
-  size_t PolymorphicFunction::size () const
-  {
-    return 0;
-  }
-  Kind PolymorphicFunction::kind () const
-  {
-    return Polymorphic_Function_Kind;
-  }
-  PolymorphicFunction::PolymorphicFunction () { }
+void PolymorphicFunction::print (std::ostream& out) const
+{
+  out << "<<polymorphic function>>";
+}
+size_t PolymorphicFunction::alignment () const
+{
+  return 0;
+}
+size_t PolymorphicFunction::size () const
+{
+  return 0;
+}
+Kind PolymorphicFunction::kind () const
+{
+  return Polymorphic_Function_Kind;
+}
+PolymorphicFunction::PolymorphicFunction () { }
 
-  void FileDescriptor::print (std::ostream& out) const
-  {
-    out << "<FileDescriptor>";
-  }
-  size_t FileDescriptor::alignment () const
-  {
-    return sizeof (void*);
-  }
-  size_t FileDescriptor::size () const
-  {
-    return sizeof (void*);
-  }
-  Kind FileDescriptor::kind () const
-  {
-    return File_Descriptor_Kind;
-  }
+void FileDescriptor::print (std::ostream& out) const
+{
+  out << "<FileDescriptor>";
+}
+size_t FileDescriptor::alignment () const
+{
+  return sizeof (void*);
+}
+size_t FileDescriptor::size () const
+{
+  return sizeof (void*);
+}
+Kind FileDescriptor::kind () const
+{
+  return File_Descriptor_Kind;
+}
 
-  FileDescriptor::FileDescriptor () { }
+FileDescriptor::FileDescriptor () { }
+
+const Initializer* Initializer::to_initializer () const
+{
+  return this;
+}
+
+const Method* Method::to_method () const
+{
+  return this;
+}
+
+const Getter* Getter::to_getter () const
+{
+  return this;
+}
+
+const Reaction* Reaction::to_reaction () const
+{
+  return this;
+}
+
+void String::print (std::ostream& out) const
+{
+  out << "<string>";
+}
+
+size_t String::alignment () const
+{
+  return sizeof (void*);
+}
+
+size_t String::size () const
+{
+  return sizeof (StringRep);
+}
+
+Kind String::kind () const
+{
+  return String_Kind;
+}
+
+String::String () { }
+
 }
