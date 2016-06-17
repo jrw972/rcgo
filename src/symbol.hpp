@@ -10,6 +10,7 @@ namespace decl
 class SymbolVisitor;
 class ConstSymbolVisitor;
 
+// TODO:  Remove this.
 extern std::string const ReturnSymbol;
 
 /*
@@ -83,7 +84,7 @@ struct ParameterSymbol : public Symbol
     : Symbol (id, loc)
     , type (t)
     , intrinsic_mutability (im)
-    , dereference_mutability (is_typed_string (t) ? std::max (dm, Immutable) : dm)
+    , dereference_mutability (t->is_typed_string () ? std::max (dm, Immutable) : dm)
     , kind (k)
     , original_ (NULL)
   { }
@@ -212,7 +213,7 @@ struct VariableSymbol : public Symbol
     : Symbol (id, loc)
     , type (t)
     , intrinsic_mutability (im)
-    , dereference_mutability (is_typed_string (t) ? std::max (dm, Immutable) : dm)
+    , dereference_mutability (t->is_typed_string () ? std::max (dm, Immutable) : dm)
     , original_ (NULL)
   { }
 

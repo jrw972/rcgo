@@ -22,7 +22,7 @@ struct NodeVisitor
   virtual void visit (PointerTypeSpec& node) = 0;
   virtual void visit (PushPortTypeSpec& node) = 0;
   virtual void visit (PullPortTypeSpec& node) = 0;
-  virtual void visit (SignatureTypeSpec& node) = 0;
+  virtual void visit (ParameterList& node) = 0;
   virtual void visit (TypeExpression& node) = 0;
   virtual void visit (BinaryArithmeticExpr& node) = 0;
   virtual void visit (AddressOfExpr& node) = 0;
@@ -90,7 +90,7 @@ struct DefaultNodeVisitor : public NodeVisitor
   virtual void visit (PointerTypeSpec& node);
   virtual void visit (PushPortTypeSpec& node);
   virtual void visit (PullPortTypeSpec& node);
-  virtual void visit (SignatureTypeSpec& node);
+  virtual void visit (ParameterList& node);
   virtual void visit (TypeExpression& node);
   virtual void visit (BinaryArithmeticExpr& node);
   virtual void visit (AddressOfExpr& node);

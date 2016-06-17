@@ -98,6 +98,19 @@ struct Type
   bool is_numeric () const;
   bool contains_pointer () const;
   bool is_typed_integer () const;
+  bool is_typed_float () const;
+  bool is_typed_unsigned_integer () const;
+  bool is_typed_complex () const;
+  bool is_typed_numeric () const;
+  bool is_untyped_numeric () const;
+  bool is_typed_string () const;
+  bool is_any_string () const;
+  bool is_slice_of_bytes () const;
+  bool is_slice_of_runes () const;
+  const Pointer* pointer_to_array () const;
+  bool is_arithmetic () const;
+  bool is_integral () const;
+  bool is_any_boolean () const;
   // Get a type making this type the base type
   const Pointer* get_pointer () const;
   const Slice* get_slice () const;
@@ -432,8 +445,6 @@ struct FunctionBase : public Type
   FunctionBase (const decl::ParameterList* a_parameter_list,
                 const decl::ParameterList* a_return_parameter_list);
   size_t alignment () const;
-  decl::ParameterSymbol* get_parameter (const std::string& name) const;
-  decl::ParameterSymbol* get_return_parameter (const std::string& name) const;
   const decl::ParameterList* const parameter_list;
   const decl::ParameterList* const return_parameter_list;
 };
@@ -659,75 +670,12 @@ bool
 are_identical (const Type* x, const Type* y);
 
 bool
-assignable (const Type* from, const semantic::Value& from_value, const Type* to);
+are_assignable (const Type* from,
+                const semantic::Value& from_value,
+                const Type* to);
 
 const Type*
-Choose (const Type* x, const Type* y);
-
-// True if any pointer is accessible.
-bool is_typed_boolean (const Type* type);
-bool is_untyped_boolean (const Type* type);
-bool is_any_boolean (const Type* type);
-
-bool is_typed_string (const Type* type);
-bool is_untyped_string (const Type* type);
-bool is_any_string (const Type* type);
-
-bool is_typed_unsigned_integer (const Type* type);
-bool is_typed_float (const Type* type);
-bool is_typed_complex (const Type* type);
-// True to typed numeric types.
-bool is_typed_numeric (const Type* type);
-// True for untyped numeric types.
-bool is_untyped_numeric (const Type* type);
-bool is_slice_of_bytes (const Type* type);
-bool is_slice_of_runes (const Type* type);
-
-// True if the type is comparable.
-bool comparable (const Type* type);
-
-// True if the type is orderable.
-bool orderable (const Type* type);
-
-// True if the types are arithmetic.
-bool arithmetic (const Type* type);
-
-bool integral (const Type* type);
-
-// True if type is an integer.
-bool
-type_is_integral (const Type* type);
-
-// True if type is an unsigned integer.
-bool
-type_is_unsigned_integral (const Type* type);
-
-// True if type is floating-point.
-bool
-type_is_floating (const Type* type);
-
-// True if == or != can be applied to values of this type.
-bool
-type_is_comparable (const Type* type);
-
-// True if <, <=, >, or >= can be applied to values of this type.
-bool
-type_is_orderable (const Type* type);
-
-// True if index is valid.
-bool
-type_is_index (const Type* type, Int::ValueType index);
-
-// True if x can be cast to y.
-bool
-type_is_castable (const Type* x, const Type* y);
-
-bool
-type_is_pointer_compare (const Type* left, const Type* right);
-
-// Return a Pointer if a pointer to an array or NULL.
-const Pointer*
-pointer_to_array (const Type* type);
+choose (const Type* x, const Type* y);
 
 // Select the type for *, /, +, -.
 // NULL means no suitable type.
@@ -764,73 +712,6 @@ struct Logical
   static const type::Type* pick (const type::Type* left_type, const type::Type* right_type);
 };
 
-inline C64 operator* (const C64&, const C64&)
-{
-  UNIMPLEMENTED;
-}
-inline C64 operator/ (const C64&, const C64&)
-{
-  UNIMPLEMENTED;
-}
-
-
-inline C128 operator* (const C128&, const C128&)
-{
-  UNIMPLEMENTED;
-}
-inline C128 operator/ (const C128&, const C128&)
-{
-  UNIMPLEMENTED;
-}
-
-inline UntypedComplex::ValueType operator* (const UntypedComplex::ValueType&, const UntypedComplex::ValueType&)
-{
-  UNIMPLEMENTED;
-}
-inline UntypedComplex::ValueType operator/ (const UntypedComplex::ValueType&, const UntypedComplex::ValueType&)
-{
-  UNIMPLEMENTED;
-}
-
-inline C64 operator+ (const C64&, const C64&)
-{
-  UNIMPLEMENTED;
-}
-inline C64 operator- (const C64&, const C64&)
-{
-  UNIMPLEMENTED;
-}
-inline C64 operator- (const C64&)
-{
-  UNIMPLEMENTED;
-}
-
-inline C128 operator+ (const C128&, const C128&)
-{
-  UNIMPLEMENTED;
-}
-inline C128 operator- (const C128&, const C128&)
-{
-  UNIMPLEMENTED;
-}
-inline C128 operator- (const C128&)
-{
-  UNIMPLEMENTED;
-}
-
-inline UntypedComplex::ValueType operator+ (const UntypedComplex::ValueType&, const UntypedComplex::ValueType&)
-{
-  UNIMPLEMENTED;
-}
-inline UntypedComplex::ValueType operator- (const UntypedComplex::ValueType&, const UntypedComplex::ValueType&)
-{
-  UNIMPLEMENTED;
-}
-inline UntypedComplex::ValueType operator- (const UntypedComplex::ValueType&)
-{
-  UNIMPLEMENTED;
-}
-
 extern NamedType named_bool;
 
 extern NamedType named_uint8;
@@ -859,11 +740,6 @@ extern NamedType named_string;
 
 extern NamedType named_file_descriptor;
 extern NamedType named_timespec;
-
-inline std::ostream& operator<< (std::ostream& out, const StringRep& s)
-{
-  return out << std::string (static_cast<const char*> (s.ptr), s.length);
-}
 
 }
 

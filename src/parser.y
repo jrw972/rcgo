@@ -59,7 +59,7 @@ using namespace ast;
 %type <list> OptionalTypeOrExpressionList
 %type <node> OrExpression
 %type <node> Parameter
-%type <list> ParameterList
+%type <list> ParameterListInternal
 %type <node> PointerType
 %type <node> PrimaryExpression
 %type <node> PullPortType
@@ -69,7 +69,8 @@ using namespace ast;
 %type <node> Reaction
 %type <node> Receiver
 %type <node> ReturnStatement
-%type <node> Signature
+%type <list> ParameterList
+%type <list> ReturnParameterList
 %type <node> SimpleStatement
 %type <node> SliceType
 %type <node> Statement
@@ -211,9 +212,9 @@ Action:
 { $$ = new DimensionedAction (@1, $1, $3, $4, $6, $8); }
 
 Reaction:
-  REACTION Receiver IDENTIFIER Signature Block
+  REACTION Receiver IDENTIFIER ParameterList Block
 { $$ = new Reaction (@1, $2, $3, $4, $5); }
-| ArrayDimension REACTION Receiver IDENTIFIER Signature Block
+| ArrayDimension REACTION Receiver IDENTIFIER ParameterList Block
 { $$ = new DimensionedReaction (@2, $1, $3, $4, $5, $6); }
 
 Bind:
@@ -221,42 +222,42 @@ Bind:
 { $$ = new Bind (@1, $2, $3, $4); }
 
 Init:
-  INIT Receiver IDENTIFIER Signature DereferenceMutability Type Block
-{ $$ = new Initializer (@1, $2, $3, $4, $5, $6, $7); }
-| INIT Receiver IDENTIFIER Signature                            Block
-{ $$ = new Initializer (@1, $2, $3, $4, Immutable, new EmptyTypeSpec (@1), $5); }
+  INIT Receiver IDENTIFIER ParameterList ReturnParameterList Block
+{ $$ = new Initializer (@1, $2, $3, $4, $5, $6); }
 
 Getter:
-GETTER Receiver IDENTIFIER Signature DereferenceMutability Type Block
-{ $$ = new Getter (@1, $2, $3, $4, $5, $6, $7); }
+GETTER Receiver IDENTIFIER ParameterList ReturnParameterList Block
+{ $$ = new Getter (@1, $2, $3, $4, $5, $6); }
 
 Method:
-  FUNC Receiver IDENTIFIER Signature DereferenceMutability Type Block
-{ $$ = new Method (@1, $2, $3, $4, $5, $6, $7); }
-| FUNC Receiver IDENTIFIER Signature                            Block
-{ $$ = new Method (@1, $2, $3, $4, Immutable, new EmptyTypeSpec (@1), $5); }
+  FUNC Receiver IDENTIFIER ParameterList ReturnParameterList Block
+{ $$ = new Method (@1, $2, $3, $4, $5, $6); }
 
 Func:
-  FUNC IDENTIFIER Signature                            Block
-{ $$ = new Function (@1, $2, $3, Immutable, new EmptyTypeSpec (@1), $4); }
-| FUNC IDENTIFIER Signature DereferenceMutability Type Block
-{ $$ = new Function (@1, $2, $3, $4, $5, $6); }
-
-Signature:
-  '(' ')'
-{ $$ = new SignatureTypeSpec (yyloc); }
-| '(' ParameterList optional_semicolon ')'
-{ $$ = $2; }
+  FUNC IDENTIFIER ParameterList ReturnParameterList Block
+{ $$ = new Function (@1, $2, $3, $4, $5); }
 
 ParameterList:
+  '(' ')'
+{ $$ = new ParameterList (yyloc); }
+| '(' ParameterListInternal optional_semicolon ')'
+{ $$ = $2; }
+
+ParameterListInternal:
   Parameter
-{ $$ = (new SignatureTypeSpec (@1))->append ($1); }
-| ParameterList ';' Parameter
+{ $$ = (new ParameterList (@1))->append ($1); }
+| ParameterListInternal ';' Parameter
 { $$ = $1->append ($3); }
 
 Parameter:
   IdentifierList Mutability DereferenceMutability Type
 { $$ = new IdentifierListTypeSpec (@1, $1, $2, $3, $4); }
+
+ReturnParameterList:
+  /* Empty */
+{ $$ = new ParameterList (yyloc); }
+| DereferenceMutability Type
+{ $$ = (new ParameterList (yyloc))->append (new IdentifierListTypeSpec (@1, (new IdentifierList (@1))->append (new Identifier (@1, decl::ReturnSymbol)), Mutable, $1, $2)); }
 
 optional_semicolon: /* Empty. */
 | ';'
@@ -434,11 +435,11 @@ ComponentType:
   COMPONENT '{' FieldList '}'
 { $$ = $3; static_cast<FieldListTypeSpec*> ($3)->is_component = true; }
 
-PushPortType: PUSH Signature { $$ = new PushPortTypeSpec (@1, $2); }
+PushPortType: PUSH ParameterList { $$ = new PushPortTypeSpec (@1, $2); }
 
 PullPortType:
-  PULL Signature DereferenceMutability Type
-{ $$ = new PullPortTypeSpec (@1, $2, $3, $4); }
+  PULL ParameterList ReturnParameterList
+{ $$ = new PullPortTypeSpec (@1, $2, $3); }
 
 HeapType: HEAP Type { $$ = new HeapTypeSpec (@1, $2); }
 

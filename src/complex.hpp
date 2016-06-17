@@ -173,6 +173,78 @@ struct StringRep
   }
 };
 
+inline C64 operator* (const C64&, const C64&)
+{
+  UNIMPLEMENTED;
+}
+inline C64 operator/ (const C64&, const C64&)
+{
+  UNIMPLEMENTED;
+}
+
+
+inline C128 operator* (const C128&, const C128&)
+{
+  UNIMPLEMENTED;
+}
+inline C128 operator/ (const C128&, const C128&)
+{
+  UNIMPLEMENTED;
+}
+
+inline CU operator* (const CU&, const CU&)
+{
+  UNIMPLEMENTED;
+}
+inline CU operator/ (const CU&, const CU&)
+{
+  UNIMPLEMENTED;
+}
+
+inline C64 operator+ (const C64&, const C64&)
+{
+  UNIMPLEMENTED;
+}
+inline C64 operator- (const C64&, const C64&)
+{
+  UNIMPLEMENTED;
+}
+inline C64 operator- (const C64&)
+{
+  UNIMPLEMENTED;
+}
+
+inline C128 operator+ (const C128&, const C128&)
+{
+  UNIMPLEMENTED;
+}
+inline C128 operator- (const C128&, const C128&)
+{
+  UNIMPLEMENTED;
+}
+inline C128 operator- (const C128&)
+{
+  UNIMPLEMENTED;
+}
+
+inline CU operator+ (const CU&, const CU&)
+{
+  UNIMPLEMENTED;
+}
+inline CU operator- (const CU&, const CU&)
+{
+  UNIMPLEMENTED;
+}
+inline CU operator- (const CU&)
+{
+  UNIMPLEMENTED;
+}
+
+inline std::ostream& operator<< (std::ostream& out, const StringRep& s)
+{
+  return out << std::string (static_cast<const char*> (s.ptr), s.length);
+}
+
 }
 
 #endif // RC_SRC_COMPLEX_HPP

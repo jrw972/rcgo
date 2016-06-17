@@ -45,7 +45,7 @@ static LiteralExpr* make_untyped_false ()
 
 static ast::Function* make_function_node ()
 {
-  return new ast::Function (1, new Identifier (1, "myfunc"), NULL, Mutable, NULL, NULL);
+  return new ast::Function (1, new Identifier (1, "myfunc"), NULL, NULL, NULL);
 }
 
 static type::Function* make_function_type ()

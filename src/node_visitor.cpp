@@ -62,7 +62,7 @@ void DefaultNodeVisitor::visit (PullPortTypeSpec& node)
 {
   default_action (node);
 }
-void DefaultNodeVisitor::visit (SignatureTypeSpec& node)
+void DefaultNodeVisitor::visit (ParameterList& node)
 {
   default_action (node);
 }

@@ -81,7 +81,7 @@ struct Visitor : public ast::DefaultNodeVisitor
                 error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                                "expression is not constant (E130)");
               }
-            if (!assignable (n->eval.type, n->eval.value, type))
+            if (!are_assignable (n->eval.type, n->eval.value, type))
               {
                 error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                                "cannot assign %s to %s in initialization (E131)", n->eval.type->to_error_string ().c_str (), type->to_error_string ().c_str ());

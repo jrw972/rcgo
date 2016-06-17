@@ -185,20 +185,18 @@ struct PushPortTypeSpec : public Node
 struct PullPortTypeSpec : public Node
 {
   PullPortTypeSpec (unsigned int line,
-                    Node* sig,
-                    Mutability dm,
-                    Node* rt);
+                    List* pl,
+                    List* rpl);
   virtual void accept (NodeVisitor& visitor);
   virtual void visit_children (NodeVisitor& visitor);
 
-  Node* const signature;
-  Mutability const indirection_mutability;
-  Node* const return_type;
+  List* const parameter_list;
+  List* const return_parameter_list;
 };
 
-struct SignatureTypeSpec : public List
+struct ParameterList : public List
 {
-  SignatureTypeSpec (unsigned int line);
+  ParameterList (unsigned int line);
   virtual void accept (NodeVisitor& visitor);
 };
 
@@ -251,8 +249,9 @@ struct CallExpr : public Node
   const type::Initializer* initializer_type;
   const type::Getter* getter_type;
   const type::Reaction* reaction_type;
-  const decl::ParameterList* signature;
-  const decl::ParameterSymbol* return_parameter;
+
+  const decl::ParameterList* parameter_list;
+  const decl::ParameterList* return_parameter_list;
 };
 
 struct ConversionExpr : public Node
@@ -622,17 +621,15 @@ struct Function : public Node
 {
   Function (unsigned int line,
             Identifier* i,
-            Node* s,
-            Mutability dm,
-            Node* rt,
+            List* pl,
+            List* rpl,
             Node* b);
   virtual void accept (NodeVisitor& visitor);
   virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
-  Node* const signature;
-  Mutability const indirection_mutability;
-  Node* const return_type;
+  List* const parameter_list;
+  List* const return_parameter_list;
   Node* const body;
 
   decl::Function* function;
@@ -677,18 +674,16 @@ struct Method : public Node
   Method (unsigned int line,
           Node * r,
           Identifier * i,
-          Node * s,
-          Mutability return_dm,
-          Node * rt,
+          List* parameter_list,
+          List* return_parameter_list,
           Node* b);
   virtual void accept (NodeVisitor& visitor);
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
   Identifier* const identifier;
-  Node* const signature;
-  Mutability const return_indirection_mutability;
-  Node* const return_type;
+  List* const parameter_list;
+  List* const return_parameter_list;
   Node* const body;
 
   decl::Method* method;
@@ -699,18 +694,16 @@ struct Getter : public Node
   Getter (unsigned int line,
           Node * r,
           Identifier * i,
-          Node * s,
-          Mutability dm,
-          Node * rt,
+          List* pl,
+          List* rpl,
           Node* b);
   virtual void accept (NodeVisitor& visitor);
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
   Identifier* const identifier;
-  Node* const signature;
-  Mutability const indirection_mutability;
-  Node* const return_type;
+  List* const parameter_list;
+  List* const return_parameter_list;
   Node* const body;
 
   decl::Getter* getter;
@@ -720,19 +713,17 @@ struct Initializer : public Node
 {
   Initializer (unsigned int line,
                Node* r,
-               Identifier * i,
-               Node * s,
-               Mutability return_dm,
-               Node* rt,
+               Identifier* i,
+               List* pl,
+               List* rpl,
                Node* b);
   virtual void accept (NodeVisitor& visitor);
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
   Identifier* const identifier;
-  Node* const signature;
-  Mutability const return_indirection_mutability;
-  Node* const return_type;
+  List* const parameter_list;
+  List* const return_parameter_list;
   Node* const body;
 
   decl::Initializer* initializer;
@@ -743,15 +734,15 @@ struct Reaction : public Node
   Reaction (unsigned int line,
             Node* r,
             Identifier* i,
-            Node* s,
+            List* parameter_list,
             Node* b);
   virtual void accept (NodeVisitor& visitor);
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
   Identifier* const identifier;
-  Node* const signature;
-  Node* const return_type;
+  List* const parameter_list;
+  List* const return_parameter_list;
   Node* const body;
 
   decl::Reaction* reaction;
@@ -763,7 +754,7 @@ struct DimensionedReaction : public Node
                        Node* d,
                        Node* r,
                        Identifier* i,
-                       Node* s,
+                       List* pl,
                        Node* b);
   virtual void accept (NodeVisitor& visitor);
   virtual void visit_children (NodeVisitor& visitor);
@@ -771,8 +762,8 @@ struct DimensionedReaction : public Node
   Node* const dimension;
   Node* const receiver;
   Identifier* const identifier;
-  Node* const signature;
-  Node* const return_type;
+  List* const parameter_list;
+  List* const return_parameter_list;
   Node* const body;
 
   decl::Reaction* reaction;

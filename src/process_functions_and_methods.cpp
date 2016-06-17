@@ -119,56 +119,30 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
 }
 
 static void
-processSignatureReturn (ErrorReporter& er,
-                        decl::SymbolTable& symtab,
-                        ast::Node* signatureNode,
-                        ast::Node* returnType,
-                        Mutability dereferenceMutability,
-                        bool requireForeignSafe,
-                        const ParameterList*& signature,
-                        ParameterSymbol*& returnSymbol)
-{
-  /* Process the signature. */
-  signature = process_signature (signatureNode, er, symtab);
-
-  /* Process the return type. */
-  const type::Type* return_type = process_type (returnType, er, symtab, true);
-
-  returnSymbol = ParameterSymbol::makeReturn (returnType->location,
-                 ReturnSymbol,
-                 return_type,
-                 dereferenceMutability);
-
-  if (requireForeignSafe)
-    {
-      CheckForForeignSafe (er, signature, returnSymbol);
-    }
-}
-
-static void
 process_signature_return (ErrorReporter& er,
                           decl::SymbolTable& symtab,
-                          ast::Node* signatureNode,
-                          ast::Node* returnType,
-                          Mutability dereferenceMutability,
+                          ast::List* parameter_list_node,
+                          ast::List* return_parameter_list_node,
                           bool requireForeignSafe,
-                          const ParameterList*& signature,
-                          ParameterSymbol*& returnSymbol)
+                          const decl::ParameterList*& parameter_list,
+                          const decl::ParameterList*& return_parameter_list)
 {
   /* Process the signature. */
-  signature = process_signature (signatureNode, er, symtab);
+  parameter_list = process_parameter_list (parameter_list_node, er, symtab, false);
 
   /* Process the return type. */
-  const type::Type* return_type = process_type (returnType, er, symtab, true);
+  return_parameter_list = process_parameter_list (return_parameter_list_node, er, symtab, true);
 
-  returnSymbol = ParameterSymbol::makeReturn (returnType->location,
-                 ReturnSymbol,
-                 return_type,
-                 dereferenceMutability);
+  // const type::Type* return_type = process_type (returnType, er, symtab, true);
+
+  // returnSymbol = ParameterSymbol::makeReturn (returnType->location,
+  //                ReturnSymbol,
+  //                return_type,
+  //                dereferenceMutability);
 
   if (requireForeignSafe)
     {
-      CheckForForeignSafe (er, signature, returnSymbol);
+      CheckForForeignSafe (er, parameter_list, return_parameter_list);
     }
 }
 
@@ -205,11 +179,11 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (ast::Function& node)
   {
-    const ParameterList* signature;
-    ParameterSymbol* return_symbol;
-    process_signature_return (er, symtab, node.signature, node.return_type, node.indirection_mutability, false,
-                              signature, return_symbol);
-    const type::Function* function_type = new type::Function (signature, (new ParameterList (node.location))->append (return_symbol));
+    const decl::ParameterList* parameter_list;
+    const decl::ParameterList* return_parameter_list;
+    process_signature_return (er, symtab, node.parameter_list, node.return_parameter_list, false,
+                              parameter_list, return_parameter_list);
+    const type::Function* function_type = new type::Function (parameter_list, return_parameter_list);
     node.function = new decl::Function (&node, function_type);
 
     symtab.enter_symbol (node.function);
@@ -220,15 +194,15 @@ struct Visitor : public ast::DefaultNodeVisitor
     ParameterSymbol* thisSymbol;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, thisSymbol, false, false);
 
-    const ParameterList* signature;
-    ParameterSymbol* return_symbol;
-    processSignatureReturn (er, symtab, node.signature, node.return_type, node.return_indirection_mutability, false,
-                            signature, return_symbol);
+    const decl::ParameterList* parameter_list;
+    const decl::ParameterList* return_parameter_list;
+    process_signature_return (er, symtab, node.parameter_list, node.return_parameter_list, false,
+                              parameter_list, return_parameter_list);
 
     type::Method* method_type = new type::Method (type,
         thisSymbol,
-        signature,
-        (new ParameterList (node.location))->append (return_symbol));
+        parameter_list,
+        return_parameter_list);
     decl::Method* method = new decl::Method (&node, node.identifier->identifier, method_type);
 
     type->insert_method (method);
@@ -240,16 +214,16 @@ struct Visitor : public ast::DefaultNodeVisitor
     ParameterSymbol* thisSymbol;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, thisSymbol, true, false);
 
-    const ParameterList* signature;
-    ParameterSymbol* return_symbol;
-    processSignatureReturn (er, symtab, node.signature, node.return_type, node.return_indirection_mutability, true,
-                            signature, return_symbol);
+    const decl::ParameterList* parameter_list;
+    const decl::ParameterList* return_parameter_list;
+    process_signature_return (er, symtab, node.parameter_list, node.return_parameter_list, true,
+                              parameter_list, return_parameter_list);
 
     type::Initializer* initializer_type =
       new type::Initializer (type,
                              thisSymbol,
-                             signature,
-                             (new ParameterList (node.location))->append (return_symbol));
+                             parameter_list,
+                             return_parameter_list);
 
     decl::Initializer* initializer = new decl::Initializer (&node, node.identifier->identifier, initializer_type);
 
@@ -284,15 +258,15 @@ struct Visitor : public ast::DefaultNodeVisitor
     ParameterSymbol* thisSymbol;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, thisSymbol, true, true);
 
-    const ParameterList* signature;
-    ParameterSymbol* return_symbol;
-    processSignatureReturn (er, symtab, node.signature, node.return_type, Foreign, true,
-                            signature, return_symbol);
+    const decl::ParameterList* parameter_list;
+    const decl::ParameterList* return_parameter_list;
+    process_signature_return (er, symtab, node.parameter_list, node.return_parameter_list, true,
+                              parameter_list, return_parameter_list);
 
     type::Reaction* reaction_type = new type::Reaction (type,
         thisSymbol,
-        signature,
-        (new ParameterList (node.location))->append (return_symbol));
+        parameter_list,
+        return_parameter_list);
 
     decl::Reaction* reaction = new decl::Reaction (node.body, node.identifier->identifier, reaction_type);
 
@@ -305,18 +279,18 @@ struct Visitor : public ast::DefaultNodeVisitor
     ParameterSymbol* thisSymbol;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, thisSymbol, true, true);
 
-    const ParameterList* signature;
-    ParameterSymbol* return_symbol;
-    processSignatureReturn (er, symtab, node.signature, node.return_type, Foreign, true,
-                            signature, return_symbol);
+    const decl::ParameterList* parameter_list;
+    const decl::ParameterList* return_parameter_list;
+    process_signature_return (er, symtab, node.parameter_list, node.return_parameter_list, true,
+                              parameter_list, return_parameter_list);
 
     ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
     type::Int::ValueType dimension = process_array_dimension (node.dimension, er, symtab);
 
     type::Reaction* reaction_type = new type::Reaction (type,
         thisSymbol,
-        signature,
-        (new ParameterList (node.location))->append (return_symbol));
+        parameter_list,
+        return_parameter_list);
 
     decl::Reaction* reaction = new decl::Reaction (node.body, node.identifier->identifier, reaction_type, iotaSymbol, dimension);
 
@@ -329,15 +303,15 @@ struct Visitor : public ast::DefaultNodeVisitor
     ParameterSymbol* thisSymbol;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, thisSymbol, true, true);
 
-    const ParameterList* signature;
-    ParameterSymbol* return_symbol;
-    processSignatureReturn (er, symtab, node.signature, node.return_type, node.indirection_mutability, true,
-                            signature, return_symbol);
+    const decl::ParameterList* parameter_list;
+    const decl::ParameterList* return_parameter_list;
+    process_signature_return (er, symtab, node.parameter_list, node.return_parameter_list, true,
+                              parameter_list, return_parameter_list);
 
     type::Getter* getter_type = new type::Getter (type,
         thisSymbol,
-        signature,
-        (new ParameterList (node.location))->append (return_symbol));
+        parameter_list,
+        return_parameter_list);
 
     decl::Getter* getter = new decl::Getter (&node, node.identifier->identifier, getter_type);
 

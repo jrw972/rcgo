@@ -142,6 +142,16 @@ static void require_value_or_variable (const Node* node)
     }
 }
 
+static void require_value_or_variable_or_void (const Node* node)
+{
+  assert (!node->eval.is_unknown ());
+  if (!node->eval.is_value_or_variable_or_void ())
+    {
+      error_at_line (-1, 0, node->location.file.c_str (), node->location.line,
+                     "required a value (E78)");
+    }
+}
+
 static void require_variable (const Node* node)
 {
   assert (node->eval.expression_kind != UnknownExpressionKind);
@@ -186,7 +196,7 @@ static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* 
 static void check_condition (Node* node)
 {
   const type::Type* condition = node->eval.type;
-  if (!(is_any_boolean (condition)))
+  if (!(condition->is_any_boolean ()))
     {
       error_at_line (-1, 0,
                      node->location.file.c_str (),
@@ -289,8 +299,8 @@ struct Visitor : public ast::DefaultNodeVisitor
     if (node.function_type)
       {
         // No restrictions on caller.
-        node.signature = node.function_type->parameter_list;
-        node.return_parameter = node.function_type->return_parameter_list->at (0);
+        node.parameter_list = node.function_type->parameter_list;
+        node.return_parameter_list = node.function_type->return_parameter_list;
       }
     else if (node.push_port_type)
       {
@@ -313,14 +323,14 @@ struct Visitor : public ast::DefaultNodeVisitor
             error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "cannot call pull port in mutable section (E198)");
           }
-        node.signature = node.pull_port_type->parameter_list;
-        node.return_parameter = node.pull_port_type->return_parameter_list->at (0);
+        node.parameter_list = node.pull_port_type->parameter_list;
+        node.return_parameter_list = node.pull_port_type->return_parameter_list;
       }
     else if (node.method_type)
       {
         // No restrictions on caller.
-        node.signature = node.method_type->parameter_list;
-        node.return_parameter = node.method_type->return_parameter_list->at (0);
+        node.parameter_list = node.method_type->parameter_list;
+        node.return_parameter_list = node.method_type->return_parameter_list;
       }
     else if (node.initializer_type)
       {
@@ -330,8 +340,8 @@ struct Visitor : public ast::DefaultNodeVisitor
             error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "initializers may only be called from initializers (E197)");
           }
-        node.signature = node.initializer_type->parameter_list;
-        node.return_parameter = node.initializer_type->return_parameter_list->at (0);
+        node.parameter_list = node.initializer_type->parameter_list;
+        node.return_parameter_list = node.initializer_type->return_parameter_list;
       }
     else if (node.getter_type)
       {
@@ -349,8 +359,8 @@ struct Visitor : public ast::DefaultNodeVisitor
             error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "cannot call getter in mutable section (E34)");
           }
-        node.signature = node.getter_type->parameter_list;
-        node.return_parameter = node.getter_type->return_parameter_list->at (0);
+        node.parameter_list = node.getter_type->parameter_list;
+        node.return_parameter_list = node.getter_type->return_parameter_list;
       }
     else if (node.reaction_type)
       {
@@ -372,17 +382,28 @@ struct Visitor : public ast::DefaultNodeVisitor
     else
       {
         node.field = node.expr->field;
-        check_types_arguments (args, node.signature);
+        check_types_arguments (args, node.parameter_list);
         require_value_or_variable (node.expr);
         require_value_or_variable_list (node.args);
-        check_mutability_arguments (node.args, node.signature);
+        check_mutability_arguments (node.args, node.parameter_list);
       }
 
-    node.eval.type = node.return_parameter->type;
-    node.eval.expression_kind = ValueExpressionKind;
-    node.eval.intrinsic_mutability = Immutable;
-    node.eval.indirection_mutability = node.return_parameter->dereference_mutability;
-    node.eval.fix_string_indirection_mutability ();
+    if (node.return_parameter_list->empty ())
+      {
+        node.eval.expression_kind = VoidExpressionKind;
+      }
+    else if (node.return_parameter_list->size () == 1)
+      {
+        node.eval.type = node.return_parameter_list->at (0)->type;
+        node.eval.expression_kind = ValueExpressionKind;
+        node.eval.intrinsic_mutability = Immutable;
+        node.eval.indirection_mutability = node.return_parameter_list->at (0)->dereference_mutability;
+        node.eval.fix_string_indirection_mutability ();
+      }
+    else
+      {
+        UNIMPLEMENTED;
+      }
   }
 
   void conversion (Node& node,
@@ -405,16 +426,16 @@ struct Visitor : public ast::DefaultNodeVisitor
           {
             UNIMPLEMENTED;
           }
-        else if (is_typed_float (from) && is_typed_float (to))
+        else if (from->is_typed_float () && to->is_typed_float ())
           {
             UNIMPLEMENTED;
           }
-        else if (from->is_typed_integer () && is_any_string (to))
+        else if (from->is_typed_integer () && to->is_any_string ())
           {
             UNIMPLEMENTED;
             node.reset_mutability = true;
           }
-        else if (is_any_string (from) && is_slice_of_bytes (to))
+        else if (from->is_any_string () && to->is_slice_of_bytes ())
           {
             if (from->is_untyped ())
               {
@@ -432,7 +453,7 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
     else
       {
-        if (assignable (from, x, to))
+        if (are_assignable (from, x, to))
           {
             // Okay.
           }
@@ -446,21 +467,21 @@ struct Visitor : public ast::DefaultNodeVisitor
           {
             // Okay.
           }
-        else if ((from->is_typed_integer () || is_typed_float (from)) &&
-                 (to->is_typed_integer () || is_typed_float (to)))
+        else if ((from->is_typed_integer () || from->is_typed_float ()) &&
+                 (to->is_typed_integer () || to->is_typed_float ()))
           {
             // Okay.
           }
-        else if (is_typed_complex (from) && is_typed_complex (to))
+        else if (from->is_typed_complex () && to->is_typed_complex ())
           {
             // Okay.
           }
-        else if ((from->is_typed_integer () || is_slice_of_bytes (from) || is_slice_of_runes (from)) && is_typed_string (to))
+        else if ((from->is_typed_integer () || from->is_slice_of_bytes () || from->is_slice_of_runes ()) && to->is_typed_string ())
           {
             // Okay.
             node.reset_mutability = true;
           }
-        else if (is_typed_string (from) && (is_slice_of_bytes (to) || is_slice_of_runes (to)))
+        else if (from->is_typed_string () && (to->is_slice_of_bytes () || to->is_slice_of_runes ()))
           {
             // Okay.
             node.reset_mutability = true;
@@ -657,7 +678,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     symtab.open_scope ();
     symtab.enter_symbol (node.initializer->receiver_parameter ());
     symtab.enter_signature (node.initializer->parameter_list ());
-    symtab.enter_symbol (node.initializer->return_parameter ());
+    symtab.enter_signature (node.initializer->return_parameter_list ());
     Visitor v (*this);
     v.receiver_parameter = node.initializer->initializerType->receiver_parameter;
     v.context = Initializer;
@@ -670,7 +691,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     symtab.open_scope ();
     symtab.enter_symbol (node.getter->receiver_parameter ());
     symtab.enter_signature (node.getter->parameter_list ());
-    symtab.enter_symbol (node.getter->return_parameter ());
+    symtab.enter_signature (node.getter->return_parameter_list ());
     Visitor v (*this);
     v.receiver_parameter = node.getter->getterType->receiver_parameter;
     v.context = Getter;
@@ -771,7 +792,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     symtab.open_scope ();
     symtab.enter_signature (node.function->parameter_list ());
-    symtab.enter_symbol (node.function->return_parameter ());
+    symtab.enter_signature (node.function->return_parameter_list ());
     node.body->accept (*this);
     symtab.close_scope ();
   }
@@ -781,7 +802,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     symtab.open_scope ();
     symtab.enter_symbol (node.method->receiver_parameter ());
     symtab.enter_signature (node.method->parameter_list ());
-    symtab.enter_symbol (node.method->return_parameter ());
+    symtab.enter_signature (node.method->return_parameter_list ());
     Visitor v (*this);
     v.receiver_parameter = node.method->methodType->receiver_parameter;
     node.body->accept (v);
@@ -798,7 +819,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   void visit (ExpressionStatement& node)
   {
     node.visit_children (*this);
-    require_value_or_variable (node.child);
+    require_value_or_variable_or_void (node.child);
   }
 
   void visit (ReturnStatement& node)
@@ -810,7 +831,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.return_symbol = symbol_cast<ParameterSymbol> (symtab.find_global_symbol (ReturnSymbol));
     assert (node.return_symbol != NULL);
 
-    if (!assignable (node.child->eval.type, node.child->eval.value, node.return_symbol->type))
+    if (!are_assignable (node.child->eval.type, node.child->eval.value, node.return_symbol->type))
       {
         error_at_line (-1, 0, node.location.file.c_str (),
                        node.location.line, "cannot convert %s to %s in return (E160)",
@@ -984,7 +1005,7 @@ struct Visitor : public ast::DefaultNodeVisitor
             Node* n = *init_pos;
             n->accept (*this);
 
-            if (!assignable (n->eval.type, n->eval.value, type))
+            if (!are_assignable (n->eval.type, n->eval.value, type))
               {
                 error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                                "cannot assign %s to %s in initialization (E62)", n->eval.type->to_error_string ().c_str (), type->to_error_string ().c_str ());
@@ -1053,7 +1074,7 @@ done:
     const type::Type* to = node.left->eval.type;
     const type::Type*& from = node.right->eval.type;
     Value& val = node.right->eval.value;
-    if (!assignable (from, val, to))
+    if (!are_assignable (from, val, to))
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "cannot assign value of type %s to variable of type %s (E199)",
@@ -1085,13 +1106,13 @@ done:
     const type::Type* to = node.left->eval.type;
     const type::Type*& from = node.right->eval.type;
     Value& val = node.right->eval.value;
-    if (!arithmetic (to))
+    if (!to->is_arithmetic ())
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "+= cannot be applied to %s (E200)",
                        to->to_error_string ().c_str ());
       }
-    if (!assignable (from, val, to))
+    if (!are_assignable (from, val, to))
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "cannot assign value of type %s to variable of type %s (E76)",
@@ -1123,7 +1144,7 @@ done:
       }
 
     node.visit_children (*this);
-    if (!arithmetic (node.child->eval.type))
+    if (!node.child->eval.type->is_arithmetic ())
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "%s cannot be applied to %s (E77)",
@@ -1265,7 +1286,7 @@ done:
     const type::Type*& index_type = index->eval.type;
     Value& index_value = index->eval.value;
 
-    if (is_untyped_numeric (index_type))
+    if (index_type->is_untyped_numeric ())
       {
         if (!index_value.representable (index_type, Int::instance ()))
           {
@@ -1342,7 +1363,7 @@ done:
     node.slice_type = base_type->underlying_type ()->to_slice ();
     if (node.slice_type != NULL)
       {
-        if (is_untyped_numeric (index_type))
+        if (index_type->is_untyped_numeric ())
           {
             if (!index_value.representable (index_type, Int::instance ()))
               {
@@ -1429,7 +1450,7 @@ done:
         return;
       }
 
-    node.pointer_to_array_type = pointer_to_array (base_type->underlying_type ());
+    node.pointer_to_array_type = base_type->pointer_to_array ();
     if (node.pointer_to_array_type)
       {
         UNIMPLEMENTED;
@@ -1640,7 +1661,7 @@ void check_types_arguments (ast::List* args, const decl::ParameterList* signatur
       const type::Type*& arg = (*pos)->eval.type;
       Value& val = (*pos)->eval.value;
       const type::Type* param = signature->at (i)->type;
-      if (!type::assignable (arg, val, param))
+      if (!type::are_assignable (arg, val, param))
         {
           error_at_line (-1, 0, (*pos)->location.file.c_str (), (*pos)->location.line,
                          "cannot assign %s to %s in call (E151)", arg->to_error_string ().c_str (), param->to_error_string ().c_str ());

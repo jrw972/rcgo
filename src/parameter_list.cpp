@@ -22,6 +22,10 @@ size_t ParameterList::size () const
 {
   return parameters_.size ();
 }
+bool ParameterList::empty () const
+{
+  return parameters_.empty ();
+}
 ParameterSymbol* ParameterList::at (size_t idx) const
 {
   return parameters_.at (idx);

@@ -747,9 +747,9 @@ void execute_no_check (ExecutorBase& exec, component_t* instance, const decl::Ac
 Readable::Readable (const util::Location& loc)
   : BuiltinFunction ("readable",
                      loc,
-                     new type::Function ((new ParameterList (loc))
+                     new type::Function ((new decl::ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
-                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable))))
+                                         (new decl::ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable))))
 { }
 
 void
@@ -777,10 +777,10 @@ Readable::call (runtime::ExecutorBase& exec) const
 Read::Read (const util::Location& loc)
   : BuiltinFunction ("read",
                      loc,
-                     new type::Function ((new ParameterList (loc))
+                     new type::Function ((new decl::ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
                                          ->append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Mutable)),
-                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::instance (), Immutable))))
+                                         (new decl::ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::instance (), Immutable))))
 { }
 
 void
@@ -795,9 +795,9 @@ Read::call (runtime::ExecutorBase& exec) const
 Writable::Writable (const util::Location& loc)
   : BuiltinFunction ("writable",
                      loc,
-                     new type::Function ((new ParameterList (loc))
+                     new type::Function ((new decl::ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
-                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable))))
+                                         (new decl::ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_bool, Immutable))))
 { }
 
 void
@@ -825,9 +825,9 @@ Writable::call (runtime::ExecutorBase& exec) const
 ClockGettime::ClockGettime (const util::Location& loc)
   : BuiltinFunction ("clock_gettime",
                      loc,
-                     new type::Function ((new ParameterList (loc))
+                     new type::Function ((new decl::ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "tp", type::named_timespec.get_pointer (), Immutable, Foreign)),
-                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable))))
+                                         (new decl::ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable))))
 { }
 
 void
@@ -841,8 +841,8 @@ ClockGettime::call (runtime::ExecutorBase& exec) const
 TimerfdCreate::TimerfdCreate (const util::Location& loc)
   : BuiltinFunction ("timerfd_create",
                      loc,
-                     new type::Function (new ParameterList (loc),
-                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable))))
+                     new type::Function (new decl::ParameterList (loc),
+                                         (new decl::ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable))))
 { }
 
 void
@@ -863,10 +863,10 @@ TimerfdCreate::call (runtime::ExecutorBase& exec) const
 TimerfdSettime::TimerfdSettime (const util::Location& loc)
   : BuiltinFunction ("timerfd_settime",
                      loc,
-                     new type::Function ((new ParameterList (loc))
+                     new type::Function ((new decl::ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
                                          ->append (ParameterSymbol::make (loc, "s", &type::named_uint64, Immutable, Immutable)),
-                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable))))
+                                         (new decl::ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_int, Immutable))))
 { }
 
 void
@@ -887,8 +887,8 @@ TimerfdSettime::call (runtime::ExecutorBase& exec) const
 UdpSocket::UdpSocket (const util::Location& loc)
   : BuiltinFunction ("udp_socket",
                      loc,
-                     new type::Function (new ParameterList (loc),
-                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable))))
+                     new type::Function (new decl::ParameterList (loc),
+                                         (new decl::ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, &type::named_file_descriptor, Mutable))))
 { }
 
 void
@@ -916,12 +916,12 @@ UdpSocket::call (runtime::ExecutorBase& exec) const
 Sendto::Sendto (const util::Location& loc)
   : BuiltinFunction ("sendto",
                      loc,
-                     new type::Function ((new ParameterList (loc))
+                     new type::Function ((new decl::ParameterList (loc))
                                          ->append (ParameterSymbol::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
                                          ->append (ParameterSymbol::make (loc, "host", &type::named_string, Immutable, Foreign))
                                          ->append (ParameterSymbol::make (loc, "port", &type::named_uint16, Immutable, Immutable))
                                          ->append (ParameterSymbol::make (loc, "buf", type::named_byte.get_slice (), Immutable, Foreign)),
-                                         (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::instance (), Immutable))))
+                                         (new decl::ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, ReturnSymbol, Int::instance (), Immutable))))
 { }
 
 void
@@ -2009,8 +2009,8 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
     {
       UNIMPLEMENTED;
     }
-  else if ((from->is_typed_integer () || is_typed_float (from)) &&
-           (to->is_typed_integer () || is_typed_float (to)))
+  else if ((from->is_typed_integer () || from->is_typed_float ()) &&
+           (to->is_typed_integer () || to->is_typed_float ()))
     {
       switch (from->underlying_kind ())
         {
@@ -2043,27 +2043,27 @@ Operation* make_conversion (Operation* c, const type::Type* from, const type::Ty
         }
       NOT_REACHED;
     }
-  else if (is_typed_complex (from) && is_typed_complex (to))
+  else if (from->is_typed_complex () && to->is_typed_complex ())
     {
       UNIMPLEMENTED;
     }
-  else if (from->is_typed_integer () && is_typed_string (to))
+  else if (from->is_typed_integer () && to->is_typed_string ())
     {
       UNIMPLEMENTED;
     }
-  else if (is_slice_of_bytes (from) && is_typed_string (to))
+  else if (from->is_slice_of_bytes () && to->is_typed_string ())
     {
       return new ConvertSliceOfBytesToString (c);
     }
-  else if (is_slice_of_runes (from) && is_typed_string (to))
+  else if (from->is_slice_of_runes () && to->is_typed_string ())
     {
       UNIMPLEMENTED;
     }
-  else if (is_typed_string (from) && is_slice_of_bytes (to))
+  else if (from->is_typed_string () && to->is_slice_of_bytes ())
     {
       return new ConvertStringToSliceOfBytes (c);
     }
-  else if (is_typed_string (from) && is_slice_of_runes (to))
+  else if (from->is_typed_string () && to->is_slice_of_runes ())
     {
       UNIMPLEMENTED;
     }

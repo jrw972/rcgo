@@ -265,7 +265,7 @@ allocate_stack_variables (ast::Node* node)
     void visit (ast::Function& node)
     {
       allocate_parameters (node.function->memory_model, node.function->parameter_list ());
-      allocate_symbol (node.function->memory_model, node.function->return_parameter ());
+      allocate_parameters (node.function->memory_model, node.function->return_parameter_list ());
       allocate_statement_stack_variables (node.body, node.function->memory_model);
       assert (node.function->memory_model.locals_empty ());
     }
@@ -274,7 +274,7 @@ allocate_stack_variables (ast::Node* node)
     {
       allocate_parameters (node.method->memory_model, node.method->parameter_list ());
       allocate_symbol (node.method->memory_model, node.method->receiver_parameter ());
-      allocate_symbol (node.method->memory_model, node.method->return_parameter ());
+      allocate_parameters (node.method->memory_model, node.method->return_parameter_list ());
       allocate_statement_stack_variables (node.body, node.method->memory_model);
       assert (node.method->memory_model.locals_empty ());
     }
@@ -283,7 +283,7 @@ allocate_stack_variables (ast::Node* node)
     {
       allocate_parameters (node.initializer->memory_model, node.initializer->parameter_list ());
       allocate_symbol (node.initializer->memory_model, node.initializer->receiver_parameter ());
-      allocate_symbol (node.initializer->memory_model, node.initializer->return_parameter ());
+      allocate_parameters (node.initializer->memory_model, node.initializer->return_parameter_list ());
       allocate_statement_stack_variables (node.body, node.initializer->memory_model);
       assert (node.initializer->memory_model.locals_empty ());
     }
@@ -292,7 +292,7 @@ allocate_stack_variables (ast::Node* node)
     {
       allocate_parameters (node.getter->memory_model, node.getter->parameter_list ());
       allocate_symbol (node.getter->memory_model, node.getter->receiver_parameter ());
-      allocate_symbol (node.getter->memory_model, node.getter->return_parameter ());
+      allocate_parameters (node.getter->memory_model, node.getter->return_parameter_list ());
       allocate_statement_stack_variables (node.body, node.getter->memory_model);
       assert (node.getter->memory_model.locals_empty ());
     }
@@ -381,7 +381,7 @@ void LogicNot::check (ErrorReporter& er,
       return;
     }
 
-  if (!(is_any_boolean (arg.type)))
+  if (!(arg.type->is_any_boolean ()))
     {
       er.cannot_be_applied (location, unary_arithmetic_external_symbol (::LogicNot), arg.type);
       result.expression_kind = ErrorExpressionKind;
@@ -554,7 +554,7 @@ void Complement::check (ErrorReporter& er,
       return;
     }
 
-  if (!(integral (arg.type)))
+  if (!(arg.type->is_integral ()))
     {
       er.cannot_be_applied (location, unary_arithmetic_external_symbol (::Complement), arg.type);
       result.expression_kind = ErrorExpressionKind;
@@ -757,15 +757,15 @@ BinaryArithmetic<InputPicker, OutputPicker, Computer, ba>::check (ErrorReporter&
       return;
     }
 
-  if (!(assignable (left.type, left.value, right.type) ||
-        assignable (right.type, right.value, left.type)))
+  if (!(are_assignable (left.type, left.value, right.type) ||
+        are_assignable (right.type, right.value, left.type)))
     {
       er.cannot_be_applied (location, binary_arithmetic_external_symbol (ba), left.type, right.type);
       result.expression_kind = ErrorExpressionKind;
       return;
     }
 
-  const type::Type* in_type = Choose (left.type, right.type);
+  const type::Type* in_type = choose (left.type, right.type);
   left.convert (in_type);
   right.convert (in_type);
 
@@ -811,7 +811,7 @@ void BinaryShift<B, ba>::check (ErrorReporter& er,
       return;
     }
 
-  if (!(is_typed_unsigned_integer (right.type) || is_untyped_numeric (right.type)))
+  if (!(right.type->is_typed_unsigned_integer () || right.type->is_untyped_numeric ()))
     {
       er.cannot_be_applied (location, binary_arithmetic_external_symbol (ba), left.type, right.type);
       result.expression_kind = ErrorExpressionKind;
@@ -830,7 +830,7 @@ void BinaryShift<B, ba>::check (ErrorReporter& er,
       right.type = type::Uint::instance ();
     }
 
-  if (!integral (left.type))
+  if (!left.type->is_integral ())
     {
       er.cannot_be_applied (location, binary_arithmetic_external_symbol (ba), left.type, right.type);
       result.expression_kind = ErrorExpressionKind;

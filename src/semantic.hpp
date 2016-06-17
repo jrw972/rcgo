@@ -236,14 +236,19 @@ ExpressionValueList collect_evals (ast::Node* node);
 type::Int::ValueType process_array_dimension (ast::Node* ptr, util::ErrorReporter& er, decl::SymbolTable& symtab);
 
 // Check that a signature has +foreign where needed.
-void CheckForForeignSafe (util::ErrorReporter& er, const decl::ParameterList* signature, const decl::ParameterSymbol* return_parameter);
+void CheckForForeignSafe (util::ErrorReporter& er,
+                          const decl::ParameterList* parameter_list,
+                          const decl::ParameterList* return_parameter_list);
 
 // Process a type specification.
 const type::Type * process_type (ast::Node* node, util::ErrorReporter& er, decl::SymbolTable& symtab, bool force);
 
 // Process a signature.
 const decl::ParameterList*
-process_signature (ast::Node* node, util::ErrorReporter& er, decl::SymbolTable& symtab);
+process_parameter_list (ast::Node* node,
+                        util::ErrorReporter& er,
+                        decl::SymbolTable& symtab,
+                        bool is_return);
 
 // Type check the expression, insert an implicit dereference if necessary, and convert to the given type if necessary.
 typed_Value

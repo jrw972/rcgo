@@ -16,6 +16,7 @@ struct ParameterList
   ParameterList (const util::Location& loc);
   size_t size_on_stack () const;
   size_t size () const;
+  bool empty () const;
   ParameterSymbol* at (size_t idx) const;
   const_iterator begin () const;
   const_iterator end () const;

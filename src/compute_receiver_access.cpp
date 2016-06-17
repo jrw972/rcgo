@@ -248,7 +248,7 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
     else
       {
-        compute_receiver_access_arguments (evals, node.signature, node.eval.receiver_access, flag);
+        compute_receiver_access_arguments (evals, node.parameter_list, node.eval.receiver_access, flag);
       }
 
     // Extend the check to the receiver if invoking a method.
@@ -262,7 +262,8 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
 
     // Check if a mutable pointer containing receiver state is returned.
-    if (node.eval.type->contains_pointer () &&
+    if (node.eval.expression_kind != VoidExpressionKind &&
+        node.eval.type->contains_pointer () &&
         node.eval.indirection_mutability == Mutable)
       {
         node.eval.receiver_state = flag;

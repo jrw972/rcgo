@@ -25,6 +25,11 @@ bool ExpressionValue::is_value_or_variable () const
   return expression_kind == ValueExpressionKind || expression_kind == VariableExpressionKind;
 }
 
+bool ExpressionValue::is_value_or_variable_or_void () const
+{
+  return expression_kind == ValueExpressionKind || expression_kind == VariableExpressionKind || expression_kind == VoidExpressionKind;
+}
+
 void ExpressionValue::fix_string_indirection_mutability ()
 {
   if (expression_kind != ErrorExpressionKind &&

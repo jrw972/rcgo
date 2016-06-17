@@ -59,6 +59,9 @@ operator<< (std::ostream& out, Node& node)
             case VariableExpressionKind:
               out << "variable";
               break;
+            case VoidExpressionKind:
+              out << "void";
+              break;
             case TypeExpressionKind:
               out << "type";
               break;
@@ -203,10 +206,10 @@ operator<< (std::ostream& out, Node& node)
       print_common (node);
       print_children (node);
     }
-    void visit (SignatureTypeSpec& node)
+    void visit (ParameterList& node)
     {
       print_indent (node);
-      out << "signature_type_spec";
+      out << "parameter_list";
       print_common (node);
       print_children (node);
     }
@@ -580,7 +583,7 @@ ACCEPT (IdentifierTypeSpec)
 ACCEPT (PointerTypeSpec)
 ACCEPT (PushPortTypeSpec)
 ACCEPT (PullPortTypeSpec)
-ACCEPT (SignatureTypeSpec)
+ACCEPT (ParameterList)
 
 ACCEPT (TypeExpression)
 ACCEPT (BinaryArithmeticExpr)
@@ -805,22 +808,20 @@ void PushPortTypeSpec::visit_children (NodeVisitor& visitor)
 }
 
 PullPortTypeSpec::PullPortTypeSpec (unsigned int line,
-                                    Node* sig,
-                                    Mutability dm,
-                                    Node* rt)
+                                    List* pl,
+                                    List* rpl)
   : Node (line)
-  , signature (sig)
-  , indirection_mutability (dm)
-  , return_type (rt)
+  , parameter_list (pl)
+  , return_parameter_list (rpl)
 { }
 
 void PullPortTypeSpec::visit_children (NodeVisitor& visitor)
 {
-  signature->accept (visitor);
-  return_type->accept (visitor);
+  parameter_list->accept (visitor);
+  return_parameter_list->accept (visitor);
 }
 
-SignatureTypeSpec::SignatureTypeSpec (unsigned int line)
+ParameterList::ParameterList (unsigned int line)
   : List (line)
 { }
 
@@ -867,8 +868,8 @@ CallExpr::CallExpr (unsigned int line, Node* e, List* a)
   , initializer_type (NULL)
   , getter_type (NULL)
   , reaction_type (NULL)
-  , signature (NULL)
-  , return_parameter (NULL)
+  , parameter_list (NULL)
+  , return_parameter_list (NULL)
 { }
 
 void CallExpr::visit_children (NodeVisitor& visitor)
@@ -1223,15 +1224,13 @@ void Bind::visit_children (NodeVisitor& visitor)
 
 Function::Function (unsigned int line,
                     Identifier* i,
-                    Node* s,
-                    Mutability dm,
-                    Node* rt,
+                    List* pl,
+                    List* rpl,
                     Node* b)
   : Node (line)
   , identifier (i)
-  , signature (s)
-  , indirection_mutability (dm)
-  , return_type (rt)
+  , parameter_list (pl)
+  , return_parameter_list (rpl)
   , body (b)
   , function (NULL)
 { }
@@ -1239,8 +1238,8 @@ Function::Function (unsigned int line,
 void Function::visit_children (NodeVisitor& visitor)
 {
   identifier->accept (visitor);
-  signature->accept (visitor);
-  return_type->accept (visitor);
+  parameter_list->accept (visitor);
+  return_parameter_list->accept (visitor);
   body->accept (visitor);
 }
 
@@ -1285,16 +1284,14 @@ void Const::visit_children (NodeVisitor& visitor)
 Method::Method (unsigned int line,
                 Node * r,
                 Identifier * i,
-                Node * s,
-                Mutability return_dm,
-                Node * rt,
+                List* a_parameter_list,
+                List* a_return_parameter_list,
                 Node* b)
   : Node (line)
   , receiver (r)
   , identifier (i)
-  , signature (s)
-  , return_indirection_mutability (return_dm)
-  , return_type (rt)
+  , parameter_list (a_parameter_list)
+  , return_parameter_list (a_return_parameter_list)
   , body (b)
   , method (NULL)
 { }
@@ -1303,24 +1300,22 @@ void Method::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
   identifier->accept (visitor);
-  signature->accept (visitor);
-  return_type->accept (visitor);
+  parameter_list->accept (visitor);
+  return_parameter_list->accept (visitor);
   body->accept (visitor);
 }
 
 Getter::Getter (unsigned int line,
                 Node * r,
                 Identifier * i,
-                Node * s,
-                Mutability dm,
-                Node * rt,
+                List* pl,
+                List* rpl,
                 Node* b)
   : Node (line)
   , receiver (r)
   , identifier (i)
-  , signature (s)
-  , indirection_mutability (dm)
-  , return_type (rt)
+  , parameter_list (pl)
+  , return_parameter_list (rpl)
   , body (b)
   , getter (NULL)
 { }
@@ -1329,24 +1324,22 @@ void Getter::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
   identifier->accept (visitor);
-  signature->accept (visitor);
-  return_type->accept (visitor);
+  parameter_list->accept (visitor);
+  return_parameter_list->accept (visitor);
   body->accept (visitor);
 }
 
 Initializer::Initializer (unsigned int line,
                           Node* r,
                           Identifier * i,
-                          Node * s,
-                          Mutability return_dm,
-                          Node* rt,
+                          List* pl,
+                          List* rpl,
                           Node* b)
   : Node (line)
   , receiver (r)
   , identifier (i)
-  , signature (s)
-  , return_indirection_mutability (return_dm)
-  , return_type (rt)
+  , parameter_list (pl)
+  , return_parameter_list (rpl)
   , body (b)
   , initializer (NULL)
 { }
@@ -1355,21 +1348,21 @@ void Initializer::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
   identifier->accept (visitor);
-  signature->accept (visitor);
-  return_type->accept (visitor);
+  parameter_list->accept (visitor);
+  return_parameter_list->accept (visitor);
   body->accept (visitor);
 }
 
 Reaction::Reaction (unsigned int line,
                     Node* r,
                     Identifier* i,
-                    Node* s,
+                    List* pl,
                     Node* b)
   : Node (line)
   , receiver (r)
   , identifier (i)
-  , signature (s)
-  , return_type (new EmptyTypeSpec (line))
+  , parameter_list (pl)
+  , return_parameter_list (new ParameterList (line))
   , body (b)
   , reaction (NULL)
 { }
@@ -1378,8 +1371,8 @@ void Reaction::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
   identifier->accept (visitor);
-  signature->accept (visitor);
-  return_type->accept (visitor);
+  parameter_list->accept (visitor);
+  return_parameter_list->accept (visitor);
   body->accept (visitor);
 }
 
@@ -1387,14 +1380,14 @@ DimensionedReaction::DimensionedReaction (unsigned int line,
     Node* d,
     Node* r,
     Identifier* i,
-    Node* s,
+    List* pl,
     Node* b)
   : Node (line)
   , dimension (d)
   , receiver (r)
   , identifier (i)
-  , signature (s)
-  , return_type (new EmptyTypeSpec (line))
+  , parameter_list (pl)
+  , return_parameter_list (new ParameterList (line))
   , body (b)
   , reaction (NULL)
 { }
@@ -1404,8 +1397,8 @@ void DimensionedReaction::visit_children (NodeVisitor& visitor)
   dimension->accept (visitor);
   receiver->accept (visitor);
   identifier->accept (visitor);
-  signature->accept (visitor);
-  return_type->accept (visitor);
+  parameter_list->accept (visitor);
+  return_parameter_list->accept (visitor);
   body->accept (visitor);
 }
 

@@ -55,32 +55,37 @@ process_array_dimension (ast::Node* node, ErrorReporter& er, decl::SymbolTable& 
 }
 
 void
-CheckForForeignSafe (ErrorReporter& er, const ParameterList* parameters, const ParameterSymbol* return_parameter)
+CheckForForeignSafe (ErrorReporter& er,
+                     const decl::ParameterList* parameter_list,
+                     const decl::ParameterList* return_parameter_list)
 {
-  if (!parameters->is_foreign_safe ())
+  if (!parameter_list->is_foreign_safe ())
     {
-      er.signature_is_not_foreign_safe (parameters->location);
+      er.signature_is_not_foreign_safe (parameter_list->location);
     }
-  if (return_parameter != NULL && !return_parameter->is_foreign_safe ())
+  if (!return_parameter_list->is_foreign_safe())
     {
-      er.signature_is_not_foreign_safe (return_parameter->location);
+      er.signature_is_not_foreign_safe (return_parameter_list->location);
     }
 }
 
 const decl::ParameterList*
-process_signature (Node* node, ErrorReporter& er, decl::SymbolTable& symtab)
+process_parameter_list (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool is_return)
 {
   struct Visitor : public ast::DefaultNodeVisitor
   {
     ErrorReporter& er;
     decl::SymbolTable& symtab;
-    const decl::ParameterList* signature;
+    bool is_return;
+    const decl::ParameterList* parameter_list;
 
     Visitor (ErrorReporter& a_er,
-             decl::SymbolTable& st)
+             decl::SymbolTable& st,
+             bool a_is_return)
       : er (a_er)
       , symtab (st)
-      , signature (NULL)
+      , is_return (a_is_return)
+      , parameter_list (NULL)
     { }
 
     void default_action (Node& node)
@@ -88,9 +93,9 @@ process_signature (Node* node, ErrorReporter& er, decl::SymbolTable& symtab)
       AST_NOT_REACHED (node);
     }
 
-    void visit (SignatureTypeSpec& node)
+    void visit (ast::ParameterList& node)
     {
-      ParameterList* sig = new ParameterList (node.location);
+      decl::ParameterList* sig = new decl::ParameterList (node.location);
       for (List::ConstIterator pos1 = node.begin (), limit1 = node.end ();
            pos1 != limit1;
            ++pos1)
@@ -108,7 +113,14 @@ process_signature (Node* node, ErrorReporter& er, decl::SymbolTable& symtab)
               const ParameterSymbol* parameter = sig->find (identifier);
               if (parameter == NULL)
                 {
-                  sig->append (ParameterSymbol::make (id->location, identifier, type, child->mutability, child->indirection_mutability));
+                  if (is_return)
+                    {
+                      sig->append (ParameterSymbol::makeReturn (id->location, identifier, type, child->indirection_mutability));
+                    }
+                  else
+                    {
+                      sig->append (ParameterSymbol::make (id->location, identifier, type, child->mutability, child->indirection_mutability));
+                    }
                 }
               else
                 {
@@ -118,15 +130,15 @@ process_signature (Node* node, ErrorReporter& er, decl::SymbolTable& symtab)
                 }
             }
         }
-      signature = sig;
+      parameter_list = sig;
     }
 
   };
 
-  Visitor v (er, symtab);
+  Visitor v (er, symtab, is_return);
   node->accept (v);
 
-  return v.signature;
+  return v.parameter_list;
 }
 
 const type::Type *
@@ -243,26 +255,23 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
 
     void visit (PushPortTypeSpec& node)
     {
-      const ParameterList* signature = process_signature (node.signature, er, symtab);
-      ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (node.location,
-                                          ReturnSymbol,
-                                          type::Void::instance (),
-                                          Immutable);
-
-      CheckForForeignSafe (er, signature, return_parameter);
-      type = new type::PushPort (signature, (new ParameterList (node.location))->append (return_parameter));
+      const decl::ParameterList* parameter_list = process_parameter_list (node.signature, er, symtab, false);
+      const decl::ParameterList* return_parameter_list = new decl::ParameterList (node.location);
+      CheckForForeignSafe (er, parameter_list, return_parameter_list);
+      type = new type::PushPort (parameter_list, return_parameter_list);
     }
 
     void visit (PullPortTypeSpec& node)
     {
-      const ParameterList* signature = process_signature (node.signature, er, symtab);
-      const type::Type* return_type = process_type (node.return_type, er, symtab, true);
-      ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (node.location,
-                                          ReturnSymbol,
-                                          return_type,
-                                          node.indirection_mutability);
-      CheckForForeignSafe (er, signature, return_parameter);
-      type = new type::PullPort (signature, (new ParameterList (node.location))->append (return_parameter));
+      const decl::ParameterList* parameter_list = process_parameter_list (node.parameter_list, er, symtab, false);
+      const decl::ParameterList* return_parameter_list = process_parameter_list (node.return_parameter_list, er, symtab, true);
+      // const type::Type* return_type = process_type (node.return_type, er, symtab, true);
+      // ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (node.location,
+      //                                     ReturnSymbol,
+      //                                     return_type,
+      //                                     node.indirection_mutability);
+      CheckForForeignSafe (er, parameter_list, return_parameter_list);
+      type = new type::PullPort (parameter_list, return_parameter_list);
     }
   };
 

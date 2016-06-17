@@ -71,9 +71,9 @@ struct Function : public Callable, public decl::Symbol
   {
     return type->parameter_list;
   }
-  ParameterSymbol* return_parameter () const
+  const decl::ParameterList* return_parameter_list () const
   {
-    return type->return_parameter_list->at (0);
+    return type->return_parameter_list;
   }
 
   const type::Function* type;
@@ -94,7 +94,7 @@ struct Method : public Callable
   {
     return methodType->parameter_list;
   }
-  decl::ParameterSymbol* return_parameter () const;
+  const decl::ParameterList* return_parameter_list () const;
   decl::ParameterSymbol* receiver_parameter () const
   {
     return methodType->receiver_parameter;
@@ -149,7 +149,7 @@ struct Initializer : public Callable
   {
     return initializerType->parameter_list;
   }
-  decl::ParameterSymbol* return_parameter () const;
+  const decl::ParameterList* return_parameter_list () const;
   decl::ParameterSymbol* receiver_parameter () const
   {
     return initializerType->receiver_parameter;
@@ -190,7 +190,7 @@ struct Getter : public Callable
     return getterType->parameter_list;
   }
 
-  decl::ParameterSymbol* return_parameter () const;
+  const decl::ParameterList* return_parameter_list () const;
   decl::ParameterSymbol* receiver_parameter () const
   {
     return getterType->receiver_parameter;

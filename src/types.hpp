@@ -35,7 +35,7 @@ class IdentifierTypeSpec;
 class PointerTypeSpec;
 class PushPortTypeSpec;
 class PullPortTypeSpec;
-class SignatureTypeSpec;
+class ParameterList;
 class TypeExpression;
 class BinaryArithmeticExpr;
 class AddressOfExpr;
@@ -102,6 +102,7 @@ enum ExpressionKind
   ValueExpressionKind,
   VariableExpressionKind,
   TypeExpressionKind,
+  VoidExpressionKind,
 };
 
 }

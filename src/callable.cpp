@@ -74,9 +74,9 @@ size_t Method::parameters_size_on_stack () const
   return methodType->parameter_list->size_on_stack ();
 }
 
-decl::ParameterSymbol* Method::return_parameter () const
+const decl::ParameterList* Method::return_parameter_list () const
 {
-  return methodType->return_parameter_list->at (0);
+  return methodType->return_parameter_list;
 }
 
 void Initializer::call (runtime::ExecutorBase& exec) const
@@ -89,9 +89,9 @@ size_t Initializer::parameters_size_on_stack () const
   return initializerType->parameter_list->size_on_stack ();
 }
 
-decl::ParameterSymbol* Initializer::return_parameter () const
+const decl::ParameterList* Initializer::return_parameter_list () const
 {
-  return initializerType->return_parameter_list->at (0);
+  return initializerType->return_parameter_list;
 }
 
 void Getter::call (runtime::ExecutorBase& exec) const
@@ -104,9 +104,9 @@ size_t Getter::parameters_size_on_stack () const
   return getterType->parameter_list->size_on_stack ();
 }
 
-decl::ParameterSymbol* Getter::return_parameter () const
+const decl::ParameterList* Getter::return_parameter_list () const
 {
-  return getterType->return_parameter_list->at (0);
+  return getterType->return_parameter_list;
 }
 
 }

@@ -139,7 +139,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
     node.visit_children (*this);
     node.operation = node.child->operation;
     // Clean up the stack if necessary.
-    if (node.child->eval.type->size () != 0)
+    if (node.child->eval.expression_kind != VoidExpressionKind && node.child->eval.type->size () != 0)
       {
         node.operation = new Popn (node.operation, node.child->eval.type->size ());
       }

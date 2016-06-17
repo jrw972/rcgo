@@ -21,6 +21,7 @@ struct ExpressionValue
   bool is_unknown () const;
   bool is_type () const;
   bool is_value_or_variable () const;
+  bool is_value_or_variable_or_void () const;
   void fix_string_indirection_mutability ();
   void convert (const type::Type* type);
 };

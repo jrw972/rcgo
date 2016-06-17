@@ -64,18 +64,10 @@ bool Type::is_numeric () const
 {
   switch (underlying_kind ())
     {
-    case Untyped_Nil_Kind:
-    case Untyped_Boolean_Kind:
-      return false;
     case Untyped_Rune_Kind:
     case Untyped_Integer_Kind:
     case Untyped_Float_Kind:
     case Untyped_Complex_Kind:
-      return true;
-    case Untyped_String_Kind:
-    case Void_Kind:
-    case Bool_Kind:
-      return false;
     case Uint8_Kind:
     case Uint16_Kind:
     case Uint32_Kind:
@@ -92,25 +84,9 @@ bool Type::is_numeric () const
     case Int_Kind:
     case Uintptr_Kind:
       return true;
-    case String_Kind:
-    case Struct_Kind:
-    case Component_Kind:
-    case Array_Kind:
-    case Map_Kind:
-    case Pointer_Kind:
-    case Slice_Kind:
-    case Heap_Kind:
-    case Function_Kind:
-    case Method_Kind:
-    case Interface_Kind:
-    case Polymorphic_Function_Kind:
-    case File_Descriptor_Kind:
+    default:
       return false;
-    case Named_Kind:
-      NOT_REACHED;
     }
-
-  NOT_REACHED;
 }
 
 bool
@@ -748,10 +724,8 @@ are_identical (const Type* x, const Type* y)
     }
 
     default:
-      break;
+      NOT_REACHED;
     }
-
-  NOT_REACHED;
 }
 
 #define INSTANCE(type) const type* \
@@ -938,195 +912,6 @@ const NamedType* NamedType::to_named_type () const
   return this;
 }
 
-bool
-type_is_integral (const Type* type)
-{
-  UNIMPLEMENTED;
-  // struct visitor : public DefaultVisitor
-  // {
-  //   bool flag;
-  //   visitor () : flag (false) { }
-
-  //   void visit (const NamedType& type)
-  //   {
-  //     type.underlying_type ()->accept (*this);
-  //   }
-
-  //   void visit (const Int& type)
-  //   {
-  //     flag = true;
-  //   }
-
-  //   void visit (const Int8& type)
-  //   {
-  //     flag = true;
-  //   }
-
-  //   void visit (const Int64& type)
-  //   {
-  //     flag = true;
-  //   }
-
-  //   void visit (const Uint& type)
-  //   {
-  //     flag = true;
-  //   }
-
-  //   void visit (const Uint8& type)
-  //   {
-  //     flag = true;
-  //   }
-
-  //   void visit (const Uint32& type)
-  //   {
-  //     flag = true;
-  //   }
-
-  //   void visit (const Uint64& type)
-  //   {
-  //     flag = true;
-  //   }
-
-  //   void visit (const UntypedInteger& type)
-  //   {
-  //     flag = true;
-  //   }
-  // };
-  // visitor v;
-  // type->accept (v);
-  // return v.flag;
-}
-
-bool
-type_is_unsigned_integral (const Type* type)
-{
-  UNIMPLEMENTED;
-  // struct visitor : public DefaultVisitor
-  // {
-  //   bool flag;
-  //   visitor () : flag (false) { }
-
-  //   void visit (const NamedType& type)
-  //   {
-  //     type.underlying_type ()->accept (*this);
-  //   }
-
-  //   void visit (const Uint& type)
-  //   {
-  //     flag = true;
-  //   }
-
-  //   void visit (const Uint8& type)
-  //   {
-  //     flag = true;
-  //   }
-  // };
-  // visitor v;
-  // type->accept (v);
-  // return v.flag;
-}
-
-bool
-type_is_floating (const Type* type)
-{
-  UNIMPLEMENTED;
-  // struct visitor : public DefaultVisitor
-  // {
-  //   bool flag;
-  //   visitor () : flag (false) { }
-
-  //   void visit (const NamedType& type)
-  //   {
-  //     type.underlying_type ()->accept (*this);
-  //   }
-
-  //   void visit (const Float64& type)
-  //   {
-  //     flag = true;
-  //   }
-  // };
-  // visitor v;
-  // type->accept (v);
-  // return v.flag;
-}
-
-bool
-type_is_orderable (const Type* type)
-{
-  UNIMPLEMENTED;
-  // struct visitor : public DefaultVisitor
-  // {
-  //   bool flag;
-  //   visitor () : flag (false) { }
-
-  //   void visit (const Pointer& type)
-  //   {
-  //     flag = true;
-  //   }
-
-  //   void visit (const NamedType& type)
-  //   {
-  //     type.underlying_type ()->accept (*this);
-  //   }
-
-  //   void visit (const Int& type)
-  //   {
-  //     flag = true;
-  //   }
-
-  //   void visit (const Int8& type)
-  //   {
-  //     flag = true;
-  //   }
-
-  //   void visit (const Uint& type)
-  //   {
-  //     flag = true;
-  //   }
-  // };
-  // visitor v;
-  // type->accept (v);
-  // return v.flag;
-}
-
-bool
-type_is_pointer_compare (const Type* left, const Type* right)
-{
-  const Type* l = left->underlying_type ();
-  const Type* r = right->underlying_type ();
-
-  return
-    (l->kind () == Pointer_Kind && r->kind () == Untyped_Nil_Kind) ||
-    (l->kind () == Untyped_Nil_Kind && r->kind () == Pointer_Kind);
-}
-
-bool
-type_is_index (const Type* type, Int::ValueType index)
-{
-  UNIMPLEMENTED;
-  // struct visitor : public DefaultVisitor
-  // {
-  //   Int::ValueType index;
-  //   bool flag;
-
-  //   visitor (Int::ValueType i) : index (i), flag (false) { }
-
-  //   void visit (const Array& type)
-  //   {
-  //     flag = index >= 0 && index < type.dimension;
-  //   }
-  // };
-  // visitor v (index);
-  // type->accept (v);
-  // return v.flag;
-}
-
-bool
-type_is_castable (const Type* x, const Type* y)
-{
-  return x->is_numeric () && y->is_numeric ();
-}
-
 void
 Function::print (std::ostream& out) const
 {
@@ -1236,13 +1021,13 @@ UntypedString::default_type () const
 }
 
 const Type*
-Choose (const Type* x, const Type* y)
+choose (const Type* x, const Type* y)
 {
   return (x->kind () > y->kind ()) ? x : y;
 }
 
 bool
-assignable (const Type* from, const Value& from_value, const Type* to)
+are_assignable (const Type* from, const Value& from_value, const Type* to)
 {
   if (to->is_untyped ())
     {
@@ -1263,12 +1048,11 @@ assignable (const Type* from, const Value& from_value, const Type* to)
   // TODO:  T is an interface type and x implements T.
 
   if (from->kind () == Untyped_Nil_Kind &&
-      (to->underlying_type ()->to_pointer () ||
-       to->underlying_type ()->to_function () ||
-       to->underlying_type ()->to_slice ()
-       //type_cast<Map> (to->underlying_type ()) ||
-       //type_cast<Interface> (to->underlying_type ())
-      ))
+      (to->underlying_kind () == Pointer_Kind ||
+       to->underlying_kind () == Function_Kind ||
+       to->underlying_kind () == Slice_Kind ||
+       to->underlying_kind () == Map_Kind ||
+       to->underlying_kind () == Interface_Kind))
     {
       return true;
     }
@@ -1332,23 +1116,24 @@ bool Type::is_typed_integer () const
     }
 }
 
-bool is_typed_unsigned_integer (const Type* type)
+bool Type::is_typed_unsigned_integer () const
 {
-  switch (type->underlying_kind ())
+  switch (underlying_kind ())
     {
     case Uint8_Kind:
     case Uint16_Kind:
     case Uint32_Kind:
     case Uint64_Kind:
+    case Uint_Kind:
       return true;
     default:
       return false;
     }
 }
 
-bool is_typed_float (const Type* type)
+bool Type::is_typed_float () const
 {
-  switch (type->underlying_kind ())
+  switch (underlying_kind ())
     {
     case Float32_Kind:
     case Float64_Kind:
@@ -1358,9 +1143,9 @@ bool is_typed_float (const Type* type)
     }
 }
 
-bool is_typed_complex (const Type* type)
+bool Type::is_typed_complex () const
 {
-  switch (type->underlying_kind ())
+  switch (underlying_kind ())
     {
     case Complex64_Kind:
     case Complex128_Kind:
@@ -1370,9 +1155,9 @@ bool is_typed_complex (const Type* type)
     }
 }
 
-bool is_typed_numeric (const Type* type)
+bool Type::is_typed_numeric () const
 {
-  switch (type->underlying_kind ())
+  switch (underlying_kind ())
     {
     case Uint8_Kind:
     case Uint16_Kind:
@@ -1395,9 +1180,9 @@ bool is_typed_numeric (const Type* type)
     }
 }
 
-bool is_untyped_numeric (const Type* type)
+bool Type::is_untyped_numeric () const
 {
-  switch (type->underlying_kind ())
+  switch (underlying_kind ())
     {
     case Untyped_Rune_Kind:
     case Untyped_Integer_Kind:
@@ -1409,53 +1194,19 @@ bool is_untyped_numeric (const Type* type)
     }
 }
 
-bool is_any_numeric (const Type* type)
+bool Type::is_typed_string () const
 {
-  switch (type->underlying_kind ())
-    {
-    case Uint8_Kind:
-    case Uint16_Kind:
-    case Uint32_Kind:
-    case Uint64_Kind:
-    case Int8_Kind:
-    case Int16_Kind:
-    case Int32_Kind:
-    case Int64_Kind:
-    case Float32_Kind:
-    case Float64_Kind:
-    case Complex64_Kind:
-    case Complex128_Kind:
-    case Uint_Kind:
-    case Int_Kind:
-    case Uintptr_Kind:
-    case Untyped_Rune_Kind:
-    case Untyped_Integer_Kind:
-    case Untyped_Float_Kind:
-    case Untyped_Complex_Kind:
-      return true;
-    default:
-      return false;
-    }
+  return underlying_kind () == String_Kind;
 }
 
-bool is_typed_string (const Type* type)
+bool Type::is_any_string () const
 {
-  return type->underlying_kind () == String_Kind;
+  return underlying_kind () == String_Kind || underlying_kind () == Untyped_String_Kind;
 }
 
-bool is_untyped_string (const Type* type)
+bool Type::is_slice_of_bytes () const
 {
-  return type->underlying_kind () == Untyped_String_Kind;
-}
-
-bool is_any_string (const Type* type)
-{
-  return is_typed_string (type) || is_untyped_string (type);
-}
-
-bool is_slice_of_bytes (const Type* type)
-{
-  const Slice* slice_type = type->underlying_type ()->to_slice ();
+  const Slice* slice_type = underlying_type ()->to_slice ();
   if (slice_type == NULL)
     {
       return false;
@@ -1463,9 +1214,9 @@ bool is_slice_of_bytes (const Type* type)
   return slice_type->base_type->underlying_type ()->kind () == Uint8_Kind;
 }
 
-bool is_slice_of_runes (const Type* type)
+bool Type::is_slice_of_runes () const
 {
-  const Slice* slice_type = type->underlying_type ()->to_slice ();
+  const Slice* slice_type = underlying_type ()->to_slice ();
   if (slice_type == NULL)
     {
       return false;
@@ -1473,37 +1224,9 @@ bool is_slice_of_runes (const Type* type)
   return slice_type->base_type->underlying_type ()->kind () == Int32_Kind;
 }
 
-bool orderable (const Type* type)
+bool Type::is_arithmetic () const
 {
-  switch (type->underlying_kind ())
-    {
-    case Uint8_Kind:
-    case Uint16_Kind:
-    case Uint32_Kind:
-    case Uint64_Kind:
-    case Int8_Kind:
-    case Int16_Kind:
-    case Int32_Kind:
-    case Int64_Kind:
-    case Float32_Kind:
-    case Float64_Kind:
-    case Uint_Kind:
-    case Int_Kind:
-    case Uintptr_Kind:
-    case String_Kind:
-    case Untyped_Rune_Kind:
-    case Untyped_Integer_Kind:
-    case Untyped_Float_Kind:
-    case Untyped_String_Kind:
-      return true;
-    default:
-      return false;
-    }
-}
-
-bool arithmetic (const Type* type)
-{
-  switch (type->underlying_kind ())
+  switch (underlying_kind ())
     {
     case Uint8_Kind:
     case Uint16_Kind:
@@ -1530,9 +1253,9 @@ bool arithmetic (const Type* type)
     }
 }
 
-bool integral (const Type* type)
+bool Type::is_integral () const
 {
-  switch (type->underlying_kind ())
+  switch (underlying_kind ())
     {
     case Uint8_Kind:
     case Uint16_Kind:
@@ -1553,25 +1276,15 @@ bool integral (const Type* type)
     }
 }
 
-bool is_typed_boolean (const Type* type)
+bool Type::is_any_boolean () const
 {
-  return type->underlying_kind () == Bool_Kind;
-}
-
-bool is_untyped_boolean (const Type* type)
-{
-  return type->underlying_kind () == Untyped_Boolean_Kind;
-}
-
-bool is_any_boolean (const Type* type)
-{
-  return is_typed_boolean (type) || is_untyped_boolean (type);
+  return underlying_kind () == Bool_Kind || underlying_kind () == Untyped_Boolean_Kind;
 }
 
 const Pointer*
-pointer_to_array (const Type* type)
+Type::pointer_to_array () const
 {
-  const Pointer* p = type->underlying_type ()->to_pointer ();
+  const Pointer* p = underlying_type ()->to_pointer ();
   if (p != NULL && p->base_type->underlying_kind () == Array_Kind)
     {
       return p;
@@ -1598,7 +1311,7 @@ NamedType named_complex64 ("complex64", Complex64::instance ());
 NamedType named_complex128 ("complex128", Complex128::instance ());
 
 NamedType named_byte ("byte", Uint8::instance ());
-NamedType named_rune ("rune", Int::instance ());
+NamedType named_rune ("rune", Int32::instance ());
 
 NamedType named_uint ("uint", Uint::instance ());
 NamedType named_int ("int", Int::instance ());
@@ -1608,16 +1321,6 @@ NamedType named_string ("string", String::instance ());
 
 NamedType named_file_descriptor ("FileDescriptor", FileDescriptor::instance ());
 NamedType named_timespec ("timespec", (new Struct ())->append_field (NULL, false, "tv_sec", &named_uint64, TagSet ())->append_field (NULL, false, "tv_nsec", &named_uint64, TagSet ()));
-
-decl::ParameterSymbol* FunctionBase::get_parameter (const std::string& name) const
-{
-  return parameter_list->find (name);
-}
-
-decl::ParameterSymbol* FunctionBase::get_return_parameter (const std::string& name) const
-{
-  return return_parameter_list->find (name);
-}
 
 void Interface::print (std::ostream& out) const
 {
@@ -1665,9 +1368,9 @@ const Type* Arithmetic::pick (const Type* left_type, const Type* right_type)
     case Untyped_Integer_Kind:
     case Untyped_Float_Kind:
     case Untyped_Complex_Kind:
-      if (is_untyped_numeric (right_type))
+      if (right_type->is_untyped_numeric ())
         {
-          return Choose (left_type, right_type);
+          return choose (left_type, right_type);
         }
       break;
 
@@ -1704,7 +1407,7 @@ const Type* Integral::pick (const Type* left_type, const Type* right_type)
       if (right_type->underlying_kind () == Untyped_Rune_Kind ||
           right_type->underlying_kind () == Untyped_Integer_Kind)
         {
-          return Choose (left_type, right_type);
+          return choose (left_type, right_type);
         }
       break;
 
@@ -1750,9 +1453,9 @@ const type::Type* Comparable::pick (const type::Type* left_type, const type::Typ
     case Untyped_Integer_Kind:
     case Untyped_Float_Kind:
     case Untyped_Complex_Kind:
-      if (is_untyped_numeric (right_type))
+      if (right_type->is_untyped_numeric ())
         {
-          return Choose (left_type, right_type);
+          return choose (left_type, right_type);
         }
       break;
 
@@ -1795,7 +1498,7 @@ const type::Type* Orderable::pick (const type::Type* left_type, const type::Type
           right_type->underlying_kind () == Untyped_Integer_Kind ||
           right_type->underlying_kind () == Untyped_Float_Kind)
         {
-          return Choose (left_type, right_type);
+          return choose (left_type, right_type);
         }
       break;
 
@@ -1813,7 +1516,7 @@ const type::Type* Logical::pick (const type::Type* left_type, const type::Type* 
       (right_type->underlying_kind () == Bool_Kind ||
        right_type->underlying_kind () == Untyped_Boolean_Kind))
     {
-      return Choose (left_type, right_type);
+      return choose (left_type, right_type);
     }
 
   return NULL;
@@ -2035,7 +1738,9 @@ size_t PullPort::size () const
 PushPort::PushPort (const decl::ParameterList* a_parameter_list,
                     const decl::ParameterList* a_return_parameter_list)
   : FunctionBase (a_parameter_list, a_return_parameter_list)
-{ }
+{
+  assert (a_return_parameter_list->empty ());
+}
 PullPort::PullPort (const decl::ParameterList* a_parameter_list,
                     const decl::ParameterList* a_return_parameter_list)
   : FunctionBase (a_parameter_list, a_return_parameter_list)
@@ -2087,7 +1792,9 @@ Reaction::Reaction (const NamedType* a_named_type,
                     const decl::ParameterList* a_parameter_list,
                     const decl::ParameterList* a_return_parameter_list)
   : MethodBase (a_named_type, a_receiver_parameter, a_parameter_list, a_return_parameter_list)
-{ }
+{
+  assert (a_return_parameter_list->empty ());
+}
 
 Kind Method::kind () const
 {
