@@ -34,13 +34,21 @@ main (int argc, char** argv)
     ExpressionValue ev1;
     ExpressionValue ev2;
     ExpressionValue ev3;
+    ExpressionValue ev4;
     ev2.expression_kind = ValueExpressionKind;
     ev3.expression_kind = VariableExpressionKind;
+    ev4.expression_kind = VoidExpressionKind;
 
     tap.tassert ("ExpressionValue::is_value_or_variable",
                  ev1.is_value_or_variable () == false &&
                  ev2.is_value_or_variable () == true &&
-                 ev3.is_value_or_variable () == true);
+                 ev3.is_value_or_variable () == true &&
+                 ev4.is_value_or_variable () == false);
+    tap.tassert ("ExpressionValue::is_value_or_variable_or_void",
+                 ev1.is_value_or_variable_or_void () == false &&
+                 ev2.is_value_or_variable_or_void () == true &&
+                 ev3.is_value_or_variable_or_void () == true &&
+                 ev4.is_value_or_variable_or_void () == true);
   }
 
   {
