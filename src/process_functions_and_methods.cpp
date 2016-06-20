@@ -235,7 +235,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     ParameterSymbol* receiver_parameter;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, receiver_parameter, true, true);
-    decl::Action *action = new decl::Action (receiver_parameter, node.body, node.identifier->identifier);
+    decl::Action *action = new decl::Action (receiver_parameter, node.precondition, node.body, node.identifier->identifier);
     type->insert_action (action);
     node.action = action;
     node.type = type;
@@ -247,7 +247,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, receiver_parameter, true, true);
     ParameterSymbol* iota_parameter = ParameterSymbol::make (node.dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
     type::Int::ValueType dimension = process_array_dimension (node.dimension, er, symtab);
-    decl::Action *action = new decl::Action (receiver_parameter, node.body, node.identifier->identifier, iota_parameter, dimension);
+    decl::Action *action = new decl::Action (receiver_parameter, node.precondition, node.body, node.identifier->identifier, iota_parameter, dimension);
     type->insert_action (action);
     node.action = action;
     node.type = type;

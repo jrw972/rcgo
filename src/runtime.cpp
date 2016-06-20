@@ -1803,14 +1803,16 @@ Activate::execute (ExecutorBase& exec) const
   return make_return ();
 }
 
-static void push_port_call (ExecutorBase& exec, Operation* args, ptrdiff_t receiver_offset, ptrdiff_t port_offset, ptrdiff_t array_offset)
+static void push_port_call (ExecutorBase& exec,
+                            Operation* args,
+                            size_t arguments_size,
+                            ptrdiff_t receiver_offset,
+                            ptrdiff_t port_offset,
+                            ptrdiff_t array_offset)
 {
-  // TODO:  The port knows the size of the arguments.  No need to measure.
-  // Push all of the arguments first and measure their size.
+  // Push all of the arguments.
   char* top_before = exec.stack ().top ();
   args->execute (exec);
-  char* top_after = exec.stack ().top ();
-  ptrdiff_t arguments_size = top_after - top_before; // Assumes stack grows up.
 
   // Find the port to activate.
   port_t* port = *reinterpret_cast<port_t**> (static_cast<char*> (exec.stack ().read_pointer (receiver_offset)) + port_offset + array_offset);
@@ -1850,7 +1852,7 @@ static void push_port_call (ExecutorBase& exec, Operation* args, ptrdiff_t recei
 OpReturn
 PushPortCall::execute (ExecutorBase& exec) const
 {
-  push_port_call (exec, args, receiver_offset, port_offset, 0);
+  push_port_call (exec, args, arguments_size, receiver_offset, port_offset, 0);
   return make_continue ();
 }
 
@@ -1860,7 +1862,7 @@ IndexedPushPortCall::execute (ExecutorBase& exec) const
   index->execute (exec);
   Int::ValueType idx;
   exec.stack ().pop (idx);
-  push_port_call (exec, args, receiver_offset, port_offset, idx * array_type->unit_size ());
+  push_port_call (exec, args, arguments_size, receiver_offset, port_offset, idx * array_type->unit_size ());
   return make_continue ();
 }
 

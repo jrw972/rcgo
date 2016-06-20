@@ -29,10 +29,7 @@ struct Instance
   ActionsType actions;
   std::string const name;
 
-  bool is_top_level () const
-  {
-    return parent == NULL;
-  }
+  bool is_top_level () const;
 
   size_t offset () const;
   // When this instance changes, preconditions in these instances may change.
@@ -57,7 +54,7 @@ struct Node
   };
 
   Node (const std::string& name);
-  virtual ~Node() { }
+  virtual ~Node();
   // Return the number of outgoing edges.
   virtual size_t outgoing_count () const = 0;
   // Return the ith outgoing node.
@@ -198,30 +195,12 @@ public:
   typedef std::map<size_t, PullPort*> PullPortsType;
   typedef std::map<ReactionKey, Reaction*> ReactionsType;
   typedef std::map<GetterKey, Getter*> GettersType;
-  InstancesType::const_iterator instances_begin () const
-  {
-    return instances_.begin ();
-  }
-  InstancesType::const_iterator instances_end () const
-  {
-    return instances_.end ();
-  }
-  PushPortsType::const_iterator push_ports_begin () const
-  {
-    return push_ports_.begin ();
-  }
-  PushPortsType::const_iterator push_ports_end () const
-  {
-    return push_ports_.end ();
-  }
-  PullPortsType::const_iterator pull_ports_begin () const
-  {
-    return pull_ports_.begin ();
-  }
-  PullPortsType::const_iterator pull_ports_end () const
-  {
-    return pull_ports_.end ();
-  }
+  InstancesType::const_iterator instances_begin () const;
+  InstancesType::const_iterator instances_end () const;
+  PushPortsType::const_iterator push_ports_begin () const;
+  PushPortsType::const_iterator push_ports_end () const;
+  PullPortsType::const_iterator pull_ports_begin () const;
+  PullPortsType::const_iterator pull_ports_end () const;
   void dump_graphviz () const;
 private:
   InstancesType instances_;

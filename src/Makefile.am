@@ -15,7 +15,6 @@ parser.hpp parser.cpp: parser.y
 #AM_YFLAGS = -v -d
 bin_PROGRAMS = rc
 rc_SOURCES = main.cpp \
-bind.hpp \
 debug.hpp \
 evaluate_static.hpp evaluate_static.cpp \
 executor_base.hpp executor_base.cpp \
@@ -39,6 +38,7 @@ rc_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 noinst_LTLIBRARIES=librc.la
 librc_la_SOURCES = action.hpp action.cpp \
 arch.hpp arch.cpp \
+bind.hpp bind.cpp \
 builtin_function.hpp builtin_function.cpp \
 callable.hpp callable.cpp \
 check_types.hpp check_types.cpp \

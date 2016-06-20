@@ -181,7 +181,6 @@ class Heap;
 class ExecutorBase;
 }
 
-class typed_Value;
 class component_t;
 class port_t;
 class scheduler_t;

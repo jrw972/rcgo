@@ -957,6 +957,7 @@ PushPortCallExpr::PushPortCallExpr (unsigned int line, Identifier* id, List* a)
   , identifier (id)
   , args (a)
   , field (NULL)
+  , push_port_type (NULL)
   , receiver_parameter (NULL)
 { }
 
@@ -975,6 +976,7 @@ IndexedPushPortCallExpr::IndexedPushPortCallExpr (unsigned int line,
   , index (idx)
   , args (a)
   , field (NULL)
+  , push_port_type (NULL)
   , receiver_parameter (NULL)
 { }
 

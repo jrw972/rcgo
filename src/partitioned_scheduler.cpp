@@ -77,10 +77,10 @@ partitioned_scheduler_t::init (composition::Composer& instance_table,
             case Action::Dynamic:
               initialize_task (new Actionask_t (action), thread_count);
               break;
-            case Action::StaticTrue:
+            case Action::Static_True:
               initialize_task (new always_task_t (action), thread_count);
               break;
-            case Action::StaticFalse:
+            case Action::Static_False:
               // Do nothing.
               break;
             }

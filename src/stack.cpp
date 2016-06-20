@@ -84,7 +84,7 @@ Stack::reserve (size_t size)
 }
 
 void
-Stack::load (void* ptr,
+Stack::load (const void* ptr,
              size_t size)
 {
   size_t s = util::align_up (size, arch::stack_alignment ());
@@ -150,22 +150,23 @@ Stack::popn (size_t size)
 }
 
 void
-Stack::dump () const
+Stack::print (std::ostream& out) const
 {
-  printf ("size = %td base_pointer = %p\n", top_ - data_, base_pointer_);
-  size_t increment = arch::stack_alignment ();
-  const char* ptr;
-  for (ptr = data_; ptr != top_; ptr += increment)
+  size_t const increment = arch::stack_alignment ();
+  assert (sizeof (size_t) == increment);
+
+  out << "size = " << size () << " base_pointer = " << (void*)base_pointer_ << '\n';
+  for (const char* ptr = data_; ptr != top_; ptr += increment)
     {
       size_t x;
       std::memcpy (&x, ptr, sizeof (size_t));
-      printf ("%p => %zx %s\n", ptr, x, ptr == base_pointer_ ? "<--" : "");
+      std::cout << (void*)ptr << " => " << x << ' ' << (ptr == base_pointer_ ? "<--" : "") << '\n';
     }
 }
 
 void
 Stack::write (ptrdiff_t offset,
-              void* ptr,
+              const void* ptr,
               size_t size)
 {
   assert (base_pointer_ + offset >= data_);
@@ -173,4 +174,43 @@ Stack::write (ptrdiff_t offset,
   std::memcpy (base_pointer_ + offset, ptr, size);
 }
 
+void
+Stack::read (ptrdiff_t offset,
+             void* ptr,
+             size_t size) const
+{
+  assert (base_pointer_ + offset >= data_);
+  assert (base_pointer_ + offset + size <= limit_);
+  std::memcpy (ptr, base_pointer_ + offset, size);
+}
+
+char* Stack::base_pointer () const
+{
+  return base_pointer_;
+}
+
+void Stack::base_pointer (char* base_pointer)
+{
+  base_pointer_ = base_pointer;
+}
+
+char* Stack::top () const
+{
+  return top_;
+}
+
+bool Stack::empty () const
+{
+  return data_ == top_;
+}
+
+void* Stack::pointer_to_instruction_pointer () const
+{
+  return base_pointer_ - sizeof (void*);
+}
+
+size_t Stack::size () const
+{
+  return top_ - data_;
+}
 }

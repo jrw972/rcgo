@@ -720,12 +720,21 @@ struct Activate : public Operation
 
 struct PushPortCall : public Operation
 {
-  PushPortCall (ptrdiff_t ro, ptrdiff_t po, Operation* o) : receiver_offset (ro), port_offset (po), args (o) { }
+  PushPortCall (const type::PushPort* a_push_port,
+                ptrdiff_t ro,
+                ptrdiff_t po,
+                Operation* o)
+    : arguments_size (a_push_port->parameter_list->size_on_stack ())
+    , receiver_offset (ro)
+    , port_offset (po)
+    , args (o)
+  { }
   virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
   }
+  size_t const arguments_size;
   ptrdiff_t const receiver_offset;
   ptrdiff_t const port_offset;
   Operation* const args;
@@ -733,12 +742,25 @@ struct PushPortCall : public Operation
 
 struct IndexedPushPortCall : public Operation
 {
-  IndexedPushPortCall (ptrdiff_t ro, ptrdiff_t po, Operation* i, Operation* o, const type::Array* a) : receiver_offset (ro), port_offset (po), index (i), args (o), array_type (a) { }
+  IndexedPushPortCall (const type::PushPort* a_push_port,
+                       ptrdiff_t ro,
+                       ptrdiff_t po,
+                       Operation* i,
+                       Operation* o,
+                       const type::Array* a)
+    : arguments_size (a_push_port->parameter_list->size_on_stack ())
+    , receiver_offset (ro)
+    , port_offset (po)
+    , index (i)
+    , args (o)
+    , array_type (a)
+  { }
   virtual OpReturn execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
     UNIMPLEMENTED;
   }
+  size_t const arguments_size;
   ptrdiff_t const receiver_offset;
   ptrdiff_t const port_offset;
   Operation* const index;

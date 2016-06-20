@@ -6,27 +6,16 @@
 namespace decl
 {
 
-class Bind
+struct Bind
 {
-public:
-  Bind (ast::Node* node, const std::string& name_, decl::ParameterSymbol* rp)
-    : node_ (node)
-    , name (name_)
-    , receiver_parameter (rp)
-  { }
-
-  ast::Node* node () const
-  {
-    return node_;
-  }
+  Bind (ast::Node* node,
+        const std::string& name,
+        ParameterSymbol* receiver_parameter);
 
   runtime::MemoryModel memory_model;
-
-private:
-  ast::Node* node_;
-public:
+  ast::Node* const node;
   std::string const name;
-  decl::ParameterSymbol* receiver_parameter;
+  ParameterSymbol* const receiver_parameter;
 };
 
 }

@@ -250,17 +250,6 @@ process_parameter_list (ast::Node* node,
                         decl::SymbolTable& symtab,
                         bool is_return);
 
-// Type check the expression, insert an implicit dereference if necessary, and convert to the given type if necessary.
-typed_Value
-CheckAndImplicitlyDereferenceAndConvert (ast::Node*& expr, const type::Type* type);
-
-void
-check_assignment (typed_Value left_tv,
-                  typed_Value right_tv,
-                  const ast::Node& node,
-                  const char* conversion_message,
-                  const char* leak_message);
-
 void
 allocate_stack_variables (ast::Node* node);
 

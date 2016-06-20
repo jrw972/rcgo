@@ -639,7 +639,7 @@ Composer::elaborate_bindings ()
             }
           };
           visitor v (*this, instance_pos->first, *bind_pos);
-          (*bind_pos)->node ()->accept (v);
+          (*bind_pos)->node->accept (v);
         }
     }
 }
@@ -1380,6 +1380,38 @@ Composer::instantiate_contained_instances (const type::Type * type,
     }
 
   return NULL;
+}
+
+bool Instance::is_top_level () const
+{
+  return parent == NULL;
+}
+
+Node::~Node() { }
+
+Composer::InstancesType::const_iterator Composer::instances_begin () const
+{
+  return instances_.begin ();
+}
+Composer::InstancesType::const_iterator Composer::instances_end () const
+{
+  return instances_.end ();
+}
+Composer::PushPortsType::const_iterator Composer::push_ports_begin () const
+{
+  return push_ports_.begin ();
+}
+Composer::PushPortsType::const_iterator Composer::push_ports_end () const
+{
+  return push_ports_.end ();
+}
+Composer::PullPortsType::const_iterator Composer::pull_ports_begin () const
+{
+  return pull_ports_.begin ();
+}
+Composer::PullPortsType::const_iterator Composer::pull_ports_end () const
+{
+  return pull_ports_.end ();
 }
 
 }

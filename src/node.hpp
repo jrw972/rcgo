@@ -344,6 +344,7 @@ struct PushPortCallExpr : public Node
   List* const args;
 
   type::Field* field;
+  const type::PushPort* push_port_type;
   decl::ParameterSymbol* receiver_parameter;
 };
 
@@ -361,6 +362,7 @@ struct IndexedPushPortCallExpr : public Node
   List* const args;
 
   type::Field* field;
+  const type::PushPort* push_port_type;
   decl::ParameterSymbol* receiver_parameter;
   const type::Array* array_type;
 };

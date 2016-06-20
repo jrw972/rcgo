@@ -45,10 +45,6 @@ struct Stack
   // Pop size bytes from the top of the stack.
   void popn (size_t size);
 
-  // TODO:  Remove these methods once they are no longer need by runtime.
-  void push_tv (const typed_Value& tv);
-  void pop_tv (typed_Value& tv);
-
   // Push base_pointer + offset.
   // Used to get the address of an argument or local variable.
   void push_address (ptrdiff_t offset);
@@ -59,7 +55,7 @@ struct Stack
   void reserve (size_t size);
 
   // Copy size bytes from ptr to the top of the stack.
-  void load (void* ptr,
+  void load (const void* ptr,
              size_t size);
 
   // Copy size bytes from the top of the stack to ptr
@@ -69,8 +65,12 @@ struct Stack
 
   // Copy size bytes from ptr to base_pointer + offset.
   void write (ptrdiff_t offset,
-              void* ptr,
+              const void* ptr,
               size_t size);
+
+  void read (ptrdiff_t offset,
+             void* ptr,
+             size_t size) const;
 
   // Read a pointer at base_pointer + offset.
   void* read_pointer (ptrdiff_t offset);
@@ -94,36 +94,23 @@ struct Stack
   void teardown ();
 
   // Get/set the base pointer.
-  char* base_pointer () const
-  {
-    return base_pointer_;
-  }
-  void base_pointer (char* base_pointer)
-  {
-    base_pointer_ = base_pointer;
-  }
+  char* base_pointer () const;
+  void base_pointer (char* base_pointer);
 
   // Get/set the top of the stack.
-  // TODO:  Remove this method.  Requires different logic for calculating the size of arguments.
-  char* top () const
-  {
-    return top_;
-  }
+  char* top () const;
 
   // True if the stack is empty.
-  bool empty () const
-  {
-    return data_ == top_;
-  }
+  bool empty () const;
 
-  // Return a pointer to the return instruction pointer.
-  void* pointer_to_instruction_pointer () const
-  {
-    return base_pointer_ - sizeof (void*);
-  }
+  // Size of the stack in bytes.
+  size_t size () const;
+
+  // Return a pointer to the return instruction pointer (which is below the base pointer).
+  void* pointer_to_instruction_pointer () const;
 
   // Debugging dump.
-  void dump () const;
+  void print (std::ostream& out = std::cout) const;
 
 private:
   char* data_;

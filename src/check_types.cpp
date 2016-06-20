@@ -709,17 +709,16 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.precondition->accept (v);
     check_condition (node.precondition);
     node.body->accept (v);
-    node.action->precondition = node.precondition;
 
     if (node.precondition->eval.value.present)
       {
         if (node.precondition->eval.value.bool_value)
           {
-            node.action->precondition_kind = decl::Action::StaticTrue;
+            node.action->precondition_kind = decl::Action::Static_True;
           }
         else
           {
-            node.action->precondition_kind = decl::Action::StaticFalse;
+            node.action->precondition_kind = decl::Action::Static_False;
           }
       }
     symtab.close_scope ();
@@ -736,17 +735,16 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.precondition->accept (v);
     check_condition (node.precondition);
     node.body->accept (v);
-    node.action->precondition = node.precondition;
 
     if (node.precondition->eval.value.present)
       {
         if (node.precondition->eval.value.bool_value)
           {
-            node.action->precondition_kind = decl::Action::StaticTrue;
+            node.action->precondition_kind = decl::Action::Static_True;
           }
         else
           {
-            node.action->precondition_kind = decl::Action::StaticFalse;
+            node.action->precondition_kind = decl::Action::Static_False;
           }
       }
     symtab.close_scope ();
@@ -1555,15 +1553,15 @@ done:
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "no port named %s (E194)", port_identifier.c_str ());
       }
-    const type::PushPort* push_port_type = node.field->type->to_push_port ();
-    if (push_port_type == NULL)
+    node.push_port_type = node.field->type->to_push_port ();
+    if (node.push_port_type == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "no port named %s (E195)", port_identifier.c_str ());
       }
 
     node.args->accept (*this);
-    check_types_arguments (node.args, push_port_type->parameter_list);
+    check_types_arguments (node.args, node.push_port_type->parameter_list);
     require_value_or_variable_list (node.args);
 
     node.eval.type = type::Void::instance ();
@@ -1589,8 +1587,8 @@ done:
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "%s is not an array of ports (E16)", port_identifier.c_str ());
       }
-    const type::PushPort* push_port_type = node.array_type->base_type->to_push_port ();
-    if (push_port_type == NULL)
+    node.push_port_type = node.array_type->base_type->to_push_port ();
+    if (node.push_port_type == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "%s is not an array of ports (E17)", port_identifier.c_str ());
@@ -1600,7 +1598,7 @@ done:
     check_array_index (node.array_type, node.index, false);
 
     node.args->accept (*this);
-    check_types_arguments (node.args, push_port_type->parameter_list);
+    check_types_arguments (node.args, node.push_port_type->parameter_list);
     require_value_or_variable_list (node.args);
 
     node.eval.type = type::Void::instance ();

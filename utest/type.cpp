@@ -149,7 +149,7 @@ main (int argc, char** argv)
     NamedType foo ("foo", new Component (NULL));
     tap.tassert ("NamedType::actions_begin/end", foo.actions_begin () == foo.actions_end ());
     Action* r1 = foo.find_action ("r");
-    Action* r = new Action (NULL, NULL, "r");
+    Action* r = new Action (NULL, NULL, NULL, "r");
     foo.insert_action (r);
     Action* r2 = foo.find_action ("r");
     tap.tassert ("NamedType::find_action", r1 == NULL && r2 == r);
@@ -627,7 +627,7 @@ main (int argc, char** argv)
     decl::Method* method = new decl::Method (NULL, "method", new type::Method (&nt, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
     decl::Initializer* initializer = new decl::Initializer (NULL, "initializer", new type::Initializer (&nt, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
     decl::Getter* getter = new decl::Getter (NULL, "getter", new type::Getter (&nt, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
-    Action* action = new Action (NULL, NULL, "action");
+    Action* action = new Action (NULL, NULL, NULL, "action");
     decl::Reaction* reaction = new decl::Reaction (NULL, "reaction", NULL);
     Bind* bind = new Bind (NULL, "bind", NULL);
 
