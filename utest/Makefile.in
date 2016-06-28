@@ -77,14 +77,13 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-TESTS = action$(EXEEXT) arch$(EXEEXT) bind$(EXEEXT) \
-	builtin_function$(EXEEXT) check_types$(EXEEXT) \
-	expression_value$(EXEEXT) heap$(EXEEXT) \
+TESTS = action$(EXEEXT) arch$(EXEEXT) bind$(EXEEXT) callable$(EXEEXT) \
+	check_types$(EXEEXT) expression_value$(EXEEXT) heap$(EXEEXT) \
 	error_reporter$(EXEEXT) location$(EXEEXT) \
 	memory_model$(EXEEXT) node_cast$(EXEEXT) \
-	parameter_list$(EXEEXT) reaction$(EXEEXT) semantic$(EXEEXT) \
-	stack$(EXEEXT) symbol_cast$(EXEEXT) symbol_table$(EXEEXT) \
-	template$(EXEEXT) type$(EXEEXT)
+	parameter_list$(EXEEXT) semantic$(EXEEXT) stack$(EXEEXT) \
+	symbol$(EXEEXT) symbol_cast$(EXEEXT) symbol_table$(EXEEXT) \
+	polymorphic_function$(EXEEXT) type$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = utest
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
@@ -102,13 +101,13 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__EXEEXT_1 = action$(EXEEXT) arch$(EXEEXT) bind$(EXEEXT) \
-	builtin_function$(EXEEXT) check_types$(EXEEXT) \
+	callable$(EXEEXT) check_types$(EXEEXT) \
 	expression_value$(EXEEXT) heap$(EXEEXT) \
 	error_reporter$(EXEEXT) location$(EXEEXT) \
 	memory_model$(EXEEXT) node_cast$(EXEEXT) \
-	parameter_list$(EXEEXT) reaction$(EXEEXT) semantic$(EXEEXT) \
-	stack$(EXEEXT) symbol_cast$(EXEEXT) symbol_table$(EXEEXT) \
-	template$(EXEEXT) type$(EXEEXT)
+	parameter_list$(EXEEXT) semantic$(EXEEXT) stack$(EXEEXT) \
+	symbol$(EXEEXT) symbol_cast$(EXEEXT) symbol_table$(EXEEXT) \
+	polymorphic_function$(EXEEXT) type$(EXEEXT)
 am__objects_1 =
 am_action_OBJECTS = action-action.$(OBJEXT) $(am__objects_1)
 action_OBJECTS = $(am_action_OBJECTS)
@@ -132,14 +131,12 @@ bind_DEPENDENCIES = $(top_builddir)/src/librc.la
 bind_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(bind_CXXFLAGS) \
 	$(CXXFLAGS) $(bind_LDFLAGS) $(LDFLAGS) -o $@
-am_builtin_function_OBJECTS =  \
-	builtin_function-builtin_function.$(OBJEXT) $(am__objects_1)
-builtin_function_OBJECTS = $(am_builtin_function_OBJECTS)
-builtin_function_DEPENDENCIES = $(top_builddir)/src/librc.la
-builtin_function_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
-	$(builtin_function_CXXFLAGS) $(CXXFLAGS) \
-	$(builtin_function_LDFLAGS) $(LDFLAGS) -o $@
+am_callable_OBJECTS = callable-callable.$(OBJEXT) $(am__objects_1)
+callable_OBJECTS = $(am_callable_OBJECTS)
+callable_DEPENDENCIES = $(top_builddir)/src/librc.la
+callable_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(callable_CXXFLAGS) \
+	$(CXXFLAGS) $(callable_LDFLAGS) $(LDFLAGS) -o $@
 am_check_types_OBJECTS = check_types-check_types.$(OBJEXT) \
 	$(am__objects_1)
 check_types_OBJECTS = $(am_check_types_OBJECTS)
@@ -196,12 +193,15 @@ parameter_list_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(parameter_list_CXXFLAGS) $(CXXFLAGS) \
 	$(parameter_list_LDFLAGS) $(LDFLAGS) -o $@
-am_reaction_OBJECTS = reaction-reaction.$(OBJEXT) $(am__objects_1)
-reaction_OBJECTS = $(am_reaction_OBJECTS)
-reaction_DEPENDENCIES = $(top_builddir)/src/librc.la
-reaction_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(reaction_CXXFLAGS) \
-	$(CXXFLAGS) $(reaction_LDFLAGS) $(LDFLAGS) -o $@
+am_polymorphic_function_OBJECTS =  \
+	polymorphic_function-polymorphic_function.$(OBJEXT) \
+	$(am__objects_1)
+polymorphic_function_OBJECTS = $(am_polymorphic_function_OBJECTS)
+polymorphic_function_DEPENDENCIES = $(top_builddir)/src/librc.la
+polymorphic_function_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(polymorphic_function_CXXFLAGS) $(CXXFLAGS) \
+	$(polymorphic_function_LDFLAGS) $(LDFLAGS) -o $@
 am_semantic_OBJECTS = semantic-semantic.$(OBJEXT) $(am__objects_1)
 semantic_OBJECTS = $(am_semantic_OBJECTS)
 semantic_DEPENDENCIES = $(top_builddir)/src/librc.la
@@ -214,6 +214,12 @@ stack_DEPENDENCIES = $(top_builddir)/src/librc.la
 stack_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(stack_CXXFLAGS) \
 	$(CXXFLAGS) $(stack_LDFLAGS) $(LDFLAGS) -o $@
+am_symbol_OBJECTS = symbol-symbol.$(OBJEXT) $(am__objects_1)
+symbol_OBJECTS = $(am_symbol_OBJECTS)
+symbol_DEPENDENCIES = $(top_builddir)/src/librc.la
+symbol_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(symbol_CXXFLAGS) \
+	$(CXXFLAGS) $(symbol_LDFLAGS) $(LDFLAGS) -o $@
 am_symbol_cast_OBJECTS = symbol_cast-symbol_cast.$(OBJEXT) \
 	$(am__objects_1)
 symbol_cast_OBJECTS = $(am_symbol_cast_OBJECTS)
@@ -228,12 +234,6 @@ symbol_table_DEPENDENCIES = $(top_builddir)/src/librc.la
 symbol_table_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(symbol_table_CXXFLAGS) \
 	$(CXXFLAGS) $(symbol_table_LDFLAGS) $(LDFLAGS) -o $@
-am_template_OBJECTS = template-template.$(OBJEXT) $(am__objects_1)
-template_OBJECTS = $(am_template_OBJECTS)
-template_DEPENDENCIES = $(top_builddir)/src/librc.la
-template_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(template_CXXFLAGS) \
-	$(CXXFLAGS) $(template_LDFLAGS) $(LDFLAGS) -o $@
 am_type_OBJECTS = type-type.$(OBJEXT) $(am__objects_1)
 type_OBJECTS = $(am_type_OBJECTS)
 type_DEPENDENCIES = $(top_builddir)/src/librc.la
@@ -293,21 +293,21 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(action_SOURCES) $(arch_SOURCES) $(bind_SOURCES) \
-	$(builtin_function_SOURCES) $(check_types_SOURCES) \
+	$(callable_SOURCES) $(check_types_SOURCES) \
 	$(error_reporter_SOURCES) $(expression_value_SOURCES) \
 	$(heap_SOURCES) $(location_SOURCES) $(memory_model_SOURCES) \
 	$(node_cast_SOURCES) $(parameter_list_SOURCES) \
-	$(reaction_SOURCES) $(semantic_SOURCES) $(stack_SOURCES) \
-	$(symbol_cast_SOURCES) $(symbol_table_SOURCES) \
-	$(template_SOURCES) $(type_SOURCES)
+	$(polymorphic_function_SOURCES) $(semantic_SOURCES) \
+	$(stack_SOURCES) $(symbol_SOURCES) $(symbol_cast_SOURCES) \
+	$(symbol_table_SOURCES) $(type_SOURCES)
 DIST_SOURCES = $(action_SOURCES) $(arch_SOURCES) $(bind_SOURCES) \
-	$(builtin_function_SOURCES) $(check_types_SOURCES) \
+	$(callable_SOURCES) $(check_types_SOURCES) \
 	$(error_reporter_SOURCES) $(expression_value_SOURCES) \
 	$(heap_SOURCES) $(location_SOURCES) $(memory_model_SOURCES) \
 	$(node_cast_SOURCES) $(parameter_list_SOURCES) \
-	$(reaction_SOURCES) $(semantic_SOURCES) $(stack_SOURCES) \
-	$(symbol_cast_SOURCES) $(symbol_table_SOURCES) \
-	$(template_SOURCES) $(type_SOURCES)
+	$(polymorphic_function_SOURCES) $(semantic_SOURCES) \
+	$(stack_SOURCES) $(symbol_SOURCES) $(symbol_cast_SOURCES) \
+	$(symbol_table_SOURCES) $(type_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -665,7 +665,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver.sh
 AM_CXXFLAGS = -I $(top_srcdir)/src
-HELPERS = tap.hpp visitor_helper.hpp
+HELPERS = tap.hpp visitor_helper.hpp mock_execution.hpp
 action_SOURCES = action.cpp $(HELPERS)
 action_LDADD = $(top_builddir)/src/librc.la
 action_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -678,10 +678,10 @@ bind_SOURCES = bind.cpp $(HELPERS)
 bind_LDADD = $(top_builddir)/src/librc.la
 bind_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 bind_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-builtin_function_SOURCES = builtin_function.cpp $(HELPERS)
-builtin_function_LDADD = $(top_builddir)/src/librc.la
-builtin_function_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-builtin_function_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+callable_SOURCES = callable.cpp $(HELPERS)
+callable_LDADD = $(top_builddir)/src/librc.la
+callable_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+callable_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 check_types_SOURCES = check_types.cpp $(HELPERS)
 check_types_LDADD = $(top_builddir)/src/librc.la
 check_types_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -714,10 +714,6 @@ parameter_list_SOURCES = parameter_list.cpp $(HELPERS)
 parameter_list_LDADD = $(top_builddir)/src/librc.la
 parameter_list_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 parameter_list_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-reaction_SOURCES = reaction.cpp $(HELPERS)
-reaction_LDADD = $(top_builddir)/src/librc.la
-reaction_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-reaction_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 semantic_SOURCES = semantic.cpp $(HELPERS)
 semantic_LDADD = $(top_builddir)/src/librc.la
 semantic_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -726,6 +722,10 @@ stack_SOURCES = stack.cpp $(HELPERS)
 stack_LDADD = $(top_builddir)/src/librc.la
 stack_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 stack_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+symbol_SOURCES = symbol.cpp $(HELPERS)
+symbol_LDADD = $(top_builddir)/src/librc.la
+symbol_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+symbol_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 symbol_cast_SOURCES = symbol_cast.cpp $(HELPERS)
 symbol_cast_LDADD = $(top_builddir)/src/librc.la
 symbol_cast_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -734,10 +734,10 @@ symbol_table_SOURCES = symbol_table.cpp $(HELPERS)
 symbol_table_LDADD = $(top_builddir)/src/librc.la
 symbol_table_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 symbol_table_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-template_SOURCES = template.cpp $(HELPERS)
-template_LDADD = $(top_builddir)/src/librc.la
-template_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-template_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+polymorphic_function_SOURCES = polymorphic_function.cpp $(HELPERS)
+polymorphic_function_LDADD = $(top_builddir)/src/librc.la
+polymorphic_function_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+polymorphic_function_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 type_SOURCES = type.cpp $(HELPERS)
 type_LDADD = $(top_builddir)/src/librc.la
 type_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -798,9 +798,9 @@ bind$(EXEEXT): $(bind_OBJECTS) $(bind_DEPENDENCIES) $(EXTRA_bind_DEPENDENCIES)
 	@rm -f bind$(EXEEXT)
 	$(AM_V_CXXLD)$(bind_LINK) $(bind_OBJECTS) $(bind_LDADD) $(LIBS)
 
-builtin_function$(EXEEXT): $(builtin_function_OBJECTS) $(builtin_function_DEPENDENCIES) $(EXTRA_builtin_function_DEPENDENCIES) 
-	@rm -f builtin_function$(EXEEXT)
-	$(AM_V_CXXLD)$(builtin_function_LINK) $(builtin_function_OBJECTS) $(builtin_function_LDADD) $(LIBS)
+callable$(EXEEXT): $(callable_OBJECTS) $(callable_DEPENDENCIES) $(EXTRA_callable_DEPENDENCIES) 
+	@rm -f callable$(EXEEXT)
+	$(AM_V_CXXLD)$(callable_LINK) $(callable_OBJECTS) $(callable_LDADD) $(LIBS)
 
 check_types$(EXEEXT): $(check_types_OBJECTS) $(check_types_DEPENDENCIES) $(EXTRA_check_types_DEPENDENCIES) 
 	@rm -f check_types$(EXEEXT)
@@ -834,9 +834,9 @@ parameter_list$(EXEEXT): $(parameter_list_OBJECTS) $(parameter_list_DEPENDENCIES
 	@rm -f parameter_list$(EXEEXT)
 	$(AM_V_CXXLD)$(parameter_list_LINK) $(parameter_list_OBJECTS) $(parameter_list_LDADD) $(LIBS)
 
-reaction$(EXEEXT): $(reaction_OBJECTS) $(reaction_DEPENDENCIES) $(EXTRA_reaction_DEPENDENCIES) 
-	@rm -f reaction$(EXEEXT)
-	$(AM_V_CXXLD)$(reaction_LINK) $(reaction_OBJECTS) $(reaction_LDADD) $(LIBS)
+polymorphic_function$(EXEEXT): $(polymorphic_function_OBJECTS) $(polymorphic_function_DEPENDENCIES) $(EXTRA_polymorphic_function_DEPENDENCIES) 
+	@rm -f polymorphic_function$(EXEEXT)
+	$(AM_V_CXXLD)$(polymorphic_function_LINK) $(polymorphic_function_OBJECTS) $(polymorphic_function_LDADD) $(LIBS)
 
 semantic$(EXEEXT): $(semantic_OBJECTS) $(semantic_DEPENDENCIES) $(EXTRA_semantic_DEPENDENCIES) 
 	@rm -f semantic$(EXEEXT)
@@ -846,6 +846,10 @@ stack$(EXEEXT): $(stack_OBJECTS) $(stack_DEPENDENCIES) $(EXTRA_stack_DEPENDENCIE
 	@rm -f stack$(EXEEXT)
 	$(AM_V_CXXLD)$(stack_LINK) $(stack_OBJECTS) $(stack_LDADD) $(LIBS)
 
+symbol$(EXEEXT): $(symbol_OBJECTS) $(symbol_DEPENDENCIES) $(EXTRA_symbol_DEPENDENCIES) 
+	@rm -f symbol$(EXEEXT)
+	$(AM_V_CXXLD)$(symbol_LINK) $(symbol_OBJECTS) $(symbol_LDADD) $(LIBS)
+
 symbol_cast$(EXEEXT): $(symbol_cast_OBJECTS) $(symbol_cast_DEPENDENCIES) $(EXTRA_symbol_cast_DEPENDENCIES) 
 	@rm -f symbol_cast$(EXEEXT)
 	$(AM_V_CXXLD)$(symbol_cast_LINK) $(symbol_cast_OBJECTS) $(symbol_cast_LDADD) $(LIBS)
@@ -853,10 +857,6 @@ symbol_cast$(EXEEXT): $(symbol_cast_OBJECTS) $(symbol_cast_DEPENDENCIES) $(EXTRA
 symbol_table$(EXEEXT): $(symbol_table_OBJECTS) $(symbol_table_DEPENDENCIES) $(EXTRA_symbol_table_DEPENDENCIES) 
 	@rm -f symbol_table$(EXEEXT)
 	$(AM_V_CXXLD)$(symbol_table_LINK) $(symbol_table_OBJECTS) $(symbol_table_LDADD) $(LIBS)
-
-template$(EXEEXT): $(template_OBJECTS) $(template_DEPENDENCIES) $(EXTRA_template_DEPENDENCIES) 
-	@rm -f template$(EXEEXT)
-	$(AM_V_CXXLD)$(template_LINK) $(template_OBJECTS) $(template_LDADD) $(LIBS)
 
 type$(EXEEXT): $(type_OBJECTS) $(type_DEPENDENCIES) $(EXTRA_type_DEPENDENCIES) 
 	@rm -f type$(EXEEXT)
@@ -871,7 +871,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/action-action.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arch-arch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bind-bind.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/builtin_function-builtin_function.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/callable-callable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_types-check_types.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/error_reporter-error_reporter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/expression_value-expression_value.Po@am__quote@
@@ -880,12 +880,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory_model-memory_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_cast-node_cast.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parameter_list-parameter_list.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reaction-reaction.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/polymorphic_function-polymorphic_function.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/semantic-semantic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stack-stack.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol-symbol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol_cast-symbol_cast.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol_table-symbol_table.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/template-template.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/type-type.Po@am__quote@
 
 .cpp.o:
@@ -951,19 +951,19 @@ bind-bind.obj: bind.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bind_CXXFLAGS) $(CXXFLAGS) -c -o bind-bind.obj `if test -f 'bind.cpp'; then $(CYGPATH_W) 'bind.cpp'; else $(CYGPATH_W) '$(srcdir)/bind.cpp'; fi`
 
-builtin_function-builtin_function.o: builtin_function.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(builtin_function_CXXFLAGS) $(CXXFLAGS) -MT builtin_function-builtin_function.o -MD -MP -MF $(DEPDIR)/builtin_function-builtin_function.Tpo -c -o builtin_function-builtin_function.o `test -f 'builtin_function.cpp' || echo '$(srcdir)/'`builtin_function.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/builtin_function-builtin_function.Tpo $(DEPDIR)/builtin_function-builtin_function.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='builtin_function.cpp' object='builtin_function-builtin_function.o' libtool=no @AMDEPBACKSLASH@
+callable-callable.o: callable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(callable_CXXFLAGS) $(CXXFLAGS) -MT callable-callable.o -MD -MP -MF $(DEPDIR)/callable-callable.Tpo -c -o callable-callable.o `test -f 'callable.cpp' || echo '$(srcdir)/'`callable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/callable-callable.Tpo $(DEPDIR)/callable-callable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='callable.cpp' object='callable-callable.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(builtin_function_CXXFLAGS) $(CXXFLAGS) -c -o builtin_function-builtin_function.o `test -f 'builtin_function.cpp' || echo '$(srcdir)/'`builtin_function.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(callable_CXXFLAGS) $(CXXFLAGS) -c -o callable-callable.o `test -f 'callable.cpp' || echo '$(srcdir)/'`callable.cpp
 
-builtin_function-builtin_function.obj: builtin_function.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(builtin_function_CXXFLAGS) $(CXXFLAGS) -MT builtin_function-builtin_function.obj -MD -MP -MF $(DEPDIR)/builtin_function-builtin_function.Tpo -c -o builtin_function-builtin_function.obj `if test -f 'builtin_function.cpp'; then $(CYGPATH_W) 'builtin_function.cpp'; else $(CYGPATH_W) '$(srcdir)/builtin_function.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/builtin_function-builtin_function.Tpo $(DEPDIR)/builtin_function-builtin_function.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='builtin_function.cpp' object='builtin_function-builtin_function.obj' libtool=no @AMDEPBACKSLASH@
+callable-callable.obj: callable.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(callable_CXXFLAGS) $(CXXFLAGS) -MT callable-callable.obj -MD -MP -MF $(DEPDIR)/callable-callable.Tpo -c -o callable-callable.obj `if test -f 'callable.cpp'; then $(CYGPATH_W) 'callable.cpp'; else $(CYGPATH_W) '$(srcdir)/callable.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/callable-callable.Tpo $(DEPDIR)/callable-callable.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='callable.cpp' object='callable-callable.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(builtin_function_CXXFLAGS) $(CXXFLAGS) -c -o builtin_function-builtin_function.obj `if test -f 'builtin_function.cpp'; then $(CYGPATH_W) 'builtin_function.cpp'; else $(CYGPATH_W) '$(srcdir)/builtin_function.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(callable_CXXFLAGS) $(CXXFLAGS) -c -o callable-callable.obj `if test -f 'callable.cpp'; then $(CYGPATH_W) 'callable.cpp'; else $(CYGPATH_W) '$(srcdir)/callable.cpp'; fi`
 
 check_types-check_types.o: check_types.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_types_CXXFLAGS) $(CXXFLAGS) -MT check_types-check_types.o -MD -MP -MF $(DEPDIR)/check_types-check_types.Tpo -c -o check_types-check_types.o `test -f 'check_types.cpp' || echo '$(srcdir)/'`check_types.cpp
@@ -1077,19 +1077,19 @@ parameter_list-parameter_list.obj: parameter_list.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(parameter_list_CXXFLAGS) $(CXXFLAGS) -c -o parameter_list-parameter_list.obj `if test -f 'parameter_list.cpp'; then $(CYGPATH_W) 'parameter_list.cpp'; else $(CYGPATH_W) '$(srcdir)/parameter_list.cpp'; fi`
 
-reaction-reaction.o: reaction.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(reaction_CXXFLAGS) $(CXXFLAGS) -MT reaction-reaction.o -MD -MP -MF $(DEPDIR)/reaction-reaction.Tpo -c -o reaction-reaction.o `test -f 'reaction.cpp' || echo '$(srcdir)/'`reaction.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/reaction-reaction.Tpo $(DEPDIR)/reaction-reaction.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='reaction.cpp' object='reaction-reaction.o' libtool=no @AMDEPBACKSLASH@
+polymorphic_function-polymorphic_function.o: polymorphic_function.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(polymorphic_function_CXXFLAGS) $(CXXFLAGS) -MT polymorphic_function-polymorphic_function.o -MD -MP -MF $(DEPDIR)/polymorphic_function-polymorphic_function.Tpo -c -o polymorphic_function-polymorphic_function.o `test -f 'polymorphic_function.cpp' || echo '$(srcdir)/'`polymorphic_function.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/polymorphic_function-polymorphic_function.Tpo $(DEPDIR)/polymorphic_function-polymorphic_function.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='polymorphic_function.cpp' object='polymorphic_function-polymorphic_function.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(reaction_CXXFLAGS) $(CXXFLAGS) -c -o reaction-reaction.o `test -f 'reaction.cpp' || echo '$(srcdir)/'`reaction.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(polymorphic_function_CXXFLAGS) $(CXXFLAGS) -c -o polymorphic_function-polymorphic_function.o `test -f 'polymorphic_function.cpp' || echo '$(srcdir)/'`polymorphic_function.cpp
 
-reaction-reaction.obj: reaction.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(reaction_CXXFLAGS) $(CXXFLAGS) -MT reaction-reaction.obj -MD -MP -MF $(DEPDIR)/reaction-reaction.Tpo -c -o reaction-reaction.obj `if test -f 'reaction.cpp'; then $(CYGPATH_W) 'reaction.cpp'; else $(CYGPATH_W) '$(srcdir)/reaction.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/reaction-reaction.Tpo $(DEPDIR)/reaction-reaction.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='reaction.cpp' object='reaction-reaction.obj' libtool=no @AMDEPBACKSLASH@
+polymorphic_function-polymorphic_function.obj: polymorphic_function.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(polymorphic_function_CXXFLAGS) $(CXXFLAGS) -MT polymorphic_function-polymorphic_function.obj -MD -MP -MF $(DEPDIR)/polymorphic_function-polymorphic_function.Tpo -c -o polymorphic_function-polymorphic_function.obj `if test -f 'polymorphic_function.cpp'; then $(CYGPATH_W) 'polymorphic_function.cpp'; else $(CYGPATH_W) '$(srcdir)/polymorphic_function.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/polymorphic_function-polymorphic_function.Tpo $(DEPDIR)/polymorphic_function-polymorphic_function.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='polymorphic_function.cpp' object='polymorphic_function-polymorphic_function.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(reaction_CXXFLAGS) $(CXXFLAGS) -c -o reaction-reaction.obj `if test -f 'reaction.cpp'; then $(CYGPATH_W) 'reaction.cpp'; else $(CYGPATH_W) '$(srcdir)/reaction.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(polymorphic_function_CXXFLAGS) $(CXXFLAGS) -c -o polymorphic_function-polymorphic_function.obj `if test -f 'polymorphic_function.cpp'; then $(CYGPATH_W) 'polymorphic_function.cpp'; else $(CYGPATH_W) '$(srcdir)/polymorphic_function.cpp'; fi`
 
 semantic-semantic.o: semantic.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(semantic_CXXFLAGS) $(CXXFLAGS) -MT semantic-semantic.o -MD -MP -MF $(DEPDIR)/semantic-semantic.Tpo -c -o semantic-semantic.o `test -f 'semantic.cpp' || echo '$(srcdir)/'`semantic.cpp
@@ -1119,6 +1119,20 @@ stack-stack.obj: stack.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(stack_CXXFLAGS) $(CXXFLAGS) -c -o stack-stack.obj `if test -f 'stack.cpp'; then $(CYGPATH_W) 'stack.cpp'; else $(CYGPATH_W) '$(srcdir)/stack.cpp'; fi`
 
+symbol-symbol.o: symbol.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_CXXFLAGS) $(CXXFLAGS) -MT symbol-symbol.o -MD -MP -MF $(DEPDIR)/symbol-symbol.Tpo -c -o symbol-symbol.o `test -f 'symbol.cpp' || echo '$(srcdir)/'`symbol.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/symbol-symbol.Tpo $(DEPDIR)/symbol-symbol.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='symbol.cpp' object='symbol-symbol.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_CXXFLAGS) $(CXXFLAGS) -c -o symbol-symbol.o `test -f 'symbol.cpp' || echo '$(srcdir)/'`symbol.cpp
+
+symbol-symbol.obj: symbol.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_CXXFLAGS) $(CXXFLAGS) -MT symbol-symbol.obj -MD -MP -MF $(DEPDIR)/symbol-symbol.Tpo -c -o symbol-symbol.obj `if test -f 'symbol.cpp'; then $(CYGPATH_W) 'symbol.cpp'; else $(CYGPATH_W) '$(srcdir)/symbol.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/symbol-symbol.Tpo $(DEPDIR)/symbol-symbol.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='symbol.cpp' object='symbol-symbol.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_CXXFLAGS) $(CXXFLAGS) -c -o symbol-symbol.obj `if test -f 'symbol.cpp'; then $(CYGPATH_W) 'symbol.cpp'; else $(CYGPATH_W) '$(srcdir)/symbol.cpp'; fi`
+
 symbol_cast-symbol_cast.o: symbol_cast.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_cast_CXXFLAGS) $(CXXFLAGS) -MT symbol_cast-symbol_cast.o -MD -MP -MF $(DEPDIR)/symbol_cast-symbol_cast.Tpo -c -o symbol_cast-symbol_cast.o `test -f 'symbol_cast.cpp' || echo '$(srcdir)/'`symbol_cast.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/symbol_cast-symbol_cast.Tpo $(DEPDIR)/symbol_cast-symbol_cast.Po
@@ -1146,20 +1160,6 @@ symbol_table-symbol_table.obj: symbol_table.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='symbol_table.cpp' object='symbol_table-symbol_table.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_table_CXXFLAGS) $(CXXFLAGS) -c -o symbol_table-symbol_table.obj `if test -f 'symbol_table.cpp'; then $(CYGPATH_W) 'symbol_table.cpp'; else $(CYGPATH_W) '$(srcdir)/symbol_table.cpp'; fi`
-
-template-template.o: template.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(template_CXXFLAGS) $(CXXFLAGS) -MT template-template.o -MD -MP -MF $(DEPDIR)/template-template.Tpo -c -o template-template.o `test -f 'template.cpp' || echo '$(srcdir)/'`template.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/template-template.Tpo $(DEPDIR)/template-template.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='template.cpp' object='template-template.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(template_CXXFLAGS) $(CXXFLAGS) -c -o template-template.o `test -f 'template.cpp' || echo '$(srcdir)/'`template.cpp
-
-template-template.obj: template.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(template_CXXFLAGS) $(CXXFLAGS) -MT template-template.obj -MD -MP -MF $(DEPDIR)/template-template.Tpo -c -o template-template.obj `if test -f 'template.cpp'; then $(CYGPATH_W) 'template.cpp'; else $(CYGPATH_W) '$(srcdir)/template.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/template-template.Tpo $(DEPDIR)/template-template.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='template.cpp' object='template-template.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(template_CXXFLAGS) $(CXXFLAGS) -c -o template-template.obj `if test -f 'template.cpp'; then $(CYGPATH_W) 'template.cpp'; else $(CYGPATH_W) '$(srcdir)/template.cpp'; fi`
 
 type-type.o: type.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(type_CXXFLAGS) $(CXXFLAGS) -MT type-type.o -MD -MP -MF $(DEPDIR)/type-type.Tpo -c -o type-type.o `test -f 'type.cpp' || echo '$(srcdir)/'`type.cpp
@@ -1395,9 +1395,9 @@ bind.log: bind$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-builtin_function.log: builtin_function$(EXEEXT)
-	@p='builtin_function$(EXEEXT)'; \
-	b='builtin_function'; \
+callable.log: callable$(EXEEXT)
+	@p='callable$(EXEEXT)'; \
+	b='callable'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1458,13 +1458,6 @@ parameter_list.log: parameter_list$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-reaction.log: reaction$(EXEEXT)
-	@p='reaction$(EXEEXT)'; \
-	b='reaction'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 semantic.log: semantic$(EXEEXT)
 	@p='semantic$(EXEEXT)'; \
 	b='semantic'; \
@@ -1475,6 +1468,13 @@ semantic.log: semantic$(EXEEXT)
 stack.log: stack$(EXEEXT)
 	@p='stack$(EXEEXT)'; \
 	b='stack'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+symbol.log: symbol$(EXEEXT)
+	@p='symbol$(EXEEXT)'; \
+	b='symbol'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1493,9 +1493,9 @@ symbol_table.log: symbol_table$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-template.log: template$(EXEEXT)
-	@p='template$(EXEEXT)'; \
-	b='template'; \
+polymorphic_function.log: polymorphic_function$(EXEEXT)
+	@p='polymorphic_function$(EXEEXT)'; \
+	b='polymorphic_function'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

@@ -3,12 +3,12 @@
 #include <sstream>
 
 #include "action.hpp"
-#include "reaction.hpp"
 #include "field.hpp"
 #include "callable.hpp"
 #include "bind.hpp"
 #include "arch.hpp"
 #include "parameter_list.hpp"
+#include "symbol_visitor.hpp"
 
 namespace type
 {
@@ -195,6 +195,22 @@ const NamedType* Type::to_named_type () const
 {
   return NULL;
 }
+
+void NamedType::accept (decl::SymbolVisitor& visitor)
+{
+  visitor.visit (*this);
+}
+void NamedType::accept (decl::ConstSymbolVisitor& visitor) const
+{
+  visitor.visit (*this);
+}
+
+bool NamedType::defined () const
+{
+  return underlying_type () != NULL;
+}
+
+
 const Array* Type::to_array () const
 {
   return NULL;
@@ -377,15 +393,6 @@ void Void::print (std::ostream& out) const
 {
   out << "<void>";
 }
-size_t Void::alignment () const
-{
-  // TODO:  Move alignment and size out of type and into arch.
-  return 0;
-}
-size_t Void::size () const
-{
-  return 0;
-}
 Kind Void::kind () const
 {
   return Void_Kind;
@@ -407,20 +414,14 @@ Struct::print (std::ostream& out) const
 }
 
 Struct*
-Struct::append_field (Package* package, bool is_anonymous, const std::string& field_name, const Type* field_type, const TagSet& tags)
+Struct::append_field (Package* package,
+                      bool is_anonymous,
+                      const std::string& field_name,
+                      const Type* field_type,
+                      const TagSet& tags)
 {
-  size_t alignment = field_type->alignment ();
-  offset_ = util::align_up (offset_, alignment);
-
-  Field *field = new Field (package, is_anonymous, field_name, field_type, tags, offset_);
+  Field *field = new Field (this, package, is_anonymous, field_name, field_type, tags);
   fields_.push_back (field);
-
-  offset_ += field_type->size ();
-  if (alignment > alignment_)
-    {
-      alignment_ = alignment;
-    }
-
   return this;
 }
 
@@ -452,25 +453,25 @@ Type::find (const std::string& identifier) const
   decl::Method* m = this->find_method (identifier);
   if (m)
     {
-      return m->methodType;
+      return m->type;
     }
 
   decl::Initializer* i = this->find_initializer (identifier);
   if (i)
     {
-      return i->initializerType;
+      return i->type;
     }
 
   decl::Getter* g = this->find_getter (identifier);
   if (g)
     {
-      return g->getterType;
+      return g->type;
     }
 
   decl::Reaction* r = this->find_reaction (identifier);
   if (r)
     {
-      return r->reaction_type;
+      return r->type;
     }
 
   Action* a = this->find_action (identifier);
@@ -747,10 +748,6 @@ INSTANCE(UntypedString)
 INSTANCE(PolymorphicFunction)
 INSTANCE(String)
 
-Struct::Struct () : offset_ (0), alignment_ (0)
-{
-}
-
 Component::Component (Package* package)
   : Struct ()
 {
@@ -810,14 +807,16 @@ Struct::contains_pointer_i () const
   return false;
 }
 
-NamedType::NamedType (const std::string& name)
-  : name_ (name)
+NamedType::NamedType (const std::string& name,
+                      const util::Location& location)
+  : Symbol (name, location)
   , underlyingType_ (NULL)
 { }
 
 NamedType::NamedType (const std::string& name,
+                      const util::Location& location,
                       const Type* subtype)
-  : name_ (name)
+  : Symbol (name, location)
   , underlyingType_ (subtype->underlying_type ())
 {
   assert (underlyingType_->is_unnamed ());
@@ -825,7 +824,7 @@ NamedType::NamedType (const std::string& name,
 
 void NamedType::print (std::ostream& out) const
 {
-  out << name_;
+  out << name;
 }
 
 void NamedType::underlying_type (const Type* u)
@@ -839,14 +838,6 @@ const Type* NamedType::underlying_type () const
   return underlyingType_;
 }
 
-size_t NamedType::alignment () const
-{
-  return underlyingType_->alignment ();
-}
-size_t NamedType::size () const
-{
-  return underlyingType_->size ();
-}
 Kind NamedType::kind () const
 {
   return Named_Kind;
@@ -955,7 +946,7 @@ Reaction::print (std::ostream& out) const
 }
 
 Function*
-MethodBase::make_function_type (ParameterSymbol* this_parameter,
+MethodBase::make_function_type (Parameter* this_parameter,
                                 const ParameterList* parameter_list,
                                 const ParameterList* return_parameter_list)
 {
@@ -973,7 +964,7 @@ MethodBase::make_function_type (ParameterSymbol* this_parameter,
 }
 
 MethodBase::MethodBase (const NamedType* named_type_,
-                        ParameterSymbol* receiver_parameter_,
+                        Parameter* receiver_parameter_,
                         const ParameterList* a_parameter_list,
                         const ParameterList* a_return_parameter_list)
   : named_type (named_type_)
@@ -1292,35 +1283,36 @@ Type::pointer_to_array () const
   return NULL;
 }
 
-NamedType named_bool ("bool", Bool::instance ());
+util::Location loc ("<builtin>");
+NamedType named_bool ("bool", loc, Bool::instance ());
 
-NamedType named_uint8 ("uint8", Uint8::instance ());
-NamedType named_uint16 ("uint16", Uint16::instance ());
-NamedType named_uint32 ("uint32", Uint32::instance ());
-NamedType named_uint64 ("uint64", Uint64::instance ());
+NamedType named_uint8 ("uint8", loc, Uint8::instance ());
+NamedType named_uint16 ("uint16", loc, Uint16::instance ());
+NamedType named_uint32 ("uint32", loc, Uint32::instance ());
+NamedType named_uint64 ("uint64", loc, Uint64::instance ());
 
-NamedType named_int8 ("int8", Int8::instance ());
-NamedType named_int16 ("int16", Int16::instance ());
-NamedType named_int32 ("int32", Int32::instance ());
-NamedType named_int64 ("int64", Int64::instance ());
+NamedType named_int8 ("int8", loc, Int8::instance ());
+NamedType named_int16 ("int16", loc, Int16::instance ());
+NamedType named_int32 ("int32", loc, Int32::instance ());
+NamedType named_int64 ("int64", loc, Int64::instance ());
 
-NamedType named_float32 ("float32", Float32::instance ());
-NamedType named_float64 ("float64", Float64::instance ());
+NamedType named_float32 ("float32", loc, Float32::instance ());
+NamedType named_float64 ("float64", loc, Float64::instance ());
 
-NamedType named_complex64 ("complex64", Complex64::instance ());
-NamedType named_complex128 ("complex128", Complex128::instance ());
+NamedType named_complex64 ("complex64", loc, Complex64::instance ());
+NamedType named_complex128 ("complex128", loc, Complex128::instance ());
 
-NamedType named_byte ("byte", Uint8::instance ());
-NamedType named_rune ("rune", Int32::instance ());
+NamedType named_byte ("byte", loc, Uint8::instance ());
+NamedType named_rune ("rune", loc, Int32::instance ());
 
-NamedType named_uint ("uint", Uint::instance ());
-NamedType named_int ("int", Int::instance ());
-NamedType named_uintptr ("uintptr", Uintptr::instance ());
+NamedType named_uint ("uint", loc, Uint::instance ());
+NamedType named_int ("int", loc, Int::instance ());
+NamedType named_uintptr ("uintptr", loc, Uintptr::instance ());
 
-NamedType named_string ("string", String::instance ());
+NamedType named_string ("string", loc, String::instance ());
 
-NamedType named_file_descriptor ("FileDescriptor", FileDescriptor::instance ());
-NamedType named_timespec ("timespec", (new Struct ())->append_field (NULL, false, "tv_sec", &named_uint64, TagSet ())->append_field (NULL, false, "tv_nsec", &named_uint64, TagSet ()));
+NamedType named_file_descriptor ("FileDescriptor", loc, FileDescriptor::instance ());
+NamedType named_timespec ("timespec", loc, (new Struct ())->append_field (NULL, false, "tv_sec", &named_uint64, TagSet ())->append_field (NULL, false, "tv_nsec", &named_uint64, TagSet ()));
 
 void Interface::print (std::ostream& out) const
 {
@@ -1530,14 +1522,6 @@ void Pointer::print (std::ostream& out) const
 {
   out << "*" << *base_type;
 }
-size_t Pointer::alignment () const
-{
-  return sizeof (ValueType);
-}
-size_t Pointer::size () const
-{
-  return sizeof (ValueType);
-}
 Kind Pointer::kind () const
 {
   return Pointer_Kind;
@@ -1559,35 +1543,15 @@ void Slice::print (std::ostream& out) const
 {
   out << "[]" << *base_type;
 }
-size_t Slice::alignment () const
-{
-  return sizeof (void*);
-}
-size_t Slice::size () const
-{
-  return sizeof (ValueType);
-}
 Kind Slice::kind () const
 {
   return Slice_Kind;
-}
-size_t Slice::unit_size () const
-{
-  return util::align_up (base_type->size (), base_type->alignment ());
 }
 const Slice* Slice::to_slice () const
 {
   return this;
 }
 Slice::Slice (const Type* base) : BaseType (base) { }
-size_t Array::alignment () const
-{
-  return base_type->alignment ();
-}
-size_t Array::size () const
-{
-  return unit_size () * dimension;
-}
 Kind Array::kind () const
 {
   return Array_Kind;
@@ -1596,20 +1560,8 @@ const Array* Array::to_array () const
 {
   return this;
 }
-size_t Array::unit_size () const
-{
-  return util::align_up (base_type->size (), base_type->alignment ());
-}
-Array::Array (Int::ValueType d, const Type* base) : BaseType (base), dimension (d) { }
+Array::Array (long d, const Type* base) : BaseType (base), dimension (d) { }
 
-size_t Map::alignment () const
-{
-  return 0;
-}
-size_t Map::size () const
-{
-  return 0;
-}
 Kind Map::kind () const
 {
   return Map_Kind;
@@ -1641,14 +1593,6 @@ void Heap::print (std::ostream& out) const
 {
   out << "heap " << *base_type;
 }
-size_t Heap::alignment () const
-{
-  return 0;
-}
-size_t Heap::size () const
-{
-  return 0;
-}
 Kind Heap::kind () const
 {
   return Heap_Kind;
@@ -1659,14 +1603,6 @@ const Heap* Heap::to_heap () const
 }
 Heap::Heap (const Type* base) : BaseType (base) { }
 
-size_t Struct::alignment () const
-{
-  return alignment_;
-}
-size_t Struct::size () const
-{
-  return offset_;
-}
 Kind Struct::kind () const
 {
   return Struct_Kind;
@@ -1710,14 +1646,6 @@ FunctionBase::FunctionBase (const decl::ParameterList* a_parameter_list,
   , return_parameter_list (a_return_parameter_list)
 { }
 
-size_t FunctionBase::alignment () const
-{
-  return sizeof (void*);
-}
-size_t Function::size () const
-{
-  return sizeof (void*);
-}
 Kind Function::kind () const
 {
   return type::Function_Kind;
@@ -1727,14 +1655,14 @@ const Function* Function::to_function () const
   return this;
 }
 
-size_t PushPort::size () const
-{
-  return sizeof (void*);
-}
-size_t PullPort::size () const
-{
-  return sizeof (pull_port_t);
-}
+// size_t PushPort::size () const
+// {
+//   return sizeof (void*);
+// }
+// size_t PullPort::size () const
+// {
+//   return sizeof (pull_port_t);
+// }
 PushPort::PushPort (const decl::ParameterList* a_parameter_list,
                     const decl::ParameterList* a_return_parameter_list)
   : FunctionBase (a_parameter_list, a_return_parameter_list)
@@ -1767,28 +1695,28 @@ const PullPort* PullPort::to_pull_port () const
 }
 
 Method::Method (const NamedType* a_named_type,
-                decl::ParameterSymbol* a_receiver_parameter,
+                decl::Parameter* a_receiver_parameter,
                 const decl::ParameterList* a_parameter_list,
                 const decl::ParameterList* a_return_parameter_list)
   : MethodBase (a_named_type, a_receiver_parameter, a_parameter_list, a_return_parameter_list)
 { }
 
 Initializer::Initializer (const NamedType* a_named_type,
-                          decl::ParameterSymbol* a_receiver_parameter,
+                          decl::Parameter* a_receiver_parameter,
                           const decl::ParameterList* a_parameter_list,
                           const decl::ParameterList* a_return_parameter_list)
   : MethodBase (a_named_type, a_receiver_parameter, a_parameter_list, a_return_parameter_list)
 { }
 
 Getter::Getter (const NamedType* a_named_type,
-                decl::ParameterSymbol* a_receiver_parameter,
+                decl::Parameter* a_receiver_parameter,
                 const decl::ParameterList* a_parameter_list,
                 const decl::ParameterList* a_return_parameter_list)
   : MethodBase (a_named_type, a_receiver_parameter, a_parameter_list, a_return_parameter_list)
 { }
 
 Reaction::Reaction (const NamedType* a_named_type,
-                    decl::ParameterSymbol* a_receiver_parameter,
+                    decl::Parameter* a_receiver_parameter,
                     const decl::ParameterList* a_parameter_list,
                     const decl::ParameterList* a_return_parameter_list)
   : MethodBase (a_named_type, a_receiver_parameter, a_parameter_list, a_return_parameter_list)
@@ -1820,14 +1748,10 @@ Interface::Interface (decl::Package* a_package)
   : package (a_package)
 { }
 
-size_t Interface::alignment () const
-{
-  return 0;
-}
-size_t Interface::size () const
-{
-  return 0;
-}
+// size_t Interface::size () const
+// {
+//   return 0;
+// }
 Kind Interface::kind () const
 {
   return Interface_Kind;
@@ -1837,14 +1761,10 @@ const Interface* Interface::to_interface () const
   return this;
 }
 
-size_t Untyped::alignment () const
-{
-  return 0;
-}
-size_t Untyped::size () const
-{
-  return 0;
-}
+// size_t Untyped::size () const
+// {
+//   return 0;
+// }
 
 Kind UntypedNil::kind () const
 {
@@ -1934,14 +1854,10 @@ void PolymorphicFunction::print (std::ostream& out) const
 {
   out << "<<polymorphic function>>";
 }
-size_t PolymorphicFunction::alignment () const
-{
-  return 0;
-}
-size_t PolymorphicFunction::size () const
-{
-  return 0;
-}
+// size_t PolymorphicFunction::size () const
+// {
+//   return 0;
+// }
 Kind PolymorphicFunction::kind () const
 {
   return Polymorphic_Function_Kind;
@@ -1952,14 +1868,10 @@ void FileDescriptor::print (std::ostream& out) const
 {
   out << "<FileDescriptor>";
 }
-size_t FileDescriptor::alignment () const
-{
-  return sizeof (void*);
-}
-size_t FileDescriptor::size () const
-{
-  return sizeof (void*);
-}
+// size_t FileDescriptor::size () const
+// {
+//   return sizeof (void*);
+// }
 Kind FileDescriptor::kind () const
 {
   return File_Descriptor_Kind;
@@ -1992,15 +1904,10 @@ void String::print (std::ostream& out) const
   out << "<string>";
 }
 
-size_t String::alignment () const
-{
-  return sizeof (void*);
-}
-
-size_t String::size () const
-{
-  return sizeof (StringRep);
-}
+// size_t String::size () const
+// {
+//   return sizeof (StringRep);
+// }
 
 Kind String::kind () const
 {

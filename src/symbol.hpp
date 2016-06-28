@@ -7,268 +7,134 @@
 
 namespace decl
 {
-class SymbolVisitor;
-class ConstSymbolVisitor;
 
-// TODO:  Remove this.
-extern std::string const ReturnSymbol;
-
-/*
- * Base class for symbols.
- */
+// Base class for symbols.
 struct Symbol
 {
-  Symbol (const std::string& id, const util::Location& loc)
-    : identifier (id)
-    , location (loc)
-    , inProgress (false)
-    , offset_ (0)
-  { }
-  virtual ~Symbol() { }
+  Symbol (const std::string& name, const util::Location& location);
+  virtual ~Symbol ();
   virtual void accept (SymbolVisitor& visitor) = 0;
   virtual void accept (ConstSymbolVisitor& visitor) const = 0;
-  virtual const type::Type* symbol_type () const = 0;
-  virtual bool defined () const
-  {
-    NOT_REACHED;
-  }
-  void offset (ptrdiff_t o)
-  {
-    offset_ = o;
-  }
-  virtual ptrdiff_t offset () const
-  {
-    return offset_;
-  }
+  virtual bool defined () const;
+  void offset (ptrdiff_t o);
+  virtual ptrdiff_t offset () const;
 
-  std::string const identifier;
+  std::string const name;
   util::Location const location;
-  bool inProgress;
+  bool in_progress;
 
 private:
+  // TODO:  Should this be here?
   ptrdiff_t offset_;
 };
 
-struct InstanceSymbol : public Symbol
+struct Instance : public Symbol
 {
-  InstanceSymbol (const std::string& id, const util::Location& loc, const type::NamedType* t, Initializer* init)
-    : Symbol (id, loc)
-    , type (t)
-    , initializer (init)
-    , instance (NULL)
-  { }
+  Instance (const std::string& name,
+            const util::Location& location,
+            const type::NamedType* type,
+            Initializer* initializer);
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-  virtual const type::Type* symbol_type () const
-  {
-    return type;
-  }
 
   const type::NamedType* const type;
   Initializer* const initializer;
+  // TODO:  Should this be here?
   composition::Instance* instance;
 };
 
-struct ParameterSymbol : public Symbol
+struct Parameter : public Symbol
 {
   enum Kind
   {
     Ordinary,
-    OrdinaryDuplicate,
+    Ordinary_Duplicate,
     Receiver,
-    ReceiverDuplicate,
+    Receiver_Duplicate,
     Return,
   };
 
-  ParameterSymbol (const std::string& id, const util::Location& loc, const type::Type* t, Mutability im, Mutability dm, Kind k)
-    : Symbol (id, loc)
-    , type (t)
-    , intrinsic_mutability (im)
-    , dereference_mutability (t->is_typed_string () ? std::max (dm, Immutable) : dm)
-    , kind (k)
-    , original_ (NULL)
-  { }
+  static Parameter*
+  make (const util::Location& location,
+        const std::string& name,
+        const type::Type* type,
+        Mutability intrinsic_mutability,
+        Mutability indirection_mutability);
 
-  virtual const type::Type* symbol_type () const
-  {
-    return type;
-  }
+  static Parameter*
+  make_return (const util::Location& location,
+               const std::string& name,
+               const type::Type* type,
+               Mutability indirection_mutability);
 
-  static ParameterSymbol* make (const util::Location& loc,
-                                const std::string& name,
-                                const type::Type* type,
-                                Mutability intrinsic_mutability,
-                                Mutability dereference_mutability)
-  {
-    return new ParameterSymbol (name, loc, type, intrinsic_mutability, dereference_mutability, Ordinary);
-  }
+  static Parameter*
+  make_receiver (const util::Location& location,
+                 const std::string& name,
+                 const type::Type* type,
+                 Mutability intrinsic_mutability,
+                 Mutability indirection_mutability);
 
-  static ParameterSymbol* makeReturn (const util::Location& loc,
-                                      const std::string& name,
-                                      const type::Type* type,
-                                      Mutability dereference_mutability)
-  {
-    return new ParameterSymbol (name, loc, type, Mutable, dereference_mutability, Return);
-  }
-
-  static ParameterSymbol* makeReceiver (const util::Location& loc,
-                                        const std::string& name,
-                                        const type::Type* type,
-                                        Mutability intrinsic_mutability,
-                                        Mutability dereference_mutability)
-  {
-    return new ParameterSymbol (name, loc, type, intrinsic_mutability, dereference_mutability, Receiver);
-  }
-
-  ParameterSymbol* duplicate (Mutability dereferenceMutability)
-  {
-    ParameterSymbol* s = new ParameterSymbol (*this);
-    switch (this->kind)
-      {
-      case Receiver:
-        s->kind = ReceiverDuplicate;
-        break;
-      case ReceiverDuplicate:
-        break;
-      case Ordinary:
-        s->kind = OrdinaryDuplicate;
-        break;
-      case OrdinaryDuplicate:
-        break;
-      default:
-        NOT_REACHED;
-      }
-    s->dereference_mutability = dereferenceMutability;
-    s->original_ = this;
-    return s;
-  }
+  Parameter*
+  duplicate (Mutability indirection_mutability);
 
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-  virtual ptrdiff_t offset () const
-  {
-    if (kind == ReceiverDuplicate ||
-        kind == OrdinaryDuplicate)
-      {
-        return original_->offset ();
-      }
-    else
-      {
-        return Symbol::offset ();
-      }
-  }
-
+  virtual ptrdiff_t offset () const;
   bool is_foreign_safe () const;
 
   const type::Type* const type;
   Mutability const intrinsic_mutability;
-  Mutability dereference_mutability;
+  Mutability indirection_mutability;
   Kind kind;
 private:
+  Parameter (const util::Location& location,
+             const std::string& name,
+             const type::Type* type,
+             Mutability intrinsic_mutability,
+             Mutability indirection_mutability,
+             Kind kind);
+
   Symbol* original_;
 };
 
-struct TypeSymbol : public Symbol
+struct Constant : public Symbol
 {
-  TypeSymbol (const std::string& id, const util::Location& loc, type::NamedType* t)
-    : Symbol (id, loc)
-    , type (t)
-  { }
-
+  Constant (const std::string& name,
+            const util::Location& location,
+            const type::Type* type,
+            const semantic::Value& value);
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-  virtual bool defined () const
-  {
-    return type->underlying_type () != NULL;
-  }
-
-  virtual const type::Type* symbol_type () const
-  {
-    return type;
-  }
-
-  type::NamedType* const type;
-};
-
-struct ConstantSymbol : public Symbol
-{
-  ConstantSymbol (const std::string& id, const util::Location& loc, const type::Type* t, const semantic::Value& v)
-    : Symbol (id, loc)
-    , type (t)
-    , value (v)
-  { }
-  virtual void accept (SymbolVisitor& visitor);
-  virtual void accept (ConstSymbolVisitor& visitor) const;
-  virtual const type::Type* symbol_type () const
-  {
-    return type;
-  }
   const type::Type* const type;
   semantic::Value const value;
 };
 
-struct VariableSymbol : public Symbol
+struct Variable : public Symbol
 {
-  VariableSymbol (const std::string& id, const util::Location& loc, const type::Type* t, Mutability im, Mutability dm)
-    : Symbol (id, loc)
-    , type (t)
-    , intrinsic_mutability (im)
-    , dereference_mutability (t->is_typed_string () ? std::max (dm, Immutable) : dm)
-    , original_ (NULL)
-  { }
-
+  Variable (const std::string& name,
+            const util::Location& location,
+            const type::Type* type,
+            Mutability intrinsic_mutability,
+            Mutability indirection_mutability);
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-
-  virtual const type::Type* symbol_type () const
-  {
-    return type;
-  }
-
-  virtual ptrdiff_t offset () const
-  {
-    if (original_ != NULL)
-      {
-        return original_->offset ();
-      }
-    else
-      {
-        return Symbol::offset ();
-      }
-  }
-
-  VariableSymbol* duplicate()
-  {
-    VariableSymbol* s = new VariableSymbol (this->identifier, this->location, this->type, Foreign, Foreign);
-    s->original_ = this;
-    return s;
-  }
+  virtual ptrdiff_t offset () const;
+  Variable* duplicate();
 
   const type::Type* const type;
   Mutability const intrinsic_mutability;
-  Mutability dereference_mutability;
+  Mutability indirection_mutability;
 private:
   Symbol* original_;
 };
 
-struct HiddenSymbol : public Symbol
+struct Hidden : public Symbol
 {
-  HiddenSymbol (const Symbol* s, const util::Location& loc)
-    : Symbol (s->identifier, loc)
-  { }
+  Hidden (const Symbol* symbol, const util::Location& location);
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-  virtual const type::Type* symbol_type () const
-  {
-    return NULL;
-  }
 };
 
-std::ostream&
-operator<< (std::ostream& out, const Symbol& s);
-
 }
-
-#define SYMBOL_NOT_REACHED(s) do { std::cerr << s << '\n'; NOT_REACHED; } while (0);
 
 #endif // RC_SRC_SYMBOL_HPP

@@ -3,6 +3,7 @@
 
 #include "types.hpp"
 #include "type.hpp"
+#include "runtime_types.hpp"
 
 namespace composition
 {
@@ -23,7 +24,7 @@ struct Instance
   Instance* const parent;
   size_t const address;
   const type::NamedType* const type;
-  component_t* component;
+  runtime::component_t* component;
   const decl::Initializer* const initializer;
   const runtime::Operation* const operation;
   ActionsType actions;
@@ -71,10 +72,10 @@ struct Action : public Node
 {
   Action (Instance* instance,
           decl::Action* action,
-          type::Int::ValueType iota = 0);
+          long iota = 0);
   Instance* const instance;
   decl::Action* const action;
-  type::Int::ValueType const iota;
+  long const iota;
   virtual size_t outgoing_count () const;
   virtual Node* outgoing_node (size_t i) const;
   const InstanceSet& instance_set ();
@@ -87,37 +88,37 @@ struct Action : public Node
 private:
   static std::string getname (Instance* instance,
                               decl::Action* action,
-                              type::Int::ValueType iota);
+                              long iota);
 };
 
 struct ReactionKey
 {
   ReactionKey (Instance* instance,
                const decl::Reaction* reaction,
-               type::Int::ValueType iota = 0);
+               long iota = 0);
   bool operator< (const ReactionKey& other) const;
   Instance* instance;
   const decl::Reaction* reaction;
-  type::Int::ValueType iota;
+  long iota;
 };
 
 struct Reaction : public Node
 {
   Reaction (Instance* instance,
             decl::Reaction* reaction,
-            type::Int::ValueType iota = 0);
+            long iota = 0);
   virtual size_t outgoing_count () const;
   virtual Node* outgoing_node (size_t i) const;
   const InstanceSet& instance_set ();
   Instance* const instance;
   decl::Reaction* const reaction;
-  type::Int::ValueType const iota;
+  long const iota;
   NodesType nodes;
   std::vector<PushPort*> push_ports;
 private:
   static std::string getname (Instance* instance,
                               decl::Reaction* reaction,
-                              type::Int::ValueType iota);
+                              long iota);
 };
 
 struct GetterKey

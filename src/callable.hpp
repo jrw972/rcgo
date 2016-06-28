@@ -11,195 +11,118 @@
 namespace decl
 {
 
-/*
- * Base class for things that can be called.
- */
-
+// Base class for things that can be called.
 struct Callable
 {
-  virtual ~Callable () { }
-  virtual void call (runtime::ExecutorBase& exec) const = 0;
+  virtual ~Callable ();
   virtual const decl::ParameterList* parameter_list () const = 0;
+  virtual const decl::ParameterList* return_parameter_list () const = 0;
   virtual const type::Type* callable_type () const = 0;
-  virtual size_t return_size_on_stack () const = 0;
-  virtual size_t receiver_size_on_stack () const = 0;
-  virtual size_t parameters_size_on_stack () const = 0;
-  virtual void check_types (ast::List* args) const;
-  virtual void check_references (ast::List* args) const;
-  virtual void check_mutability (ast::List* args) const;
-  virtual void compute_receiver_access (const semantic::ExpressionValueList& args, ReceiverAccess& receiver_access, bool& flag) const;
+  virtual void check (ast::List* args) const = 0;
+
+  virtual void
+  compute_receiver_access (const semantic::ExpressionValueList& args,
+                           ReceiverAccess& receiver_access,
+                           bool& flag) const = 0;
+
+  virtual void call (runtime::ExecutorBase& exec) const = 0;
 
   runtime::MemoryModel memory_model;
 };
 
-/*
- * TODO:  I debate whether or not the return symbols should be recorded here.
- */
-
-struct Function : public Callable, public decl::Symbol
+struct FunctionBase : public Callable, public decl::Symbol
 {
-  // TODO:  Remove duplication with Symbol.
-  Function (ast::Function* node, const type::Function* type);
+  FunctionBase (const std::string& id,
+                const util::Location& loc,
+                const type::Function* type);
 
   // Callable
-  virtual void call (runtime::ExecutorBase& exec) const;
-  virtual const type::Type* callable_type () const
-  {
-    return type;
-  }
+  virtual const decl::ParameterList* parameter_list () const;
+  const decl::ParameterList* return_parameter_list () const;
+  virtual const type::Type* callable_type () const;
+  virtual void check (ast::List* args) const;
+
+  virtual void
+  compute_receiver_access (const semantic::ExpressionValueList& args,
+                           ReceiverAccess& receiver_access,
+                           bool& flag) const;
 
   // Symbol
   virtual void accept (decl::SymbolVisitor& visitor);
   virtual void accept (decl::ConstSymbolVisitor& visitor) const;
-  virtual const type::Type* symbol_type () const
-  {
-    return type;
-  }
-
-  ast::Function* const node;
-
-  virtual size_t return_size_on_stack () const
-  {
-    return type->return_parameter_list->size_on_stack ();
-  }
-  virtual size_t receiver_size_on_stack () const
-  {
-    return 0;
-  }
-  virtual size_t parameters_size_on_stack () const;
-  virtual const decl::ParameterList* parameter_list () const
-  {
-    return type->parameter_list;
-  }
-  const decl::ParameterList* return_parameter_list () const
-  {
-    return type->return_parameter_list;
-  }
 
   const type::Function* type;
 };
 
-struct Method : public Callable
+struct Function : public FunctionBase
 {
-  Method (ast::Method* n,
-          const std::string& na,
-          const type::Method* method_type_)
-    : node (n)
-    , name (na)
-    , methodType (method_type_)
-  { }
-
+  Function (const std::string& name,
+            const util::Location& location,
+            const type::Function* type);
   virtual void call (runtime::ExecutorBase& exec) const;
-  virtual const decl::ParameterList* parameter_list () const
-  {
-    return methodType->parameter_list;
-  }
-  const decl::ParameterList* return_parameter_list () const;
-  decl::ParameterSymbol* receiver_parameter () const
-  {
-    return methodType->receiver_parameter;
-  }
-
-  virtual const type::Type* callable_type () const
-  {
-    return methodType;
-  }
-
-  virtual size_t return_size_on_stack () const
-  {
-    return methodType->return_parameter_list->size_on_stack ();
-  }
-  virtual size_t receiver_size_on_stack () const
-  {
-    return util::align_up (methodType->receiver_parameter->type->size (), arch::stack_alignment ());
-  }
-  virtual size_t parameters_size_on_stack () const;
-
-  ast::Method* const node;
-  std::string const name;
-  const type::Method * const methodType;
+  runtime::Operation* operation;
 };
 
-struct Initializer : public Callable
+struct MethodBase : public Callable
 {
-  Initializer (ast::Initializer* n,
-               const std::string& na,
-               const type::Initializer* initializer_type_)
-    : node (n)
-    , name (na)
-    , initializerType (initializer_type_)
-  { }
+  MethodBase (const std::string& a_name,
+              const type::MethodBase* a_type);
+  virtual const decl::ParameterList* parameter_list () const;
+  virtual const decl::ParameterList* return_parameter_list () const;
+  virtual const type::Type* callable_type () const;
+
+  virtual void check (ast::List* args) const;
+
+  virtual void
+  compute_receiver_access (const semantic::ExpressionValueList& args,
+                           ReceiverAccess& receiver_access,
+                           bool& flag) const;
 
   virtual void call (runtime::ExecutorBase& exec) const;
-  virtual const type::Type* callable_type () const
-  {
-    return initializerType;
-  }
 
-  virtual size_t return_size_on_stack () const
-  {
-    return initializerType->return_parameter_list->size_on_stack ();
-  }
-  virtual size_t receiver_size_on_stack () const
-  {
-    return util::align_up (initializerType->receiver_parameter->type->size (), arch::stack_alignment ());
-  }
-  virtual size_t parameters_size_on_stack () const;
-  virtual const decl::ParameterList* parameter_list () const
-  {
-    return initializerType->parameter_list;
-  }
-  const decl::ParameterList* return_parameter_list () const;
-  decl::ParameterSymbol* receiver_parameter () const
-  {
-    return initializerType->receiver_parameter;
-  }
-  ast::Initializer* const node;
   std::string const name;
-  const type::Initializer* const initializerType;
+  const type::MethodBase* const type;
+  runtime::Operation* operation;
 };
 
-struct Getter : public Callable
+struct Method : public MethodBase
 {
-  Getter (ast::Getter* n,
-          const std::string& na,
-          const type::Getter* getter_type_)
-    : node (n)
-    , name (na)
-    , getterType (getter_type_)
-  { }
+  Method (const std::string& name,
+          const type::Method* method_type);
+};
 
-  virtual void call (runtime::ExecutorBase& exec) const;
+struct Initializer : public MethodBase
+{
+  Initializer (const std::string& name,
+               const type::Initializer* initializer_type);
+};
 
-  virtual const type::Type* callable_type () const
-  {
-    return getterType;
-  }
-
-  virtual size_t return_size_on_stack () const
-  {
-    return getterType->return_parameter_list->size_on_stack ();
-  }
-  virtual size_t receiver_size_on_stack () const
-  {
-    return util::align_up (getterType->receiver_parameter->type->size (), arch::stack_alignment ());
-  }
-  virtual size_t parameters_size_on_stack () const;
-  virtual const decl::ParameterList* parameter_list () const
-  {
-    return getterType->parameter_list;
-  }
-
-  const decl::ParameterList* return_parameter_list () const;
-  decl::ParameterSymbol* receiver_parameter () const
-  {
-    return getterType->receiver_parameter;
-  }
-
+struct Getter : public MethodBase
+{
+  Getter (ast::Getter* node,
+          const std::string& name,
+          const type::Getter* getter_type);
   ast::Getter* const node;
-  std::string const name;
-  const type::Getter* const getterType;
   ReceiverAccess immutable_phase_access;
+};
+
+struct Reaction : public MethodBase
+{
+  Reaction (ast::Node* a_body,
+            const std::string& a_name,
+            const type::Reaction* a_reaction_type);
+  Reaction (ast::Node* a_body,
+            const std::string& a_name,
+            const type::Reaction* a_reaction_type,
+            Symbol* a_iota,
+            long a_dimension);
+
+  ast::Node* const body;
+  ReceiverAccess immutable_phase_access;
+  Symbol* const iota;
+  long const dimension;
+
+  bool has_dimension () const;
 };
 
 }

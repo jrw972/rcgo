@@ -23,7 +23,7 @@ struct Node
   type::Field* field;
   bool reset_mutability;
   const decl::Callable* callable;
-  const decl::Template* temp;
+  const decl::PolymorphicFunction* temp;
   runtime::Operation* operation;
 
 protected:
@@ -221,7 +221,7 @@ struct Binary : public Node
 struct BinaryArithmeticExpr : public Binary
 {
   BinaryArithmeticExpr (unsigned int line,
-                        decl::Template* temp,
+                        decl::PolymorphicFunction* temp,
                         Node* left,
                         Node* right);
   virtual void accept (NodeVisitor& visitor);
@@ -330,7 +330,7 @@ struct EmptyExpr : public Node
 
 struct UnaryArithmeticExpr : public Unary<>
 {
-  UnaryArithmeticExpr (unsigned int line, decl::Template* temp, Node* child);
+  UnaryArithmeticExpr (unsigned int line, decl::PolymorphicFunction* temp, Node* child);
   virtual void accept (NodeVisitor& visitor);
 };
 
@@ -345,7 +345,7 @@ struct PushPortCallExpr : public Node
 
   type::Field* field;
   const type::PushPort* push_port_type;
-  decl::ParameterSymbol* receiver_parameter;
+  decl::Parameter* receiver_parameter;
 };
 
 struct IndexedPushPortCallExpr : public Node
@@ -363,7 +363,7 @@ struct IndexedPushPortCallExpr : public Node
 
   type::Field* field;
   const type::PushPort* push_port_type;
-  decl::ParameterSymbol* receiver_parameter;
+  decl::Parameter* receiver_parameter;
   const type::Array* array_type;
 };
 
@@ -418,7 +418,7 @@ struct ChangeStatement : public Node
   Identifier* const identifier;
   Node* const body;
 
-  decl::VariableSymbol* root_symbol;
+  decl::Variable* root_symbol;
 };
 
 struct ExpressionStatement : public Unary<>
@@ -458,7 +458,7 @@ struct ReturnStatement : public Unary<>
   ReturnStatement (unsigned int line, Node* child);
   virtual void accept (NodeVisitor& visitor);
 
-  const decl::ParameterSymbol* return_symbol;
+  const decl::Parameter* return_symbol;
 };
 
 struct IncrementDecrementStatement : public Unary<>
@@ -516,7 +516,7 @@ struct VarStatement : public Node
   Node* const type_spec;
   List* const expression_list;
 
-  typedef std::vector<decl::VariableSymbol*> SymbolsType;
+  typedef std::vector<decl::Variable*> SymbolsType;
   SymbolsType symbols;
 };
 
@@ -559,8 +559,8 @@ struct ForIotaStatement : public Node
   Node* const limit_node;
   Node* const body;
 
-  decl::VariableSymbol* symbol;
-  type::Int::ValueType limit;
+  decl::Variable* symbol;
+  long limit;
 };
 
 struct Action : public Node
@@ -652,7 +652,7 @@ struct Instance : public Node
   Identifier* const initializer;
   List* const expression_list;
 
-  decl::InstanceSymbol* symbol;
+  decl::Instance* symbol;
 };
 
 struct Const : public Node

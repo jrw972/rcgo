@@ -17,7 +17,6 @@ bin_PROGRAMS = rc
 rc_SOURCES = main.cpp \
 debug.hpp \
 evaluate_static.hpp evaluate_static.cpp \
-executor_base.hpp executor_base.cpp \
 field.hpp \
 generate_code.hpp generate_code.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
@@ -42,11 +41,11 @@ bind.hpp bind.cpp \
 builtin_function.hpp builtin_function.cpp \
 callable.hpp callable.cpp \
 check_types.hpp check_types.cpp \
-complex.hpp \
 composition.hpp composition.cpp \
 compute_receiver_access.hpp compute_receiver_access.cpp \
 enter_symbols.cpp \
 error_reporter.hpp error_reporter.cpp \
+executor_base.hpp executor_base.cpp \
 expression_value.hpp expression_value.cpp \
 heap.hpp heap.cpp \
 location.hpp location.cpp \
@@ -54,18 +53,19 @@ memory_model.hpp memory_model.cpp \
 node.hpp node.cpp \
 node_cast.hpp \
 node_visitor.hpp node_visitor.cpp \
+operation.hpp operation.cpp \
 parameter_list.hpp parameter_list.cpp \
 process_type_spec.cpp \
 process_types_and_constants.hpp process_types_and_constants.cpp \
-reaction.hpp reaction.cpp \
 runtime.hpp runtime.cpp \
+runtime_types.hpp runtime_types.cpp \
 semantic.hpp semantic.cpp \
 stack.hpp stack.cpp \
 symbol.hpp symbol.cpp \
 symbol_cast.hpp \
 symbol_table.hpp symbol_table.cpp \
 symbol_visitor.hpp symbol_visitor.cpp \
-template.hpp template.cpp \
+polymorphic_function.hpp polymorphic_function.cpp \
 type.hpp type.cpp \
 value.hpp value.cpp
 librc_la_LIBADD=-lpthread

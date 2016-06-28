@@ -1,34 +1,68 @@
 #ifndef RC_SRC_BUILTIN_FUNCTION_HPP
 #define RC_SRC_BUILTIN_FUNCTION_HPP
 
+#include "types.hpp"
 #include "callable.hpp"
-#include "symbol.hpp"
 
-namespace decl
+namespace runtime
 {
 
 // Base class for builtin functions.
-struct BuiltinFunction : public decl::Callable, public decl::Symbol
+struct BuiltinFunction : public decl::FunctionBase
 {
   BuiltinFunction (const std::string& id,
                    const util::Location& loc,
                    const type::Function* type);
-
-  // Symbol
-  virtual void accept (decl::SymbolVisitor& visitor);
-  virtual void accept (decl::ConstSymbolVisitor& visitor) const;
-  virtual const type::Type* symbol_type () const;
-
-  // Callable
-  virtual const type::Type* callable_type () const;
-  virtual const decl::ParameterList* parameter_list () const;
-  virtual size_t return_size_on_stack () const;
-  virtual size_t receiver_size_on_stack () const;
-  virtual size_t parameters_size_on_stack () const;
-
-  const type::Function* const type;
 };
 
-}
+struct Readable : public BuiltinFunction
+{
+  Readable (const util::Location& loc);
+  virtual void call (ExecutorBase& exec) const;
+};
+
+struct Read : public BuiltinFunction
+{
+  Read (const util::Location& loc);
+  virtual void call (ExecutorBase& exec) const;
+};
+
+struct Writable : public BuiltinFunction
+{
+  Writable (const util::Location& loc);
+  virtual void call (ExecutorBase& exec) const;
+};
+
+struct ClockGettime : public BuiltinFunction
+{
+  ClockGettime (const util::Location& loc);
+  virtual void call (ExecutorBase& exec) const;
+};
+
+struct TimerfdCreate : public BuiltinFunction
+{
+  TimerfdCreate (const util::Location& loc);
+  virtual void call (ExecutorBase& exec) const;
+};
+
+struct TimerfdSettime : public BuiltinFunction
+{
+  TimerfdSettime (const util::Location& loc);
+  virtual void call (ExecutorBase& exec) const;
+};
+
+struct UdpSocket : public BuiltinFunction
+{
+  UdpSocket (const util::Location& loc);
+  virtual void call (ExecutorBase& exec) const;
+};
+
+struct Sendto : public BuiltinFunction
+{
+  Sendto (const util::Location& loc);
+  virtual void call (ExecutorBase& exec) const;
+};
+
+};
 
 #endif // RC_SRC_BUILTIN_FUNCTION_HPP

@@ -1,6 +1,7 @@
 #include "expression_value.hpp"
 
 #include "tap.hpp"
+#include "type.hpp"
 
 using namespace semantic;
 using namespace type;

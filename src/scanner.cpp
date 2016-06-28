@@ -1953,13 +1953,13 @@ do_action:	/* This label is used only to access EOF actions. */
             }
 
           size_t size = destination - begin;
-          UntypedString::ValueType v;
+          runtime::String v;
           v.ptr = malloc (size);
           memcpy (v.ptr, begin, size);
           v.length = size;
 
           Value value;
-          value.string_value = v;
+          value.untyped_string_value = v;
           value.present = true;
           yylval.node = new LiteralExpr (yylloc, UntypedString::instance (), value);
           return LITERAL;
@@ -1975,13 +1975,13 @@ do_action:	/* This label is used only to access EOF actions. */
           char* limit = yytext + yyleng - 1;
           char* end = parseInterprettedString (yylloc, pos, limit, pos);
           size_t size = end - begin;
-          UntypedString::ValueType v;
+          runtime::String v;
           v.ptr = malloc (size);
           memcpy (v.ptr, begin, size);
           v.length = size;
 
           Value value;
-          value.string_value = v;
+          value.untyped_string_value = v;
           value.present = true;
           yylval.node = new LiteralExpr (yylloc, UntypedString::instance (), value);
           return LITERAL;
@@ -1993,7 +1993,7 @@ do_action:	/* This label is used only to access EOF actions. */
         {
           Value value;
           errno = 0;
-          value.integer_value = strtoull (yytext, NULL, 10);
+          value.untyped_integer_value = strtoull (yytext, NULL, 10);
           if (errno == ERANGE)
             {
               error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
@@ -2010,7 +2010,7 @@ do_action:	/* This label is used only to access EOF actions. */
         {
           Value value;
           errno = 0;
-          value.integer_value = strtoull (yytext, NULL, 8);
+          value.untyped_integer_value = strtoull (yytext, NULL, 8);
           if (errno == ERANGE)
             {
               error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
@@ -2027,7 +2027,7 @@ do_action:	/* This label is used only to access EOF actions. */
         {
           Value value;
           errno = 0;
-          value.integer_value = strtoull (yytext, NULL, 16);
+          value.untyped_integer_value = strtoull (yytext, NULL, 16);
           if (errno == ERANGE)
             {
               error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
@@ -2043,7 +2043,7 @@ do_action:	/* This label is used only to access EOF actions. */
 #line 332 "scanner.l"
         {
           Value value;
-          value.float_value = strtod (yytext, NULL);
+          value.untyped_float_value = strtod (yytext, NULL);
           value.present = true;
           yylval.node = new LiteralExpr (yylloc, UntypedFloat::instance (), value);
           return LITERAL;
@@ -2054,9 +2054,9 @@ do_action:	/* This label is used only to access EOF actions. */
 #line 340 "scanner.l"
         {
           Value value;
-          value.complex_value = UntypedComplex::ValueType::make (0, strtod (yytext, NULL));
+          value.untyped_complex_value = semantic::UntypedComplex::make (0, strtod (yytext, NULL));
           value.present = true;
-          yylval.node = new LiteralExpr (yylloc, UntypedComplex::instance (), value);
+          yylval.node = new LiteralExpr (yylloc, type::UntypedComplex::instance (), value);
           return LITERAL;
         }
         YY_BREAK
@@ -2065,7 +2065,7 @@ do_action:	/* This label is used only to access EOF actions. */
 #line 348 "scanner.l"
         {
           Value value;
-          value.rune_value = yytext[1];
+          value.untyped_rune_value = yytext[1];
           value.present = true;
           yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
           return LITERAL;
@@ -2080,39 +2080,39 @@ do_action:	/* This label is used only to access EOF actions. */
           switch (yytext[2])
             {
             case 'a':
-              value.rune_value = '\a';
+              value.untyped_rune_value = '\a';
               yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
               break;
             case 'b':
-              value.rune_value = '\b';
+              value.untyped_rune_value = '\b';
               yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
               break;
             case 'f':
-              value.rune_value = '\f';
+              value.untyped_rune_value = '\f';
               yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
               break;
             case 'n':
-              value.rune_value = '\n';
+              value.untyped_rune_value = '\n';
               yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
               break;
             case 'r':
-              value.rune_value = '\r';
+              value.untyped_rune_value = '\r';
               yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
               break;
             case 't':
-              value.rune_value = '\t';
+              value.untyped_rune_value = '\t';
               yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
               break;
             case 'v':
-              value.rune_value = '\v';
+              value.untyped_rune_value = '\v';
               yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
               break;
             case '\\':
-              value.rune_value = '\\';
+              value.untyped_rune_value = '\\';
               yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
               break;
             case '\'':
-              value.rune_value = '\'';
+              value.untyped_rune_value = '\'';
               yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
               break;
             default:
@@ -2127,7 +2127,7 @@ do_action:	/* This label is used only to access EOF actions. */
 #line 403 "scanner.l"
         {
           Value value;
-          value.rune_value = parseOctal (yylloc, yytext + 2);
+          value.untyped_rune_value = parseOctal (yylloc, yytext + 2);
           value.present = true;
           yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
           return LITERAL;
@@ -2138,7 +2138,7 @@ do_action:	/* This label is used only to access EOF actions. */
 #line 411 "scanner.l"
         {
           Value value;
-          value.rune_value = parseHex (yylloc, yytext + 3);
+          value.untyped_rune_value = parseHex (yylloc, yytext + 3);
           value.present = true;
           yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
           return LITERAL;
@@ -2149,7 +2149,7 @@ do_action:	/* This label is used only to access EOF actions. */
 #line 419 "scanner.l"
         {
           Value value;
-          value.rune_value = parseU4 (yylloc, yytext + 3);
+          value.untyped_rune_value = parseU4 (yylloc, yytext + 3);
           value.present = true;
           yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
           return LITERAL;
@@ -2160,7 +2160,7 @@ do_action:	/* This label is used only to access EOF actions. */
 #line 427 "scanner.l"
         {
           Value value;
-          value.rune_value = parseU8 (yylloc, yytext + 3);
+          value.untyped_rune_value = parseU8 (yylloc, yytext + 3);
           value.present = true;
           yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
           return LITERAL;

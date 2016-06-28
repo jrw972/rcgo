@@ -74,11 +74,11 @@ ErrorReporter::undefined (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::hidden (const Location& loc,
-                       const std::string& id)
+ErrorReporter::hidden_symbol (const Location& loc,
+                              const std::string& id)
 {
-  out_ << loc << ": " << id << " is hidden in this scope " << Hidden << '\n';
-  return bump (Hidden);
+  out_ << loc << ": " << id << " is hidden in this scope " << Hidden_Symbol << '\n';
+  return bump (Hidden_Symbol);
 }
 
 ErrorCode

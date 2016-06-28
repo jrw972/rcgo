@@ -2540,7 +2540,7 @@ yyreduce:
     case 42:
 #line 260 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.list) = (new ParameterList (yyloc))->append (new IdentifierListTypeSpec ((yylsp[-1]), (new IdentifierList ((yylsp[-1])))->append (new Identifier ((yylsp[-1]), decl::ReturnSymbol)), Mutable, (yyvsp[-1].mutability), (yyvsp[0].node)));
+        (yyval.list) = (new ParameterList (yyloc))->append (new IdentifierListTypeSpec ((yylsp[-1]), (new IdentifierList ((yylsp[-1])))->append (new Identifier ((yylsp[-1]), "")), Mutable, (yyvsp[-1].mutability), (yyvsp[0].node)));
       }
 #line 2342 "parser.cpp" /* yacc.c:1646  */
       break;

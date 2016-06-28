@@ -1,6 +1,7 @@
 #ifndef RC_SRC_UTIL_HPP
 #define RC_SRC_UTIL_HPP
 
+#include <string>
 #include <cstddef>
 #include <cstdlib>
 

@@ -158,8 +158,8 @@ Stack::print (std::ostream& out) const
   out << "size = " << size () << " base_pointer = " << (void*)base_pointer_ << '\n';
   for (const char* ptr = data_; ptr != top_; ptr += increment)
     {
-      size_t x;
-      std::memcpy (&x, ptr, sizeof (size_t));
+      void* x;
+      std::memcpy (&x, ptr, sizeof (void*));
       std::cout << (void*)ptr << " => " << x << ' ' << (ptr == base_pointer_ ? "<--" : "") << '\n';
     }
 }

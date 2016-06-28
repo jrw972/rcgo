@@ -13,15 +13,15 @@ main (int argc, char** argv)
   Tap tap;
 
   {
-    Symbol* s = new VariableSymbol ("id", Location (), &named_bool, Mutable, Mutable);
-    tap.tassert ("decl::symbol_cast", symbol_cast<VariableSymbol> (s) != NULL);
-    tap.tassert ("decl::symbol_cast (null)", symbol_cast<ParameterSymbol> (s) == NULL);
+    Symbol* s = new Variable ("id", Location (), &named_bool, Mutable, Mutable);
+    tap.tassert ("decl::symbol_cast", symbol_cast<Variable> (s) != NULL);
+    tap.tassert ("decl::symbol_cast (null)", symbol_cast<Parameter> (s) == NULL);
   }
 
   {
-    const Symbol* s = new VariableSymbol ("id", Location (), &named_bool, Mutable, Mutable);
-    tap.tassert ("decl::symbol_cast const", symbol_cast<VariableSymbol> (s) != NULL);
-    tap.tassert ("decl::symbol_cast const (null)", symbol_cast<ParameterSymbol> (s) == NULL);
+    const Symbol* s = new Variable ("id", Location (), &named_bool, Mutable, Mutable);
+    tap.tassert ("decl::symbol_cast const", symbol_cast<Variable> (s) != NULL);
+    tap.tassert ("decl::symbol_cast const (null)", symbol_cast<Parameter> (s) == NULL);
   }
 
   tap.print_plan ();

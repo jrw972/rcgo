@@ -2,67 +2,83 @@
 #define RC_SRC_VALUE_HPP
 
 #include "types.hpp"
-#include "type.hpp"
+
+// Borrow some types from runtime.
+#include "runtime_types.hpp"
 
 namespace semantic
 {
 
-typedef uint64_t UintValueType;
-typedef int64_t IntValueType;
+struct UntypedComplex
+{
+  double real;
+  double imag;
+  static UntypedComplex make (double r, double i);
+  bool operator== (const UntypedComplex& other) const;
+  UntypedComplex& operator= (const double& x);
+  UntypedComplex& operator= (const runtime::Complex64& x);
+  UntypedComplex& operator= (const runtime::Complex128& x);
+  operator double() const;
+};
+
+UntypedComplex operator* (const UntypedComplex&, const UntypedComplex&);
+UntypedComplex operator/ (const UntypedComplex&, const UntypedComplex&);
+UntypedComplex operator+ (const UntypedComplex&, const UntypedComplex&);
+UntypedComplex operator- (const UntypedComplex&, const UntypedComplex&);
+UntypedComplex operator- (const UntypedComplex&);
 
 struct Value
 {
-  Value () : present (false) { }
-  bool representable (const type::Type* from, const type::Type* to) const;
-  void convert (const type::Type* from, const type::Type* to);
-  type::Int::ValueType to_int (const type::Type* type) const;
+  Value ();
+
+  bool
+  representable (const type::Type* from, const type::Type* to) const;
+
+  void
+  convert (const type::Type* from, const type::Type* to);
+
+  long
+  to_int (const type::Type* type) const;
 
   bool present;
   union
   {
-    type::Bool::ValueType bool_value;
+    bool bool_value;
 
-    type::Uint8::ValueType uint8_value;
-    type::Uint16::ValueType uint16_value;
-    type::Uint32::ValueType uint32_value;
-    type::Uint64::ValueType uint64_value;
+    uint8_t uint8_value;
+    uint16_t uint16_value;
+    uint32_t uint32_value;
+    uint64_t uint64_value;
 
-    type::Int8::ValueType int8_value;
-    type::Int16::ValueType int16_value;
-    type::Int32::ValueType int32_value;
-    type::Int64::ValueType int64_value;
+    int8_t int8_value;
+    int16_t int16_value;
+    int32_t int32_value;
+    int64_t int64_value;
 
-    type::Float32::ValueType float32_value;
-    type::Float64::ValueType float64_value;
+    float float32_value;
+    double float64_value;
 
-    type::Complex64::ValueType complex64_value;
-    type::Complex128::ValueType complex128_value;
+    runtime::Complex64 complex64_value;
+    runtime::Complex128 complex128_value;
 
-    type::Uint::ValueType uint_value;
-    type::Int::ValueType int_value;
-    type::Uintptr::ValueType uintptr_value;
+    unsigned long uint_value;
+    long int_value;
+    size_t uintptr_value;
 
-    type::Pointer::ValueType pointer_value;
-    type::Slice::ValueType slice_value;
-    type::String::ValueType stringu_value;
+    void* pointer_value;
+    runtime::Slice slice_value;
+    runtime::String string_value;
 
-    type::UntypedBoolean::ValueType boolean_value;
-    type::UntypedRune::ValueType rune_value;
-    type::UntypedInteger::ValueType integer_value;
-    type::UntypedFloat::ValueType float_value;
-    type::UntypedComplex::ValueType complex_value;
-    type::UntypedString::ValueType string_value;
+    bool untyped_boolean_value;
+    int32_t untyped_rune_value;
+    long long untyped_integer_value;
+    double untyped_float_value;
+    UntypedComplex untyped_complex_value;
+    runtime::String untyped_string_value;
   };
 };
 
 typedef std::vector<Value> ValueList;
-
-inline std::ostream& operator<< (std::ostream& out, const type::Slice::ValueType& s)
-{
-  out << '{' << s.ptr << ',' << s.length << ',' << s.capacity << '}';
-  return out;
-}
-
 
 struct ValuePrinter
 {
@@ -73,23 +89,38 @@ struct ValuePrinter
 
 std::ostream& operator<< (std::ostream& out, const ValuePrinter& vp);
 
-void equal (Value& out, const type::Type* type, const Value& left, const Value& right);
-void not_equal (Value& out, const type::Type* type, const Value& left, const Value& right);
-void less_than (Value& out, const type::Type* type, const Value& left, const Value& right);
-void less_equal (Value& out, const type::Type* type, const Value& left, const Value& right);
-void more_than (Value& out, const type::Type* type, const Value& left, const Value& right);
-void more_equal (Value& out, const type::Type* type, const Value& left, const Value& right);
+void equal (Value& out, const type::Type* type,
+            const Value& left, const Value& right);
+void not_equal (Value& out, const type::Type* type,
+                const Value& left, const Value& right);
+void less_than (Value& out, const type::Type* type,
+                const Value& left, const Value& right);
+void less_equal (Value& out, const type::Type* type,
+                 const Value& left, const Value& right);
+void more_than (Value& out, const type::Type* type,
+                const Value& left, const Value& right);
+void more_equal (Value& out, const type::Type* type,
+                 const Value& left, const Value& right);
 
-void multiply (Value& out, const type::Type* type, const Value& left, const Value& right);
-void divide (Value& out, const type::Type* type, const Value& left, const Value& right);
-void modulus (Value& out, const type::Type* type, const Value& left, const Value& right);
-void add (Value& out, const type::Type* type, const Value& left, const Value& right);
-void subtract (Value& out, const type::Type* type, const Value& left, const Value& right);
+void multiply (Value& out, const type::Type* type,
+               const Value& left, const Value& right);
+void divide (Value& out, const type::Type* type,
+             const Value& left, const Value& right);
+void modulus (Value& out, const type::Type* type,
+              const Value& left, const Value& right);
+void add (Value& out, const type::Type* type,
+          const Value& left, const Value& right);
+void subtract (Value& out, const type::Type* type,
+               const Value& left, const Value& right);
 
-void bit_and (Value& out, const type::Type* type, const Value& left, const Value& right);
-void bit_and_not (Value& out, const type::Type* type, const Value& left, const Value& right);
-void bit_or (Value& out, const type::Type* type, const Value& left, const Value& right);
-void bit_xor (Value& out, const type::Type* type, const Value& left, const Value& right);
+void bit_and (Value& out, const type::Type* type,
+              const Value& left, const Value& right);
+void bit_and_not (Value& out, const type::Type* type,
+                  const Value& left, const Value& right);
+void bit_or (Value& out, const type::Type* type,
+             const Value& left, const Value& right);
+void bit_xor (Value& out, const type::Type* type,
+              const Value& left, const Value& right);
 
 }
 

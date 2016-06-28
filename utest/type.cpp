@@ -2,11 +2,11 @@
 
 #include "tap.hpp"
 #include "action.hpp"
-#include "reaction.hpp"
 #include "bind.hpp"
 #include "package.hpp"
 #include "parameter_list.hpp"
 #include "visitor_helper.hpp"
+#include "callable.hpp"
 
 #include <sstream>
 
@@ -18,22 +18,12 @@ void
 scalar_test (Tap& tap,
              const std::string& type,
              const std::string& rep,
-             size_t alignment,
-             size_t size,
              type::Kind kind)
 {
   {
     std::stringstream str;
     T::instance ()->print (str);
     tap.tassert (type + "::print", str.str () == rep);
-  }
-
-  {
-    tap.tassert (type + "::alignment", T::instance ()->alignment () == alignment);
-  }
-
-  {
-    tap.tassert (type + "::size", T::instance ()->size () == size);
   }
 
   {
@@ -48,7 +38,7 @@ main (int argc, char** argv)
 
   {
     std::stringstream ss;
-    ss << named_int;
+    ss << static_cast<Type&> (named_int);
     tap.tassert ("operator<<", ss.str () == named_int.to_error_string ());
   }
 
@@ -76,77 +66,65 @@ main (int argc, char** argv)
     tap.tassert ("Type::get_heap", p1 != NULL && p1 == p2);
   }
 
+  util::Location loc;
   {
-    NamedType foo ("foo");
+    NamedType foo ("foo", loc);
     tap.tassert ("NamedType::NamedType(1)", foo.underlying_type () == NULL);
   }
 
   {
-    NamedType foo ("foo", Int::instance ());
+    NamedType foo ("foo", loc, Int::instance ());
     tap.tassert ("NamedType::NamedType(2)", foo.underlying_type () == Int::instance ());
   }
 
   {
-    NamedType foo ("foo");
+    NamedType foo ("foo", loc);
     std::stringstream str;
     foo.print (str);
     tap.tassert ("NamedType::print", str.str () == "foo");
   }
 
   {
-    NamedType foo ("foo");
+    NamedType foo ("foo", loc);
     foo.underlying_type (&named_int);
     tap.tassert ("NamedType::underlying_type", foo.underlying_type () == Int::instance ());
   }
 
   {
-    NamedType foo ("foo", Int::instance ());
-    tap.tassert ("NamedType::alignment", foo.alignment () == Int::instance ()->alignment ());
-  }
-
-  {
-    NamedType foo ("foo", Int::instance ());
-    tap.tassert ("NamedType::size", foo.size () == Int::instance ()->size ());
-  }
-
-  {
-    NamedType foo ("foo");
+    NamedType foo ("foo", loc);
     tap.tassert ("NamedType::kind", foo.kind () == Named_Kind);
   }
 
   {
-    util::Location loc;
-    NamedType foo ("foo", new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL));
     decl::Method* r1 = foo.find_method ("r");
-    decl::Method* r = new decl::Method (NULL, "r", new type::Method (&foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
+    decl::Method* r = new decl::Method ("r", new type::Method (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
     foo.insert_method (r);
     decl::Method* r2 = foo.find_method ("r");
     tap.tassert ("NamedType::find_method", r1 == NULL && r2 == r);
   }
 
   {
-    util::Location loc;
-    NamedType foo ("foo", new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL));
     decl::Initializer* r1 = foo.find_initializer ("r");
-    decl::Initializer* r = new decl::Initializer (NULL, "r", new type::Initializer (&foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
+    decl::Initializer* r = new decl::Initializer ("r", new type::Initializer (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
     foo.insert_initializer (r);
     decl::Initializer* r2 = foo.find_initializer ("r");
     tap.tassert ("NamedType::find_initializer", r1 == NULL && r2 == r);
   }
 
   {
-    util::Location loc;
-    NamedType foo ("foo", new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL));
     tap.tassert ("NamedType::getters_begin/end", foo.getters_begin () == foo.getters_end ());
     decl::Getter* r1 = foo.find_getter ("r");
-    decl::Getter* r = new decl::Getter (NULL, "r", new type::Getter (&foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
+    decl::Getter* r = new decl::Getter (NULL, "r", new type::Getter (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
     foo.insert_getter (r);
     decl::Getter* r2 = foo.find_getter ("r");
     tap.tassert ("NamedType::find_getter", r1 == NULL && r2 == r);
   }
 
   {
-    NamedType foo ("foo", new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL));
     tap.tassert ("NamedType::actions_begin/end", foo.actions_begin () == foo.actions_end ());
     Action* r1 = foo.find_action ("r");
     Action* r = new Action (NULL, NULL, NULL, "r");
@@ -156,7 +134,7 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType foo ("foo", new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL));
     tap.tassert ("NamedType::reactions_begin/end", foo.reactions_begin () == foo.reactions_end ());
     decl::Reaction* r1 = foo.find_reaction ("r");
     decl::Reaction* r = new decl::Reaction (NULL, "r", NULL);
@@ -166,7 +144,7 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType foo ("foo", new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL));
     tap.tassert ("NamedType::binds_begin/end", foo.binds_begin () == foo.binds_end ());
     Bind* r1 = foo.find_bind ("r");
     Bind* r = new Bind (NULL, "r", NULL);
@@ -176,18 +154,17 @@ main (int argc, char** argv)
   }
 
   {
-    util::Location loc;
-    NamedType foo ("foo", new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL));
 
-    decl::Method* m = new decl::Method (NULL, "m", new type::Method (&foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
+    decl::Method* m = new decl::Method ("m", new type::Method (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
     foo.insert_method (m);
     decl::Callable* m2 = foo.find_callable ("m");
 
-    decl::Initializer* i = new decl::Initializer (NULL, "i", new type::Initializer (&foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
+    decl::Initializer* i = new decl::Initializer ("i", new type::Initializer (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
     foo.insert_initializer (i);
     decl::Callable* i2 = foo.find_callable ("i");
 
-    decl::Getter* g = new decl::Getter (NULL, "g", new type::Getter (&foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
+    decl::Getter* g = new decl::Getter (NULL, "g", new type::Getter (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
     foo.insert_getter (g);
     decl::Callable* g2 = foo.find_callable ("g");
 
@@ -207,57 +184,41 @@ main (int argc, char** argv)
   }
 
   {
-    tap.tassert ("Void::alignment", Void::instance ()->alignment () == 0);
-  }
-
-  {
-    tap.tassert ("Void::size", Void::instance ()->size () == 0);
-  }
-
-  {
     tap.tassert ("Void::kind", Void::instance ()->kind () == Void_Kind);
   }
 
-  scalar_test<Bool> (tap, "Bool", "<bool>", 1, 1, Bool_Kind);
-  scalar_test<Uint8> (tap, "Uint8", "<uint8>", 1, 1, Uint8_Kind);
-  scalar_test<Uint16> (tap, "Uint16", "<uint16>", 2, 2, Uint16_Kind);
-  scalar_test<Uint32> (tap, "Uint32", "<uint32>", 4, 4, Uint32_Kind);
-  scalar_test<Uint64> (tap, "Uint64", "<uint64>", 8, 8, Uint64_Kind);
-  scalar_test<Int8> (tap, "Int8", "<int8>", 1, 1, Int8_Kind);
-  scalar_test<Int16> (tap, "Int16", "<int16>", 2, 2, Int16_Kind);
-  scalar_test<Int32> (tap, "Int32", "<int32>", 4, 4, Int32_Kind);
-  scalar_test<Int64> (tap, "Int64", "<int64>", 8, 8, Int64_Kind);
-  scalar_test<Float32> (tap, "Float32", "<float32>", 4, 4, Float32_Kind);
-  scalar_test<Float64> (tap, "Float64", "<float64>", 8, 8, Float64_Kind);
-  scalar_test<Complex64> (tap, "Complex64", "<complex64>", 8, 8, Complex64_Kind);
-  scalar_test<Complex128> (tap, "Complex128", "<complex128>", 16, 16, Complex128_Kind);
-  scalar_test<Uint> (tap, "Uint", "<uint>", 8, 8, Uint_Kind);
-  scalar_test<Int> (tap, "Int", "<int>", 8, 8, Int_Kind);
-  scalar_test<Uintptr> (tap, "Uintpr", "<uintptr>", 8, 8, Uintptr_Kind);
-  scalar_test<String> (tap, "String", "<string>", 8, 16, String_Kind);
+  scalar_test<Bool> (tap, "Bool", "<bool>", Bool_Kind);
+  scalar_test<Uint8> (tap, "Uint8", "<uint8>", Uint8_Kind);
+  scalar_test<Uint16> (tap, "Uint16", "<uint16>", Uint16_Kind);
+  scalar_test<Uint32> (tap, "Uint32", "<uint32>", Uint32_Kind);
+  scalar_test<Uint64> (tap, "Uint64", "<uint64>", Uint64_Kind);
+  scalar_test<Int8> (tap, "Int8", "<int8>", Int8_Kind);
+  scalar_test<Int16> (tap, "Int16", "<int16>", Int16_Kind);
+  scalar_test<Int32> (tap, "Int32", "<int32>", Int32_Kind);
+  scalar_test<Int64> (tap, "Int64", "<int64>", Int64_Kind);
+  scalar_test<Float32> (tap, "Float32", "<float32>", Float32_Kind);
+  scalar_test<Float64> (tap, "Float64", "<float64>", Float64_Kind);
+  scalar_test<Complex64> (tap, "Complex64", "<complex64>", Complex64_Kind);
+  scalar_test<Complex128> (tap, "Complex128", "<complex128>", Complex128_Kind);
+  scalar_test<Uint> (tap, "Uint", "<uint>", Uint_Kind);
+  scalar_test<Int> (tap, "Int", "<int>", Int_Kind);
+  scalar_test<Uintptr> (tap, "Uintpr", "<uintptr>", Uintptr_Kind);
+  scalar_test<String> (tap, "String", "<string>", String_Kind);
 
-  scalar_test<UntypedNil> (tap, "UntypedNil", "<<nil>>", 0, 0, Untyped_Nil_Kind);
-  scalar_test<UntypedBoolean> (tap, "UntypedBoolean", "<<boolean>>", 0, 0, Untyped_Boolean_Kind);
-  scalar_test<UntypedRune> (tap, "UntypedRune", "<<rune>>", 0, 0, Untyped_Rune_Kind);
-  scalar_test<UntypedInteger> (tap, "UntypedInteger", "<<integer>>", 0, 0, Untyped_Integer_Kind);
-  scalar_test<UntypedFloat> (tap, "UntypedFloat", "<<float>>", 0, 0, Untyped_Float_Kind);
-  scalar_test<UntypedComplex> (tap, "UntypedComplex", "<<complex>>", 0, 0, Untyped_Complex_Kind);
-  scalar_test<UntypedString> (tap, "UntypedString", "<<string>>", 0, 0, Untyped_String_Kind);
-  scalar_test<PolymorphicFunction> (tap, "PolymorphicFunction", "<<polymorphic function>>", 0, 0, Polymorphic_Function_Kind);
-  scalar_test<FileDescriptor> (tap, "FileDescriptor", "<FileDescriptor>", 8, 8, File_Descriptor_Kind);
+  scalar_test<UntypedNil> (tap, "UntypedNil", "<<nil>>", Untyped_Nil_Kind);
+  scalar_test<UntypedBoolean> (tap, "UntypedBoolean", "<<boolean>>", Untyped_Boolean_Kind);
+  scalar_test<UntypedRune> (tap, "UntypedRune", "<<rune>>", Untyped_Rune_Kind);
+  scalar_test<UntypedInteger> (tap, "UntypedInteger", "<<integer>>", Untyped_Integer_Kind);
+  scalar_test<UntypedFloat> (tap, "UntypedFloat", "<<float>>", Untyped_Float_Kind);
+  scalar_test<UntypedComplex> (tap, "UntypedComplex", "<<complex>>", Untyped_Complex_Kind);
+  scalar_test<UntypedString> (tap, "UntypedString", "<<string>>", Untyped_String_Kind);
+  scalar_test<type::PolymorphicFunction> (tap, "PolymorphicFunction", "<<polymorphic function>>", Polymorphic_Function_Kind);
+  scalar_test<FileDescriptor> (tap, "FileDescriptor", "<FileDescriptor>", File_Descriptor_Kind);
 
   {
     std::stringstream str;
     Int::instance ()->get_pointer ()->print (str);
     tap.tassert ("Pointer::print", str.str () == "*<int>");
-  }
-
-  {
-    tap.tassert ("Pointer::alignment", Int::instance ()->get_pointer ()->alignment () == 8);
-  }
-
-  {
-    tap.tassert ("Pointer::size", Int::instance ()->get_pointer ()->size () == 8);
   }
 
   {
@@ -275,8 +236,8 @@ main (int argc, char** argv)
 
   {
     util::Location loc;
-    NamedType foo ("foo", new Component (NULL));
-    decl::Method* r = new decl::Method (NULL, "r", new type::Method (&foo, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
+    NamedType foo ("foo", loc, new Component (NULL));
+    decl::Method* r = new decl::Method ("r", new type::Method (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
     foo.insert_method (r);
     decl::Callable* r2 = foo.get_pointer ()->find_callable ("r");
     tap.tassert ("Pointer::find_callable", r2 == r);
@@ -289,19 +250,7 @@ main (int argc, char** argv)
   }
 
   {
-    tap.tassert ("Slice::alignment", Int::instance ()->get_slice ()->alignment () == 8);
-  }
-
-  {
-    tap.tassert ("Slice::size", Int::instance ()->get_slice ()->size () == 24);
-  }
-
-  {
     tap.tassert ("Slice::kind", Int::instance ()->get_slice ()->kind () == Slice_Kind);
-  }
-
-  {
-    tap.tassert ("Slice::unit_size", Int::instance ()->get_slice ()->unit_size () == 8);
   }
 
   {
@@ -311,19 +260,7 @@ main (int argc, char** argv)
   }
 
   {
-    tap.tassert ("Array::alignment", Int::instance ()->get_array (3)->alignment () == 8);
-  }
-
-  {
-    tap.tassert ("Array::size", Int::instance ()->get_array (3)->size () == 24);
-  }
-
-  {
     tap.tassert ("Array::kind", Int::instance ()->get_array (3)->kind () == Array_Kind);
-  }
-
-  {
-    tap.tassert ("Array::unit_size", Int::instance ()->get_array (3)->unit_size () == 8);
   }
 
   {
@@ -339,14 +276,6 @@ main (int argc, char** argv)
   }
 
   {
-    tap.tassert ("Map::alignment # TODO", Map::make (Int::instance (), Uint::instance ())->alignment () != 0);
-  }
-
-  {
-    tap.tassert ("Map::size # TODO", Map::make (Int::instance (), Uint::instance ())->size () != 0);
-  }
-
-  {
     tap.tassert ("Map::kind", Map::make (Int::instance (), Uint::instance ())->kind () == Map_Kind);
   }
 
@@ -354,14 +283,6 @@ main (int argc, char** argv)
     std::stringstream str;
     Int::instance ()->get_heap ()->print (str);
     tap.tassert ("Heap::print", str.str () == "heap <int>");
-  }
-
-  {
-    tap.tassert ("Heap::alignment # TODO", Int::instance ()->get_heap ()->alignment () != 0);
-  }
-
-  {
-    tap.tassert ("Heap::size # TODO", Int::instance ()->get_heap ()->size () != 0);
   }
 
   {
@@ -374,18 +295,6 @@ main (int argc, char** argv)
     s.append_field (NULL, false, "r", &named_int, TagSet ());
     s.print (str);
     tap.tassert ("Struct::print", str.str () == "struct {r int;}");
-  }
-
-  {
-    Struct s;
-    s.append_field (NULL, false, "r", &named_int, TagSet ());
-    tap.tassert ("Struct::alignment", s.alignment () == 8);
-  }
-
-  {
-    Struct s;
-    s.append_field (NULL, false, "r", &named_int, TagSet ());
-    tap.tassert ("Struct::size", s.size () == 8);
   }
 
   {
@@ -426,18 +335,6 @@ main (int argc, char** argv)
   {
     util::Location loc;
     type::Function f (new ParameterList (loc), new ParameterList (loc));
-    tap.tassert ("Function::alignment", f.alignment () == 8);
-  }
-
-  {
-    util::Location loc;
-    type::Function f (new ParameterList (loc), new ParameterList (loc));
-    tap.tassert ("Function::size", f.size () == 8);
-  }
-
-  {
-    util::Location loc;
-    type::Function f (new ParameterList (loc), new ParameterList (loc));
     tap.tassert ("Function::kind", f.kind () == Function_Kind);
   }
 
@@ -447,18 +344,6 @@ main (int argc, char** argv)
     type::PushPort f (new ParameterList (loc), new ParameterList (loc));
     f.print (str);
     tap.tassert ("PushPort::print", str.str () == "push ()");
-  }
-
-  {
-    util::Location loc;
-    type::PushPort f (new ParameterList (loc), new ParameterList (loc));
-    tap.tassert ("PushPort::alignment", f.alignment () == 8);
-  }
-
-  {
-    util::Location loc;
-    type::PushPort f (new ParameterList (loc), new ParameterList (loc));
-    tap.tassert ("PushPort::size", f.size () == 8);
   }
 
   {
@@ -478,38 +363,26 @@ main (int argc, char** argv)
   {
     util::Location loc;
     type::PullPort f (new ParameterList (loc), new ParameterList (loc));
-    tap.tassert ("PullPort::alignment", f.alignment () == 8);
-  }
-
-  {
-    util::Location loc;
-    type::PullPort f (new ParameterList (loc), new ParameterList (loc));
-    tap.tassert ("PullPort::size", f.size () == 16);
-  }
-
-  {
-    util::Location loc;
-    type::PullPort f (new ParameterList (loc), new ParameterList (loc));
     tap.tassert ("PullPort::kind", f.kind () == Pull_Port_Kind);
   }
 
   {
     util::Location loc;
     std::stringstream str;
-    type::Method f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
+    type::Method f (&named_int, Parameter::make_receiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     f.print (str);
     tap.tassert ("Method::print", str.str () == "(int) func () ()");
   }
 
   {
     util::Location loc;
-    type::Method f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
+    type::Method f (&named_int, Parameter::make_receiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     tap.tassert ("Method::kind", f.kind () == Method_Kind);
   }
 
   {
     util::Location loc;
-    type::Method f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
+    type::Method f (&named_int, Parameter::make_receiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     tap.tassert ("Method::to_method", f.to_method () == &f);
   }
 
@@ -517,10 +390,10 @@ main (int argc, char** argv)
     util::Location loc;
     std::stringstream str;
     type::Method m (&named_int,
-                    ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable),
-                    (new ParameterList (loc))->append (ParameterSymbol::make (loc, "there", &named_int, Immutable, Immutable)),
+                    Parameter::make_receiver (loc, "this", &named_int, Immutable, Immutable),
+                    (new ParameterList (loc))->append (Parameter::make (loc, "there", &named_int, Immutable, Immutable)),
                     new ParameterList (loc));
-    type::Function f ((new ParameterList (loc))->append (ParameterSymbol::make (loc, "there", &named_int, Immutable, Immutable))->append (ParameterSymbol::make (loc, "there", &named_int, Immutable, Immutable)),
+    type::Function f ((new ParameterList (loc))->append (Parameter::make (loc, "there", &named_int, Immutable, Immutable))->append (Parameter::make (loc, "there", &named_int, Immutable, Immutable)),
                       new ParameterList (loc));
     tap.tassert ("Method::function_type", are_identical (m.function_type, &f) == true);
   }
@@ -528,60 +401,60 @@ main (int argc, char** argv)
   {
     util::Location loc;
     std::stringstream str;
-    type::Initializer f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
+    type::Initializer f (&named_int, Parameter::make_receiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     f.print (str);
     tap.tassert ("Initializer::print", str.str () == "(int) init () ()");
   }
 
   {
     util::Location loc;
-    type::Initializer f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
+    type::Initializer f (&named_int, Parameter::make_receiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     tap.tassert ("Initializer::kind", f.kind () == Initializer_Kind);
   }
 
   {
     util::Location loc;
-    type::Initializer f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
+    type::Initializer f (&named_int, Parameter::make_receiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     tap.tassert ("Initializer::to_initializer", f.to_initializer () == &f);
   }
 
   {
     util::Location loc;
     std::stringstream str;
-    type::Getter f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
+    type::Getter f (&named_int, Parameter::make_receiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     f.print (str);
     tap.tassert ("Getter::print", str.str () == "(int) getter () ()");
   }
 
   {
     util::Location loc;
-    type::Getter f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
+    type::Getter f (&named_int, Parameter::make_receiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     tap.tassert ("Getter::kind", f.kind () == Getter_Kind);
   }
 
   {
     util::Location loc;
-    type::Getter f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
+    type::Getter f (&named_int, Parameter::make_receiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     tap.tassert ("Getter::to_getter", f.to_getter () == &f);
   }
 
   {
     util::Location loc;
     std::stringstream str;
-    type::Reaction f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
+    type::Reaction f (&named_int, Parameter::make_receiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     f.print (str);
     tap.tassert ("Reaction::print", str.str () == "(int) reaction ()");
   }
 
   {
     util::Location loc;
-    type::Reaction f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
+    type::Reaction f (&named_int, Parameter::make_receiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     tap.tassert ("Reaction::kind", f.kind () == Reaction_Kind);
   }
 
   {
     util::Location loc;
-    type::Reaction f (&named_int, ParameterSymbol::makeReceiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
+    type::Reaction f (&named_int, Parameter::make_receiver (loc, "this", &named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     tap.tassert ("Reaction::to_reaction", f.to_reaction () == &f);
   }
 
@@ -591,18 +464,7 @@ main (int argc, char** argv)
     type::Interface f (NULL);
     f.methods["func"] = new type::Function (new ParameterList (loc), new ParameterList (loc));
     f.print (str);
-    std::cout << str.str () << '\n';
     tap.tassert ("Interface::print", str.str () == "interface {func func () ();}");
-  }
-
-  {
-    type::Interface f (NULL);
-    tap.tassert ("Interface::alignment # TODO", f.alignment () != 0);
-  }
-
-  {
-    type::Interface f (NULL);
-    tap.tassert ("Interface::size # TODO", f.size () != 0);
   }
 
   {
@@ -622,11 +484,11 @@ main (int argc, char** argv)
     Struct s;
     s.append_field (NULL, false, "field", &named_int, TagSet ());
 
-    NamedType nt ("foo", &s);
+    NamedType nt ("foo", loc, &s);
 
-    decl::Method* method = new decl::Method (NULL, "method", new type::Method (&nt, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
-    decl::Initializer* initializer = new decl::Initializer (NULL, "initializer", new type::Initializer (&nt, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
-    decl::Getter* getter = new decl::Getter (NULL, "getter", new type::Getter (&nt, ParameterSymbol::makeReceiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (ParameterSymbol::makeReturn (loc, "", &type::named_int, Immutable))));
+    decl::Method* method = new decl::Method ("method", new type::Method (&nt, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
+    decl::Initializer* initializer = new decl::Initializer ("initializer", new type::Initializer (&nt, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
+    decl::Getter* getter = new decl::Getter (NULL, "getter", new type::Getter (&nt, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
     Action* action = new Action (NULL, NULL, NULL, "action");
     decl::Reaction* reaction = new decl::Reaction (NULL, "reaction", NULL);
     Bind* bind = new Bind (NULL, "bind", NULL);
@@ -778,144 +640,144 @@ main (int argc, char** argv)
   {
     util::Location loc;
     type::Function f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     type::Function f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     tap.tassert ("type::are_identical - functions same", are_identical (&f1, &f2));
   }
   {
     util::Location loc;
     type::Function f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     type::Function f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     tap.tassert ("type::are_identical - functions different parameter list", !are_identical (&f1, &f2));
   }
   {
     util::Location loc;
     type::Function f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable)));
     type::Function f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     tap.tassert ("type::are_identical - functions different return parameter list", !are_identical (&f1, &f2));
   }
   {
     util::Location loc;
     type::Function f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_float32, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_float32, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     type::Function f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     tap.tassert ("type::are_identical - functions different parameter type", !are_identical (&f1, &f2));
   }
   {
     util::Location loc;
     type::Function f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_int, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_int, Immutable)));
     type::Function f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     tap.tassert ("type::are_identical - functions different return parameter type", !are_identical (&f1, &f2));
   }
   {
     util::Location loc;
     type::Function f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable))
                        ->set_variadic (true));
     type::Function f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     tap.tassert ("type::are_identical - functions different variadic", !are_identical (&f1, &f2));
   }
 
   {
     util::Location loc;
     type::PushPort f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc)));
     type::PushPort f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc)));
     tap.tassert ("type::are_identical - push ports same", are_identical (&f1, &f2));
   }
   {
     util::Location loc;
     type::PushPort f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc)));
     type::PushPort f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc)));
     tap.tassert ("type::are_identical - push ports different parameter list", !are_identical (&f1, &f2));
   }
   {
     util::Location loc;
     type::PushPort f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_float32, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_float32, Immutable, Immutable)),
                        (new ParameterList (loc)));
     type::PushPort f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc)));
     tap.tassert ("type::are_identical - push ports different parameter type", !are_identical (&f1, &f2));
   }
   {
     util::Location loc;
     type::PushPort f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
                        ->set_variadic (true));
     type::PushPort f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc)));
     tap.tassert ("type::are_identical - push ports different variadic", !are_identical (&f1, &f2));
   }
@@ -923,150 +785,150 @@ main (int argc, char** argv)
   {
     util::Location loc;
     type::PullPort f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     type::PullPort f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     tap.tassert ("type::are_identical - pull ports same", are_identical (&f1, &f2));
   }
   {
     util::Location loc;
     type::PullPort f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     type::PullPort f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     tap.tassert ("type::are_identical - pull ports different parameter list", !are_identical (&f1, &f2));
   }
   {
     util::Location loc;
     type::PullPort f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable)));
     type::PullPort f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     tap.tassert ("type::are_identical - pull ports different return parameter list", !are_identical (&f1, &f2));
   }
   {
     util::Location loc;
     type::PullPort f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_float32, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_float32, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     type::PullPort f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     tap.tassert ("type::are_identical - pull ports different parameter type", !are_identical (&f1, &f2));
   }
   {
     util::Location loc;
     type::PullPort f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_int, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_int, Immutable)));
     type::PullPort f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     tap.tassert ("type::are_identical - pull ports different return parameter type", !are_identical (&f1, &f2));
   }
   {
     util::Location loc;
     type::PullPort f1 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable))
                        ->set_variadic (true));
     type::PullPort f2 ((new ParameterList (loc))
-                       ->append (ParameterSymbol::make (loc, "p", &named_int, Immutable, Immutable))
-                       ->append (ParameterSymbol::make (loc, "q", &named_int, Immutable, Immutable)),
+                       ->append (Parameter::make (loc, "p", &named_int, Immutable, Immutable))
+                       ->append (Parameter::make (loc, "q", &named_int, Immutable, Immutable)),
                        (new ParameterList (loc))
-                       ->append (ParameterSymbol::makeReturn (loc, "r", &named_float32, Immutable))
-                       ->append (ParameterSymbol::makeReturn (loc, "s", &named_float32, Immutable)));
+                       ->append (Parameter::make_return (loc, "r", &named_float32, Immutable))
+                       ->append (Parameter::make_return (loc, "s", &named_float32, Immutable)));
     tap.tassert ("type::are_identical - pull ports different variadic", !are_identical (&f1, &f2));
   }
 
   {
     util::Location loc;
     Interface i1 (NULL);
-    i1.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
-    i1.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
+    i1.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
+    i1.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
     Interface i2 (NULL);
-    i2.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
-    i2.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
+    i2.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
+    i2.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
     tap.tassert ("type::are_identical - interfaces same", are_identical (&i1, &i2));
   }
 
   {
     util::Location loc;
     Interface i1 (NULL);
-    i1.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
-    i1.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
+    i1.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
+    i1.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
     Interface i2 (NULL);
-    i2.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
+    i2.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
     tap.tassert ("type::are_identical - interfaces different method counts", !are_identical (&i1, &i2));
   }
 
   {
     util::Location loc;
     Interface i1 (NULL);
-    i1.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
-    i1.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
+    i1.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
+    i1.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
     Interface i2 (NULL);
-    i2.methods["skunk1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
-    i2.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
+    i2.methods["skunk1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
+    i2.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
     tap.tassert ("type::are_identical - interfaces different method names", !are_identical (&i1, &i2));
   }
 
   {
     util::Location loc;
     Interface i1 (NULL);
-    i1.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
-    i1.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
+    i1.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
+    i1.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
     Interface i2 (NULL);
-    i2.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
-    i2.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_float32, Immutable)));
+    i2.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
+    i2.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_float32, Immutable)));
     tap.tassert ("type::are_identical - interfaces different signatures", !are_identical (&i1, &i2));
   }
 
   {
     util::Location loc;
     Interface i1 (new Package ());
-    i1.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
-    i1.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
+    i1.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
+    i1.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
     Interface i2 (new Package ());
-    i2.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
-    i2.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
+    i2.methods["func1"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
+    i2.methods["Func2"] = new type::Function ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
     tap.tassert ("type::are_identical - interfaces different packages", !are_identical (&i1, &i2));
   }
 
@@ -1095,7 +957,7 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType x ("x", named_int.get_pointer ());
+    NamedType x ("x", loc, named_int.get_pointer ());
     tap.tassert ("type::to_pointer", named_int.to_pointer () == NULL && named_int.get_pointer ()->to_pointer () != NULL && x.to_pointer () == NULL);
   }
 
@@ -1118,7 +980,7 @@ main (int argc, char** argv)
 
   {
     util::Location loc;
-    type::Function f ((new ParameterList (loc)), (new ParameterList (loc))->append (ParameterSymbol::makeReturn (loc, "", &named_int, Immutable)));
+    type::Function f ((new ParameterList (loc)), (new ParameterList (loc))->append (Parameter::make_return (loc, "", &named_int, Immutable)));
     tap.tassert ("type::to_function", named_int.to_function () == NULL && f.to_function () != NULL);
   }
 
@@ -1214,7 +1076,7 @@ main (int argc, char** argv)
     semantic::Value v;
     v.present = true;
     tap.tassert ("type::are_assignable untyped to typed", are_assignable (UntypedInteger::instance (), v, &named_int) == true);
-    v.integer_value = 300;
+    v.untyped_integer_value = 300;
     tap.tassert ("type::are_assignable untyped not representable", are_assignable (UntypedInteger::instance (), v, &named_uint8) == false);
   }
 

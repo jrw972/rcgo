@@ -9,21 +9,20 @@ namespace decl
 
 struct ParameterList
 {
-  typedef std::vector<ParameterSymbol*> ParametersType;
+  typedef std::vector<Parameter*> ParametersType;
   typedef ParametersType::const_iterator const_iterator;
   typedef ParametersType::const_reverse_iterator const_reverse_iterator;
 
   ParameterList (const util::Location& loc);
-  size_t size_on_stack () const;
   size_t size () const;
   bool empty () const;
-  ParameterSymbol* at (size_t idx) const;
+  Parameter* at (size_t idx) const;
   const_iterator begin () const;
   const_iterator end () const;
   const_reverse_iterator rbegin () const;
   const_reverse_iterator rend () const;
-  ParameterSymbol* find (const std::string& name) const;
-  ParameterList* append (ParameterSymbol* p);
+  Parameter* find (const std::string& name) const;
+  ParameterList* append (Parameter* p);
   ParameterList* set_variadic (bool v);
   bool is_variadic () const;
   bool is_foreign_safe () const;
@@ -35,7 +34,6 @@ struct ParameterList
 
 private:
   ParametersType parameters_;
-  size_t size_on_stack_;
   bool variadic_;
 };
 

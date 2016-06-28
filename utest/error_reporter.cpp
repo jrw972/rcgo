@@ -83,8 +83,8 @@ main (int argc, char** argv)
     Location loc;
     std::stringstream ss;
     ErrorReporter er (0, ss);
-    int code = er.hidden (loc, "somefunc");
-    check (tap, "ErrorReporter::hidden", loc, ss, er, code);
+    int code = er.hidden_symbol (loc, "somefunc");
+    check (tap, "ErrorReporter::hidden_symbol", loc, ss, er, code);
   }
 
   {

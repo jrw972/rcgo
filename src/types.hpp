@@ -136,25 +136,25 @@ namespace decl
 {
 class Action;
 class Bind;
-class BuiltinFunction;
 class Callable;
-class ConstantSymbol;
+class ConstSymbolVisitor;
+class Constant;
 class Function;
+class FunctionBase;
 class Getter;
-class HiddenSymbol;
+class Hidden;
 class Initializer;
-class InstanceSymbol;
+class Instance;
 class Method;
 class Package;
 class ParameterList;
-class ParameterSymbol;
+class Parameter;
+class PolymorphicFunction;
 class Reaction;
 class Symbol;
 class SymbolTable;
-class Template;
-class TemplateSymbol;
-class TypeSymbol;
-class VariableSymbol;
+class SymbolVisitor;
+class Variable;
 
 typedef std::vector<const type::Type*> TypeList;
 }
@@ -174,16 +174,15 @@ struct Getter;
 
 namespace runtime
 {
+class ComponentInfoBase;
+class ExecutorBase;
+class FileDescriptor;
+class Heap;
+class ListOperation;
+class MemoryModel;
 class Operation;
 class Stack;
-class MemoryModel;
-class Heap;
-class ExecutorBase;
 }
-
-class component_t;
-class port_t;
-class scheduler_t;
 
 // A reference is either mutable, immutable, or foreign.
 // Ordered by strictness for <.
@@ -201,12 +200,6 @@ enum ReceiverAccess
   AccessWrite,
 };
 
-struct pull_port_t
-{
-  component_t* instance;
-  decl::Getter* getter;
-};
-
 enum UnaryArithmetic
 {
   LogicNot,
@@ -214,23 +207,6 @@ enum UnaryArithmetic
   Negate,
   Complement,
 };
-
-inline const char* unary_arithmetic_external_symbol (UnaryArithmetic ua)
-{
-  switch (ua)
-    {
-    case LogicNot:
-      return "!";
-    case Posate:
-      return "+";
-    case Negate:
-      return "-";
-    case Complement:
-      return "^";
-    }
-
-  NOT_REACHED;
-}
 
 enum BinaryArithmetic
 {
@@ -258,56 +234,5 @@ enum BinaryArithmetic
 
   LogicAnd,
 };
-
-inline const char* binary_arithmetic_external_symbol (BinaryArithmetic ba)
-{
-  switch (ba)
-    {
-    case Multiply:
-      return "*";
-    case Divide:
-      return "/";
-    case Modulus:
-      return "%";
-    case LeftShift:
-      return "<<";
-    case RightShift:
-      return ">>";
-    case BitAnd:
-      return "&";
-    case BitAndNot:
-      return "&^";
-
-    case Add:
-      return "+";
-    case Subtract:
-      return "-";
-    case BitOr:
-      return "|";
-    case BitXor:
-      return "^";
-
-    case Equal:
-      return "==";
-    case NotEqual:
-      return "!=";
-    case LessThan:
-      return "<";
-    case LessEqual:
-      return "<=";
-    case MoreThan:
-      return ">";
-    case MoreEqual:
-      return ">=";
-
-    case LogicOr:
-      return "||";
-
-    case LogicAnd:
-      return "&&";
-    }
-
-  NOT_REACHED;
-}
 
 #endif // RC_SRC_TYPES_HPP

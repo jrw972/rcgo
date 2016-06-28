@@ -32,7 +32,7 @@ process_constant_expression (ast::Node* node,
     }
 }
 
-type::Int::ValueType
+long
 process_array_dimension (ast::Node* node, ErrorReporter& er, decl::SymbolTable& symtab)
 {
   process_constant_expression (node, er, symtab);
@@ -45,7 +45,7 @@ process_array_dimension (ast::Node* node, ErrorReporter& er, decl::SymbolTable& 
 
   node->eval.value.convert (node->eval.type, &named_int);
   node->eval.type = &named_int;
-  type::Int::ValueType dim = node->eval.value.int_value;
+  long dim = node->eval.value.int_value;
   if (dim < 0)
     {
       error_at_line (-1, 0, node->location.file.c_str (), node->location.line,
@@ -110,16 +110,16 @@ process_parameter_list (Node* node, ErrorReporter& er, decl::SymbolTable& symtab
             {
               ast::Node* id = *pos2;
               const std::string& identifier = node_cast<Identifier> (id)->identifier;
-              const ParameterSymbol* parameter = sig->find (identifier);
+              const Parameter* parameter = sig->find (identifier);
               if (parameter == NULL)
                 {
                   if (is_return)
                     {
-                      sig->append (ParameterSymbol::makeReturn (id->location, identifier, type, child->indirection_mutability));
+                      sig->append (Parameter::make_return (id->location, identifier, type, child->indirection_mutability));
                     }
                   else
                     {
-                      sig->append (ParameterSymbol::make (id->location, identifier, type, child->mutability, child->indirection_mutability));
+                      sig->append (Parameter::make (id->location, identifier, type, child->mutability, child->indirection_mutability));
                     }
                 }
               else
@@ -164,7 +164,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
 
     void visit (ArrayTypeSpec& node)
     {
-      type::Int::ValueType dimension = process_array_dimension (node.dimension, er, symtab);
+      long dimension = process_array_dimension (node.dimension, er, symtab);
       const type::Type* base_type = process_type (node.base_type, er, symtab, true);
       type = base_type->get_array (dimension);
     }
@@ -238,13 +238,12 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
           error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                          "%s was not declared in this scope (E102)", identifier.c_str ());
         }
-      TypeSymbol* symbol = symbol_cast<TypeSymbol> (s);
-      if (symbol == NULL)
+      type = symbol_cast<NamedType> (s);
+      if (type == NULL)
         {
           error_at_line (-1, 0, child->location.file.c_str (), child->location.line,
                          "%s does not refer to a type (E110)", identifier.c_str ());
         }
-      type = symbol->type;
     }
 
     void visit (PointerTypeSpec& node)
@@ -265,11 +264,6 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
     {
       const decl::ParameterList* parameter_list = process_parameter_list (node.parameter_list, er, symtab, false);
       const decl::ParameterList* return_parameter_list = process_parameter_list (node.return_parameter_list, er, symtab, true);
-      // const type::Type* return_type = process_type (node.return_type, er, symtab, true);
-      // ParameterSymbol* return_parameter = ParameterSymbol::makeReturn (node.location,
-      //                                     ReturnSymbol,
-      //                                     return_type,
-      //                                     node.indirection_mutability);
       CheckForForeignSafe (er, parameter_list, return_parameter_list);
       type = new type::PullPort (parameter_list, return_parameter_list);
     }

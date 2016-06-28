@@ -10,12 +10,12 @@ struct Bind
 {
   Bind (ast::Node* node,
         const std::string& name,
-        ParameterSymbol* receiver_parameter);
+        Parameter* receiver_parameter);
 
   runtime::MemoryModel memory_model;
   ast::Node* const node;
   std::string const name;
-  ParameterSymbol* const receiver_parameter;
+  Parameter* const receiver_parameter;
 };
 
 }

@@ -22,9 +22,9 @@ class MemoryModel
 public:
   MemoryModel ();
   bool arguments_empty () const;
-  void arguments_push (size_t size);
+  void arguments_push (const type::Type* type);
   bool locals_empty () const;
-  void locals_push (size_t size);
+  void locals_push (const type::Type* type);
   void locals_pop (size_t size);
   ptrdiff_t arguments_offset () const;
   ptrdiff_t locals_offset () const;

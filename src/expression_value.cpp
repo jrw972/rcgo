@@ -1,5 +1,7 @@
 #include "expression_value.hpp"
 
+#include "type.hpp"
+
 namespace semantic
 {
 

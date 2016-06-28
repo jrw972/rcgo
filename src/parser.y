@@ -257,7 +257,7 @@ ReturnParameterList:
   /* Empty */
 { $$ = new ParameterList (yyloc); }
 | DereferenceMutability Type
-{ $$ = (new ParameterList (yyloc))->append (new IdentifierListTypeSpec (@1, (new IdentifierList (@1))->append (new Identifier (@1, decl::ReturnSymbol)), Mutable, $1, $2)); }
+{ $$ = (new ParameterList (yyloc))->append (new IdentifierListTypeSpec (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, $1, $2)); }
 
 optional_semicolon: /* Empty. */
 | ';'

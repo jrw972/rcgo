@@ -125,11 +125,13 @@ struct static_Value
       {
       case STACK_ADDRESS:
         out = in;
-        out.offset += type->unit_size () * idx.value;
+        UNIMPLEMENTED;
+        //out.offset += type->unit_size () * idx.value;
         break;
       case ABSOLUTE_ADDRESS:
         out = in;
-        out.address += type->unit_size () * idx.value;
+        UNIMPLEMENTED;
+        //out.address += type->unit_size () * idx.value;
         break;
       case VALUE:
         NOT_REACHED;

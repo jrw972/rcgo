@@ -4,97 +4,172 @@
 
 #include "symbol_visitor.hpp"
 #include "node.hpp"
-#include "builtin_function.hpp"
-#include "template.hpp"
+#include "polymorphic_function.hpp"
+#include "callable.hpp"
 
 namespace decl
 {
 
-std::string const ReturnSymbol ("0return");
+Symbol::Symbol (const std::string& id, const util::Location& loc)
+  : name (id)
+  , location (loc)
+  , in_progress (false)
+  , offset_ (0)
+{ }
+Symbol::~Symbol() { }
+
+bool Symbol::defined () const
+{
+  return true;
+}
+
+void Symbol::offset (ptrdiff_t o)
+{
+  offset_ = o;
+}
+ptrdiff_t Symbol::offset () const
+{
+  return offset_;
+}
 
 #define ACCEPT(type) void type::accept (SymbolVisitor& visitor) { visitor.visit (*this); } \
 void type::accept (ConstSymbolVisitor& visitor) const { visitor.visit (*this); }
 
-ACCEPT(InstanceSymbol)
-ACCEPT(ParameterSymbol)
-ACCEPT(TypeSymbol)
-ACCEPT(ConstantSymbol)
-ACCEPT(VariableSymbol)
-ACCEPT(HiddenSymbol)
+ACCEPT(Instance)
+ACCEPT(Parameter)
+ACCEPT(Constant)
+ACCEPT(Variable)
+ACCEPT(Hidden)
 
-bool
-ParameterSymbol::is_foreign_safe () const
+Instance::Instance (const std::string& id, const util::Location& loc, const type::NamedType* t, Initializer* init)
+  : Symbol (id, loc)
+  , type (t)
+  , initializer (init)
+  , instance (NULL)
+{ }
+
+Parameter::Parameter (const util::Location& loc,
+                      const std::string& id,
+                      const type::Type* t,
+                      Mutability im,
+                      Mutability dm,
+                      Kind k)
+  : Symbol (id, loc)
+  , type (t)
+  , intrinsic_mutability (im)
+  , indirection_mutability (t->is_typed_string () ? std::max (dm, Immutable) : dm)
+  , kind (k)
+  , original_ (NULL)
+{ }
+
+
+Parameter*
+Parameter::make (const util::Location& loc,
+                 const std::string& name,
+                 const type::Type* type,
+                 Mutability intrinsic_mutability,
+                 Mutability indirection_mutability)
 {
-  if (type->contains_pointer () && dereference_mutability != Foreign)
-    {
-      switch (kind)
-        {
-        case Ordinary:
-        case OrdinaryDuplicate:
-        case Receiver:
-        case ReceiverDuplicate:
-        case Return:
-          return false;
-        }
-    }
-
-  return true;
+  return new Parameter (loc, name, type, intrinsic_mutability, indirection_mutability, Ordinary);
 }
 
-std::ostream&
-operator<< (std::ostream& out, const Symbol& s)
+Parameter*
+Parameter::make_return (const util::Location& loc,
+                        const std::string& name,
+                        const type::Type* type,
+                        Mutability indirection_mutability)
 {
-  struct Visitor : public ConstSymbolVisitor
-  {
-    std::ostream& out;
+  return new Parameter (loc, name, type, Mutable, indirection_mutability, Return);
+}
 
-    Visitor (std::ostream& o) : out (o) { }
+Parameter*
+Parameter::make_receiver (const util::Location& loc,
+                          const std::string& name,
+                          const type::Type* type,
+                          Mutability intrinsic_mutability,
+                          Mutability indirection_mutability)
+{
+  return new Parameter (loc, name, type, intrinsic_mutability, indirection_mutability, Receiver);
+}
 
-    void default_action (const Symbol& s)
+Parameter*
+Parameter::duplicate (Mutability dereferenceMutability)
+{
+  Parameter* s = new Parameter (*this);
+  switch (this->kind)
     {
+    case Receiver:
+      s->kind = Receiver_Duplicate;
+      break;
+    case Receiver_Duplicate:
+      break;
+    case Ordinary:
+      s->kind = Ordinary_Duplicate;
+      break;
+    case Ordinary_Duplicate:
+      break;
+    case Return:
       NOT_REACHED;
     }
-
-    virtual void visit (const BuiltinFunction& s)
-    {
-      out << "BuiltinFunction " << s.identifier << '\n';
-    }
-    virtual void visit (const decl::TemplateSymbol& s)
-    {
-      out << "Template " << s.identifier << '\n';
-    }
-    virtual void visit (const Function& s)
-    {
-      out << "Function " << s.identifier << '\n';
-    }
-    virtual void visit (const InstanceSymbol& s)
-    {
-      out << "InstanceSymbol " << s.identifier << '\n';
-    }
-    virtual void visit (const ParameterSymbol& s)
-    {
-      out << "Parameter " << s.identifier << '\n';
-    }
-    virtual void visit (const TypeSymbol& s)
-    {
-      out << "Type " << s.identifier << '\n';
-    }
-    virtual void visit (const ConstantSymbol& s)
-    {
-      out << "Constant " << s.identifier << '\n';
-    }
-    virtual void visit (const VariableSymbol& s)
-    {
-      out << "Variable " << s.identifier << '\n';
-    }
-    virtual void visit (const HiddenSymbol& s)
-    {
-      UNIMPLEMENTED;
-    }
-  };
-  Visitor v (out);
-  s.accept (v);
-  return out;
+  s->indirection_mutability = dereferenceMutability;
+  s->original_ = this;
+  return s;
 }
+
+ptrdiff_t Parameter::offset () const
+{
+  if (kind == Receiver_Duplicate ||
+      kind == Ordinary_Duplicate)
+    {
+      return original_->offset ();
+    }
+  else
+    {
+      return Symbol::offset ();
+    }
+}
+
+bool
+Parameter::is_foreign_safe () const
+{
+  return !(type->contains_pointer () && indirection_mutability != Foreign);
+}
+
+Constant::Constant (const std::string& id, const util::Location& loc, const type::Type* t, const semantic::Value& v)
+  : Symbol (id, loc)
+  , type (t)
+  , value (v)
+{ }
+
+Variable::Variable (const std::string& id, const util::Location& loc, const type::Type* t, Mutability im, Mutability dm)
+  : Symbol (id, loc)
+  , type (t)
+  , intrinsic_mutability (im)
+  , indirection_mutability (t->is_typed_string () ? std::max (dm, Immutable) : dm)
+  , original_ (NULL)
+{ }
+
+ptrdiff_t Variable::offset () const
+{
+  if (original_ != NULL)
+    {
+      return original_->offset ();
+    }
+  else
+    {
+      return Symbol::offset ();
+    }
+}
+
+Variable* Variable::duplicate()
+{
+  Variable* s = new Variable (this->name, this->location, this->type, Foreign, Foreign);
+  s->original_ = this;
+  return s;
+}
+
+Hidden::Hidden (const Symbol* s, const util::Location& loc)
+  : Symbol (s->name, loc)
+{ }
 
 }

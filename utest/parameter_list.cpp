@@ -4,6 +4,7 @@
 #include "location.hpp"
 #include "symbol.hpp"
 #include "arch.hpp"
+#include "type.hpp"
 
 #include <sstream>
 
@@ -23,7 +24,6 @@ main (int argc, char** argv)
     ParameterList sig (loc);
     tap.tassert ("ParameterList::ParameterList ()",
                  sig.location == loc &&
-                 sig.size_on_stack () == 0 &&
                  sig.size () == 0 &&
                  sig.begin () == sig.end () &&
                  sig.rbegin () == sig.rend () &&
@@ -31,13 +31,12 @@ main (int argc, char** argv)
   }
 
   {
-    ParameterSymbol* p = ParameterSymbol::make (util::Location (), "there", &named_int, Immutable, Immutable);
+    Parameter* p = Parameter::make (util::Location (), "there", &named_int, Immutable, Immutable);
     ParameterList sig ((Location ()));
     ParameterList* sig2 = sig.append (p);
 
-    tap.tassert ("ParameterList::append (ParameterSymbol*)",
+    tap.tassert ("ParameterList::append (Parameter*)",
                  sig2 == &sig &&
-                 sig.size_on_stack () == 8 &&
                  sig.size () == 1 &&
                  sig.at (0) == p &&
                  *sig.begin () == p &&
@@ -48,9 +47,9 @@ main (int argc, char** argv)
   {
     ParameterList sig ((Location ()));
     std::string a = sig.to_string ();
-    sig.append (ParameterSymbol::make (util::Location (), "there", &named_int, Immutable, Immutable));
+    sig.append (Parameter::make (util::Location (), "there", &named_int, Immutable, Immutable));
     std::string b = sig.to_string ();
-    sig.append (ParameterSymbol::make (util::Location (), "there", &named_int, Immutable, Immutable));
+    sig.append (Parameter::make (util::Location (), "there", &named_int, Immutable, Immutable));
     std::string c = sig.to_string ();
 
     std::stringstream str;
@@ -73,10 +72,10 @@ main (int argc, char** argv)
 
   {
     ParameterList sig ((Location ()));
-    sig.append (ParameterSymbol::make (util::Location (), "there", &named_int, Immutable, Immutable));
+    sig.append (Parameter::make (util::Location (), "there", &named_int, Immutable, Immutable));
     tap.tassert ("ParameterList::is_foreign_safe () true",
                  sig.is_foreign_safe () == true);
-    sig.append (ParameterSymbol::make (util::Location (), "there", named_int.get_pointer (), Immutable, Mutable));
+    sig.append (Parameter::make (util::Location (), "there", named_int.get_pointer (), Immutable, Mutable));
     tap.tassert ("ParameterList::is_foreign_safe () false",
                  sig.is_foreign_safe () == false);
   }

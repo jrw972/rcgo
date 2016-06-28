@@ -101,14 +101,15 @@ am_librc_la_OBJECTS = librc_la-action.lo librc_la-arch.lo \
 	librc_la-callable.lo librc_la-check_types.lo \
 	librc_la-composition.lo librc_la-compute_receiver_access.lo \
 	librc_la-enter_symbols.lo librc_la-error_reporter.lo \
-	librc_la-expression_value.lo librc_la-heap.lo \
-	librc_la-location.lo librc_la-memory_model.lo librc_la-node.lo \
-	librc_la-node_visitor.lo librc_la-parameter_list.lo \
+	librc_la-executor_base.lo librc_la-expression_value.lo \
+	librc_la-heap.lo librc_la-location.lo librc_la-memory_model.lo \
+	librc_la-node.lo librc_la-node_visitor.lo \
+	librc_la-operation.lo librc_la-parameter_list.lo \
 	librc_la-process_type_spec.lo \
-	librc_la-process_types_and_constants.lo librc_la-reaction.lo \
-	librc_la-runtime.lo librc_la-semantic.lo librc_la-stack.lo \
-	librc_la-symbol.lo librc_la-symbol_table.lo \
-	librc_la-symbol_visitor.lo librc_la-template.lo \
+	librc_la-process_types_and_constants.lo librc_la-runtime.lo \
+	librc_la-runtime_types.lo librc_la-semantic.lo \
+	librc_la-stack.lo librc_la-symbol.lo librc_la-symbol_table.lo \
+	librc_la-symbol_visitor.lo librc_la-polymorphic_function.lo \
 	librc_la-type.lo librc_la-value.lo
 librc_la_OBJECTS = $(am_librc_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -121,9 +122,8 @@ librc_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_rc_OBJECTS = rc-main.$(OBJEXT) rc-evaluate_static.$(OBJEXT) \
-	rc-executor_base.$(OBJEXT) rc-generate_code.$(OBJEXT) \
-	rc-instance_scheduler.$(OBJEXT) rc-parser.$(OBJEXT) \
-	rc-partitioned_scheduler.$(OBJEXT) \
+	rc-generate_code.$(OBJEXT) rc-instance_scheduler.$(OBJEXT) \
+	rc-parser.$(OBJEXT) rc-partitioned_scheduler.$(OBJEXT) \
 	rc-process_definitions.$(OBJEXT) \
 	rc-process_functions_and_methods.$(OBJEXT) \
 	rc-scanner.$(OBJEXT) rc-yyparse.$(OBJEXT)
@@ -343,7 +343,6 @@ BUILT_SOURCES = scanner.hpp scanner.cpp parser.hpp parser.cpp
 rc_SOURCES = main.cpp \
 debug.hpp \
 evaluate_static.hpp evaluate_static.cpp \
-executor_base.hpp executor_base.cpp \
 field.hpp \
 generate_code.hpp generate_code.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
@@ -368,11 +367,11 @@ bind.hpp bind.cpp \
 builtin_function.hpp builtin_function.cpp \
 callable.hpp callable.cpp \
 check_types.hpp check_types.cpp \
-complex.hpp \
 composition.hpp composition.cpp \
 compute_receiver_access.hpp compute_receiver_access.cpp \
 enter_symbols.cpp \
 error_reporter.hpp error_reporter.cpp \
+executor_base.hpp executor_base.cpp \
 expression_value.hpp expression_value.cpp \
 heap.hpp heap.cpp \
 location.hpp location.cpp \
@@ -380,18 +379,19 @@ memory_model.hpp memory_model.cpp \
 node.hpp node.cpp \
 node_cast.hpp \
 node_visitor.hpp node_visitor.cpp \
+operation.hpp operation.cpp \
 parameter_list.hpp parameter_list.cpp \
 process_type_spec.cpp \
 process_types_and_constants.hpp process_types_and_constants.cpp \
-reaction.hpp reaction.cpp \
 runtime.hpp runtime.cpp \
+runtime_types.hpp runtime_types.cpp \
 semantic.hpp semantic.cpp \
 stack.hpp stack.cpp \
 symbol.hpp symbol.cpp \
 symbol_cast.hpp \
 symbol_table.hpp symbol_table.cpp \
 symbol_visitor.hpp symbol_visitor.cpp \
-template.hpp template.cpp \
+polymorphic_function.hpp polymorphic_function.cpp \
 type.hpp type.cpp \
 value.hpp value.cpp
 
@@ -517,27 +517,28 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-compute_receiver_access.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-enter_symbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-error_reporter.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-executor_base.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-expression_value.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-heap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-location.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-memory_model.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-node.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-node_visitor.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-operation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-parameter_list.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-polymorphic_function.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-process_type_spec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-process_types_and_constants.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-reaction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-runtime.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-runtime_types.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-semantic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-stack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-symbol.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-symbol_table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-symbol_visitor.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-template.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-type.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librc_la-value.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rc-evaluate_static.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rc-executor_base.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rc-generate_code.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rc-instance_scheduler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rc-main.Po@am__quote@
@@ -639,6 +640,13 @@ librc_la-error_reporter.lo: error_reporter.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -c -o librc_la-error_reporter.lo `test -f 'error_reporter.cpp' || echo '$(srcdir)/'`error_reporter.cpp
 
+librc_la-executor_base.lo: executor_base.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -MT librc_la-executor_base.lo -MD -MP -MF $(DEPDIR)/librc_la-executor_base.Tpo -c -o librc_la-executor_base.lo `test -f 'executor_base.cpp' || echo '$(srcdir)/'`executor_base.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librc_la-executor_base.Tpo $(DEPDIR)/librc_la-executor_base.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='executor_base.cpp' object='librc_la-executor_base.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -c -o librc_la-executor_base.lo `test -f 'executor_base.cpp' || echo '$(srcdir)/'`executor_base.cpp
+
 librc_la-expression_value.lo: expression_value.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -MT librc_la-expression_value.lo -MD -MP -MF $(DEPDIR)/librc_la-expression_value.Tpo -c -o librc_la-expression_value.lo `test -f 'expression_value.cpp' || echo '$(srcdir)/'`expression_value.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librc_la-expression_value.Tpo $(DEPDIR)/librc_la-expression_value.Plo
@@ -681,6 +689,13 @@ librc_la-node_visitor.lo: node_visitor.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -c -o librc_la-node_visitor.lo `test -f 'node_visitor.cpp' || echo '$(srcdir)/'`node_visitor.cpp
 
+librc_la-operation.lo: operation.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -MT librc_la-operation.lo -MD -MP -MF $(DEPDIR)/librc_la-operation.Tpo -c -o librc_la-operation.lo `test -f 'operation.cpp' || echo '$(srcdir)/'`operation.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librc_la-operation.Tpo $(DEPDIR)/librc_la-operation.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='operation.cpp' object='librc_la-operation.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -c -o librc_la-operation.lo `test -f 'operation.cpp' || echo '$(srcdir)/'`operation.cpp
+
 librc_la-parameter_list.lo: parameter_list.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -MT librc_la-parameter_list.lo -MD -MP -MF $(DEPDIR)/librc_la-parameter_list.Tpo -c -o librc_la-parameter_list.lo `test -f 'parameter_list.cpp' || echo '$(srcdir)/'`parameter_list.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librc_la-parameter_list.Tpo $(DEPDIR)/librc_la-parameter_list.Plo
@@ -702,19 +717,19 @@ librc_la-process_types_and_constants.lo: process_types_and_constants.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -c -o librc_la-process_types_and_constants.lo `test -f 'process_types_and_constants.cpp' || echo '$(srcdir)/'`process_types_and_constants.cpp
 
-librc_la-reaction.lo: reaction.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -MT librc_la-reaction.lo -MD -MP -MF $(DEPDIR)/librc_la-reaction.Tpo -c -o librc_la-reaction.lo `test -f 'reaction.cpp' || echo '$(srcdir)/'`reaction.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librc_la-reaction.Tpo $(DEPDIR)/librc_la-reaction.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='reaction.cpp' object='librc_la-reaction.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -c -o librc_la-reaction.lo `test -f 'reaction.cpp' || echo '$(srcdir)/'`reaction.cpp
-
 librc_la-runtime.lo: runtime.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -MT librc_la-runtime.lo -MD -MP -MF $(DEPDIR)/librc_la-runtime.Tpo -c -o librc_la-runtime.lo `test -f 'runtime.cpp' || echo '$(srcdir)/'`runtime.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librc_la-runtime.Tpo $(DEPDIR)/librc_la-runtime.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='runtime.cpp' object='librc_la-runtime.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -c -o librc_la-runtime.lo `test -f 'runtime.cpp' || echo '$(srcdir)/'`runtime.cpp
+
+librc_la-runtime_types.lo: runtime_types.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -MT librc_la-runtime_types.lo -MD -MP -MF $(DEPDIR)/librc_la-runtime_types.Tpo -c -o librc_la-runtime_types.lo `test -f 'runtime_types.cpp' || echo '$(srcdir)/'`runtime_types.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librc_la-runtime_types.Tpo $(DEPDIR)/librc_la-runtime_types.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='runtime_types.cpp' object='librc_la-runtime_types.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -c -o librc_la-runtime_types.lo `test -f 'runtime_types.cpp' || echo '$(srcdir)/'`runtime_types.cpp
 
 librc_la-semantic.lo: semantic.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -MT librc_la-semantic.lo -MD -MP -MF $(DEPDIR)/librc_la-semantic.Tpo -c -o librc_la-semantic.lo `test -f 'semantic.cpp' || echo '$(srcdir)/'`semantic.cpp
@@ -751,12 +766,12 @@ librc_la-symbol_visitor.lo: symbol_visitor.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -c -o librc_la-symbol_visitor.lo `test -f 'symbol_visitor.cpp' || echo '$(srcdir)/'`symbol_visitor.cpp
 
-librc_la-template.lo: template.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -MT librc_la-template.lo -MD -MP -MF $(DEPDIR)/librc_la-template.Tpo -c -o librc_la-template.lo `test -f 'template.cpp' || echo '$(srcdir)/'`template.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librc_la-template.Tpo $(DEPDIR)/librc_la-template.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='template.cpp' object='librc_la-template.lo' libtool=yes @AMDEPBACKSLASH@
+librc_la-polymorphic_function.lo: polymorphic_function.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -MT librc_la-polymorphic_function.lo -MD -MP -MF $(DEPDIR)/librc_la-polymorphic_function.Tpo -c -o librc_la-polymorphic_function.lo `test -f 'polymorphic_function.cpp' || echo '$(srcdir)/'`polymorphic_function.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librc_la-polymorphic_function.Tpo $(DEPDIR)/librc_la-polymorphic_function.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='polymorphic_function.cpp' object='librc_la-polymorphic_function.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -c -o librc_la-template.lo `test -f 'template.cpp' || echo '$(srcdir)/'`template.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -c -o librc_la-polymorphic_function.lo `test -f 'polymorphic_function.cpp' || echo '$(srcdir)/'`polymorphic_function.cpp
 
 librc_la-type.lo: type.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librc_la_CXXFLAGS) $(CXXFLAGS) -MT librc_la-type.lo -MD -MP -MF $(DEPDIR)/librc_la-type.Tpo -c -o librc_la-type.lo `test -f 'type.cpp' || echo '$(srcdir)/'`type.cpp
@@ -799,20 +814,6 @@ rc-evaluate_static.obj: evaluate_static.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='evaluate_static.cpp' object='rc-evaluate_static.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rc_CXXFLAGS) $(CXXFLAGS) -c -o rc-evaluate_static.obj `if test -f 'evaluate_static.cpp'; then $(CYGPATH_W) 'evaluate_static.cpp'; else $(CYGPATH_W) '$(srcdir)/evaluate_static.cpp'; fi`
-
-rc-executor_base.o: executor_base.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rc_CXXFLAGS) $(CXXFLAGS) -MT rc-executor_base.o -MD -MP -MF $(DEPDIR)/rc-executor_base.Tpo -c -o rc-executor_base.o `test -f 'executor_base.cpp' || echo '$(srcdir)/'`executor_base.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rc-executor_base.Tpo $(DEPDIR)/rc-executor_base.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='executor_base.cpp' object='rc-executor_base.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rc_CXXFLAGS) $(CXXFLAGS) -c -o rc-executor_base.o `test -f 'executor_base.cpp' || echo '$(srcdir)/'`executor_base.cpp
-
-rc-executor_base.obj: executor_base.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rc_CXXFLAGS) $(CXXFLAGS) -MT rc-executor_base.obj -MD -MP -MF $(DEPDIR)/rc-executor_base.Tpo -c -o rc-executor_base.obj `if test -f 'executor_base.cpp'; then $(CYGPATH_W) 'executor_base.cpp'; else $(CYGPATH_W) '$(srcdir)/executor_base.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rc-executor_base.Tpo $(DEPDIR)/rc-executor_base.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='executor_base.cpp' object='rc-executor_base.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rc_CXXFLAGS) $(CXXFLAGS) -c -o rc-executor_base.obj `if test -f 'executor_base.cpp'; then $(CYGPATH_W) 'executor_base.cpp'; else $(CYGPATH_W) '$(srcdir)/executor_base.cpp'; fi`
 
 rc-generate_code.o: generate_code.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rc_CXXFLAGS) $(CXXFLAGS) -MT rc-generate_code.o -MD -MP -MF $(DEPDIR)/rc-generate_code.Tpo -c -o rc-generate_code.o `test -f 'generate_code.cpp' || echo '$(srcdir)/'`generate_code.cpp

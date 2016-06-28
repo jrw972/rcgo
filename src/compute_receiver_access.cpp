@@ -5,9 +5,9 @@
 #include "symbol_visitor.hpp"
 #include "symbol_cast.hpp"
 #include "action.hpp"
-#include "reaction.hpp"
 #include "parameter_list.hpp"
 #include "semantic.hpp"
+#include "callable.hpp"
 
 namespace semantic
 {
@@ -256,7 +256,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     if (node.method_type != NULL &&
         node.expr->eval.receiver_state &&
         node.method_type->receiver_parameter->type->contains_pointer () &&
-        node.method_type->receiver_parameter->dereference_mutability == Mutable)
+        node.method_type->receiver_parameter->indirection_mutability == Mutable)
       {
         node.eval.receiver_access = AccessWrite;
       }
@@ -278,8 +278,8 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     node.eval.receiver_state = false;
     node.eval.receiver_access = AccessNone;
-    ParameterSymbol* parameter = symbol_cast<ParameterSymbol> (node.symbol);
-    if (parameter != NULL && (parameter->kind == ParameterSymbol::Receiver || parameter->kind == ParameterSymbol::ReceiverDuplicate))
+    Parameter* parameter = symbol_cast<Parameter> (node.symbol);
+    if (parameter != NULL && (parameter->kind == Parameter::Receiver || parameter->kind == Parameter::Receiver_Duplicate))
       {
         node.eval.receiver_state = true;
         node.eval.receiver_access = AccessRead;
@@ -314,7 +314,7 @@ struct Visitor : public ast::DefaultNodeVisitor
                                           node.right->eval.receiver_access);
   }
 
-  void visit (Instance& node)
+  void visit (ast::Instance& node)
   {
     node.expression_list->accept (*this);
   }
@@ -397,11 +397,11 @@ compute_receiver_access_arguments (const ExpressionValueList& args,
        pos != limit;
        ++pos, ++i)
     {
-      ParameterSymbol* param = signature->at (i);
+      Parameter* param = signature->at (i);
       receiver_access = std::max (receiver_access, pos->receiver_access);
       if (pos->receiver_state &&
           param->type->contains_pointer () &&
-          param->dereference_mutability == Mutable)
+          param->indirection_mutability == Mutable)
         {
           receiver_access = std::max (receiver_access, AccessWrite);
           flag = true;

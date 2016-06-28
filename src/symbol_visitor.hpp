@@ -9,30 +9,28 @@ namespace decl
 struct SymbolVisitor
 {
   virtual ~SymbolVisitor();
-  virtual void visit (BuiltinFunction& s);
-  virtual void visit (TemplateSymbol& s);
-  virtual void visit (Function& s);
-  virtual void visit (InstanceSymbol& s);
-  virtual void visit (ParameterSymbol& s);
-  virtual void visit (TypeSymbol& s);
-  virtual void visit (ConstantSymbol& s);
-  virtual void visit (VariableSymbol& s);
-  virtual void visit (HiddenSymbol& s);
+  virtual void visit (PolymorphicFunction& s);
+  virtual void visit (FunctionBase& s);
+  virtual void visit (Instance& s);
+  virtual void visit (Parameter& s);
+  virtual void visit (type::NamedType& s);
+  virtual void visit (Constant& s);
+  virtual void visit (Variable& s);
+  virtual void visit (Hidden& s);
   virtual void default_action (Symbol& s);
 };
 
 struct ConstSymbolVisitor
 {
   virtual ~ConstSymbolVisitor();
-  virtual void visit (const BuiltinFunction& s);
-  virtual void visit (const TemplateSymbol& s);
-  virtual void visit (const Function& s);
-  virtual void visit (const InstanceSymbol& s);
-  virtual void visit (const ParameterSymbol& s);
-  virtual void visit (const TypeSymbol& s);
-  virtual void visit (const ConstantSymbol& s);
-  virtual void visit (const VariableSymbol& s);
-  virtual void visit (const HiddenSymbol& s);
+  virtual void visit (const PolymorphicFunction& s);
+  virtual void visit (const FunctionBase& s);
+  virtual void visit (const Instance& s);
+  virtual void visit (const Parameter& s);
+  virtual void visit (const type::NamedType& s);
+  virtual void visit (const Constant& s);
+  virtual void visit (const Variable& s);
+  virtual void visit (const Hidden& s);
   virtual void default_action (const Symbol& s);
 };
 

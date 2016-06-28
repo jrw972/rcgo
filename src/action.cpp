@@ -5,7 +5,7 @@ namespace decl
 using namespace ast;
 using namespace type;
 
-Action::Action (decl::ParameterSymbol* a_receiver_parameter,
+Action::Action (decl::Parameter* a_receiver_parameter,
                 Node* a_precondition,
                 Node* a_body,
                 const std::string& a_name)
@@ -18,12 +18,12 @@ Action::Action (decl::ParameterSymbol* a_receiver_parameter,
   , precondition_kind (Dynamic)
 { }
 
-Action::Action (decl::ParameterSymbol* a_receiver_parameter,
+Action::Action (decl::Parameter* a_receiver_parameter,
                 Node* a_precondition,
                 Node* a_body,
                 const std::string& a_name,
-                decl::ParameterSymbol* a_iota_parameter,
-                Int::ValueType a_dimension)
+                decl::Parameter* a_iota_parameter,
+                long a_dimension)
   : receiver_parameter (a_receiver_parameter)
   , precondition (a_precondition)
   , body (a_body)

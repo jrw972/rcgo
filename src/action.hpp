@@ -17,24 +17,24 @@ struct Action
     Static_False,
   };
 
-  Action (ParameterSymbol* receiver_parameter,
+  Action (Parameter* receiver_parameter,
           ast::Node* precondition,
           ast::Node* body,
           const std::string& name);
 
-  Action (ParameterSymbol* receiver_parameter,
+  Action (Parameter* receiver_parameter,
           ast::Node* precondition,
           ast::Node* body,
           const std::string& name,
-          ParameterSymbol* iota_parameter,
-          type::Int::ValueType dimension);
+          Parameter* iota_parameter,
+          long dimension);
 
-  ParameterSymbol* const receiver_parameter;
+  Parameter* const receiver_parameter;
   ast::Node* const precondition;
   ast::Node* const body;
   std::string const name;
-  ParameterSymbol* const iota_parameter;
-  type::Int::ValueType const dimension;
+  Parameter* const iota_parameter;
+  long const dimension;
   PreconditionKind precondition_kind;
   ReceiverAccess precondition_access;
   ReceiverAccess immutable_phase_access;

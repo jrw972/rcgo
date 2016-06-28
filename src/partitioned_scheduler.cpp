@@ -8,6 +8,7 @@
 #include "debug.hpp"
 #include "heap.hpp"
 #include "runtime.hpp"
+#include "action.hpp"
 
 namespace runtime
 {

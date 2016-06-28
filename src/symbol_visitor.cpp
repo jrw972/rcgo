@@ -1,84 +1,76 @@
 #include "symbol_visitor.hpp"
 
-#include "builtin_function.hpp"
-#include "template.hpp"
+#include "polymorphic_function.hpp"
+#include "callable.hpp"
 
 namespace decl
 {
 
 SymbolVisitor::~SymbolVisitor() { }
-void SymbolVisitor::visit (BuiltinFunction& s)
+void SymbolVisitor::visit (PolymorphicFunction& s)
 {
   default_action (s);
 }
-void SymbolVisitor::visit (TemplateSymbol& s)
+void SymbolVisitor::visit (FunctionBase& s)
 {
   default_action (s);
 }
-void SymbolVisitor::visit (Function& s)
+void SymbolVisitor::visit (Instance& s)
 {
   default_action (s);
 }
-void SymbolVisitor::visit (InstanceSymbol& s)
+void SymbolVisitor::visit (Parameter& s)
 {
   default_action (s);
 }
-void SymbolVisitor::visit (ParameterSymbol& s)
+void SymbolVisitor::visit (type::NamedType& s)
 {
   default_action (s);
 }
-void SymbolVisitor::visit (TypeSymbol& s)
+void SymbolVisitor::visit (Constant& s)
 {
   default_action (s);
 }
-void SymbolVisitor::visit (ConstantSymbol& s)
+void SymbolVisitor::visit (Variable& s)
 {
   default_action (s);
 }
-void SymbolVisitor::visit (VariableSymbol& s)
-{
-  default_action (s);
-}
-void SymbolVisitor::visit (HiddenSymbol& s)
+void SymbolVisitor::visit (Hidden& s)
 {
   default_action (s);
 }
 void SymbolVisitor::default_action (Symbol& s) { }
 
 ConstSymbolVisitor::~ConstSymbolVisitor() { }
-void ConstSymbolVisitor::visit (const BuiltinFunction& s)
+void ConstSymbolVisitor::visit (const PolymorphicFunction& s)
 {
   default_action (s);
 }
-void ConstSymbolVisitor::visit (const TemplateSymbol& s)
+void ConstSymbolVisitor::visit (const FunctionBase& s)
 {
   default_action (s);
 }
-void ConstSymbolVisitor::visit (const Function& s)
+void ConstSymbolVisitor::visit (const Instance& s)
 {
   default_action (s);
 }
-void ConstSymbolVisitor::visit (const InstanceSymbol& s)
+void ConstSymbolVisitor::visit (const Parameter& s)
 {
   default_action (s);
 }
-void ConstSymbolVisitor::visit (const ParameterSymbol& s)
+void ConstSymbolVisitor::visit (const type::NamedType& s)
 {
   default_action (s);
 }
-void ConstSymbolVisitor::visit (const TypeSymbol& s)
+void ConstSymbolVisitor::visit (const Constant& s)
 {
   default_action (s);
 }
-void ConstSymbolVisitor::visit (const ConstantSymbol& s)
+void ConstSymbolVisitor::visit (const Variable& s)
 {
   default_action (s);
 }
-void ConstSymbolVisitor::visit (const VariableSymbol& s)
-{
-  default_action (s);
-}
-void ConstSymbolVisitor::visit (const HiddenSymbol& s)
+void ConstSymbolVisitor::visit (const Hidden& s)
 {
   default_action (s);
 }

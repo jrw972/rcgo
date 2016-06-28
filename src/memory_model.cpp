@@ -14,9 +14,9 @@ bool MemoryModel::arguments_empty () const
   return arguments_offset_ == -(ptrdiff_t)sizeof (void*);
 }
 
-void MemoryModel::arguments_push (size_t size)
+void MemoryModel::arguments_push (const type::Type* type)
 {
-  arguments_offset_ -= util::align_up (size, arch::stack_alignment ());
+  arguments_offset_ -= arch::size_on_stack (type);
 }
 
 bool MemoryModel::locals_empty () const
@@ -24,9 +24,9 @@ bool MemoryModel::locals_empty () const
   return locals_offset_ == sizeof (void*);
 }
 
-void MemoryModel::locals_push (size_t size)
+void MemoryModel::locals_push (const type::Type* type)
 {
-  size = util::align_up (size, arch::stack_alignment ());
+  size_t size = arch::size_on_stack (type);
   locals_offset_ += size;
   locals_size_on_stack_ += size;
 }

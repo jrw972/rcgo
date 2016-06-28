@@ -5,7 +5,7 @@
 #include "node.hpp"
 #include "node_visitor.hpp"
 #include "node_cast.hpp"
-#include "template.hpp"
+#include "polymorphic_function.hpp"
 #include "callable.hpp"
 #include "symbol_visitor.hpp"
 #include "semantic.hpp"
@@ -14,10 +14,8 @@
 #include "process_types_and_constants.hpp"
 #include "symbol.hpp"
 #include "action.hpp"
-#include "reaction.hpp"
 #include "bind.hpp"
 #include "parameter_list.hpp"
-#include "builtin_function.hpp"
 #include "error_reporter.hpp"
 
 namespace semantic
@@ -221,7 +219,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   ErrorReporter& er;
   SymbolTable& symtab;
-  ParameterSymbol* receiver_parameter;
+  Parameter* receiver_parameter;
   Context context;
   bool in_mutable_phase;
 
@@ -374,10 +372,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     if (node.callable != NULL)
       {
         require_value_or_variable (node.expr);
-        // TODO:  Merge check_references into check_types.
-        node.callable->check_types (args);
-        node.callable->check_references (node.args);
-        node.callable->check_mutability (node.args);
+        node.callable->check (args);
       }
     else
       {
@@ -397,7 +392,7 @@ struct Visitor : public ast::DefaultNodeVisitor
         node.eval.type = node.return_parameter_list->at (0)->type;
         node.eval.expression_kind = ValueExpressionKind;
         node.eval.intrinsic_mutability = Immutable;
-        node.eval.indirection_mutability = node.return_parameter_list->at (0)->dereference_mutability;
+        node.eval.indirection_mutability = node.return_parameter_list->at (0)->indirection_mutability;
         node.eval.fix_string_indirection_mutability ();
       }
     else
@@ -536,8 +531,6 @@ struct Visitor : public ast::DefaultNodeVisitor
         return;
       }
 
-    node.eval.type = node.symbol->symbol_type ();
-
     struct visitor : public ConstSymbolVisitor
     {
       IdentifierExpr& node;
@@ -554,44 +547,41 @@ struct Visitor : public ast::DefaultNodeVisitor
         NOT_REACHED;
       }
 
-      void visit (const BuiltinFunction& symbol)
-      {
-        node.callable = &symbol;
-        node.eval.expression_kind = ValueExpressionKind;
-        node.eval.intrinsic_mutability = Immutable;
-        node.eval.indirection_mutability = Immutable;
-      }
-
-      void visit (const decl::TemplateSymbol& symbol)
+      void visit (const decl::PolymorphicFunction& symbol)
       {
         node.temp = &symbol;
+        node.eval.type = type::PolymorphicFunction::instance ();
         node.eval.expression_kind = ValueExpressionKind;
         node.eval.intrinsic_mutability = Immutable;
         node.eval.indirection_mutability = Immutable;
       }
 
-      void visit (const decl::Function& symbol)
+      void visit (const decl::FunctionBase& symbol)
       {
         node.callable = &symbol;
+        node.eval.type = symbol.type;
         node.eval.expression_kind = ValueExpressionKind;
         node.eval.intrinsic_mutability = Immutable;
         node.eval.indirection_mutability = Immutable;
       }
 
-      void visit (const ParameterSymbol& symbol)
+      void visit (const Parameter& symbol)
       {
+        node.eval.type = symbol.type;
         node.eval.expression_kind = VariableExpressionKind;
         node.eval.intrinsic_mutability = symbol.intrinsic_mutability;
-        node.eval.indirection_mutability = symbol.dereference_mutability;
+        node.eval.indirection_mutability = symbol.indirection_mutability;
       }
 
-      void visit (const TypeSymbol& symbol)
+      void visit (const NamedType& symbol)
       {
+        node.eval.type = &symbol;
         node.eval.expression_kind = TypeExpressionKind;
       }
 
-      void visit (const ConstantSymbol& symbol)
+      void visit (const Constant& symbol)
       {
+        node.eval.type = symbol.type;
         node.eval.value = symbol.value;
         assert (node.eval.value.present);
         node.eval.expression_kind = ValueExpressionKind;
@@ -599,16 +589,17 @@ struct Visitor : public ast::DefaultNodeVisitor
         node.eval.indirection_mutability = Mutable;
       }
 
-      void visit (const VariableSymbol& symbol)
+      void visit (const Variable& symbol)
       {
+        node.eval.type = symbol.type;
         node.eval.expression_kind = VariableExpressionKind;
         node.eval.intrinsic_mutability = symbol.intrinsic_mutability;
-        node.eval.indirection_mutability = symbol.dereference_mutability;
+        node.eval.indirection_mutability = symbol.indirection_mutability;
       }
 
-      void visit (const HiddenSymbol& symbol)
+      void visit (const decl::Hidden& symbol)
       {
-        er.hidden (symbol.location, symbol.identifier);
+        er.hidden_symbol (symbol.location, symbol.name);
         node.eval.expression_kind = ErrorExpressionKind;
       }
     };
@@ -664,23 +655,21 @@ struct Visitor : public ast::DefaultNodeVisitor
     // Do nothing.
   }
 
-  void visit (Instance& node)
+  void visit (ast::Instance& node)
   {
     // Check the arguments.
     node.expression_list->accept (*this);
-    check_types_arguments (node.expression_list, node.symbol->initializer->initializerType->parameter_list);
+    check_types_arguments (node.expression_list, node.symbol->initializer->type->parameter_list);
     require_value_or_variable_list (node.expression_list);
-    check_mutability_arguments (node.expression_list, node.symbol->initializer->initializerType->parameter_list);
+    check_mutability_arguments (node.expression_list, node.symbol->initializer->type->parameter_list);
   }
 
   void visit (ast::Initializer& node)
   {
-    symtab.open_scope ();
-    symtab.enter_symbol (node.initializer->receiver_parameter ());
-    symtab.enter_signature (node.initializer->parameter_list ());
-    symtab.enter_signature (node.initializer->return_parameter_list ());
+    symtab.open_scope (node.initializer->parameter_list (),
+                       node.initializer->return_parameter_list ());
     Visitor v (*this);
-    v.receiver_parameter = node.initializer->initializerType->receiver_parameter;
+    v.receiver_parameter = node.initializer->type->receiver_parameter;
     v.context = Initializer;
     node.body->accept (v);
     symtab.close_scope ();
@@ -688,12 +677,10 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (ast::Getter& node)
   {
-    symtab.open_scope ();
-    symtab.enter_symbol (node.getter->receiver_parameter ());
-    symtab.enter_signature (node.getter->parameter_list ());
-    symtab.enter_signature (node.getter->return_parameter_list ());
+    symtab.open_scope (node.getter->parameter_list (),
+                       node.getter->return_parameter_list ());
     Visitor v (*this);
-    v.receiver_parameter = node.getter->getterType->receiver_parameter;
+    v.receiver_parameter = node.getter->type->receiver_parameter;
     v.context = Getter;
     node.body->accept (v);
     symtab.close_scope ();
@@ -727,8 +714,8 @@ struct Visitor : public ast::DefaultNodeVisitor
   void visit (DimensionedAction& node)
   {
     symtab.open_scope ();
-    symtab.enter_symbol (node.action->receiver_parameter);
     symtab.enter_symbol (node.action->iota_parameter);
+    symtab.enter_symbol (node.action->receiver_parameter);
     Visitor v (*this);
     v.receiver_parameter = node.action->receiver_parameter;
     v.context = Action;
@@ -752,12 +739,11 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (ast::Reaction& node)
   {
-    symtab.open_scope ();
-    symtab.enter_symbol (node.reaction->reaction_type->receiver_parameter);
-    symtab.enter_signature (node.reaction->parameter_list ());
+    symtab.open_scope (node.reaction->parameter_list (),
+                       node.reaction->return_parameter_list ());
     // No return type.
     Visitor v (*this);
-    v.receiver_parameter = node.reaction->reaction_type->receiver_parameter;
+    v.receiver_parameter = node.reaction->type->receiver_parameter;
     v.context = Reaction;
     node.body->accept (v);
     symtab.close_scope ();
@@ -765,14 +751,13 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (DimensionedReaction& node)
   {
-    symtab.open_scope ();
-    symtab.enter_symbol (node.reaction->reaction_type->receiver_parameter);
-    symtab.enter_symbol (node.reaction->iota);
-    symtab.enter_signature (node.reaction->parameter_list ());
+    symtab.open_scope (node.reaction->iota,
+                       node.reaction->parameter_list (),
+                       node.reaction->return_parameter_list ());
 
     // No return type.
     Visitor v (*this);
-    v.receiver_parameter = node.reaction->reaction_type->receiver_parameter;
+    v.receiver_parameter = node.reaction->type->receiver_parameter;
     v.context = Reaction;
     node.body->accept (v);
     symtab.close_scope ();
@@ -788,21 +773,18 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (ast::Function& node)
   {
-    symtab.open_scope ();
-    symtab.enter_signature (node.function->parameter_list ());
-    symtab.enter_signature (node.function->return_parameter_list ());
+    symtab.open_scope (node.function->parameter_list (),
+                       node.function->return_parameter_list ());
     node.body->accept (*this);
     symtab.close_scope ();
   }
 
   void visit (ast::Method& node)
   {
-    symtab.open_scope ();
-    symtab.enter_symbol (node.method->receiver_parameter ());
-    symtab.enter_signature (node.method->parameter_list ());
-    symtab.enter_signature (node.method->return_parameter_list ());
+    symtab.open_scope (node.method->parameter_list (),
+                       node.method->return_parameter_list ());
     Visitor v (*this);
-    v.receiver_parameter = node.method->methodType->receiver_parameter;
+    v.receiver_parameter = node.method->type->receiver_parameter;
     node.body->accept (v);
     symtab.close_scope ();
   }
@@ -826,8 +808,20 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.visit_children (*this);
 
     // Get the return symbol.
-    node.return_symbol = symbol_cast<ParameterSymbol> (symtab.find_global_symbol (ReturnSymbol));
-    assert (node.return_symbol != NULL);
+    const decl::ParameterList* return_parameter_list =
+      symtab.return_parameter_list ();
+
+    if (return_parameter_list == NULL)
+      {
+        UNIMPLEMENTED;
+      }
+
+    if (return_parameter_list->size () != 1)
+      {
+        UNIMPLEMENTED;
+      }
+
+    node.return_symbol = return_parameter_list->at (0);
 
     if (!are_assignable (node.child->eval.type, node.child->eval.value, node.return_symbol->type))
       {
@@ -840,7 +834,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     require_value_or_variable (node.child);
 
     if (node.child->eval.type->contains_pointer () &&
-        node.return_symbol->dereference_mutability < node.child->eval.indirection_mutability)
+        node.return_symbol->indirection_mutability < node.child->eval.indirection_mutability)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "return casts away +const or +foreign (E149)");
@@ -867,7 +861,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     const std::string& identifier = node.identifier->identifier;
     node.limit = process_array_dimension (node.limit_node, er, symtab);
-    node.symbol = new VariableSymbol (identifier, node.identifier->location, Int::instance (), Immutable, Immutable);
+    node.symbol = new Variable (identifier, node.identifier->location, Int::instance (), Immutable, Immutable);
     symtab.open_scope ();
     symtab.enter_symbol (node.symbol);
     node.body->accept (*this);
@@ -894,8 +888,8 @@ struct Visitor : public ast::DefaultNodeVisitor
     // Enter the new heap root.
     const std::string& identifier = node.identifier->identifier;
     // Don't know dereference mutability yet.
-    node.root_symbol = new VariableSymbol (identifier, node.location, root_type, Immutable, Foreign);
-    node.root_symbol->dereference_mutability = node.expr->eval.indirection_mutability;
+    node.root_symbol = new Variable (identifier, node.location, root_type, Immutable, Foreign);
+    node.root_symbol->indirection_mutability = node.expr->eval.indirection_mutability;
     symtab.enter_symbol (node.root_symbol);
 
     // Check the body.
@@ -981,7 +975,7 @@ struct Visitor : public ast::DefaultNodeVisitor
              ++id_pos)
           {
             const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
-            VariableSymbol* symbol = new VariableSymbol (name, (*id_pos)->location, type, node.mutability, node.dereferenceMutability);
+            Variable* symbol = new Variable (name, (*id_pos)->location, type, node.mutability, node.dereferenceMutability);
             symtab.enter_symbol (symbol);
             node.symbols.push_back (symbol);
           }
@@ -1012,7 +1006,7 @@ struct Visitor : public ast::DefaultNodeVisitor
             require_value_or_variable (n);
 
             const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
-            VariableSymbol* symbol = new VariableSymbol (name, (*id_pos)->location, type, node.eval.intrinsic_mutability, node.dereferenceMutability);
+            Variable* symbol = new Variable (name, (*id_pos)->location, type, node.eval.intrinsic_mutability, node.dereferenceMutability);
             symtab.enter_symbol (symbol);
             node.symbols.push_back (symbol);
           }
@@ -1040,7 +1034,7 @@ struct Visitor : public ast::DefaultNodeVisitor
         require_value_or_variable (n);
 
         const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
-        VariableSymbol* symbol = new VariableSymbol (name, (*id_pos)->location, n->eval.type, node.eval.intrinsic_mutability, node.dereferenceMutability);
+        Variable* symbol = new Variable (name, (*id_pos)->location, n->eval.type, node.eval.intrinsic_mutability, node.dereferenceMutability);
         symtab.enter_symbol (symbol);
         node.symbols.push_back (symbol);
       }
@@ -1054,10 +1048,10 @@ done:
              ++pos, ++idx)
           {
             Node* n = *pos;
-            VariableSymbol* symbol = node.symbols[idx];
+            Variable* symbol = node.symbols[idx];
 
             if (n->eval.type->contains_pointer () &&
-                symbol->dereference_mutability < n->eval.indirection_mutability)
+                symbol->indirection_mutability < n->eval.indirection_mutability)
               {
                 error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                                "assignment casts away +const or +foreign (E92)");
@@ -1172,8 +1166,8 @@ done:
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "parameter specified for non-parameterized reaction (E41)");
       }
-    type::Int::ValueType dimension = reaction->dimension;
-    check_array_index (reaction->reaction_type->get_array (dimension), node.param, false);
+    long dimension = reaction->dimension;
+    check_array_index (reaction->type->get_array (dimension), node.param, false);
   }
 
   void visit (BindPullPortStatement& node)
@@ -1293,7 +1287,7 @@ done:
           }
         index_value.convert (index_type, Int::instance ());
         index_type = Int::instance ();
-        Int::ValueType idx = index_value.int_value;
+        long idx = index_value.int_value;
         if (idx < 0)
           {
             error_at_line (-1, 0, index->location.file.c_str (), index->location.line,
@@ -1313,7 +1307,7 @@ done:
       {
         if (index_value.present)
           {
-            Int::ValueType idx = index_value.to_int (index_type);
+            long idx = index_value.to_int (index_type);
             if (idx < 0)
               {
                 error_at_line (-1, 0, index->location.file.c_str (), index->location.line,
@@ -1370,7 +1364,7 @@ done:
               }
             index_value.convert (index_type, Int::instance ());
             index_type = Int::instance ();
-            Int::ValueType idx = index_value.int_value;
+            long idx = index_value.int_value;
             if (idx < 0)
               {
                 error_at_line (-1, 0, index_node->location.file.c_str (), index_node->location.line,
@@ -1381,7 +1375,7 @@ done:
           {
             if (index_value.present)
               {
-                Int::ValueType idx = index_value.to_int (index_type);
+                long idx = index_value.to_int (index_type);
                 if (idx < 0)
                   {
                     error_at_line (-1, 0, index_node->location.file.c_str (), index_node->location.line,
@@ -1696,7 +1690,7 @@ void check_mutability_arguments (ast::Node* node, const decl::ParameterList* sig
       const type::Type* arg = (*pos)->eval.type;
       if (arg->contains_pointer ())
         {
-          if (signature->at (i)->dereference_mutability < (*pos)->eval.indirection_mutability)
+          if (signature->at (i)->indirection_mutability < (*pos)->eval.indirection_mutability)
             {
               error_at_line (-1, 0, (*pos)->location.file.c_str (), (*pos)->location.line,
                              "argument %zd casts away +const or +foreign (E85)", i + 1);

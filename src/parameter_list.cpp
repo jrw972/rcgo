@@ -4,20 +4,17 @@
 
 #include "symbol.hpp"
 #include "arch.hpp"
+#include "type.hpp"
 
 namespace decl
 {
 
 ParameterList::ParameterList (const util::Location& a_location)
   : location (a_location)
-  , size_on_stack_ (0)
+  //, size_on_stack_ (0)
   , variadic_ (false)
 { }
 
-size_t ParameterList::size_on_stack () const
-{
-  return size_on_stack_;
-}
 size_t ParameterList::size () const
 {
   return parameters_.size ();
@@ -26,7 +23,7 @@ bool ParameterList::empty () const
 {
   return parameters_.empty ();
 }
-ParameterSymbol* ParameterList::at (size_t idx) const
+Parameter* ParameterList::at (size_t idx) const
 {
   return parameters_.at (idx);
 }
@@ -47,7 +44,7 @@ ParameterList::const_reverse_iterator ParameterList::rend () const
   return parameters_.rend ();
 }
 
-ParameterSymbol*
+Parameter*
 ParameterList::find (const std::string& name) const
 {
   for (ParametersType::const_iterator ptr = parameters_.begin (),
@@ -55,7 +52,7 @@ ParameterList::find (const std::string& name) const
        ptr != limit;
        ++ptr)
     {
-      if ((*ptr)->identifier == name)
+      if ((*ptr)->name == name)
         {
           return *ptr;
         }
@@ -93,10 +90,9 @@ ParameterList::to_string () const
 }
 
 ParameterList*
-ParameterList::append (ParameterSymbol* p)
+ParameterList::append (Parameter* p)
 {
   parameters_.push_back (p);
-  size_on_stack_ += util::align_up (p->type->size (), arch::stack_alignment ());
   return this;
 }
 

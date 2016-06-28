@@ -8,26 +8,28 @@ namespace decl
 
 struct SymbolTable
 {
-
-  SymbolTable ()
-    : current_scope_ (NULL)
-  { }
+  SymbolTable ();
 
   void open_scope ();
+  void open_scope (const ParameterList* parameter_list,
+                   const ParameterList* return_parameter_list);
+  void open_scope (Symbol* iota,
+                   const ParameterList* parameter_list,
+                   const ParameterList* return_parameter_list);
   void close_scope ();
 
-  void enter_symbol (decl::Symbol* s);
-  void enter_signature (const decl::ParameterList* type);
+  void enter_symbol (Symbol* s);
 
   void change ();
   void activate ();
 
   Symbol* find_global_symbol (const std::string& identifier) const;
   Symbol* find_local_symbol (const std::string& identifier) const;
-
   Package* package () const;
+  const ParameterList* return_parameter_list () const;
 
 private:
+  void enter_parameter_list (const ParameterList* type);
   struct Scope;
   Scope* current_scope_;
 };

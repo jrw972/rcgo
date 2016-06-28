@@ -1,5 +1,7 @@
 #include "value.hpp"
 
+#include "type.hpp"
+
 #include <utility>
 
 namespace semantic
@@ -7,6 +9,69 @@ namespace semantic
 
 using namespace type;
 using namespace std::rel_ops;
+
+UntypedComplex UntypedComplex::make (double r, double i)
+{
+  UntypedComplex retval;
+  retval.real = r;
+  retval.imag = i;
+  return retval;
+}
+
+bool UntypedComplex::operator== (const UntypedComplex& other) const
+{
+  return this->real == other.real && this->imag == other.imag;
+}
+
+UntypedComplex& UntypedComplex::operator= (const double& x)
+{
+  this->real = x;
+  this->imag = 0;
+  return *this;
+}
+
+UntypedComplex& UntypedComplex::operator= (const runtime::Complex64& x)
+{
+  this->real = x.real;
+  this->imag = x.imag;
+  return *this;
+}
+
+UntypedComplex& UntypedComplex::operator= (const runtime::Complex128& x)
+{
+  this->real = x.real;
+  this->imag = x.imag;
+  return *this;
+}
+
+UntypedComplex::operator double() const
+{
+  return this->real;
+}
+
+UntypedComplex operator* (const UntypedComplex&, const UntypedComplex&)
+{
+  UNIMPLEMENTED;
+}
+UntypedComplex operator/ (const UntypedComplex&, const UntypedComplex&)
+{
+  UNIMPLEMENTED;
+}
+UntypedComplex operator+ (const UntypedComplex&, const UntypedComplex&)
+{
+  UNIMPLEMENTED;
+}
+UntypedComplex operator- (const UntypedComplex&, const UntypedComplex&)
+{
+  UNIMPLEMENTED;
+}
+UntypedComplex operator- (const UntypedComplex&)
+{
+  UNIMPLEMENTED;
+}
+
+Value::Value () : present (false) { }
+
 
 // struct alpha_visitor : public Type::DefaultVisitor
 // {
@@ -129,41 +194,41 @@ static bool to_and_back (const T& x, const type::Type* type)
   switch (type->underlying_kind ())
     {
     case Uint8_Kind:
-      return to_and_back_helper<Uint8::ValueType> (x);
+      return to_and_back_helper<uint8_t> (x);
     case Uint16_Kind:
-      return to_and_back_helper<Uint16::ValueType> (x);
+      return to_and_back_helper<uint16_t> (x);
     case Uint32_Kind:
-      return to_and_back_helper<Uint32::ValueType> (x);
+      return to_and_back_helper<uint32_t> (x);
     case Uint64_Kind:
-      return to_and_back_helper<Uint64::ValueType> (x);
+      return to_and_back_helper<uint64_t> (x);
     case Int8_Kind:
-      return to_and_back_helper<Int8::ValueType> (x);
+      return to_and_back_helper<int8_t> (x);
     case Int16_Kind:
-      return to_and_back_helper<Int16::ValueType> (x);
+      return to_and_back_helper<int16_t> (x);
     case Int32_Kind:
-      return to_and_back_helper<Int32::ValueType> (x);
+      return to_and_back_helper<int32_t> (x);
     case Int64_Kind:
-      return to_and_back_helper<Int64::ValueType> (x);
+      return to_and_back_helper<int64_t> (x);
     case Float32_Kind:
-      return to_and_back_helper<Float32::ValueType> (x);
+      return to_and_back_helper<float> (x);
     case Float64_Kind:
-      return to_and_back_helper<Float64::ValueType> (x);
+      return to_and_back_helper<double> (x);
     case Complex64_Kind:
-      return to_and_back_helper<Complex64::ValueType> (x);
+      return to_and_back_helper<runtime::Complex64> (x);
     case Complex128_Kind:
-      return to_and_back_helper<Complex128::ValueType> (x);
+      return to_and_back_helper<runtime::Complex128> (x);
     case Uint_Kind:
-      return to_and_back_helper<Uint::ValueType> (x);
+      return to_and_back_helper<unsigned long> (x);
     case Int_Kind:
-      return to_and_back_helper<Int::ValueType> (x);
+      return to_and_back_helper<long> (x);
     case Uintptr_Kind:
-      return to_and_back_helper<Uintptr::ValueType> (x);
+      return to_and_back_helper<size_t> (x);
     default:
       return false;
     }
 }
 
-static void convert_numeric (Value& value, UntypedComplex::ValueType x, const type::Type* type)
+static void convert_numeric (Value& value, UntypedComplex x, const type::Type* type)
 {
   switch (type->kind ())
     {
@@ -210,10 +275,10 @@ static void convert_numeric (Value& value, UntypedComplex::ValueType x, const ty
       value.complex128_value = x;
       break;
     case Untyped_Integer_Kind:
-      value.integer_value = x;
+      value.untyped_integer_value = x;
       break;
     case Untyped_Float_Kind:
-      value.float_value = x;
+      value.untyped_float_value = x;
       break;
     default:
       TYPE_NOT_REACHED (*type);
@@ -236,13 +301,13 @@ Value::representable (const type::Type* from, const type::Type* to) const
     case Untyped_Boolean_Kind:
       return to->underlying_kind () == Bool_Kind;
     case Untyped_Rune_Kind:
-      return to_and_back (rune_value, to);
+      return to_and_back (untyped_rune_value, to);
     case Untyped_Integer_Kind:
-      return to_and_back (integer_value, to);
+      return to_and_back (untyped_integer_value, to);
     case Untyped_Float_Kind:
-      return to_and_back (float_value, to);
+      return to_and_back (untyped_float_value, to);
     case Untyped_Complex_Kind:
-      return to_and_back (complex_value, to);
+      return to_and_back (untyped_complex_value, to);
     case Untyped_String_Kind:
       return to->underlying_kind () == String_Kind;
     default:
@@ -322,38 +387,38 @@ Value::convert (const type::Type* from, const type::Type* to)
     {
       if (to->kind () == Bool_Kind)
         {
-          this->bool_value = this->boolean_value;
+          this->bool_value = this->untyped_boolean_value;
         }
     }
     break;
 
     case Untyped_Rune_Kind:
     {
-      UntypedComplex::ValueType x;
-      x = this->rune_value;
+      UntypedComplex x;
+      x = this->untyped_rune_value;
       convert_numeric (*this, x, to);
     }
     break;
 
     case Untyped_Integer_Kind:
     {
-      UntypedComplex::ValueType x;
-      x = this->integer_value;
+      UntypedComplex x;
+      x = this->untyped_integer_value;
       convert_numeric (*this, x, to);
     }
     break;
 
     case Untyped_Float_Kind:
     {
-      UntypedComplex::ValueType x;
-      x = this->float_value;
+      UntypedComplex x;
+      x = this->untyped_float_value;
       convert_numeric (*this, x, to);
     }
     break;
 
     case Uint8_Kind:
     {
-      UntypedComplex::ValueType x;
+      UntypedComplex x;
       x = this->uint8_value;
       convert_numeric (*this, x, to);
     }
@@ -361,7 +426,7 @@ Value::convert (const type::Type* from, const type::Type* to)
 
     case Uint16_Kind:
     {
-      UntypedComplex::ValueType x;
+      UntypedComplex x;
       x = this->uint16_value;
       convert_numeric (*this, x, to);
     }
@@ -369,7 +434,7 @@ Value::convert (const type::Type* from, const type::Type* to)
 
     case Uint32_Kind:
     {
-      UntypedComplex::ValueType x;
+      UntypedComplex x;
       x = this->uint32_value;
       convert_numeric (*this, x, to);
     }
@@ -377,7 +442,7 @@ Value::convert (const type::Type* from, const type::Type* to)
 
     case Uint64_Kind:
     {
-      UntypedComplex::ValueType x;
+      UntypedComplex x;
       x = this->uint64_value;
       convert_numeric (*this, x, to);
     }
@@ -385,7 +450,7 @@ Value::convert (const type::Type* from, const type::Type* to)
 
     case Int8_Kind:
     {
-      UntypedComplex::ValueType x;
+      UntypedComplex x;
       x = this->int8_value;
       convert_numeric (*this, x, to);
     }
@@ -393,7 +458,7 @@ Value::convert (const type::Type* from, const type::Type* to)
 
     case Int16_Kind:
     {
-      UntypedComplex::ValueType x;
+      UntypedComplex x;
       x = this->int16_value;
       convert_numeric (*this, x, to);
     }
@@ -401,7 +466,7 @@ Value::convert (const type::Type* from, const type::Type* to)
 
     case Int32_Kind:
     {
-      UntypedComplex::ValueType x;
+      UntypedComplex x;
       x = this->int32_value;
       convert_numeric (*this, x, to);
     }
@@ -409,7 +474,7 @@ Value::convert (const type::Type* from, const type::Type* to)
 
     case Int64_Kind:
     {
-      UntypedComplex::ValueType x;
+      UntypedComplex x;
       x = this->int64_value;
       convert_numeric (*this, x, to);
     }
@@ -417,7 +482,7 @@ Value::convert (const type::Type* from, const type::Type* to)
 
     case Int_Kind:
     {
-      UntypedComplex::ValueType x;
+      UntypedComplex x;
       x = this->int_value;
       convert_numeric (*this, x, to);
     }
@@ -425,7 +490,7 @@ Value::convert (const type::Type* from, const type::Type* to)
 
     case Float32_Kind:
     {
-      UntypedComplex::ValueType x;
+      UntypedComplex x;
       x = this->float32_value;
       convert_numeric (*this, x, to);
     }
@@ -433,7 +498,7 @@ Value::convert (const type::Type* from, const type::Type* to)
 
     case Float64_Kind:
     {
-      UntypedComplex::ValueType x;
+      UntypedComplex x;
       x = this->float64_value;
       convert_numeric (*this, x, to);
     }
@@ -441,7 +506,7 @@ Value::convert (const type::Type* from, const type::Type* to)
 
     case Complex64_Kind:
     {
-      UntypedComplex::ValueType x;
+      UntypedComplex x;
       x = this->complex64_value;
       convert_numeric (*this, x, to);
     }
@@ -449,7 +514,7 @@ Value::convert (const type::Type* from, const type::Type* to)
 
     case Complex128_Kind:
     {
-      UntypedComplex::ValueType x;
+      UntypedComplex x;
       x = this->complex128_value;
       convert_numeric (*this, x, to);
     }
@@ -459,7 +524,7 @@ Value::convert (const type::Type* from, const type::Type* to)
     {
       if (to->kind () == String_Kind)
         {
-          this->stringu_value = this->string_value;
+          this->string_value = this->untyped_string_value;
           return;
         }
 
@@ -477,7 +542,7 @@ Value::convert (const type::Type* from, const type::Type* to)
 
       if (to->kind () == Slice_Kind)
         {
-          this->slice_value = Slice::ValueType ();
+          this->slice_value = runtime::Slice ();
           return;
         }
 
@@ -490,7 +555,7 @@ Value::convert (const type::Type* from, const type::Type* to)
     }
 }
 
-type::Int::ValueType
+long
 Value::to_int (const type::Type* type) const
 {
   assert (type->is_typed_integer ());
@@ -529,79 +594,79 @@ void equal (Value& out, const type::Type* type, const Value& left, const Value& 
   switch (type->underlying_kind ())
     {
     case Untyped_Nil_Kind:
-      out.boolean_value = true;
+      out.untyped_boolean_value = true;
       break;
     case Untyped_Boolean_Kind:
-      out.boolean_value = left.boolean_value == right.boolean_value;
+      out.untyped_boolean_value = left.untyped_boolean_value == right.untyped_boolean_value;
       break;
     case Untyped_Rune_Kind:
-      out.boolean_value = left.rune_value == right.rune_value;
+      out.untyped_boolean_value = left.untyped_rune_value == right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.boolean_value = left.integer_value == right.integer_value;
+      out.untyped_boolean_value = left.untyped_integer_value == right.untyped_integer_value;
       break;
     case Untyped_Float_Kind:
-      out.boolean_value = left.float_value == right.float_value;
+      out.untyped_boolean_value = left.untyped_float_value == right.untyped_float_value;
       break;
     case Untyped_Complex_Kind:
-      out.boolean_value = left.complex_value == right.complex_value;
+      out.untyped_boolean_value = left.untyped_complex_value == right.untyped_complex_value;
       break;
     case Untyped_String_Kind:
-      out.boolean_value = left.string_value == right.string_value;
+      out.untyped_boolean_value = left.untyped_string_value == right.untyped_string_value;
       break;
     case Bool_Kind:
-      out.boolean_value = left.bool_value == right.bool_value;
+      out.untyped_boolean_value = left.bool_value == right.bool_value;
       break;
     case Uint8_Kind:
-      out.boolean_value = left.uint8_value == right.uint8_value;
+      out.untyped_boolean_value = left.uint8_value == right.uint8_value;
       break;
     case Uint16_Kind:
-      out.boolean_value = left.uint16_value == right.uint16_value;
+      out.untyped_boolean_value = left.uint16_value == right.uint16_value;
       break;
     case Uint32_Kind:
-      out.boolean_value = left.uint32_value == right.uint32_value;
+      out.untyped_boolean_value = left.uint32_value == right.uint32_value;
       break;
     case Uint64_Kind:
-      out.boolean_value = left.uint64_value == right.uint64_value;
+      out.untyped_boolean_value = left.uint64_value == right.uint64_value;
       break;
     case Int8_Kind:
-      out.boolean_value = left.int8_value == right.int8_value;
+      out.untyped_boolean_value = left.int8_value == right.int8_value;
       break;
     case Int16_Kind:
-      out.boolean_value = left.int16_value == right.int16_value;
+      out.untyped_boolean_value = left.int16_value == right.int16_value;
       break;
     case Int32_Kind:
-      out.boolean_value = left.int32_value == right.int32_value;
+      out.untyped_boolean_value = left.int32_value == right.int32_value;
       break;
     case Int64_Kind:
-      out.boolean_value = left.int64_value == right.int64_value;
+      out.untyped_boolean_value = left.int64_value == right.int64_value;
       break;
     case Float32_Kind:
-      out.boolean_value = left.float32_value == right.float32_value;
+      out.untyped_boolean_value = left.float32_value == right.float32_value;
       break;
     case Float64_Kind:
-      out.boolean_value = left.float64_value == right.float64_value;
+      out.untyped_boolean_value = left.float64_value == right.float64_value;
       break;
     case Complex64_Kind:
-      out.boolean_value = left.complex64_value == right.complex64_value;
+      out.untyped_boolean_value = left.complex64_value == right.complex64_value;
       break;
     case Complex128_Kind:
-      out.boolean_value = left.complex128_value == right.complex128_value;
+      out.untyped_boolean_value = left.complex128_value == right.complex128_value;
       break;
     case Uint_Kind:
-      out.boolean_value = left.uint_value == right.uint_value;
+      out.untyped_boolean_value = left.uint_value == right.uint_value;
       break;
     case Int_Kind:
-      out.boolean_value = left.int_value == right.int_value;
+      out.untyped_boolean_value = left.int_value == right.int_value;
       break;
     case Uintptr_Kind:
-      out.boolean_value = left.uintptr_value == right.uintptr_value;
+      out.untyped_boolean_value = left.uintptr_value == right.uintptr_value;
       break;
     case String_Kind:
-      out.boolean_value = left.stringu_value == right.stringu_value;
+      out.untyped_boolean_value = left.string_value == right.string_value;
       break;
     case Pointer_Kind:
-      out.boolean_value = left.pointer_value == right.pointer_value;
+      out.untyped_boolean_value = left.pointer_value == right.pointer_value;
       break;
     default:
       TYPE_NOT_REACHED (*type);
@@ -614,79 +679,79 @@ void not_equal (Value& out, const type::Type* type, const Value& left, const Val
   switch (type->underlying_kind ())
     {
     case Untyped_Nil_Kind:
-      out.boolean_value = false;
+      out.untyped_boolean_value = false;
       break;
     case Untyped_Boolean_Kind:
-      out.boolean_value = left.boolean_value != right.boolean_value;
+      out.untyped_boolean_value = left.untyped_boolean_value != right.untyped_boolean_value;
       break;
     case Untyped_Rune_Kind:
-      out.boolean_value = left.rune_value != right.rune_value;
+      out.untyped_boolean_value = left.untyped_rune_value != right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.boolean_value = left.integer_value != right.integer_value;
+      out.untyped_boolean_value = left.untyped_integer_value != right.untyped_integer_value;
       break;
     case Untyped_Float_Kind:
-      out.boolean_value = left.float_value != right.float_value;
+      out.untyped_boolean_value = left.untyped_float_value != right.untyped_float_value;
       break;
     case Untyped_Complex_Kind:
-      out.boolean_value = left.complex_value != right.complex_value;
+      out.untyped_boolean_value = left.untyped_complex_value != right.untyped_complex_value;
       break;
     case Untyped_String_Kind:
-      out.boolean_value = left.string_value != right.string_value;
+      out.untyped_boolean_value = left.untyped_string_value != right.untyped_string_value;
       break;
     case Bool_Kind:
-      out.boolean_value = left.bool_value != right.bool_value;
+      out.untyped_boolean_value = left.bool_value != right.bool_value;
       break;
     case Uint8_Kind:
-      out.boolean_value = left.uint8_value != right.uint8_value;
+      out.untyped_boolean_value = left.uint8_value != right.uint8_value;
       break;
     case Uint16_Kind:
-      out.boolean_value = left.uint16_value != right.uint16_value;
+      out.untyped_boolean_value = left.uint16_value != right.uint16_value;
       break;
     case Uint32_Kind:
-      out.boolean_value = left.uint32_value != right.uint32_value;
+      out.untyped_boolean_value = left.uint32_value != right.uint32_value;
       break;
     case Uint64_Kind:
-      out.boolean_value = left.uint64_value != right.uint64_value;
+      out.untyped_boolean_value = left.uint64_value != right.uint64_value;
       break;
     case Int8_Kind:
-      out.boolean_value = left.int8_value != right.int8_value;
+      out.untyped_boolean_value = left.int8_value != right.int8_value;
       break;
     case Int16_Kind:
-      out.boolean_value = left.int16_value != right.int16_value;
+      out.untyped_boolean_value = left.int16_value != right.int16_value;
       break;
     case Int32_Kind:
-      out.boolean_value = left.int32_value != right.int32_value;
+      out.untyped_boolean_value = left.int32_value != right.int32_value;
       break;
     case Int64_Kind:
-      out.boolean_value = left.int64_value != right.int64_value;
+      out.untyped_boolean_value = left.int64_value != right.int64_value;
       break;
     case Float32_Kind:
-      out.boolean_value = left.float32_value != right.float32_value;
+      out.untyped_boolean_value = left.float32_value != right.float32_value;
       break;
     case Float64_Kind:
-      out.boolean_value = left.float64_value != right.float64_value;
+      out.untyped_boolean_value = left.float64_value != right.float64_value;
       break;
     case Complex64_Kind:
-      out.boolean_value = left.complex64_value != right.complex64_value;
+      out.untyped_boolean_value = left.complex64_value != right.complex64_value;
       break;
     case Complex128_Kind:
-      out.boolean_value = left.complex128_value != right.complex128_value;
+      out.untyped_boolean_value = left.complex128_value != right.complex128_value;
       break;
     case Uint_Kind:
-      out.boolean_value = left.uint_value != right.uint_value;
+      out.untyped_boolean_value = left.uint_value != right.uint_value;
       break;
     case Int_Kind:
-      out.boolean_value = left.int_value != right.int_value;
+      out.untyped_boolean_value = left.int_value != right.int_value;
       break;
     case Uintptr_Kind:
-      out.boolean_value = left.uintptr_value != right.uintptr_value;
+      out.untyped_boolean_value = left.uintptr_value != right.uintptr_value;
       break;
     case String_Kind:
-      out.boolean_value = left.stringu_value != right.stringu_value;
+      out.untyped_boolean_value = left.string_value != right.string_value;
       break;
     case Pointer_Kind:
-      out.boolean_value = left.pointer_value != right.pointer_value;
+      out.untyped_boolean_value = left.pointer_value != right.pointer_value;
       break;
     default:
       TYPE_NOT_REACHED (*type);
@@ -699,58 +764,58 @@ void less_than (Value& out, const type::Type* type, const Value& left, const Val
   switch (type->underlying_kind ())
     {
     case Untyped_Rune_Kind:
-      out.boolean_value = left.rune_value < right.rune_value;
+      out.untyped_boolean_value = left.untyped_rune_value < right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.boolean_value = left.integer_value < right.integer_value;
+      out.untyped_boolean_value = left.untyped_integer_value < right.untyped_integer_value;
       break;
     case Untyped_Float_Kind:
-      out.boolean_value = left.float_value < right.float_value;
+      out.untyped_boolean_value = left.untyped_float_value < right.untyped_float_value;
       break;
     case Untyped_String_Kind:
-      out.boolean_value = left.string_value < right.string_value;
+      out.untyped_boolean_value = left.untyped_string_value < right.untyped_string_value;
       break;
     case Uint8_Kind:
-      out.boolean_value = left.uint8_value < right.uint8_value;
+      out.untyped_boolean_value = left.uint8_value < right.uint8_value;
       break;
     case Uint16_Kind:
-      out.boolean_value = left.uint16_value < right.uint16_value;
+      out.untyped_boolean_value = left.uint16_value < right.uint16_value;
       break;
     case Uint32_Kind:
-      out.boolean_value = left.uint32_value < right.uint32_value;
+      out.untyped_boolean_value = left.uint32_value < right.uint32_value;
       break;
     case Uint64_Kind:
-      out.boolean_value = left.uint64_value < right.uint64_value;
+      out.untyped_boolean_value = left.uint64_value < right.uint64_value;
       break;
     case Int8_Kind:
-      out.boolean_value = left.int8_value < right.int8_value;
+      out.untyped_boolean_value = left.int8_value < right.int8_value;
       break;
     case Int16_Kind:
-      out.boolean_value = left.int16_value < right.int16_value;
+      out.untyped_boolean_value = left.int16_value < right.int16_value;
       break;
     case Int32_Kind:
-      out.boolean_value = left.int32_value < right.int32_value;
+      out.untyped_boolean_value = left.int32_value < right.int32_value;
       break;
     case Int64_Kind:
-      out.boolean_value = left.int64_value < right.int64_value;
+      out.untyped_boolean_value = left.int64_value < right.int64_value;
       break;
     case Float32_Kind:
-      out.boolean_value = left.float32_value < right.float32_value;
+      out.untyped_boolean_value = left.float32_value < right.float32_value;
       break;
     case Float64_Kind:
-      out.boolean_value = left.float64_value < right.float64_value;
+      out.untyped_boolean_value = left.float64_value < right.float64_value;
       break;
     case Uint_Kind:
-      out.boolean_value = left.uint_value < right.uint_value;
+      out.untyped_boolean_value = left.uint_value < right.uint_value;
       break;
     case Int_Kind:
-      out.boolean_value = left.int_value < right.int_value;
+      out.untyped_boolean_value = left.int_value < right.int_value;
       break;
     case Uintptr_Kind:
-      out.boolean_value = left.uintptr_value < right.uintptr_value;
+      out.untyped_boolean_value = left.uintptr_value < right.uintptr_value;
       break;
     case String_Kind:
-      out.boolean_value = left.stringu_value < right.stringu_value;
+      out.untyped_boolean_value = left.string_value < right.string_value;
       break;
     default:
       TYPE_NOT_REACHED (*type);
@@ -763,58 +828,58 @@ void less_equal (Value& out, const type::Type* type, const Value& left, const Va
   switch (type->underlying_kind ())
     {
     case Untyped_Rune_Kind:
-      out.boolean_value = left.rune_value <= right.rune_value;
+      out.untyped_boolean_value = left.untyped_rune_value <= right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.boolean_value = left.integer_value <= right.integer_value;
+      out.untyped_boolean_value = left.untyped_integer_value <= right.untyped_integer_value;
       break;
     case Untyped_Float_Kind:
-      out.boolean_value = left.float_value <= right.float_value;
+      out.untyped_boolean_value = left.untyped_float_value <= right.untyped_float_value;
       break;
     case Untyped_String_Kind:
-      out.boolean_value = left.string_value <= right.string_value;
+      out.untyped_boolean_value = left.untyped_string_value <= right.untyped_string_value;
       break;
     case Uint8_Kind:
-      out.boolean_value = left.uint8_value <= right.uint8_value;
+      out.untyped_boolean_value = left.uint8_value <= right.uint8_value;
       break;
     case Uint16_Kind:
-      out.boolean_value = left.uint16_value <= right.uint16_value;
+      out.untyped_boolean_value = left.uint16_value <= right.uint16_value;
       break;
     case Uint32_Kind:
-      out.boolean_value = left.uint32_value <= right.uint32_value;
+      out.untyped_boolean_value = left.uint32_value <= right.uint32_value;
       break;
     case Uint64_Kind:
-      out.boolean_value = left.uint64_value <= right.uint64_value;
+      out.untyped_boolean_value = left.uint64_value <= right.uint64_value;
       break;
     case Int8_Kind:
-      out.boolean_value = left.int8_value <= right.int8_value;
+      out.untyped_boolean_value = left.int8_value <= right.int8_value;
       break;
     case Int16_Kind:
-      out.boolean_value = left.int16_value <= right.int16_value;
+      out.untyped_boolean_value = left.int16_value <= right.int16_value;
       break;
     case Int32_Kind:
-      out.boolean_value = left.int32_value <= right.int32_value;
+      out.untyped_boolean_value = left.int32_value <= right.int32_value;
       break;
     case Int64_Kind:
-      out.boolean_value = left.int64_value <= right.int64_value;
+      out.untyped_boolean_value = left.int64_value <= right.int64_value;
       break;
     case Float32_Kind:
-      out.boolean_value = left.float32_value <= right.float32_value;
+      out.untyped_boolean_value = left.float32_value <= right.float32_value;
       break;
     case Float64_Kind:
-      out.boolean_value = left.float64_value <= right.float64_value;
+      out.untyped_boolean_value = left.float64_value <= right.float64_value;
       break;
     case Uint_Kind:
-      out.boolean_value = left.uint_value <= right.uint_value;
+      out.untyped_boolean_value = left.uint_value <= right.uint_value;
       break;
     case Int_Kind:
-      out.boolean_value = left.int_value <= right.int_value;
+      out.untyped_boolean_value = left.int_value <= right.int_value;
       break;
     case Uintptr_Kind:
-      out.boolean_value = left.uintptr_value <= right.uintptr_value;
+      out.untyped_boolean_value = left.uintptr_value <= right.uintptr_value;
       break;
     case String_Kind:
-      out.boolean_value = left.stringu_value <= right.stringu_value;
+      out.untyped_boolean_value = left.string_value <= right.string_value;
       break;
     default:
       TYPE_NOT_REACHED (*type);
@@ -827,58 +892,58 @@ void more_than (Value& out, const type::Type* type, const Value& left, const Val
   switch (type->underlying_kind ())
     {
     case Untyped_Rune_Kind:
-      out.boolean_value = left.rune_value > right.rune_value;
+      out.untyped_boolean_value = left.untyped_rune_value > right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.boolean_value = left.integer_value > right.integer_value;
+      out.untyped_boolean_value = left.untyped_integer_value > right.untyped_integer_value;
       break;
     case Untyped_Float_Kind:
-      out.boolean_value = left.float_value > right.float_value;
+      out.untyped_boolean_value = left.untyped_float_value > right.untyped_float_value;
       break;
     case Untyped_String_Kind:
-      out.boolean_value = left.string_value > right.string_value;
+      out.untyped_boolean_value = left.untyped_string_value > right.untyped_string_value;
       break;
     case Uint8_Kind:
-      out.boolean_value = left.uint8_value > right.uint8_value;
+      out.untyped_boolean_value = left.uint8_value > right.uint8_value;
       break;
     case Uint16_Kind:
-      out.boolean_value = left.uint16_value > right.uint16_value;
+      out.untyped_boolean_value = left.uint16_value > right.uint16_value;
       break;
     case Uint32_Kind:
-      out.boolean_value = left.uint32_value > right.uint32_value;
+      out.untyped_boolean_value = left.uint32_value > right.uint32_value;
       break;
     case Uint64_Kind:
-      out.boolean_value = left.uint64_value > right.uint64_value;
+      out.untyped_boolean_value = left.uint64_value > right.uint64_value;
       break;
     case Int8_Kind:
-      out.boolean_value = left.int8_value > right.int8_value;
+      out.untyped_boolean_value = left.int8_value > right.int8_value;
       break;
     case Int16_Kind:
-      out.boolean_value = left.int16_value > right.int16_value;
+      out.untyped_boolean_value = left.int16_value > right.int16_value;
       break;
     case Int32_Kind:
-      out.boolean_value = left.int32_value > right.int32_value;
+      out.untyped_boolean_value = left.int32_value > right.int32_value;
       break;
     case Int64_Kind:
-      out.boolean_value = left.int64_value > right.int64_value;
+      out.untyped_boolean_value = left.int64_value > right.int64_value;
       break;
     case Float32_Kind:
-      out.boolean_value = left.float32_value > right.float32_value;
+      out.untyped_boolean_value = left.float32_value > right.float32_value;
       break;
     case Float64_Kind:
-      out.boolean_value = left.float64_value > right.float64_value;
+      out.untyped_boolean_value = left.float64_value > right.float64_value;
       break;
     case Uint_Kind:
-      out.boolean_value = left.uint_value > right.uint_value;
+      out.untyped_boolean_value = left.uint_value > right.uint_value;
       break;
     case Int_Kind:
-      out.boolean_value = left.int_value > right.int_value;
+      out.untyped_boolean_value = left.int_value > right.int_value;
       break;
     case Uintptr_Kind:
-      out.boolean_value = left.uintptr_value > right.uintptr_value;
+      out.untyped_boolean_value = left.uintptr_value > right.uintptr_value;
       break;
     case String_Kind:
-      out.boolean_value = left.stringu_value > right.stringu_value;
+      out.untyped_boolean_value = left.string_value > right.string_value;
       break;
     default:
       TYPE_NOT_REACHED (*type);
@@ -891,58 +956,58 @@ void more_equal (Value& out, const type::Type* type, const Value& left, const Va
   switch (type->underlying_kind ())
     {
     case Untyped_Rune_Kind:
-      out.boolean_value = left.rune_value >= right.rune_value;
+      out.untyped_boolean_value = left.untyped_rune_value >= right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.boolean_value = left.integer_value >= right.integer_value;
+      out.untyped_boolean_value = left.untyped_integer_value >= right.untyped_integer_value;
       break;
     case Untyped_Float_Kind:
-      out.boolean_value = left.float_value >= right.float_value;
+      out.untyped_boolean_value = left.untyped_float_value >= right.untyped_float_value;
       break;
     case Untyped_String_Kind:
-      out.boolean_value = left.string_value >= right.string_value;
+      out.untyped_boolean_value = left.untyped_string_value >= right.untyped_string_value;
       break;
     case Uint8_Kind:
-      out.boolean_value = left.uint8_value >= right.uint8_value;
+      out.untyped_boolean_value = left.uint8_value >= right.uint8_value;
       break;
     case Uint16_Kind:
-      out.boolean_value = left.uint16_value >= right.uint16_value;
+      out.untyped_boolean_value = left.uint16_value >= right.uint16_value;
       break;
     case Uint32_Kind:
-      out.boolean_value = left.uint32_value >= right.uint32_value;
+      out.untyped_boolean_value = left.uint32_value >= right.uint32_value;
       break;
     case Uint64_Kind:
-      out.boolean_value = left.uint64_value >= right.uint64_value;
+      out.untyped_boolean_value = left.uint64_value >= right.uint64_value;
       break;
     case Int8_Kind:
-      out.boolean_value = left.int8_value >= right.int8_value;
+      out.untyped_boolean_value = left.int8_value >= right.int8_value;
       break;
     case Int16_Kind:
-      out.boolean_value = left.int16_value >= right.int16_value;
+      out.untyped_boolean_value = left.int16_value >= right.int16_value;
       break;
     case Int32_Kind:
-      out.boolean_value = left.int32_value >= right.int32_value;
+      out.untyped_boolean_value = left.int32_value >= right.int32_value;
       break;
     case Int64_Kind:
-      out.boolean_value = left.int64_value >= right.int64_value;
+      out.untyped_boolean_value = left.int64_value >= right.int64_value;
       break;
     case Float32_Kind:
-      out.boolean_value = left.float32_value >= right.float32_value;
+      out.untyped_boolean_value = left.float32_value >= right.float32_value;
       break;
     case Float64_Kind:
-      out.boolean_value = left.float64_value >= right.float64_value;
+      out.untyped_boolean_value = left.float64_value >= right.float64_value;
       break;
     case Uint_Kind:
-      out.boolean_value = left.uint_value >= right.uint_value;
+      out.untyped_boolean_value = left.uint_value >= right.uint_value;
       break;
     case Int_Kind:
-      out.boolean_value = left.int_value >= right.int_value;
+      out.untyped_boolean_value = left.int_value >= right.int_value;
       break;
     case Uintptr_Kind:
-      out.boolean_value = left.uintptr_value >= right.uintptr_value;
+      out.untyped_boolean_value = left.uintptr_value >= right.uintptr_value;
       break;
     case String_Kind:
-      out.boolean_value = left.stringu_value >= right.stringu_value;
+      out.untyped_boolean_value = left.string_value >= right.string_value;
       break;
     default:
       TYPE_NOT_REACHED (*type);
@@ -955,16 +1020,16 @@ void multiply (Value& out, const type::Type* type, const Value& left, const Valu
   switch (type->underlying_kind ())
     {
     case Untyped_Rune_Kind:
-      out.rune_value = left.rune_value * right.rune_value;
+      out.untyped_rune_value = left.untyped_rune_value * right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.integer_value = left.integer_value * right.integer_value;
+      out.untyped_integer_value = left.untyped_integer_value * right.untyped_integer_value;
       break;
     case Untyped_Float_Kind:
-      out.float_value = left.float_value * right.float_value;
+      out.untyped_float_value = left.untyped_float_value * right.untyped_float_value;
       break;
     case Untyped_Complex_Kind:
-      out.complex_value = left.complex_value * right.complex_value;
+      out.untyped_complex_value = left.untyped_complex_value * right.untyped_complex_value;
       break;
     case Uint8_Kind:
       out.uint8_value = left.uint8_value * right.uint8_value;
@@ -1022,16 +1087,16 @@ void divide (Value& out, const type::Type* type, const Value& left, const Value&
   switch (type->underlying_kind ())
     {
     case Untyped_Rune_Kind:
-      out.rune_value = left.rune_value / right.rune_value;
+      out.untyped_rune_value = left.untyped_rune_value / right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.integer_value = left.integer_value / right.integer_value;
+      out.untyped_integer_value = left.untyped_integer_value / right.untyped_integer_value;
       break;
     case Untyped_Float_Kind:
-      out.float_value = left.float_value / right.float_value;
+      out.untyped_float_value = left.untyped_float_value / right.untyped_float_value;
       break;
     case Untyped_Complex_Kind:
-      out.complex_value = left.complex_value / right.complex_value;
+      out.untyped_complex_value = left.untyped_complex_value / right.untyped_complex_value;
       break;
     case Uint8_Kind:
       out.uint8_value = left.uint8_value / right.uint8_value;
@@ -1089,10 +1154,10 @@ void modulus (Value& out, const type::Type* type, const Value& left, const Value
   switch (type->underlying_kind ())
     {
     case Untyped_Rune_Kind:
-      out.rune_value = left.rune_value % right.rune_value;
+      out.untyped_rune_value = left.untyped_rune_value % right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.integer_value = left.integer_value % right.integer_value;
+      out.untyped_integer_value = left.untyped_integer_value % right.untyped_integer_value;
       break;
     case Uint8_Kind:
       out.uint8_value = left.uint8_value % right.uint8_value;
@@ -1138,16 +1203,16 @@ void add (Value& out, const type::Type* type, const Value& left, const Value& ri
   switch (type->underlying_kind ())
     {
     case Untyped_Rune_Kind:
-      out.rune_value = left.rune_value + right.rune_value;
+      out.untyped_rune_value = left.untyped_rune_value + right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.integer_value = left.integer_value + right.integer_value;
+      out.untyped_integer_value = left.untyped_integer_value + right.untyped_integer_value;
       break;
     case Untyped_Float_Kind:
-      out.float_value = left.float_value + right.float_value;
+      out.untyped_float_value = left.untyped_float_value + right.untyped_float_value;
       break;
     case Untyped_Complex_Kind:
-      out.complex_value = left.complex_value + right.complex_value;
+      out.untyped_complex_value = left.untyped_complex_value + right.untyped_complex_value;
       break;
     case Uint8_Kind:
       out.uint8_value = left.uint8_value + right.uint8_value;
@@ -1205,16 +1270,16 @@ void subtract (Value& out, const type::Type* type, const Value& left, const Valu
   switch (type->underlying_kind ())
     {
     case Untyped_Rune_Kind:
-      out.rune_value = left.rune_value - right.rune_value;
+      out.untyped_rune_value = left.untyped_rune_value - right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.integer_value = left.integer_value - right.integer_value;
+      out.untyped_integer_value = left.untyped_integer_value - right.untyped_integer_value;
       break;
     case Untyped_Float_Kind:
-      out.float_value = left.float_value - right.float_value;
+      out.untyped_float_value = left.untyped_float_value - right.untyped_float_value;
       break;
     case Untyped_Complex_Kind:
-      out.complex_value = left.complex_value - right.complex_value;
+      out.untyped_complex_value = left.untyped_complex_value - right.untyped_complex_value;
       break;
     case Uint8_Kind:
       out.uint8_value = left.uint8_value - right.uint8_value;
@@ -1272,10 +1337,10 @@ void bit_and (Value& out, const type::Type* type, const Value& left, const Value
   switch (type->underlying_kind ())
     {
     case Untyped_Rune_Kind:
-      out.rune_value = left.rune_value & right.rune_value;
+      out.untyped_rune_value = left.untyped_rune_value & right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.integer_value = left.integer_value & right.integer_value;
+      out.untyped_integer_value = left.untyped_integer_value & right.untyped_integer_value;
       break;
     case Uint8_Kind:
       out.uint8_value = left.uint8_value & right.uint8_value;
@@ -1321,10 +1386,10 @@ void bit_and_not (Value& out, const type::Type* type, const Value& left, const V
   switch (type->underlying_kind ())
     {
     case Untyped_Rune_Kind:
-      out.rune_value = left.rune_value & ~right.rune_value;
+      out.untyped_rune_value = left.untyped_rune_value & ~right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.integer_value = left.integer_value & ~right.integer_value;
+      out.untyped_integer_value = left.untyped_integer_value & ~right.untyped_integer_value;
       break;
     case Uint8_Kind:
       out.uint8_value = left.uint8_value & ~right.uint8_value;
@@ -1370,10 +1435,10 @@ void bit_xor (Value& out, const type::Type* type, const Value& left, const Value
   switch (type->underlying_kind ())
     {
     case Untyped_Rune_Kind:
-      out.rune_value = left.rune_value ^ right.rune_value;
+      out.untyped_rune_value = left.untyped_rune_value ^ right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.integer_value = left.integer_value ^ right.integer_value;
+      out.untyped_integer_value = left.untyped_integer_value ^ right.untyped_integer_value;
       break;
     case Uint8_Kind:
       out.uint8_value = left.uint8_value ^ right.uint8_value;
@@ -1419,10 +1484,10 @@ void bit_or (Value& out, const type::Type* type, const Value& left, const Value&
   switch (type->underlying_kind ())
     {
     case Untyped_Rune_Kind:
-      out.rune_value = left.rune_value | right.rune_value;
+      out.untyped_rune_value = left.untyped_rune_value | right.untyped_rune_value;
       break;
     case Untyped_Integer_Kind:
-      out.integer_value = left.integer_value | right.integer_value;
+      out.untyped_integer_value = left.untyped_integer_value | right.untyped_integer_value;
       break;
     case Uint8_Kind:
       out.uint8_value = left.uint8_value | right.uint8_value;
@@ -1600,19 +1665,19 @@ std::ostream& operator<< (std::ostream& out, const ValuePrinter& vp)
 
       //   void visit (const UntypedBoolean& type)
       //   {
-      //     out << " value=" << tv.boolean_value;
+      //     out << " value=" << tv.untyped_boolean_value;
       //   }
       //   void visit (const UntypedInteger& type)
       //   {
-      //     out << " value=" << tv.integer_value;
+      //     out << " value=" << tv.untyped_integer_value;
       //   }
       //   void visit (const UntypedFloat& type)
       //   {
-      //     out << " value=" << tv.float_value;
+      //     out << " value=" << tv.untyped_float_value;
       //   }
       //   void visit (const UntypedString& type)
       //   {
-      //     const UntypedString::ValueType& s = tv.string_value;
+      //     const UntypedString::ValueType& s = tv.untyped_string_value;
       //     out << " value={" << s.ptr << ',' << s.length << '}';
       //   }
       //   void visit (const type::PolymorphicFunction& type)

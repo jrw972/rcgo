@@ -14,7 +14,7 @@ enum ErrorCode
   Func_Expects_Arg = 2,
   Cannot_Be_Applied = 3,
   Undefined = 4,
-  Hidden = 5,
+  Hidden_Symbol = 5,
   Requires_Value_Or_Variable = 6,
   Requires_Type = 7,
   Leaks_Pointers = 8,
@@ -45,8 +45,8 @@ struct ErrorReporter
                                const type::Type* right);
   ErrorCode undefined (const Location& loc,
                        const std::string& id);
-  ErrorCode hidden (const Location& loc,
-                    const std::string& id);
+  ErrorCode hidden_symbol (const Location& loc,
+                           const std::string& id);
   ErrorCode requires_value_or_variable (const Location& loc);
   ErrorCode requires_type (const Location& loc);
   ErrorCode leaks_pointers (const Location& loc);

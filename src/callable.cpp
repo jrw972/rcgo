@@ -1,112 +1,156 @@
 #include "callable.hpp"
-#include "executor_base.hpp"
+
+
 #include "node.hpp"
-#include "runtime.hpp"
 #include "symbol_visitor.hpp"
 #include "check_types.hpp"
 #include "compute_receiver_access.hpp"
-#include "parameter_list.hpp"
+#include "operation.hpp"
 
 namespace decl
 {
 
 using namespace ast;
 
+Callable::~Callable () { }
+
+FunctionBase::FunctionBase (const std::string& id,
+                            const util::Location& loc,
+                            const type::Function* a_type)
+  : Symbol (id, loc)
+  , type (a_type)
+{ }
+
+const type::Type* FunctionBase::callable_type () const
+{
+  return type;
+}
+const decl::ParameterList* FunctionBase::parameter_list () const
+{
+  return type->parameter_list;
+}
+const decl::ParameterList* FunctionBase::return_parameter_list () const
+{
+  return type->return_parameter_list;
+}
+
 void
-Callable::check_types (ast::List* args) const
+FunctionBase::accept (SymbolVisitor& visitor)
+{
+  visitor.visit (*this);
+}
+
+void
+FunctionBase::accept (ConstSymbolVisitor& visitor) const
+{
+  visitor.visit (*this);
+}
+
+void
+FunctionBase::check (ast::List* args) const
 {
   semantic::check_types_arguments (args, parameter_list ());
-}
-
-void
-Callable::check_references (ast::List* args) const
-{
   semantic::require_value_or_variable_list (args);
-}
-
-void
-Callable::check_mutability (ast::List* args) const
-{
   semantic::check_mutability_arguments (args, parameter_list ());
 }
 
 void
-Callable::compute_receiver_access (const semantic::ExpressionValueList& args, ReceiverAccess& receiver_access, bool& flag) const
+FunctionBase::compute_receiver_access (const semantic::ExpressionValueList& args, ReceiverAccess& receiver_access, bool& flag) const
 {
   semantic::compute_receiver_access_arguments (args, parameter_list (), receiver_access, flag);
 }
 
-Function::Function (ast::Function* node_, const type::Function* a_type)
-  : Symbol (node_->identifier->identifier, node_->identifier->location)
-  , node (node_)
-  , type (a_type)
+Function::Function (const std::string& name,
+                    const util::Location& location,
+                    const type::Function* type)
+  : FunctionBase (name, location, type)
+  , operation (NULL)
 { }
-
-void
-Function::accept (SymbolVisitor& visitor)
-{
-  visitor.visit (*this);
-}
-
-void
-Function::accept (ConstSymbolVisitor& visitor) const
-{
-  visitor.visit (*this);
-}
 
 void Function::call (runtime::ExecutorBase& exec) const
 {
-  this->node->body->operation->execute (exec);
+  this->operation->execute (exec);
 }
 
-size_t Function::parameters_size_on_stack () const
+MethodBase::MethodBase (const std::string& a_name,
+                        const type::MethodBase* a_type)
+  : name (a_name)
+  , type (a_type)
+  , operation (NULL)
+{ }
+
+const decl::ParameterList* MethodBase::parameter_list () const
 {
-  return type->parameter_list->size_on_stack ();
+  return type->function_type->parameter_list;
+}
+const decl::ParameterList* MethodBase::return_parameter_list () const
+{
+  return type->function_type->return_parameter_list;
+}
+const type::Type* MethodBase::callable_type () const
+{
+  return type;
 }
 
-void Method::call (runtime::ExecutorBase& exec) const
+void
+MethodBase::check (ast::List* args) const
 {
-  this->node->body->operation->execute (exec);
+  semantic::check_types_arguments (args, type->parameter_list);
+  semantic::require_value_or_variable_list (args);
+  semantic::check_mutability_arguments (args, type->parameter_list);
 }
 
-size_t Method::parameters_size_on_stack () const
+void
+MethodBase::compute_receiver_access (const semantic::ExpressionValueList& args, ReceiverAccess& receiver_access, bool& flag) const
 {
-  return methodType->parameter_list->size_on_stack ();
+  semantic::compute_receiver_access_arguments (args, type->parameter_list, receiver_access, flag);
 }
 
-const decl::ParameterList* Method::return_parameter_list () const
+void MethodBase::call (runtime::ExecutorBase& exec) const
 {
-  return methodType->return_parameter_list;
+  this->operation->execute (exec);
 }
 
-void Initializer::call (runtime::ExecutorBase& exec) const
-{
-  this->node->operation->execute (exec);
-}
+Method::Method (const std::string& name,
+                const type::Method* method_type)
+  : MethodBase (name, method_type)
+{ }
 
-size_t Initializer::parameters_size_on_stack () const
-{
-  return initializerType->parameter_list->size_on_stack ();
-}
+Initializer::Initializer (const std::string& name,
+                          const type::Initializer* initializer_type)
+  : MethodBase (name, initializer_type)
+{ }
 
-const decl::ParameterList* Initializer::return_parameter_list () const
-{
-  return initializerType->return_parameter_list;
-}
+Getter::Getter (ast::Getter* n,
+                const std::string& name,
+                const type::Getter* getter_type)
+  : MethodBase (name, getter_type)
+  , node (n)
+{ }
 
-void Getter::call (runtime::ExecutorBase& exec) const
-{
-  this->node->operation->execute (exec);
-}
+Reaction::Reaction (ast::Node* a_body,
+                    const std::string& a_name,
+                    const type::Reaction* a_reaction_type)
+  : MethodBase (a_name, a_reaction_type)
+  , body (a_body)
+  , iota (NULL)
+  , dimension (-1)
+{ }
 
-size_t Getter::parameters_size_on_stack () const
-{
-  return getterType->parameter_list->size_on_stack ();
-}
+Reaction::Reaction (ast::Node* a_body,
+                    const std::string& a_name,
+                    const type::Reaction* a_reaction_type,
+                    Symbol* a_iota,
+                    long a_dimension)
+  : MethodBase (a_name, a_reaction_type)
+  , body (a_body)
+  , iota (a_iota)
+  , dimension (a_dimension)
+{ }
 
-const decl::ParameterList* Getter::return_parameter_list () const
+bool Reaction::has_dimension () const
 {
-  return getterType->return_parameter_list;
+  return iota != NULL;
 }
 
 }

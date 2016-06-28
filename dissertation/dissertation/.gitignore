@@ -1,5 +1,9 @@
-paper.aux
+*.aux
 paper.dvi
 paper.log
 paper.pdf
+paper.lof
+paper.lot
+paper.out
+paper.toc
 paper-*.cpt

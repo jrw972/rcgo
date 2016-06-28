@@ -1,6 +1,9 @@
 #ifndef RC_UTEST_TAP_HPP
 #define RC_UTEST_TAP_HPP
 
+#include <string>
+#include <iostream>
+
 struct Tap
 {
   Tap () : test_number_ (0) { }

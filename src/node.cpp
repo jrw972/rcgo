@@ -2,6 +2,7 @@
 
 #include "node_visitor.hpp"
 #include "node_cast.hpp"
+#include "type.hpp"
 
 namespace ast
 {
@@ -847,7 +848,7 @@ void Binary::visit_children (NodeVisitor& visitor)
   right->accept (visitor);
 }
 
-BinaryArithmeticExpr::BinaryArithmeticExpr (unsigned int line, decl::Template* a_temp, Node* left, Node* right)
+BinaryArithmeticExpr::BinaryArithmeticExpr (unsigned int line, decl::PolymorphicFunction* a_temp, Node* left, Node* right)
   : Binary (line, left, right)
 {
   temp = a_temp;
@@ -946,7 +947,7 @@ EmptyExpr::EmptyExpr (unsigned int line)
   : Node (line)
 { }
 
-UnaryArithmeticExpr::UnaryArithmeticExpr (unsigned int line, decl::Template* a_temp, Node* child)
+UnaryArithmeticExpr::UnaryArithmeticExpr (unsigned int line, decl::PolymorphicFunction* a_temp, Node* child)
   : Unary (line, child)
 {
   temp = a_temp;

@@ -14,10 +14,11 @@
 #include "callable.hpp"
 #include "semantic.hpp"
 #include "evaluate_static.hpp"
-#include "reaction.hpp"
 #include "stack.hpp"
 #include "runtime.hpp"
 #include "parameter_list.hpp"
+#include "executor_base.hpp"
+#include "operation.hpp"
 
 namespace composition
 {
@@ -114,7 +115,7 @@ Node::Node (const std::string& n)
 
 Action::Action (Instance* i,
                 decl::Action* a,
-                type::Int::ValueType p)
+                long p)
   : Node (getname (i, a, p))
   , instance (i)
   , action (a)
@@ -159,7 +160,7 @@ Action::instance_set ()
 }
 
 std::string
-Action::getname (Instance* i, decl::Action* a, type::Int::ValueType p)
+Action::getname (Instance* i, decl::Action* a, long p)
 {
   std::stringstream str;
   str << i->name << '.' << a->name;
@@ -170,7 +171,7 @@ Action::getname (Instance* i, decl::Action* a, type::Int::ValueType p)
   return str.str ();
 }
 
-ReactionKey::ReactionKey (Instance* i, const decl::Reaction* a, type::Int::ValueType p)
+ReactionKey::ReactionKey (Instance* i, const decl::Reaction* a, long p)
   : instance (i)
   , reaction (a)
   , iota (p)
@@ -192,7 +193,7 @@ ReactionKey::operator< (const ReactionKey& other) const
 
 Reaction::Reaction (Instance* i,
                     decl::Reaction* a,
-                    type::Int::ValueType p)
+                    long p)
   : Node (getname (i, a, p))
   , instance (i)
   , reaction (a)
@@ -235,7 +236,7 @@ Reaction::instance_set ()
 }
 
 std::string
-Reaction::getname (Instance* i, decl::Reaction* a, type::Int::ValueType p)
+Reaction::getname (Instance* i, decl::Reaction* a, long p)
 {
   std::stringstream str;
   str << i->name << '.' << a->name;
@@ -535,10 +536,11 @@ Composer::elaborate_bindings ()
               assert (node.condition->eval.expression_kind != semantic::UnknownExpressionKind);
               if (node.condition->eval.expression_kind == semantic::VariableExpressionKind)
                 {
-                  void* ptr = exec.stack ().pop_pointer ();
-                  exec.stack ().load (ptr, node.condition->eval.type->size ());
+                  UNIMPLEMENTED;
+                  // void* ptr = exec.stack ().pop_pointer ();
+                  //exec.stack ().load (ptr, node.condition->eval.type->size ());
                 }
-              Bool::ValueType c;
+              bool c;
               exec.stack ().pop (c);
               if (c)
                 {
@@ -557,11 +559,11 @@ Composer::elaborate_bindings ()
 
             void visit (ForIotaStatement& node)
             {
-              for (Int::ValueType idx = 0, limit = node.limit;
+              for (long idx = 0, limit = node.limit;
                    idx != limit;
                    ++idx)
                 {
-                  Int::ValueType* i = static_cast<Int::ValueType*> (exec.stack ().get_address (node.symbol->offset ()));
+                  long* i = static_cast<long*> (exec.stack ().get_address (node.symbol->offset ()));
                   *i = idx;
                   node.body->accept (*this);
                 }
@@ -572,7 +574,7 @@ Composer::elaborate_bindings ()
               node.body->accept (*this);
             }
 
-            void bind (ast::Node* left, ast::Node* right, Int::ValueType param = 0)
+            void bind (ast::Node* left, ast::Node* right, long param = 0)
             {
               left->operation->execute (exec);
               void* port = exec.stack ().pop_pointer ();
@@ -581,8 +583,9 @@ Composer::elaborate_bindings ()
               void* reaction_component = exec.stack ().pop_pointer ();
               if (sb->eval.type->underlying_type ()->to_pointer ())
                 {
-                  exec.stack ().load (reaction_component, sb->eval.type->size ());
-                  reaction_component = exec.stack ().pop_pointer ();
+                  UNIMPLEMENTED;
+                  // exec.stack ().load (reaction_component, sb->eval.type->size ());
+                  // reaction_component = exec.stack ().pop_pointer ();
                 }
               const decl::Reaction* reaction = static_cast<const decl::Reaction*> (right->callable);
               PushPortsType::const_iterator pp_pos = table.push_ports_.find (reinterpret_cast<size_t> (port));
@@ -609,10 +612,11 @@ Composer::elaborate_bindings ()
               assert (node.param->eval.expression_kind != semantic::UnknownExpressionKind);
               if (node.param->eval.expression_kind == semantic::VariableExpressionKind)
                 {
-                  void* ptr = exec.stack ().pop_pointer ();
-                  exec.stack ().load (ptr, node.param->eval.type->size ());
+                  UNIMPLEMENTED;
+                  // void* ptr = exec.stack ().pop_pointer ();
+                  // exec.stack ().load (ptr, node.param->eval.type->size ());
                 }
-              Int::ValueType idx;
+              long idx;
               exec.stack ().pop (idx);
               bind (node.left, node.right, idx);
             }
@@ -717,7 +721,7 @@ Composer::enumerate_actions ()
           decl::Action* action = *pos;
           if (action->has_dimension ())
             {
-              for (type::Int::ValueType idx = 0; idx != action->dimension; ++idx)
+              for (long idx = 0; idx != action->dimension; ++idx)
                 {
                   instance->actions.push_back (new Action (instance, action, idx));
                 }
@@ -751,11 +755,11 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     , getter (NULL)
     , activation (NULL)
   {
-    exec.stack ().push_pointer (reinterpret_cast<void*> (action->instance->address));
     if (action->action->has_dimension ())
       {
         exec.stack ().push (action->iota);
       }
+    exec.stack ().push_pointer (reinterpret_cast<void*> (action->instance->address));
     exec.stack ().push_pointer (NULL);
     exec.stack ().setup (action->action->memory_model.locals_size_on_stack ());
   }
@@ -767,12 +771,12 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     , getter (NULL)
     , activation (NULL)
   {
-    exec.stack ().push_pointer (reinterpret_cast<void*> (reaction->instance->address));
     if (reaction->reaction->has_dimension ())
       {
         exec.stack ().push (reaction->iota);
       }
-    exec.stack ().reserve (reaction->reaction->parameter_list ()->size_on_stack ());
+    exec.stack ().push_pointer (reinterpret_cast<void*> (reaction->instance->address));
+    exec.stack ().reserve (arch::size_on_stack (reaction->reaction->parameter_list ()) - sizeof (void*));
     exec.stack ().push_pointer (NULL);
     exec.stack ().setup (reaction->reaction->memory_model.locals_size_on_stack ());
   }
@@ -785,8 +789,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     , activation (NULL)
   {
     exec.stack ().push_pointer (reinterpret_cast<void*> (getter->instance->address));
-    exec.stack ().reserve (getter->getter->parameter_list ()->size_on_stack ());
-    exec.stack ().push_pointer (NULL);
+    exec.stack ().reserve (arch::size_on_stack (getter->getter->parameter_list ()) - sizeof (void*));
     exec.stack ().setup (getter->getter->memory_model.locals_size_on_stack ());
   }
 
@@ -882,7 +885,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
 
   void visit (PushPortCallExpr& node)
   {
-    size_t port = activation->instance->address + node.field->offset;
+    size_t port = activation->instance->address + arch::offset (node.field);
     // Find what is bound to this port.
     Composer::PushPortsType::const_iterator port_pos = table.push_ports_.find (port);
     assert (port_pos != table.push_ports_.end ());
@@ -896,11 +899,12 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     assert (node.index->eval.expression_kind != semantic::UnknownExpressionKind);
     if (node.index->eval.expression_kind == semantic::VariableExpressionKind)
       {
-        void* ptr = exec.stack ().pop_pointer ();
-        exec.stack ().load (ptr, node.index->eval.type->size ());
+        UNIMPLEMENTED;
+        // void* ptr = exec.stack ().pop_pointer ();
+        // exec.stack ().load (ptr, node.index->eval.type->size ());
       }
 
-    Int::ValueType idx;
+    long idx;
     exec.stack ().pop (idx);
     if (idx < 0)
       {
@@ -913,13 +917,14 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
                        "port index is negative (E75)");
       }
 
-    size_t port = activation->instance->address + node.field->offset + idx * node.array_type->unit_size ();
+    UNIMPLEMENTED;
+    // size_t port = activation->instance->address + node.field->offset + idx * node.array_type->unit_size ();
 
-    // Find what is bound to this port.
-    Composer::PushPortsType::const_iterator port_pos = table.push_ports_.find (port);
-    assert (port_pos != table.push_ports_.end ());
-    activation->nodes.push_back (port_pos->second);
-    node.args->accept (*this);
+    // // Find what is bound to this port.
+    // Composer::PushPortsType::const_iterator port_pos = table.push_ports_.find (port);
+    // assert (port_pos != table.push_ports_.end ());
+    // activation->nodes.push_back (port_pos->second);
+    // node.args->accept (*this);
   }
 
   void visit (CallExpr& node)
@@ -938,7 +943,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
                 sb->eval.type->underlying_type ()->to_pointer ())
               {
                 void* ptr = exec.stack ().pop_pointer ();
-                exec.stack ().load (ptr, sb->eval.type->size ());
+                exec.stack ().load (ptr, arch::size (sb->eval.type));
               }
             size_t inst_addr = reinterpret_cast<size_t> (exec.stack ().pop_pointer ());
             InstancesType::const_iterator i_pos = table.instances_.find (inst_addr);
@@ -954,7 +959,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
         const type::PullPort* function = node.pull_port_type;
         if (function != NULL)
           {
-            size_t port = get_instance ()->address + node.field->offset;
+            size_t port = get_instance ()->address + arch::offset (node.field);
             Composer::PullPortsType::const_iterator port_pos = table.pull_ports_.find (port);
             assert (port_pos != table.pull_ports_.end ());
             addCall (port_pos->second);
@@ -1078,7 +1083,7 @@ Composer::enumerate_reactions ()
           decl::Reaction* reaction = *pos;
           if (reaction->has_dimension ())
             {
-              for (type::Int::ValueType idx = 0; idx != reaction->dimension; ++idx)
+              for (long idx = 0; idx != reaction->dimension; ++idx)
                 {
                   reactions_.insert (std::make_pair (ReactionKey (instance, reaction, idx), new Reaction (instance, reaction, idx)));
                 }
@@ -1299,7 +1304,7 @@ Composer::enumerate_instances (ast::Node * node)
       const NamedType *type = node.symbol->type;
       decl::Initializer* initializer = node.symbol->initializer;
       node.symbol->instance = instance_table.instantiate_contained_instances (type, NULL, initializer, address, node.location.line, &node, node.identifier->identifier);
-      address += type->size ();
+      address += arch::size (type);
     }
 
     void visit (SourceFile& node)
@@ -1344,7 +1349,7 @@ Composer::instantiate_contained_instances (const type::Type * type,
            ++pos)
         {
           // Recur changing address (and field).
-          instantiate_contained_instances ((*pos)->type, parent, NULL, address + (*pos)->offset, line, NULL, name + "." + (*pos)->name, NULL, *pos);
+          instantiate_contained_instances ((*pos)->type, parent, NULL, address + arch::offset (*pos), line, NULL, name + "." + (*pos)->name, NULL, *pos);
         }
 
       return parent;
@@ -1354,13 +1359,13 @@ Composer::instantiate_contained_instances (const type::Type * type,
     case Array_Kind:
     {
       const Array* a = type->to_array ();
-      for (Int::ValueType idx = 0; idx != a->dimension; ++idx)
+      for (long idx = 0; idx != a->dimension; ++idx)
         {
           // Recur changing address.
           std::stringstream newname;
           newname << name << '[' << idx << ']';
-
-          instantiate_contained_instances (a->base_type, parent, NULL, address + idx * a->unit_size (), line, NULL, newname.str (), NULL, field);
+          UNIMPLEMENTED;
+          //instantiate_contained_instances (a->base_type, parent, NULL, address + idx * a->unit_size (), line, NULL, newname.str (), NULL, field);
         }
     }
     break;

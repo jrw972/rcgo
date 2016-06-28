@@ -6,10 +6,10 @@
 #include "semantic.hpp"
 #include "symbol.hpp"
 #include "action.hpp"
-#include "reaction.hpp"
 #include "semantic.hpp"
 #include "bind.hpp"
 #include "parameter_list.hpp"
+#include "callable.hpp"
 
 namespace semantic
 {
@@ -43,7 +43,7 @@ namespace
 // }
 
 static NamedType*
-processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* identifierNode, ParameterSymbol*& receiver_symbol,
+processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* identifierNode, Parameter*& receiver_symbol,
                  bool requireComponent, bool requireImmutableDereferenceMutability)
 {
   Receiver* node = node_cast<Receiver> (n);
@@ -51,15 +51,13 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
 
   Identifier* type_identifier_node = node->type_identifier;
   const std::string& type_identifier = type_identifier_node->identifier;
-  TypeSymbol* symbol = processAndLookup<TypeSymbol> (symtab, type_identifier, type_identifier_node->location);
-  if (symbol == NULL)
+  NamedType* type = processAndLookup<NamedType> (symtab, type_identifier, type_identifier_node->location);
+  if (type == NULL)
     {
       error_at_line (-1, 0, type_identifier_node->location.file.c_str (), type_identifier_node->location.line,
                      "%s does not refer to a type (E57)",
                      type_identifier.c_str ());
     }
-
-  NamedType *type = symbol->type;
 
   if (requireComponent && type->underlying_type ()->kind () != Component_Kind)
     {
@@ -109,11 +107,11 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
     }
 
   receiver_symbol =
-    ParameterSymbol::makeReceiver (this_identifier_node->location,
-                                   this_identifier,
-                                   receiver_type,
-                                   node->mutability,
-                                   node->indirection_mutability);
+    Parameter::make_receiver (this_identifier_node->location,
+                              this_identifier,
+                              receiver_type,
+                              node->mutability,
+                              node->indirection_mutability);
 
   return type;
 }
@@ -132,13 +130,6 @@ process_signature_return (ErrorReporter& er,
 
   /* Process the return type. */
   return_parameter_list = process_parameter_list (return_parameter_list_node, er, symtab, true);
-
-  // const type::Type* return_type = process_type (returnType, er, symtab, true);
-
-  // returnSymbol = ParameterSymbol::makeReturn (returnType->location,
-  //                ReturnSymbol,
-  //                return_type,
-  //                dereferenceMutability);
 
   if (requireForeignSafe)
     {
@@ -184,14 +175,14 @@ struct Visitor : public ast::DefaultNodeVisitor
     process_signature_return (er, symtab, node.parameter_list, node.return_parameter_list, false,
                               parameter_list, return_parameter_list);
     const type::Function* function_type = new type::Function (parameter_list, return_parameter_list);
-    node.function = new decl::Function (&node, function_type);
+    node.function = new decl::Function (node.identifier->identifier, node.identifier->location, function_type);
 
     symtab.enter_symbol (node.function);
   }
 
   void visit (ast::Method& node)
   {
-    ParameterSymbol* thisSymbol;
+    Parameter* thisSymbol;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, thisSymbol, false, false);
 
     const decl::ParameterList* parameter_list;
@@ -203,7 +194,7 @@ struct Visitor : public ast::DefaultNodeVisitor
         thisSymbol,
         parameter_list,
         return_parameter_list);
-    decl::Method* method = new decl::Method (&node, node.identifier->identifier, method_type);
+    decl::Method* method = new decl::Method (node.identifier->identifier, method_type);
 
     type->insert_method (method);
     node.method = method;
@@ -211,7 +202,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (ast::Initializer& node)
   {
-    ParameterSymbol* thisSymbol;
+    Parameter* thisSymbol;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, thisSymbol, true, false);
 
     const decl::ParameterList* parameter_list;
@@ -225,7 +216,7 @@ struct Visitor : public ast::DefaultNodeVisitor
                              parameter_list,
                              return_parameter_list);
 
-    decl::Initializer* initializer = new decl::Initializer (&node, node.identifier->identifier, initializer_type);
+    decl::Initializer* initializer = new decl::Initializer (node.identifier->identifier, initializer_type);
 
     type->insert_initializer (initializer);
     node.initializer = initializer;
@@ -233,7 +224,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (ast::Action& node)
   {
-    ParameterSymbol* receiver_parameter;
+    Parameter* receiver_parameter;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, receiver_parameter, true, true);
     decl::Action *action = new decl::Action (receiver_parameter, node.precondition, node.body, node.identifier->identifier);
     type->insert_action (action);
@@ -243,10 +234,10 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (DimensionedAction& node)
   {
-    ParameterSymbol* receiver_parameter;
+    Parameter* receiver_parameter;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, receiver_parameter, true, true);
-    ParameterSymbol* iota_parameter = ParameterSymbol::make (node.dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
-    type::Int::ValueType dimension = process_array_dimension (node.dimension, er, symtab);
+    Parameter* iota_parameter = Parameter::make (node.dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
+    long dimension = process_array_dimension (node.dimension, er, symtab);
     decl::Action *action = new decl::Action (receiver_parameter, node.precondition, node.body, node.identifier->identifier, iota_parameter, dimension);
     type->insert_action (action);
     node.action = action;
@@ -255,7 +246,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (ast::Reaction& node)
   {
-    ParameterSymbol* thisSymbol;
+    Parameter* thisSymbol;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, thisSymbol, true, true);
 
     const decl::ParameterList* parameter_list;
@@ -276,7 +267,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (DimensionedReaction& node)
   {
-    ParameterSymbol* thisSymbol;
+    Parameter* thisSymbol;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, thisSymbol, true, true);
 
     const decl::ParameterList* parameter_list;
@@ -284,8 +275,8 @@ struct Visitor : public ast::DefaultNodeVisitor
     process_signature_return (er, symtab, node.parameter_list, node.return_parameter_list, true,
                               parameter_list, return_parameter_list);
 
-    ParameterSymbol* iotaSymbol = ParameterSymbol::make (node.dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
-    type::Int::ValueType dimension = process_array_dimension (node.dimension, er, symtab);
+    Parameter* iotaSymbol = Parameter::make (node.dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
+    long dimension = process_array_dimension (node.dimension, er, symtab);
 
     type::Reaction* reaction_type = new type::Reaction (type,
         thisSymbol,
@@ -300,7 +291,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (ast::Getter& node)
   {
-    ParameterSymbol* thisSymbol;
+    Parameter* thisSymbol;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, thisSymbol, true, true);
 
     const decl::ParameterList* parameter_list;
@@ -321,14 +312,14 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (ast::Bind& node)
   {
-    ParameterSymbol* thisSymbol;
+    Parameter* thisSymbol;
     NamedType* type = processReceiver (symtab, node.receiver, node.identifier, thisSymbol, true, false);
     decl::Bind* bind = new decl::Bind (&node, node.identifier->identifier, thisSymbol);
     type->insert_bind (bind);
     node.bind = bind;
   }
 
-  void visit (Instance& node)
+  void visit (ast::Instance& node)
   {
     const std::string& identifier = node.identifier->identifier;
     const std::string& initializer_identifier = node.initializer->identifier;
@@ -351,7 +342,7 @@ struct Visitor : public ast::DefaultNodeVisitor
                        initializer_identifier.c_str ());
       }
 
-    node.symbol = new InstanceSymbol (identifier, node.identifier->location, type, initializer);
+    node.symbol = new decl::Instance (identifier, node.identifier->location, type, initializer);
     symtab.enter_symbol (node.symbol);
   }
 

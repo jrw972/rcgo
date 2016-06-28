@@ -5,8 +5,8 @@
 
 #include <vector>
 
+#include "symbol.hpp"
 #include "util.hpp"
-#include "complex.hpp"
 
 #define TYPE_NOT_REACHED(type) do { std::cerr << '\n' << type << std::endl; NOT_REACHED; } while (0);
 #define STRING_RETURNER(name, string) struct name { const char* operator() () const { return string; } }
@@ -87,8 +87,6 @@ struct Type
   virtual void print (std::ostream& out = std::cout) const = 0;
   std::string to_error_string () const;
   // Allocation
-  virtual size_t alignment () const = 0;
-  virtual size_t size () const = 0;
   // Get the unnamed type for an untyped type
   virtual const Type* default_type () const;
   // Various predicates
@@ -162,22 +160,22 @@ std::ostream&
 operator<< (std::ostream& o, const Type& type);
 
 // A NamedType is created via type name ...
-struct NamedType : public Type
+struct NamedType : public Type, public decl::Symbol
 {
   typedef std::vector<decl::Getter*> GettersType;
   typedef std::vector<decl::Action*> ActionsType;
   typedef std::vector<decl::Reaction*> ReactionsType;
   typedef std::vector<decl::Bind*> BindsType;
 
-  NamedType (const std::string& name);
   NamedType (const std::string& name,
+             const util::Location& location);
+  NamedType (const std::string& name,
+             const util::Location& location,
              const Type* underlyingType);
 
   void print (std::ostream& out = std::cout) const;
   void underlying_type (const Type* u);
   const Type* underlying_type () const;
-  virtual size_t alignment () const;
-  virtual size_t size () const;
   virtual Kind kind () const;
   void insert_method (decl::Method* method);
   decl::Method* find_method (const std::string& identifier) const;
@@ -202,8 +200,11 @@ struct NamedType : public Type
   virtual decl::Callable* find_callable (const std::string& name) const;
   virtual const NamedType* to_named_type () const;
 
+  virtual void accept (decl::SymbolVisitor& visitor);
+  virtual void accept (decl::ConstSymbolVisitor& visitor) const;
+  virtual bool defined () const;
+
 private:
-  std::string const name_;
   const Type* underlyingType_;
   std::vector<decl::Method*> methods_;
   std::vector<decl::Initializer*> initializers_;
@@ -218,97 +219,83 @@ private:
 struct Void : public Type
 {
   void print (std::ostream& out = std::cout) const;
-  size_t alignment () const;
-  size_t size () const;
   virtual Kind kind () const;
   static const Void* instance ();
 private:
   Void ();
 };
 
-template <typename T, typename S, Kind k>
+template <typename S, Kind k>
 struct Scalar : public Type
 {
-  typedef T ValueType;
   void print (std::ostream& out = std::cout) const
   {
     out << S () ();
-  }
-  size_t alignment () const
-  {
-    return sizeof (T);
-  }
-  size_t size () const
-  {
-    return sizeof (T);
   }
   virtual Kind kind () const
   {
     return k;
   }
-  static const Scalar<T, S, k>* instance ()
+  static const Scalar<S, k>* instance ()
   {
-    static Scalar<T, S, k>* instance_ = new Scalar<T, S, k> ();
+    static Scalar<S, k>* instance_ = new Scalar<S, k> ();
     return instance_;
   }
 private:
-  Scalar<T, S, k> () { }
+  Scalar<S, k> () { }
 };
 
 STRING_RETURNER(BoolString, "<bool>");
-typedef Scalar<bool, BoolString, Bool_Kind> Bool;
+typedef Scalar<BoolString, Bool_Kind> Bool;
 
 STRING_RETURNER(Uint8String, "<uint8>");
-typedef Scalar<uint8_t, Uint8String, Uint8_Kind> Uint8;
+typedef Scalar<Uint8String, Uint8_Kind> Uint8;
 
 STRING_RETURNER(Uint16String, "<uint16>");
-typedef Scalar<uint16_t, Uint16String, Uint16_Kind> Uint16;
+typedef Scalar<Uint16String, Uint16_Kind> Uint16;
 
 STRING_RETURNER(Uint32String, "<uint32>");
-typedef Scalar<uint32_t, Uint32String, Uint32_Kind> Uint32;
+typedef Scalar<Uint32String, Uint32_Kind> Uint32;
 
 STRING_RETURNER(Uint64String, "<uint64>");
-typedef Scalar<uint64_t, Uint64String, Uint64_Kind> Uint64;
+typedef Scalar<Uint64String, Uint64_Kind> Uint64;
 
 STRING_RETURNER(Int8String, "<int8>");
-typedef Scalar<int8_t, Int8String, Int8_Kind> Int8;
+typedef Scalar<Int8String, Int8_Kind> Int8;
 
 STRING_RETURNER(Int16String, "<int16>");
-typedef Scalar<int16_t, Int16String, Int16_Kind> Int16;
+typedef Scalar<Int16String, Int16_Kind> Int16;
 
 STRING_RETURNER(Int32String, "<int32>");
-typedef Scalar<int32_t, Int32String, Int32_Kind> Int32;
+typedef Scalar<Int32String, Int32_Kind> Int32;
 
 STRING_RETURNER(Int64String, "<int64>");
-typedef Scalar<int64_t, Int64String, Int64_Kind> Int64;
+typedef Scalar<Int64String, Int64_Kind> Int64;
 
 STRING_RETURNER(Float32String, "<float32>");
-typedef Scalar<float, Float32String, Float32_Kind> Float32;
+typedef Scalar<Float32String, Float32_Kind> Float32;
 
 STRING_RETURNER(Float64String, "<float64>");
-typedef Scalar<double, Float64String, Float64_Kind> Float64;
+typedef Scalar<Float64String, Float64_Kind> Float64;
 
 STRING_RETURNER(Complex64String, "<complex64>");
-typedef Scalar<C64, Complex64String, Complex64_Kind> Complex64;
+typedef Scalar<Complex64String, Complex64_Kind> Complex64;
 
 STRING_RETURNER(Complex128String, "<complex128>");
-typedef Scalar<C128, Complex128String, Complex128_Kind> Complex128;
+typedef Scalar<Complex128String, Complex128_Kind> Complex128;
 
 STRING_RETURNER(UintString, "<uint>");
-typedef Scalar<unsigned long, UintString, Uint_Kind> Uint;
+typedef Scalar<UintString, Uint_Kind> Uint;
 
 STRING_RETURNER(IntString, "<int>");
-typedef Scalar<long, IntString, Int_Kind> Int;
+typedef Scalar<IntString, Int_Kind> Int;
 
 STRING_RETURNER(UintptrString, "<uintptr>");
-typedef Scalar<ptrdiff_t, UintptrString, Uintptr_Kind> Uintptr;
+typedef Scalar<UintptrString, Uintptr_Kind> Uintptr;
 
 struct String : public Type
 {
-  typedef StringRep ValueType;
   void print (std::ostream& out = std::cout) const;
-  size_t alignment () const;
-  size_t size () const;
   virtual Kind kind () const;
   static const String* instance ();
 private:
@@ -325,10 +312,7 @@ struct BaseType
 
 struct Pointer : public Type, public BaseType
 {
-  typedef void* ValueType;
   void print (std::ostream& out = std::cout) const;
-  size_t alignment () const;
-  size_t size () const;
   virtual Kind kind () const;
   virtual Field* find_field_i (const std::string& name) const;
   virtual decl::Callable* find_callable (const std::string& name) const;
@@ -341,18 +325,9 @@ private:
 
 struct Slice : public Type, public BaseType
 {
-  struct ValueType
-  {
-    void* ptr;
-    Uint::ValueType length;
-    Uint::ValueType capacity;
-  };
   virtual void print (std::ostream& out = std::cout) const;
-  virtual size_t alignment () const;
-  virtual size_t size () const;
   virtual Kind kind () const;
   virtual const Slice* to_slice () const;
-  size_t unit_size () const;
 private:
   virtual bool contains_pointer_i () const;
   friend class Type;
@@ -362,16 +337,13 @@ private:
 struct Array : public Type, public BaseType
 {
   void print (std::ostream& out = std::cout) const;
-  size_t alignment () const;
-  size_t size () const;
   virtual Kind kind () const;
   virtual const Array* to_array () const;
-  const Int::ValueType dimension;
-  size_t unit_size () const;
+  long const dimension;
 private:
   virtual bool contains_pointer_i () const;
   friend class Type;
-  Array (Int::ValueType d, const Type* base);
+  Array (long d, const Type* base);
 };
 
 struct Map : public Type
@@ -379,8 +351,6 @@ struct Map : public Type
   typedef std::map<std::pair<const Type*, const Type*>, const Map*> MapType;
   static const Map* make (const Type* key_type, const Type* value_type);
   virtual void print (std::ostream& out = std::cout) const;
-  virtual size_t alignment () const;
-  virtual size_t size () const;
   virtual Kind kind () const;
   virtual const Map* to_map () const;
 
@@ -396,8 +366,6 @@ private:
 struct Heap : public Type, public BaseType
 {
   void print (std::ostream& out = std::cout) const;
-  size_t alignment () const;
-  size_t size () const;
   virtual Kind kind () const;
   virtual const Heap* to_heap () const;
 private:
@@ -410,10 +378,7 @@ struct Struct : public Type
 {
   typedef std::vector<Field*> FieldsType;
   typedef FieldsType::const_iterator const_iterator;
-  Struct ();
   void print (std::ostream& out = std::cout) const;
-  size_t alignment () const;
-  size_t size () const;
   virtual Kind kind () const;
   virtual const Struct* to_struct () const;
   const_iterator begin () const;
@@ -429,8 +394,6 @@ protected:
   FieldsType fields_;
 private:
   virtual bool contains_pointer_i () const;
-  ptrdiff_t offset_;
-  size_t alignment_;
 };
 
 struct Component : public Struct
@@ -444,7 +407,6 @@ struct FunctionBase : public Type
 {
   FunctionBase (const decl::ParameterList* a_parameter_list,
                 const decl::ParameterList* a_return_parameter_list);
-  size_t alignment () const;
   const decl::ParameterList* const parameter_list;
   const decl::ParameterList* const return_parameter_list;
 };
@@ -454,7 +416,6 @@ struct Function : public FunctionBase
   Function (const decl::ParameterList* a_parameter_list,
             const decl::ParameterList* a_return_parameter_list);
   void print (std::ostream& out = std::cout) const;
-  size_t size () const;
   virtual Kind kind () const;
   virtual const Function* to_function () const;
 };
@@ -464,7 +425,6 @@ struct PushPort : public FunctionBase
   PushPort (const decl::ParameterList* a_parameter_list,
             const decl::ParameterList* a_return_parameter_list);
   void print (std::ostream& out = std::cout) const;
-  size_t size () const;
   virtual Kind kind () const;
   virtual const PushPort* to_push_port () const;
 };
@@ -474,7 +434,6 @@ struct PullPort : public FunctionBase
   PullPort (const decl::ParameterList* a_parameter_list,
             const decl::ParameterList* a_return_parameter_list);
   void print (std::ostream& out = std::cout) const;
-  size_t size () const;
   virtual Kind kind () const;
   virtual const PullPort* to_pull_port () const;
 };
@@ -482,24 +441,16 @@ struct PullPort : public FunctionBase
 struct MethodBase : public Type
 {
   MethodBase (const NamedType* a_named_type,
-              decl::ParameterSymbol* a_receiver_parameter,
+              decl::Parameter* a_receiver_parameter,
               const decl::ParameterList* a_parameter_list,
               const decl::ParameterList* a_return_parameter_list);
-  size_t alignment () const
-  {
-    return sizeof (void*);
-  }
-  size_t size () const
-  {
-    return sizeof (void*);
-  }
   const NamedType* const named_type;
-  decl::ParameterSymbol* const receiver_parameter;
+  decl::Parameter* const receiver_parameter;
   const decl::ParameterList* const parameter_list;
   const decl::ParameterList* const return_parameter_list;
   const Function* const function_type;
 private:
-  static Function* make_function_type (decl::ParameterSymbol* receiver_parameter,
+  static Function* make_function_type (decl::Parameter* receiver_parameter,
                                        const decl::ParameterList* parameter_list,
                                        const decl::ParameterList* return_parameter_list);
 };
@@ -507,7 +458,7 @@ private:
 struct Method : public MethodBase
 {
   Method (const NamedType* a_named_type,
-          decl::ParameterSymbol* a_receiver_parameter,
+          decl::Parameter* a_receiver_parameter,
           const decl::ParameterList* a_parameter_list,
           const decl::ParameterList* a_return_parameter_list);
   void print (std::ostream& out = std::cout) const;
@@ -518,7 +469,7 @@ struct Method : public MethodBase
 struct Initializer : public MethodBase
 {
   Initializer (const NamedType* a_named_type,
-               decl::ParameterSymbol* a_receiver_parameter,
+               decl::Parameter* a_receiver_parameter,
                const decl::ParameterList* a_parameter_list,
                const decl::ParameterList* a_return_parameter_list);
   void print (std::ostream& out = std::cout) const;
@@ -529,7 +480,7 @@ struct Initializer : public MethodBase
 struct Getter : public MethodBase
 {
   Getter (const NamedType* a_named_type,
-          decl::ParameterSymbol* a_receiver_parameter,
+          decl::Parameter* a_receiver_parameter,
           const decl::ParameterList* a_parameter_list,
           const decl::ParameterList* a_return_parameter_list);
   void print (std::ostream& out = std::cout) const;
@@ -540,7 +491,7 @@ struct Getter : public MethodBase
 struct Reaction : public MethodBase
 {
   Reaction (const NamedType* a_named_type,
-            decl::ParameterSymbol* a_receiver_parameter,
+            decl::Parameter* a_receiver_parameter,
             const decl::ParameterList* a_parameter_list,
             const decl::ParameterList* a_return_parameter_list);
   void print (std::ostream& out = std::cout) const;
@@ -552,8 +503,6 @@ struct Interface : public Type
 {
   Interface (decl::Package* a_package);
   virtual void print (std::ostream& out = std::cout) const;
-  virtual size_t alignment () const;
-  virtual size_t size () const;
   virtual Kind kind () const;
   virtual const Interface* to_interface () const;
 
@@ -562,13 +511,7 @@ struct Interface : public Type
   MethodsType methods;
 };
 
-struct Untyped : public Type
-{
-  size_t alignment () const;
-  size_t size () const;
-};
-
-struct UntypedNil : public Untyped
+struct UntypedNil : public Type
 {
   virtual Kind kind () const;
   void print (std::ostream& out = std::cout) const;
@@ -577,9 +520,8 @@ private:
   UntypedNil ();
 };
 
-struct UntypedBoolean : public Untyped
+struct UntypedBoolean : public Type
 {
-  typedef bool ValueType;
   virtual Kind kind () const;
   virtual const Type* default_type () const;
   void print (std::ostream& out = std::cout) const;
@@ -588,9 +530,8 @@ private:
   UntypedBoolean ();
 };
 
-struct UntypedRune : public Untyped
+struct UntypedRune : public Type
 {
-  typedef int32_t ValueType;
   virtual Kind kind () const;
   virtual const Type* default_type () const;
   void print (std::ostream& out = std::cout) const;
@@ -599,9 +540,8 @@ private:
   UntypedRune ();
 };
 
-struct UntypedInteger : public Untyped
+struct UntypedInteger : public Type
 {
-  typedef long long ValueType;
   virtual Kind kind () const;
   virtual const Type* default_type () const;
   void print (std::ostream& out = std::cout) const;
@@ -610,9 +550,8 @@ private:
   UntypedInteger ();
 };
 
-struct UntypedFloat : public Untyped
+struct UntypedFloat : public Type
 {
-  typedef double ValueType;
   virtual Kind kind () const;
   virtual const Type* default_type () const;
   void print (std::ostream& out = std::cout) const;
@@ -621,9 +560,8 @@ private:
   UntypedFloat ();
 };
 
-struct UntypedComplex : public Untyped
+struct UntypedComplex : public Type
 {
-  typedef CU ValueType;
   virtual Kind kind () const;
   virtual const Type* default_type () const;
   void print (std::ostream& out = std::cout) const;
@@ -632,9 +570,8 @@ private:
   UntypedComplex ();
 };
 
-struct UntypedString : public Untyped
+struct UntypedString : public Type
 {
-  typedef StringRep ValueType;
   virtual Kind kind () const;
   virtual const Type* default_type () const;
   void print (std::ostream& out = std::cout) const;
@@ -646,8 +583,6 @@ private:
 struct PolymorphicFunction : public Type
 {
   virtual void print (std::ostream& out = std::cout) const;
-  virtual size_t alignment () const;
-  virtual size_t size () const;
   virtual Kind kind () const;
   static const PolymorphicFunction* instance ();
 private:
@@ -657,8 +592,6 @@ private:
 struct FileDescriptor : public Type
 {
   void print (std::ostream& out = std::cout) const;
-  size_t alignment () const;
-  size_t size () const;
   virtual Kind kind () const;
   static const FileDescriptor* instance ();
 private:

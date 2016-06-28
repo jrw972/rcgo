@@ -1,11 +1,10 @@
 #include "symbol_table.hpp"
 
-#include <error.h>
-
 #include "symbol.hpp"
 #include "symbol_visitor.hpp"
 #include "parameter_list.hpp"
 #include "symbol_cast.hpp"
+#include "type.hpp"
 
 namespace decl
 {
@@ -17,33 +16,35 @@ struct SymbolTable::Scope
 
   typedef std::vector<Symbol*> SymbolsType;
 
-  Scope (Scope* p = NULL) :
-    parent_ (p)
+  Scope (Scope* p = NULL)
+    : parent (p)
+    , parameter_list (NULL)
+    , return_parameter_list (NULL)
   { }
 
   void enter_symbol (Symbol* s)
   {
-    symbols_.push_back (s);
+    symbols.push_back (s);
   }
 
   Symbol* find_global_symbol (const std::string& identifier) const
   {
-    for (SymbolsType::const_iterator pos = symbols_.begin (),
-         limit = symbols_.end ();
+    for (SymbolsType::const_iterator pos = symbols.begin (),
+         limit = symbols.end ();
          pos != limit;
          ++pos)
       {
         Symbol *s = *pos;
-        if (identifier == s->identifier)
+        if (identifier == s->name)
           {
             return s;
           }
       }
 
     /* Not found in this scope.  Try the parent. */
-    if (parent_)
+    if (parent)
       {
-        return parent_->find_global_symbol (identifier);
+        return parent->find_global_symbol (identifier);
       }
     else
       {
@@ -53,13 +54,13 @@ struct SymbolTable::Scope
 
   Symbol* find_local_symbol (const std::string& identifier) const
   {
-    for (SymbolsType::const_iterator pos = symbols_.begin (),
-         limit = symbols_.end ();
+    for (SymbolsType::const_iterator pos = symbols.begin (),
+         limit = symbols.end ();
          pos != limit;
          ++pos)
       {
         Symbol *s = *pos;
-        if (identifier == s->identifier)
+        if (identifier == s->name)
           {
             return s;
           }
@@ -70,42 +71,52 @@ struct SymbolTable::Scope
 
   void activate ()
   {
-    // Remove all parameters containing pointers to avoid a leak.
     Scope* s;
-    for (s = parent_; s != NULL; s = s->parent_)
+    for (s = parent; s != NULL; s = s->parent)
       {
-        for (SymbolsType::const_iterator ptr = s->symbols_.begin (),
-             limit = s->symbols_.end ();
+        for (SymbolsType::const_iterator ptr = s->symbols.begin (),
+             limit = s->symbols.end ();
              ptr != limit;
              ++ptr)
           {
+            Symbol* x = find_global_symbol ((*ptr)->name);
+            if (x != NULL && symbol_cast<Hidden> (x) != NULL)
+              {
+                // Leave hidden symbols hidden.
+                continue;
+              }
+
             {
-              ParameterSymbol* symbol = symbol_cast<ParameterSymbol> (*ptr);
+              Parameter* symbol = symbol_cast<Parameter> (*ptr);
               if (symbol != NULL)
                 {
-                  if (symbol->kind == ParameterSymbol::Receiver)
+                  if (symbol->kind == Parameter::Receiver)
                     {
+                      // Change receiver to have mutable indirection mutability.
                       enter_symbol (symbol->duplicate (Mutable));
                     }
                   else
                     {
-                      if (symbol->type->contains_pointer () && symbol->dereference_mutability == Foreign)
+                      // Hide all parameters containing pointers.
+                      if (symbol->type->contains_pointer ())
                         {
+                          assert (symbol->is_foreign_safe ());
                           // Hide this parameter.
-                          enter_symbol (new HiddenSymbol (symbol, symbol->location));
+                          enter_symbol (new Hidden (symbol, symbol->location));
                         }
                     }
                 }
             }
 
             {
-              const VariableSymbol* symbol = symbol_cast<VariableSymbol> (*ptr);
+              const Variable* symbol = symbol_cast<Variable> (*ptr);
               if (symbol != NULL)
                 {
-                  if (symbol->type->contains_pointer () && symbol->dereference_mutability == Foreign)
+                  // Hide all variables that may point to foreign data.
+                  if (symbol->type->contains_pointer ()
+                      && symbol->indirection_mutability == Foreign)
                     {
-                      // Hide this variable.
-                      enter_symbol (new HiddenSymbol (symbol, symbol->location));
+                      enter_symbol (new Hidden (symbol, symbol->location));
                     }
                 }
             }
@@ -117,15 +128,22 @@ struct SymbolTable::Scope
   void change ()
   {
     Scope* s;
-    for (s = parent_; s != NULL; s = s->parent_)
+    for (s = parent; s != NULL; s = s->parent)
       {
-        for (SymbolsType::const_iterator ptr = s->symbols_.begin (),
-             limit = s->symbols_.end ();
+        for (SymbolsType::const_iterator ptr = s->symbols.begin (),
+             limit = s->symbols.end ();
              ptr != limit;
              ++ptr)
           {
+            Symbol* x = find_global_symbol ((*ptr)->name);
+            if (x != NULL && symbol_cast<Hidden> (x) != NULL)
+              {
+                // Leave hidden symbols hidden.
+                continue;
+              }
+
             {
-              ParameterSymbol* symbol = symbol_cast<ParameterSymbol> (*ptr);
+              Parameter* symbol = symbol_cast<Parameter> (*ptr);
               if (symbol != NULL)
                 {
                   if (symbol->type->contains_pointer ())
@@ -138,7 +156,7 @@ struct SymbolTable::Scope
             }
 
             {
-              VariableSymbol* symbol = symbol_cast<VariableSymbol> (*ptr);
+              Variable* symbol = symbol_cast<Variable> (*ptr);
               if (symbol != NULL)
                 {
                   if (symbol->type->contains_pointer ())
@@ -153,9 +171,15 @@ struct SymbolTable::Scope
       }
   }
 
-  Scope* parent_;
-  SymbolsType symbols_;
+  Scope* parent;
+  SymbolsType symbols;
+  const ParameterList* parameter_list;
+  const ParameterList* return_parameter_list;
 };
+
+SymbolTable::SymbolTable ()
+  : current_scope_ (NULL)
+{ }
 
 void
 SymbolTable::open_scope ()
@@ -164,50 +188,51 @@ SymbolTable::open_scope ()
 }
 
 void
+SymbolTable::open_scope (const ParameterList* parameter_list,
+                         const ParameterList* return_parameter_list)
+{
+  open_scope ();
+  enter_parameter_list (parameter_list);
+  enter_parameter_list (return_parameter_list);
+  current_scope_->parameter_list = parameter_list;
+  current_scope_->return_parameter_list = return_parameter_list;
+}
+
+void
+SymbolTable::open_scope (Symbol* iota,
+                         const ParameterList* parameter_list,
+                         const ParameterList* return_parameter_list)
+{
+  open_scope ();
+  enter_symbol (iota);
+  enter_parameter_list (parameter_list);
+  enter_parameter_list (return_parameter_list);
+  current_scope_->parameter_list = parameter_list;
+  current_scope_->return_parameter_list = return_parameter_list;
+}
+
+
+void
 SymbolTable::close_scope ()
 {
   Scope* s = current_scope_;
-  current_scope_ = s->parent_;
+  current_scope_ = s->parent;
   delete s;
 }
 
 void
 SymbolTable::enter_symbol (Symbol* symbol)
 {
-  // Check if the symbol is defined locally.
-  const std::string& identifier = symbol->identifier;
-  Symbol *s = find_local_symbol (identifier);
-  if (s == NULL)
-    {
-      current_scope_->enter_symbol (symbol);
-    }
-  else
-    {
-      error_at_line (-1, 0, symbol->location.file.c_str (), symbol->location.line,
-                     "%s is already defined in this scope (E113)", identifier.c_str ());
-    }
+  current_scope_->enter_symbol (symbol);
 }
 
 void
-SymbolTable::enter_signature (const ParameterList* type)
+SymbolTable::enter_parameter_list (const ParameterList* type)
 {
   for (ParameterList::ParametersType::const_iterator pos = type->begin (), limit = type->end ();
        pos != limit; ++pos)
     {
-      ParameterSymbol* x = *pos;
-      // Check if the symbol is defined locally.
-      const std::string& identifier = x->identifier;
-      Symbol* s = find_local_symbol (identifier);
-      if (s == NULL)
-        {
-          current_scope_->enter_symbol (x);
-        }
-      else
-        {
-          error_at_line (-1, 0, x->location.file.c_str (), x->location.line,
-                         "%s is already defined in this scope (E55)",
-                         identifier.c_str ());
-        }
+      current_scope_->enter_symbol (*pos);
     }
 }
 
@@ -239,6 +264,24 @@ Package*
 SymbolTable::package () const
 {
   return NULL;
+}
+
+const ParameterList*
+SymbolTable::return_parameter_list () const
+{
+  Scope* s = current_scope_;
+  while (s != NULL && s->return_parameter_list == NULL)
+    {
+      s = s->parent;
+    }
+  if (s != NULL)
+    {
+      return s->return_parameter_list;
+    }
+  else
+    {
+      return NULL;
+    }
 }
 
 }

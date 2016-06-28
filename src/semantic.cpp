@@ -5,7 +5,6 @@
 #include "debug.hpp"
 #include "node.hpp"
 #include "action.hpp"
-#include "reaction.hpp"
 #include "type.hpp"
 #include "symbol.hpp"
 #include "memory_model.hpp"
@@ -15,6 +14,7 @@
 #include "parameter_list.hpp"
 #include "error_reporter.hpp"
 #include "runtime.hpp"
+#include "operation.hpp"
 
 namespace semantic
 {
@@ -57,42 +57,42 @@ allocate_symbol (runtime::MemoryModel& memory_model,
       NOT_REACHED;
     }
 
-    void visit (ParameterSymbol& symbol)
+    void visit (Parameter& symbol)
     {
       switch (symbol.kind)
         {
-        case ParameterSymbol::Ordinary:
-        case ParameterSymbol::Receiver:
-        case ParameterSymbol::Return:
+        case Parameter::Ordinary:
+        case Parameter::Receiver:
+        case Parameter::Return:
         {
           const type::Type* type = symbol.type;
-          memory_model.arguments_push (type->size ());
+          memory_model.arguments_push (type);
           static_cast<Symbol&> (symbol).offset (memory_model.arguments_offset ());
-          if (symbol.kind == ParameterSymbol::Receiver)
+          if (symbol.kind == Parameter::Receiver)
             {
               memory_model.set_receiver_offset ();
             }
         }
         break;
-        case ParameterSymbol::ReceiverDuplicate:
-        case ParameterSymbol::OrdinaryDuplicate:
+        case Parameter::Receiver_Duplicate:
+        case Parameter::Ordinary_Duplicate:
           break;
         }
     }
 
-    void visit (ConstantSymbol& symbol)
+    void visit (Constant& symbol)
     {
       // No need to allocate.
     }
 
-    void visit (VariableSymbol& symbol)
+    void visit (Variable& symbol)
     {
       const type::Type* type = symbol.type;
       static_cast<Symbol&>(symbol).offset (memory_model.locals_offset ());
-      memory_model.locals_push (type->size ());
+      memory_model.locals_push (type);
     }
 
-    void visit (HiddenSymbol& symbol)
+    void visit (decl::Hidden& symbol)
     {
       // Do nothing.
     }
@@ -249,8 +249,8 @@ allocate_stack_variables (ast::Node* node)
 
     void visit (DimensionedAction& node)
     {
-      allocate_symbol (node.action->memory_model, node.action->iota_parameter);
       allocate_symbol (node.action->memory_model, node.action->receiver_parameter);
+      allocate_symbol (node.action->memory_model, node.action->iota_parameter);
       allocate_statement_stack_variables (node.body, node.action->memory_model);
       assert (node.action->memory_model.locals_empty ());
     }
@@ -273,7 +273,6 @@ allocate_stack_variables (ast::Node* node)
     void visit (ast::Method& node)
     {
       allocate_parameters (node.method->memory_model, node.method->parameter_list ());
-      allocate_symbol (node.method->memory_model, node.method->receiver_parameter ());
       allocate_parameters (node.method->memory_model, node.method->return_parameter_list ());
       allocate_statement_stack_variables (node.body, node.method->memory_model);
       assert (node.method->memory_model.locals_empty ());
@@ -282,7 +281,6 @@ allocate_stack_variables (ast::Node* node)
     void visit (ast::Initializer& node)
     {
       allocate_parameters (node.initializer->memory_model, node.initializer->parameter_list ());
-      allocate_symbol (node.initializer->memory_model, node.initializer->receiver_parameter ());
       allocate_parameters (node.initializer->memory_model, node.initializer->return_parameter_list ());
       allocate_statement_stack_variables (node.body, node.initializer->memory_model);
       assert (node.initializer->memory_model.locals_empty ());
@@ -291,7 +289,6 @@ allocate_stack_variables (ast::Node* node)
     void visit (ast::Getter& node)
     {
       allocate_parameters (node.getter->memory_model, node.getter->parameter_list ());
-      allocate_symbol (node.getter->memory_model, node.getter->receiver_parameter ());
       allocate_parameters (node.getter->memory_model, node.getter->return_parameter_list ());
       allocate_statement_stack_variables (node.body, node.getter->memory_model);
       assert (node.getter->memory_model.locals_empty ());
@@ -300,7 +297,6 @@ allocate_stack_variables (ast::Node* node)
     void visit (ast::Reaction& node)
     {
       allocate_parameters (node.reaction->memory_model, node.reaction->parameter_list ());
-      allocate_symbol (node.reaction->memory_model, node.reaction->reaction_type->receiver_parameter);
       allocate_statement_stack_variables (node.body, node.reaction->memory_model);
       assert (node.reaction->memory_model.locals_empty ());
     }
@@ -309,7 +305,6 @@ allocate_stack_variables (ast::Node* node)
     {
       allocate_parameters (node.reaction->memory_model, node.reaction->parameter_list ());
       allocate_symbol (node.reaction->memory_model, node.reaction->iota);
-      allocate_symbol (node.reaction->memory_model, node.reaction->reaction_type->receiver_parameter);
       allocate_statement_stack_variables (node.body, node.reaction->memory_model);
       assert (node.reaction->memory_model.locals_empty ());
     }
@@ -368,6 +363,10 @@ require_type (ErrorReporter& er,
   return true;
 }
 
+LogicNot::LogicNot (const util::Location& loc)
+  : PolymorphicFunction ("!", loc)
+{ }
+
 void LogicNot::check (ErrorReporter& er,
                       const Location& location,
                       ExpressionValue& result,
@@ -383,7 +382,7 @@ void LogicNot::check (ErrorReporter& er,
 
   if (!(arg.type->is_any_boolean ()))
     {
-      er.cannot_be_applied (location, unary_arithmetic_external_symbol (::LogicNot), arg.type);
+      er.cannot_be_applied (location, "!", arg.type);
       result.expression_kind = ErrorExpressionKind;
       return;
     }
@@ -402,7 +401,7 @@ void LogicNot::check (ErrorReporter& er,
           result.value.bool_value = !arg.value.bool_value;
           break;
         case Untyped_Boolean_Kind:
-          result.value.boolean_value = !arg.value.boolean_value;
+          result.value.untyped_boolean_value = !arg.value.untyped_boolean_value;
           break;
         default:
           NOT_REACHED;
@@ -411,11 +410,15 @@ void LogicNot::check (ErrorReporter& er,
 }
 
 runtime::Operation* LogicNot::generate_code (const ExpressionValue& result,
-    const ExpressionValue& arg_val,
-    runtime::Operation* arg_op) const
+    const ExpressionValueList& arg_val,
+    runtime::ListOperation* arg_op) const
 {
   return runtime::make_unary<LogicNotter> (result.type, arg_op);
 }
+
+Posate::Posate (const util::Location& loc)
+  : PolymorphicFunction ("+", loc)
+{ }
 
 void Posate::check (ErrorReporter& er,
                     const util::Location& location,
@@ -432,7 +435,7 @@ void Posate::check (ErrorReporter& er,
 
   if (!arg.type->is_numeric ())
     {
-      er.cannot_be_applied (location, unary_arithmetic_external_symbol (::Posate), arg.type);
+      er.cannot_be_applied (location, "+", arg.type);
       result.expression_kind = ErrorExpressionKind;
       return;
     }
@@ -447,6 +450,10 @@ void Posate::check (ErrorReporter& er,
       result.value = arg.value;
     }
 }
+
+Negate::Negate (const util::Location& loc)
+  : PolymorphicFunction ("-", loc)
+{ }
 
 void Negate::check (ErrorReporter& er,
                     const util::Location& location,
@@ -463,7 +470,7 @@ void Negate::check (ErrorReporter& er,
 
   if (!arg.type->is_numeric ())
     {
-      er.cannot_be_applied (location, unary_arithmetic_external_symbol (::Negate), arg.type);
+      er.cannot_be_applied (location, "-", arg.type);
       result.expression_kind = ErrorExpressionKind;
       return;
     }
@@ -524,22 +531,26 @@ void Negate::check (ErrorReporter& er,
           result.value.uintptr_value = -arg.value.uintptr_value;
           break;
         case Untyped_Rune_Kind:
-          result.value.rune_value = -arg.value.rune_value;
+          result.value.untyped_rune_value = -arg.value.untyped_rune_value;
           break;
         case Untyped_Integer_Kind:
-          result.value.integer_value = -arg.value.integer_value;
+          result.value.untyped_integer_value = -arg.value.untyped_integer_value;
           break;
         case Untyped_Float_Kind:
-          result.value.float_value = -arg.value.float_value;
+          result.value.untyped_float_value = -arg.value.untyped_float_value;
           break;
         case Untyped_Complex_Kind:
-          result.value.complex_value = -arg.value.complex_value;
+          result.value.untyped_complex_value = -arg.value.untyped_complex_value;
           break;
         default:
           NOT_REACHED;
         }
     }
 }
+
+Complement::Complement (const util::Location& loc)
+  : PolymorphicFunction ("^", loc)
+{ }
 
 void Complement::check (ErrorReporter& er,
                         const Location& location,
@@ -556,7 +567,7 @@ void Complement::check (ErrorReporter& er,
 
   if (!(arg.type->is_integral ()))
     {
-      er.cannot_be_applied (location, unary_arithmetic_external_symbol (::Complement), arg.type);
+      er.cannot_be_applied (location, "^", arg.type);
       result.expression_kind = ErrorExpressionKind;
       return;
     }
@@ -605,10 +616,10 @@ void Complement::check (ErrorReporter& er,
           result.value.uintptr_value = ~arg.value.uintptr_value;
           break;
         case Untyped_Rune_Kind:
-          result.value.rune_value = ~arg.value.rune_value;
+          result.value.untyped_rune_value = ~arg.value.untyped_rune_value;
           break;
         case Untyped_Integer_Kind:
-          result.value.integer_value = ~arg.value.integer_value;
+          result.value.untyped_integer_value = ~arg.value.untyped_integer_value;
           break;
         default:
           NOT_REACHED;
@@ -652,12 +663,10 @@ void BinaryValueComputer<Op>::compute (ExpressionValue& result,
 
 template <typename Op>
 runtime::Operation* BinaryValueComputer<Op>::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+    const ExpressionValueList& arg_vals,
+    runtime::ListOperation* arg_ops)
 {
-  return Op::generate_code (result, left_val, left_op, right_val, right_op);
+  return Op::generate_code (result, arg_vals, arg_ops);
 }
 
 void LogicOrComputer::compute (ExpressionValue& result,
@@ -670,23 +679,21 @@ void LogicOrComputer::compute (ExpressionValue& result,
       if (left.value.bool_value)
         {
           result.value.present = true;
-          result.value.boolean_value = true;
+          result.value.untyped_boolean_value = true;
         }
       else if (right.value.present)
         {
           result.value.present = true;
-          result.value.boolean_value = right.value.bool_value;
+          result.value.untyped_boolean_value = right.value.bool_value;
         }
     }
 }
 
 runtime::Operation* LogicOrComputer::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+    const ExpressionValueList& arg_vals,
+    runtime::ListOperation* arg_ops)
 {
-  return new runtime::LogicOr (left_op, right_op);
+  return new runtime::LogicOr (arg_ops->list[0], arg_ops->list[1]);
 }
 
 void LogicAndComputer::compute (ExpressionValue& result,
@@ -699,23 +706,72 @@ void LogicAndComputer::compute (ExpressionValue& result,
       if (!left.value.bool_value)
         {
           result.value.present = true;
-          result.value.boolean_value = false;
+          result.value.untyped_boolean_value = false;
         }
       else if (right.value.present)
         {
           result.value.present = true;
-          result.value.boolean_value = right.value.bool_value;
+          result.value.untyped_boolean_value = right.value.bool_value;
         }
     }
 }
 
 runtime::Operation* LogicAndComputer::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+    const ExpressionValueList& arg_vals,
+    runtime::ListOperation* arg_ops)
 {
-  return new runtime::LogicAnd (left_op, right_op);
+  return new runtime::LogicAnd (arg_ops->list[0], arg_ops->list[1]);
+}
+
+static const char* binary_arithmetic_external_symbol (::BinaryArithmetic ba)
+{
+  switch (ba)
+    {
+    case ::Multiply:
+      return "*";
+    case ::Divide:
+      return "/";
+    case ::Modulus:
+      return "%";
+    case ::LeftShift:
+      return "<<";
+    case ::RightShift:
+      return ">>";
+    case ::BitAnd:
+      return "&";
+    case ::BitAndNot:
+      return "&^";
+
+    case ::Add:
+      return "+";
+    case ::Subtract:
+      return "-";
+    case ::BitOr:
+      return "|";
+    case ::BitXor:
+      return "^";
+
+    case ::Equal:
+      return "==";
+    case ::NotEqual:
+      return "!=";
+    case ::LessThan:
+      return "<";
+    case ::LessEqual:
+      return "<=";
+    case ::MoreThan:
+      return ">";
+    case ::MoreEqual:
+      return ">=";
+
+    case ::LogicOr:
+      return "||";
+
+    case ::LogicAnd:
+      return "&&";
+    }
+
+  NOT_REACHED;
 }
 
 template <typename InputPicker, typename OutputPicker, typename Computer, ::BinaryArithmetic ba>
@@ -787,12 +843,10 @@ BinaryArithmetic<InputPicker, OutputPicker, Computer, ba>::check (ErrorReporter&
 template <typename InputPicker, typename OutputPicker, typename Computer, ::BinaryArithmetic ba>
 runtime::Operation*
 BinaryArithmetic<InputPicker, OutputPicker, Computer, ba>::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op) const
+    const ExpressionValueList& arg_vals,
+    runtime::ListOperation* arg_ops) const
 {
-  return Computer::generate_code (result, left_val, left_op, right_val, right_op);
+  return Computer::generate_code (result, arg_vals, arg_ops);
 }
 
 template <typename B, ::BinaryArithmetic ba>
@@ -882,10 +936,10 @@ void BinaryShift<B, ba>::check (ErrorReporter& er,
           result.value.uintptr_value = B () (left.value.uintptr_value, right.value.uint_value);
           break;
         case Untyped_Rune_Kind:
-          result.value.rune_value = B () (left.value.rune_value, right.value.uint_value);
+          result.value.untyped_rune_value = B () (left.value.untyped_rune_value, right.value.uint_value);
           break;
         case Untyped_Integer_Kind:
-          result.value.integer_value = B () (left.value.integer_value, right.value.uint_value);
+          result.value.untyped_integer_value = B () (left.value.untyped_integer_value, right.value.uint_value);
           break;
         default:
           TYPE_NOT_REACHED (*result.type);
@@ -895,12 +949,10 @@ void BinaryShift<B, ba>::check (ErrorReporter& er,
 
 template <typename B, ::BinaryArithmetic ba>
 runtime::Operation* BinaryShift<B, ba>::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op) const
+    const ExpressionValueList& arg_vals,
+    runtime::ListOperation* arg_ops) const
 {
-  return B::generate_code (result, left_val, left_op, right_val, right_op);
+  return B::generate_code (result, arg_vals, arg_ops);
 }
 
 template class BinaryArithmetic<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SMultiply>, ::Multiply>;
@@ -928,13 +980,12 @@ void SMultiply::operator() (Value& out, const type::Type* type, const Value& lef
   multiply (out, type, left, right);
 }
 
-runtime::Operation* SMultiply::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SMultiply::generate_code (const ExpressionValue& result,
+                          const ExpressionValueList& arg_vals,
+                          runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_arithmetic<Multiplier> (result.type, left_op, right_op);
+  return runtime::make_binary_arithmetic<Multiplier> (result.type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 void SDivide::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
@@ -942,13 +993,12 @@ void SDivide::operator() (Value& out, const type::Type* type, const Value& left,
   divide (out, type, left, right);
 }
 
-runtime::Operation* SDivide::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SDivide::generate_code (const ExpressionValue& result,
+                        const ExpressionValueList& arg_vals,
+                        runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_arithmetic<Divider> (result.type, left_op, right_op);
+  return runtime::make_binary_arithmetic<Divider> (result.type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 void SModulus::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
@@ -956,33 +1006,28 @@ void SModulus::operator() (Value& out, const type::Type* type, const Value& left
   modulus (out, type, left, right);
 }
 
-runtime::Operation* SModulus::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SModulus::generate_code (const ExpressionValue& result,
+                         const ExpressionValueList& arg_vals,
+                         runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_integral<Modulizer> (result.type, left_op, right_op);
+  return runtime::make_binary_integral<Modulizer> (result.type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 runtime::Operation*
 LeftShifter::generate_code (const ExpressionValue& result,
-                            const ExpressionValue& left_val,
-                            runtime::Operation* left_op,
-                            const ExpressionValue& right_val,
-                            runtime::Operation* right_op)
+                            const ExpressionValueList& arg_vals,
+                            runtime::ListOperation* arg_ops)
 {
-  return runtime::make_shift<LeftShifter> (result.type, left_op, MakeConvertToUint (right_op, right_val.type));
+  return runtime::make_shift<LeftShifter> (result.type, arg_ops->list[0], MakeConvertToUint (arg_ops->list[1], arg_vals[1].type));
 }
 
 runtime::Operation*
 RightShifter::generate_code (const ExpressionValue& result,
-                             const ExpressionValue& left_val,
-                             runtime::Operation* left_op,
-                             const ExpressionValue& right_val,
-                             runtime::Operation* right_op)
+                             const ExpressionValueList& arg_vals,
+                             runtime::ListOperation* arg_ops)
 {
-  return runtime::make_shift<RightShifter> (result.type, left_op, MakeConvertToUint (right_op, right_val.type));
+  return runtime::make_shift<RightShifter> (result.type, arg_ops->list[0], MakeConvertToUint (arg_ops->list[1], arg_vals[1].type));
 }
 
 void SBitAnd::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
@@ -990,13 +1035,12 @@ void SBitAnd::operator() (Value& out, const type::Type* type, const Value& left,
   bit_and (out, type, left, right);
 }
 
-runtime::Operation* SBitAnd::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SBitAnd::generate_code (const ExpressionValue& result,
+                        const ExpressionValueList& arg_vals,
+                        runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_integral<BitAnder> (result.type, left_op, right_op);
+  return runtime::make_binary_integral<BitAnder> (result.type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 void SBitAndNot::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
@@ -1004,13 +1048,12 @@ void SBitAndNot::operator() (Value& out, const type::Type* type, const Value& le
   bit_and_not (out, type, left, right);
 }
 
-runtime::Operation* SBitAndNot::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SBitAndNot::generate_code (const ExpressionValue& result,
+                           const ExpressionValueList& arg_vals,
+                           runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_integral<BitAndNotter> (result.type, left_op, right_op);
+  return runtime::make_binary_integral<BitAndNotter> (result.type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 void SAdd::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
@@ -1018,13 +1061,12 @@ void SAdd::operator() (Value& out, const type::Type* type, const Value& left, co
   add (out, type, left, right);
 }
 
-runtime::Operation* SAdd::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SAdd::generate_code (const ExpressionValue& result,
+                     const ExpressionValueList& arg_vals,
+                     runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_integral<Adder> (result.type, left_op, right_op);
+  return runtime::make_binary_integral<Adder> (result.type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 void SSubtract::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
@@ -1032,13 +1074,12 @@ void SSubtract::operator() (Value& out, const type::Type* type, const Value& lef
   subtract (out, type, left, right);
 }
 
-runtime::Operation* SSubtract::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SSubtract::generate_code (const ExpressionValue& result,
+                          const ExpressionValueList& arg_vals,
+                          runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_arithmetic<Subtracter> (result.type, left_op, right_op);
+  return runtime::make_binary_arithmetic<Subtracter> (result.type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 void SBitOr::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
@@ -1046,13 +1087,12 @@ void SBitOr::operator() (Value& out, const type::Type* type, const Value& left, 
   bit_or (out, type, left, right);
 }
 
-runtime::Operation* SBitOr::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SBitOr::generate_code (const ExpressionValue& result,
+                       const ExpressionValueList& arg_vals,
+                       runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_integral<BitOrer> (result.type, left_op, right_op);
+  return runtime::make_binary_integral<BitOrer> (result.type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 void SBitXor::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
@@ -1060,13 +1100,12 @@ void SBitXor::operator() (Value& out, const type::Type* type, const Value& left,
   bit_xor (out, type, left, right);
 }
 
-runtime::Operation* SBitXor::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SBitXor::generate_code (const ExpressionValue& result,
+                        const ExpressionValueList& arg_vals,
+                        runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_integral<BitXorer> (result.type, left_op, right_op);
+  return runtime::make_binary_integral<BitXorer> (result.type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 void SEqual::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
@@ -1074,13 +1113,12 @@ void SEqual::operator() (Value& out, const type::Type* type, const Value& left, 
   equal (out, type, left, right);
 }
 
-runtime::Operation* SEqual::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SEqual::generate_code (const ExpressionValue& result,
+                       const ExpressionValueList& arg_vals,
+                       runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_arithmetic<Equalizer> (left_val.type, left_op, right_op);
+  return runtime::make_binary_arithmetic<Equalizer> (arg_vals[0].type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 void SNotEqual::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
@@ -1088,13 +1126,12 @@ void SNotEqual::operator() (Value& out, const type::Type* type, const Value& lef
   not_equal (out, type, left, right);
 }
 
-runtime::Operation* SNotEqual::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SNotEqual::generate_code (const ExpressionValue& result,
+                          const ExpressionValueList& arg_vals,
+                          runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_arithmetic<NotEqualizer> (left_val.type, left_op, right_op);
+  return runtime::make_binary_arithmetic<NotEqualizer> (arg_vals[0].type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 void SLessThan::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
@@ -1102,13 +1139,12 @@ void SLessThan::operator() (Value& out, const type::Type* type, const Value& lef
   less_than (out, type, left, right);
 }
 
-runtime::Operation* SLessThan::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SLessThan::generate_code (const ExpressionValue& result,
+                          const ExpressionValueList& arg_vals,
+                          runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_arithmetic<LessThaner> (left_val.type, left_op, right_op);
+  return runtime::make_binary_arithmetic<LessThaner> (arg_vals[0].type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 void SLessEqual::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
@@ -1116,13 +1152,12 @@ void SLessEqual::operator() (Value& out, const type::Type* type, const Value& le
   less_equal (out, type, left, right);
 }
 
-runtime::Operation* SLessEqual::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SLessEqual::generate_code (const ExpressionValue& result,
+                           const ExpressionValueList& arg_vals,
+                           runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_arithmetic<LessEqualizer> (left_val.type, left_op, right_op);
+  return runtime::make_binary_arithmetic<LessEqualizer> (arg_vals[0].type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 void SMoreThan::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
@@ -1130,13 +1165,12 @@ void SMoreThan::operator() (Value& out, const type::Type* type, const Value& lef
   more_than (out, type, left, right);
 }
 
-runtime::Operation* SMoreThan::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SMoreThan::generate_code (const ExpressionValue& result,
+                          const ExpressionValueList& arg_vals,
+                          runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_arithmetic<MoreThaner> (left_val.type, left_op, right_op);
+  return runtime::make_binary_arithmetic<MoreThaner> (arg_vals[0].type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 void SMoreEqual::operator() (Value& out, const type::Type* type, const Value& left, const Value& right) const
@@ -1144,18 +1178,17 @@ void SMoreEqual::operator() (Value& out, const type::Type* type, const Value& le
   more_equal (out, type, left, right);
 }
 
-runtime::Operation* SMoreEqual::generate_code (const ExpressionValue& result,
-    const ExpressionValue& left_val,
-    runtime::Operation* left_op,
-    const ExpressionValue& right_val,
-    runtime::Operation* right_op)
+runtime::Operation*
+SMoreEqual::generate_code (const ExpressionValue& result,
+                           const ExpressionValueList& arg_vals,
+                           runtime::ListOperation* arg_ops)
 {
-  return runtime::make_binary_arithmetic<MoreEqualizer> (left_val.type, left_op, right_op);
+  return runtime::make_binary_arithmetic<MoreEqualizer> (arg_vals[0].type, arg_ops->list[0], arg_ops->list[1]);
 }
 
 New::New (const Location& loc)
-  : TemplateSymbol ("new",
-                    loc)
+  : PolymorphicFunction ("new",
+                         loc)
 { }
 
 void
@@ -1194,14 +1227,14 @@ void New::compute_receiver_access (const semantic::ExpressionValueList& args,
 
 runtime::Operation* New::generate_code (const semantic::ExpressionValue& result,
                                         const semantic::ExpressionValueList& arg_vals,
-                                        runtime::Operation* arg_ops) const
+                                        runtime::ListOperation* arg_ops) const
 {
   return new runtime::NewOp (arg_vals.front ().type);
 }
 
 Move::Move (const Location& loc)
-  : TemplateSymbol ("move",
-                    loc)
+  : PolymorphicFunction ("move",
+                         loc)
 { }
 
 void
@@ -1258,14 +1291,14 @@ Move::compute_receiver_access (const semantic::ExpressionValueList& args,
 
 runtime::Operation* Move::generate_code (const semantic::ExpressionValue& result,
     const semantic::ExpressionValueList& arg_vals,
-    runtime::Operation* arg_ops) const
+    runtime::ListOperation* arg_ops) const
 {
   return new runtime::MoveOp (arg_ops);
 }
 
 Merge::Merge (const Location& loc)
-  : TemplateSymbol ("merge",
-                    loc)
+  : PolymorphicFunction ("merge",
+                         loc)
 { }
 
 void
@@ -1321,14 +1354,14 @@ void Merge::compute_receiver_access (const semantic::ExpressionValueList& args,
 
 runtime::Operation* Merge::generate_code (const semantic::ExpressionValue& result,
     const semantic::ExpressionValueList& arg_vals,
-    runtime::Operation* arg_ops) const
+    runtime::ListOperation* arg_ops) const
 {
   return new runtime::MergeOp (arg_ops);
 }
 
 Len::Len (const Location& loc)
-  : TemplateSymbol ("len",
-                    loc)
+  : PolymorphicFunction ("len",
+                         loc)
 { }
 
 void
@@ -1367,14 +1400,14 @@ Len::check (ErrorReporter& er,
 
 runtime::Operation* Len::generate_code (const semantic::ExpressionValue& result,
                                         const semantic::ExpressionValueList& arg_vals,
-                                        runtime::Operation* arg_ops) const
+                                        runtime::ListOperation* arg_ops) const
 {
   return new runtime::LenOp (arg_ops);
 }
 
 Append::Append (const Location& loc)
-  : TemplateSymbol ("append",
-                    loc)
+  : PolymorphicFunction ("append",
+                         loc)
 { }
 
 void
@@ -1423,14 +1456,14 @@ Append::check (ErrorReporter& er,
 
 runtime::Operation* Append::generate_code (const semantic::ExpressionValue& result,
     const semantic::ExpressionValueList& arg_vals,
-    runtime::Operation* arg_ops) const
+    runtime::ListOperation* arg_ops) const
 {
   return make_append (arg_vals[0].type->underlying_type ()->to_slice (), arg_ops);
 }
 
 Copy::Copy (const Location& loc)
-  : TemplateSymbol ("copy",
-                    loc)
+  : PolymorphicFunction ("copy",
+                         loc)
 { }
 
 void
@@ -1457,7 +1490,7 @@ Copy::check (ErrorReporter& er,
     {
     case Slice_Kind:
     {
-      const Slice* st = arg.type->underlying_type ()->to_slice ();
+      const type::Slice* st = arg.type->underlying_type ()->to_slice ();
       if (st->base_type->contains_pointer ())
         {
           er.leaks_pointers (location);
@@ -1500,14 +1533,14 @@ Copy::compute_receiver_access (const semantic::ExpressionValueList& args,
 
 runtime::Operation* Copy::generate_code (const semantic::ExpressionValue& result,
     const semantic::ExpressionValueList& arg_vals,
-    runtime::Operation* arg_ops) const
+    runtime::ListOperation* arg_ops) const
 {
   return new runtime::CopyOp (arg_vals.front ().type, arg_ops);
 }
 
 Println::Println (const Location& loc)
-  : TemplateSymbol ("println",
-                    loc)
+  : PolymorphicFunction ("println",
+                         loc)
 { }
 
 void
@@ -1523,10 +1556,7 @@ Println::check (ErrorReporter& er,
       pos->convert (pos->type->default_type ());
     }
 
-  result.expression_kind = ValueExpressionKind;
-  result.type = Void::instance ();
-  result.intrinsic_mutability = Immutable;
-  result.indirection_mutability = Immutable;
+  result.expression_kind = VoidExpressionKind;
 }
 
 void Println::compute_receiver_access (const semantic::ExpressionValueList& args,
@@ -1547,34 +1577,34 @@ void Println::compute_receiver_access (const semantic::ExpressionValueList& args
 
 runtime::Operation* Println::generate_code (const semantic::ExpressionValue& result,
     const semantic::ExpressionValueList& arg_vals,
-    runtime::Operation* arg_ops) const
+    runtime::ListOperation* arg_ops) const
 {
   return new runtime::PrintlnOp (arg_vals, arg_ops);
 }
 
-Posate posate_temp;
-Negate negate_temp;
-LogicNot logic_not_temp;
-Complement complement_temp;
+Posate posate_temp ((util::Location ()));
+Negate negate_temp ((util::Location ()));
+LogicNot logic_not_temp ((util::Location ()));
+Complement complement_temp ((util::Location ()));
 
-Multiply multiply_temp;
-Divide divide_temp;
-Modulus modulus_temp;
-LeftShift left_shift_temp;
-RightShift right_shift_temp;
-BitAnd bit_and_temp;
-BitAndNot bit_and_not_temp;
-Add add_temp;
-Subtract subtract_temp;
-BitOr bit_or_temp;
-BitXor bit_xor_temp;
-Equal equal_temp;
-NotEqual not_equal_temp;
-LessThan less_than_temp;
-LessEqual less_equal_temp;
-MoreThan more_than_temp;
-MoreEqual more_equal_temp;
-LogicOr logic_or_temp;
-LogicAnd logic_and_temp;
+Multiply multiply_temp ("*", (util::Location ()));
+Divide divide_temp ("/", (util::Location ()));
+Modulus modulus_temp ("%", (util::Location ()));
+LeftShift left_shift_temp ("<<", (util::Location ()));
+RightShift right_shift_temp (">>", (util::Location ()));
+BitAnd bit_and_temp ("&", (util::Location ()));
+BitAndNot bit_and_not_temp ("&^", (util::Location ()));
+Add add_temp ("+", (util::Location ()));
+Subtract subtract_temp ("-", (util::Location ()));
+BitOr bit_or_temp ("|", (util::Location ()));
+BitXor bit_xor_temp ("^", (util::Location ()));
+Equal equal_temp ("==", (util::Location ()));
+NotEqual not_equal_temp ("!=", (util::Location ()));
+LessThan less_than_temp ("<", (util::Location ()));
+LessEqual less_equal_temp ("<=", (util::Location ()));
+MoreThan more_than_temp (">", (util::Location ()));
+MoreEqual more_equal_temp (">=", (util::Location ()));
+LogicOr logic_or_temp ("||", (util::Location ()));
+LogicAnd logic_and_temp ("&&", (util::Location ()));
 
 }

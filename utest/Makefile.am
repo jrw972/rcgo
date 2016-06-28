@@ -2,10 +2,10 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver
 
 AM_CXXFLAGS = -I $(top_srcdir)/src
 
-TESTS = action arch bind builtin_function check_types expression_value heap error_reporter location memory_model node_cast parameter_list reaction semantic stack symbol_cast symbol_table template type
+TESTS = action arch bind callable check_types expression_value heap error_reporter location memory_model node_cast parameter_list semantic stack symbol symbol_cast symbol_table polymorphic_function type
 check_PROGRAMS = $(TESTS)
 
-HELPERS=tap.hpp visitor_helper.hpp
+HELPERS=tap.hpp visitor_helper.hpp mock_execution.hpp
 
 action_SOURCES = action.cpp $(HELPERS)
 action_LDADD = $(top_builddir)/src/librc.la
@@ -22,10 +22,10 @@ bind_LDADD = $(top_builddir)/src/librc.la
 bind_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 bind_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
-builtin_function_SOURCES = builtin_function.cpp $(HELPERS)
-builtin_function_LDADD = $(top_builddir)/src/librc.la
-builtin_function_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-builtin_function_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+callable_SOURCES = callable.cpp $(HELPERS)
+callable_LDADD = $(top_builddir)/src/librc.la
+callable_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+callable_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
 check_types_SOURCES = check_types.cpp $(HELPERS)
 check_types_LDADD = $(top_builddir)/src/librc.la
@@ -67,11 +67,6 @@ parameter_list_LDADD = $(top_builddir)/src/librc.la
 parameter_list_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 parameter_list_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
-reaction_SOURCES = reaction.cpp $(HELPERS)
-reaction_LDADD = $(top_builddir)/src/librc.la
-reaction_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-reaction_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-
 semantic_SOURCES = semantic.cpp $(HELPERS)
 semantic_LDADD = $(top_builddir)/src/librc.la
 semantic_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -81,6 +76,11 @@ stack_SOURCES = stack.cpp $(HELPERS)
 stack_LDADD = $(top_builddir)/src/librc.la
 stack_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 stack_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+
+symbol_SOURCES = symbol.cpp $(HELPERS)
+symbol_LDADD = $(top_builddir)/src/librc.la
+symbol_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+symbol_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
 symbol_cast_SOURCES = symbol_cast.cpp $(HELPERS)
 symbol_cast_LDADD = $(top_builddir)/src/librc.la
@@ -92,10 +92,10 @@ symbol_table_LDADD = $(top_builddir)/src/librc.la
 symbol_table_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 symbol_table_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
-template_SOURCES = template.cpp $(HELPERS)
-template_LDADD = $(top_builddir)/src/librc.la
-template_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-template_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+polymorphic_function_SOURCES = polymorphic_function.cpp $(HELPERS)
+polymorphic_function_LDADD = $(top_builddir)/src/librc.la
+polymorphic_function_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+polymorphic_function_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
 type_SOURCES = type.cpp $(HELPERS)
 type_LDADD = $(top_builddir)/src/librc.la

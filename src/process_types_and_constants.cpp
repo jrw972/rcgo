@@ -41,9 +41,8 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (ast::Type& node)
   {
-    const std::string& name = node.identifier->identifier;
-    NamedType* type = new NamedType (name);
-    symtab.enter_symbol (new TypeSymbol (name, node.identifier->location, type));
+    NamedType* type = new NamedType (node.identifier->identifier, node.identifier->location);
+    symtab.enter_symbol (type);
     type->underlying_type (process_type (node.type_spec, er, symtab, true));
   }
 
@@ -91,7 +90,7 @@ struct Visitor : public ast::DefaultNodeVisitor
             n->eval.type = type;
 
             const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
-            Symbol* symbol = new ConstantSymbol (name, (*id_pos)->location, type, n->eval.value);
+            Symbol* symbol = new Constant (name, (*id_pos)->location, type, n->eval.value);
             symtab.enter_symbol (symbol);
           }
 
@@ -117,7 +116,7 @@ struct Visitor : public ast::DefaultNodeVisitor
           }
 
         const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
-        Symbol* symbol = new ConstantSymbol (name, (*id_pos)->location, n->eval.type, n->eval.value);
+        Symbol* symbol = new Constant (name, (*id_pos)->location, n->eval.type, n->eval.value);
         symtab.enter_symbol (symbol);
       }
     node.done = true;
@@ -168,7 +167,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     // Do nothing.
   }
 
-  void visit (Instance& node)
+  void visit (ast::Instance& node)
   {
     // Do nothing.
   }
