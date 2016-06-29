@@ -393,7 +393,7 @@ Control
 DynamicPullPortCall::execute (ExecutorBase& exec) const
 {
   func->execute (exec);
-  pull_port_t pp;
+  PullPort pp;
   exec.stack ().pop (pp);
 
   // Create space for the return.
@@ -876,7 +876,7 @@ static void push_port_call (ExecutorBase& exec,
   args->execute (exec);
 
   // Find the port to activate.
-  push_port_t* port = *reinterpret_cast<push_port_t**> (static_cast<char*> (exec.stack ().read_pointer (receiver_offset)) + port_offset + array_offset);
+  PushPort* port = *reinterpret_cast<PushPort**> (static_cast<char*> (exec.stack ().read_pointer (receiver_offset)) + port_offset + array_offset);
 
   char* base_pointer = exec.stack ().base_pointer ();
 
@@ -987,8 +987,9 @@ struct ConvertSliceOfBytesToString : public Operation
     runtime::Slice in;
     exec.stack ().pop (in);
     runtime::String out;
-    out.ptr = exec.heap ()->allocate (in.length);
-    memcpy (out.ptr, in.ptr, in.length);
+    void* o = exec.heap ()->allocate (in.length);
+    memcpy (o, in.ptr, in.length);
+    out.ptr = o;
     out.length = in.length;
     exec.stack ().push (out);
     return Control_Continue;
@@ -1520,8 +1521,9 @@ Control CopyOp::execute (ExecutorBase& exec) const
       runtime::String in;
       exec.stack ().pop (in);
       runtime::String out;
-      out.ptr = exec.heap ()->allocate (in.length);
-      memcpy (out.ptr, in.ptr, in.length);
+      void* o = exec.heap ()->allocate (in.length);
+      memcpy (o, in.ptr, in.length);
+      out.ptr = o;
       out.length = in.length;
       exec.stack ().push (out);
       return Control_Continue;

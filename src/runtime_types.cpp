@@ -1,9 +1,18 @@
 #include "runtime_types.hpp"
 
 #include <cstring>
+#include <cmath>
 
 namespace runtime
 {
+
+  Complex64 Complex64::make (float r, float i)
+  {
+    Complex64 c64;
+    c64.real = r;
+    c64.imag = i;
+    return c64;
+  }
 
 bool Complex64::operator== (const Complex64& other) const
 {
@@ -41,27 +50,56 @@ Complex64& Complex64::operator+= (const Complex64& x)
   return *this;
 }
 
-Complex64 operator* (const Complex64&, const Complex64&)
+  Complex64 operator* (const Complex64& x, const Complex64& y)
 {
-  UNIMPLEMENTED;
+  Complex64 c64;
+  c64.real = x.real * y.real - x.imag * y.imag;
+  c64.imag = x.real * y.imag + x.imag * y.real;
+  return c64;
 }
-Complex64 operator/ (const Complex64&, const Complex64&)
+Complex64 operator/ (const Complex64& x, const Complex64& y)
 {
-  UNIMPLEMENTED;
+  const float xmag = sqrt (x.real * x.real + x.imag * x.imag);
+  const float xtheta = atan (x.imag / x.real);
+  const float ymag = sqrt (y.real * y.real + y.imag * y.imag);
+  const float ytheta = atan (y.imag / y.real);
+  const float mag = xmag / ymag;
+  const float theta = xtheta - ytheta;
+  Complex64 c64;
+  c64.real = mag * cos (theta);
+  c64.imag = mag * sin (theta);
+  return c64;
 }
 
-Complex64 operator+ (const Complex64&, const Complex64&)
+Complex64 operator+ (const Complex64& x, const Complex64& y)
 {
-  UNIMPLEMENTED;
+  Complex64 c64;
+  c64.real = x.real + y.real;
+  c64.imag = x.imag + y.imag;
+  return c64;
 }
-Complex64 operator- (const Complex64&, const Complex64&)
+Complex64 operator- (const Complex64& x, const Complex64& y)
 {
-  UNIMPLEMENTED;
+  Complex64 c64;
+  c64.real = x.real - y.real;
+  c64.imag = x.imag - y.imag;
+  return c64;
 }
-Complex64 operator- (const Complex64&)
+Complex64 operator- (const Complex64& x)
 {
-  UNIMPLEMENTED;
+  Complex64 c64;
+  c64.real = -x.real;
+  c64.imag = -x.imag;
+  return c64;
 }
+
+  Complex128 Complex128::make (double r, double i)
+  {
+    Complex128 c128;
+    c128.real = r;
+    c128.imag = i;
+    return c128;
+  }
 
 bool Complex128::operator== (const Complex128& other) const
 {
@@ -99,31 +137,55 @@ Complex128& Complex128::operator+= (const Complex128& x)
   return *this;
 }
 
-Complex128 operator* (const Complex128&, const Complex128&)
+Complex128 operator* (const Complex128& x, const Complex128& y)
 {
-  UNIMPLEMENTED;
+  Complex128 c128;
+  c128.real = x.real * y.real - x.imag * y.imag;
+  c128.imag = x.real * y.imag + x.imag * y.real;
+  return c128;
 }
-Complex128 operator/ (const Complex128&, const Complex128&)
+Complex128 operator/ (const Complex128& x, const Complex128& y)
 {
-  UNIMPLEMENTED;
+  const double xmag = sqrt (x.real * x.real + x.imag * x.imag);
+  const double xtheta = atan (x.imag / x.real);
+  const double ymag = sqrt (y.real * y.real + y.imag * y.imag);
+  const double ytheta = atan (y.imag / y.real);
+  const double mag = xmag / ymag;
+  const double theta = xtheta - ytheta;
+  Complex128 c128;
+  c128.real = mag * cos (theta);
+  c128.imag = mag * sin (theta);
+  return c128;
 }
-Complex128 operator+ (const Complex128&, const Complex128&)
+Complex128 operator+ (const Complex128& x, const Complex128& y)
 {
-  UNIMPLEMENTED;
+  Complex128 c128;
+  c128.real = x.real + y.real;
+  c128.imag = x.imag + y.imag;
+  return c128;
 }
-Complex128 operator- (const Complex128&, const Complex128&)
+Complex128 operator- (const Complex128& x, const Complex128& y)
 {
-  UNIMPLEMENTED;
+  Complex128 c128;
+  c128.real = x.real - y.real;
+  c128.imag = x.imag - y.imag;
+  return c128;
 }
-Complex128 operator- (const Complex128&)
+Complex128 operator- (const Complex128& x)
 {
-  UNIMPLEMENTED;
+  Complex128 c128;
+  c128.real = -x.real;
+  c128.imag = -x.imag;
+  return c128;
 }
 
-std::ostream& operator<< (std::ostream& out, const String& s)
-{
-  return out << std::string (static_cast<const char*> (s.ptr), s.length);
-}
+  String String::make (const void* ptr, size_t length)
+  {
+    String s;
+    s.ptr = ptr;
+    s.length = length;
+    return s;
+  }
 
 bool String::operator== (const String& other) const
 {
@@ -156,6 +218,11 @@ bool String::operator< (const String& other) const
     {
       return this->length < other.length;
     }
+}
+
+std::ostream& operator<< (std::ostream& out, const String& s)
+{
+  return out << std::string (static_cast<const char*> (s.ptr), s.length);
 }
 
 std::ostream& operator<< (std::ostream& out, const Slice& s)

@@ -50,9 +50,9 @@ allocate_instances (composition::Composer& instance_table)
 }
 
 static void
-bind (push_port_t** output_port, component_t* input_instance, const decl::Reaction* reaction, long parameter)
+bind (PushPort** output_port, component_t* input_instance, const decl::Reaction* reaction, long parameter)
 {
-  push_port_t* port = new push_port_t;
+  PushPort* port = new PushPort;
   port->instance = input_instance;
   port->reaction = reaction;
   port->parameter = parameter;
@@ -78,7 +78,7 @@ create_bindings (composition::Composer& instance_table)
            ++reaction_pos)
         {
           composition::Reaction* r = *reaction_pos;
-          bind (reinterpret_cast<push_port_t**> (reinterpret_cast<char*> (output_instance->component) + output_port),
+          bind (reinterpret_cast<PushPort**> (reinterpret_cast<char*> (output_instance->component) + output_port),
                 r->instance->component,
                 r->reaction,
                 r->iota);
@@ -93,7 +93,7 @@ create_bindings (composition::Composer& instance_table)
       composition::Instance* pull_port_instance = pp_pos->second->instance;
       size_t pull_port_address = pp_pos->first - pull_port_instance->address;
       composition::Getter* getter = *pp_pos->second->getters.begin ();
-      pull_port_t* pull_port = reinterpret_cast<pull_port_t*> (reinterpret_cast<char*> (pull_port_instance->component) + pull_port_address);
+      PullPort* pull_port = reinterpret_cast<PullPort*> (reinterpret_cast<char*> (pull_port_instance->component) + pull_port_address);
       assert (getter->instance != NULL);
       pull_port->instance = getter->instance->component;
       pull_port->getter = getter->getter;

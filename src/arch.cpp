@@ -231,7 +231,7 @@ size_t size (const Type* type)
     case Push_Port_Kind:
       return sizeof (void*);
     case Pull_Port_Kind:
-      return sizeof (runtime::pull_port_t);
+      return sizeof (runtime::PullPort);
 
     case Interface_Kind:
       UNIMPLEMENTED;

@@ -2,7 +2,27 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver
 
 AM_CXXFLAGS = -I $(top_srcdir)/src
 
-TESTS = action arch bind callable check_types expression_value heap error_reporter location memory_model node_cast parameter_list semantic stack symbol symbol_cast symbol_table polymorphic_function type
+TESTS = \
+ action \
+ arch \
+ bind \
+ callable \
+ check_types \
+ error_reporter \
+ expression_value \
+ heap \
+ location memory_model \
+ node_cast \
+ parameter_list \
+ polymorphic_function \
+ runtime_types \
+ semantic \
+ stack \
+ symbol \
+ symbol_cast \
+ symbol_table \
+ type \
+ value
 check_PROGRAMS = $(TESTS)
 
 HELPERS=tap.hpp visitor_helper.hpp mock_execution.hpp
@@ -97,7 +117,17 @@ polymorphic_function_LDADD = $(top_builddir)/src/librc.la
 polymorphic_function_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 polymorphic_function_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
+runtime_types_SOURCES = runtime_types.cpp $(HELPERS)
+runtime_types_LDADD = $(top_builddir)/src/librc.la
+runtime_types_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+runtime_types_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+
 type_SOURCES = type.cpp $(HELPERS)
 type_LDADD = $(top_builddir)/src/librc.la
 type_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 type_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+
+value_SOURCES = value.cpp $(HELPERS)
+value_LDADD = $(top_builddir)/src/librc.la
+value_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+value_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)

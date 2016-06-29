@@ -78,12 +78,13 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 TESTS = action$(EXEEXT) arch$(EXEEXT) bind$(EXEEXT) callable$(EXEEXT) \
-	check_types$(EXEEXT) expression_value$(EXEEXT) heap$(EXEEXT) \
-	error_reporter$(EXEEXT) location$(EXEEXT) \
+	check_types$(EXEEXT) error_reporter$(EXEEXT) \
+	expression_value$(EXEEXT) heap$(EXEEXT) location$(EXEEXT) \
 	memory_model$(EXEEXT) node_cast$(EXEEXT) \
-	parameter_list$(EXEEXT) semantic$(EXEEXT) stack$(EXEEXT) \
+	parameter_list$(EXEEXT) polymorphic_function$(EXEEXT) \
+	runtime_types$(EXEEXT) semantic$(EXEEXT) stack$(EXEEXT) \
 	symbol$(EXEEXT) symbol_cast$(EXEEXT) symbol_table$(EXEEXT) \
-	polymorphic_function$(EXEEXT) type$(EXEEXT)
+	type$(EXEEXT) value$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = utest
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
@@ -101,13 +102,13 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__EXEEXT_1 = action$(EXEEXT) arch$(EXEEXT) bind$(EXEEXT) \
-	callable$(EXEEXT) check_types$(EXEEXT) \
-	expression_value$(EXEEXT) heap$(EXEEXT) \
-	error_reporter$(EXEEXT) location$(EXEEXT) \
+	callable$(EXEEXT) check_types$(EXEEXT) error_reporter$(EXEEXT) \
+	expression_value$(EXEEXT) heap$(EXEEXT) location$(EXEEXT) \
 	memory_model$(EXEEXT) node_cast$(EXEEXT) \
-	parameter_list$(EXEEXT) semantic$(EXEEXT) stack$(EXEEXT) \
+	parameter_list$(EXEEXT) polymorphic_function$(EXEEXT) \
+	runtime_types$(EXEEXT) semantic$(EXEEXT) stack$(EXEEXT) \
 	symbol$(EXEEXT) symbol_cast$(EXEEXT) symbol_table$(EXEEXT) \
-	polymorphic_function$(EXEEXT) type$(EXEEXT)
+	type$(EXEEXT) value$(EXEEXT)
 am__objects_1 =
 am_action_OBJECTS = action-action.$(OBJEXT) $(am__objects_1)
 action_OBJECTS = $(am_action_OBJECTS)
@@ -202,6 +203,14 @@ polymorphic_function_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(polymorphic_function_CXXFLAGS) $(CXXFLAGS) \
 	$(polymorphic_function_LDFLAGS) $(LDFLAGS) -o $@
+am_runtime_types_OBJECTS = runtime_types-runtime_types.$(OBJEXT) \
+	$(am__objects_1)
+runtime_types_OBJECTS = $(am_runtime_types_OBJECTS)
+runtime_types_DEPENDENCIES = $(top_builddir)/src/librc.la
+runtime_types_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(runtime_types_CXXFLAGS) $(CXXFLAGS) $(runtime_types_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_semantic_OBJECTS = semantic-semantic.$(OBJEXT) $(am__objects_1)
 semantic_OBJECTS = $(am_semantic_OBJECTS)
 semantic_DEPENDENCIES = $(top_builddir)/src/librc.la
@@ -240,6 +249,12 @@ type_DEPENDENCIES = $(top_builddir)/src/librc.la
 type_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(type_CXXFLAGS) \
 	$(CXXFLAGS) $(type_LDFLAGS) $(LDFLAGS) -o $@
+am_value_OBJECTS = value-value.$(OBJEXT) $(am__objects_1)
+value_OBJECTS = $(am_value_OBJECTS)
+value_DEPENDENCIES = $(top_builddir)/src/librc.la
+value_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(value_CXXFLAGS) \
+	$(CXXFLAGS) $(value_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -297,17 +312,19 @@ SOURCES = $(action_SOURCES) $(arch_SOURCES) $(bind_SOURCES) \
 	$(error_reporter_SOURCES) $(expression_value_SOURCES) \
 	$(heap_SOURCES) $(location_SOURCES) $(memory_model_SOURCES) \
 	$(node_cast_SOURCES) $(parameter_list_SOURCES) \
-	$(polymorphic_function_SOURCES) $(semantic_SOURCES) \
-	$(stack_SOURCES) $(symbol_SOURCES) $(symbol_cast_SOURCES) \
-	$(symbol_table_SOURCES) $(type_SOURCES)
+	$(polymorphic_function_SOURCES) $(runtime_types_SOURCES) \
+	$(semantic_SOURCES) $(stack_SOURCES) $(symbol_SOURCES) \
+	$(symbol_cast_SOURCES) $(symbol_table_SOURCES) $(type_SOURCES) \
+	$(value_SOURCES)
 DIST_SOURCES = $(action_SOURCES) $(arch_SOURCES) $(bind_SOURCES) \
 	$(callable_SOURCES) $(check_types_SOURCES) \
 	$(error_reporter_SOURCES) $(expression_value_SOURCES) \
 	$(heap_SOURCES) $(location_SOURCES) $(memory_model_SOURCES) \
 	$(node_cast_SOURCES) $(parameter_list_SOURCES) \
-	$(polymorphic_function_SOURCES) $(semantic_SOURCES) \
-	$(stack_SOURCES) $(symbol_SOURCES) $(symbol_cast_SOURCES) \
-	$(symbol_table_SOURCES) $(type_SOURCES)
+	$(polymorphic_function_SOURCES) $(runtime_types_SOURCES) \
+	$(semantic_SOURCES) $(stack_SOURCES) $(symbol_SOURCES) \
+	$(symbol_cast_SOURCES) $(symbol_table_SOURCES) $(type_SOURCES) \
+	$(value_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -738,10 +755,18 @@ polymorphic_function_SOURCES = polymorphic_function.cpp $(HELPERS)
 polymorphic_function_LDADD = $(top_builddir)/src/librc.la
 polymorphic_function_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 polymorphic_function_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+runtime_types_SOURCES = runtime_types.cpp $(HELPERS)
+runtime_types_LDADD = $(top_builddir)/src/librc.la
+runtime_types_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+runtime_types_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 type_SOURCES = type.cpp $(HELPERS)
 type_LDADD = $(top_builddir)/src/librc.la
 type_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 type_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+value_SOURCES = value.cpp $(HELPERS)
+value_LDADD = $(top_builddir)/src/librc.la
+value_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+value_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -838,6 +863,10 @@ polymorphic_function$(EXEEXT): $(polymorphic_function_OBJECTS) $(polymorphic_fun
 	@rm -f polymorphic_function$(EXEEXT)
 	$(AM_V_CXXLD)$(polymorphic_function_LINK) $(polymorphic_function_OBJECTS) $(polymorphic_function_LDADD) $(LIBS)
 
+runtime_types$(EXEEXT): $(runtime_types_OBJECTS) $(runtime_types_DEPENDENCIES) $(EXTRA_runtime_types_DEPENDENCIES) 
+	@rm -f runtime_types$(EXEEXT)
+	$(AM_V_CXXLD)$(runtime_types_LINK) $(runtime_types_OBJECTS) $(runtime_types_LDADD) $(LIBS)
+
 semantic$(EXEEXT): $(semantic_OBJECTS) $(semantic_DEPENDENCIES) $(EXTRA_semantic_DEPENDENCIES) 
 	@rm -f semantic$(EXEEXT)
 	$(AM_V_CXXLD)$(semantic_LINK) $(semantic_OBJECTS) $(semantic_LDADD) $(LIBS)
@@ -862,6 +891,10 @@ type$(EXEEXT): $(type_OBJECTS) $(type_DEPENDENCIES) $(EXTRA_type_DEPENDENCIES)
 	@rm -f type$(EXEEXT)
 	$(AM_V_CXXLD)$(type_LINK) $(type_OBJECTS) $(type_LDADD) $(LIBS)
 
+value$(EXEEXT): $(value_OBJECTS) $(value_DEPENDENCIES) $(EXTRA_value_DEPENDENCIES) 
+	@rm -f value$(EXEEXT)
+	$(AM_V_CXXLD)$(value_LINK) $(value_OBJECTS) $(value_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -881,12 +914,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_cast-node_cast.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parameter_list-parameter_list.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/polymorphic_function-polymorphic_function.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runtime_types-runtime_types.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/semantic-semantic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stack-stack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol-symbol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol_cast-symbol_cast.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol_table-symbol_table.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/type-type.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/value-value.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -1091,6 +1126,20 @@ polymorphic_function-polymorphic_function.obj: polymorphic_function.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(polymorphic_function_CXXFLAGS) $(CXXFLAGS) -c -o polymorphic_function-polymorphic_function.obj `if test -f 'polymorphic_function.cpp'; then $(CYGPATH_W) 'polymorphic_function.cpp'; else $(CYGPATH_W) '$(srcdir)/polymorphic_function.cpp'; fi`
 
+runtime_types-runtime_types.o: runtime_types.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(runtime_types_CXXFLAGS) $(CXXFLAGS) -MT runtime_types-runtime_types.o -MD -MP -MF $(DEPDIR)/runtime_types-runtime_types.Tpo -c -o runtime_types-runtime_types.o `test -f 'runtime_types.cpp' || echo '$(srcdir)/'`runtime_types.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/runtime_types-runtime_types.Tpo $(DEPDIR)/runtime_types-runtime_types.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='runtime_types.cpp' object='runtime_types-runtime_types.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(runtime_types_CXXFLAGS) $(CXXFLAGS) -c -o runtime_types-runtime_types.o `test -f 'runtime_types.cpp' || echo '$(srcdir)/'`runtime_types.cpp
+
+runtime_types-runtime_types.obj: runtime_types.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(runtime_types_CXXFLAGS) $(CXXFLAGS) -MT runtime_types-runtime_types.obj -MD -MP -MF $(DEPDIR)/runtime_types-runtime_types.Tpo -c -o runtime_types-runtime_types.obj `if test -f 'runtime_types.cpp'; then $(CYGPATH_W) 'runtime_types.cpp'; else $(CYGPATH_W) '$(srcdir)/runtime_types.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/runtime_types-runtime_types.Tpo $(DEPDIR)/runtime_types-runtime_types.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='runtime_types.cpp' object='runtime_types-runtime_types.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(runtime_types_CXXFLAGS) $(CXXFLAGS) -c -o runtime_types-runtime_types.obj `if test -f 'runtime_types.cpp'; then $(CYGPATH_W) 'runtime_types.cpp'; else $(CYGPATH_W) '$(srcdir)/runtime_types.cpp'; fi`
+
 semantic-semantic.o: semantic.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(semantic_CXXFLAGS) $(CXXFLAGS) -MT semantic-semantic.o -MD -MP -MF $(DEPDIR)/semantic-semantic.Tpo -c -o semantic-semantic.o `test -f 'semantic.cpp' || echo '$(srcdir)/'`semantic.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/semantic-semantic.Tpo $(DEPDIR)/semantic-semantic.Po
@@ -1174,6 +1223,20 @@ type-type.obj: type.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='type.cpp' object='type-type.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(type_CXXFLAGS) $(CXXFLAGS) -c -o type-type.obj `if test -f 'type.cpp'; then $(CYGPATH_W) 'type.cpp'; else $(CYGPATH_W) '$(srcdir)/type.cpp'; fi`
+
+value-value.o: value.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(value_CXXFLAGS) $(CXXFLAGS) -MT value-value.o -MD -MP -MF $(DEPDIR)/value-value.Tpo -c -o value-value.o `test -f 'value.cpp' || echo '$(srcdir)/'`value.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/value-value.Tpo $(DEPDIR)/value-value.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='value.cpp' object='value-value.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(value_CXXFLAGS) $(CXXFLAGS) -c -o value-value.o `test -f 'value.cpp' || echo '$(srcdir)/'`value.cpp
+
+value-value.obj: value.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(value_CXXFLAGS) $(CXXFLAGS) -MT value-value.obj -MD -MP -MF $(DEPDIR)/value-value.Tpo -c -o value-value.obj `if test -f 'value.cpp'; then $(CYGPATH_W) 'value.cpp'; else $(CYGPATH_W) '$(srcdir)/value.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/value-value.Tpo $(DEPDIR)/value-value.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='value.cpp' object='value-value.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(value_CXXFLAGS) $(CXXFLAGS) -c -o value-value.obj `if test -f 'value.cpp'; then $(CYGPATH_W) 'value.cpp'; else $(CYGPATH_W) '$(srcdir)/value.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -1409,6 +1472,13 @@ check_types.log: check_types$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+error_reporter.log: error_reporter$(EXEEXT)
+	@p='error_reporter$(EXEEXT)'; \
+	b='error_reporter'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 expression_value.log: expression_value$(EXEEXT)
 	@p='expression_value$(EXEEXT)'; \
 	b='expression_value'; \
@@ -1419,13 +1489,6 @@ expression_value.log: expression_value$(EXEEXT)
 heap.log: heap$(EXEEXT)
 	@p='heap$(EXEEXT)'; \
 	b='heap'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-error_reporter.log: error_reporter$(EXEEXT)
-	@p='error_reporter$(EXEEXT)'; \
-	b='error_reporter'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1454,6 +1517,20 @@ node_cast.log: node_cast$(EXEEXT)
 parameter_list.log: parameter_list$(EXEEXT)
 	@p='parameter_list$(EXEEXT)'; \
 	b='parameter_list'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+polymorphic_function.log: polymorphic_function$(EXEEXT)
+	@p='polymorphic_function$(EXEEXT)'; \
+	b='polymorphic_function'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+runtime_types.log: runtime_types$(EXEEXT)
+	@p='runtime_types$(EXEEXT)'; \
+	b='runtime_types'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1493,16 +1570,16 @@ symbol_table.log: symbol_table$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-polymorphic_function.log: polymorphic_function$(EXEEXT)
-	@p='polymorphic_function$(EXEEXT)'; \
-	b='polymorphic_function'; \
+type.log: type$(EXEEXT)
+	@p='type$(EXEEXT)'; \
+	b='type'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-type.log: type$(EXEEXT)
-	@p='type$(EXEEXT)'; \
-	b='type'; \
+value.log: value$(EXEEXT)
+	@p='value$(EXEEXT)'; \
+	b='value'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

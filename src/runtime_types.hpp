@@ -11,7 +11,9 @@ struct Complex64
   float real;
   float imag;
 
+  static Complex64 make (float r, float i);
   bool operator== (const Complex64& other) const;
+  // TODO:  Remove this method.  Requires refactoring operation.
   operator double() const;
   Complex64& operator= (double x);
   Complex64& operator++ ();
@@ -30,7 +32,9 @@ struct Complex128
   double real;
   double imag;
 
+  static Complex128 make (double r, double i);
   bool operator== (const Complex128& other) const;
+  // TODO:  Remove this method.  Requires refactoring operation.
   operator double() const;
   Complex128& operator= (double x);
   Complex128& operator++ ();
@@ -46,14 +50,15 @@ Complex128 operator- (const Complex128&);
 
 struct String
 {
-  void* ptr;
+  const void* ptr;
   size_t length;
 
+  static String make (const void* ptr, size_t length);
   bool operator== (const String& other) const;
   bool operator< (const String& other) const;
 };
 
-std::ostream& operator<< (std::ostream& out, const String& s);
+  std::ostream& operator<< (std::ostream& out, const String& s);
 
 struct Slice
 {
@@ -77,15 +82,15 @@ private:
 // A cmponent_t* contains the address of a component instance.
 struct component_t;
 
-struct push_port_t
+struct PushPort
 {
   component_t* instance;
   const decl::Reaction* reaction;
   long parameter;
-  push_port_t* next;
+  PushPort* next;
 };
 
-struct pull_port_t
+struct PullPort
 {
   component_t* instance;
   decl::Getter* getter;

@@ -262,8 +262,9 @@ ESCAPED \\[abfnrtv\\\"]
 
                          size_t size = destination - begin;
                          runtime::String v;
-                         v.ptr = malloc (size);
-                         memcpy (v.ptr, begin, size);
+                         void* o = malloc (size);
+                         memcpy (o, begin, size);
+                         v.ptr = o;
                          v.length = size;
 
                          Value value;
@@ -279,8 +280,9 @@ ESCAPED \\[abfnrtv\\\"]
   char* end = parseInterprettedString (yylloc, pos, limit, pos);
   size_t size = end - begin;
   runtime::String v;
-  v.ptr = malloc (size);
-  memcpy (v.ptr, begin, size);
+  void* o = malloc (size);
+  memcpy (o, begin, size);
+  v.ptr = o;
   v.length = size;
 
   Value value;
