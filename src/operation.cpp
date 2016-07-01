@@ -554,8 +554,7 @@ IndexArray::execute (ExecutorBase& exec) const
       error_at_line (-1, 0, location.file.c_str (), location.line,
                      "array index is out of bounds (E148)");
     }
-  UNIMPLEMENTED;
-  //exec.stack ().push_pointer (static_cast<char*> (ptr) + i * type->unit_size ());
+  exec.stack ().push_pointer (static_cast<char*> (ptr) + i * arch::unit_size (type));
   return Control_Continue;
 }
 
@@ -596,9 +595,8 @@ SliceArray::execute (ExecutorBase& exec) const
   runtime::Slice slice_val;
   slice_val.length = high_val - low_val;
   slice_val.capacity = max_val - low_val;
-  UNIMPLEMENTED;
-  // slice_val.ptr = slice_val.length ? ptr + low_val * type->unit_size () : NULL;
-  // exec.stack ().push (slice_val);
+  slice_val.ptr = slice_val.length ? ptr + low_val * arch::unit_size (type) : NULL;
+  exec.stack ().push (slice_val);
 
   return Control_Continue;
 }
@@ -640,8 +638,7 @@ SliceSlice::execute (ExecutorBase& exec) const
 
   s.length = high_val - low_val;
   s.capacity = max_val - low_val;
-  UNIMPLEMENTED;
-  //s.ptr = s.length ? static_cast<char*> (s.ptr) + low_val * type->unit_size () : NULL;
+  s.ptr = s.length ? static_cast<char*> (s.ptr) + low_val * arch::unit_size (type) : NULL;
   exec.stack ().push (s);
 
   return Control_Continue;
@@ -923,8 +920,7 @@ IndexedPushPortCall::execute (ExecutorBase& exec) const
   index->execute (exec);
   long idx;
   exec.stack ().pop (idx);
-  UNIMPLEMENTED;
-  //push_port_call (exec, args, arguments_size, receiver_offset, port_offset, idx * array_type->unit_size ());
+  push_port_call (exec, args, arguments_size, receiver_offset, port_offset, idx * arch::unit_size (array_type));
   return Control_Continue;
 }
 
@@ -1463,18 +1459,16 @@ struct AppendOp : public Operation
     const unsigned long new_length = slice.length + 1;
     if (new_length > slice.capacity)
       {
-        UNIMPLEMENTED;
-        // const unsigned long new_capacity = 2 * new_length;
-        // void* ptr = exec.heap ()->allocate (new_capacity * slice_type->unit_size ());
-        // memcpy (ptr, slice.ptr, slice.length * slice_type->unit_size ());
-        // slice.ptr = ptr;
-        // slice.capacity = new_capacity;
+        const unsigned long new_capacity = 2 * new_length;
+        void* ptr = exec.heap ()->allocate (new_capacity * arch::unit_size (slice_type));
+        memcpy (ptr, slice.ptr, slice.length * arch::unit_size (slice_type));
+        slice.ptr = ptr;
+        slice.capacity = new_capacity;
       }
-    UNIMPLEMENTED;
-    // memcpy (static_cast<char*> (slice.ptr) + slice.length * slice_type->unit_size (), &element, slice_type->unit_size ());
-    // slice.length = new_length;
-    // exec.stack ().push (slice);
-    // return Control_Continue;
+    memcpy (static_cast<char*> (slice.ptr) + slice.length * arch::unit_size (slice_type), &element, arch::unit_size (slice_type));
+    slice.length = new_length;
+    exec.stack ().push (slice);
+    return Control_Continue;
   }
 
   virtual void dump () const
@@ -1503,17 +1497,16 @@ Control CopyOp::execute (ExecutorBase& exec) const
   const type::Slice* slice_type = type->underlying_type ()->to_slice ();
   if (slice_type != NULL)
     {
-      UNIMPLEMENTED;
-      // semantic::Slice in;
-      // exec.stack ().pop (in);
-      // semantic::Slice out;
-      // size_t sz = slice_type->unit_size () * in.length;
-      // out.ptr = exec.heap ()->allocate (sz);
-      // memcpy (out.ptr, in.ptr, sz);
-      // out.length = in.length;
-      // out.capacity = in.length;
-      // exec.stack ().push (out);
-      // return Control_Continue;
+      runtime::Slice in;
+      exec.stack ().pop (in);
+      runtime::Slice out;
+      size_t sz = arch::unit_size (slice_type) * in.length;
+      out.ptr = exec.heap ()->allocate (sz);
+      memcpy (out.ptr, in.ptr, sz);
+      out.length = in.length;
+      out.capacity = in.length;
+      exec.stack ().push (out);
+      return Control_Continue;
     }
 
   if (type->underlying_type ()->kind () == String_Kind)

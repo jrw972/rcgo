@@ -76,7 +76,7 @@ partitioned_scheduler_t::init (composition::Composer& instance_table,
           switch (action->action->precondition_kind)
             {
             case Action::Dynamic:
-              initialize_task (new Actionask_t (action), thread_count);
+              initialize_task (new action_task_t (action), thread_count);
               break;
             case Action::Static_True:
               initialize_task (new always_task_t (action), thread_count);
@@ -98,7 +98,6 @@ partitioned_scheduler_t::run ()
     {
       executors_[i]->spawn ();
     }
-
   for (size_t i = 0; i != executors_.size (); ++i)
     {
       executors_[i]->join ();
@@ -285,7 +284,7 @@ partitioned_scheduler_t::executor_t::run_i ()
               sleep ();
               break;
             case DOUBLE_CHECK:
-              if (fileDescriptorMap_.empty ())
+              if (file_descriptor_map_.empty ())
                 {
                   state = WAIT2;
                   send (Message::make_start_waiting2 (id_));
@@ -395,8 +394,8 @@ partitioned_scheduler_t::executor_t::poll ()
   pfd.events = POLLIN;
   pfds.push_back (pfd);
 
-  for (FileDescriptorMapType::const_iterator pos = fileDescriptorMap_.begin (),
-       limit = fileDescriptorMap_.end ();
+  for (FileDescriptorMapType::const_iterator pos = file_descriptor_map_.begin (),
+       limit = file_descriptor_map_.end ();
        pos != limit;
        ++pos)
     {

@@ -583,9 +583,8 @@ Composer::elaborate_bindings ()
               void* reaction_component = exec.stack ().pop_pointer ();
               if (sb->eval.type->underlying_type ()->to_pointer ())
                 {
-                  UNIMPLEMENTED;
-                  // exec.stack ().load (reaction_component, sb->eval.type->size ());
-                  // reaction_component = exec.stack ().pop_pointer ();
+                  exec.stack ().load (reaction_component, arch::size (sb->eval.type));
+                  reaction_component = exec.stack ().pop_pointer ();
                 }
               const decl::Reaction* reaction = static_cast<const decl::Reaction*> (right->callable);
               PushPortsType::const_iterator pp_pos = table.push_ports_.find (reinterpret_cast<size_t> (port));
@@ -612,9 +611,8 @@ Composer::elaborate_bindings ()
               assert (node.param->eval.expression_kind != semantic::UnknownExpressionKind);
               if (node.param->eval.expression_kind == semantic::VariableExpressionKind)
                 {
-                  UNIMPLEMENTED;
-                  // void* ptr = exec.stack ().pop_pointer ();
-                  // exec.stack ().load (ptr, node.param->eval.type->size ());
+                  void* ptr = exec.stack ().pop_pointer ();
+                  exec.stack ().load (ptr, arch::size (node.param->eval.type));
                 }
               long idx;
               exec.stack ().pop (idx);
@@ -899,9 +897,8 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     assert (node.index->eval.expression_kind != semantic::UnknownExpressionKind);
     if (node.index->eval.expression_kind == semantic::VariableExpressionKind)
       {
-        UNIMPLEMENTED;
-        // void* ptr = exec.stack ().pop_pointer ();
-        // exec.stack ().load (ptr, node.index->eval.type->size ());
+        void* ptr = exec.stack ().pop_pointer ();
+        exec.stack ().load (ptr, arch::size (node.index->eval.type));
       }
 
     long idx;
@@ -917,14 +914,13 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
                        "port index is negative (E75)");
       }
 
-    UNIMPLEMENTED;
-    // size_t port = activation->instance->address + node.field->offset + idx * node.array_type->unit_size ();
+    size_t port = activation->instance->address + arch::offset (node.field) + idx * arch::unit_size (node.array_type);
 
-    // // Find what is bound to this port.
-    // Composer::PushPortsType::const_iterator port_pos = table.push_ports_.find (port);
-    // assert (port_pos != table.push_ports_.end ());
-    // activation->nodes.push_back (port_pos->second);
-    // node.args->accept (*this);
+    // Find what is bound to this port.
+    Composer::PushPortsType::const_iterator port_pos = table.push_ports_.find (port);
+    assert (port_pos != table.push_ports_.end ());
+    activation->nodes.push_back (port_pos->second);
+    node.args->accept (*this);
   }
 
   void visit (CallExpr& node)
@@ -1364,8 +1360,7 @@ Composer::instantiate_contained_instances (const type::Type * type,
           // Recur changing address.
           std::stringstream newname;
           newname << name << '[' << idx << ']';
-          UNIMPLEMENTED;
-          //instantiate_contained_instances (a->base_type, parent, NULL, address + idx * a->unit_size (), line, NULL, newname.str (), NULL, field);
+          instantiate_contained_instances (a->base_type, parent, NULL, address + idx * arch::unit_size (a), line, NULL, newname.str (), NULL, field);
         }
     }
     break;

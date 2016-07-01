@@ -685,14 +685,13 @@ struct IndexedPushPortCall : public Operation
                        Operation* i,
                        Operation* o,
                        const type::Array* a)
-    : arguments_size (0/*a_push_port->parameter_list->size_on_stack ()*/)
+    : arguments_size (arch::size_on_stack (a_push_port->parameter_list))
     , receiver_offset (ro)
     , port_offset (po)
     , index (i)
     , args (o)
     , array_type (a)
   {
-    UNIMPLEMENTED;
   }
   virtual Control execute (ExecutorBase& exec) const;
   virtual void dump () const

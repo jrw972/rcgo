@@ -223,9 +223,9 @@ private:
     size_t generation_;
   };
 
-  struct Actionask_t : public task_t
+  struct action_task_t : public task_t
   {
-    Actionask_t (const composition::Action* a)
+    action_task_t (const composition::Action* a)
       : action (a)
     { }
 
@@ -299,7 +299,7 @@ private:
       , ready_head_ (NULL)
       , ready_tail_ (&ready_head_)
       , task_count_ (0)
-      , tracFile_Descriptor_Kinds_ (false)
+      , track_file_descriptors_ (false)
       , using_eventfd_ (false)
     {
       pthread_mutex_init (&mutex_, NULL);
@@ -357,23 +357,23 @@ private:
     }
 
     virtual void
-    checkedForReadability (FileDescriptor* fd)
+    checked_for_readability (FileDescriptor* fd)
     {
-      if (tracFile_Descriptor_Kinds_)
+      if (track_file_descriptors_)
         {
           std::pair<FileDescriptorMapType::iterator, bool> x =
-            fileDescriptorMap_.insert (std::make_pair (fd, 0));
+            file_descriptor_map_.insert (std::make_pair (fd, 0));
           x.first->second |= POLLIN;
         }
     }
 
     virtual void
-    checkedForWritability (FileDescriptor* fd)
+    checked_for_writability (FileDescriptor* fd)
     {
-      if (tracFile_Descriptor_Kinds_)
+      if (track_file_descriptors_)
         {
           std::pair<FileDescriptorMapType::iterator, bool> x =
-            fileDescriptorMap_.insert (std::make_pair (fd, 0));
+            file_descriptor_map_.insert (std::make_pair (fd, 0));
           x.first->second |= POLLOUT;
         }
     }
@@ -383,14 +383,14 @@ private:
     void
     disableFileDescriptorTracking ()
     {
-      tracFile_Descriptor_Kinds_ = false;
+      track_file_descriptors_ = false;
     }
 
     void
     enableFileDescriptorTracking ()
     {
-      tracFile_Descriptor_Kinds_ = true;
-      fileDescriptorMap_.clear ();
+      track_file_descriptors_ = true;
+      file_descriptor_map_.clear ();
     }
 
     struct Message
@@ -533,9 +533,9 @@ private:
     task_t** ready_tail_;
     std::queue<Message> message_queue_;
     size_t task_count_;
-    bool tracFile_Descriptor_Kinds_;
+    bool track_file_descriptors_;
     typedef std::map<FileDescriptor*, short> FileDescriptorMapType;
-    FileDescriptorMapType fileDescriptorMap_;
+    FileDescriptorMapType file_descriptor_map_;
     bool using_eventfd_;
   };
 

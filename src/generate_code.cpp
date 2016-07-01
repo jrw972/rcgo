@@ -716,12 +716,11 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
 
   void visit (IndexedPushPortCallExpr& node)
   {
-    UNIMPLEMENTED;
-    // node.index->accept (*this);
-    // Operation* i = node.index->operation;
-    // i = load (node.index, i);
-    // node.args->accept (*this);
-    // node.operation = new IndexedPushPortCall (node.push_port_type, node.receiver_parameter->offset (), node.field->offset, i, node.args->operation, node.array_type);
+    node.index->accept (*this);
+    Operation* i = node.index->operation;
+    i = load (node.index, i);
+    node.args->accept (*this);
+    node.operation = new IndexedPushPortCall (node.push_port_type, node.receiver_parameter->offset (), arch::offset (node.field), i, node.args->operation, node.array_type);
   }
 
 };
