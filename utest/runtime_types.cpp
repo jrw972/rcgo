@@ -23,9 +23,15 @@ main (int argc, char** argv)
     double d = c64;
     tap.tassert ("Complex64::operator double()",
                  d == 3.0);
+
+    c64 = semantic::UntypedComplex::make (3.0, 4.0);
+    tap.tassert ("Complex64::operator=(UntypedComplex)",
+                 c64.real == 3.0 && c64.imag == 4.0);
+
     c64 = 2.0;
     tap.tassert ("Complex64::operator=(double)",
                  c64.real == 2.0 && c64.imag == 0.0);
+
     ++c64;
     tap.tassert ("Complex64::operator++",
                  c64.real == 3.0 && c64.imag == 0.0);
@@ -50,7 +56,7 @@ main (int argc, char** argv)
     c64 = -Complex64::make (1.0, 2.0);
     tap.tassert ("Complex64::operator-",
                  c64.real == -1.0 && c64.imag == -2.0);
-   }
+  }
 
   {
     Complex128 c128 = Complex128::make (3.0, 4.0);
@@ -61,6 +67,11 @@ main (int argc, char** argv)
     double d = c128;
     tap.tassert ("Complex128::operator double()",
                  d == 3.0);
+
+    c128 = semantic::UntypedComplex::make (3.0, 4.0);
+    tap.tassert ("Complex128::operator=(UntypedComplex)",
+                 c128.real == 3.0 && c128.imag == 4.0);
+
     c128 = 2.0;
     tap.tassert ("Complex128::operator=(double)",
                  c128.real == 2.0 && c128.imag == 0.0);
@@ -88,7 +99,7 @@ main (int argc, char** argv)
     c128 = -Complex128::make (1.0, 2.0);
     tap.tassert ("Complex128::operator-",
                  c128.real == -1.0 && c128.imag == -2.0);
-   }
+  }
 
   {
     String s, t;
@@ -103,12 +114,14 @@ main (int argc, char** argv)
     t = String::make (o, 5);
     tap.tassert ("String::operator==",
                  s == t);
+    tap.tassert ("String::operator==",
+                 s == "hello");
   }
 
   {
     String s, t;
-    s = String::make ("alpha", 5);
-    t = String::make ("beta", 4);
+    s = String::make ("alpha");
+    t = String::make ("beta");
     tap.tassert ("String::operator<",
                  (s < t) == true);
     tap.tassert ("String::operator<",
@@ -119,6 +132,11 @@ main (int argc, char** argv)
     t = String::make ("alphaalpha", 10);
     tap.tassert ("String::operator<",
                  (s < t) == true);
+  }
+
+  {
+    Slice s = Slice::make ();
+    tap.tassert ("Slice::make", s.ptr == NULL && s.length == 0 && s.capacity == 0 && s.is_nil ());
   }
 
   {

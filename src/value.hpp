@@ -30,15 +30,9 @@ UntypedComplex operator- (const UntypedComplex&);
 struct Value
 {
   Value ();
-
-  bool
-  representable (const type::Type* from, const type::Type* to) const;
-
-  void
-  convert (const type::Type* from, const type::Type* to);
-
-  long
-  to_int (const type::Type* type) const;
+  bool representable (const type::Type* from, const type::Type* to) const;
+  void convert (const type::Type* from, const type::Type* to);
+  long to_int (const type::Type* type) const;
 
   bool present;
   union

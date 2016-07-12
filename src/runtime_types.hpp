@@ -16,6 +16,7 @@ struct Complex64
   // TODO:  Remove this method.  Requires refactoring operation.
   operator double() const;
   Complex64& operator= (double x);
+  Complex64& operator= (const semantic::UntypedComplex& x);
   Complex64& operator++ ();
   Complex64& operator-- ();
   Complex64& operator+= (const Complex64& x);
@@ -37,6 +38,7 @@ struct Complex128
   // TODO:  Remove this method.  Requires refactoring operation.
   operator double() const;
   Complex128& operator= (double x);
+  Complex128& operator= (const semantic::UntypedComplex& x);
   Complex128& operator++ ();
   Complex128& operator-- ();
   Complex128& operator+= (const Complex128& x);
@@ -53,18 +55,23 @@ struct String
   const void* ptr;
   size_t length;
 
+  static String make (const char* str);
   static String make (const void* ptr, size_t length);
   bool operator== (const String& other) const;
+  bool operator== (const char* str) const;
   bool operator< (const String& other) const;
 };
 
-  std::ostream& operator<< (std::ostream& out, const String& s);
+std::ostream& operator<< (std::ostream& out, const String& s);
 
 struct Slice
 {
   void* ptr;
   size_t length;
   size_t capacity;
+
+  static Slice make ();
+  bool is_nil () const;
 };
 
 std::ostream& operator<< (std::ostream& out, const Slice& s);

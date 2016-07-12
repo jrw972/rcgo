@@ -1,8 +1,9 @@
 #include "value.hpp"
 
-#include "type.hpp"
-
 #include <utility>
+#include <cmath>
+
+#include "type.hpp"
 
 namespace semantic
 {
@@ -49,134 +50,49 @@ UntypedComplex::operator double() const
   return this->real;
 }
 
-UntypedComplex operator* (const UntypedComplex&, const UntypedComplex&)
+UntypedComplex operator* (const UntypedComplex& x, const UntypedComplex& y)
 {
-  UNIMPLEMENTED;
+  UntypedComplex uc;
+  uc.real = x.real * y.real - x.imag * y.imag;
+  uc.imag = x.real * y.imag + x.imag * y.real;
+  return uc;
 }
-UntypedComplex operator/ (const UntypedComplex&, const UntypedComplex&)
+UntypedComplex operator/ (const UntypedComplex& x, const UntypedComplex& y)
 {
-  UNIMPLEMENTED;
+  const double xmag = sqrt (x.real * x.real + x.imag * x.imag);
+  const double xtheta = atan (x.imag / x.real);
+  const double ymag = sqrt (y.real * y.real + y.imag * y.imag);
+  const double ytheta = atan (y.imag / y.real);
+  const double mag = xmag / ymag;
+  const double theta = xtheta - ytheta;
+  UntypedComplex uc;
+  uc.real = mag * cos (theta);
+  uc.imag = mag * sin (theta);
+  return uc;
 }
-UntypedComplex operator+ (const UntypedComplex&, const UntypedComplex&)
+UntypedComplex operator+ (const UntypedComplex& x, const UntypedComplex& y)
 {
-  UNIMPLEMENTED;
+  UntypedComplex uc;
+  uc.real = x.real + y.real;
+  uc.imag = x.imag + y.imag;
+  return uc;
 }
-UntypedComplex operator- (const UntypedComplex&, const UntypedComplex&)
+UntypedComplex operator- (const UntypedComplex& x, const UntypedComplex& y)
 {
-  UNIMPLEMENTED;
+  UntypedComplex uc;
+  uc.real = x.real - y.real;
+  uc.imag = x.imag - y.imag;
+  return uc;
 }
-UntypedComplex operator- (const UntypedComplex&)
+UntypedComplex operator- (const UntypedComplex& x)
 {
-  UNIMPLEMENTED;
+  UntypedComplex uc;
+  uc.real = -x.real;
+  uc.imag = -x.imag;
+  return uc;
 }
 
 Value::Value () : present (false) { }
-
-
-// struct alpha_visitor : public Type::DefaultVisitor
-// {
-//   bool flag;
-//   Complex::ValueType x;
-
-//   alpha_visitor (Complex::ValueType z) : flag (false), x (z) { }
-
-//   void default_action (const Type::Type& type)
-//   {
-//     TYPE_NOT_REACHED (type);
-//   }
-
-//   template <typename T>
-//   void doit (const T& type)
-//   {
-//     typename T::ValueType y;
-//     y = x;
-//     Complex::ValueType z;
-//     z = y;
-//     flag = (x == z);
-//   }
-
-//   void visit (const Uint8& type)
-//   {
-//     doit (type);
-//   }
-
-//   void visit (const Uint16& type)
-//   {
-//     doit (type);
-//   }
-
-//   void visit (const Uint32& type)
-//   {
-//     doit (type);
-//   }
-
-//   void visit (const Uint64& type)
-//   {
-//     doit (type);
-//   }
-
-//   void visit (const Int8& type)
-//   {
-//     doit (type);
-//   }
-
-//   void visit (const Int16& type)
-//   {
-//     doit (type);
-//   }
-
-//   void visit (const Int32& type)
-//   {
-//     doit (type);
-//   }
-
-//   void visit (const Int64& type)
-//   {
-//     doit (type);
-//   }
-
-//   void visit (const Uint& type)
-//   {
-//     doit (type);
-//   }
-
-//   void visit (const Int& type)
-//   {
-//     doit (type);
-//   }
-
-//   void visit (const Float32& type)
-//   {
-//     doit (type);
-//   }
-
-//   void visit (const Float64& type)
-//   {
-//     doit (type);
-//   }
-
-//   void visit (const Complex64& type)
-//   {
-//     doit (type);
-//   }
-
-//   void visit (const Complex128& type)
-//   {
-//     doit (type);
-//   }
-
-//   void visit (const Integer& type)
-//   {
-//     doit (type);
-//   }
-// };
-
-// static bool to_and_back (Complex::ValueType x, const Type::Type* type)
-// {
-//   alpha_visitor v (x);
-//   type->Accept (v);
-//   return v.flag;
-// }
 
 template <typename S, typename T>
 static bool to_and_back_helper (const T& x)
@@ -228,8 +144,14 @@ static bool to_and_back (const T& x, const type::Type* type)
     }
 }
 
-static void convert_numeric (Value& value, UntypedComplex x, const type::Type* type)
+static void
+convert_numeric (Value& value, UntypedComplex x, const type::Type* type)
 {
+  if (!type->is_numeric ())
+    {
+      return;
+    }
+
   switch (type->kind ())
     {
     case Uint8_Kind:
@@ -261,6 +183,9 @@ static void convert_numeric (Value& value, UntypedComplex x, const type::Type* t
       break;
     case Int_Kind:
       value.int_value = x;
+      break;
+    case Uintptr_Kind:
+      value.uintptr_value = x;
       break;
     case Float32_Kind:
       value.float32_value = x;
@@ -313,65 +238,6 @@ Value::representable (const type::Type* from, const type::Type* to) const
     default:
       NOT_REACHED;
     }
-
-  // struct visitor : public type::DefaultVisitor
-  // {
-  //   const Value& value;
-  //   const type::Type* to;
-  //   bool flag;
-
-  //   visitor (const Value& v, const type::Type* t) : value (v), to (t), flag (false) { }
-
-  //   void default_action (const type::Type& type)
-  //   {
-  //     TYPE_NOT_REACHED (type);
-  //   }
-
-  //   void visit (const type::Int& type)
-  //   {
-  //     Complex::ValueType x;
-  //     x = value.ref (type);
-  //     flag = to_and_back (x, to->UnderlyingType ());
-  //   }
-
-  //   void visit (const type::Boolean& type)
-  //   {
-  //     flag =
-  //       type_cast<type::Boolean> (to) != NULL ||
-  //       type_cast<type::Bool> (to) != NULL;
-  //   }
-
-  //   void visit (const type::Rune& type)
-  //   {
-  //     Complex::ValueType x;
-  //     x = value.ref (type);
-  //     flag = to_and_back (x, to->UnderlyingType ());
-  //   }
-
-  //   void visit (const type::Integer& type)
-  //   {
-  //     Complex::ValueType x;
-  //     x = value.ref (type);
-  //     flag = to_and_back (x, to->UnderlyingType ());
-  //   }
-
-  //   void visit (const type::Float& type)
-  //   {
-  //     Complex::ValueType x;
-  //     x = value.ref (type);
-  //     flag = to_and_back (x, to->UnderlyingType ());
-  //   }
-
-  //   void visit (const type::String& type)
-  //   {
-  //     if (type::type_cast<type::StringU> (to->UnderlyingType ()))
-  //       {
-  //         flag = true;
-  //       }
-  //   }
-  // } v (*this, to->UnderlyingType ());
-  // from->UnderlyingType ()->Accept (v);
-  // return v.flag;
 }
 
 void
@@ -488,6 +354,22 @@ Value::convert (const type::Type* from, const type::Type* to)
     }
     break;
 
+    case Uint_Kind:
+    {
+      UntypedComplex x;
+      x = this->uint_value;
+      convert_numeric (*this, x, to);
+    }
+    break;
+
+    case Uintptr_Kind:
+    {
+      UntypedComplex x;
+      x = this->uintptr_value;
+      convert_numeric (*this, x, to);
+    }
+    break;
+
     case Float32_Kind:
     {
       UntypedComplex x;
@@ -525,10 +407,7 @@ Value::convert (const type::Type* from, const type::Type* to)
       if (to->kind () == String_Kind)
         {
           this->string_value = this->untyped_string_value;
-          return;
         }
-
-      NOT_REACHED;
     }
     break;
 
@@ -537,16 +416,11 @@ Value::convert (const type::Type* from, const type::Type* to)
       if (to->kind () == Pointer_Kind)
         {
           this->pointer_value = NULL;
-          return;
         }
-
-      if (to->kind () == Slice_Kind)
+      else if (to->kind () == Slice_Kind)
         {
-          this->slice_value = runtime::Slice ();
-          return;
+          this->slice_value = runtime::Slice::make ();
         }
-
-      NOT_REACHED;
     }
     break;
 

@@ -94,6 +94,7 @@ namespace semantic
 {
 class Value;
 class ExpressionValue;
+class UntypedComplex;
 
 enum ExpressionKind
 {

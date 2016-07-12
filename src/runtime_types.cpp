@@ -3,16 +3,18 @@
 #include <cstring>
 #include <cmath>
 
+#include "value.hpp"
+
 namespace runtime
 {
 
-  Complex64 Complex64::make (float r, float i)
-  {
-    Complex64 c64;
-    c64.real = r;
-    c64.imag = i;
-    return c64;
-  }
+Complex64 Complex64::make (float r, float i)
+{
+  Complex64 c64;
+  c64.real = r;
+  c64.imag = i;
+  return c64;
+}
 
 bool Complex64::operator== (const Complex64& other) const
 {
@@ -28,6 +30,13 @@ Complex64& Complex64::operator= (double x)
 {
   this->real = x;
   this->imag = 0;
+  return *this;
+}
+
+Complex64& Complex64::operator= (const semantic::UntypedComplex& x)
+{
+  this->real = x.real;
+  this->imag = x.imag;
   return *this;
 }
 
@@ -50,7 +59,7 @@ Complex64& Complex64::operator+= (const Complex64& x)
   return *this;
 }
 
-  Complex64 operator* (const Complex64& x, const Complex64& y)
+Complex64 operator* (const Complex64& x, const Complex64& y)
 {
   Complex64 c64;
   c64.real = x.real * y.real - x.imag * y.imag;
@@ -93,13 +102,13 @@ Complex64 operator- (const Complex64& x)
   return c64;
 }
 
-  Complex128 Complex128::make (double r, double i)
-  {
-    Complex128 c128;
-    c128.real = r;
-    c128.imag = i;
-    return c128;
-  }
+Complex128 Complex128::make (double r, double i)
+{
+  Complex128 c128;
+  c128.real = r;
+  c128.imag = i;
+  return c128;
+}
 
 bool Complex128::operator== (const Complex128& other) const
 {
@@ -115,6 +124,13 @@ Complex128& Complex128::operator= (double x)
 {
   this->real = x;
   this->imag = 0;
+  return *this;
+}
+
+Complex128& Complex128::operator= (const semantic::UntypedComplex& x)
+{
+  this->real = x.real;
+  this->imag = x.imag;
   return *this;
 }
 
@@ -179,13 +195,21 @@ Complex128 operator- (const Complex128& x)
   return c128;
 }
 
-  String String::make (const void* ptr, size_t length)
-  {
-    String s;
-    s.ptr = ptr;
-    s.length = length;
-    return s;
-  }
+String String::make (const char* str)
+{
+  String s;
+  s.ptr = str;
+  s.length = strlen (str);
+  return s;
+}
+
+String String::make (const void* ptr, size_t length)
+{
+  String s;
+  s.ptr = ptr;
+  s.length = length;
+  return s;
+}
 
 bool String::operator== (const String& other) const
 {
@@ -201,6 +225,25 @@ bool String::operator== (const String& other) const
     }
 
   return memcmp (this->ptr, other.ptr, this->length) == 0;
+}
+
+bool String::operator== (const char* str) const
+{
+  const void* other_ptr = str;
+  size_t other_length = strlen (str);
+
+  if (this->ptr == other_ptr &&
+      this->length == other_length)
+    {
+      return true;
+    }
+
+  if (this->length != other_length)
+    {
+      return false;
+    }
+
+  return memcmp (this->ptr, other_ptr, this->length) == 0;
 }
 
 bool String::operator< (const String& other) const
@@ -223,6 +266,20 @@ bool String::operator< (const String& other) const
 std::ostream& operator<< (std::ostream& out, const String& s)
 {
   return out << std::string (static_cast<const char*> (s.ptr), s.length);
+}
+
+Slice Slice::make ()
+{
+  Slice s;
+  s.ptr = NULL;
+  s.length = 0;
+  s.capacity = 0;
+  return s;
+}
+
+bool Slice::is_nil () const
+{
+  return ptr == NULL && length == 0 && capacity == 0;
 }
 
 std::ostream& operator<< (std::ostream& out, const Slice& s)
