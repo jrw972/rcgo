@@ -464,6 +464,8 @@ Value::to_int (const type::Type* type) const
 
 void equal (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -549,6 +551,8 @@ void equal (Value& out, const type::Type* type, const Value& left, const Value& 
 
 void not_equal (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -634,6 +638,8 @@ void not_equal (Value& out, const type::Type* type, const Value& left, const Val
 
 void less_than (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -698,6 +704,8 @@ void less_than (Value& out, const type::Type* type, const Value& left, const Val
 
 void less_equal (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -762,6 +770,8 @@ void less_equal (Value& out, const type::Type* type, const Value& left, const Va
 
 void more_than (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -826,6 +836,8 @@ void more_than (Value& out, const type::Type* type, const Value& left, const Val
 
 void more_equal (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -890,6 +902,8 @@ void more_equal (Value& out, const type::Type* type, const Value& left, const Va
 
 void multiply (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -957,6 +971,8 @@ void multiply (Value& out, const type::Type* type, const Value& left, const Valu
 
 void divide (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -1024,6 +1040,8 @@ void divide (Value& out, const type::Type* type, const Value& left, const Value&
 
 void modulus (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -1073,6 +1091,8 @@ void modulus (Value& out, const type::Type* type, const Value& left, const Value
 
 void add (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -1140,6 +1160,8 @@ void add (Value& out, const type::Type* type, const Value& left, const Value& ri
 
 void subtract (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -1207,6 +1229,8 @@ void subtract (Value& out, const type::Type* type, const Value& left, const Valu
 
 void bit_and (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -1256,6 +1280,8 @@ void bit_and (Value& out, const type::Type* type, const Value& left, const Value
 
 void bit_and_not (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -1305,6 +1331,8 @@ void bit_and_not (Value& out, const type::Type* type, const Value& left, const V
 
 void bit_xor (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -1354,6 +1382,8 @@ void bit_xor (Value& out, const type::Type* type, const Value& left, const Value
 
 void bit_or (Value& out, const type::Type* type, const Value& left, const Value& right)
 {
+  assert (left.present);
+  assert (right.present);
   out.present = true;
   switch (type->underlying_kind ())
     {
@@ -1401,6 +1431,92 @@ void bit_or (Value& out, const type::Type* type, const Value& left, const Value&
     }
 }
 
+  void Value::print (const type::Type* type, std::ostream& out) const
+  {
+    if (present) {
+      switch (type->underlying_kind ())
+        {
+        case Untyped_Nil_Kind:
+          out << "<nil>";
+          break;
+        case Untyped_Boolean_Kind:
+          out << (untyped_boolean_value ? "<true>" : "<false>");
+          break;
+        case Untyped_Rune_Kind:
+          out << '<' << untyped_rune_value << '>';
+          break;
+        case Untyped_Integer_Kind:
+          out << '<' << untyped_integer_value << '>';
+          break;
+        case Untyped_Float_Kind:
+          out << '<' << untyped_float_value << '>';
+          break;
+        case Untyped_Complex_Kind:
+          out << '<' << untyped_complex_value << '>';
+          break;
+        case Untyped_String_Kind:
+          out << '<' << untyped_string_value << '>';
+          break;
+        case Bool_Kind:
+          out << (bool_value ? "<true>" : "<false>");
+          break;
+        case Uint8_Kind:
+          out << '<' << (int)uint8_value << '>';
+          break;
+        case Uint16_Kind:
+          out << '<' << uint16_value << '>';
+          break;
+        case Uint32_Kind:
+          out << '<' << uint32_value << '>';
+          break;
+        case Uint64_Kind:
+          out << '<' << uint64_value << '>';
+          break;
+        case Int8_Kind:
+          out << '<' << (int)int8_value << '>';
+          break;
+        case Int16_Kind:
+          out << '<' << int16_value << '>';
+          break;
+        case Int32_Kind:
+          out << '<' << int32_value << '>';
+          break;
+        case Int64_Kind:
+          out << '<' << int64_value << '>';
+          break;
+        case Float32_Kind:
+          out << '<' << float32_value << '>';
+          break;
+        case Float64_Kind:
+          out << '<' << float64_value << '>';
+          break;
+        case Complex64_Kind:
+          out << '<' << complex64_value << '>';
+          break;
+        case Complex128_Kind:
+          out << '<' << complex128_value << '>';
+          break;
+        case Uint_Kind:
+          out << '<' << uint_value << '>';
+          break;
+        case Int_Kind:
+          out << '<' << int_value << '>';
+          break;
+        case Uintptr_Kind:
+          out << '<' << uintptr_value << '>';
+          break;
+        case String_Kind:
+          out << '<' << string_value << '>';
+          break;
+        case Pointer_Kind:
+          out << '<' << pointer_value << '>';
+          break;
+        default:
+          TYPE_NOT_REACHED (*type);
+        }
+    }
+  }
+
 ValuePrinter::ValuePrinter (const type::Type* t, const Value& v)
   : type (t)
   , value (v)
@@ -1408,161 +1524,7 @@ ValuePrinter::ValuePrinter (const type::Type* t, const Value& v)
 
 std::ostream& operator<< (std::ostream& out, const ValuePrinter& vp)
 {
-  if (vp.value.present)
-    {
-      UNIMPLEMENTED;
-      // struct visitor : public type::DefaultVisitor
-      // {
-      //   const Value& tv;
-      //   std::ostream& out;
-
-      //   visitor (const Value& v, std::ostream& o)
-      //     : tv (v)
-      //     , out (o)
-      //   { }
-
-      //   void default_action (const type::Type& type)
-      //   {
-      //     TYPE_NOT_REACHED(type);
-      //   }
-
-      //   void visit (const type::Bool& type)
-      //   {
-      //     out << " value=" << tv.bool_value;
-      //   }
-
-      //   void visit (const Uint8& type)
-      //   {
-      //     out << " value=" << (int)tv.uint8_value;
-      //   }
-
-      //   void visit (const Uint16& type)
-      //   {
-      //     out << " value=" << (int)tv.uint16_value;
-      //   }
-
-      //   void visit (const Uint32& type)
-      //   {
-      //     out << " value=" << tv.uint32_value;
-      //   }
-
-      //   void visit (const Uint64& type)
-      //   {
-      //     out << " value=" << tv.uint64_value;
-      //   }
-
-      //   void visit (const Int8& type)
-      //   {
-      //     out << " value=" << (int)tv.int8_value;
-      //   }
-
-      //   void visit (const Int16& type)
-      //   {
-      //     out << " value=" << (int)tv.int16_value;
-      //   }
-
-      //   void visit (const Int32& type)
-      //   {
-      //     out << " value=" << tv.int32_value;
-      //   }
-
-      //   void visit (const Int64& type)
-      //   {
-      //     out << " value=" << tv.int64_value;
-      //   }
-
-      //   void visit (const Uint& type)
-      //   {
-      //     out << " value=" << tv.uint_value;
-      //   }
-
-      //   void visit (const Int& type)
-      //   {
-      //     out << " value=" << tv.int_value;
-      //   }
-
-      //   void visit (const Uintptr& type)
-      //   {
-      //     out << " value=" << tv.uintptr_value;
-      //   }
-
-      //   void visit (const Float32& type)
-      //   {
-      //     out << " value=" << tv.float32_value;
-      //   }
-
-      //   void visit (const Float64& type)
-      //   {
-      //     out << " value=" << tv.float64_value;
-      //   }
-
-      //   void visit (const Complex64& type)
-      //   {
-      //     out << " value=(" << tv.complex64_value.real << ',' << tv.complex64_value.imag << "i)";
-      //   }
-
-      //   void visit (const Complex128& type)
-      //   {
-      //     out << " value=(" << tv.complex128_value.real << ',' << tv.complex128_value.imag << "i)";
-      //   }
-
-      //   void visit (const UntypedNil& type)
-      //   {
-      //     out << " value=" << (void*)NULL;
-      //   }
-
-      //   void visit (const type::Function& type)
-      //   {
-      //     out << " value=<function>";
-      //   }
-
-      //   void visit (const type::Method& type)
-      //   {
-      //     out << " value=<method>";
-      //   }
-
-      //   void visit (const Slice& type)
-      //   {
-      //     const Slice::ValueType& s = tv.slice_value;
-      //     out << " value={" << s.ptr << ',' << s.length << ',' << s.capacity << '}';
-      //   }
-      //   void visit (const String& type)
-      //   {
-      //     const String::ValueType& s = tv.stringu_value;
-      //     out << " value={" << s.ptr << ',' << s.length << '}';
-      //   }
-
-      //   void visit (const Pointer& type)
-      //   {
-      //     out << " value=" << tv.pointer_value;
-      //   }
-
-      //   void visit (const UntypedBoolean& type)
-      //   {
-      //     out << " value=" << tv.untyped_boolean_value;
-      //   }
-      //   void visit (const UntypedInteger& type)
-      //   {
-      //     out << " value=" << tv.untyped_integer_value;
-      //   }
-      //   void visit (const UntypedFloat& type)
-      //   {
-      //     out << " value=" << tv.untyped_float_value;
-      //   }
-      //   void visit (const UntypedString& type)
-      //   {
-      //     const UntypedString::ValueType& s = tv.untyped_string_value;
-      //     out << " value={" << s.ptr << ',' << s.length << '}';
-      //   }
-      //   void visit (const type::PolymorphicFunction& type)
-      //   {
-      //     out << " value=<polymorphic function>";
-      //   }
-      // };
-      // visitor v (vp.value, out);
-      // vp.type->underlying_type ()->accept (v);
-    }
-
+  vp.value.print (vp.type, out);
   return out;
 }
 

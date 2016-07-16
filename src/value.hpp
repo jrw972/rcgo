@@ -33,6 +33,7 @@ struct Value
   bool representable (const type::Type* from, const type::Type* to) const;
   void convert (const type::Type* from, const type::Type* to);
   long to_int (const type::Type* type) const;
+  void print (const type::Type* type, std::ostream& out = std::cout) const;
 
   bool present;
   union
