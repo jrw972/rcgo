@@ -1,5 +1,5 @@
 function expect_success() {
-    if rc $srcdir/$3
+    if $RCGO $srcdir/$3
     then
         echo "ok $1 - $2 ($3)"
     else
@@ -9,7 +9,7 @@ function expect_success() {
 
 function expect_error() {
     pattern="($4)"
-    if rc $srcdir/$3 2>&1 | grep -q -F "$pattern"
+    if $RCGO $srcdir/$3 2>&1 | grep -q -F "$pattern"
     then
         echo "ok $1 - $2 ($3)"
     else

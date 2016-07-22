@@ -13,8 +13,8 @@ parser.hpp parser.cpp: parser.y
 
 #AM_LFLAGS = --header=$(addsuffix .hpp,$(basename $@))
 #AM_YFLAGS = -v -d
-bin_PROGRAMS = rc
-rc_SOURCES = main.cpp \
+bin_PROGRAMS = rcgo
+rcgo_SOURCES = main.cpp \
 debug.hpp \
 evaluate_static.hpp evaluate_static.cpp \
 field.hpp \
@@ -30,12 +30,12 @@ scheduler.hpp \
 types.hpp \
 util.hpp \
 yyparse.hpp yyparse.cpp
-rc_LDADD=librc.la
-rc_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-rc_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+rcgo_LDADD=librcgo.la
+rcgo_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+rcgo_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
-noinst_LTLIBRARIES=librc.la
-librc_la_SOURCES = action.hpp action.cpp \
+noinst_LTLIBRARIES=librcgo.la
+librcgo_la_SOURCES = action.hpp action.cpp \
 arch.hpp arch.cpp \
 bind.hpp bind.cpp \
 builtin_function.hpp builtin_function.cpp \
@@ -68,6 +68,6 @@ symbol_visitor.hpp symbol_visitor.cpp \
 polymorphic_function.hpp polymorphic_function.cpp \
 type.hpp type.cpp \
 value.hpp value.cpp
-librc_la_LIBADD=-lpthread
-librc_la_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-librc_la_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+librcgo_la_LIBADD=-lpthread
+librcgo_la_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+librcgo_la_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)

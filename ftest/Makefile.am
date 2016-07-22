@@ -1,6 +1,6 @@
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver.sh
 
-AM_TESTS_ENVIRONMENT = RC='$(top_builddir)/src/rc'; export RC; PATH="$(top_builddir)/src:$$PATH"; export PATH;
+AM_TESTS_ENVIRONMENT = RCGO='$(top_builddir)/src/rcgo'; export RCGO; PATH="$(top_builddir)/src:$$PATH"; export PATH;
 #LOG_COMPILER = $(SH)
 
 TESTS = mutability.sh \

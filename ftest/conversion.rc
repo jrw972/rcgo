@@ -1,4 +1,4 @@
-#!/usr/bin/env rc
+#!/usr/bin/env rcgo
 
 func test (num *uint; desc string; status bool) {
   if status {

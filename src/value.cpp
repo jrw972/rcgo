@@ -1431,9 +1431,10 @@ void bit_or (Value& out, const type::Type* type, const Value& left, const Value&
     }
 }
 
-  void Value::print (const type::Type* type, std::ostream& out) const
-  {
-    if (present) {
+void Value::print (const type::Type* type, std::ostream& out) const
+{
+  if (present)
+    {
       switch (type->underlying_kind ())
         {
         case Untyped_Nil_Kind:
@@ -1515,7 +1516,7 @@ void bit_or (Value& out, const type::Type* type, const Value& left, const Value&
           TYPE_NOT_REACHED (*type);
         }
     }
-  }
+}
 
 ValuePrinter::ValuePrinter (const type::Type* t, const Value& v)
   : type (t)

@@ -1,4 +1,4 @@
-#!/usr/bin/env rc
+#!/usr/bin/env rcgo
 
 type Test component { };
 

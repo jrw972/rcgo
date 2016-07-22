@@ -112,7 +112,7 @@ am__EXEEXT_1 = action$(EXEEXT) arch$(EXEEXT) bind$(EXEEXT) \
 am__objects_1 =
 am_action_OBJECTS = action-action.$(OBJEXT) $(am__objects_1)
 action_OBJECTS = $(am_action_OBJECTS)
-action_DEPENDENCIES = $(top_builddir)/src/librc.la
+action_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -122,33 +122,33 @@ action_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(CXXFLAGS) $(action_LDFLAGS) $(LDFLAGS) -o $@
 am_arch_OBJECTS = arch-arch.$(OBJEXT) $(am__objects_1)
 arch_OBJECTS = $(am_arch_OBJECTS)
-arch_DEPENDENCIES = $(top_builddir)/src/librc.la
+arch_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 arch_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(arch_CXXFLAGS) \
 	$(CXXFLAGS) $(arch_LDFLAGS) $(LDFLAGS) -o $@
 am_bind_OBJECTS = bind-bind.$(OBJEXT) $(am__objects_1)
 bind_OBJECTS = $(am_bind_OBJECTS)
-bind_DEPENDENCIES = $(top_builddir)/src/librc.la
+bind_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 bind_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(bind_CXXFLAGS) \
 	$(CXXFLAGS) $(bind_LDFLAGS) $(LDFLAGS) -o $@
 am_callable_OBJECTS = callable-callable.$(OBJEXT) $(am__objects_1)
 callable_OBJECTS = $(am_callable_OBJECTS)
-callable_DEPENDENCIES = $(top_builddir)/src/librc.la
+callable_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 callable_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(callable_CXXFLAGS) \
 	$(CXXFLAGS) $(callable_LDFLAGS) $(LDFLAGS) -o $@
 am_check_types_OBJECTS = check_types-check_types.$(OBJEXT) \
 	$(am__objects_1)
 check_types_OBJECTS = $(am_check_types_OBJECTS)
-check_types_DEPENDENCIES = $(top_builddir)/src/librc.la
+check_types_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 check_types_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(check_types_CXXFLAGS) \
 	$(CXXFLAGS) $(check_types_LDFLAGS) $(LDFLAGS) -o $@
 am_error_reporter_OBJECTS = error_reporter-error_reporter.$(OBJEXT) \
 	$(am__objects_1)
 error_reporter_OBJECTS = $(am_error_reporter_OBJECTS)
-error_reporter_DEPENDENCIES = $(top_builddir)/src/librc.la
+error_reporter_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 error_reporter_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(error_reporter_CXXFLAGS) $(CXXFLAGS) \
@@ -156,40 +156,40 @@ error_reporter_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 am_expression_value_OBJECTS =  \
 	expression_value-expression_value.$(OBJEXT) $(am__objects_1)
 expression_value_OBJECTS = $(am_expression_value_OBJECTS)
-expression_value_DEPENDENCIES = $(top_builddir)/src/librc.la
+expression_value_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 expression_value_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(expression_value_CXXFLAGS) $(CXXFLAGS) \
 	$(expression_value_LDFLAGS) $(LDFLAGS) -o $@
 am_heap_OBJECTS = heap-heap.$(OBJEXT) $(am__objects_1)
 heap_OBJECTS = $(am_heap_OBJECTS)
-heap_DEPENDENCIES = $(top_builddir)/src/librc.la
+heap_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 heap_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(heap_CXXFLAGS) \
 	$(CXXFLAGS) $(heap_LDFLAGS) $(LDFLAGS) -o $@
 am_location_OBJECTS = location-location.$(OBJEXT) $(am__objects_1)
 location_OBJECTS = $(am_location_OBJECTS)
-location_DEPENDENCIES = $(top_builddir)/src/librc.la
+location_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 location_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(location_CXXFLAGS) \
 	$(CXXFLAGS) $(location_LDFLAGS) $(LDFLAGS) -o $@
 am_memory_model_OBJECTS = memory_model-memory_model.$(OBJEXT) \
 	$(am__objects_1)
 memory_model_OBJECTS = $(am_memory_model_OBJECTS)
-memory_model_DEPENDENCIES = $(top_builddir)/src/librc.la
+memory_model_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 memory_model_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(memory_model_CXXFLAGS) \
 	$(CXXFLAGS) $(memory_model_LDFLAGS) $(LDFLAGS) -o $@
 am_node_cast_OBJECTS = node_cast-node_cast.$(OBJEXT) $(am__objects_1)
 node_cast_OBJECTS = $(am_node_cast_OBJECTS)
-node_cast_DEPENDENCIES = $(top_builddir)/src/librc.la
+node_cast_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 node_cast_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(node_cast_CXXFLAGS) \
 	$(CXXFLAGS) $(node_cast_LDFLAGS) $(LDFLAGS) -o $@
 am_parameter_list_OBJECTS = parameter_list-parameter_list.$(OBJEXT) \
 	$(am__objects_1)
 parameter_list_OBJECTS = $(am_parameter_list_OBJECTS)
-parameter_list_DEPENDENCIES = $(top_builddir)/src/librc.la
+parameter_list_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 parameter_list_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(parameter_list_CXXFLAGS) $(CXXFLAGS) \
@@ -198,7 +198,7 @@ am_polymorphic_function_OBJECTS =  \
 	polymorphic_function-polymorphic_function.$(OBJEXT) \
 	$(am__objects_1)
 polymorphic_function_OBJECTS = $(am_polymorphic_function_OBJECTS)
-polymorphic_function_DEPENDENCIES = $(top_builddir)/src/librc.la
+polymorphic_function_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 polymorphic_function_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(polymorphic_function_CXXFLAGS) $(CXXFLAGS) \
@@ -206,52 +206,52 @@ polymorphic_function_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 am_runtime_types_OBJECTS = runtime_types-runtime_types.$(OBJEXT) \
 	$(am__objects_1)
 runtime_types_OBJECTS = $(am_runtime_types_OBJECTS)
-runtime_types_DEPENDENCIES = $(top_builddir)/src/librc.la
+runtime_types_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 runtime_types_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(runtime_types_CXXFLAGS) $(CXXFLAGS) $(runtime_types_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_semantic_OBJECTS = semantic-semantic.$(OBJEXT) $(am__objects_1)
 semantic_OBJECTS = $(am_semantic_OBJECTS)
-semantic_DEPENDENCIES = $(top_builddir)/src/librc.la
+semantic_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 semantic_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(semantic_CXXFLAGS) \
 	$(CXXFLAGS) $(semantic_LDFLAGS) $(LDFLAGS) -o $@
 am_stack_OBJECTS = stack-stack.$(OBJEXT) $(am__objects_1)
 stack_OBJECTS = $(am_stack_OBJECTS)
-stack_DEPENDENCIES = $(top_builddir)/src/librc.la
+stack_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 stack_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(stack_CXXFLAGS) \
 	$(CXXFLAGS) $(stack_LDFLAGS) $(LDFLAGS) -o $@
 am_symbol_OBJECTS = symbol-symbol.$(OBJEXT) $(am__objects_1)
 symbol_OBJECTS = $(am_symbol_OBJECTS)
-symbol_DEPENDENCIES = $(top_builddir)/src/librc.la
+symbol_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 symbol_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(symbol_CXXFLAGS) \
 	$(CXXFLAGS) $(symbol_LDFLAGS) $(LDFLAGS) -o $@
 am_symbol_cast_OBJECTS = symbol_cast-symbol_cast.$(OBJEXT) \
 	$(am__objects_1)
 symbol_cast_OBJECTS = $(am_symbol_cast_OBJECTS)
-symbol_cast_DEPENDENCIES = $(top_builddir)/src/librc.la
+symbol_cast_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 symbol_cast_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(symbol_cast_CXXFLAGS) \
 	$(CXXFLAGS) $(symbol_cast_LDFLAGS) $(LDFLAGS) -o $@
 am_symbol_table_OBJECTS = symbol_table-symbol_table.$(OBJEXT) \
 	$(am__objects_1)
 symbol_table_OBJECTS = $(am_symbol_table_OBJECTS)
-symbol_table_DEPENDENCIES = $(top_builddir)/src/librc.la
+symbol_table_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 symbol_table_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(symbol_table_CXXFLAGS) \
 	$(CXXFLAGS) $(symbol_table_LDFLAGS) $(LDFLAGS) -o $@
 am_type_OBJECTS = type-type.$(OBJEXT) $(am__objects_1)
 type_OBJECTS = $(am_type_OBJECTS)
-type_DEPENDENCIES = $(top_builddir)/src/librc.la
+type_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 type_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(type_CXXFLAGS) \
 	$(CXXFLAGS) $(type_LDFLAGS) $(LDFLAGS) -o $@
 am_value_OBJECTS = value-value.$(OBJEXT) $(am__objects_1)
 value_OBJECTS = $(am_value_OBJECTS)
-value_DEPENDENCIES = $(top_builddir)/src/librc.la
+value_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 value_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(value_CXXFLAGS) \
 	$(CXXFLAGS) $(value_LDFLAGS) $(LDFLAGS) -o $@
@@ -684,87 +684,87 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver
 AM_CXXFLAGS = -I $(top_srcdir)/src
 HELPERS = tap.hpp visitor_helper.hpp mock_execution.hpp
 action_SOURCES = action.cpp $(HELPERS)
-action_LDADD = $(top_builddir)/src/librc.la
+action_LDADD = $(top_builddir)/src/librcgo.la
 action_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 action_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 arch_SOURCES = arch.cpp $(HELPERS)
-arch_LDADD = $(top_builddir)/src/librc.la
+arch_LDADD = $(top_builddir)/src/librcgo.la
 arch_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 arch_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 bind_SOURCES = bind.cpp $(HELPERS)
-bind_LDADD = $(top_builddir)/src/librc.la
+bind_LDADD = $(top_builddir)/src/librcgo.la
 bind_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 bind_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 callable_SOURCES = callable.cpp $(HELPERS)
-callable_LDADD = $(top_builddir)/src/librc.la
+callable_LDADD = $(top_builddir)/src/librcgo.la
 callable_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 callable_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 check_types_SOURCES = check_types.cpp $(HELPERS)
-check_types_LDADD = $(top_builddir)/src/librc.la
+check_types_LDADD = $(top_builddir)/src/librcgo.la
 check_types_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 check_types_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 expression_value_SOURCES = expression_value.cpp $(HELPERS)
-expression_value_LDADD = $(top_builddir)/src/librc.la
+expression_value_LDADD = $(top_builddir)/src/librcgo.la
 expression_value_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 expression_value_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 heap_SOURCES = heap.cpp $(HELPERS)
-heap_LDADD = $(top_builddir)/src/librc.la
+heap_LDADD = $(top_builddir)/src/librcgo.la
 heap_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 heap_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 error_reporter_SOURCES = error_reporter.cpp $(HELPERS)
-error_reporter_LDADD = $(top_builddir)/src/librc.la
+error_reporter_LDADD = $(top_builddir)/src/librcgo.la
 error_reporter_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 error_reporter_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 location_SOURCES = location.cpp $(HELPERS)
-location_LDADD = $(top_builddir)/src/librc.la
+location_LDADD = $(top_builddir)/src/librcgo.la
 location_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 location_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 memory_model_SOURCES = memory_model.cpp $(HELPERS)
-memory_model_LDADD = $(top_builddir)/src/librc.la
+memory_model_LDADD = $(top_builddir)/src/librcgo.la
 memory_model_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 memory_model_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 node_cast_SOURCES = node_cast.cpp $(HELPERS)
-node_cast_LDADD = $(top_builddir)/src/librc.la
+node_cast_LDADD = $(top_builddir)/src/librcgo.la
 node_cast_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 node_cast_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 parameter_list_SOURCES = parameter_list.cpp $(HELPERS)
-parameter_list_LDADD = $(top_builddir)/src/librc.la
+parameter_list_LDADD = $(top_builddir)/src/librcgo.la
 parameter_list_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 parameter_list_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 semantic_SOURCES = semantic.cpp $(HELPERS)
-semantic_LDADD = $(top_builddir)/src/librc.la
+semantic_LDADD = $(top_builddir)/src/librcgo.la
 semantic_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 semantic_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 stack_SOURCES = stack.cpp $(HELPERS)
-stack_LDADD = $(top_builddir)/src/librc.la
+stack_LDADD = $(top_builddir)/src/librcgo.la
 stack_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 stack_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 symbol_SOURCES = symbol.cpp $(HELPERS)
-symbol_LDADD = $(top_builddir)/src/librc.la
+symbol_LDADD = $(top_builddir)/src/librcgo.la
 symbol_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 symbol_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 symbol_cast_SOURCES = symbol_cast.cpp $(HELPERS)
-symbol_cast_LDADD = $(top_builddir)/src/librc.la
+symbol_cast_LDADD = $(top_builddir)/src/librcgo.la
 symbol_cast_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 symbol_cast_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 symbol_table_SOURCES = symbol_table.cpp $(HELPERS)
-symbol_table_LDADD = $(top_builddir)/src/librc.la
+symbol_table_LDADD = $(top_builddir)/src/librcgo.la
 symbol_table_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 symbol_table_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 polymorphic_function_SOURCES = polymorphic_function.cpp $(HELPERS)
-polymorphic_function_LDADD = $(top_builddir)/src/librc.la
+polymorphic_function_LDADD = $(top_builddir)/src/librcgo.la
 polymorphic_function_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 polymorphic_function_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 runtime_types_SOURCES = runtime_types.cpp $(HELPERS)
-runtime_types_LDADD = $(top_builddir)/src/librc.la
+runtime_types_LDADD = $(top_builddir)/src/librcgo.la
 runtime_types_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 runtime_types_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 type_SOURCES = type.cpp $(HELPERS)
-type_LDADD = $(top_builddir)/src/librc.la
+type_LDADD = $(top_builddir)/src/librcgo.la
 type_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 type_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 value_SOURCES = value.cpp $(HELPERS)
-value_LDADD = $(top_builddir)/src/librc.la
+value_LDADD = $(top_builddir)/src/librcgo.la
 value_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 value_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 all: all-am

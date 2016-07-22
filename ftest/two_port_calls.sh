@@ -9,7 +9,7 @@ Bang Mutable
 Bang Mutable
 EOF`
 
-actual=`$RC $srcdir/two_port_calls.rc 2>&1`
+actual=`$RCGO $srcdir/two_port_calls.rc 2>&1`
 
 echo "Expected"
 echo "$expected"
