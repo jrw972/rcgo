@@ -1,0 +1,56 @@
+/* -*- c++ -*- */
+#include "unit_test.hpp"
+#include "semantic.hpp"
+#include "symbol_table.hpp"
+
+using namespace semantic;
+
+scope(semantic); {
+  unit(enter_symbols); {
+    decl::SymbolTable symtab;
+    symtab.open_scope ();
+    enter_symbols (symtab);
+
+    ASSERT (symtab.find_global_symbol ("bool") != NULL);
+    ASSERT (symtab.find_global_symbol ("uint8") != NULL);
+    ASSERT (symtab.find_global_symbol ("uint16") != NULL);
+    ASSERT (symtab.find_global_symbol ("uint32") != NULL);
+    ASSERT (symtab.find_global_symbol ("uint64") != NULL);
+    ASSERT (symtab.find_global_symbol ("int8") != NULL);
+    ASSERT (symtab.find_global_symbol ("int16") != NULL);
+    ASSERT (symtab.find_global_symbol ("int32") != NULL);
+    ASSERT (symtab.find_global_symbol ("int64") != NULL);
+    ASSERT (symtab.find_global_symbol ("float32") != NULL);
+    ASSERT (symtab.find_global_symbol ("float64") != NULL);
+    ASSERT (symtab.find_global_symbol ("complex64") != NULL);
+    ASSERT (symtab.find_global_symbol ("complex128") != NULL);
+    ASSERT (symtab.find_global_symbol ("byte") != NULL);
+    ASSERT (symtab.find_global_symbol ("rune") != NULL);
+    ASSERT (symtab.find_global_symbol ("uint") != NULL);
+    ASSERT (symtab.find_global_symbol ("int") != NULL);
+    ASSERT (symtab.find_global_symbol ("uintptr") != NULL);
+    ASSERT (symtab.find_global_symbol ("string") != NULL);
+    ASSERT (symtab.find_global_symbol ("new") != NULL);
+    ASSERT (symtab.find_global_symbol ("move") != NULL);
+    ASSERT (symtab.find_global_symbol ("merge") != NULL);
+    ASSERT (symtab.find_global_symbol ("len") != NULL);
+    ASSERT (symtab.find_global_symbol ("append") != NULL);
+    ASSERT (symtab.find_global_symbol ("copy") != NULL);
+    ASSERT (symtab.find_global_symbol ("println") != NULL);
+    ASSERT (symtab.find_global_symbol ("FileDescriptor") != NULL);
+    ASSERT (symtab.find_global_symbol ("timespec") != NULL);
+    ASSERT (symtab.find_global_symbol ("readable") != NULL);
+    ASSERT (symtab.find_global_symbol ("read") != NULL);
+    ASSERT (symtab.find_global_symbol ("writable") != NULL);
+    ASSERT (symtab.find_global_symbol ("clock_gettime") != NULL);
+    ASSERT (symtab.find_global_symbol ("timerfd_create") != NULL);
+    ASSERT (symtab.find_global_symbol ("timerfd_settime") != NULL);
+    ASSERT (symtab.find_global_symbol ("udp_socket") != NULL);
+    ASSERT (symtab.find_global_symbol ("sendto") != NULL);
+    ASSERT (symtab.find_global_symbol ("nil") != NULL);
+    ASSERT (symtab.find_global_symbol ("true") != NULL);
+    ASSERT (symtab.find_global_symbol ("false") != NULL);
+
+
+  }; off();
+}; off();

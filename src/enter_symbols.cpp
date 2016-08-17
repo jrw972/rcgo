@@ -1,13 +1,5 @@
 #include "semantic.hpp"
 
-#include <error.h>
-
-#include "node.hpp"
-#include "node_visitor.hpp"
-#include "symbol.hpp"
-#include "polymorphic_function.hpp"
-#include "runtime.hpp"
-#include "symbol_table.hpp"
 #include "builtin_function.hpp"
 
 namespace semantic
