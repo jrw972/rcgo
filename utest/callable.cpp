@@ -29,7 +29,7 @@ main (int argc, char** argv)
     tap.tassert ("decl::Function::callable_type ()",
                  func.callable_type () == &functype);
     // Just to exercise the code.
-    func.check (new ast::ListExpr (1));
+    func.check (new ast::ExpressionList (1));
     ReceiverAccess ra;
     bool flag;
     func.compute_receiver_access (semantic::ExpressionValueList (), ra, flag);
@@ -64,7 +64,7 @@ main (int argc, char** argv)
     tap.tassert ("decl::Method::callable_type ()",
                  meth.callable_type () == &methodtype);
     // Just to exercise the code.
-    meth.check (new ast::ListExpr (1));
+    meth.check (new ast::ExpressionList (1));
     ReceiverAccess ra;
     bool flag;
     meth.compute_receiver_access (semantic::ExpressionValueList (), ra, flag);
@@ -91,7 +91,7 @@ main (int argc, char** argv)
     tap.tassert ("decl::Initializer::callable_type ()",
                  initializer.callable_type () == &initializertype);
     // Just to exercise the code.
-    initializer.check (new ast::ListExpr (1));
+    initializer.check (new ast::ExpressionList (1));
     ReceiverAccess ra;
     bool flag;
     initializer.compute_receiver_access (semantic::ExpressionValueList (), ra, flag);
@@ -120,7 +120,7 @@ main (int argc, char** argv)
     tap.tassert ("decl::Getter::callable_type ()",
                  getter.callable_type () == &gettertype);
     // Just to exercise the code.
-    getter.check (new ast::ListExpr (1));
+    getter.check (new ast::ExpressionList (1));
     ReceiverAccess ra;
     bool flag;
     getter.compute_receiver_access (semantic::ExpressionValueList (), ra, flag);
@@ -135,7 +135,7 @@ main (int argc, char** argv)
   {
     util::Location loc;
     Parameter* receiver = Parameter::make (loc, "there", &type::named_int, Immutable, Immutable);
-    ast::Node* body = new ast::ListStatement (1);
+    ast::Node* body = new ast::StatementList (1);
     const std::string name ("myreaction");
     ParameterList* parameter_list = new ParameterList (loc);
     const type::Reaction* reaction_type = new type::Reaction (NULL, receiver, parameter_list, new ParameterList (loc));
@@ -158,7 +158,7 @@ main (int argc, char** argv)
     util::Location loc;
     Parameter* receiver = Parameter::make (loc, "there", &type::named_int, Immutable, Immutable);
     Parameter* iota = Parameter::make (loc, "there", &type::named_int, Immutable, Immutable);
-    ast::Node* body = new ast::ListStatement (1);
+    ast::Node* body = new ast::StatementList (1);
     const std::string name ("myreaction");
     const type::Reaction* reaction_type = new type::Reaction (NULL, receiver, new ParameterList (loc), new ParameterList (loc));
 

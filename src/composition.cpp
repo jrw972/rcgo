@@ -530,7 +530,7 @@ Composer::elaborate_bindings ()
               NOT_REACHED;
             }
 
-            void visit (IfStatement& node)
+            void visit (ast::If& node)
             {
               node.condition->operation->execute (exec);
               assert (node.condition->eval.expression_kind != semantic::UnknownExpressionKind);
@@ -544,22 +544,22 @@ Composer::elaborate_bindings ()
               exec.stack ().pop (c);
               if (c)
                 {
-                  node.true_branch->accept (*this);
+                  node.true_body->accept (*this);
                 }
               else
                 {
-                  node.false_branch->accept (*this);
+                  node.false_body->accept (*this);
                 }
             }
 
-            void visit (ListStatement& node)
+            void visit (StatementList& node)
             {
               node.visit_children (*this);
             }
 
-            void visit (ForIotaStatement& node)
+            void visit (ast::ForIota& node)
             {
-              for (long idx = 0, limit = node.limit;
+              for (long idx = 0, limit = node.limit_value;
                    idx != limit;
                    ++idx)
                 {
@@ -578,7 +578,7 @@ Composer::elaborate_bindings ()
             {
               left->operation->execute (exec);
               void* port = exec.stack ().pop_pointer ();
-              ast::Node* sb = node_cast<SelectExpr> (right)->base;
+              ast::Node* sb = node_cast<ast::Select> (right)->base;
               sb->operation->execute (exec);
               void* reaction_component = exec.stack ().pop_pointer ();
               if (sb->eval.type->underlying_type ()->to_pointer ())
@@ -600,12 +600,12 @@ Composer::elaborate_bindings ()
               r->push_ports.push_back (pp);
             }
 
-            void visit (BindPushPortStatement& node)
+            void visit (BindPushPort& node)
             {
               bind (node.left, node.right);
             }
 
-            void visit (BindPushPortParamStatement& node)
+            void visit (BindPushPortParameter& node)
             {
               node.param->operation->execute (exec);
               assert (node.param->eval.expression_kind != semantic::UnknownExpressionKind);
@@ -619,11 +619,11 @@ Composer::elaborate_bindings ()
               bind (node.left, node.right, idx);
             }
 
-            void visit (BindPullPortStatement& node)
+            void visit (BindPullPort& node)
             {
               node.left->operation->execute (exec);
               void* port = exec.stack ().pop_pointer ();
-              ast::Node* sb = node_cast<SelectExpr> (node.right)->base;
+              ast::Node* sb = node_cast<ast::Select> (node.right)->base;
               sb->operation->execute (exec);
               void* getter_component = exec.stack ().pop_pointer ();
               const decl::Getter* getter = static_cast<const decl::Getter*> (node.right->callable);
@@ -837,12 +837,12 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     AST_NOT_REACHED (node);
   }
 
-  void visit (ConversionExpr& node)
+  void visit (Conversion& node)
   {
-    node.expr->accept (*this);
+    node.argument->accept (*this);
   }
 
-  void visit (ListStatement& node)
+  void visit (StatementList& node)
   {
     node.visit_children (*this);
   }
@@ -852,12 +852,12 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     node.visit_children (*this);
   }
 
-  void visit (ReturnStatement& node)
+  void visit (ast::Return& node)
   {
     node.visit_children (*this);
   }
 
-  void visit (ActivateStatement& node)
+  void visit (ast::Activate& node)
   {
     if (action != NULL)
       {
@@ -873,25 +873,25 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
       {
         NOT_REACHED;
       }
-    node.expr_list->accept (*this);
+    node.arguments->accept (*this);
   }
 
-  void visit (ListExpr& node)
+  void visit (ExpressionList& node)
   {
     node.visit_children (*this);
   }
 
-  void visit (PushPortCallExpr& node)
+  void visit (ast::PushPortCall& node)
   {
     size_t port = activation->instance->address + arch::offset (node.field);
     // Find what is bound to this port.
     Composer::PushPortsType::const_iterator port_pos = table.push_ports_.find (port);
     assert (port_pos != table.push_ports_.end ());
     activation->nodes.push_back (port_pos->second);
-    node.args->accept (*this);
+    node.arguments->accept (*this);
   }
 
-  void visit (IndexedPushPortCallExpr& node)
+  void visit (ast::IndexedPushPortCall& node)
   {
     node.index->operation->execute (exec);
     assert (node.index->eval.expression_kind != semantic::UnknownExpressionKind);
@@ -920,19 +920,19 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     Composer::PushPortsType::const_iterator port_pos = table.push_ports_.find (port);
     assert (port_pos != table.push_ports_.end ());
     activation->nodes.push_back (port_pos->second);
-    node.args->accept (*this);
+    node.arguments->accept (*this);
   }
 
-  void visit (CallExpr& node)
+  void visit (Call& node)
   {
-    assert (node.expr->eval.expression_kind != semantic::UnknownExpressionKind);
-    if (node.expr->eval.expression_kind != semantic::TypeExpressionKind)
+    assert (node.expression->eval.expression_kind != semantic::UnknownExpressionKind);
+    if (node.expression->eval.expression_kind != semantic::TypeExpressionKind)
       {
         // Are we calling a getter or pull port.
         const type::Getter* method = node.getter_type;
         if (method != NULL)
           {
-            ast::Node* sb = node_cast<SelectExpr> (node.expr)->base;
+            ast::Node* sb = node_cast<ast::Select> (node.expression)->base;
             sb->operation->execute (exec);
             assert (sb->eval.expression_kind != semantic::UnknownExpressionKind);
             if (sb->eval.expression_kind == semantic::VariableExpressionKind &&
@@ -965,47 +965,47 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     node.visit_children (*this);
   }
 
-  void visit (IdentifierExpr& node)
+  void visit (IdentifierExpression& node)
   {
     // Do nothing.
   }
 
-  void visit (LiteralExpr& node)
+  void visit (ast::Literal& node)
   {
     // Do nothing.
   }
 
-  void visit (BinaryArithmeticExpr& node)
+  void visit (ast::BinaryArithmetic& node)
   {
     node.visit_children (*this);
   }
 
-  void visit (UnaryArithmeticExpr& node)
+  void visit (ast::UnaryArithmetic& node)
   {
     node.visit_children (*this);
   }
 
-  void visit (AddressOfExpr& node)
+  void visit (AddressOf& node)
   {
     node.visit_children (*this);
   }
 
-  void visit (SelectExpr& node)
+  void visit (ast::Select& node)
   {
     node.base->accept (*this);
   }
 
-  void visit (DereferenceExpr& node)
+  void visit (Dereference& node)
   {
     node.visit_children (*this);
   }
 
-  void visit (VarStatement& node)
+  void visit (Var& node)
   {
-    node.expression_list->accept (*this);
+    node.expressions->accept (*this);
   }
 
-  void visit (AssignStatement& node)
+  void visit (ast::Assign& node)
   {
     node.visit_children (*this);
   }
@@ -1014,9 +1014,9 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
   {
   }
 
-  void visit (ChangeStatement& node)
+  void visit (ast::Change& node)
   {
-    node.expr->accept (*this);
+    node.argument->accept (*this);
     node.body->accept (*this);
   }
 
@@ -1024,12 +1024,12 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
   {
   }
 
-  void visit (IndexExpr& node)
+  void visit (Index& node)
   {
     node.visit_children (*this);
   }
 
-  void visit (IfStatement& node)
+  void visit (ast::If& node)
   {
     node.visit_children (*this);
   }
@@ -1354,7 +1354,7 @@ Composer::instantiate_contained_instances (const type::Type * type,
 
     case Array_Kind:
     {
-      const Array* a = type->to_array ();
+      const type::Array* a = type->to_array ();
       for (long idx = 0; idx != a->dimension; ++idx)
         {
           // Recur changing address.

@@ -43,14 +43,14 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     NamedType* type = new NamedType (node.identifier->identifier, node.identifier->location);
     symtab.enter_symbol (type);
-    type->underlying_type (process_type (node.type_spec, er, symtab, true));
+    type->underlying_type (process_type (node.type, er, symtab, true));
   }
 
   void visit (Const& node)
   {
-    ast::List* identifier_list = node.identifier_list;
-    ast::Node* type_spec = node.type_spec;
-    ast::List* expression_list = node.expression_list;
+    ast::List* identifier_list = node.identifiers;
+    ast::Node* type_spec = node.type;
+    ast::List* expression_list = node.expressions;
 
     if (expression_list->size () != 0 &&
         identifier_list->size () != expression_list->size ())

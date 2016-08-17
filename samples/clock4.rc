@@ -13,7 +13,7 @@ action (this $const * Counter) _tick (this.counter < limit) {
   };
 }
 
-func (this $const * Counter) Counter () uint {
+getter (this $const * Counter) Counter () uint {
   return this.counter;
 }
 

@@ -270,7 +270,7 @@ ESCAPED \\[abfnrtv\\\"]
                          Value value;
                          value.untyped_string_value = v;
                          value.present = true;
-                         yylval.node = new LiteralExpr (yylloc, UntypedString::instance (), value);
+                         yylval.node = new Literal (yylloc, UntypedString::instance (), value);
                          return LITERAL; }
 
 \"([^\"]|{OCTAL}|{HEX}|{LITTLEU}|{BIGU}|{ESCAPED})*\" {
@@ -288,7 +288,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.untyped_string_value = v;
   value.present = true;
-  yylval.node = new LiteralExpr (yylloc, UntypedString::instance (), value);
+  yylval.node = new Literal (yylloc, UntypedString::instance (), value);
   return LITERAL;
 }
 
@@ -301,7 +301,7 @@ ESCAPED \\[abfnrtv\\\"]
       "integer literal '%s' is out of range (E11)", yytext);
   }
   value.present = true;
-  yylval.node = new LiteralExpr (yylloc, UntypedInteger::instance (), value);
+  yylval.node = new Literal (yylloc, UntypedInteger::instance (), value);
   return LITERAL;
 }
 
@@ -314,7 +314,7 @@ ESCAPED \\[abfnrtv\\\"]
       "octal literal '%s' is out of range (E12)", yytext);
   }
   value.present = true;
-  yylval.node = new LiteralExpr (yylloc, UntypedInteger::instance (), value);
+  yylval.node = new Literal (yylloc, UntypedInteger::instance (), value);
   return LITERAL;
 }
 
@@ -327,7 +327,7 @@ ESCAPED \\[abfnrtv\\\"]
       "hex literal '%s' is out of range (E13)", yytext);
   }
   value.present = true;
-  yylval.node = new LiteralExpr (yylloc, UntypedInteger::instance (), value);
+  yylval.node = new Literal (yylloc, UntypedInteger::instance (), value);
   return LITERAL;
 }
 
@@ -335,7 +335,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.untyped_float_value = strtod (yytext, NULL);
   value.present = true;
-  yylval.node = new LiteralExpr (yylloc, UntypedFloat::instance (), value);
+  yylval.node = new Literal (yylloc, UntypedFloat::instance (), value);
   return LITERAL;
 }
 
@@ -343,7 +343,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.untyped_complex_value = semantic::UntypedComplex::make (0, strtod (yytext, NULL));
   value.present = true;
-  yylval.node = new LiteralExpr (yylloc, type::UntypedComplex::instance (), value);
+  yylval.node = new Literal (yylloc, type::UntypedComplex::instance (), value);
   return LITERAL;
 }
 
@@ -351,7 +351,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.untyped_rune_value = yytext[1];
   value.present = true;
-  yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
+  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
   return LITERAL;
 }
 
@@ -361,39 +361,39 @@ ESCAPED \\[abfnrtv\\\"]
   switch (yytext[2]) {
   case 'a':
     value.untyped_rune_value = '\a';
-    yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
+    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
     break;
   case 'b':
     value.untyped_rune_value = '\b';
-    yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
+    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
     break;
   case 'f':
     value.untyped_rune_value = '\f';
-    yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
+    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
     break;
   case 'n':
     value.untyped_rune_value = '\n';
-    yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
+    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
     break;
   case 'r':
     value.untyped_rune_value = '\r';
-    yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
+    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
     break;
   case 't':
     value.untyped_rune_value = '\t';
-    yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
+    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
     break;
   case 'v':
     value.untyped_rune_value = '\v';
-    yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
+    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
     break;
   case '\\':
     value.untyped_rune_value = '\\';
-    yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
+    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
     break;
   case '\'':
     value.untyped_rune_value = '\'';
-    yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
+    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
     break;
   default:
     NOT_REACHED;
@@ -406,7 +406,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.untyped_rune_value = parseOctal (yylloc, yytext + 2);
   value.present = true;
-  yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
+  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
   return LITERAL;
 }
 
@@ -414,7 +414,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.untyped_rune_value = parseHex (yylloc, yytext + 3);
   value.present = true;
-  yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
+  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
   return LITERAL;
 }
 
@@ -422,7 +422,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.untyped_rune_value = parseU4 (yylloc, yytext + 3);
   value.present = true;
-  yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
+  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
   return LITERAL;
 }
 
@@ -430,7 +430,7 @@ ESCAPED \\[abfnrtv\\\"]
   Value value;
   value.untyped_rune_value = parseU8 (yylloc, yytext + 3);
   value.present = true;
-  yylval.node = new LiteralExpr (yylloc, UntypedRune::instance (), value);
+  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
   return LITERAL;
 }
 

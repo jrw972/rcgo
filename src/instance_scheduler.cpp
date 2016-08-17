@@ -161,7 +161,7 @@ instance_scheduler_t::init (Composer& instance_table,
   {
     // Initialize.
     instance_executor_t exec (*this, stack_size, 0);
-    for (InfoMapType::const_iterator pos = info_map_.begin (),
+    for (InfoMap::const_iterator pos = info_map_.begin (),
          limit = info_map_.end ();
          pos != limit;
          ++pos)

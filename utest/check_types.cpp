@@ -13,33 +13,33 @@ using namespace util;
 using namespace decl;
 using namespace type;
 
-static IdentifierExpr* make_identifier_expr (const std::string& id)
+static IdentifierExpression* make_identifier_expr (const std::string& id)
 {
-  return new IdentifierExpr (1, new Identifier (1, id));
+  return new IdentifierExpression (1, new Identifier (1, id));
 }
 
-static LiteralExpr* make_untyped_one ()
+static Literal* make_untyped_one ()
 {
   semantic::Value v;
   v.present = true;
   v.untyped_integer_value = 1;
-  return new LiteralExpr (1, UntypedInteger::instance (), v);
+  return new Literal (1, UntypedInteger::instance (), v);
 }
 
-static LiteralExpr* make_untyped_false ()
+static Literal* make_untyped_false ()
 {
   semantic::Value v;
   v.present = true;
   v.untyped_boolean_value = false;
-  return new LiteralExpr (1, UntypedBoolean::instance (), v);
+  return new Literal (1, UntypedBoolean::instance (), v);
 }
 
-// static LiteralExpr* make_typed_false ()
+// static Literal* make_typed_false ()
 // {
 //   semantic::Value v;
 //   v.present = true;
 //   v.bool_value = false;
-//   return new LiteralExpr (1, &named_bool, v);
+//   return new Literal (1, &named_bool, v);
 // }
 
 // static ast::Function* make_function_node ()
@@ -74,7 +74,7 @@ main (int argc, char** argv)
 
     check_types (root, er, symtab);
 
-    tap.tassert ("semantic::check_types LiteralExpr",
+    tap.tassert ("semantic::check_types Literal",
                  root->eval.expression_kind == ValueExpressionKind &&
                  root->eval.intrinsic_mutability == Immutable &&
                  root->eval.indirection_mutability == Immutable &&
@@ -85,13 +85,13 @@ main (int argc, char** argv)
   {
     Node* child1 = make_untyped_one ();
     Node* child2 = make_untyped_one ();
-    Node* root = (new ListExpr (1))->append (child1)->append (child2);
+    Node* root = (new ExpressionList (1))->append (child1)->append (child2);
     ErrorReporter er;
     SymbolTable symtab;
 
     check_types (root, er, symtab);
 
-    tap.tassert ("semantic::check_types ListExpr",
+    tap.tassert ("semantic::check_types ExpressionList",
                  child2->eval.expression_kind == ValueExpressionKind &&
                  child2->eval.intrinsic_mutability == Immutable &&
                  child2->eval.indirection_mutability == Immutable &&
@@ -107,7 +107,7 @@ main (int argc, char** argv)
 
     check_types (root, er, symtab);
 
-    tap.tassert ("semantic::check_types IdentifierExpr undefined",
+    tap.tassert ("semantic::check_types IdentifierExpression undefined",
                  root->eval.expression_kind == ErrorExpressionKind &&
                  last_error (er, Undefined));
 
@@ -124,7 +124,7 @@ main (int argc, char** argv)
 
     check_types (root, er, symtab);
 
-    tap.tassert ("semantic::check_types IdentifierExpr BuiltinFunction",
+    tap.tassert ("semantic::check_types IdentifierExpression BuiltinFunction",
                  root->eval.expression_kind == ValueExpressionKind &&
                  root->eval.type == symbol->type &&
                  root->callable == symbol &&
@@ -145,10 +145,10 @@ main (int argc, char** argv)
 
     check_types (root, er, symtab);
 
-    tap.tassert ("semantic::check_types IdentifierExpr Template",
+    tap.tassert ("semantic::check_types IdentifierExpression Template",
                  root->eval.expression_kind == ValueExpressionKind &&
                  root->eval.type == type::PolymorphicFunction::instance () &&
-                 root->temp == symbol &&
+                 root->polymorphic_function == symbol &&
                  root->eval.intrinsic_mutability == Immutable &&
                  root->eval.indirection_mutability == Immutable &&
                  no_error (er));
@@ -167,7 +167,7 @@ main (int argc, char** argv)
 
     check_types (root, er, symtab);
 
-    tap.tassert ("semantic::check_types IdentifierExpr Function",
+    tap.tassert ("semantic::check_types IdentifierExpression Function",
                  root->eval.expression_kind == ValueExpressionKind &&
                  root->eval.type == symbol->type &&
                  root->callable == symbol &&
@@ -188,7 +188,7 @@ main (int argc, char** argv)
 
     check_types (root, er, symtab);
 
-    tap.tassert ("semantic::check_types IdentifierExpr Parameter",
+    tap.tassert ("semantic::check_types IdentifierExpression Parameter",
                  root->eval.expression_kind == VariableExpressionKind &&
                  root->eval.type == symbol->type &&
                  root->eval.intrinsic_mutability == Mutable &&
@@ -207,7 +207,7 @@ main (int argc, char** argv)
 
     check_types (root, er, symtab);
 
-    tap.tassert ("semantic::check_types IdentifierExpr Type",
+    tap.tassert ("semantic::check_types IdentifierExpression Type",
                  root->eval.expression_kind == TypeExpressionKind &&
                  root->eval.type == &named_bool &&
                  no_error (er));
@@ -227,7 +227,7 @@ main (int argc, char** argv)
 
     check_types (root, er, symtab);
 
-    tap.tassert ("semantic::check_types IdentifierExpr Constant",
+    tap.tassert ("semantic::check_types IdentifierExpression Constant",
                  root->eval.expression_kind == ValueExpressionKind &&
                  root->eval.type == symbol->type &&
                  root->eval.intrinsic_mutability == Immutable &&
@@ -247,7 +247,7 @@ main (int argc, char** argv)
 
     check_types (root, er, symtab);
 
-    tap.tassert ("semantic::check_types IdentifierExpr Variable",
+    tap.tassert ("semantic::check_types IdentifierExpression Variable",
                  root->eval.expression_kind == VariableExpressionKind &&
                  root->eval.type == symbol->type &&
                  root->eval.intrinsic_mutability == Mutable &&
@@ -267,7 +267,7 @@ main (int argc, char** argv)
 
     check_types (root, er, symtab);
 
-    tap.tassert ("semantic::check_types IdentifierExpr Hidden",
+    tap.tassert ("semantic::check_types IdentifierExpression Hidden",
                  root->eval.expression_kind == ErrorExpressionKind &&
                  last_error (er, util::Hidden_Symbol));
 
@@ -275,7 +275,7 @@ main (int argc, char** argv)
   }
 
   {
-    Node* root = new UnaryArithmeticExpr (1, &logic_not_temp, new UnaryArithmeticExpr (1, &logic_not_temp, make_untyped_one ()));
+    Node* root = new ast::UnaryArithmetic (1, &logic_not_temp, new ast::UnaryArithmetic (1, &logic_not_temp, make_untyped_one ()));
     ErrorReporter er;
     SymbolTable symtab;
     symtab.open_scope ();
@@ -283,7 +283,7 @@ main (int argc, char** argv)
 
     check_types (root, er, symtab);
 
-    tap.tassert ("semantic::check_types UnaryArithmeticExpr subexpression error",
+    tap.tassert ("semantic::check_types UnaryArithmetic subexpression error",
                  root->eval.expression_kind == ErrorExpressionKind &&
                  last_error (er, Cannot_Be_Applied));
 
@@ -291,7 +291,7 @@ main (int argc, char** argv)
   }
 
   {
-    Node* root = new UnaryArithmeticExpr (1, &logic_not_temp, make_untyped_false ());
+    Node* root = new ast::UnaryArithmetic (1, &logic_not_temp, make_untyped_false ());
     ErrorReporter er;
     SymbolTable symtab;
     symtab.open_scope ();
@@ -299,7 +299,7 @@ main (int argc, char** argv)
 
     check_types (root, er, symtab);
 
-    tap.tassert ("semantic::check_types UnaryArithmeticExpr",
+    tap.tassert ("semantic::check_types UnaryArithmetic",
                  root->eval.expression_kind == ValueExpressionKind &&
                  root->eval.type == UntypedBoolean::instance () &&
                  root->eval.value.present &&
@@ -310,7 +310,7 @@ main (int argc, char** argv)
   }
 
   {
-    Node* root = new BinaryArithmeticExpr (1, &multiply_temp, new UnaryArithmeticExpr (1, &logic_not_temp, make_untyped_one ()), make_untyped_one ());
+    Node* root = new ast::BinaryArithmetic (1, &multiply_temp, new ast::UnaryArithmetic (1, &logic_not_temp, make_untyped_one ()), make_untyped_one ());
     ErrorReporter er;
     SymbolTable symtab;
     symtab.open_scope ();
@@ -326,7 +326,7 @@ main (int argc, char** argv)
   }
 
   {
-    Node* root = new BinaryArithmeticExpr (1, &multiply_temp, make_untyped_one (), new UnaryArithmeticExpr (1, &logic_not_temp, make_untyped_one ()));
+    Node* root = new ast::BinaryArithmetic (1, &multiply_temp, make_untyped_one (), new ast::UnaryArithmetic (1, &logic_not_temp, make_untyped_one ()));
     ErrorReporter er;
     SymbolTable symtab;
     symtab.open_scope ();
@@ -342,7 +342,7 @@ main (int argc, char** argv)
   }
 
   {
-    Node* root = new BinaryArithmeticExpr (1, &multiply_temp, make_untyped_one (), make_untyped_one ());
+    Node* root = new ast::BinaryArithmetic (1, &multiply_temp, make_untyped_one (), make_untyped_one ());
     ErrorReporter er;
     SymbolTable symtab;
     symtab.open_scope ();

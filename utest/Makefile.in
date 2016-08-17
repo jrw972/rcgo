@@ -84,7 +84,7 @@ TESTS = action$(EXEEXT) arch$(EXEEXT) bind$(EXEEXT) callable$(EXEEXT) \
 	parameter_list$(EXEEXT) polymorphic_function$(EXEEXT) \
 	runtime_types$(EXEEXT) semantic$(EXEEXT) stack$(EXEEXT) \
 	symbol$(EXEEXT) symbol_cast$(EXEEXT) symbol_table$(EXEEXT) \
-	type$(EXEEXT) value$(EXEEXT)
+	type$(EXEEXT) value$(EXEEXT) unit_test$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = utest
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
@@ -108,7 +108,7 @@ am__EXEEXT_1 = action$(EXEEXT) arch$(EXEEXT) bind$(EXEEXT) \
 	parameter_list$(EXEEXT) polymorphic_function$(EXEEXT) \
 	runtime_types$(EXEEXT) semantic$(EXEEXT) stack$(EXEEXT) \
 	symbol$(EXEEXT) symbol_cast$(EXEEXT) symbol_table$(EXEEXT) \
-	type$(EXEEXT) value$(EXEEXT)
+	type$(EXEEXT) value$(EXEEXT) unit_test$(EXEEXT)
 am__objects_1 =
 am_action_OBJECTS = action-action.$(OBJEXT) $(am__objects_1)
 action_OBJECTS = $(am_action_OBJECTS)
@@ -249,6 +249,13 @@ type_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 type_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(type_CXXFLAGS) \
 	$(CXXFLAGS) $(type_LDFLAGS) $(LDFLAGS) -o $@
+am_unit_test_OBJECTS = unit_test-unit_test.$(OBJEXT) \
+	unit_test-node.$(OBJEXT) $(am__objects_1)
+unit_test_OBJECTS = $(am_unit_test_OBJECTS)
+unit_test_DEPENDENCIES = $(top_builddir)/src/librcgo.la
+unit_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(unit_test_CXXFLAGS) \
+	$(CXXFLAGS) $(unit_test_LDFLAGS) $(LDFLAGS) -o $@
 am_value_OBJECTS = value-value.$(OBJEXT) $(am__objects_1)
 value_OBJECTS = $(am_value_OBJECTS)
 value_DEPENDENCIES = $(top_builddir)/src/librcgo.la
@@ -315,7 +322,7 @@ SOURCES = $(action_SOURCES) $(arch_SOURCES) $(bind_SOURCES) \
 	$(polymorphic_function_SOURCES) $(runtime_types_SOURCES) \
 	$(semantic_SOURCES) $(stack_SOURCES) $(symbol_SOURCES) \
 	$(symbol_cast_SOURCES) $(symbol_table_SOURCES) $(type_SOURCES) \
-	$(value_SOURCES)
+	$(unit_test_SOURCES) $(value_SOURCES)
 DIST_SOURCES = $(action_SOURCES) $(arch_SOURCES) $(bind_SOURCES) \
 	$(callable_SOURCES) $(check_types_SOURCES) \
 	$(error_reporter_SOURCES) $(expression_value_SOURCES) \
@@ -324,7 +331,7 @@ DIST_SOURCES = $(action_SOURCES) $(arch_SOURCES) $(bind_SOURCES) \
 	$(polymorphic_function_SOURCES) $(runtime_types_SOURCES) \
 	$(semantic_SOURCES) $(stack_SOURCES) $(symbol_SOURCES) \
 	$(symbol_cast_SOURCES) $(symbol_table_SOURCES) $(type_SOURCES) \
-	$(value_SOURCES)
+	$(unit_test_SOURCES) $(value_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -672,6 +679,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -682,7 +690,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver.sh
 AM_CXXFLAGS = -I $(top_srcdir)/src
-HELPERS = tap.hpp visitor_helper.hpp mock_execution.hpp
+EXTRA_DIST = node.test
+HELPERS = unit_test.hpp tap.hpp visitor_helper.hpp mock_execution.hpp
 action_SOURCES = action.cpp $(HELPERS)
 action_LDADD = $(top_builddir)/src/librcgo.la
 action_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -767,6 +776,10 @@ value_SOURCES = value.cpp $(HELPERS)
 value_LDADD = $(top_builddir)/src/librcgo.la
 value_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 value_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+unit_test_SOURCES = unit_test.cpp node.cpp $(HELPERS)
+unit_test_LDADD = $(top_builddir)/src/librcgo.la
+unit_test_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+unit_test_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -891,6 +904,10 @@ type$(EXEEXT): $(type_OBJECTS) $(type_DEPENDENCIES) $(EXTRA_type_DEPENDENCIES)
 	@rm -f type$(EXEEXT)
 	$(AM_V_CXXLD)$(type_LINK) $(type_OBJECTS) $(type_LDADD) $(LIBS)
 
+unit_test$(EXEEXT): $(unit_test_OBJECTS) $(unit_test_DEPENDENCIES) $(EXTRA_unit_test_DEPENDENCIES) 
+	@rm -f unit_test$(EXEEXT)
+	$(AM_V_CXXLD)$(unit_test_LINK) $(unit_test_OBJECTS) $(unit_test_LDADD) $(LIBS)
+
 value$(EXEEXT): $(value_OBJECTS) $(value_DEPENDENCIES) $(EXTRA_value_DEPENDENCIES) 
 	@rm -f value$(EXEEXT)
 	$(AM_V_CXXLD)$(value_LINK) $(value_OBJECTS) $(value_LDADD) $(LIBS)
@@ -921,6 +938,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol_cast-symbol_cast.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol_table-symbol_table.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/type-type.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-node.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-unit_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/value-value.Po@am__quote@
 
 .cpp.o:
@@ -1223,6 +1242,34 @@ type-type.obj: type.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='type.cpp' object='type-type.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(type_CXXFLAGS) $(CXXFLAGS) -c -o type-type.obj `if test -f 'type.cpp'; then $(CYGPATH_W) 'type.cpp'; else $(CYGPATH_W) '$(srcdir)/type.cpp'; fi`
+
+unit_test-unit_test.o: unit_test.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-unit_test.o -MD -MP -MF $(DEPDIR)/unit_test-unit_test.Tpo -c -o unit_test-unit_test.o `test -f 'unit_test.cpp' || echo '$(srcdir)/'`unit_test.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-unit_test.Tpo $(DEPDIR)/unit_test-unit_test.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='unit_test.cpp' object='unit_test-unit_test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-unit_test.o `test -f 'unit_test.cpp' || echo '$(srcdir)/'`unit_test.cpp
+
+unit_test-unit_test.obj: unit_test.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-unit_test.obj -MD -MP -MF $(DEPDIR)/unit_test-unit_test.Tpo -c -o unit_test-unit_test.obj `if test -f 'unit_test.cpp'; then $(CYGPATH_W) 'unit_test.cpp'; else $(CYGPATH_W) '$(srcdir)/unit_test.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-unit_test.Tpo $(DEPDIR)/unit_test-unit_test.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='unit_test.cpp' object='unit_test-unit_test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-unit_test.obj `if test -f 'unit_test.cpp'; then $(CYGPATH_W) 'unit_test.cpp'; else $(CYGPATH_W) '$(srcdir)/unit_test.cpp'; fi`
+
+unit_test-node.o: node.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-node.o -MD -MP -MF $(DEPDIR)/unit_test-node.Tpo -c -o unit_test-node.o `test -f 'node.cpp' || echo '$(srcdir)/'`node.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-node.Tpo $(DEPDIR)/unit_test-node.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='node.cpp' object='unit_test-node.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-node.o `test -f 'node.cpp' || echo '$(srcdir)/'`node.cpp
+
+unit_test-node.obj: node.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-node.obj -MD -MP -MF $(DEPDIR)/unit_test-node.Tpo -c -o unit_test-node.obj `if test -f 'node.cpp'; then $(CYGPATH_W) 'node.cpp'; else $(CYGPATH_W) '$(srcdir)/node.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-node.Tpo $(DEPDIR)/unit_test-node.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='node.cpp' object='unit_test-node.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-node.obj `if test -f 'node.cpp'; then $(CYGPATH_W) 'node.cpp'; else $(CYGPATH_W) '$(srcdir)/node.cpp'; fi`
 
 value-value.o: value.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(value_CXXFLAGS) $(CXXFLAGS) -MT value-value.o -MD -MP -MF $(DEPDIR)/value-value.Tpo -c -o value-value.o `test -f 'value.cpp' || echo '$(srcdir)/'`value.cpp
@@ -1584,6 +1631,13 @@ value.log: value$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+unit_test.log: unit_test$(EXEEXT)
+	@p='unit_test$(EXEEXT)'; \
+	b='unit_test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -1755,6 +1809,9 @@ uninstall-am:
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	recheck tags tags-am uninstall uninstall-am
 
+
+%.cpp : %.test
+	awk -f $(top_srcdir)/utest/testpro.awk $< > $@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

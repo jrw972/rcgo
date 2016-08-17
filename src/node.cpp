@@ -10,558 +10,267 @@ using namespace decl;
 using namespace semantic;
 
 std::ostream&
-operator<< (std::ostream& out, Node& node)
+operator<< (std::ostream& out, const Node& node)
 {
-  struct visitor : public NodeVisitor
-  {
-    std::ostream& out;
-    size_t indent;
-
-    visitor (std::ostream& o) : out (o), indent (0) { }
-
-    void print_indent (const Node& node)
-    {
-      for (size_t idx = 0; idx != indent; ++idx)
-        {
-          out << ' ';
-        }
-      out << node.location.line << ' ';
-    }
-
-    void print_children (Node& node)
-    {
-      size_t old_indent = indent;
-      indent += 2;
-      node.visit_children (*this);
-      indent = old_indent;
-    }
-
-    void print_common (const Node& node)
-    {
-      if (node.eval.type != NULL)
-        {
-          out << ' ' << *node.eval.type;
-          if (node.eval.value.present)
-            {
-              out << ' ' << ValuePrinter (node.eval.type, node.eval.value);
-            }
-          out << ' ';
-          switch (node.eval.expression_kind)
-            {
-            case UnknownExpressionKind:
-              out << "unknown";
-              break;
-            case ErrorExpressionKind:
-              out << "error";
-              break;
-            case ValueExpressionKind:
-              out << "value";
-              break;
-            case VariableExpressionKind:
-              out << "variable";
-              break;
-            case VoidExpressionKind:
-              out << "void";
-              break;
-            case TypeExpressionKind:
-              out << "type";
-              break;
-            }
-          out << ' ';
-          switch (node.eval.intrinsic_mutability)
-            {
-            case Mutable:
-              break;
-            case Immutable:
-              out << "const";
-              break;
-            case Foreign:
-              out << "foreign";
-              break;
-            }
-          out << ' ';
-          switch (node.eval.indirection_mutability)
-            {
-            case Mutable:
-              break;
-            case Immutable:
-              out << "+const";
-              break;
-            case Foreign:
-              out << "+foreign";
-              break;
-            }
-        }
-      out << " receiver_state=" << node.eval.receiver_state;
-      out << " receiver_access=";
-      switch (node.eval.receiver_access)
-        {
-        case AccessNone:
-          out << "none";
-          break;
-        case AccessRead:
-          out << "read";
-          break;
-        case AccessWrite:
-          out << "write";
-          break;
-        }
-      out << '\n';
-    }
-
-    void visit (Identifier& node)
-    {
-      print_indent (node);
-      out << "identifier " << node.identifier;
-      print_common (node);
-      print_children (node);
-    }
-    void visit (IdentifierList& node)
-    {
-      print_indent (node);
-      out << "identifier_list";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (Receiver& node)
-    {
-      print_indent (node);
-      out << "receiver";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (ArrayTypeSpec& node)
-    {
-      print_indent (node);
-      out << "array_type_spec";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (SliceTypeSpec& node)
-    {
-      print_indent (node);
-      out << "slice_type_spec";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (MapTypeSpec& node)
-    {
-      print_indent (node);
-      out << "map_type_spec";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (EmptyTypeSpec& node)
-    {
-      print_indent (node);
-      out << "empty_type_spec";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (FieldListTypeSpec& node)
-    {
-      print_indent (node);
-      out << "field_list_type_spec";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (HeapTypeSpec& node)
-    {
-      print_indent (node);
-      out << "heap_type_spec";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (IdentifierListTypeSpec& node)
-    {
-      print_indent (node);
-      out << "identifier_list_type_spec";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (IdentifierTypeSpec& node)
-    {
-      print_indent (node);
-      out << "identifier_type_spec";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (PointerTypeSpec& node)
-    {
-      print_indent (node);
-      out << "pointer_type_spec";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (PushPortTypeSpec& node)
-    {
-      print_indent (node);
-      out << "push_port_type_spec";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (PullPortTypeSpec& node)
-    {
-      print_indent (node);
-      out << "pull_port_type_spec";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (ParameterList& node)
-    {
-      print_indent (node);
-      out << "parameter_list";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (TypeExpression& node)
-    {
-      print_indent (node);
-      out << "TypeExpression";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (BinaryArithmeticExpr& node)
-    {
-      print_indent (node);
-      out << "binary_arithmetic_expr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (AddressOfExpr& node)
-    {
-      print_indent (node);
-      out << "address_of_expr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (CallExpr& node)
-    {
-      print_indent (node);
-      out << "call_expr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (ConversionExpr& node)
-    {
-      print_indent (node);
-      out << "conversion_expr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (DereferenceExpr& node)
-    {
-      print_indent (node);
-      out << "dereference_expr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (IdentifierExpr& node)
-    {
-      print_indent (node);
-      out << "identifier_expr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (IndexExpr& node)
-    {
-      print_indent (node);
-      out << "index_expr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (SliceExpr& node)
-    {
-      print_indent (node);
-      out << "slice_expr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (EmptyExpr& node)
-    {
-      print_indent (node);
-      out << "EmptyExpr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (IndexedPushPortCallExpr& node)
-    {
-      print_indent (node);
-      out << "indexed_port_call_expr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (ListExpr& node)
-    {
-      print_indent (node);
-      out << "list_expr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (LiteralExpr& node)
-    {
-      print_indent (node);
-      out << "literal_expr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (UnaryArithmeticExpr& node)
-    {
-      print_indent (node);
-      out << "unary_arithmetic_expr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (PushPortCallExpr& node)
-    {
-      print_indent (node);
-      out << "push_port_call_expr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (SelectExpr& node)
-    {
-      print_indent (node);
-      out << "select_expr";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (EmptyStatement& node)
-    {
-      print_indent (node);
-      out << "empty_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (AddAssignStatement& node)
-    {
-      print_indent (node);
-      out << "add_assign_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (ChangeStatement& node)
-    {
-      print_indent (node);
-      out << "change_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (AssignStatement& node)
-    {
-      print_indent (node);
-      out << "assign_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (ExpressionStatement& node)
-    {
-      print_indent (node);
-      out << "expression_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (IfStatement& node)
-    {
-      print_indent (node);
-      out << "if_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (WhileStatement& node)
-    {
-      print_indent (node);
-      out << "while_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (ListStatement& node)
-    {
-      print_indent (node);
-      out << "list_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (ReturnStatement& node)
-    {
-      print_indent (node);
-      out << "return_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (IncrementDecrementStatement& node)
-    {
-      print_indent (node);
-      out << "increment_decrement_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (SubtractAssignStatement& node)
-    {
-      print_indent (node);
-      out << "subtract_assign_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (ActivateStatement& node)
-    {
-      print_indent (node);
-      out << "activate_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (VarStatement& node)
-    {
-      print_indent (node);
-      out << "var_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (BindPushPortStatement& node)
-    {
-      print_indent (node);
-      out << "bind_push_port_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (BindPushPortParamStatement& node)
-    {
-      print_indent (node);
-      out << "bind_push_port_param_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (BindPullPortStatement& node)
-    {
-      print_indent (node);
-      out << "bind_pull_port_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (ForIotaStatement& node)
-    {
-      print_indent (node);
-      out << "for_iota_statement";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (Action& node)
-    {
-      print_indent (node);
-      out << "action";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (Const& node)
-    {
-      print_indent (node);
-      out << "const";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (DimensionedAction& node)
-    {
-      print_indent (node);
-      out << "dimensioned_action";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (Bind& node)
-    {
-      print_indent (node);
-      out << "bind";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (Function& node)
-    {
-      print_indent (node);
-      out << "function";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (Getter& node)
-    {
-      print_indent (node);
-      out << "getter";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (Initializer& node)
-    {
-      print_indent (node);
-      out << "initializer";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (Instance& node)
-    {
-      print_indent (node);
-      out << "instance";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (Method& node)
-    {
-      print_indent (node);
-      out << "method";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (Reaction& node)
-    {
-      print_indent (node);
-      out << "reaction";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (DimensionedReaction& node)
-    {
-      print_indent (node);
-      out << "dimensioned_reaction";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (Type& node)
-    {
-      print_indent (node);
-      out << "Type";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (SourceFile& node)
-    {
-      print_indent (node);
-      out << "SourceFile";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (ElementList& node)
-    {
-      print_indent (node);
-      out << "element_list";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (Element& node)
-    {
-      print_indent (node);
-      out << "element";
-      print_common (node);
-      print_children (node);
-    }
-    void visit (CompositeLiteral& node)
-    {
-      print_indent (node);
-      out << "composite_literal";
-      print_common (node);
-      print_children (node);
-    }
-  };
-
-  visitor v (out);
-  node.accept (v);
+  node.print (out);
   return out;
+}
+
+void Identifier::print (std::ostream& out) const
+{
+  out << "Identifier " << identifier;
+}
+void IdentifierList::print (std::ostream& out) const
+{
+  out << "IdentifierList";
+}
+void Receiver::print (std::ostream& out) const
+{
+  out << "Receiver";
+}
+void Array::print (std::ostream& out) const
+{
+  out << "Array";
+}
+void Slice::print (std::ostream& out) const
+{
+  out << "Slice";
+}
+void Map::print (std::ostream& out) const
+{
+  out << "Map";
+}
+void EmptyType::print (std::ostream& out) const
+{
+  out << "EmptyType";
+}
+void FieldList::print (std::ostream& out) const
+{
+  out << "FieldList";
+}
+void Heap::print (std::ostream& out) const
+{
+  out << "Heap";
+}
+void VariableList::print (std::ostream& out) const
+{
+  out << "VariableList";
+}
+void IdentifierType::print (std::ostream& out) const
+{
+  out << "IdentifierType";
+}
+void Pointer::print (std::ostream& out) const
+{
+  out << "Pointer";
+}
+void PushPort::print (std::ostream& out) const
+{
+  out << "PushPort";
+}
+void PullPort::print (std::ostream& out) const
+{
+  out << "PullPort";
+}
+void ParameterList::print (std::ostream& out) const
+{
+  out << "ParameterList";
+}
+void TypeExpression::print (std::ostream& out) const
+{
+  out << "TypeExpression";
+}
+void BinaryArithmetic::print (std::ostream& out) const
+{
+  out << "BinaryArithmetic";
+}
+void AddressOf::print (std::ostream& out) const
+{
+  out << "AddressOf";
+}
+void Call::print (std::ostream& out) const
+{
+  out << "Call";
+}
+void Conversion::print (std::ostream& out) const
+{
+  out << "Conversion";
+}
+void Dereference::print (std::ostream& out) const
+{
+  out << "Dereference";
+}
+void IdentifierExpression::print (std::ostream& out) const
+{
+  out << "IdentifierExpression";
+}
+void Index::print (std::ostream& out) const
+{
+  out << "Index";
+}
+void IndexSlice::print (std::ostream& out) const
+{
+  out << "IndexSlice";
+}
+void EmptyExpression::print (std::ostream& out) const
+{
+  out << "EmptyExpression";
+}
+void IndexedPushPortCall::print (std::ostream& out) const
+{
+  out << "IndexedPushPortCall";
+}
+void ExpressionList::print (std::ostream& out) const
+{
+  out << "ExpressionList";
+}
+void Literal::print (std::ostream& out) const
+{
+  out << "Literal";
+}
+void UnaryArithmetic::print (std::ostream& out) const
+{
+  out << "UnaryArithmetic";
+}
+void PushPortCall::print (std::ostream& out) const
+{
+  out << "PushPortCall";
+}
+void Select::print (std::ostream& out) const
+{
+  out << "Select";
+}
+void EmptyStatement::print (std::ostream& out) const
+{
+  out << "EmptyStatement";
+}
+void AddAssign::print (std::ostream& out) const
+{
+  out << "AddAssign";
+}
+void Change::print (std::ostream& out) const
+{
+  out << "Change";
+}
+void Assign::print (std::ostream& out) const
+{
+  out << "Assign";
+}
+void ExpressionStatement::print (std::ostream& out) const
+{
+  out << "ExpressionStatement";
+}
+void If::print (std::ostream& out) const
+{
+  out << "If";
+}
+void While::print (std::ostream& out) const
+{
+  out << "While";
+}
+void StatementList::print (std::ostream& out) const
+{
+  out << "StatementList";
+}
+void Return::print (std::ostream& out) const
+{
+  out << "Return";
+}
+void IncrementDecrement::print (std::ostream& out) const
+{
+  out << "IncrementDecrement";
+}
+void SubtractAssign::print (std::ostream& out) const
+{
+  out << "SubtractAssign";
+}
+void Activate::print (std::ostream& out) const
+{
+  out << "Activate";
+}
+void Var::print (std::ostream& out) const
+{
+  out << "Var";
+}
+void BindPushPort::print (std::ostream& out) const
+{
+  out << "BindPushPort";
+}
+void BindPushPortParameter::print (std::ostream& out) const
+{
+  out << "BindPushPortParameter";
+}
+void BindPullPort::print (std::ostream& out) const
+{
+  out << "BindPullPort";
+}
+void ForIota::print (std::ostream& out) const
+{
+  out << "ForIota";
+}
+void Action::print (std::ostream& out) const
+{
+  out << "Action";
+}
+void Const::print (std::ostream& out) const
+{
+  out << "Const";
+}
+void DimensionedAction::print (std::ostream& out) const
+{
+  out << "DimensionedAction";
+}
+void Bind::print (std::ostream& out) const
+{
+  out << "Bind";
+}
+void Function::print (std::ostream& out) const
+{
+  out << "Function";
+}
+void Getter::print (std::ostream& out) const
+{
+  out << "Getter";
+}
+void Initializer::print (std::ostream& out) const
+{
+  out << "Initializer";
+}
+void Instance::print (std::ostream& out) const
+{
+  out << "Instance";
+}
+void Method::print (std::ostream& out) const
+{
+  out << "Method";
+}
+void Reaction::print (std::ostream& out) const
+{
+  out << "Reaction";
+}
+void DimensionedReaction::print (std::ostream& out) const
+{
+  out << "DimensionedReaction";
+}
+void Type::print (std::ostream& out) const
+{
+  out << "Type";
+}
+void SourceFile::print (std::ostream& out) const
+{
+  out << "SourceFile";
+}
+void ElementList::print (std::ostream& out) const
+{
+  out << "ElementList";
+}
+void Element::print (std::ostream& out) const
+{
+  out << "Element";
+}
+void CompositeLiteral::print (std::ostream& out) const
+{
+  out << "CompositeLiteral";
 }
 
 #define ACCEPT(type) void                               \
@@ -570,73 +279,70 @@ operator<< (std::ostream& out, Node& node)
     visitor.visit (*this);                              \
   }
 
-ACCEPT (Identifier)
-ACCEPT (IdentifierList)
-ACCEPT (Receiver)
-ACCEPT (ArrayTypeSpec)
-ACCEPT (SliceTypeSpec)
-ACCEPT (MapTypeSpec)
-ACCEPT (EmptyTypeSpec)
-ACCEPT (FieldListTypeSpec)
-ACCEPT (HeapTypeSpec)
-ACCEPT (IdentifierListTypeSpec)
-ACCEPT (IdentifierTypeSpec)
-ACCEPT (PointerTypeSpec)
-ACCEPT (PushPortTypeSpec)
-ACCEPT (PullPortTypeSpec)
-ACCEPT (ParameterList)
-
-ACCEPT (TypeExpression)
-ACCEPT (BinaryArithmeticExpr)
-ACCEPT (AddressOfExpr)
-ACCEPT (CallExpr)
-ACCEPT (ConversionExpr)
-ACCEPT (DereferenceExpr)
-ACCEPT (IdentifierExpr)
-ACCEPT (IndexExpr)
-ACCEPT (SliceExpr)
-ACCEPT (EmptyExpr)
-ACCEPT (IndexedPushPortCallExpr)
-ACCEPT (ListExpr)
-ACCEPT (LiteralExpr)
-ACCEPT (UnaryArithmeticExpr)
-ACCEPT (PushPortCallExpr)
-ACCEPT (SelectExpr)
-
-ACCEPT (EmptyStatement)
-ACCEPT (AddAssignStatement)
-ACCEPT (ChangeStatement)
-ACCEPT (AssignStatement)
-ACCEPT (ExpressionStatement)
-ACCEPT (IfStatement)
-ACCEPT (WhileStatement)
-ACCEPT (ListStatement)
-ACCEPT (ReturnStatement)
-ACCEPT (IncrementDecrementStatement)
-ACCEPT (SubtractAssignStatement)
-ACCEPT (ActivateStatement)
-ACCEPT (VarStatement)
-ACCEPT (BindPushPortStatement)
-ACCEPT (BindPushPortParamStatement)
-ACCEPT (BindPullPortStatement)
-ACCEPT (ForIotaStatement)
-
 ACCEPT (Action)
-ACCEPT (Const)
-ACCEPT (DimensionedAction)
+ACCEPT (Activate)
+ACCEPT (AddAssign)
+ACCEPT (AddressOf)
+ACCEPT (Array)
+ACCEPT (Assign)
+ACCEPT (BinaryArithmetic)
 ACCEPT (Bind)
+ACCEPT (BindPullPort)
+ACCEPT (BindPushPort)
+ACCEPT (BindPushPortParameter)
+ACCEPT (Call)
+ACCEPT (Change)
+ACCEPT (CompositeLiteral)
+ACCEPT (Const)
+ACCEPT (Conversion)
+ACCEPT (Dereference)
+ACCEPT (DimensionedAction)
+ACCEPT (DimensionedReaction)
+ACCEPT (Element)
+ACCEPT (ElementList)
+ACCEPT (EmptyExpression)
+ACCEPT (EmptyStatement)
+ACCEPT (EmptyType)
+ACCEPT (ExpressionList)
+ACCEPT (ExpressionStatement)
+ACCEPT (FieldList)
+ACCEPT (ForIota)
 ACCEPT (Function)
 ACCEPT (Getter)
+ACCEPT (Heap)
+ACCEPT (Identifier)
+ACCEPT (IdentifierExpression)
+ACCEPT (IdentifierList)
+ACCEPT (IdentifierType)
+ACCEPT (If)
+ACCEPT (IncrementDecrement)
+ACCEPT (Index)
+ACCEPT (IndexSlice)
+ACCEPT (IndexedPushPortCall)
 ACCEPT (Initializer)
 ACCEPT (Instance)
+ACCEPT (Literal)
+ACCEPT (Map)
 ACCEPT (Method)
+ACCEPT (ParameterList)
+ACCEPT (Pointer)
+ACCEPT (PullPort)
+ACCEPT (PushPort)
+ACCEPT (PushPortCall)
 ACCEPT (Reaction)
-ACCEPT (DimensionedReaction)
-ACCEPT (Type)
+ACCEPT (Receiver)
+ACCEPT (Return)
+ACCEPT (Select)
+ACCEPT (Slice)
 ACCEPT (SourceFile)
-ACCEPT (ElementList)
-ACCEPT (Element)
-ACCEPT (CompositeLiteral)
+ACCEPT (StatementList)
+ACCEPT (SubtractAssign)
+ACCEPT (Type)
+ACCEPT (TypeExpression)
+ACCEPT (UnaryArithmetic)
+ACCEPT (Var)
+ACCEPT (VariableList)
+ACCEPT (While)
 
 Node::~Node() { }
 
@@ -684,13 +390,13 @@ Node::Node (unsigned int line_)
   , field (NULL)
   , reset_mutability (false)
   , callable (NULL)
-  , temp (NULL)
+  , polymorphic_function (NULL)
   , operation (NULL)
 {
   assert (location.line != 0);
 }
 
-LiteralExpr::LiteralExpr (unsigned int line, const ::type::Type* t, const Value& v)
+Literal::Literal (unsigned int line, const ::type::Type* t, const Value& v)
   : Node (line)
 {
   eval.type = t;
@@ -715,111 +421,111 @@ Receiver::Receiver (unsigned int line,
                     bool isP,
                     Identifier* type_id)
   : Node (line)
-  , this_identifier (this_id)
+  , identifier (this_id)
   , mutability (m)
   , indirection_mutability (dm)
   , is_pointer (isP)
-  , type_identifier (type_id)
+  , type (type_id)
 { }
 
 void
 Receiver::visit_children (NodeVisitor& visitor)
 {
-  this_identifier->accept (visitor);
-  type_identifier->accept (visitor);
+  identifier->accept (visitor);
+  type->accept (visitor);
 }
 
-ArrayTypeSpec::ArrayTypeSpec (unsigned int line, Node* dim, Node* base)
+Array::Array (unsigned int line, Node* dim, Node* base)
   : Node (line)
   , dimension (dim)
   , base_type (base)
 { }
 
-void ArrayTypeSpec::visit_children (NodeVisitor& visitor)
+void Array::visit_children (NodeVisitor& visitor)
 {
   dimension->accept (visitor);
   base_type->accept (visitor);
 }
 
-EmptyTypeSpec::EmptyTypeSpec (unsigned int line)
+EmptyType::EmptyType (unsigned int line)
   : Node (line)
 { }
 
-FieldListTypeSpec::FieldListTypeSpec (unsigned int line)
+FieldList::FieldList (unsigned int line)
   : List (line)
   , is_component (false)
 { }
 
-HeapTypeSpec::HeapTypeSpec (unsigned int line, Node* child)
+Heap::Heap (unsigned int line, Node* child)
   : Unary (line, child)
 { }
 
-IdentifierTypeSpec::IdentifierTypeSpec (unsigned int line, Identifier* child)
+IdentifierType::IdentifierType (unsigned int line, Identifier* child)
   : Unary (line, child)
 { }
 
-IdentifierListTypeSpec::IdentifierListTypeSpec (unsigned int line,
-    List* id_list,
-    Mutability m,
-    Mutability dm,
-    Node* type_sp)
+VariableList::VariableList (unsigned int line,
+                            List* id_list,
+                            Mutability m,
+                            Mutability dm,
+                            Node* type_sp)
   : Node (line)
-  , identifier_list (id_list)
+  , identifiers (id_list)
   , mutability (m)
   , indirection_mutability (dm)
-  , type_spec (type_sp)
+  , type (type_sp)
 { }
 
 void
-IdentifierListTypeSpec::visit_children (NodeVisitor& visitor)
+VariableList::visit_children (NodeVisitor& visitor)
 {
-  identifier_list->accept (visitor);
-  type_spec->accept (visitor);
+  identifiers->accept (visitor);
+  type->accept (visitor);
 }
 
-PointerTypeSpec::PointerTypeSpec (unsigned int line, Node* child)
+Pointer::Pointer (unsigned int line, Node* child)
   : Unary (line, child)
 { }
 
-SliceTypeSpec::SliceTypeSpec (unsigned int line, Node* child)
+Slice::Slice (unsigned int line, Node* child)
   : Unary (line, child)
 { }
 
-MapTypeSpec::MapTypeSpec (unsigned int line, Node* k, Node* v)
+Map::Map (unsigned int line, Node* k, Node* v)
   : Node (line)
   , key (k)
   , value (v)
 { }
 
 void
-MapTypeSpec::visit_children (NodeVisitor& visitor)
+Map::visit_children (NodeVisitor& visitor)
 {
   key->accept (visitor);
   value->accept (visitor);
 }
 
-PushPortTypeSpec::PushPortTypeSpec (unsigned int line, Node* sig)
+PushPort::PushPort (unsigned int line, List* sig)
   : Node (line)
-  , signature (sig)
+  , parameters (sig)
 { }
 
-void PushPortTypeSpec::visit_children (NodeVisitor& visitor)
+void PushPort::visit_children (NodeVisitor& visitor)
 {
-  signature->accept (visitor);
+  parameters->accept (visitor);
 }
 
-PullPortTypeSpec::PullPortTypeSpec (unsigned int line,
-                                    List* pl,
-                                    List* rpl)
+PullPort::PullPort (unsigned int line,
+                    List* pl,
+                    List* rpl)
   : Node (line)
-  , parameter_list (pl)
-  , return_parameter_list (rpl)
+  , parameters (pl)
+  , return_parameters (rpl)
 { }
 
-void PullPortTypeSpec::visit_children (NodeVisitor& visitor)
+void PullPort::visit_children (NodeVisitor& visitor)
 {
-  parameter_list->accept (visitor);
-  return_parameter_list->accept (visitor);
+  parameters->accept (visitor);
+  return_parameters->accept (visitor);
 }
 
 ParameterList::ParameterList (unsigned int line)
@@ -827,14 +533,8 @@ ParameterList::ParameterList (unsigned int line)
 { }
 
 TypeExpression::TypeExpression (unsigned int line, Node* ts)
-  : Node (line)
-  , type_spec (ts)
+  : Unary<> (line, ts)
 { }
-
-void TypeExpression::visit_children (NodeVisitor& visitor)
-{
-  type_spec->accept (visitor);
-}
 
 Binary::Binary (unsigned int line, Node* l, Node* r)
   : Node (line)
@@ -848,20 +548,20 @@ void Binary::visit_children (NodeVisitor& visitor)
   right->accept (visitor);
 }
 
-BinaryArithmeticExpr::BinaryArithmeticExpr (unsigned int line, decl::PolymorphicFunction* a_temp, Node* left, Node* right)
+BinaryArithmetic::BinaryArithmetic (unsigned int line, decl::PolymorphicFunction* a_temp, Node* left, Node* right)
   : Binary (line, left, right)
 {
-  temp = a_temp;
+  polymorphic_function = a_temp;
 }
 
-AddressOfExpr::AddressOfExpr (unsigned int line, Node* child)
+AddressOf::AddressOf (unsigned int line, Node* child)
   : Unary (line, child)
 { }
 
-CallExpr::CallExpr (unsigned int line, Node* e, List* a)
+Call::Call (unsigned int line, Node* e, List* a)
   : Node (line)
-  , expr (e)
-  , args (a)
+  , expression (e)
+  , arguments (a)
   , function_type (NULL)
   , push_port_type (NULL)
   , pull_port_type (NULL)
@@ -869,40 +569,40 @@ CallExpr::CallExpr (unsigned int line, Node* e, List* a)
   , initializer_type (NULL)
   , getter_type (NULL)
   , reaction_type (NULL)
-  , parameter_list (NULL)
-  , return_parameter_list (NULL)
+  , parameters (NULL)
+  , return_parameters (NULL)
 { }
 
-void CallExpr::visit_children (NodeVisitor& visitor)
+void Call::visit_children (NodeVisitor& visitor)
 {
-  expr->accept (visitor);
-  args->accept (visitor);
+  expression->accept (visitor);
+  arguments->accept (visitor);
 }
 
-ConversionExpr::ConversionExpr (unsigned int line, Node* te, Node* e)
+Conversion::Conversion (unsigned int line, Node* te, Node* e)
   : Node (line)
-  , type_expr (te)
-  , expr (e)
+  , type (te)
+  , argument (e)
 { }
-void ConversionExpr::visit_children (NodeVisitor& visitor)
+void Conversion::visit_children (NodeVisitor& visitor)
 {
-  type_expr->accept (visitor);
-  expr->accept (visitor);
+  type->accept (visitor);
+  argument->accept (visitor);
 }
 
-DereferenceExpr::DereferenceExpr (unsigned int line, Node* child)
+Dereference::Dereference (unsigned int line, Node* child)
   : Unary (line, child)
 { }
 
-ListExpr::ListExpr (unsigned int line)
+ExpressionList::ExpressionList (unsigned int line)
   : List (line)
 { }
 
-IdentifierExpr::IdentifierExpr (unsigned int line, Identifier* c)
+IdentifierExpression::IdentifierExpression (unsigned int line, Identifier* c)
   : Unary (line, c)
 { }
 
-IndexExpr::IndexExpr (unsigned int line, Node* b, Node* i)
+Index::Index (unsigned int line, Node* b, Node* i)
   : Node (line)
   , base (b)
   , index (i)
@@ -910,32 +610,32 @@ IndexExpr::IndexExpr (unsigned int line, Node* b, Node* i)
   , slice_type (NULL)
 { }
 
-void IndexExpr::visit_children (NodeVisitor& visitor)
+void Index::visit_children (NodeVisitor& visitor)
 {
   base->accept (visitor);
   index->accept (visitor);
 }
 
-SliceExpr::SliceExpr (unsigned int line,
-                      Node* b,
-                      Node* l,
-                      Node* h,
-                      Node* m)
+IndexSlice::IndexSlice (unsigned int line,
+                        Node* b,
+                        Node* l,
+                        Node* h,
+                        Node* m)
   : Node (line)
   , base (b)
   , low (l)
-  , low_present (node_cast<EmptyExpr> (low) == NULL)
+  , low_present (node_cast<EmptyExpression> (low) == NULL)
   , high (h)
-  , high_present (node_cast<EmptyExpr> (high) == NULL)
+  , high_present (node_cast<EmptyExpression> (high) == NULL)
   , max (m)
-  , max_present (node_cast<EmptyExpr> (max) == NULL)
+  , max_present (node_cast<EmptyExpression> (max) == NULL)
   , string_type (NULL)
   , pointer_to_array_type (NULL)
   , array_type (NULL)
   , slice_type (NULL)
 { }
 
-void SliceExpr::visit_children (NodeVisitor& visitor)
+void IndexSlice::visit_children (NodeVisitor& visitor)
 {
   base->accept (visitor);
   low->accept (visitor);
@@ -943,58 +643,58 @@ void SliceExpr::visit_children (NodeVisitor& visitor)
   max->accept (visitor);
 }
 
-EmptyExpr::EmptyExpr (unsigned int line)
+EmptyExpression::EmptyExpression (unsigned int line)
   : Node (line)
 { }
 
-UnaryArithmeticExpr::UnaryArithmeticExpr (unsigned int line, decl::PolymorphicFunction* a_temp, Node* child)
+UnaryArithmetic::UnaryArithmetic (unsigned int line, decl::PolymorphicFunction* a_temp, Node* child)
   : Unary (line, child)
 {
-  temp = a_temp;
+  polymorphic_function = a_temp;
 }
 
-PushPortCallExpr::PushPortCallExpr (unsigned int line, Identifier* id, List* a)
+PushPortCall::PushPortCall (unsigned int line, Identifier* id, List* a)
   : Node (line)
   , identifier (id)
-  , args (a)
+  , arguments (a)
   , field (NULL)
   , push_port_type (NULL)
   , receiver_parameter (NULL)
 { }
 
-void PushPortCallExpr::visit_children (NodeVisitor& visitor)
+void PushPortCall::visit_children (NodeVisitor& visitor)
 {
   identifier->accept (visitor);
-  args->accept (visitor);
+  arguments->accept (visitor);
 }
 
-IndexedPushPortCallExpr::IndexedPushPortCallExpr (unsigned int line,
+IndexedPushPortCall::IndexedPushPortCall (unsigned int line,
     Identifier* id,
     Node* idx,
     List* a)
   : Node (line)
   , identifier (id)
   , index (idx)
-  , args (a)
+  , arguments (a)
   , field (NULL)
   , push_port_type (NULL)
   , receiver_parameter (NULL)
 { }
 
-void IndexedPushPortCallExpr::visit_children (NodeVisitor& visitor)
+void IndexedPushPortCall::visit_children (NodeVisitor& visitor)
 {
   identifier->accept (visitor);
   index->accept (visitor);
-  args->accept (visitor);
+  arguments->accept (visitor);
 }
 
-SelectExpr::SelectExpr (unsigned int line, Node* b, Identifier* id)
+Select::Select (unsigned int line, Node* b, Identifier* id)
   : Node (line)
   , base (b)
   , identifier (id)
 { }
 
-void SelectExpr::visit_children (NodeVisitor& visitor)
+void Select::visit_children (NodeVisitor& visitor)
 {
   base->accept (visitor);
   identifier->accept (visitor);
@@ -1004,27 +704,27 @@ EmptyStatement::EmptyStatement (unsigned int line)
   : Node (line)
 { }
 
-AddAssignStatement::AddAssignStatement (unsigned int line, Node* left, Node* right)
+AddAssign::AddAssign (unsigned int line, Node* left, Node* right)
   : Binary (line, left, right)
 { }
 
-AssignStatement::AssignStatement (unsigned int line, Node* left, Node* right)
+Assign::Assign (unsigned int line, Node* left, Node* right)
   : Binary (line, left, right)
 { }
 
-ChangeStatement::ChangeStatement (unsigned int line,
-                                  Node * e,
-                                  Identifier * id,
-                                  Node * b)
+Change::Change (unsigned int line,
+                Node * e,
+                Identifier * id,
+                Node * b)
   : Node (line)
-  , expr (e)
+  , argument (e)
   , identifier (id)
   , body (b)
 { }
 
-void ChangeStatement::visit_children (NodeVisitor& visitor)
+void Change::visit_children (NodeVisitor& visitor)
 {
-  expr->accept (visitor);
+  argument->accept (visitor);
   identifier->accept (visitor);
   body->accept (visitor);
 }
@@ -1033,96 +733,96 @@ ExpressionStatement::ExpressionStatement (unsigned int line, Node* child)
   : Unary (line, child)
 { }
 
-IfStatement::IfStatement (unsigned int line,
-                          Node* s,
-                          Node* c,
-                          Node* tb,
-                          Node* fb)
+If::If (unsigned int line,
+        Node* s,
+        Node* c,
+        Node* tb,
+        Node* fb)
   : Node (line)
-  , statement (s)
+  , before (s)
   , condition (c)
-  , true_branch (tb)
-  , false_branch (fb)
+  , true_body (tb)
+  , false_body (fb)
 { }
 
-void IfStatement::visit_children (NodeVisitor& visitor)
+void If::visit_children (NodeVisitor& visitor)
 {
-  statement->accept (visitor);
+  before->accept (visitor);
   condition->accept (visitor);
-  true_branch->accept (visitor);
-  false_branch->accept (visitor);
+  true_body->accept (visitor);
+  false_body->accept (visitor);
 }
 
-WhileStatement::WhileStatement (unsigned int line, Node* c, Node* b)
+While::While (unsigned int line, Node* c, Node* b)
   : Node (line)
   , condition (c)
   , body (b)
 { }
 
-void WhileStatement::visit_children (NodeVisitor& visitor)
+void While::visit_children (NodeVisitor& visitor)
 {
   condition->accept (visitor);
   body->accept (visitor);
 }
 
-ReturnStatement::ReturnStatement (unsigned int line, Node* child)
+Return::Return (unsigned int line, Node* child)
   : Unary (line, child)
   , return_symbol (NULL)
 { }
 
-IncrementDecrementStatement::IncrementDecrementStatement (unsigned int line, Node* child, Kind a_kind)
+IncrementDecrement::IncrementDecrement (unsigned int line, Node* child, Kind a_kind)
   : Unary (line, child)
   , kind (a_kind)
 { }
 
-ListStatement::ListStatement (unsigned int line)
+StatementList::StatementList (unsigned int line)
   : List (line)
 { }
 
-SubtractAssignStatement::SubtractAssignStatement (unsigned int line, Node* left, Node* right)
+SubtractAssign::SubtractAssign (unsigned int line, Node* left, Node* right)
   : Binary (line, left, right)
 { }
 
-ActivateStatement::ActivateStatement (unsigned int line, List * el, Node * b)
+Activate::Activate (unsigned int line, List * el, Node * b)
   : Node (line)
-  , expr_list (el)
+  , arguments (el)
   , body (b)
   , memory_model (NULL)
   , in_action (false)
 { }
 
-void ActivateStatement::visit_children (NodeVisitor& visitor)
+void Activate::visit_children (NodeVisitor& visitor)
 {
-  expr_list->accept (visitor);
+  arguments->accept (visitor);
   body->accept (visitor);
 }
 
-VarStatement::VarStatement (unsigned int line,
-                            List* il,
-                            Mutability m,
-                            Mutability dm,
-                            Node* ts,
-                            List* el)
+Var::Var (unsigned int line,
+          List* il,
+          Mutability m,
+          Mutability dm,
+          Node* ts,
+          List* el)
   : Node (line)
-  , identifier_list (il)
+  , identifiers (il)
   , mutability (m)
-  , dereferenceMutability (dm)
-  , type_spec (ts)
-  , expression_list (el)
+  , indirection_mutability (dm)
+  , type (ts)
+  , expressions (el)
 { }
 
-void VarStatement::visit_children (NodeVisitor& visitor)
+void Var::visit_children (NodeVisitor& visitor)
 {
-  identifier_list->accept (visitor);
-  type_spec->accept (visitor);
-  expression_list->accept (visitor);
+  identifiers->accept (visitor);
+  type->accept (visitor);
+  expressions->accept (visitor);
 }
 
-BindPushPortStatement::BindPushPortStatement (unsigned int line, Node* left, Node* right)
+BindPushPort::BindPushPort (unsigned int line, Node* left, Node* right)
   : Binary (line, left, right)
 { }
 
-BindPushPortParamStatement::BindPushPortParamStatement (unsigned int line,
+BindPushPortParameter::BindPushPortParameter (unsigned int line,
     Node* l,
     Node* r,
     Node* p)
@@ -1132,31 +832,31 @@ BindPushPortParamStatement::BindPushPortParamStatement (unsigned int line,
   , param (p)
 { }
 
-void BindPushPortParamStatement::visit_children (NodeVisitor& visitor)
+void BindPushPortParameter::visit_children (NodeVisitor& visitor)
 {
   left->accept (visitor);
   right->accept (visitor);
   param->accept (visitor);
 }
 
-BindPullPortStatement::BindPullPortStatement (unsigned int line, Node* left, Node* right)
+BindPullPort::BindPullPort (unsigned int line, Node* left, Node* right)
   : Binary (line, left, right)
 { }
 
-ForIotaStatement::ForIotaStatement (unsigned int line,
-                                    Identifier* id,
-                                    Node* lim,
-                                    Node* b)
+ForIota::ForIota (unsigned int line,
+                  Identifier* id,
+                  Node* lim,
+                  Node* b)
   : Node (line)
   , identifier (id)
-  , limit_node (lim)
+  , limit (lim)
   , body (b)
 { }
 
-void ForIotaStatement::visit_children (NodeVisitor& visitor)
+void ForIota::visit_children (NodeVisitor& visitor)
 {
   identifier->accept (visitor);
-  limit_node->accept (visitor);
+  limit->accept (visitor);
   body->accept (visitor);
 }
 
@@ -1232,8 +932,8 @@ Function::Function (unsigned int line,
                     Node* b)
   : Node (line)
   , identifier (i)
-  , parameter_list (pl)
-  , return_parameter_list (rpl)
+  , parameters (pl)
+  , return_parameters (rpl)
   , body (b)
   , function (NULL)
 { }
@@ -1241,8 +941,8 @@ Function::Function (unsigned int line,
 void Function::visit_children (NodeVisitor& visitor)
 {
   identifier->accept (visitor);
-  parameter_list->accept (visitor);
-  return_parameter_list->accept (visitor);
+  parameters->accept (visitor);
+  return_parameters->accept (visitor);
   body->accept (visitor);
 }
 
@@ -1253,17 +953,17 @@ Instance::Instance (unsigned int line,
                     List* el)
   : Node (line)
   , identifier (id)
-  , type_name (tn)
+  , type (tn)
   , initializer (init)
-  , expression_list (el)
+  , arguments (el)
 { }
 
 void Instance::visit_children (NodeVisitor& visitor)
 {
   identifier->accept (visitor);
-  type_name->accept (visitor);
+  type->accept (visitor);
   initializer->accept (visitor);
-  expression_list->accept (visitor);
+  arguments->accept (visitor);
 }
 
 Const::Const (unsigned int line,
@@ -1271,17 +971,17 @@ Const::Const (unsigned int line,
               Node* ts,
               List* el)
   : Node (line)
-  , identifier_list (il)
-  , type_spec (ts)
-  , expression_list (el)
+  , identifiers (il)
+  , type (ts)
+  , expressions (el)
   , done (false)
 { }
 
 void Const::visit_children (NodeVisitor& visitor)
 {
-  identifier_list->accept (visitor);
-  type_spec->accept (visitor);
-  expression_list->accept (visitor);
+  identifiers->accept (visitor);
+  type->accept (visitor);
+  expressions->accept (visitor);
 }
 
 Method::Method (unsigned int line,
@@ -1293,8 +993,8 @@ Method::Method (unsigned int line,
   : Node (line)
   , receiver (r)
   , identifier (i)
-  , parameter_list (a_parameter_list)
-  , return_parameter_list (a_return_parameter_list)
+  , parameters (a_parameter_list)
+  , return_parameters (a_return_parameter_list)
   , body (b)
   , method (NULL)
 { }
@@ -1303,8 +1003,8 @@ void Method::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
   identifier->accept (visitor);
-  parameter_list->accept (visitor);
-  return_parameter_list->accept (visitor);
+  parameters->accept (visitor);
+  return_parameters->accept (visitor);
   body->accept (visitor);
 }
 
@@ -1317,8 +1017,8 @@ Getter::Getter (unsigned int line,
   : Node (line)
   , receiver (r)
   , identifier (i)
-  , parameter_list (pl)
-  , return_parameter_list (rpl)
+  , parameters (pl)
+  , return_parameters (rpl)
   , body (b)
   , getter (NULL)
 { }
@@ -1327,8 +1027,8 @@ void Getter::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
   identifier->accept (visitor);
-  parameter_list->accept (visitor);
-  return_parameter_list->accept (visitor);
+  parameters->accept (visitor);
+  return_parameters->accept (visitor);
   body->accept (visitor);
 }
 
@@ -1341,8 +1041,8 @@ Initializer::Initializer (unsigned int line,
   : Node (line)
   , receiver (r)
   , identifier (i)
-  , parameter_list (pl)
-  , return_parameter_list (rpl)
+  , parameters (pl)
+  , return_parameters (rpl)
   , body (b)
   , initializer (NULL)
 { }
@@ -1351,8 +1051,8 @@ void Initializer::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
   identifier->accept (visitor);
-  parameter_list->accept (visitor);
-  return_parameter_list->accept (visitor);
+  parameters->accept (visitor);
+  return_parameters->accept (visitor);
   body->accept (visitor);
 }
 
@@ -1364,8 +1064,8 @@ Reaction::Reaction (unsigned int line,
   : Node (line)
   , receiver (r)
   , identifier (i)
-  , parameter_list (pl)
-  , return_parameter_list (new ParameterList (line))
+  , parameters (pl)
+  , return_parameters (new ParameterList (line))
   , body (b)
   , reaction (NULL)
 { }
@@ -1374,8 +1074,8 @@ void Reaction::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
   identifier->accept (visitor);
-  parameter_list->accept (visitor);
-  return_parameter_list->accept (visitor);
+  parameters->accept (visitor);
+  return_parameters->accept (visitor);
   body->accept (visitor);
 }
 
@@ -1389,8 +1089,8 @@ DimensionedReaction::DimensionedReaction (unsigned int line,
   , dimension (d)
   , receiver (r)
   , identifier (i)
-  , parameter_list (pl)
-  , return_parameter_list (new ParameterList (line))
+  , parameters (pl)
+  , return_parameters (new ParameterList (line))
   , body (b)
   , reaction (NULL)
 { }
@@ -1400,21 +1100,21 @@ void DimensionedReaction::visit_children (NodeVisitor& visitor)
   dimension->accept (visitor);
   receiver->accept (visitor);
   identifier->accept (visitor);
-  parameter_list->accept (visitor);
-  return_parameter_list->accept (visitor);
+  parameters->accept (visitor);
+  return_parameters->accept (visitor);
   body->accept (visitor);
 }
 
 Type::Type (unsigned int line, Identifier* i, Node* ts)
   : Node (line)
   , identifier (i)
-  , type_spec (ts)
+  , type (ts)
 { }
 
 void Type::visit_children (NodeVisitor& visitor)
 {
   identifier->accept (visitor);
-  type_spec->accept (visitor);
+  type->accept (visitor);
 }
 
 SourceFile::SourceFile ()
@@ -1441,19 +1141,19 @@ CompositeLiteral::CompositeLiteral (unsigned int line,
                                     Node* lt,
                                     List* lv)
   : Node (line)
-  , literal_type (lt)
-  , literal_value (lv)
+  , type (lt)
+  , value (lv)
 { }
 
 void CompositeLiteral::visit_children (NodeVisitor& visitor)
 {
-  literal_type->accept (visitor);
-  literal_value->accept (visitor);
+  type->accept (visitor);
+  value->accept (visitor);
 }
 
-void EmptyTypeSpec::visit_children (NodeVisitor& visitor) { }
-void EmptyExpr::visit_children (NodeVisitor& visitor) { }
-void LiteralExpr::visit_children (NodeVisitor& visitor) { }
+void EmptyType::visit_children (NodeVisitor& visitor) { }
+void EmptyExpression::visit_children (NodeVisitor& visitor) { }
+void Literal::visit_children (NodeVisitor& visitor) { }
 void EmptyStatement::visit_children (NodeVisitor& visitor) { }
 
 }

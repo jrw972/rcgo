@@ -394,7 +394,7 @@ partitioned_scheduler_t::executor_t::poll ()
   pfd.events = POLLIN;
   pfds.push_back (pfd);
 
-  for (FileDescriptorMapType::const_iterator pos = file_descriptor_map_.begin (),
+  for (FileDescriptorMap::const_iterator pos = file_descriptor_map_.begin (),
        limit = file_descriptor_map_.end ();
        pos != limit;
        ++pos)

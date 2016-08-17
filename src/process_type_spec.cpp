@@ -100,9 +100,9 @@ process_parameter_list (Node* node, ErrorReporter& er, decl::SymbolTable& symtab
            pos1 != limit1;
            ++pos1)
         {
-          IdentifierListTypeSpec* child = static_cast<IdentifierListTypeSpec*> (*pos1);
-          List *identifier_list = child->identifier_list;
-          Node *type_spec = child->type_spec;
+          VariableList* child = static_cast<VariableList*> (*pos1);
+          List *identifier_list = child->identifiers;
+          Node *type_spec = child->type;
           const type::Type* type = process_type (type_spec, er, symtab, true);
           for (List::ConstIterator pos2 = identifier_list->begin (), limit2 = identifier_list->end ();
                pos2 != limit2;
@@ -162,25 +162,25 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
       AST_NOT_REACHED (node);
     }
 
-    void visit (ArrayTypeSpec& node)
+    void visit (ast::Array& node)
     {
       long dimension = process_array_dimension (node.dimension, er, symtab);
       const type::Type* base_type = process_type (node.base_type, er, symtab, true);
       type = base_type->get_array (dimension);
     }
 
-    void visit (SliceTypeSpec& node)
+    void visit (ast::Slice& node)
     {
       const type::Type* base_type = process_type (node.child, er, symtab, false);
       type = base_type->get_slice ();
     }
 
-    void visit (EmptyTypeSpec& node)
+    void visit (EmptyType& node)
     {
       type = Void::instance ();
     }
 
-    void visit (FieldListTypeSpec& node)
+    void visit (FieldList& node)
     {
       Struct* field_list;
       if (node.is_component)
@@ -197,9 +197,9 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
            ++pos)
         {
           ast::Node* child = *pos;
-          IdentifierListTypeSpec* c = static_cast<IdentifierListTypeSpec*> (child);
-          List *identifier_list = c->identifier_list;
-          Node *type_spec = c->type_spec;
+          VariableList* c = static_cast<VariableList*> (child);
+          List *identifier_list = c->identifiers;
+          Node *type_spec = c->type;
           const type::Type *type = process_type (type_spec, er, symtab, true);
           for (List::ConstIterator pos2 = identifier_list->begin (),
                limit2 = identifier_list->end ();
@@ -223,12 +223,12 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
       type = field_list;
     }
 
-    void visit (HeapTypeSpec& node)
+    void visit (ast::Heap& node)
     {
       type = process_type (node.child, er, symtab, false)->get_heap ();
     }
 
-    void visit (IdentifierTypeSpec& node)
+    void visit (IdentifierType& node)
     {
       Identifier *child = node.child;
       const std::string& identifier = child->identifier;
@@ -246,24 +246,24 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symtab, bool for
         }
     }
 
-    void visit (PointerTypeSpec& node)
+    void visit (ast::Pointer& node)
     {
       const type::Type* base_type = process_type (node.child, er, symtab, false);
       type = base_type->get_pointer ();
     }
 
-    void visit (PushPortTypeSpec& node)
+    void visit (ast::PushPort& node)
     {
-      const decl::ParameterList* parameter_list = process_parameter_list (node.signature, er, symtab, false);
+      const decl::ParameterList* parameter_list = process_parameter_list (node.parameters, er, symtab, false);
       const decl::ParameterList* return_parameter_list = new decl::ParameterList (node.location);
       CheckForForeignSafe (er, parameter_list, return_parameter_list);
       type = new type::PushPort (parameter_list, return_parameter_list);
     }
 
-    void visit (PullPortTypeSpec& node)
+    void visit (ast::PullPort& node)
     {
-      const decl::ParameterList* parameter_list = process_parameter_list (node.parameter_list, er, symtab, false);
-      const decl::ParameterList* return_parameter_list = process_parameter_list (node.return_parameter_list, er, symtab, true);
+      const decl::ParameterList* parameter_list = process_parameter_list (node.parameters, er, symtab, false);
+      const decl::ParameterList* return_parameter_list = process_parameter_list (node.return_parameters, er, symtab, true);
       CheckForForeignSafe (er, parameter_list, return_parameter_list);
       type = new type::PullPort (parameter_list, return_parameter_list);
     }

@@ -26,7 +26,7 @@ type_check_statement (Node * node)
       AST_NOT_REACHED (node);
     }
 
-    void visit (BindPullPortStatement& node)
+    void visit (BindPullPort& node)
     {
       UNIMPLEMENTED;
       // typed_Value pull_port_tv = CheckExpectReference (node.left ());
@@ -56,7 +56,7 @@ type_check_statement (Node * node)
       //   }
     }
 
-    void visit (ListStatement& node)
+    void visit (StatementList& node)
     {
       for (List::ConstIterator pos = node.begin (), limit = node.end ();
            pos != limit;

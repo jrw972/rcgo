@@ -35,18 +35,18 @@ struct Visitor : public ast::DefaultNodeVisitor
     AST_NOT_REACHED (node);
   }
 
-  void visit (AddressOfExpr& node)
+  void visit (AddressOf& node)
   {
     node.child->accept (*this);
     node.eval.receiver_state = node.child->eval.receiver_state;
     node.eval.receiver_access = node.child->eval.receiver_access;
   }
 
-  void visit (ConversionExpr& node)
+  void visit (Conversion& node)
   {
-    node.expr->accept (*this);
-    node.eval.receiver_state = node.expr->eval.receiver_state;
-    node.eval.receiver_access = node.expr->eval.receiver_access;
+    node.argument->accept (*this);
+    node.eval.receiver_state = node.argument->eval.receiver_state;
+    node.eval.receiver_access = node.argument->eval.receiver_access;
   }
 
   void visit (SourceFile& node)
@@ -118,7 +118,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     // Do nothing.
   }
 
-  void visit (ListStatement& node)
+  void visit (StatementList& node)
   {
     node.visit_children (*this);
     node.eval.receiver_access = AccessNone;
@@ -131,11 +131,11 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.eval.receiver_access = node.child->eval.receiver_access;
   }
 
-  void visit (VarStatement& node)
+  void visit (Var& node)
   {
-    node.expression_list->accept (*this);
+    node.expressions->accept (*this);
     node.eval.receiver_access = AccessNone;
-    process_list (node, node.expression_list);
+    process_list (node, node.expressions);
   }
 
   void visit (EmptyStatement& node)
@@ -143,21 +143,21 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.eval.receiver_access = AccessNone;
   }
 
-  void visit (WhileStatement& node)
+  void visit (While& node)
   {
     node.visit_children (*this);
     node.eval.receiver_access = node.body->eval.receiver_access;
   }
 
-  void visit (IfStatement& node)
+  void visit (If& node)
   {
     node.visit_children (*this);
-    node.eval.receiver_access = node.statement->eval.receiver_access;
-    node.eval.receiver_access = std::max (node.eval.receiver_access, node.true_branch->eval.receiver_access);
-    node.eval.receiver_access = std::max (node.eval.receiver_access, node.false_branch->eval.receiver_access);
+    node.eval.receiver_access = node.before->eval.receiver_access;
+    node.eval.receiver_access = std::max (node.eval.receiver_access, node.true_body->eval.receiver_access);
+    node.eval.receiver_access = std::max (node.eval.receiver_access, node.false_body->eval.receiver_access);
   }
 
-  void visit (AddAssignStatement& node)
+  void visit (AddAssign& node)
   {
     node.visit_children (*this);
     // Straight write.
@@ -169,7 +169,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.eval.receiver_access = std::max (node.left->eval.receiver_access, node.right->eval.receiver_access);
   }
 
-  void visit (AssignStatement& node)
+  void visit (Assign& node)
   {
     node.visit_children (*this);
     // Straight write.
@@ -190,7 +190,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.eval.receiver_access = std::max (node.left->eval.receiver_access, node.right->eval.receiver_access);
   }
 
-  void visit (IncrementDecrementStatement& node)
+  void visit (IncrementDecrement& node)
   {
     node.visit_children (*this);
     node.eval.receiver_access = node.child->eval.receiver_access;
@@ -200,47 +200,47 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
   }
 
-  void visit (ReturnStatement& node)
+  void visit (Return& node)
   {
     node.visit_children (*this);
     node.eval.receiver_access = node.child->eval.receiver_access;
   }
 
-  void visit (ActivateStatement& node)
+  void visit (Activate& node)
   {
     node.visit_children (*this);
-    node.eval.receiver_access = node.expr_list->eval.receiver_access;
+    node.eval.receiver_access = node.arguments->eval.receiver_access;
     node.mutable_phase_access = node.body->eval.receiver_access;
   }
 
-  void visit (ChangeStatement& node)
+  void visit (Change& node)
   {
-    node.expr->accept (*this);
+    node.argument->accept (*this);
     node.body->accept (*this);
-    node.eval.receiver_access = std::max (node.expr->eval.receiver_access, node.body->eval.receiver_access);
+    node.eval.receiver_access = std::max (node.argument->eval.receiver_access, node.body->eval.receiver_access);
   }
 
-  void visit (CallExpr& node)
+  void visit (Call& node)
   {
-    assert (node.expr->eval.expression_kind != UnknownExpressionKind);
-    if (node.expr->eval.expression_kind == TypeExpressionKind)
+    assert (node.expression->eval.expression_kind != UnknownExpressionKind);
+    if (node.expression->eval.expression_kind == TypeExpressionKind)
       {
         // Conversion.
-        node.args->accept (*this);
-        node.eval.receiver_access = node.args->at (0)->eval.receiver_access;
-        node.eval.receiver_state = node.args->at (0)->eval.receiver_state;
+        node.arguments->accept (*this);
+        node.eval.receiver_access = node.arguments->at (0)->eval.receiver_access;
+        node.eval.receiver_state = node.arguments->at (0)->eval.receiver_state;
         return;
       }
 
     node.visit_children (*this);
 
-    ExpressionValueList evals = semantic::collect_evals (node.args);
+    ExpressionValueList evals = semantic::collect_evals (node.arguments);
 
     // Check if a mutable pointer goes into a function.
     bool flag = false;
-    if (node.temp != NULL)
+    if (node.polymorphic_function != NULL)
       {
-        node.temp->compute_receiver_access (evals, node.eval.receiver_access, flag);
+        node.polymorphic_function->compute_receiver_access (evals, node.eval.receiver_access, flag);
       }
     else if (node.callable != NULL)
       {
@@ -248,13 +248,13 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
     else
       {
-        compute_receiver_access_arguments (evals, node.parameter_list, node.eval.receiver_access, flag);
+        compute_receiver_access_arguments (evals, node.parameters, node.eval.receiver_access, flag);
       }
 
     // Extend the check to the receiver if invoking a method.
-    node.eval.receiver_access = std::max (node.eval.receiver_access, node.expr->eval.receiver_access);
+    node.eval.receiver_access = std::max (node.eval.receiver_access, node.expression->eval.receiver_access);
     if (node.method_type != NULL &&
-        node.expr->eval.receiver_state &&
+        node.expression->eval.receiver_state &&
         node.method_type->receiver_parameter->type->contains_pointer () &&
         node.method_type->receiver_parameter->indirection_mutability == Mutable)
       {
@@ -274,7 +274,7 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
   }
 
-  void visit (IdentifierExpr& node)
+  void visit (IdentifierExpression& node)
   {
     node.eval.receiver_state = false;
     node.eval.receiver_access = AccessNone;
@@ -286,27 +286,27 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
   }
 
-  void visit (ListExpr& node)
+  void visit (ExpressionList& node)
   {
     node.visit_children (*this);
     node.eval.receiver_access = AccessNone;
     process_list (node, &node);
   }
 
-  void visit (LiteralExpr& node)
+  void visit (Literal& node)
   {
     node.eval.receiver_state = false;
     node.eval.receiver_access = AccessNone;
   }
 
-  void visit (UnaryArithmeticExpr& node)
+  void visit (ast::UnaryArithmetic& node)
   {
     node.visit_children (*this);
     node.eval.receiver_state = false;
     node.eval.receiver_access = node.child->eval.receiver_access;
   }
 
-  void visit (BinaryArithmeticExpr& node)
+  void visit (ast::BinaryArithmetic& node)
   {
     node.visit_children (*this);
     node.eval.receiver_state = false;
@@ -316,27 +316,27 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (ast::Instance& node)
   {
-    node.expression_list->accept (*this);
+    node.arguments->accept (*this);
   }
 
-  void visit (SelectExpr& node)
+  void visit (Select& node)
   {
     node.base->accept (*this);
     node.eval.receiver_state = node.base->eval.receiver_state;
     node.eval.receiver_access = node.base->eval.receiver_access;
   }
 
-  void visit (PushPortCallExpr& node)
+  void visit (PushPortCall& node)
   {
-    node.args->accept (*this);
-    process_list (node, node.args);
+    node.arguments->accept (*this);
+    process_list (node, node.arguments);
   }
 
-  void visit (IndexedPushPortCallExpr& node)
+  void visit (IndexedPushPortCall& node)
   {
     node.index->accept (*this);
-    node.args->accept (*this);
-    process_list (node, node.args);
+    node.arguments->accept (*this);
+    process_list (node, node.arguments);
   }
 
   void visit (TypeExpression& node)
@@ -344,21 +344,21 @@ struct Visitor : public ast::DefaultNodeVisitor
     // Do nothing.
   }
 
-  void visit (DereferenceExpr& node)
+  void visit (Dereference& node)
   {
     node.visit_children (*this);
     node.eval.receiver_state = node.child->eval.receiver_state;
     node.eval.receiver_access = node.child->eval.receiver_access;
   }
 
-  void visit (IndexExpr& node)
+  void visit (Index& node)
   {
     node.visit_children (*this);
     node.eval.receiver_state = node.base->eval.receiver_state;
     node.eval.receiver_access = std::max (node.base->eval.receiver_access, node.index->eval.receiver_access);
   }
 
-  void visit (SliceExpr& node)
+  void visit (IndexSlice& node)
   {
     node.base->accept (*this);
     node.eval.receiver_state = node.base->eval.receiver_state;

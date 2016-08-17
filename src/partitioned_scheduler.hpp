@@ -361,7 +361,7 @@ private:
     {
       if (track_file_descriptors_)
         {
-          std::pair<FileDescriptorMapType::iterator, bool> x =
+          std::pair<FileDescriptorMap::iterator, bool> x =
             file_descriptor_map_.insert (std::make_pair (fd, 0));
           x.first->second |= POLLIN;
         }
@@ -372,7 +372,7 @@ private:
     {
       if (track_file_descriptors_)
         {
-          std::pair<FileDescriptorMapType::iterator, bool> x =
+          std::pair<FileDescriptorMap::iterator, bool> x =
             file_descriptor_map_.insert (std::make_pair (fd, 0));
           x.first->second |= POLLOUT;
         }
@@ -534,8 +534,8 @@ private:
     std::queue<Message> message_queue_;
     size_t task_count_;
     bool track_file_descriptors_;
-    typedef std::map<FileDescriptor*, short> FileDescriptorMapType;
-    FileDescriptorMapType file_descriptor_map_;
+    typedef std::map<FileDescriptor*, short> FileDescriptorMap;
+    FileDescriptorMap file_descriptor_map_;
     bool using_eventfd_;
   };
 

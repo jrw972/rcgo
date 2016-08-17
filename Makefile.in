@@ -322,6 +322,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -825,13 +826,13 @@ test: check
 @COVERAGE_TRUE@	lcov --zerocounters --directory src --directory src/.libs
 @COVERAGE_TRUE@	cd utest && make check
 @COVERAGE_TRUE@	lcov --capture --directory src --directory src/.libs --output-file utest.info
-@COVERAGE_TRUE@	lcov --extract utest.info '*rc/*src/*' --output-file utest.filtered.info
+@COVERAGE_TRUE@	lcov --extract utest.info '*rcgo/*src/*' --output-file utest.filtered.info
 @COVERAGE_TRUE@	sed -i -e 's@$(abs_builddir)@$(realpath $(abs_top_srcdir))@g' utest.filtered.info
 @COVERAGE_TRUE@	genhtml -o html/utest utest.filtered.info
 @COVERAGE_TRUE@	lcov --zerocounters --directory src --directory src/.libs
 @COVERAGE_TRUE@	cd ftest && make check
 @COVERAGE_TRUE@	lcov --capture --directory src --directory src/.libs --output-file ftest.info
-@COVERAGE_TRUE@	lcov --extract ftest.info '*rc/*src/*' --output-file ftest.filtered.info
+@COVERAGE_TRUE@	lcov --extract ftest.info '*rcgo/*src/*' --output-file ftest.filtered.info
 @COVERAGE_TRUE@	sed -i -e 's@$(abs_builddir)@$(realpath $(abs_top_srcdir))@g' ftest.filtered.info
 @COVERAGE_TRUE@	genhtml -o html/ftest ftest.filtered.info
 @COVERAGE_TRUE@	@echo "file://$(PWD)/html/utest/index.html"

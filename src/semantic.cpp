@@ -124,7 +124,7 @@ allocate_statement_stack_variables (ast::Node* node, runtime::MemoryModel& memor
     void visit (EmptyStatement& node)
     { }
 
-    void visit (ForIotaStatement& node)
+    void visit (ForIota& node)
     {
       ptrdiff_t offset_before = memory_model.locals_offset ();
       allocate_symbol (memory_model, node.symbol);
@@ -134,27 +134,27 @@ allocate_statement_stack_variables (ast::Node* node, runtime::MemoryModel& memor
       assert (memory_model.locals_offset () == offset_before);
     }
 
-    void visit (BindPushPortStatement& node)
+    void visit (BindPushPort& node)
     {
       // Do nothing.
     }
 
-    void visit (BindPushPortParamStatement& node)
+    void visit (BindPushPortParameter& node)
     {
       // Do nothing.
     }
 
-    void visit (BindPullPortStatement& node)
+    void visit (BindPullPort& node)
     {
       // Do nothing.
     }
 
-    void visit (AssignStatement& node)
+    void visit (Assign& node)
     {
       // Do nothing.
     }
 
-    void visit (ChangeStatement& node)
+    void visit (Change& node)
     {
       ptrdiff_t offset_before = memory_model.locals_offset ();
       allocate_symbol (memory_model, node.root_symbol);
@@ -169,28 +169,29 @@ allocate_statement_stack_variables (ast::Node* node, runtime::MemoryModel& memor
       // Do nothing.
     }
 
-    void visit (IfStatement& node)
+    void visit (If& node)
     {
-      allocate_statement_stack_variables (node.true_branch, memory_model);
-      allocate_statement_stack_variables (node.false_branch, memory_model);
+      allocate_statement_stack_variables (node.before, memory_model);
+      allocate_statement_stack_variables (node.true_body, memory_model);
+      allocate_statement_stack_variables (node.false_body, memory_model);
     }
 
-    void visit (WhileStatement& node)
+    void visit (While& node)
     {
       allocate_statement_stack_variables (node.body, memory_model);
     }
 
-    void visit (AddAssignStatement& node)
+    void visit (AddAssign& node)
     {
       // Do nothing.
     }
 
-    void visit (SubtractAssignStatement& node)
+    void visit (SubtractAssign& node)
     {
       // Do nothing.
     }
 
-    void visit (ListStatement& node)
+    void visit (StatementList& node)
     {
       ptrdiff_t offset_before = memory_model.locals_offset ();
       for (List::ConstIterator pos = node.begin (), limit = node.end ();
@@ -204,25 +205,25 @@ allocate_statement_stack_variables (ast::Node* node, runtime::MemoryModel& memor
       assert (memory_model.locals_offset () == offset_before);
     }
 
-    void visit (ReturnStatement& node)
+    void visit (Return& node)
     {
       // Do nothing.
     }
 
-    void visit (IncrementDecrementStatement& node)
+    void visit (IncrementDecrement& node)
     {
       // Do nothing.
     }
 
-    void visit (ActivateStatement& node)
+    void visit (Activate& node)
     {
       allocate_statement_stack_variables (node.body, memory_model);
       node.memory_model = &memory_model;
     }
 
-    void visit (VarStatement& node)
+    void visit (Var& node)
     {
-      for (VarStatement::SymbolsType::const_iterator pos = node.symbols.begin (),
+      for (Var::SymbolsType::const_iterator pos = node.symbols.begin (),
            limit = node.symbols.end ();
            pos != limit;
            ++pos)

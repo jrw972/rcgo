@@ -1,6 +1,8 @@
 #ifndef RC_UTEST_VISITOR_HELPER_HPP
 #define RC_UTEST_VISITOR_HELPER_HPP
 
+#include "unit_test.hpp"
+
 template <typename V, typename T>
 struct TestVisitor : public V
 {
@@ -28,5 +30,14 @@ struct TestConstVisitor : public V
   }
 
 };
+
+template <typename Visitor, typename Node>
+inline void test_accept (Node& node)
+{
+  TestVisitor<Visitor, Node> v;
+  node.accept (v);
+  ASSERT (v.item == &node);
+}
+
 
 #endif // RC_UTEST_VISITOR_HELPER_HPP

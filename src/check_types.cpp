@@ -237,14 +237,14 @@ struct Visitor : public ast::DefaultNodeVisitor
     AST_NOT_REACHED (node);
   }
 
-  void visit (CallExpr& node)
+  void visit (Call& node)
   {
     node.visit_children (*this);
-    assert (node.expr->eval.expression_kind != UnknownExpressionKind);
-    if (node.expr->eval.expression_kind == TypeExpressionKind)
+    assert (node.expression->eval.expression_kind != UnknownExpressionKind);
+    if (node.expression->eval.expression_kind == TypeExpressionKind)
       {
         // Conversion.
-        if (node.args->size () != 1)
+        if (node.arguments->size () != 1)
           {
             error_at_line (-1, 0, node.location.file.c_str (),
                            node.location.line,
@@ -252,13 +252,13 @@ struct Visitor : public ast::DefaultNodeVisitor
 
           }
 
-        conversion (node, node.expr, node.args->at (0));
+        conversion (node, node.expression, node.arguments->at (0));
         return;
       }
 
     // Collect the arguments.
     ExpressionValueList arguments;
-    List* args = node.args;
+    List* args = node.arguments;
     for (List::ConstIterator pos = args->begin (), limit = args->end ();
          pos != limit;
          ++pos)
@@ -266,10 +266,10 @@ struct Visitor : public ast::DefaultNodeVisitor
         arguments.push_back ((*pos)->eval);
       }
 
-    if (node.expr->temp != NULL)
+    if (node.expression->polymorphic_function != NULL)
       {
-        node.temp = node.expr->temp;
-        node.temp->check (er, node.location, node.eval, arguments);
+        node.polymorphic_function = node.expression->polymorphic_function;
+        node.polymorphic_function->check (er, node.location, node.eval, arguments);
         List::ConstIterator pos, limit;
         ExpressionValueList::const_iterator pos2;
         for (pos = args->begin (), limit = args->end (), pos2 = arguments.begin ();
@@ -283,22 +283,22 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
     else
       {
-        node.callable = node.expr->callable;
+        node.callable = node.expression->callable;
       }
 
-    node.function_type = node.expr->eval.type->to_function ();
-    node.push_port_type = node.expr->eval.type->to_push_port ();
-    node.pull_port_type = node.expr->eval.type->to_pull_port ();
-    node.method_type = node.expr->eval.type->to_method ();
-    node.initializer_type = node.expr->eval.type->to_initializer ();
-    node.getter_type = node.expr->eval.type->to_getter ();
-    node.reaction_type = node.expr->eval.type->to_reaction ();
+    node.function_type = node.expression->eval.type->to_function ();
+    node.push_port_type = node.expression->eval.type->to_push_port ();
+    node.pull_port_type = node.expression->eval.type->to_pull_port ();
+    node.method_type = node.expression->eval.type->to_method ();
+    node.initializer_type = node.expression->eval.type->to_initializer ();
+    node.getter_type = node.expression->eval.type->to_getter ();
+    node.reaction_type = node.expression->eval.type->to_reaction ();
 
     if (node.function_type)
       {
         // No restrictions on caller.
-        node.parameter_list = node.function_type->parameter_list;
-        node.return_parameter_list = node.function_type->return_parameter_list;
+        node.parameters = node.function_type->parameter_list;
+        node.return_parameters = node.function_type->return_parameter_list;
       }
     else if (node.push_port_type)
       {
@@ -321,14 +321,14 @@ struct Visitor : public ast::DefaultNodeVisitor
             error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "cannot call pull port in mutable section (E198)");
           }
-        node.parameter_list = node.pull_port_type->parameter_list;
-        node.return_parameter_list = node.pull_port_type->return_parameter_list;
+        node.parameters = node.pull_port_type->parameter_list;
+        node.return_parameters = node.pull_port_type->return_parameter_list;
       }
     else if (node.method_type)
       {
         // No restrictions on caller.
-        node.parameter_list = node.method_type->parameter_list;
-        node.return_parameter_list = node.method_type->return_parameter_list;
+        node.parameters = node.method_type->parameter_list;
+        node.return_parameters = node.method_type->return_parameter_list;
       }
     else if (node.initializer_type)
       {
@@ -338,8 +338,8 @@ struct Visitor : public ast::DefaultNodeVisitor
             error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "initializers may only be called from initializers (E197)");
           }
-        node.parameter_list = node.initializer_type->parameter_list;
-        node.return_parameter_list = node.initializer_type->return_parameter_list;
+        node.parameters = node.initializer_type->parameter_list;
+        node.return_parameters = node.initializer_type->return_parameter_list;
       }
     else if (node.getter_type)
       {
@@ -357,8 +357,8 @@ struct Visitor : public ast::DefaultNodeVisitor
             error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "cannot call getter in mutable section (E34)");
           }
-        node.parameter_list = node.getter_type->parameter_list;
-        node.return_parameter_list = node.getter_type->return_parameter_list;
+        node.parameters = node.getter_type->parameter_list;
+        node.return_parameters = node.getter_type->return_parameter_list;
       }
     else if (node.reaction_type)
       {
@@ -371,28 +371,28 @@ struct Visitor : public ast::DefaultNodeVisitor
 
     if (node.callable != NULL)
       {
-        require_value_or_variable (node.expr);
+        require_value_or_variable (node.expression);
         node.callable->check (args);
       }
     else
       {
-        node.field = node.expr->field;
-        check_types_arguments (args, node.parameter_list);
-        require_value_or_variable (node.expr);
-        require_value_or_variable_list (node.args);
-        check_mutability_arguments (node.args, node.parameter_list);
+        node.field = node.expression->field;
+        check_types_arguments (args, node.parameters);
+        require_value_or_variable (node.expression);
+        require_value_or_variable_list (node.arguments);
+        check_mutability_arguments (node.arguments, node.parameters);
       }
 
-    if (node.return_parameter_list->empty ())
+    if (node.return_parameters->empty ())
       {
         node.eval.expression_kind = VoidExpressionKind;
       }
-    else if (node.return_parameter_list->size () == 1)
+    else if (node.return_parameters->size () == 1)
       {
-        node.eval.type = node.return_parameter_list->at (0)->type;
+        node.eval.type = node.return_parameters->at (0)->type;
         node.eval.expression_kind = ValueExpressionKind;
         node.eval.intrinsic_mutability = Immutable;
-        node.eval.indirection_mutability = node.return_parameter_list->at (0)->indirection_mutability;
+        node.eval.indirection_mutability = node.return_parameters->at (0)->indirection_mutability;
         node.eval.fix_string_indirection_mutability ();
       }
     else
@@ -500,18 +500,18 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.eval.fix_string_indirection_mutability ();
   }
 
-  void visit (ConversionExpr& node)
+  void visit (Conversion& node)
   {
     node.visit_children (*this);
-    conversion (node, node.type_expr, node.expr);
+    conversion (node, node.type, node.argument);
   }
 
-  void visit (ListExpr& node)
+  void visit (ExpressionList& node)
   {
     node.visit_children (*this);
   }
 
-  void visit (LiteralExpr& node)
+  void visit (Literal& node)
   {
     assert (node.eval.value.present);
     node.eval.expression_kind = ValueExpressionKind;
@@ -519,7 +519,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.eval.indirection_mutability = Immutable;
   }
 
-  void visit (IdentifierExpr& node)
+  void visit (IdentifierExpression& node)
   {
     Identifier* identifier_node = node.child;
     const std::string& identifier = identifier_node->identifier;
@@ -533,10 +533,10 @@ struct Visitor : public ast::DefaultNodeVisitor
 
     struct visitor : public ConstSymbolVisitor
     {
-      IdentifierExpr& node;
+      IdentifierExpression& node;
       ErrorReporter& er;
 
-      visitor (IdentifierExpr& n,
+      visitor (IdentifierExpression& n,
                ErrorReporter& a_er)
         : node (n)
         , er (a_er)
@@ -549,7 +549,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
       void visit (const decl::PolymorphicFunction& symbol)
       {
-        node.temp = &symbol;
+        node.polymorphic_function = &symbol;
         node.eval.type = type::PolymorphicFunction::instance ();
         node.eval.expression_kind = ValueExpressionKind;
         node.eval.intrinsic_mutability = Immutable;
@@ -608,7 +608,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.eval.fix_string_indirection_mutability ();
   }
 
-  void visit (UnaryArithmeticExpr& node)
+  void visit (ast::UnaryArithmetic& node)
   {
     node.visit_children (*this);
 
@@ -621,10 +621,10 @@ struct Visitor : public ast::DefaultNodeVisitor
     ExpressionValueList evals;
     evals.push_back (node.child->eval);
 
-    node.temp->check (er, node.location, node.eval, evals);
+    node.polymorphic_function->check (er, node.location, node.eval, evals);
   }
 
-  void visit (BinaryArithmeticExpr& node)
+  void visit (ast::BinaryArithmetic& node)
   {
     node.visit_children (*this);
 
@@ -639,7 +639,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     evals.push_back (node.left->eval);
     evals.push_back (node.right->eval);
 
-    node.temp->check (er, node.location, node.eval, evals);
+    node.polymorphic_function->check (er, node.location, node.eval, evals);
 
     node.left->eval = evals[0];
     node.right->eval = evals[1];
@@ -658,10 +658,10 @@ struct Visitor : public ast::DefaultNodeVisitor
   void visit (ast::Instance& node)
   {
     // Check the arguments.
-    node.expression_list->accept (*this);
-    check_types_arguments (node.expression_list, node.symbol->initializer->type->parameter_list);
-    require_value_or_variable_list (node.expression_list);
-    check_mutability_arguments (node.expression_list, node.symbol->initializer->type->parameter_list);
+    node.arguments->accept (*this);
+    check_types_arguments (node.arguments, node.symbol->initializer->type->parameter_list);
+    require_value_or_variable_list (node.arguments);
+    check_mutability_arguments (node.arguments, node.symbol->initializer->type->parameter_list);
   }
 
   void visit (ast::Initializer& node)
@@ -789,7 +789,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     symtab.close_scope ();
   }
 
-  void visit (ListStatement& node)
+  void visit (StatementList& node)
   {
     symtab.open_scope ();
     node.visit_children (*this);
@@ -802,7 +802,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     require_value_or_variable_or_void (node.child);
   }
 
-  void visit (ReturnStatement& node)
+  void visit (Return& node)
   {
     // Check the expression.
     node.visit_children (*this);
@@ -841,7 +841,7 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
   }
 
-  void visit (IfStatement& node)
+  void visit (If& node)
   {
     symtab.open_scope ();
     node.visit_children (*this);
@@ -849,7 +849,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     symtab.close_scope ();
   }
 
-  void visit (WhileStatement& node)
+  void visit (While& node)
   {
     symtab.open_scope ();
     node.visit_children (*this);
@@ -857,10 +857,10 @@ struct Visitor : public ast::DefaultNodeVisitor
     symtab.close_scope ();
   }
 
-  void visit (ForIotaStatement& node)
+  void visit (ForIota& node)
   {
     const std::string& identifier = node.identifier->identifier;
-    node.limit = process_array_dimension (node.limit_node, er, symtab);
+    node.limit_value = process_array_dimension (node.limit, er, symtab);
     node.symbol = new Variable (identifier, node.identifier->location, Int::instance (), Immutable, Immutable);
     symtab.open_scope ();
     symtab.enter_symbol (node.symbol);
@@ -868,18 +868,18 @@ struct Visitor : public ast::DefaultNodeVisitor
     symtab.close_scope ();
   }
 
-  void visit (ChangeStatement& node)
+  void visit (Change& node)
   {
-    node.expr->accept (*this);
+    node.argument->accept (*this);
 
-    const type::Type* root_type = node.expr->eval.type->merge_change ();
+    const type::Type* root_type = node.argument->eval.type->merge_change ();
     if (root_type == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                       "cannot change expression of type %s (E96)", node.expr->eval.type->to_error_string ().c_str ());
+                       "cannot change expression of type %s (E96)", node.argument->eval.type->to_error_string ().c_str ());
       }
 
-    require_value_or_variable (node.expr);
+    require_value_or_variable (node.argument);
 
     // Enter all parameters and variables in scope that are pointers as pointers to foreign.
     symtab.open_scope ();
@@ -889,7 +889,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     const std::string& identifier = node.identifier->identifier;
     // Don't know dereference mutability yet.
     node.root_symbol = new Variable (identifier, node.location, root_type, Immutable, Foreign);
-    node.root_symbol->indirection_mutability = node.expr->eval.indirection_mutability;
+    node.root_symbol->indirection_mutability = node.argument->eval.indirection_mutability;
     symtab.enter_symbol (node.root_symbol);
 
     // Check the body.
@@ -897,7 +897,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     symtab.close_scope ();
   }
 
-  void visit (ActivateStatement& node)
+  void visit (Activate& node)
   {
     if (!(context == Action ||
           context == Reaction))
@@ -913,7 +913,7 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
 
     // Check the activations.
-    node.expr_list->accept (*this);
+    node.arguments->accept (*this);
 
     Visitor v (*this);
     v.in_mutable_phase = true;
@@ -941,11 +941,11 @@ struct Visitor : public ast::DefaultNodeVisitor
     // Do nothing.
   }
 
-  void visit (VarStatement& node)
+  void visit (Var& node)
   {
-    ast::List* identifier_list = node.identifier_list;
-    ast::Node* type_spec = node.type_spec;
-    ast::List* expression_list = node.expression_list;
+    ast::List* identifier_list = node.identifiers;
+    ast::Node* type_spec = node.type;
+    ast::List* expression_list = node.expressions;
 
     if (expression_list->size () != 0 &&
         identifier_list->size () != expression_list->size ())
@@ -975,7 +975,7 @@ struct Visitor : public ast::DefaultNodeVisitor
              ++id_pos)
           {
             const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
-            Variable* symbol = new Variable (name, (*id_pos)->location, type, node.mutability, node.dereferenceMutability);
+            Variable* symbol = new Variable (name, (*id_pos)->location, type, node.mutability, node.indirection_mutability);
             symtab.enter_symbol (symbol);
             node.symbols.push_back (symbol);
           }
@@ -1006,7 +1006,7 @@ struct Visitor : public ast::DefaultNodeVisitor
             require_value_or_variable (n);
 
             const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
-            Variable* symbol = new Variable (name, (*id_pos)->location, type, node.eval.intrinsic_mutability, node.dereferenceMutability);
+            Variable* symbol = new Variable (name, (*id_pos)->location, type, node.eval.intrinsic_mutability, node.indirection_mutability);
             symtab.enter_symbol (symbol);
             node.symbols.push_back (symbol);
           }
@@ -1034,16 +1034,16 @@ struct Visitor : public ast::DefaultNodeVisitor
         require_value_or_variable (n);
 
         const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
-        Variable* symbol = new Variable (name, (*id_pos)->location, n->eval.type, node.eval.intrinsic_mutability, node.dereferenceMutability);
+        Variable* symbol = new Variable (name, (*id_pos)->location, n->eval.type, node.eval.intrinsic_mutability, node.indirection_mutability);
         symtab.enter_symbol (symbol);
         node.symbols.push_back (symbol);
       }
 
 done:
-    if (!node.expression_list->empty ())
+    if (!node.expressions->empty ())
       {
         size_t idx = 0;
-        for (List::ConstIterator pos = node.expression_list->begin (), limit = node.expression_list->end ();
+        for (List::ConstIterator pos = node.expressions->begin (), limit = node.expressions->end ();
              pos != limit;
              ++pos, ++idx)
           {
@@ -1060,7 +1060,7 @@ done:
       }
   }
 
-  void visit (AssignStatement& node)
+  void visit (Assign& node)
   {
     node.visit_children (*this);
     const type::Type* to = node.left->eval.type;
@@ -1091,7 +1091,7 @@ done:
       }
   }
 
-  void visit (AddAssignStatement& node)
+  void visit (AddAssign& node)
   {
     node.visit_children (*this);
 
@@ -1122,15 +1122,15 @@ done:
       }
   }
 
-  void visit (IncrementDecrementStatement& node)
+  void visit (IncrementDecrement& node)
   {
     const char* op = "";
     switch (node.kind)
       {
-      case IncrementDecrementStatement::Increment:
+      case IncrementDecrement::Increment:
         op = "++";
         break;
-      case IncrementDecrementStatement::Decrement:
+      case IncrementDecrement::Decrement:
         op = "--";
         break;
       }
@@ -1151,13 +1151,13 @@ done:
       }
   }
 
-  void visit (BindPushPortStatement& node)
+  void visit (BindPushPort& node)
   {
     node.visit_children (*this);
     bind (node, node.left, node.right);
   }
 
-  void visit (BindPushPortParamStatement& node)
+  void visit (BindPushPortParameter& node)
   {
     node.visit_children (*this);
     const decl::Reaction* reaction = bind (node, node.left, node.right);
@@ -1170,7 +1170,7 @@ done:
     check_array_index (reaction->type->get_array (dimension), node.param, false);
   }
 
-  void visit (BindPullPortStatement& node)
+  void visit (BindPullPort& node)
   {
     node.visit_children (*this);
 
@@ -1202,11 +1202,11 @@ done:
       }
   }
 
-  void visit (DereferenceExpr& node)
+  void visit (Dereference& node)
   {
     node.visit_children (*this);
     const type::Type* t = node.child->eval.type;
-    const Pointer* p = t->underlying_type ()->to_pointer ();
+    const type::Pointer* p = t->underlying_type ()->to_pointer ();
     if (p == NULL)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
@@ -1220,7 +1220,7 @@ done:
     node.eval.fix_string_indirection_mutability ();
   }
 
-  void visit (AddressOfExpr& node)
+  void visit (AddressOf& node)
   {
     node.visit_children (*this);
     require_variable (node.child);
@@ -1231,7 +1231,7 @@ done:
     node.eval.fix_string_indirection_mutability ();
   }
 
-  void visit (SelectExpr& node)
+  void visit (Select& node)
   {
     const std::string& identifier = node.identifier->identifier;
     node.base->accept (*this);
@@ -1273,7 +1273,7 @@ done:
       }
   }
 
-  void check_array_index (const Array* array_type, Node* index, bool allow_equal)
+  void check_array_index (const type::Array* array_type, Node* index, bool allow_equal)
   {
     const type::Type*& index_type = index->eval.type;
     Value& index_value = index->eval.value;
@@ -1331,7 +1331,7 @@ done:
     require_value_or_variable (index);
   }
 
-  void visit (IndexExpr& node)
+  void visit (Index& node)
   {
     node.visit_children (*this);
     const type::Type* base_type = node.base->eval.type;
@@ -1405,7 +1405,7 @@ done:
                    base_type->to_error_string ().c_str ());
   }
 
-  void visit (SliceExpr& node)
+  void visit (IndexSlice& node)
   {
     Node* base = node.base;
     base->accept (*this);
@@ -1532,11 +1532,11 @@ done:
 
   void visit (TypeExpression& node)
   {
-    node.eval.type = process_type (node.type_spec, er, symtab, true);
+    node.eval.type = process_type (node.child, er, symtab, true);
     node.eval.expression_kind = TypeExpressionKind;
   }
 
-  void visit (PushPortCallExpr& node)
+  void visit (PushPortCall& node)
   {
     node.receiver_parameter = receiver_parameter;
     const std::string& port_identifier = node.identifier->identifier;
@@ -1554,9 +1554,9 @@ done:
                        "no port named %s (E195)", port_identifier.c_str ());
       }
 
-    node.args->accept (*this);
-    check_types_arguments (node.args, node.push_port_type->parameter_list);
-    require_value_or_variable_list (node.args);
+    node.arguments->accept (*this);
+    check_types_arguments (node.arguments, node.push_port_type->parameter_list);
+    require_value_or_variable_list (node.arguments);
 
     node.eval.type = type::Void::instance ();
     node.eval.expression_kind = ValueExpressionKind;
@@ -1564,7 +1564,7 @@ done:
     node.eval.indirection_mutability = Immutable;
   }
 
-  void visit (IndexedPushPortCallExpr& node)
+  void visit (IndexedPushPortCall& node)
   {
     node.receiver_parameter = receiver_parameter;
     const std::string& port_identifier = node.identifier->identifier;
@@ -1591,9 +1591,9 @@ done:
     node.index->accept (*this);
     check_array_index (node.array_type, node.index, false);
 
-    node.args->accept (*this);
-    check_types_arguments (node.args, node.push_port_type->parameter_list);
-    require_value_or_variable_list (node.args);
+    node.arguments->accept (*this);
+    check_types_arguments (node.arguments, node.push_port_type->parameter_list);
+    require_value_or_variable_list (node.arguments);
 
     node.eval.type = type::Void::instance ();
     node.eval.expression_kind = ValueExpressionKind;
@@ -1603,15 +1603,15 @@ done:
 
   void visit (CompositeLiteral& node)
   {
-    node.eval.type = process_type (node.literal_type, er, symtab, true);
+    node.eval.type = process_type (node.type, er, symtab, true);
     node.eval.expression_kind = VariableExpressionKind;
 
     switch (node.eval.type->underlying_kind ())
       {
       case Struct_Kind:
       {
-        for (List::ConstIterator pos = node.literal_value->begin (),
-             limit = node.literal_value->end ();
+        for (List::ConstIterator pos = node.value->begin (),
+             limit = node.value->end ();
              pos != limit;
              ++pos)
           {
@@ -1680,7 +1680,7 @@ void check_types (ast::Node* root, ErrorReporter& er, SymbolTable& symtab)
 
 void check_mutability_arguments (ast::Node* node, const decl::ParameterList* signature)
 {
-  ListExpr* args = node_cast<ListExpr> (node);
+  ExpressionList* args = node_cast<ExpressionList> (node);
 
   size_t i = 0;
   for (List::ConstIterator pos = args->begin (), limit = args->end ();

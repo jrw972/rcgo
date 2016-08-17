@@ -111,8 +111,8 @@ private:
   pthread_cond_t list_cond_;
   pthread_mutex_t stdout_mutex_;
   // TODO:  Replace this datastructure by translating once.
-  typedef std::map<composition::Instance*, instance_info_t*> InfoMapType;
-  InfoMapType info_map_;
+  typedef std::map<composition::Instance*, instance_info_t*> InfoMap;
+  InfoMap info_map_;
 };
 
 }

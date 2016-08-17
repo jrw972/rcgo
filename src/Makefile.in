@@ -102,11 +102,16 @@ am_librcgo_la_OBJECTS = librcgo_la-action.lo librcgo_la-arch.lo \
 	librcgo_la-composition.lo \
 	librcgo_la-compute_receiver_access.lo \
 	librcgo_la-enter_symbols.lo librcgo_la-error_reporter.lo \
-	librcgo_la-executor_base.lo librcgo_la-expression_value.lo \
-	librcgo_la-heap.lo librcgo_la-location.lo \
-	librcgo_la-memory_model.lo librcgo_la-node.lo \
-	librcgo_la-node_visitor.lo librcgo_la-operation.lo \
-	librcgo_la-parameter_list.lo librcgo_la-process_type_spec.lo \
+	librcgo_la-evaluate_static.lo librcgo_la-executor_base.lo \
+	librcgo_la-expression_value.lo librcgo_la-generate_code.lo \
+	librcgo_la-heap.lo librcgo_la-instance_scheduler.lo \
+	librcgo_la-location.lo librcgo_la-memory_model.lo \
+	librcgo_la-node.lo librcgo_la-node_visitor.lo \
+	librcgo_la-operation.lo librcgo_la-parameter_list.lo \
+	librcgo_la-partitioned_scheduler.lo \
+	librcgo_la-process_definitions.lo \
+	librcgo_la-process_functions_and_methods.lo \
+	librcgo_la-process_type_spec.lo \
 	librcgo_la-process_types_and_constants.lo \
 	librcgo_la-runtime.lo librcgo_la-runtime_types.lo \
 	librcgo_la-semantic.lo librcgo_la-stack.lo \
@@ -124,11 +129,7 @@ librcgo_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(CXXFLAGS) $(librcgo_la_LDFLAGS) $(LDFLAGS) -o $@
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_rcgo_OBJECTS = rcgo-main.$(OBJEXT) rcgo-evaluate_static.$(OBJEXT) \
-	rcgo-generate_code.$(OBJEXT) rcgo-instance_scheduler.$(OBJEXT) \
-	rcgo-parser.$(OBJEXT) rcgo-partitioned_scheduler.$(OBJEXT) \
-	rcgo-process_definitions.$(OBJEXT) \
-	rcgo-process_functions_and_methods.$(OBJEXT) \
+am_rcgo_OBJECTS = rcgo-main.$(OBJEXT) rcgo-parser.$(OBJEXT) \
 	rcgo-scanner.$(OBJEXT) rcgo-yyparse.$(OBJEXT)
 rcgo_OBJECTS = $(am_rcgo_OBJECTS)
 rcgo_DEPENDENCIES = librcgo.la
@@ -333,6 +334,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -345,15 +347,9 @@ EXTRA_DIST = scanner.l parser.y
 BUILT_SOURCES = scanner.hpp scanner.cpp parser.hpp parser.cpp
 rcgo_SOURCES = main.cpp \
 debug.hpp \
-evaluate_static.hpp evaluate_static.cpp \
 field.hpp \
-generate_code.hpp generate_code.cpp \
-instance_scheduler.hpp instance_scheduler.cpp \
 package.hpp \
 parser.hpp parser.cpp \
-partitioned_scheduler.hpp partitioned_scheduler.cpp \
-process_definitions.cpp \
-process_functions_and_methods.hpp process_functions_and_methods.cpp \
 scanner.hpp scanner.cpp \
 scheduler.hpp \
 types.hpp \
@@ -374,9 +370,12 @@ composition.hpp composition.cpp \
 compute_receiver_access.hpp compute_receiver_access.cpp \
 enter_symbols.cpp \
 error_reporter.hpp error_reporter.cpp \
+evaluate_static.hpp evaluate_static.cpp \
 executor_base.hpp executor_base.cpp \
 expression_value.hpp expression_value.cpp \
+generate_code.hpp generate_code.cpp \
 heap.hpp heap.cpp \
+instance_scheduler.hpp instance_scheduler.cpp \
 location.hpp location.cpp \
 memory_model.hpp memory_model.cpp \
 node.hpp node.cpp \
@@ -384,6 +383,9 @@ node_cast.hpp \
 node_visitor.hpp node_visitor.cpp \
 operation.hpp operation.cpp \
 parameter_list.hpp parameter_list.cpp \
+partitioned_scheduler.hpp partitioned_scheduler.cpp \
+process_definitions.cpp \
+process_functions_and_methods.hpp process_functions_and_methods.cpp \
 process_type_spec.cpp \
 process_types_and_constants.hpp process_types_and_constants.cpp \
 runtime.hpp runtime.cpp \
@@ -520,16 +522,22 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-compute_receiver_access.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-enter_symbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-error_reporter.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-evaluate_static.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-executor_base.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-expression_value.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-generate_code.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-heap.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-instance_scheduler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-location.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-memory_model.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-node.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-node_visitor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-operation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-parameter_list.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-partitioned_scheduler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-polymorphic_function.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-process_definitions.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-process_functions_and_methods.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-process_type_spec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-process_types_and_constants.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-runtime.Plo@am__quote@
@@ -541,14 +549,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-symbol_visitor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-type.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-value.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rcgo-evaluate_static.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rcgo-generate_code.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rcgo-instance_scheduler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rcgo-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rcgo-parser.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rcgo-partitioned_scheduler.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rcgo-process_definitions.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rcgo-process_functions_and_methods.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rcgo-scanner.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rcgo-yyparse.Po@am__quote@
 
@@ -643,6 +645,13 @@ librcgo_la-error_reporter.lo: error_reporter.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-error_reporter.lo `test -f 'error_reporter.cpp' || echo '$(srcdir)/'`error_reporter.cpp
 
+librcgo_la-evaluate_static.lo: evaluate_static.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-evaluate_static.lo -MD -MP -MF $(DEPDIR)/librcgo_la-evaluate_static.Tpo -c -o librcgo_la-evaluate_static.lo `test -f 'evaluate_static.cpp' || echo '$(srcdir)/'`evaluate_static.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-evaluate_static.Tpo $(DEPDIR)/librcgo_la-evaluate_static.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='evaluate_static.cpp' object='librcgo_la-evaluate_static.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-evaluate_static.lo `test -f 'evaluate_static.cpp' || echo '$(srcdir)/'`evaluate_static.cpp
+
 librcgo_la-executor_base.lo: executor_base.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-executor_base.lo -MD -MP -MF $(DEPDIR)/librcgo_la-executor_base.Tpo -c -o librcgo_la-executor_base.lo `test -f 'executor_base.cpp' || echo '$(srcdir)/'`executor_base.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-executor_base.Tpo $(DEPDIR)/librcgo_la-executor_base.Plo
@@ -657,12 +666,26 @@ librcgo_la-expression_value.lo: expression_value.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-expression_value.lo `test -f 'expression_value.cpp' || echo '$(srcdir)/'`expression_value.cpp
 
+librcgo_la-generate_code.lo: generate_code.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-generate_code.lo -MD -MP -MF $(DEPDIR)/librcgo_la-generate_code.Tpo -c -o librcgo_la-generate_code.lo `test -f 'generate_code.cpp' || echo '$(srcdir)/'`generate_code.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-generate_code.Tpo $(DEPDIR)/librcgo_la-generate_code.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='generate_code.cpp' object='librcgo_la-generate_code.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-generate_code.lo `test -f 'generate_code.cpp' || echo '$(srcdir)/'`generate_code.cpp
+
 librcgo_la-heap.lo: heap.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-heap.lo -MD -MP -MF $(DEPDIR)/librcgo_la-heap.Tpo -c -o librcgo_la-heap.lo `test -f 'heap.cpp' || echo '$(srcdir)/'`heap.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-heap.Tpo $(DEPDIR)/librcgo_la-heap.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='heap.cpp' object='librcgo_la-heap.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-heap.lo `test -f 'heap.cpp' || echo '$(srcdir)/'`heap.cpp
+
+librcgo_la-instance_scheduler.lo: instance_scheduler.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-instance_scheduler.lo -MD -MP -MF $(DEPDIR)/librcgo_la-instance_scheduler.Tpo -c -o librcgo_la-instance_scheduler.lo `test -f 'instance_scheduler.cpp' || echo '$(srcdir)/'`instance_scheduler.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-instance_scheduler.Tpo $(DEPDIR)/librcgo_la-instance_scheduler.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='instance_scheduler.cpp' object='librcgo_la-instance_scheduler.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-instance_scheduler.lo `test -f 'instance_scheduler.cpp' || echo '$(srcdir)/'`instance_scheduler.cpp
 
 librcgo_la-location.lo: location.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-location.lo -MD -MP -MF $(DEPDIR)/librcgo_la-location.Tpo -c -o librcgo_la-location.lo `test -f 'location.cpp' || echo '$(srcdir)/'`location.cpp
@@ -705,6 +728,27 @@ librcgo_la-parameter_list.lo: parameter_list.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='parameter_list.cpp' object='librcgo_la-parameter_list.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-parameter_list.lo `test -f 'parameter_list.cpp' || echo '$(srcdir)/'`parameter_list.cpp
+
+librcgo_la-partitioned_scheduler.lo: partitioned_scheduler.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-partitioned_scheduler.lo -MD -MP -MF $(DEPDIR)/librcgo_la-partitioned_scheduler.Tpo -c -o librcgo_la-partitioned_scheduler.lo `test -f 'partitioned_scheduler.cpp' || echo '$(srcdir)/'`partitioned_scheduler.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-partitioned_scheduler.Tpo $(DEPDIR)/librcgo_la-partitioned_scheduler.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='partitioned_scheduler.cpp' object='librcgo_la-partitioned_scheduler.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-partitioned_scheduler.lo `test -f 'partitioned_scheduler.cpp' || echo '$(srcdir)/'`partitioned_scheduler.cpp
+
+librcgo_la-process_definitions.lo: process_definitions.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-process_definitions.lo -MD -MP -MF $(DEPDIR)/librcgo_la-process_definitions.Tpo -c -o librcgo_la-process_definitions.lo `test -f 'process_definitions.cpp' || echo '$(srcdir)/'`process_definitions.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-process_definitions.Tpo $(DEPDIR)/librcgo_la-process_definitions.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_definitions.cpp' object='librcgo_la-process_definitions.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-process_definitions.lo `test -f 'process_definitions.cpp' || echo '$(srcdir)/'`process_definitions.cpp
+
+librcgo_la-process_functions_and_methods.lo: process_functions_and_methods.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-process_functions_and_methods.lo -MD -MP -MF $(DEPDIR)/librcgo_la-process_functions_and_methods.Tpo -c -o librcgo_la-process_functions_and_methods.lo `test -f 'process_functions_and_methods.cpp' || echo '$(srcdir)/'`process_functions_and_methods.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-process_functions_and_methods.Tpo $(DEPDIR)/librcgo_la-process_functions_and_methods.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_functions_and_methods.cpp' object='librcgo_la-process_functions_and_methods.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-process_functions_and_methods.lo `test -f 'process_functions_and_methods.cpp' || echo '$(srcdir)/'`process_functions_and_methods.cpp
 
 librcgo_la-process_type_spec.lo: process_type_spec.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-process_type_spec.lo -MD -MP -MF $(DEPDIR)/librcgo_la-process_type_spec.Tpo -c -o librcgo_la-process_type_spec.lo `test -f 'process_type_spec.cpp' || echo '$(srcdir)/'`process_type_spec.cpp
@@ -804,48 +848,6 @@ rcgo-main.obj: main.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o rcgo-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
 
-rcgo-evaluate_static.o: evaluate_static.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT rcgo-evaluate_static.o -MD -MP -MF $(DEPDIR)/rcgo-evaluate_static.Tpo -c -o rcgo-evaluate_static.o `test -f 'evaluate_static.cpp' || echo '$(srcdir)/'`evaluate_static.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rcgo-evaluate_static.Tpo $(DEPDIR)/rcgo-evaluate_static.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='evaluate_static.cpp' object='rcgo-evaluate_static.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o rcgo-evaluate_static.o `test -f 'evaluate_static.cpp' || echo '$(srcdir)/'`evaluate_static.cpp
-
-rcgo-evaluate_static.obj: evaluate_static.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT rcgo-evaluate_static.obj -MD -MP -MF $(DEPDIR)/rcgo-evaluate_static.Tpo -c -o rcgo-evaluate_static.obj `if test -f 'evaluate_static.cpp'; then $(CYGPATH_W) 'evaluate_static.cpp'; else $(CYGPATH_W) '$(srcdir)/evaluate_static.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rcgo-evaluate_static.Tpo $(DEPDIR)/rcgo-evaluate_static.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='evaluate_static.cpp' object='rcgo-evaluate_static.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o rcgo-evaluate_static.obj `if test -f 'evaluate_static.cpp'; then $(CYGPATH_W) 'evaluate_static.cpp'; else $(CYGPATH_W) '$(srcdir)/evaluate_static.cpp'; fi`
-
-rcgo-generate_code.o: generate_code.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT rcgo-generate_code.o -MD -MP -MF $(DEPDIR)/rcgo-generate_code.Tpo -c -o rcgo-generate_code.o `test -f 'generate_code.cpp' || echo '$(srcdir)/'`generate_code.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rcgo-generate_code.Tpo $(DEPDIR)/rcgo-generate_code.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='generate_code.cpp' object='rcgo-generate_code.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o rcgo-generate_code.o `test -f 'generate_code.cpp' || echo '$(srcdir)/'`generate_code.cpp
-
-rcgo-generate_code.obj: generate_code.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT rcgo-generate_code.obj -MD -MP -MF $(DEPDIR)/rcgo-generate_code.Tpo -c -o rcgo-generate_code.obj `if test -f 'generate_code.cpp'; then $(CYGPATH_W) 'generate_code.cpp'; else $(CYGPATH_W) '$(srcdir)/generate_code.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rcgo-generate_code.Tpo $(DEPDIR)/rcgo-generate_code.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='generate_code.cpp' object='rcgo-generate_code.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o rcgo-generate_code.obj `if test -f 'generate_code.cpp'; then $(CYGPATH_W) 'generate_code.cpp'; else $(CYGPATH_W) '$(srcdir)/generate_code.cpp'; fi`
-
-rcgo-instance_scheduler.o: instance_scheduler.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT rcgo-instance_scheduler.o -MD -MP -MF $(DEPDIR)/rcgo-instance_scheduler.Tpo -c -o rcgo-instance_scheduler.o `test -f 'instance_scheduler.cpp' || echo '$(srcdir)/'`instance_scheduler.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rcgo-instance_scheduler.Tpo $(DEPDIR)/rcgo-instance_scheduler.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='instance_scheduler.cpp' object='rcgo-instance_scheduler.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o rcgo-instance_scheduler.o `test -f 'instance_scheduler.cpp' || echo '$(srcdir)/'`instance_scheduler.cpp
-
-rcgo-instance_scheduler.obj: instance_scheduler.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT rcgo-instance_scheduler.obj -MD -MP -MF $(DEPDIR)/rcgo-instance_scheduler.Tpo -c -o rcgo-instance_scheduler.obj `if test -f 'instance_scheduler.cpp'; then $(CYGPATH_W) 'instance_scheduler.cpp'; else $(CYGPATH_W) '$(srcdir)/instance_scheduler.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rcgo-instance_scheduler.Tpo $(DEPDIR)/rcgo-instance_scheduler.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='instance_scheduler.cpp' object='rcgo-instance_scheduler.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o rcgo-instance_scheduler.obj `if test -f 'instance_scheduler.cpp'; then $(CYGPATH_W) 'instance_scheduler.cpp'; else $(CYGPATH_W) '$(srcdir)/instance_scheduler.cpp'; fi`
-
 rcgo-parser.o: parser.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT rcgo-parser.o -MD -MP -MF $(DEPDIR)/rcgo-parser.Tpo -c -o rcgo-parser.o `test -f 'parser.cpp' || echo '$(srcdir)/'`parser.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rcgo-parser.Tpo $(DEPDIR)/rcgo-parser.Po
@@ -859,48 +861,6 @@ rcgo-parser.obj: parser.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='parser.cpp' object='rcgo-parser.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o rcgo-parser.obj `if test -f 'parser.cpp'; then $(CYGPATH_W) 'parser.cpp'; else $(CYGPATH_W) '$(srcdir)/parser.cpp'; fi`
-
-rcgo-partitioned_scheduler.o: partitioned_scheduler.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT rcgo-partitioned_scheduler.o -MD -MP -MF $(DEPDIR)/rcgo-partitioned_scheduler.Tpo -c -o rcgo-partitioned_scheduler.o `test -f 'partitioned_scheduler.cpp' || echo '$(srcdir)/'`partitioned_scheduler.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rcgo-partitioned_scheduler.Tpo $(DEPDIR)/rcgo-partitioned_scheduler.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='partitioned_scheduler.cpp' object='rcgo-partitioned_scheduler.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o rcgo-partitioned_scheduler.o `test -f 'partitioned_scheduler.cpp' || echo '$(srcdir)/'`partitioned_scheduler.cpp
-
-rcgo-partitioned_scheduler.obj: partitioned_scheduler.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT rcgo-partitioned_scheduler.obj -MD -MP -MF $(DEPDIR)/rcgo-partitioned_scheduler.Tpo -c -o rcgo-partitioned_scheduler.obj `if test -f 'partitioned_scheduler.cpp'; then $(CYGPATH_W) 'partitioned_scheduler.cpp'; else $(CYGPATH_W) '$(srcdir)/partitioned_scheduler.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rcgo-partitioned_scheduler.Tpo $(DEPDIR)/rcgo-partitioned_scheduler.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='partitioned_scheduler.cpp' object='rcgo-partitioned_scheduler.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o rcgo-partitioned_scheduler.obj `if test -f 'partitioned_scheduler.cpp'; then $(CYGPATH_W) 'partitioned_scheduler.cpp'; else $(CYGPATH_W) '$(srcdir)/partitioned_scheduler.cpp'; fi`
-
-rcgo-process_definitions.o: process_definitions.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT rcgo-process_definitions.o -MD -MP -MF $(DEPDIR)/rcgo-process_definitions.Tpo -c -o rcgo-process_definitions.o `test -f 'process_definitions.cpp' || echo '$(srcdir)/'`process_definitions.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rcgo-process_definitions.Tpo $(DEPDIR)/rcgo-process_definitions.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_definitions.cpp' object='rcgo-process_definitions.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o rcgo-process_definitions.o `test -f 'process_definitions.cpp' || echo '$(srcdir)/'`process_definitions.cpp
-
-rcgo-process_definitions.obj: process_definitions.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT rcgo-process_definitions.obj -MD -MP -MF $(DEPDIR)/rcgo-process_definitions.Tpo -c -o rcgo-process_definitions.obj `if test -f 'process_definitions.cpp'; then $(CYGPATH_W) 'process_definitions.cpp'; else $(CYGPATH_W) '$(srcdir)/process_definitions.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rcgo-process_definitions.Tpo $(DEPDIR)/rcgo-process_definitions.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_definitions.cpp' object='rcgo-process_definitions.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o rcgo-process_definitions.obj `if test -f 'process_definitions.cpp'; then $(CYGPATH_W) 'process_definitions.cpp'; else $(CYGPATH_W) '$(srcdir)/process_definitions.cpp'; fi`
-
-rcgo-process_functions_and_methods.o: process_functions_and_methods.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT rcgo-process_functions_and_methods.o -MD -MP -MF $(DEPDIR)/rcgo-process_functions_and_methods.Tpo -c -o rcgo-process_functions_and_methods.o `test -f 'process_functions_and_methods.cpp' || echo '$(srcdir)/'`process_functions_and_methods.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rcgo-process_functions_and_methods.Tpo $(DEPDIR)/rcgo-process_functions_and_methods.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_functions_and_methods.cpp' object='rcgo-process_functions_and_methods.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o rcgo-process_functions_and_methods.o `test -f 'process_functions_and_methods.cpp' || echo '$(srcdir)/'`process_functions_and_methods.cpp
-
-rcgo-process_functions_and_methods.obj: process_functions_and_methods.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT rcgo-process_functions_and_methods.obj -MD -MP -MF $(DEPDIR)/rcgo-process_functions_and_methods.Tpo -c -o rcgo-process_functions_and_methods.obj `if test -f 'process_functions_and_methods.cpp'; then $(CYGPATH_W) 'process_functions_and_methods.cpp'; else $(CYGPATH_W) '$(srcdir)/process_functions_and_methods.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rcgo-process_functions_and_methods.Tpo $(DEPDIR)/rcgo-process_functions_and_methods.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_functions_and_methods.cpp' object='rcgo-process_functions_and_methods.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o rcgo-process_functions_and_methods.obj `if test -f 'process_functions_and_methods.cpp'; then $(CYGPATH_W) 'process_functions_and_methods.cpp'; else $(CYGPATH_W) '$(srcdir)/process_functions_and_methods.cpp'; fi`
 
 rcgo-scanner.o: scanner.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT rcgo-scanner.o -MD -MP -MF $(DEPDIR)/rcgo-scanner.Tpo -c -o rcgo-scanner.o `test -f 'scanner.cpp' || echo '$(srcdir)/'`scanner.cpp

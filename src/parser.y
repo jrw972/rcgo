@@ -14,16 +14,16 @@ using namespace ast;
 %token <node> LITERAL
 
 %type <node> Action
-%type <node> ActivateStatement
+%type <node> Activate
 %type <node> AddExpression
 %type <node> AndExpression
 %type <node> ArrayDimension
-%type <node> ArrayType
+%type <node> Array
 %type <node> AssignmentStatement
 %type <node> Bind
 %type <node> BindStatement
 %type <node> Block
-%type <node> ChangeStatement
+%type <node> Change
 %type <node> CompareExpression
 %type <node> ComponentType
 %type <node> Const
@@ -37,20 +37,20 @@ using namespace ast;
 %type <list> ExpressionList
 %type <node> ExpressionStatement
 %type <list> FieldList
-%type <node> ForIotaStatement
+%type <node> ForIota
 %type <node> Func
 %type <node> Getter
-%type <node> HeapType
+%type <node> Heap
 %type <list> IdentifierList
-%type <node> IfStatement
+%type <node> If
 %type <node> IncrementStatement
-%type <node> IndexExpression
+%type <node> Indexession
 %type <node> Init
 %type <node> Instance
 %type <node> Key
 %type <node> KeyType
 %type <list> LiteralValue
-%type <node> MapType
+%type <node> Map
 %type <node> Method
 %type <node> MultiplyExpression
 %type <node> OptionalExpression
@@ -60,19 +60,19 @@ using namespace ast;
 %type <node> OrExpression
 %type <node> Parameter
 %type <list> ParameterListInternal
-%type <node> PointerType
+%type <node> Pointer
 %type <node> PrimaryExpression
-%type <node> PullPortType
+%type <node> PullPort
 %type <node> PushPortCall
 %type <list> PushPortCallList
-%type <node> PushPortType
+%type <node> PushPort
 %type <node> Reaction
 %type <node> Receiver
-%type <node> ReturnStatement
+%type <node> Return
 %type <list> ParameterList
 %type <list> ReturnParameterList
 %type <node> SimpleStatement
-%type <node> SliceType
+%type <node> Slice
 %type <node> Statement
 %type <list> StatementList
 %type <node> StructType
@@ -84,8 +84,8 @@ using namespace ast;
 %type <list> TypeOrExpressionList
 %type <node> UnaryExpression
 %type <node> Value
-%type <node> VarStatement
-%type <node> WhileStatement
+%type <node> Var
+%type <node> While
 
 %destructor { /* Free the node ($$). */ } <node>
 
@@ -181,7 +181,7 @@ Const:
   CONST IdentifierList Type '=' ExpressionList ';'
   { $$ = new Const (@1, $2, $3, $5); }
 | CONST IdentifierList      '=' ExpressionList ';'
-  { $$ = new Const (@1, $2, new EmptyTypeSpec (@1), $4); }
+  { $$ = new Const (@1, $2, new EmptyType (@1), $4); }
 
 Instance:
   INSTANCE IDENTIFIER TypeName IDENTIFIER '(' OptionalExpressionList ')' ';'
@@ -251,41 +251,41 @@ ParameterListInternal:
 
 Parameter:
   IdentifierList Mutability DereferenceMutability Type
-{ $$ = new IdentifierListTypeSpec (@1, $1, $2, $3, $4); }
+{ $$ = new VariableList (@1, $1, $2, $3, $4); }
 
 ReturnParameterList:
   /* Empty */
 { $$ = new ParameterList (yyloc); }
 | DereferenceMutability Type
-{ $$ = (new ParameterList (yyloc))->append (new IdentifierListTypeSpec (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, $1, $2)); }
+{ $$ = (new ParameterList (yyloc))->append (new VariableList (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, $1, $2)); }
 
 optional_semicolon: /* Empty. */
 | ';'
 
 BindStatement:
   Expression RIGHT_ARROW Expression ';'
-{ $$ = new BindPushPortStatement (@1, $1, $3); }
+{ $$ = new BindPushPort (@1, $1, $3); }
 | Expression RIGHT_ARROW Expression DOTDOTDOT Expression';'
-{ $$ = new BindPushPortParamStatement (@1, $1, $3, $5); }
+{ $$ = new BindPushPortParameter (@1, $1, $3, $5); }
 | Expression LEFT_ARROW Expression ';'
-{ $$ = new BindPullPortStatement (@1, $1, $3); }
+{ $$ = new BindPullPort (@1, $1, $3); }
 
 Block: '{' StatementList '}' { $$ = $2; }
 
 StatementList:
-  /* empty */ { $$ = new ListStatement (yyloc); }
+  /* empty */ { $$ = new StatementList (yyloc); }
 | StatementList Statement { $$ = $1->append ($2); }
 
 Statement:
   SimpleStatement   { $$ = $1; }
-| VarStatement      { $$ = $1; }
-| ActivateStatement { $$ = $1; }
+| Var      { $$ = $1; }
+| Activate { $$ = $1; }
 | Block             { $$ = $1; }
-| ReturnStatement   { $$ = $1; }
-| IfStatement       { $$ = $1; }
-| WhileStatement    { $$ = $1; }
-| ChangeStatement   { $$ = $1; }
-| ForIotaStatement  { $$ = $1; }
+| Return   { $$ = $1; }
+| If       { $$ = $1; }
+| While    { $$ = $1; }
+| Change   { $$ = $1; }
+| ForIota  { $$ = $1; }
 | BindStatement     { $$ = $1; }
 | Const             { $$ = $1; }
 
@@ -297,67 +297,67 @@ SimpleStatement:
 
 EmptyStatement: /* empty */ ';' { $$ = new EmptyStatement (yyloc); }
 
-ActivateStatement:
+Activate:
   ACTIVATE OptionalPushPortCallList Block
-{ $$ = new ActivateStatement (@1, $2, $3); }
+{ $$ = new Activate (@1, $2, $3); }
 
-ChangeStatement:
+Change:
   CHANGE '(' Expression ',' IDENTIFIER ')' Block
-{ $$ = new ChangeStatement (@1, $3, $5, $7); }
+{ $$ = new Change (@1, $3, $5, $7); }
 
-ForIotaStatement:
+ForIota:
   FOR IDENTIFIER DOTDOTDOT Expression Block
-{ $$ = new ForIotaStatement (@1, $2, $4, $5); }
+{ $$ = new ForIota (@1, $2, $4, $5); }
 
-ReturnStatement:
+Return:
   RETURN Expression ';'
-{ $$ = new ReturnStatement (@1, $2); }
+{ $$ = new Return (@1, $2); }
 
 IncrementStatement:
   Expression INCREMENT ';'
-{ $$ = new IncrementDecrementStatement (@1, $1, IncrementDecrementStatement::Increment); }
+{ $$ = new IncrementDecrement (@1, $1, IncrementDecrement::Increment); }
 | Expression DECREMENT ';'
-{ $$ = new IncrementDecrementStatement (@1, $1, IncrementDecrementStatement::Decrement); }
+{ $$ = new IncrementDecrement (@1, $1, IncrementDecrement::Decrement); }
 
 OptionalPushPortCallList:
   /* Empty. */
-{ $$ = new ListExpr (yyloc); }
+{ $$ = new ExpressionList (yyloc); }
 | PushPortCallList
 { $$ = $1; }
 
 PushPortCallList:
   PushPortCall
-{ $$ = (new ListExpr (@1))->append ($1); }
+{ $$ = (new ExpressionList (@1))->append ($1); }
 | PushPortCallList ',' PushPortCall
 { $$ = $1->append ($3); }
 
 PushPortCall:
-  IDENTIFIER IndexExpression '(' OptionalExpressionList ')'
-{ $$ = new IndexedPushPortCallExpr (@1, $1, $2, $4); }
+  IDENTIFIER Indexession '(' OptionalExpressionList ')'
+{ $$ = new IndexedPushPortCall (@1, $1, $2, $4); }
 | IDENTIFIER '(' OptionalExpressionList ')'
-{ $$ = new PushPortCallExpr (@1, $1, $3); }
+{ $$ = new PushPortCall (@1, $1, $3); }
 
-IndexExpression: '[' Expression ']' { $$ = $2; }
+Indexession: '[' Expression ']' { $$ = $2; }
 
 OptionalExpressionList:
-  /* Empty. */   { $$ = new ListExpr (yyloc); }
+  /* Empty. */   { $$ = new ExpressionList (yyloc); }
 | ExpressionList { $$ = $1; }
 
 OptionalTypeOrExpressionList:
-  /* Empty. */         { $$ = new ListExpr (yyloc); }
+  /* Empty. */         { $$ = new ExpressionList (yyloc); }
 | TypeOrExpressionList { $$ = $1; }
 
 ExpressionList:
   Expression
-{ $$ = (new ListExpr (@1))->append ($1); }
+{ $$ = (new ExpressionList (@1))->append ($1); }
 | ExpressionList ',' Expression
 { $$ = $1->append ($3); }
 
 TypeOrExpressionList:
   Expression
-{ $$ = (new ListExpr (@1))->append ($1); }
+{ $$ = (new ExpressionList (@1))->append ($1); }
 | TypeLitExpression
-{ $$ = (new ListExpr (@1))->append (new TypeExpression (@1, $1)); }
+{ $$ = (new ExpressionList (@1))->append (new TypeExpression (@1, $1)); }
 | TypeOrExpressionList ',' Expression
 { $$ = $1->append ($3); }
 | TypeOrExpressionList ',' TypeLitExpression
@@ -367,39 +367,39 @@ ExpressionStatement:
   Expression ';'
 { $$ = new ExpressionStatement (@1, $1); }
 
-VarStatement:
+Var:
   VAR IdentifierList Mutability DereferenceMutability Type '=' ExpressionList ';'
-{ $$ = new VarStatement (@1, $2, $3, $4, $5, $7); }
+{ $$ = new Var (@1, $2, $3, $4, $5, $7); }
 | VAR IdentifierList Mutability DereferenceMutability Type ';'
-{ $$ = new VarStatement (@1, $2, $3, $4, $5, new ListExpr (@1)); }
+{ $$ = new Var (@1, $2, $3, $4, $5, new ExpressionList (@1)); }
 | VAR IdentifierList Mutability DereferenceMutability '=' ExpressionList ';'
-{ $$ = new VarStatement (@1, $2, $3, $4, new EmptyTypeSpec (@1), $6); }
+{ $$ = new Var (@1, $2, $3, $4, new EmptyType (@1), $6); }
 | IdentifierList Mutability DereferenceMutability SHORT_ASSIGN ExpressionList ';'
-{ $$ = new VarStatement (@1, $1, $2, $3, new EmptyTypeSpec (@1), $5); }
+{ $$ = new Var (@1, $1, $2, $3, new EmptyType (@1), $5); }
 
 AssignmentStatement:
   Expression '=' Expression ';'
-{ $$ = new AssignStatement (@1, $1, $3); }
+{ $$ = new Assign (@1, $1, $3); }
 | Expression ADD_ASSIGN Expression ';'
-{ $$ = new AddAssignStatement (@1, $1, $3); }
+{ $$ = new AddAssign (@1, $1, $3); }
 
-IfStatement:
+If:
   IF Expression Block
-  { $$ = new IfStatement (@1, new EmptyStatement (@1), $2, $3, new ListStatement (@1)); }
-| IF Expression Block ELSE IfStatement
-{ $$ = new IfStatement (@1, new EmptyStatement (@1), $2, $3, $5); }
+  { $$ = new If (@1, new EmptyStatement (@1), $2, $3, new StatementList (@1)); }
+| IF Expression Block ELSE If
+{ $$ = new If (@1, new EmptyStatement (@1), $2, $3, $5); }
 | IF Expression Block ELSE Block
-{ $$ = new IfStatement (@1, new EmptyStatement (@1), $2, $3, $5); }
+{ $$ = new If (@1, new EmptyStatement (@1), $2, $3, $5); }
 | IF SimpleStatement ';' Expression Block
-{ $$ = new IfStatement (@1, $2, $4, $5, new ListStatement (@1)); }
-| IF SimpleStatement ';' Expression Block ELSE IfStatement
-{ $$ = new IfStatement (@1, $2, $4, $5, $7); }
+{ $$ = new If (@1, $2, $4, $5, new StatementList (@1)); }
+| IF SimpleStatement ';' Expression Block ELSE If
+{ $$ = new If (@1, $2, $4, $5, $7); }
 | IF SimpleStatement ';' Expression Block ELSE Block
-{ $$ = new IfStatement (@1, $2, $4, $5, $7); }
+{ $$ = new If (@1, $2, $4, $5, $7); }
 
-WhileStatement:
+While:
   FOR Expression Block
-{ $$ = new WhileStatement (@1, $2, $3); }
+{ $$ = new While (@1, $2, $3); }
 
 IdentifierList:
   IDENTIFIER
@@ -409,47 +409,47 @@ IdentifierList:
 
 // Type literals that can appear in expressions.
 TypeLitExpression:
-  ArrayType     { $$ = $1; }
+  Array     { $$ = $1; }
 | StructType    { $$ = $1; }
-| SliceType     { $$ = $1; }
-| MapType       { $$ = $1; }
+| Slice     { $$ = $1; }
+| Map       { $$ = $1; }
 | ComponentType { $$ = $1; }
-| PushPortType  { $$ = $1; }
-| PullPortType  { $$ = $1; }
-| HeapType      { $$ = $1; }
+| PushPort  { $$ = $1; }
+| PullPort  { $$ = $1; }
+| Heap      { $$ = $1; }
 
-ArrayType:
-  ArrayDimension ElementType { $$ = new ArrayTypeSpec (@1, $1, $2); }
+Array:
+  ArrayDimension ElementType { $$ = new Array (@1, $1, $2); }
 
 ElementType: Type { $$ = $1; }
 
 StructType: STRUCT '{' FieldList '}' { $$ = $3; }
 
-SliceType: '[' ']' ElementType { $$ = new SliceTypeSpec (@1, $3); }
+Slice: '[' ']' ElementType { $$ = new Slice (@1, $3); }
 
-MapType: MAP '[' KeyType ']' ElementType { $$ = new MapTypeSpec (@1, $3, $5); }
+Map: MAP '[' KeyType ']' ElementType { $$ = new Map (@1, $3, $5); }
 
 KeyType: Type { $$ = $1; }
 
 ComponentType:
   COMPONENT '{' FieldList '}'
-{ $$ = $3; static_cast<FieldListTypeSpec*> ($3)->is_component = true; }
+{ $$ = $3; static_cast<FieldList*> ($3)->is_component = true; }
 
-PushPortType: PUSH ParameterList { $$ = new PushPortTypeSpec (@1, $2); }
+PushPort: PUSH ParameterList { $$ = new PushPort (@1, $2); }
 
-PullPortType:
+PullPort:
   PULL ParameterList ReturnParameterList
-{ $$ = new PullPortTypeSpec (@1, $2, $3); }
+{ $$ = new PullPort (@1, $2, $3); }
 
-HeapType: HEAP Type { $$ = new HeapTypeSpec (@1, $2); }
+Heap: HEAP Type { $$ = new Heap (@1, $2); }
 
-PointerType: '*' Type { $$ = new PointerTypeSpec (@1, $2); }
+Pointer: '*' Type { $$ = new Pointer (@1, $2); }
 
 TypeLit:
-  PointerType       { $$ = $1; }
+  Pointer       { $$ = $1; }
 | TypeLitExpression { $$ = $1; }
 
-TypeName: IDENTIFIER { $$ = new IdentifierTypeSpec (@1, $1); }
+TypeName: IDENTIFIER { $$ = new IdentifierType (@1, $1); }
 
 Type:
   TypeName     { $$ = $1; }
@@ -460,13 +460,13 @@ ArrayDimension: '[' Expression ']' { $$ = $2; }
 
 FieldList:
   /* empty */
-{ $$ = new FieldListTypeSpec (yyloc); }
+{ $$ = new FieldList (yyloc); }
 | FieldList IdentifierList Type ';'
-{ $$ = $1->append (new IdentifierListTypeSpec (@1, $2, Mutable, Mutable, $3)); }
+{ $$ = $1->append (new VariableList (@1, $2, Mutable, Mutable, $3)); }
 
 OptionalExpression:
   /* empty */
-{ $$ = new EmptyExpr (yyloc); }
+{ $$ = new EmptyExpression (yyloc); }
 | Expression
 { $$ = $1; }
 
@@ -476,68 +476,68 @@ OrExpression:
   AndExpression
 { $$ = $1; }
 | OrExpression LOGIC_OR AndExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::logic_or_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::logic_or_temp, $1, $3); }
 
 AndExpression:
   CompareExpression
 { $$ = $1; }
 | AndExpression LOGIC_AND CompareExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::logic_and_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::logic_and_temp, $1, $3); }
 
 CompareExpression:
   AddExpression
 { $$ = $1; }
 | CompareExpression EQUAL AddExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::equal_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::equal_temp, $1, $3); }
 | CompareExpression NOT_EQUAL AddExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::not_equal_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::not_equal_temp, $1, $3); }
 | CompareExpression '<' AddExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::less_than_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::less_than_temp, $1, $3); }
 | CompareExpression LESS_EQUAL AddExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::less_equal_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::less_equal_temp, $1, $3); }
 | CompareExpression '>' AddExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::more_than_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::more_than_temp, $1, $3); }
 | CompareExpression MORE_EQUAL AddExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::more_equal_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::more_equal_temp, $1, $3); }
 
 AddExpression:
   MultiplyExpression
 { $$ = $1; }
 | AddExpression '+' MultiplyExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::add_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::add_temp, $1, $3); }
 | AddExpression '-' MultiplyExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::subtract_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::subtract_temp, $1, $3); }
 | AddExpression '|' MultiplyExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::bit_or_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::bit_or_temp, $1, $3); }
 | AddExpression '^' MultiplyExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::bit_xor_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::bit_xor_temp, $1, $3); }
 
 MultiplyExpression:
   UnaryExpression
 { $$ = $1; }
 | MultiplyExpression '*' UnaryExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::multiply_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::multiply_temp, $1, $3); }
 | MultiplyExpression '/' UnaryExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::divide_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::divide_temp, $1, $3); }
 | MultiplyExpression '%' UnaryExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::modulus_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::modulus_temp, $1, $3); }
 | MultiplyExpression LEFT_SHIFT UnaryExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::left_shift_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::left_shift_temp, $1, $3); }
 | MultiplyExpression RIGHT_SHIFT UnaryExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::right_shift_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::right_shift_temp, $1, $3); }
 | MultiplyExpression '&' UnaryExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::bit_and_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::bit_and_temp, $1, $3); }
 | MultiplyExpression AND_NOT UnaryExpression
-{ $$ = new BinaryArithmeticExpr (@1, &semantic::bit_and_not_temp, $1, $3); }
+{ $$ = new ast::BinaryArithmetic (@1, &semantic::bit_and_not_temp, $1, $3); }
 
 UnaryExpression:
   PrimaryExpression   { $$ = $1; }
-| '+' UnaryExpression { $$ = new UnaryArithmeticExpr (@1, &semantic::posate_temp, $2); }
-| '-' UnaryExpression { $$ = new UnaryArithmeticExpr (@1, &semantic::negate_temp, $2); }
-| '!' UnaryExpression { $$ = new UnaryArithmeticExpr (@1, &semantic::logic_not_temp, $2); }
-| '^' UnaryExpression { $$ = new UnaryArithmeticExpr (@1, &semantic::complement_temp, $2); }
-| '*' UnaryExpression { $$ = new DereferenceExpr (@1, $2); }
-| '&' UnaryExpression { $$ = new AddressOfExpr (@1, $2); }
+| '+' UnaryExpression { $$ = new ast::UnaryArithmetic (@1, &semantic::posate_temp, $2); }
+| '-' UnaryExpression { $$ = new ast::UnaryArithmetic (@1, &semantic::negate_temp, $2); }
+| '!' UnaryExpression { $$ = new ast::UnaryArithmetic (@1, &semantic::logic_not_temp, $2); }
+| '^' UnaryExpression { $$ = new ast::UnaryArithmetic (@1, &semantic::complement_temp, $2); }
+| '*' UnaryExpression { $$ = new Dereference (@1, $2); }
+| '&' UnaryExpression { $$ = new AddressOf (@1, $2); }
 
 PrimaryExpression:
   LITERAL
@@ -545,26 +545,26 @@ PrimaryExpression:
 | TypeLitExpression LiteralValue
 { $$ = new CompositeLiteral (@1, $1, $2); }
 | IDENTIFIER LiteralValue
-{ $$ = new CompositeLiteral (@1, new IdentifierTypeSpec (@1, $1), $2); }
+{ $$ = new CompositeLiteral (@1, new IdentifierType (@1, $1), $2); }
 | '[' DOTDOTDOT ']' ElementType LiteralValue
-{ $$ = new CompositeLiteral (@1, new ArrayTypeSpec (@1, new EmptyExpr (@1), $4), $5); }
+{ $$ = new CompositeLiteral (@1, new Array (@1, new EmptyExpression (@1), $4), $5); }
 /* | FunctionLit */
 | IDENTIFIER
-{ $$ = new IdentifierExpr (@1, $1); }
+{ $$ = new IdentifierExpression (@1, $1); }
 | '(' Expression ')'
 { $$ = $2; }
 | PrimaryExpression '.' IDENTIFIER
-{ $$ = new SelectExpr (@1, $1, $3); }
+{ $$ = new Select (@1, $1, $3); }
 | PrimaryExpression '[' Expression ']'
-{ $$ = new IndexExpr (@1, $1, $3); }
+{ $$ = new Index (@1, $1, $3); }
 | PrimaryExpression '[' OptionalExpression ':' OptionalExpression ']'
-{ $$ = new SliceExpr (@1, $1, $3, $5, new EmptyExpr (yyloc)); }
+{ $$ = new IndexSlice (@1, $1, $3, $5, new EmptyExpression (yyloc)); }
 | PrimaryExpression '[' OptionalExpression ':' Expression ':' Expression ']'
-{ $$ = new SliceExpr (@1, $1, $3, $5, $7); }
+{ $$ = new IndexSlice (@1, $1, $3, $5, $7); }
 | PrimaryExpression '(' OptionalTypeOrExpressionList ')'
-{ $$ = new CallExpr (@1, $1, $3); }
+{ $$ = new Call (@1, $1, $3); }
 | TypeLitExpression '(' Expression ')'
-{ $$ = new ConversionExpr (@1, new TypeExpression (@1, $1), $3); }
+{ $$ = new Conversion (@1, new TypeExpression (@1, $1), $3); }
 
 LiteralValue:
   '{' '}'                           { $$ = new ElementList (@1); }
@@ -576,7 +576,7 @@ ElementList:
 
 Element:
   Key ':' Value { $$ = new Element (@1, $1, $3); }
-| Value         { $$ = new Element (@1, new EmptyExpr (@1), $1); }
+| Value         { $$ = new Element (@1, new EmptyExpression (@1), $1); }
 
 Key:
   Expression   { $$ = $1; }

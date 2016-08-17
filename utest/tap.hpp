@@ -3,10 +3,13 @@
 
 #include <string>
 #include <iostream>
+#include <vector>
+#include <cassert>
 
 struct Tap
 {
   Tap () : test_number_ (0) { }
+
   void tassert (const std::string& description,
                 bool ok,
                 const std::string& msg = std::string ())

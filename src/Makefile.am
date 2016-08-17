@@ -16,15 +16,9 @@ parser.hpp parser.cpp: parser.y
 bin_PROGRAMS = rcgo
 rcgo_SOURCES = main.cpp \
 debug.hpp \
-evaluate_static.hpp evaluate_static.cpp \
 field.hpp \
-generate_code.hpp generate_code.cpp \
-instance_scheduler.hpp instance_scheduler.cpp \
 package.hpp \
 parser.hpp parser.cpp \
-partitioned_scheduler.hpp partitioned_scheduler.cpp \
-process_definitions.cpp \
-process_functions_and_methods.hpp process_functions_and_methods.cpp \
 scanner.hpp scanner.cpp \
 scheduler.hpp \
 types.hpp \
@@ -45,9 +39,12 @@ composition.hpp composition.cpp \
 compute_receiver_access.hpp compute_receiver_access.cpp \
 enter_symbols.cpp \
 error_reporter.hpp error_reporter.cpp \
+evaluate_static.hpp evaluate_static.cpp \
 executor_base.hpp executor_base.cpp \
 expression_value.hpp expression_value.cpp \
+generate_code.hpp generate_code.cpp \
 heap.hpp heap.cpp \
+instance_scheduler.hpp instance_scheduler.cpp \
 location.hpp location.cpp \
 memory_model.hpp memory_model.cpp \
 node.hpp node.cpp \
@@ -55,6 +52,9 @@ node_cast.hpp \
 node_visitor.hpp node_visitor.cpp \
 operation.hpp operation.cpp \
 parameter_list.hpp parameter_list.cpp \
+partitioned_scheduler.hpp partitioned_scheduler.cpp \
+process_definitions.cpp \
+process_functions_and_methods.hpp process_functions_and_methods.cpp \
 process_type_spec.cpp \
 process_types_and_constants.hpp process_types_and_constants.cpp \
 runtime.hpp runtime.cpp \

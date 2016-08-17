@@ -12,7 +12,7 @@ action (this $const * Counter) _tick (true) {
   };
 }
 
-func (this $const * Counter) Counter () uint {
+getter (this $const * Counter) Counter () uint {
   return this.counter;
 }
 

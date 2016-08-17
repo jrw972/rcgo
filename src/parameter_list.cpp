@@ -11,7 +11,7 @@ namespace decl
 
 ParameterList::ParameterList (const util::Location& a_location)
   : location (a_location)
-  //, size_on_stack_ (0)
+    //, size_on_stack_ (0)
   , variadic_ (false)
 { }
 

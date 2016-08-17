@@ -372,7 +372,7 @@ struct Equal : public LeftDispatch
   operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
-              const Pointer& type) const
+              const type::Pointer& type) const
   {
     doit (exec, memoryModel, node, type);
   }
@@ -445,9 +445,9 @@ struct NotEqual : public LeftDispatch
   operator() (ExecutorBase& exec,
               const MemoryModel& memoryModel,
               const ast::Binary& node,
-              const Pointer&) const
+              const type::Pointer&) const
   {
-    doit<Pointer> (exec, memoryModel, node);
+    doit<type::Pointer> (exec, memoryModel, node);
   }
 
   template <typename T>

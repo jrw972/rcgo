@@ -2,6 +2,11 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver
 
 AM_CXXFLAGS = -I $(top_srcdir)/src
 
+EXTRA_DIST = node.test
+
+%.cpp : %.test
+	awk -f $(top_srcdir)/utest/testpro.awk $< > $@
+
 TESTS = \
  action \
  arch \
@@ -22,10 +27,11 @@ TESTS = \
  symbol_cast \
  symbol_table \
  type \
- value
+ value \
+ unit_test
 check_PROGRAMS = $(TESTS)
 
-HELPERS=tap.hpp visitor_helper.hpp mock_execution.hpp
+HELPERS=unit_test.hpp tap.hpp visitor_helper.hpp mock_execution.hpp
 
 action_SOURCES = action.cpp $(HELPERS)
 action_LDADD = $(top_builddir)/src/librcgo.la
@@ -131,3 +137,8 @@ value_SOURCES = value.cpp $(HELPERS)
 value_LDADD = $(top_builddir)/src/librcgo.la
 value_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 value_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+
+unit_test_SOURCES = unit_test.cpp node.cpp $(HELPERS)
+unit_test_LDADD = $(top_builddir)/src/librcgo.la
+unit_test_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+unit_test_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)

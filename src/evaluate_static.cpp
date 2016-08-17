@@ -86,7 +86,7 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
   //       }
   //   }
 
-  //   void visit (const LiteralExpr& node)
+  //   void visit (const Literal& node)
   //   {
   //     typed_Value tv = node.typed_value;
   //     struct visitor : public Type::DefaultVisitor
@@ -112,7 +112,7 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
   //     result = v.result;
   //   }
 
-  //   void visit (const IndexExpr& node)
+  //   void visit (const Index& node)
   //   {
   //     static_Value base = EvaluateStatic (node.base (), memory);
   //     static_Value index = EvaluateStatic (node.index (), memory);
@@ -121,7 +121,7 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
   //     result = static_Value::index (base, array_type, index);
   //   }
 
-  //   void visit (const SelectExpr& node)
+  //   void visit (const Select& node)
   //   {
   //     typed_Value tv = node.typed_value;
   //     assert (tv.has_offset);
@@ -135,7 +135,7 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
   //     result = static_Value::dereference (v);
   //   }
 
-  //   void visit (const IdentifierExpr& node)
+  //   void visit (const IdentifierExpression& node)
   //   {
   //     ptrdiff_t offset = node.symbol->offset ();
   //     result = static_Value::make_stack_offset (offset);

@@ -28,7 +28,7 @@ size_t alignment (const Type* type)
 {
   switch (type->underlying_kind ())
     {
-      // These types cannot be allocated.
+    // These types cannot be allocated.
     case Untyped_Nil_Kind:
     case Untyped_Boolean_Kind:
     case Untyped_Rune_Kind:
@@ -141,7 +141,7 @@ size_t size (const Type* type)
 {
   switch (type->underlying_kind ())
     {
-      // These types cannot be allocated.
+    // These types cannot be allocated.
     case Untyped_Nil_Kind:
     case Untyped_Boolean_Kind:
     case Untyped_Rune_Kind:

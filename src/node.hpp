@@ -15,6 +15,7 @@ struct Node
   virtual ~Node();
   virtual void accept (NodeVisitor& visitor) = 0;
   virtual void visit_children (NodeVisitor& visitor) = 0;
+  virtual void print (std::ostream& out = std::cout) const = 0;
 
   util::Location const location;
 
@@ -22,8 +23,11 @@ struct Node
 
   type::Field* field;
   bool reset_mutability;
+  // TODO:  Abstract a callable with a polymorphic function.
   const decl::Callable* callable;
-  const decl::PolymorphicFunction* temp;
+  // TODO:  Move to ExpressionValue.
+  const decl::PolymorphicFunction* polymorphic_function;
+  // TODO:  Get rid of this member.
   runtime::Operation* operation;
 
 protected:
@@ -54,7 +58,7 @@ struct Identifier : public Node
   Identifier (unsigned int line, const std::string& id);
   virtual void accept (NodeVisitor& visitor);
   virtual void visit_children (NodeVisitor& visitor);
-
+  virtual void print (std::ostream& out) const;
   std::string const identifier;
 };
 
@@ -62,30 +66,28 @@ struct IdentifierList : public List
 {
   IdentifierList (unsigned int line);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
 struct Receiver : public Node
 {
-  Receiver (unsigned int line,
-            Identifier* this_id,
-            Mutability m,
-            Mutability dm,
-            bool isP,
-            Identifier* type_id);
+  Receiver (unsigned int line, Identifier* a_identifier, Mutability a_mutability, Mutability a_indirection_mutability, bool a_is_pointer, Identifier* a_type);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  Identifier* const this_identifier;
+  Identifier* const identifier;
   Mutability const mutability;
   Mutability const indirection_mutability;
   bool const is_pointer;
-  Identifier* const type_identifier;
+  Identifier* const type;
 };
 
-struct ArrayTypeSpec : public Node
+struct Array : public Node
 {
-  ArrayTypeSpec (unsigned int line, Node* dim, Node* base);
+  Array (unsigned int line, Node* dim, Node* base);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const dimension;
@@ -108,105 +110,109 @@ struct Unary : public Node
   T* const child;
 };
 
-struct EmptyTypeSpec : public Node
+struct EmptyType : public Node
 {
-  EmptyTypeSpec (unsigned int line);
+  EmptyType (unsigned int line);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 };
 
-struct FieldListTypeSpec : public List
+struct FieldList : public List
 {
-  FieldListTypeSpec (unsigned int line);
+  FieldList (unsigned int line);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 
   bool is_component;
 };
 
-struct HeapTypeSpec : public Unary<>
+struct Heap : public Unary<>
 {
-  HeapTypeSpec (unsigned int line, Node* child);
+  Heap (unsigned int line, Node* child);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct IdentifierTypeSpec : public Unary<Identifier>
+// TODO:  Use this node more often in the grammar to eliminate duplicate code.
+struct IdentifierType : public Unary<Identifier>
 {
-  IdentifierTypeSpec (unsigned int line, Identifier* child);
+  IdentifierType (unsigned int line, Identifier* child);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct IdentifierListTypeSpec : public Node
+struct VariableList : public Node
 {
-  IdentifierListTypeSpec (unsigned int line,
-                          List* id_list,
-                          Mutability m,
-                          Mutability dm,
-                          Node* type_sp);
+  VariableList (unsigned int line, List* a_identifiers, Mutability a_mutability, Mutability a_indirection_mutability, Node* a_type);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  List* const identifier_list;
+  List* const identifiers;
   Mutability const mutability;
   Mutability const indirection_mutability;
-  Node* const type_spec;
+  Node* const type;
 };
 
-struct PointerTypeSpec : public Unary<>
+struct Pointer : public Unary<>
 {
-  PointerTypeSpec (unsigned int line, Node* child);
+  Pointer (unsigned int line, Node* child);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct SliceTypeSpec : public Unary<>
+struct Slice : public Unary<>
 {
-  SliceTypeSpec (unsigned int line, Node* child);
+  Slice (unsigned int line, Node* child);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct MapTypeSpec : public Node
+struct Map : public Node
 {
-  MapTypeSpec (unsigned int line, Node* k, Node* v);
+  Map (unsigned int line, Node* k, Node* v);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const key;
   Node* const value;
 };
 
-struct PushPortTypeSpec : public Node
+struct PushPort : public Node
 {
-  PushPortTypeSpec (unsigned int line, Node* sig);
+  PushPort (unsigned int line, List* a_parameters);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  Node* const signature;
+  List* const parameters;
 };
 
-struct PullPortTypeSpec : public Node
+struct PullPort : public Node
 {
-  PullPortTypeSpec (unsigned int line,
-                    List* pl,
-                    List* rpl);
+  PullPort (unsigned int line, List* a_parameters, List* a_return_parameters);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  List* const parameter_list;
-  List* const return_parameter_list;
+  List* const parameters;
+  List* const return_parameters;
 };
 
 struct ParameterList : public List
 {
   ParameterList (unsigned int line);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct TypeExpression : public Node
+struct TypeExpression : public Unary<>
 {
-  TypeExpression (unsigned int line, Node* ts);
+  TypeExpression (unsigned int line, Node* a_type);
   virtual void accept (NodeVisitor& visitor);
-  virtual void visit_children (NodeVisitor& visitor);
-
-  Node* const type_spec;
+  virtual void print (std::ostream& out) const;
 };
 
 struct Binary : public Node
@@ -218,29 +224,33 @@ struct Binary : public Node
   Node* const right;
 };
 
-struct BinaryArithmeticExpr : public Binary
+// TODO:  Get rid of this and replace it with a call.
+struct BinaryArithmetic : public Binary
 {
-  BinaryArithmeticExpr (unsigned int line,
-                        decl::PolymorphicFunction* temp,
-                        Node* left,
-                        Node* right);
+  BinaryArithmetic (unsigned int line,
+                    decl::PolymorphicFunction* temp,
+                    Node* left,
+                    Node* right);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct AddressOfExpr : public Unary<>
+struct AddressOf : public Unary<>
 {
-  AddressOfExpr (unsigned int line, Node* child);
+  AddressOf (unsigned int line, Node* child);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct CallExpr : public Node
+struct Call : public Node
 {
-  CallExpr (unsigned int line, Node* e, List* a);
+  Call (unsigned int line, Node* e, List* a);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  Node* const expr;
-  List* const args;
+  Node* const expression;
+  List* const arguments;
 
   const type::Function* function_type;
   const type::PushPort* push_port_type;
@@ -250,44 +260,50 @@ struct CallExpr : public Node
   const type::Getter* getter_type;
   const type::Reaction* reaction_type;
 
-  const decl::ParameterList* parameter_list;
-  const decl::ParameterList* return_parameter_list;
+  const decl::ParameterList* parameters;
+  const decl::ParameterList* return_parameters;
 };
 
-struct ConversionExpr : public Node
+struct Conversion : public Node
 {
-  ConversionExpr (unsigned int line, Node* te, Node* e);
+  Conversion (unsigned int line, Node* te, Node* e);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  Node* const type_expr;
-  Node* const expr;
+  Node* const type;
+  Node* const argument;
 };
 
-struct DereferenceExpr : public Unary<>
+// TODO:  Rename to Indirection.
+struct Dereference : public Unary<>
 {
-  DereferenceExpr (unsigned int line, Node* child);
+  Dereference (unsigned int line, Node* child);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct ListExpr : public List
+struct ExpressionList : public List
 {
-  ListExpr (unsigned int line);
+  ExpressionList (unsigned int line);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct IdentifierExpr : public Unary<Identifier>
+struct IdentifierExpression : public Unary<Identifier>
 {
-  IdentifierExpr (unsigned int line, Identifier* child);
+  IdentifierExpression (unsigned int line, Identifier* child);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 
   decl::Symbol* symbol;
 };
 
-struct IndexExpr : public Node
+struct Index : public Node
 {
-  IndexExpr (unsigned int line, Node* b, Node* i);
+  Index (unsigned int line, Node* a_base, Node* a_index);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const base;
@@ -297,14 +313,11 @@ struct IndexExpr : public Node
   const type::Slice* slice_type;
 };
 
-struct SliceExpr : public Node
+struct IndexSlice : public Node
 {
-  SliceExpr (unsigned int line,
-             Node* b,
-             Node* l,
-             Node* h,
-             Node* m);
+  IndexSlice (unsigned int line, Node* a_base, Node* a_low, Node* a_high, Node* a_max);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const base;
@@ -321,45 +334,47 @@ struct SliceExpr : public Node
   const type::Slice* slice_type;
 };
 
-struct EmptyExpr : public Node
+struct EmptyExpression : public Node
 {
-  EmptyExpr (unsigned int line);
+  EmptyExpression (unsigned int line);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 };
 
-struct UnaryArithmeticExpr : public Unary<>
+// TODO:  Get rid of this class.
+struct UnaryArithmetic : public Unary<>
 {
-  UnaryArithmeticExpr (unsigned int line, decl::PolymorphicFunction* temp, Node* child);
+  UnaryArithmetic (unsigned int line, decl::PolymorphicFunction* temp, Node* child);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct PushPortCallExpr : public Node
+struct PushPortCall : public Node
 {
-  PushPortCallExpr (unsigned int line, Identifier* id, List* a);
+  PushPortCall (unsigned int line, Identifier* a_identifier, List* a_arguments);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
-  List* const args;
+  List* const arguments;
 
   type::Field* field;
   const type::PushPort* push_port_type;
   decl::Parameter* receiver_parameter;
 };
 
-struct IndexedPushPortCallExpr : public Node
+struct IndexedPushPortCall : public Node
 {
-  IndexedPushPortCallExpr (unsigned int line,
-                           Identifier* id,
-                           Node* idx,
-                           List* a);
+  IndexedPushPortCall (unsigned int line, Identifier* a_identifier, Node* a_index, List* a_arguments);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
   Node* const index;
-  List* const args;
+  List* const arguments;
 
   type::Field* field;
   const type::PushPort* push_port_type;
@@ -367,22 +382,22 @@ struct IndexedPushPortCallExpr : public Node
   const type::Array* array_type;
 };
 
-struct SelectExpr : public Node
+struct Select : public Node
 {
-  SelectExpr (unsigned int line, Node* b, Identifier* id);
+  Select (unsigned int line, Node* a_base, Identifier* a_identifier);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const base;
   Identifier* const identifier;
 };
 
-struct LiteralExpr : public Node
+struct Literal : public Node
 {
-  LiteralExpr (unsigned int line,
-               const type::Type* t,
-               const semantic::Value& v);
+  Literal (unsigned int line, const type::Type* a_type, const semantic::Value& a_value);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 };
 
@@ -390,31 +405,35 @@ struct EmptyStatement : public Node
 {
   EmptyStatement (unsigned int line);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 };
 
-struct AddAssignStatement : public Binary
+struct AddAssign : public Binary
 {
-  AddAssignStatement (unsigned int line, Node* left, Node* right);
+  AddAssign (unsigned int line, Node* left, Node* right);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct AssignStatement : public Binary
+struct Assign : public Binary
 {
-  AssignStatement (unsigned int line, Node* left, Node* right);
+  Assign (unsigned int line, Node* left, Node* right);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct ChangeStatement : public Node
+struct Change : public Node
 {
-  ChangeStatement (unsigned int line,
-                   Node * e,
-                   Identifier * id,
-                   Node * b);
+  Change (unsigned int line,
+          Node * e,
+          Identifier * id,
+          Node * b);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  Node* const expr;
+  Node* const argument;
   Identifier* const identifier;
   Node* const body;
 
@@ -425,73 +444,79 @@ struct ExpressionStatement : public Unary<>
 {
   ExpressionStatement (unsigned int line, Node* child);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct IfStatement : public Node
+struct If : public Node
 {
-  IfStatement (unsigned int line,
-               Node* s,
-               Node* c,
-               Node* tb,
-               Node* fb);
+  If (unsigned int line, Node* a_before, Node* a_condition, Node* a_true_body, Node* false_body);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  Node* const statement;
+  Node* const before;
   Node* const condition;
-  Node* const true_branch;
-  Node* const false_branch;
+  Node* const true_body;
+  Node* const false_body;
 };
 
-struct WhileStatement : public Node
+// TODO:  This should be For.
+struct While : public Node
 {
-  WhileStatement (unsigned int line, Node* c, Node* b);
+  While (unsigned int line, Node* a_condition, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const condition;
   Node* const body;
 };
 
-struct ReturnStatement : public Unary<>
+struct Return : public Unary<>
 {
-  ReturnStatement (unsigned int line, Node* child);
+  Return (unsigned int line, Node* child);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 
   const decl::Parameter* return_symbol;
 };
 
-struct IncrementDecrementStatement : public Unary<>
+// TODO:  Eliminate this node.  It is syntactic sugar.
+struct IncrementDecrement : public Unary<>
 {
   enum Kind
   {
     Increment,
     Decrement
   };
-  IncrementDecrementStatement (unsigned int line, Node* child, Kind a_kind);
+  IncrementDecrement (unsigned int line, Node* child, Kind a_kind);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   Kind const kind;
 };
 
-struct ListStatement : public List
+struct StatementList : public List
 {
-  ListStatement (unsigned int line);
+  StatementList (unsigned int line);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct SubtractAssignStatement : public Binary
+struct SubtractAssign : public Binary
 {
-  SubtractAssignStatement (unsigned int line, Node* left, Node* right);
+  SubtractAssign (unsigned int line, Node* left, Node* right);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct ActivateStatement : public Node
+struct Activate : public Node
 {
-  ActivateStatement (unsigned int line, List * el, Node * b);
+  Activate (unsigned int line, List * el, Node * b);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  List* const expr_list;
+  List* const arguments;
   Node* const body;
 
   const runtime::MemoryModel* memory_model;
@@ -499,40 +524,39 @@ struct ActivateStatement : public Node
   bool in_action;
 };
 
-struct VarStatement : public Node
+struct Var : public Node
 {
-  VarStatement (unsigned int line,
-                List* il,
-                Mutability m,
-                Mutability dm,
-                Node* ts,
-                List* el);
+  Var (unsigned int line, List* a_identifiers, Mutability a_mutability, Mutability a_indirection_mutability, Node* a_type, List* ael);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  List* const identifier_list;
+  // TODO:  Use a VariableList.
+  List* const identifiers;
   Mutability const mutability;
-  Mutability const dereferenceMutability;
-  Node* const type_spec;
-  List* const expression_list;
+  Mutability const indirection_mutability;
+  Node* const type;
+  List* const expressions;
 
   typedef std::vector<decl::Variable*> SymbolsType;
   SymbolsType symbols;
 };
 
-struct BindPushPortStatement : public Binary
+struct BindPushPort : public Binary
 {
-  BindPushPortStatement (unsigned int line, Node* left, Node* right);
+  BindPushPort (unsigned int line, Node* left, Node* right);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct BindPushPortParamStatement : public Node
+struct BindPushPortParameter : public Node
 {
-  BindPushPortParamStatement (unsigned int line,
-                              Node* l,
-                              Node* r,
-                              Node* p);
+  BindPushPortParameter (unsigned int line,
+                         Node* l,
+                         Node* r,
+                         Node* p);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const left;
@@ -540,27 +564,26 @@ struct BindPushPortParamStatement : public Node
   Node* const param;
 };
 
-struct BindPullPortStatement : public Binary
+struct BindPullPort : public Binary
 {
-  BindPullPortStatement (unsigned int line, Node* left, Node* right);
+  BindPullPort (unsigned int line, Node* left, Node* right);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
-struct ForIotaStatement : public Node
+struct ForIota : public Node
 {
-  ForIotaStatement (unsigned int line,
-                    Identifier* id,
-                    Node* lim,
-                    Node* b);
+  ForIota (unsigned int line, Identifier* a_identifier, Node* a_limit, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
-  Node* const limit_node;
+  Node* const limit;
   Node* const body;
 
   decl::Variable* symbol;
-  long limit;
+  long limit_value;
 };
 
 struct Action : public Node
@@ -571,6 +594,7 @@ struct Action : public Node
           Node* p,
           Node* b);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
@@ -591,6 +615,7 @@ struct DimensionedAction : public Node
                      Node* p,
                      Node* b);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const dimension;
@@ -610,6 +635,7 @@ struct Bind : public Node
         Identifier* i,
         Node* b);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
@@ -621,17 +647,14 @@ struct Bind : public Node
 
 struct Function : public Node
 {
-  Function (unsigned int line,
-            Identifier* i,
-            List* pl,
-            List* rpl,
-            Node* b);
+  Function (unsigned int line, Identifier* a_identifier, List* a_parameters, List* return_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
-  List* const parameter_list;
-  List* const return_parameter_list;
+  List* const parameters;
+  List* const return_parameters;
   Node* const body;
 
   decl::Function* function;
@@ -639,18 +662,15 @@ struct Function : public Node
 
 struct Instance : public Node
 {
-  Instance (unsigned int line,
-            Identifier* id,
-            Node* tn,
-            Identifier* init,
-            List* el);
+  Instance (unsigned int line, Identifier* a_identifier, Node* a_type, Identifier* a_initializer, List* a_arguments);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
-  Node* const type_name;
+  Node* const type;
   Identifier* const initializer;
-  List* const expression_list;
+  List* const arguments;
 
   decl::Instance* symbol;
 };
@@ -662,30 +682,27 @@ struct Const : public Node
          Node* ts,
          List* el);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  List* const identifier_list;
-  Node* const type_spec;
-  List* const expression_list;
+  List* const identifiers;
+  Node* const type;
+  List* const expressions;
 
   bool done;
 };
 
 struct Method : public Node
 {
-  Method (unsigned int line,
-          Node * r,
-          Identifier * i,
-          List* parameter_list,
-          List* return_parameter_list,
-          Node* b);
+  Method (unsigned int line, Node* a_receiver, Identifier* a_identifier,  List* a_parameters, List* a_return_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
   Identifier* const identifier;
-  List* const parameter_list;
-  List* const return_parameter_list;
+  List* const parameters;
+  List* const return_parameters;
   Node* const body;
 
   decl::Method* method;
@@ -693,19 +710,15 @@ struct Method : public Node
 
 struct Getter : public Node
 {
-  Getter (unsigned int line,
-          Node * r,
-          Identifier * i,
-          List* pl,
-          List* rpl,
-          Node* b);
+  Getter (unsigned int line, Node* a_receiver, Identifier* a_identifier, List* a_parameters, List* a_return_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
   Identifier* const identifier;
-  List* const parameter_list;
-  List* const return_parameter_list;
+  List* const parameters;
+  List* const return_parameters;
   Node* const body;
 
   decl::Getter* getter;
@@ -713,19 +726,15 @@ struct Getter : public Node
 
 struct Initializer : public Node
 {
-  Initializer (unsigned int line,
-               Node* r,
-               Identifier* i,
-               List* pl,
-               List* rpl,
-               Node* b);
+  Initializer (unsigned int line, Node* a_receiver, Identifier* a_identifier, List* a_parameters, List* a_return_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
   Identifier* const identifier;
-  List* const parameter_list;
-  List* const return_parameter_list;
+  List* const parameters;
+  List* const return_parameters;
   Node* const body;
 
   decl::Initializer* initializer;
@@ -733,18 +742,15 @@ struct Initializer : public Node
 
 struct Reaction : public Node
 {
-  Reaction (unsigned int line,
-            Node* r,
-            Identifier* i,
-            List* parameter_list,
-            Node* b);
+  Reaction (unsigned int line, Node* a_receiver, Identifier* a_identifier, List* a_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const receiver;
   Identifier* const identifier;
-  List* const parameter_list;
-  List* const return_parameter_list;
+  List* const parameters;
+  List* const return_parameters;
   Node* const body;
 
   decl::Reaction* reaction;
@@ -759,13 +765,14 @@ struct DimensionedReaction : public Node
                        List* pl,
                        Node* b);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const dimension;
   Node* const receiver;
   Identifier* const identifier;
-  List* const parameter_list;
-  List* const return_parameter_list;
+  List* const parameters;
+  List* const return_parameters;
   Node* const body;
 
   decl::Reaction* reaction;
@@ -773,30 +780,34 @@ struct DimensionedReaction : public Node
 
 struct Type : public Node
 {
-  Type (unsigned int line, Identifier* i, Node* ts);
+  Type (unsigned int line, Identifier* a_identifier, Node* a_type);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
-  Node* const type_spec;
+  Node* const type;
 };
 
 struct SourceFile : public List
 {
   SourceFile ();
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
 struct ElementList : public List
 {
   ElementList (unsigned int line);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
 struct Element : public Node
 {
-  Element (unsigned int line, Node* k, Node* v);
+  Element (unsigned int line, Node* a_key, Node* a_value);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const key;
@@ -809,13 +820,14 @@ struct CompositeLiteral : public Node
                     Node* lt,
                     List* lv);
   virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  Node* const literal_type;
-  List* const literal_value;
+  Node* const type;
+  List* const value;
 };
 
-std::ostream& operator<< (std::ostream& out, Node& node);
+std::ostream& operator<< (std::ostream& out, const Node& node);
 }
 
 #define AST_NOT_REACHED(node) do { std::cerr << node; NOT_REACHED; } while (0);

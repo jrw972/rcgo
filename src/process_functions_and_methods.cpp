@@ -49,7 +49,7 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
   Receiver* node = node_cast<Receiver> (n);
   assert (node != NULL);
 
-  Identifier* type_identifier_node = node->type_identifier;
+  Identifier* type_identifier_node = node->type;
   const std::string& type_identifier = type_identifier_node->identifier;
   NamedType* type = processAndLookup<NamedType> (symtab, type_identifier, type_identifier_node->location);
   if (type == NULL)
@@ -93,7 +93,7 @@ processReceiver (decl::SymbolTable& symtab, ast::Node* n, ast::Identifier* ident
       }
   }
 
-  Identifier *this_identifier_node = node->this_identifier;
+  Identifier *this_identifier_node = node->identifier;
   const std::string& this_identifier = this_identifier_node->identifier;
 
   const type::Type* receiver_type;
@@ -172,7 +172,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     const decl::ParameterList* parameter_list;
     const decl::ParameterList* return_parameter_list;
-    process_signature_return (er, symtab, node.parameter_list, node.return_parameter_list, false,
+    process_signature_return (er, symtab, node.parameters, node.return_parameters, false,
                               parameter_list, return_parameter_list);
     const type::Function* function_type = new type::Function (parameter_list, return_parameter_list);
     node.function = new decl::Function (node.identifier->identifier, node.identifier->location, function_type);
@@ -187,7 +187,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
     const decl::ParameterList* parameter_list;
     const decl::ParameterList* return_parameter_list;
-    process_signature_return (er, symtab, node.parameter_list, node.return_parameter_list, false,
+    process_signature_return (er, symtab, node.parameters, node.return_parameters, false,
                               parameter_list, return_parameter_list);
 
     type::Method* method_type = new type::Method (type,
@@ -207,7 +207,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
     const decl::ParameterList* parameter_list;
     const decl::ParameterList* return_parameter_list;
-    process_signature_return (er, symtab, node.parameter_list, node.return_parameter_list, true,
+    process_signature_return (er, symtab, node.parameters, node.return_parameters, true,
                               parameter_list, return_parameter_list);
 
     type::Initializer* initializer_type =
@@ -251,7 +251,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
     const decl::ParameterList* parameter_list;
     const decl::ParameterList* return_parameter_list;
-    process_signature_return (er, symtab, node.parameter_list, node.return_parameter_list, true,
+    process_signature_return (er, symtab, node.parameters, node.return_parameters, true,
                               parameter_list, return_parameter_list);
 
     type::Reaction* reaction_type = new type::Reaction (type,
@@ -272,7 +272,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
     const decl::ParameterList* parameter_list;
     const decl::ParameterList* return_parameter_list;
-    process_signature_return (er, symtab, node.parameter_list, node.return_parameter_list, true,
+    process_signature_return (er, symtab, node.parameters, node.return_parameters, true,
                               parameter_list, return_parameter_list);
 
     Parameter* iotaSymbol = Parameter::make (node.dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
@@ -296,7 +296,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
     const decl::ParameterList* parameter_list;
     const decl::ParameterList* return_parameter_list;
-    process_signature_return (er, symtab, node.parameter_list, node.return_parameter_list, true,
+    process_signature_return (er, symtab, node.parameters, node.return_parameters, true,
                               parameter_list, return_parameter_list);
 
     type::Getter* getter_type = new type::Getter (type,
@@ -324,12 +324,12 @@ struct Visitor : public ast::DefaultNodeVisitor
     const std::string& identifier = node.identifier->identifier;
     const std::string& initializer_identifier = node.initializer->identifier;
 
-    const type::NamedType* type = process_type (node.type_name, er, symtab, true)->to_named_type ();
+    const type::NamedType* type = process_type (node.type, er, symtab, true)->to_named_type ();
 
     if (type->underlying_type ()->kind () != Component_Kind)
       {
-        error_at_line (-1, 0, node.type_name->location.file.c_str (),
-                       node.type_name->location.line,
+        error_at_line (-1, 0, node.type->location.file.c_str (),
+                       node.type->location.line,
                        "type does not refer to a component (E64)");
       }
 
