@@ -200,9 +200,6 @@ struct Negater
   }
 };
 
-// Enter builtin types, constants, etc.
-void enter_symbols (decl::SymbolTable& symtab);
-
 // Look up a symbol.  If it is not defined, process its definition.
 template<typename T>
 T* processAndLookup (decl::SymbolTable& symtab, const std::string& identifier, const util::Location& location)

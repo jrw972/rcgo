@@ -19,6 +19,9 @@ enum ErrorCode
   Requires_Type = 7,
   Leaks_Pointers = 8,
   Signature_Is_Not_Foreign_Safe = 9,
+  Expected_N_Expressions = 10,
+  Cannot_Convert = 11,
+  Expression_Is_Not_Constant = 12,
 };
 
 struct ErrorReporter
@@ -51,6 +54,13 @@ struct ErrorReporter
   ErrorCode requires_type (const Location& loc);
   ErrorCode leaks_pointers (const Location& loc);
   ErrorCode signature_is_not_foreign_safe (const Location& loc);
+  ErrorCode expected_n_expressions (const Location& loc,
+                                    size_t expected,
+                                    size_t received);
+  ErrorCode cannot_convert (const Location& loc,
+                            const type::Type* from,
+                            const type::Type* to);
+  ErrorCode expression_is_not_constant (const Location& loc);
 
   const ListType& list () const;
   size_t count () const;

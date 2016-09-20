@@ -1,6 +1,6 @@
 /* -*- c++ -*- */
 #include "unit_test.hpp"
-#include "semantic.hpp"
+#include "enter_symbols.hpp"
 #include "symbol_table.hpp"
 
 using namespace semantic;

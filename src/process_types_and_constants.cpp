@@ -7,6 +7,7 @@
 #include "semantic.hpp"
 #include "check_types.hpp"
 #include "symbol_table.hpp"
+#include "error_reporter.hpp"
 
 namespace semantic
 {
@@ -28,11 +29,6 @@ struct Visitor : public ast::DefaultNodeVisitor
     , symtab (st)
   { }
 
-  void default_action (Node& node)
-  {
-    AST_NOT_REACHED (node);
-  }
-
   void visit (SourceFile& node)
   {
     symtab.open_scope ();
@@ -42,6 +38,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   void visit (ast::Type& node)
   {
     NamedType* type = new NamedType (node.identifier->identifier, node.identifier->location);
+    // Enter the type before processing it to support recursive types.
     symtab.enter_symbol (type);
     type->underlying_type (process_type (node.type, er, symtab, true));
   }
@@ -52,12 +49,12 @@ struct Visitor : public ast::DefaultNodeVisitor
     ast::Node* type_spec = node.type;
     ast::List* expression_list = node.expressions;
 
-    if (expression_list->size () != 0 &&
-        identifier_list->size () != expression_list->size ())
+    if (identifier_list->size () != expression_list->size ())
       {
-        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                       "wrong number of initializers (E88)");
+        er.expected_n_expressions (node.location, identifier_list->size (), expression_list->size ());
       }
+
+    const size_t limit = std::min (identifier_list->size (), expression_list->size ());
 
     // Process the type spec.
     const type::Type* type = process_type (type_spec, er, symtab, true);
@@ -67,23 +64,23 @@ struct Visitor : public ast::DefaultNodeVisitor
         // Type, expressions.
 
         // Enter each symbol.
+        size_t idx = 0;
         for (List::ConstIterator id_pos = identifier_list->begin (),
-             id_limit = identifier_list->end (),
              init_pos = expression_list->begin ();
-             id_pos != id_limit;
-             ++id_pos, ++init_pos)
+             idx != limit;
+             ++id_pos, ++init_pos, ++idx)
           {
             Node* n = *init_pos;
             check_types (n, er, symtab);
             if (!n->eval.value.present)
               {
-                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                               "expression is not constant (E130)");
+                er.expression_is_not_constant (n->location);
+                continue;
               }
             if (!are_assignable (n->eval.type, n->eval.value, type))
               {
-                error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                               "cannot assign %s to %s in initialization (E131)", n->eval.type->to_error_string ().c_str (), type->to_error_string ().c_str ());
+                er.cannot_convert (n->location, n->eval.type, type);
+                continue;
               }
 
             n->eval.value.convert (n->eval.type, type);
@@ -98,21 +95,21 @@ struct Visitor : public ast::DefaultNodeVisitor
         return;
       }
 
-    // No type, expressions.
+    // No type, just expressions.
 
     // Enter each symbol.
+    size_t idx = 0;
     for (List::ConstIterator id_pos = identifier_list->begin (),
-         id_limit = identifier_list->end (),
          init_pos = expression_list->begin ();
-         id_pos != id_limit;
-         ++id_pos, ++init_pos)
+         idx != limit;
+         ++id_pos, ++init_pos, ++idx)
       {
         Node* n = *init_pos;
         check_types (n, er, symtab);
         if (!n->eval.value.present)
           {
-            error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
-                           "expression is not constant (E89)");
+            er.expression_is_not_constant (n->location);
+            continue;
           }
 
         const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
@@ -121,57 +118,6 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
     node.done = true;
   }
-
-  void visit (ast::Function& node)
-  {
-    // Do nothing.
-  }
-
-  void visit (ast::Method& node)
-  {
-    // Do nothing.
-  }
-
-  void visit (ast::Initializer& node)
-  {
-    // Do nothing.
-  }
-
-  void visit (ast::Action& node)
-  {
-    // Do nothing.
-  }
-
-  void visit (DimensionedAction& node)
-  {
-    // Do nothing.
-  }
-
-  void visit (ast::Reaction& node)
-  {
-    // Do nothing.
-  }
-
-  void visit (DimensionedReaction& node)
-  {
-    // Do nothing.
-  }
-
-  void visit (ast::Getter& node)
-  {
-    // Do nothing.
-  }
-
-  void visit (ast::Bind& node)
-  {
-    // Do nothing.
-  }
-
-  void visit (ast::Instance& node)
-  {
-    // Do nothing.
-  }
-
 };
 }
 

@@ -18,7 +18,8 @@ main (int argc, char** argv)
     SymbolTable st;
     tap.tassert ("SymbolTable::SymbolTable ()",
                  st.package () == NULL
-                 && st.return_parameter_list () == NULL);
+                 && st.return_parameter_list () == NULL
+                 && st.current_scope () == NULL);
 
   }
 
@@ -26,6 +27,7 @@ main (int argc, char** argv)
     SymbolTable st;
     st.open_scope ();
     Symbol* s1 = new Variable ("x", loc, &named_int, Immutable, Immutable);
+    tap.tassert ("symbolTable::current_scope", st.current_scope () != NULL);
     st.enter_symbol (s1);
     Symbol* s = st.find_local_symbol ("x");
     tap.tassert ("SymbolTable::find_local_symbol yes", s == s1);

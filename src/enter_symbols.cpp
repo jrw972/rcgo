@@ -1,6 +1,8 @@
-#include "semantic.hpp"
+#include "enter_symbols.hpp"
 
 #include "builtin_function.hpp"
+#include "symbol_table.hpp"
+#include "semantic.hpp"
 
 namespace semantic
 {

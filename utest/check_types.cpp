@@ -6,6 +6,7 @@
 #include "symbol_table.hpp"
 #include "semantic.hpp"
 #include "builtin_function.hpp"
+#include "enter_symbols.hpp"
 
 using namespace semantic;
 using namespace ast;

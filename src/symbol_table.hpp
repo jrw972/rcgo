@@ -28,9 +28,11 @@ struct SymbolTable
   Package* package () const;
   const ParameterList* return_parameter_list () const;
 
+  struct Scope;
+  const Scope* current_scope () const;
+
 private:
   void enter_parameter_list (const ParameterList* type);
-  struct Scope;
   Scope* current_scope_;
 };
 

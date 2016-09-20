@@ -1,0 +1,176 @@
+/* -*- c++ -*- */
+#include "unit_test.hpp"
+#include "process_types_and_constants.hpp"
+#include "node.hpp"
+#include "error_reporter.hpp"
+#include "symbol_table.hpp"
+#include "enter_symbols.hpp"
+#include "type.hpp"
+#include "symbol_cast.hpp"
+
+using namespace semantic;
+
+scope(semantic); {
+  util::ErrorReporter er;
+  decl::SymbolTable symtab;
+  scenario(SourceFile); {
+    unit(process_types_and_constants); {
+      ast::SourceFile root;
+      const decl::SymbolTable::Scope* before = symtab.current_scope ();
+      process_types_and_constants (&root, er, symtab);
+      const decl::SymbolTable::Scope* after = symtab.current_scope ();
+      ASSERT (before == NULL);
+      ASSERT (after != NULL);
+    }; off();
+  }; off();
+  scenario(Type); {
+    unit(process_types_and_constants); {
+      ast::Identifier id1 (1, "mytype");
+      ast::Identifier id2 (1, "int");
+      ast::IdentifierType identifier_type (1, &id2);
+      ast::Type root (1, &id1, &identifier_type);
+      symtab.open_scope ();
+      enter_symbols (symtab);
+      process_types_and_constants (&root, er, symtab);
+      ASSERT (symtab.find_global_symbol ("mytype") != NULL);
+    }; off();
+  }; off();
+  scenario(Const); {
+    unit(process_types_and_constants); {
+      ast::IdentifierList identifiers (1);
+      identifiers.append (new ast::Identifier (1, "x"));
+      ast::Identifier id1 (1, "int");
+      ast::IdentifierType type (1, &id1);
+      semantic::Value sv;
+      sv.present = 1;
+      sv.untyped_integer_value = 1;
+      ast::Literal value (1, type::UntypedInteger::instance (), sv);
+      ast::ExpressionList expressions (1);
+      expressions.append (&value);
+      ast::Const root (1, &identifiers, &type, &expressions);
+      symtab.open_scope ();
+      enter_symbols (symtab);
+      process_types_and_constants (&root, er, symtab);
+      ASSERT (root.done);
+      decl::Symbol* sym = symtab.find_global_symbol ("x");
+      ASSERT (sym != NULL);
+      decl::Constant* c = decl::symbol_cast<decl::Constant> (sym);
+      ASSERT (c != NULL);
+      ASSERT (c->type == &type::named_int);
+      ASSERT (c->value.present);
+      ASSERT (c->value.int_value == 1);
+    }; off();
+  }; off();
+  scenario(Const_Mismatch); {
+    unit(process_types_and_constants); {
+      ast::IdentifierList identifiers (1);
+      identifiers.append (new ast::Identifier (1, "x"));
+      ast::Identifier id1 (1, "int");
+      ast::IdentifierType type (1, &id1);
+      ast::ExpressionList expressions (1);
+      ast::Const root (1, &identifiers, &type, &expressions);
+      symtab.open_scope ();
+      enter_symbols (symtab);
+      process_types_and_constants (&root, er, symtab);
+      ASSERT (root.done);
+      ASSERT (er.count () == 1);
+      ASSERT (er.list ().back () == util::Expected_N_Expressions);
+    }; off();
+  }; off();
+  scenario(Const_Not_Const); {
+    unit(process_types_and_constants); {
+      ast::IdentifierList identifiers (1);
+      identifiers.append (new ast::Identifier (1, "x"));
+      ast::Identifier id1 (1, "int");
+      ast::IdentifierType idtype (1, &id1);
+      ast::Pointer type (1, &idtype);
+      ast::Identifier id2 (1, "new");
+      ast::IdentifierExpression idx (1, &id2);
+      ast::ExpressionList args (1);
+      ast::Identifier id3 (1, "int");
+      ast::IdentifierType idtype2 (1, &id3);
+      ast::TypeExpression tex (1, &idtype2);
+      args.append (&tex);
+      ast::Call call (1, &idx, &args);
+      ast::ExpressionList expressions (1);
+      expressions.append (&call);
+      ast::Const root (1, &identifiers, &type, &expressions);
+      symtab.open_scope ();
+      enter_symbols (symtab);
+      process_types_and_constants (&root, er, symtab);
+      ASSERT (root.done);
+      ASSERT (er.count () == 1);
+      ASSERT (er.list ().back () == util::Expression_Is_Not_Constant);
+    }; off();
+  }; off();
+  scenario(Const_Not_Assignable); {
+    unit(process_types_and_constants); {
+      ast::IdentifierList identifiers (1);
+      identifiers.append (new ast::Identifier (1, "x"));
+      ast::Identifier id1 (1, "int");
+      ast::IdentifierType type (1, &id1);
+      semantic::Value sv;
+      sv.present = 1;
+      sv.untyped_float_value = 1.5;
+      ast::Literal value (1, type::UntypedFloat::instance (), sv);
+      ast::ExpressionList expressions (1);
+      expressions.append (&value);
+      ast::Const root (1, &identifiers, &type, &expressions);
+      symtab.open_scope ();
+      enter_symbols (symtab);
+      process_types_and_constants (&root, er, symtab);
+      ASSERT (root.done);
+      ASSERT (er.count () == 1);
+      ASSERT (er.list ().back () == util::Cannot_Convert);
+    }; off();
+  }; off();
+  scenario(Const_No_Type); {
+    unit(process_types_and_constants); {
+      ast::IdentifierList identifiers (1);
+      identifiers.append (new ast::Identifier (1, "x"));
+      ast::EmptyType type (1);
+      semantic::Value sv;
+      sv.present = 1;
+      sv.untyped_integer_value = 1;
+      ast::Literal value (1, type::UntypedInteger::instance (), sv);
+      ast::ExpressionList expressions (1);
+      expressions.append (&value);
+      ast::Const root (1, &identifiers, &type, &expressions);
+      symtab.open_scope ();
+      enter_symbols (symtab);
+      process_types_and_constants (&root, er, symtab);
+      ASSERT (root.done);
+      decl::Symbol* sym = symtab.find_global_symbol ("x");
+      ASSERT (sym != NULL);
+      decl::Constant* c = decl::symbol_cast<decl::Constant> (sym);
+      ASSERT (c != NULL);
+      ASSERT (c->type == type::UntypedInteger::instance ());
+      ASSERT (c->value.present);
+      ASSERT (c->value.untyped_integer_value == 1);
+    }; off();
+  }; off();
+  scenario(Const_No_Type_Not_Const); {
+    unit(process_types_and_constants); {
+      ast::IdentifierList identifiers (1);
+      identifiers.append (new ast::Identifier (1, "x"));
+      ast::EmptyType type (1);
+      ast::Identifier id2 (1, "new");
+      ast::IdentifierExpression idx (1, &id2);
+      ast::ExpressionList args (1);
+      ast::Identifier id3 (1, "int");
+      ast::IdentifierType idtype2 (1, &id3);
+      ast::TypeExpression tex (1, &idtype2);
+      args.append (&tex);
+      ast::Call call (1, &idx, &args);
+      ast::ExpressionList expressions (1);
+      expressions.append (&call);
+      ast::Const root (1, &identifiers, &type, &expressions);
+      symtab.open_scope ();
+      enter_symbols (symtab);
+      process_types_and_constants (&root, er, symtab);
+      ASSERT (root.done);
+      ASSERT (er.count () == 1);
+      ASSERT (er.list ().back () == util::Expression_Is_Not_Constant);
+    }; off();
+  }; off();
+}; off();

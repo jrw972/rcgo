@@ -2,7 +2,7 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver
 
 AM_CXXFLAGS = -I $(top_srcdir)/src
 
-EXTRA_DIST = node.test
+EXTRA_DIST = enter_symbols.test node.test process_types_and_constants.test
 
 %.cpp : %.test
 	awk -f $(top_srcdir)/utest/testpro.awk $< > $@
@@ -138,7 +138,7 @@ value_LDADD = $(top_builddir)/src/librcgo.la
 value_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 value_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
-unit_test_SOURCES = $(HELPERS) unit_test.cpp enter_symbols.cpp node.cpp
+unit_test_SOURCES = $(HELPERS) unit_test.cpp enter_symbols.cpp node.cpp process_types_and_constants.cpp
 unit_test_LDADD = $(top_builddir)/src/librcgo.la
 unit_test_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 unit_test_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)

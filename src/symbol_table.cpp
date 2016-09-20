@@ -284,4 +284,10 @@ SymbolTable::return_parameter_list () const
     }
 }
 
+const SymbolTable::Scope*
+SymbolTable::current_scope () const
+{
+  return current_scope_;
+}
+
 }

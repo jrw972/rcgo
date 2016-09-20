@@ -102,10 +102,36 @@ ErrorReporter::leaks_pointers (const Location& loc)
   return bump (Leaks_Pointers);
 }
 
-ErrorCode ErrorReporter::signature_is_not_foreign_safe (const Location& loc)
+ErrorCode
+ErrorReporter::signature_is_not_foreign_safe (const Location& loc)
 {
   out_ << loc << ": signature is not foreign safe " << Signature_Is_Not_Foreign_Safe << '\n';
   return bump (Signature_Is_Not_Foreign_Safe);
+}
+
+ErrorCode
+ErrorReporter::expected_n_expressions (const Location& loc,
+                                       size_t expected,
+                                       size_t received)
+{
+  out_ << loc << ": expected " << expected << " expressions but received " << received << '\n';
+  return bump (Expected_N_Expressions);
+}
+
+ErrorCode
+ErrorReporter::cannot_convert (const Location& loc,
+                               const type::Type* from,
+                               const type::Type* to)
+{
+  out_ << loc << ": cannot convert expression of type " << from->to_error_string () << " to " << to->to_error_string () << '\n';
+  return bump (Cannot_Convert);
+}
+
+ErrorCode
+ErrorReporter::expression_is_not_constant (const Location& loc)
+{
+  out_ << loc << ": expression is not constant\n";
+  return bump (Expression_Is_Not_Constant);
 }
 
 const ErrorReporter::ListType& ErrorReporter::list () const

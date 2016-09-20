@@ -19,6 +19,7 @@
 #include "generate_code.hpp"
 #include "check_types.hpp"
 #include "compute_receiver_access.hpp"
+#include "enter_symbols.hpp"
 #include "process_types_and_constants.hpp"
 #include "process_functions_and_methods.hpp"
 #include "scheduler.hpp"

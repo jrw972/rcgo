@@ -368,7 +368,7 @@ callable.hpp callable.cpp \
 check_types.hpp check_types.cpp \
 composition.hpp composition.cpp \
 compute_receiver_access.hpp compute_receiver_access.cpp \
-enter_symbols.cpp \
+enter_symbols.hpp enter_symbols.cpp \
 error_reporter.hpp error_reporter.cpp \
 evaluate_static.hpp evaluate_static.cpp \
 executor_base.hpp executor_base.cpp \
