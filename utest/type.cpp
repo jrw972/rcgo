@@ -69,12 +69,12 @@ main (int argc, char** argv)
   util::Location loc;
   {
     NamedType foo ("foo", loc);
-    tap.tassert ("NamedType::NamedType(1)", foo.underlying_type () == NULL);
+    tap.tassert ("NamedType::NamedType(1)", foo.underlying_type () == NULL && foo.defined () == false);
   }
 
   {
     NamedType foo ("foo", loc, Int::instance ());
-    tap.tassert ("NamedType::NamedType(2)", foo.underlying_type () == Int::instance ());
+    tap.tassert ("NamedType::NamedType(2)", foo.underlying_type () == Int::instance () && foo.defined () == true);
   }
 
   {

@@ -213,6 +213,10 @@ main (int argc, char** argv)
     v.convert (&type::named_complex128, &type::named_int8);
     tap.tassert ("Value::convert complex128 -> int8", v.int8_value == 120);
 
+    v.complex128_value = 120;
+    v.convert (&type::named_complex128, &type::named_string);
+    tap.tassert ("Value::convert complex128 -> string", v.complex128_value == 120);
+
     v.untyped_string_value = runtime::String::make ("hello");
     v.convert (type::UntypedString::instance (), &type::named_string);
     tap.tassert ("Value::convert string -> string", v.string_value == "hello");

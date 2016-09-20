@@ -74,6 +74,21 @@ main (int argc, char** argv)
   {
     Link root;
     Heap* h = new Heap (&root, sizeof (Link));
+    h->allocate (sizeof (Link));
+    h->allocate (sizeof (Link));
+    h->allocate (sizeof (Link));
+    h->allocate (sizeof (Link));
+    Link* obj5 = static_cast<Link*> (h->allocate (sizeof (Link)));
+    root.next = obj5;
+    h->collect_garbage (true);
+    Link* arr = static_cast<Link*> (h->allocate (64 * sizeof (Link)));
+    tap.tassert ("Heap::allocate traverse free list", arr != NULL);
+    delete h;
+  }
+
+  {
+    Link root;
+    Heap* h = new Heap (&root, sizeof (Link));
     Link* obj1 = static_cast<Link*> (h->allocate (sizeof (Link)));
     Link* obj2 = static_cast<Link*> (h->allocate (sizeof (Link)));
     root.next = obj2;

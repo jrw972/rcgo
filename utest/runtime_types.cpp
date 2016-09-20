@@ -109,13 +109,17 @@ main (int argc, char** argv)
     t = String::make (s.ptr, 4);
     tap.tassert ("String::operator==",
                  s != t);
-    void* o = malloc (5);
+    char* o = (char*)malloc (5);
     memcpy (o, "hello", 5);
     t = String::make (o, 5);
     tap.tassert ("String::operator==",
                  s == t);
     tap.tassert ("String::operator==",
                  s == "hello");
+    tap.tassert ("String::operator==",
+                 !(s == "hell"));
+    tap.tassert ("String::operator==",
+                 s == o);
   }
 
   {
