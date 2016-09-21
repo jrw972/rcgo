@@ -3,8 +3,8 @@
 #include "process_types_and_constants.hpp"
 #include "node.hpp"
 #include "error_reporter.hpp"
-#include "symbol_table.hpp"
-#include "enter_symbols.hpp"
+#include "scope.hpp"
+#include "enter_predeclared_identifiers.hpp"
 #include "type.hpp"
 #include "symbol_cast.hpp"
 
@@ -12,27 +12,16 @@ using namespace semantic;
 
 scope(semantic); {
   util::ErrorReporter er;
-  decl::SymbolTable symtab;
-  scenario(SourceFile); {
-    unit(process_types_and_constants); {
-      ast::SourceFile root;
-      const decl::SymbolTable::Scope* before = symtab.current_scope ();
-      process_types_and_constants (&root, er, symtab);
-      const decl::SymbolTable::Scope* after = symtab.current_scope ();
-      ASSERT (before == NULL);
-      ASSERT (after != NULL);
-    }; off();
-  }; off();
+  decl::Scope scope;
   scenario(Type); {
     unit(process_types_and_constants); {
       ast::Identifier id1 (1, "mytype");
       ast::Identifier id2 (1, "int");
       ast::IdentifierType identifier_type (1, &id2);
       ast::Type root (1, &id1, &identifier_type);
-      symtab.open_scope ();
-      enter_symbols (symtab);
-      process_types_and_constants (&root, er, symtab);
-      ASSERT (symtab.find_global_symbol ("mytype") != NULL);
+      enter_predeclared_identifiers (&scope);
+      process_types_and_constants (&root, er, &scope);
+      ASSERT (scope.find_global_symbol ("mytype") != NULL);
     }; off();
   }; off();
   scenario(Const); {
@@ -48,11 +37,10 @@ scope(semantic); {
       ast::ExpressionList expressions (1);
       expressions.append (&value);
       ast::Const root (1, &identifiers, &type, &expressions);
-      symtab.open_scope ();
-      enter_symbols (symtab);
-      process_types_and_constants (&root, er, symtab);
+      enter_predeclared_identifiers (&scope);
+      process_types_and_constants (&root, er, &scope);
       ASSERT (root.done);
-      decl::Symbol* sym = symtab.find_global_symbol ("x");
+      decl::Symbol* sym = scope.find_global_symbol ("x");
       ASSERT (sym != NULL);
       decl::Constant* c = decl::symbol_cast<decl::Constant> (sym);
       ASSERT (c != NULL);
@@ -69,9 +57,8 @@ scope(semantic); {
       ast::IdentifierType type (1, &id1);
       ast::ExpressionList expressions (1);
       ast::Const root (1, &identifiers, &type, &expressions);
-      symtab.open_scope ();
-      enter_symbols (symtab);
-      process_types_and_constants (&root, er, symtab);
+      enter_predeclared_identifiers (&scope);
+      process_types_and_constants (&root, er, &scope);
       ASSERT (root.done);
       ASSERT (er.count () == 1);
       ASSERT (er.list ().back () == util::Expected_N_Expressions);
@@ -95,9 +82,8 @@ scope(semantic); {
       ast::ExpressionList expressions (1);
       expressions.append (&call);
       ast::Const root (1, &identifiers, &type, &expressions);
-      symtab.open_scope ();
-      enter_symbols (symtab);
-      process_types_and_constants (&root, er, symtab);
+      enter_predeclared_identifiers (&scope);
+      process_types_and_constants (&root, er, &scope);
       ASSERT (root.done);
       ASSERT (er.count () == 1);
       ASSERT (er.list ().back () == util::Expression_Is_Not_Constant);
@@ -116,9 +102,8 @@ scope(semantic); {
       ast::ExpressionList expressions (1);
       expressions.append (&value);
       ast::Const root (1, &identifiers, &type, &expressions);
-      symtab.open_scope ();
-      enter_symbols (symtab);
-      process_types_and_constants (&root, er, symtab);
+      enter_predeclared_identifiers (&scope);
+      process_types_and_constants (&root, er, &scope);
       ASSERT (root.done);
       ASSERT (er.count () == 1);
       ASSERT (er.list ().back () == util::Cannot_Convert);
@@ -136,11 +121,10 @@ scope(semantic); {
       ast::ExpressionList expressions (1);
       expressions.append (&value);
       ast::Const root (1, &identifiers, &type, &expressions);
-      symtab.open_scope ();
-      enter_symbols (symtab);
-      process_types_and_constants (&root, er, symtab);
+      enter_predeclared_identifiers (&scope);
+      process_types_and_constants (&root, er, &scope);
       ASSERT (root.done);
-      decl::Symbol* sym = symtab.find_global_symbol ("x");
+      decl::Symbol* sym = scope.find_global_symbol ("x");
       ASSERT (sym != NULL);
       decl::Constant* c = decl::symbol_cast<decl::Constant> (sym);
       ASSERT (c != NULL);
@@ -165,9 +149,8 @@ scope(semantic); {
       ast::ExpressionList expressions (1);
       expressions.append (&call);
       ast::Const root (1, &identifiers, &type, &expressions);
-      symtab.open_scope ();
-      enter_symbols (symtab);
-      process_types_and_constants (&root, er, symtab);
+      enter_predeclared_identifiers (&scope);
+      process_types_and_constants (&root, er, &scope);
       ASSERT (root.done);
       ASSERT (er.count () == 1);
       ASSERT (er.list ().back () == util::Expression_Is_Not_Constant);

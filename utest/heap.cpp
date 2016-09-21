@@ -161,11 +161,11 @@ main (int argc, char** argv)
     // Collect garbage in children.
     Link root;
     Heap* h = new Heap (&root, sizeof (Link));
-    Link* obj1 = static_cast<Link*> (h->allocate (5 * sizeof (Link)));
+    static_cast<Link*> (h->allocate (5 * sizeof (Link)));
     Link* obj2 = static_cast<Link*> (h->allocate (sizeof (Link)));
     root.next = obj2;
     h->collect_garbage (true);
-    obj1 = static_cast<Link*> (h->allocate (sizeof (Link)));
+    static_cast<Link*> (h->allocate (sizeof (Link)));
     delete h;
   }
 

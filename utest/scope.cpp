@@ -1,5 +1,5 @@
 #include "tap.hpp"
-#include "symbol_table.hpp"
+#include "scope.hpp"
 #include "parameter_list.hpp"
 #include "type.hpp"
 #include "symbol.hpp"
@@ -15,40 +15,36 @@ main (int argc, char** argv)
   util::Location loc;
 
   {
-    SymbolTable st;
+    Scope st;
     tap.tassert ("SymbolTable::SymbolTable ()",
                  st.package () == NULL
-                 && st.return_parameter_list () == NULL
-                 && st.current_scope () == NULL);
+                 && st.return_parameter_list () == NULL);
 
   }
 
   {
-    SymbolTable st;
-    st.open_scope ();
+    Scope* st = new Scope ();
     Symbol* s1 = new Variable ("x", loc, &named_int, Immutable, Immutable);
-    tap.tassert ("symbolTable::current_scope", st.current_scope () != NULL);
-    st.enter_symbol (s1);
-    Symbol* s = st.find_local_symbol ("x");
+    st->enter_symbol (s1);
+    Symbol* s = st->find_local_symbol ("x");
     tap.tassert ("SymbolTable::find_local_symbol yes", s == s1);
-    st.open_scope ();
-    s = st.find_local_symbol ("x");
+    st = st->open ();
+    s = st->find_local_symbol ("x");
     tap.tassert ("SymbolTable::find_local_symbol no", s == NULL);
-    st.close_scope ();
-    st.close_scope ();
+    st = st->close ();
+    st = st->close ();
   }
 
   {
-    SymbolTable st;
-    st.open_scope ();
+    Scope* st = new Scope ();
     Symbol* s1 = new Variable ("x", loc, &named_int, Immutable, Immutable);
-    st.enter_symbol (s1);
-    st.open_scope ();
+    st->enter_symbol (s1);
+    st = st->open ();
 
-    tap.tassert ("SymbolTable::find_global_symbol yes", st.find_global_symbol ("x") == s1);
-    tap.tassert ("SymbolTable::find_global_symbol no", st.find_global_symbol ("y") == NULL);
-    st.close_scope ();
-    st.close_scope ();
+    tap.tassert ("SymbolTable::find_global_symbol yes", st->find_global_symbol ("x") == s1);
+    tap.tassert ("SymbolTable::find_global_symbol no", st->find_global_symbol ("y") == NULL);
+    st = st->close ();
+    st = st->close ();
   }
 
   {
@@ -58,17 +54,18 @@ main (int argc, char** argv)
     pl->append (x);
     ParameterList* rpl = new ParameterList (loc);
     rpl->append (y);
-    SymbolTable st;
-    st.open_scope (pl, rpl);
-    st.open_scope ();
+    Scope* st = new Scope ();
+    st = st->open (pl, rpl);
+    st = st->open ();
 
     tap.tassert ("SymbolTable::open_scope (pl, rpl)",
-                 st.find_global_symbol ("x") == x
-                 && st.find_global_symbol ("y") == y
-                 && st.return_parameter_list () == rpl);
+                 st->find_global_symbol ("x") == x
+                 && st->find_global_symbol ("y") == y
+                 && st->return_parameter_list () == rpl);
 
-    st.close_scope ();
-    st.close_scope ();
+    st = st->close ();
+    st = st->close ();
+    st = st->close ();
   }
 
   {
@@ -79,18 +76,19 @@ main (int argc, char** argv)
     pl->append (x);
     ParameterList* rpl = new ParameterList (loc);
     rpl->append (y);
-    SymbolTable st;
-    st.open_scope (iota, pl, rpl);
-    st.open_scope ();
+    Scope* st = new Scope ();
+    st = st->open (iota, pl, rpl);
+    st = st->open ();
 
     tap.tassert ("SymbolTable::open_scope (IOTA, pl, rpl)",
-                 st.find_global_symbol ("IOTA") == iota
-                 && st.find_global_symbol ("x") == x
-                 && st.find_global_symbol ("y") == y
-                 && st.return_parameter_list () == rpl);
+                 st->find_global_symbol ("IOTA") == iota
+                 && st->find_global_symbol ("x") == x
+                 && st->find_global_symbol ("y") == y
+                 && st->return_parameter_list () == rpl);
 
-    st.close_scope ();
-    st.close_scope ();
+    st = st->close ();
+    st = st->close ();
+    st = st->close ();
   }
 
   {
@@ -107,21 +105,21 @@ main (int argc, char** argv)
     ParameterList* pl = new ParameterList (loc);
     pl->append (r)->append (x1)->append (x2)->append (x3);
     ParameterList* rpl = new ParameterList (loc);
-    SymbolTable st;
-    st.open_scope (pl, rpl);
-    st.open_scope ();
-    st.enter_symbol (&v1);
-    st.enter_symbol (&v2);
-    st.enter_symbol (&h3);
-    st.open_scope ();
-    st.activate ();
+    Scope* st = new Scope ();
+    st = st->open (pl, rpl);
+    st = st->open ();
+    st->enter_symbol (&v1);
+    st->enter_symbol (&v2);
+    st->enter_symbol (&h3);
+    st = st->open ();
+    st->activate ();
 
-    const Parameter* r_after = symbol_cast<Parameter> (st.find_global_symbol ("this"));
-    const Parameter* x1_after = symbol_cast<Parameter> (st.find_global_symbol ("x1"));
-    const Hidden* x2_after = symbol_cast<Hidden> (st.find_global_symbol ("x2"));
-    const Variable* v1_after = symbol_cast<Variable> (st.find_global_symbol ("v1"));
-    const Hidden* v2_after = symbol_cast<Hidden> (st.find_global_symbol ("v2"));
-    const Hidden* x3_after = symbol_cast<Hidden> (st.find_global_symbol ("x3"));
+    const Parameter* r_after = symbol_cast<Parameter> (st->find_global_symbol ("this"));
+    const Parameter* x1_after = symbol_cast<Parameter> (st->find_global_symbol ("x1"));
+    const Hidden* x2_after = symbol_cast<Hidden> (st->find_global_symbol ("x2"));
+    const Variable* v1_after = symbol_cast<Variable> (st->find_global_symbol ("v1"));
+    const Hidden* v2_after = symbol_cast<Hidden> (st->find_global_symbol ("v2"));
+    const Hidden* x3_after = symbol_cast<Hidden> (st->find_global_symbol ("x3"));
 
     tap.tassert ("SymbolTable::activate ()",
                  r_after->indirection_mutability == Mutable
@@ -131,9 +129,20 @@ main (int argc, char** argv)
                  && v2_after != NULL
                  && x3_after == &h3);
 
-    st.close_scope ();
-    st.close_scope ();
-    st.close_scope ();
+    std::cout << (r_after->indirection_mutability == Mutable) << '\n'
+              << (x1_after == x1) << '\n'
+              << (x2_after != NULL) << '\n'
+              << (v1_after == &v1) << '\n'
+              << (v2_after != NULL) << '\n'
+              << (x3_after == &h3) << '\n';
+    std::cout << x3 << '\n';
+    std::cout << &h3 << '\n';
+    std::cout << x3_after << '\n';
+
+    st = st->close ();
+    st = st->close ();
+    st = st->close ();
+    st = st->close ();
   }
 
   {
@@ -150,21 +159,21 @@ main (int argc, char** argv)
     ParameterList* pl = new ParameterList (loc);
     pl->append (r)->append (x1)->append (x2)->append (x3);
     ParameterList* rpl = new ParameterList (loc);
-    SymbolTable st;
-    st.open_scope (pl, rpl);
-    st.open_scope ();
-    st.enter_symbol (&v1);
-    st.enter_symbol (&v2);
-    st.enter_symbol (&h3);
-    st.open_scope ();
-    st.change ();
+    Scope* st = new Scope ();
+    st = st->open (pl, rpl);
+    st = st->open ();
+    st->enter_symbol (&v1);
+    st->enter_symbol (&v2);
+    st->enter_symbol (&h3);
+    st = st->open ();
+    st->change ();
 
-    const Parameter* r_after = symbol_cast<Parameter> (st.find_global_symbol ("this"));
-    const Parameter* x1_after = symbol_cast<Parameter> (st.find_global_symbol ("x1"));
-    const Parameter* x2_after = symbol_cast<Parameter> (st.find_global_symbol ("x2"));
-    const Variable* v1_after = symbol_cast<Variable> (st.find_global_symbol ("v1"));
-    const Variable* v2_after = symbol_cast<Variable> (st.find_global_symbol ("v2"));
-    const Hidden* x3_after = symbol_cast<Hidden> (st.find_global_symbol ("x3"));
+    const Parameter* r_after = symbol_cast<Parameter> (st->find_global_symbol ("this"));
+    const Parameter* x1_after = symbol_cast<Parameter> (st->find_global_symbol ("x1"));
+    const Parameter* x2_after = symbol_cast<Parameter> (st->find_global_symbol ("x2"));
+    const Variable* v1_after = symbol_cast<Variable> (st->find_global_symbol ("v1"));
+    const Variable* v2_after = symbol_cast<Variable> (st->find_global_symbol ("v2"));
+    const Hidden* x3_after = symbol_cast<Hidden> (st->find_global_symbol ("x3"));
 
     tap.tassert ("SymbolTable::change ()",
                  r_after->indirection_mutability == Foreign
@@ -174,9 +183,10 @@ main (int argc, char** argv)
                  && v2_after->indirection_mutability == Foreign
                  && x3_after == &h3);
 
-    st.close_scope ();
-    st.close_scope ();
-    st.close_scope ();
+    st = st->close ();
+    st = st->close ();
+    st = st->close ();
+    st = st->close ();
   }
 
   tap.print_plan ();

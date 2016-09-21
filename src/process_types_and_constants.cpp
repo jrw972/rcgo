@@ -6,7 +6,7 @@
 #include "symbol.hpp"
 #include "semantic.hpp"
 #include "check_types.hpp"
-#include "symbol_table.hpp"
+#include "scope.hpp"
 #include "error_reporter.hpp"
 
 namespace semantic
@@ -21,17 +21,16 @@ namespace
 struct Visitor : public ast::DefaultNodeVisitor
 {
   ErrorReporter& er;
-  SymbolTable& symtab;
+  Scope* scope;
 
   Visitor (ErrorReporter& a_er,
-           SymbolTable& st)
+           Scope* a_scope)
     : er (a_er)
-    , symtab (st)
+    , scope (a_scope)
   { }
 
   void visit (SourceFile& node)
   {
-    symtab.open_scope ();
     node.visit_children (*this);
   }
 
@@ -39,8 +38,8 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     NamedType* type = new NamedType (node.identifier->identifier, node.identifier->location);
     // Enter the type before processing it to support recursive types.
-    symtab.enter_symbol (type);
-    type->underlying_type (process_type (node.type, er, symtab, true));
+    scope->enter_symbol (type);
+    type->underlying_type (process_type (node.type, er, scope, true));
   }
 
   void visit (Const& node)
@@ -57,7 +56,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     const size_t limit = std::min (identifier_list->size (), expression_list->size ());
 
     // Process the type spec.
-    const type::Type* type = process_type (type_spec, er, symtab, true);
+    const type::Type* type = process_type (type_spec, er, scope, true);
 
     if (type->kind () != Void_Kind)
       {
@@ -71,7 +70,7 @@ struct Visitor : public ast::DefaultNodeVisitor
              ++id_pos, ++init_pos, ++idx)
           {
             Node* n = *init_pos;
-            check_types (n, er, symtab);
+            check_types (n, er, scope);
             if (!n->eval.value.present)
               {
                 er.expression_is_not_constant (n->location);
@@ -88,7 +87,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
             const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
             Symbol* symbol = new Constant (name, (*id_pos)->location, type, n->eval.value);
-            symtab.enter_symbol (symbol);
+            scope->enter_symbol (symbol);
           }
 
         node.done = true;
@@ -105,7 +104,7 @@ struct Visitor : public ast::DefaultNodeVisitor
          ++id_pos, ++init_pos, ++idx)
       {
         Node* n = *init_pos;
-        check_types (n, er, symtab);
+        check_types (n, er, scope);
         if (!n->eval.value.present)
           {
             er.expression_is_not_constant (n->location);
@@ -114,16 +113,16 @@ struct Visitor : public ast::DefaultNodeVisitor
 
         const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
         Symbol* symbol = new Constant (name, (*id_pos)->location, n->eval.type, n->eval.value);
-        symtab.enter_symbol (symbol);
+        scope->enter_symbol (symbol);
       }
     node.done = true;
   }
 };
 }
 
-void process_types_and_constants (ast::Node* root, ErrorReporter& er, SymbolTable& symtab)
+void process_types_and_constants (ast::Node* root, ErrorReporter& er, Scope* scope)
 {
-  Visitor v (er, symtab);
+  Visitor v (er, scope);
   root->accept (v);
 }
 }

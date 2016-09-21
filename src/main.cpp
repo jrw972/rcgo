@@ -19,11 +19,11 @@
 #include "generate_code.hpp"
 #include "check_types.hpp"
 #include "compute_receiver_access.hpp"
-#include "enter_symbols.hpp"
+#include "enter_predeclared_identifiers.hpp"
 #include "process_types_and_constants.hpp"
 #include "process_functions_and_methods.hpp"
 #include "scheduler.hpp"
-#include "symbol_table.hpp"
+#include "scope.hpp"
 #include "error_reporter.hpp"
 
 static void
@@ -218,12 +218,14 @@ main (int argc, char **argv)
   arch::set_stack_alignment (sizeof (void*));
 
   util::ErrorReporter er (3);
-  decl::SymbolTable symtab;
-  symtab.open_scope ();
-  semantic::enter_symbols (symtab);
-  semantic::process_types_and_constants (root, er, symtab);
-  semantic::process_functions_and_methods (root, er, symtab);
-  semantic::check_types (root, er, symtab);
+  decl::Scope universal_scope;
+  semantic::enter_predeclared_identifiers (&universal_scope);
+
+  decl::Scope* package_scope = universal_scope.open ();
+  decl::Scope* file_scope = package_scope->open ();
+  semantic::process_types_and_constants (root, er, file_scope);
+  semantic::process_functions_and_methods (root, er, file_scope);
+  semantic::check_types (root, er, file_scope);
   semantic::compute_receiver_access (root);
 
   if (profile)
@@ -241,6 +243,7 @@ main (int argc, char **argv)
     }
 
   // Calculate the offsets of all stack variables.
+  // TODO:  Allocate and generate code after composition check.
   // Do this so we can execute some code statically when checking composition.
   semantic::allocate_stack_variables (root);
 

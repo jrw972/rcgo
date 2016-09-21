@@ -152,8 +152,8 @@ class ParameterList;
 class Parameter;
 class PolymorphicFunction;
 class Reaction;
+class Scope;
 class Symbol;
-class SymbolTable;
 class SymbolVisitor;
 class Variable;
 

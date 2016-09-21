@@ -37,7 +37,7 @@ callable.hpp callable.cpp \
 check_types.hpp check_types.cpp \
 composition.hpp composition.cpp \
 compute_receiver_access.hpp compute_receiver_access.cpp \
-enter_symbols.hpp enter_symbols.cpp \
+enter_predeclared_identifiers.hpp enter_predeclared_identifiers.cpp \
 error_reporter.hpp error_reporter.cpp \
 evaluate_static.hpp evaluate_static.cpp \
 executor_base.hpp executor_base.cpp \
@@ -59,11 +59,11 @@ process_type_spec.cpp \
 process_types_and_constants.hpp process_types_and_constants.cpp \
 runtime.hpp runtime.cpp \
 runtime_types.hpp runtime_types.cpp \
+scope.hpp scope.cpp \
 semantic.hpp semantic.cpp \
 stack.hpp stack.cpp \
 symbol.hpp symbol.cpp \
 symbol_cast.hpp \
-symbol_table.hpp symbol_table.cpp \
 symbol_visitor.hpp symbol_visitor.cpp \
 polymorphic_function.hpp polymorphic_function.cpp \
 type.hpp type.cpp \

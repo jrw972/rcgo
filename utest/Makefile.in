@@ -83,7 +83,7 @@ TESTS = action$(EXEEXT) arch$(EXEEXT) bind$(EXEEXT) callable$(EXEEXT) \
 	memory_model$(EXEEXT) node_cast$(EXEEXT) \
 	parameter_list$(EXEEXT) polymorphic_function$(EXEEXT) \
 	runtime_types$(EXEEXT) semantic$(EXEEXT) stack$(EXEEXT) \
-	symbol$(EXEEXT) symbol_cast$(EXEEXT) symbol_table$(EXEEXT) \
+	symbol$(EXEEXT) symbol_cast$(EXEEXT) scope$(EXEEXT) \
 	type$(EXEEXT) value$(EXEEXT) unit_test$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = utest
@@ -107,7 +107,7 @@ am__EXEEXT_1 = action$(EXEEXT) arch$(EXEEXT) bind$(EXEEXT) \
 	memory_model$(EXEEXT) node_cast$(EXEEXT) \
 	parameter_list$(EXEEXT) polymorphic_function$(EXEEXT) \
 	runtime_types$(EXEEXT) semantic$(EXEEXT) stack$(EXEEXT) \
-	symbol$(EXEEXT) symbol_cast$(EXEEXT) symbol_table$(EXEEXT) \
+	symbol$(EXEEXT) symbol_cast$(EXEEXT) scope$(EXEEXT) \
 	type$(EXEEXT) value$(EXEEXT) unit_test$(EXEEXT)
 am__objects_1 =
 am_action_OBJECTS = action-action.$(OBJEXT) $(am__objects_1)
@@ -211,6 +211,12 @@ runtime_types_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(runtime_types_CXXFLAGS) $(CXXFLAGS) $(runtime_types_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_scope_OBJECTS = scope-scope.$(OBJEXT) $(am__objects_1)
+scope_OBJECTS = $(am_scope_OBJECTS)
+scope_DEPENDENCIES = $(top_builddir)/src/librcgo.la
+scope_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(scope_CXXFLAGS) \
+	$(CXXFLAGS) $(scope_LDFLAGS) $(LDFLAGS) -o $@
 am_semantic_OBJECTS = semantic-semantic.$(OBJEXT) $(am__objects_1)
 semantic_OBJECTS = $(am_semantic_OBJECTS)
 semantic_DEPENDENCIES = $(top_builddir)/src/librcgo.la
@@ -236,13 +242,6 @@ symbol_cast_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 symbol_cast_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(symbol_cast_CXXFLAGS) \
 	$(CXXFLAGS) $(symbol_cast_LDFLAGS) $(LDFLAGS) -o $@
-am_symbol_table_OBJECTS = symbol_table-symbol_table.$(OBJEXT) \
-	$(am__objects_1)
-symbol_table_OBJECTS = $(am_symbol_table_OBJECTS)
-symbol_table_DEPENDENCIES = $(top_builddir)/src/librcgo.la
-symbol_table_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(symbol_table_CXXFLAGS) \
-	$(CXXFLAGS) $(symbol_table_LDFLAGS) $(LDFLAGS) -o $@
 am_type_OBJECTS = type-type.$(OBJEXT) $(am__objects_1)
 type_OBJECTS = $(am_type_OBJECTS)
 type_DEPENDENCIES = $(top_builddir)/src/librcgo.la
@@ -250,7 +249,8 @@ type_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(type_CXXFLAGS) \
 	$(CXXFLAGS) $(type_LDFLAGS) $(LDFLAGS) -o $@
 am_unit_test_OBJECTS = $(am__objects_1) unit_test-unit_test.$(OBJEXT) \
-	unit_test-enter_symbols.$(OBJEXT) unit_test-node.$(OBJEXT) \
+	unit_test-enter_predeclared_identifiers.$(OBJEXT) \
+	unit_test-node.$(OBJEXT) \
 	unit_test-process_types_and_constants.$(OBJEXT)
 unit_test_OBJECTS = $(am_unit_test_OBJECTS)
 unit_test_DEPENDENCIES = $(top_builddir)/src/librcgo.la
@@ -321,8 +321,8 @@ SOURCES = $(action_SOURCES) $(arch_SOURCES) $(bind_SOURCES) \
 	$(heap_SOURCES) $(location_SOURCES) $(memory_model_SOURCES) \
 	$(node_cast_SOURCES) $(parameter_list_SOURCES) \
 	$(polymorphic_function_SOURCES) $(runtime_types_SOURCES) \
-	$(semantic_SOURCES) $(stack_SOURCES) $(symbol_SOURCES) \
-	$(symbol_cast_SOURCES) $(symbol_table_SOURCES) $(type_SOURCES) \
+	$(scope_SOURCES) $(semantic_SOURCES) $(stack_SOURCES) \
+	$(symbol_SOURCES) $(symbol_cast_SOURCES) $(type_SOURCES) \
 	$(unit_test_SOURCES) $(value_SOURCES)
 DIST_SOURCES = $(action_SOURCES) $(arch_SOURCES) $(bind_SOURCES) \
 	$(callable_SOURCES) $(check_types_SOURCES) \
@@ -330,8 +330,8 @@ DIST_SOURCES = $(action_SOURCES) $(arch_SOURCES) $(bind_SOURCES) \
 	$(heap_SOURCES) $(location_SOURCES) $(memory_model_SOURCES) \
 	$(node_cast_SOURCES) $(parameter_list_SOURCES) \
 	$(polymorphic_function_SOURCES) $(runtime_types_SOURCES) \
-	$(semantic_SOURCES) $(stack_SOURCES) $(symbol_SOURCES) \
-	$(symbol_cast_SOURCES) $(symbol_table_SOURCES) $(type_SOURCES) \
+	$(scope_SOURCES) $(semantic_SOURCES) $(stack_SOURCES) \
+	$(symbol_SOURCES) $(symbol_cast_SOURCES) $(type_SOURCES) \
 	$(unit_test_SOURCES) $(value_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -691,7 +691,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver.sh
 AM_CXXFLAGS = -I $(top_srcdir)/src
-EXTRA_DIST = enter_symbols.test node.test process_types_and_constants.test
+EXTRA_DIST = enter_predeclared_identifiers.test node.test process_types_and_constants.test
 HELPERS = unit_test.hpp tap.hpp visitor_helper.hpp mock_execution.hpp
 action_SOURCES = action.cpp $(HELPERS)
 action_LDADD = $(top_builddir)/src/librcgo.la
@@ -757,10 +757,10 @@ symbol_cast_SOURCES = symbol_cast.cpp $(HELPERS)
 symbol_cast_LDADD = $(top_builddir)/src/librcgo.la
 symbol_cast_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 symbol_cast_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-symbol_table_SOURCES = symbol_table.cpp $(HELPERS)
-symbol_table_LDADD = $(top_builddir)/src/librcgo.la
-symbol_table_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-symbol_table_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+scope_SOURCES = scope.cpp $(HELPERS)
+scope_LDADD = $(top_builddir)/src/librcgo.la
+scope_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+scope_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 polymorphic_function_SOURCES = polymorphic_function.cpp $(HELPERS)
 polymorphic_function_LDADD = $(top_builddir)/src/librcgo.la
 polymorphic_function_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -777,7 +777,7 @@ value_SOURCES = value.cpp $(HELPERS)
 value_LDADD = $(top_builddir)/src/librcgo.la
 value_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 value_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-unit_test_SOURCES = $(HELPERS) unit_test.cpp enter_symbols.cpp node.cpp process_types_and_constants.cpp
+unit_test_SOURCES = $(HELPERS) unit_test.cpp enter_predeclared_identifiers.cpp node.cpp process_types_and_constants.cpp
 unit_test_LDADD = $(top_builddir)/src/librcgo.la
 unit_test_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 unit_test_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
@@ -881,6 +881,10 @@ runtime_types$(EXEEXT): $(runtime_types_OBJECTS) $(runtime_types_DEPENDENCIES) $
 	@rm -f runtime_types$(EXEEXT)
 	$(AM_V_CXXLD)$(runtime_types_LINK) $(runtime_types_OBJECTS) $(runtime_types_LDADD) $(LIBS)
 
+scope$(EXEEXT): $(scope_OBJECTS) $(scope_DEPENDENCIES) $(EXTRA_scope_DEPENDENCIES) 
+	@rm -f scope$(EXEEXT)
+	$(AM_V_CXXLD)$(scope_LINK) $(scope_OBJECTS) $(scope_LDADD) $(LIBS)
+
 semantic$(EXEEXT): $(semantic_OBJECTS) $(semantic_DEPENDENCIES) $(EXTRA_semantic_DEPENDENCIES) 
 	@rm -f semantic$(EXEEXT)
 	$(AM_V_CXXLD)$(semantic_LINK) $(semantic_OBJECTS) $(semantic_LDADD) $(LIBS)
@@ -896,10 +900,6 @@ symbol$(EXEEXT): $(symbol_OBJECTS) $(symbol_DEPENDENCIES) $(EXTRA_symbol_DEPENDE
 symbol_cast$(EXEEXT): $(symbol_cast_OBJECTS) $(symbol_cast_DEPENDENCIES) $(EXTRA_symbol_cast_DEPENDENCIES) 
 	@rm -f symbol_cast$(EXEEXT)
 	$(AM_V_CXXLD)$(symbol_cast_LINK) $(symbol_cast_OBJECTS) $(symbol_cast_LDADD) $(LIBS)
-
-symbol_table$(EXEEXT): $(symbol_table_OBJECTS) $(symbol_table_DEPENDENCIES) $(EXTRA_symbol_table_DEPENDENCIES) 
-	@rm -f symbol_table$(EXEEXT)
-	$(AM_V_CXXLD)$(symbol_table_LINK) $(symbol_table_OBJECTS) $(symbol_table_LDADD) $(LIBS)
 
 type$(EXEEXT): $(type_OBJECTS) $(type_DEPENDENCIES) $(EXTRA_type_DEPENDENCIES) 
 	@rm -f type$(EXEEXT)
@@ -933,13 +933,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parameter_list-parameter_list.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/polymorphic_function-polymorphic_function.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runtime_types-runtime_types.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scope-scope.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/semantic-semantic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stack-stack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol-symbol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol_cast-symbol_cast.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol_table-symbol_table.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/type-type.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-enter_symbols.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-enter_predeclared_identifiers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-node.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-process_types_and_constants.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-unit_test.Po@am__quote@
@@ -1162,6 +1162,20 @@ runtime_types-runtime_types.obj: runtime_types.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(runtime_types_CXXFLAGS) $(CXXFLAGS) -c -o runtime_types-runtime_types.obj `if test -f 'runtime_types.cpp'; then $(CYGPATH_W) 'runtime_types.cpp'; else $(CYGPATH_W) '$(srcdir)/runtime_types.cpp'; fi`
 
+scope-scope.o: scope.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(scope_CXXFLAGS) $(CXXFLAGS) -MT scope-scope.o -MD -MP -MF $(DEPDIR)/scope-scope.Tpo -c -o scope-scope.o `test -f 'scope.cpp' || echo '$(srcdir)/'`scope.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/scope-scope.Tpo $(DEPDIR)/scope-scope.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='scope.cpp' object='scope-scope.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(scope_CXXFLAGS) $(CXXFLAGS) -c -o scope-scope.o `test -f 'scope.cpp' || echo '$(srcdir)/'`scope.cpp
+
+scope-scope.obj: scope.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(scope_CXXFLAGS) $(CXXFLAGS) -MT scope-scope.obj -MD -MP -MF $(DEPDIR)/scope-scope.Tpo -c -o scope-scope.obj `if test -f 'scope.cpp'; then $(CYGPATH_W) 'scope.cpp'; else $(CYGPATH_W) '$(srcdir)/scope.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/scope-scope.Tpo $(DEPDIR)/scope-scope.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='scope.cpp' object='scope-scope.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(scope_CXXFLAGS) $(CXXFLAGS) -c -o scope-scope.obj `if test -f 'scope.cpp'; then $(CYGPATH_W) 'scope.cpp'; else $(CYGPATH_W) '$(srcdir)/scope.cpp'; fi`
+
 semantic-semantic.o: semantic.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(semantic_CXXFLAGS) $(CXXFLAGS) -MT semantic-semantic.o -MD -MP -MF $(DEPDIR)/semantic-semantic.Tpo -c -o semantic-semantic.o `test -f 'semantic.cpp' || echo '$(srcdir)/'`semantic.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/semantic-semantic.Tpo $(DEPDIR)/semantic-semantic.Po
@@ -1218,20 +1232,6 @@ symbol_cast-symbol_cast.obj: symbol_cast.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_cast_CXXFLAGS) $(CXXFLAGS) -c -o symbol_cast-symbol_cast.obj `if test -f 'symbol_cast.cpp'; then $(CYGPATH_W) 'symbol_cast.cpp'; else $(CYGPATH_W) '$(srcdir)/symbol_cast.cpp'; fi`
 
-symbol_table-symbol_table.o: symbol_table.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_table_CXXFLAGS) $(CXXFLAGS) -MT symbol_table-symbol_table.o -MD -MP -MF $(DEPDIR)/symbol_table-symbol_table.Tpo -c -o symbol_table-symbol_table.o `test -f 'symbol_table.cpp' || echo '$(srcdir)/'`symbol_table.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/symbol_table-symbol_table.Tpo $(DEPDIR)/symbol_table-symbol_table.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='symbol_table.cpp' object='symbol_table-symbol_table.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_table_CXXFLAGS) $(CXXFLAGS) -c -o symbol_table-symbol_table.o `test -f 'symbol_table.cpp' || echo '$(srcdir)/'`symbol_table.cpp
-
-symbol_table-symbol_table.obj: symbol_table.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_table_CXXFLAGS) $(CXXFLAGS) -MT symbol_table-symbol_table.obj -MD -MP -MF $(DEPDIR)/symbol_table-symbol_table.Tpo -c -o symbol_table-symbol_table.obj `if test -f 'symbol_table.cpp'; then $(CYGPATH_W) 'symbol_table.cpp'; else $(CYGPATH_W) '$(srcdir)/symbol_table.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/symbol_table-symbol_table.Tpo $(DEPDIR)/symbol_table-symbol_table.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='symbol_table.cpp' object='symbol_table-symbol_table.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_table_CXXFLAGS) $(CXXFLAGS) -c -o symbol_table-symbol_table.obj `if test -f 'symbol_table.cpp'; then $(CYGPATH_W) 'symbol_table.cpp'; else $(CYGPATH_W) '$(srcdir)/symbol_table.cpp'; fi`
-
 type-type.o: type.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(type_CXXFLAGS) $(CXXFLAGS) -MT type-type.o -MD -MP -MF $(DEPDIR)/type-type.Tpo -c -o type-type.o `test -f 'type.cpp' || echo '$(srcdir)/'`type.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/type-type.Tpo $(DEPDIR)/type-type.Po
@@ -1260,19 +1260,19 @@ unit_test-unit_test.obj: unit_test.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-unit_test.obj `if test -f 'unit_test.cpp'; then $(CYGPATH_W) 'unit_test.cpp'; else $(CYGPATH_W) '$(srcdir)/unit_test.cpp'; fi`
 
-unit_test-enter_symbols.o: enter_symbols.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_symbols.o -MD -MP -MF $(DEPDIR)/unit_test-enter_symbols.Tpo -c -o unit_test-enter_symbols.o `test -f 'enter_symbols.cpp' || echo '$(srcdir)/'`enter_symbols.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_symbols.Tpo $(DEPDIR)/unit_test-enter_symbols.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_symbols.cpp' object='unit_test-enter_symbols.o' libtool=no @AMDEPBACKSLASH@
+unit_test-enter_predeclared_identifiers.o: enter_predeclared_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_predeclared_identifiers.o -MD -MP -MF $(DEPDIR)/unit_test-enter_predeclared_identifiers.Tpo -c -o unit_test-enter_predeclared_identifiers.o `test -f 'enter_predeclared_identifiers.cpp' || echo '$(srcdir)/'`enter_predeclared_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_predeclared_identifiers.Tpo $(DEPDIR)/unit_test-enter_predeclared_identifiers.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_predeclared_identifiers.cpp' object='unit_test-enter_predeclared_identifiers.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_symbols.o `test -f 'enter_symbols.cpp' || echo '$(srcdir)/'`enter_symbols.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_predeclared_identifiers.o `test -f 'enter_predeclared_identifiers.cpp' || echo '$(srcdir)/'`enter_predeclared_identifiers.cpp
 
-unit_test-enter_symbols.obj: enter_symbols.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_symbols.obj -MD -MP -MF $(DEPDIR)/unit_test-enter_symbols.Tpo -c -o unit_test-enter_symbols.obj `if test -f 'enter_symbols.cpp'; then $(CYGPATH_W) 'enter_symbols.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_symbols.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_symbols.Tpo $(DEPDIR)/unit_test-enter_symbols.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_symbols.cpp' object='unit_test-enter_symbols.obj' libtool=no @AMDEPBACKSLASH@
+unit_test-enter_predeclared_identifiers.obj: enter_predeclared_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_predeclared_identifiers.obj -MD -MP -MF $(DEPDIR)/unit_test-enter_predeclared_identifiers.Tpo -c -o unit_test-enter_predeclared_identifiers.obj `if test -f 'enter_predeclared_identifiers.cpp'; then $(CYGPATH_W) 'enter_predeclared_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_predeclared_identifiers.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_predeclared_identifiers.Tpo $(DEPDIR)/unit_test-enter_predeclared_identifiers.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_predeclared_identifiers.cpp' object='unit_test-enter_predeclared_identifiers.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_symbols.obj `if test -f 'enter_symbols.cpp'; then $(CYGPATH_W) 'enter_symbols.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_symbols.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_predeclared_identifiers.obj `if test -f 'enter_predeclared_identifiers.cpp'; then $(CYGPATH_W) 'enter_predeclared_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_predeclared_identifiers.cpp'; fi`
 
 unit_test-node.o: node.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-node.o -MD -MP -MF $(DEPDIR)/unit_test-node.Tpo -c -o unit_test-node.o `test -f 'node.cpp' || echo '$(srcdir)/'`node.cpp
@@ -1641,9 +1641,9 @@ symbol_cast.log: symbol_cast$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-symbol_table.log: symbol_table$(EXEEXT)
-	@p='symbol_table$(EXEEXT)'; \
-	b='symbol_table'; \
+scope.log: scope$(EXEEXT)
+	@p='scope$(EXEEXT)'; \
+	b='scope'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

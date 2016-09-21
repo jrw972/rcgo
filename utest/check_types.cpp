@@ -3,10 +3,10 @@
 #include "tap.hpp"
 #include "node.hpp"
 #include "error_reporter.hpp"
-#include "symbol_table.hpp"
+#include "scope.hpp"
 #include "semantic.hpp"
 #include "builtin_function.hpp"
-#include "enter_symbols.hpp"
+#include "enter_predeclared_identifiers.hpp"
 
 using namespace semantic;
 using namespace ast;
@@ -71,9 +71,9 @@ main (int argc, char** argv)
   {
     Node* root = make_untyped_one ();
     ErrorReporter er;
-    SymbolTable symtab;
+    Scope scope;
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types Literal",
                  root->eval.expression_kind == ValueExpressionKind &&
@@ -88,9 +88,9 @@ main (int argc, char** argv)
     Node* child2 = make_untyped_one ();
     Node* root = (new ExpressionList (1))->append (child1)->append (child2);
     ErrorReporter er;
-    SymbolTable symtab;
+    Scope scope;
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types ExpressionList",
                  child2->eval.expression_kind == ValueExpressionKind &&
@@ -103,10 +103,9 @@ main (int argc, char** argv)
   {
     Node* root = make_identifier_expr ("int64");
     ErrorReporter er;
-    SymbolTable symtab;
-    symtab.open_scope ();
+    Scope scope;
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types IdentifierExpression undefined",
                  root->eval.expression_kind == ErrorExpressionKind &&
@@ -119,11 +118,10 @@ main (int argc, char** argv)
     Node* root = make_identifier_expr ("readable");
     ErrorReporter er;
     runtime::BuiltinFunction* symbol = new runtime::Readable (Location (1));
-    SymbolTable symtab;
-    symtab.open_scope ();
-    symtab.enter_symbol (symbol);
+    Scope scope;
+    scope.enter_symbol (symbol);
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types IdentifierExpression BuiltinFunction",
                  root->eval.expression_kind == ValueExpressionKind &&
@@ -140,11 +138,10 @@ main (int argc, char** argv)
     Node* root = make_identifier_expr ("new");
     ErrorReporter er;
     decl::PolymorphicFunction* symbol = new semantic::New (Location (1));
-    SymbolTable symtab;
-    symtab.open_scope ();
-    symtab.enter_symbol (symbol);
+    Scope scope;
+    scope.enter_symbol (symbol);
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types IdentifierExpression Template",
                  root->eval.expression_kind == ValueExpressionKind &&
@@ -162,11 +159,10 @@ main (int argc, char** argv)
     Node* root = make_identifier_expr ("myfunc");
     ErrorReporter er;
     decl::Function* symbol = new decl::Function ("myfunc", loc, make_function_type ());
-    SymbolTable symtab;
-    symtab.open_scope ();
-    symtab.enter_symbol (symbol);
+    Scope scope;
+    scope.enter_symbol (symbol);
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types IdentifierExpression Function",
                  root->eval.expression_kind == ValueExpressionKind &&
@@ -183,11 +179,10 @@ main (int argc, char** argv)
     Node* root = make_identifier_expr ("myparam");
     ErrorReporter er;
     decl::Parameter* symbol = Parameter::make (Location (1), "myparam", &named_int, Mutable, Mutable);
-    SymbolTable symtab;
-    symtab.open_scope ();
-    symtab.enter_symbol (symbol);
+    Scope scope;
+    scope.enter_symbol (symbol);
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types IdentifierExpression Parameter",
                  root->eval.expression_kind == VariableExpressionKind &&
@@ -202,11 +197,10 @@ main (int argc, char** argv)
   {
     Node* root = make_identifier_expr ("bool");
     ErrorReporter er;
-    SymbolTable symtab;
-    symtab.open_scope ();
-    symtab.enter_symbol (&named_bool);
+    Scope scope;
+    scope.enter_symbol (&named_bool);
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types IdentifierExpression Type",
                  root->eval.expression_kind == TypeExpressionKind &&
@@ -222,11 +216,10 @@ main (int argc, char** argv)
     Value v;
     v.present = true;
     decl::Constant* symbol = new Constant ("nil", Location (1), type::UntypedNil::instance (), v);
-    SymbolTable symtab;
-    symtab.open_scope ();
-    symtab.enter_symbol (symbol);
+    Scope scope;
+    scope.enter_symbol (symbol);
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types IdentifierExpression Constant",
                  root->eval.expression_kind == ValueExpressionKind &&
@@ -242,11 +235,10 @@ main (int argc, char** argv)
     Node* root = make_identifier_expr ("myvar");
     ErrorReporter er;
     decl::Variable* symbol = new Variable ("myvar", Location (1), &named_int, Mutable, Mutable);
-    SymbolTable symtab;
-    symtab.open_scope ();
-    symtab.enter_symbol (symbol);
+    Scope scope;
+    scope.enter_symbol (symbol);
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types IdentifierExpression Variable",
                  root->eval.expression_kind == VariableExpressionKind &&
@@ -262,11 +254,10 @@ main (int argc, char** argv)
     Node* root = make_identifier_expr ("myvar");
     ErrorReporter er;
     decl::Hidden* symbol = new decl::Hidden (new Variable ("myvar", Location (1), &named_int, Mutable, Mutable), Location (1));
-    SymbolTable symtab;
-    symtab.open_scope ();
-    symtab.enter_symbol (symbol);
+    Scope scope;
+    scope.enter_symbol (symbol);
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types IdentifierExpression Hidden",
                  root->eval.expression_kind == ErrorExpressionKind &&
@@ -278,11 +269,10 @@ main (int argc, char** argv)
   {
     Node* root = new ast::UnaryArithmetic (1, &logic_not_temp, new ast::UnaryArithmetic (1, &logic_not_temp, make_untyped_one ()));
     ErrorReporter er;
-    SymbolTable symtab;
-    symtab.open_scope ();
-    enter_symbols (symtab);
+    Scope scope;
+    enter_predeclared_identifiers (&scope);
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types UnaryArithmetic subexpression error",
                  root->eval.expression_kind == ErrorExpressionKind &&
@@ -294,11 +284,10 @@ main (int argc, char** argv)
   {
     Node* root = new ast::UnaryArithmetic (1, &logic_not_temp, make_untyped_false ());
     ErrorReporter er;
-    SymbolTable symtab;
-    symtab.open_scope ();
-    enter_symbols (symtab);
+    Scope scope;
+    enter_predeclared_identifiers (&scope);
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types UnaryArithmetic",
                  root->eval.expression_kind == ValueExpressionKind &&
@@ -313,11 +302,10 @@ main (int argc, char** argv)
   {
     Node* root = new ast::BinaryArithmetic (1, &multiply_temp, new ast::UnaryArithmetic (1, &logic_not_temp, make_untyped_one ()), make_untyped_one ());
     ErrorReporter er;
-    SymbolTable symtab;
-    symtab.open_scope ();
-    enter_symbols (symtab);
+    Scope scope;
+    enter_predeclared_identifiers (&scope);
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types BinaryArithmeticExpr left error",
                  root->eval.expression_kind == ErrorExpressionKind &&
@@ -329,11 +317,10 @@ main (int argc, char** argv)
   {
     Node* root = new ast::BinaryArithmetic (1, &multiply_temp, make_untyped_one (), new ast::UnaryArithmetic (1, &logic_not_temp, make_untyped_one ()));
     ErrorReporter er;
-    SymbolTable symtab;
-    symtab.open_scope ();
-    enter_symbols (symtab);
+    Scope scope;
+    enter_predeclared_identifiers (&scope);
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types BinaryArithmeticExpr right error",
                  root->eval.expression_kind == ErrorExpressionKind &&
@@ -345,11 +332,10 @@ main (int argc, char** argv)
   {
     Node* root = new ast::BinaryArithmetic (1, &multiply_temp, make_untyped_one (), make_untyped_one ());
     ErrorReporter er;
-    SymbolTable symtab;
-    symtab.open_scope ();
-    enter_symbols (symtab);
+    Scope scope;
+    enter_predeclared_identifiers (&scope);
 
-    check_types (root, er, symtab);
+    check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types BinaryArithmeticExpr",
                  root->eval.expression_kind == ValueExpressionKind &&

@@ -8,7 +8,7 @@
 #include "types.hpp"
 #include "symbol_visitor.hpp"
 #include "symbol_cast.hpp"
-#include "symbol_table.hpp"
+#include "scope.hpp"
 #include "polymorphic_function.hpp"
 #include "type.hpp"
 
@@ -202,9 +202,9 @@ struct Negater
 
 // Look up a symbol.  If it is not defined, process its definition.
 template<typename T>
-T* processAndLookup (decl::SymbolTable& symtab, const std::string& identifier, const util::Location& location)
+T* processAndLookup (decl::Scope* scope, const std::string& identifier, const util::Location& location)
 {
-  decl::Symbol *symbol = symtab.find_global_symbol (identifier);
+  decl::Symbol *symbol = scope->find_global_symbol (identifier);
   if (symbol == NULL)
     {
       error_at_line (-1, 0, location.file.c_str (), location.line,
@@ -227,7 +227,7 @@ T* processAndLookup (decl::SymbolTable& symtab, const std::string& identifier, c
 ExpressionValueList collect_evals (ast::Node* node);
 
 // Extract an array dimension or error.
-long process_array_dimension (ast::Node* ptr, util::ErrorReporter& er, decl::SymbolTable& symtab);
+long process_array_dimension (ast::Node* ptr, util::ErrorReporter& er, decl::Scope* scope);
 
 // Check that a signature has +foreign where needed.
 void CheckForForeignSafe (util::ErrorReporter& er,
@@ -235,13 +235,13 @@ void CheckForForeignSafe (util::ErrorReporter& er,
                           const decl::ParameterList* return_parameter_list);
 
 // Process a type specification.
-const type::Type * process_type (ast::Node* node, util::ErrorReporter& er, decl::SymbolTable& symtab, bool force);
+const type::Type * process_type (ast::Node* node, util::ErrorReporter& er, decl::Scope* scope, bool force);
 
 // Process a signature.
 const decl::ParameterList*
 process_parameter_list (ast::Node* node,
                         util::ErrorReporter& er,
-                        decl::SymbolTable& symtab,
+                        decl::Scope* scope,
                         bool is_return);
 
 void

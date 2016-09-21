@@ -1,4 +1,4 @@
-#include "symbol_table.hpp"
+#include "scope.hpp"
 
 #include "symbol.hpp"
 #include "symbol_visitor.hpp"
@@ -11,26 +11,67 @@ namespace decl
 
 using namespace type;
 
-struct SymbolTable::Scope
-{
-
-  typedef std::vector<Symbol*> SymbolsType;
-
-  Scope (Scope* p = NULL)
-    : parent (p)
-    , parameter_list (NULL)
-    , return_parameter_list (NULL)
+  Scope::Scope ()
+    : parent_ (NULL)
+    , parameter_list_ (NULL)
+    , return_parameter_list_ (NULL)
   { }
 
-  void enter_symbol (Symbol* s)
+  Scope::Scope (Scope* p)
+    : parent_ (p)
+    , parameter_list_ (NULL)
+    , return_parameter_list_ (NULL)
+  { }
+
+  Scope*
+  Scope::open ()
   {
-    symbols.push_back (s);
+    return new Scope (this);
   }
 
-  Symbol* find_global_symbol (const std::string& identifier) const
+Scope*
+Scope::open (const ParameterList* parameter_list,
+             const ParameterList* return_parameter_list)
+{
+  Scope* s = new Scope (this);
+  s->enter_parameter_list (parameter_list);
+  s->enter_parameter_list (return_parameter_list);
+  s->parameter_list_ = parameter_list;
+  s->return_parameter_list_ = return_parameter_list;
+  return s;
+}
+
+Scope*
+Scope::open (Symbol* iota,
+             const ParameterList* parameter_list,
+             const ParameterList* return_parameter_list)
+{
+  Scope* s = new Scope (this);
+  s->enter_symbol (iota);
+  s->enter_parameter_list (parameter_list);
+  s->enter_parameter_list (return_parameter_list);
+  s->parameter_list_ = parameter_list;
+  s->return_parameter_list_ = return_parameter_list;
+  return s;
+}
+
+  Scope*
+  Scope::close ()
+{
+  Scope* s = this->parent_;
+  delete this;
+  return s;
+}
+
+  void Scope::enter_symbol (Symbol* s)
   {
-    for (SymbolsType::const_iterator pos = symbols.begin (),
-         limit = symbols.end ();
+    symbols_.push_back (s);
+  }
+
+  Symbol* Scope::find_global_symbol (const std::string& identifier) const
+  {
+    for (SymbolsType::const_iterator pos = symbols_.begin (),
+         limit = symbols_.end ();
          pos != limit;
          ++pos)
       {
@@ -42,9 +83,9 @@ struct SymbolTable::Scope
       }
 
     /* Not found in this scope.  Try the parent. */
-    if (parent)
+    if (parent_)
       {
-        return parent->find_global_symbol (identifier);
+        return parent_->find_global_symbol (identifier);
       }
     else
       {
@@ -52,10 +93,10 @@ struct SymbolTable::Scope
       }
   }
 
-  Symbol* find_local_symbol (const std::string& identifier) const
+  Symbol* Scope::find_local_symbol (const std::string& identifier) const
   {
-    for (SymbolsType::const_iterator pos = symbols.begin (),
-         limit = symbols.end ();
+    for (SymbolsType::const_iterator pos = symbols_.begin (),
+         limit = symbols_.end ();
          pos != limit;
          ++pos)
       {
@@ -69,16 +110,16 @@ struct SymbolTable::Scope
     return NULL;
   }
 
-  void activate ()
+  void Scope::activate ()
   {
-    Scope* s;
-    for (s = parent; s != NULL; s = s->parent)
+    for (Scope* s = parent_; s != NULL; s = s->parent_)
       {
-        for (SymbolsType::const_iterator ptr = s->symbols.begin (),
-             limit = s->symbols.end ();
+        for (SymbolsType::const_iterator ptr = s->symbols_.begin (),
+             limit = s->symbols_.end ();
              ptr != limit;
              ++ptr)
           {
+            // Find because it may be hidden.
             Symbol* x = find_global_symbol ((*ptr)->name);
             if (x != NULL && symbol_cast<Hidden> (x) != NULL)
               {
@@ -125,13 +166,13 @@ struct SymbolTable::Scope
       }
   }
 
-  void change ()
+  void Scope::change ()
   {
     Scope* s;
-    for (s = parent; s != NULL; s = s->parent)
+    for (s = parent_; s != NULL; s = s->parent_)
       {
-        for (SymbolsType::const_iterator ptr = s->symbols.begin (),
-             limit = s->symbols.end ();
+        for (SymbolsType::const_iterator ptr = s->symbols_.begin (),
+             limit = s->symbols_.end ();
              ptr != limit;
              ++ptr)
           {
@@ -171,123 +212,38 @@ struct SymbolTable::Scope
       }
   }
 
-  Scope* parent;
-  SymbolsType symbols;
-  const ParameterList* parameter_list;
-  const ParameterList* return_parameter_list;
-};
+  const ParameterList*
+  Scope::return_parameter_list () const
+  {
+    const Scope* s = this;
+    while (s != NULL && s->return_parameter_list_ == NULL)
+      {
+        s = s->parent_;
+      }
+    if (s != NULL)
+      {
+        return s->return_parameter_list_;
+      }
+    else
+      {
+        return NULL;
+      }
+  }
 
-SymbolTable::SymbolTable ()
-  : current_scope_ (NULL)
-{ }
-
-void
-SymbolTable::open_scope ()
-{
-  current_scope_ = new Scope (current_scope_);
-}
-
-void
-SymbolTable::open_scope (const ParameterList* parameter_list,
-                         const ParameterList* return_parameter_list)
-{
-  open_scope ();
-  enter_parameter_list (parameter_list);
-  enter_parameter_list (return_parameter_list);
-  current_scope_->parameter_list = parameter_list;
-  current_scope_->return_parameter_list = return_parameter_list;
-}
+  Package*
+  Scope::package () const
+  {
+    return NULL;
+  }
 
 void
-SymbolTable::open_scope (Symbol* iota,
-                         const ParameterList* parameter_list,
-                         const ParameterList* return_parameter_list)
-{
-  open_scope ();
-  enter_symbol (iota);
-  enter_parameter_list (parameter_list);
-  enter_parameter_list (return_parameter_list);
-  current_scope_->parameter_list = parameter_list;
-  current_scope_->return_parameter_list = return_parameter_list;
-}
-
-
-void
-SymbolTable::close_scope ()
-{
-  Scope* s = current_scope_;
-  current_scope_ = s->parent;
-  delete s;
-}
-
-void
-SymbolTable::enter_symbol (Symbol* symbol)
-{
-  current_scope_->enter_symbol (symbol);
-}
-
-void
-SymbolTable::enter_parameter_list (const ParameterList* type)
+Scope::enter_parameter_list (const ParameterList* type)
 {
   for (ParameterList::ParametersType::const_iterator pos = type->begin (), limit = type->end ();
        pos != limit; ++pos)
     {
-      current_scope_->enter_symbol (*pos);
+      enter_symbol (*pos);
     }
-}
-
-void
-SymbolTable::change ()
-{
-  current_scope_->change ();
-}
-
-void
-SymbolTable::activate ()
-{
-  current_scope_->activate ();
-}
-
-Symbol*
-SymbolTable::find_global_symbol (const std::string& identifier) const
-{
-  return current_scope_->find_global_symbol (identifier);
-}
-
-Symbol*
-SymbolTable::find_local_symbol (const std::string& identifier) const
-{
-  return current_scope_->find_local_symbol (identifier);
-}
-
-Package*
-SymbolTable::package () const
-{
-  return NULL;
-}
-
-const ParameterList*
-SymbolTable::return_parameter_list () const
-{
-  Scope* s = current_scope_;
-  while (s != NULL && s->return_parameter_list == NULL)
-    {
-      s = s->parent;
-    }
-  if (s != NULL)
-    {
-      return s->return_parameter_list;
-    }
-  else
-    {
-      return NULL;
-    }
-}
-
-const SymbolTable::Scope*
-SymbolTable::current_scope () const
-{
-  return current_scope_;
 }
 
 }

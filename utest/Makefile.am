@@ -2,7 +2,7 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver
 
 AM_CXXFLAGS = -I $(top_srcdir)/src
 
-EXTRA_DIST = enter_symbols.test node.test process_types_and_constants.test
+EXTRA_DIST = enter_predeclared_identifiers.test node.test process_types_and_constants.test
 
 %.cpp : %.test
 	awk -f $(top_srcdir)/utest/testpro.awk $< > $@
@@ -25,7 +25,7 @@ TESTS = \
  stack \
  symbol \
  symbol_cast \
- symbol_table \
+ scope \
  type \
  value \
  unit_test
@@ -113,10 +113,10 @@ symbol_cast_LDADD = $(top_builddir)/src/librcgo.la
 symbol_cast_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 symbol_cast_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
-symbol_table_SOURCES = symbol_table.cpp $(HELPERS)
-symbol_table_LDADD = $(top_builddir)/src/librcgo.la
-symbol_table_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-symbol_table_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+scope_SOURCES = scope.cpp $(HELPERS)
+scope_LDADD = $(top_builddir)/src/librcgo.la
+scope_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+scope_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
 polymorphic_function_SOURCES = polymorphic_function.cpp $(HELPERS)
 polymorphic_function_LDADD = $(top_builddir)/src/librcgo.la
@@ -138,7 +138,7 @@ value_LDADD = $(top_builddir)/src/librcgo.la
 value_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 value_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
-unit_test_SOURCES = $(HELPERS) unit_test.cpp enter_symbols.cpp node.cpp process_types_and_constants.cpp
+unit_test_SOURCES = $(HELPERS) unit_test.cpp enter_predeclared_identifiers.cpp node.cpp process_types_and_constants.cpp
 unit_test_LDADD = $(top_builddir)/src/librcgo.la
 unit_test_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 unit_test_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)

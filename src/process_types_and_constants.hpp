@@ -5,7 +5,7 @@
 
 namespace semantic
 {
-void process_types_and_constants (ast::Node* root, util::ErrorReporter& er, decl::SymbolTable& symtab);
+void process_types_and_constants (ast::Node* root, util::ErrorReporter& er, decl::Scope* scope);
 }
 
 #endif // RC_SRC_PROCESS_TYPES_AND_CONSTANTS_HPP

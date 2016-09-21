@@ -218,15 +218,15 @@ struct Visitor : public ast::DefaultNodeVisitor
   };
 
   ErrorReporter& er;
-  SymbolTable& symtab;
+  Scope* scope;
   Parameter* receiver_parameter;
   Context context;
   bool in_mutable_phase;
 
   Visitor (ErrorReporter& a_er,
-           SymbolTable& st)
+           Scope* a_scope)
     : er (a_er)
-    , symtab (st)
+    , scope (a_scope)
     , receiver_parameter (NULL)
     , context (Other)
     , in_mutable_phase (false)
@@ -523,7 +523,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     Identifier* identifier_node = node.child;
     const std::string& identifier = identifier_node->identifier;
-    node.symbol = symtab.find_global_symbol (identifier);
+    node.symbol = scope->find_global_symbol (identifier);
     if (node.symbol == NULL)
       {
         er.undefined (node.location, identifier);
@@ -666,30 +666,30 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (ast::Initializer& node)
   {
-    symtab.open_scope (node.initializer->parameter_list (),
-                       node.initializer->return_parameter_list ());
+    scope = scope->open (node.initializer->parameter_list (),
+                         node.initializer->return_parameter_list ());
     Visitor v (*this);
     v.receiver_parameter = node.initializer->type->receiver_parameter;
     v.context = Initializer;
     node.body->accept (v);
-    symtab.close_scope ();
+    scope = scope->close ();
   }
 
   void visit (ast::Getter& node)
   {
-    symtab.open_scope (node.getter->parameter_list (),
-                       node.getter->return_parameter_list ());
+    scope = scope->open (node.getter->parameter_list (),
+                         node.getter->return_parameter_list ());
     Visitor v (*this);
     v.receiver_parameter = node.getter->type->receiver_parameter;
     v.context = Getter;
     node.body->accept (v);
-    symtab.close_scope ();
+    scope = scope->close ();
   }
 
   void visit (ast::Action& node)
   {
-    symtab.open_scope ();
-    symtab.enter_symbol (node.action->receiver_parameter);
+    scope = scope->open ();
+    scope->enter_symbol (node.action->receiver_parameter);
     Visitor v (*this);
     v.receiver_parameter = node.action->receiver_parameter;
     v.context = Action;
@@ -708,14 +708,14 @@ struct Visitor : public ast::DefaultNodeVisitor
             node.action->precondition_kind = decl::Action::Static_False;
           }
       }
-    symtab.close_scope ();
+    scope = scope->close ();
   }
 
   void visit (DimensionedAction& node)
   {
-    symtab.open_scope ();
-    symtab.enter_symbol (node.action->iota_parameter);
-    symtab.enter_symbol (node.action->receiver_parameter);
+    scope = scope->open ();
+    scope->enter_symbol (node.action->iota_parameter);
+    scope->enter_symbol (node.action->receiver_parameter);
     Visitor v (*this);
     v.receiver_parameter = node.action->receiver_parameter;
     v.context = Action;
@@ -734,66 +734,66 @@ struct Visitor : public ast::DefaultNodeVisitor
             node.action->precondition_kind = decl::Action::Static_False;
           }
       }
-    symtab.close_scope ();
+    scope = scope->close ();
   }
 
   void visit (ast::Reaction& node)
   {
-    symtab.open_scope (node.reaction->parameter_list (),
-                       node.reaction->return_parameter_list ());
+    scope = scope->open (node.reaction->parameter_list (),
+                         node.reaction->return_parameter_list ());
     // No return type.
     Visitor v (*this);
     v.receiver_parameter = node.reaction->type->receiver_parameter;
     v.context = Reaction;
     node.body->accept (v);
-    symtab.close_scope ();
+    scope = scope->close ();
   }
 
   void visit (DimensionedReaction& node)
   {
-    symtab.open_scope (node.reaction->iota,
-                       node.reaction->parameter_list (),
-                       node.reaction->return_parameter_list ());
+    scope = scope->open (node.reaction->iota,
+                         node.reaction->parameter_list (),
+                         node.reaction->return_parameter_list ());
 
     // No return type.
     Visitor v (*this);
     v.receiver_parameter = node.reaction->type->receiver_parameter;
     v.context = Reaction;
     node.body->accept (v);
-    symtab.close_scope ();
+    scope = scope->close ();
   }
 
   void visit (ast::Bind& node)
   {
-    symtab.open_scope ();
-    symtab.enter_symbol (node.bind->receiver_parameter);
+    scope = scope->open ();
+    scope->enter_symbol (node.bind->receiver_parameter);
     node.body->accept (*this);
-    symtab.close_scope ();
+    scope = scope->close ();
   }
 
   void visit (ast::Function& node)
   {
-    symtab.open_scope (node.function->parameter_list (),
-                       node.function->return_parameter_list ());
+    scope = scope->open (node.function->parameter_list (),
+                         node.function->return_parameter_list ());
     node.body->accept (*this);
-    symtab.close_scope ();
+    scope = scope->close ();
   }
 
   void visit (ast::Method& node)
   {
-    symtab.open_scope (node.method->parameter_list (),
-                       node.method->return_parameter_list ());
+    scope = scope->open (node.method->parameter_list (),
+                         node.method->return_parameter_list ());
     Visitor v (*this);
     v.receiver_parameter = node.method->type->receiver_parameter;
     node.body->accept (v);
-    symtab.close_scope ();
+    scope = scope->close ();
   }
 
   void visit (StatementList& node)
   {
-    symtab.open_scope ();
+    scope = scope->open ();
     node.visit_children (*this);
-    symtab.close_scope ();
+    scope = scope->close ();
   }
 
   void visit (ExpressionStatement& node)
@@ -809,7 +809,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
     // Get the return symbol.
     const decl::ParameterList* return_parameter_list =
-      symtab.return_parameter_list ();
+      scope->return_parameter_list ();
 
     if (return_parameter_list == NULL)
       {
@@ -843,29 +843,29 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (If& node)
   {
-    symtab.open_scope ();
+    scope = scope->open ();
     node.visit_children (*this);
     check_condition (node.condition);
-    symtab.close_scope ();
+    scope = scope->close ();
   }
 
   void visit (While& node)
   {
-    symtab.open_scope ();
+    scope = scope->open ();
     node.visit_children (*this);
     check_condition (node.condition);
-    symtab.close_scope ();
+    scope = scope->close ();
   }
 
   void visit (ForIota& node)
   {
     const std::string& identifier = node.identifier->identifier;
-    node.limit_value = process_array_dimension (node.limit, er, symtab);
+    node.limit_value = process_array_dimension (node.limit, er, scope);
     node.symbol = new Variable (identifier, node.identifier->location, Int::instance (), Immutable, Immutable);
-    symtab.open_scope ();
-    symtab.enter_symbol (node.symbol);
+    scope = scope->open ();
+    scope->enter_symbol (node.symbol);
     node.body->accept (*this);
-    symtab.close_scope ();
+    scope = scope->close ();
   }
 
   void visit (Change& node)
@@ -882,19 +882,19 @@ struct Visitor : public ast::DefaultNodeVisitor
     require_value_or_variable (node.argument);
 
     // Enter all parameters and variables in scope that are pointers as pointers to foreign.
-    symtab.open_scope ();
-    symtab.change ();
+    scope = scope->open ();
+    scope->change ();
 
     // Enter the new heap root.
     const std::string& identifier = node.identifier->identifier;
     // Don't know dereference mutability yet.
     node.root_symbol = new Variable (identifier, node.location, root_type, Immutable, Foreign);
     node.root_symbol->indirection_mutability = node.argument->eval.indirection_mutability;
-    symtab.enter_symbol (node.root_symbol);
+    scope->enter_symbol (node.root_symbol);
 
     // Check the body.
     node.body->accept (*this);
-    symtab.close_scope ();
+    scope = scope->close ();
   }
 
   void visit (Activate& node)
@@ -915,15 +915,14 @@ struct Visitor : public ast::DefaultNodeVisitor
     // Check the activations.
     node.arguments->accept (*this);
 
+    // Re-insert this as a pointer to mutable.
+    scope = scope->open ();
+    scope->activate ();
+    // Check the body.
     Visitor v (*this);
     v.in_mutable_phase = true;
-
-    // Re-insert this as a pointer to mutable.
-    symtab.open_scope ();
-    symtab.activate ();
-    // Check the body.
     node.body->accept (v);
-    symtab.close_scope ();
+    scope = scope->close ();
 
     node.in_action = context == Action;
   }
@@ -932,7 +931,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     if (!node.done)
       {
-        process_types_and_constants (&node, er, symtab);
+        process_types_and_constants (&node, er, scope);
       }
   }
 
@@ -955,7 +954,7 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
 
     // Process the type spec.
-    const type::Type* type = process_type (type_spec, er, symtab, true);
+    const type::Type* type = process_type (type_spec, er, scope, true);
 
     if (expression_list->size () == 0)
       {
@@ -976,7 +975,7 @@ struct Visitor : public ast::DefaultNodeVisitor
           {
             const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
             Variable* symbol = new Variable (name, (*id_pos)->location, type, node.mutability, node.indirection_mutability);
-            symtab.enter_symbol (symbol);
+            scope->enter_symbol (symbol);
             node.symbols.push_back (symbol);
           }
 
@@ -1007,7 +1006,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
             const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
             Variable* symbol = new Variable (name, (*id_pos)->location, type, node.eval.intrinsic_mutability, node.indirection_mutability);
-            symtab.enter_symbol (symbol);
+            scope->enter_symbol (symbol);
             node.symbols.push_back (symbol);
           }
 
@@ -1035,7 +1034,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
         const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
         Variable* symbol = new Variable (name, (*id_pos)->location, n->eval.type, node.eval.intrinsic_mutability, node.indirection_mutability);
-        symtab.enter_symbol (symbol);
+        scope->enter_symbol (symbol);
         node.symbols.push_back (symbol);
       }
 
@@ -1532,7 +1531,7 @@ done:
 
   void visit (TypeExpression& node)
   {
-    node.eval.type = process_type (node.child, er, symtab, true);
+    node.eval.type = process_type (node.child, er, scope, true);
     node.eval.expression_kind = TypeExpressionKind;
   }
 
@@ -1603,7 +1602,7 @@ done:
 
   void visit (CompositeLiteral& node)
   {
-    node.eval.type = process_type (node.type, er, symtab, true);
+    node.eval.type = process_type (node.type, er, scope, true);
     node.eval.expression_kind = VariableExpressionKind;
 
     switch (node.eval.type->underlying_kind ())
@@ -1672,9 +1671,9 @@ void require_value_or_variable_list (const List* node)
     }
 }
 
-void check_types (ast::Node* root, ErrorReporter& er, SymbolTable& symtab)
+void check_types (ast::Node* root, ErrorReporter& er, Scope* scope)
 {
-  Visitor visitor (er, symtab);
+  Visitor visitor (er, scope);
   root->accept (visitor);
 }
 
