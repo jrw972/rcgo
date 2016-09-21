@@ -39,6 +39,11 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
 
   void visit (SourceFile& node)
   {
+    node.top_level_decl_list->accept (*this);
+  }
+
+  void visit (TopLevelDeclList& node)
+  {
     node.visit_children (*this);
   }
 

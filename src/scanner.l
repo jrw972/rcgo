@@ -176,10 +176,12 @@ ESCAPED \\[abfnrtv\\\"]
 "goto"                 { return GOTO; }
 "heap"                 { return HEAP; }
 "if"                   { return IF; }
+"import"               { return IMPORT; }
 "init"                 { return INIT; }
 "instance"             { return INSTANCE; }
 "interface"            { return INTERFACE; }
 "map"                  { return MAP; }
+"package"              { return PACKAGE_KW; }
 "pull"                 { return PULL; }
 "push"                 { return PUSH; }
 "range"                { return RANGE; }
@@ -271,7 +273,7 @@ ESCAPED \\[abfnrtv\\\"]
                          value.untyped_string_value = v;
                          value.present = true;
                          yylval.node = new Literal (yylloc, UntypedString::instance (), value);
-                         return LITERAL; }
+                         return STRING_LIT; }
 
 \"([^\"]|{OCTAL}|{HEX}|{LITTLEU}|{BIGU}|{ESCAPED})*\" {
   char* begin = yytext + 1;
@@ -289,7 +291,7 @@ ESCAPED \\[abfnrtv\\\"]
   value.untyped_string_value = v;
   value.present = true;
   yylval.node = new Literal (yylloc, UntypedString::instance (), value);
-  return LITERAL;
+  return STRING_LIT;
 }
 
 [1-9][0-9]* {

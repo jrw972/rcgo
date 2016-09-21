@@ -312,6 +312,11 @@ allocate_stack_variables (ast::Node* node)
 
     void visit (SourceFile& node)
     {
+      node.top_level_decl_list->accept (*this);
+    }
+
+    void visit (TopLevelDeclList& node)
+    {
       node.visit_children (*this);
     }
   };

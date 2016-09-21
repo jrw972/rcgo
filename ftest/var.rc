@@ -1,12 +1,14 @@
 #!/usr/bin/env rcgo
 
+package ftest;
+
 func test (num uint; desc string; status bool) {
   if status {
     println (`ok `, num, ` - `, desc);
   } else {
     println (`not ok `, num, ` - `, desc);
-  }
-}
+  };
+};
 
 type Test component { };
 
@@ -14,6 +16,6 @@ init (this *Test) Init () {
   println (`1..1`);
   var x const uint = 3;
   test (1, `var x const = ...`, x == 3);
-}
+};
 
 instance system Test Init ();

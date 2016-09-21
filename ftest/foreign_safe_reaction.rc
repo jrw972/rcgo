@@ -1,3 +1,5 @@
+package ftest;
+
 type C component { };
 
-reaction (this $const *C) Reaction (x *int) { }
+reaction (this $const *C) Reaction (x *int) { };

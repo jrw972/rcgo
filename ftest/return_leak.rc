@@ -1,7 +1,9 @@
+package ftest;
+
 type S struct {
     ptr *int;
 };
 
 func (this $const * S) f () *int {
     return this.ptr;
-}
+};

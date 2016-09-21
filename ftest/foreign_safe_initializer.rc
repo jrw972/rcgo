@@ -1,3 +1,5 @@
+package ftest;
+
 type C component { };
 
-init (C $const *C) Init (x *int) { }
+init (C $const *C) Init (x *int) { };

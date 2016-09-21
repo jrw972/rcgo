@@ -1,30 +1,32 @@
 #!/usr/bin/env rcgo
 
+package ftest;
+
 type Test component { };
 
 func not_evaluated (flag *bool) bool {
   *flag = true;
   return true;
-}
+};
 
 func test (num uint; desc string; status bool) {
   if status {
     println (`ok `, num, ` - `, desc);
   } else {
     println (`not ok `, num, ` - `, desc);
-  }
-}
+  };
+};
 
 func Two () *uint {
   var x *uint = new (uint);
   *x = 2;
   return x;
-}
+};
 
 init (this *Test) Main (x uint; y $foreign *uint) {
   println (`1..1`);
 
   test (1, `initializer args`, x == 1 && y != nil && *y == 2);
-}
+};
 
 instance t Test Main (1, Two ());

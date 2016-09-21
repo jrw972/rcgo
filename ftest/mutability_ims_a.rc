@@ -1,3 +1,5 @@
+package ftest;
+
 type T struct {
   s int;
 };
@@ -5,4 +7,4 @@ type T struct {
 func f () {
   var x const T;
   x.s = 4;
-}
+};

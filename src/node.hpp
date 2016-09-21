@@ -789,11 +789,17 @@ struct Type : public Node
   Node* const type;
 };
 
-struct SourceFile : public List
+struct SourceFile : public Node
 {
-  SourceFile ();
+  SourceFile (unsigned int line, Identifier* a_package,
+              List* a_import_decl_list, List* a_top_level_decl_list);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
+  virtual void visit_children (NodeVisitor& visitor);
+
+  Identifier* const package;
+  List* const import_decl_list;
+  List* const top_level_decl_list;
 };
 
 struct ElementList : public List
@@ -825,6 +831,20 @@ struct CompositeLiteral : public Node
 
   Node* const type;
   List* const value;
+};
+
+struct ImportDeclList : public List
+{
+  ImportDeclList (unsigned int line);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
+};
+
+struct TopLevelDeclList : public List
+{
+  TopLevelDeclList (unsigned int line);
+  virtual void accept (NodeVisitor& visitor);
+  virtual void print (std::ostream& out) const;
 };
 
 std::ostream& operator<< (std::ostream& out, const Node& node);

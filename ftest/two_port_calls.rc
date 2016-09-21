@@ -1,3 +1,5 @@
+package ftest;
+
 type Actuator component {
   flag bool;
   bang1 push ();
@@ -7,8 +9,8 @@ type Actuator component {
 action (this $const * Actuator) bang (!this.flag) {
   activate bang1 (), bang2 () {
     this.flag = true;
-  }
-}
+  };
+};
 
 type Detector component { };
 
@@ -16,8 +18,8 @@ reaction (this $const * Detector) bang () {
   println (`Bang Immutable`);
   activate {
     println (`Bang Mutable`);
-  }
-}
+  };
+};
 
 type System component {
   actuator Actuator;
@@ -28,8 +30,8 @@ type System component {
 bind (this *System) Bind {
   this.actuator.bang1 -> this.detector1.bang;
   this.actuator.bang2 -> this.detector2.bang;
-}
+};
 
-init (this *System) Init () { }
+init (this *System) Init () { };
 
 instance system System Init ();

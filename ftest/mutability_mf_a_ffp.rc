@@ -1,5 +1,7 @@
+package ftest;
+
 func f () {
   var x $foreign *int;
   var y foreign $foreign *int;
   x = y;
-}
+};

@@ -1,3 +1,5 @@
+package samples;
+
 type Element struct
 {
   value uint;
@@ -22,7 +24,7 @@ func (this *Queue) Push (v uint)
   e.value = v;
   *this.tail = e;
   this.tail = &e.next;
-}
+};
 
 func (this *Queue) Pop ()
 {
@@ -31,17 +33,17 @@ func (this *Queue) Pop ()
     {
       this.tail = &this.head;
     };
-}
+};
 
 func (this $const * Queue) Empty () bool
 {
   return this.head == nil;
-}
+};
 
 func (this $const * Queue) Front () uint
 {
   return this.head.value;
-}
+};
 
 type Channel component
 {
@@ -57,7 +59,7 @@ reaction (this $const * Channel) send (message $foreign *uint)
   {
     this.queue.Push (x);
   };
-}
+};
 
 action (this $const * Channel) _receive (!this.queue.Empty ())
 {
@@ -65,7 +67,7 @@ action (this $const * Channel) _receive (!this.queue.Empty ())
     {
       this.queue.Pop ();
     };
-}
+};
 
 type System component
 {
@@ -75,7 +77,7 @@ type System component
 };
 
 init (this *System) Initially ()
-{ }
+{ };
 
 action (this $const * System) _send (this.send_count != 100)
 {
@@ -88,16 +90,16 @@ action (this $const * System) _send (this.send_count != 100)
     println (`Sent `, this.send_count);
     this.send_count++;
   };
-}
+};
 
 reaction (this $const * System) receive (message uint)
 {
   println (`Received `, message);
-}
+};
 
 bind (this *System) _bind {
   this.send -> this.channel.send;
   this.channel.receive -> this.receive;
-}
+};
 
 instance s System Initially ();

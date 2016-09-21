@@ -1,13 +1,15 @@
 #!/usr/bin/env rcgo
 
+package ftest;
+
 func test (num *uint; desc string; status bool) {
   if status {
     println (`ok `, *num, ` - `, desc);
   } else {
     println (`not ok `, *num, ` - `, desc);
-  }
+  };
   *num++;
-}
+};
 
 type Test component { };
 
@@ -17,17 +19,17 @@ init (this *Test) print () {
   {
     var x int;
     test (&n, `zeroed initially`, x == 0);
-  }
+  };
 
   {
     {
       var x int = 3;
-    }
+    };
     {
       var x int;
       test (&n, `zeroed in new scope`, x == 0);
-    }
-  }
-}
+    };
+  };
+};
 
 instance h Test print ();

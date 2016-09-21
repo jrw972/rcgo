@@ -1174,12 +1174,17 @@ scope(ast); {
 
   scope(SourceFile); {
     scenario(default); {
-      SourceFile node;
+      SourceFile node (1, &identifier1, &list1, &list2);
+      unit(SourceFile); {
+        ASSERT (node.package == &identifier1);
+        ASSERT (node.import_decl_list == &list1);
+        ASSERT (node.top_level_decl_list == &list2);
+      }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
       }; off();
       unit(visit_children); {
-        test_visit_children (node);
+        test_visit_children (node, &identifier1, &list1, &list2);
       }; off();
       unit(print); {
         test_print (node);
@@ -1296,6 +1301,36 @@ scope(ast); {
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2);
+      }; off();
+      unit(print); {
+        test_print (node);
+      }; off();
+    }; off();
+  }; off();
+
+  scope(TopLevelDeclList); {
+    scenario(default); {
+      TopLevelDeclList node (1);
+      unit(accept); {
+        test_accept<DefaultNodeVisitor> (node);
+      }; off();
+      unit(visit_children); {
+        test_visit_children (node);
+      }; off();
+      unit(print); {
+        test_print (node);
+      }; off();
+    }; off();
+  }; off();
+
+  scope(ImportDeclList); {
+    scenario(default); {
+      ImportDeclList node (1);
+      unit(accept); {
+        test_accept<DefaultNodeVisitor> (node);
+      }; off();
+      unit(visit_children); {
+        test_visit_children (node);
       }; off();
       unit(print); {
         test_print (node);

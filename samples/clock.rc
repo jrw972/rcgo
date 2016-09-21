@@ -1,4 +1,7 @@
 // A component based on the Clock automaton of Distributed Algorithms, p. 213.
+
+package samples;
+
 type Clock component {
   counter uint;
   flag bool;
@@ -10,19 +13,19 @@ action (this $const * Clock) _tick (true) {
     this.counter++;
     println (`Counter is now `, this.counter);
   };
-}
+};
 
 reaction (this $const * Clock) request () {
   activate {
     this.flag = true;
   };
-}
+};
 
 action (this $const * Clock) _clock (this.flag) {
   activate response (this.counter) {
     this.flag = false;
   };
-}
+};
 
 type Sampler component {
   flag bool;
@@ -33,14 +36,14 @@ action (this $const * Sampler) _request (!this.flag) {
   activate request () {
     this.flag = true;
   };
-}
+};
 
 reaction (this $const * Sampler) response (t uint) {
   println (`Received `, t);
   activate {
     this.flag = false;
   };
-}
+};
 
 type System component {
   sampler Sampler;
@@ -48,11 +51,11 @@ type System component {
 };
 
 init (this *System) Initially ()
-{ }
+{ };
 
 bind (this *System) _bind {
   this.sampler.request -> this.clock.request;
   this.clock.response -> this.sampler.response;
-}
+};
 
 instance s System Initially ();

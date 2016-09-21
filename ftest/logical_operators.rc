@@ -1,17 +1,19 @@
 #!/usr/bin/env rcgo
 
+package ftest;
+
 func not_evaluated (flag *bool) bool {
   *flag = true;
   return true;
-}
+};
 
 func test (num uint; desc string; status bool) {
   if status {
     println (`ok `, num, ` - `, desc);
   } else {
     println (`not ok `, num, ` - `, desc);
-  }
-}
+  };
+};
 
 type Test component { };
 
@@ -27,7 +29,7 @@ init (this *Test) Main () {
     test (3, `literal true || false`, c == true);
     const d = true || true;
     test (4, `literal true || true`, d == true);
-  }
+  };
 
   {
     var t, f const = true, false;
@@ -39,7 +41,7 @@ init (this *Test) Main () {
     var flag = false;
     f || t || not_evaluated (&flag);
     test (9, `short circuit ||`, flag == false);
-  }
+  };
 
   {
     const a = false && false;
@@ -50,7 +52,7 @@ init (this *Test) Main () {
     test (12, `literal true && false`, c == false);
     const d = true && true;
     test (13, `literal true && true`, d == true);
-  }
+  };
 
   {
     var t, f const = true, false;
@@ -62,21 +64,21 @@ init (this *Test) Main () {
     var flag = false;
     t && f && not_evaluated (&flag);
     test (18, `short circuit &&`, flag == false);
-  }
+  };
 
   {
     const a = !false;
     test (19, `literal !false`, a == true);
     const b = !true;
     test (20, `literal !true`, b == false);
-  }
+  };
 
   {
     var t, f const = true, false;
     test (21, `var !true`, !t == false);
     test (22, `var !false`, !f == true);
-  }
+  };
 
-}
+};
 
 instance t Test Main ();

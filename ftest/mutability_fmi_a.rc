@@ -1,4 +1,6 @@
+package ftest;
+
 func f () {
   var x foreign [3]int;
   x[0] = 4;
-}
+};

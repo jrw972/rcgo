@@ -1,10 +1,12 @@
+package samples;
+
 func append32 (buf []byte; x uint32) []byte {
     buf = append (buf, byte ((x & 0xFF000000) >> 24));
     buf = append (buf, byte ((x & 0x00FF0000) >> 16));
     buf = append (buf, byte ((x & 0x0000FF00) >> 8));
     buf = append (buf, byte ((x & 0x000000FF) >> 0));
     return buf;
-}
+};
 
 func append64 (buf []byte; x uint64) []byte {
     buf = append (buf, byte ((x & 0xFF00000000000000) >> 56));
@@ -16,7 +18,7 @@ func append64 (buf []byte; x uint64) []byte {
     buf = append (buf, byte ((x & 0x000000000000FF00) >> 8));
     buf = append (buf, byte ((x & 0x00000000000000FF) >> 0));
     return buf;
-}
+};
 
 const RESERVED = 0;
 const SYMMETRIC_ACTIVE = 1;
@@ -55,7 +57,7 @@ func (this *SntpMessage) initialize () {
     clock_gettime (&ts);
     this.transmit = (uint64 (ts.tv_sec + 0x83AA7E80) << 32) |
                     (uint64 (float64 (ts.tv_nsec) * 1e-9 * (1 << 32)) << 0);
-}
+};
 
 func (this *SntpMessage) serialize (buf []byte) []byte {
      buf = append (buf, ((this.mode & 0x7) << 0)
@@ -72,7 +74,7 @@ func (this *SntpMessage) serialize (buf []byte) []byte {
      buf = append64 (buf, this.receive);
      buf = append64 (buf, this.transmit);
      return buf;
-}
+};
 
 func (this *SntpMessage) deserialize (buf $foreign []byte) {
      if len (buf) >= 1 {
@@ -80,52 +82,52 @@ func (this *SntpMessage) deserialize (buf $foreign []byte) {
             this.versionNumber = buf[0] >> 3 & 0x7;
             this.leapIndicator = buf[0] >> 6 & 0x3;
             buf = buf[1:];
-     }
+     };
      if len (buf) >= 1 {
             this.stratum = buf[0];
             buf = buf[1:];
-     }
+     };
      if len (buf) >= 1 {
             this.poll = buf[0];
             buf = buf[1:];
-     }
+     };
      if len (buf) >= 1 {
             this.precision = buf[0];
             buf = buf[1:];
-     }
+     };
      if len (buf) >= 4 {
             this.rootDelay = uint32 (buf[0]) << 24 | uint32 (buf[1]) << 16 | uint32 (buf[2]) << 8 | uint32 (buf[3]);
             buf = buf[4:];
-     }
+     };
      if len (buf) >= 4 {
             this.rootDispersion = uint32 (buf[0]) << 24 | uint32 (buf[1]) << 16 | uint32 (buf[2]) << 8 | uint32 (buf[3]);
             buf = buf[4:];
-     }
+     };
      if len (buf) >= 4 {
             this.referenceIdentifier = uint32 (buf[0]) << 24 | uint32 (buf[1]) << 16 | uint32 (buf[2]) << 8 | uint32 (buf[3]);
             buf = buf[4:];
-     }
+     };
      if len (buf) >= 8 {
             this.reference = uint64 (buf[0]) << 56 | uint64 (buf[1]) << 48 | uint64 (buf[2]) << 40 | uint64 (buf[3]) << 32 |
                              uint64 (buf[4]) << 24 | uint64 (buf[5]) << 16 | uint64 (buf[6]) <<  8 | uint64 (buf[7]) <<  0;
             buf = buf[8:];
-     }
+     };
      if len (buf) >= 8 {
             this.originate = uint64 (buf[0]) << 56 | uint64 (buf[1]) << 48 | uint64 (buf[2]) << 40 | uint64 (buf[3]) << 32 |
                              uint64 (buf[4]) << 24 | uint64 (buf[5]) << 16 | uint64 (buf[6]) <<  8 | uint64 (buf[7]) <<  0;
             buf = buf[8:];
-     }
+     };
      if len (buf) >= 8 {
             this.receive = uint64 (buf[0]) << 56 | uint64 (buf[1]) << 48 | uint64 (buf[2]) << 40 | uint64 (buf[3]) << 32 |
                            uint64 (buf[4]) << 24 | uint64 (buf[5]) << 16 | uint64 (buf[6]) <<  8 | uint64 (buf[7]) <<  0;
             buf = buf[8:];
-     }
+     };
      if len (buf) >= 8 {
             this.transmit = uint64 (buf[0]) << 56 | uint64 (buf[1]) << 48 | uint64 (buf[2]) << 40 | uint64 (buf[3]) << 32 |
                             uint64 (buf[4]) << 24 | uint64 (buf[5]) << 16 | uint64 (buf[6]) <<  8 | uint64 (buf[7]) <<  0;
             buf = buf[8:];
-     }
-}
+     };
+};
 
 type Timer component {
      fd FileDescriptor;
@@ -136,15 +138,15 @@ init (this *Timer) Init (interval uint64) {
      this.fd = timerfd_create();
      if (interval != 0) {
           timerfd_settime(this.fd, interval);
-     }
-}
+     };
+};
 
 action (this $const * Timer) _alarm (readable(this.fd)) {
      activate Alarm () {
           var buf [8]byte;
           var r int = read(this.fd, buf[0:8]);
-     }
-}
+     };
+};
 
 type UdpMessage struct {
   host string;
@@ -158,7 +160,7 @@ func (this $foreign *UdpMessage) Copy () UdpMessage {
      m.port = this.port;
      m.msg = copy (this.msg);
      return m;
-}
+};
 
 type Element struct
 {
@@ -184,7 +186,7 @@ func (this *Queue) Push (value UdpMessage)
   e.value = value;
   *this.tail = e;
   this.tail = &e.next;
-}
+};
 
 func (this *Queue) Pop ()
 {
@@ -193,17 +195,17 @@ func (this *Queue) Pop ()
     {
       this.tail = &this.head;
     };
-}
+};
 
 func (this $const * Queue) Empty () bool
 {
   return this.head == nil;
-}
+};
 
 func (this *Queue) Front () UdpMessage
 {
   return this.head.value;
-}
+};
 
 type UdpParticipant component {
      fd FileDescriptor;
@@ -217,15 +219,15 @@ reaction (this $const * UdpParticipant) Send (msg $foreign UdpMessage) {
      activate {
           this.outQueue.Push (m);
      };
-}
+};
 
 action (this $const * UdpParticipant) _send (!this.outQueue.Empty () && writable (this.fd)) {
        activate {
               var m UdpMessage = this.outQueue.Front ();
               sendto (this.fd, m.host, m.port, m.msg);
               this.outQueue.Pop ();
-       }
-}
+       };
+};
 
 action (this $const * UdpParticipant) _pre_receive (readable (this.fd)) {
        activate {
@@ -234,18 +236,18 @@ action (this $const * UdpParticipant) _pre_receive (readable (this.fd)) {
          var m UdpMessage;
          m.msg = copy(buf[0:r]);
          this.inQueue.Push (m);
-       }
-}
+       };
+};
 
 action (this $const *UdpParticipant) _receive (!this.inQueue.Empty ()) {
   activate Receive (this.inQueue.Front ()) {
     this.inQueue.Pop ();
-  }
-}
+  };
+};
 
 init (this *UdpParticipant) Init () {
      this.fd = udp_socket();
-}
+};
 
 type Sntp component {
      timer Timer;
@@ -257,12 +259,12 @@ bind (this *Sntp) _bind {
      this.timer.Alarm -> this.Alarm;
      this.Send -> this.udp.Send;
      this.udp.Receive -> this.Receive;
-}
+};
 
 init (this *Sntp) Init () {
      this.timer.Init(60);
      this.udp.Init();
-}
+};
 
 reaction (this $const * Sntp) Alarm () {
      var s SntpMessage;
@@ -275,7 +277,7 @@ reaction (this $const * Sntp) Alarm () {
      msg.port = 123;
      msg.msg = s.serialize (nil);
      activate Send (msg) { };
-}
+};
 
 reaction (this $const * Sntp) Receive (msg $foreign UdpMessage) {
     var ts timespec;
@@ -301,6 +303,6 @@ reaction (this $const * Sntp) Receive (msg $foreign UdpMessage) {
     println ("roundtrip delay = ", (destination - s.originate) - (s.transmit - s.receive));
     println ("clock offset = ", int64((s.receive - s.originate) + (s.transmit - destination)) / 2);
     //      d = (T4 - T1) - (T3 - T2)     t = ((T2 - T1) + (T3 - T4)) / 2.
-}
+};
 
 instance s Sntp Init ();

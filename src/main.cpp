@@ -223,6 +223,7 @@ main (int argc, char **argv)
 
   decl::Scope* package_scope = universal_scope.open ();
   decl::Scope* file_scope = package_scope->open ();
+  // Enter all
   semantic::process_types_and_constants (root, er, file_scope);
   semantic::process_functions_and_methods (root, er, file_scope);
   semantic::check_types (root, er, file_scope);

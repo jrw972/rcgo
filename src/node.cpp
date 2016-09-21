@@ -272,6 +272,15 @@ void CompositeLiteral::print (std::ostream& out) const
 {
   out << "CompositeLiteral";
 }
+void ImportDeclList::print (std::ostream& out) const
+{
+  out << "ImportDeclList";
+}
+
+void TopLevelDeclList::print (std::ostream& out) const
+{
+  out << "TopLevelDeclList";
+}
 
 #define ACCEPT(type) void                               \
   type::accept (NodeVisitor& visitor)                 \
@@ -343,6 +352,8 @@ ACCEPT (UnaryArithmetic)
 ACCEPT (Var)
 ACCEPT (VariableList)
 ACCEPT (While)
+ACCEPT (ImportDeclList)
+ACCEPT (TopLevelDeclList)
 
 Node::~Node() { }
 
@@ -1117,9 +1128,20 @@ void Type::visit_children (NodeVisitor& visitor)
   type->accept (visitor);
 }
 
-SourceFile::SourceFile ()
-  : List (-1)
+SourceFile::SourceFile (unsigned int line, Identifier* a_package,
+                        List* a_import_decl_list, List* a_top_level_decl_list)
+  : Node (line)
+  , package (a_package)
+  , import_decl_list (a_import_decl_list)
+  , top_level_decl_list (a_top_level_decl_list)
 { }
+
+void SourceFile::visit_children (NodeVisitor& visitor)
+{
+  package->accept (visitor);
+  import_decl_list->accept (visitor);
+  top_level_decl_list->accept (visitor);
+}
 
 ElementList::ElementList (unsigned int line)
   : List (line)
@@ -1155,5 +1177,13 @@ void EmptyType::visit_children (NodeVisitor& visitor) { }
 void EmptyExpression::visit_children (NodeVisitor& visitor) { }
 void Literal::visit_children (NodeVisitor& visitor) { }
 void EmptyStatement::visit_children (NodeVisitor& visitor) { }
+
+ImportDeclList::ImportDeclList (unsigned int line)
+  : List (line)
+{ }
+
+TopLevelDeclList::TopLevelDeclList (unsigned int line)
+  : List (line)
+{ }
 
 }

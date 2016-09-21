@@ -12,23 +12,22 @@ using namespace ast;
 
 %token <identifier> IDENTIFIER
 %token <node> LITERAL
+%token <node> STRING_LIT
 
-%type <node> Action
+%type <node> ActionDecl
 %type <node> Activate
 %type <node> AddExpression
 %type <node> AndExpression
 %type <node> ArrayDimension
 %type <node> Array
 %type <node> AssignmentStatement
-%type <node> Bind
+%type <node> BindDecl
 %type <node> BindStatement
 %type <node> Block
 %type <node> Change
 %type <node> CompareExpression
 %type <node> ComponentType
-%type <node> Const
-%type <node> Definition
-%type <list> DefinitionList
+%type <node> ConstDecl
 %type <node> Element
 %type <list> ElementList
 %type <node> ElementType
@@ -38,26 +37,30 @@ using namespace ast;
 %type <node> ExpressionStatement
 %type <list> FieldList
 %type <node> ForIota
-%type <node> Func
-%type <node> Getter
+%type <node> FunctionDecl
+%type <node> GetterDecl
 %type <node> Heap
 %type <list> IdentifierList
 %type <node> If
+%type <list> ImportDeclList
 %type <node> IncrementStatement
 %type <node> Indexession
-%type <node> Init
-%type <node> Instance
+%type <node> InitDecl
+%type <node> InstanceDecl
 %type <node> Key
 %type <node> KeyType
+%type <node> Literal
 %type <list> LiteralValue
 %type <node> Map
-%type <node> Method
+%type <node> MethodDecl
 %type <node> MultiplyExpression
 %type <node> OptionalExpression
 %type <list> OptionalExpressionList
 %type <list> OptionalPushPortCallList
 %type <list> OptionalTypeOrExpressionList
 %type <node> OrExpression
+%type <identifier> PackageClause
+%type <identifier> PackageName
 %type <node> Parameter
 %type <list> ParameterListInternal
 %type <node> Pointer
@@ -66,16 +69,19 @@ using namespace ast;
 %type <node> PushPortCall
 %type <list> PushPortCallList
 %type <node> PushPort
-%type <node> Reaction
+%type <node> ReactionDecl
 %type <node> Receiver
 %type <node> Return
 %type <list> ParameterList
 %type <list> ReturnParameterList
 %type <node> SimpleStatement
 %type <node> Slice
+%type <node> SourceFile
 %type <node> Statement
 %type <list> StatementList
 %type <node> StructType
+%type <node> TopLevelDecl
+%type <list> TopLevelDeclList
 %type <node> Type
 %type <node> TypeDecl
 %type <node> TypeLit
@@ -84,7 +90,7 @@ using namespace ast;
 %type <list> TypeOrExpressionList
 %type <node> UnaryExpression
 %type <node> Value
-%type <node> Var
+%type <node> VarDecl
 %type <node> While
 
 %destructor { /* Free the node ($$). */ } <node>
@@ -112,10 +118,12 @@ using namespace ast;
 %token GOTO
 %token HEAP
 %token IF
+%token IMPORT
 %token INIT
 %token INSTANCE
 %token INTERFACE
 %token MAP
+%token PACKAGE_KW
 %token PULL
 %token PUSH
 %token RANGE
@@ -159,35 +167,62 @@ using namespace ast;
 
 %%
 
-Top: DefinitionList { root = $1; }
+Top: SourceFile { root = $1; }
 
-DefinitionList:
-  /* empty */               { $$ = new SourceFile (); }
-| DefinitionList Definition { $$ = $1->append ($2);   }
+SourceFile:
+PackageClause ';' ImportDeclList TopLevelDeclList { $$ = new SourceFile (@1, $1, $3, $4); }
 
-Definition:
-  TypeDecl { $$ = $1; }
-| Init     { $$ = $1; }
-| Getter   { $$ = $1; }
-| Action   { $$ = $1; }
-| Reaction { $$ = $1; }
-| Bind     { $$ = $1; }
-| Instance { $$ = $1; }
-| Method   { $$ = $1; }
-| Func     { $$ = $1; }
-| Const    { $$ = $1; }
+PackageClause: PACKAGE_KW PackageName { $$ = $2; }
 
-Const:
-  CONST IdentifierList Type '=' ExpressionList ';'
+PackageName: IDENTIFIER { $$ = $1; }
+
+ImportDeclList:
+  /* Empty */                   { $$ = new ImportDeclList (yyloc); }
+| ImportDeclList ImportDecl ';' { UNIMPLEMENTED; }
+
+ImportDecl:
+  IMPORT ImportSpec             { UNIMPLEMENTED; }
+| IMPORT '(' ImportSpecList ')' { UNIMPLEMENTED; }
+
+ImportSpecList:
+  /* Empty */                   { UNIMPLEMENTED; }
+| ImportSpecList ImportSpec ';' { UNIMPLEMENTED; }
+
+ImportSpec:
+"." ImportPath           { UNIMPLEMENTED; }
+| PackageName ImportPath { UNIMPLEMENTED; }
+| ImportPath             { UNIMPLEMENTED; }
+
+ImportPath: STRING_LIT { UNIMPLEMENTED; }
+
+TopLevelDeclList:
+  /* Empty */                       { $$ = new TopLevelDeclList (yyloc); }
+| TopLevelDeclList TopLevelDecl ';' { $$ = $1->append ($2); }
+
+TopLevelDecl:
+// No VarDecl as global variables are not allowed.
+  ConstDecl    { $$ = $1; }
+| TypeDecl     { $$ = $1; }
+| FunctionDecl { $$ = $1; }
+| MethodDecl   { $$ = $1; }
+| InitDecl     { $$ = $1; }
+| GetterDecl   { $$ = $1; }
+| ActionDecl   { $$ = $1; }
+| ReactionDecl { $$ = $1; }
+| BindDecl     { $$ = $1; }
+| InstanceDecl { $$ = $1; }
+
+ConstDecl:
+  CONST IdentifierList Type '=' ExpressionList
   { $$ = new Const (@1, $2, $3, $5); }
-| CONST IdentifierList      '=' ExpressionList ';'
+| CONST IdentifierList      '=' ExpressionList
   { $$ = new Const (@1, $2, new EmptyType (@1), $4); }
 
-Instance:
-  INSTANCE IDENTIFIER TypeName IDENTIFIER '(' OptionalExpressionList ')' ';'
+InstanceDecl:
+  INSTANCE IDENTIFIER TypeName IDENTIFIER '(' OptionalExpressionList ')'
 { $$ = new Instance (@1, $2, $3, $4, $6); }
 
-TypeDecl: TYPE IDENTIFIER Type ';' { $$ = new ast::Type (@1, $2, $3); }
+TypeDecl: TYPE IDENTIFIER Type { $$ = new ast::Type (@1, $2, $3); }
 
 Mutability:
   /* Empty. */ { $$ = Mutable;   }
@@ -205,35 +240,35 @@ Receiver:
 | '(' IDENTIFIER Mutability DereferenceMutability     IDENTIFIER ')'
 { $$ = new Receiver (@1, $2, $3, $4, false, $5); }
 
-Action:
+ActionDecl:
   ACTION Receiver IDENTIFIER                '(' Expression ')' Block
 { $$ = new Action (@1, $2, $3, $5, $7); }
 | ArrayDimension ACTION Receiver IDENTIFIER '(' Expression ')' Block
 { $$ = new DimensionedAction (@1, $1, $3, $4, $6, $8); }
 
-Reaction:
+ReactionDecl:
   REACTION Receiver IDENTIFIER ParameterList Block
 { $$ = new Reaction (@1, $2, $3, $4, $5); }
 | ArrayDimension REACTION Receiver IDENTIFIER ParameterList Block
 { $$ = new DimensionedReaction (@2, $1, $3, $4, $5, $6); }
 
-Bind:
+BindDecl:
   BIND Receiver IDENTIFIER Block
 { $$ = new Bind (@1, $2, $3, $4); }
 
-Init:
+InitDecl:
   INIT Receiver IDENTIFIER ParameterList ReturnParameterList Block
 { $$ = new Initializer (@1, $2, $3, $4, $5, $6); }
 
-Getter:
+GetterDecl:
 GETTER Receiver IDENTIFIER ParameterList ReturnParameterList Block
 { $$ = new Getter (@1, $2, $3, $4, $5, $6); }
 
-Method:
+MethodDecl:
   FUNC Receiver IDENTIFIER ParameterList ReturnParameterList Block
 { $$ = new Method (@1, $2, $3, $4, $5, $6); }
 
-Func:
+FunctionDecl:
   FUNC IDENTIFIER ParameterList ReturnParameterList Block
 { $$ = new Function (@1, $2, $3, $4, $5); }
 
@@ -263,31 +298,32 @@ optional_semicolon: /* Empty. */
 | ';'
 
 BindStatement:
-  Expression RIGHT_ARROW Expression ';'
+  Expression RIGHT_ARROW Expression
 { $$ = new BindPushPort (@1, $1, $3); }
-| Expression RIGHT_ARROW Expression DOTDOTDOT Expression';'
+| Expression RIGHT_ARROW Expression DOTDOTDOT Expression
 { $$ = new BindPushPortParameter (@1, $1, $3, $5); }
-| Expression LEFT_ARROW Expression ';'
+| Expression LEFT_ARROW Expression
 { $$ = new BindPullPort (@1, $1, $3); }
 
 Block: '{' StatementList '}' { $$ = $2; }
 
 StatementList:
   /* empty */ { $$ = new StatementList (yyloc); }
-| StatementList Statement { $$ = $1->append ($2); }
+| StatementList Statement ';' { $$ = $1->append ($2); }
 
 Statement:
-  SimpleStatement   { $$ = $1; }
-| Var      { $$ = $1; }
-| Activate { $$ = $1; }
-| Block             { $$ = $1; }
-| Return   { $$ = $1; }
-| If       { $$ = $1; }
-| While    { $$ = $1; }
-| Change   { $$ = $1; }
-| ForIota  { $$ = $1; }
-| BindStatement     { $$ = $1; }
-| Const             { $$ = $1; }
+  SimpleStatement { $$ = $1; }
+| ConstDecl       { $$ = $1; }
+| TypeDecl        { $$ = $1; }
+| VarDecl         { $$ = $1; }
+| Activate        { $$ = $1; }
+| Block           { $$ = $1; }
+| Return          { $$ = $1; }
+| If              { $$ = $1; }
+| While           { $$ = $1; }
+| Change          { $$ = $1; }
+| ForIota         { $$ = $1; }
+| BindStatement   { $$ = $1; }
 
 SimpleStatement:
   EmptyStatement      { $$ = $1; }
@@ -295,7 +331,7 @@ SimpleStatement:
 | IncrementStatement  { $$ = $1; }
 | AssignmentStatement { $$ = $1; }
 
-EmptyStatement: /* empty */ ';' { $$ = new EmptyStatement (yyloc); }
+EmptyStatement: /* empty */ { $$ = new EmptyStatement (yyloc); }
 
 Activate:
   ACTIVATE OptionalPushPortCallList Block
@@ -310,13 +346,13 @@ ForIota:
 { $$ = new ForIota (@1, $2, $4, $5); }
 
 Return:
-  RETURN Expression ';'
+  RETURN Expression
 { $$ = new Return (@1, $2); }
 
 IncrementStatement:
-  Expression INCREMENT ';'
+  Expression INCREMENT
 { $$ = new IncrementDecrement (@1, $1, IncrementDecrement::Increment); }
-| Expression DECREMENT ';'
+| Expression DECREMENT
 { $$ = new IncrementDecrement (@1, $1, IncrementDecrement::Decrement); }
 
 OptionalPushPortCallList:
@@ -364,23 +400,23 @@ TypeOrExpressionList:
 { $$ = $1->append (new TypeExpression (@1, $3)); }
 
 ExpressionStatement:
-  Expression ';'
+  Expression
 { $$ = new ExpressionStatement (@1, $1); }
 
-Var:
-  VAR IdentifierList Mutability DereferenceMutability Type '=' ExpressionList ';'
+VarDecl:
+  VAR IdentifierList Mutability DereferenceMutability Type '=' ExpressionList
 { $$ = new Var (@1, $2, $3, $4, $5, $7); }
-| VAR IdentifierList Mutability DereferenceMutability Type ';'
+| VAR IdentifierList Mutability DereferenceMutability Type
 { $$ = new Var (@1, $2, $3, $4, $5, new ExpressionList (@1)); }
-| VAR IdentifierList Mutability DereferenceMutability '=' ExpressionList ';'
+| VAR IdentifierList Mutability DereferenceMutability '=' ExpressionList
 { $$ = new Var (@1, $2, $3, $4, new EmptyType (@1), $6); }
-| IdentifierList Mutability DereferenceMutability SHORT_ASSIGN ExpressionList ';'
+| IdentifierList Mutability DereferenceMutability SHORT_ASSIGN ExpressionList
 { $$ = new Var (@1, $1, $2, $3, new EmptyType (@1), $5); }
 
 AssignmentStatement:
-  Expression '=' Expression ';'
+  Expression '=' Expression
 { $$ = new Assign (@1, $1, $3); }
-| Expression ADD_ASSIGN Expression ';'
+| Expression ADD_ASSIGN Expression
 { $$ = new AddAssign (@1, $1, $3); }
 
 If:
@@ -540,7 +576,7 @@ UnaryExpression:
 | '&' UnaryExpression { $$ = new AddressOf (@1, $2); }
 
 PrimaryExpression:
-  LITERAL
+  Literal
 { $$ = $1; }
 | TypeLitExpression LiteralValue
 { $$ = new CompositeLiteral (@1, $1, $2); }
@@ -565,6 +601,10 @@ PrimaryExpression:
 { $$ = new Call (@1, $1, $3); }
 | TypeLitExpression '(' Expression ')'
 { $$ = new Conversion (@1, new TypeExpression (@1, $1), $3); }
+
+Literal:
+  LITERAL    { $$ = $1; }
+| STRING_LIT { $$ = $1; }
 
 LiteralValue:
   '{' '}'                           { $$ = new ElementList (@1); }

@@ -1,3 +1,5 @@
+package ftest;
+
 type S struct {
   ptr *bool;
 };
@@ -6,4 +8,4 @@ func f () {
   var x S;
   var y $const S;
   x = y;
-}
+};

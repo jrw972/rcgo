@@ -1,1 +1,3 @@
+package ftest;
+
 type PP push (x *int);

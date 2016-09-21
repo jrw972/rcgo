@@ -156,4 +156,33 @@ scope(semantic); {
       ASSERT (er.list ().back () == util::Expression_Is_Not_Constant);
     }; off();
   }; off();
+  scenario(TopLevelDeclList); {
+    unit(process_types_and_constants); {
+      ast::Identifier id1 (1, "mytype");
+      ast::Identifier id2 (1, "int");
+      ast::IdentifierType identifier_type (1, &id2);
+      ast::Type type (1, &id1, &identifier_type);
+      ast::TopLevelDeclList root (1);
+      root.append (&type);
+      enter_predeclared_identifiers (&scope);
+      process_types_and_constants (&root, er, &scope);
+      ASSERT (scope.find_global_symbol ("mytype") != NULL);
+    }; off();
+  }; off();
+  scenario(SourceFile); {
+    unit(process_types_and_constants); {
+      ast::Identifier package (1, "pkg");
+      ast::ImportDeclList imports (1);
+      ast::Identifier id1 (1, "mytype");
+      ast::Identifier id2 (1, "int");
+      ast::IdentifierType identifier_type (1, &id2);
+      ast::Type type (1, &id1, &identifier_type);
+      ast::TopLevelDeclList top (1);
+      top.append (&type);
+      ast::SourceFile root (1, &package, &imports, &top);
+      enter_predeclared_identifiers (&scope);
+      process_types_and_constants (&root, er, &scope);
+      ASSERT (scope.find_global_symbol ("mytype") != NULL);
+    }; off();
+  }; off();
 }; off();

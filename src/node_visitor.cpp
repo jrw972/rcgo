@@ -271,6 +271,16 @@ void DefaultNodeVisitor::visit (CompositeLiteral& node)
   default_action (node);
 }
 
+void DefaultNodeVisitor::visit (ImportDeclList& node)
+{
+  default_action (node);
+}
+
+void DefaultNodeVisitor::visit (TopLevelDeclList& node)
+{
+  default_action (node);
+}
+
 void DefaultNodeVisitor::default_action (Node& node)
 { }
 

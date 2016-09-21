@@ -1,6 +1,8 @@
 // A version of the Clock automaton of Distributed Algorithms, p. 213.
 // This implementation uses synchronous getters to increase parallelism.
 
+package samples;
+
 const limit = 10000;
 
 type Counter component {
@@ -11,11 +13,11 @@ action (this $const * Counter) _tick (this.counter < limit) {
   activate {
     this.counter++;
   };
-}
+};
 
 getter (this $const * Counter) Counter () uint {
   return this.counter;
-}
+};
 
 type Sampler component {
   c Counter;
@@ -26,10 +28,10 @@ action (this $const * Sampler) _request (this.counter < limit) {
   x := this.c.Counter ();
   activate {
     this.counter++;
-  }
-}
+  };
+};
 
 init (this *Sampler) Initially ()
-{ }
+{ };
 
 instance s Sampler Initially ();

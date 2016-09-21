@@ -1,5 +1,7 @@
 // From Distributed Algorithms, p. 204.
 
+package samples;
+
 type Element struct
 {
   value int;
@@ -24,7 +26,7 @@ func (this *Queue) Push (v int)
   e.value = v;
   *this.tail = e;
   this.tail = &e.next;
-}
+};
 
 func (this *Queue) Pop ()
 {
@@ -33,17 +35,17 @@ func (this *Queue) Pop ()
     {
       this.tail = &this.head;
     };
-}
+};
 
 func (this $const * Queue) Empty () bool
 {
   return this.head == nil;
-}
+};
 
 func (this $const * Queue) Front () int
 {
   return this.head.value;
-}
+};
 
 type Channel component
 {
@@ -57,7 +59,7 @@ reaction (this $const * Channel) send (message int)
   {
     this.queue.Push (message);
   };
-}
+};
 
 action (this $const * Channel) _receive (!this.queue.Empty ())
 {
@@ -65,7 +67,7 @@ action (this $const * Channel) _receive (!this.queue.Empty ())
     {
       this.queue.Pop ();
     };
-}
+};
 
 // From Distributed Algorithms, p. 205.
 
@@ -81,7 +83,7 @@ init (this *Process) Init (i int)
 {
   println (`I am process `, i);
   this.i = i;
-}
+};
 
 reaction (this $const * Process) Initr (v int)
 {
@@ -90,7 +92,7 @@ reaction (this $const * Process) Initr (v int)
     this.val[this.i] = v;
     println (`Process `, this.i, ` initialized with value `, v);
   };
-}
+};
 
 [3] action (this $const * Process) _send (this.val[this.i] != 0 && this.i != IOTA)
 {
@@ -98,7 +100,7 @@ reaction (this $const * Process) Initr (v int)
   println (`Process `, this.i, ` sending `, this.val[this.i], ` to process `, IOTA);
   activate send[IOTA] (this.val[this.i])
   { };
-}
+};
 
 [3] reaction (this $const * Process) receive (v int)
 {
@@ -108,7 +110,7 @@ reaction (this $const * Process) Initr (v int)
   {
     this.val[IOTA] = v;
   };
-}
+};
 
 func p (val [3]int) bool {
   var i int;
@@ -121,7 +123,7 @@ func p (val [3]int) bool {
   };
 
   return true;
-}
+};
 
 func f (val [3]int) int
 {
@@ -133,7 +135,7 @@ func f (val [3]int) int
     i++;
   };
   return sum;
-}
+};
 
 action (this $const * Process) _decide (p (this.val))
 {
@@ -143,7 +145,7 @@ action (this $const * Process) _decide (p (this.val))
   println (`Process `, this.i, ` decided the value is `, v);
   activate decide (v)
   { };
-}
+};
 
 type System component
 {
@@ -160,19 +162,19 @@ init (this *System) Init ()
     this.process[i].Init (i);
     i++;
   };
-}
+};
 
 [3] action (this $const * System) _send (true)
 {
   // send
   activate initp[IOTA] (100 + IOTA)
   { };
-}
+};
 
 [3] reaction (this $const * System) decide (v int)
 {
   println (`Process `, IOTA, ` decided the value is `, v);
-}
+};
 
 bind (this *System) _bind {
   for i ... 3 {
@@ -183,9 +185,9 @@ bind (this *System) _bind {
       if i != j {
         this.process[i].send[j] -> this.channel[i][j].send;
         this.channel[i][j].receive -> this.process[j].receive ... i;
-      }
-    }
-  }
-}
+      };
+    };
+  };
+};
 
 instance system System Init ();

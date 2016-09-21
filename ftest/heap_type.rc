@@ -1,12 +1,14 @@
 #!/usr/bin/env rcgo
 
+package ftest;
+
 func test (num uint; desc string; status bool) {
   if status {
     println (`ok `, num, ` - `, desc);
   } else {
     println (`not ok `, num, ` - `, desc);
-  }
-}
+  };
+};
 
 type Test component { };
 
@@ -19,8 +21,8 @@ init (this *Test) Init () {
      change (x, y) {
        var z *heap int = move (x);
        test (1, `move active heap`, z == nil);
-     }
-  }
+     };
+  };
 
   {
     // Attempt to merge an active heap.
@@ -28,8 +30,8 @@ init (this *Test) Init () {
      change (x, y) {
        var z *int = merge (x);
        test (2, `merge active heap`, z == nil);
-     }
-  }
+     };
+  };
 
   {
     // Attempt to stack heaps.
@@ -40,10 +42,10 @@ init (this *Test) Init () {
        change (y, yr) {
          change (x, xr2) {
            test (3, `stack heaps`, xr2 != nil && *xr2 == 100);
-         }
-       }
-     }
-  }
-}
+         };
+       };
+     };
+  };
+};
 
 instance t Test Init ();

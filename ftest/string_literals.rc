@@ -1,12 +1,14 @@
 #!/usr/bin/env rcgo
 
+package ftest;
+
 func test (num uint; desc string; status bool) {
   if status {
     println (`ok `, num, ` - `, desc);
   } else {
     println (`not ok `, num, ` - `, desc);
-  }
-}
+  };
+};
 
 type Test component { };
 
@@ -17,52 +19,50 @@ init (this *Test) Main () {
     const x = `abc`;
     const y = "abc";
     test (1, `example 1`, x == y);
-  }
+  };
   {
     const x = `\n
 \n`;
     const y = "\\n\n\\n";
     test (2, `example 2`, x == y);
-  }
+  };
   {
     const x = `
 `;
     const y = "\n";
     test (3, `example 3`, x == y);
-  }
+  };
   {
     const x = `Hello, world!
 `;
     const y = "Hello, world!\n";
     test (4, `example 4`, x == y);
-  }
+  };
   {
     const x = "日本語";
     const y = `日本語`;
     test (5, `example 5`, x == y);
-  }
+  };
   {
     const x = "日本語";
     const y = "\u65e5\u672c\u8a9e";
     test (6, `example 6`, x == y);
-  }
+  };
   {
     const x = "日本語";
     const y = "\U000065e5\U0000672c\U00008a9e";
     test (7, `example 7`, x == y);
-  }
+  };
   {
     const x = "日本語";
     const y = "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e";
     test (8, `example 8`, x == y);
-  }
+  };
   {
     const x = "日本語";
     const y = "\u65e5本\U00008a9e";
     test (9, `example 9`, x == y);
-  }
-
-
-}
+  };
+};
 
 instance t Test Main ();

@@ -1,7 +1,9 @@
+package ftest;
+
 type C component { };
 
 reaction (this $const * C) r (x $foreign *bool) {
   activate {
     println *x;
-  }
-}
+  };
+};

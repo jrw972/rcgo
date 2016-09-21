@@ -1,17 +1,19 @@
 #!/usr/bin/env rcgo
 
+package ftest;
+
 func test (num *uint; desc string; status bool) {
   if status {
     println (`ok `, *num, ` - `, desc);
   } else {
     println (`not ok `, *num, ` - `, desc);
-  }
+  };
   *num++;
-}
+};
 
 func getslice () []byte {
   return []byte ("Hello");
-}
+};
 
 type Test component { };
 
@@ -21,86 +23,86 @@ init (this *Test) Main () {
   {
     const x int8 = 3.0;
     test (&n, `3.0 to int8`, x == 3);
-  }
+  };
   {
     const x int16 = 3.0;
     test (&n, `3.0 to int16`, x == 3);
-  }
+  };
   {
     const x int32 = 3.0;
     test (&n, `3.0 to int32`, x == 3);
-  }
+  };
   {
     const x int64 = 3.0;
     test (&n, `3.0 to int64`, x == 3);
-  }
+  };
   {
     const x uint8 = 3.0;
     test (&n, `3.0 to uint8`, x == 3);
-  }
+  };
   {
     const x uint16 = 3.0;
     test (&n, `3.0 to uint16`, x == 3);
-  }
+  };
   {
     const x uint32 = 3.0;
     test (&n, `3.0 to uint32`, x == 3);
-  }
+  };
   {
     const x uint64 = 3.0;
     test (&n, `3.0 to uint64`, x == 3);
-  }
+  };
   {
     const x float32 = 3.0;
     test (&n, `3.0 to float32`, x == 3);
-  }
+  };
   {
     const x float64 = 3.0;
     test (&n, `3.0 to float64`, x == 3);
-  }
+  };
   {
     const x complex64 = 3.0;
     test (&n, `3.0 to complex64`, x == 3);
-  }
+  };
   {
     const x complex128 = 3.0;
     test (&n, `3.0 to complex128`, x == 3);
-  }
+  };
   {
     const x int64 = 2147483648.0;
     test (&n, `2147483648.0 to int64`, x == (1<<31));
-  }
+  };
   {
     const x uint32 = 2147483648.0;
     test (&n, `2147483648.0 to uint32`, x == (1<<31));
-  }
+  };
   {
     const x uint64 = 2147483648.0;
     test (&n, `2147483648.0 to uint64`, x == (1<<31));
-  }
+  };
   {
     const x float32 = 2147483648.0;
     test (&n, `2147483648.0 to float32`, x == (1<<31));
-  }
+  };
   {
     const x float64 = 2147483648.0;
     test (&n, `2147483648.0 to float64`, x == (1<<31));
-  }
+  };
   {
     const x complex64 = 2147483648.0;
     test (&n, `2147483648.0 to complex64`, x == (1<<31));
-  }
+  };
   {
     const x complex128 = 2147483648.0;
     test (&n, `2147483648.0 to complex128`, x == (1<<31));
-  }
+  };
   {
     var x []byte = getslice();
     test (&n, `"Hello" to []byte`, x[3] == 108);
     x[3] = 0;
     var y []byte = getslice();
     test (&n, `string copy`, y[3] == 108);
-  }
-}
+  };
+};
 
 instance t Test Main ();

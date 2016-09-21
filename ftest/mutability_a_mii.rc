@@ -1,5 +1,7 @@
+package ftest;
+
 func f () {
   var x *int;
   var y $const [3]*int;
   x = y[0];
-}
+};

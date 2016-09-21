@@ -1,1 +1,3 @@
+package ftest;
+
 const x = "\U00110000";

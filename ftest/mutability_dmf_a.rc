@@ -1,4 +1,6 @@
+package ftest;
+
 func f () {
   var x $foreign * int;
   *x = 1;
-}
+};

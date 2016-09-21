@@ -1,12 +1,14 @@
 #!/usr/bin/env rcgo
 
+package ftest;
+
 func test (num uint; desc string; status bool) {
   if status {
     println (`ok `, num, ` - `, desc);
   } else {
     println (`not ok `, num, ` - `, desc);
-  }
-}
+  };
+};
 
 type Test component { };
 
@@ -32,7 +34,7 @@ init (this *Test) Main () {
     test (15, `literal <=`, (189 <= -53) == false);
     test (16, `literal >`,  (189 >  -53) == true);
     test (17, `literal >=`, (189 >= -53) == true);
-  }
+  };
 
   {
     const x int = 189;
@@ -57,7 +59,7 @@ init (this *Test) Main () {
     test (32, `const <=`, (x <= y) == false);
     test (33, `const >`,  (x >  y) == true);
     test (34, `const >=`, (x >= y) == true);
-  }
+  };
 
   {
     var x int = 189;
@@ -82,7 +84,7 @@ init (this *Test) Main () {
     test (49, `<=`, (x <= y) == false);
     test (50, `>`,  (x >  y) == true);
     test (51, `>=`, (x >= y) == true);
-  }
-}
+  };
+};
 
 instance t Test Main ();

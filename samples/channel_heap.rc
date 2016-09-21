@@ -1,3 +1,5 @@
+package samples;
+
 type Element struct
 {
   value *heap uint;
@@ -22,7 +24,7 @@ func (this *Queue) Push (v *heap uint)
   e.value = v;
   *this.tail = e;
   this.tail = &e.next;
-}
+};
 
 func (this *Queue) Pop ()
 {
@@ -31,17 +33,17 @@ func (this *Queue) Pop ()
     {
       this.tail = &this.head;
     };
-}
+};
 
 func (this $const * Queue) Empty () bool
 {
   return this.head == nil;
-}
+};
 
 func (this $const * Queue) Front () $const *heap uint
 {
   return this.head.value;
-}
+};
 
 type Channel component
 {
@@ -56,7 +58,7 @@ reaction (this $const * Channel) send (message $foreign *heap uint)
   {
     this.queue.Push (x);
   };
-}
+};
 
 action (this $const * Channel) _receive (!this.queue.Empty ())
 {
@@ -64,7 +66,7 @@ action (this $const * Channel) _receive (!this.queue.Empty ())
     {
       this.queue.Pop ();
     };
-}
+};
 
 type System component
 {
@@ -74,7 +76,7 @@ type System component
 };
 
 init (this *System) Initially ()
-{ }
+{ };
 
 action (this $const * System) _send (this.send_count != 100)
 {
@@ -88,18 +90,18 @@ action (this $const * System) _send (this.send_count != 100)
     println (`Sent `, this.send_count);
     this.send_count++;
   };
-}
+};
 
 reaction (this $const * System) receive (message $foreign *heap uint)
 {
   var x *uint;
   x = merge (message);
   println (`Received `, *x);
-}
+};
 
 bind (this *System) Bind {
   this.send -> this.channel.send;
   this.channel.receive -> this.receive;
-}
+};
 
 instance s System Initially ();

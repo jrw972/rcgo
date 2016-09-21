@@ -85,6 +85,8 @@ class SourceFile;
 class ElementList;
 class Element;
 class CompositeLiteral;
+class ImportDeclList;
+class TopLevelDeclList;
 
 class NodeVisitor;
 class DefaultNodeVisitor;

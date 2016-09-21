@@ -1,19 +1,21 @@
 #!/usr/bin/env rcgo
 
+package ftest;
+
 type Test component { };
 
 func not_evaluated (flag *bool) bool {
   *flag = true;
   return true;
-}
+};
 
 func test (num uint; desc string; status bool) {
   if status {
     println (`ok `, num, ` - `, desc);
   } else {
     println (`not ok `, num, ` - `, desc);
-  }
-}
+  };
+};
 
 init (this *Test) Main () {
   println (`1..38`);
@@ -76,6 +78,6 @@ init (this *Test) Main () {
   flag = false;
   f || t || not_evaluated (&flag);
   test (38, `short circuit ||`, flag == false);
-}
+};
 
 instance t Test Main ();

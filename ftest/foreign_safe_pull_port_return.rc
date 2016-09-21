@@ -1,1 +1,3 @@
+package ftest;
+
 type T pull (x int) *int;
