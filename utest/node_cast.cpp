@@ -13,7 +13,7 @@ main (int argc, char** argv)
   {
     Node* n = new Identifier (1, "id");
     tap.tassert ("ast::node_cast", node_cast<Identifier> (n) != NULL);
-    tap.tassert ("ast::node_cast (null)", node_cast<Reaction> (n) == NULL);
+    tap.tassert ("ast::node_cast (null)", node_cast<ReactionDecl> (n) == NULL);
   }
 
   tap.print_plan ();

@@ -104,7 +104,7 @@ main (int argc, char** argv)
   }
 
   {
-    ast::Getter node (1, NULL, NULL, NULL, NULL, NULL);
+    ast::GetterDecl node (1, NULL, NULL, NULL, NULL, NULL);
     type::NamedType x ("mytype", loc, &type::named_int);
     type::Getter gettertype (&x, Parameter::make_receiver (loc, "this", &type::named_int, Immutable, Immutable), new ParameterList (loc), new ParameterList (loc));
     Getter getter (&node, "name", &gettertype);

@@ -214,15 +214,15 @@ TopLevelDecl:
 
 ConstDecl:
   CONST IdentifierList Type '=' ExpressionList
-  { $$ = new Const (@1, $2, $3, $5); }
+  { $$ = new ConstDecl (@1, $2, $3, $5); }
 | CONST IdentifierList      '=' ExpressionList
-  { $$ = new Const (@1, $2, new EmptyType (@1), $4); }
+  { $$ = new ConstDecl (@1, $2, new EmptyType (@1), $4); }
 
 InstanceDecl:
   INSTANCE IDENTIFIER TypeName IDENTIFIER '(' OptionalExpressionList ')'
-{ $$ = new Instance (@1, $2, $3, $4, $6); }
+{ $$ = new InstanceDecl (@1, $2, $3, $4, $6); }
 
-TypeDecl: TYPE IDENTIFIER Type { $$ = new ast::Type (@1, $2, $3); }
+TypeDecl: TYPE IDENTIFIER Type { $$ = new ast::TypeDecl (@1, $2, $3); }
 
 Mutability:
   /* Empty. */ { $$ = Mutable;   }
@@ -242,35 +242,35 @@ Receiver:
 
 ActionDecl:
   ACTION Receiver IDENTIFIER                '(' Expression ')' Block
-{ $$ = new Action (@1, $2, $3, $5, $7); }
+{ $$ = new ActionDecl (@1, $2, $3, $5, $7); }
 | ArrayDimension ACTION Receiver IDENTIFIER '(' Expression ')' Block
-{ $$ = new DimensionedAction (@1, $1, $3, $4, $6, $8); }
+{ $$ = new DimensionedActionDecl (@1, $1, $3, $4, $6, $8); }
 
 ReactionDecl:
   REACTION Receiver IDENTIFIER ParameterList Block
-{ $$ = new Reaction (@1, $2, $3, $4, $5); }
+{ $$ = new ReactionDecl (@1, $2, $3, $4, $5); }
 | ArrayDimension REACTION Receiver IDENTIFIER ParameterList Block
-{ $$ = new DimensionedReaction (@2, $1, $3, $4, $5, $6); }
+{ $$ = new DimensionedReactionDecl (@2, $1, $3, $4, $5, $6); }
 
 BindDecl:
   BIND Receiver IDENTIFIER Block
-{ $$ = new Bind (@1, $2, $3, $4); }
+{ $$ = new BindDecl (@1, $2, $3, $4); }
 
 InitDecl:
   INIT Receiver IDENTIFIER ParameterList ReturnParameterList Block
-{ $$ = new Initializer (@1, $2, $3, $4, $5, $6); }
+{ $$ = new InitDecl (@1, $2, $3, $4, $5, $6); }
 
 GetterDecl:
 GETTER Receiver IDENTIFIER ParameterList ReturnParameterList Block
-{ $$ = new Getter (@1, $2, $3, $4, $5, $6); }
+{ $$ = new GetterDecl (@1, $2, $3, $4, $5, $6); }
 
 MethodDecl:
   FUNC Receiver IDENTIFIER ParameterList ReturnParameterList Block
-{ $$ = new Method (@1, $2, $3, $4, $5, $6); }
+{ $$ = new MethodDecl (@1, $2, $3, $4, $5, $6); }
 
 FunctionDecl:
   FUNC IDENTIFIER ParameterList ReturnParameterList Block
-{ $$ = new Function (@1, $2, $3, $4, $5); }
+{ $$ = new FunctionDecl (@1, $2, $3, $4, $5); }
 
 ParameterList:
   '(' ')'
@@ -291,8 +291,12 @@ Parameter:
 ReturnParameterList:
   /* Empty */
 { $$ = new ParameterList (yyloc); }
-| DereferenceMutability Type
-{ $$ = (new ParameterList (yyloc))->append (new VariableList (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, $1, $2)); }
+| Type
+{ $$ = (new ParameterList (yyloc))->append (new VariableList (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, Mutable, $1)); }
+| '$' CONST Type
+{ $$ = (new ParameterList (yyloc))->append (new VariableList (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, Immutable, $3)); }
+| '$' FOREIGN Type
+{ $$ = (new ParameterList (yyloc))->append (new VariableList (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, Foreign, $3)); }
 
 optional_semicolon: /* Empty. */
 | ';'

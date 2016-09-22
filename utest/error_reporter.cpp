@@ -119,6 +119,47 @@ main (int argc, char** argv)
     check (tap, "ErrorReporter::signature_is_not_foreign_safe", loc, ss, er, code);
   }
 
+  {
+    Location loc;
+    std::stringstream ss;
+    ErrorReporter er (0, ss);
+    int code = er.expected_n_expressions (loc, 4, 5);
+    check (tap, "ErrorReporter::expected_n_expressions", loc, ss, er, code);
+  }
+
+  {
+    Location loc;
+    std::stringstream ss;
+    ErrorReporter er (0, ss);
+    int code = er.cannot_convert (loc, &type::named_int32, &type::named_float32);
+    check (tap, "ErrorReporter::cannot_convert", loc, ss, er, code);
+  }
+
+  {
+    Location loc;
+    std::stringstream ss;
+    ErrorReporter er (0, ss);
+    int code = er.expression_is_not_constant (loc);
+    check (tap, "ErrorReporter::expression_is_not_constant", loc, ss, er, code);
+  }
+
+  {
+    Location loc;
+    Location previous;
+    std::stringstream ss;
+    ErrorReporter er (0, ss);
+    int code = er.already_declared (loc, "id", previous);
+    check (tap, "ErrorReporter::already_declared", loc, ss, er, code);
+  }
+
+  {
+    Location loc;
+    std::stringstream ss;
+    ErrorReporter er (0, ss);
+    int code = er.defined_recursively (loc, "id");
+    check (tap, "ErrorReporter::defined_recursively", loc, ss, er, code);
+  }
+
   tap.print_plan ();
 
   return 0;

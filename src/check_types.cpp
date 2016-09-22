@@ -11,12 +11,13 @@
 #include "semantic.hpp"
 #include "symbol.hpp"
 #include "field.hpp"
-#include "process_types_and_constants.hpp"
 #include "symbol.hpp"
 #include "action.hpp"
 #include "bind.hpp"
 #include "parameter_list.hpp"
 #include "error_reporter.hpp"
+#include "enter_top_level_identifiers.hpp"
+#include "process_top_level_declarations.hpp"
 
 namespace semantic
 {
@@ -655,12 +656,12 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.visit_children (*this);
   }
 
-  void visit (ast::Type& node)
+  void visit (ast::TypeDecl& node)
   {
     // Do nothing.
   }
 
-  void visit (ast::Instance& node)
+  void visit (ast::InstanceDecl& node)
   {
     // Check the arguments.
     node.arguments->accept (*this);
@@ -669,7 +670,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     check_mutability_arguments (node.arguments, node.symbol->initializer->type->parameter_list);
   }
 
-  void visit (ast::Initializer& node)
+  void visit (ast::InitDecl& node)
   {
     scope = scope->open (node.initializer->parameter_list (),
                          node.initializer->return_parameter_list ());
@@ -680,7 +681,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     scope = scope->close ();
   }
 
-  void visit (ast::Getter& node)
+  void visit (ast::GetterDecl& node)
   {
     scope = scope->open (node.getter->parameter_list (),
                          node.getter->return_parameter_list ());
@@ -691,7 +692,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     scope = scope->close ();
   }
 
-  void visit (ast::Action& node)
+  void visit (ast::ActionDecl& node)
   {
     scope = scope->open ();
     scope->enter_symbol (node.action->receiver_parameter);
@@ -716,7 +717,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     scope = scope->close ();
   }
 
-  void visit (DimensionedAction& node)
+  void visit (DimensionedActionDecl& node)
   {
     scope = scope->open ();
     scope->enter_symbol (node.action->iota_parameter);
@@ -742,7 +743,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     scope = scope->close ();
   }
 
-  void visit (ast::Reaction& node)
+  void visit (ast::ReactionDecl& node)
   {
     scope = scope->open (node.reaction->parameter_list (),
                          node.reaction->return_parameter_list ());
@@ -754,7 +755,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     scope = scope->close ();
   }
 
-  void visit (DimensionedReaction& node)
+  void visit (DimensionedReactionDecl& node)
   {
     scope = scope->open (node.reaction->iota,
                          node.reaction->parameter_list (),
@@ -768,7 +769,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     scope = scope->close ();
   }
 
-  void visit (ast::Bind& node)
+  void visit (ast::BindDecl& node)
   {
     scope = scope->open ();
     scope->enter_symbol (node.bind->receiver_parameter);
@@ -776,15 +777,15 @@ struct Visitor : public ast::DefaultNodeVisitor
     scope = scope->close ();
   }
 
-  void visit (ast::Function& node)
+  void visit (ast::FunctionDecl& node)
   {
-    scope = scope->open (node.function->parameter_list (),
-                         node.function->return_parameter_list ());
+    scope = scope->open (node.symbol->parameter_list (),
+                         node.symbol->return_parameter_list ());
     node.body->accept (*this);
     scope = scope->close ();
   }
 
-  void visit (ast::Method& node)
+  void visit (ast::MethodDecl& node)
   {
     scope = scope->open (node.method->parameter_list (),
                          node.method->return_parameter_list ());
@@ -932,11 +933,13 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.in_action = context == Action;
   }
 
-  void visit (Const& node)
+  void visit (ConstDecl& node)
   {
-    if (!node.done)
+    if (node.symbols.empty ())
       {
-        process_types_and_constants (&node, er, scope);
+        // Not at top level so process.
+        enter_top_level_identifiers (&node, er, scope, scope);
+        process_top_level_declarations (&node, er, scope);
       }
   }
 
@@ -959,7 +962,8 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
 
     // Process the type spec.
-    const type::Type* type = process_type (type_spec, er, scope, true);
+    // TODO:  Check for failure.
+    const type::Type* type = process_type (type_spec, er, scope);
 
     if (expression_list->size () == 0)
       {
@@ -1536,7 +1540,8 @@ done:
 
   void visit (TypeExpression& node)
   {
-    node.eval.type = process_type (node.child, er, scope, true);
+    // TODO:  Check for failure.
+    node.eval.type = process_type (node.child, er, scope);
     node.eval.expression_kind = TypeExpressionKind;
   }
 
@@ -1607,7 +1612,8 @@ done:
 
   void visit (CompositeLiteral& node)
   {
-    node.eval.type = process_type (node.type, er, scope, true);
+    // TODO:  Check for failure.
+    node.eval.type = process_type (node.type, er, scope);
     node.eval.expression_kind = VariableExpressionKind;
 
     switch (node.eval.type->underlying_kind ())
@@ -1680,6 +1686,17 @@ void check_types (ast::Node* root, ErrorReporter& er, Scope* scope)
 {
   Visitor visitor (er, scope);
   root->accept (visitor);
+}
+
+bool check_constant_expression (ast::Node* root, util::ErrorReporter& er, decl::Scope* scope)
+{
+  check_types (root, er, scope);
+  if (!root->eval.value.present)
+    {
+      er.expression_is_not_constant (root->location);
+      return false;
+    }
+  return true;
 }
 
 void check_mutability_arguments (ast::Node* node, const decl::ParameterList* signature)

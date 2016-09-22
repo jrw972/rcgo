@@ -22,6 +22,8 @@ enum ErrorCode
   Expected_N_Expressions = 10,
   Cannot_Convert = 11,
   Expression_Is_Not_Constant = 12,
+  Already_Declared = 13,
+  Defined_Recursively = 14,
 };
 
 struct ErrorReporter
@@ -61,6 +63,11 @@ struct ErrorReporter
                             const type::Type* from,
                             const type::Type* to);
   ErrorCode expression_is_not_constant (const Location& loc);
+  ErrorCode already_declared (const Location& loc,
+                              const std::string& id,
+                              const Location& previous_loc);
+  ErrorCode defined_recursively (const Location& loc,
+                                 const std::string& id);
 
   const ListType& list () const;
   size_t count () const;

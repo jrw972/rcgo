@@ -61,6 +61,12 @@ FunctionBase::compute_receiver_access (const semantic::ExpressionValueList& args
 }
 
 Function::Function (const std::string& name,
+                    const util::Location& location)
+  : FunctionBase (name, location, NULL)
+  , operation (NULL)
+{ }
+
+Function::Function (const std::string& name,
                     const util::Location& location,
                     const type::Function* type)
   : FunctionBase (name, location, type)
@@ -121,7 +127,7 @@ Initializer::Initializer (const std::string& name,
   : MethodBase (name, initializer_type)
 { }
 
-Getter::Getter (ast::Getter* n,
+Getter::Getter (ast::GetterDecl* n,
                 const std::string& name,
                 const type::Getter* getter_type)
   : MethodBase (name, getter_type)

@@ -586,13 +586,13 @@ struct ForIota : public Node
   long limit_value;
 };
 
-struct Action : public Node
+struct ActionDecl : public Node
 {
-  Action (unsigned int line,
-          Node* r,
-          Identifier* i,
-          Node* p,
-          Node* b);
+  ActionDecl (unsigned int line,
+              Node* r,
+              Identifier* i,
+              Node* p,
+              Node* b);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
@@ -606,14 +606,14 @@ struct Action : public Node
   const type::Type* type;
 };
 
-struct DimensionedAction : public Node
+struct DimensionedActionDecl : public Node
 {
-  DimensionedAction (unsigned int line,
-                     Node* d,
-                     Node* r,
-                     Identifier* i,
-                     Node* p,
-                     Node* b);
+  DimensionedActionDecl (unsigned int line,
+                         Node* d,
+                         Node* r,
+                         Identifier* i,
+                         Node* p,
+                         Node* b);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
@@ -628,12 +628,12 @@ struct DimensionedAction : public Node
   const type::Type* type;
 };
 
-struct Bind : public Node
+struct BindDecl : public Node
 {
-  Bind (unsigned int line,
-        Node* r,
-        Identifier* i,
-        Node* b);
+  BindDecl (unsigned int line,
+            Node* r,
+            Identifier* i,
+            Node* b);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
@@ -645,9 +645,9 @@ struct Bind : public Node
   decl::Bind* bind;
 };
 
-struct Function : public Node
+struct FunctionDecl : public Node
 {
-  Function (unsigned int line, Identifier* a_identifier, List* a_parameters, List* return_parameters, Node* a_body);
+  FunctionDecl (unsigned int line, Identifier* a_identifier, List* a_parameters, List* return_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
@@ -657,12 +657,12 @@ struct Function : public Node
   List* const return_parameters;
   Node* const body;
 
-  decl::Function* function;
+  decl::Function* symbol;
 };
 
-struct Instance : public Node
+struct InstanceDecl : public Node
 {
-  Instance (unsigned int line, Identifier* a_identifier, Node* a_type, Identifier* a_initializer, List* a_arguments);
+  InstanceDecl (unsigned int line, Identifier* a_identifier, Node* a_type, Identifier* a_initializer, List* a_arguments);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
@@ -675,12 +675,12 @@ struct Instance : public Node
   decl::Instance* symbol;
 };
 
-struct Const : public Node
+struct ConstDecl : public Node
 {
-  Const (unsigned int line,
-         List* il,
-         Node* ts,
-         List* el);
+  ConstDecl (unsigned int line,
+             List* il,
+             Node* ts,
+             List* el);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
@@ -689,12 +689,13 @@ struct Const : public Node
   Node* const type;
   List* const expressions;
 
-  bool done;
+  typedef std::vector<decl::Constant*> SymbolsType;
+  SymbolsType symbols;
 };
 
-struct Method : public Node
+struct MethodDecl : public Node
 {
-  Method (unsigned int line, Node* a_receiver, Identifier* a_identifier,  List* a_parameters, List* a_return_parameters, Node* a_body);
+  MethodDecl (unsigned int line, Node* a_receiver, Identifier* a_identifier,  List* a_parameters, List* a_return_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
@@ -708,9 +709,9 @@ struct Method : public Node
   decl::Method* method;
 };
 
-struct Getter : public Node
+struct GetterDecl : public Node
 {
-  Getter (unsigned int line, Node* a_receiver, Identifier* a_identifier, List* a_parameters, List* a_return_parameters, Node* a_body);
+  GetterDecl (unsigned int line, Node* a_receiver, Identifier* a_identifier, List* a_parameters, List* a_return_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
@@ -724,9 +725,9 @@ struct Getter : public Node
   decl::Getter* getter;
 };
 
-struct Initializer : public Node
+struct InitDecl : public Node
 {
-  Initializer (unsigned int line, Node* a_receiver, Identifier* a_identifier, List* a_parameters, List* a_return_parameters, Node* a_body);
+  InitDecl (unsigned int line, Node* a_receiver, Identifier* a_identifier, List* a_parameters, List* a_return_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
@@ -740,9 +741,9 @@ struct Initializer : public Node
   decl::Initializer* initializer;
 };
 
-struct Reaction : public Node
+struct ReactionDecl : public Node
 {
-  Reaction (unsigned int line, Node* a_receiver, Identifier* a_identifier, List* a_parameters, Node* a_body);
+  ReactionDecl (unsigned int line, Node* a_receiver, Identifier* a_identifier, List* a_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
@@ -756,14 +757,14 @@ struct Reaction : public Node
   decl::Reaction* reaction;
 };
 
-struct DimensionedReaction : public Node
+struct DimensionedReactionDecl : public Node
 {
-  DimensionedReaction (unsigned int line,
-                       Node* d,
-                       Node* r,
-                       Identifier* i,
-                       List* pl,
-                       Node* b);
+  DimensionedReactionDecl (unsigned int line,
+                           Node* d,
+                           Node* r,
+                           Identifier* i,
+                           List* pl,
+                           Node* b);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
@@ -778,15 +779,17 @@ struct DimensionedReaction : public Node
   decl::Reaction* reaction;
 };
 
-struct Type : public Node
+struct TypeDecl : public Node
 {
-  Type (unsigned int line, Identifier* a_identifier, Node* a_type);
+  TypeDecl (unsigned int line, Identifier* a_identifier, Node* a_type);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
   Node* const type;
+
+  type::NamedType* symbol;
 };
 
 struct SourceFile : public Node

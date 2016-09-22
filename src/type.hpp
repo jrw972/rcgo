@@ -168,7 +168,8 @@ struct NamedType : public Type, public decl::Symbol
   typedef std::vector<decl::Bind*> BindsType;
 
   NamedType (const std::string& name,
-             const util::Location& location);
+             const util::Location& location,
+             ast::TypeDecl* a_typedecl);
   NamedType (const std::string& name,
              const util::Location& location,
              const Type* underlyingType);
@@ -202,6 +203,7 @@ struct NamedType : public Type, public decl::Symbol
 
   virtual void accept (decl::SymbolVisitor& visitor);
   virtual void accept (decl::ConstSymbolVisitor& visitor) const;
+  virtual bool process_declaration_i (util::ErrorReporter& er, decl::Scope* file_scope);
   virtual bool defined () const;
 
 private:
@@ -212,6 +214,7 @@ private:
   ActionsType actions_;
   ReactionsType reactions_;
   BindsType binds_;
+  ast::TypeDecl* const typedecl_;
 };
 
 // Void represents the absence of a type

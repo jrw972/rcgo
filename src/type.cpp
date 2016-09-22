@@ -9,6 +9,9 @@
 #include "arch.hpp"
 #include "parameter_list.hpp"
 #include "symbol_visitor.hpp"
+#include "semantic.hpp"
+#include "node.hpp"
+#include "error_reporter.hpp"
 
 namespace type
 {
@@ -203,6 +206,17 @@ void NamedType::accept (decl::SymbolVisitor& visitor)
 void NamedType::accept (decl::ConstSymbolVisitor& visitor) const
 {
   visitor.visit (*this);
+}
+
+bool
+NamedType::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+{
+  const Type* t = process_type (typedecl_->type, er, file_scope);
+  if (t)
+    {
+      underlying_type (t);
+    }
+  return t;
 }
 
 bool NamedType::defined () const
@@ -808,9 +822,11 @@ Struct::contains_pointer_i () const
 }
 
 NamedType::NamedType (const std::string& name,
-                      const util::Location& location)
+                      const util::Location& location,
+                      ast::TypeDecl* a_typedecl)
   : Symbol (name, location)
   , underlyingType_ (NULL)
+  , typedecl_ (a_typedecl)
 { }
 
 NamedType::NamedType (const std::string& name,
@@ -818,8 +834,10 @@ NamedType::NamedType (const std::string& name,
                       const Type* subtype)
   : Symbol (name, location)
   , underlyingType_ (subtype->underlying_type ())
+  , typedecl_ (NULL)
 {
   assert (underlyingType_->is_unnamed ());
+  state_ = Symbol::Defined;
 }
 
 void NamedType::print (std::ostream& out) const

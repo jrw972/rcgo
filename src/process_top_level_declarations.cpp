@@ -1,46 +1,22 @@
-#include "process_functions_and_methods.hpp"
-
-#include "node.hpp"
+#include "process_top_level_declarations.hpp"
 #include "node_visitor.hpp"
-#include "node_cast.hpp"
+#include "node.hpp"
+#include "type.hpp"
 #include "semantic.hpp"
-#include "symbol.hpp"
-#include "action.hpp"
-#include "semantic.hpp"
-#include "bind.hpp"
-#include "parameter_list.hpp"
 #include "callable.hpp"
+#include "node_cast.hpp"
+#include "action.hpp"
+#include "bind.hpp"
 
 namespace semantic
 {
-using namespace util;
-using namespace ast;
-using namespace type;
-using namespace decl;
-
 namespace
 {
 
-// template <typename T>
-// static T*
-// enter_undefined_symbol (T* s,
-//                         Node& a)
-// {
-//   ast::Node* symtab = a.GetParent ();
-//   const std::string& identifier = s->identifier;
-//   Symbol *symbol = symtab->FindLocalSymbol (identifier);
-//   if (symbol == NULL)
-//     {
-//       symtab->EnterSymbol (s);
-//     }
-//   else
-//     {
-//       error_at_line (-1, 0, s->definingNode->location.File.c_str (),
-//                      s->definingNode->location.Line,
-//                      "%s is already defined in this scope (E73)", identifier.c_str ());
-//     }
-//   return s;
-// }
+using namespace ast;
+using namespace util;
+using namespace decl;
+using namespace type;
 
 static NamedType*
 processReceiver (decl::Scope* scope, ast::Node* n, ast::Identifier* identifierNode, Parameter*& receiver_symbol,
@@ -137,21 +113,17 @@ process_signature_return (ErrorReporter& er,
     }
 }
 
-struct Visitor : public ast::DefaultNodeVisitor
+struct visitor : public DefaultNodeVisitor
 {
+
   ErrorReporter& er;
-  decl::Scope* scope;
+  Scope* file_scope;
 
-  Visitor (ErrorReporter& a_er,
-           decl::Scope* a_scope)
+  visitor (ErrorReporter& a_er,
+           Scope* a_file_scope)
     : er (a_er)
-    , scope (a_scope)
+    , file_scope (a_file_scope)
   { }
-
-  void default_action (Node& node)
-  {
-    AST_NOT_REACHED (node);
-  }
 
   void visit (SourceFile& node)
   {
@@ -163,36 +135,40 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.visit_children (*this);
   }
 
-  void visit (ast::Type& node)
+  void visit (ConstDecl& node)
   {
-    // Do nothing.
+    for (ConstDecl::SymbolsType::const_iterator pos = node.symbols.begin (),
+         limit = node.symbols.end ();
+         pos != limit;
+         ++pos)
+      {
+        (*pos)->process_declaration (er, file_scope);
+      }
   }
 
-  void visit (Const& node)
+  void visit (TypeDecl& node)
   {
-    // Do nothing.
+    if (!node.symbol) return;
+    node.symbol->process_declaration (er, file_scope);
   }
 
-  void visit (ast::Function& node)
+  void visit (FunctionDecl& node)
   {
     const decl::ParameterList* parameter_list;
     const decl::ParameterList* return_parameter_list;
-    process_signature_return (er, scope, node.parameters, node.return_parameters, false,
+    process_signature_return (er, file_scope, node.parameters, node.return_parameters, false,
                               parameter_list, return_parameter_list);
-    const type::Function* function_type = new type::Function (parameter_list, return_parameter_list);
-    node.function = new decl::Function (node.identifier->identifier, node.identifier->location, function_type);
-
-    scope->enter_symbol (node.function);
+    node.symbol->type = new type::Function (parameter_list, return_parameter_list);
   }
 
-  void visit (ast::Method& node)
+  void visit (MethodDecl& node)
   {
     Parameter* thisSymbol;
-    NamedType* type = processReceiver (scope, node.receiver, node.identifier, thisSymbol, false, false);
+    NamedType* type = processReceiver (file_scope, node.receiver, node.identifier, thisSymbol, false, false);
 
     const decl::ParameterList* parameter_list;
     const decl::ParameterList* return_parameter_list;
-    process_signature_return (er, scope, node.parameters, node.return_parameters, false,
+    process_signature_return (er, file_scope, node.parameters, node.return_parameters, false,
                               parameter_list, return_parameter_list);
 
     type::Method* method_type = new type::Method (type,
@@ -205,14 +181,14 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.method = method;
   }
 
-  void visit (ast::Initializer& node)
+  void visit (InitDecl& node)
   {
     Parameter* thisSymbol;
-    NamedType* type = processReceiver (scope, node.receiver, node.identifier, thisSymbol, true, false);
+    NamedType* type = processReceiver (file_scope, node.receiver, node.identifier, thisSymbol, true, false);
 
     const decl::ParameterList* parameter_list;
     const decl::ParameterList* return_parameter_list;
-    process_signature_return (er, scope, node.parameters, node.return_parameters, true,
+    process_signature_return (er, file_scope, node.parameters, node.return_parameters, true,
                               parameter_list, return_parameter_list);
 
     type::Initializer* initializer_type =
@@ -227,81 +203,14 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.initializer = initializer;
   }
 
-  void visit (ast::Action& node)
-  {
-    Parameter* receiver_parameter;
-    NamedType* type = processReceiver (scope, node.receiver, node.identifier, receiver_parameter, true, true);
-    decl::Action *action = new decl::Action (receiver_parameter, node.precondition, node.body, node.identifier->identifier);
-    type->insert_action (action);
-    node.action = action;
-    node.type = type;
-  }
-
-  void visit (DimensionedAction& node)
-  {
-    Parameter* receiver_parameter;
-    NamedType* type = processReceiver (scope, node.receiver, node.identifier, receiver_parameter, true, true);
-    Parameter* iota_parameter = Parameter::make (node.dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
-    long dimension = process_array_dimension (node.dimension, er, scope);
-    decl::Action *action = new decl::Action (receiver_parameter, node.precondition, node.body, node.identifier->identifier, iota_parameter, dimension);
-    type->insert_action (action);
-    node.action = action;
-    node.type = type;
-  }
-
-  void visit (ast::Reaction& node)
+  void visit (GetterDecl& node)
   {
     Parameter* thisSymbol;
-    NamedType* type = processReceiver (scope, node.receiver, node.identifier, thisSymbol, true, true);
+    NamedType* type = processReceiver (file_scope, node.receiver, node.identifier, thisSymbol, true, true);
 
     const decl::ParameterList* parameter_list;
     const decl::ParameterList* return_parameter_list;
-    process_signature_return (er, scope, node.parameters, node.return_parameters, true,
-                              parameter_list, return_parameter_list);
-
-    type::Reaction* reaction_type = new type::Reaction (type,
-        thisSymbol,
-        parameter_list,
-        return_parameter_list);
-
-    decl::Reaction* reaction = new decl::Reaction (node.body, node.identifier->identifier, reaction_type);
-
-    type->insert_reaction (reaction);
-    node.reaction = reaction;
-  }
-
-  void visit (DimensionedReaction& node)
-  {
-    Parameter* thisSymbol;
-    NamedType* type = processReceiver (scope, node.receiver, node.identifier, thisSymbol, true, true);
-
-    const decl::ParameterList* parameter_list;
-    const decl::ParameterList* return_parameter_list;
-    process_signature_return (er, scope, node.parameters, node.return_parameters, true,
-                              parameter_list, return_parameter_list);
-
-    Parameter* iotaSymbol = Parameter::make (node.dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
-    long dimension = process_array_dimension (node.dimension, er, scope);
-
-    type::Reaction* reaction_type = new type::Reaction (type,
-        thisSymbol,
-        parameter_list,
-        return_parameter_list);
-
-    decl::Reaction* reaction = new decl::Reaction (node.body, node.identifier->identifier, reaction_type, iotaSymbol, dimension);
-
-    type->insert_reaction (reaction);
-    node.reaction = reaction;
-  }
-
-  void visit (ast::Getter& node)
-  {
-    Parameter* thisSymbol;
-    NamedType* type = processReceiver (scope, node.receiver, node.identifier, thisSymbol, true, true);
-
-    const decl::ParameterList* parameter_list;
-    const decl::ParameterList* return_parameter_list;
-    process_signature_return (er, scope, node.parameters, node.return_parameters, true,
+    process_signature_return (er, file_scope, node.parameters, node.return_parameters, true,
                               parameter_list, return_parameter_list);
 
     type::Getter* getter_type = new type::Getter (type,
@@ -315,21 +224,88 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.getter = getter;
   }
 
-  void visit (ast::Bind& node)
+  void visit (ActionDecl& node)
+  {
+    Parameter* receiver_parameter;
+    NamedType* type = processReceiver (file_scope, node.receiver, node.identifier, receiver_parameter, true, true);
+    decl::Action *action = new decl::Action (receiver_parameter, node.precondition, node.body, node.identifier->identifier);
+    type->insert_action (action);
+    node.action = action;
+    node.type = type;
+  }
+
+  void visit (DimensionedActionDecl& node)
+  {
+    Parameter* receiver_parameter;
+    NamedType* type = processReceiver (file_scope, node.receiver, node.identifier, receiver_parameter, true, true);
+    Parameter* iota_parameter = Parameter::make (node.dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
+    long dimension = process_array_dimension (node.dimension, er, file_scope);
+    decl::Action *action = new decl::Action (receiver_parameter, node.precondition, node.body, node.identifier->identifier, iota_parameter, dimension);
+    type->insert_action (action);
+    node.action = action;
+    node.type = type;
+  }
+
+  void visit (ReactionDecl& node)
   {
     Parameter* thisSymbol;
-    NamedType* type = processReceiver (scope, node.receiver, node.identifier, thisSymbol, true, false);
+    NamedType* type = processReceiver (file_scope, node.receiver, node.identifier, thisSymbol, true, true);
+
+    const decl::ParameterList* parameter_list;
+    const decl::ParameterList* return_parameter_list;
+    process_signature_return (er, file_scope, node.parameters, node.return_parameters, true,
+                              parameter_list, return_parameter_list);
+
+    type::Reaction* reaction_type = new type::Reaction (type,
+        thisSymbol,
+        parameter_list,
+        return_parameter_list);
+
+    decl::Reaction* reaction = new decl::Reaction (node.body, node.identifier->identifier, reaction_type);
+
+    type->insert_reaction (reaction);
+    node.reaction = reaction;
+  }
+
+  void visit (DimensionedReactionDecl& node)
+  {
+    Parameter* thisSymbol;
+    NamedType* type = processReceiver (file_scope, node.receiver, node.identifier, thisSymbol, true, true);
+
+    const decl::ParameterList* parameter_list;
+    const decl::ParameterList* return_parameter_list;
+    process_signature_return (er, file_scope, node.parameters, node.return_parameters, true,
+                              parameter_list, return_parameter_list);
+
+    Parameter* iotaSymbol = Parameter::make (node.dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
+    long dimension = process_array_dimension (node.dimension, er, file_scope);
+
+    type::Reaction* reaction_type = new type::Reaction (type,
+        thisSymbol,
+        parameter_list,
+        return_parameter_list);
+
+    decl::Reaction* reaction = new decl::Reaction (node.body, node.identifier->identifier, reaction_type, iotaSymbol, dimension);
+
+    type->insert_reaction (reaction);
+    node.reaction = reaction;
+  }
+
+  void visit (BindDecl& node)
+  {
+    Parameter* thisSymbol;
+    NamedType* type = processReceiver (file_scope, node.receiver, node.identifier, thisSymbol, true, false);
     decl::Bind* bind = new decl::Bind (&node, node.identifier->identifier, thisSymbol);
     type->insert_bind (bind);
     node.bind = bind;
   }
 
-  void visit (ast::Instance& node)
+  void visit (InstanceDecl& node)
   {
-    const std::string& identifier = node.identifier->identifier;
     const std::string& initializer_identifier = node.initializer->identifier;
 
-    const type::NamedType* type = process_type (node.type, er, scope, true)->to_named_type ();
+    // TODO:  Check for failure.
+    const type::NamedType* type = process_type (node.type, er, file_scope)->to_named_type ();
 
     if (type->underlying_type ()->kind () != Component_Kind)
       {
@@ -346,17 +322,16 @@ struct Visitor : public ast::DefaultNodeVisitor
                        "no initializer named %s (E56)",
                        initializer_identifier.c_str ());
       }
-
-    node.symbol = new decl::Instance (identifier, node.identifier->location, type, initializer);
-    scope->enter_symbol (node.symbol);
+    node.symbol->type = type;
+    node.symbol->initializer = initializer;
   }
-
 };
+
 }
 
-void process_functions_and_methods (ast::Node* root, ErrorReporter& er, decl::Scope* scope)
+void process_top_level_declarations (ast::Node* root, util::ErrorReporter& er, decl::Scope* file_scope)
 {
-  Visitor visitor (er, scope);
-  root->accept (visitor);
+  visitor v (er, file_scope);
+  root->accept (v);
 }
 }

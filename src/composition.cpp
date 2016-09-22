@@ -569,7 +569,7 @@ Composer::elaborate_bindings ()
                 }
             }
 
-            void visit (ast::Bind& node)
+            void visit (ast::BindDecl& node)
             {
               node.body->accept (*this);
             }
@@ -1295,7 +1295,7 @@ Composer::enumerate_instances (ast::Node * node)
 
     visitor (composition::Composer& it) : instance_table (it), address (0) { }
 
-    void visit (ast::Instance& node)
+    void visit (ast::InstanceDecl& node)
     {
       const NamedType *type = node.symbol->type;
       decl::Initializer* initializer = node.symbol->initializer;
@@ -1324,7 +1324,7 @@ Composer::instantiate_contained_instances (const type::Type * type,
     decl::Initializer* initializer,
     size_t address,
     unsigned int line,
-    ast::Instance* node,
+    ast::InstanceDecl* node,
     const std::string& name,
     const NamedType* named_type,
     Field* field)

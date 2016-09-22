@@ -6,17 +6,70 @@
 #include "node.hpp"
 #include "polymorphic_function.hpp"
 #include "callable.hpp"
+#include "semantic.hpp"
+#include "check_types.hpp"
+#include "error_reporter.hpp"
 
 namespace decl
 {
+using namespace semantic;
+using namespace type;
 
 Symbol::Symbol (const std::string& id, const util::Location& loc)
   : name (id)
   , location (loc)
   , in_progress (false)
+  , state_ (Declared)
   , offset_ (0)
 { }
+
 Symbol::~Symbol() { }
+
+Symbol::State
+Symbol::state () const
+{
+  return state_;
+}
+
+bool
+Symbol::process_declaration (util::ErrorReporter& er, Scope* file_scope)
+{
+  switch (state_)
+    {
+    case Symbol::Declared:
+    {
+      state_ = Symbol::In_Progress;
+      if (process_declaration_i (er, file_scope))
+        {
+          state_ = Symbol::Defined;
+        }
+      else
+        {
+          state_ = Symbol::Undefined;
+        }
+    }
+    break;
+
+    case Symbol::In_Progress:
+      er.defined_recursively (location, name);
+      state_ = Symbol::Undefined;
+      break;
+
+    case Symbol::Defined:
+      break;
+
+    case Symbol::Undefined:
+      break;
+    }
+
+  return state_ == Symbol::Defined;
+}
+
+bool
+Symbol::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+{
+  return true;
+}
 
 bool Symbol::defined () const
 {
@@ -40,6 +93,13 @@ ACCEPT(Parameter)
 ACCEPT(Constant)
 ACCEPT(Variable)
 ACCEPT(Hidden)
+
+Instance::Instance (const std::string& id, const util::Location& loc)
+  : Symbol (id, loc)
+  , type (NULL)
+  , initializer (NULL)
+  , instance (NULL)
+{ }
 
 Instance::Instance (const std::string& id, const util::Location& loc, const type::NamedType* t, Initializer* init)
   : Symbol (id, loc)
@@ -135,11 +195,62 @@ Parameter::is_foreign_safe () const
   return !(type->contains_pointer () && indirection_mutability != Foreign);
 }
 
+Constant::Constant (const std::string& id, const util::Location& loc, ast::Node* a_type_spec, ast::Node* a_init)
+  : Symbol (id, loc)
+  , type_spec_ (a_type_spec)
+  , init_ (a_init)
+{ }
+
 Constant::Constant (const std::string& id, const util::Location& loc, const type::Type* t, const semantic::Value& v)
   : Symbol (id, loc)
   , type (t)
   , value (v)
-{ }
+  , type_spec_ (NULL)
+  , init_ (NULL)
+{
+  state_ = Defined;
+}
+
+bool
+Constant::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+{
+  // Process the type spec.
+  const type::Type* type = process_type (type_spec_, er, file_scope);
+  if (!type) return false;
+
+  if (type->kind () != Void_Kind)
+    {
+      // Type, expressions.
+      if (!check_constant_expression (init_, er, file_scope))
+        {
+          return false;
+        }
+      if (!are_assignable (init_->eval.type, init_->eval.value, type))
+        {
+          er.cannot_convert (init_->location, init_->eval.type, type);
+          return false;
+        }
+
+      init_->eval.value.convert (init_->eval.type, type);
+      init_->eval.type = type;
+
+      this->type = type;
+      this->value = init_->eval.value;
+    }
+  else
+    {
+      // No type, just expressions.
+      if (!check_constant_expression (init_, er, file_scope))
+        {
+          return false;
+        }
+
+      this->type = init_->eval.type;
+      this->value = init_->eval.value;
+    }
+
+  return true;
+}
 
 Variable::Variable (const std::string& id, const util::Location& loc, const type::Type* t, Mutability im, Mutability dm)
   : Symbol (id, loc)

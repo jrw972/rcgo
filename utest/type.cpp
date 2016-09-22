@@ -68,8 +68,9 @@ main (int argc, char** argv)
 
   util::Location loc;
   {
-    NamedType foo ("foo", loc);
-    tap.tassert ("NamedType::NamedType(1)", foo.underlying_type () == NULL && foo.defined () == false);
+    NamedType foo ("foo", loc, static_cast<ast::TypeDecl*> (NULL));
+    tap.tassert ("NamedType::NamedType(1)", foo.underlying_type () == NULL &&
+                 foo.defined () == false);
   }
 
   {
@@ -78,20 +79,20 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType foo ("foo", loc);
+    NamedType foo ("foo", loc, Int::instance ());
     std::stringstream str;
     foo.print (str);
     tap.tassert ("NamedType::print", str.str () == "foo");
   }
 
   {
-    NamedType foo ("foo", loc);
+    NamedType foo ("foo", loc, Int::instance ());
     foo.underlying_type (&named_int);
     tap.tassert ("NamedType::underlying_type", foo.underlying_type () == Int::instance ());
   }
 
   {
-    NamedType foo ("foo", loc);
+    NamedType foo ("foo", loc, Int::instance ());
     tap.tassert ("NamedType::kind", foo.kind () == Named_Kind);
   }
 

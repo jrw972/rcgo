@@ -51,11 +51,14 @@ struct FunctionBase : public Callable, public decl::Symbol
   virtual void accept (decl::SymbolVisitor& visitor);
   virtual void accept (decl::ConstSymbolVisitor& visitor) const;
 
+  // TODO:  Use getter/setter.
   const type::Function* type;
 };
 
 struct Function : public FunctionBase
 {
+  Function (const std::string& name,
+            const util::Location& location);
   Function (const std::string& name,
             const util::Location& location,
             const type::Function* type);
@@ -99,10 +102,10 @@ struct Initializer : public MethodBase
 
 struct Getter : public MethodBase
 {
-  Getter (ast::Getter* node,
+  Getter (ast::GetterDecl* node,
           const std::string& name,
           const type::Getter* getter_type);
-  ast::Getter* const node;
+  ast::GetterDecl* const node;
   ReceiverAccess immutable_phase_access;
 };
 

@@ -11,18 +11,33 @@ namespace decl
 // Base class for symbols.
 struct Symbol
 {
+  enum State
+  {
+    Declared,
+    In_Progress,
+    Defined,
+    Undefined,
+  };
+
   Symbol (const std::string& name, const util::Location& location);
   virtual ~Symbol ();
   virtual void accept (SymbolVisitor& visitor) = 0;
   virtual void accept (ConstSymbolVisitor& visitor) const = 0;
+  State state () const;
+  bool process_declaration (util::ErrorReporter& er, Scope* file_scope);
+  // TODO:  Remove defined.
   virtual bool defined () const;
   void offset (ptrdiff_t o);
   virtual ptrdiff_t offset () const;
 
   std::string const name;
   util::Location const location;
+  // TODO:  Remove in_progress.
   bool in_progress;
 
+protected:
+  State state_;
+  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
 private:
   // TODO:  Should this be here?
   ptrdiff_t offset_;
@@ -31,14 +46,17 @@ private:
 struct Instance : public Symbol
 {
   Instance (const std::string& name,
+            const util::Location& location);
+  Instance (const std::string& name,
             const util::Location& location,
             const type::NamedType* type,
             Initializer* initializer);
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
 
-  const type::NamedType* const type;
-  Initializer* const initializer;
+  // TODO:  Use getters/setters for these.
+  const type::NamedType* type;
+  Initializer* initializer;
   // TODO:  Should this be here?
   composition::Instance* instance;
 };
@@ -101,12 +119,23 @@ struct Constant : public Symbol
 {
   Constant (const std::string& name,
             const util::Location& location,
+            ast::Node* a_type_spec,
+            ast::Node* a_init);
+  Constant (const std::string& name,
+            const util::Location& location,
             const type::Type* type,
             const semantic::Value& value);
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-  const type::Type* const type;
-  semantic::Value const value;
+  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+
+  // TODO:  Convert to getters.
+  const type::Type* type;
+  semantic::Value value;
+
+private:
+  ast::Node* const type_spec_;
+  ast::Node* const init_;
 };
 
 struct Variable : public Symbol

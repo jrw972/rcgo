@@ -208,51 +208,51 @@ void ForIota::print (std::ostream& out) const
 {
   out << "ForIota";
 }
-void Action::print (std::ostream& out) const
+void ActionDecl::print (std::ostream& out) const
 {
-  out << "Action";
+  out << "ActionDecl";
 }
-void Const::print (std::ostream& out) const
+void ConstDecl::print (std::ostream& out) const
 {
-  out << "Const";
+  out << "ConstDecl";
 }
-void DimensionedAction::print (std::ostream& out) const
+void DimensionedActionDecl::print (std::ostream& out) const
 {
-  out << "DimensionedAction";
+  out << "DimensionedActionDecl";
 }
-void Bind::print (std::ostream& out) const
+void BindDecl::print (std::ostream& out) const
 {
-  out << "Bind";
+  out << "BindDecl";
 }
-void Function::print (std::ostream& out) const
+void FunctionDecl::print (std::ostream& out) const
 {
-  out << "Function";
+  out << "FunctionDecl";
 }
-void Getter::print (std::ostream& out) const
+void GetterDecl::print (std::ostream& out) const
 {
-  out << "Getter";
+  out << "GetterDecl";
 }
-void Initializer::print (std::ostream& out) const
+void InitDecl::print (std::ostream& out) const
 {
-  out << "Initializer";
+  out << "InitDecl";
 }
-void Instance::print (std::ostream& out) const
+void InstanceDecl::print (std::ostream& out) const
 {
-  out << "Instance";
+  out << "InstanceDecl";
 }
-void Method::print (std::ostream& out) const
+void MethodDecl::print (std::ostream& out) const
 {
-  out << "Method";
+  out << "MethodDecl";
 }
-void Reaction::print (std::ostream& out) const
+void ReactionDecl::print (std::ostream& out) const
 {
-  out << "Reaction";
+  out << "ReactionDecl";
 }
-void DimensionedReaction::print (std::ostream& out) const
+void DimensionedReactionDecl::print (std::ostream& out) const
 {
-  out << "DimensionedReaction";
+  out << "DimensionedReactionDecl";
 }
-void Type::print (std::ostream& out) const
+void TypeDecl::print (std::ostream& out) const
 {
   out << "Type";
 }
@@ -288,25 +288,25 @@ void TopLevelDeclList::print (std::ostream& out) const
     visitor.visit (*this);                              \
   }
 
-ACCEPT (Action)
+ACCEPT (ActionDecl)
 ACCEPT (Activate)
 ACCEPT (AddAssign)
 ACCEPT (AddressOf)
 ACCEPT (Array)
 ACCEPT (Assign)
 ACCEPT (BinaryArithmetic)
-ACCEPT (Bind)
+ACCEPT (BindDecl)
 ACCEPT (BindPullPort)
 ACCEPT (BindPushPort)
 ACCEPT (BindPushPortParameter)
 ACCEPT (Call)
 ACCEPT (Change)
 ACCEPT (CompositeLiteral)
-ACCEPT (Const)
+ACCEPT (ConstDecl)
 ACCEPT (Conversion)
 ACCEPT (Dereference)
-ACCEPT (DimensionedAction)
-ACCEPT (DimensionedReaction)
+ACCEPT (DimensionedActionDecl)
+ACCEPT (DimensionedReactionDecl)
 ACCEPT (Element)
 ACCEPT (ElementList)
 ACCEPT (EmptyExpression)
@@ -316,8 +316,8 @@ ACCEPT (ExpressionList)
 ACCEPT (ExpressionStatement)
 ACCEPT (FieldList)
 ACCEPT (ForIota)
-ACCEPT (Function)
-ACCEPT (Getter)
+ACCEPT (FunctionDecl)
+ACCEPT (GetterDecl)
 ACCEPT (Heap)
 ACCEPT (Identifier)
 ACCEPT (IdentifierExpression)
@@ -328,17 +328,17 @@ ACCEPT (IncrementDecrement)
 ACCEPT (Index)
 ACCEPT (IndexSlice)
 ACCEPT (IndexedPushPortCall)
-ACCEPT (Initializer)
-ACCEPT (Instance)
+ACCEPT (InitDecl)
+ACCEPT (InstanceDecl)
 ACCEPT (Literal)
 ACCEPT (Map)
-ACCEPT (Method)
+ACCEPT (MethodDecl)
 ACCEPT (ParameterList)
 ACCEPT (Pointer)
 ACCEPT (PullPort)
 ACCEPT (PushPort)
 ACCEPT (PushPortCall)
-ACCEPT (Reaction)
+ACCEPT (ReactionDecl)
 ACCEPT (Receiver)
 ACCEPT (Return)
 ACCEPT (Select)
@@ -346,7 +346,7 @@ ACCEPT (Slice)
 ACCEPT (SourceFile)
 ACCEPT (StatementList)
 ACCEPT (SubtractAssign)
-ACCEPT (Type)
+ACCEPT (TypeDecl)
 ACCEPT (TypeExpression)
 ACCEPT (UnaryArithmetic)
 ACCEPT (Var)
@@ -871,11 +871,11 @@ void ForIota::visit_children (NodeVisitor& visitor)
   body->accept (visitor);
 }
 
-Action::Action (unsigned int line,
-                Node* r,
-                Identifier* i,
-                Node* p,
-                Node* b)
+ActionDecl::ActionDecl (unsigned int line,
+                        Node* r,
+                        Identifier* i,
+                        Node* p,
+                        Node* b)
   : Node (line)
   , receiver (r)
   , identifier (i)
@@ -885,7 +885,7 @@ Action::Action (unsigned int line,
   , type (NULL)
 { }
 
-void Action::visit_children (NodeVisitor& visitor)
+void ActionDecl::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
   identifier->accept (visitor);
@@ -893,12 +893,12 @@ void Action::visit_children (NodeVisitor& visitor)
   body->accept (visitor);
 }
 
-DimensionedAction::DimensionedAction (unsigned int line,
-                                      Node* d,
-                                      Node* r,
-                                      Identifier* i,
-                                      Node* p,
-                                      Node* b)
+DimensionedActionDecl::DimensionedActionDecl (unsigned int line,
+    Node* d,
+    Node* r,
+    Identifier* i,
+    Node* p,
+    Node* b)
   : Node (line)
   , dimension (d)
   , receiver (r)
@@ -909,7 +909,7 @@ DimensionedAction::DimensionedAction (unsigned int line,
   , type (NULL)
 { }
 
-void DimensionedAction::visit_children (NodeVisitor& visitor)
+void DimensionedActionDecl::visit_children (NodeVisitor& visitor)
 {
   dimension->accept (visitor);
   receiver->accept (visitor);
@@ -918,10 +918,10 @@ void DimensionedAction::visit_children (NodeVisitor& visitor)
   body->accept (visitor);
 }
 
-Bind::Bind (unsigned int line,
-            Node* r,
-            Identifier* i,
-            Node* b)
+BindDecl::BindDecl (unsigned int line,
+                    Node* r,
+                    Identifier* i,
+                    Node* b)
   : Node (line)
   , receiver (r)
   , identifier (i)
@@ -929,27 +929,27 @@ Bind::Bind (unsigned int line,
   , bind (NULL)
 { }
 
-void Bind::visit_children (NodeVisitor& visitor)
+void BindDecl::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
   identifier->accept (visitor);
   body->accept (visitor);
 }
 
-Function::Function (unsigned int line,
-                    Identifier* i,
-                    List* pl,
-                    List* rpl,
-                    Node* b)
+FunctionDecl::FunctionDecl (unsigned int line,
+                            Identifier* i,
+                            List* pl,
+                            List* rpl,
+                            Node* b)
   : Node (line)
   , identifier (i)
   , parameters (pl)
   , return_parameters (rpl)
   , body (b)
-  , function (NULL)
+  , symbol (NULL)
 { }
 
-void Function::visit_children (NodeVisitor& visitor)
+void FunctionDecl::visit_children (NodeVisitor& visitor)
 {
   identifier->accept (visitor);
   parameters->accept (visitor);
@@ -957,11 +957,11 @@ void Function::visit_children (NodeVisitor& visitor)
   body->accept (visitor);
 }
 
-Instance::Instance (unsigned int line,
-                    Identifier* id,
-                    Node* tn,
-                    Identifier* init,
-                    List* el)
+InstanceDecl::InstanceDecl (unsigned int line,
+                            Identifier* id,
+                            Node* tn,
+                            Identifier* init,
+                            List* el)
   : Node (line)
   , identifier (id)
   , type (tn)
@@ -969,7 +969,7 @@ Instance::Instance (unsigned int line,
   , arguments (el)
 { }
 
-void Instance::visit_children (NodeVisitor& visitor)
+void InstanceDecl::visit_children (NodeVisitor& visitor)
 {
   identifier->accept (visitor);
   type->accept (visitor);
@@ -977,30 +977,29 @@ void Instance::visit_children (NodeVisitor& visitor)
   arguments->accept (visitor);
 }
 
-Const::Const (unsigned int line,
-              List* il,
-              Node* ts,
-              List* el)
+ConstDecl::ConstDecl (unsigned int line,
+                      List* il,
+                      Node* ts,
+                      List* el)
   : Node (line)
   , identifiers (il)
   , type (ts)
   , expressions (el)
-  , done (false)
 { }
 
-void Const::visit_children (NodeVisitor& visitor)
+void ConstDecl::visit_children (NodeVisitor& visitor)
 {
   identifiers->accept (visitor);
   type->accept (visitor);
   expressions->accept (visitor);
 }
 
-Method::Method (unsigned int line,
-                Node * r,
-                Identifier * i,
-                List* a_parameter_list,
-                List* a_return_parameter_list,
-                Node* b)
+MethodDecl::MethodDecl (unsigned int line,
+                        Node * r,
+                        Identifier * i,
+                        List* a_parameter_list,
+                        List* a_return_parameter_list,
+                        Node* b)
   : Node (line)
   , receiver (r)
   , identifier (i)
@@ -1010,7 +1009,7 @@ Method::Method (unsigned int line,
   , method (NULL)
 { }
 
-void Method::visit_children (NodeVisitor& visitor)
+void MethodDecl::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
   identifier->accept (visitor);
@@ -1019,12 +1018,12 @@ void Method::visit_children (NodeVisitor& visitor)
   body->accept (visitor);
 }
 
-Getter::Getter (unsigned int line,
-                Node * r,
-                Identifier * i,
-                List* pl,
-                List* rpl,
-                Node* b)
+GetterDecl::GetterDecl (unsigned int line,
+                        Node * r,
+                        Identifier * i,
+                        List* pl,
+                        List* rpl,
+                        Node* b)
   : Node (line)
   , receiver (r)
   , identifier (i)
@@ -1034,7 +1033,7 @@ Getter::Getter (unsigned int line,
   , getter (NULL)
 { }
 
-void Getter::visit_children (NodeVisitor& visitor)
+void GetterDecl::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
   identifier->accept (visitor);
@@ -1043,12 +1042,12 @@ void Getter::visit_children (NodeVisitor& visitor)
   body->accept (visitor);
 }
 
-Initializer::Initializer (unsigned int line,
-                          Node* r,
-                          Identifier * i,
-                          List* pl,
-                          List* rpl,
-                          Node* b)
+InitDecl::InitDecl (unsigned int line,
+                    Node* r,
+                    Identifier * i,
+                    List* pl,
+                    List* rpl,
+                    Node* b)
   : Node (line)
   , receiver (r)
   , identifier (i)
@@ -1058,7 +1057,7 @@ Initializer::Initializer (unsigned int line,
   , initializer (NULL)
 { }
 
-void Initializer::visit_children (NodeVisitor& visitor)
+void InitDecl::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
   identifier->accept (visitor);
@@ -1067,11 +1066,11 @@ void Initializer::visit_children (NodeVisitor& visitor)
   body->accept (visitor);
 }
 
-Reaction::Reaction (unsigned int line,
-                    Node* r,
-                    Identifier* i,
-                    List* pl,
-                    Node* b)
+ReactionDecl::ReactionDecl (unsigned int line,
+                            Node* r,
+                            Identifier* i,
+                            List* pl,
+                            Node* b)
   : Node (line)
   , receiver (r)
   , identifier (i)
@@ -1081,7 +1080,7 @@ Reaction::Reaction (unsigned int line,
   , reaction (NULL)
 { }
 
-void Reaction::visit_children (NodeVisitor& visitor)
+void ReactionDecl::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
   identifier->accept (visitor);
@@ -1090,7 +1089,7 @@ void Reaction::visit_children (NodeVisitor& visitor)
   body->accept (visitor);
 }
 
-DimensionedReaction::DimensionedReaction (unsigned int line,
+DimensionedReactionDecl::DimensionedReactionDecl (unsigned int line,
     Node* d,
     Node* r,
     Identifier* i,
@@ -1106,7 +1105,7 @@ DimensionedReaction::DimensionedReaction (unsigned int line,
   , reaction (NULL)
 { }
 
-void DimensionedReaction::visit_children (NodeVisitor& visitor)
+void DimensionedReactionDecl::visit_children (NodeVisitor& visitor)
 {
   dimension->accept (visitor);
   receiver->accept (visitor);
@@ -1116,13 +1115,14 @@ void DimensionedReaction::visit_children (NodeVisitor& visitor)
   body->accept (visitor);
 }
 
-Type::Type (unsigned int line, Identifier* i, Node* ts)
+TypeDecl::TypeDecl (unsigned int line, Identifier* i, Node* ts)
   : Node (line)
   , identifier (i)
   , type (ts)
+  , symbol (NULL)
 { }
 
-void Type::visit_children (NodeVisitor& visitor)
+void TypeDecl::visit_children (NodeVisitor& visitor)
 {
   identifier->accept (visitor);
   type->accept (visitor);

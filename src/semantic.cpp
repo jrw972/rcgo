@@ -116,7 +116,7 @@ allocate_statement_stack_variables (ast::Node* node, runtime::MemoryModel& memor
       AST_NOT_REACHED (node);
     }
 
-    void visit (Const& node)
+    void visit (ConstDecl& node)
     {
       // Do nothing.
     }
@@ -241,14 +241,14 @@ allocate_stack_variables (ast::Node* node)
 {
   struct visitor : public DefaultNodeVisitor
   {
-    void visit (ast::Action& node)
+    void visit (ast::ActionDecl& node)
     {
       allocate_symbol (node.action->memory_model, node.action->receiver_parameter);
       allocate_statement_stack_variables (node.body, node.action->memory_model);
       assert (node.action->memory_model.locals_empty ());
     }
 
-    void visit (DimensionedAction& node)
+    void visit (DimensionedActionDecl& node)
     {
       allocate_symbol (node.action->memory_model, node.action->receiver_parameter);
       allocate_symbol (node.action->memory_model, node.action->iota_parameter);
@@ -256,22 +256,22 @@ allocate_stack_variables (ast::Node* node)
       assert (node.action->memory_model.locals_empty ());
     }
 
-    void visit (ast::Bind& node)
+    void visit (ast::BindDecl& node)
     {
       allocate_symbol (node.bind->memory_model, node.bind->receiver_parameter);
       allocate_statement_stack_variables (node.body, node.bind->memory_model);
       assert (node.bind->memory_model.locals_empty ());
     }
 
-    void visit (ast::Function& node)
+    void visit (ast::FunctionDecl& node)
     {
-      allocate_parameters (node.function->memory_model, node.function->parameter_list ());
-      allocate_parameters (node.function->memory_model, node.function->return_parameter_list ());
-      allocate_statement_stack_variables (node.body, node.function->memory_model);
-      assert (node.function->memory_model.locals_empty ());
+      allocate_parameters (node.symbol->memory_model, node.symbol->parameter_list ());
+      allocate_parameters (node.symbol->memory_model, node.symbol->return_parameter_list ());
+      allocate_statement_stack_variables (node.body, node.symbol->memory_model);
+      assert (node.symbol->memory_model.locals_empty ());
     }
 
-    void visit (ast::Method& node)
+    void visit (ast::MethodDecl& node)
     {
       allocate_parameters (node.method->memory_model, node.method->parameter_list ());
       allocate_parameters (node.method->memory_model, node.method->return_parameter_list ());
@@ -279,7 +279,7 @@ allocate_stack_variables (ast::Node* node)
       assert (node.method->memory_model.locals_empty ());
     }
 
-    void visit (ast::Initializer& node)
+    void visit (ast::InitDecl& node)
     {
       allocate_parameters (node.initializer->memory_model, node.initializer->parameter_list ());
       allocate_parameters (node.initializer->memory_model, node.initializer->return_parameter_list ());
@@ -287,7 +287,7 @@ allocate_stack_variables (ast::Node* node)
       assert (node.initializer->memory_model.locals_empty ());
     }
 
-    void visit (ast::Getter& node)
+    void visit (ast::GetterDecl& node)
     {
       allocate_parameters (node.getter->memory_model, node.getter->parameter_list ());
       allocate_parameters (node.getter->memory_model, node.getter->return_parameter_list ());
@@ -295,14 +295,14 @@ allocate_stack_variables (ast::Node* node)
       assert (node.getter->memory_model.locals_empty ());
     }
 
-    void visit (ast::Reaction& node)
+    void visit (ast::ReactionDecl& node)
     {
       allocate_parameters (node.reaction->memory_model, node.reaction->parameter_list ());
       allocate_statement_stack_variables (node.body, node.reaction->memory_model);
       assert (node.reaction->memory_model.locals_empty ());
     }
 
-    void visit (DimensionedReaction& node)
+    void visit (DimensionedReactionDecl& node)
     {
       allocate_parameters (node.reaction->memory_model, node.reaction->parameter_list ());
       allocate_symbol (node.reaction->memory_model, node.reaction->iota);

@@ -33,7 +33,6 @@ BEGIN {
     id[count] = $0
     type[count] = "scope"
     code[count] = ""
-    line[count] = NR + 1
     count += 1
     next
 }
@@ -44,7 +43,6 @@ BEGIN {
     id[count] = $0
     type[count] = "unit"
     code[count] = ""
-    line[count] = NR + 1
     count += 1
     next
 }
@@ -55,7 +53,6 @@ BEGIN {
     id[count] = $0
     type[count] = "scenario"
     code[count] = ""
-    line[count] = NR + 1
     count += 1
     next
 }
@@ -65,7 +62,6 @@ BEGIN {
         name = function_name()
         print "void " name " () {"
         for (idx = 0; idx < count; idx += 1) {
-            print "#line " line[idx] " \"" FILENAME "\""
             print code[idx]
         }
         print "}"
@@ -83,6 +79,7 @@ BEGIN {
 
 {
     if (count > 0) {
+        code[count - 1] = code[count - 1] "#line " NR " \"" FILENAME "\"\n"
         code[count - 1] = code[count - 1] $0 "\n"
     } else {
         print "#line " NR " \"" FILENAME "\""

@@ -38,6 +38,7 @@ check_types.hpp check_types.cpp \
 composition.hpp composition.cpp \
 compute_receiver_access.hpp compute_receiver_access.cpp \
 enter_predeclared_identifiers.hpp enter_predeclared_identifiers.cpp \
+enter_top_level_identifiers.hpp enter_top_level_identifiers.cpp \
 error_reporter.hpp error_reporter.cpp \
 evaluate_static.hpp evaluate_static.cpp \
 executor_base.hpp executor_base.cpp \
@@ -54,9 +55,8 @@ operation.hpp operation.cpp \
 parameter_list.hpp parameter_list.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
 process_definitions.cpp \
-process_functions_and_methods.hpp process_functions_and_methods.cpp \
+process_top_level_declarations.hpp process_top_level_declarations.cpp \
 process_type_spec.cpp \
-process_types_and_constants.hpp process_types_and_constants.cpp \
 runtime.hpp runtime.cpp \
 runtime_types.hpp runtime_types.cpp \
 scope.hpp scope.cpp \

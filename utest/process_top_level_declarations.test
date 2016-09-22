@@ -1,0 +1,293 @@
+/* -*- c++ -*- */
+#include "unit_test.hpp"
+#include "enter_predeclared_identifiers.hpp"
+#include "enter_top_level_identifiers.hpp"
+#include "process_top_level_declarations.hpp"
+#include "node.hpp"
+#include "error_reporter.hpp"
+#include "scope.hpp"
+#include "symbol_cast.hpp"
+#include "type.hpp"
+
+using namespace semantic;
+
+scope(semantic); {
+
+  util::ErrorReporter er;
+  decl::Scope universal_scope;
+  enter_predeclared_identifiers (&universal_scope);
+  decl::Scope* package_scope = universal_scope.open ();
+  decl::Scope* file_scope = package_scope->open ();
+
+  ast::Identifier id1 (1, "mytype");
+  ast::Identifier id2 (1, "int");
+  ast::IdentifierType identifier_type (1, &id2);
+  ast::TypeDecl typedecl (1, &id1, &identifier_type);
+
+  scenario(TypeDecl); {
+    unit(process_top_level_declarations); {
+      enter_top_level_identifiers (&typedecl, er, package_scope, file_scope);
+      process_top_level_declarations (&typedecl, er, file_scope);
+      decl::Symbol* s = package_scope->find_local_symbol ("mytype");
+      ASSERT (s->state () == decl::Symbol::Defined);
+      type::NamedType* t = decl::symbol_cast<type::NamedType> (s);
+      ASSERT (t->underlying_type () == type::named_int.underlying_type ());
+    }; off();
+  }; off();
+
+  ast::IdentifierList identifiers (1);
+  identifiers.append (new ast::Identifier (1, "x"));
+  ast::IdentifierType type (1, &id2);
+  semantic::Value sv;
+  sv.present = 1;
+  sv.untyped_integer_value = 1;
+  ast::Literal value (1, type::UntypedInteger::instance (), sv);
+  ast::ExpressionList expressions (1);
+  expressions.append (&value);
+  ast::ConstDecl constdecl (1, &identifiers, &type, &expressions);
+
+  scenario(ConstDecl); {
+    unit(process_top_level_declarations); {
+      enter_top_level_identifiers (&constdecl, er, package_scope, file_scope);
+      process_top_level_declarations (&constdecl, er, file_scope);
+      decl::Symbol* s = package_scope->find_local_symbol ("x");
+      ASSERT (s->state () == decl::Symbol::Defined);
+      decl::Constant* c = decl::symbol_cast<decl::Constant> (s);
+      ASSERT (c->type == &type::named_int);
+      ASSERT (c->value.present);
+      ASSERT (c->value.int_value == 1);
+    }; off();
+  }; off();
+
+  // ast::Identifier funcid (1, "f");
+  // ast::IdentifierList parameters (1);
+  // ast::IdentifierList return_parameters (1);
+  // ast::IdentifierList body (1);
+  // ast::FunctionDecl functiondecl (1, &funcid, &parameters, &return_parameters, &body);
+
+  // scenario(FunctionDecl); {
+  //   unit(process_top_level_declarations); {
+  //     process_top_level_declarations (&functiondecl, er, package_scope, file_scope);
+  //     decl::Symbol* s = package_scope->find_local_symbol ("f");
+  //     ASSERT (s != NULL);
+  //     ASSERT (decl::symbol_cast<decl::FunctionBase> (s) != NULL);
+  //     ASSERT (s->state () == decl::Symbol::Declared);
+  //   }; off();
+  // }; off();
+
+  // ast::Identifier identifier (1, "i");
+  // ast::Identifier init (1, "init");
+  // ast::IdentifierList arguments (1);
+  // ast::InstanceDecl instancedecl (1, &identifier, &type, &init, &arguments);
+
+  // scenario(InstanceDecl); {
+  //   unit(process_top_level_declarations); {
+  //     process_top_level_declarations (&instancedecl, er, package_scope, file_scope);
+  //     decl::Symbol* s = package_scope->find_local_symbol ("i");
+  //     ASSERT (s != NULL);
+  //     ASSERT (decl::symbol_cast<decl::Instance> (s) != NULL);
+  //     ASSERT (s->state () == decl::Symbol::Declared);
+  //   }; off();
+  // }; off();
+
+  // ast::TopLevelDeclList decllist (1);
+  // decllist.append (&typedecl);
+  // decllist.append (&constdecl);
+  // decllist.append (&functiondecl);
+  // decllist.append (&instancedecl);
+
+  // scenario(TopLevelDeclList); {
+  //   unit(process_top_level_declarations); {
+  //     process_top_level_declarations (&decllist, er, package_scope, file_scope);
+  //     ASSERT (package_scope->find_local_symbol ("mytype") != NULL);
+  //     ASSERT (package_scope->find_local_symbol ("x") != NULL);
+  //     ASSERT (package_scope->find_local_symbol ("f") != NULL);
+  //     ASSERT (package_scope->find_local_symbol ("i") != NULL);
+  //   }; off();
+  // }; off();
+
+  // ast::Identifier package (1, "package");
+  // ast::ImportDeclList imports (1);
+  // ast::SourceFile sourcefile (1, &package, &imports, &decllist);
+
+  // scenario(SourceFile); {
+  //   unit(process_top_level_declarations); {
+  //     process_top_level_declarations (&sourcefile, er, package_scope, file_scope);
+  //     ASSERT (package_scope->find_local_symbol ("mytype") != NULL);
+  //     ASSERT (package_scope->find_local_symbol ("x") != NULL);
+  //     ASSERT (package_scope->find_local_symbol ("f") != NULL);
+  //     ASSERT (package_scope->find_local_symbol ("i") != NULL);
+  //   }; off();
+  // }; off();
+
+  file_scope->close ();
+  package_scope->close ();
+
+}; off();
+
+
+// scope(semantic); {
+//   util::ErrorReporter er;
+//   decl::Scope scope;
+//   scenario(Const); {
+//     unit(process_types_and_constants); {
+//       ast::IdentifierList identifiers (1);
+//       identifiers.append (new ast::Identifier (1, "x"));
+//       ast::Identifier id1 (1, "int");
+//       ast::IdentifierType type (1, &id1);
+//       semantic::Value sv;
+//       sv.present = 1;
+//       sv.untyped_integer_value = 1;
+//       ast::Literal value (1, type::UntypedInteger::instance (), sv);
+//       ast::ExpressionList expressions (1);
+//       expressions.append (&value);
+//       ast::ConstDecl root (1, &identifiers, &type, &expressions);
+//       enter_predeclared_identifiers (&scope);
+//       process_types_and_constants (&root, er, &scope);
+//       ASSERT (root.done);
+//       decl::Symbol* sym = scope.find_global_symbol ("x");
+//       ASSERT (sym != NULL);
+//       decl::Constant* c = decl::symbol_cast<decl::Constant> (sym);
+//       ASSERT (c != NULL);
+//       ASSERT (c->type == &type::named_int);
+//       ASSERT (c->value.present);
+//       ASSERT (c->value.int_value == 1);
+//     }; off();
+//   }; off();
+//   scenario(Const_Mismatch); {
+//     unit(process_types_and_constants); {
+//       ast::IdentifierList identifiers (1);
+//       identifiers.append (new ast::Identifier (1, "x"));
+//       ast::Identifier id1 (1, "int");
+//       ast::IdentifierType type (1, &id1);
+//       ast::ExpressionList expressions (1);
+//       ast::ConstDecl root (1, &identifiers, &type, &expressions);
+//       enter_predeclared_identifiers (&scope);
+//       process_types_and_constants (&root, er, &scope);
+//       ASSERT (root.done);
+//       ASSERT (er.count () == 1);
+//       ASSERT (er.list ().back () == util::Expected_N_Expressions);
+//     }; off();
+//   }; off();
+//   scenario(Const_Not_Const); {
+//     unit(process_types_and_constants); {
+//       ast::IdentifierList identifiers (1);
+//       identifiers.append (new ast::Identifier (1, "x"));
+//       ast::Identifier id1 (1, "int");
+//       ast::IdentifierType idtype (1, &id1);
+//       ast::Pointer type (1, &idtype);
+//       ast::Identifier id2 (1, "new");
+//       ast::IdentifierExpression idx (1, &id2);
+//       ast::ExpressionList args (1);
+//       ast::Identifier id3 (1, "int");
+//       ast::IdentifierType idtype2 (1, &id3);
+//       ast::TypeExpression tex (1, &idtype2);
+//       args.append (&tex);
+//       ast::Call call (1, &idx, &args);
+//       ast::ExpressionList expressions (1);
+//       expressions.append (&call);
+//       ast::ConstDecl root (1, &identifiers, &type, &expressions);
+//       enter_predeclared_identifiers (&scope);
+//       process_types_and_constants (&root, er, &scope);
+//       ASSERT (root.done);
+//       ASSERT (er.count () == 1);
+//       ASSERT (er.list ().back () == util::Expression_Is_Not_Constant);
+//     }; off();
+//   }; off();
+//   scenario(Const_Not_Assignable); {
+//     unit(process_types_and_constants); {
+//       ast::IdentifierList identifiers (1);
+//       identifiers.append (new ast::Identifier (1, "x"));
+//       ast::Identifier id1 (1, "int");
+//       ast::IdentifierType type (1, &id1);
+//       semantic::Value sv;
+//       sv.present = 1;
+//       sv.untyped_float_value = 1.5;
+//       ast::Literal value (1, type::UntypedFloat::instance (), sv);
+//       ast::ExpressionList expressions (1);
+//       expressions.append (&value);
+//       ast::ConstDecl root (1, &identifiers, &type, &expressions);
+//       enter_predeclared_identifiers (&scope);
+//       process_types_and_constants (&root, er, &scope);
+//       ASSERT (root.done);
+//       ASSERT (er.count () == 1);
+//       ASSERT (er.list ().back () == util::Cannot_Convert);
+//     }; off();
+//   }; off();
+//   scenario(Const_No_Type); {
+//     unit(process_types_and_constants); {
+//       ast::IdentifierList identifiers (1);
+//       identifiers.append (new ast::Identifier (1, "x"));
+//       ast::EmptyType type (1);
+//       semantic::Value sv;
+//       sv.present = 1;
+//       sv.untyped_integer_value = 1;
+//       ast::Literal value (1, type::UntypedInteger::instance (), sv);
+//       ast::ExpressionList expressions (1);
+//       expressions.append (&value);
+//       ast::ConstDecl root (1, &identifiers, &type, &expressions);
+//       enter_predeclared_identifiers (&scope);
+//       process_types_and_constants (&root, er, &scope);
+//       ASSERT (root.done);
+//       decl::Symbol* sym = scope.find_global_symbol ("x");
+//       ASSERT (sym != NULL);
+//       decl::Constant* c = decl::symbol_cast<decl::Constant> (sym);
+//       ASSERT (c != NULL);
+//       ASSERT (c->type == type::UntypedInteger::instance ());
+//       ASSERT (c->value.present);
+//       ASSERT (c->value.untyped_integer_value == 1);
+//     }; off();
+//   }; off();
+//   scenario(Const_No_Type_Not_Const); {
+//     unit(process_types_and_constants); {
+//       ast::IdentifierList identifiers (1);
+//       identifiers.append (new ast::Identifier (1, "x"));
+//       ast::EmptyType type (1);
+//       ast::Identifier id2 (1, "new");
+//       ast::IdentifierExpression idx (1, &id2);
+//       ast::ExpressionList args (1);
+//       ast::Identifier id3 (1, "int");
+//       ast::IdentifierType idtype2 (1, &id3);
+//       ast::TypeExpression tex (1, &idtype2);
+//       args.append (&tex);
+//       ast::Call call (1, &idx, &args);
+//       ast::ExpressionList expressions (1);
+//       expressions.append (&call);
+//       ast::ConstDecl root (1, &identifiers, &type, &expressions);
+//       enter_predeclared_identifiers (&scope);
+//       process_types_and_constants (&root, er, &scope);
+//       ASSERT (root.done);
+//       ASSERT (er.count () == 1);
+//       ASSERT (er.list ().back () == util::Expression_Is_Not_Constant);
+//     }; off();
+//   }; off();
+//   scenario(TopLevelDeclList); {
+//     unit(process_types_and_constants); {
+//       ast::Identifier id1 (1, "mytype");
+//       ast::Identifier id2 (1, "int");
+//       ast::IdentifierType identifier_type (1, &id2);
+//       ast::TypeDecl type (1, &id1, &identifier_type);
+//       ast::TopLevelDeclList root (1);
+//       root.append (&type);
+//       enter_predeclared_identifiers (&scope);
+//       process_types_and_constants (&root, er, &scope);
+//       ASSERT (scope.find_global_symbol ("mytype") != NULL);
+//     }; off();
+//   }; off();
+//   scenario(SourceFile); {
+//     unit(process_types_and_constants); {
+//       ast::Identifier package (1, "pkg");
+//       ast::ImportDeclList imports (1);
+//       ast::Identifier id1 (1, "mytype");
+//       ast::Identifier id2 (1, "int");
+//       ast::IdentifierType identifier_type (1, &id2);
+//       ast::TypeDecl type (1, &id1, &identifier_type);
+//       ast::TopLevelDeclList top (1);
+//       top.append (&type);
+//       ast::SourceFile root (1, &package, &imports, &top);
+//       enter_predeclared_identifiers (&scope);
+//       process_types_and_constants (&root, er, &scope);
+//       ASSERT (scope.find_global_symbol ("mytype") != NULL);
+//     }; off();
+//   }; off();
+// }; off();

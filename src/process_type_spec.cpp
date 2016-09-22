@@ -103,7 +103,8 @@ process_parameter_list (Node* node, ErrorReporter& er, decl::Scope* scope, bool 
           VariableList* child = static_cast<VariableList*> (*pos1);
           List *identifier_list = child->identifiers;
           Node *type_spec = child->type;
-          const type::Type* type = process_type (type_spec, er, scope, true);
+          // TODO:  Check for failure.
+          const type::Type* type = process_type (type_spec, er, scope);
           for (List::ConstIterator pos2 = identifier_list->begin (), limit2 = identifier_list->end ();
                pos2 != limit2;
                ++pos2)
@@ -142,18 +143,26 @@ process_parameter_list (Node* node, ErrorReporter& er, decl::Scope* scope, bool 
 }
 
 const type::Type *
-process_type (Node* node, ErrorReporter& er, decl::Scope* scope, bool force)
+process_type (Node* node, ErrorReporter& er, decl::Scope* scope, bool require_named_types_to_be_defined)
 {
+  if (node->eval.expression_kind == TypeExpressionKind)
+    {
+      return node->eval.type;
+    }
+
   struct Visitor : public ast::DefaultNodeVisitor
   {
     ErrorReporter& er;
     decl::Scope* scope;
+    bool const require_named_types_to_be_defined;
     const type::Type* type;
 
     Visitor (ErrorReporter& a_er,
-             decl::Scope* a_scope)
+             decl::Scope* a_scope,
+             bool a_require_named_types_to_be_defined)
       : er (a_er)
       , scope (a_scope)
+      , require_named_types_to_be_defined (a_require_named_types_to_be_defined)
       , type (NULL)
     { }
 
@@ -165,12 +174,14 @@ process_type (Node* node, ErrorReporter& er, decl::Scope* scope, bool force)
     void visit (ast::Array& node)
     {
       long dimension = process_array_dimension (node.dimension, er, scope);
-      const type::Type* base_type = process_type (node.base_type, er, scope, true);
+      // TODO:  Check for failure.
+      const type::Type* base_type = process_type (node.base_type, er, scope);
       type = base_type->get_array (dimension);
     }
 
     void visit (ast::Slice& node)
     {
+      // TODO:  Check for failure.
       const type::Type* base_type = process_type (node.child, er, scope, false);
       type = base_type->get_slice ();
     }
@@ -200,7 +211,8 @@ process_type (Node* node, ErrorReporter& er, decl::Scope* scope, bool force)
           VariableList* c = static_cast<VariableList*> (child);
           List *identifier_list = c->identifiers;
           Node *type_spec = c->type;
-          const type::Type *type = process_type (type_spec, er, scope, true);
+          // TODO:  Check for failure.
+          const type::Type *type = process_type (type_spec, er, scope);
           for (List::ConstIterator pos2 = identifier_list->begin (),
                limit2 = identifier_list->end ();
                pos2 != limit2;
@@ -225,6 +237,7 @@ process_type (Node* node, ErrorReporter& er, decl::Scope* scope, bool force)
 
     void visit (ast::Heap& node)
     {
+      // TODO:  Check for failure.
       type = process_type (node.child, er, scope, false)->get_heap ();
     }
 
@@ -238,16 +251,24 @@ process_type (Node* node, ErrorReporter& er, decl::Scope* scope, bool force)
           error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                          "%s was not declared in this scope (E102)", identifier.c_str ());
         }
-      type = symbol_cast<NamedType> (s);
-      if (type == NULL)
+
+      NamedType* t = symbol_cast<NamedType> (s);
+      type = t;
+      if (t == NULL)
         {
           error_at_line (-1, 0, child->location.file.c_str (), child->location.line,
                          "%s does not refer to a type (E110)", identifier.c_str ());
+        }
+
+      if (require_named_types_to_be_defined && !t->process_declaration (er, scope))
+        {
+          type = NULL;
         }
     }
 
     void visit (ast::Pointer& node)
     {
+      // TODO:  Check for failure.
       const type::Type* base_type = process_type (node.child, er, scope, false);
       type = base_type->get_pointer ();
     }
@@ -269,16 +290,13 @@ process_type (Node* node, ErrorReporter& er, decl::Scope* scope, bool force)
     }
   };
 
-  Visitor type_spec_visitor (er, scope);
+  Visitor type_spec_visitor (er, scope, require_named_types_to_be_defined);
   node->accept (type_spec_visitor);
 
-  if (force && type_spec_visitor.type->underlying_type () == NULL)
-    {
-      error_at_line (-1, 0, node->location.file.c_str (), node->location.line,
-                     "type is defined recursively (E173)");
-    }
+  node->eval.expression_kind = TypeExpressionKind;
+  node->eval.type = type_spec_visitor.type;
 
-  return type_spec_visitor.type;
+  return node->eval.type;
 }
 
 }

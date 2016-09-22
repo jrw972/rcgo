@@ -47,35 +47,35 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
     node.visit_children (*this);
   }
 
-  void visit (ast::Type& node)
+  void visit (ast::TypeDecl& node)
   {
     // Do nothing.
   }
 
-  void visit (ast::Instance& node)
+  void visit (ast::InstanceDecl& node)
   {
     node.arguments->accept (*this);
     node.operation = new MethodCall (node.symbol->initializer, new runtime::Instance (node.symbol), node.arguments->operation);
   }
 
-  void visit (Const& node)
+  void visit (ConstDecl& node)
   {
     // Do nothing.
   }
 
-  void visit (ast::Initializer& node)
+  void visit (ast::InitDecl& node)
   {
     node.body->accept (*this);
     node.initializer->operation = new SetRestoreCurrentInstance (node.body->operation, node.initializer->memory_model.receiver_offset ());
   }
 
-  void visit (ast::Getter& node)
+  void visit (ast::GetterDecl& node)
   {
     node.body->accept (*this);
     node.getter->operation = new SetRestoreCurrentInstance (node.body->operation, node.getter->memory_model.receiver_offset ());
   }
 
-  void visit (ast::Action& node)
+  void visit (ast::ActionDecl& node)
   {
     node.precondition->accept (*this);
     Operation* p = node.precondition->operation;
@@ -85,7 +85,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
     node.body->operation = new SetRestoreCurrentInstance (node.body->operation, node.action->memory_model.receiver_offset ());
   }
 
-  void visit (DimensionedAction& node)
+  void visit (DimensionedActionDecl& node)
   {
     node.precondition->accept (*this);
     Operation* p = node.precondition->operation;
@@ -95,30 +95,30 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
     node.body->operation = new SetRestoreCurrentInstance (node.body->operation, node.action->memory_model.receiver_offset ());
   }
 
-  void visit (ast::Reaction& node)
+  void visit (ast::ReactionDecl& node)
   {
     node.body->accept (*this);
     node.reaction->operation = new SetRestoreCurrentInstance (node.body->operation, node.reaction->memory_model.receiver_offset ());
   }
 
-  void visit (DimensionedReaction& node)
+  void visit (DimensionedReactionDecl& node)
   {
     node.body->accept (*this);
     node.reaction->operation = new SetRestoreCurrentInstance (node.body->operation, node.reaction->memory_model.receiver_offset ());
   }
 
-  void visit (ast::Bind& node)
+  void visit (ast::BindDecl& node)
   {
     node.body->accept (*this);
   }
 
-  void visit (ast::Function& node)
+  void visit (ast::FunctionDecl& node)
   {
     node.body->accept (*this);
-    node.function->operation = node.body->operation;
+    node.symbol->operation = node.body->operation;
   }
 
-  void visit (ast::Method& node)
+  void visit (ast::MethodDecl& node)
   {
     node.body->accept (*this);
     node.method->operation = node.body->operation;

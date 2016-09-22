@@ -235,7 +235,7 @@ void CheckForForeignSafe (util::ErrorReporter& er,
                           const decl::ParameterList* return_parameter_list);
 
 // Process a type specification.
-const type::Type * process_type (ast::Node* node, util::ErrorReporter& er, decl::Scope* scope, bool force);
+const type::Type * process_type (ast::Node* node, util::ErrorReporter& er, decl::Scope* scope, bool require_named_types_to_be_defined = true);
 
 // Process a signature.
 const decl::ParameterList*

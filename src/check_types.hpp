@@ -10,6 +10,7 @@ void require_value_or_variable_list (const ast::List* node);
 void check_mutability_arguments (ast::Node* node, const decl::ParameterList* signature);
 
 void check_types (ast::Node* root, util::ErrorReporter& er, decl::Scope* scope);
+bool check_constant_expression (ast::Node* root, util::ErrorReporter& er, decl::Scope* scope);
 }
 
 #endif // RC_SRC_CHECK_TYPES_HPP

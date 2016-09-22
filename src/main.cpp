@@ -20,8 +20,8 @@
 #include "check_types.hpp"
 #include "compute_receiver_access.hpp"
 #include "enter_predeclared_identifiers.hpp"
-#include "process_types_and_constants.hpp"
-#include "process_functions_and_methods.hpp"
+#include "enter_top_level_identifiers.hpp"
+#include "process_top_level_declarations.hpp"
 #include "scheduler.hpp"
 #include "scope.hpp"
 #include "error_reporter.hpp"
@@ -223,9 +223,13 @@ main (int argc, char **argv)
 
   decl::Scope* package_scope = universal_scope.open ();
   decl::Scope* file_scope = package_scope->open ();
-  // Enter all
-  semantic::process_types_and_constants (root, er, file_scope);
-  semantic::process_functions_and_methods (root, er, file_scope);
+  // Enter top-level identifier into the package scope.
+  // This includes constants, types, functions, and instances.
+  semantic::enter_top_level_identifiers (root, er, package_scope, file_scope);
+  // Process all top-level declarations.
+  // This includes constants, types, functions, methods, initializers, getters,
+  // actions, reactions, binders, and instances.
+  semantic::process_top_level_declarations (root, er, file_scope);
   semantic::check_types (root, er, file_scope);
   semantic::compute_receiver_access (root);
 

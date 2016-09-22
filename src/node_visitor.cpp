@@ -202,51 +202,51 @@ void DefaultNodeVisitor::visit (ForIota& node)
   default_action (node);
 }
 
-void DefaultNodeVisitor::visit (Action& node)
+void DefaultNodeVisitor::visit (ActionDecl& node)
 {
   default_action (node);
 }
-void DefaultNodeVisitor::visit (Const& node)
+void DefaultNodeVisitor::visit (ConstDecl& node)
 {
   default_action (node);
 }
-void DefaultNodeVisitor::visit (DimensionedAction& node)
+void DefaultNodeVisitor::visit (DimensionedActionDecl& node)
 {
   default_action (node);
 }
-void DefaultNodeVisitor::visit (Bind& node)
+void DefaultNodeVisitor::visit (BindDecl& node)
 {
   default_action (node);
 }
-void DefaultNodeVisitor::visit (Function& node)
+void DefaultNodeVisitor::visit (FunctionDecl& node)
 {
   default_action (node);
 }
-void DefaultNodeVisitor::visit (Getter& node)
+void DefaultNodeVisitor::visit (GetterDecl& node)
 {
   default_action (node);
 }
-void DefaultNodeVisitor::visit (Initializer& node)
+void DefaultNodeVisitor::visit (InitDecl& node)
 {
   default_action (node);
 }
-void DefaultNodeVisitor::visit (Instance& node)
+void DefaultNodeVisitor::visit (InstanceDecl& node)
 {
   default_action (node);
 }
-void DefaultNodeVisitor::visit (Method& node)
+void DefaultNodeVisitor::visit (MethodDecl& node)
 {
   default_action (node);
 }
-void DefaultNodeVisitor::visit (Reaction& node)
+void DefaultNodeVisitor::visit (ReactionDecl& node)
 {
   default_action (node);
 }
-void DefaultNodeVisitor::visit (DimensionedReaction& node)
+void DefaultNodeVisitor::visit (DimensionedReactionDecl& node)
 {
   default_action (node);
 }
-void DefaultNodeVisitor::visit (Type& node)
+void DefaultNodeVisitor::visit (TypeDecl& node)
 {
   default_action (node);
 }

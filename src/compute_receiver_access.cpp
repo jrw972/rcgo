@@ -59,28 +59,28 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.visit_children (*this);
   }
 
-  void visit (ast::Type& node)
+  void visit (ast::TypeDecl& node)
   {
     // Do nothing.
   }
 
-  void visit (Const& node)
+  void visit (ConstDecl& node)
   {
     // Do nothing.
   }
 
-  void visit (ast::Initializer& node)
+  void visit (ast::InitDecl& node)
   {
     // Do nothing.
   }
 
-  void visit (ast::Getter& node)
+  void visit (ast::GetterDecl& node)
   {
     node.body->accept (*this);
     node.getter->immutable_phase_access = node.body->eval.receiver_access;
   }
 
-  void visit (ast::Action& node)
+  void visit (ast::ActionDecl& node)
   {
     node.precondition->accept (*this);
     node.body->accept (*this);
@@ -88,7 +88,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.action->immutable_phase_access = node.body->eval.receiver_access;
   }
 
-  void visit (DimensionedAction& node)
+  void visit (DimensionedActionDecl& node)
   {
     node.precondition->accept (*this);
     node.body->accept (*this);
@@ -96,29 +96,29 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.action->immutable_phase_access = node.body->eval.receiver_access;
   }
 
-  void visit (ast::Reaction& node)
+  void visit (ast::ReactionDecl& node)
   {
     node.body->accept (*this);
     node.reaction->immutable_phase_access = node.body->eval.receiver_access;
   }
 
-  void visit (DimensionedReaction& node)
+  void visit (DimensionedReactionDecl& node)
   {
     node.body->accept (*this);
     node.reaction->immutable_phase_access = node.body->eval.receiver_access;
   }
 
-  void visit (ast::Bind& node)
+  void visit (ast::BindDecl& node)
   {
     // Do nothing.
   }
 
-  void visit (ast::Function& node)
+  void visit (ast::FunctionDecl& node)
   {
     // Do nothing.
   }
 
-  void visit (ast::Method& node)
+  void visit (ast::MethodDecl& node)
   {
     // Do nothing.
   }
@@ -319,7 +319,7 @@ struct Visitor : public ast::DefaultNodeVisitor
                                           node.right->eval.receiver_access);
   }
 
-  void visit (ast::Instance& node)
+  void visit (ast::InstanceDecl& node)
   {
     node.arguments->accept (*this);
   }

@@ -71,10 +71,10 @@ scope(ast); {
   Identifier node3 (1, "node3");
   Identifier node4 (1, "node4");
 
-  scope(Action); {
+  scope(ActionDecl); {
     scenario(default); {
-      Action node (1, &node1, &identifier1, &node2, &node3);
-      unit(Action); {
+      ActionDecl node (1, &node1, &identifier1, &node2, &node3);
+      unit(ActionDecl); {
         ASSERT (node.receiver == &node1);
         ASSERT (node.identifier == &identifier1);
         ASSERT (node.precondition == &node2);
@@ -208,7 +208,7 @@ scope(ast); {
 
   scope(Bind); {
     scenario(default); {
-      Bind node (1, &node1, &identifier1, &node2);
+      BindDecl node (1, &node1, &identifier1, &node2);
       unit(Bind); {
         ASSERT (node.receiver == &node1);
         ASSERT (node.identifier == &identifier1);
@@ -344,11 +344,12 @@ scope(ast); {
 
   scope (Const); {
     scenario(default); {
-      Const node (1, &list1, &node1, &list2);
+      ConstDecl node (1, &list1, &node1, &list2);
       unit(Const); {
         ASSERT (node.identifiers == &list1);
         ASSERT (node.type == &node1);
         ASSERT (node.expressions == &list2);
+        ASSERT (node.symbols.empty ());
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
@@ -399,10 +400,10 @@ scope(ast); {
     }; off();
   }; off();
 
-  scope(DimensionedAction); {
+  scope(DimensionedActionDecl); {
     scenario(default); {
-      DimensionedAction node (1, &node1, &node2, &identifier1, &node3, &node4);
-      unit(DimensionedAction); {
+      DimensionedActionDecl node (1, &node1, &node2, &identifier1, &node3, &node4);
+      unit(DimensionedActionDecl); {
         ASSERT (node.dimension == &node1);
         ASSERT (node.receiver == &node2);
         ASSERT (node.identifier == &identifier1);
@@ -422,10 +423,10 @@ scope(ast); {
   }; off();
 
 
-  scope(DimensionedReaction); {
+  scope(DimensionedReactionDecl); {
     scenario(default); {
-      DimensionedReaction node (1, &node1, &node2, &identifier1, &list1, &node3);
-      unit(DimensionedReaction); {
+      DimensionedReactionDecl node (1, &node1, &node2, &identifier1, &list1, &node3);
+      unit(DimensionedReactionDecl); {
         ASSERT (node.dimension == &node1);
         ASSERT (node.receiver == &node2);
         ASSERT (node.identifier == &identifier1);
@@ -576,9 +577,9 @@ scope(ast); {
     }; off();
   }; off();
 
-  scope(Function); {
+  scope(FunctionDecl); {
     scenario(default); {
-      Function node (1, &identifier1, &list1, &list2, &node1);
+      FunctionDecl node (1, &identifier1, &list1, &list2, &node1);
       unit(Function); {
         ASSERT (node.identifier == &identifier1);
         ASSERT (node.parameters == &list1);
@@ -597,10 +598,10 @@ scope(ast); {
     }; off();
   }; off();
 
-  scope(Getter); {
+  scope(GetterDecl); {
     scenario(default); {
-      Getter node (1, &node1, &identifier1, &list1, &list2, &node2);
-      unit(Getter); {
+      GetterDecl node (1, &node1, &identifier1, &list1, &list2, &node2);
+      unit(GetterDecl); {
         ASSERT (node.receiver == &node1);
         ASSERT (node.identifier == &identifier1);
         ASSERT (node.parameters == &list1);
@@ -806,10 +807,10 @@ scope(ast); {
     }; off();
   }; off();
 
-  scope(Initializer); {
+  scope(InitDecl); {
     scenario(default); {
-      Initializer node (1, &node1, &identifier1, &list1, &list2, &node2);
-      unit(Initializer); {
+      InitDecl node (1, &node1, &identifier1, &list1, &list2, &node2);
+      unit(InitDecl); {
         ASSERT (node.receiver == &node1);
         ASSERT (node.identifier == &identifier1);
         ASSERT (node.parameters == &list1);
@@ -828,9 +829,9 @@ scope(ast); {
     }; off();
   }; off();
 
-  scope(Instance); {
+  scope(InstanceDecl); {
     scenario(default); {
-      Instance node (1, &identifier1, &node1, &identifier2, &list1);
+      InstanceDecl node (1, &identifier1, &node1, &identifier2, &list1);
       unit(Instance); {
         ASSERT (node.identifier == &identifier1);
         ASSERT (node.type == &node1);
@@ -942,10 +943,10 @@ scope(ast); {
     }; off();
   }; off();
 
-  scope(Method); {
+  scope(MethodDecl); {
     scenario(default); {
-      Method node (1, &node1, &identifier1, &list1, &list2, &node2);
-      unit(Method); {
+      MethodDecl node (1, &node1, &identifier1, &list1, &list2, &node2);
+      unit(MethodDecl); {
         ASSERT (node.receiver == &node1);
         ASSERT (node.identifier == &identifier1);
         ASSERT (node.parameters == &list1);
@@ -1053,10 +1054,10 @@ scope(ast); {
     }; off();
   }; off();
 
-  scope(Reaction); {
+  scope(ReactionDecl); {
     scenario(default); {
-      Reaction node (1, &node1, &identifier1, &list1, &node2);
-      unit(Reaction); {
+      ReactionDecl node (1, &node1, &identifier1, &list1, &node2);
+      unit(ReactionDecl); {
         ASSERT (node.receiver == &node1);
         ASSERT (node.identifier == &identifier1);
         ASSERT (node.parameters == &list1);
@@ -1211,12 +1212,13 @@ scope(ast); {
     }; off();
   }; off();
 
-  scope(Type); {
+  scope(TypeDecl); {
     scenario(default); {
-      Type node (1, &identifier1, &node1);
-      unit(Type); {
+      TypeDecl node (1, &identifier1, &node1);
+      unit(TypeDecl); {
         ASSERT (node.identifier == &identifier1);
         ASSERT (node.type == &node1);
+        ASSERT (node.symbol == NULL);
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);

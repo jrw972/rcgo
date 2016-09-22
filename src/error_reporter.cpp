@@ -114,7 +114,7 @@ ErrorReporter::expected_n_expressions (const Location& loc,
                                        size_t expected,
                                        size_t received)
 {
-  out_ << loc << ": expected " << expected << " expressions but received " << received << '\n';
+  out_ << loc << ": expected " << expected << " expressions but received " << received << ' ' << Expected_N_Expressions << '\n';
   return bump (Expected_N_Expressions);
 }
 
@@ -123,15 +123,32 @@ ErrorReporter::cannot_convert (const Location& loc,
                                const type::Type* from,
                                const type::Type* to)
 {
-  out_ << loc << ": cannot convert expression of type " << from->to_error_string () << " to " << to->to_error_string () << '\n';
+  out_ << loc << ": cannot convert expression of type " << from->to_error_string () << " to " << to->to_error_string () << ' ' << Cannot_Convert << '\n';
   return bump (Cannot_Convert);
 }
 
 ErrorCode
 ErrorReporter::expression_is_not_constant (const Location& loc)
 {
-  out_ << loc << ": expression is not constant\n";
+  out_ << loc << ": expression is not constant " << Expression_Is_Not_Constant << '\n';
   return bump (Expression_Is_Not_Constant);
+}
+
+ErrorCode
+ErrorReporter::already_declared (const Location& loc,
+                                 const std::string& id,
+                                 const Location& previous_loc)
+{
+  out_ << loc << ": " << id << " was already declared in this scope (previous declaration at " << previous_loc << ") " << Already_Declared << '\n';
+  return bump (Already_Declared);
+}
+
+ErrorCode
+ErrorReporter::defined_recursively (const Location& loc,
+                                    const std::string& id)
+{
+  out_ << loc << ": " << id << " is defined recursively " << Defined_Recursively << '\n';
+  return bump (Defined_Recursively);
 }
 
 const ErrorReporter::ListType& ErrorReporter::list () const
