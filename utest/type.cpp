@@ -69,13 +69,12 @@ main (int argc, char** argv)
   util::Location loc;
   {
     NamedType foo ("foo", loc, static_cast<ast::TypeDecl*> (NULL));
-    tap.tassert ("NamedType::NamedType(1)", foo.underlying_type () == NULL &&
-                 foo.defined () == false);
+    tap.tassert ("NamedType::NamedType(1)", foo.underlying_type () == NULL);
   }
 
   {
     NamedType foo ("foo", loc, Int::instance ());
-    tap.tassert ("NamedType::NamedType(2)", foo.underlying_type () == Int::instance () && foo.defined () == true);
+    tap.tassert ("NamedType::NamedType(2)", foo.underlying_type () == Int::instance ());
   }
 
   {
@@ -97,7 +96,7 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType foo ("foo", loc, new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL, loc));
     decl::Method* r1 = foo.find_method ("r");
     decl::Method* r = new decl::Method ("r", new type::Method (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
     foo.insert_method (r);
@@ -106,7 +105,7 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType foo ("foo", loc, new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL, loc));
     decl::Initializer* r1 = foo.find_initializer ("r");
     decl::Initializer* r = new decl::Initializer ("r", new type::Initializer (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
     foo.insert_initializer (r);
@@ -115,7 +114,7 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType foo ("foo", loc, new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL, loc));
     tap.tassert ("NamedType::getters_begin/end", foo.getters_begin () == foo.getters_end ());
     decl::Getter* r1 = foo.find_getter ("r");
     decl::Getter* r = new decl::Getter (NULL, "r", new type::Getter (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
@@ -125,7 +124,7 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType foo ("foo", loc, new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL, loc));
     tap.tassert ("NamedType::actions_begin/end", foo.actions_begin () == foo.actions_end ());
     Action* r1 = foo.find_action ("r");
     Action* r = new Action (NULL, NULL, NULL, "r");
@@ -135,7 +134,7 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType foo ("foo", loc, new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL, loc));
     tap.tassert ("NamedType::reactions_begin/end", foo.reactions_begin () == foo.reactions_end ());
     decl::Reaction* r1 = foo.find_reaction ("r");
     decl::Reaction* r = new decl::Reaction (NULL, "r", NULL);
@@ -145,7 +144,7 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType foo ("foo", loc, new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL, loc));
     tap.tassert ("NamedType::binds_begin/end", foo.binds_begin () == foo.binds_end ());
     Bind* r1 = foo.find_bind ("r");
     Bind* r = new Bind (NULL, "r", NULL);
@@ -155,7 +154,7 @@ main (int argc, char** argv)
   }
 
   {
-    NamedType foo ("foo", loc, new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL, loc));
 
     decl::Method* m = new decl::Method ("m", new type::Method (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
     foo.insert_method (m);
@@ -176,16 +175,6 @@ main (int argc, char** argv)
     decl::Callable* n = foo.find_callable ("not there");
 
     tap.tassert ("NamedType::find_callable", m2 == m && i2 == i && g2 == g && r2 == r && n == NULL);
-  }
-
-  {
-    std::stringstream str;
-    Void::instance ()->print (str);
-    tap.tassert ("Void::print", str.str () == "<void>");
-  }
-
-  {
-    tap.tassert ("Void::kind", Void::instance ()->kind () == Void_Kind);
   }
 
   scalar_test<Bool> (tap, "Bool", "<bool>", Bool_Kind);
@@ -230,14 +219,14 @@ main (int argc, char** argv)
     Struct s;
     const Type* p = s.get_pointer ();
     Field* f1 = p->find_field ("r");
-    s.append_field (NULL, false, "r", &named_int, TagSet ());
+    s.append_field (NULL, false, "r", loc, &named_int, TagSet ());
     Field* f2 = p->find_field ("r");
     tap.tassert ("Pointer::find_field", f1 == NULL && f2 != NULL);
   }
 
   {
     util::Location loc;
-    NamedType foo ("foo", loc, new Component (NULL));
+    NamedType foo ("foo", loc, new Component (NULL, loc));
     decl::Method* r = new decl::Method ("r", new type::Method (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
     foo.insert_method (r);
     decl::Callable* r2 = foo.get_pointer ()->find_callable ("r");
@@ -293,7 +282,7 @@ main (int argc, char** argv)
   {
     std::stringstream str;
     Struct s;
-    s.append_field (NULL, false, "r", &named_int, TagSet ());
+    s.append_field (NULL, false, "r", loc, &named_int, TagSet ());
     s.print (str);
     tap.tassert ("Struct::print", str.str () == "struct {r int;}");
   }
@@ -306,7 +295,7 @@ main (int argc, char** argv)
   {
     Struct s;
     Field* f1 = s.find_field ("r");
-    s.append_field (NULL, false, "r", &named_int, TagSet ());
+    s.append_field (NULL, false, "r", loc, &named_int, TagSet ());
     Field* f2 = s.find_field ("r");
     tap.tassert ("Struct::find_field", f1 == NULL && f2 != NULL);
     tap.tassert ("Struct::field_count", s.field_count () == 1);
@@ -314,14 +303,14 @@ main (int argc, char** argv)
 
   {
     std::stringstream str;
-    Component s (NULL);
-    s.append_field (NULL, false, "r", &named_int, TagSet ());
+    Component s (NULL, loc);
+    s.append_field (NULL, false, "r", loc, &named_int, TagSet ());
     s.print (str);
     tap.tassert ("Component::print", str.str () == "component {r int;}");
   }
 
   {
-    Component s (NULL);
+    Component s (NULL, loc);
     tap.tassert ("Component::kind", s.kind () == Component_Kind);
   }
 
@@ -483,7 +472,7 @@ main (int argc, char** argv)
     util::Location loc;
 
     Struct s;
-    s.append_field (NULL, false, "field", &named_int, TagSet ());
+    s.append_field (NULL, false, "field", loc, &named_int, TagSet ());
 
     NamedType nt ("foo", loc, &s);
 
@@ -502,36 +491,28 @@ main (int argc, char** argv)
     nt.insert_bind (bind);
 
     {
-      const Type* t = nt.find ("field");
-      tap.tassert ("Type::select (field)", t == &named_int);
+      tap.tassert ("Type::select (field)", nt.has_member ("field"));
     }
     {
-      const Type* t = nt.find ("method");
-      tap.tassert ("Type::select (method)", t == method->callable_type ());
+      tap.tassert ("Type::select (method)", nt.has_member ("method"));
     }
     {
-      const Type* t = nt.find ("initializer");
-      tap.tassert ("Type::select (initializer)", t == initializer->callable_type ());
+      tap.tassert ("Type::select (initializer)", nt.has_member ("initializer"));
     }
     {
-      const Type* t = nt.find ("getter");
-      tap.tassert ("Type::select (getter)", t == getter->callable_type ());
+      tap.tassert ("Type::select (getter)", nt.has_member ("getter"));
     }
     {
-      const Type* t = nt.find ("action");
-      tap.tassert ("Type::select (action)", t == Void::instance ());
+      tap.tassert ("Type::select (action)", nt.has_member ("action"));
     }
     {
-      const Type* t = nt.find ("reaction");
-      tap.tassert ("Type::select (reaction)", t == reaction->callable_type ());
+      tap.tassert ("Type::select (reaction)", nt.has_member ("reaction"));
     }
     {
-      const Type* t = nt.find ("bind");
-      tap.tassert ("Type::select (bind)", t == Void::instance ());
+      tap.tassert ("Type::select (bind)", nt.has_member ("bind"));
     }
     {
-      const Type* t = nt.find ("not there");
-      tap.tassert ("Type::select (NULL)", t == NULL);
+      tap.tassert ("Type::select (NULL)", !nt.has_member ("not there"));
     }
   }
   {
@@ -577,40 +558,40 @@ main (int argc, char** argv)
   }
 
   {
-    Struct* s1 = (new Struct ())->append_field (NULL, false, "x", &named_int, TagSet ());
-    Struct* s2 = (new Struct ())->append_field (NULL, false, "x", &named_int, TagSet ());
+    Struct* s1 = (new Struct ())->append_field (NULL, false, "x", loc, &named_int, TagSet ());
+    Struct* s2 = (new Struct ())->append_field (NULL, false, "x", loc, &named_int, TagSet ());
     tap.tassert ("type::are_identical - struct same", are_identical (s1, s2));
   }
   {
-    Struct* s1 = (new Struct ())->append_field (NULL, true, "T", &named_int, TagSet ());
-    Struct* s2 = (new Struct ())->append_field (NULL, true, "T", &named_int, TagSet ());
+    Struct* s1 = (new Struct ())->append_field (NULL, true, "T", loc, &named_int, TagSet ());
+    Struct* s2 = (new Struct ())->append_field (NULL, true, "T", loc, &named_int, TagSet ());
     tap.tassert ("type::are_identical - struct same anonymous field", are_identical (s1, s2));
   }
   {
-    Struct* s1 = (new Struct ())->append_field (NULL, false, "T", &named_int, TagSet ());
-    Struct* s2 = (new Struct ())->append_field (NULL, true, "T", &named_int, TagSet ());
+    Struct* s1 = (new Struct ())->append_field (NULL, false, "T", loc, &named_int, TagSet ());
+    Struct* s2 = (new Struct ())->append_field (NULL, true, "T", loc, &named_int, TagSet ());
     tap.tassert ("type::are_identical - struct different anonymous field", !are_identical (s1, s2));
   }
   {
-    Struct* s1 = (new Struct ())->append_field (NULL, false, "x", &named_int, TagSet ());
-    Struct* s2 = (new Struct ())->append_field (NULL, false, "y", &named_int, TagSet ());
+    Struct* s1 = (new Struct ())->append_field (NULL, false, "x", loc, &named_int, TagSet ());
+    Struct* s2 = (new Struct ())->append_field (NULL, false, "y", loc, &named_int, TagSet ());
     tap.tassert ("type::are_identical - struct different field name", !are_identical (s1, s2));
   }
   {
-    Struct* s1 = (new Struct ())->append_field (NULL, false, "x", &named_int, TagSet ());
-    Struct* s2 = (new Struct ())->append_field (NULL, false, "x", &named_float32, TagSet ());
+    Struct* s1 = (new Struct ())->append_field (NULL, false, "x", loc, &named_int, TagSet ());
+    Struct* s2 = (new Struct ())->append_field (NULL, false, "x", loc, &named_float32, TagSet ());
     tap.tassert ("type::are_identical - struct different field type", !are_identical (s1, s2));
   }
   {
     TagSet ts;
     ts.insert ("some tag");
-    Struct* s1 = (new Struct ())->append_field (NULL, false, "x", &named_int, ts);
-    Struct* s2 = (new Struct ())->append_field (NULL, false, "x", &named_int, TagSet ());
+    Struct* s1 = (new Struct ())->append_field (NULL, false, "x", loc, &named_int, ts);
+    Struct* s2 = (new Struct ())->append_field (NULL, false, "x", loc, &named_int, TagSet ());
     tap.tassert ("type::are_identical - struct different field tags", !are_identical (s1, s2));
   }
   {
-    Struct* s1 = (new Struct ())->append_field (new Package (), false, "x", &named_int, TagSet ());
-    Struct* s2 = (new Struct ())->append_field (new Package (), false, "x", &named_int, TagSet ());
+    Struct* s1 = (new Struct ())->append_field (new Package (), false, "x", loc, &named_int, TagSet ());
+    Struct* s2 = (new Struct ())->append_field (new Package (), false, "x", loc, &named_int, TagSet ());
     tap.tassert ("type::are_identical - struct different package with private field", !are_identical (s1, s2));
   }
 
@@ -622,7 +603,7 @@ main (int argc, char** argv)
 
   {
     const Pointer* p1 = (new Struct ())->get_pointer ();
-    const Pointer* p2 = (new Struct ())->append_field (NULL, false, "x", &named_int, TagSet ())->get_pointer ();
+    const Pointer* p2 = (new Struct ())->append_field (NULL, false, "x", loc, &named_int, TagSet ())->get_pointer ();
     tap.tassert ("type::are_identical - pointers different", !are_identical (p1, p2));
   }
 
@@ -634,7 +615,7 @@ main (int argc, char** argv)
 
   {
     const Heap* p1 = (new Struct ())->get_heap ();
-    const Heap* p2 = (new Struct ())->append_field (NULL, false, "x", &named_int, TagSet ())->get_heap ();
+    const Heap* p2 = (new Struct ())->append_field (NULL, false, "x", loc, &named_int, TagSet ())->get_heap ();
     tap.tassert ("type::are_identical - heaps different", !are_identical (p1, p2));
   }
 
@@ -1055,9 +1036,9 @@ main (int argc, char** argv)
     tap.tassert ("type::contains_pointer file_descriptor", named_file_descriptor.contains_pointer () == true);
 
     Struct s;
-    s.append_field (NULL, false, "r", &named_int, TagSet ());
+    s.append_field (NULL, false, "r", loc, &named_int, TagSet ());
     tap.tassert ("type::contains_pointer struct false", s.contains_pointer () == false);
-    s.append_field (NULL, false, "r", named_int.get_pointer (), TagSet ());
+    s.append_field (NULL, false, "r", loc, named_int.get_pointer (), TagSet ());
     tap.tassert ("type::contains_pointer struct true", s.contains_pointer () == true);
   }
 

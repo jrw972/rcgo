@@ -78,13 +78,12 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 TESTS = action$(EXEEXT) arch$(EXEEXT) bind$(EXEEXT) callable$(EXEEXT) \
-	check_types$(EXEEXT) error_reporter$(EXEEXT) \
-	expression_value$(EXEEXT) heap$(EXEEXT) location$(EXEEXT) \
-	memory_model$(EXEEXT) node_cast$(EXEEXT) \
+	check_types$(EXEEXT) expression_value$(EXEEXT) heap$(EXEEXT) \
+	location$(EXEEXT) memory_model$(EXEEXT) node_cast$(EXEEXT) \
 	parameter_list$(EXEEXT) polymorphic_function$(EXEEXT) \
 	runtime_types$(EXEEXT) semantic$(EXEEXT) stack$(EXEEXT) \
-	symbol$(EXEEXT) symbol_cast$(EXEEXT) scope$(EXEEXT) \
-	type$(EXEEXT) value$(EXEEXT) unit_test$(EXEEXT)
+	symbol_cast$(EXEEXT) scope$(EXEEXT) type$(EXEEXT) \
+	value$(EXEEXT) unit_test$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = utest
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
@@ -102,13 +101,13 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__EXEEXT_1 = action$(EXEEXT) arch$(EXEEXT) bind$(EXEEXT) \
-	callable$(EXEEXT) check_types$(EXEEXT) error_reporter$(EXEEXT) \
+	callable$(EXEEXT) check_types$(EXEEXT) \
 	expression_value$(EXEEXT) heap$(EXEEXT) location$(EXEEXT) \
 	memory_model$(EXEEXT) node_cast$(EXEEXT) \
 	parameter_list$(EXEEXT) polymorphic_function$(EXEEXT) \
 	runtime_types$(EXEEXT) semantic$(EXEEXT) stack$(EXEEXT) \
-	symbol$(EXEEXT) symbol_cast$(EXEEXT) scope$(EXEEXT) \
-	type$(EXEEXT) value$(EXEEXT) unit_test$(EXEEXT)
+	symbol_cast$(EXEEXT) scope$(EXEEXT) type$(EXEEXT) \
+	value$(EXEEXT) unit_test$(EXEEXT)
 am__objects_1 =
 am_action_OBJECTS = action-action.$(OBJEXT) $(am__objects_1)
 action_OBJECTS = $(am_action_OBJECTS)
@@ -145,14 +144,6 @@ check_types_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 check_types_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(check_types_CXXFLAGS) \
 	$(CXXFLAGS) $(check_types_LDFLAGS) $(LDFLAGS) -o $@
-am_error_reporter_OBJECTS = error_reporter-error_reporter.$(OBJEXT) \
-	$(am__objects_1)
-error_reporter_OBJECTS = $(am_error_reporter_OBJECTS)
-error_reporter_DEPENDENCIES = $(top_builddir)/src/librcgo.la
-error_reporter_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
-	$(error_reporter_CXXFLAGS) $(CXXFLAGS) \
-	$(error_reporter_LDFLAGS) $(LDFLAGS) -o $@
 am_expression_value_OBJECTS =  \
 	expression_value-expression_value.$(OBJEXT) $(am__objects_1)
 expression_value_OBJECTS = $(am_expression_value_OBJECTS)
@@ -229,12 +220,6 @@ stack_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 stack_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(stack_CXXFLAGS) \
 	$(CXXFLAGS) $(stack_LDFLAGS) $(LDFLAGS) -o $@
-am_symbol_OBJECTS = symbol-symbol.$(OBJEXT) $(am__objects_1)
-symbol_OBJECTS = $(am_symbol_OBJECTS)
-symbol_DEPENDENCIES = $(top_builddir)/src/librcgo.la
-symbol_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(symbol_CXXFLAGS) \
-	$(CXXFLAGS) $(symbol_LDFLAGS) $(LDFLAGS) -o $@
 am_symbol_cast_OBJECTS = symbol_cast-symbol_cast.$(OBJEXT) \
 	$(am__objects_1)
 symbol_cast_OBJECTS = $(am_symbol_cast_OBJECTS)
@@ -251,8 +236,9 @@ type_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 am_unit_test_OBJECTS = $(am__objects_1) unit_test-unit_test.$(OBJEXT) \
 	unit_test-enter_predeclared_identifiers.$(OBJEXT) \
 	unit_test-enter_top_level_identifiers.$(OBJEXT) \
-	unit_test-node.$(OBJEXT) \
-	unit_test-process_top_level_declarations.$(OBJEXT)
+	unit_test-error_reporter.$(OBJEXT) unit_test-node.$(OBJEXT) \
+	unit_test-process_top_level_declarations.$(OBJEXT) \
+	unit_test-process_type.$(OBJEXT) unit_test-symbol.$(OBJEXT)
 unit_test_OBJECTS = $(am_unit_test_OBJECTS)
 unit_test_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 unit_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -318,22 +304,22 @@ am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(action_SOURCES) $(arch_SOURCES) $(bind_SOURCES) \
 	$(callable_SOURCES) $(check_types_SOURCES) \
-	$(error_reporter_SOURCES) $(expression_value_SOURCES) \
-	$(heap_SOURCES) $(location_SOURCES) $(memory_model_SOURCES) \
+	$(expression_value_SOURCES) $(heap_SOURCES) \
+	$(location_SOURCES) $(memory_model_SOURCES) \
 	$(node_cast_SOURCES) $(parameter_list_SOURCES) \
 	$(polymorphic_function_SOURCES) $(runtime_types_SOURCES) \
 	$(scope_SOURCES) $(semantic_SOURCES) $(stack_SOURCES) \
-	$(symbol_SOURCES) $(symbol_cast_SOURCES) $(type_SOURCES) \
-	$(unit_test_SOURCES) $(value_SOURCES)
+	$(symbol_cast_SOURCES) $(type_SOURCES) $(unit_test_SOURCES) \
+	$(value_SOURCES)
 DIST_SOURCES = $(action_SOURCES) $(arch_SOURCES) $(bind_SOURCES) \
 	$(callable_SOURCES) $(check_types_SOURCES) \
-	$(error_reporter_SOURCES) $(expression_value_SOURCES) \
-	$(heap_SOURCES) $(location_SOURCES) $(memory_model_SOURCES) \
+	$(expression_value_SOURCES) $(heap_SOURCES) \
+	$(location_SOURCES) $(memory_model_SOURCES) \
 	$(node_cast_SOURCES) $(parameter_list_SOURCES) \
 	$(polymorphic_function_SOURCES) $(runtime_types_SOURCES) \
 	$(scope_SOURCES) $(semantic_SOURCES) $(stack_SOURCES) \
-	$(symbol_SOURCES) $(symbol_cast_SOURCES) $(type_SOURCES) \
-	$(unit_test_SOURCES) $(value_SOURCES)
+	$(symbol_cast_SOURCES) $(type_SOURCES) $(unit_test_SOURCES) \
+	$(value_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -692,7 +678,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver.sh
 AM_CXXFLAGS = -I $(top_srcdir)/src
-EXTRA_DIST = enter_predeclared_identifiers.test enter_top_level_identifiers.test node.test process_top_level_declarations.test
+EXTRA_DIST = enter_predeclared_identifiers.test enter_top_level_identifiers.test error_reporter.test node.test process_top_level_declarations.test process_type.test symbol.test
 HELPERS = unit_test.hpp tap.hpp visitor_helper.hpp mock_execution.hpp
 action_SOURCES = action.cpp $(HELPERS)
 action_LDADD = $(top_builddir)/src/librcgo.la
@@ -722,10 +708,6 @@ heap_SOURCES = heap.cpp $(HELPERS)
 heap_LDADD = $(top_builddir)/src/librcgo.la
 heap_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 heap_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-error_reporter_SOURCES = error_reporter.cpp $(HELPERS)
-error_reporter_LDADD = $(top_builddir)/src/librcgo.la
-error_reporter_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-error_reporter_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 location_SOURCES = location.cpp $(HELPERS)
 location_LDADD = $(top_builddir)/src/librcgo.la
 location_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -750,10 +732,6 @@ stack_SOURCES = stack.cpp $(HELPERS)
 stack_LDADD = $(top_builddir)/src/librcgo.la
 stack_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 stack_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-symbol_SOURCES = symbol.cpp $(HELPERS)
-symbol_LDADD = $(top_builddir)/src/librcgo.la
-symbol_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-symbol_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 symbol_cast_SOURCES = symbol_cast.cpp $(HELPERS)
 symbol_cast_LDADD = $(top_builddir)/src/librcgo.la
 symbol_cast_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -778,7 +756,7 @@ value_SOURCES = value.cpp $(HELPERS)
 value_LDADD = $(top_builddir)/src/librcgo.la
 value_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 value_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-unit_test_SOURCES = $(HELPERS) unit_test.cpp enter_predeclared_identifiers.cpp enter_top_level_identifiers.cpp node.cpp process_top_level_declarations.cpp
+unit_test_SOURCES = $(HELPERS) unit_test.cpp enter_predeclared_identifiers.cpp enter_top_level_identifiers.cpp error_reporter.cpp node.cpp process_top_level_declarations.cpp process_type.cpp symbol.cpp
 unit_test_LDADD = $(top_builddir)/src/librcgo.la
 unit_test_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 unit_test_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
@@ -846,10 +824,6 @@ check_types$(EXEEXT): $(check_types_OBJECTS) $(check_types_DEPENDENCIES) $(EXTRA
 	@rm -f check_types$(EXEEXT)
 	$(AM_V_CXXLD)$(check_types_LINK) $(check_types_OBJECTS) $(check_types_LDADD) $(LIBS)
 
-error_reporter$(EXEEXT): $(error_reporter_OBJECTS) $(error_reporter_DEPENDENCIES) $(EXTRA_error_reporter_DEPENDENCIES) 
-	@rm -f error_reporter$(EXEEXT)
-	$(AM_V_CXXLD)$(error_reporter_LINK) $(error_reporter_OBJECTS) $(error_reporter_LDADD) $(LIBS)
-
 expression_value$(EXEEXT): $(expression_value_OBJECTS) $(expression_value_DEPENDENCIES) $(EXTRA_expression_value_DEPENDENCIES) 
 	@rm -f expression_value$(EXEEXT)
 	$(AM_V_CXXLD)$(expression_value_LINK) $(expression_value_OBJECTS) $(expression_value_LDADD) $(LIBS)
@@ -894,10 +868,6 @@ stack$(EXEEXT): $(stack_OBJECTS) $(stack_DEPENDENCIES) $(EXTRA_stack_DEPENDENCIE
 	@rm -f stack$(EXEEXT)
 	$(AM_V_CXXLD)$(stack_LINK) $(stack_OBJECTS) $(stack_LDADD) $(LIBS)
 
-symbol$(EXEEXT): $(symbol_OBJECTS) $(symbol_DEPENDENCIES) $(EXTRA_symbol_DEPENDENCIES) 
-	@rm -f symbol$(EXEEXT)
-	$(AM_V_CXXLD)$(symbol_LINK) $(symbol_OBJECTS) $(symbol_LDADD) $(LIBS)
-
 symbol_cast$(EXEEXT): $(symbol_cast_OBJECTS) $(symbol_cast_DEPENDENCIES) $(EXTRA_symbol_cast_DEPENDENCIES) 
 	@rm -f symbol_cast$(EXEEXT)
 	$(AM_V_CXXLD)$(symbol_cast_LINK) $(symbol_cast_OBJECTS) $(symbol_cast_LDADD) $(LIBS)
@@ -925,7 +895,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bind-bind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/callable-callable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_types-check_types.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/error_reporter-error_reporter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/expression_value-expression_value.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/heap-heap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/location-location.Po@am__quote@
@@ -937,13 +906,15 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scope-scope.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/semantic-semantic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stack-stack.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol-symbol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol_cast-symbol_cast.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/type-type.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-enter_predeclared_identifiers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-enter_top_level_identifiers.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-error_reporter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-node.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-process_top_level_declarations.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-process_type.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-symbol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-unit_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/value-value.Po@am__quote@
 
@@ -1037,20 +1008,6 @@ check_types-check_types.obj: check_types.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='check_types.cpp' object='check_types-check_types.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_types_CXXFLAGS) $(CXXFLAGS) -c -o check_types-check_types.obj `if test -f 'check_types.cpp'; then $(CYGPATH_W) 'check_types.cpp'; else $(CYGPATH_W) '$(srcdir)/check_types.cpp'; fi`
-
-error_reporter-error_reporter.o: error_reporter.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(error_reporter_CXXFLAGS) $(CXXFLAGS) -MT error_reporter-error_reporter.o -MD -MP -MF $(DEPDIR)/error_reporter-error_reporter.Tpo -c -o error_reporter-error_reporter.o `test -f 'error_reporter.cpp' || echo '$(srcdir)/'`error_reporter.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/error_reporter-error_reporter.Tpo $(DEPDIR)/error_reporter-error_reporter.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='error_reporter.cpp' object='error_reporter-error_reporter.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(error_reporter_CXXFLAGS) $(CXXFLAGS) -c -o error_reporter-error_reporter.o `test -f 'error_reporter.cpp' || echo '$(srcdir)/'`error_reporter.cpp
-
-error_reporter-error_reporter.obj: error_reporter.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(error_reporter_CXXFLAGS) $(CXXFLAGS) -MT error_reporter-error_reporter.obj -MD -MP -MF $(DEPDIR)/error_reporter-error_reporter.Tpo -c -o error_reporter-error_reporter.obj `if test -f 'error_reporter.cpp'; then $(CYGPATH_W) 'error_reporter.cpp'; else $(CYGPATH_W) '$(srcdir)/error_reporter.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/error_reporter-error_reporter.Tpo $(DEPDIR)/error_reporter-error_reporter.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='error_reporter.cpp' object='error_reporter-error_reporter.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(error_reporter_CXXFLAGS) $(CXXFLAGS) -c -o error_reporter-error_reporter.obj `if test -f 'error_reporter.cpp'; then $(CYGPATH_W) 'error_reporter.cpp'; else $(CYGPATH_W) '$(srcdir)/error_reporter.cpp'; fi`
 
 expression_value-expression_value.o: expression_value.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(expression_value_CXXFLAGS) $(CXXFLAGS) -MT expression_value-expression_value.o -MD -MP -MF $(DEPDIR)/expression_value-expression_value.Tpo -c -o expression_value-expression_value.o `test -f 'expression_value.cpp' || echo '$(srcdir)/'`expression_value.cpp
@@ -1206,20 +1163,6 @@ stack-stack.obj: stack.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(stack_CXXFLAGS) $(CXXFLAGS) -c -o stack-stack.obj `if test -f 'stack.cpp'; then $(CYGPATH_W) 'stack.cpp'; else $(CYGPATH_W) '$(srcdir)/stack.cpp'; fi`
 
-symbol-symbol.o: symbol.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_CXXFLAGS) $(CXXFLAGS) -MT symbol-symbol.o -MD -MP -MF $(DEPDIR)/symbol-symbol.Tpo -c -o symbol-symbol.o `test -f 'symbol.cpp' || echo '$(srcdir)/'`symbol.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/symbol-symbol.Tpo $(DEPDIR)/symbol-symbol.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='symbol.cpp' object='symbol-symbol.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_CXXFLAGS) $(CXXFLAGS) -c -o symbol-symbol.o `test -f 'symbol.cpp' || echo '$(srcdir)/'`symbol.cpp
-
-symbol-symbol.obj: symbol.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_CXXFLAGS) $(CXXFLAGS) -MT symbol-symbol.obj -MD -MP -MF $(DEPDIR)/symbol-symbol.Tpo -c -o symbol-symbol.obj `if test -f 'symbol.cpp'; then $(CYGPATH_W) 'symbol.cpp'; else $(CYGPATH_W) '$(srcdir)/symbol.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/symbol-symbol.Tpo $(DEPDIR)/symbol-symbol.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='symbol.cpp' object='symbol-symbol.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_CXXFLAGS) $(CXXFLAGS) -c -o symbol-symbol.obj `if test -f 'symbol.cpp'; then $(CYGPATH_W) 'symbol.cpp'; else $(CYGPATH_W) '$(srcdir)/symbol.cpp'; fi`
-
 symbol_cast-symbol_cast.o: symbol_cast.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(symbol_cast_CXXFLAGS) $(CXXFLAGS) -MT symbol_cast-symbol_cast.o -MD -MP -MF $(DEPDIR)/symbol_cast-symbol_cast.Tpo -c -o symbol_cast-symbol_cast.o `test -f 'symbol_cast.cpp' || echo '$(srcdir)/'`symbol_cast.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/symbol_cast-symbol_cast.Tpo $(DEPDIR)/symbol_cast-symbol_cast.Po
@@ -1290,6 +1233,20 @@ unit_test-enter_top_level_identifiers.obj: enter_top_level_identifiers.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_top_level_identifiers.obj `if test -f 'enter_top_level_identifiers.cpp'; then $(CYGPATH_W) 'enter_top_level_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_top_level_identifiers.cpp'; fi`
 
+unit_test-error_reporter.o: error_reporter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-error_reporter.o -MD -MP -MF $(DEPDIR)/unit_test-error_reporter.Tpo -c -o unit_test-error_reporter.o `test -f 'error_reporter.cpp' || echo '$(srcdir)/'`error_reporter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-error_reporter.Tpo $(DEPDIR)/unit_test-error_reporter.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='error_reporter.cpp' object='unit_test-error_reporter.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-error_reporter.o `test -f 'error_reporter.cpp' || echo '$(srcdir)/'`error_reporter.cpp
+
+unit_test-error_reporter.obj: error_reporter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-error_reporter.obj -MD -MP -MF $(DEPDIR)/unit_test-error_reporter.Tpo -c -o unit_test-error_reporter.obj `if test -f 'error_reporter.cpp'; then $(CYGPATH_W) 'error_reporter.cpp'; else $(CYGPATH_W) '$(srcdir)/error_reporter.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-error_reporter.Tpo $(DEPDIR)/unit_test-error_reporter.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='error_reporter.cpp' object='unit_test-error_reporter.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-error_reporter.obj `if test -f 'error_reporter.cpp'; then $(CYGPATH_W) 'error_reporter.cpp'; else $(CYGPATH_W) '$(srcdir)/error_reporter.cpp'; fi`
+
 unit_test-node.o: node.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-node.o -MD -MP -MF $(DEPDIR)/unit_test-node.Tpo -c -o unit_test-node.o `test -f 'node.cpp' || echo '$(srcdir)/'`node.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-node.Tpo $(DEPDIR)/unit_test-node.Po
@@ -1317,6 +1274,34 @@ unit_test-process_top_level_declarations.obj: process_top_level_declarations.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_top_level_declarations.cpp' object='unit_test-process_top_level_declarations.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-process_top_level_declarations.obj `if test -f 'process_top_level_declarations.cpp'; then $(CYGPATH_W) 'process_top_level_declarations.cpp'; else $(CYGPATH_W) '$(srcdir)/process_top_level_declarations.cpp'; fi`
+
+unit_test-process_type.o: process_type.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-process_type.o -MD -MP -MF $(DEPDIR)/unit_test-process_type.Tpo -c -o unit_test-process_type.o `test -f 'process_type.cpp' || echo '$(srcdir)/'`process_type.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-process_type.Tpo $(DEPDIR)/unit_test-process_type.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_type.cpp' object='unit_test-process_type.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-process_type.o `test -f 'process_type.cpp' || echo '$(srcdir)/'`process_type.cpp
+
+unit_test-process_type.obj: process_type.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-process_type.obj -MD -MP -MF $(DEPDIR)/unit_test-process_type.Tpo -c -o unit_test-process_type.obj `if test -f 'process_type.cpp'; then $(CYGPATH_W) 'process_type.cpp'; else $(CYGPATH_W) '$(srcdir)/process_type.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-process_type.Tpo $(DEPDIR)/unit_test-process_type.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_type.cpp' object='unit_test-process_type.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-process_type.obj `if test -f 'process_type.cpp'; then $(CYGPATH_W) 'process_type.cpp'; else $(CYGPATH_W) '$(srcdir)/process_type.cpp'; fi`
+
+unit_test-symbol.o: symbol.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-symbol.o -MD -MP -MF $(DEPDIR)/unit_test-symbol.Tpo -c -o unit_test-symbol.o `test -f 'symbol.cpp' || echo '$(srcdir)/'`symbol.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-symbol.Tpo $(DEPDIR)/unit_test-symbol.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='symbol.cpp' object='unit_test-symbol.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-symbol.o `test -f 'symbol.cpp' || echo '$(srcdir)/'`symbol.cpp
+
+unit_test-symbol.obj: symbol.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-symbol.obj -MD -MP -MF $(DEPDIR)/unit_test-symbol.Tpo -c -o unit_test-symbol.obj `if test -f 'symbol.cpp'; then $(CYGPATH_W) 'symbol.cpp'; else $(CYGPATH_W) '$(srcdir)/symbol.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-symbol.Tpo $(DEPDIR)/unit_test-symbol.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='symbol.cpp' object='unit_test-symbol.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-symbol.obj `if test -f 'symbol.cpp'; then $(CYGPATH_W) 'symbol.cpp'; else $(CYGPATH_W) '$(srcdir)/symbol.cpp'; fi`
 
 value-value.o: value.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(value_CXXFLAGS) $(CXXFLAGS) -MT value-value.o -MD -MP -MF $(DEPDIR)/value-value.Tpo -c -o value-value.o `test -f 'value.cpp' || echo '$(srcdir)/'`value.cpp
@@ -1566,13 +1551,6 @@ check_types.log: check_types$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-error_reporter.log: error_reporter$(EXEEXT)
-	@p='error_reporter$(EXEEXT)'; \
-	b='error_reporter'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 expression_value.log: expression_value$(EXEEXT)
 	@p='expression_value$(EXEEXT)'; \
 	b='expression_value'; \
@@ -1639,13 +1617,6 @@ semantic.log: semantic$(EXEEXT)
 stack.log: stack$(EXEEXT)
 	@p='stack$(EXEEXT)'; \
 	b='stack'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-symbol.log: symbol$(EXEEXT)
-	@p='symbol$(EXEEXT)'; \
-	b='symbol'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

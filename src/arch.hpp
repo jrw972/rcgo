@@ -15,7 +15,7 @@ size_t unit_size (const type::Array* array);
 size_t unit_size (const type::Slice* slice);
 size_t size_on_stack (const type::Type* type);
 size_t size_on_stack (const decl::ParameterList* list);
-size_t offset (const type::Field* field);
+size_t offset (const decl::Field* field);
 }
 
 #endif // RC_SRC_ARCH_HPP

@@ -16,7 +16,6 @@ parser.hpp parser.cpp: parser.y
 bin_PROGRAMS = rcgo
 rcgo_SOURCES = main.cpp \
 debug.hpp \
-field.hpp \
 package.hpp \
 parser.hpp parser.cpp \
 scanner.hpp scanner.cpp \
@@ -56,7 +55,7 @@ parameter_list.hpp parameter_list.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
 process_definitions.cpp \
 process_top_level_declarations.hpp process_top_level_declarations.cpp \
-process_type_spec.cpp \
+process_type.hpp process_type.cpp \
 runtime.hpp runtime.cpp \
 runtime_types.hpp runtime_types.cpp \
 scope.hpp scope.cpp \

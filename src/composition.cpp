@@ -9,7 +9,6 @@
 #include "node_visitor.hpp"
 #include "node_cast.hpp"
 #include "bind.hpp"
-#include "field.hpp"
 #include "action.hpp"
 #include "callable.hpp"
 #include "semantic.hpp"
@@ -1297,8 +1296,8 @@ Composer::enumerate_instances (ast::Node * node)
 
     void visit (ast::InstanceDecl& node)
     {
-      const NamedType *type = node.symbol->type;
-      decl::Initializer* initializer = node.symbol->initializer;
+      const NamedType *type = node.symbol->type ();
+      decl::Initializer* initializer = node.symbol->initializer ();
       node.symbol->instance = instance_table.instantiate_contained_instances (type, NULL, initializer, address, node.location.line, &node, node.identifier->identifier);
       address += arch::size (type);
     }

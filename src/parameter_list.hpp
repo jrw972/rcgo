@@ -25,7 +25,6 @@ struct ParameterList
   ParameterList* append (Parameter* p);
   ParameterList* set_variadic (bool v);
   bool is_variadic () const;
-  bool is_foreign_safe () const;
 
   void print (std::ostream& out = std::cout) const;
   std::string to_string () const;

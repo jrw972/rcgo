@@ -94,34 +94,31 @@ struct visitor : public DefaultNodeVisitor
   void visit (TypeDecl& node)
   {
     const Identifier* id = node.identifier;
-    if (already_declared (id))
+    if (!already_declared (id))
       {
-        return;
+        node.symbol = new NamedType (id->identifier, id->location, &node);
+        package_scope->enter_symbol (node.symbol);
       }
-    node.symbol = new NamedType (id->identifier, id->location, &node);
-    package_scope->enter_symbol (node.symbol);
   }
 
   void visit (FunctionDecl& node)
   {
     const Identifier* id = node.identifier;
-    if (already_declared (id))
+    if (!already_declared (id))
       {
-        return;
+        node.symbol = new decl::Function (id->identifier, id->location, &node);
+        package_scope->enter_symbol (node.symbol);
       }
-    node.symbol = new decl::Function (id->identifier, id->location);
-    package_scope->enter_symbol (node.symbol);
   }
 
   void visit (InstanceDecl& node)
   {
     const Identifier* id = node.identifier;
-    if (already_declared (id))
+    if (!already_declared (id))
       {
-        return;
+        node.symbol = new decl::Instance (id->identifier, id->location, &node);
+        package_scope->enter_symbol (node.symbol);
       }
-    node.symbol = new decl::Instance (id->identifier, id->location);
-    package_scope->enter_symbol (node.symbol);
   }
 };
 }

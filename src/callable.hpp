@@ -58,12 +58,16 @@ struct FunctionBase : public Callable, public decl::Symbol
 struct Function : public FunctionBase
 {
   Function (const std::string& name,
-            const util::Location& location);
+            const util::Location& location,
+            ast::FunctionDecl* a_functiondecl);
   Function (const std::string& name,
             const util::Location& location,
             const type::Function* type);
+  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
   virtual void call (runtime::ExecutorBase& exec) const;
   runtime::Operation* operation;
+private:
+  ast::FunctionDecl* const functiondecl_;
 };
 
 struct MethodBase : public Callable

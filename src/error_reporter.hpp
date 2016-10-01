@@ -13,17 +13,23 @@ enum ErrorCode
   Func_Expects_Count = 1,
   Func_Expects_Arg = 2,
   Cannot_Be_Applied = 3,
-  Undefined = 4,
+  Not_Declared = 4,
   Hidden_Symbol = 5,
   Requires_Value_Or_Variable = 6,
-  Requires_Type = 7,
+  Expected_A_Type = 7,
   Leaks_Pointers = 8,
-  Signature_Is_Not_Foreign_Safe = 9,
+  Parameter_Is_Not_Foreign_Safe = 9,
   Expected_N_Expressions = 10,
   Cannot_Convert = 11,
   Expression_Is_Not_Constant = 12,
   Already_Declared = 13,
   Defined_Recursively = 14,
+  Non_Integer_Array_Dimension = 15,
+  Negative_Array_Dimension = 16,
+  Not_Defined = 17,
+  Expected_A_Component = 18,
+  Expected_A_Pointer = 19,
+  Expected_Immutable_Indirection_Mutability = 20,
 };
 
 struct ErrorReporter
@@ -48,14 +54,14 @@ struct ErrorReporter
                                const std::string& op,
                                const type::Type* left,
                                const type::Type* right);
-  ErrorCode undefined (const Location& loc,
-                       const std::string& id);
+  ErrorCode not_declared (const Location& loc,
+                          const std::string& id);
   ErrorCode hidden_symbol (const Location& loc,
                            const std::string& id);
   ErrorCode requires_value_or_variable (const Location& loc);
-  ErrorCode requires_type (const Location& loc);
+  ErrorCode expected_a_type (const Location& loc);
   ErrorCode leaks_pointers (const Location& loc);
-  ErrorCode signature_is_not_foreign_safe (const Location& loc);
+  ErrorCode parameter_is_not_foreign_safe (const Location& loc);
   ErrorCode expected_n_expressions (const Location& loc,
                                     size_t expected,
                                     size_t received);
@@ -68,6 +74,15 @@ struct ErrorReporter
                               const Location& previous_loc);
   ErrorCode defined_recursively (const Location& loc,
                                  const std::string& id);
+  ErrorCode non_integer_array_dimension (const Location& loc,
+                                         const type::Type* type);
+  ErrorCode negative_array_dimension (const Location& loc,
+                                      long dim);
+  ErrorCode not_defined (const Location& loc,
+                         const std::string& id);
+  ErrorCode expected_a_component (const Location& loc);
+  ErrorCode expected_a_pointer (const Location& loc);
+  ErrorCode expected_immutable_indirection_mutability (const Location& loc);
 
   const ListType& list () const;
   size_t count () const;

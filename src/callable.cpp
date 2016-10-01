@@ -6,11 +6,13 @@
 #include "check_types.hpp"
 #include "compute_receiver_access.hpp"
 #include "operation.hpp"
+#include "process_type.hpp"
 
 namespace decl
 {
 
 using namespace ast;
+using namespace semantic;
 
 Callable::~Callable () { }
 
@@ -19,7 +21,12 @@ FunctionBase::FunctionBase (const std::string& id,
                             const type::Function* a_type)
   : Symbol (id, loc)
   , type (a_type)
-{ }
+{
+  if (a_type)
+    {
+      state_ = Defined;
+    }
+}
 
 const type::Type* FunctionBase::callable_type () const
 {
@@ -61,9 +68,11 @@ FunctionBase::compute_receiver_access (const semantic::ExpressionValueList& args
 }
 
 Function::Function (const std::string& name,
-                    const util::Location& location)
+                    const util::Location& location,
+                    ast::FunctionDecl* a_functiondecl)
   : FunctionBase (name, location, NULL)
   , operation (NULL)
+  , functiondecl_ (a_functiondecl)
 { }
 
 Function::Function (const std::string& name,
@@ -71,7 +80,19 @@ Function::Function (const std::string& name,
                     const type::Function* type)
   : FunctionBase (name, location, type)
   , operation (NULL)
+  , functiondecl_ (NULL)
 { }
+
+bool Function::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+{
+  const decl::ParameterList* parameter_list;
+  const decl::ParameterList* return_parameter_list;
+  // TODO:  Handle error.
+  process_signature (er, file_scope, functiondecl_->parameters, functiondecl_->return_parameters, false,
+                     parameter_list, return_parameter_list);
+  this->type = new type::Function (parameter_list, return_parameter_list);
+  return true;
+}
 
 void Function::call (runtime::ExecutorBase& exec) const
 {

@@ -71,11 +71,16 @@ scope(ast); {
   Identifier node3 (1, "node3");
   Identifier node4 (1, "node4");
 
+  Receiver receiver1 (1, &identifier1, Mutable, Mutable, false, &identifier2);
+
+  ast::ParameterList parameters1 (1);
+  ast::ParameterList parameters2 (1);
+
   scope(ActionDecl); {
     scenario(default); {
-      ActionDecl node (1, &node1, &identifier1, &node2, &node3);
+      ActionDecl node (1, &receiver1, &identifier1, &node2, &node3);
       unit(ActionDecl); {
-        ASSERT (node.receiver == &node1);
+        ASSERT (node.receiver == &receiver1);
         ASSERT (node.identifier == &identifier1);
         ASSERT (node.precondition == &node2);
         ASSERT (node.body == &node3);
@@ -84,7 +89,7 @@ scope(ast); {
         test_accept<DefaultNodeVisitor> (node);
       }; off();
       unit(visit_children); {
-        test_visit_children (node, &node1, &identifier1, &node2, &node3);
+        test_visit_children (node, &receiver1, &identifier1, &node2, &node3);
       }; off();
       unit(print); {
         test_print (node);
@@ -208,9 +213,9 @@ scope(ast); {
 
   scope(Bind); {
     scenario(default); {
-      BindDecl node (1, &node1, &identifier1, &node2);
+      BindDecl node (1, &receiver1, &identifier1, &node2);
       unit(Bind); {
-        ASSERT (node.receiver == &node1);
+        ASSERT (node.receiver == &receiver1);
         ASSERT (node.identifier == &identifier1);
         ASSERT (node.body == &node2);
       } off ();
@@ -218,7 +223,7 @@ scope(ast); {
         test_accept<DefaultNodeVisitor> (node);
       }; off();
       unit(visit_children); {
-        test_visit_children (node, &node1, &identifier1, &node2);
+        test_visit_children (node, &receiver1, &identifier1, &node2);
       }; off();
       unit(print); {
         test_print (node);
@@ -402,10 +407,10 @@ scope(ast); {
 
   scope(DimensionedActionDecl); {
     scenario(default); {
-      DimensionedActionDecl node (1, &node1, &node2, &identifier1, &node3, &node4);
+      DimensionedActionDecl node (1, &node1, &receiver1, &identifier1, &node3, &node4);
       unit(DimensionedActionDecl); {
         ASSERT (node.dimension == &node1);
-        ASSERT (node.receiver == &node2);
+        ASSERT (node.receiver == &receiver1);
         ASSERT (node.identifier == &identifier1);
         ASSERT (node.precondition == &node3);
         ASSERT (node.body == &node4);
@@ -414,7 +419,7 @@ scope(ast); {
         test_accept<DefaultNodeVisitor> (node);
       }; off();
       unit(visit_children); {
-        test_visit_children (node, &node1, &node2, &identifier1, &node3, &node4);
+        test_visit_children (node, &node1, &receiver1, &identifier1, &node3, &node4);
       }; off();
       unit(print); {
         test_print (node);
@@ -425,19 +430,19 @@ scope(ast); {
 
   scope(DimensionedReactionDecl); {
     scenario(default); {
-      DimensionedReactionDecl node (1, &node1, &node2, &identifier1, &list1, &node3);
+      DimensionedReactionDecl node (1, &node1, &receiver1, &identifier1, &parameters1, &node3);
       unit(DimensionedReactionDecl); {
         ASSERT (node.dimension == &node1);
-        ASSERT (node.receiver == &node2);
+        ASSERT (node.receiver == &receiver1);
         ASSERT (node.identifier == &identifier1);
-        ASSERT (node.parameters == &list1);
+        ASSERT (node.parameters == &parameters1);
         ASSERT (node.body == &node3);
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
       }; off();
       unit(visit_children); {
-        test_visit_children (node, &node1, &node2, &identifier1, &list1, &node3, node.return_parameters);
+        test_visit_children (node, &node1, &receiver1, &identifier1, &parameters1, &node3, node.return_parameters);
       }; off();
       unit(print); {
         test_print (node);
@@ -579,18 +584,18 @@ scope(ast); {
 
   scope(FunctionDecl); {
     scenario(default); {
-      FunctionDecl node (1, &identifier1, &list1, &list2, &node1);
+      FunctionDecl node (1, &identifier1, &parameters1, &parameters2, &node1);
       unit(Function); {
         ASSERT (node.identifier == &identifier1);
-        ASSERT (node.parameters == &list1);
-        ASSERT (node.return_parameters == &list2);
+        ASSERT (node.parameters == &parameters1);
+        ASSERT (node.return_parameters == &parameters2);
         ASSERT (node.body == &node1);
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
       }; off();
       unit(visit_children); {
-        test_visit_children (node, &identifier1, &list1, &list2, &node1);
+        test_visit_children (node, &identifier1, &parameters1, &parameters2, &node1);
       }; off();
       unit(print); {
         test_print (node);
@@ -600,19 +605,19 @@ scope(ast); {
 
   scope(GetterDecl); {
     scenario(default); {
-      GetterDecl node (1, &node1, &identifier1, &list1, &list2, &node2);
+      GetterDecl node (1, &receiver1, &identifier1, &parameters1, &parameters2, &node2);
       unit(GetterDecl); {
-        ASSERT (node.receiver == &node1);
+        ASSERT (node.receiver == &receiver1);
         ASSERT (node.identifier == &identifier1);
-        ASSERT (node.parameters == &list1);
-        ASSERT (node.return_parameters == &list2);
+        ASSERT (node.parameters == &parameters1);
+        ASSERT (node.return_parameters == &parameters2);
         ASSERT (node.body == &node2);
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
       }; off();
       unit(visit_children); {
-        test_visit_children (node, &node1, &identifier1, &list1, &list2, &node2);
+        test_visit_children (node, &receiver1, &identifier1, &parameters1, &parameters2, &node2);
       }; off();
       unit(print); {
         test_print (node);
@@ -809,19 +814,19 @@ scope(ast); {
 
   scope(InitDecl); {
     scenario(default); {
-      InitDecl node (1, &node1, &identifier1, &list1, &list2, &node2);
+      InitDecl node (1, &receiver1, &identifier1, &parameters1, &parameters2, &node2);
       unit(InitDecl); {
-        ASSERT (node.receiver == &node1);
+        ASSERT (node.receiver == &receiver1);
         ASSERT (node.identifier == &identifier1);
-        ASSERT (node.parameters == &list1);
-        ASSERT (node.return_parameters == &list2);
+        ASSERT (node.parameters == &parameters1);
+        ASSERT (node.return_parameters == &parameters2);
         ASSERT (node.body == &node2);
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
       }; off();
       unit(visit_children); {
-        test_visit_children (node, &node1, &identifier1, &list1, &list2, &node2);
+        test_visit_children (node, &receiver1, &identifier1, &parameters1, &parameters2, &node2);
       }; off();
       unit(print); {
         test_print (node);
@@ -945,19 +950,19 @@ scope(ast); {
 
   scope(MethodDecl); {
     scenario(default); {
-      MethodDecl node (1, &node1, &identifier1, &list1, &list2, &node2);
+      MethodDecl node (1, &receiver1, &identifier1, &parameters1, &parameters2, &node2);
       unit(MethodDecl); {
-        ASSERT (node.receiver == &node1);
+        ASSERT (node.receiver == &receiver1);
         ASSERT (node.identifier == &identifier1);
-        ASSERT (node.parameters == &list1);
-        ASSERT (node.return_parameters == &list2);
+        ASSERT (node.parameters == &parameters1);
+        ASSERT (node.return_parameters == &parameters2);
         ASSERT (node.body == &node2);
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
       }; off();
       unit(visit_children); {
-        test_visit_children (node, &node1, &identifier1, &list1, &list2, &node2);
+        test_visit_children (node, &receiver1, &identifier1, &parameters1, &parameters2, &node2);
       }; off();
       unit(print); {
         test_print (node);
@@ -1000,16 +1005,16 @@ scope(ast); {
 
   scope(PullPort); {
     scenario(default); {
-      PullPort node (1, &list1, &list2);
+      PullPort node (1, &parameters1, &parameters2);
       unit(PullPort); {
-        ASSERT (node.parameters == &list1);
-        ASSERT (node.return_parameters == &list2);
+        ASSERT (node.parameters == &parameters1);
+        ASSERT (node.return_parameters == &parameters2);
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
       }; off();
       unit(visit_children); {
-        test_visit_children (node, &list1, &list2);
+        test_visit_children (node, &parameters1, &parameters2);
       }; off();
       unit(print); {
         test_print (node);
@@ -1038,15 +1043,15 @@ scope(ast); {
 
   scope(PushPort); {
     scenario(default); {
-      PushPort node (1, &list1);
+      PushPort node (1, &parameters1);
       unit(PushPort); {
-        ASSERT (node.parameters == &list1);
+        ASSERT (node.parameters == &parameters1);
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
       }; off();
       unit(visit_children); {
-        test_visit_children (node, &list1);
+        test_visit_children (node, &parameters1);
       }; off();
       unit(print); {
         test_print (node);
@@ -1056,18 +1061,18 @@ scope(ast); {
 
   scope(ReactionDecl); {
     scenario(default); {
-      ReactionDecl node (1, &node1, &identifier1, &list1, &node2);
+      ReactionDecl node (1, &receiver1, &identifier1, &parameters1, &node2);
       unit(ReactionDecl); {
-        ASSERT (node.receiver == &node1);
+        ASSERT (node.receiver == &receiver1);
         ASSERT (node.identifier == &identifier1);
-        ASSERT (node.parameters == &list1);
+        ASSERT (node.parameters == &parameters1);
         ASSERT (node.body == &node2);
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
       }; off();
       unit(visit_children); {
-        test_visit_children (node, &node1, &identifier1, &list1, &node2, node.return_parameters);
+        test_visit_children (node, &receiver1, &identifier1, &parameters1, &node2, node.return_parameters);
       }; off();
       unit(print); {
         test_print (node);
@@ -1340,12 +1345,12 @@ scope(ast); {
     }; off();
   }; off();
 
-unit(left_shift_Node); {
-  std::stringstream ss1;
-  identifier1.print (ss1);
-  std::stringstream ss2;
-  ss2 << identifier1;
-  ASSERT (ss1.str () == ss2.str ());
-}; off();
+  unit(left_shift_Node); {
+    std::stringstream ss1;
+    identifier1.print (ss1);
+    std::stringstream ss2;
+    ss2 << identifier1;
+    ASSERT (ss1.str () == ss2.str ());
+  }; off();
 
 }; off();

@@ -8,7 +8,13 @@
 using namespace ast;
 %}
 
-%union { ast::Node* node; ast::List* list; ast::Identifier* identifier; Mutability mutability; }
+%union {
+  ast::Node* node;
+  ast::List* list;
+  ast::ParameterList* parameter_list;
+  ast::Identifier* identifier;
+  ast::Receiver* receiver;
+  Mutability mutability; }
 
 %token <identifier> IDENTIFIER
 %token <node> LITERAL
@@ -62,7 +68,7 @@ using namespace ast;
 %type <identifier> PackageClause
 %type <identifier> PackageName
 %type <node> Parameter
-%type <list> ParameterListInternal
+%type <parameter_list> ParameterListInternal
 %type <node> Pointer
 %type <node> PrimaryExpression
 %type <node> PullPort
@@ -70,10 +76,10 @@ using namespace ast;
 %type <list> PushPortCallList
 %type <node> PushPort
 %type <node> ReactionDecl
-%type <node> Receiver
+%type <receiver> Receiver
 %type <node> Return
-%type <list> ParameterList
-%type <list> ReturnParameterList
+%type <parameter_list> ParameterList
+%type <parameter_list> ReturnParameterList
 %type <node> SimpleStatement
 %type <node> Slice
 %type <node> SourceFile
@@ -280,9 +286,9 @@ ParameterList:
 
 ParameterListInternal:
   Parameter
-{ $$ = (new ParameterList (@1))->append ($1); }
+{ $$ = new ParameterList (@1); $$->append ($1); }
 | ParameterListInternal ';' Parameter
-{ $$ = $1->append ($3); }
+{ $$ = $1; $$->append ($3); }
 
 Parameter:
   IdentifierList Mutability DereferenceMutability Type
@@ -292,11 +298,11 @@ ReturnParameterList:
   /* Empty */
 { $$ = new ParameterList (yyloc); }
 | Type
-{ $$ = (new ParameterList (yyloc))->append (new VariableList (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, Mutable, $1)); }
+{ $$ = new ParameterList (yyloc); $$->append (new VariableList (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, Mutable, $1)); }
 | '$' CONST Type
-{ $$ = (new ParameterList (yyloc))->append (new VariableList (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, Immutable, $3)); }
+{ $$ = new ParameterList (yyloc); $$->append (new VariableList (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, Immutable, $3)); }
 | '$' FOREIGN Type
-{ $$ = (new ParameterList (yyloc))->append (new VariableList (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, Foreign, $3)); }
+{ $$ = new ParameterList (yyloc); $$->append (new VariableList (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, Foreign, $3)); }
 
 optional_semicolon: /* Empty. */
 | ';'

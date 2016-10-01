@@ -117,12 +117,15 @@ enum yytokentype
 union YYSTYPE
 {
 #line 11 "parser.y" /* yacc.c:1909  */
+
   ast::Node* node;
   ast::List* list;
+  ast::ParameterList* parameter_list;
   ast::Identifier* identifier;
+  ast::Receiver* receiver;
   Mutability mutability;
 
-#line 123 "parser.hpp" /* yacc.c:1909  */
+#line 129 "parser.hpp" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

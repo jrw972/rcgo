@@ -515,7 +515,7 @@ Map::visit_children (NodeVisitor& visitor)
   value->accept (visitor);
 }
 
-PushPort::PushPort (unsigned int line, List* sig)
+PushPort::PushPort (unsigned int line, ParameterList* sig)
   : Node (line)
   , parameters (sig)
 { }
@@ -526,8 +526,8 @@ void PushPort::visit_children (NodeVisitor& visitor)
 }
 
 PullPort::PullPort (unsigned int line,
-                    List* pl,
-                    List* rpl)
+                    ParameterList* pl,
+                    ParameterList* rpl)
   : Node (line)
   , parameters (pl)
   , return_parameters (rpl)
@@ -872,7 +872,7 @@ void ForIota::visit_children (NodeVisitor& visitor)
 }
 
 ActionDecl::ActionDecl (unsigned int line,
-                        Node* r,
+                        Receiver* r,
                         Identifier* i,
                         Node* p,
                         Node* b)
@@ -895,7 +895,7 @@ void ActionDecl::visit_children (NodeVisitor& visitor)
 
 DimensionedActionDecl::DimensionedActionDecl (unsigned int line,
     Node* d,
-    Node* r,
+    Receiver* r,
     Identifier* i,
     Node* p,
     Node* b)
@@ -919,7 +919,7 @@ void DimensionedActionDecl::visit_children (NodeVisitor& visitor)
 }
 
 BindDecl::BindDecl (unsigned int line,
-                    Node* r,
+                    Receiver* r,
                     Identifier* i,
                     Node* b)
   : Node (line)
@@ -938,8 +938,8 @@ void BindDecl::visit_children (NodeVisitor& visitor)
 
 FunctionDecl::FunctionDecl (unsigned int line,
                             Identifier* i,
-                            List* pl,
-                            List* rpl,
+                            ParameterList* pl,
+                            ParameterList* rpl,
                             Node* b)
   : Node (line)
   , identifier (i)
@@ -995,10 +995,10 @@ void ConstDecl::visit_children (NodeVisitor& visitor)
 }
 
 MethodDecl::MethodDecl (unsigned int line,
-                        Node * r,
+                        Receiver* r,
                         Identifier * i,
-                        List* a_parameter_list,
-                        List* a_return_parameter_list,
+                        ParameterList* a_parameter_list,
+                        ParameterList* a_return_parameter_list,
                         Node* b)
   : Node (line)
   , receiver (r)
@@ -1019,10 +1019,10 @@ void MethodDecl::visit_children (NodeVisitor& visitor)
 }
 
 GetterDecl::GetterDecl (unsigned int line,
-                        Node * r,
+                        Receiver* r,
                         Identifier * i,
-                        List* pl,
-                        List* rpl,
+                        ParameterList* pl,
+                        ParameterList* rpl,
                         Node* b)
   : Node (line)
   , receiver (r)
@@ -1043,10 +1043,10 @@ void GetterDecl::visit_children (NodeVisitor& visitor)
 }
 
 InitDecl::InitDecl (unsigned int line,
-                    Node* r,
+                    Receiver* r,
                     Identifier * i,
-                    List* pl,
-                    List* rpl,
+                    ParameterList* pl,
+                    ParameterList* rpl,
                     Node* b)
   : Node (line)
   , receiver (r)
@@ -1067,9 +1067,9 @@ void InitDecl::visit_children (NodeVisitor& visitor)
 }
 
 ReactionDecl::ReactionDecl (unsigned int line,
-                            Node* r,
+                            Receiver* r,
                             Identifier* i,
-                            List* pl,
+                            ParameterList* pl,
                             Node* b)
   : Node (line)
   , receiver (r)
@@ -1091,9 +1091,9 @@ void ReactionDecl::visit_children (NodeVisitor& visitor)
 
 DimensionedReactionDecl::DimensionedReactionDecl (unsigned int line,
     Node* d,
-    Node* r,
+    Receiver* r,
     Identifier* i,
-    List* pl,
+    ParameterList* pl,
     Node* b)
   : Node (line)
   , dimension (d)

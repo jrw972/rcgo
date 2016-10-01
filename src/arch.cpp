@@ -2,7 +2,6 @@
 
 #include "util.hpp"
 #include "type.hpp"
-#include "field.hpp"
 #include "parameter_list.hpp"
 #include "symbol.hpp"
 #include "runtime_types.hpp"
@@ -48,9 +47,6 @@ size_t alignment (const Type* type)
 
     case Named_Kind:
       NOT_REACHED;
-
-    case Void_Kind:
-      UNIMPLEMENTED;
 
     case Bool_Kind:
       return 1;
@@ -162,9 +158,6 @@ size_t size (const Type* type)
     case Named_Kind:
       NOT_REACHED;
 
-    case Void_Kind:
-      UNIMPLEMENTED;
-
     case Bool_Kind:
       return 1;
     case Uint8_Kind:
@@ -260,7 +253,7 @@ size_t size_on_stack (const decl::ParameterList* list)
   return sz;
 }
 
-size_t offset (const Field* field)
+size_t offset (const decl::Field* field)
 {
   size_t sz = 0;
   const Struct* s = field->m_struct;

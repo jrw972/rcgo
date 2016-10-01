@@ -1,0 +1,338 @@
+/* -*- c++ -*- */
+#include "unit_test.hpp"
+#include "tap.hpp"
+#include "symbol.hpp"
+#include "type.hpp"
+#include "callable.hpp"
+#include "visitor_helper.hpp"
+#include "symbol_visitor.hpp"
+#include "node.hpp"
+#include "error_reporter.hpp"
+#include "scope.hpp"
+#include "package.hpp"
+
+using namespace type;
+using namespace decl;
+using namespace util;
+using namespace ast;
+
+scope(decl); {
+  Location loc;
+
+  scope(Instance); {
+
+    decl::Initializer init ("blah", NULL);
+    Instance symbol ("name", loc, &named_int, &init);
+
+    unit(Instance); {
+      ASSERT (symbol.name == "name");
+      ASSERT (symbol.location == loc);
+      ASSERT (symbol.type () == &named_int);
+      ASSERT (symbol.initializer () == &init);
+      ASSERT (symbol.instance == NULL);
+    }; off();
+
+    unit(offset); {
+      symbol.offset (53);
+      ASSERT (symbol.offset () == 53);
+    }; off();
+
+    scenario(SymbolVisitor); {
+      unit(accept); {
+        TestVisitor<SymbolVisitor, Instance> v;
+        symbol.accept (v);
+        ASSERT (v.item == &symbol);
+      }; off();
+    }; off();
+
+    scenario(ConstSymbolVisitor); {
+      unit(accept); {
+        TestConstVisitor<ConstSymbolVisitor, Instance> cv;
+        symbol.accept (cv);
+        ASSERT (cv.item == &symbol);
+      }; off();
+    }; off();
+  }; off();
+
+  scope(Parameter); {
+
+    scenario(make); {
+
+      Parameter* symbol = Parameter::make (loc, "name", &named_int, Immutable, Immutable);
+
+      unit(make); {
+        ASSERT (symbol->name == "name");
+        ASSERT (symbol->location == loc);
+        ASSERT (symbol->type == &named_int);
+        ASSERT (symbol->intrinsic_mutability == Immutable);
+        ASSERT (symbol->indirection_mutability == Immutable);
+        ASSERT (symbol->kind == Parameter::Ordinary);
+      }; off();
+
+      unit(offset); {
+        static_cast<Symbol*> (symbol)->offset (53);
+        ASSERT (symbol->offset () == 53);
+      }; off();
+
+      scenario(SymbolVisitor); {
+        unit(accept); {
+          TestVisitor<SymbolVisitor, Parameter> v;
+          symbol->accept (v);
+          ASSERT (v.item == symbol);
+        }; off();
+      }; off();
+
+      scenario(ConstSymbolVisitor); {
+        unit(accept); {
+          TestConstVisitor<ConstSymbolVisitor, Parameter> cv;
+          symbol->accept (cv);
+          ASSERT (cv.item == symbol);
+        }; off();
+      }; off();
+
+      unit(duplicate); {
+        Parameter* dup1 = symbol->duplicate (Mutable);
+        Parameter* dup2 = dup1->duplicate (Foreign);
+        static_cast<Symbol*> (symbol)->offset (34);
+        ASSERT (dup1->name == "name");
+        ASSERT (dup1->location == loc);
+        ASSERT (dup1->type == &named_int);
+        ASSERT (dup1->intrinsic_mutability == Immutable);
+        ASSERT (dup1->indirection_mutability == Mutable);
+        ASSERT (dup1->kind == Parameter::Ordinary_Duplicate);
+        ASSERT (dup1->offset () == 34);
+        ASSERT (dup2->indirection_mutability == Foreign);
+        ASSERT (dup2->offset () == 34);
+      }; off();
+
+    }; off();
+
+    unit(make_return); {
+      Parameter* symbol = Parameter::make_return (loc, "name", &named_int, Immutable);
+      ASSERT (symbol->name == "name");
+      ASSERT (symbol->location == loc);
+      ASSERT (symbol->type == &named_int);
+      ASSERT (symbol->intrinsic_mutability == Mutable);
+      ASSERT (symbol->indirection_mutability == Immutable);
+      ASSERT (symbol->kind == Parameter::Return);
+    }; off();
+
+    scenario(make_receiver); {
+
+      Parameter* symbol = Parameter::make_receiver (loc, "name", &named_int, Immutable, Immutable);
+
+      unit(make_receiver); {
+        ASSERT (symbol->name == "name");
+        ASSERT (symbol->location == loc);
+        ASSERT (symbol->type == &named_int);
+        ASSERT (symbol->intrinsic_mutability == Immutable);
+        ASSERT (symbol->indirection_mutability == Immutable);
+        ASSERT (symbol->kind == Parameter::Receiver);
+      }; off();
+
+      unit(duplicate); {
+        Parameter* dup1 = symbol->duplicate (Mutable);
+        Parameter* dup2 = dup1->duplicate (Foreign);
+        static_cast<Symbol*> (symbol)->offset (34);
+        ASSERT (dup1->name == "name");
+        ASSERT (dup1->location == loc);
+        ASSERT (dup1->type == &named_int);
+        ASSERT (dup1->intrinsic_mutability == Immutable);
+        ASSERT (dup1->indirection_mutability == Mutable);
+        ASSERT (dup1->kind == Parameter::Receiver_Duplicate);
+        ASSERT (dup1->offset () == 34);
+        ASSERT (dup2->indirection_mutability == Foreign);
+        ASSERT (dup2->offset () == 34);
+      }; off();
+    }; off();
+
+    unit(is_foreign_safe); {
+      Parameter* safe1_symbol = Parameter::make (loc, "name", &named_int, Immutable, Immutable);
+      Parameter* safe2_symbol = Parameter::make (loc, "name", named_int.get_pointer (), Immutable, Foreign);
+      Parameter* unsafe_symbol = Parameter::make (loc, "name", named_int.get_pointer (), Immutable, Immutable);
+
+      ASSERT (safe1_symbol->is_foreign_safe ());
+      ASSERT (safe2_symbol->is_foreign_safe ());
+      ASSERT (!unsafe_symbol->is_foreign_safe ());
+    }; off();
+  }; off();
+
+  scope(Constant); {
+
+    semantic::Value value;
+    value.present = true;
+    value.int_value = 37;
+    Constant symbol ("name", loc, &named_int, value);
+
+    unit(Constant); {
+      ASSERT (symbol.name == "name");
+      ASSERT (symbol.location == loc);
+      ASSERT (symbol.type () == &named_int);
+      ASSERT (symbol.value ().int_value == 37);
+    }; off();
+
+    scenario(SymbolVisitor); {
+      unit(accept); {
+        TestVisitor<SymbolVisitor, Constant> v;
+        symbol.accept (v);
+        ASSERT (v.item == &symbol);
+      }; off();
+    }; off();
+
+    scenario(ConstSymbolVisitor); {
+      unit(accept); {
+        TestConstVisitor<ConstSymbolVisitor, Constant> cv;
+        symbol.accept (cv);
+        ASSERT (cv.item == &symbol);
+      }; off();
+    }; off();
+
+  }; off();
+
+  scope(Variable); {
+    Variable symbol ("name", loc, &named_int, Immutable, Immutable);
+    static_cast<Symbol&> (symbol).offset (53);
+
+    unit(Variable); {
+      ASSERT (symbol.name == "name");
+      ASSERT (symbol.location == loc);
+      ASSERT (symbol.type == &named_int);
+      ASSERT (symbol.intrinsic_mutability == Immutable);
+      ASSERT (symbol.indirection_mutability == Immutable);
+    }; off();
+
+    unit(duplicate); {
+      Variable* dup = symbol.duplicate ();
+      ASSERT (dup->name == "name");
+      ASSERT (dup->location == loc);
+      ASSERT (dup->type == &named_int);
+      ASSERT (dup->intrinsic_mutability == Foreign);
+      ASSERT (dup->indirection_mutability == Foreign);
+      ASSERT (dup->offset () == 53);
+    }; off();
+
+    scenario(SymbolVisitor); {
+      unit(accept); {
+        TestVisitor<SymbolVisitor, Variable> v;
+        symbol.accept (v);
+        ASSERT (v.item == &symbol);
+      }; off();
+    }; off();
+
+    scenario(ConstSymbolVisitor); {
+      unit(accept); {
+        TestConstVisitor<ConstSymbolVisitor, Variable> cv;
+        symbol.accept (cv);
+        ASSERT (cv.item == &symbol);
+      }; off();
+    }; off();
+  }; off();
+
+  scope(Hidden); {
+    Variable var ("name", loc, &named_int, Immutable, Immutable);
+    Hidden symbol (&var, loc);
+
+    unit(Hidden); {
+      ASSERT (symbol.name == "name");
+      ASSERT (symbol.location == loc);
+    }; off();
+
+    scenario(SymbolVisitor); {
+      unit(accept); {
+        TestVisitor<SymbolVisitor, Hidden> v;
+        symbol.accept (v);
+        ASSERT (v.item == &symbol);
+      }; off();
+    }; off();
+
+    scenario(ConstSymbolVisitor); {
+      unit(accept); {
+        TestConstVisitor<ConstSymbolVisitor, Hidden> cv;
+        symbol.accept (cv);
+        ASSERT (cv.item == &symbol);
+      }; off();
+    }; off();
+
+  }; off();
+
+  scope(Field); {
+    Struct s;
+    Package p;
+    Field symbol (&s, &p, false, "name", loc, &type::named_int, TagSet ());
+
+    unit(Field); {
+      ASSERT (symbol.name == "name");
+      ASSERT (symbol.location == loc);
+      ASSERT (symbol.m_struct == &s);
+      ASSERT (symbol.package == &p);
+      ASSERT (symbol.is_anonymous == false);
+      ASSERT (symbol.type == &type::named_int);
+      ASSERT (symbol.tags == TagSet ());
+    }; off();
+
+    scenario(SymbolVisitor); {
+      unit(accept); {
+        TestVisitor<SymbolVisitor, Field> v;
+        symbol.accept (v);
+        ASSERT (v.item == &symbol);
+      }; off();
+    }; off();
+
+    scenario(ConstSymbolVisitor); {
+      unit(accept); {
+        TestConstVisitor<ConstSymbolVisitor, Field> cv;
+        symbol.accept (cv);
+        ASSERT (cv.item == &symbol);
+      }; off();
+    }; off();
+
+  }; off();
+
+  scope(Symbol); {
+
+    ErrorReporter er;
+    Scope scope;
+
+    scenario(undefined); {
+
+      unit(process_declaration); {
+        EmptyType type (1);
+        Identifier id (1, "not_defined");
+        IdentifierExpression idex (1, &id);
+        Constant symbol ("name", loc, &type, &idex);
+        ASSERT (symbol.process_declaration (er, &scope) == false);
+        ASSERT (er.count () != 0);
+      }; off();
+
+    }; off();
+
+    scenario(recursively_defined); {
+
+      unit(process_declaration); {
+        EmptyType type (1);
+        Identifier id (1, "name");
+        IdentifierExpression idex (1, &id);
+        Constant symbol ("name", loc, &type, &idex);
+        scope.enter_symbol (&symbol);
+        ASSERT (symbol.process_declaration (er, &scope) == false);
+        ASSERT (er.count () != 0);
+      }; off();
+
+    }; off();
+
+    scenario(still_undefined); {
+
+      unit(process_declaration); {
+        EmptyType type (1);
+        Identifier id (1, "not_defined");
+        IdentifierExpression idex (1, &id);
+        Constant symbol ("name", loc, &type, &idex);
+        ASSERT (symbol.process_declaration (er, &scope) == false);
+        ASSERT (symbol.process_declaration (er, &scope) == false);
+      }; off();
+
+    }; off();
+
+  }; off();
+
+}; off();

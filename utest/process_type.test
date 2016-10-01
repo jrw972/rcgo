@@ -1,0 +1,661 @@
+/* -*- c++ -*- */
+#include "unit_test.hpp"
+#include "process_type.hpp"
+#include "error_reporter.hpp"
+#include "scope.hpp"
+#include "value.hpp"
+#include "node.hpp"
+#include "type.hpp"
+#include "enter_predeclared_identifiers.hpp"
+#include "enter_top_level_identifiers.hpp"
+#include "parameter_list.hpp"
+
+using namespace semantic;
+using namespace util;
+using namespace decl;
+using namespace type;
+using namespace ast;
+
+scope(semantic); {
+
+  ErrorReporter er;
+  Scope scope;
+
+  scenario(not_constant); {
+    unit(process_array_dimension); {
+      enter_predeclared_identifiers (&scope);
+      ast::Identifier id2 (1, "new");
+      ast::IdentifierExpression idx (1, &id2);
+      ast::ExpressionList args (1);
+      ast::Identifier id3 (1, "int");
+      ast::IdentifierType idtype2 (1, &id3);
+      ast::TypeExpression tex (1, &idtype2);
+      args.append (&tex);
+      ast::Call node (1, &idx, &args);
+      long dim = process_array_dimension (er, &scope, &node);
+      ASSERT (dim == -1);
+      ASSERT (er.count () == 1);
+    }; off();
+  }; off();
+
+  scenario(not_integer); {
+    unit(process_array_dimension); {
+      semantic::Value sv;
+      sv.present = 1;
+      sv.untyped_string_value = runtime::String::make ("not an integer");
+      ast::Literal node (1, type::UntypedString::instance (), sv);
+      long dim = process_array_dimension (er, &scope, &node);
+      ASSERT (dim == -1);
+      ASSERT (er.count () == 1);
+    }; off();
+  }; off();
+
+  scenario(negative); {
+    unit(process_array_dimension); {
+      semantic::Value sv;
+      sv.present = 1;
+      sv.untyped_integer_value = -37;
+      ast::Literal node (1, type::UntypedInteger::instance (), sv);
+      long dim = process_array_dimension (er, &scope, &node);
+      ASSERT (dim == -1);
+      ASSERT (er.count () == 1);
+    }; off();
+  }; off();
+
+  scenario(success); {
+    unit(process_array_dimension); {
+      semantic::Value sv;
+      sv.present = 1;
+      sv.untyped_integer_value = 37;
+      ast::Literal node (1, type::UntypedInteger::instance (), sv);
+      long dim = process_array_dimension (er, &scope, &node);
+      ASSERT (dim == 37);
+    }; off();
+  }; off();
+}; off();
+
+scope(semantic); {
+
+  ErrorReporter er;
+  Scope scope;
+
+  unit(check_for_foreign_safe); {
+    Location loc (1);
+    decl::ParameterList sig (loc);
+    sig.append (Parameter::make (loc, "there", &named_int, Immutable, Immutable));
+    check_for_foreign_safe (er, &sig);
+    ASSERT (er.count () == 0);
+    sig.append (Parameter::make (loc, "there", named_int.get_pointer (), Immutable, Mutable));
+    check_for_foreign_safe (er, &sig);
+    ASSERT (er.count () == 1);
+  }; off();
+
+}; off();
+
+scope(semantic); {
+
+  ErrorReporter er;
+  Scope scope;
+  Location loc (1);
+
+  scenario(no_receiver_type); {
+    unit(process_receiver); {
+      ast::Identifier this_id (1, "this");
+      ast::Identifier type_id (1, "not_declared");
+      ast::Receiver receiver (1, &this_id, Mutable, Mutable, false, &type_id);
+      decl::Parameter* parameter;
+      ASSERT (process_receiver (er, &scope, &receiver, parameter, false, false) == NULL);
+      ASSERT (parameter == NULL);
+      ASSERT (er.count () == 1);
+    }; off();
+  }; off();
+
+  scenario(receiver_type_not_a_type); {
+    unit(process_receiver); {
+      enter_predeclared_identifiers (&scope);
+      ast::Identifier this_id (1, "this");
+      ast::Identifier type_id (1, "true");
+      ast::Receiver receiver (1, &this_id, Mutable, Mutable, false, &type_id);
+      decl::Parameter* parameter;
+      ASSERT (process_receiver (er, &scope, &receiver, parameter, false, false) == NULL);
+      ASSERT (parameter == NULL);
+      ASSERT (er.count () == 1);
+    }; off();
+  }; off();
+
+  scenario(require_component); {
+    unit(process_receiver); {
+      enter_predeclared_identifiers (&scope);
+      ast::Identifier this_id (1, "this");
+      ast::Identifier type_id (1, "int");
+      ast::Receiver receiver (1, &this_id, Mutable, Mutable, false, &type_id);
+      decl::Parameter* parameter;
+      ASSERT (process_receiver (er, &scope, &receiver, parameter, true, false) == NULL);
+      ASSERT (parameter == NULL);
+      ASSERT (er.count () == 1);
+    }; off();
+  }; off();
+
+  scenario(require_component_pointer); {
+    unit(process_receiver); {
+      Component comp (NULL, loc);
+      NamedType mytype ("mytype", loc, &comp);
+      scope.enter_symbol (&mytype);
+      ast::Identifier this_id (1, "this");
+      ast::Identifier type_id (1, "mytype");
+      ast::Receiver receiver (1, &this_id, Mutable, Mutable, false, &type_id);
+      decl::Parameter* parameter;
+      ASSERT (process_receiver (er, &scope, &receiver, parameter, true, false) == NULL);
+      ASSERT (parameter == NULL);
+      ASSERT (er.count () == 1);
+    }; off();
+  }; off();
+
+  scenario(require_dereference_immutability); {
+    unit(process_receiver); {
+      Component comp (NULL, loc);
+      NamedType mytype ("mytype", loc, &comp);
+      scope.enter_symbol (&mytype);
+      ast::Identifier this_id (1, "this");
+      ast::Identifier type_id (1, "mytype");
+      ast::Receiver receiver (1, &this_id, Mutable, Mutable, true, &type_id);
+      decl::Parameter* parameter;
+      ASSERT (process_receiver (er, &scope, &receiver, parameter, true, true) == NULL);
+      ASSERT (parameter == NULL);
+      ASSERT (er.count () == 1);
+    }; off();
+  }; off();
+
+  scenario(success_pointer); {
+    unit(process_receiver); {
+      Component comp (NULL, loc);
+      NamedType mytype ("mytype", loc, &comp);
+      scope.enter_symbol (&mytype);
+      ast::Identifier this_id (1, "this");
+      ast::Identifier type_id (1, "mytype");
+      ast::Receiver receiver (1, &this_id, Mutable, Immutable, true, &type_id);
+      decl::Parameter* parameter;
+      NamedType* type = process_receiver (er, &scope, &receiver, parameter, true, true);
+      ASSERT (parameter != NULL);
+      ASSERT (parameter->location == this_id.location);
+      ASSERT (parameter->name == this_id.identifier);
+      ASSERT (parameter->type == mytype.get_pointer ());
+      ASSERT (parameter->intrinsic_mutability == Mutable);
+      ASSERT (parameter->indirection_mutability == Immutable);
+      ASSERT (type == &mytype);
+      ASSERT (er.count () == 0);
+    }; off();
+  }; off();
+
+  scenario(success_not_pointer); {
+    unit(process_receiver); {
+      NamedType mytype ("mytype", loc, &type::named_int);
+      scope.enter_symbol (&mytype);
+      ast::Identifier this_id (1, "this");
+      ast::Identifier type_id (1, "mytype");
+      ast::Receiver receiver (1, &this_id, Mutable, Mutable, false, &type_id);
+      decl::Parameter* parameter;
+      NamedType* type = process_receiver (er, &scope, &receiver, parameter, false, false);
+      ASSERT (parameter != NULL);
+      ASSERT (parameter->location == this_id.location);
+      ASSERT (parameter->name == this_id.identifier);
+      ASSERT (parameter->type == &mytype);
+      ASSERT (parameter->intrinsic_mutability == Mutable);
+      ASSERT (parameter->indirection_mutability == Mutable);
+      ASSERT (type == &mytype);
+      ASSERT (er.count () == 0);
+    }; off();
+  }; off();
+
+}; off();
+
+scope(semantic); {
+
+  ErrorReporter er;
+  Scope scope;
+  Location loc (1);
+
+  scenario(bad_type); {
+    unit(process_parameter_list); {
+      ast::Identifier id1 (1, "x");
+      ast::Identifier id2 (1, "not_declared");
+      ast::IdentifierList identifiers (1);
+      identifiers.append (&id1);
+      ast::IdentifierType type (1, &id2);
+      ast::VariableList variable_list (1, &identifiers, Mutable, Mutable, &type);
+      ast::ParameterList parameter_list (1);
+      parameter_list.append (&variable_list);
+      const decl::ParameterList* pl = process_parameter_list (er, &scope, &parameter_list, false);
+      ASSERT (pl != NULL);
+      ASSERT (er.count () == 1);
+    }; off();
+  }; off();
+
+  scenario(success_return); {
+    unit(process_parameter_list); {
+      enter_predeclared_identifiers (&scope);
+      ast::Identifier id1 (1, "x");
+      ast::Identifier id2 (1, "int");
+      ast::IdentifierList identifiers (1);
+      identifiers.append (&id1);
+      ast::IdentifierType type (1, &id2);
+      ast::VariableList variable_list (1, &identifiers, Mutable, Mutable, &type);
+      ast::ParameterList parameter_list (1);
+      parameter_list.append (&variable_list);
+      const decl::ParameterList* pl = process_parameter_list (er, &scope, &parameter_list, true);
+      ASSERT (pl != NULL);
+      ASSERT (er.count () == 0);
+      ASSERT (pl->size () == 1);
+      const decl::Parameter* p = pl->at (0);
+      ASSERT (p->type == &type::named_int);
+      ASSERT (p->intrinsic_mutability == Mutable);
+      ASSERT (p->indirection_mutability == Mutable);
+      ASSERT (p->kind == Parameter::Return);
+    }; off();
+  }; off();
+
+  scenario(success); {
+    unit(process_parameter_list); {
+      enter_predeclared_identifiers (&scope);
+      ast::Identifier id1 (1, "x");
+      ast::Identifier id2 (1, "int");
+      ast::IdentifierList identifiers (1);
+      identifiers.append (&id1);
+      ast::IdentifierType type (1, &id2);
+      ast::VariableList variable_list (1, &identifiers, Mutable, Mutable, &type);
+      ast::ParameterList parameter_list (1);
+      parameter_list.append (&variable_list);
+      const decl::ParameterList* pl = process_parameter_list (er, &scope, &parameter_list, false);
+      ASSERT (pl != NULL);
+      ASSERT (er.count () == 0);
+      ASSERT (pl->size () == 1);
+      const decl::Parameter* p = pl->at (0);
+      ASSERT (p->type == &type::named_int);
+      ASSERT (p->intrinsic_mutability == Mutable);
+      ASSERT (p->indirection_mutability == Mutable);
+      ASSERT (p->kind == Parameter::Ordinary);
+    }; off();
+  }; off();
+
+  scenario(already_declared); {
+    unit(process_parameter_list); {
+      enter_predeclared_identifiers (&scope);
+      ast::Identifier id1 (1, "x");
+      ast::Identifier id2 (1, "int");
+      ast::IdentifierList identifiers (1);
+      identifiers.append (&id1);
+      identifiers.append (&id1);
+      ast::IdentifierType type (1, &id2);
+      ast::VariableList variable_list (1, &identifiers, Mutable, Mutable, &type);
+      ast::ParameterList parameter_list (1);
+      parameter_list.append (&variable_list);
+      const decl::ParameterList* pl = process_parameter_list (er, &scope, &parameter_list, false);
+      ASSERT (pl != NULL);
+      ASSERT (er.count () == 1);
+      ASSERT (pl->size () == 1);
+    }; off();
+  }; off();
+
+}; off();
+
+scope(semantic); {
+
+  ErrorReporter er;
+  Scope scope;
+  Location loc (1);
+
+  scenario(success); {
+    unit(process_signature); {
+      enter_predeclared_identifiers (&scope);
+
+      ast::Identifier id1 (1, "x");
+      ast::Identifier id2 (1, "int");
+      ast::IdentifierList identifiers (1);
+      identifiers.append (&id1);
+      ast::IdentifierType type (1, &id2);
+      ast::VariableList variable_list (1, &identifiers, Mutable, Mutable, &type);
+      ast::ParameterList parameter_list (1);
+      parameter_list.append (&variable_list);
+
+      ast::Identifier rid1 (1, "y");
+      ast::Identifier rid2 (1, "int");
+      ast::IdentifierList ridentifiers (1);
+      ridentifiers.append (&rid1);
+      ast::IdentifierType rtype (1, &rid2);
+      ast::VariableList return_variable_list (1, &ridentifiers, Mutable, Mutable, &rtype);
+      ast::ParameterList return_parameter_list (1);
+      return_parameter_list.append (&return_variable_list);
+
+      const decl::ParameterList* pl;
+      const decl::ParameterList* rpl;
+      process_signature (er, &scope, &parameter_list, &return_parameter_list, true, pl, rpl);
+      ASSERT (er.count () == 0);
+      ASSERT (pl != NULL);
+      ASSERT (rpl != NULL);
+      ASSERT (pl->size () == 1);
+      ASSERT (pl->at (0)->kind == Parameter::Ordinary);
+      ASSERT (rpl->size () == 1);
+      ASSERT (rpl->at (0)->kind == Parameter::Return);
+    }; off();
+  }; off();
+
+}; off();
+
+scope(semantic); {
+
+  ErrorReporter er;
+  Scope scope;
+
+  scenario(IdentifierType); {
+
+    scenario(not_delcared); {
+      unit(process_type); {
+        Identifier id (1, "not_declared");
+        IdentifierType type (1, &id);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 1);
+        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+      }; off();
+    }; off();
+
+    scenario(not_a_type); {
+      unit(process_type); {
+        enter_predeclared_identifiers (&scope);
+        Identifier id (1, "true");
+        IdentifierType type (1, &id);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 1);
+        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+      }; off();
+    }; off();
+
+    scenario(not_defined); {
+      unit(process_type); {
+        ast::Identifier id1 (1, "mytype");
+        ast::Identifier id2 (1, "not_defined");
+        ast::IdentifierType identifier_type (1, &id2);
+        ast::TypeDecl typedecl (1, &id1, &identifier_type);
+        enter_top_level_identifiers (&typedecl, er, &scope, &scope);
+        Identifier id (1, "mytype");
+        IdentifierType type (1, &id);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 2);
+        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+      }; off();
+    }; off();
+
+    scenario(success); {
+      unit(process_type); {
+        enter_predeclared_identifiers (&scope);
+        Identifier id (1, "int");
+        IdentifierType type (1, &id);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 0);
+        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        ASSERT (type.eval.type == &named_int);
+      }; off();
+    }; off();
+
+  }; off();
+
+  scenario(Array); {
+
+    scenario(illegal_dimension); {
+      unit(process_type); {
+        enter_predeclared_identifiers (&scope);
+        semantic::Value sv;
+        sv.present = 1;
+        sv.untyped_integer_value = -1;
+        ast::Literal dim (1, type::UntypedInteger::instance (), sv);
+        Identifier id (1, "int");
+        IdentifierType base (1, &id);
+        ast::Array type (1, &dim, &base);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 1);
+        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+      }; off();
+    }; off();
+
+    scenario(bad_base_type); {
+      unit(process_type); {
+        semantic::Value sv;
+        sv.present = 1;
+        sv.untyped_integer_value = 1;
+        ast::Literal dim (1, type::UntypedInteger::instance (), sv);
+        Identifier id (1, "not_declared");
+        IdentifierType base (1, &id);
+        ast::Array type (1, &dim, &base);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 1);
+        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+      }; off();
+    }; off();
+
+    scenario(success); {
+      unit(process_type); {
+        enter_predeclared_identifiers (&scope);
+        semantic::Value sv;
+        sv.present = 1;
+        sv.untyped_integer_value = 1;
+        ast::Literal dim (1, type::UntypedInteger::instance (), sv);
+        Identifier id (1, "int");
+        IdentifierType base (1, &id);
+        ast::Array type (1, &dim, &base);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 0);
+        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        ASSERT (type.eval.type == named_int.get_array (1));
+      }; off();
+    }; off();
+
+  }; off();
+
+  scenario(Slice); {
+
+    scenario(bad_base_type); {
+      unit(process_type); {
+        Identifier id (1, "not_declared");
+        IdentifierType base (1, &id);
+        ast::Slice type (1, &base);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 1);
+        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+      }; off();
+    }; off();
+
+    scenario(success); {
+      unit(process_type); {
+        enter_predeclared_identifiers (&scope);
+        Identifier id (1, "int");
+        IdentifierType base (1, &id);
+        ast::Slice type (1, &base);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 0);
+        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        ASSERT (type.eval.type == named_int.get_slice ());
+      }; off();
+    }; off();
+
+  }; off();
+
+  scenario(Pointer); {
+
+    scenario(bad_base_type); {
+      unit(process_type); {
+        Identifier id (1, "not_declared");
+        IdentifierType base (1, &id);
+        ast::Pointer type (1, &base);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 1);
+        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+      }; off();
+    }; off();
+
+    scenario(success); {
+      unit(process_type); {
+        enter_predeclared_identifiers (&scope);
+        Identifier id (1, "int");
+        IdentifierType base (1, &id);
+        ast::Pointer type (1, &base);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 0);
+        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        ASSERT (type.eval.type == named_int.get_pointer ());
+      }; off();
+    }; off();
+
+  }; off();
+
+  scenario(Heap); {
+
+    scenario(bad_base_type); {
+      unit(process_type); {
+        Identifier id (1, "not_declared");
+        IdentifierType base (1, &id);
+        ast::Heap type (1, &base);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 1);
+        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+      }; off();
+    }; off();
+
+    scenario(success); {
+      unit(process_type); {
+        enter_predeclared_identifiers (&scope);
+        Identifier id (1, "int");
+        IdentifierType base (1, &id);
+        ast::Heap type (1, &base);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 0);
+        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        ASSERT (type.eval.type == named_int.get_heap ());
+      }; off();
+    }; off();
+
+  }; off();
+
+  scenario(EmptyType); {
+
+    unit(process_type); {
+      ast::EmptyType type (1);
+      process_type (&type, er, &scope);
+      ASSERT (er.count () == 0);
+      ASSERT (type.eval.expression_kind == EmptyTypeExpressionKind);
+    }; off();
+
+  }; off();
+
+  scenario(FieldList); {
+
+    scenario(bad_field_type); {
+      unit(process_type); {
+        ast::Identifier fid (1, "the_field");
+        ast::IdentifierList identifiers (1);
+        identifiers.append (&fid);
+        Identifier tid (1, "not_declared");
+        IdentifierType vtype (1, &tid);
+        ast::VariableList vl (1, &identifiers, Immutable, Immutable, &vtype);
+        ast::FieldList type (1);
+        type.append (&vl);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () != 0);
+        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        const Struct* s = type.eval.type->to_struct ();
+        ASSERT (s != NULL);
+        ASSERT (s->field_count () == 0);
+      }; off();
+    }; off();
+
+    scenario(duplicate_field_name); {
+      unit(process_type); {
+        enter_predeclared_identifiers (&scope);
+        ast::Identifier fid (1, "the_field");
+        ast::IdentifierList identifiers (1);
+        identifiers.append (&fid);
+        identifiers.append (&fid);
+        Identifier tid (1, "int");
+        IdentifierType vtype (1, &tid);
+        ast::VariableList vl (1, &identifiers, Immutable, Immutable, &vtype);
+        ast::FieldList type (1);
+        type.append (&vl);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () != 0);
+        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        const Struct* s = type.eval.type->to_struct ();
+        ASSERT (s != NULL);
+        ASSERT (s->field_count () == 1);
+      }; off();
+    }; off();
+
+    scenario(struct_success); {
+      unit(process_type); {
+        enter_predeclared_identifiers (&scope);
+        ast::Identifier fid1 (1, "the_field");
+        ast::Identifier fid2 (1, "another");
+        ast::IdentifierList identifiers (1);
+        identifiers.append (&fid1);
+        identifiers.append (&fid2);
+        Identifier tid (1, "int");
+        IdentifierType vtype (1, &tid);
+        ast::VariableList vl (1, &identifiers, Immutable, Immutable, &vtype);
+        ast::FieldList type (1);
+        type.append (&vl);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 0);
+        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        const Struct* s = type.eval.type->to_struct ();
+        ASSERT (s != NULL);
+        ASSERT (s->field_count () == 2);
+      }; off();
+    }; off();
+
+    scenario(component_success); {
+      unit(process_type); {
+        enter_predeclared_identifiers (&scope);
+        ast::Identifier fid1 (1, "the_field");
+        ast::Identifier fid2 (1, "another");
+        ast::IdentifierList identifiers (1);
+        identifiers.append (&fid1);
+        identifiers.append (&fid2);
+        Identifier tid (1, "int");
+        IdentifierType vtype (1, &tid);
+        ast::VariableList vl (1, &identifiers, Immutable, Immutable, &vtype);
+        ast::FieldList type (1);
+        type.is_component = true;
+        type.append (&vl);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 0);
+        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        const Struct* s = type.eval.type->to_struct ();
+        ASSERT (s != NULL);
+        ASSERT (s->kind () == Component_Kind);
+        ASSERT (s->field_count () == 3);
+      }; off();
+    }; off();
+
+    scenario(push_port_success); {
+      unit(process_type); {
+        ast::ParameterList pl (1);
+        ast::PushPort type (1, &pl);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 0);
+        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        ASSERT (type.eval.type->kind () == Push_Port_Kind);
+      }; off();
+    }; off();
+
+    scenario(pull_port_success); {
+      unit(process_type); {
+        ast::ParameterList pl (1);
+        ast::ParameterList rpl (1);
+        ast::PullPort type (1, &pl, &rpl);
+        process_type (&type, er, &scope);
+        ASSERT (er.count () == 0);
+        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        ASSERT (type.eval.type->kind () == Pull_Port_Kind);
+      }; off();
+    }; off();
+
+  }; off();
+
+}; off();

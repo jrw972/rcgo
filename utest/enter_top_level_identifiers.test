@@ -30,6 +30,22 @@ scope(semantic); {
     }; off();
   }; off();
 
+  scenario(already_declared_in_package_scope); {
+    unit(enter_top_level_identifiers); {
+      enter_top_level_identifiers (&typedecl, er, package_scope, file_scope);
+      enter_top_level_identifiers (&typedecl, er, package_scope, file_scope);
+      ASSERT (er.count () == 1);
+    }; off();
+  }; off();
+
+  scenario(already_declared_in_file_scope); {
+    unit(enter_top_level_identifiers); {
+      enter_top_level_identifiers (&typedecl, er, file_scope, file_scope);
+      enter_top_level_identifiers (&typedecl, er, package_scope, file_scope);
+      ASSERT (er.count () == 1);
+    }; off();
+  }; off();
+
   ast::IdentifierList identifiers (1);
   identifiers.append (new ast::Identifier (1, "x"));
   ast::IdentifierType type (1, &id2);
@@ -51,9 +67,18 @@ scope(semantic); {
     }; off();
   }; off();
 
+  expressions.append (&value);
+
+  scenario(ConstDecl_mismatch); {
+    unit(enter_top_level_identifiers); {
+      enter_top_level_identifiers (&constdecl, er, package_scope, file_scope);
+      ASSERT (er.count () == 1);
+    }; off();
+  }; off();
+
   ast::Identifier funcid (1, "f");
-  ast::IdentifierList parameters (1);
-  ast::IdentifierList return_parameters (1);
+  ast::ParameterList parameters (1);
+  ast::ParameterList return_parameters (1);
   ast::IdentifierList body (1);
   ast::FunctionDecl functiondecl (1, &funcid, &parameters, &return_parameters, &body);
 

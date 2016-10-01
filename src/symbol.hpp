@@ -25,15 +25,11 @@ struct Symbol
   virtual void accept (ConstSymbolVisitor& visitor) const = 0;
   State state () const;
   bool process_declaration (util::ErrorReporter& er, Scope* file_scope);
-  // TODO:  Remove defined.
-  virtual bool defined () const;
   void offset (ptrdiff_t o);
   virtual ptrdiff_t offset () const;
 
   std::string const name;
   util::Location const location;
-  // TODO:  Remove in_progress.
-  bool in_progress;
 
 protected:
   State state_;
@@ -46,19 +42,27 @@ private:
 struct Instance : public Symbol
 {
   Instance (const std::string& name,
-            const util::Location& location);
+            const util::Location& location,
+            ast::InstanceDecl* a_instancedecl);
   Instance (const std::string& name,
             const util::Location& location,
             const type::NamedType* type,
             Initializer* initializer);
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
+  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
 
-  // TODO:  Use getters/setters for these.
-  const type::NamedType* type;
-  Initializer* initializer;
+  const type::NamedType* type () const;
+  Initializer* initializer () const;
+
+private:
+  const type::NamedType* type_;
+  Initializer* initializer_;
+public:
   // TODO:  Should this be here?
   composition::Instance* instance;
+private:
+  ast::InstanceDecl* const instancedecl_;
 };
 
 struct Parameter : public Symbol
@@ -129,11 +133,12 @@ struct Constant : public Symbol
   virtual void accept (ConstSymbolVisitor& visitor) const;
   virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
 
-  // TODO:  Convert to getters.
-  const type::Type* type;
-  semantic::Value value;
+  const type::Type* type () const;
+  semantic::Value value () const;
 
 private:
+  const type::Type* type_;
+  semantic::Value value_;
   ast::Node* const type_spec_;
   ast::Node* const init_;
 };
@@ -160,6 +165,25 @@ private:
 struct Hidden : public Symbol
 {
   Hidden (const Symbol* symbol, const util::Location& location);
+  virtual void accept (SymbolVisitor& visitor);
+  virtual void accept (ConstSymbolVisitor& visitor) const;
+};
+
+struct Field : public Symbol
+{
+  const type::Struct* const m_struct;
+  decl::Package* const package;
+  bool const is_anonymous;
+  const type::Type* const type;
+  type::TagSet const tags;
+
+  Field (const type::Struct* a_struct,
+         decl::Package* a_package,
+         bool a_is_anonymous,
+         const std::string& a_name,
+         const util::Location& a_location,
+         const type::Type* a_type,
+         const type::TagSet& a_tags);
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
 };

@@ -66,11 +66,11 @@ ErrorReporter::cannot_be_applied (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::undefined (const Location& loc,
-                          const std::string& id)
+ErrorReporter::not_declared (const Location& loc,
+                             const std::string& id)
 {
-  out_ << loc << ": " << id << " is not defined in this scope " << Undefined << '\n';
-  return bump (Undefined);
+  out_ << loc << ": " << id << " is not declared in this scope " << Not_Declared << '\n';
+  return bump (Not_Declared);
 }
 
 ErrorCode
@@ -89,10 +89,10 @@ ErrorReporter::requires_value_or_variable (const Location& loc)
 }
 
 ErrorCode
-ErrorReporter::requires_type (const Location& loc)
+ErrorReporter::expected_a_type (const Location& loc)
 {
-  out_ << loc << ": required a type " << Requires_Type << '\n';
-  return bump (Requires_Type);
+  out_ << loc << ": expected a type " << Expected_A_Type << '\n';
+  return bump (Expected_A_Type);
 }
 
 ErrorCode
@@ -103,10 +103,10 @@ ErrorReporter::leaks_pointers (const Location& loc)
 }
 
 ErrorCode
-ErrorReporter::signature_is_not_foreign_safe (const Location& loc)
+ErrorReporter::parameter_is_not_foreign_safe (const Location& loc)
 {
-  out_ << loc << ": signature is not foreign safe " << Signature_Is_Not_Foreign_Safe << '\n';
-  return bump (Signature_Is_Not_Foreign_Safe);
+  out_ << loc << ": parameter is not foreign safe " << Parameter_Is_Not_Foreign_Safe << '\n';
+  return bump (Parameter_Is_Not_Foreign_Safe);
 }
 
 ErrorCode
@@ -150,6 +150,52 @@ ErrorReporter::defined_recursively (const Location& loc,
   out_ << loc << ": " << id << " is defined recursively " << Defined_Recursively << '\n';
   return bump (Defined_Recursively);
 }
+
+ErrorCode
+ErrorReporter::non_integer_array_dimension (const Location& loc,
+    const type::Type* type)
+{
+  out_ << loc << ": cannot convert value of type " << type->to_error_string () << " to integer for array dimension " << Non_Integer_Array_Dimension << '\n';
+  return bump (Non_Integer_Array_Dimension);
+}
+
+ErrorCode
+ErrorReporter::negative_array_dimension (const Location& loc,
+    long dim)
+{
+  out_ << loc << ": array dimension (" << dim << ") is negative " << Negative_Array_Dimension << '\n';
+  return bump (Negative_Array_Dimension);
+}
+
+ErrorCode
+ErrorReporter::not_defined (const Location& loc,
+                            const std::string& id)
+{
+  out_ << loc << ": " << id << " is not defined " << Not_Defined << '\n';
+  return bump (Not_Defined);
+}
+
+ErrorCode
+ErrorReporter::expected_a_component (const Location& loc)
+{
+  out_ << loc << ": expected a component " << Expected_A_Component << '\n';
+  return bump (Expected_A_Component);
+}
+
+ErrorCode
+ErrorReporter::expected_a_pointer (const Location& loc)
+{
+  out_ << loc << ": expected a pointer " << Expected_A_Pointer << '\n';
+  return bump (Expected_A_Pointer);
+}
+
+ErrorCode
+ErrorReporter::expected_immutable_indirection_mutability (const Location& loc)
+{
+  out_ << loc << ": expected immutable indirection mutability ($const or $foreign) " << Expected_Immutable_Indirection_Mutability << '\n';
+  return bump (Expected_Immutable_Indirection_Mutability);
+}
+
 
 const ErrorReporter::ListType& ErrorReporter::list () const
 {

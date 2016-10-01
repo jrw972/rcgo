@@ -109,7 +109,7 @@ main (int argc, char** argv)
 
     tap.tassert ("semantic::check_types IdentifierExpression undefined",
                  root->eval.expression_kind == ErrorExpressionKind &&
-                 last_error (er, Undefined));
+                 last_error (er, Not_Declared));
 
     delete root;
   }
@@ -223,7 +223,7 @@ main (int argc, char** argv)
 
     tap.tassert ("semantic::check_types IdentifierExpression Constant",
                  root->eval.expression_kind == ValueExpressionKind &&
-                 root->eval.type == symbol->type &&
+                 root->eval.type == symbol->type () &&
                  root->eval.intrinsic_mutability == Immutable &&
                  root->eval.indirection_mutability == Mutable &&
                  no_error (er));

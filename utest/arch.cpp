@@ -23,8 +23,8 @@ main (int argc, char** argv)
 
   {
     Struct s;
-    s.append_field (NULL, false, "a", named_int.get_pointer (), TagSet ());
-    s.append_field (NULL, false, "b", &named_bool, TagSet ());
+    s.append_field (NULL, false, "a", loc, named_int.get_pointer (), TagSet ());
+    s.append_field (NULL, false, "b", loc, &named_bool, TagSet ());
     tap.tassert ("unit_size(Array)", unit_size (s.get_array (3)) == 16);
     tap.tassert ("unit_size(Slice)", unit_size (s.get_slice ()) == 16);
   }
@@ -51,11 +51,11 @@ main (int argc, char** argv)
     tap.tassert ("alignment (String)", alignment (String::instance ()) == sizeof (void*));
     Struct s;
     tap.tassert ("alignment (Struct) empty", alignment (&s) == 0);
-    s.append_field (NULL, false, "field", &named_int, TagSet ());
+    s.append_field (NULL, false, "field", loc, &named_int, TagSet ());
     tap.tassert ("alignment (Struct)", alignment (&s) == alignment(&named_int));
-    Component c (NULL);
+    Component c (NULL, loc);
     tap.tassert ("alignment (Component) empty", alignment (&c) == sizeof (void*));
-    c.append_field (NULL, false, "field", &named_int, TagSet ());
+    c.append_field (NULL, false, "field", loc, &named_int, TagSet ());
     tap.tassert ("alignment (Component)", alignment (&c) == alignment(&named_int));
     tap.tassert ("alignment (Array)", alignment (c.get_array (3)) == alignment (&c));
     tap.tassert ("alignment (Pointer)", alignment (c.get_pointer ()) == sizeof (void*));
@@ -90,11 +90,11 @@ main (int argc, char** argv)
     tap.tassert ("size (String)", size (String::instance ()) == sizeof (runtime::String));
     Struct s;
     tap.tassert ("size (Struct) empty", size (&s) == 0);
-    s.append_field (NULL, false, "field", &named_int, TagSet ());
+    s.append_field (NULL, false, "field", loc, &named_int, TagSet ());
     tap.tassert ("size (Struct)", size (&s) == size(&named_int));
-    Component c (NULL);
+    Component c (NULL, loc);
     tap.tassert ("size (Component) empty", size (&c) == sizeof (void*));
-    c.append_field (NULL, false, "field", &named_int, TagSet ());
+    c.append_field (NULL, false, "field", loc, &named_int, TagSet ());
     tap.tassert ("size (Component)", size (&c) == 16);
     tap.tassert ("size (Array)", size (c.get_array (3)) == 48);
     tap.tassert ("size (Pointer)", size (c.get_pointer ()) == sizeof (void*));
@@ -122,10 +122,10 @@ main (int argc, char** argv)
 
   {
     Struct s;
-    s.append_field (NULL, false, "a", &named_int8, TagSet ());
-    s.append_field (NULL, false, "b", &named_int16, TagSet ());
-    s.append_field (NULL, false, "c", &named_int32, TagSet ());
-    s.append_field (NULL, false, "d", &named_int64, TagSet ());
+    s.append_field (NULL, false, "a", loc, &named_int8, TagSet ());
+    s.append_field (NULL, false, "b", loc, &named_int16, TagSet ());
+    s.append_field (NULL, false, "c", loc, &named_int32, TagSet ());
+    s.append_field (NULL, false, "d", loc, &named_int64, TagSet ());
     tap.tassert ("offset",
                  offset (s.find_field ("a")) == 0 &&
                  offset (s.find_field ("b")) == 2 &&

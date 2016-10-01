@@ -27,9 +27,7 @@ enum Kind
   Untyped_String_Kind, // Last
 
   // Typed types.
-  Void_Kind, // First
-
-  Bool_Kind,
+  Bool_Kind, // First
   Uint8_Kind,
   Uint16_Kind,
   Uint32_Kind,
@@ -115,7 +113,7 @@ struct Type
   const Array* get_array (long dimension) const;
   const Heap* get_heap () const;
   // Selecting
-  Field* find_field (const std::string& name) const;
+  decl::Field* find_field (const std::string& name) const;
   virtual decl::Method* find_method (const std::string& identifier) const;
   virtual decl::Initializer* find_initializer (const std::string& identifier) const;
   virtual decl::Getter* find_getter (const std::string& identifier) const;
@@ -123,7 +121,7 @@ struct Type
   virtual decl::Reaction* find_reaction (const std::string& identifier) const;
   virtual decl::Bind* find_bind (const std::string& identifier) const;
   virtual decl::Callable* find_callable (const std::string& name) const;
-  const Type* find (const std::string& identifier) const;
+  bool has_member (const std::string& identifier) const;
   // Heap operations.
   const Type* move () const;
   const Type* merge_change () const;
@@ -145,7 +143,7 @@ struct Type
   virtual const Getter* to_getter () const;
 
 protected:
-  virtual Field* find_field_i (const std::string& name) const;
+  virtual decl::Field* find_field_i (const std::string& name) const;
   virtual bool contains_pointer_i () const;
 
 private:
@@ -204,7 +202,6 @@ struct NamedType : public Type, public decl::Symbol
   virtual void accept (decl::SymbolVisitor& visitor);
   virtual void accept (decl::ConstSymbolVisitor& visitor) const;
   virtual bool process_declaration_i (util::ErrorReporter& er, decl::Scope* file_scope);
-  virtual bool defined () const;
 
 private:
   const Type* underlyingType_;
@@ -215,17 +212,6 @@ private:
   ReactionsType reactions_;
   BindsType binds_;
   ast::TypeDecl* const typedecl_;
-};
-
-// Void represents the absence of a type
-// TODO:  Remove Void.
-struct Void : public Type
-{
-  void print (std::ostream& out = std::cout) const;
-  virtual Kind kind () const;
-  static const Void* instance ();
-private:
-  Void ();
 };
 
 template <typename S, Kind k>
@@ -317,7 +303,7 @@ struct Pointer : public Type, public BaseType
 {
   void print (std::ostream& out = std::cout) const;
   virtual Kind kind () const;
-  virtual Field* find_field_i (const std::string& name) const;
+  virtual decl::Field* find_field_i (const std::string& name) const;
   virtual decl::Callable* find_callable (const std::string& name) const;
   virtual const Pointer* to_pointer () const;
 private:
@@ -379,7 +365,7 @@ private:
 
 struct Struct : public Type
 {
-  typedef std::vector<Field*> FieldsType;
+  typedef std::vector<decl::Field*> FieldsType;
   typedef FieldsType::const_iterator const_iterator;
   void print (std::ostream& out = std::cout) const;
   virtual Kind kind () const;
@@ -389,9 +375,10 @@ struct Struct : public Type
   Struct* append_field (decl::Package* package,
                         bool is_anonymous,
                         const std::string& field_name,
+                        const util::Location& location,
                         const Type* field_type,
                         const TagSet& tags);
-  virtual Field* find_field_i (const std::string& name) const;
+  virtual decl::Field* find_field_i (const std::string& name) const;
   size_t field_count () const;
 protected:
   FieldsType fields_;
@@ -401,7 +388,7 @@ private:
 
 struct Component : public Struct
 {
-  Component (decl::Package* package);
+  Component (decl::Package* package, const util::Location& location);
   void print (std::ostream& out = std::cout) const;
   virtual Kind kind () const;
 };

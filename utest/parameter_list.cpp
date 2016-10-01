@@ -70,16 +70,6 @@ main (int argc, char** argv)
                  sig.is_variadic ());
   }
 
-  {
-    ParameterList sig ((Location ()));
-    sig.append (Parameter::make (util::Location (), "there", &named_int, Immutable, Immutable));
-    tap.tassert ("ParameterList::is_foreign_safe () true",
-                 sig.is_foreign_safe () == true);
-    sig.append (Parameter::make (util::Location (), "there", named_int.get_pointer (), Immutable, Mutable));
-    tap.tassert ("ParameterList::is_foreign_safe () false",
-                 sig.is_foreign_safe () == false);
-  }
-
   tap.print_plan ();
 
   return 0;

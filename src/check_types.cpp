@@ -10,7 +10,6 @@
 #include "symbol_visitor.hpp"
 #include "semantic.hpp"
 #include "symbol.hpp"
-#include "field.hpp"
 #include "symbol.hpp"
 #include "action.hpp"
 #include "bind.hpp"
@@ -18,6 +17,7 @@
 #include "error_reporter.hpp"
 #include "enter_top_level_identifiers.hpp"
 #include "process_top_level_declarations.hpp"
+#include "process_type.hpp"
 
 namespace semantic
 {
@@ -527,7 +527,14 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.symbol = scope->find_global_symbol (identifier);
     if (node.symbol == NULL)
       {
-        er.undefined (node.location, identifier);
+        er.not_declared (node.location, identifier);
+        node.eval.expression_kind = ErrorExpressionKind;
+        return;
+      }
+
+    if (!node.symbol->process_declaration (er, scope))
+      {
+        // process_declaration reports error.
         node.eval.expression_kind = ErrorExpressionKind;
         return;
       }
@@ -582,8 +589,8 @@ struct Visitor : public ast::DefaultNodeVisitor
 
       void visit (const Constant& symbol)
       {
-        node.eval.type = symbol.type;
-        node.eval.value = symbol.value;
+        node.eval.type = symbol.type ();
+        node.eval.value = symbol.value ();
         assert (node.eval.value.present);
         node.eval.expression_kind = ValueExpressionKind;
         node.eval.intrinsic_mutability = Immutable;
@@ -665,9 +672,9 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     // Check the arguments.
     node.arguments->accept (*this);
-    check_types_arguments (node.arguments, node.symbol->initializer->type->parameter_list);
+    check_types_arguments (node.arguments, node.symbol->initializer ()->type->parameter_list);
     require_value_or_variable_list (node.arguments);
-    check_mutability_arguments (node.arguments, node.symbol->initializer->type->parameter_list);
+    check_mutability_arguments (node.arguments, node.symbol->initializer ()->type->parameter_list);
   }
 
   void visit (ast::InitDecl& node)
@@ -866,7 +873,8 @@ struct Visitor : public ast::DefaultNodeVisitor
   void visit (ForIota& node)
   {
     const std::string& identifier = node.identifier->identifier;
-    node.limit_value = process_array_dimension (node.limit, er, scope);
+    // TODO:  Check for error.
+    node.limit_value = process_array_dimension (er, scope, node.limit);
     node.symbol = new Variable (identifier, node.identifier->location, Int::instance (), Immutable, Immutable);
     scope = scope->open ();
     scope->enter_symbol (node.symbol);
@@ -962,19 +970,24 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
 
     // Process the type spec.
-    // TODO:  Check for failure.
-    const type::Type* type = process_type (type_spec, er, scope);
+    process_type (type_spec, er, scope);
+    if (type_spec->eval.expression_kind == ErrorExpressionKind)
+      {
+        // TODO:  Check for failure.
+        UNIMPLEMENTED;
+      }
 
     if (expression_list->size () == 0)
       {
         // Type, no expressions.
-
-        if (type->kind () == Void_Kind)
+        if (type_spec->eval.expression_kind == EmptyTypeExpressionKind)
           {
             error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                            "missing type (E183)");
 
           }
+
+        const type::Type* type = type_spec->eval.type;
 
         // Enter each symbol.
         for (List::ConstIterator id_pos = identifier_list->begin (),
@@ -991,9 +1004,10 @@ struct Visitor : public ast::DefaultNodeVisitor
         return;
       }
 
-    if (type->kind () != Void_Kind)
+    if (type_spec->eval.expression_kind == TypeExpressionKind)
       {
         // Type, expressions.
+        const type::Type* type = type_spec->eval.type;
 
         // Enter each symbol.
         for (List::ConstIterator id_pos = identifier_list->begin (),
@@ -1540,9 +1554,9 @@ done:
 
   void visit (TypeExpression& node)
   {
-    // TODO:  Check for failure.
-    node.eval.type = process_type (node.child, er, scope);
-    node.eval.expression_kind = TypeExpressionKind;
+    process_type (node.child, er, scope);
+    node.eval.expression_kind = node.child->eval.expression_kind;
+    node.eval.type = node.child->eval.type;
   }
 
   void visit (PushPortCall& node)
@@ -1567,8 +1581,7 @@ done:
     check_types_arguments (node.arguments, node.push_port_type->parameter_list);
     require_value_or_variable_list (node.arguments);
 
-    node.eval.type = type::Void::instance ();
-    node.eval.expression_kind = ValueExpressionKind;
+    node.eval.expression_kind = VoidExpressionKind;
     node.eval.intrinsic_mutability = Immutable;
     node.eval.indirection_mutability = Immutable;
   }
@@ -1604,8 +1617,7 @@ done:
     check_types_arguments (node.arguments, node.push_port_type->parameter_list);
     require_value_or_variable_list (node.arguments);
 
-    node.eval.type = type::Void::instance ();
-    node.eval.expression_kind = ValueExpressionKind;
+    node.eval.expression_kind = VoidExpressionKind;
     node.eval.intrinsic_mutability = Immutable;
     node.eval.indirection_mutability = Immutable;
   }
@@ -1613,7 +1625,9 @@ done:
   void visit (CompositeLiteral& node)
   {
     // TODO:  Check for failure.
-    node.eval.type = process_type (node.type, er, scope);
+    node.eval.type = NULL;
+    process_type (node.type, er, scope);
+    assert (false);
     node.eval.expression_kind = VariableExpressionKind;
 
     switch (node.eval.type->underlying_kind ())

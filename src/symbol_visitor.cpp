@@ -39,6 +39,10 @@ void SymbolVisitor::visit (Hidden& s)
 {
   default_action (s);
 }
+void SymbolVisitor::visit (Field& s)
+{
+  default_action (s);
+}
 void SymbolVisitor::default_action (Symbol& s) { }
 
 ConstSymbolVisitor::~ConstSymbolVisitor() { }
@@ -71,6 +75,10 @@ void ConstSymbolVisitor::visit (const Variable& s)
   default_action (s);
 }
 void ConstSymbolVisitor::visit (const Hidden& s)
+{
+  default_action (s);
+}
+void ConstSymbolVisitor::visit (const Field& s)
 {
   default_action (s);
 }

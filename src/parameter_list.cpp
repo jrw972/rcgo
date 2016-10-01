@@ -106,21 +106,6 @@ bool ParameterList::is_variadic () const
   return variadic_;
 }
 
-bool
-ParameterList::is_foreign_safe () const
-{
-  for (const_iterator pos = begin (), limit = end ();
-       pos != limit;
-       ++pos)
-    {
-      if (!(*pos)->is_foreign_safe ())
-        {
-          return false;
-        }
-    }
-  return true;
-}
-
 std::ostream& operator<< (std::ostream& out,
                           const ParameterList& list)
 {

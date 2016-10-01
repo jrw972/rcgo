@@ -21,7 +21,7 @@ struct Node
 
   semantic::ExpressionValue eval;
 
-  type::Field* field;
+  decl::Field* field;
   bool reset_mutability;
   // TODO:  Abstract a callable with a polymorphic function.
   const decl::Callable* callable;
@@ -182,23 +182,23 @@ struct Map : public Node
 
 struct PushPort : public Node
 {
-  PushPort (unsigned int line, List* a_parameters);
+  PushPort (unsigned int line, ParameterList* a_parameters);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  List* const parameters;
+  ParameterList* const parameters;
 };
 
 struct PullPort : public Node
 {
-  PullPort (unsigned int line, List* a_parameters, List* a_return_parameters);
+  PullPort (unsigned int line, ParameterList* a_parameters, ParameterList* a_return_parameters);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  List* const parameters;
-  List* const return_parameters;
+  ParameterList* const parameters;
+  ParameterList* const return_parameters;
 };
 
 struct ParameterList : public List
@@ -360,7 +360,7 @@ struct PushPortCall : public Node
   Identifier* const identifier;
   List* const arguments;
 
-  type::Field* field;
+  decl::Field* field;
   const type::PushPort* push_port_type;
   decl::Parameter* receiver_parameter;
 };
@@ -376,7 +376,7 @@ struct IndexedPushPortCall : public Node
   Node* const index;
   List* const arguments;
 
-  type::Field* field;
+  decl::Field* field;
   const type::PushPort* push_port_type;
   decl::Parameter* receiver_parameter;
   const type::Array* array_type;
@@ -589,7 +589,7 @@ struct ForIota : public Node
 struct ActionDecl : public Node
 {
   ActionDecl (unsigned int line,
-              Node* r,
+              Receiver* r,
               Identifier* i,
               Node* p,
               Node* b);
@@ -597,7 +597,7 @@ struct ActionDecl : public Node
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  Node* const receiver;
+  Receiver* const receiver;
   Identifier* const identifier;
   Node* const precondition;
   Node* const body;
@@ -610,7 +610,7 @@ struct DimensionedActionDecl : public Node
 {
   DimensionedActionDecl (unsigned int line,
                          Node* d,
-                         Node* r,
+                         Receiver* r,
                          Identifier* i,
                          Node* p,
                          Node* b);
@@ -619,7 +619,7 @@ struct DimensionedActionDecl : public Node
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const dimension;
-  Node* const receiver;
+  Receiver* const receiver;
   Identifier* const identifier;
   Node* const precondition;
   Node* const body;
@@ -631,14 +631,14 @@ struct DimensionedActionDecl : public Node
 struct BindDecl : public Node
 {
   BindDecl (unsigned int line,
-            Node* r,
+            Receiver* r,
             Identifier* i,
             Node* b);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  Node* const receiver;
+  Receiver* const receiver;
   Identifier* const identifier;
   Node* const body;
 
@@ -647,14 +647,14 @@ struct BindDecl : public Node
 
 struct FunctionDecl : public Node
 {
-  FunctionDecl (unsigned int line, Identifier* a_identifier, List* a_parameters, List* return_parameters, Node* a_body);
+  FunctionDecl (unsigned int line, Identifier* a_identifier, ParameterList* a_parameters, ParameterList* return_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Identifier* const identifier;
-  List* const parameters;
-  List* const return_parameters;
+  ParameterList* const parameters;
+  ParameterList* const return_parameters;
   Node* const body;
 
   decl::Function* symbol;
@@ -695,15 +695,15 @@ struct ConstDecl : public Node
 
 struct MethodDecl : public Node
 {
-  MethodDecl (unsigned int line, Node* a_receiver, Identifier* a_identifier,  List* a_parameters, List* a_return_parameters, Node* a_body);
+  MethodDecl (unsigned int line, Receiver* a_receiver, Identifier* a_identifier,  ParameterList* a_parameters, ParameterList* a_return_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  Node* const receiver;
+  Receiver* const receiver;
   Identifier* const identifier;
-  List* const parameters;
-  List* const return_parameters;
+  ParameterList* const parameters;
+  ParameterList* const return_parameters;
   Node* const body;
 
   decl::Method* method;
@@ -711,15 +711,15 @@ struct MethodDecl : public Node
 
 struct GetterDecl : public Node
 {
-  GetterDecl (unsigned int line, Node* a_receiver, Identifier* a_identifier, List* a_parameters, List* a_return_parameters, Node* a_body);
+  GetterDecl (unsigned int line, Receiver* a_receiver, Identifier* a_identifier, ParameterList* a_parameters, ParameterList* a_return_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  Node* const receiver;
+  Receiver* const receiver;
   Identifier* const identifier;
-  List* const parameters;
-  List* const return_parameters;
+  ParameterList* const parameters;
+  ParameterList* const return_parameters;
   Node* const body;
 
   decl::Getter* getter;
@@ -727,15 +727,15 @@ struct GetterDecl : public Node
 
 struct InitDecl : public Node
 {
-  InitDecl (unsigned int line, Node* a_receiver, Identifier* a_identifier, List* a_parameters, List* a_return_parameters, Node* a_body);
+  InitDecl (unsigned int line, Receiver* a_receiver, Identifier* a_identifier, ParameterList* a_parameters, ParameterList* a_return_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  Node* const receiver;
+  Receiver* const receiver;
   Identifier* const identifier;
-  List* const parameters;
-  List* const return_parameters;
+  ParameterList* const parameters;
+  ParameterList* const return_parameters;
   Node* const body;
 
   decl::Initializer* initializer;
@@ -743,15 +743,15 @@ struct InitDecl : public Node
 
 struct ReactionDecl : public Node
 {
-  ReactionDecl (unsigned int line, Node* a_receiver, Identifier* a_identifier, List* a_parameters, Node* a_body);
+  ReactionDecl (unsigned int line, Receiver* a_receiver, Identifier* a_identifier, ParameterList* a_parameters, Node* a_body);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
-  Node* const receiver;
+  Receiver* const receiver;
   Identifier* const identifier;
-  List* const parameters;
-  List* const return_parameters;
+  ParameterList* const parameters;
+  ParameterList* const return_parameters;
   Node* const body;
 
   decl::Reaction* reaction;
@@ -761,19 +761,19 @@ struct DimensionedReactionDecl : public Node
 {
   DimensionedReactionDecl (unsigned int line,
                            Node* d,
-                           Node* r,
+                           Receiver* r,
                            Identifier* i,
-                           List* pl,
+                           ParameterList* pl,
                            Node* b);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
 
   Node* const dimension;
-  Node* const receiver;
+  Receiver* const receiver;
   Identifier* const identifier;
-  List* const parameters;
-  List* const return_parameters;
+  ParameterList* const parameters;
+  ParameterList* const return_parameters;
   Node* const body;
 
   decl::Reaction* reaction;

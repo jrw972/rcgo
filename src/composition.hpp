@@ -157,14 +157,14 @@ struct PushPort : public Node
 {
   PushPort (size_t address,
             Instance* instance,
-            type::Field* field,
+            decl::Field* field,
             const std::string& name);
   virtual size_t outgoing_count () const;
   virtual Node* outgoing_node (size_t i) const;
   const InstanceSet& instance_set ();
   size_t const address;
   Instance* const instance;
-  type::Field* const field;
+  decl::Field* const field;
   ReactionsType reactions;
 };
 
@@ -172,14 +172,14 @@ struct PullPort : public Node
 {
   PullPort (size_t address,
             Instance* instance,
-            type::Field* field,
+            decl::Field* field,
             const std::string& name);
   virtual size_t outgoing_count () const;
   virtual Node* outgoing_node (size_t i) const;
   virtual const InstanceSet& instance_set ();
   size_t const address;
   Instance* const instance;
-  type::Field* const field;
+  decl::Field* const field;
   GettersType getters;
 };
 
@@ -218,15 +218,15 @@ private:
       ast::InstanceDecl* node,
       const std::string& name,
       const type::NamedType* named_type = NULL,
-      type::Field* field = NULL);
+      decl::Field* field = NULL);
   void add_instance (Instance* instance);
   void add_push_port (size_t address,
                       Instance* output_instance,
-                      type::Field* output_field,
+                      decl::Field* output_field,
                       const std::string& name);
   void add_pull_port (size_t address,
                       Instance* input_instance,
-                      type::Field* input_field,
+                      decl::Field* input_field,
                       const std::string& name);
   void enumerate_actions ();
   void elaborate_actions ();

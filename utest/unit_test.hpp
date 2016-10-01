@@ -4,12 +4,14 @@
 #include <string>
 #include <iostream>
 
+struct Tree;
+
 struct UnitTester
 {
-
   virtual void register_test_unit (void (*func) (), const char* name) = 0;
   virtual void register_test_scenario (void (*func) (), const char* name) = 0;
-  virtual int run_tests () = 0;
+  virtual int run_tests (bool dry_run) = 0;
+  virtual int run_tests (bool dry_run, Tree* tree) = 0;
   virtual void error (const char* condition, const char* file, int line) = 0;
 
   static UnitTester* impl ();

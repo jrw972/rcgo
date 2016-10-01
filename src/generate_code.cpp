@@ -6,7 +6,6 @@
 #include "runtime.hpp"
 #include "callable.hpp"
 #include "symbol_visitor.hpp"
-#include "field.hpp"
 #include "semantic.hpp"
 #include "bind.hpp"
 #include "action.hpp"
@@ -55,7 +54,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
   void visit (ast::InstanceDecl& node)
   {
     node.arguments->accept (*this);
-    node.operation = new MethodCall (node.symbol->initializer, new runtime::Instance (node.symbol), node.arguments->operation);
+    node.operation = new MethodCall (node.symbol->initializer (), new runtime::Instance (node.symbol), node.arguments->operation);
   }
 
   void visit (ConstDecl& node)

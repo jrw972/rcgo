@@ -200,49 +200,7 @@ struct Negater
   }
 };
 
-// Look up a symbol.  If it is not defined, process its definition.
-template<typename T>
-T* processAndLookup (decl::Scope* scope, const std::string& identifier, const util::Location& location)
-{
-  decl::Symbol *symbol = scope->find_global_symbol (identifier);
-  if (symbol == NULL)
-    {
-      error_at_line (-1, 0, location.file.c_str (), location.line,
-                     "%s was not declared in this scope (E114)", identifier.c_str ());
-    }
-  if (symbol->in_progress)
-    {
-      error_at_line (-1, 0, location.file.c_str (), location.line,
-                     "%s is defined recursively (E115)", identifier.c_str ());
-    }
-  if (!symbol->defined ())
-    {
-      // Process the definition.
-      UNIMPLEMENTED;
-    }
-
-  return decl::symbol_cast<T> (symbol);
-}
-
 ExpressionValueList collect_evals (ast::Node* node);
-
-// Extract an array dimension or error.
-long process_array_dimension (ast::Node* ptr, util::ErrorReporter& er, decl::Scope* scope);
-
-// Check that a signature has +foreign where needed.
-void CheckForForeignSafe (util::ErrorReporter& er,
-                          const decl::ParameterList* parameter_list,
-                          const decl::ParameterList* return_parameter_list);
-
-// Process a type specification.
-const type::Type * process_type (ast::Node* node, util::ErrorReporter& er, decl::Scope* scope, bool require_named_types_to_be_defined = true);
-
-// Process a signature.
-const decl::ParameterList*
-process_parameter_list (ast::Node* node,
-                        util::ErrorReporter& er,
-                        decl::Scope* scope,
-                        bool is_return);
 
 void
 allocate_stack_variables (ast::Node* node);

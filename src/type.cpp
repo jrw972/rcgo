@@ -3,7 +3,6 @@
 #include <sstream>
 
 #include "action.hpp"
-#include "field.hpp"
 #include "callable.hpp"
 #include "bind.hpp"
 #include "arch.hpp"
@@ -12,6 +11,7 @@
 #include "semantic.hpp"
 #include "node.hpp"
 #include "error_reporter.hpp"
+#include "process_type.hpp"
 
 namespace type
 {
@@ -55,7 +55,7 @@ bool Type::is_untyped () const
 
 bool Type::is_unnamed () const
 {
-  return kind () >= Void_Kind && kind () <= File_Descriptor_Kind;
+  return kind () >= Bool_Kind && kind () <= File_Descriptor_Kind;
 }
 
 bool Type::is_named () const
@@ -211,19 +211,15 @@ void NamedType::accept (decl::ConstSymbolVisitor& visitor) const
 bool
 NamedType::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
 {
-  const Type* t = process_type (typedecl_->type, er, file_scope);
-  if (t)
+  process_type (typedecl_->type, er, file_scope, true);
+  if (typedecl_->type->eval.expression_kind == TypeExpressionKind)
     {
-      underlying_type (t);
+      underlying_type (typedecl_->type->eval.type);
+      return true;
     }
-  return t;
-}
 
-bool NamedType::defined () const
-{
-  return underlying_type () != NULL;
+  return false;
 }
-
 
 const Array* Type::to_array () const
 {
@@ -403,16 +399,6 @@ NamedType::find_bind (const std::string& identifier) const
   return NULL;
 }
 
-void Void::print (std::ostream& out) const
-{
-  out << "<void>";
-}
-Kind Void::kind () const
-{
-  return Void_Kind;
-}
-Void::Void () { }
-
 void
 Struct::print (std::ostream& out) const
 {
@@ -431,10 +417,11 @@ Struct*
 Struct::append_field (Package* package,
                       bool is_anonymous,
                       const std::string& field_name,
+                      const util::Location& location,
                       const Type* field_type,
                       const TagSet& tags)
 {
-  Field *field = new Field (this, package, is_anonymous, field_name, field_type, tags);
+  Field* field = new Field (this, package, is_anonymous, field_name, location, field_type, tags);
   fields_.push_back (field);
   return this;
 }
@@ -455,52 +442,17 @@ Struct::find_field_i (const std::string& name) const
   return NULL;
 }
 
-const Type*
-Type::find (const std::string& identifier) const
+bool
+Type::has_member (const std::string& identifier) const
 {
-  Field* f = this->find_field (identifier);
-  if (f)
-    {
-      return f->type;
-    }
-
-  decl::Method* m = this->find_method (identifier);
-  if (m)
-    {
-      return m->type;
-    }
-
-  decl::Initializer* i = this->find_initializer (identifier);
-  if (i)
-    {
-      return i->type;
-    }
-
-  decl::Getter* g = this->find_getter (identifier);
-  if (g)
-    {
-      return g->type;
-    }
-
-  decl::Reaction* r = this->find_reaction (identifier);
-  if (r)
-    {
-      return r->type;
-    }
-
-  Action* a = this->find_action (identifier);
-  if (a)
-    {
-      return Void::instance ();
-    }
-
-  Bind* b = this->find_bind (identifier);
-  if (b)
-    {
-      return Void::instance ();
-    }
-
-  return NULL;
+  return
+    this->find_field (identifier) ||
+    this->find_method (identifier) ||
+    this->find_initializer (identifier) ||
+    this->find_getter (identifier) ||
+    this->find_reaction (identifier) ||
+    this->find_action (identifier) ||
+    this->find_bind (identifier);
 }
 
 const Type*
@@ -750,7 +702,6 @@ type::instance () \
   return i; \
 }
 
-INSTANCE(Void)
 INSTANCE(FileDescriptor)
 INSTANCE(UntypedNil)
 INSTANCE(UntypedBoolean)
@@ -762,11 +713,11 @@ INSTANCE(UntypedString)
 INSTANCE(PolymorphicFunction)
 INSTANCE(String)
 
-Component::Component (Package* package)
+Component::Component (Package* package, const util::Location& location)
   : Struct ()
 {
   /* Prepend the field list with a pointer for the runtime. */
-  append_field (package, true, "0runtime", Void::instance ()->get_pointer (), TagSet ());
+  append_field (package, true, "0runtime", location, Int32::instance ()->get_pointer (), TagSet ());
 }
 
 bool
@@ -1330,7 +1281,7 @@ NamedType named_uintptr ("uintptr", loc, Uintptr::instance ());
 NamedType named_string ("string", loc, String::instance ());
 
 NamedType named_file_descriptor ("FileDescriptor", loc, FileDescriptor::instance ());
-NamedType named_timespec ("timespec", loc, (new Struct ())->append_field (NULL, false, "tv_sec", &named_uint64, TagSet ())->append_field (NULL, false, "tv_nsec", &named_uint64, TagSet ()));
+NamedType named_timespec ("timespec", loc, (new Struct ())->append_field (NULL, false, "tv_sec", loc, &named_uint64, TagSet ())->append_field (NULL, false, "tv_nsec", loc, &named_uint64, TagSet ()));
 
 void Interface::print (std::ostream& out) const
 {
@@ -1673,14 +1624,6 @@ const Function* Function::to_function () const
   return this;
 }
 
-// size_t PushPort::size () const
-// {
-//   return sizeof (void*);
-// }
-// size_t PullPort::size () const
-// {
-//   return sizeof (pull_port_t);
-// }
 PushPort::PushPort (const decl::ParameterList* a_parameter_list,
                     const decl::ParameterList* a_return_parameter_list)
   : FunctionBase (a_parameter_list, a_return_parameter_list)
@@ -1766,10 +1709,6 @@ Interface::Interface (decl::Package* a_package)
   : package (a_package)
 { }
 
-// size_t Interface::size () const
-// {
-//   return 0;
-// }
 Kind Interface::kind () const
 {
   return Interface_Kind;
@@ -1778,11 +1717,6 @@ const Interface* Interface::to_interface () const
 {
   return this;
 }
-
-// size_t Untyped::size () const
-// {
-//   return 0;
-// }
 
 Kind UntypedNil::kind () const
 {
@@ -1872,10 +1806,7 @@ void PolymorphicFunction::print (std::ostream& out) const
 {
   out << "<<polymorphic function>>";
 }
-// size_t PolymorphicFunction::size () const
-// {
-//   return 0;
-// }
+
 Kind PolymorphicFunction::kind () const
 {
   return Polymorphic_Function_Kind;
@@ -1886,10 +1817,7 @@ void FileDescriptor::print (std::ostream& out) const
 {
   out << "<FileDescriptor>";
 }
-// size_t FileDescriptor::size () const
-// {
-//   return sizeof (void*);
-// }
+
 Kind FileDescriptor::kind () const
 {
   return File_Descriptor_Kind;
@@ -1921,11 +1849,6 @@ void String::print (std::ostream& out) const
 {
   out << "<string>";
 }
-
-// size_t String::size () const
-// {
-//   return sizeof (StringRep);
-// }
 
 Kind String::kind () const
 {

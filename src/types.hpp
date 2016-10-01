@@ -105,6 +105,7 @@ enum ExpressionKind
   ValueExpressionKind,
   VariableExpressionKind,
   TypeExpressionKind,
+  EmptyTypeExpressionKind,
   VoidExpressionKind,
 };
 
@@ -113,7 +114,6 @@ enum ExpressionKind
 namespace type
 {
 class Array;
-class Field;
 class Function;
 class Getter;
 class Heap;
@@ -130,7 +130,6 @@ class Slice;
 class Struct;
 class Type;
 class UntypedString;
-class Void;
 
 typedef std::set<std::string> TagSet;
 }
@@ -142,6 +141,7 @@ class Bind;
 class Callable;
 class ConstSymbolVisitor;
 class Constant;
+class Field;
 class Function;
 class FunctionBase;
 class Getter;

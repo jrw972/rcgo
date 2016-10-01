@@ -53,9 +53,9 @@ scope(semantic); {
       decl::Symbol* s = package_scope->find_local_symbol ("x");
       ASSERT (s->state () == decl::Symbol::Defined);
       decl::Constant* c = decl::symbol_cast<decl::Constant> (s);
-      ASSERT (c->type == &type::named_int);
-      ASSERT (c->value.present);
-      ASSERT (c->value.int_value == 1);
+      ASSERT (c->type () == &type::named_int);
+      ASSERT (c->value ().present);
+      ASSERT (c->value ().int_value == 1);
     }; off();
   }; off();
 

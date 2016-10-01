@@ -5,7 +5,6 @@
 #include "callable.hpp"
 #include "symbol_visitor.hpp"
 #include "types.hpp"
-#include "field.hpp"
 #include "composition.hpp"
 #include "heap.hpp"
 #include "executor_base.hpp"

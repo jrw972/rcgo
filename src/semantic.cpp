@@ -362,7 +362,7 @@ require_type (ErrorReporter& er,
   assert (!arg.is_unknown ());
   if (!arg.is_type ())
     {
-      er.requires_type (location);
+      er.expected_a_type (location);
       result.expression_kind = TypeExpressionKind;
       return false;
     }

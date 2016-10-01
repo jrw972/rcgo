@@ -9,6 +9,7 @@
 #include "semantic.hpp"
 #include "check_types.hpp"
 #include "error_reporter.hpp"
+#include "process_type.hpp"
 
 namespace decl
 {
@@ -18,7 +19,6 @@ using namespace type;
 Symbol::Symbol (const std::string& id, const util::Location& loc)
   : name (id)
   , location (loc)
-  , in_progress (false)
   , state_ (Declared)
   , offset_ (0)
 { }
@@ -71,11 +71,6 @@ Symbol::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
   return true;
 }
 
-bool Symbol::defined () const
-{
-  return true;
-}
-
 void Symbol::offset (ptrdiff_t o)
 {
   offset_ = o;
@@ -93,20 +88,71 @@ ACCEPT(Parameter)
 ACCEPT(Constant)
 ACCEPT(Variable)
 ACCEPT(Hidden)
+ACCEPT(Field)
 
-Instance::Instance (const std::string& id, const util::Location& loc)
+Instance::Instance (const std::string& id, const util::Location& loc, ast::InstanceDecl* a_instancedecl)
   : Symbol (id, loc)
-  , type (NULL)
-  , initializer (NULL)
+  , type_ (NULL)
+  , initializer_ (NULL)
   , instance (NULL)
+  , instancedecl_ (a_instancedecl)
 { }
 
 Instance::Instance (const std::string& id, const util::Location& loc, const type::NamedType* t, Initializer* init)
   : Symbol (id, loc)
-  , type (t)
-  , initializer (init)
+  , type_ (t)
+  , initializer_ (init)
   , instance (NULL)
-{ }
+  , instancedecl_ (NULL)
+{
+  state_ = Defined;
+}
+
+const type::NamedType*
+Instance::type () const
+{
+  return type_;
+}
+
+Initializer*
+Instance::initializer () const
+{
+  return initializer_;
+}
+
+bool
+Instance::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+{
+  const std::string& initializer_identifier = instancedecl_->initializer->identifier;
+
+  process_type (instancedecl_->type, er, file_scope);
+  if (instancedecl_->type->eval.expression_kind == ErrorExpressionKind)
+    {
+      return false;
+    }
+
+  const type::NamedType* type = instancedecl_->type->eval.type->to_named_type ();
+
+  if (type->underlying_type ()->kind () != Component_Kind)
+    {
+      error_at_line (-1, 0, instancedecl_->type->location.file.c_str (),
+                     instancedecl_->type->location.line,
+                     "type does not refer to a component (E64)");
+    }
+
+  decl::Initializer* initializer = type->find_initializer (initializer_identifier);
+  if (initializer == NULL)
+    {
+      error_at_line (-1, 0, instancedecl_->initializer->location.file.c_str (),
+                     instancedecl_->initializer->location.line,
+                     "no initializer named %s (E56)",
+                     initializer_identifier.c_str ());
+    }
+  this->type_ = type;
+  this->initializer_ = initializer;
+
+  return true;
+}
 
 Parameter::Parameter (const util::Location& loc,
                       const std::string& id,
@@ -203,8 +249,8 @@ Constant::Constant (const std::string& id, const util::Location& loc, ast::Node*
 
 Constant::Constant (const std::string& id, const util::Location& loc, const type::Type* t, const semantic::Value& v)
   : Symbol (id, loc)
-  , type (t)
-  , value (v)
+  , type_ (t)
+  , value_ (v)
   , type_spec_ (NULL)
   , init_ (NULL)
 {
@@ -215,11 +261,16 @@ bool
 Constant::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
 {
   // Process the type spec.
-  const type::Type* type = process_type (type_spec_, er, file_scope);
-  if (!type) return false;
-
-  if (type->kind () != Void_Kind)
+  process_type (type_spec_, er, file_scope);
+  if (type_spec_->eval.expression_kind == ErrorExpressionKind)
     {
+      return false;
+    }
+
+  if (type_spec_->eval.expression_kind == TypeExpressionKind)
+    {
+      const type::Type* type = type_spec_->eval.type;
+
       // Type, expressions.
       if (!check_constant_expression (init_, er, file_scope))
         {
@@ -234,8 +285,8 @@ Constant::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
       init_->eval.value.convert (init_->eval.type, type);
       init_->eval.type = type;
 
-      this->type = type;
-      this->value = init_->eval.value;
+      this->type_ = type;
+      this->value_ = init_->eval.value;
     }
   else
     {
@@ -245,11 +296,23 @@ Constant::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
           return false;
         }
 
-      this->type = init_->eval.type;
-      this->value = init_->eval.value;
+      this->type_ = init_->eval.type;
+      this->value_ = init_->eval.value;
     }
 
   return true;
+}
+
+const type::Type*
+Constant::type () const
+{
+  return type_;
+}
+
+semantic::Value
+Constant::value () const
+{
+  return value_;
 }
 
 Variable::Variable (const std::string& id, const util::Location& loc, const type::Type* t, Mutability im, Mutability dm)
@@ -281,6 +344,21 @@ Variable* Variable::duplicate()
 
 Hidden::Hidden (const Symbol* s, const util::Location& loc)
   : Symbol (s->name, loc)
+{ }
+
+Field::Field (const Struct* a_struct,
+              decl::Package* a_package,
+              bool a_is_anonymous,
+              const std::string& a_name,
+              const util::Location& a_location,
+              const type::Type* a_type,
+              const TagSet& a_tags)
+  : Symbol (a_name, a_location)
+  , m_struct (a_struct)
+  , package (a_package)
+  , is_anonymous (a_is_anonymous)
+  , type (a_type)
+  , tags (a_tags)
 { }
 
 }

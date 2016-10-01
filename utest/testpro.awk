@@ -60,16 +60,17 @@ BEGIN {
 /off[ ]*\([ ]*\)/ {
     if (type[count-1] == "unit") {
         name = function_name()
+        uname = unit_name()
         print "void " name " () {"
         for (idx = 0; idx < count; idx += 1) {
             print code[idx]
         }
         print "}"
-        print "RegisterTestUnit register_test_unit_" name " (" name ", \"" unit_name() "\");"
+        print "RegisterTestUnit register_test_unit_" name " (" name ", \"" uname "\");"
 
         for (idx = 0; idx < count; idx += 1) {
             if (type[idx] == "scenario") {
-                print "RegisterTestScenario register_test_scenario_" name " (" name, ", \"" id[idx] "\");"
+                print "RegisterTestScenario register_test_scenario_" name "_" id[idx] " (" name ", \"" id[idx] "\");"
             }
         }
     }

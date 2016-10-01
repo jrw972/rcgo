@@ -17,6 +17,7 @@ struct SymbolVisitor
   virtual void visit (Constant& s);
   virtual void visit (Variable& s);
   virtual void visit (Hidden& s);
+  virtual void visit (Field& s);
   virtual void default_action (Symbol& s);
 };
 
@@ -31,6 +32,7 @@ struct ConstSymbolVisitor
   virtual void visit (const Constant& s);
   virtual void visit (const Variable& s);
   virtual void visit (const Hidden& s);
+  virtual void visit (const Field& s);
   virtual void default_action (const Symbol& s);
 };
 
