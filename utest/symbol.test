@@ -10,6 +10,8 @@
 #include "error_reporter.hpp"
 #include "scope.hpp"
 #include "package.hpp"
+#include "enter_predeclared_identifiers.hpp"
+#include "astgen.hpp"
 
 using namespace type;
 using namespace decl;
@@ -18,39 +20,117 @@ using namespace ast;
 
 scope(decl); {
   Location loc;
+  ErrorReporter er;
+  Scope scope;
 
   scope(Instance); {
 
-    decl::Initializer init ("blah", NULL);
-    Instance symbol ("name", loc, &named_int, &init);
+    scenario(fully_constructed); {
+      type::NamedType x ("mytype", loc, &type::named_int);
+      decl::Initializer init (gen_init_decl ("blah"), &x);
+      Instance symbol ("name", loc, &named_int, &init);
 
-    unit(Instance); {
-      ASSERT (symbol.name == "name");
-      ASSERT (symbol.location == loc);
-      ASSERT (symbol.type () == &named_int);
-      ASSERT (symbol.initializer () == &init);
-      ASSERT (symbol.instance == NULL);
-    }; off();
+      unit(Instance); {
+        ASSERT (symbol.name == "name");
+        ASSERT (symbol.location == loc);
+        ASSERT (symbol.type () == &named_int);
+        ASSERT (symbol.initializer () == &init);
+        ASSERT (symbol.instance == NULL);
+      }; off();
 
-    unit(offset); {
-      symbol.offset (53);
-      ASSERT (symbol.offset () == 53);
-    }; off();
+      unit(offset); {
+        symbol.offset (53);
+        ASSERT (symbol.offset () == 53);
+      }; off();
 
-    scenario(SymbolVisitor); {
-      unit(accept); {
-        TestVisitor<SymbolVisitor, Instance> v;
-        symbol.accept (v);
-        ASSERT (v.item == &symbol);
+      scenario(SymbolVisitor); {
+        unit(accept); {
+          TestVisitor<SymbolVisitor, Instance> v;
+          symbol.accept (v);
+          ASSERT (v.item == &symbol);
+        }; off();
+      }; off();
+
+      scenario(ConstSymbolVisitor); {
+        unit(accept); {
+          TestConstVisitor<ConstSymbolVisitor, Instance> cv;
+          symbol.accept (cv);
+          ASSERT (cv.item == &symbol);
+        }; off();
       }; off();
     }; off();
 
-    scenario(ConstSymbolVisitor); {
-      unit(accept); {
-        TestConstVisitor<ConstSymbolVisitor, Instance> cv;
-        symbol.accept (cv);
-        ASSERT (cv.item == &symbol);
+    scenario(from_decl); {
+      scenario (no_type); {
+        unit(process_declaration); {
+          ast::Identifier identifier (1, "i");
+          ast::Identifier id2 (1, "T");
+          ast::IdentifierType type (1, &id2);
+          ast::Identifier init (1, "init");
+          ast::IdentifierList arguments (1);
+          ast::InstanceDecl instancedecl (1, &identifier, &type, &init, &arguments);
+          decl::Instance instance (&instancedecl);
+          ASSERT (instance.process_declaration (er, &scope) == false);
+          ASSERT (er.count () == 1);
+        }; off();
       }; off();
+
+      scenario (not_a_component); {
+        unit(process_declaration); {
+          semantic::enter_predeclared_identifiers (&scope);
+          ast::Identifier identifier (1, "i");
+          ast::Identifier id2 (1, "int");
+          ast::IdentifierType type (1, &id2);
+          ast::Identifier init (1, "init");
+          ast::IdentifierList arguments (1);
+          ast::InstanceDecl instancedecl (1, &identifier, &type, &init, &arguments);
+          decl::Instance instance (&instancedecl);
+          ASSERT (instance.process_declaration (er, &scope) == false);
+          ASSERT (er.count () == 1);
+        }; off();
+      }; off();
+
+      scenario (no_initializer); {
+        unit(process_declaration); {
+          type::Component mycomp (NULL, loc);
+          type::NamedType mytype ("mytype", loc, &mycomp);
+          scope.enter_symbol (&mytype);
+
+          ast::Identifier identifier (1, "i");
+          ast::Identifier id2 (1, "mytype");
+          ast::IdentifierType type (1, &id2);
+          ast::Identifier init (1, "init");
+          ast::IdentifierList arguments (1);
+          ast::InstanceDecl instancedecl (1, &identifier, &type, &init, &arguments);
+          decl::Instance instance (&instancedecl);
+          ASSERT (instance.process_declaration (er, &scope) == false);
+          ASSERT (er.count () == 1);
+        }; off();
+      }; off();
+
+      scenario (success); {
+        unit(process_declaration); {
+          type::Component mycomp (NULL, loc);
+          type::NamedType mytype ("mytype", loc, &mycomp);
+          decl::Initializer initializer (gen_init_decl ("init"), &mytype);
+          mytype.insert_initializer (&initializer);
+
+          scope.enter_symbol (&mytype);
+
+          ast::Identifier identifier (1, "i");
+          ast::Identifier id2 (1, "mytype");
+          ast::IdentifierType type (1, &id2);
+          ast::Identifier init (1, "init");
+          ast::IdentifierList arguments (1);
+          ast::InstanceDecl instancedecl (1, &identifier, &type, &init, &arguments);
+          decl::Instance instance (&instancedecl);
+          ASSERT (instance.process_declaration (er, &scope) == true);
+          ASSERT (er.count () == 0);
+          ASSERT (instance.type () == &mytype);
+          ASSERT (instance.initializer () == &initializer);
+        }; off();
+      }; off();
+
     }; off();
   }; off();
 
@@ -159,32 +239,146 @@ scope(decl); {
 
   scope(Constant); {
 
-    semantic::Value value;
-    value.present = true;
-    value.int_value = 37;
-    Constant symbol ("name", loc, &named_int, value);
+    scenario(fully_constructed); {
+      semantic::Value value;
+      value.present = true;
+      value.int_value = 37;
+      Constant symbol ("name", loc, &named_int, value);
 
-    unit(Constant); {
-      ASSERT (symbol.name == "name");
-      ASSERT (symbol.location == loc);
-      ASSERT (symbol.type () == &named_int);
-      ASSERT (symbol.value ().int_value == 37);
-    }; off();
+      unit(Constant); {
+        ASSERT (symbol.name == "name");
+        ASSERT (symbol.location == loc);
+        ASSERT (symbol.type () == &named_int);
+        ASSERT (symbol.value ().int_value == 37);
+      }; off();
 
-    scenario(SymbolVisitor); {
-      unit(accept); {
-        TestVisitor<SymbolVisitor, Constant> v;
-        symbol.accept (v);
-        ASSERT (v.item == &symbol);
+      scenario(SymbolVisitor); {
+        unit(accept); {
+          TestVisitor<SymbolVisitor, Constant> v;
+          symbol.accept (v);
+          ASSERT (v.item == &symbol);
+        }; off();
+      }; off();
+
+      scenario(ConstSymbolVisitor); {
+        unit(accept); {
+          TestConstVisitor<ConstSymbolVisitor, Constant> cv;
+          symbol.accept (cv);
+          ASSERT (cv.item == &symbol);
+        }; off();
       }; off();
     }; off();
 
-    scenario(ConstSymbolVisitor); {
-      unit(accept); {
-        TestConstVisitor<ConstSymbolVisitor, Constant> cv;
-        symbol.accept (cv);
-        ASSERT (cv.item == &symbol);
+    scenario(from_decl); {
+
+      scenario(with_type); {
+
+        scenario(bad_type); {
+          unit(process_declaration); {
+            Identifier id1 (1, "not_declared");
+            IdentifierType type (1, &id1);
+            semantic::Value val;
+            val.present = true;
+            Literal expr (1, type::UntypedInteger::instance (), val);
+            Constant myconst ("myconst", loc, &type, &expr);
+            ASSERT (myconst.process_declaration(er, &scope) == false);
+            ASSERT (er.count () == 1);
+          }; off();
+        }; off();
+
+        scenario(not_constant); {
+          unit(process_declaration); {
+            semantic::enter_predeclared_identifiers (&scope);
+            Identifier id1 (1, "int");
+            IdentifierType type (1, &id1);
+            ast::Identifier id2 (1, "new");
+            ast::IdentifierExpression idx (1, &id2);
+            ast::ExpressionList args (1);
+            ast::Identifier id3 (1, "int");
+            ast::IdentifierType idtype2 (1, &id3);
+            ast::TypeExpression tex (1, &idtype2);
+            args.append (&tex);
+            ast::Call node (1, &idx, &args);
+            Constant myconst ("myconst", loc, &type, &node);
+            ASSERT (myconst.process_declaration(er, &scope) == false);
+            ASSERT (er.count () == 1);
+          }; off();
+        }; off();
+
+        scenario(not_assignable); {
+          unit(process_declaration); {
+            semantic::enter_predeclared_identifiers (&scope);
+            Identifier id1 (1, "int");
+            IdentifierType type (1, &id1);
+            semantic::Value val;
+            val.present = true;
+            val.untyped_float_value = 3.5;
+            Literal expr (1, type::UntypedFloat::instance (), val);
+            Constant myconst ("myconst", loc, &type, &expr);
+            ASSERT (myconst.process_declaration(er, &scope) == false);
+            ASSERT (er.count () == 1);
+          }; off();
+        }; off();
+
+        scenario(sucess); {
+          unit(process_declaration); {
+            semantic::enter_predeclared_identifiers (&scope);
+            Identifier id1 (1, "int");
+            IdentifierType type (1, &id1);
+            semantic::Value val;
+            val.present = true;
+            val.untyped_float_value = 1.0;
+            Literal expr (1, type::UntypedFloat::instance (), val);
+            Constant myconst ("myconst", loc, &type, &expr);
+            ASSERT (myconst.process_declaration(er, &scope) == true);
+            ASSERT (er.count () == 0);
+            ASSERT (myconst.type () == &type::named_int);
+            ASSERT (myconst.value ().present == true);
+            ASSERT (myconst.value ().int_value == 1);
+          }; off();
+        }; off();
+
       }; off();
+
+
+      scenario(without_type); {
+
+        scenario(not_constant); {
+          unit(process_declaration); {
+            semantic::enter_predeclared_identifiers (&scope);
+            EmptyType type (1);
+            ast::Identifier id2 (1, "new");
+            ast::IdentifierExpression idx (1, &id2);
+            ast::ExpressionList args (1);
+            ast::Identifier id3 (1, "int");
+            ast::IdentifierType idtype2 (1, &id3);
+            ast::TypeExpression tex (1, &idtype2);
+            args.append (&tex);
+            ast::Call node (1, &idx, &args);
+            Constant myconst ("myconst", loc, &type, &node);
+            ASSERT (myconst.process_declaration(er, &scope) == false);
+            ASSERT (er.count () == 1);
+          }; off();
+        }; off();
+
+        scenario(sucess); {
+          unit(process_declaration); {
+            EmptyType type (1);
+            semantic::Value val;
+            val.present = true;
+            val.untyped_float_value = 37.5;
+            Literal expr (1, type::UntypedFloat::instance (), val);
+            Constant myconst ("myconst", loc, &type, &expr);
+            ASSERT (myconst.process_declaration(er, &scope) == true);
+            ASSERT (er.count () == 0);
+            ASSERT (myconst.type () == type::UntypedFloat::instance ());
+            ASSERT (myconst.value ().present == true);
+            ASSERT (myconst.value ().untyped_float_value == 37.5);
+          }; off();
+        }; off();
+
+      }; off();
+
     }; off();
 
   }; off();
@@ -289,9 +483,6 @@ scope(decl); {
   }; off();
 
   scope(Symbol); {
-
-    ErrorReporter er;
-    Scope scope;
 
     scenario(undefined); {
 

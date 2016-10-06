@@ -2,16 +2,13 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver
 
 AM_CXXFLAGS = -I $(top_srcdir)/src
 
-EXTRA_DIST = enter_predeclared_identifiers.test enter_top_level_identifiers.test error_reporter.test node.test process_top_level_declarations.test process_type.test symbol.test
+EXTRA_DIST = callable.test enter_predeclared_identifiers.test enter_top_level_identifiers.test error_reporter.test node.test process_top_level_declarations.test process_type.test symbol.test
 
 %.cpp : %.test
 	awk -f $(top_srcdir)/utest/testpro.awk $< > $@
 
 TESTS = \
- action \
  arch \
- bind \
- callable \
  check_types \
  expression_value \
  heap \
@@ -29,27 +26,12 @@ TESTS = \
  unit_test
 check_PROGRAMS = $(TESTS)
 
-HELPERS=unit_test.hpp tap.hpp visitor_helper.hpp mock_execution.hpp
-
-action_SOURCES = action.cpp $(HELPERS)
-action_LDADD = $(top_builddir)/src/librcgo.la
-action_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-action_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+HELPERS=unit_test.hpp tap.hpp visitor_helper.hpp mock_execution.hpp astgen.hpp astgen.cpp
 
 arch_SOURCES = arch.cpp $(HELPERS)
 arch_LDADD = $(top_builddir)/src/librcgo.la
 arch_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 arch_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-
-bind_SOURCES = bind.cpp $(HELPERS)
-bind_LDADD = $(top_builddir)/src/librcgo.la
-bind_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-bind_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-
-callable_SOURCES = callable.cpp $(HELPERS)
-callable_LDADD = $(top_builddir)/src/librcgo.la
-callable_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-callable_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
 check_types_SOURCES = check_types.cpp $(HELPERS)
 check_types_LDADD = $(top_builddir)/src/librcgo.la
@@ -126,7 +108,7 @@ value_LDADD = $(top_builddir)/src/librcgo.la
 value_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 value_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
-unit_test_SOURCES = $(HELPERS) unit_test.cpp enter_predeclared_identifiers.cpp enter_top_level_identifiers.cpp error_reporter.cpp node.cpp process_top_level_declarations.cpp process_type.cpp symbol.cpp
+unit_test_SOURCES = $(HELPERS) unit_test.cpp callable.cpp enter_predeclared_identifiers.cpp enter_top_level_identifiers.cpp error_reporter.cpp node.cpp process_top_level_declarations.cpp process_type.cpp symbol.cpp
 unit_test_LDADD = $(top_builddir)/src/librcgo.la
 unit_test_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 unit_test_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)

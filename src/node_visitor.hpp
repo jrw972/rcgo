@@ -25,8 +25,6 @@ struct NodeVisitor
   virtual void visit (ConstDecl& node) = 0;
   virtual void visit (Conversion& node) = 0;
   virtual void visit (Dereference& node) = 0;
-  virtual void visit (DimensionedActionDecl& node) = 0;
-  virtual void visit (DimensionedReactionDecl& node) = 0;
   virtual void visit (Element& node) = 0;
   virtual void visit (ElementList& node) = 0;
   virtual void visit (EmptyExpression& node) = 0;
@@ -96,8 +94,6 @@ struct DefaultNodeVisitor : public NodeVisitor
   virtual void visit (ConstDecl& node);
   virtual void visit (Conversion& node);
   virtual void visit (Dereference& node);
-  virtual void visit (DimensionedActionDecl& node);
-  virtual void visit (DimensionedReactionDecl& node);
   virtual void visit (Element& node);
   virtual void visit (ElementList& node);
   virtual void visit (EmptyExpression& node);

@@ -42,6 +42,7 @@ Symbol::process_declaration (util::ErrorReporter& er, Scope* file_scope)
       if (process_declaration_i (er, file_scope))
         {
           state_ = Symbol::Defined;
+          post_process_declaration_i (er, file_scope);
         }
       else
         {
@@ -71,6 +72,10 @@ Symbol::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
   return true;
 }
 
+void
+Symbol::post_process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+{ }
+
 void Symbol::offset (ptrdiff_t o)
 {
   offset_ = o;
@@ -90,8 +95,8 @@ ACCEPT(Variable)
 ACCEPT(Hidden)
 ACCEPT(Field)
 
-Instance::Instance (const std::string& id, const util::Location& loc, ast::InstanceDecl* a_instancedecl)
-  : Symbol (id, loc)
+Instance::Instance (ast::InstanceDecl* a_instancedecl)
+  : Symbol (a_instancedecl->identifier->identifier, a_instancedecl->identifier->location)
   , type_ (NULL)
   , initializer_ (NULL)
   , instance (NULL)
@@ -135,18 +140,15 @@ Instance::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
 
   if (type->underlying_type ()->kind () != Component_Kind)
     {
-      error_at_line (-1, 0, instancedecl_->type->location.file.c_str (),
-                     instancedecl_->type->location.line,
-                     "type does not refer to a component (E64)");
+      er.expected_a_component (instancedecl_->type->location);
+      return false;
     }
 
   decl::Initializer* initializer = type->find_initializer (initializer_identifier);
   if (initializer == NULL)
     {
-      error_at_line (-1, 0, instancedecl_->initializer->location.file.c_str (),
-                     instancedecl_->initializer->location.line,
-                     "no initializer named %s (E56)",
-                     initializer_identifier.c_str ());
+      er.not_declared (instancedecl_->initializer->location, initializer_identifier);
+      return false;
     }
   this->type_ = type;
   this->initializer_ = initializer;
@@ -287,6 +289,7 @@ Constant::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
 
       this->type_ = type;
       this->value_ = init_->eval.value;
+      return true;
     }
   else
     {
@@ -298,9 +301,8 @@ Constant::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
 
       this->type_ = init_->eval.type;
       this->value_ = init_->eval.value;
+      return true;
     }
-
-  return true;
 }
 
 const type::Type*

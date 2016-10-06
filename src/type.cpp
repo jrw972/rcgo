@@ -1,10 +1,9 @@
 #include "type.hpp"
 
 #include <sstream>
+#include <algorithm>
 
-#include "action.hpp"
 #include "callable.hpp"
-#include "bind.hpp"
 #include "arch.hpp"
 #include "parameter_list.hpp"
 #include "symbol_visitor.hpp"
@@ -219,6 +218,79 @@ NamedType::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
     }
 
   return false;
+}
+
+struct check_member_func
+{
+  util::ErrorReporter& er;
+  Scope& scope;
+
+  check_member_func (util::ErrorReporter& a_er,
+                     Scope& a_scope)
+    : er (a_er)
+    , scope (a_scope)
+  { }
+
+  void operator() (Symbol* symbol)
+  {
+    const Symbol* prev = scope.find_local_symbol (symbol->name);
+    if (prev)
+      {
+        er.already_declared (symbol->location, symbol->name, prev->location);
+      }
+    scope.enter_symbol (symbol);
+  }
+
+};
+
+struct process_declaration_func
+{
+  util::ErrorReporter& er;
+  Scope* file_scope;
+
+  process_declaration_func (util::ErrorReporter& a_er,
+                            Scope* a_file_scope)
+    : er (a_er)
+    , file_scope (a_file_scope)
+  { }
+
+  template <typename T>
+  void operator() (T* t)
+  {
+    t->process_declaration (er, file_scope);
+  }
+
+};
+
+void
+NamedType::post_process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+{
+  Scope s;
+  // Enter all fields in a struct.
+  const Struct* st = underlying_type ()->to_struct ();
+  if (st)
+    {
+      for (Struct::const_iterator pos = st->begin (), limit = st->end ();
+           pos != limit;
+           ++pos)
+        {
+          s.enter_symbol ((*pos));
+        }
+    }
+
+  std::for_each (methods_.begin (), methods_.end (), check_member_func (er, s));
+  std::for_each (initializers_.begin (), initializers_.end (), check_member_func (er, s));
+  std::for_each (getters_.begin (), getters_.end (), check_member_func (er, s));
+  std::for_each (actions_.begin (), actions_.end (), check_member_func (er, s));
+  std::for_each (reactions_.begin (), reactions_.end (), check_member_func (er, s));
+  std::for_each (binds_.begin (), binds_.end (), check_member_func (er, s));
+
+  std::for_each (methods_.begin (), methods_.end (), process_declaration_func (er, file_scope));
+  std::for_each (initializers_.begin (), initializers_.end (), process_declaration_func (er, file_scope));
+  std::for_each (getters_.begin (), getters_.end (), process_declaration_func (er, file_scope));
+  std::for_each (actions_.begin (), actions_.end (), process_declaration_func (er, file_scope));
+  std::for_each (reactions_.begin (), reactions_.end (), process_declaration_func (er, file_scope));
+  std::for_each (binds_.begin (), binds_.end (), process_declaration_func (er, file_scope));
 }
 
 const Array* Type::to_array () const
@@ -772,10 +844,8 @@ Struct::contains_pointer_i () const
   return false;
 }
 
-NamedType::NamedType (const std::string& name,
-                      const util::Location& location,
-                      ast::TypeDecl* a_typedecl)
-  : Symbol (name, location)
+NamedType::NamedType (ast::TypeDecl* a_typedecl)
+  : Symbol (a_typedecl->identifier->identifier, a_typedecl->identifier->location)
   , underlyingType_ (NULL)
   , typedecl_ (a_typedecl)
 { }

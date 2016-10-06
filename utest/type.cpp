@@ -1,12 +1,15 @@
 #include "type.hpp"
 
 #include "tap.hpp"
-#include "action.hpp"
-#include "bind.hpp"
 #include "package.hpp"
 #include "parameter_list.hpp"
 #include "visitor_helper.hpp"
 #include "callable.hpp"
+#include "node.hpp"
+#include "astgen.hpp"
+#include "error_reporter.hpp"
+#include "scope.hpp"
+#include "enter_predeclared_identifiers.hpp"
 
 #include <sstream>
 
@@ -68,7 +71,10 @@ main (int argc, char** argv)
 
   util::Location loc;
   {
-    NamedType foo ("foo", loc, static_cast<ast::TypeDecl*> (NULL));
+    ast::Identifier id (1, "foo");
+    ast::EmptyType type (1);
+    ast::TypeDecl typedecl (1, &id, &type);
+    NamedType foo (&typedecl);
     tap.tassert ("NamedType::NamedType(1)", foo.underlying_type () == NULL);
   }
 
@@ -98,7 +104,7 @@ main (int argc, char** argv)
   {
     NamedType foo ("foo", loc, new Component (NULL, loc));
     decl::Method* r1 = foo.find_method ("r");
-    decl::Method* r = new decl::Method ("r", new type::Method (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
+    decl::Method* r = new decl::Method (gen_method_decl ("r"), &foo);
     foo.insert_method (r);
     decl::Method* r2 = foo.find_method ("r");
     tap.tassert ("NamedType::find_method", r1 == NULL && r2 == r);
@@ -107,7 +113,7 @@ main (int argc, char** argv)
   {
     NamedType foo ("foo", loc, new Component (NULL, loc));
     decl::Initializer* r1 = foo.find_initializer ("r");
-    decl::Initializer* r = new decl::Initializer ("r", new type::Initializer (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
+    decl::Initializer* r = new decl::Initializer (gen_init_decl ("r"), &foo);
     foo.insert_initializer (r);
     decl::Initializer* r2 = foo.find_initializer ("r");
     tap.tassert ("NamedType::find_initializer", r1 == NULL && r2 == r);
@@ -117,7 +123,7 @@ main (int argc, char** argv)
     NamedType foo ("foo", loc, new Component (NULL, loc));
     tap.tassert ("NamedType::getters_begin/end", foo.getters_begin () == foo.getters_end ());
     decl::Getter* r1 = foo.find_getter ("r");
-    decl::Getter* r = new decl::Getter (NULL, "r", new type::Getter (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
+    decl::Getter* r = new decl::Getter (gen_getter_decl ("r"), &foo);
     foo.insert_getter (r);
     decl::Getter* r2 = foo.find_getter ("r");
     tap.tassert ("NamedType::find_getter", r1 == NULL && r2 == r);
@@ -127,7 +133,7 @@ main (int argc, char** argv)
     NamedType foo ("foo", loc, new Component (NULL, loc));
     tap.tassert ("NamedType::actions_begin/end", foo.actions_begin () == foo.actions_end ());
     Action* r1 = foo.find_action ("r");
-    Action* r = new Action (NULL, NULL, NULL, "r");
+    Action* r = new Action (gen_action_decl ("r"), &foo);
     foo.insert_action (r);
     Action* r2 = foo.find_action ("r");
     tap.tassert ("NamedType::find_action", r1 == NULL && r2 == r);
@@ -137,7 +143,7 @@ main (int argc, char** argv)
     NamedType foo ("foo", loc, new Component (NULL, loc));
     tap.tassert ("NamedType::reactions_begin/end", foo.reactions_begin () == foo.reactions_end ());
     decl::Reaction* r1 = foo.find_reaction ("r");
-    decl::Reaction* r = new decl::Reaction (NULL, "r", NULL);
+    decl::Reaction* r = new decl::Reaction (gen_reaction_decl ("r"), &foo);
     foo.insert_reaction (r);
     decl::Reaction* r2 = foo.find_reaction ("r");
     tap.tassert ("NamedType::find_reaction", r1 == NULL && r2 == r);
@@ -147,7 +153,7 @@ main (int argc, char** argv)
     NamedType foo ("foo", loc, new Component (NULL, loc));
     tap.tassert ("NamedType::binds_begin/end", foo.binds_begin () == foo.binds_end ());
     Bind* r1 = foo.find_bind ("r");
-    Bind* r = new Bind (NULL, "r", NULL);
+    Bind* r = new Bind (gen_bind_decl ("r"), &foo);
     foo.insert_bind (r);
     Bind* r2 = foo.find_bind ("r");
     tap.tassert ("NamedType::find_bind", r1 == NULL && r2 == r);
@@ -156,25 +162,36 @@ main (int argc, char** argv)
   {
     NamedType foo ("foo", loc, new Component (NULL, loc));
 
-    decl::Method* m = new decl::Method ("m", new type::Method (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
+    decl::Method* m = new decl::Method (gen_method_decl ("m"), &foo);
     foo.insert_method (m);
     decl::Callable* m2 = foo.find_callable ("m");
 
-    decl::Initializer* i = new decl::Initializer ("i", new type::Initializer (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
+    decl::Initializer* i = new decl::Initializer (gen_init_decl ("i"), &foo);
     foo.insert_initializer (i);
     decl::Callable* i2 = foo.find_callable ("i");
 
-    decl::Getter* g = new decl::Getter (NULL, "g", new type::Getter (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
+    decl::Getter* g = new decl::Getter (gen_getter_decl ("g"), &foo);
     foo.insert_getter (g);
     decl::Callable* g2 = foo.find_callable ("g");
 
-    decl::Reaction* r = new decl::Reaction (NULL, "r", NULL);
+    decl::Reaction* r = new decl::Reaction (gen_reaction_decl ("r"), &foo);
     foo.insert_reaction (r);
     decl::Callable* r2 = foo.find_callable ("r");
 
     decl::Callable* n = foo.find_callable ("not there");
 
     tap.tassert ("NamedType::find_callable", m2 == m && i2 == i && g2 == g && r2 == r && n == NULL);
+  }
+
+  {
+    util::ErrorReporter er;
+    Scope scope;
+    semantic::enter_predeclared_identifiers (&scope);
+    NamedType mytype (gen_type_decl ("mytype", gen_field_list ("myfield", "int")));
+    decl::Method method (gen_method_decl ("myfield"), &mytype);
+    mytype.insert_method (&method);
+    mytype.process_declaration (er, &scope);
+    tap.tassert ("NamedType::process_declaration", er.count () == 1);
   }
 
   scalar_test<Bool> (tap, "Bool", "<bool>", Bool_Kind);
@@ -227,7 +244,7 @@ main (int argc, char** argv)
   {
     util::Location loc;
     NamedType foo ("foo", loc, new Component (NULL, loc));
-    decl::Method* r = new decl::Method ("r", new type::Method (&foo, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
+    decl::Method* r = new decl::Method (gen_method_decl ("r"), &foo);
     foo.insert_method (r);
     decl::Callable* r2 = foo.get_pointer ()->find_callable ("r");
     tap.tassert ("Pointer::find_callable", r2 == r);
@@ -476,12 +493,12 @@ main (int argc, char** argv)
 
     NamedType nt ("foo", loc, &s);
 
-    decl::Method* method = new decl::Method ("method", new type::Method (&nt, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
-    decl::Initializer* initializer = new decl::Initializer ("initializer", new type::Initializer (&nt, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
-    decl::Getter* getter = new decl::Getter (NULL, "getter", new type::Getter (&nt, Parameter::make_receiver (loc, "", &type::named_int, Mutable, Mutable), (new ParameterList (loc)), ((new ParameterList (loc)))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))));
-    Action* action = new Action (NULL, NULL, NULL, "action");
-    decl::Reaction* reaction = new decl::Reaction (NULL, "reaction", NULL);
-    Bind* bind = new Bind (NULL, "bind", NULL);
+    decl::Method* method = new decl::Method (gen_method_decl ("method"), &nt);
+    decl::Initializer* initializer = new decl::Initializer (gen_init_decl ("initializer"), &nt);
+    decl::Getter* getter = new decl::Getter (gen_getter_decl ("getter"), &nt);
+    Action* action = new Action (gen_action_decl ("action"), &nt);
+    decl::Reaction* reaction = new decl::Reaction (gen_reaction_decl ("reaction"), &nt);
+    Bind* bind = new Bind (gen_bind_decl ("bind"), &nt);
 
     nt.insert_method (method);
     nt.insert_initializer (initializer);

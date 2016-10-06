@@ -98,41 +98,15 @@ scope(semantic); {
   Scope scope;
   Location loc (1);
 
-  scenario(no_receiver_type); {
-    unit(process_receiver); {
-      ast::Identifier this_id (1, "this");
-      ast::Identifier type_id (1, "not_declared");
-      ast::Receiver receiver (1, &this_id, Mutable, Mutable, false, &type_id);
-      decl::Parameter* parameter;
-      ASSERT (process_receiver (er, &scope, &receiver, parameter, false, false) == NULL);
-      ASSERT (parameter == NULL);
-      ASSERT (er.count () == 1);
-    }; off();
-  }; off();
-
-  scenario(receiver_type_not_a_type); {
-    unit(process_receiver); {
-      enter_predeclared_identifiers (&scope);
-      ast::Identifier this_id (1, "this");
-      ast::Identifier type_id (1, "true");
-      ast::Receiver receiver (1, &this_id, Mutable, Mutable, false, &type_id);
-      decl::Parameter* parameter;
-      ASSERT (process_receiver (er, &scope, &receiver, parameter, false, false) == NULL);
-      ASSERT (parameter == NULL);
-      ASSERT (er.count () == 1);
-    }; off();
-  }; off();
-
   scenario(require_component); {
     unit(process_receiver); {
       enter_predeclared_identifiers (&scope);
+      NamedType mytype ("mytype", loc, &type::named_int);
       ast::Identifier this_id (1, "this");
       ast::Identifier type_id (1, "int");
       ast::Receiver receiver (1, &this_id, Mutable, Mutable, false, &type_id);
-      decl::Parameter* parameter;
-      ASSERT (process_receiver (er, &scope, &receiver, parameter, true, false) == NULL);
-      ASSERT (parameter == NULL);
-      ASSERT (er.count () == 1);
+      process_receiver (er, &scope, &mytype, &receiver, true, false);
+      ASSERT (er.count () == 2);
     }; off();
   }; off();
 
@@ -140,13 +114,10 @@ scope(semantic); {
     unit(process_receiver); {
       Component comp (NULL, loc);
       NamedType mytype ("mytype", loc, &comp);
-      scope.enter_symbol (&mytype);
       ast::Identifier this_id (1, "this");
       ast::Identifier type_id (1, "mytype");
       ast::Receiver receiver (1, &this_id, Mutable, Mutable, false, &type_id);
-      decl::Parameter* parameter;
-      ASSERT (process_receiver (er, &scope, &receiver, parameter, true, false) == NULL);
-      ASSERT (parameter == NULL);
+      process_receiver (er, &scope, &mytype, &receiver, true, false);
       ASSERT (er.count () == 1);
     }; off();
   }; off();
@@ -159,9 +130,7 @@ scope(semantic); {
       ast::Identifier this_id (1, "this");
       ast::Identifier type_id (1, "mytype");
       ast::Receiver receiver (1, &this_id, Mutable, Mutable, true, &type_id);
-      decl::Parameter* parameter;
-      ASSERT (process_receiver (er, &scope, &receiver, parameter, true, true) == NULL);
-      ASSERT (parameter == NULL);
+      process_receiver (er, &scope, &mytype, &receiver, true, true);
       ASSERT (er.count () == 1);
     }; off();
   }; off();
@@ -174,15 +143,13 @@ scope(semantic); {
       ast::Identifier this_id (1, "this");
       ast::Identifier type_id (1, "mytype");
       ast::Receiver receiver (1, &this_id, Mutable, Immutable, true, &type_id);
-      decl::Parameter* parameter;
-      NamedType* type = process_receiver (er, &scope, &receiver, parameter, true, true);
+      decl::Parameter* parameter = process_receiver (er, &scope, &mytype, &receiver, true, true);
       ASSERT (parameter != NULL);
       ASSERT (parameter->location == this_id.location);
       ASSERT (parameter->name == this_id.identifier);
       ASSERT (parameter->type == mytype.get_pointer ());
       ASSERT (parameter->intrinsic_mutability == Mutable);
       ASSERT (parameter->indirection_mutability == Immutable);
-      ASSERT (type == &mytype);
       ASSERT (er.count () == 0);
     }; off();
   }; off();
@@ -194,15 +161,13 @@ scope(semantic); {
       ast::Identifier this_id (1, "this");
       ast::Identifier type_id (1, "mytype");
       ast::Receiver receiver (1, &this_id, Mutable, Mutable, false, &type_id);
-      decl::Parameter* parameter;
-      NamedType* type = process_receiver (er, &scope, &receiver, parameter, false, false);
+      decl::Parameter* parameter = process_receiver (er, &scope, &mytype, &receiver, false, false);
       ASSERT (parameter != NULL);
       ASSERT (parameter->location == this_id.location);
       ASSERT (parameter->name == this_id.identifier);
       ASSERT (parameter->type == &mytype);
       ASSERT (parameter->intrinsic_mutability == Mutable);
       ASSERT (parameter->indirection_mutability == Mutable);
-      ASSERT (type == &mytype);
       ASSERT (er.count () == 0);
     }; off();
   }; off();
@@ -277,25 +242,6 @@ scope(semantic); {
     }; off();
   }; off();
 
-  scenario(already_declared); {
-    unit(process_parameter_list); {
-      enter_predeclared_identifiers (&scope);
-      ast::Identifier id1 (1, "x");
-      ast::Identifier id2 (1, "int");
-      ast::IdentifierList identifiers (1);
-      identifiers.append (&id1);
-      identifiers.append (&id1);
-      ast::IdentifierType type (1, &id2);
-      ast::VariableList variable_list (1, &identifiers, Mutable, Mutable, &type);
-      ast::ParameterList parameter_list (1);
-      parameter_list.append (&variable_list);
-      const decl::ParameterList* pl = process_parameter_list (er, &scope, &parameter_list, false);
-      ASSERT (pl != NULL);
-      ASSERT (er.count () == 1);
-      ASSERT (pl->size () == 1);
-    }; off();
-  }; off();
-
 }; off();
 
 scope(semantic); {
@@ -336,6 +282,25 @@ scope(semantic); {
       ASSERT (pl->at (0)->kind == Parameter::Ordinary);
       ASSERT (rpl->size () == 1);
       ASSERT (rpl->at (0)->kind == Parameter::Return);
+    }; off();
+  }; off();
+
+}; off();
+
+scope(semantic); {
+  util::Location loc;
+  ErrorReporter er;
+
+  scenario(duplicate_parameters); {
+    unit(check_unique_parameters); {
+      decl::ParameterList parameters (loc);
+      parameters.append (Parameter::make (loc, "x", &type::named_int, Mutable, Mutable));
+      parameters.append (Parameter::make (loc, "x", &type::named_int, Mutable, Mutable));
+      decl::ParameterList return_parameters (loc);
+      return_parameters.append (Parameter::make (loc, "x", &type::named_int, Mutable, Mutable));
+      type::Function func (&parameters, &return_parameters);
+      check_unique_parameters (er, &func);
+      ASSERT (er.count () == 2);
     }; off();
   }; off();
 

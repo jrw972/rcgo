@@ -216,10 +216,6 @@ void ConstDecl::print (std::ostream& out) const
 {
   out << "ConstDecl";
 }
-void DimensionedActionDecl::print (std::ostream& out) const
-{
-  out << "DimensionedActionDecl";
-}
 void BindDecl::print (std::ostream& out) const
 {
   out << "BindDecl";
@@ -247,10 +243,6 @@ void MethodDecl::print (std::ostream& out) const
 void ReactionDecl::print (std::ostream& out) const
 {
   out << "ReactionDecl";
-}
-void DimensionedReactionDecl::print (std::ostream& out) const
-{
-  out << "DimensionedReactionDecl";
 }
 void TypeDecl::print (std::ostream& out) const
 {
@@ -305,8 +297,6 @@ ACCEPT (CompositeLiteral)
 ACCEPT (ConstDecl)
 ACCEPT (Conversion)
 ACCEPT (Dereference)
-ACCEPT (DimensionedActionDecl)
-ACCEPT (DimensionedReactionDecl)
 ACCEPT (Element)
 ACCEPT (ElementList)
 ACCEPT (EmptyExpression)
@@ -872,33 +862,11 @@ void ForIota::visit_children (NodeVisitor& visitor)
 }
 
 ActionDecl::ActionDecl (unsigned int line,
+                        Node* d,
                         Receiver* r,
                         Identifier* i,
                         Node* p,
                         Node* b)
-  : Node (line)
-  , receiver (r)
-  , identifier (i)
-  , precondition (p)
-  , body (b)
-  , action (NULL)
-  , type (NULL)
-{ }
-
-void ActionDecl::visit_children (NodeVisitor& visitor)
-{
-  receiver->accept (visitor);
-  identifier->accept (visitor);
-  precondition->accept (visitor);
-  body->accept (visitor);
-}
-
-DimensionedActionDecl::DimensionedActionDecl (unsigned int line,
-    Node* d,
-    Receiver* r,
-    Identifier* i,
-    Node* p,
-    Node* b)
   : Node (line)
   , dimension (d)
   , receiver (r)
@@ -906,10 +874,9 @@ DimensionedActionDecl::DimensionedActionDecl (unsigned int line,
   , precondition (p)
   , body (b)
   , action (NULL)
-  , type (NULL)
 { }
 
-void DimensionedActionDecl::visit_children (NodeVisitor& visitor)
+void ActionDecl::visit_children (NodeVisitor& visitor)
 {
   dimension->accept (visitor);
   receiver->accept (visitor);
@@ -1067,34 +1034,11 @@ void InitDecl::visit_children (NodeVisitor& visitor)
 }
 
 ReactionDecl::ReactionDecl (unsigned int line,
+                            Node* d,
                             Receiver* r,
                             Identifier* i,
                             ParameterList* pl,
                             Node* b)
-  : Node (line)
-  , receiver (r)
-  , identifier (i)
-  , parameters (pl)
-  , return_parameters (new ParameterList (line))
-  , body (b)
-  , reaction (NULL)
-{ }
-
-void ReactionDecl::visit_children (NodeVisitor& visitor)
-{
-  receiver->accept (visitor);
-  identifier->accept (visitor);
-  parameters->accept (visitor);
-  return_parameters->accept (visitor);
-  body->accept (visitor);
-}
-
-DimensionedReactionDecl::DimensionedReactionDecl (unsigned int line,
-    Node* d,
-    Receiver* r,
-    Identifier* i,
-    ParameterList* pl,
-    Node* b)
   : Node (line)
   , dimension (d)
   , receiver (r)
@@ -1105,7 +1049,7 @@ DimensionedReactionDecl::DimensionedReactionDecl (unsigned int line,
   , reaction (NULL)
 { }
 
-void DimensionedReactionDecl::visit_children (NodeVisitor& visitor)
+void ReactionDecl::visit_children (NodeVisitor& visitor)
 {
   dimension->accept (visitor);
   receiver->accept (visitor);

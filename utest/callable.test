@@ -1,0 +1,270 @@
+/* -*- c++ -*- */
+#include "callable.hpp"
+#include "unit_test.hpp"
+
+#include "node.hpp"
+#include "mock_execution.hpp"
+#include "visitor_helper.hpp"
+#include "symbol_visitor.hpp"
+#include "error_reporter.hpp"
+#include "scope.hpp"
+#include "astgen.hpp"
+
+using namespace decl;
+
+scope(decl); {
+  util::Location loc;
+  util::ErrorReporter er;
+  decl::Scope scope;
+
+  scope(Function); {
+    Function func (gen_function_decl ("name"));
+
+    unit(Function); {
+      ASSERT (func.name == "name");
+      ASSERT (func.type == NULL);
+      ASSERT (func.operation == NULL);
+    }; off();
+
+    unit(process_declaration); {
+      ASSERT (func.process_declaration (er, &scope) == true);
+      ASSERT (func.state () == Symbol::Defined);
+      ASSERT (func.type != NULL);
+      ASSERT (func.parameter_list () == func.type->parameter_list);
+      ASSERT (func.return_parameter_list () == func.type->return_parameter_list);
+      ASSERT (func.callable_type () == func.type);
+    }; off();
+
+    scenario(SymbolVisitor); {
+      unit(accept); {
+        TestVisitor<SymbolVisitor, FunctionBase> v;
+        func.accept (v);
+        ASSERT (v.item == &func);
+      }; off();
+    }; off();
+
+    scenario(ConstSymbolVisitor); {
+      unit(accept); {
+        TestConstVisitor<ConstSymbolVisitor, FunctionBase> cv;
+        func.accept (cv);
+        ASSERT (cv.item == &func);
+      }; off();
+    }; off();
+
+    scenario(defined); {
+      func.process_declaration (er, &scope);
+
+      unit(check); {
+        func.check (new ast::ExpressionList (1));
+        ReceiverAccess ra;
+        bool flag;
+        func.compute_receiver_access (semantic::ExpressionValueList (), ra, flag);
+      }; off();
+
+      unit(call); {
+        MockExecutor exec;
+        MockOperation op;
+        func.operation = &op;
+        func.call (exec);
+        ASSERT (op.was_executed);
+      }; off();
+    }; off();
+
+  }; off();
+
+  scope(Method); {
+    type::NamedType x ("mytype", loc, &type::named_int);
+    Method meth (gen_method_decl ("name"), &x);
+
+    unit(Method); {
+      ASSERT (meth.name == "name");
+      ASSERT (meth.type == NULL);
+      ASSERT (meth.operation == NULL);
+    }; off();
+
+    unit(process_declaration); {
+      ASSERT (meth.process_declaration (er, &scope) == true);
+      ASSERT (meth.state () == Symbol::Defined);
+      ASSERT (meth.type != NULL);
+      ASSERT (meth.parameter_list () == meth.type->function_type->parameter_list);
+      ASSERT (meth.return_parameter_list () == meth.type->return_parameter_list);
+      ASSERT (meth.callable_type () == meth.type);
+    }; off();
+
+    scenario(SymbolVisitor); {
+      unit(accept); {
+        TestVisitor<SymbolVisitor, MethodBase> v;
+        meth.accept (v);
+        ASSERT (v.item == &meth);
+      }; off();
+    }; off();
+
+    scenario(ConstSymbolVisitor); {
+      unit(accept); {
+        TestConstVisitor<ConstSymbolVisitor, MethodBase> cv;
+        meth.accept (cv);
+        ASSERT (cv.item == &meth);
+      }; off();
+    }; off();
+
+    scenario(defined); {
+      meth.process_declaration (er, &scope);
+
+      unit(check); {
+        meth.check (new ast::ExpressionList (1));
+        ReceiverAccess ra;
+        bool flag;
+        meth.compute_receiver_access (semantic::ExpressionValueList (), ra, flag);
+      }; off();
+
+      unit(call); {
+        MockExecutor exec;
+        MockOperation op;
+        meth.operation = &op;
+        meth.call (exec);
+        ASSERT (op.was_executed);
+      }; off();
+    }; off();
+
+  }; off();
+
+  scope(Initializer); {
+    type::NamedType x ("mytype", loc, &type::named_int);
+    Initializer initializer (gen_init_decl ("name"), &x);
+
+    unit(Initializer); {
+      ASSERT (initializer.name == "name");
+      ASSERT (initializer.type == NULL);
+      ASSERT (initializer.operation == NULL);
+    }; off();
+
+    unit(process_declaration); {
+      ASSERT (initializer.process_declaration (er, &scope) == true);
+      ASSERT (initializer.state () == Symbol::Defined);
+      ASSERT (initializer.type != NULL);
+      ASSERT (initializer.parameter_list () == initializer.type->function_type->parameter_list);
+      ASSERT (initializer.return_parameter_list () == initializer.type->return_parameter_list);
+      ASSERT (initializer.callable_type () == initializer.type);
+    }; off();
+  }; off();
+
+  scope(Getter); {
+    type::NamedType x ("mytype", loc, &type::named_int);
+    Getter getter (gen_getter_decl ("name"), &x);
+
+    unit(Getter); {
+      ASSERT (getter.name == "name");
+      ASSERT (getter.type == NULL);
+      ASSERT (getter.operation == NULL);
+    }; off();
+
+    unit(process_declaration); {
+      ASSERT (getter.process_declaration (er, &scope) == true);
+      ASSERT (getter.state () == Symbol::Defined);
+      ASSERT (getter.type != NULL);
+      ASSERT (getter.parameter_list () == getter.type->function_type->parameter_list);
+      ASSERT (getter.return_parameter_list () == getter.type->return_parameter_list);
+      ASSERT (getter.callable_type () == getter.type);
+    }; off();
+
+  }; off();
+
+  scope(Action); {
+
+    unit(Action); {
+      type::NamedType x ("mytype", loc, &type::named_int);
+      Action action (gen_action_decl ("name"), &x);
+      ASSERT (action.name == "name");
+      ASSERT (action.type == NULL);
+      ASSERT (action.operation == NULL);
+      ASSERT (action.receiver_parameter () == NULL);
+      ASSERT (action.iota_parameter () == NULL);
+      ASSERT (action.dimension () == -1);
+    }; off();
+
+    scenario(normal); {
+      unit(process_declaration); {
+        type::NamedType x ("mytype", loc, &type::named_int);
+        Action action (gen_action_decl ("name"), &x);
+        ASSERT (action.process_declaration (er, &scope) == true);
+        ASSERT (action.state () == Symbol::Defined);
+        ASSERT (action.receiver_parameter () != NULL);
+        ASSERT (action.iota_parameter () == NULL);
+        ASSERT (action.dimension () == -1);
+      }; off();
+    }; off();
+
+    scenario(dimensioned); {
+      unit(process_declaration); {
+        type::NamedType x ("mytype", loc, &type::named_int);
+        Action action (gen_action_decl ("name", 5), &x);
+        ASSERT (action.process_declaration (er, &scope) == true);
+        ASSERT (action.state () == Symbol::Defined);
+        ASSERT (action.receiver_parameter () != NULL);
+        ASSERT (action.iota_parameter () != NULL);
+        ASSERT (action.dimension () == 5);
+      }; off();
+    }; off();
+
+  }; off();
+
+  scope(Reaction); {
+    unit(Reaction); {
+      type::NamedType x ("mytype", loc, &type::named_int);
+      decl::Reaction reaction (gen_reaction_decl ("name"), &x);
+      ASSERT (reaction.operation == NULL);
+      ASSERT (reaction.name == "name");
+      ASSERT (reaction.iota () == NULL);
+      ASSERT (reaction.type == NULL);
+      ASSERT (reaction.dimension () == -1);
+    }; off();
+
+    scenario(normal); {
+      unit(process_declaration); {
+        type::NamedType x ("mytype", loc, &type::named_int);
+        decl::Reaction reaction (gen_reaction_decl ("name"), &x);
+        ASSERT (reaction.process_declaration (er, &scope) == true);
+        ASSERT (reaction.state () == Symbol::Defined);
+        ASSERT (reaction.iota () == NULL);
+        ASSERT (reaction.dimension () == -1);
+        ASSERT (reaction.callable_type () == reaction.type);
+        ASSERT (reaction.parameter_list () == reaction.type->function_type->parameter_list);
+        ASSERT (reaction.return_parameter_list () == reaction.type->function_type->return_parameter_list);
+      }; off();
+    }; off();
+
+    scenario(dimensioned); {
+      unit(process_declaration); {
+        type::NamedType x ("mytype", loc, &type::named_int);
+        Reaction reaction (gen_reaction_decl ("name", 5), &x);
+        ASSERT (reaction.process_declaration (er, &scope) == true);
+        ASSERT (reaction.state () == Symbol::Defined);
+        ASSERT (reaction.iota () != NULL);
+        ASSERT (reaction.dimension () == 5);
+        ASSERT (reaction.callable_type () == reaction.type);
+        ASSERT (reaction.parameter_list () == reaction.type->function_type->parameter_list);
+        ASSERT (reaction.return_parameter_list () == reaction.type->function_type->return_parameter_list);
+      }; off();
+    }; off();
+
+  }; off();
+
+  scope(Bind); {
+    type::NamedType x ("mytype", loc, &type::named_int);
+    decl::Bind bind (gen_bind_decl ("name"), &x);
+    unit(Bind); {
+      ASSERT (bind.operation == NULL);
+      ASSERT (bind.name == "name");
+      ASSERT (bind.type == NULL);
+      ASSERT (bind.receiver_parameter () == NULL);
+    }; off();
+
+    unit(process_declaration); {
+      ASSERT (bind.process_declaration (er, &scope) == true);
+      ASSERT (bind.state () == Symbol::Defined);
+      ASSERT (bind.receiver_parameter () != NULL);
+    }; off();
+
+  }; off();
+
+}; off();

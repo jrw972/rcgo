@@ -7,6 +7,7 @@
 #include "semantic.hpp"
 #include "builtin_function.hpp"
 #include "enter_predeclared_identifiers.hpp"
+#include "astgen.hpp"
 
 using namespace semantic;
 using namespace ast;
@@ -47,11 +48,6 @@ static Literal* make_untyped_false ()
 // {
 //   return new ast::Function (1, new Identifier (1, "myfunc"), NULL, NULL, NULL);
 // }
-
-static type::Function* make_function_type ()
-{
-  return new type::Function (NULL, NULL);
-}
 
 static bool no_error (const ErrorReporter& er)
 {
@@ -155,19 +151,20 @@ main (int argc, char** argv)
   }
 
   {
-    util::Location loc;
-    Node* root = make_identifier_expr ("myfunc");
     ErrorReporter er;
-    decl::Function* symbol = new decl::Function ("myfunc", loc, make_function_type ());
     Scope scope;
-    scope.enter_symbol (symbol);
+
+    Node* root = make_identifier_expr ("myfunc");
+    decl::Function symbol (gen_function_decl ("myfunc"));
+    symbol.process_declaration (er, &scope);
+    scope.enter_symbol (&symbol);
 
     check_types (root, er, &scope);
 
     tap.tassert ("semantic::check_types IdentifierExpression Function",
                  root->eval.expression_kind == ValueExpressionKind &&
-                 root->eval.type == symbol->type &&
-                 root->callable == symbol &&
+                 root->eval.type == symbol.type &&
+                 root->callable == &symbol &&
                  root->eval.intrinsic_mutability == Immutable &&
                  root->eval.indirection_mutability == Immutable &&
                  no_error (er));

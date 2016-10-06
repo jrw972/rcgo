@@ -7,8 +7,6 @@
 #include "callable.hpp"
 #include "symbol_visitor.hpp"
 #include "semantic.hpp"
-#include "bind.hpp"
-#include "action.hpp"
 #include "operation.hpp"
 
 namespace  code
@@ -84,23 +82,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
     node.body->operation = new SetRestoreCurrentInstance (node.body->operation, node.action->memory_model.receiver_offset ());
   }
 
-  void visit (DimensionedActionDecl& node)
-  {
-    node.precondition->accept (*this);
-    Operation* p = node.precondition->operation;
-    p = load (node.precondition, p);
-    node.precondition->operation = new SetRestoreCurrentInstance (p, node.action->memory_model.receiver_offset ());
-    node.body->accept (*this);
-    node.body->operation = new SetRestoreCurrentInstance (node.body->operation, node.action->memory_model.receiver_offset ());
-  }
-
   void visit (ast::ReactionDecl& node)
-  {
-    node.body->accept (*this);
-    node.reaction->operation = new SetRestoreCurrentInstance (node.body->operation, node.reaction->memory_model.receiver_offset ());
-  }
-
-  void visit (DimensionedReactionDecl& node)
   {
     node.body->accept (*this);
     node.reaction->operation = new SetRestoreCurrentInstance (node.body->operation, node.reaction->memory_model.receiver_offset ());

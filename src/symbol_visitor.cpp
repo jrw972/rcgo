@@ -15,6 +15,10 @@ void SymbolVisitor::visit (FunctionBase& s)
 {
   default_action (s);
 }
+void SymbolVisitor::visit (MethodBase& s)
+{
+  default_action (s);
+}
 void SymbolVisitor::visit (Instance& s)
 {
   default_action (s);
@@ -51,6 +55,10 @@ void ConstSymbolVisitor::visit (const PolymorphicFunction& s)
   default_action (s);
 }
 void ConstSymbolVisitor::visit (const FunctionBase& s)
+{
+  default_action (s);
+}
+void ConstSymbolVisitor::visit (const MethodBase& s)
 {
   default_action (s);
 }

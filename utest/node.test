@@ -76,27 +76,6 @@ scope(ast); {
   ast::ParameterList parameters1 (1);
   ast::ParameterList parameters2 (1);
 
-  scope(ActionDecl); {
-    scenario(default); {
-      ActionDecl node (1, &receiver1, &identifier1, &node2, &node3);
-      unit(ActionDecl); {
-        ASSERT (node.receiver == &receiver1);
-        ASSERT (node.identifier == &identifier1);
-        ASSERT (node.precondition == &node2);
-        ASSERT (node.body == &node3);
-      }; off();
-      unit(accept); {
-        test_accept<DefaultNodeVisitor> (node);
-      }; off();
-      unit(visit_children); {
-        test_visit_children (node, &receiver1, &identifier1, &node2, &node3);
-      }; off();
-      unit(print); {
-        test_print (node);
-      }; off();
-    }; off();
-  }; off();
-
   scope(Activate); {
     scenario(default); {
       Activate node (1, &list1, &node1);
@@ -405,10 +384,10 @@ scope(ast); {
     }; off();
   }; off();
 
-  scope(DimensionedActionDecl); {
+  scope(ActionDecl); {
     scenario(default); {
-      DimensionedActionDecl node (1, &node1, &receiver1, &identifier1, &node3, &node4);
-      unit(DimensionedActionDecl); {
+      ActionDecl node (1, &node1, &receiver1, &identifier1, &node3, &node4);
+      unit(ActionDecl); {
         ASSERT (node.dimension == &node1);
         ASSERT (node.receiver == &receiver1);
         ASSERT (node.identifier == &identifier1);
@@ -428,10 +407,10 @@ scope(ast); {
   }; off();
 
 
-  scope(DimensionedReactionDecl); {
+  scope(ReactionDecl); {
     scenario(default); {
-      DimensionedReactionDecl node (1, &node1, &receiver1, &identifier1, &parameters1, &node3);
-      unit(DimensionedReactionDecl); {
+      ReactionDecl node (1, &node1, &receiver1, &identifier1, &parameters1, &node3);
+      unit(ReactionDecl); {
         ASSERT (node.dimension == &node1);
         ASSERT (node.receiver == &receiver1);
         ASSERT (node.identifier == &identifier1);
@@ -1052,27 +1031,6 @@ scope(ast); {
       }; off();
       unit(visit_children); {
         test_visit_children (node, &parameters1);
-      }; off();
-      unit(print); {
-        test_print (node);
-      }; off();
-    }; off();
-  }; off();
-
-  scope(ReactionDecl); {
-    scenario(default); {
-      ReactionDecl node (1, &receiver1, &identifier1, &parameters1, &node2);
-      unit(ReactionDecl); {
-        ASSERT (node.receiver == &receiver1);
-        ASSERT (node.identifier == &identifier1);
-        ASSERT (node.parameters == &parameters1);
-        ASSERT (node.body == &node2);
-      }; off();
-      unit(accept); {
-        test_accept<DefaultNodeVisitor> (node);
-      }; off();
-      unit(visit_children); {
-        test_visit_children (node, &receiver1, &identifier1, &parameters1, &node2, node.return_parameters);
       }; off();
       unit(print); {
         test_print (node);

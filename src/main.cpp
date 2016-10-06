@@ -21,6 +21,7 @@
 #include "compute_receiver_access.hpp"
 #include "enter_predeclared_identifiers.hpp"
 #include "enter_top_level_identifiers.hpp"
+#include "enter_method_identifiers.hpp"
 #include "process_top_level_declarations.hpp"
 #include "scheduler.hpp"
 #include "scope.hpp"
@@ -226,6 +227,8 @@ main (int argc, char **argv)
   // Enter top-level identifier into the package scope.
   // This includes constants, types, functions, and instances.
   semantic::enter_top_level_identifiers (root, er, package_scope, file_scope);
+  // Enter method-like identifiers into the named types.
+  semantic::enter_method_identifiers (root, er, file_scope);
   // Process all top-level declarations.
   // This includes constants, types, functions, methods, initializers, getters,
   // actions, reactions, binders, and instances.

@@ -18,11 +18,11 @@ check_for_foreign_safe (util::ErrorReporter& er,
                         const decl::ParameterList* parameter_list);
 
 // Process a receiver.
-type::NamedType*
+decl::Parameter*
 process_receiver (util::ErrorReporter& er,
                   decl::Scope* scope,
+                  const type::NamedType* named_type,
                   ast::Receiver* node,
-                  decl::Parameter*& receiver_symbol,
                   bool require_component,
                   bool require_immutable_dereference_mutability);
 
@@ -41,6 +41,10 @@ process_signature (util::ErrorReporter& er,
                    bool require_foreign_safe,
                    const decl::ParameterList*& parameter_list,
                    const decl::ParameterList*& return_parameter_list);
+
+void
+check_unique_parameters (util::ErrorReporter& er,
+                         const type::Function* type);
 
 // Process a type specification.
 // Pre:  node->eval.expression_kind == UnknownExpressionKind

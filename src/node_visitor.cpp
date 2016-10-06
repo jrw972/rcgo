@@ -210,10 +210,6 @@ void DefaultNodeVisitor::visit (ConstDecl& node)
 {
   default_action (node);
 }
-void DefaultNodeVisitor::visit (DimensionedActionDecl& node)
-{
-  default_action (node);
-}
 void DefaultNodeVisitor::visit (BindDecl& node)
 {
   default_action (node);
@@ -239,10 +235,6 @@ void DefaultNodeVisitor::visit (MethodDecl& node)
   default_action (node);
 }
 void DefaultNodeVisitor::visit (ReactionDecl& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (DimensionedReactionDecl& node)
 {
   default_action (node);
 }

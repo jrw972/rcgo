@@ -34,6 +34,7 @@ struct Symbol
 protected:
   State state_;
   virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+  virtual void post_process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
 private:
   // TODO:  Should this be here?
   ptrdiff_t offset_;
@@ -41,9 +42,7 @@ private:
 
 struct Instance : public Symbol
 {
-  Instance (const std::string& name,
-            const util::Location& location,
-            ast::InstanceDecl* a_instancedecl);
+  Instance (ast::InstanceDecl* a_instancedecl);
   Instance (const std::string& name,
             const util::Location& location,
             const type::NamedType* type,

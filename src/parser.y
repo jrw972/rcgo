@@ -248,15 +248,15 @@ Receiver:
 
 ActionDecl:
   ACTION Receiver IDENTIFIER                '(' Expression ')' Block
-{ $$ = new ActionDecl (@1, $2, $3, $5, $7); }
+{ $$ = new ActionDecl (@1, new EmptyExpression (@1), $2, $3, $5, $7); }
 | ArrayDimension ACTION Receiver IDENTIFIER '(' Expression ')' Block
-{ $$ = new DimensionedActionDecl (@1, $1, $3, $4, $6, $8); }
+{ $$ = new ActionDecl (@1, $1, $3, $4, $6, $8); }
 
 ReactionDecl:
   REACTION Receiver IDENTIFIER ParameterList Block
-{ $$ = new ReactionDecl (@1, $2, $3, $4, $5); }
+{ $$ = new ReactionDecl (@1, new EmptyExpression (@1), $2, $3, $4, $5); }
 | ArrayDimension REACTION Receiver IDENTIFIER ParameterList Block
-{ $$ = new DimensionedReactionDecl (@2, $1, $3, $4, $5, $6); }
+{ $$ = new ReactionDecl (@2, $1, $3, $4, $5, $6); }
 
 BindDecl:
   BIND Receiver IDENTIFIER Block

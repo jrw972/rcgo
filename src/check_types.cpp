@@ -11,8 +11,6 @@
 #include "semantic.hpp"
 #include "symbol.hpp"
 #include "symbol.hpp"
-#include "action.hpp"
-#include "bind.hpp"
 #include "parameter_list.hpp"
 #include "error_reporter.hpp"
 #include "enter_top_level_identifiers.hpp"
@@ -702,35 +700,14 @@ struct Visitor : public ast::DefaultNodeVisitor
   void visit (ast::ActionDecl& node)
   {
     scope = scope->open ();
-    scope->enter_symbol (node.action->receiver_parameter);
-    Visitor v (*this);
-    v.receiver_parameter = node.action->receiver_parameter;
-    v.context = Action;
-    node.precondition->accept (v);
-    check_condition (node.precondition);
-    node.body->accept (v);
 
-    if (node.precondition->eval.value.present)
+    if (node.action->dimension () != -1)
       {
-        if (node.precondition->eval.value.bool_value)
-          {
-            node.action->precondition_kind = decl::Action::Static_True;
-          }
-        else
-          {
-            node.action->precondition_kind = decl::Action::Static_False;
-          }
+        scope->enter_symbol (node.action->iota_parameter ());
       }
-    scope = scope->close ();
-  }
-
-  void visit (DimensionedActionDecl& node)
-  {
-    scope = scope->open ();
-    scope->enter_symbol (node.action->iota_parameter);
-    scope->enter_symbol (node.action->receiver_parameter);
+    scope->enter_symbol (node.action->receiver_parameter ());
     Visitor v (*this);
-    v.receiver_parameter = node.action->receiver_parameter;
+    v.receiver_parameter = node.action->receiver_parameter ();
     v.context = Action;
     node.precondition->accept (v);
     check_condition (node.precondition);
@@ -752,22 +729,17 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (ast::ReactionDecl& node)
   {
-    scope = scope->open (node.reaction->parameter_list (),
-                         node.reaction->return_parameter_list ());
-    // No return type.
-    Visitor v (*this);
-    v.receiver_parameter = node.reaction->type->receiver_parameter;
-    v.context = Reaction;
-    node.body->accept (v);
-    scope = scope->close ();
-  }
-
-  void visit (DimensionedReactionDecl& node)
-  {
-    scope = scope->open (node.reaction->iota,
-                         node.reaction->parameter_list (),
-                         node.reaction->return_parameter_list ());
-
+    if (node.reaction->dimension () != -1)
+      {
+        scope = scope->open (node.reaction->iota (),
+                             node.reaction->parameter_list (),
+                             node.reaction->return_parameter_list ());
+      }
+    else
+      {
+        scope = scope->open (node.reaction->parameter_list (),
+                             node.reaction->return_parameter_list ());
+      }
     // No return type.
     Visitor v (*this);
     v.receiver_parameter = node.reaction->type->receiver_parameter;
@@ -779,7 +751,7 @@ struct Visitor : public ast::DefaultNodeVisitor
   void visit (ast::BindDecl& node)
   {
     scope = scope->open ();
-    scope->enter_symbol (node.bind->receiver_parameter);
+    scope->enter_symbol (node.bind->receiver_parameter ());
     node.body->accept (*this);
     scope = scope->close ();
   }
@@ -1183,12 +1155,13 @@ done:
   {
     node.visit_children (*this);
     const decl::Reaction* reaction = bind (node, node.left, node.right);
-    if (!reaction->has_dimension ())
+    long dimension = reaction->dimension ();
+    if (dimension == -1)
       {
         error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
                        "parameter specified for non-parameterized reaction (E41)");
       }
-    long dimension = reaction->dimension;
+
     check_array_index (reaction->type->get_array (dimension), node.param, false);
   }
 

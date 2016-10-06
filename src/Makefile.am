@@ -28,15 +28,14 @@ rcgo_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 rcgo_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
 noinst_LTLIBRARIES=librcgo.la
-librcgo_la_SOURCES = action.hpp action.cpp \
-arch.hpp arch.cpp \
-bind.hpp bind.cpp \
+librcgo_la_SOURCES = arch.hpp arch.cpp \
 builtin_function.hpp builtin_function.cpp \
 callable.hpp callable.cpp \
 check_types.hpp check_types.cpp \
 composition.hpp composition.cpp \
 compute_receiver_access.hpp compute_receiver_access.cpp \
 enter_predeclared_identifiers.hpp enter_predeclared_identifiers.cpp \
+enter_method_identifiers.hpp enter_method_identifiers.cpp \
 enter_top_level_identifiers.hpp enter_top_level_identifiers.cpp \
 error_reporter.hpp error_reporter.cpp \
 evaluate_static.hpp evaluate_static.cpp \

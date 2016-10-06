@@ -4,7 +4,6 @@
 #include "node_visitor.hpp"
 #include "symbol_visitor.hpp"
 #include "symbol_cast.hpp"
-#include "action.hpp"
 #include "parameter_list.hpp"
 #include "semantic.hpp"
 #include "callable.hpp"
@@ -88,21 +87,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.action->immutable_phase_access = node.body->eval.receiver_access;
   }
 
-  void visit (DimensionedActionDecl& node)
-  {
-    node.precondition->accept (*this);
-    node.body->accept (*this);
-    node.action->precondition_access = node.precondition->eval.receiver_access;
-    node.action->immutable_phase_access = node.body->eval.receiver_access;
-  }
-
   void visit (ast::ReactionDecl& node)
-  {
-    node.body->accept (*this);
-    node.reaction->immutable_phase_access = node.body->eval.receiver_access;
-  }
-
-  void visit (DimensionedReactionDecl& node)
   {
     node.body->accept (*this);
     node.reaction->immutable_phase_access = node.body->eval.receiver_access;

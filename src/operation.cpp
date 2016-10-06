@@ -882,7 +882,7 @@ static void push_port_call (ExecutorBase& exec,
     {
       // Set up a frame.
       // Push the parameter.
-      if (port->reaction->has_dimension ())
+      if (port->reaction->dimension () != -1)
         {
           exec.stack ().push<long> (port->parameter);
         }

@@ -4,7 +4,6 @@
 #include "node.hpp"
 #include "symbol.hpp"
 #include "semantic.hpp"
-#include "action.hpp"
 #include "callable.hpp"
 #include "node_visitor.hpp"
 

@@ -2559,7 +2559,7 @@ yyreduce:
     case 40:
 #line 251 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ActionDecl ((yylsp[-6]), (yyvsp[-5].receiver), (yyvsp[-4].identifier), (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = new ActionDecl ((yylsp[-6]), new EmptyExpression ((yylsp[-6])), (yyvsp[-5].receiver), (yyvsp[-4].identifier), (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 2364 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -2567,7 +2567,7 @@ yyreduce:
     case 41:
 #line 253 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new DimensionedActionDecl ((yylsp[-7]), (yyvsp[-7].node), (yyvsp[-5].receiver), (yyvsp[-4].identifier), (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = new ActionDecl ((yylsp[-7]), (yyvsp[-7].node), (yyvsp[-5].receiver), (yyvsp[-4].identifier), (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 2370 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -2575,7 +2575,7 @@ yyreduce:
     case 42:
 #line 257 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ReactionDecl ((yylsp[-4]), (yyvsp[-3].receiver), (yyvsp[-2].identifier), (yyvsp[-1].parameter_list), (yyvsp[0].node));
+        (yyval.node) = new ReactionDecl ((yylsp[-4]), new EmptyExpression ((yylsp[-4])), (yyvsp[-3].receiver), (yyvsp[-2].identifier), (yyvsp[-1].parameter_list), (yyvsp[0].node));
       }
 #line 2376 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -2583,7 +2583,7 @@ yyreduce:
     case 43:
 #line 259 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new DimensionedReactionDecl ((yylsp[-4]), (yyvsp[-5].node), (yyvsp[-3].receiver), (yyvsp[-2].identifier), (yyvsp[-1].parameter_list), (yyvsp[0].node));
+        (yyval.node) = new ReactionDecl ((yylsp[-4]), (yyvsp[-5].node), (yyvsp[-3].receiver), (yyvsp[-2].identifier), (yyvsp[-1].parameter_list), (yyvsp[0].node));
       }
 #line 2382 "parser.cpp" /* yacc.c:1646  */
       break;

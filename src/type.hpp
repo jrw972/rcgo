@@ -165,9 +165,7 @@ struct NamedType : public Type, public decl::Symbol
   typedef std::vector<decl::Reaction*> ReactionsType;
   typedef std::vector<decl::Bind*> BindsType;
 
-  NamedType (const std::string& name,
-             const util::Location& location,
-             ast::TypeDecl* a_typedecl);
+  NamedType (ast::TypeDecl* a_typedecl);
   NamedType (const std::string& name,
              const util::Location& location,
              const Type* underlyingType);
@@ -202,6 +200,7 @@ struct NamedType : public Type, public decl::Symbol
   virtual void accept (decl::SymbolVisitor& visitor);
   virtual void accept (decl::ConstSymbolVisitor& visitor) const;
   virtual bool process_declaration_i (util::ErrorReporter& er, decl::Scope* file_scope);
+  virtual void post_process_declaration_i (util::ErrorReporter& er, decl::Scope* file_scope);
 
 private:
   const Type* underlyingType_;

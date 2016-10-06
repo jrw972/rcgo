@@ -8,8 +8,6 @@
 #include "node.hpp"
 #include "node_visitor.hpp"
 #include "node_cast.hpp"
-#include "bind.hpp"
-#include "action.hpp"
 #include "callable.hpp"
 #include "semantic.hpp"
 #include "evaluate_static.hpp"
@@ -163,7 +161,7 @@ Action::getname (Instance* i, decl::Action* a, long p)
 {
   std::stringstream str;
   str << i->name << '.' << a->name;
-  if (a->has_dimension ())
+  if (a->dimension () != -1)
     {
       str << '[' << p << ']';
     }
@@ -239,7 +237,7 @@ Reaction::getname (Instance* i, decl::Reaction* a, long p)
 {
   std::stringstream str;
   str << i->name << '.' << a->name;
-  if (a->has_dimension ())
+  if (a->dimension () != -1)
     {
       str << '[' << p << ']';
     }
@@ -640,7 +638,7 @@ Composer::elaborate_bindings ()
             }
           };
           visitor v (*this, instance_pos->first, *bind_pos);
-          (*bind_pos)->node->accept (v);
+          (*bind_pos)->binddecl->accept (v);
         }
     }
 }
@@ -716,9 +714,9 @@ Composer::enumerate_actions ()
            ++pos)
         {
           decl::Action* action = *pos;
-          if (action->has_dimension ())
+          if (action->dimension () != -1)
             {
-              for (long idx = 0; idx != action->dimension; ++idx)
+              for (long idx = 0; idx != action->dimension (); ++idx)
                 {
                   instance->actions.push_back (new Action (instance, action, idx));
                 }
@@ -752,7 +750,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     , getter (NULL)
     , activation (NULL)
   {
-    if (action->action->has_dimension ())
+    if (action->action->dimension () != -1)
       {
         exec.stack ().push (action->iota);
       }
@@ -768,7 +766,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     , getter (NULL)
     , activation (NULL)
   {
-    if (reaction->reaction->has_dimension ())
+    if (reaction->reaction->dimension () != -1)
       {
         exec.stack ().push (reaction->iota);
       }
@@ -1050,11 +1048,11 @@ Composer::elaborate_actions ()
           Action* action = *pos;
           {
             ElaborationVisitor v (*this, action, true);
-            action->action->precondition->accept (v);
+            action->action->actiondecl->precondition->accept (v);
           }
           {
             ElaborationVisitor v (*this, action);
-            action->action->body->accept (v);
+            action->action->actiondecl->body->accept (v);
           }
         }
     }
@@ -1076,9 +1074,9 @@ Composer::enumerate_reactions ()
            ++pos)
         {
           decl::Reaction* reaction = *pos;
-          if (reaction->has_dimension ())
+          if (reaction->dimension () != -1)
             {
-              for (long idx = 0; idx != reaction->dimension; ++idx)
+              for (long idx = 0; idx != reaction->dimension (); ++idx)
                 {
                   reactions_.insert (std::make_pair (ReactionKey (instance, reaction, idx), new Reaction (instance, reaction, idx)));
                 }
@@ -1101,7 +1099,7 @@ Composer::elaborate_reactions ()
     {
       Reaction* reaction = pos->second;
       ElaborationVisitor v (*this, reaction);
-      reaction->reaction->body->accept (v);
+      reaction->reaction->reactiondecl->body->accept (v);
     }
 }
 
@@ -1136,7 +1134,7 @@ Composer::elaborate_getters ()
     {
       Getter* getter = pos->second;
       ElaborationVisitor v (*this, getter);
-      getter->getter->node->body->accept (v);
+      getter->getter->getterdecl->body->accept (v);
     }
 }
 

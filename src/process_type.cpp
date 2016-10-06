@@ -46,7 +46,6 @@ process_array_dimension (ErrorReporter& er, decl::Scope* scope, ast::Node* node)
   return dim;
 }
 
-
 void
 check_for_foreign_safe (ErrorReporter& er,
                         const decl::ParameterList* parameter_list)
@@ -62,74 +61,46 @@ check_for_foreign_safe (ErrorReporter& er,
     }
 }
 
-NamedType*
+Parameter*
 process_receiver (ErrorReporter& er,
                   decl::Scope* scope,
+                  const type::NamedType* named_type,
                   ast::Receiver* node,
-                  Parameter*& receiver_symbol,
                   bool require_component,
                   bool require_immutable_dereference_mutability)
 {
-  receiver_symbol = NULL;
-
-  Identifier* type_identifier_node = node->type;
-  const std::string& type_identifier = type_identifier_node->identifier;
-
-  decl::Symbol* symbol = scope->find_global_symbol (type_identifier);
-  if (symbol == NULL)
+  if (require_component && named_type->underlying_type ()->kind () != Component_Kind)
     {
-      er.not_declared (type_identifier_node->location, type_identifier);
-      return NULL;
-    }
-
-  NamedType* type = decl::symbol_cast<NamedType> (symbol);
-
-  if (type == NULL)
-    {
-      er.expected_a_type (type_identifier_node->location);
-      return NULL;
-    }
-
-  assert (type->state () == Symbol::Defined);
-
-  if (require_component && type->underlying_type ()->kind () != Component_Kind)
-    {
-      er.expected_a_component (type_identifier_node->location);
-      return NULL;
+      er.expected_a_component (node->type->location);
     }
 
   if (require_component && !node->is_pointer)
     {
-      er.expected_a_pointer (type_identifier_node->location);
-      return NULL;
+      er.expected_a_pointer (node->type->location);
     }
 
   if (require_immutable_dereference_mutability && node->indirection_mutability < Immutable)
     {
       er.expected_immutable_indirection_mutability (node->location);
-      return NULL;
     }
 
   const type::Type* receiver_type;
   if (node->is_pointer)
     {
-      receiver_type = type->get_pointer ();
+      receiver_type = named_type->get_pointer ();
     }
   else
     {
-      receiver_type = type;
+      receiver_type = named_type;
     }
 
   Identifier* this_identifier_node = node->identifier;
 
-  receiver_symbol =
-    Parameter::make_receiver (this_identifier_node->location,
-                              this_identifier_node->identifier,
-                              receiver_type,
-                              node->mutability,
-                              node->indirection_mutability);
-
-  return type;
+  return Parameter::make_receiver (this_identifier_node->location,
+                                   this_identifier_node->identifier,
+                                   receiver_type,
+                                   node->mutability,
+                                   node->indirection_mutability);
 }
 
 const decl::ParameterList*
@@ -158,21 +129,13 @@ process_parameter_list (ErrorReporter& er,
         {
           ast::Node* id = *pos2;
           const std::string& identifier = node_cast<Identifier> (id)->identifier;
-          const Parameter* parameter = parameter_list->find (identifier);
-          if (parameter == NULL)
+          if (is_return)
             {
-              if (is_return)
-                {
-                  parameter_list->append (Parameter::make_return (id->location, identifier, type, child->indirection_mutability));
-                }
-              else
-                {
-                  parameter_list->append (Parameter::make (id->location, identifier, type, child->mutability, child->indirection_mutability));
-                }
+              parameter_list->append (Parameter::make_return (id->location, identifier, type, child->indirection_mutability));
             }
           else
             {
-              er.already_declared (id->location, identifier, parameter->location);
+              parameter_list->append (Parameter::make (id->location, identifier, type, child->mutability, child->indirection_mutability));
             }
         }
     }
@@ -199,6 +162,41 @@ process_signature (ErrorReporter& er,
     {
       check_for_foreign_safe (er, parameter_list);
       check_for_foreign_safe (er, return_parameter_list);
+    }
+}
+
+void
+check_unique_parameters (util::ErrorReporter& er,
+                         const type::Function* type)
+{
+  Scope s;
+
+  for (decl::ParameterList::const_iterator pos = type->parameter_list->begin (),
+       limit = type->parameter_list->end ();
+       pos != limit;
+       ++pos)
+    {
+      Parameter* param = *pos;
+      const Symbol* sym = s.find_local_symbol (param->name);
+      if (sym)
+        {
+          er.already_declared (param->location, param->name, sym->location);
+        }
+      s.enter_symbol (param);
+    }
+
+  for (decl::ParameterList::const_iterator pos = type->return_parameter_list->begin (),
+       limit = type->return_parameter_list->end ();
+       pos != limit;
+       ++pos)
+    {
+      Parameter* param = *pos;
+      const Symbol* sym = s.find_local_symbol (param->name);
+      if (sym)
+        {
+          er.already_declared (param->location, param->name, sym->location);
+        }
+      s.enter_symbol (param);
     }
 }
 

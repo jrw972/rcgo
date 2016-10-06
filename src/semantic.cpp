@@ -4,11 +4,9 @@
 
 #include "debug.hpp"
 #include "node.hpp"
-#include "action.hpp"
 #include "type.hpp"
 #include "symbol.hpp"
 #include "memory_model.hpp"
-#include "bind.hpp"
 #include "callable.hpp"
 #include "node_visitor.hpp"
 #include "parameter_list.hpp"
@@ -243,22 +241,19 @@ allocate_stack_variables (ast::Node* node)
   {
     void visit (ast::ActionDecl& node)
     {
-      allocate_symbol (node.action->memory_model, node.action->receiver_parameter);
-      allocate_statement_stack_variables (node.body, node.action->memory_model);
-      assert (node.action->memory_model.locals_empty ());
-    }
+      allocate_symbol (node.action->memory_model, node.action->receiver_parameter ());
+      if (node.action->dimension () != -1)
+        {
+          allocate_symbol (node.action->memory_model, node.action->iota_parameter ());
+        }
 
-    void visit (DimensionedActionDecl& node)
-    {
-      allocate_symbol (node.action->memory_model, node.action->receiver_parameter);
-      allocate_symbol (node.action->memory_model, node.action->iota_parameter);
       allocate_statement_stack_variables (node.body, node.action->memory_model);
       assert (node.action->memory_model.locals_empty ());
     }
 
     void visit (ast::BindDecl& node)
     {
-      allocate_symbol (node.bind->memory_model, node.bind->receiver_parameter);
+      allocate_symbol (node.bind->memory_model, node.bind->receiver_parameter ());
       allocate_statement_stack_variables (node.body, node.bind->memory_model);
       assert (node.bind->memory_model.locals_empty ());
     }
@@ -298,14 +293,10 @@ allocate_stack_variables (ast::Node* node)
     void visit (ast::ReactionDecl& node)
     {
       allocate_parameters (node.reaction->memory_model, node.reaction->parameter_list ());
-      allocate_statement_stack_variables (node.body, node.reaction->memory_model);
-      assert (node.reaction->memory_model.locals_empty ());
-    }
-
-    void visit (DimensionedReactionDecl& node)
-    {
-      allocate_parameters (node.reaction->memory_model, node.reaction->parameter_list ());
-      allocate_symbol (node.reaction->memory_model, node.reaction->iota);
+      if (node.reaction->dimension () != -1)
+        {
+          allocate_symbol (node.reaction->memory_model, node.reaction->iota ());
+        }
       allocate_statement_stack_variables (node.body, node.reaction->memory_model);
       assert (node.reaction->memory_model.locals_empty ());
     }

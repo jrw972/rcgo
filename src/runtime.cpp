@@ -12,7 +12,6 @@
 #include "check_types.hpp"
 #include "error_reporter.hpp"
 #include "parameter_list.hpp"
-#include "action.hpp"
 #include "operation.hpp"
 
 namespace runtime
@@ -610,7 +609,7 @@ enabled (ExecutorBase& exec,
   assert (exec.stack ().empty ());
 
   // Push iota.
-  if (action->has_dimension ())
+  if (action->dimension () != -1)
     {
       exec.stack ().push<unsigned long> (iota);
     }
@@ -619,7 +618,7 @@ enabled (ExecutorBase& exec,
   // Push an instruction pointer.
   exec.stack ().push_pointer (NULL);
   exec.stack ().setup (0 /* No locals. */);
-  action->precondition->operation->execute (exec);
+  action->actiondecl->precondition->operation->execute (exec);
   bool retval;
   exec.stack ().pop (retval);
   exec.stack ().teardown ();
@@ -628,7 +627,7 @@ enabled (ExecutorBase& exec,
   // Pop this.
   exec.stack ().pop_pointer ();
   // Pop iota.
-  if (action->has_dimension ())
+  if (action->dimension () != -1)
     {
       unsigned long x;
       exec.stack ().pop (x);
@@ -647,7 +646,7 @@ execute (ExecutorBase& exec,
 
   exec.stack ().setup (action->memory_model.locals_size_on_stack ());
 
-  action->body->operation->execute (exec);
+  action->actiondecl->body->operation->execute (exec);
 
   if (exec.mutable_phase_base_pointer () == 0)
     {
@@ -678,7 +677,7 @@ void execute_no_check (ExecutorBase& exec, component_t* instance, const decl::Ac
   assert (exec.stack ().empty ());
 
   // Push iota.
-  if (action->has_dimension ())
+  if (action->dimension () != -1)
     {
       exec.stack ().push<unsigned long> (iota);
     }
@@ -693,7 +692,7 @@ void execute_no_check (ExecutorBase& exec, component_t* instance, const decl::Ac
   // Pop the instance.
   exec.stack ().pop_pointer ();
   // Pop iota.
-  if (action->has_dimension ())
+  if (action->dimension () != -1)
     {
       unsigned long x;
       exec.stack ().pop (x);

@@ -96,12 +96,12 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 librcgo_la_DEPENDENCIES =
-am_librcgo_la_OBJECTS = librcgo_la-action.lo librcgo_la-arch.lo \
-	librcgo_la-bind.lo librcgo_la-builtin_function.lo \
-	librcgo_la-callable.lo librcgo_la-check_types.lo \
-	librcgo_la-composition.lo \
+am_librcgo_la_OBJECTS = librcgo_la-arch.lo \
+	librcgo_la-builtin_function.lo librcgo_la-callable.lo \
+	librcgo_la-check_types.lo librcgo_la-composition.lo \
 	librcgo_la-compute_receiver_access.lo \
 	librcgo_la-enter_predeclared_identifiers.lo \
+	librcgo_la-enter_method_identifiers.lo \
 	librcgo_la-enter_top_level_identifiers.lo \
 	librcgo_la-error_reporter.lo librcgo_la-evaluate_static.lo \
 	librcgo_la-executor_base.lo librcgo_la-expression_value.lo \
@@ -359,15 +359,14 @@ rcgo_LDADD = librcgo.la
 rcgo_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 rcgo_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 noinst_LTLIBRARIES = librcgo.la
-librcgo_la_SOURCES = action.hpp action.cpp \
-arch.hpp arch.cpp \
-bind.hpp bind.cpp \
+librcgo_la_SOURCES = arch.hpp arch.cpp \
 builtin_function.hpp builtin_function.cpp \
 callable.hpp callable.cpp \
 check_types.hpp check_types.cpp \
 composition.hpp composition.cpp \
 compute_receiver_access.hpp compute_receiver_access.cpp \
 enter_predeclared_identifiers.hpp enter_predeclared_identifiers.cpp \
+enter_method_identifiers.hpp enter_method_identifiers.cpp \
 enter_top_level_identifiers.hpp enter_top_level_identifiers.cpp \
 error_reporter.hpp error_reporter.cpp \
 evaluate_static.hpp evaluate_static.cpp \
@@ -511,14 +510,13 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-action.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-arch.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-bind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-builtin_function.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-callable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-check_types.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-composition.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-compute_receiver_access.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-enter_method_identifiers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-enter_predeclared_identifiers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-enter_top_level_identifiers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-error_reporter.Plo@am__quote@
@@ -574,26 +572,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
-librcgo_la-action.lo: action.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-action.lo -MD -MP -MF $(DEPDIR)/librcgo_la-action.Tpo -c -o librcgo_la-action.lo `test -f 'action.cpp' || echo '$(srcdir)/'`action.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-action.Tpo $(DEPDIR)/librcgo_la-action.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='action.cpp' object='librcgo_la-action.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-action.lo `test -f 'action.cpp' || echo '$(srcdir)/'`action.cpp
-
 librcgo_la-arch.lo: arch.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-arch.lo -MD -MP -MF $(DEPDIR)/librcgo_la-arch.Tpo -c -o librcgo_la-arch.lo `test -f 'arch.cpp' || echo '$(srcdir)/'`arch.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-arch.Tpo $(DEPDIR)/librcgo_la-arch.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='arch.cpp' object='librcgo_la-arch.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-arch.lo `test -f 'arch.cpp' || echo '$(srcdir)/'`arch.cpp
-
-librcgo_la-bind.lo: bind.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-bind.lo -MD -MP -MF $(DEPDIR)/librcgo_la-bind.Tpo -c -o librcgo_la-bind.lo `test -f 'bind.cpp' || echo '$(srcdir)/'`bind.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-bind.Tpo $(DEPDIR)/librcgo_la-bind.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='bind.cpp' object='librcgo_la-bind.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-bind.lo `test -f 'bind.cpp' || echo '$(srcdir)/'`bind.cpp
 
 librcgo_la-builtin_function.lo: builtin_function.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-builtin_function.lo -MD -MP -MF $(DEPDIR)/librcgo_la-builtin_function.Tpo -c -o librcgo_la-builtin_function.lo `test -f 'builtin_function.cpp' || echo '$(srcdir)/'`builtin_function.cpp
@@ -636,6 +620,13 @@ librcgo_la-enter_predeclared_identifiers.lo: enter_predeclared_identifiers.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_predeclared_identifiers.cpp' object='librcgo_la-enter_predeclared_identifiers.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-enter_predeclared_identifiers.lo `test -f 'enter_predeclared_identifiers.cpp' || echo '$(srcdir)/'`enter_predeclared_identifiers.cpp
+
+librcgo_la-enter_method_identifiers.lo: enter_method_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-enter_method_identifiers.lo -MD -MP -MF $(DEPDIR)/librcgo_la-enter_method_identifiers.Tpo -c -o librcgo_la-enter_method_identifiers.lo `test -f 'enter_method_identifiers.cpp' || echo '$(srcdir)/'`enter_method_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-enter_method_identifiers.Tpo $(DEPDIR)/librcgo_la-enter_method_identifiers.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_method_identifiers.cpp' object='librcgo_la-enter_method_identifiers.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-enter_method_identifiers.lo `test -f 'enter_method_identifiers.cpp' || echo '$(srcdir)/'`enter_method_identifiers.cpp
 
 librcgo_la-enter_top_level_identifiers.lo: enter_top_level_identifiers.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-enter_top_level_identifiers.lo -MD -MP -MF $(DEPDIR)/librcgo_la-enter_top_level_identifiers.Tpo -c -o librcgo_la-enter_top_level_identifiers.lo `test -f 'enter_top_level_identifiers.cpp' || echo '$(srcdir)/'`enter_top_level_identifiers.cpp

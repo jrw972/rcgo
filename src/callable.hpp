@@ -51,29 +51,25 @@ struct FunctionBase : public Callable, public decl::Symbol
   virtual void accept (decl::SymbolVisitor& visitor);
   virtual void accept (decl::ConstSymbolVisitor& visitor) const;
 
-  // TODO:  Use getter/setter.
+  // TODO:  Use getter.
   const type::Function* type;
 };
 
 struct Function : public FunctionBase
 {
-  Function (const std::string& name,
-            const util::Location& location,
-            ast::FunctionDecl* a_functiondecl);
-  Function (const std::string& name,
-            const util::Location& location,
-            const type::Function* type);
-  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+  Function (ast::FunctionDecl* a_functiondecl);
   virtual void call (runtime::ExecutorBase& exec) const;
   runtime::Operation* operation;
-private:
-  ast::FunctionDecl* const functiondecl_;
+  ast::FunctionDecl* const functiondecl;
+
+  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
 };
 
-struct MethodBase : public Callable
+struct MethodBase : public Callable, public decl::Symbol
 {
   MethodBase (const std::string& a_name,
-              const type::MethodBase* a_type);
+              const util::Location& a_location,
+              const type::NamedType* a_named_type);
   virtual const decl::ParameterList* parameter_list () const;
   virtual const decl::ParameterList* return_parameter_list () const;
   virtual const type::Type* callable_type () const;
@@ -87,49 +83,105 @@ struct MethodBase : public Callable
 
   virtual void call (runtime::ExecutorBase& exec) const;
 
-  std::string const name;
-  const type::MethodBase* const type;
+  // Symbol
+  virtual void accept (decl::SymbolVisitor& visitor);
+  virtual void accept (decl::ConstSymbolVisitor& visitor) const;
+
+  const type::NamedType* const named_type;
+  // TODO:  Use getter.
+  const type::MethodBase* type;
   runtime::Operation* operation;
 };
 
 struct Method : public MethodBase
 {
-  Method (const std::string& name,
-          const type::Method* method_type);
+  Method (ast::MethodDecl* a_methoddecl,
+          const type::NamedType* a_named_type);
+  ast::MethodDecl* const methoddecl;
+
+private:
+  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
 };
 
 struct Initializer : public MethodBase
 {
-  Initializer (const std::string& name,
-               const type::Initializer* initializer_type);
+  Initializer (ast::InitDecl* a_initdecl,
+               const type::NamedType* a_named_type);
+  ast::InitDecl* const initdecl;
+
+private:
+  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
 };
 
 struct Getter : public MethodBase
 {
   Getter (ast::GetterDecl* node,
-          const std::string& name,
-          const type::Getter* getter_type);
-  ast::GetterDecl* const node;
+          const type::NamedType* a_named_type);
+  ast::GetterDecl* const getterdecl;
   ReceiverAccess immutable_phase_access;
+
+private:
+  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+};
+
+struct Action : public MethodBase
+{
+  enum PreconditionKind
+  {
+    Dynamic,
+    Static_True,
+    Static_False,
+  };
+
+  Action (ast::ActionDecl* a_actiondecl,
+          const type::NamedType* a_named_type);
+
+  PreconditionKind precondition_kind;
+  ReceiverAccess precondition_access;
+  ReceiverAccess immutable_phase_access;
+  ast::ActionDecl* const actiondecl;
+
+  Parameter* receiver_parameter () const;
+  Parameter* iota_parameter () const;
+  long dimension () const;
+
+private:
+  Parameter* receiver_parameter_;
+  Parameter* iota_parameter_;
+  long dimension_;
+
+  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
 };
 
 struct Reaction : public MethodBase
 {
-  Reaction (ast::Node* a_body,
-            const std::string& a_name,
-            const type::Reaction* a_reaction_type);
-  Reaction (ast::Node* a_body,
-            const std::string& a_name,
-            const type::Reaction* a_reaction_type,
-            Symbol* a_iota,
-            long a_dimension);
+  Reaction (ast::ReactionDecl* a_reaction,
+            const type::NamedType* a_named_type);
 
-  ast::Node* const body;
+  ast::ReactionDecl* const reactiondecl;
   ReceiverAccess immutable_phase_access;
-  Symbol* const iota;
-  long const dimension;
 
-  bool has_dimension () const;
+  Symbol* iota () const;
+  long dimension () const;
+
+private:
+  Symbol* iota_;
+  long dimension_;
+  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+};
+
+struct Bind : public MethodBase
+{
+  Bind (ast::BindDecl* a_binddecl,
+        const type::NamedType* a_named_type);
+
+  ast::BindDecl* const binddecl;
+
+  Parameter* receiver_parameter () const;
+
+private:
+  Parameter* receiver_parameter_;
+  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
 };
 
 }

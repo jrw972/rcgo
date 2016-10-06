@@ -11,6 +11,7 @@ struct SymbolVisitor
   virtual ~SymbolVisitor();
   virtual void visit (PolymorphicFunction& s);
   virtual void visit (FunctionBase& s);
+  virtual void visit (MethodBase& s);
   virtual void visit (Instance& s);
   virtual void visit (Parameter& s);
   virtual void visit (type::NamedType& s);
@@ -26,6 +27,7 @@ struct ConstSymbolVisitor
   virtual ~ConstSymbolVisitor();
   virtual void visit (const PolymorphicFunction& s);
   virtual void visit (const FunctionBase& s);
+  virtual void visit (const MethodBase& s);
   virtual void visit (const Instance& s);
   virtual void visit (const Parameter& s);
   virtual void visit (const type::NamedType& s);

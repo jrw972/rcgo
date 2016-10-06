@@ -589,31 +589,11 @@ struct ForIota : public Node
 struct ActionDecl : public Node
 {
   ActionDecl (unsigned int line,
+              Node* d,
               Receiver* r,
               Identifier* i,
               Node* p,
               Node* b);
-  virtual void accept (NodeVisitor& visitor);
-  virtual void print (std::ostream& out) const;
-  virtual void visit_children (NodeVisitor& visitor);
-
-  Receiver* const receiver;
-  Identifier* const identifier;
-  Node* const precondition;
-  Node* const body;
-
-  decl::Action* action;
-  const type::Type* type;
-};
-
-struct DimensionedActionDecl : public Node
-{
-  DimensionedActionDecl (unsigned int line,
-                         Node* d,
-                         Receiver* r,
-                         Identifier* i,
-                         Node* p,
-                         Node* b);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
@@ -625,7 +605,6 @@ struct DimensionedActionDecl : public Node
   Node* const body;
 
   decl::Action* action;
-  const type::Type* type;
 };
 
 struct BindDecl : public Node
@@ -743,28 +722,12 @@ struct InitDecl : public Node
 
 struct ReactionDecl : public Node
 {
-  ReactionDecl (unsigned int line, Receiver* a_receiver, Identifier* a_identifier, ParameterList* a_parameters, Node* a_body);
-  virtual void accept (NodeVisitor& visitor);
-  virtual void print (std::ostream& out) const;
-  virtual void visit_children (NodeVisitor& visitor);
-
-  Receiver* const receiver;
-  Identifier* const identifier;
-  ParameterList* const parameters;
-  ParameterList* const return_parameters;
-  Node* const body;
-
-  decl::Reaction* reaction;
-};
-
-struct DimensionedReactionDecl : public Node
-{
-  DimensionedReactionDecl (unsigned int line,
-                           Node* d,
-                           Receiver* r,
-                           Identifier* i,
-                           ParameterList* pl,
-                           Node* b);
+  ReactionDecl (unsigned int line,
+                Node* d,
+                Receiver* r,
+                Identifier* i,
+                ParameterList* pl,
+                Node* b);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
