@@ -14,7 +14,7 @@
 #include "parameter_list.hpp"
 #include "error_reporter.hpp"
 #include "enter_top_level_identifiers.hpp"
-#include "process_top_level_declarations.hpp"
+#include "process_top_level_identifiers.hpp"
 #include "process_type.hpp"
 
 namespace semantic

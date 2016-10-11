@@ -31,6 +31,32 @@ struct TestConstVisitor : public V
 
 };
 
+template <typename V, typename T>
+struct TestDefaultVisitor : public V
+{
+  T* item;
+
+  TestDefaultVisitor () : item (NULL) { }
+
+  void default_action (T& item)
+  {
+    this->item = &item;
+  }
+};
+
+template <typename V, typename T>
+struct TestDefaultConstVisitor : public V
+{
+  const T* item;
+
+  TestDefaultConstVisitor () : item (NULL) { }
+
+  void default_action (const T& item)
+  {
+    this->item = &item;
+  }
+};
+
 template <typename Visitor, typename Node>
 inline void test_accept (Node& node)
 {

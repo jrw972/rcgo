@@ -276,6 +276,11 @@ void DefaultNodeVisitor::visit (TopLevelDeclList& node)
 void DefaultNodeVisitor::default_action (Node& node)
 { }
 
+#ifndef COVERAGE
+TreePrinter::TreePrinter (Node& a_node)
+  : node (a_node)
+{ }
+
 void TreePrinter::print (std::ostream& out) const
 {
   struct visitor : public DefaultNodeVisitor
@@ -394,6 +399,6 @@ std::ostream& operator<< (std::ostream& out,
   printer.print (out);
   return out;
 }
-
+#endif
 
 }

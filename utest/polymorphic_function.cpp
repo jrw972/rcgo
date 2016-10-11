@@ -46,14 +46,20 @@ main (int argc, char** argv)
     TestVisitor<SymbolVisitor, PolymorphicFunction> visitor;
     MyPolymorphicFunction ts ("id", Location ());
     ts.accept (visitor);
-    tap.tassert ("PolymorphicFunction::visit ()", visitor.item == &ts);
+    tap.tassert ("PolymorphicFunction::accept ()", visitor.item == &ts);
+    TestDefaultVisitor<SymbolVisitor, Symbol> w;
+    ts.accept (w);
+    tap.tassert ("PolymorphicFunction::accept ()", w.item == &ts);
   }
 
   {
     TestConstVisitor<ConstSymbolVisitor, PolymorphicFunction> visitor;
     MyPolymorphicFunction ts ("id", Location ());
     ts.accept (visitor);
-    tap.tassert ("PolymorphicFunction::visit (Const)", visitor.item == &ts);
+    tap.tassert ("PolymorphicFunction::accept (Const)", visitor.item == &ts);
+    TestDefaultConstVisitor<ConstSymbolVisitor, Symbol> w;
+    ts.accept (w);
+    tap.tassert ("PolymorphicFunction::accept (Const)", w.item == &ts);
   }
 
   tap.print_plan ();

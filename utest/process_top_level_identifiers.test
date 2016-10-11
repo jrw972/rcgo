@@ -2,62 +2,143 @@
 #include "unit_test.hpp"
 #include "enter_predeclared_identifiers.hpp"
 #include "enter_top_level_identifiers.hpp"
-#include "process_top_level_declarations.hpp"
+#include "process_top_level_identifiers.hpp"
 #include "node.hpp"
 #include "error_reporter.hpp"
 #include "scope.hpp"
 #include "symbol_cast.hpp"
 #include "type.hpp"
+#include "astgen.hpp"
+#include "callable.hpp"
 
 using namespace semantic;
+using namespace util;
+using namespace ast;
+using namespace decl;
 
 scope(semantic); {
-
-  util::ErrorReporter er;
-  decl::Scope universal_scope;
-  enter_predeclared_identifiers (&universal_scope);
-  decl::Scope* package_scope = universal_scope.open ();
-  decl::Scope* file_scope = package_scope->open ();
-
-  ast::Identifier id1 (1, "mytype");
-  ast::Identifier id2 (1, "int");
-  ast::IdentifierType identifier_type (1, &id2);
-  ast::TypeDecl typedecl (1, &id1, &identifier_type);
+  ErrorReporter er;
+  Scope scope;
 
   scenario(TypeDecl); {
-    unit(process_top_level_declarations); {
-      enter_top_level_identifiers (&typedecl, er, package_scope, file_scope);
-      process_top_level_declarations (&typedecl, er, file_scope);
-      decl::Symbol* s = package_scope->find_local_symbol ("mytype");
-      ASSERT (s->state () == decl::Symbol::Defined);
-      type::NamedType* t = decl::symbol_cast<type::NamedType> (s);
-      ASSERT (t->underlying_type () == type::named_int.underlying_type ());
+    unit(process_top_level_identifiers); {
+      type::NamedType nt ("T", Location (), &type::named_int);
+      scope.enter_symbol (&nt);
+      TypeDecl* td = gen_type_decl ("mytype", new IdentifierType (1, new Identifier (1, "T")));
+      enter_top_level_identifiers (td, er, &scope, &scope);
+      process_top_level_declarations (td, er, &scope);
+      Symbol* s = scope.find_global_symbol ("mytype");
+      ASSERT (s->state () == Symbol::Defined);
     }; off();
   }; off();
 
-  ast::IdentifierList identifiers (1);
-  identifiers.append (new ast::Identifier (1, "x"));
-  ast::IdentifierType type (1, &id2);
-  semantic::Value sv;
-  sv.present = 1;
-  sv.untyped_integer_value = 1;
-  ast::Literal value (1, type::UntypedInteger::instance (), sv);
-  ast::ExpressionList expressions (1);
-  expressions.append (&value);
-  ast::ConstDecl constdecl (1, &identifiers, &type, &expressions);
-
-  scenario(ConstDecl); {
-    unit(process_top_level_declarations); {
-      enter_top_level_identifiers (&constdecl, er, package_scope, file_scope);
-      process_top_level_declarations (&constdecl, er, file_scope);
-      decl::Symbol* s = package_scope->find_local_symbol ("x");
-      ASSERT (s->state () == decl::Symbol::Defined);
-      decl::Constant* c = decl::symbol_cast<decl::Constant> (s);
-      ASSERT (c->type () == &type::named_int);
-      ASSERT (c->value ().present);
-      ASSERT (c->value ().int_value == 1);
+  scenario(FunctionDecl); {
+    unit(process_top_level_identifiers); {
+      FunctionDecl* fd = gen_function_decl ("myfunc");
+      enter_top_level_identifiers (fd, er, &scope, &scope);
+      process_top_level_declarations (fd, er, &scope);
+      Symbol* s = scope.find_global_symbol ("myfunc");
+      ASSERT (s->state () == Symbol::Defined);
     }; off();
   }; off();
+
+  scenario(InstanceDecl); {
+    unit(process_top_level_identifiers); {
+      type::Component comp (NULL, Location ());
+      type::NamedType nt (DEFAULT_TYPE_NAME, Location (), &comp);
+      decl::Initializer init (gen_init_decl ("init"), &nt);
+      nt.insert_initializer (&init);
+      scope.enter_symbol (&nt);
+      InstanceDecl* id = gen_instance_decl ("myinst", "init");
+      enter_top_level_identifiers (id, er, &scope, &scope);
+      process_top_level_declarations (id, er, &scope);
+      Symbol* s = scope.find_global_symbol ("myinst");
+      ASSERT (s->state () == Symbol::Defined);
+    }; off();
+  }; off();
+
+  scenario(ConstantDecl); {
+    unit(process_top_level_identifiers); {
+      type::NamedType nt ("T", Location (), &type::named_int);
+      scope.enter_symbol (&nt);
+      ConstDecl* cd = gen_const_decl ("myconst");
+      enter_top_level_identifiers (cd, er, &scope, &scope);
+      process_top_level_declarations (cd, er, &scope);
+      Symbol* s = scope.find_global_symbol ("myconst");
+      ASSERT (s->state () == Symbol::Defined);
+    }; off();
+  }; off();
+
+  scenario(TopLevelDeclList); {
+    unit(process_top_level_identifiers); {
+      FunctionDecl* fd = gen_function_decl ("myfunc");
+      TopLevelDeclList list (1);
+      list.append (fd);
+      enter_top_level_identifiers (&list, er, &scope, &scope);
+      process_top_level_declarations (&list, er, &scope);
+      Symbol* s = scope.find_global_symbol ("myfunc");
+      ASSERT (s->state () == Symbol::Defined);
+    }; off();
+  }; off();
+
+  scenario(SourceFile); {
+    unit(process_top_level_identifiers); {
+      FunctionDecl* fd = gen_function_decl ("myfunc");
+      TopLevelDeclList list (1);
+      list.append (fd);
+      SourceFile sf (1, new Identifier (1, "package"), new ImportDeclList (1), &list);
+      enter_top_level_identifiers (&sf, er, &scope, &scope);
+      process_top_level_declarations (&sf, er, &scope);
+      Symbol* s = scope.find_global_symbol ("myfunc");
+      ASSERT (s->state () == Symbol::Defined);
+    }; off();
+  }; off();
+
+  // util::ErrorReporter er;
+  // decl::Scope universal_scope;
+  // enter_predeclared_identifiers (&universal_scope);
+  // decl::Scope* package_scope = universal_scope.open ();
+  // decl::Scope* file_scope = package_scope->open ();
+
+  // ast::Identifier id1 (1, "mytype");
+  // ast::Identifier id2 (1, "int");
+  // ast::IdentifierType identifier_type (1, &id2);
+  // ast::TypeDecl typedecl (1, &id1, &identifier_type);
+
+  // scenario(TypeDecl); {
+  //   unit(process_top_level_declarations); {
+  //     enter_top_level_identifiers (&typedecl, er, package_scope, file_scope);
+  //     process_top_level_declarations (&typedecl, er, file_scope);
+  //     decl::Symbol* s = package_scope->find_local_symbol ("mytype");
+  //     ASSERT (s->state () == decl::Symbol::Defined);
+  //     type::NamedType* t = decl::symbol_cast<type::NamedType> (s);
+  //     ASSERT (t->underlying_type () == type::named_int.underlying_type ());
+  //   }; off();
+  // }; off();
+
+  // ast::IdentifierList identifiers (1);
+  // identifiers.append (new ast::Identifier (1, "x"));
+  // ast::IdentifierType type (1, &id2);
+  // semantic::Value sv;
+  // sv.present = 1;
+  // sv.untyped_integer_value = 1;
+  // ast::Literal value (1, type::UntypedInteger::instance (), sv);
+  // ast::ExpressionList expressions (1);
+  // expressions.append (&value);
+  // ast::ConstDecl constdecl (1, &identifiers, &type, &expressions);
+
+  // scenario(ConstDecl); {
+  //   unit(process_top_level_declarations); {
+  //     enter_top_level_identifiers (&constdecl, er, package_scope, file_scope);
+  //     process_top_level_declarations (&constdecl, er, file_scope);
+  //     decl::Symbol* s = package_scope->find_local_symbol ("x");
+  //     ASSERT (s->state () == decl::Symbol::Defined);
+  //     decl::Constant* c = decl::symbol_cast<decl::Constant> (s);
+  //     ASSERT (c->type () == &type::named_int);
+  //     ASSERT (c->value ().present);
+  //     ASSERT (c->value ().int_value == 1);
+  //   }; off();
+  // }; off();
 
   // ast::Identifier funcid (1, "f");
   // ast::IdentifierList parameters (1);

@@ -1,4 +1,4 @@
-#include "process_top_level_declarations.hpp"
+#include "process_top_level_identifiers.hpp"
 #include "node_visitor.hpp"
 #include "node.hpp"
 #include "type.hpp"
@@ -52,19 +52,19 @@ struct visitor : public DefaultNodeVisitor
 
   void visit (TypeDecl& node)
   {
-    if (!node.symbol) return;
+    assert (node.symbol);
     node.symbol->process_declaration (er, file_scope);
   }
 
   void visit (FunctionDecl& node)
   {
-    if (!node.symbol) return;
+    assert (node.symbol);
     node.symbol->process_declaration (er, file_scope);
   }
 
   void visit (InstanceDecl& node)
   {
-    if (!node.symbol) return;
+    assert (node.symbol);
     node.symbol->process_declaration (er, file_scope);
   }
 };

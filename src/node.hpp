@@ -816,6 +816,6 @@ struct TopLevelDeclList : public List
 std::ostream& operator<< (std::ostream& out, const Node& node);
 }
 
-#define AST_NOT_REACHED(node) do { std::cerr << node; NOT_REACHED; } while (0);
+#define AST_NOT_REACHED(node) do { std::cerr << node << std::endl; NOT_REACHED; } while (0);
 
 #endif // RC_SRC_NODE_HPP

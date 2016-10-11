@@ -48,6 +48,9 @@ scope(decl); {
           TestVisitor<SymbolVisitor, Instance> v;
           symbol.accept (v);
           ASSERT (v.item == &symbol);
+          TestDefaultVisitor<SymbolVisitor, Symbol> w;
+          symbol.accept (w);
+          ASSERT (w.item == &symbol);
         }; off();
       }; off();
 
@@ -56,6 +59,9 @@ scope(decl); {
           TestConstVisitor<ConstSymbolVisitor, Instance> cv;
           symbol.accept (cv);
           ASSERT (cv.item == &symbol);
+          TestDefaultConstVisitor<ConstSymbolVisitor, Symbol> w;
+          symbol.accept (w);
+          ASSERT (w.item == &symbol);
         }; off();
       }; off();
     }; off();
@@ -159,6 +165,9 @@ scope(decl); {
           TestVisitor<SymbolVisitor, Parameter> v;
           symbol->accept (v);
           ASSERT (v.item == symbol);
+          TestDefaultVisitor<SymbolVisitor, Symbol> w;
+          symbol->accept (w);
+          ASSERT (w.item == symbol);
         }; off();
       }; off();
 
@@ -167,6 +176,9 @@ scope(decl); {
           TestConstVisitor<ConstSymbolVisitor, Parameter> cv;
           symbol->accept (cv);
           ASSERT (cv.item == symbol);
+          TestDefaultConstVisitor<ConstSymbolVisitor, Symbol> w;
+          symbol->accept (w);
+          ASSERT (w.item == symbol);
         }; off();
       }; off();
 
@@ -257,6 +269,9 @@ scope(decl); {
           TestVisitor<SymbolVisitor, Constant> v;
           symbol.accept (v);
           ASSERT (v.item == &symbol);
+          TestDefaultVisitor<SymbolVisitor, Symbol> w;
+          symbol.accept (w);
+          ASSERT (w.item == &symbol);
         }; off();
       }; off();
 
@@ -265,6 +280,9 @@ scope(decl); {
           TestConstVisitor<ConstSymbolVisitor, Constant> cv;
           symbol.accept (cv);
           ASSERT (cv.item == &symbol);
+          TestDefaultConstVisitor<ConstSymbolVisitor, Symbol> w;
+          symbol.accept (w);
+          ASSERT (w.item == &symbol);
         }; off();
       }; off();
     }; off();
@@ -410,6 +428,9 @@ scope(decl); {
         TestVisitor<SymbolVisitor, Variable> v;
         symbol.accept (v);
         ASSERT (v.item == &symbol);
+        TestDefaultVisitor<SymbolVisitor, Symbol> w;
+        symbol.accept (w);
+        ASSERT (w.item == &symbol);
       }; off();
     }; off();
 
@@ -418,6 +439,9 @@ scope(decl); {
         TestConstVisitor<ConstSymbolVisitor, Variable> cv;
         symbol.accept (cv);
         ASSERT (cv.item == &symbol);
+        TestDefaultConstVisitor<ConstSymbolVisitor, Symbol> w;
+        symbol.accept (w);
+        ASSERT (w.item == &symbol);
       }; off();
     }; off();
   }; off();
@@ -436,6 +460,9 @@ scope(decl); {
         TestVisitor<SymbolVisitor, Hidden> v;
         symbol.accept (v);
         ASSERT (v.item == &symbol);
+        TestDefaultVisitor<SymbolVisitor, Symbol> w;
+        symbol.accept (w);
+        ASSERT (w.item == &symbol);
       }; off();
     }; off();
 
@@ -444,6 +471,9 @@ scope(decl); {
         TestConstVisitor<ConstSymbolVisitor, Hidden> cv;
         symbol.accept (cv);
         ASSERT (cv.item == &symbol);
+        TestDefaultConstVisitor<ConstSymbolVisitor, Symbol> w;
+        symbol.accept (w);
+        ASSERT (w.item == &symbol);
       }; off();
     }; off();
 
@@ -469,6 +499,9 @@ scope(decl); {
         TestVisitor<SymbolVisitor, Field> v;
         symbol.accept (v);
         ASSERT (v.item == &symbol);
+        TestDefaultVisitor<SymbolVisitor, Symbol> w;
+        symbol.accept (w);
+        ASSERT (w.item == &symbol);
       }; off();
     }; off();
 
@@ -477,6 +510,9 @@ scope(decl); {
         TestConstVisitor<ConstSymbolVisitor, Field> cv;
         symbol.accept (cv);
         ASSERT (cv.item == &symbol);
+        TestDefaultConstVisitor<ConstSymbolVisitor, Symbol> w;
+        symbol.accept (w);
+        ASSERT (w.item == &symbol);
       }; off();
     }; off();
 

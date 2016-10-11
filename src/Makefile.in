@@ -112,7 +112,7 @@ am_librcgo_la_OBJECTS = librcgo_la-arch.lo \
 	librcgo_la-parameter_list.lo \
 	librcgo_la-partitioned_scheduler.lo \
 	librcgo_la-process_definitions.lo \
-	librcgo_la-process_top_level_declarations.lo \
+	librcgo_la-process_top_level_identifiers.lo \
 	librcgo_la-process_type.lo librcgo_la-runtime.lo \
 	librcgo_la-runtime_types.lo librcgo_la-scope.lo \
 	librcgo_la-semantic.lo librcgo_la-stack.lo \
@@ -384,7 +384,7 @@ operation.hpp operation.cpp \
 parameter_list.hpp parameter_list.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
 process_definitions.cpp \
-process_top_level_declarations.hpp process_top_level_declarations.cpp \
+process_top_level_identifiers.hpp process_top_level_identifiers.cpp \
 process_type.hpp process_type.cpp \
 runtime.hpp runtime.cpp \
 runtime_types.hpp runtime_types.cpp \
@@ -535,7 +535,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-partitioned_scheduler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-polymorphic_function.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-process_definitions.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-process_top_level_declarations.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-process_top_level_identifiers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-process_type.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-runtime.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-runtime_types.Plo@am__quote@
@@ -740,12 +740,12 @@ librcgo_la-process_definitions.lo: process_definitions.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-process_definitions.lo `test -f 'process_definitions.cpp' || echo '$(srcdir)/'`process_definitions.cpp
 
-librcgo_la-process_top_level_declarations.lo: process_top_level_declarations.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-process_top_level_declarations.lo -MD -MP -MF $(DEPDIR)/librcgo_la-process_top_level_declarations.Tpo -c -o librcgo_la-process_top_level_declarations.lo `test -f 'process_top_level_declarations.cpp' || echo '$(srcdir)/'`process_top_level_declarations.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-process_top_level_declarations.Tpo $(DEPDIR)/librcgo_la-process_top_level_declarations.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_top_level_declarations.cpp' object='librcgo_la-process_top_level_declarations.lo' libtool=yes @AMDEPBACKSLASH@
+librcgo_la-process_top_level_identifiers.lo: process_top_level_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-process_top_level_identifiers.lo -MD -MP -MF $(DEPDIR)/librcgo_la-process_top_level_identifiers.Tpo -c -o librcgo_la-process_top_level_identifiers.lo `test -f 'process_top_level_identifiers.cpp' || echo '$(srcdir)/'`process_top_level_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-process_top_level_identifiers.Tpo $(DEPDIR)/librcgo_la-process_top_level_identifiers.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_top_level_identifiers.cpp' object='librcgo_la-process_top_level_identifiers.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-process_top_level_declarations.lo `test -f 'process_top_level_declarations.cpp' || echo '$(srcdir)/'`process_top_level_declarations.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-process_top_level_identifiers.lo `test -f 'process_top_level_identifiers.cpp' || echo '$(srcdir)/'`process_top_level_identifiers.cpp
 
 librcgo_la-process_type.lo: process_type.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-process_type.lo -MD -MP -MF $(DEPDIR)/librcgo_la-process_type.Tpo -c -o librcgo_la-process_type.lo `test -f 'process_type.cpp' || echo '$(srcdir)/'`process_type.cpp

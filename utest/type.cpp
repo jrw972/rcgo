@@ -10,6 +10,7 @@
 #include "error_reporter.hpp"
 #include "scope.hpp"
 #include "enter_predeclared_identifiers.hpp"
+#include "symbol_visitor.hpp"
 
 #include <sstream>
 
@@ -192,6 +193,26 @@ main (int argc, char** argv)
     mytype.insert_method (&method);
     mytype.process_declaration (er, &scope);
     tap.tassert ("NamedType::process_declaration", er.count () == 1);
+  }
+
+  {
+    NamedType mytype ("mytype", loc, &named_int);
+    TestVisitor<SymbolVisitor, NamedType> v;
+    mytype.accept (v);
+    tap.tassert ("NamedType::accept", v.item == &mytype);
+    TestDefaultVisitor<SymbolVisitor, Symbol> w;
+    mytype.accept (w);
+    tap.tassert ("NamedType::accept", w.item == &mytype);
+  }
+
+  {
+    NamedType mytype ("mytype", loc, &named_int);
+    TestConstVisitor<ConstSymbolVisitor, NamedType> cv;
+    mytype.accept (cv);
+    tap.tassert ("NamedType::accept (const)", cv.item == &mytype);
+    TestDefaultConstVisitor<ConstSymbolVisitor, Symbol> w;
+    mytype.accept (w);
+    tap.tassert ("NamedType::accept (const)", w.item == &mytype);
   }
 
   scalar_test<Bool> (tap, "Bool", "<bool>", Bool_Kind);

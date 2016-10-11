@@ -30,6 +30,26 @@ struct MyPolymorphicFunction : public decl::PolymorphicFunction {
                  runtime::ListOperation* arg_ops) const { return NULL; }
 };
 
+struct DefaultNodeVisitorHarness : public DefaultNodeVisitor {
+  Node* node;
+
+  DefaultNodeVisitorHarness ()
+    : node (NULL)
+  { }
+
+  void default_action (Node& node)
+  {
+    this->node = &node;
+  }
+};
+
+void test_default_visit (Node& node)
+{
+  DefaultNodeVisitorHarness v;
+  node.accept (v);
+  ASSERT (v.node == &node);
+}
+
 struct VisitChildren : public DefaultNodeVisitor {
   std::set<Node*> nodes;
   virtual void default_action (Node& node) { nodes.insert (&node); }
@@ -85,6 +105,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &list1, &node1);
@@ -104,6 +125,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2);
@@ -122,6 +144,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1);
@@ -141,6 +164,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2);
@@ -160,6 +184,7 @@ scope(ast); {
       } off ();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2);
@@ -180,6 +205,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2);
@@ -200,6 +226,7 @@ scope(ast); {
       } off ();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &receiver1, &identifier1, &node2);
@@ -219,6 +246,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2);
@@ -239,6 +267,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2, &node3);
@@ -258,6 +287,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2);
@@ -277,6 +307,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &list1);
@@ -297,6 +328,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &identifier1, &node2);
@@ -316,6 +348,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &list1);
@@ -337,6 +370,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &list1, &node1, &list2);
@@ -356,6 +390,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2);
@@ -374,6 +409,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1);
@@ -396,6 +432,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &receiver1, &identifier1, &node3, &node4);
@@ -419,6 +456,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &receiver1, &identifier1, &parameters1, &node3, node.return_parameters);
@@ -438,6 +476,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2);
@@ -453,6 +492,7 @@ scope(ast); {
       ElementList node (1);
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node);
@@ -468,6 +508,7 @@ scope(ast); {
       EmptyExpression node (1);
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node);
@@ -483,6 +524,7 @@ scope(ast); {
       EmptyStatement node (1);
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node);
@@ -498,6 +540,7 @@ scope(ast); {
       EmptyType node (1);
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node);
@@ -516,6 +559,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1);
@@ -531,6 +575,7 @@ scope(ast); {
       FieldList node (1);
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node);
@@ -551,6 +596,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &identifier1, &node1, &node2);
@@ -572,6 +618,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &identifier1, &parameters1, &parameters2, &node1);
@@ -594,6 +641,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &receiver1, &identifier1, &parameters1, &parameters2, &node2);
@@ -612,6 +660,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1);
@@ -630,6 +679,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node);
@@ -648,6 +698,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1);
@@ -663,6 +714,7 @@ scope(ast); {
       IdentifierList node (1);
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node);
@@ -684,6 +736,7 @@ scope(ast); {
     } off();
     unit(accept); {
       test_accept<DefaultNodeVisitor> (node);
+      test_default_visit (node);
     }; off();
     unit(visit_children); {
       test_visit_children (node, &list1, &node1);
@@ -702,6 +755,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1);
@@ -723,6 +777,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2, &node3, &node4);
@@ -742,6 +797,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1);
@@ -761,6 +817,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2);
@@ -781,6 +838,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &identifier1, &node1, &list1);
@@ -803,6 +861,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &receiver1, &identifier1, &parameters1, &parameters2, &node2);
@@ -824,6 +883,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &identifier1, &node1, &identifier2, &list1);
@@ -844,6 +904,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node);
@@ -865,6 +926,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2);
@@ -880,6 +942,7 @@ scope(ast); {
       StatementList node (1);
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node);
@@ -898,6 +961,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node);
@@ -917,6 +981,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2);
@@ -939,6 +1004,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &receiver1, &identifier1, &parameters1, &parameters2, &node2);
@@ -954,6 +1020,7 @@ scope(ast); {
       ParameterList node (1);
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node);
@@ -972,6 +1039,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1);
@@ -991,6 +1059,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &parameters1, &parameters2);
@@ -1010,6 +1079,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &identifier1, &list1);
@@ -1028,6 +1098,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &parameters1);
@@ -1050,6 +1121,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &identifier1, &identifier2);
@@ -1068,6 +1140,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1);
@@ -1087,6 +1160,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &identifier1);
@@ -1108,6 +1182,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2, &node3, &node4);
@@ -1126,6 +1201,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1);
@@ -1146,6 +1222,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &identifier1, &list1, &list2);
@@ -1165,6 +1242,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2);
@@ -1185,6 +1263,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &identifier1, &node1);
@@ -1203,6 +1282,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1);
@@ -1222,6 +1302,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1);
@@ -1244,6 +1325,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &list1, &node1, &list2);
@@ -1263,6 +1345,7 @@ scope(ast); {
       }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node, &node1, &node2);
@@ -1278,6 +1361,7 @@ scope(ast); {
       TopLevelDeclList node (1);
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node);
@@ -1293,6 +1377,7 @@ scope(ast); {
       ImportDeclList node (1);
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
+        test_default_visit (node);
       }; off();
       unit(visit_children); {
         test_visit_children (node);

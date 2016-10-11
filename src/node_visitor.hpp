@@ -2,6 +2,7 @@
 #define RC_SRC_NODE_VISITOR_HPP
 
 #include "types.hpp"
+#include <config.h>
 
 namespace ast
 {
@@ -143,22 +144,17 @@ struct DefaultNodeVisitor : public NodeVisitor
   virtual void visit (While& node);
 };
 
-
+#ifndef COVERAGE
 struct TreePrinter
 {
-  TreePrinter (Node& a_node)
-    : node (a_node)
-  { }
-
+  TreePrinter (Node& a_node);
   Node& node;
-
   void print (std::ostream& out) const;
 };
 
 std::ostream& operator<< (std::ostream& out,
                           const TreePrinter& printer);
-
-
+#endif
 }
 
 #endif // RC_SRC_AST_VISITOR_HPP

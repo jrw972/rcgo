@@ -3,10 +3,12 @@
 
 using namespace ast;
 
+const std::string DEFAULT_TYPE_NAME ("T");
+
 static ast::Receiver* gen_receiver ()
 {
   Identifier* this_id = new ast::Identifier (1, "this");
-  Identifier* type_id = new ast::Identifier (1, "T");
+  Identifier* type_id = new ast::Identifier (1, DEFAULT_TYPE_NAME);
   return new ast::Receiver (1, this_id, Mutable, Mutable, false, type_id);
 }
 
@@ -68,6 +70,23 @@ ast::GetterDecl* gen_getter_decl (const std::string& name)
 ast::FunctionDecl* gen_function_decl (const std::string& name)
 {
   return new ast::FunctionDecl (1, new Identifier (1, name), new ParameterList (1), new ParameterList (1), NULL);
+}
+
+ast::InstanceDecl* gen_instance_decl (const std::string& name, const std::string& init)
+{
+  return new ast::InstanceDecl (1, new Identifier (1, name), new IdentifierType (1, new Identifier (1, DEFAULT_TYPE_NAME)), new Identifier (1, init), new ExpressionList (1));
+}
+
+ast::ConstDecl* gen_const_decl (const std::string& name)
+{
+  IdentifierList* ids = new IdentifierList (1);
+  ids->append (new Identifier (1, name));
+  ExpressionList* exprs = new ExpressionList (1);
+  semantic::Value v;
+  v.present = true;
+  v.untyped_integer_value = 1;
+  exprs->append (new Literal (1, type::UntypedInteger::instance (), v));
+  return new ast::ConstDecl (1, ids, new EmptyType (1), exprs);
 }
 
 ast::FieldList* gen_field_list (const std::string& field_name,

@@ -40,6 +40,9 @@ scope(decl); {
         TestVisitor<SymbolVisitor, FunctionBase> v;
         func.accept (v);
         ASSERT (v.item == &func);
+        TestDefaultVisitor<SymbolVisitor, Symbol> w;
+        func.accept (w);
+        ASSERT (w.item == &func);
       }; off();
     }; off();
 
@@ -48,6 +51,9 @@ scope(decl); {
         TestConstVisitor<ConstSymbolVisitor, FunctionBase> cv;
         func.accept (cv);
         ASSERT (cv.item == &func);
+        TestDefaultConstVisitor<ConstSymbolVisitor, Symbol> w;
+        func.accept (w);
+        ASSERT (w.item == &func);
       }; off();
     }; off();
 
@@ -96,6 +102,9 @@ scope(decl); {
         TestVisitor<SymbolVisitor, MethodBase> v;
         meth.accept (v);
         ASSERT (v.item == &meth);
+        TestDefaultVisitor<SymbolVisitor, Symbol> w;
+        meth.accept (w);
+        ASSERT (w.item == &meth);
       }; off();
     }; off();
 
@@ -104,6 +113,9 @@ scope(decl); {
         TestConstVisitor<ConstSymbolVisitor, MethodBase> cv;
         meth.accept (cv);
         ASSERT (cv.item == &meth);
+        TestDefaultConstVisitor<ConstSymbolVisitor, Symbol> w;
+        meth.accept (w);
+        ASSERT (w.item == &meth);
       }; off();
     }; off();
 

@@ -53,7 +53,7 @@ operation.hpp operation.cpp \
 parameter_list.hpp parameter_list.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
 process_definitions.cpp \
-process_top_level_declarations.hpp process_top_level_declarations.cpp \
+process_top_level_identifiers.hpp process_top_level_identifiers.cpp \
 process_type.hpp process_type.cpp \
 runtime.hpp runtime.cpp \
 runtime_types.hpp runtime_types.cpp \

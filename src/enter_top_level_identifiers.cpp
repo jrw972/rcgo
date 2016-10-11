@@ -31,7 +31,7 @@ struct visitor : public DefaultNodeVisitor
   Scope* package_scope;
   Scope* file_scope;
 
-  bool already_declared (const Identifier* node)
+  void check_already_declared (const Identifier* node)
   {
     Symbol* s;
 
@@ -39,17 +39,15 @@ struct visitor : public DefaultNodeVisitor
     if (s)
       {
         er.already_declared (node->location, node->identifier, s->location);
-        return true;
+        return;
       }
 
     s = file_scope->find_local_symbol (node->identifier);
     if (s)
       {
         er.already_declared (node->location, node->identifier, s->location);
-        return true;
+        return;
       }
-
-    return false;
   }
 
   void visit (SourceFile& node)
@@ -82,40 +80,32 @@ struct visitor : public DefaultNodeVisitor
          ++id_pos, ++init_pos, ++idx)
       {
         const Identifier* id = node_cast<Identifier> (*id_pos);
-        if (!already_declared (id))
-          {
-            Constant* symbol = new Constant (id->identifier, id->location, node.type, *init_pos);
-            package_scope->enter_symbol (symbol);
-            node.symbols.push_back (symbol);
-          }
+        check_already_declared (id);
+        Constant* symbol = new Constant (id->identifier, id->location, node.type, *init_pos);
+        package_scope->enter_symbol (symbol);
+        node.symbols.push_back (symbol);
       }
   }
 
   void visit (TypeDecl& node)
   {
-    if (!already_declared (node.identifier))
-      {
-        node.symbol = new NamedType (&node);
-        package_scope->enter_symbol (node.symbol);
-      }
+    check_already_declared (node.identifier);
+    node.symbol = new NamedType (&node);
+    package_scope->enter_symbol (node.symbol);
   }
 
   void visit (FunctionDecl& node)
   {
-    if (!already_declared (node.identifier))
-      {
-        node.symbol = new decl::Function (&node);
-        package_scope->enter_symbol (node.symbol);
-      }
+    check_already_declared (node.identifier);
+    node.symbol = new decl::Function (&node);
+    package_scope->enter_symbol (node.symbol);
   }
 
   void visit (InstanceDecl& node)
   {
-    if (!already_declared (node.identifier))
-      {
-        node.symbol = new decl::Instance (&node);
-        package_scope->enter_symbol (node.symbol);
-      }
+    check_already_declared (node.identifier);
+    node.symbol = new decl::Instance (&node);
+    package_scope->enter_symbol (node.symbol);
   }
 };
 }

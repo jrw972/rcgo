@@ -1,0 +1,152 @@
+/* -*- c++ -*- */
+#include "unit_test.hpp"
+#include "enter_method_identifiers.hpp"
+#include "error_reporter.hpp"
+#include "scope.hpp"
+#include "type.hpp"
+#include "astgen.hpp"
+
+using namespace semantic;
+using namespace util;
+using namespace decl;
+using namespace type;
+
+scope(semantic); {
+  ErrorReporter er;
+  Scope scope;
+  NamedType named_type (DEFAULT_TYPE_NAME, util::Location (), &named_int);
+
+  scenario(type_declared); {
+    scope.enter_symbol (&named_type);
+
+    scenario(MethodDecl); {
+      unit(enter_method_identifiers); {
+        enter_method_identifiers (gen_method_decl ("mymethod"), er, &scope);
+        ASSERT (named_type.find_method ("mymethod") != NULL);
+      }; off();
+    }; off();
+
+    scenario(InitDecl); {
+      unit(enter_method_identifiers); {
+        enter_method_identifiers (gen_init_decl ("myinit"), er, &scope);
+        ASSERT (named_type.find_initializer ("myinit") != NULL);
+      }; off();
+    }; off();
+
+    scenario(GetterDecl); {
+      unit(enter_method_identifiers); {
+        enter_method_identifiers (gen_getter_decl ("mygetter"), er, &scope);
+        ASSERT (named_type.find_getter ("mygetter") != NULL);
+      }; off();
+    }; off();
+
+    scenario(ActionDecl); {
+      unit(enter_method_identifiers); {
+        enter_method_identifiers (gen_action_decl ("myaction"), er, &scope);
+        ASSERT (named_type.find_action ("myaction") != NULL);
+      }; off();
+    }; off();
+
+    scenario(ReactionDecl); {
+      unit(enter_method_identifiers); {
+        enter_method_identifiers (gen_reaction_decl ("myreaction"), er, &scope);
+        ASSERT (named_type.find_reaction ("myreaction") != NULL);
+      }; off();
+    }; off();
+
+    scenario(BindDecl); {
+      unit(enter_method_identifiers); {
+        enter_method_identifiers (gen_bind_decl ("mybind"), er, &scope);
+        ASSERT (named_type.find_bind ("mybind") != NULL);
+      }; off();
+    }; off();
+
+    scenario (TopLevelDeclList); {
+      unit(enter_method_identifiers); {
+        ast::TopLevelDeclList list (1);
+        list.append (gen_method_decl ("mymethod"));
+        enter_method_identifiers (&list, er, &scope);
+        ASSERT (named_type.find_method ("mymethod") != NULL);
+      }; off();
+    }; off();
+
+    scenario (SourceFile); {
+      unit(enter_method_identifiers); {
+        ast::Identifier package (1, "mypackage");
+        ast::TopLevelDeclList list (1);
+        list.append (gen_method_decl ("mymethod"));
+        ast::SourceFile sf (1, &package, new ast::ImportDeclList (1), &list);
+        enter_method_identifiers (&sf, er, &scope);
+        ASSERT (named_type.find_method ("mymethod") != NULL);
+      }; off();
+    }; off();
+
+  }; off();
+
+  scenario(type_not_declared); {
+
+    scenario(MethodDecl); {
+      unit(enter_method_identifiers); {
+        enter_method_identifiers (gen_method_decl ("mymethod"), er, &scope);
+        ASSERT (named_type.find_method ("mymethod") == NULL);
+        ASSERT (er.count () == 1);
+      }; off();
+    }; off();
+
+    scenario(InitDecl); {
+      unit(enter_method_identifiers); {
+        enter_method_identifiers (gen_init_decl ("myinit"), er, &scope);
+        ASSERT (named_type.find_initializer ("myinit") == NULL);
+        ASSERT (er.count () == 1);
+      }; off();
+    }; off();
+
+    scenario(GetterDecl); {
+      unit(enter_method_identifiers); {
+        enter_method_identifiers (gen_getter_decl ("mygetter"), er, &scope);
+        ASSERT (named_type.find_getter ("mygetter") == NULL);
+        ASSERT (er.count () == 1);
+      }; off();
+    }; off();
+
+    scenario(ActionDecl); {
+      unit(enter_method_identifiers); {
+        enter_method_identifiers (gen_action_decl ("myaction"), er, &scope);
+        ASSERT (named_type.find_action ("myaction") == NULL);
+        ASSERT (er.count () == 1);
+      }; off();
+    }; off();
+
+    scenario(ReactionDecl); {
+      unit(enter_method_identifiers); {
+        enter_method_identifiers (gen_reaction_decl ("myreaction"), er, &scope);
+        ASSERT (named_type.find_reaction ("myreaction") == NULL);
+        ASSERT (er.count () == 1);
+      }; off();
+    }; off();
+
+    scenario(BindDecl); {
+      unit(enter_method_identifiers); {
+        enter_method_identifiers (gen_bind_decl ("mybind"), er, &scope);
+        ASSERT (named_type.find_bind ("mybind") == NULL);
+        ASSERT (er.count () == 1);
+      }; off();
+    }; off();
+  }; off();
+
+  scenario(not_a_type); {
+    semantic::Value v;
+    v.present = true;
+    v.int_value = 5;
+    Constant c (DEFAULT_TYPE_NAME, util::Location (), &named_int, v);
+    scope.enter_symbol (&c);
+
+    unit(enter_method_identifiers); {
+      enter_method_identifiers (gen_method_decl ("mymethod"), er, &scope);
+      ASSERT (named_type.find_method ("mymethod") == NULL);
+      ASSERT (er.count () == 1);
+    }; off();
+
+  }; off();
+
+}; off();

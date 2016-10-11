@@ -22,7 +22,7 @@
 #include "enter_predeclared_identifiers.hpp"
 #include "enter_top_level_identifiers.hpp"
 #include "enter_method_identifiers.hpp"
-#include "process_top_level_declarations.hpp"
+#include "process_top_level_identifiers.hpp"
 #include "scheduler.hpp"
 #include "scope.hpp"
 #include "error_reporter.hpp"

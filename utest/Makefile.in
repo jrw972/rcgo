@@ -230,10 +230,11 @@ type_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 am__objects_16 = unit_test-astgen.$(OBJEXT)
 am_unit_test_OBJECTS = $(am__objects_16) unit_test-unit_test.$(OBJEXT) \
 	unit_test-callable.$(OBJEXT) \
+	unit_test-enter_method_identifiers.$(OBJEXT) \
 	unit_test-enter_predeclared_identifiers.$(OBJEXT) \
 	unit_test-enter_top_level_identifiers.$(OBJEXT) \
 	unit_test-error_reporter.$(OBJEXT) unit_test-node.$(OBJEXT) \
-	unit_test-process_top_level_declarations.$(OBJEXT) \
+	unit_test-process_top_level_identifiers.$(OBJEXT) \
 	unit_test-process_type.$(OBJEXT) unit_test-symbol.$(OBJEXT)
 unit_test_OBJECTS = $(am_unit_test_OBJECTS)
 unit_test_DEPENDENCIES = $(top_builddir)/src/librcgo.la
@@ -673,7 +674,16 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver.sh
 AM_CXXFLAGS = -I $(top_srcdir)/src
-EXTRA_DIST = callable.test enter_predeclared_identifiers.test enter_top_level_identifiers.test error_reporter.test node.test process_top_level_declarations.test process_type.test symbol.test
+EXTRA_DIST = callable.test \
+enter_method_identifiers.test \
+enter_predeclared_identifiers.test \
+enter_top_level_identifiers.test \
+error_reporter.test \
+node.test \
+process_top_level_identifiers.test \
+process_type.test \
+symbol.test
+
 HELPERS = unit_test.hpp tap.hpp visitor_helper.hpp mock_execution.hpp astgen.hpp astgen.cpp
 arch_SOURCES = arch.cpp $(HELPERS)
 arch_LDADD = $(top_builddir)/src/librcgo.la
@@ -739,7 +749,17 @@ value_SOURCES = value.cpp $(HELPERS)
 value_LDADD = $(top_builddir)/src/librcgo.la
 value_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 value_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-unit_test_SOURCES = $(HELPERS) unit_test.cpp callable.cpp enter_predeclared_identifiers.cpp enter_top_level_identifiers.cpp error_reporter.cpp node.cpp process_top_level_declarations.cpp process_type.cpp symbol.cpp
+unit_test_SOURCES = $(HELPERS) \
+unit_test.cpp \
+callable.cpp \
+enter_method_identifiers.cpp \
+enter_predeclared_identifiers.cpp \
+enter_top_level_identifiers.cpp \
+error_reporter.cpp \
+node.cpp \
+process_top_level_identifiers.cpp \
+process_type.cpp symbol.cpp
+
 unit_test_LDADD = $(top_builddir)/src/librcgo.la
 unit_test_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 unit_test_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
@@ -893,11 +913,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/type-type.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-astgen.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-callable.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-enter_method_identifiers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-enter_predeclared_identifiers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-enter_top_level_identifiers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-error_reporter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-node.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-process_top_level_declarations.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-process_top_level_identifiers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-process_type.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-symbol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-unit_test.Po@am__quote@
@@ -1387,6 +1408,20 @@ unit_test-callable.obj: callable.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-callable.obj `if test -f 'callable.cpp'; then $(CYGPATH_W) 'callable.cpp'; else $(CYGPATH_W) '$(srcdir)/callable.cpp'; fi`
 
+unit_test-enter_method_identifiers.o: enter_method_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_method_identifiers.o -MD -MP -MF $(DEPDIR)/unit_test-enter_method_identifiers.Tpo -c -o unit_test-enter_method_identifiers.o `test -f 'enter_method_identifiers.cpp' || echo '$(srcdir)/'`enter_method_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_method_identifiers.Tpo $(DEPDIR)/unit_test-enter_method_identifiers.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_method_identifiers.cpp' object='unit_test-enter_method_identifiers.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_method_identifiers.o `test -f 'enter_method_identifiers.cpp' || echo '$(srcdir)/'`enter_method_identifiers.cpp
+
+unit_test-enter_method_identifiers.obj: enter_method_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_method_identifiers.obj -MD -MP -MF $(DEPDIR)/unit_test-enter_method_identifiers.Tpo -c -o unit_test-enter_method_identifiers.obj `if test -f 'enter_method_identifiers.cpp'; then $(CYGPATH_W) 'enter_method_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_method_identifiers.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_method_identifiers.Tpo $(DEPDIR)/unit_test-enter_method_identifiers.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_method_identifiers.cpp' object='unit_test-enter_method_identifiers.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_method_identifiers.obj `if test -f 'enter_method_identifiers.cpp'; then $(CYGPATH_W) 'enter_method_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_method_identifiers.cpp'; fi`
+
 unit_test-enter_predeclared_identifiers.o: enter_predeclared_identifiers.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_predeclared_identifiers.o -MD -MP -MF $(DEPDIR)/unit_test-enter_predeclared_identifiers.Tpo -c -o unit_test-enter_predeclared_identifiers.o `test -f 'enter_predeclared_identifiers.cpp' || echo '$(srcdir)/'`enter_predeclared_identifiers.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_predeclared_identifiers.Tpo $(DEPDIR)/unit_test-enter_predeclared_identifiers.Po
@@ -1443,19 +1478,19 @@ unit_test-node.obj: node.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-node.obj `if test -f 'node.cpp'; then $(CYGPATH_W) 'node.cpp'; else $(CYGPATH_W) '$(srcdir)/node.cpp'; fi`
 
-unit_test-process_top_level_declarations.o: process_top_level_declarations.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-process_top_level_declarations.o -MD -MP -MF $(DEPDIR)/unit_test-process_top_level_declarations.Tpo -c -o unit_test-process_top_level_declarations.o `test -f 'process_top_level_declarations.cpp' || echo '$(srcdir)/'`process_top_level_declarations.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-process_top_level_declarations.Tpo $(DEPDIR)/unit_test-process_top_level_declarations.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_top_level_declarations.cpp' object='unit_test-process_top_level_declarations.o' libtool=no @AMDEPBACKSLASH@
+unit_test-process_top_level_identifiers.o: process_top_level_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-process_top_level_identifiers.o -MD -MP -MF $(DEPDIR)/unit_test-process_top_level_identifiers.Tpo -c -o unit_test-process_top_level_identifiers.o `test -f 'process_top_level_identifiers.cpp' || echo '$(srcdir)/'`process_top_level_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-process_top_level_identifiers.Tpo $(DEPDIR)/unit_test-process_top_level_identifiers.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_top_level_identifiers.cpp' object='unit_test-process_top_level_identifiers.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-process_top_level_declarations.o `test -f 'process_top_level_declarations.cpp' || echo '$(srcdir)/'`process_top_level_declarations.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-process_top_level_identifiers.o `test -f 'process_top_level_identifiers.cpp' || echo '$(srcdir)/'`process_top_level_identifiers.cpp
 
-unit_test-process_top_level_declarations.obj: process_top_level_declarations.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-process_top_level_declarations.obj -MD -MP -MF $(DEPDIR)/unit_test-process_top_level_declarations.Tpo -c -o unit_test-process_top_level_declarations.obj `if test -f 'process_top_level_declarations.cpp'; then $(CYGPATH_W) 'process_top_level_declarations.cpp'; else $(CYGPATH_W) '$(srcdir)/process_top_level_declarations.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-process_top_level_declarations.Tpo $(DEPDIR)/unit_test-process_top_level_declarations.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_top_level_declarations.cpp' object='unit_test-process_top_level_declarations.obj' libtool=no @AMDEPBACKSLASH@
+unit_test-process_top_level_identifiers.obj: process_top_level_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-process_top_level_identifiers.obj -MD -MP -MF $(DEPDIR)/unit_test-process_top_level_identifiers.Tpo -c -o unit_test-process_top_level_identifiers.obj `if test -f 'process_top_level_identifiers.cpp'; then $(CYGPATH_W) 'process_top_level_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/process_top_level_identifiers.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-process_top_level_identifiers.Tpo $(DEPDIR)/unit_test-process_top_level_identifiers.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='process_top_level_identifiers.cpp' object='unit_test-process_top_level_identifiers.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-process_top_level_declarations.obj `if test -f 'process_top_level_declarations.cpp'; then $(CYGPATH_W) 'process_top_level_declarations.cpp'; else $(CYGPATH_W) '$(srcdir)/process_top_level_declarations.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-process_top_level_identifiers.obj `if test -f 'process_top_level_identifiers.cpp'; then $(CYGPATH_W) 'process_top_level_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/process_top_level_identifiers.cpp'; fi`
 
 unit_test-process_type.o: process_type.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-process_type.o -MD -MP -MF $(DEPDIR)/unit_test-process_type.Tpo -c -o unit_test-process_type.o `test -f 'process_type.cpp' || echo '$(srcdir)/'`process_type.cpp

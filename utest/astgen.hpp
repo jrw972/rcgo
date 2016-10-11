@@ -3,6 +3,8 @@
 
 #include "node.hpp"
 
+extern const std::string DEFAULT_TYPE_NAME;
+
 // Helpers for programmatically generating ASTs.
 
 ast::ActionDecl* gen_action_decl (const std::string& name, long dimension = -1);
@@ -13,6 +15,8 @@ ast::MethodDecl* gen_method_decl (const std::string& name);
 ast::InitDecl* gen_init_decl (const std::string& name);
 ast::GetterDecl* gen_getter_decl (const std::string& name);
 ast::FunctionDecl* gen_function_decl (const std::string& name);
+ast::InstanceDecl* gen_instance_decl (const std::string& name, const std::string& init);
+ast::ConstDecl* gen_const_decl (const std::string& name);
 
 ast::FieldList* gen_field_list (const std::string& field_name,
                                 const std::string& field_type);
