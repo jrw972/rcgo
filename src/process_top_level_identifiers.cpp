@@ -1,8 +1,6 @@
-#include "process_top_level_identifiers.hpp"
 #include "node_visitor.hpp"
 #include "node.hpp"
 #include "type.hpp"
-#include "semantic.hpp"
 #include "callable.hpp"
 #include "node_cast.hpp"
 #include "process_type.hpp"
@@ -21,12 +19,12 @@ struct visitor : public DefaultNodeVisitor
 {
 
   ErrorReporter& er;
-  Scope* file_scope;
+  SymbolTable& symbol_table;
 
   visitor (ErrorReporter& a_er,
-           Scope* a_file_scope)
+           SymbolTable& a_symbol_table)
     : er (a_er)
-    , file_scope (a_file_scope)
+    , symbol_table (a_symbol_table)
   { }
 
   void visit (SourceFile& node)
@@ -46,34 +44,34 @@ struct visitor : public DefaultNodeVisitor
          pos != limit;
          ++pos)
       {
-        (*pos)->process_declaration (er, file_scope);
+        (*pos)->process_declaration (er, symbol_table);
       }
   }
 
   void visit (TypeDecl& node)
   {
     assert (node.symbol);
-    node.symbol->process_declaration (er, file_scope);
+    node.symbol->process_declaration (er, symbol_table);
   }
 
   void visit (FunctionDecl& node)
   {
     assert (node.symbol);
-    node.symbol->process_declaration (er, file_scope);
+    node.symbol->process_declaration (er, symbol_table);
   }
 
   void visit (InstanceDecl& node)
   {
     assert (node.symbol);
-    node.symbol->process_declaration (er, file_scope);
+    node.symbol->process_declaration (er, symbol_table);
   }
 };
 
 }
 
-void process_top_level_declarations (ast::Node* root, util::ErrorReporter& er, decl::Scope* file_scope)
+void process_top_level_declarations (ast::Node* root, util::ErrorReporter& er, decl::SymbolTable& symbol_table)
 {
-  visitor v (er, file_scope);
+  visitor v (er, symbol_table);
   root->accept (v);
 }
 }

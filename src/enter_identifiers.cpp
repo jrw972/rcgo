@@ -6,6 +6,7 @@
 #include "type.hpp"
 #include "node_cast.hpp"
 #include "callable.hpp"
+#include "symbol_table.hpp"
 
 namespace semantic
 {
@@ -19,33 +20,20 @@ using namespace type;
 struct visitor : public DefaultNodeVisitor
 {
   visitor (ErrorReporter& a_er,
-           Scope* a_package_scope,
-           Scope* a_file_scope)
+           SymbolTable& a_symbol_table)
     : er (a_er)
-    , package_scope (a_package_scope)
-    , file_scope (a_file_scope)
+    , symbol_table (a_symbol_table)
   { }
 
   ErrorReporter& er;
-  Scope* package_scope;
-  Scope* file_scope;
+  SymbolTable& symbol_table;
 
   void check_already_declared (const Identifier* node)
   {
-    Symbol* s;
-
-    s = package_scope->find_local_symbol (node->identifier);
-    if (s)
+    if (symbol_table.is_declared_locally (node->identifier))
       {
+        Symbol* s = symbol_table.retrieve_symbol (node->identifier);
         er.already_declared (node->location, node->identifier, s->location);
-        return;
-      }
-
-    s = file_scope->find_local_symbol (node->identifier);
-    if (s)
-      {
-        er.already_declared (node->location, node->identifier, s->location);
-        return;
       }
   }
 
@@ -81,7 +69,7 @@ struct visitor : public DefaultNodeVisitor
         const Identifier* id = node_cast<Identifier> (*id_pos);
         check_already_declared (id);
         Constant* symbol = new Constant (id->identifier, id->location, node.type, *init_pos);
-        package_scope->enter_symbol (symbol);
+        symbol_table.enter_symbol (symbol);
         node.symbols.push_back (symbol);
       }
   }
@@ -90,28 +78,28 @@ struct visitor : public DefaultNodeVisitor
   {
     check_already_declared (node.identifier);
     node.symbol = new NamedType (&node);
-    package_scope->enter_symbol (node.symbol);
+    symbol_table.enter_symbol (node.symbol);
   }
 
   void visit (FunctionDecl& node)
   {
     check_already_declared (node.identifier);
     node.symbol = new decl::Function (&node);
-    package_scope->enter_symbol (node.symbol);
+    symbol_table.enter_symbol (node.symbol);
   }
 
   void visit (InstanceDecl& node)
   {
     check_already_declared (node.identifier);
     node.symbol = new decl::Instance (&node);
-    package_scope->enter_symbol (node.symbol);
+    symbol_table.enter_symbol (node.symbol);
   }
 };
 }
 
-void enter_file_identifiers (ast::Node* root, util::ErrorReporter& er, decl::Scope* package_scope, decl::Scope* file_scope)
+void enter_identifiers (ast::Node* root, util::ErrorReporter& er, decl::SymbolTable& symbol_table, bool exported_symbols)
 {
-  visitor v (er, package_scope, file_scope);
+  visitor v (er, symbol_table);
   root->accept (v);
 }
 

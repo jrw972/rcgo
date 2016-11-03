@@ -12,6 +12,22 @@ namespace runtime
 using namespace type;
 using namespace semantic;
 
+runtime::Operation*
+LeftShifter::generate_code (const ExpressionValue& result,
+                            const ExpressionValueList& arg_vals,
+                            runtime::ListOperation* arg_ops)
+{
+  return runtime::make_shift<LeftShifter> (result.type, arg_ops->list[0], MakeConvertToUint (arg_ops->list[1], arg_vals[1].type));
+}
+
+runtime::Operation*
+RightShifter::generate_code (const ExpressionValue& result,
+                             const ExpressionValueList& arg_vals,
+                             runtime::ListOperation* arg_ops)
+{
+  return runtime::make_shift<RightShifter> (result.type, arg_ops->list[0], MakeConvertToUint (arg_ops->list[1], arg_vals[1].type));
+}
+
 struct heap_link_t
 {
   Heap* heap;
@@ -41,7 +57,7 @@ IndexSlice::execute (ExecutorBase& exec) const
 
   if (i < 0 || static_cast<unsigned long> (i) >= s.length)
     {
-      error_at_line (-1, 0, location.file.c_str (), location.line,
+      error_at_line (-1, 0, location.file ().c_str (), location.line (),
                      "slice index is out of bounds (E35)");
 
     }
@@ -271,8 +287,6 @@ LogicAnd::execute (ExecutorBase& exec) const
 
 Operation* make_literal (const type::Type* type, const Value& value)
 {
-  assert (value.present);
-
   switch (type->underlying_type ()->kind ())
     {
     case Bool_Kind:
@@ -302,7 +316,7 @@ Operation* make_literal (const type::Type* type, const Value& value)
     case String_Kind:
       return make_literal (value.string_value);
     case Pointer_Kind:
-      return make_literal (value.pointer_value);
+      return make_literal (NULL);
     case Slice_Kind:
       return make_literal (value.slice_value);
     default:
@@ -551,7 +565,7 @@ IndexArray::execute (ExecutorBase& exec) const
   exec.stack ().pop (i);
   if (i < 0 || i >= type->dimension)
     {
-      error_at_line (-1, 0, location.file.c_str (), location.line,
+      error_at_line (-1, 0, location.file ().c_str (), location.line (),
                      "array index is out of bounds (E148)");
     }
   exec.stack ().push_pointer (static_cast<char*> (ptr) + i * arch::unit_size (type));
@@ -588,7 +602,7 @@ SliceArray::execute (ExecutorBase& exec) const
         high_val <= max_val &&
         max_val <= type->dimension))
     {
-      error_at_line (-1, 0, location.file.c_str (), location.line,
+      error_at_line (-1, 0, location.file ().c_str (), location.line (),
                      "slice index is out of range (E223)");
     }
 
@@ -632,7 +646,7 @@ SliceSlice::execute (ExecutorBase& exec) const
         high_val <= max_val &&
         max_val <= static_cast<long> (s.capacity)))
     {
-      error_at_line (-1, 0, location.file.c_str (), location.line,
+      error_at_line (-1, 0, location.file ().c_str (), location.line (),
                      "slice index is out of range (E22)");
     }
 

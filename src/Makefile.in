@@ -96,11 +96,11 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 librcgo_la_DEPENDENCIES =
-am_librcgo_la_OBJECTS = librcgo_la-arch.lo \
+am_librcgo_la_OBJECTS = librcgo_la-allocate.lo librcgo_la-arch.lo \
 	librcgo_la-builtin_function.lo librcgo_la-callable.lo \
-	librcgo_la-check_types.lo librcgo_la-composition.lo \
+	librcgo_la-check_all.lo librcgo_la-composition.lo \
 	librcgo_la-compute_receiver_access.lo \
-	librcgo_la-enter_predeclared_identifiers.lo \
+	librcgo_la-enter_identifiers.lo \
 	librcgo_la-enter_method_identifiers.lo \
 	librcgo_la-enter_top_level_identifiers.lo \
 	librcgo_la-error_reporter.lo librcgo_la-evaluate_static.lo \
@@ -111,14 +111,15 @@ am_librcgo_la_OBJECTS = librcgo_la-arch.lo \
 	librcgo_la-node_visitor.lo librcgo_la-operation.lo \
 	librcgo_la-parameter_list.lo \
 	librcgo_la-partitioned_scheduler.lo \
+	librcgo_la-polymorphic_function.lo \
+	librcgo_la-populate_universe_block.lo \
 	librcgo_la-process_definitions.lo \
 	librcgo_la-process_top_level_identifiers.lo \
 	librcgo_la-process_type.lo librcgo_la-runtime.lo \
 	librcgo_la-runtime_types.lo librcgo_la-scope.lo \
-	librcgo_la-semantic.lo librcgo_la-stack.lo \
-	librcgo_la-symbol.lo librcgo_la-symbol_visitor.lo \
-	librcgo_la-polymorphic_function.lo librcgo_la-type.lo \
-	librcgo_la-value.lo
+	librcgo_la-stack.lo librcgo_la-symbol.lo \
+	librcgo_la-symbol_table.lo librcgo_la-symbol_visitor.lo \
+	librcgo_la-type.lo librcgo_la-value.lo
 librcgo_la_OBJECTS = $(am_librcgo_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -359,19 +360,20 @@ rcgo_LDADD = librcgo.la
 rcgo_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 rcgo_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 noinst_LTLIBRARIES = librcgo.la
-librcgo_la_SOURCES = arch.hpp arch.cpp \
+librcgo_la_SOURCES = allocate.hpp allocate.cpp \
+arch.hpp arch.cpp \
 builtin_function.hpp builtin_function.cpp \
 callable.hpp callable.cpp \
-check_types.hpp check_types.cpp \
+check_all.cpp \
 composition.hpp composition.cpp \
-compute_receiver_access.hpp compute_receiver_access.cpp \
-enter_predeclared_identifiers.hpp enter_predeclared_identifiers.cpp \
-enter_method_identifiers.hpp enter_method_identifiers.cpp \
-enter_top_level_identifiers.hpp enter_top_level_identifiers.cpp \
+compute_receiver_access.cpp \
+enter_identifiers.cpp \
+enter_method_identifiers.cpp \
+enter_top_level_identifiers.cpp \
 error_reporter.hpp error_reporter.cpp \
-evaluate_static.hpp evaluate_static.cpp \
+evaluate_static.cpp \
 executor_base.hpp executor_base.cpp \
-expression_value.hpp expression_value.cpp \
+expression_value.cpp \
 generate_code.hpp generate_code.cpp \
 heap.hpp heap.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
@@ -383,20 +385,23 @@ node_visitor.hpp node_visitor.cpp \
 operation.hpp operation.cpp \
 parameter_list.hpp parameter_list.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
+polymorphic_function.hpp polymorphic_function.cpp \
+polymorphic_function_visitor.hpp \
+populate_universe_block.cpp \
 process_definitions.cpp \
-process_top_level_identifiers.hpp process_top_level_identifiers.cpp \
+process_top_level_identifiers.cpp \
 process_type.hpp process_type.cpp \
 runtime.hpp runtime.cpp \
 runtime_types.hpp runtime_types.cpp \
 scope.hpp scope.cpp \
-semantic.hpp semantic.cpp \
+semantic.hpp \
 stack.hpp stack.cpp \
 symbol.hpp symbol.cpp \
 symbol_cast.hpp \
+symbol_table.hpp symbol_table.cpp \
 symbol_visitor.hpp symbol_visitor.cpp \
-polymorphic_function.hpp polymorphic_function.cpp \
 type.hpp type.cpp \
-value.hpp value.cpp
+value.cpp
 
 librcgo_la_LIBADD = -lpthread
 librcgo_la_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -510,14 +515,15 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-allocate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-arch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-builtin_function.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-callable.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-check_types.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-check_all.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-composition.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-compute_receiver_access.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-enter_identifiers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-enter_method_identifiers.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-enter_predeclared_identifiers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-enter_top_level_identifiers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-error_reporter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-evaluate_static.Plo@am__quote@
@@ -534,15 +540,16 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-parameter_list.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-partitioned_scheduler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-polymorphic_function.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-populate_universe_block.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-process_definitions.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-process_top_level_identifiers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-process_type.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-runtime.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-runtime_types.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-scope.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-semantic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-stack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-symbol.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-symbol_table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-symbol_visitor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-type.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librcgo_la-value.Plo@am__quote@
@@ -572,6 +579,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
+librcgo_la-allocate.lo: allocate.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-allocate.lo -MD -MP -MF $(DEPDIR)/librcgo_la-allocate.Tpo -c -o librcgo_la-allocate.lo `test -f 'allocate.cpp' || echo '$(srcdir)/'`allocate.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-allocate.Tpo $(DEPDIR)/librcgo_la-allocate.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='allocate.cpp' object='librcgo_la-allocate.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-allocate.lo `test -f 'allocate.cpp' || echo '$(srcdir)/'`allocate.cpp
+
 librcgo_la-arch.lo: arch.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-arch.lo -MD -MP -MF $(DEPDIR)/librcgo_la-arch.Tpo -c -o librcgo_la-arch.lo `test -f 'arch.cpp' || echo '$(srcdir)/'`arch.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-arch.Tpo $(DEPDIR)/librcgo_la-arch.Plo
@@ -593,12 +607,12 @@ librcgo_la-callable.lo: callable.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-callable.lo `test -f 'callable.cpp' || echo '$(srcdir)/'`callable.cpp
 
-librcgo_la-check_types.lo: check_types.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-check_types.lo -MD -MP -MF $(DEPDIR)/librcgo_la-check_types.Tpo -c -o librcgo_la-check_types.lo `test -f 'check_types.cpp' || echo '$(srcdir)/'`check_types.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-check_types.Tpo $(DEPDIR)/librcgo_la-check_types.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='check_types.cpp' object='librcgo_la-check_types.lo' libtool=yes @AMDEPBACKSLASH@
+librcgo_la-check_all.lo: check_all.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-check_all.lo -MD -MP -MF $(DEPDIR)/librcgo_la-check_all.Tpo -c -o librcgo_la-check_all.lo `test -f 'check_all.cpp' || echo '$(srcdir)/'`check_all.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-check_all.Tpo $(DEPDIR)/librcgo_la-check_all.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='check_all.cpp' object='librcgo_la-check_all.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-check_types.lo `test -f 'check_types.cpp' || echo '$(srcdir)/'`check_types.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-check_all.lo `test -f 'check_all.cpp' || echo '$(srcdir)/'`check_all.cpp
 
 librcgo_la-composition.lo: composition.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-composition.lo -MD -MP -MF $(DEPDIR)/librcgo_la-composition.Tpo -c -o librcgo_la-composition.lo `test -f 'composition.cpp' || echo '$(srcdir)/'`composition.cpp
@@ -614,12 +628,12 @@ librcgo_la-compute_receiver_access.lo: compute_receiver_access.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-compute_receiver_access.lo `test -f 'compute_receiver_access.cpp' || echo '$(srcdir)/'`compute_receiver_access.cpp
 
-librcgo_la-enter_predeclared_identifiers.lo: enter_predeclared_identifiers.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-enter_predeclared_identifiers.lo -MD -MP -MF $(DEPDIR)/librcgo_la-enter_predeclared_identifiers.Tpo -c -o librcgo_la-enter_predeclared_identifiers.lo `test -f 'enter_predeclared_identifiers.cpp' || echo '$(srcdir)/'`enter_predeclared_identifiers.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-enter_predeclared_identifiers.Tpo $(DEPDIR)/librcgo_la-enter_predeclared_identifiers.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_predeclared_identifiers.cpp' object='librcgo_la-enter_predeclared_identifiers.lo' libtool=yes @AMDEPBACKSLASH@
+librcgo_la-enter_identifiers.lo: enter_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-enter_identifiers.lo -MD -MP -MF $(DEPDIR)/librcgo_la-enter_identifiers.Tpo -c -o librcgo_la-enter_identifiers.lo `test -f 'enter_identifiers.cpp' || echo '$(srcdir)/'`enter_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-enter_identifiers.Tpo $(DEPDIR)/librcgo_la-enter_identifiers.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_identifiers.cpp' object='librcgo_la-enter_identifiers.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-enter_predeclared_identifiers.lo `test -f 'enter_predeclared_identifiers.cpp' || echo '$(srcdir)/'`enter_predeclared_identifiers.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-enter_identifiers.lo `test -f 'enter_identifiers.cpp' || echo '$(srcdir)/'`enter_identifiers.cpp
 
 librcgo_la-enter_method_identifiers.lo: enter_method_identifiers.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-enter_method_identifiers.lo -MD -MP -MF $(DEPDIR)/librcgo_la-enter_method_identifiers.Tpo -c -o librcgo_la-enter_method_identifiers.lo `test -f 'enter_method_identifiers.cpp' || echo '$(srcdir)/'`enter_method_identifiers.cpp
@@ -733,6 +747,20 @@ librcgo_la-partitioned_scheduler.lo: partitioned_scheduler.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-partitioned_scheduler.lo `test -f 'partitioned_scheduler.cpp' || echo '$(srcdir)/'`partitioned_scheduler.cpp
 
+librcgo_la-polymorphic_function.lo: polymorphic_function.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-polymorphic_function.lo -MD -MP -MF $(DEPDIR)/librcgo_la-polymorphic_function.Tpo -c -o librcgo_la-polymorphic_function.lo `test -f 'polymorphic_function.cpp' || echo '$(srcdir)/'`polymorphic_function.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-polymorphic_function.Tpo $(DEPDIR)/librcgo_la-polymorphic_function.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='polymorphic_function.cpp' object='librcgo_la-polymorphic_function.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-polymorphic_function.lo `test -f 'polymorphic_function.cpp' || echo '$(srcdir)/'`polymorphic_function.cpp
+
+librcgo_la-populate_universe_block.lo: populate_universe_block.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-populate_universe_block.lo -MD -MP -MF $(DEPDIR)/librcgo_la-populate_universe_block.Tpo -c -o librcgo_la-populate_universe_block.lo `test -f 'populate_universe_block.cpp' || echo '$(srcdir)/'`populate_universe_block.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-populate_universe_block.Tpo $(DEPDIR)/librcgo_la-populate_universe_block.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='populate_universe_block.cpp' object='librcgo_la-populate_universe_block.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-populate_universe_block.lo `test -f 'populate_universe_block.cpp' || echo '$(srcdir)/'`populate_universe_block.cpp
+
 librcgo_la-process_definitions.lo: process_definitions.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-process_definitions.lo -MD -MP -MF $(DEPDIR)/librcgo_la-process_definitions.Tpo -c -o librcgo_la-process_definitions.lo `test -f 'process_definitions.cpp' || echo '$(srcdir)/'`process_definitions.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-process_definitions.Tpo $(DEPDIR)/librcgo_la-process_definitions.Plo
@@ -775,13 +803,6 @@ librcgo_la-scope.lo: scope.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-scope.lo `test -f 'scope.cpp' || echo '$(srcdir)/'`scope.cpp
 
-librcgo_la-semantic.lo: semantic.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-semantic.lo -MD -MP -MF $(DEPDIR)/librcgo_la-semantic.Tpo -c -o librcgo_la-semantic.lo `test -f 'semantic.cpp' || echo '$(srcdir)/'`semantic.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-semantic.Tpo $(DEPDIR)/librcgo_la-semantic.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='semantic.cpp' object='librcgo_la-semantic.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-semantic.lo `test -f 'semantic.cpp' || echo '$(srcdir)/'`semantic.cpp
-
 librcgo_la-stack.lo: stack.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-stack.lo -MD -MP -MF $(DEPDIR)/librcgo_la-stack.Tpo -c -o librcgo_la-stack.lo `test -f 'stack.cpp' || echo '$(srcdir)/'`stack.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-stack.Tpo $(DEPDIR)/librcgo_la-stack.Plo
@@ -796,19 +817,19 @@ librcgo_la-symbol.lo: symbol.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-symbol.lo `test -f 'symbol.cpp' || echo '$(srcdir)/'`symbol.cpp
 
+librcgo_la-symbol_table.lo: symbol_table.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-symbol_table.lo -MD -MP -MF $(DEPDIR)/librcgo_la-symbol_table.Tpo -c -o librcgo_la-symbol_table.lo `test -f 'symbol_table.cpp' || echo '$(srcdir)/'`symbol_table.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-symbol_table.Tpo $(DEPDIR)/librcgo_la-symbol_table.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='symbol_table.cpp' object='librcgo_la-symbol_table.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-symbol_table.lo `test -f 'symbol_table.cpp' || echo '$(srcdir)/'`symbol_table.cpp
+
 librcgo_la-symbol_visitor.lo: symbol_visitor.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-symbol_visitor.lo -MD -MP -MF $(DEPDIR)/librcgo_la-symbol_visitor.Tpo -c -o librcgo_la-symbol_visitor.lo `test -f 'symbol_visitor.cpp' || echo '$(srcdir)/'`symbol_visitor.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-symbol_visitor.Tpo $(DEPDIR)/librcgo_la-symbol_visitor.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='symbol_visitor.cpp' object='librcgo_la-symbol_visitor.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-symbol_visitor.lo `test -f 'symbol_visitor.cpp' || echo '$(srcdir)/'`symbol_visitor.cpp
-
-librcgo_la-polymorphic_function.lo: polymorphic_function.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-polymorphic_function.lo -MD -MP -MF $(DEPDIR)/librcgo_la-polymorphic_function.Tpo -c -o librcgo_la-polymorphic_function.lo `test -f 'polymorphic_function.cpp' || echo '$(srcdir)/'`polymorphic_function.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librcgo_la-polymorphic_function.Tpo $(DEPDIR)/librcgo_la-polymorphic_function.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='polymorphic_function.cpp' object='librcgo_la-polymorphic_function.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o librcgo_la-polymorphic_function.lo `test -f 'polymorphic_function.cpp' || echo '$(srcdir)/'`polymorphic_function.cpp
 
 librcgo_la-type.lo: type.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT librcgo_la-type.lo -MD -MP -MF $(DEPDIR)/librcgo_la-type.Tpo -c -o librcgo_la-type.lo `test -f 'type.cpp' || echo '$(srcdir)/'`type.cpp

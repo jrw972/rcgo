@@ -5,10 +5,192 @@
 #include "executor_base.hpp"
 #include "type.hpp"
 #include "symbol.hpp"
-#include "expression_value.hpp"
 
 namespace runtime
 {
+
+struct Multiplier
+{
+  template <typename T>
+  T operator() (const T& x, const T& y) const
+  {
+    return x * y;
+  }
+};
+
+struct Divider
+{
+  template <typename T>
+  T operator() (const T& x, const T& y) const
+  {
+    return x / y;
+  }
+};
+
+struct Modulizer
+{
+  template <typename T>
+  T operator() (const T& x, const T& y) const
+  {
+    return x % y;
+  }
+};
+
+struct LeftShifter
+{
+  template <typename T, typename U>
+  T operator() (const T& x, const U& y) const
+  {
+    return x << y;
+  }
+
+  static runtime::Operation*
+  generate_code (const semantic::ExpressionValue& result,
+                 const semantic::ExpressionValueList& arg_vals,
+                 runtime::ListOperation* arg_ops);
+};
+
+struct RightShifter
+{
+  template <typename T, typename U>
+  T operator() (const T& x, const U& y) const
+  {
+    return x >> y;
+  }
+
+  static runtime::Operation*
+  generate_code (const semantic::ExpressionValue& result,
+                 const semantic::ExpressionValueList& arg_vals,
+                 runtime::ListOperation* arg_ops);
+};
+
+struct BitAnder
+{
+  template <typename T>
+  T operator() (const T& x, const T& y) const
+  {
+    return x & y;
+  }
+};
+
+struct BitAndNotter
+{
+  template <typename T>
+  T operator() (const T& x, const T& y) const
+  {
+    return x & (~y);
+  }
+};
+
+struct Adder
+{
+  template <typename T>
+  T operator() (const T& x, const T& y) const
+  {
+    return x + y;
+  }
+};
+
+struct Subtracter
+{
+  template <typename T>
+  T operator() (const T& x, const T& y) const
+  {
+    return x - y;
+  }
+};
+
+struct BitOrer
+{
+  template <typename T>
+  T operator() (const T& x, const T& y) const
+  {
+    return x | y;
+  }
+};
+
+struct BitXorer
+{
+  template <typename T>
+  T operator() (const T& x, const T& y) const
+  {
+    return x ^ y;
+  }
+};
+
+struct Equalizer
+{
+  template <typename T>
+  bool operator() (const T& x, const T& y) const
+  {
+    return x == y;
+  }
+};
+
+struct NotEqualizer
+{
+  template <typename T>
+  bool operator() (const T& x, const T& y) const
+  {
+    return x != y;
+  }
+};
+
+struct LessThaner
+{
+  template <typename T>
+  bool operator() (const T& x, const T& y) const
+  {
+    return x < y;
+  }
+};
+
+struct LessEqualizer
+{
+  template <typename T>
+  bool operator() (const T& x, const T& y) const
+  {
+    return x <= y;
+  }
+};
+
+struct MoreThaner
+{
+  template <typename T>
+  bool operator() (const T& x, const T& y) const
+  {
+    return x > y;
+  }
+};
+
+struct MoreEqualizer
+{
+  template <typename T>
+  bool operator() (const T& x, const T& y) const
+  {
+    return x >= y;
+  }
+};
+
+template <typename T>
+struct LogicNotter
+{
+  typedef T ValueType;
+  bool operator() (const T& x) const
+  {
+    return !x;
+  }
+};
+
+template <typename T>
+struct Negater
+{
+  typedef T ValueType;
+  T operator() (const T& x) const
+  {
+    return -x;
+  }
+};
 
 enum Control
 {
@@ -191,6 +373,23 @@ make_literal (T v)
 }
 
 Operation* make_literal (const type::Type* type, const semantic::Value& value);
+
+struct CallableLiteral : public Operation
+{
+  CallableLiteral (const decl::Callable* a_callable) :
+    callable (a_callable)
+  { }
+  virtual Control execute (ExecutorBase& exec) const
+  {
+    exec.stack ().push (callable);
+    return Control_Continue;
+  }
+  virtual void dump () const
+  {
+    std::cout << "CallableLiteral value=" << callable << '\n';
+  }
+  const decl::Callable* const callable;
+};
 
 struct LogicOr : public Operation
 {

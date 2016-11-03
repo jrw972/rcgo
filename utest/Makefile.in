@@ -77,12 +77,11 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-TESTS = arch$(EXEEXT) check_types$(EXEEXT) expression_value$(EXEEXT) \
-	heap$(EXEEXT) location$(EXEEXT) memory_model$(EXEEXT) \
-	node_cast$(EXEEXT) parameter_list$(EXEEXT) \
-	polymorphic_function$(EXEEXT) runtime_types$(EXEEXT) \
-	semantic$(EXEEXT) stack$(EXEEXT) symbol_cast$(EXEEXT) \
-	scope$(EXEEXT) type$(EXEEXT) value$(EXEEXT) unit_test$(EXEEXT)
+TESTS = arch$(EXEEXT) heap$(EXEEXT) location$(EXEEXT) \
+	memory_model$(EXEEXT) node_cast$(EXEEXT) \
+	parameter_list$(EXEEXT) runtime_types$(EXEEXT) \
+	operation$(EXEEXT) stack$(EXEEXT) symbol_cast$(EXEEXT) \
+	scope$(EXEEXT) type$(EXEEXT) unit_test$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = utest
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
@@ -99,13 +98,11 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__EXEEXT_1 = arch$(EXEEXT) check_types$(EXEEXT) \
-	expression_value$(EXEEXT) heap$(EXEEXT) location$(EXEEXT) \
+am__EXEEXT_1 = arch$(EXEEXT) heap$(EXEEXT) location$(EXEEXT) \
 	memory_model$(EXEEXT) node_cast$(EXEEXT) \
-	parameter_list$(EXEEXT) polymorphic_function$(EXEEXT) \
-	runtime_types$(EXEEXT) semantic$(EXEEXT) stack$(EXEEXT) \
-	symbol_cast$(EXEEXT) scope$(EXEEXT) type$(EXEEXT) \
-	value$(EXEEXT) unit_test$(EXEEXT)
+	parameter_list$(EXEEXT) runtime_types$(EXEEXT) \
+	operation$(EXEEXT) stack$(EXEEXT) symbol_cast$(EXEEXT) \
+	scope$(EXEEXT) type$(EXEEXT) unit_test$(EXEEXT)
 am__objects_1 = arch-astgen.$(OBJEXT)
 am_arch_OBJECTS = arch-arch.$(OBJEXT) $(am__objects_1)
 arch_OBJECTS = $(am_arch_OBJECTS)
@@ -117,137 +114,106 @@ am__v_lt_1 =
 arch_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(arch_CXXFLAGS) \
 	$(CXXFLAGS) $(arch_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_2 = check_types-astgen.$(OBJEXT)
-am_check_types_OBJECTS = check_types-check_types.$(OBJEXT) \
-	$(am__objects_2)
-check_types_OBJECTS = $(am_check_types_OBJECTS)
-check_types_DEPENDENCIES = $(top_builddir)/src/librcgo.la
-check_types_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(check_types_CXXFLAGS) \
-	$(CXXFLAGS) $(check_types_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_3 = expression_value-astgen.$(OBJEXT)
-am_expression_value_OBJECTS =  \
-	expression_value-expression_value.$(OBJEXT) $(am__objects_3)
-expression_value_OBJECTS = $(am_expression_value_OBJECTS)
-expression_value_DEPENDENCIES = $(top_builddir)/src/librcgo.la
-expression_value_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
-	$(expression_value_CXXFLAGS) $(CXXFLAGS) \
-	$(expression_value_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_4 = heap-astgen.$(OBJEXT)
-am_heap_OBJECTS = heap-heap.$(OBJEXT) $(am__objects_4)
+am__objects_2 = heap-astgen.$(OBJEXT)
+am_heap_OBJECTS = heap-heap.$(OBJEXT) $(am__objects_2)
 heap_OBJECTS = $(am_heap_OBJECTS)
 heap_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 heap_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(heap_CXXFLAGS) \
 	$(CXXFLAGS) $(heap_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_5 = location-astgen.$(OBJEXT)
-am_location_OBJECTS = location-location.$(OBJEXT) $(am__objects_5)
+am__objects_3 = location-astgen.$(OBJEXT)
+am_location_OBJECTS = location-location.$(OBJEXT) $(am__objects_3)
 location_OBJECTS = $(am_location_OBJECTS)
 location_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 location_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(location_CXXFLAGS) \
 	$(CXXFLAGS) $(location_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_6 = memory_model-astgen.$(OBJEXT)
+am__objects_4 = memory_model-astgen.$(OBJEXT)
 am_memory_model_OBJECTS = memory_model-memory_model.$(OBJEXT) \
-	$(am__objects_6)
+	$(am__objects_4)
 memory_model_OBJECTS = $(am_memory_model_OBJECTS)
 memory_model_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 memory_model_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(memory_model_CXXFLAGS) \
 	$(CXXFLAGS) $(memory_model_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_7 = node_cast-astgen.$(OBJEXT)
-am_node_cast_OBJECTS = node_cast-node_cast.$(OBJEXT) $(am__objects_7)
+am__objects_5 = node_cast-astgen.$(OBJEXT)
+am_node_cast_OBJECTS = node_cast-node_cast.$(OBJEXT) $(am__objects_5)
 node_cast_OBJECTS = $(am_node_cast_OBJECTS)
 node_cast_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 node_cast_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(node_cast_CXXFLAGS) \
 	$(CXXFLAGS) $(node_cast_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_8 = parameter_list-astgen.$(OBJEXT)
+am__objects_6 = operation-astgen.$(OBJEXT)
+am_operation_OBJECTS = operation-operation.$(OBJEXT) $(am__objects_6)
+operation_OBJECTS = $(am_operation_OBJECTS)
+operation_DEPENDENCIES = $(top_builddir)/src/librcgo.la
+operation_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(operation_CXXFLAGS) \
+	$(CXXFLAGS) $(operation_LDFLAGS) $(LDFLAGS) -o $@
+am__objects_7 = parameter_list-astgen.$(OBJEXT)
 am_parameter_list_OBJECTS = parameter_list-parameter_list.$(OBJEXT) \
-	$(am__objects_8)
+	$(am__objects_7)
 parameter_list_OBJECTS = $(am_parameter_list_OBJECTS)
 parameter_list_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 parameter_list_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(parameter_list_CXXFLAGS) $(CXXFLAGS) \
 	$(parameter_list_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_9 = polymorphic_function-astgen.$(OBJEXT)
-am_polymorphic_function_OBJECTS =  \
-	polymorphic_function-polymorphic_function.$(OBJEXT) \
-	$(am__objects_9)
-polymorphic_function_OBJECTS = $(am_polymorphic_function_OBJECTS)
-polymorphic_function_DEPENDENCIES = $(top_builddir)/src/librcgo.la
-polymorphic_function_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
-	$(polymorphic_function_CXXFLAGS) $(CXXFLAGS) \
-	$(polymorphic_function_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_10 = runtime_types-astgen.$(OBJEXT)
+am__objects_8 = runtime_types-astgen.$(OBJEXT)
 am_runtime_types_OBJECTS = runtime_types-runtime_types.$(OBJEXT) \
-	$(am__objects_10)
+	$(am__objects_8)
 runtime_types_OBJECTS = $(am_runtime_types_OBJECTS)
 runtime_types_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 runtime_types_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(runtime_types_CXXFLAGS) $(CXXFLAGS) $(runtime_types_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am__objects_11 = scope-astgen.$(OBJEXT)
-am_scope_OBJECTS = scope-scope.$(OBJEXT) $(am__objects_11)
+am__objects_9 = scope-astgen.$(OBJEXT)
+am_scope_OBJECTS = scope-scope.$(OBJEXT) $(am__objects_9)
 scope_OBJECTS = $(am_scope_OBJECTS)
 scope_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 scope_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(scope_CXXFLAGS) \
 	$(CXXFLAGS) $(scope_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_12 = semantic-astgen.$(OBJEXT)
-am_semantic_OBJECTS = semantic-semantic.$(OBJEXT) $(am__objects_12)
-semantic_OBJECTS = $(am_semantic_OBJECTS)
-semantic_DEPENDENCIES = $(top_builddir)/src/librcgo.la
-semantic_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(semantic_CXXFLAGS) \
-	$(CXXFLAGS) $(semantic_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_13 = stack-astgen.$(OBJEXT)
-am_stack_OBJECTS = stack-stack.$(OBJEXT) $(am__objects_13)
+am__objects_10 = stack-astgen.$(OBJEXT)
+am_stack_OBJECTS = stack-stack.$(OBJEXT) $(am__objects_10)
 stack_OBJECTS = $(am_stack_OBJECTS)
 stack_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 stack_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(stack_CXXFLAGS) \
 	$(CXXFLAGS) $(stack_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_14 = symbol_cast-astgen.$(OBJEXT)
+am__objects_11 = symbol_cast-astgen.$(OBJEXT)
 am_symbol_cast_OBJECTS = symbol_cast-symbol_cast.$(OBJEXT) \
-	$(am__objects_14)
+	$(am__objects_11)
 symbol_cast_OBJECTS = $(am_symbol_cast_OBJECTS)
 symbol_cast_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 symbol_cast_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(symbol_cast_CXXFLAGS) \
 	$(CXXFLAGS) $(symbol_cast_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_15 = type-astgen.$(OBJEXT)
-am_type_OBJECTS = type-type.$(OBJEXT) $(am__objects_15)
+am__objects_12 = type-astgen.$(OBJEXT)
+am_type_OBJECTS = type-type.$(OBJEXT) $(am__objects_12)
 type_OBJECTS = $(am_type_OBJECTS)
 type_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 type_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(type_CXXFLAGS) \
 	$(CXXFLAGS) $(type_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_16 = unit_test-astgen.$(OBJEXT)
-am_unit_test_OBJECTS = $(am__objects_16) unit_test-unit_test.$(OBJEXT) \
-	unit_test-callable.$(OBJEXT) \
+am__objects_13 = unit_test-astgen.$(OBJEXT)
+am_unit_test_OBJECTS = $(am__objects_13) unit_test-unit_test.$(OBJEXT) \
+	unit_test-callable.$(OBJEXT) unit_test-check_all.$(OBJEXT) \
 	unit_test-enter_method_identifiers.$(OBJEXT) \
-	unit_test-enter_predeclared_identifiers.$(OBJEXT) \
-	unit_test-enter_top_level_identifiers.$(OBJEXT) \
-	unit_test-error_reporter.$(OBJEXT) unit_test-node.$(OBJEXT) \
+	unit_test-enter_identifiers.$(OBJEXT) \
+	unit_test-error_reporter.$(OBJEXT) \
+	unit_test-expression_value.$(OBJEXT) unit_test-node.$(OBJEXT) \
+	unit_test-polymorphic_function.$(OBJEXT) \
+	unit_test-populate_universe_block.$(OBJEXT) \
 	unit_test-process_top_level_identifiers.$(OBJEXT) \
-	unit_test-process_type.$(OBJEXT) unit_test-symbol.$(OBJEXT)
+	unit_test-process_type.$(OBJEXT) unit_test-symbol.$(OBJEXT) \
+	unit_test-symbol_table.$(OBJEXT) unit_test-value.$(OBJEXT)
 unit_test_OBJECTS = $(am_unit_test_OBJECTS)
 unit_test_DEPENDENCIES = $(top_builddir)/src/librcgo.la
 unit_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(unit_test_CXXFLAGS) \
 	$(CXXFLAGS) $(unit_test_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_17 = value-astgen.$(OBJEXT)
-am_value_OBJECTS = value-value.$(OBJEXT) $(am__objects_17)
-value_OBJECTS = $(am_value_OBJECTS)
-value_DEPENDENCIES = $(top_builddir)/src/librcgo.la
-value_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(value_CXXFLAGS) \
-	$(CXXFLAGS) $(value_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -300,22 +266,16 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(arch_SOURCES) $(check_types_SOURCES) \
-	$(expression_value_SOURCES) $(heap_SOURCES) \
-	$(location_SOURCES) $(memory_model_SOURCES) \
-	$(node_cast_SOURCES) $(parameter_list_SOURCES) \
-	$(polymorphic_function_SOURCES) $(runtime_types_SOURCES) \
-	$(scope_SOURCES) $(semantic_SOURCES) $(stack_SOURCES) \
-	$(symbol_cast_SOURCES) $(type_SOURCES) $(unit_test_SOURCES) \
-	$(value_SOURCES)
-DIST_SOURCES = $(arch_SOURCES) $(check_types_SOURCES) \
-	$(expression_value_SOURCES) $(heap_SOURCES) \
-	$(location_SOURCES) $(memory_model_SOURCES) \
-	$(node_cast_SOURCES) $(parameter_list_SOURCES) \
-	$(polymorphic_function_SOURCES) $(runtime_types_SOURCES) \
-	$(scope_SOURCES) $(semantic_SOURCES) $(stack_SOURCES) \
-	$(symbol_cast_SOURCES) $(type_SOURCES) $(unit_test_SOURCES) \
-	$(value_SOURCES)
+SOURCES = $(arch_SOURCES) $(heap_SOURCES) $(location_SOURCES) \
+	$(memory_model_SOURCES) $(node_cast_SOURCES) \
+	$(operation_SOURCES) $(parameter_list_SOURCES) \
+	$(runtime_types_SOURCES) $(scope_SOURCES) $(stack_SOURCES) \
+	$(symbol_cast_SOURCES) $(type_SOURCES) $(unit_test_SOURCES)
+DIST_SOURCES = $(arch_SOURCES) $(heap_SOURCES) $(location_SOURCES) \
+	$(memory_model_SOURCES) $(node_cast_SOURCES) \
+	$(operation_SOURCES) $(parameter_list_SOURCES) \
+	$(runtime_types_SOURCES) $(scope_SOURCES) $(stack_SOURCES) \
+	$(symbol_cast_SOURCES) $(type_SOURCES) $(unit_test_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -675,28 +635,26 @@ top_srcdir = @top_srcdir@
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver.sh
 AM_CXXFLAGS = -I $(top_srcdir)/src
 EXTRA_DIST = callable.test \
+check_all.test \
 enter_method_identifiers.test \
-enter_predeclared_identifiers.test \
-enter_top_level_identifiers.test \
+enter_identifiers.test \
+enter_identifiers.test \
 error_reporter.test \
+expression_value.test \
 node.test \
+polymorphic_function.test \
+populate_universe_block.test \
 process_top_level_identifiers.test \
 process_type.test \
-symbol.test
+symbol.test \
+symbol_table.test \
+value.test
 
 HELPERS = unit_test.hpp tap.hpp visitor_helper.hpp mock_execution.hpp astgen.hpp astgen.cpp
 arch_SOURCES = arch.cpp $(HELPERS)
 arch_LDADD = $(top_builddir)/src/librcgo.la
 arch_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 arch_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-check_types_SOURCES = check_types.cpp $(HELPERS)
-check_types_LDADD = $(top_builddir)/src/librcgo.la
-check_types_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-check_types_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-expression_value_SOURCES = expression_value.cpp $(HELPERS)
-expression_value_LDADD = $(top_builddir)/src/librcgo.la
-expression_value_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-expression_value_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 heap_SOURCES = heap.cpp $(HELPERS)
 heap_LDADD = $(top_builddir)/src/librcgo.la
 heap_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -717,10 +675,10 @@ parameter_list_SOURCES = parameter_list.cpp $(HELPERS)
 parameter_list_LDADD = $(top_builddir)/src/librcgo.la
 parameter_list_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 parameter_list_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-semantic_SOURCES = semantic.cpp $(HELPERS)
-semantic_LDADD = $(top_builddir)/src/librcgo.la
-semantic_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-semantic_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
+operation_SOURCES = operation.cpp $(HELPERS)
+operation_LDADD = $(top_builddir)/src/librcgo.la
+operation_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
+operation_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 stack_SOURCES = stack.cpp $(HELPERS)
 stack_LDADD = $(top_builddir)/src/librcgo.la
 stack_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -733,10 +691,6 @@ scope_SOURCES = scope.cpp $(HELPERS)
 scope_LDADD = $(top_builddir)/src/librcgo.la
 scope_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 scope_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-polymorphic_function_SOURCES = polymorphic_function.cpp $(HELPERS)
-polymorphic_function_LDADD = $(top_builddir)/src/librcgo.la
-polymorphic_function_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-polymorphic_function_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 runtime_types_SOURCES = runtime_types.cpp $(HELPERS)
 runtime_types_LDADD = $(top_builddir)/src/librcgo.la
 runtime_types_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -745,20 +699,22 @@ type_SOURCES = type.cpp $(HELPERS)
 type_LDADD = $(top_builddir)/src/librcgo.la
 type_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 type_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
-value_SOURCES = value.cpp $(HELPERS)
-value_LDADD = $(top_builddir)/src/librcgo.la
-value_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-value_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 unit_test_SOURCES = $(HELPERS) \
 unit_test.cpp \
 callable.cpp \
+check_all.cpp \
 enter_method_identifiers.cpp \
-enter_predeclared_identifiers.cpp \
-enter_top_level_identifiers.cpp \
+enter_identifiers.cpp \
 error_reporter.cpp \
+expression_value.cpp \
 node.cpp \
+polymorphic_function.cpp \
+populate_universe_block.cpp \
 process_top_level_identifiers.cpp \
-process_type.cpp symbol.cpp
+process_type.cpp \
+symbol.cpp \
+symbol_table.cpp \
+value.cpp
 
 unit_test_LDADD = $(top_builddir)/src/librcgo.la
 unit_test_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
@@ -811,14 +767,6 @@ arch$(EXEEXT): $(arch_OBJECTS) $(arch_DEPENDENCIES) $(EXTRA_arch_DEPENDENCIES)
 	@rm -f arch$(EXEEXT)
 	$(AM_V_CXXLD)$(arch_LINK) $(arch_OBJECTS) $(arch_LDADD) $(LIBS)
 
-check_types$(EXEEXT): $(check_types_OBJECTS) $(check_types_DEPENDENCIES) $(EXTRA_check_types_DEPENDENCIES) 
-	@rm -f check_types$(EXEEXT)
-	$(AM_V_CXXLD)$(check_types_LINK) $(check_types_OBJECTS) $(check_types_LDADD) $(LIBS)
-
-expression_value$(EXEEXT): $(expression_value_OBJECTS) $(expression_value_DEPENDENCIES) $(EXTRA_expression_value_DEPENDENCIES) 
-	@rm -f expression_value$(EXEEXT)
-	$(AM_V_CXXLD)$(expression_value_LINK) $(expression_value_OBJECTS) $(expression_value_LDADD) $(LIBS)
-
 heap$(EXEEXT): $(heap_OBJECTS) $(heap_DEPENDENCIES) $(EXTRA_heap_DEPENDENCIES) 
 	@rm -f heap$(EXEEXT)
 	$(AM_V_CXXLD)$(heap_LINK) $(heap_OBJECTS) $(heap_LDADD) $(LIBS)
@@ -835,13 +783,13 @@ node_cast$(EXEEXT): $(node_cast_OBJECTS) $(node_cast_DEPENDENCIES) $(EXTRA_node_
 	@rm -f node_cast$(EXEEXT)
 	$(AM_V_CXXLD)$(node_cast_LINK) $(node_cast_OBJECTS) $(node_cast_LDADD) $(LIBS)
 
+operation$(EXEEXT): $(operation_OBJECTS) $(operation_DEPENDENCIES) $(EXTRA_operation_DEPENDENCIES) 
+	@rm -f operation$(EXEEXT)
+	$(AM_V_CXXLD)$(operation_LINK) $(operation_OBJECTS) $(operation_LDADD) $(LIBS)
+
 parameter_list$(EXEEXT): $(parameter_list_OBJECTS) $(parameter_list_DEPENDENCIES) $(EXTRA_parameter_list_DEPENDENCIES) 
 	@rm -f parameter_list$(EXEEXT)
 	$(AM_V_CXXLD)$(parameter_list_LINK) $(parameter_list_OBJECTS) $(parameter_list_LDADD) $(LIBS)
-
-polymorphic_function$(EXEEXT): $(polymorphic_function_OBJECTS) $(polymorphic_function_DEPENDENCIES) $(EXTRA_polymorphic_function_DEPENDENCIES) 
-	@rm -f polymorphic_function$(EXEEXT)
-	$(AM_V_CXXLD)$(polymorphic_function_LINK) $(polymorphic_function_OBJECTS) $(polymorphic_function_LDADD) $(LIBS)
 
 runtime_types$(EXEEXT): $(runtime_types_OBJECTS) $(runtime_types_DEPENDENCIES) $(EXTRA_runtime_types_DEPENDENCIES) 
 	@rm -f runtime_types$(EXEEXT)
@@ -850,10 +798,6 @@ runtime_types$(EXEEXT): $(runtime_types_OBJECTS) $(runtime_types_DEPENDENCIES) $
 scope$(EXEEXT): $(scope_OBJECTS) $(scope_DEPENDENCIES) $(EXTRA_scope_DEPENDENCIES) 
 	@rm -f scope$(EXEEXT)
 	$(AM_V_CXXLD)$(scope_LINK) $(scope_OBJECTS) $(scope_LDADD) $(LIBS)
-
-semantic$(EXEEXT): $(semantic_OBJECTS) $(semantic_DEPENDENCIES) $(EXTRA_semantic_DEPENDENCIES) 
-	@rm -f semantic$(EXEEXT)
-	$(AM_V_CXXLD)$(semantic_LINK) $(semantic_OBJECTS) $(semantic_LDADD) $(LIBS)
 
 stack$(EXEEXT): $(stack_OBJECTS) $(stack_DEPENDENCIES) $(EXTRA_stack_DEPENDENCIES) 
 	@rm -f stack$(EXEEXT)
@@ -871,10 +815,6 @@ unit_test$(EXEEXT): $(unit_test_OBJECTS) $(unit_test_DEPENDENCIES) $(EXTRA_unit_
 	@rm -f unit_test$(EXEEXT)
 	$(AM_V_CXXLD)$(unit_test_LINK) $(unit_test_OBJECTS) $(unit_test_LDADD) $(LIBS)
 
-value$(EXEEXT): $(value_OBJECTS) $(value_DEPENDENCIES) $(EXTRA_value_DEPENDENCIES) 
-	@rm -f value$(EXEEXT)
-	$(AM_V_CXXLD)$(value_LINK) $(value_OBJECTS) $(value_LDADD) $(LIBS)
-
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -883,10 +823,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arch-arch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arch-astgen.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_types-astgen.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_types-check_types.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/expression_value-astgen.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/expression_value-expression_value.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/heap-astgen.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/heap-heap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/location-astgen.Po@am__quote@
@@ -895,16 +831,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory_model-memory_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_cast-astgen.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_cast-node_cast.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/operation-astgen.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/operation-operation.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parameter_list-astgen.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parameter_list-parameter_list.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/polymorphic_function-astgen.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/polymorphic_function-polymorphic_function.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runtime_types-astgen.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runtime_types-runtime_types.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scope-astgen.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scope-scope.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/semantic-astgen.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/semantic-semantic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stack-astgen.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stack-stack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/symbol_cast-astgen.Po@am__quote@
@@ -913,17 +847,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/type-type.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-astgen.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-callable.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-check_all.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-enter_identifiers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-enter_method_identifiers.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-enter_predeclared_identifiers.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-enter_top_level_identifiers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-error_reporter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-expression_value.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-node.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-polymorphic_function.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-populate_universe_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-process_top_level_identifiers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-process_type.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-symbol.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-symbol_table.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-unit_test.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/value-astgen.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/value-value.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-value.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -973,62 +910,6 @@ arch-astgen.obj: astgen.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='arch-astgen.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arch_CXXFLAGS) $(CXXFLAGS) -c -o arch-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
-
-check_types-check_types.o: check_types.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_types_CXXFLAGS) $(CXXFLAGS) -MT check_types-check_types.o -MD -MP -MF $(DEPDIR)/check_types-check_types.Tpo -c -o check_types-check_types.o `test -f 'check_types.cpp' || echo '$(srcdir)/'`check_types.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_types-check_types.Tpo $(DEPDIR)/check_types-check_types.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='check_types.cpp' object='check_types-check_types.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_types_CXXFLAGS) $(CXXFLAGS) -c -o check_types-check_types.o `test -f 'check_types.cpp' || echo '$(srcdir)/'`check_types.cpp
-
-check_types-check_types.obj: check_types.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_types_CXXFLAGS) $(CXXFLAGS) -MT check_types-check_types.obj -MD -MP -MF $(DEPDIR)/check_types-check_types.Tpo -c -o check_types-check_types.obj `if test -f 'check_types.cpp'; then $(CYGPATH_W) 'check_types.cpp'; else $(CYGPATH_W) '$(srcdir)/check_types.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_types-check_types.Tpo $(DEPDIR)/check_types-check_types.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='check_types.cpp' object='check_types-check_types.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_types_CXXFLAGS) $(CXXFLAGS) -c -o check_types-check_types.obj `if test -f 'check_types.cpp'; then $(CYGPATH_W) 'check_types.cpp'; else $(CYGPATH_W) '$(srcdir)/check_types.cpp'; fi`
-
-check_types-astgen.o: astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_types_CXXFLAGS) $(CXXFLAGS) -MT check_types-astgen.o -MD -MP -MF $(DEPDIR)/check_types-astgen.Tpo -c -o check_types-astgen.o `test -f 'astgen.cpp' || echo '$(srcdir)/'`astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_types-astgen.Tpo $(DEPDIR)/check_types-astgen.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='check_types-astgen.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_types_CXXFLAGS) $(CXXFLAGS) -c -o check_types-astgen.o `test -f 'astgen.cpp' || echo '$(srcdir)/'`astgen.cpp
-
-check_types-astgen.obj: astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_types_CXXFLAGS) $(CXXFLAGS) -MT check_types-astgen.obj -MD -MP -MF $(DEPDIR)/check_types-astgen.Tpo -c -o check_types-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_types-astgen.Tpo $(DEPDIR)/check_types-astgen.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='check_types-astgen.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_types_CXXFLAGS) $(CXXFLAGS) -c -o check_types-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
-
-expression_value-expression_value.o: expression_value.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(expression_value_CXXFLAGS) $(CXXFLAGS) -MT expression_value-expression_value.o -MD -MP -MF $(DEPDIR)/expression_value-expression_value.Tpo -c -o expression_value-expression_value.o `test -f 'expression_value.cpp' || echo '$(srcdir)/'`expression_value.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/expression_value-expression_value.Tpo $(DEPDIR)/expression_value-expression_value.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='expression_value.cpp' object='expression_value-expression_value.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(expression_value_CXXFLAGS) $(CXXFLAGS) -c -o expression_value-expression_value.o `test -f 'expression_value.cpp' || echo '$(srcdir)/'`expression_value.cpp
-
-expression_value-expression_value.obj: expression_value.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(expression_value_CXXFLAGS) $(CXXFLAGS) -MT expression_value-expression_value.obj -MD -MP -MF $(DEPDIR)/expression_value-expression_value.Tpo -c -o expression_value-expression_value.obj `if test -f 'expression_value.cpp'; then $(CYGPATH_W) 'expression_value.cpp'; else $(CYGPATH_W) '$(srcdir)/expression_value.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/expression_value-expression_value.Tpo $(DEPDIR)/expression_value-expression_value.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='expression_value.cpp' object='expression_value-expression_value.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(expression_value_CXXFLAGS) $(CXXFLAGS) -c -o expression_value-expression_value.obj `if test -f 'expression_value.cpp'; then $(CYGPATH_W) 'expression_value.cpp'; else $(CYGPATH_W) '$(srcdir)/expression_value.cpp'; fi`
-
-expression_value-astgen.o: astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(expression_value_CXXFLAGS) $(CXXFLAGS) -MT expression_value-astgen.o -MD -MP -MF $(DEPDIR)/expression_value-astgen.Tpo -c -o expression_value-astgen.o `test -f 'astgen.cpp' || echo '$(srcdir)/'`astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/expression_value-astgen.Tpo $(DEPDIR)/expression_value-astgen.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='expression_value-astgen.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(expression_value_CXXFLAGS) $(CXXFLAGS) -c -o expression_value-astgen.o `test -f 'astgen.cpp' || echo '$(srcdir)/'`astgen.cpp
-
-expression_value-astgen.obj: astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(expression_value_CXXFLAGS) $(CXXFLAGS) -MT expression_value-astgen.obj -MD -MP -MF $(DEPDIR)/expression_value-astgen.Tpo -c -o expression_value-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/expression_value-astgen.Tpo $(DEPDIR)/expression_value-astgen.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='expression_value-astgen.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(expression_value_CXXFLAGS) $(CXXFLAGS) -c -o expression_value-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
 
 heap-heap.o: heap.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(heap_CXXFLAGS) $(CXXFLAGS) -MT heap-heap.o -MD -MP -MF $(DEPDIR)/heap-heap.Tpo -c -o heap-heap.o `test -f 'heap.cpp' || echo '$(srcdir)/'`heap.cpp
@@ -1142,6 +1023,34 @@ node_cast-astgen.obj: astgen.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(node_cast_CXXFLAGS) $(CXXFLAGS) -c -o node_cast-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
 
+operation-operation.o: operation.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(operation_CXXFLAGS) $(CXXFLAGS) -MT operation-operation.o -MD -MP -MF $(DEPDIR)/operation-operation.Tpo -c -o operation-operation.o `test -f 'operation.cpp' || echo '$(srcdir)/'`operation.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/operation-operation.Tpo $(DEPDIR)/operation-operation.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='operation.cpp' object='operation-operation.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(operation_CXXFLAGS) $(CXXFLAGS) -c -o operation-operation.o `test -f 'operation.cpp' || echo '$(srcdir)/'`operation.cpp
+
+operation-operation.obj: operation.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(operation_CXXFLAGS) $(CXXFLAGS) -MT operation-operation.obj -MD -MP -MF $(DEPDIR)/operation-operation.Tpo -c -o operation-operation.obj `if test -f 'operation.cpp'; then $(CYGPATH_W) 'operation.cpp'; else $(CYGPATH_W) '$(srcdir)/operation.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/operation-operation.Tpo $(DEPDIR)/operation-operation.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='operation.cpp' object='operation-operation.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(operation_CXXFLAGS) $(CXXFLAGS) -c -o operation-operation.obj `if test -f 'operation.cpp'; then $(CYGPATH_W) 'operation.cpp'; else $(CYGPATH_W) '$(srcdir)/operation.cpp'; fi`
+
+operation-astgen.o: astgen.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(operation_CXXFLAGS) $(CXXFLAGS) -MT operation-astgen.o -MD -MP -MF $(DEPDIR)/operation-astgen.Tpo -c -o operation-astgen.o `test -f 'astgen.cpp' || echo '$(srcdir)/'`astgen.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/operation-astgen.Tpo $(DEPDIR)/operation-astgen.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='operation-astgen.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(operation_CXXFLAGS) $(CXXFLAGS) -c -o operation-astgen.o `test -f 'astgen.cpp' || echo '$(srcdir)/'`astgen.cpp
+
+operation-astgen.obj: astgen.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(operation_CXXFLAGS) $(CXXFLAGS) -MT operation-astgen.obj -MD -MP -MF $(DEPDIR)/operation-astgen.Tpo -c -o operation-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/operation-astgen.Tpo $(DEPDIR)/operation-astgen.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='operation-astgen.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(operation_CXXFLAGS) $(CXXFLAGS) -c -o operation-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
+
 parameter_list-parameter_list.o: parameter_list.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(parameter_list_CXXFLAGS) $(CXXFLAGS) -MT parameter_list-parameter_list.o -MD -MP -MF $(DEPDIR)/parameter_list-parameter_list.Tpo -c -o parameter_list-parameter_list.o `test -f 'parameter_list.cpp' || echo '$(srcdir)/'`parameter_list.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/parameter_list-parameter_list.Tpo $(DEPDIR)/parameter_list-parameter_list.Po
@@ -1169,34 +1078,6 @@ parameter_list-astgen.obj: astgen.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='parameter_list-astgen.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(parameter_list_CXXFLAGS) $(CXXFLAGS) -c -o parameter_list-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
-
-polymorphic_function-polymorphic_function.o: polymorphic_function.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(polymorphic_function_CXXFLAGS) $(CXXFLAGS) -MT polymorphic_function-polymorphic_function.o -MD -MP -MF $(DEPDIR)/polymorphic_function-polymorphic_function.Tpo -c -o polymorphic_function-polymorphic_function.o `test -f 'polymorphic_function.cpp' || echo '$(srcdir)/'`polymorphic_function.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/polymorphic_function-polymorphic_function.Tpo $(DEPDIR)/polymorphic_function-polymorphic_function.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='polymorphic_function.cpp' object='polymorphic_function-polymorphic_function.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(polymorphic_function_CXXFLAGS) $(CXXFLAGS) -c -o polymorphic_function-polymorphic_function.o `test -f 'polymorphic_function.cpp' || echo '$(srcdir)/'`polymorphic_function.cpp
-
-polymorphic_function-polymorphic_function.obj: polymorphic_function.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(polymorphic_function_CXXFLAGS) $(CXXFLAGS) -MT polymorphic_function-polymorphic_function.obj -MD -MP -MF $(DEPDIR)/polymorphic_function-polymorphic_function.Tpo -c -o polymorphic_function-polymorphic_function.obj `if test -f 'polymorphic_function.cpp'; then $(CYGPATH_W) 'polymorphic_function.cpp'; else $(CYGPATH_W) '$(srcdir)/polymorphic_function.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/polymorphic_function-polymorphic_function.Tpo $(DEPDIR)/polymorphic_function-polymorphic_function.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='polymorphic_function.cpp' object='polymorphic_function-polymorphic_function.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(polymorphic_function_CXXFLAGS) $(CXXFLAGS) -c -o polymorphic_function-polymorphic_function.obj `if test -f 'polymorphic_function.cpp'; then $(CYGPATH_W) 'polymorphic_function.cpp'; else $(CYGPATH_W) '$(srcdir)/polymorphic_function.cpp'; fi`
-
-polymorphic_function-astgen.o: astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(polymorphic_function_CXXFLAGS) $(CXXFLAGS) -MT polymorphic_function-astgen.o -MD -MP -MF $(DEPDIR)/polymorphic_function-astgen.Tpo -c -o polymorphic_function-astgen.o `test -f 'astgen.cpp' || echo '$(srcdir)/'`astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/polymorphic_function-astgen.Tpo $(DEPDIR)/polymorphic_function-astgen.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='polymorphic_function-astgen.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(polymorphic_function_CXXFLAGS) $(CXXFLAGS) -c -o polymorphic_function-astgen.o `test -f 'astgen.cpp' || echo '$(srcdir)/'`astgen.cpp
-
-polymorphic_function-astgen.obj: astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(polymorphic_function_CXXFLAGS) $(CXXFLAGS) -MT polymorphic_function-astgen.obj -MD -MP -MF $(DEPDIR)/polymorphic_function-astgen.Tpo -c -o polymorphic_function-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/polymorphic_function-astgen.Tpo $(DEPDIR)/polymorphic_function-astgen.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='polymorphic_function-astgen.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(polymorphic_function_CXXFLAGS) $(CXXFLAGS) -c -o polymorphic_function-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
 
 runtime_types-runtime_types.o: runtime_types.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(runtime_types_CXXFLAGS) $(CXXFLAGS) -MT runtime_types-runtime_types.o -MD -MP -MF $(DEPDIR)/runtime_types-runtime_types.Tpo -c -o runtime_types-runtime_types.o `test -f 'runtime_types.cpp' || echo '$(srcdir)/'`runtime_types.cpp
@@ -1253,34 +1134,6 @@ scope-astgen.obj: astgen.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='scope-astgen.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(scope_CXXFLAGS) $(CXXFLAGS) -c -o scope-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
-
-semantic-semantic.o: semantic.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(semantic_CXXFLAGS) $(CXXFLAGS) -MT semantic-semantic.o -MD -MP -MF $(DEPDIR)/semantic-semantic.Tpo -c -o semantic-semantic.o `test -f 'semantic.cpp' || echo '$(srcdir)/'`semantic.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/semantic-semantic.Tpo $(DEPDIR)/semantic-semantic.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='semantic.cpp' object='semantic-semantic.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(semantic_CXXFLAGS) $(CXXFLAGS) -c -o semantic-semantic.o `test -f 'semantic.cpp' || echo '$(srcdir)/'`semantic.cpp
-
-semantic-semantic.obj: semantic.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(semantic_CXXFLAGS) $(CXXFLAGS) -MT semantic-semantic.obj -MD -MP -MF $(DEPDIR)/semantic-semantic.Tpo -c -o semantic-semantic.obj `if test -f 'semantic.cpp'; then $(CYGPATH_W) 'semantic.cpp'; else $(CYGPATH_W) '$(srcdir)/semantic.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/semantic-semantic.Tpo $(DEPDIR)/semantic-semantic.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='semantic.cpp' object='semantic-semantic.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(semantic_CXXFLAGS) $(CXXFLAGS) -c -o semantic-semantic.obj `if test -f 'semantic.cpp'; then $(CYGPATH_W) 'semantic.cpp'; else $(CYGPATH_W) '$(srcdir)/semantic.cpp'; fi`
-
-semantic-astgen.o: astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(semantic_CXXFLAGS) $(CXXFLAGS) -MT semantic-astgen.o -MD -MP -MF $(DEPDIR)/semantic-astgen.Tpo -c -o semantic-astgen.o `test -f 'astgen.cpp' || echo '$(srcdir)/'`astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/semantic-astgen.Tpo $(DEPDIR)/semantic-astgen.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='semantic-astgen.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(semantic_CXXFLAGS) $(CXXFLAGS) -c -o semantic-astgen.o `test -f 'astgen.cpp' || echo '$(srcdir)/'`astgen.cpp
-
-semantic-astgen.obj: astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(semantic_CXXFLAGS) $(CXXFLAGS) -MT semantic-astgen.obj -MD -MP -MF $(DEPDIR)/semantic-astgen.Tpo -c -o semantic-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/semantic-astgen.Tpo $(DEPDIR)/semantic-astgen.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='semantic-astgen.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(semantic_CXXFLAGS) $(CXXFLAGS) -c -o semantic-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
 
 stack-stack.o: stack.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(stack_CXXFLAGS) $(CXXFLAGS) -MT stack-stack.o -MD -MP -MF $(DEPDIR)/stack-stack.Tpo -c -o stack-stack.o `test -f 'stack.cpp' || echo '$(srcdir)/'`stack.cpp
@@ -1408,6 +1261,20 @@ unit_test-callable.obj: callable.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-callable.obj `if test -f 'callable.cpp'; then $(CYGPATH_W) 'callable.cpp'; else $(CYGPATH_W) '$(srcdir)/callable.cpp'; fi`
 
+unit_test-check_all.o: check_all.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-check_all.o -MD -MP -MF $(DEPDIR)/unit_test-check_all.Tpo -c -o unit_test-check_all.o `test -f 'check_all.cpp' || echo '$(srcdir)/'`check_all.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-check_all.Tpo $(DEPDIR)/unit_test-check_all.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='check_all.cpp' object='unit_test-check_all.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-check_all.o `test -f 'check_all.cpp' || echo '$(srcdir)/'`check_all.cpp
+
+unit_test-check_all.obj: check_all.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-check_all.obj -MD -MP -MF $(DEPDIR)/unit_test-check_all.Tpo -c -o unit_test-check_all.obj `if test -f 'check_all.cpp'; then $(CYGPATH_W) 'check_all.cpp'; else $(CYGPATH_W) '$(srcdir)/check_all.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-check_all.Tpo $(DEPDIR)/unit_test-check_all.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='check_all.cpp' object='unit_test-check_all.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-check_all.obj `if test -f 'check_all.cpp'; then $(CYGPATH_W) 'check_all.cpp'; else $(CYGPATH_W) '$(srcdir)/check_all.cpp'; fi`
+
 unit_test-enter_method_identifiers.o: enter_method_identifiers.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_method_identifiers.o -MD -MP -MF $(DEPDIR)/unit_test-enter_method_identifiers.Tpo -c -o unit_test-enter_method_identifiers.o `test -f 'enter_method_identifiers.cpp' || echo '$(srcdir)/'`enter_method_identifiers.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_method_identifiers.Tpo $(DEPDIR)/unit_test-enter_method_identifiers.Po
@@ -1422,33 +1289,19 @@ unit_test-enter_method_identifiers.obj: enter_method_identifiers.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_method_identifiers.obj `if test -f 'enter_method_identifiers.cpp'; then $(CYGPATH_W) 'enter_method_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_method_identifiers.cpp'; fi`
 
-unit_test-enter_predeclared_identifiers.o: enter_predeclared_identifiers.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_predeclared_identifiers.o -MD -MP -MF $(DEPDIR)/unit_test-enter_predeclared_identifiers.Tpo -c -o unit_test-enter_predeclared_identifiers.o `test -f 'enter_predeclared_identifiers.cpp' || echo '$(srcdir)/'`enter_predeclared_identifiers.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_predeclared_identifiers.Tpo $(DEPDIR)/unit_test-enter_predeclared_identifiers.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_predeclared_identifiers.cpp' object='unit_test-enter_predeclared_identifiers.o' libtool=no @AMDEPBACKSLASH@
+unit_test-enter_identifiers.o: enter_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_identifiers.o -MD -MP -MF $(DEPDIR)/unit_test-enter_identifiers.Tpo -c -o unit_test-enter_identifiers.o `test -f 'enter_identifiers.cpp' || echo '$(srcdir)/'`enter_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_identifiers.Tpo $(DEPDIR)/unit_test-enter_identifiers.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_identifiers.cpp' object='unit_test-enter_identifiers.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_predeclared_identifiers.o `test -f 'enter_predeclared_identifiers.cpp' || echo '$(srcdir)/'`enter_predeclared_identifiers.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_identifiers.o `test -f 'enter_identifiers.cpp' || echo '$(srcdir)/'`enter_identifiers.cpp
 
-unit_test-enter_predeclared_identifiers.obj: enter_predeclared_identifiers.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_predeclared_identifiers.obj -MD -MP -MF $(DEPDIR)/unit_test-enter_predeclared_identifiers.Tpo -c -o unit_test-enter_predeclared_identifiers.obj `if test -f 'enter_predeclared_identifiers.cpp'; then $(CYGPATH_W) 'enter_predeclared_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_predeclared_identifiers.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_predeclared_identifiers.Tpo $(DEPDIR)/unit_test-enter_predeclared_identifiers.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_predeclared_identifiers.cpp' object='unit_test-enter_predeclared_identifiers.obj' libtool=no @AMDEPBACKSLASH@
+unit_test-enter_identifiers.obj: enter_identifiers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_identifiers.obj -MD -MP -MF $(DEPDIR)/unit_test-enter_identifiers.Tpo -c -o unit_test-enter_identifiers.obj `if test -f 'enter_identifiers.cpp'; then $(CYGPATH_W) 'enter_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_identifiers.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_identifiers.Tpo $(DEPDIR)/unit_test-enter_identifiers.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_identifiers.cpp' object='unit_test-enter_identifiers.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_predeclared_identifiers.obj `if test -f 'enter_predeclared_identifiers.cpp'; then $(CYGPATH_W) 'enter_predeclared_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_predeclared_identifiers.cpp'; fi`
-
-unit_test-enter_top_level_identifiers.o: enter_top_level_identifiers.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_top_level_identifiers.o -MD -MP -MF $(DEPDIR)/unit_test-enter_top_level_identifiers.Tpo -c -o unit_test-enter_top_level_identifiers.o `test -f 'enter_top_level_identifiers.cpp' || echo '$(srcdir)/'`enter_top_level_identifiers.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_top_level_identifiers.Tpo $(DEPDIR)/unit_test-enter_top_level_identifiers.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_top_level_identifiers.cpp' object='unit_test-enter_top_level_identifiers.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_top_level_identifiers.o `test -f 'enter_top_level_identifiers.cpp' || echo '$(srcdir)/'`enter_top_level_identifiers.cpp
-
-unit_test-enter_top_level_identifiers.obj: enter_top_level_identifiers.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_top_level_identifiers.obj -MD -MP -MF $(DEPDIR)/unit_test-enter_top_level_identifiers.Tpo -c -o unit_test-enter_top_level_identifiers.obj `if test -f 'enter_top_level_identifiers.cpp'; then $(CYGPATH_W) 'enter_top_level_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_top_level_identifiers.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_top_level_identifiers.Tpo $(DEPDIR)/unit_test-enter_top_level_identifiers.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_top_level_identifiers.cpp' object='unit_test-enter_top_level_identifiers.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_top_level_identifiers.obj `if test -f 'enter_top_level_identifiers.cpp'; then $(CYGPATH_W) 'enter_top_level_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_top_level_identifiers.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_identifiers.obj `if test -f 'enter_identifiers.cpp'; then $(CYGPATH_W) 'enter_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_identifiers.cpp'; fi`
 
 unit_test-error_reporter.o: error_reporter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-error_reporter.o -MD -MP -MF $(DEPDIR)/unit_test-error_reporter.Tpo -c -o unit_test-error_reporter.o `test -f 'error_reporter.cpp' || echo '$(srcdir)/'`error_reporter.cpp
@@ -1464,6 +1317,20 @@ unit_test-error_reporter.obj: error_reporter.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-error_reporter.obj `if test -f 'error_reporter.cpp'; then $(CYGPATH_W) 'error_reporter.cpp'; else $(CYGPATH_W) '$(srcdir)/error_reporter.cpp'; fi`
 
+unit_test-expression_value.o: expression_value.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-expression_value.o -MD -MP -MF $(DEPDIR)/unit_test-expression_value.Tpo -c -o unit_test-expression_value.o `test -f 'expression_value.cpp' || echo '$(srcdir)/'`expression_value.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-expression_value.Tpo $(DEPDIR)/unit_test-expression_value.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='expression_value.cpp' object='unit_test-expression_value.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-expression_value.o `test -f 'expression_value.cpp' || echo '$(srcdir)/'`expression_value.cpp
+
+unit_test-expression_value.obj: expression_value.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-expression_value.obj -MD -MP -MF $(DEPDIR)/unit_test-expression_value.Tpo -c -o unit_test-expression_value.obj `if test -f 'expression_value.cpp'; then $(CYGPATH_W) 'expression_value.cpp'; else $(CYGPATH_W) '$(srcdir)/expression_value.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-expression_value.Tpo $(DEPDIR)/unit_test-expression_value.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='expression_value.cpp' object='unit_test-expression_value.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-expression_value.obj `if test -f 'expression_value.cpp'; then $(CYGPATH_W) 'expression_value.cpp'; else $(CYGPATH_W) '$(srcdir)/expression_value.cpp'; fi`
+
 unit_test-node.o: node.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-node.o -MD -MP -MF $(DEPDIR)/unit_test-node.Tpo -c -o unit_test-node.o `test -f 'node.cpp' || echo '$(srcdir)/'`node.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-node.Tpo $(DEPDIR)/unit_test-node.Po
@@ -1477,6 +1344,34 @@ unit_test-node.obj: node.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='node.cpp' object='unit_test-node.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-node.obj `if test -f 'node.cpp'; then $(CYGPATH_W) 'node.cpp'; else $(CYGPATH_W) '$(srcdir)/node.cpp'; fi`
+
+unit_test-polymorphic_function.o: polymorphic_function.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-polymorphic_function.o -MD -MP -MF $(DEPDIR)/unit_test-polymorphic_function.Tpo -c -o unit_test-polymorphic_function.o `test -f 'polymorphic_function.cpp' || echo '$(srcdir)/'`polymorphic_function.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-polymorphic_function.Tpo $(DEPDIR)/unit_test-polymorphic_function.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='polymorphic_function.cpp' object='unit_test-polymorphic_function.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-polymorphic_function.o `test -f 'polymorphic_function.cpp' || echo '$(srcdir)/'`polymorphic_function.cpp
+
+unit_test-polymorphic_function.obj: polymorphic_function.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-polymorphic_function.obj -MD -MP -MF $(DEPDIR)/unit_test-polymorphic_function.Tpo -c -o unit_test-polymorphic_function.obj `if test -f 'polymorphic_function.cpp'; then $(CYGPATH_W) 'polymorphic_function.cpp'; else $(CYGPATH_W) '$(srcdir)/polymorphic_function.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-polymorphic_function.Tpo $(DEPDIR)/unit_test-polymorphic_function.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='polymorphic_function.cpp' object='unit_test-polymorphic_function.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-polymorphic_function.obj `if test -f 'polymorphic_function.cpp'; then $(CYGPATH_W) 'polymorphic_function.cpp'; else $(CYGPATH_W) '$(srcdir)/polymorphic_function.cpp'; fi`
+
+unit_test-populate_universe_block.o: populate_universe_block.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-populate_universe_block.o -MD -MP -MF $(DEPDIR)/unit_test-populate_universe_block.Tpo -c -o unit_test-populate_universe_block.o `test -f 'populate_universe_block.cpp' || echo '$(srcdir)/'`populate_universe_block.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-populate_universe_block.Tpo $(DEPDIR)/unit_test-populate_universe_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='populate_universe_block.cpp' object='unit_test-populate_universe_block.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-populate_universe_block.o `test -f 'populate_universe_block.cpp' || echo '$(srcdir)/'`populate_universe_block.cpp
+
+unit_test-populate_universe_block.obj: populate_universe_block.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-populate_universe_block.obj -MD -MP -MF $(DEPDIR)/unit_test-populate_universe_block.Tpo -c -o unit_test-populate_universe_block.obj `if test -f 'populate_universe_block.cpp'; then $(CYGPATH_W) 'populate_universe_block.cpp'; else $(CYGPATH_W) '$(srcdir)/populate_universe_block.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-populate_universe_block.Tpo $(DEPDIR)/unit_test-populate_universe_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='populate_universe_block.cpp' object='unit_test-populate_universe_block.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-populate_universe_block.obj `if test -f 'populate_universe_block.cpp'; then $(CYGPATH_W) 'populate_universe_block.cpp'; else $(CYGPATH_W) '$(srcdir)/populate_universe_block.cpp'; fi`
 
 unit_test-process_top_level_identifiers.o: process_top_level_identifiers.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-process_top_level_identifiers.o -MD -MP -MF $(DEPDIR)/unit_test-process_top_level_identifiers.Tpo -c -o unit_test-process_top_level_identifiers.o `test -f 'process_top_level_identifiers.cpp' || echo '$(srcdir)/'`process_top_level_identifiers.cpp
@@ -1520,33 +1415,33 @@ unit_test-symbol.obj: symbol.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-symbol.obj `if test -f 'symbol.cpp'; then $(CYGPATH_W) 'symbol.cpp'; else $(CYGPATH_W) '$(srcdir)/symbol.cpp'; fi`
 
-value-value.o: value.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(value_CXXFLAGS) $(CXXFLAGS) -MT value-value.o -MD -MP -MF $(DEPDIR)/value-value.Tpo -c -o value-value.o `test -f 'value.cpp' || echo '$(srcdir)/'`value.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/value-value.Tpo $(DEPDIR)/value-value.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='value.cpp' object='value-value.o' libtool=no @AMDEPBACKSLASH@
+unit_test-symbol_table.o: symbol_table.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-symbol_table.o -MD -MP -MF $(DEPDIR)/unit_test-symbol_table.Tpo -c -o unit_test-symbol_table.o `test -f 'symbol_table.cpp' || echo '$(srcdir)/'`symbol_table.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-symbol_table.Tpo $(DEPDIR)/unit_test-symbol_table.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='symbol_table.cpp' object='unit_test-symbol_table.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(value_CXXFLAGS) $(CXXFLAGS) -c -o value-value.o `test -f 'value.cpp' || echo '$(srcdir)/'`value.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-symbol_table.o `test -f 'symbol_table.cpp' || echo '$(srcdir)/'`symbol_table.cpp
 
-value-value.obj: value.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(value_CXXFLAGS) $(CXXFLAGS) -MT value-value.obj -MD -MP -MF $(DEPDIR)/value-value.Tpo -c -o value-value.obj `if test -f 'value.cpp'; then $(CYGPATH_W) 'value.cpp'; else $(CYGPATH_W) '$(srcdir)/value.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/value-value.Tpo $(DEPDIR)/value-value.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='value.cpp' object='value-value.obj' libtool=no @AMDEPBACKSLASH@
+unit_test-symbol_table.obj: symbol_table.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-symbol_table.obj -MD -MP -MF $(DEPDIR)/unit_test-symbol_table.Tpo -c -o unit_test-symbol_table.obj `if test -f 'symbol_table.cpp'; then $(CYGPATH_W) 'symbol_table.cpp'; else $(CYGPATH_W) '$(srcdir)/symbol_table.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-symbol_table.Tpo $(DEPDIR)/unit_test-symbol_table.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='symbol_table.cpp' object='unit_test-symbol_table.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(value_CXXFLAGS) $(CXXFLAGS) -c -o value-value.obj `if test -f 'value.cpp'; then $(CYGPATH_W) 'value.cpp'; else $(CYGPATH_W) '$(srcdir)/value.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-symbol_table.obj `if test -f 'symbol_table.cpp'; then $(CYGPATH_W) 'symbol_table.cpp'; else $(CYGPATH_W) '$(srcdir)/symbol_table.cpp'; fi`
 
-value-astgen.o: astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(value_CXXFLAGS) $(CXXFLAGS) -MT value-astgen.o -MD -MP -MF $(DEPDIR)/value-astgen.Tpo -c -o value-astgen.o `test -f 'astgen.cpp' || echo '$(srcdir)/'`astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/value-astgen.Tpo $(DEPDIR)/value-astgen.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='value-astgen.o' libtool=no @AMDEPBACKSLASH@
+unit_test-value.o: value.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-value.o -MD -MP -MF $(DEPDIR)/unit_test-value.Tpo -c -o unit_test-value.o `test -f 'value.cpp' || echo '$(srcdir)/'`value.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-value.Tpo $(DEPDIR)/unit_test-value.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='value.cpp' object='unit_test-value.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(value_CXXFLAGS) $(CXXFLAGS) -c -o value-astgen.o `test -f 'astgen.cpp' || echo '$(srcdir)/'`astgen.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-value.o `test -f 'value.cpp' || echo '$(srcdir)/'`value.cpp
 
-value-astgen.obj: astgen.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(value_CXXFLAGS) $(CXXFLAGS) -MT value-astgen.obj -MD -MP -MF $(DEPDIR)/value-astgen.Tpo -c -o value-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/value-astgen.Tpo $(DEPDIR)/value-astgen.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='astgen.cpp' object='value-astgen.obj' libtool=no @AMDEPBACKSLASH@
+unit_test-value.obj: value.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-value.obj -MD -MP -MF $(DEPDIR)/unit_test-value.Tpo -c -o unit_test-value.obj `if test -f 'value.cpp'; then $(CYGPATH_W) 'value.cpp'; else $(CYGPATH_W) '$(srcdir)/value.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-value.Tpo $(DEPDIR)/unit_test-value.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='value.cpp' object='unit_test-value.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(value_CXXFLAGS) $(CXXFLAGS) -c -o value-astgen.obj `if test -f 'astgen.cpp'; then $(CYGPATH_W) 'astgen.cpp'; else $(CYGPATH_W) '$(srcdir)/astgen.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-value.obj `if test -f 'value.cpp'; then $(CYGPATH_W) 'value.cpp'; else $(CYGPATH_W) '$(srcdir)/value.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -1754,20 +1649,6 @@ arch.log: arch$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-check_types.log: check_types$(EXEEXT)
-	@p='check_types$(EXEEXT)'; \
-	b='check_types'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-expression_value.log: expression_value$(EXEEXT)
-	@p='expression_value$(EXEEXT)'; \
-	b='expression_value'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 heap.log: heap$(EXEEXT)
 	@p='heap$(EXEEXT)'; \
 	b='heap'; \
@@ -1803,13 +1684,6 @@ parameter_list.log: parameter_list$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-polymorphic_function.log: polymorphic_function$(EXEEXT)
-	@p='polymorphic_function$(EXEEXT)'; \
-	b='polymorphic_function'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 runtime_types.log: runtime_types$(EXEEXT)
 	@p='runtime_types$(EXEEXT)'; \
 	b='runtime_types'; \
@@ -1817,9 +1691,9 @@ runtime_types.log: runtime_types$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-semantic.log: semantic$(EXEEXT)
-	@p='semantic$(EXEEXT)'; \
-	b='semantic'; \
+operation.log: operation$(EXEEXT)
+	@p='operation$(EXEEXT)'; \
+	b='operation'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1848,13 +1722,6 @@ scope.log: scope$(EXEEXT)
 type.log: type$(EXEEXT)
 	@p='type$(EXEEXT)'; \
 	b='type'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-value.log: value$(EXEEXT)
-	@p='value$(EXEEXT)'; \
-	b='value'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

@@ -9,13 +9,14 @@
 #include "error_reporter.hpp"
 #include "scope.hpp"
 #include "astgen.hpp"
+#include "symbol_table.hpp"
 
 using namespace decl;
 
 scope(decl); {
   util::Location loc;
   util::ErrorReporter er;
-  decl::Scope scope;
+  decl::SymbolTable symbol_table;
 
   scope(Function); {
     Function func (gen_function_decl ("name"));
@@ -27,7 +28,7 @@ scope(decl); {
     }; off();
 
     unit(process_declaration); {
-      ASSERT (func.process_declaration (er, &scope) == true);
+      ASSERT (func.process_declaration (er, symbol_table) == true);
       ASSERT (func.state () == Symbol::Defined);
       ASSERT (func.type != NULL);
       ASSERT (func.parameter_list () == func.type->parameter_list);
@@ -58,7 +59,7 @@ scope(decl); {
     }; off();
 
     scenario(defined); {
-      func.process_declaration (er, &scope);
+      func.process_declaration (er, symbol_table);
 
       unit(check); {
         func.check (new ast::ExpressionList (1));
@@ -89,7 +90,7 @@ scope(decl); {
     }; off();
 
     unit(process_declaration); {
-      ASSERT (meth.process_declaration (er, &scope) == true);
+      ASSERT (meth.process_declaration (er, symbol_table) == true);
       ASSERT (meth.state () == Symbol::Defined);
       ASSERT (meth.type != NULL);
       ASSERT (meth.parameter_list () == meth.type->function_type->parameter_list);
@@ -120,7 +121,7 @@ scope(decl); {
     }; off();
 
     scenario(defined); {
-      meth.process_declaration (er, &scope);
+      meth.process_declaration (er, symbol_table);
 
       unit(check); {
         meth.check (new ast::ExpressionList (1));
@@ -151,7 +152,7 @@ scope(decl); {
     }; off();
 
     unit(process_declaration); {
-      ASSERT (initializer.process_declaration (er, &scope) == true);
+      ASSERT (initializer.process_declaration (er, symbol_table) == true);
       ASSERT (initializer.state () == Symbol::Defined);
       ASSERT (initializer.type != NULL);
       ASSERT (initializer.parameter_list () == initializer.type->function_type->parameter_list);
@@ -171,7 +172,7 @@ scope(decl); {
     }; off();
 
     unit(process_declaration); {
-      ASSERT (getter.process_declaration (er, &scope) == true);
+      ASSERT (getter.process_declaration (er, symbol_table) == true);
       ASSERT (getter.state () == Symbol::Defined);
       ASSERT (getter.type != NULL);
       ASSERT (getter.parameter_list () == getter.type->function_type->parameter_list);
@@ -198,7 +199,7 @@ scope(decl); {
       unit(process_declaration); {
         type::NamedType x ("mytype", loc, &type::named_int);
         Action action (gen_action_decl ("name"), &x);
-        ASSERT (action.process_declaration (er, &scope) == true);
+        ASSERT (action.process_declaration (er, symbol_table) == true);
         ASSERT (action.state () == Symbol::Defined);
         ASSERT (action.receiver_parameter () != NULL);
         ASSERT (action.iota_parameter () == NULL);
@@ -210,7 +211,7 @@ scope(decl); {
       unit(process_declaration); {
         type::NamedType x ("mytype", loc, &type::named_int);
         Action action (gen_action_decl ("name", 5), &x);
-        ASSERT (action.process_declaration (er, &scope) == true);
+        ASSERT (action.process_declaration (er, symbol_table) == true);
         ASSERT (action.state () == Symbol::Defined);
         ASSERT (action.receiver_parameter () != NULL);
         ASSERT (action.iota_parameter () != NULL);
@@ -235,7 +236,7 @@ scope(decl); {
       unit(process_declaration); {
         type::NamedType x ("mytype", loc, &type::named_int);
         decl::Reaction reaction (gen_reaction_decl ("name"), &x);
-        ASSERT (reaction.process_declaration (er, &scope) == true);
+        ASSERT (reaction.process_declaration (er, symbol_table) == true);
         ASSERT (reaction.state () == Symbol::Defined);
         ASSERT (reaction.iota () == NULL);
         ASSERT (reaction.dimension () == -1);
@@ -249,7 +250,7 @@ scope(decl); {
       unit(process_declaration); {
         type::NamedType x ("mytype", loc, &type::named_int);
         Reaction reaction (gen_reaction_decl ("name", 5), &x);
-        ASSERT (reaction.process_declaration (er, &scope) == true);
+        ASSERT (reaction.process_declaration (er, symbol_table) == true);
         ASSERT (reaction.state () == Symbol::Defined);
         ASSERT (reaction.iota () != NULL);
         ASSERT (reaction.dimension () == 5);
@@ -272,7 +273,7 @@ scope(decl); {
     }; off();
 
     unit(process_declaration); {
-      ASSERT (bind.process_declaration (er, &scope) == true);
+      ASSERT (bind.process_declaration (er, symbol_table) == true);
       ASSERT (bind.state () == Symbol::Defined);
       ASSERT (bind.receiver_parameter () != NULL);
     }; off();

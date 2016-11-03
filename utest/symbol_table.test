@@ -1,0 +1,43 @@
+/* -*- c++ -*- */
+#include "unit_test.hpp"
+#include "symbol_table.hpp"
+#include "type.hpp"
+
+using namespace decl;
+
+scope(decl); {
+
+  scope(SymbolTable); {
+
+    unit(open_scope); {
+      SymbolTable st;
+      st.open_scope ();
+      ASSERT (st.retrieve_symbol ("x") == NULL);
+      ASSERT (!st.is_declared_locally ("x"));
+    }; off();
+
+    unit(enter_symbol); {
+      SymbolTable st;
+      st.open_scope ();
+      st.enter_symbol (&type::named_int);
+      st.open_scope ();
+      st.enter_symbol (&type::named_int32);
+      ASSERT (st.retrieve_symbol (type::named_int.name) == &type::named_int);
+      ASSERT (st.retrieve_symbol (type::named_int32.name) == &type::named_int32);
+      ASSERT (!st.is_declared_locally (type::named_int.name));
+      ASSERT (st.is_declared_locally (type::named_int32.name));
+    }; off();
+
+    unit(close_scope); {
+      SymbolTable st;
+      st.open_scope ();
+      st.enter_symbol (&type::named_int);
+      st.open_scope ();
+      ASSERT (!st.is_declared_locally (type::named_int.name));
+      st.close_scope ();
+      ASSERT (st.is_declared_locally (type::named_int.name));
+    }; off();
+
+  }; off();
+
+}; off();

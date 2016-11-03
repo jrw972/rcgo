@@ -1,0 +1,73 @@
+/* -*- c++ -*- */
+#include "unit_test.hpp"
+#include "polymorphic_function.hpp"
+#include "visitor_helper.hpp"
+#include "symbol_visitor.hpp"
+#include "polymorphic_function_visitor.hpp"
+#include "error_reporter.hpp"
+
+using namespace decl;
+using namespace util;
+using namespace semantic;
+
+struct MyPolymorphicFunction : public PolymorphicFunction
+{
+  MyPolymorphicFunction (const std::string& id,
+                         const util::Location& loc)
+    : PolymorphicFunction (id, loc)
+  { }
+
+  virtual void accept (decl::PolymorphicFunctionVisitor& visitor) const { }
+
+  virtual void
+  check (util::ErrorReporter& er,
+         const util::Location& loc,
+         semantic::ExpressionValue& result,
+         semantic::ExpressionValueList& arguments) const
+  { }
+
+  virtual void
+  compute_receiver_access (const semantic::ExpressionValueList& args,
+                           ReceiverAccess& receiver_access,
+                           bool& flag) const
+  { }
+
+  virtual runtime::Operation*
+  generate_code (const semantic::ExpressionValue& result,
+                 const semantic::ExpressionValueList& arg_vals,
+                 runtime::ListOperation* arg_ops) const
+  {
+    return NULL;
+  }
+};
+
+scope(decl); {
+
+  scope(PolymorphicFunction); {
+
+    scenario(SymbolVisitor); {
+      unit(accept); {
+        TestVisitor<SymbolVisitor, PolymorphicFunction> visitor;
+        MyPolymorphicFunction ts ("id", Location ());
+        static_cast<Symbol&> (ts).accept (visitor);
+        ASSERT (visitor.item == &ts);
+        TestDefaultVisitor<SymbolVisitor, Symbol> w;
+        static_cast<Symbol&> (ts).accept (w);
+        ASSERT (w.item == &ts);
+      }; off();
+    }; off();
+
+    scenario(ConstSymbolVisitor); {
+      unit(accept); {
+        TestConstVisitor<ConstSymbolVisitor, PolymorphicFunction> visitor;
+        MyPolymorphicFunction ts ("id", Location ());
+        static_cast<Symbol&> (ts).accept (visitor);
+        ASSERT (visitor.item == &ts);
+        TestDefaultConstVisitor<ConstSymbolVisitor, Symbol> w;
+        static_cast<Symbol&> (ts).accept (w);
+        ASSERT (w.item == &ts);
+      }; off();
+    }; off();
+  }; off();
+
+}; off();

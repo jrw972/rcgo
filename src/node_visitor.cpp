@@ -71,10 +71,6 @@ void DefaultNodeVisitor::visit (TypeExpression& node)
 {
   default_action (node);
 }
-void DefaultNodeVisitor::visit (BinaryArithmetic& node)
-{
-  default_action (node);
-}
 void DefaultNodeVisitor::visit (AddressOf& node)
 {
   default_action (node);
@@ -116,10 +112,6 @@ void DefaultNodeVisitor::visit (ExpressionList& node)
   default_action (node);
 }
 void DefaultNodeVisitor::visit (Literal& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (UnaryArithmetic& node)
 {
   default_action (node);
 }
@@ -293,7 +285,7 @@ void TreePrinter::print (std::ostream& out) const
     virtual void default_action (Node& node)
     {
       print_indent (node);
-      out << node << '\n';
+      out << node << ' ' << node.eval << '\n';
       print_children (node);
     }
 
@@ -304,7 +296,7 @@ void TreePrinter::print (std::ostream& out) const
         {
           out << ' ';
         }
-      out << node.location.line << ' ';
+      out << node.location.line () << ' ';
     }
 
     void print_children (Node& node)

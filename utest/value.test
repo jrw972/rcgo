@@ -1,0 +1,57 @@
+/* -*- c++ -*- */
+#include "unit_test.hpp"
+#include "type.hpp"
+
+#include <sstream>
+
+using namespace semantic;
+
+scope(semantic); {
+
+  scope(UntypedComplex); {
+    UntypedComplex uc = UntypedComplex::make (3.0, 4.0);
+    unit(make); {
+      ASSERT (uc.real == 3.0 && uc.imag == 4.0);
+    }; off();
+    unit(operator_equal); {
+      ASSERT (uc == uc);
+    }; off();
+    unit(operator_double); {
+      double d = uc;
+      ASSERT (d == 3.0);
+    }; off();
+    unit(operator_assign_double); {
+      uc = 2.0;
+      ASSERT (uc.real == 2.0 && uc.imag == 0.0);
+    }; off();
+    unit(operator_assign_Complex64); {
+      uc = runtime::Complex64::make (8.0, 9.0);
+      ASSERT (uc.real == 8.0 && uc.imag == 9.0);
+    }; off();
+    unit(operator_assign_Complex128); {
+      uc = runtime::Complex128::make (8.0, 9.0);
+      ASSERT (uc.real == 8.0 && uc.imag == 9.0);
+    }; off();
+    unit(operator_multiply); {
+      uc = UntypedComplex::make (1.0, 2.0) * UntypedComplex::make (3.0, 4.0);
+      ASSERT (uc.real == -5.0 && uc.imag == 10.0);
+    }; off();
+    unit(operator_divide); {
+      uc = UntypedComplex::make (1.0, 2.0) / UntypedComplex::make (3.0, 4.0);
+      ASSERT (abs (uc.real - .44) < .01 && abs (uc.imag - .08) < .01);
+    }; off();
+    unit(operator_add); {
+      uc = UntypedComplex::make (1.0, 2.0) + UntypedComplex::make (3.0, 4.0);
+      ASSERT (uc.real == 4.0 && uc.imag == 6.0);
+    }; off();
+    unit(operator_subtract); {
+      uc = UntypedComplex::make (1.0, 2.0) - UntypedComplex::make (3.0, 4.0);
+      ASSERT (uc.real == -2.0 && uc.imag == -2.0);
+    }; off();
+    unit(operator_negate); {
+      uc = -UntypedComplex::make (1.0, 2.0);
+      ASSERT (uc.real == -1.0 && uc.imag == -2.0);
+    }; off();
+  }; off();
+
+}; off();

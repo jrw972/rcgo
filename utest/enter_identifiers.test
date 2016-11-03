@@ -1,19 +1,20 @@
 /* -*- c++ -*- */
 #include "unit_test.hpp"
-#include "enter_top_level_identifiers.hpp"
 #include "node.hpp"
 #include "error_reporter.hpp"
 #include "scope.hpp"
 #include "symbol_cast.hpp"
 #include "type.hpp"
+#include "semantic.hpp"
+#include "symbol_table.hpp"
 
 using namespace semantic;
 
 scope(semantic); {
 
   util::ErrorReporter er;
-  decl::Scope* package_scope = new decl::Scope ();
-  decl::Scope* file_scope = package_scope->open ();
+  decl::SymbolTable symbol_table;
+  symbol_table.open_scope ();
 
   ast::Identifier id1 (1, "mytype");
   ast::Identifier id2 (1, "int");
@@ -21,9 +22,9 @@ scope(semantic); {
   ast::TypeDecl typedecl (1, &id1, &identifier_type);
 
   scenario(TypeDecl); {
-    unit(enter_top_level_identifiers); {
-      enter_top_level_identifiers (&typedecl, er, package_scope, file_scope);
-      decl::Symbol* s = package_scope->find_local_symbol ("mytype");
+    unit(enter_identifiers); {
+      enter_identifiers (&typedecl, er, symbol_table, true);
+      decl::Symbol* s = symbol_table.retrieve_symbol ("mytype");
       ASSERT (s != NULL);
       ASSERT (decl::symbol_cast<type::NamedType> (s) != NULL);
       ASSERT (s->state () == decl::Symbol::Declared);
@@ -31,36 +32,37 @@ scope(semantic); {
   }; off();
 
   scenario(already_declared_in_package_scope); {
-    unit(enter_top_level_identifiers); {
-      enter_top_level_identifiers (&typedecl, er, package_scope, file_scope);
-      enter_top_level_identifiers (&typedecl, er, package_scope, file_scope);
-      ASSERT (er.count () == 1);
+    unit(enter_identifiers); {
+      enter_identifiers (&typedecl, er, symbol_table, true);
+      enter_identifiers (&typedecl, er, symbol_table, true);
+      ASSERT (er.list ().size () == 1);
     }; off();
   }; off();
 
   scenario(already_declared_in_file_scope); {
-    unit(enter_top_level_identifiers); {
-      enter_top_level_identifiers (&typedecl, er, file_scope, file_scope);
-      enter_top_level_identifiers (&typedecl, er, package_scope, file_scope);
-      ASSERT (er.count () == 1);
+    unit(enter_identifiers); {
+      enter_identifiers (&typedecl, er, symbol_table, true);
+      enter_identifiers (&typedecl, er, symbol_table, true);
+      ASSERT (er.list ().size () == 1);
     }; off();
   }; off();
 
   ast::IdentifierList identifiers (1);
   identifiers.append (new ast::Identifier (1, "x"));
   ast::IdentifierType type (1, &id2);
-  semantic::Value sv;
-  sv.present = 1;
-  sv.untyped_integer_value = 1;
-  ast::Literal value (1, type::UntypedInteger::instance (), sv);
+  semantic::ExpressionValue sv;
+  sv.kind = semantic::ExpressionValue::Constant;
+  sv.type = type::UntypedInteger::instance ();
+  sv.value.untyped_integer_value = 1;
+  ast::Literal value (1, sv);
   ast::ExpressionList expressions (1);
   expressions.append (&value);
   ast::ConstDecl constdecl (1, &identifiers, &type, &expressions);
 
   scenario(ConstDecl); {
-    unit(enter_top_level_identifiers); {
-      enter_top_level_identifiers (&constdecl, er, package_scope, file_scope);
-      decl::Symbol* s = package_scope->find_local_symbol ("x");
+    unit(enter_identifiers); {
+      enter_identifiers (&constdecl, er, symbol_table, true);
+      decl::Symbol* s = symbol_table.retrieve_symbol ("x");
       ASSERT (s != NULL);
       ASSERT (decl::symbol_cast<decl::Constant> (s) != NULL);
       ASSERT (s->state () == decl::Symbol::Declared);
@@ -70,9 +72,9 @@ scope(semantic); {
   expressions.append (&value);
 
   scenario(ConstDecl_mismatch); {
-    unit(enter_top_level_identifiers); {
-      enter_top_level_identifiers (&constdecl, er, package_scope, file_scope);
-      ASSERT (er.count () == 1);
+    unit(enter_identifiers); {
+      enter_identifiers (&constdecl, er, symbol_table, true);
+      ASSERT (er.list ().size () == 1);
     }; off();
   }; off();
 
@@ -83,9 +85,9 @@ scope(semantic); {
   ast::FunctionDecl functiondecl (1, &funcid, &parameters, &return_parameters, &body);
 
   scenario(FunctionDecl); {
-    unit(enter_top_level_identifiers); {
-      enter_top_level_identifiers (&functiondecl, er, package_scope, file_scope);
-      decl::Symbol* s = package_scope->find_local_symbol ("f");
+    unit(enter_identifiers); {
+      enter_identifiers (&functiondecl, er, symbol_table, true);
+      decl::Symbol* s = symbol_table.retrieve_symbol ("f");
       ASSERT (s != NULL);
       ASSERT (decl::symbol_cast<decl::FunctionBase> (s) != NULL);
       ASSERT (s->state () == decl::Symbol::Declared);
@@ -98,9 +100,9 @@ scope(semantic); {
   ast::InstanceDecl instancedecl (1, &identifier, &type, &init, &arguments);
 
   scenario(InstanceDecl); {
-    unit(enter_top_level_identifiers); {
-      enter_top_level_identifiers (&instancedecl, er, package_scope, file_scope);
-      decl::Symbol* s = package_scope->find_local_symbol ("i");
+    unit(enter_identifiers); {
+      enter_identifiers (&instancedecl, er, symbol_table, true);
+      decl::Symbol* s = symbol_table.retrieve_symbol ("i");
       ASSERT (s != NULL);
       ASSERT (decl::symbol_cast<decl::Instance> (s) != NULL);
       ASSERT (s->state () == decl::Symbol::Declared);
@@ -114,12 +116,12 @@ scope(semantic); {
   decllist.append (&instancedecl);
 
   scenario(TopLevelDeclList); {
-    unit(enter_top_level_identifiers); {
-      enter_top_level_identifiers (&decllist, er, package_scope, file_scope);
-      ASSERT (package_scope->find_local_symbol ("mytype") != NULL);
-      ASSERT (package_scope->find_local_symbol ("x") != NULL);
-      ASSERT (package_scope->find_local_symbol ("f") != NULL);
-      ASSERT (package_scope->find_local_symbol ("i") != NULL);
+    unit(enter_identifiers); {
+      enter_identifiers (&decllist, er, symbol_table, true);
+      ASSERT (symbol_table.retrieve_symbol ("mytype") != NULL);
+      ASSERT (symbol_table.retrieve_symbol ("x") != NULL);
+      ASSERT (symbol_table.retrieve_symbol ("f") != NULL);
+      ASSERT (symbol_table.retrieve_symbol ("i") != NULL);
     }; off();
   }; off();
 
@@ -128,16 +130,15 @@ scope(semantic); {
   ast::SourceFile sourcefile (1, &package, &imports, &decllist);
 
   scenario(SourceFile); {
-    unit(enter_top_level_identifiers); {
-      enter_top_level_identifiers (&sourcefile, er, package_scope, file_scope);
-      ASSERT (package_scope->find_local_symbol ("mytype") != NULL);
-      ASSERT (package_scope->find_local_symbol ("x") != NULL);
-      ASSERT (package_scope->find_local_symbol ("f") != NULL);
-      ASSERT (package_scope->find_local_symbol ("i") != NULL);
+    unit(enter_identifiers); {
+      enter_identifiers (&sourcefile, er, symbol_table, true);
+      ASSERT (symbol_table.retrieve_symbol ("mytype") != NULL);
+      ASSERT (symbol_table.retrieve_symbol ("x") != NULL);
+      ASSERT (symbol_table.retrieve_symbol ("f") != NULL);
+      ASSERT (symbol_table.retrieve_symbol ("i") != NULL);
     }; off();
   }; off();
 
   file_scope->close ();
-  package_scope->close ();
 
 }; off();

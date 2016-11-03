@@ -1,0 +1,1149 @@
+/* -*- c++ -*- */
+#include "unit_test.hpp"
+
+#include <sstream>
+
+#include "type.hpp"
+#include "polymorphic_function.hpp"
+#include "error_reporter.hpp"
+#include "parameter_list.hpp"
+
+using namespace semantic;
+using namespace type;
+using namespace util;
+
+scope(semantic); {
+
+  scope(ExpressionValue); {
+
+    unit(ExpressionValue); {
+      ExpressionValue ev;
+      ASSERT (ev.kind == ExpressionValue::Unknown);
+      ASSERT (ev.is_unknown ());
+      ASSERT (ev.intrinsic_mutability == Unknown_Mutability);
+      ASSERT (ev.indirection_mutability == Unknown_Mutability);
+    }; off();
+
+    unit(make_error); {
+      ExpressionValue ev = ExpressionValue::make_error ();
+      ASSERT (ev.kind == ExpressionValue::Error);
+      ASSERT (ev.is_error ());
+    }; off();
+
+    unit(make_void); {
+      ExpressionValue ev = ExpressionValue::make_void ();
+      ASSERT (ev.kind == ExpressionValue::Void);
+      ASSERT (ev.is_void ());
+    }; off();
+
+    unit(make_variable); {
+      ExpressionValue ev = ExpressionValue::make_variable (&type::named_int);
+      ASSERT (ev.kind == ExpressionValue::Variable);
+      ASSERT (ev.type == &type::named_int);
+      ASSERT (ev.is_variable ());
+    }; off();
+
+    scenario(no_variadic); {
+      unit(make_value); {
+        ExpressionValue ev = ExpressionValue::make_value (&type::named_int, Immutable, Mutable);
+        ASSERT (ev.kind == ExpressionValue::Value);
+        ASSERT (ev.type == &type::named_int);
+        ASSERT (ev.intrinsic_mutability == Immutable);
+        ASSERT (ev.indirection_mutability == Mutable);
+        ASSERT (ev.is_value ());
+        ASSERT (!ev.is_variadic ());
+      }; off();
+    }; off();
+
+    scenario(variadic); {
+      unit(make_value); {
+        ExpressionValue ev = ExpressionValue::make_value (&type::named_int, Immutable, Mutable, true);
+        ASSERT (ev.kind == ExpressionValue::Value);
+        ASSERT (ev.type == &type::named_int);
+        ASSERT (ev.intrinsic_mutability == Immutable);
+        ASSERT (ev.indirection_mutability == Mutable);
+        ASSERT (ev.is_value ());
+        ASSERT (ev.is_variadic ());
+      }; off();
+    }; off();
+
+    unit(make_bool); {
+      ExpressionValue ev = ExpressionValue::make_bool (&type::named_bool, true);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_bool);
+      ASSERT (ev.value.bool_value == true);
+    }; off();
+
+    unit(make_uint8); {
+      ExpressionValue ev = ExpressionValue::make_uint8 (&type::named_uint8, 37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_uint8);
+      ASSERT (ev.value.uint8_value == 37);
+    }; off();
+
+    unit(make_uint16); {
+      ExpressionValue ev = ExpressionValue::make_uint16 (&type::named_uint16, 37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_uint16);
+      ASSERT (ev.value.uint16_value == 37);
+    }; off();
+
+    unit(make_uint32); {
+      ExpressionValue ev = ExpressionValue::make_uint32 (&type::named_uint32, 37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_uint32);
+      ASSERT (ev.value.uint32_value == 37);
+    }; off();
+
+    unit(make_uint64); {
+      ExpressionValue ev = ExpressionValue::make_uint64 (&type::named_uint64, 37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_uint64);
+      ASSERT (ev.value.uint64_value == 37);
+    }; off();
+
+    unit(make_int8); {
+      ExpressionValue ev = ExpressionValue::make_int8 (&type::named_int8, 37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_int8);
+      ASSERT (ev.value.int8_value == 37);
+    }; off();
+
+    unit(make_int16); {
+      ExpressionValue ev = ExpressionValue::make_int16 (&type::named_int16, 37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_int16);
+      ASSERT (ev.value.int16_value == 37);
+    }; off();
+
+    unit(make_int32); {
+      ExpressionValue ev = ExpressionValue::make_int32 (&type::named_int32, 37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_int32);
+      ASSERT (ev.value.int32_value == 37);
+    }; off();
+
+    unit(make_int64); {
+      ExpressionValue ev = ExpressionValue::make_int64 (&type::named_int64, 37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_int64);
+      ASSERT (ev.value.int64_value == 37);
+    }; off();
+
+    unit(make_float32); {
+      ExpressionValue ev = ExpressionValue::make_float32 (&type::named_float32, 37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_float32);
+      ASSERT (ev.value.float32_value == 37);
+    }; off();
+
+    unit(make_float64); {
+      ExpressionValue ev = ExpressionValue::make_float64 (&type::named_float64, 37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_float64);
+      ASSERT (ev.value.float64_value == 37);
+    }; off();
+
+    unit(make_complex64); {
+      ExpressionValue ev = ExpressionValue::make_complex64 (&type::named_complex64, runtime::Complex64::make (1, 2));
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_complex64);
+      ASSERT (ev.value.complex64_value == runtime::Complex64::make (1, 2));
+    }; off();
+
+    unit(make_complex128); {
+      ExpressionValue ev = ExpressionValue::make_complex128 (&type::named_complex128, runtime::Complex128::make (1, 2));
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_complex128);
+      ASSERT (ev.value.complex128_value == runtime::Complex128::make (1, 2));
+    }; off();
+
+    unit(make_uint); {
+      ExpressionValue ev = ExpressionValue::make_uint (&type::named_uint, 37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_uint);
+      ASSERT (ev.value.uint_value == 37);
+    }; off();
+
+    unit(make_int); {
+      ExpressionValue ev = ExpressionValue::make_int (&type::named_int, 37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_int);
+      ASSERT (ev.value.int_value == 37);
+    }; off();
+
+    unit(make_uintptr); {
+      ExpressionValue ev = ExpressionValue::make_uintptr (&type::named_uintptr, 37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_uintptr);
+      ASSERT (ev.value.uintptr_value == 37);
+    }; off();
+
+    unit(make_string); {
+      ExpressionValue ev = ExpressionValue::make_string (&type::named_string, runtime::String::make ("alpha"));
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == &type::named_string);
+      ASSERT (ev.value.string_value == runtime::String::make ("alpha"));
+    }; off();
+
+    unit(make_pointer); {
+      ExpressionValue ev = ExpressionValue::make_pointer (type::named_int.get_pointer ());
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == type::named_int.get_pointer ());
+    }; off();
+
+    unit(make_nil); {
+      ExpressionValue ev = ExpressionValue::make_nil ();
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == type::UntypedNil::instance ());
+    }; off();
+
+    unit(make_boolean); {
+      ExpressionValue ev = ExpressionValue::make_boolean (true);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == type::UntypedBoolean::instance ());
+      ASSERT (ev.value.untyped_boolean_value == true);
+    }; off();
+
+    unit(make_rune); {
+      ExpressionValue ev = ExpressionValue::make_rune (37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == type::UntypedRune::instance ());
+      ASSERT (ev.value.untyped_rune_value == 37);
+    }; off();
+
+    unit(make_integer); {
+      ExpressionValue ev = ExpressionValue::make_integer (37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == type::UntypedInteger::instance ());
+      ASSERT (ev.value.untyped_integer_value == 37);
+    }; off();
+
+    unit(make_float); {
+      ExpressionValue ev = ExpressionValue::make_float (37);
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == type::UntypedFloat::instance ());
+      ASSERT (ev.value.untyped_float_value == 37);
+    }; off();
+
+    unit(make_complex); {
+      ExpressionValue ev = ExpressionValue::make_complex (semantic::UntypedComplex::make (1, 2));
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == type::UntypedComplex::instance ());
+      ASSERT (ev.value.untyped_complex_value == semantic::UntypedComplex::make (1, 2));
+    }; off();
+
+    unit(make_string_untyped); {
+      ExpressionValue ev = ExpressionValue::make_string_untyped (runtime::String::make("alpha"));
+      ASSERT (ev.kind == ExpressionValue::Constant);
+      ASSERT (ev.type == type::UntypedString::instance ());
+      ASSERT (ev.value.untyped_string_value == runtime::String::make("alpha"));
+    }; off();
+
+    unit(make_type); {
+      ExpressionValue ev = ExpressionValue::make_type (&type::named_int);
+      ASSERT (ev.kind == ExpressionValue::Type);
+      ASSERT (ev.type == &type::named_int);
+      ASSERT (ev.is_type ());
+    }; off();
+
+    unit(is_type); {
+      ExpressionValue ev1;
+      ExpressionValue ev2;
+      ev2.kind = ExpressionValue::Type;
+
+      ASSERT (ev1.is_type () == false);
+      ASSERT (ev2.is_type () == true);
+    }; off();
+
+    ExpressionValue ev1;
+    ExpressionValue ev2;
+    ExpressionValue ev3;
+    ExpressionValue ev4;
+    ev2.kind = ExpressionValue::Value;
+    ev3.kind = ExpressionValue::Variable;
+    ev4.kind = ExpressionValue::Void;
+
+    unit(is_rvalue); {
+      ASSERT (ev1.is_rvalue () == false);
+      ASSERT (ev2.is_rvalue () == true);
+      ASSERT (ev3.is_rvalue () == true);
+      ASSERT (ev4.is_rvalue () == false);
+    }; off();
+
+    unit(is_rvalue_or_void); {
+      ASSERT (ev1.is_rvalue_or_void () == false);
+      ASSERT (ev2.is_rvalue_or_void () == true);
+      ASSERT (ev3.is_rvalue_or_void () == true);
+      ASSERT (ev4.is_rvalue_or_void () == true);
+    }; off();
+
+    unit(fix_string_direction_mutability); {
+      ExpressionValue ev;
+      ev.kind = ExpressionValue::Variable;
+      ev.type = &named_string;
+      ev.indirection_mutability = Mutable;
+      ev.fix_string_indirection_mutability ();
+
+      ASSERT (ev.indirection_mutability == Immutable);
+    }; off();
+
+    ExpressionValue out;
+    out.kind = ExpressionValue::Constant;
+
+    scenario(nil_to_pointer); {
+      unit(representable); {
+        out.type = type::UntypedNil::instance ();
+        ASSERT (out.representable (type::named_int.get_pointer ()) == true);
+      }; off();
+    }; off();
+    scenario(nil_to_slice); {
+      unit(representable); {
+        out.type = type::UntypedNil::instance ();
+        ASSERT (out.representable (type::named_int.get_slice ()) == true);
+      }; off();
+    }; off();
+    scenario(nil_to_int); {
+      unit(representable); {
+        out.type = type::UntypedNil::instance ();
+        ASSERT (out.representable (&type::named_int) == false);
+      }; off();
+    }; off();
+
+    scenario(boolean_to_bool); {
+      unit(representable); {
+        out.type = type::UntypedBoolean::instance ();
+        ASSERT (out.representable (&type::named_bool) == true);
+      }; off();
+    }; off();
+    scenario(boolean_to_int); {
+      unit(representable); {
+        out.type = type::UntypedBoolean::instance ();
+        ASSERT (out.representable (&type::named_int) == false);
+      }; off();
+    }; off();
+
+    out.value.untyped_rune_value = 555;
+    scenario(rune_to_int32); {
+      unit(representable); {
+        out.type = type::UntypedRune::instance ();
+        ASSERT (out.representable (&type::named_int32) == true);
+      }; off();
+    }; off();
+    scenario(rune_to_int8); {
+      unit(representable); {
+        out.type = type::UntypedRune::instance ();
+        ASSERT (out.representable (&type::named_int8) == false);
+      }; off();
+    }; off();
+
+    out.value.untyped_integer_value = 555;
+    scenario(integer_to_int32); {
+      unit(representable); {
+        out.type = type::UntypedInteger::instance ();
+        ASSERT (out.representable (&type::named_int32) == true);
+      }; off();
+    }; off();
+    scenario(integer_to_int8); {
+      unit(representable); {
+        out.type = type::UntypedInteger::instance ();
+        ASSERT (out.representable (&type::named_int8) == false);
+      }; off();
+    }; off();
+
+    out.value.untyped_float_value = 3.5;
+    scenario(float_to_float32); {
+      unit(representable); {
+        out.type = type::UntypedFloat::instance ();
+        ASSERT (out.representable (&type::named_float32) == true);
+      }; off();
+    }; off();
+    scenario(float_to_int32); {
+      unit(representable); {
+        out.type = type::UntypedFloat::instance ();
+        ASSERT (out.representable (&type::named_int32) == false);
+      }; off();
+    }; off();
+
+    out.value.untyped_complex_value = semantic::UntypedComplex::make (1.0, 2.0);
+    scenario(complex_to_int32_fail); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_int32) == false);
+      }; off();
+    }; off();
+    scenario(complex_to_string); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_string) == false);
+      }; off();
+    }; off();
+    out.value.untyped_complex_value = semantic::UntypedComplex::make (1.0, 0.0);
+    scenario(complex_to_uint8); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_uint8) == true);
+      }; off();
+    }; off();
+    scenario(complex_to_uint16); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_uint16) == true);
+      }; off();
+    }; off();
+    scenario(complex_to_uint32); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_uint32) == true);
+      }; off();
+    }; off();
+    scenario(complex_to_uint64); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_uint64) == true);
+      }; off();
+    }; off();
+    scenario(complex_to_int8); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_int8) == true);
+      }; off();
+    }; off();
+    scenario(complex_to_int16); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_int16) == true);
+      }; off();
+    }; off();
+    scenario(complex_to_int32); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_int32) == true);
+      }; off();
+    }; off();
+    scenario(complex_to_int64); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_int64) == true);
+      }; off();
+    }; off();
+    scenario(complex_to_float32); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_float32) == true);
+      }; off();
+    }; off();
+    scenario(complex_to_float64); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_float64) == true);
+      }; off();
+    }; off();
+    scenario(complex_to_complex64); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_complex64) == true);
+      }; off();
+    }; off();
+    scenario(complex_to_complex128); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_complex128) == true);
+      }; off();
+    }; off();
+    scenario(complex_to_uint); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_uint) == true);
+      }; off();
+    }; off();
+    scenario(complex_to_int); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_int) == true);
+      }; off();
+    }; off();
+    scenario(complex_to_uintptr); {
+      unit(representable); {
+        out.type = type::UntypedComplex::instance ();
+        ASSERT (out.representable (&type::named_uintptr) == true);
+      }; off();
+    }; off();
+
+    scenario(string_to_string); {
+      unit(representable); {
+        out.type = type::UntypedString::instance ();
+        ASSERT (out.representable (&type::named_string) == true);
+      }; off();
+    }; off();
+    scenario(string_to_int32); {
+      unit(representable); {
+        out.type = type::UntypedString::instance ();
+        ASSERT (out.representable (&type::named_int32) == false);
+      }; off();
+    }; off();
+
+    scenario(boolean_to_bool); {
+      unit(convert); {
+        out.type = type::UntypedBoolean::instance ();
+        out.value.untyped_boolean_value = true;
+        out.convert (&type::named_bool);
+        ASSERT (out.value.bool_value == true);
+      }; off();
+    }; off();
+
+    scenario(rune_to_uint8); {
+      unit(convert); {
+        out.type = type::UntypedRune::instance ();
+        out.value.untyped_rune_value = 120;
+        out.convert (&type::named_uint8);
+        ASSERT (out.value.uint8_value == 120);
+      }; off();
+    }; off();
+
+    scenario(integer_to_uint16); {
+      unit(convert); {
+        out.type = type::UntypedInteger::instance ();
+        out.value.untyped_integer_value = 120;
+        out.convert (&type::named_uint16);
+        ASSERT (out.value.uint16_value == 120);
+      }; off();
+    }; off();
+
+    scenario(float_to_uint32); {
+      unit(convert); {
+        out.type = type::UntypedFloat::instance ();
+        out.value.untyped_float_value = 120;
+        out.convert (&type::named_uint32);
+        ASSERT (out.value.uint32_value == 120);
+      }; off();
+    }; off();
+
+    scenario(uint8_to_uint64); {
+      unit(convert); {
+        out.type = &type::named_uint8;
+        out.value.uint64_value = 120;
+        out.convert (&type::named_uint64);
+        ASSERT (out.value.uint64_value == 120);
+      }; off();
+    }; off();
+
+    scenario(uint16_to_int8); {
+      unit(convert); {
+        out.type = &type::named_uint16;
+        out.value.uint16_value = 120;
+        out.convert (&type::named_int8);
+        ASSERT (out.value.int8_value == 120);
+      }; off();
+    }; off();
+
+    scenario(uint32_to_int16); {
+      unit(convert); {
+        out.type = &type::named_uint32;
+        out.value.uint32_value = 120;
+        out.convert (&type::named_int16);
+        ASSERT (out.value.int16_value == 120);
+      }; off();
+    }; off();
+
+    scenario(uint64_to_int32); {
+      unit(convert); {
+        out.type = &type::named_uint64;
+        out.value.uint64_value = 120;
+        out.convert (&type::named_int32);
+        ASSERT (out.value.int32_value == 120);
+      }; off();
+    }; off();
+
+    scenario(int8_to_int64); {
+      unit(convert); {
+        out.type = &type::named_int8;
+        out.value.int64_value = 120;
+        out.convert (&type::named_int64);
+        ASSERT (out.value.int64_value == 120);
+      }; off();
+    }; off();
+
+    scenario(int16_to_uint); {
+      unit(convert); {
+        out.type = &type::named_int16;
+        out.value.int16_value = 120;
+        out.convert (&type::named_uint);
+        ASSERT (out.value.uint_value == 120);
+      }; off();
+    }; off();
+
+    scenario(int32_to_int); {
+      unit(convert); {
+        out.type = &type::named_int32;
+        out.value.int32_value = 120;
+        out.convert (&type::named_int);
+        ASSERT (out.value.int_value == 120);
+      }; off();
+    }; off();
+
+    scenario(int64_to_uintptr); {
+      unit(convert); {
+        out.type = &type::named_int64;
+        out.value.int64_value = 120;
+        out.convert (&type::named_uintptr);
+        ASSERT (out.value.uintptr_value == 120);
+      }; off();
+    }; off();
+
+    scenario(uint_to_float32); {
+      unit(convert); {
+        out.type = &type::named_uint;
+        out.value.uint_value = 120;
+        out.convert (&type::named_float32);
+        ASSERT (out.value.float32_value == 120);
+      }; off();
+    }; off();
+
+    scenario(int_to_complex64); {
+      unit(convert); {
+        out.type = &type::named_int;
+        out.value.int_value = 120;
+        out.convert (&type::named_complex64);
+        ASSERT (out.value.complex64_value == 120);
+      }; off();
+    }; off();
+
+    scenario(uintptr_to_float64); {
+      unit(convert); {
+        out.type = &type::named_uintptr;
+        out.value.uintptr_value = 120;
+        out.convert (&type::named_float64);
+        ASSERT (out.value.float64_value == 120);
+      }; off();
+    }; off();
+
+    scenario(float32_to_complex128); {
+      unit(convert); {
+        out.type = &type::named_float32;
+        out.value.float32_value = 120;
+        out.convert (&type::named_complex128);
+        ASSERT (out.value.complex128_value == 120);
+      }; off();
+    }; off();
+
+    scenario(float64_to_integer); {
+      unit(convert); {
+        out.type = &type::named_float64;
+        out.value.float64_value = 120;
+        out.convert (type::UntypedInteger::instance ());
+        ASSERT (out.value.untyped_integer_value == 120);
+      }; off();
+    }; off();
+
+    scenario(complex64_to_float); {
+      unit(convert); {
+        out.type = &type::named_complex64;
+        out.value.complex64_value = 120;
+        out.convert (type::UntypedFloat::instance ());
+        ASSERT (out.value.untyped_float_value == 120);
+      }; off();
+    }; off();
+
+    scenario(complex128_to_int8); {
+      unit(convert); {
+        out.type = &type::named_complex128;
+        out.value.complex128_value = 120;
+        out.convert (&type::named_int8);
+        ASSERT (out.value.int8_value == 120);
+      }; off();
+    }; off();
+
+    scenario(complex128_to_string); {
+      unit(convert); {
+        out.type = &type::named_complex128;
+        out.value.complex128_value = 120;
+        out.convert (&type::named_string);
+        ASSERT (out.value.complex128_value == 120);
+      }; off();
+    }; off();
+
+    scenario(string_to_string); {
+      unit(convert); {
+        out.type = type::UntypedString::instance ();
+        out.value.untyped_string_value = runtime::String::make ("hello");
+        out.convert (&type::named_string);
+        ASSERT (out.value.string_value == "hello");
+      }; off();
+    }; off();
+
+    scenario(nil_to_pointer); {
+      unit(convert); {
+        out.type = type::UntypedNil::instance ();
+        out.convert (type::named_int8.get_pointer ());
+        //ASSERT (out.value.pointer_value == NULL);
+      }; off();
+    }; off();
+
+    scenario(nil_to_slice); {
+      unit(convert); {
+        out.type = type::UntypedNil::instance ();
+        out.convert (type::named_int8.get_slice ());
+        ASSERT (out.value.slice_value.is_nil ());
+      }; off();
+    }; off();
+
+    scenario(uint8); {
+      unit(to_int); {
+        out.type = &type::named_uint8;
+        out.value.uint8_value = 8;
+        ASSERT (out.to_int () == 8);
+      }; off();
+    }; off();
+    scenario(uint16); {
+      unit(to_int); {
+        out.type = &type::named_uint16;
+        out.value.uint16_value = 16;
+        ASSERT (out.to_int () == 16);
+      }; off();
+    }; off();
+    scenario(uint32); {
+      unit(to_int); {
+        out.type = &type::named_uint32;
+        out.value.uint32_value = 32;
+        ASSERT (out.to_int () == 32);
+      }; off();
+    }; off();
+    scenario(uint64); {
+      unit(to_int); {
+        out.type = &type::named_uint64;
+        out.value.uint64_value = 64;
+        ASSERT (out.to_int () == 64);
+      }; off();
+    }; off();
+    scenario(int8); {
+      unit(to_int); {
+        out.type = &type::named_int8;
+        out.value.int8_value = 8;
+        ASSERT (out.to_int () == 8);
+      }; off();
+    }; off();
+    scenario(int16); {
+      unit(to_int); {
+        out.type = &type::named_int16;
+        out.value.int16_value = 16;
+        ASSERT (out.to_int () == 16);
+      }; off();
+    }; off();
+    scenario(int32); {
+      unit(to_int); {
+        out.type = &type::named_int32;
+        out.value.int32_value = 32;
+        ASSERT (out.to_int () == 32);
+      }; off();
+    }; off();
+    scenario(int64); {
+      unit(to_int); {
+        out.type = &type::named_int64;
+        out.value.int64_value = 64;
+        ASSERT (out.to_int () == 64);
+      }; off();
+    }; off();
+    scenario(uint); {
+      unit(to_int); {
+        out.type = &type::named_uint;
+        out.value.uint_value = 65;
+        ASSERT (out.to_int () == 65);
+      }; off();
+    }; off();
+    scenario(int); {
+      unit(to_int); {
+        out.type = &type::named_int;
+        out.value.int_value = 66;
+        ASSERT (out.to_int () == 66);
+      }; off();
+    }; off();
+    scenario(uintptr); {
+      unit(to_int); {
+        out.type = &type::named_uintptr;
+        out.value.uintptr_value = 67;
+        ASSERT (out.to_int () == 67);
+      }; off();
+    }; off();
+
+    std::stringstream str;
+
+    scenario (Unknown); {
+      unit(print); {
+        out.kind = ExpressionValue::Unknown;
+        out.print (str);
+        ASSERT (str.str () == "Unknown");
+      }; off();
+    }; off();
+
+    scenario (Error); {
+      unit(print); {
+        out.kind = ExpressionValue::Error;
+        out.print (str);
+        ASSERT (str.str () == "Error");
+      }; off();
+    }; off();
+
+    scenario (Value); {
+      unit(print); {
+        out.kind = ExpressionValue::Value;
+        out.type = &type::named_int;
+        out.print (str);
+        ASSERT (str.str () == "Value int Unknown Unknown");
+      }; off();
+    }; off();
+
+    out.kind = ExpressionValue::Constant;
+
+    scenario (nil); {
+      unit(print); {
+        out.type = type::UntypedNil::instance ();
+        out.print (str);
+        ASSERT (str.str () == "Constant <<nil>> <nil> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(boolean); {
+      unit(print); {
+        out.type = type::UntypedBoolean::instance ();
+        out.value.untyped_boolean_value = true;
+        out.print (str);
+        ASSERT (str.str () == "Constant <<boolean>> <true> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(rune); {
+      unit(print); {
+        out.type = type::UntypedRune::instance ();
+        out.value.untyped_rune_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant <<rune>> <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(integer); {
+      unit(print); {
+        out.type = type::UntypedInteger::instance ();
+        out.value.untyped_integer_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant <<integer>> <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(float); {
+      unit(print); {
+        out.type = type::UntypedFloat::instance ();
+        out.value.untyped_float_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant <<float>> <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(complex); {
+      unit(print); {
+        out.type = type::UntypedComplex::instance ();
+        out.value.untyped_complex_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant <<complex>> <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(string_untyped); {
+      unit(print); {
+        out.type = type::UntypedString::instance ();
+        out.value.untyped_string_value = runtime::String::make ("hello");
+        out.print (str);
+        ASSERT (str.str () == "Constant <<string>> <hello> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(bool); {
+      unit(print); {
+        out.type = &type::named_bool;
+        out.value.bool_value = true;
+        out.print (str);
+        ASSERT (str.str () == "Constant bool <true> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(uint8); {
+      unit(print); {
+        out.type = &type::named_uint8;
+        out.value.uint8_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant uint8 <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(uint16); {
+      unit(print); {
+        out.type = &type::named_uint16;
+        out.value.uint16_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant uint16 <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(uint32); {
+      unit(print); {
+        out.type = &type::named_uint32;
+        out.value.uint32_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant uint32 <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(uint64); {
+      unit(print); {
+        out.type = &type::named_uint64;
+        out.value.uint64_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant uint64 <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(int8); {
+      unit(print); {
+        out.type = &type::named_int8;
+        out.value.int8_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant int8 <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(int16); {
+      unit(print); {
+        out.type = &type::named_int16;
+        out.value.int16_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant int16 <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(int32); {
+      unit(print); {
+        out.type = &type::named_int32;
+        out.value.int32_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant int32 <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(int64); {
+      unit(print); {
+        out.type = &type::named_int64;
+        out.value.int64_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant int64 <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(float32); {
+      unit(print); {
+        out.type = &type::named_float32;
+        out.value.float32_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant float32 <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(float64); {
+      unit(print); {
+        out.type = &type::named_float64;
+        out.value.float64_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant float64 <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(complex64); {
+      unit(print); {
+        out.type = &type::named_complex64;
+        out.value.complex64_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant complex64 <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(complex128); {
+      unit(print); {
+        out.type = &type::named_complex128;
+        out.value.complex128_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant complex128 <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(uint); {
+      unit(print); {
+        out.type = &type::named_uint;
+        out.value.uint_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant uint <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(int); {
+      unit(print); {
+        out.type = &type::named_int;
+        out.value.int_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant int <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(uintptr); {
+      unit(print); {
+        out.type = &type::named_uintptr;
+        out.value.uintptr_value = 89;
+        out.print (str);
+        ASSERT (str.str () == "Constant uintptr <89> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(string); {
+      unit(print); {
+        out.type = &type::named_string;
+        out.value.string_value = runtime::String::make ("hello");
+        out.print (str);
+        ASSERT (str.str () == "Constant string <hello> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario(pointer); {
+      unit(print); {
+        out.type = type::named_string.get_pointer ();
+        out.print (str);
+        ASSERT (str.str () == "Constant *string <nil> Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario (Variable); {
+      unit(print); {
+        out.kind = ExpressionValue::Variable;
+        out.type = &type::named_int;
+        out.print (str);
+        ASSERT (str.str () == "Variable int Unknown Unknown");
+      }; off();
+    }; off();
+
+    scenario (Type); {
+      unit(print); {
+        out.kind = ExpressionValue::Type;
+        out.type = &type::named_int;
+        out.print (str);
+        ASSERT (str.str () == "Type int");
+      }; off();
+    }; off();
+
+    scenario (EmptyType); {
+      unit(print); {
+        out.kind = ExpressionValue::EmptyType;
+        out.print (str);
+        ASSERT (str.str () == "EmptyType");
+      }; off();
+    }; off();
+
+    scenario (Void); {
+      unit(print); {
+        out.kind = ExpressionValue::Void;
+        out.print (str);
+        ASSERT (str.str () == "Void");
+      }; off();
+    }; off();
+
+    scenario (Polymorhpic_Function); {
+      unit(print); {
+        out.kind = ExpressionValue::Polymorphic_Function;
+        out.polymorphic_function = new decl::New ();
+        out.print (str);
+        ASSERT (str.str () == "Polymorphic_Function new");
+      }; off();
+    }; off();
+
+    scenario (named_to_untyped); {
+      unit(is_assignable); {
+        ExpressionValue ev = ExpressionValue::make_value (&named_int, Immutable, Immutable);
+        ASSERT (ev.is_assignable (UntypedInteger::instance ()) == false);
+      }; off();
+    }; off();
+
+    scenario (identical); {
+      unit(is_assignable); {
+        ExpressionValue ev = ExpressionValue::make_value (&named_int, Immutable, Immutable);
+        ASSERT (ev.is_assignable (&named_int) == true);
+      }; off();
+    }; off();
+
+    scenario (typed_to_named); {
+      unit(is_assignable); {
+        ExpressionValue ev = ExpressionValue::make_value (named_int.underlying_type (), Immutable, Immutable);
+        ASSERT (ev.is_assignable (&named_int) == true);
+      }; off();
+    }; off();
+
+    scenario (nil_to_pointer); {
+      unit(is_assignable); {
+        ExpressionValue ev = ExpressionValue::make_nil ();
+        ASSERT (ev.is_assignable (named_int.get_pointer ()) == true);
+      }; off();
+    }; off();
+
+    scenario (nil_to_function); {
+      unit(is_assignable); {
+        util::Location loc;
+        decl::ParameterList pl (loc);
+        type::Function f (&pl, &pl);
+        ExpressionValue ev = ExpressionValue::make_nil ();
+        ASSERT (ev.is_assignable (&f) == true);
+      }; off();
+    }; off();
+
+    scenario (nil_to_slice); {
+      unit(is_assignable); {
+        ExpressionValue ev = ExpressionValue::make_nil ();
+        ASSERT (ev.is_assignable (named_int.get_slice ()) == true);
+      }; off();
+    }; off();
+
+    scenario (nil_to_map); {
+      unit(is_assignable); {
+        ExpressionValue ev = ExpressionValue::make_nil ();
+        ASSERT (ev.is_assignable (Map::make (&named_int, &named_int)) == true);
+      }; off();
+    }; off();
+
+    scenario (nil_to_interface); {
+      unit(is_assignable); {
+        Interface i (NULL);
+        ExpressionValue ev = ExpressionValue::make_nil ();
+        ASSERT (ev.is_assignable (Map::make (&named_int, &i)) == true);
+      }; off();
+    }; off();
+
+    scenario (untyped_to_named); {
+      unit(is_assignable); {
+        ExpressionValue ev = ExpressionValue::make_integer (87);
+        ASSERT (ev.is_assignable (&named_int) == true);
+      }; off();
+    }; off();
+
+    scenario (untyped_to_named_not_representable); {
+      unit(is_assignable); {
+        ExpressionValue ev = ExpressionValue::make_integer (300);
+        ASSERT (ev.is_assignable (&named_uint8) == false);
+      }; off();
+    }; off();
+  }; off();
+
+  scenario (print_ExpressionValue); {
+    unit(left_shift_operator); {
+      ExpressionValue out;
+      out.kind = ExpressionValue::Void;
+      std::stringstream str;
+      str << out;
+      ASSERT (str.str () == "Void");
+    }; off();
+  }; off();
+
+}; off();

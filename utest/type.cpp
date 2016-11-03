@@ -9,8 +9,8 @@
 #include "astgen.hpp"
 #include "error_reporter.hpp"
 #include "scope.hpp"
-#include "enter_predeclared_identifiers.hpp"
 #include "symbol_visitor.hpp"
+#include "symbol_table.hpp"
 
 #include <sstream>
 
@@ -43,7 +43,7 @@ main (int argc, char** argv)
   {
     std::stringstream ss;
     ss << static_cast<Type&> (named_int);
-    tap.tassert ("operator<<", ss.str () == named_int.to_error_string ());
+    tap.tassert ("operator<<", ss.str () == "int");
   }
 
   {
@@ -186,13 +186,14 @@ main (int argc, char** argv)
 
   {
     util::ErrorReporter er;
-    Scope scope;
-    semantic::enter_predeclared_identifiers (&scope);
+    SymbolTable symbol_table;
+    symbol_table.open_scope ();
+    semantic::populate_universe_block (symbol_table);
     NamedType mytype (gen_type_decl ("mytype", gen_field_list ("myfield", "int")));
     decl::Method method (gen_method_decl ("myfield"), &mytype);
     mytype.insert_method (&method);
-    mytype.process_declaration (er, &scope);
-    tap.tassert ("NamedType::process_declaration", er.count () == 1);
+    mytype.process_declaration (er, symbol_table);
+    tap.tassert ("NamedType::process_declaration", er.list ().size () == 1);
   }
 
   {
@@ -240,7 +241,6 @@ main (int argc, char** argv)
   scalar_test<UntypedFloat> (tap, "UntypedFloat", "<<float>>", Untyped_Float_Kind);
   scalar_test<UntypedComplex> (tap, "UntypedComplex", "<<complex>>", Untyped_Complex_Kind);
   scalar_test<UntypedString> (tap, "UntypedString", "<<string>>", Untyped_String_Kind);
-  scalar_test<type::PolymorphicFunction> (tap, "PolymorphicFunction", "<<polymorphic function>>", Polymorphic_Function_Kind);
   scalar_test<FileDescriptor> (tap, "FileDescriptor", "<FileDescriptor>", File_Descriptor_Kind);
 
   {
@@ -556,6 +556,10 @@ main (int argc, char** argv)
   {
     const Type* t = named_int.get_heap ()->get_pointer ();
     tap.tassert ("Type::move", t->move () == t);
+  }
+  {
+    const Type* t = named_int.get_pointer ();
+    tap.tassert ("Type::move", t->move () == NULL);
   }
   {
     tap.tassert ("Type::move", named_int.move () == NULL);
@@ -1041,6 +1045,7 @@ main (int argc, char** argv)
     tap.tassert ("type::is_slice_of_runes", named_rune.get_slice ()->is_slice_of_runes () == true && named_string.get_slice ()->is_slice_of_runes () == false && named_int.is_slice_of_runes () == false);
     tap.tassert ("type::is_arithmetic", named_int.is_arithmetic () == true && named_string.is_arithmetic () == false);
     tap.tassert ("type::is_integral", named_int.is_integral () == true && named_float32.is_integral () == false);
+    tap.tassert ("type::is_any_boolean", named_bool.is_any_boolean () == true && named_float32.is_any_boolean () == false);
 
     tap.tassert ("type::pointer_to_array", named_int.get_array (3)->get_pointer ()->pointer_to_array () != NULL && named_int.pointer_to_array () == NULL);
   }
@@ -1078,26 +1083,6 @@ main (int argc, char** argv)
     tap.tassert ("type::contains_pointer struct false", s.contains_pointer () == false);
     s.append_field (NULL, false, "r", loc, named_int.get_pointer (), TagSet ());
     tap.tassert ("type::contains_pointer struct true", s.contains_pointer () == true);
-  }
-
-  {
-    // Assignable tests
-    tap.tassert ("type::are_assignable to untyped", are_assignable (&named_int, semantic::Value (), UntypedInteger::instance ()) == false);
-    tap.tassert ("type::are_assignable identical", are_assignable (&named_int, semantic::Value (), &named_int) == true);
-    tap.tassert ("type::are_assignable unnamed to named", are_assignable (Int::instance (), semantic::Value (), &named_int) == true);
-    tap.tassert ("type::are_assignable nil to pointer", are_assignable (UntypedNil::instance (), semantic::Value (), named_int.get_pointer ()) == true);
-    util::Location loc;
-    type::Function f (new ParameterList (loc), new ParameterList (loc));
-    tap.tassert ("type::are_assignable nil to function", are_assignable (UntypedNil::instance (), semantic::Value (), &f) == true);
-    tap.tassert ("type::are_assignable nil to slice", are_assignable (UntypedNil::instance (), semantic::Value (), named_int.get_slice ()) == true);
-    tap.tassert ("type::are_assignable nil to map", are_assignable (UntypedNil::instance (), semantic::Value (), Map::make (&named_int, &named_int)) == true);
-    type::Interface i (NULL);
-    tap.tassert ("type::are_assignable nil to interface", are_assignable (UntypedNil::instance (), semantic::Value (), &i) == true);
-    semantic::Value v;
-    v.present = true;
-    tap.tassert ("type::are_assignable untyped to typed", are_assignable (UntypedInteger::instance (), v, &named_int) == true);
-    v.untyped_integer_value = 300;
-    tap.tassert ("type::are_assignable untyped not representable", are_assignable (UntypedInteger::instance (), v, &named_uint8) == false);
   }
 
   {

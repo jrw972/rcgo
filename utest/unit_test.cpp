@@ -206,6 +206,7 @@ struct UnitTesterImpl : public UnitTester
     test_fail_ = true;
   }
 
+  // Determine the maximum number of results for a tree.
   void analyze (Tree* tree) const
   {
     if (tree->left)
@@ -229,15 +230,17 @@ struct UnitTesterImpl : public UnitTester
         break;
       case Unit:
       {
-        StringMapType::const_iterator pos = unit_to_funcs_.find (tree->id);
-        if (pos != unit_to_funcs_.end ())
+        StringMapType::const_iterator pos = unit_to_funcs_.lower_bound (tree->id);
+        const size_t s = tree->id.size ();
+        size_t count = 0;
+        while (pos != unit_to_funcs_.end () &&
+               pos->first.size () >= s &&
+               pos->first.substr (0, s) == tree->id)
           {
-            tree->worst_case = pos->second.size ();
+            count += pos->second.size ();
+            ++pos;
           }
-        else
-          {
-            tree->worst_case = 0;
-          }
+        tree->worst_case = count;
       }
       break;
       case Scenario:
@@ -258,6 +261,7 @@ struct UnitTesterImpl : public UnitTester
 
   typedef std::vector<void (*) () > FuncVector;
 
+  // Evaluate a tree producing a vector of functions to execute.
   void evaluate (Tree* tree, FuncVector& out) const
   {
     switch (tree->op)
@@ -320,10 +324,14 @@ struct UnitTesterImpl : public UnitTester
       break;
       case Unit:
       {
-        StringMapType::const_iterator pos = unit_to_funcs_.find (tree->id);
-        if (pos != unit_to_funcs_.end ())
+        StringMapType::const_iterator pos = unit_to_funcs_.lower_bound (tree->id);
+        const size_t s = tree->id.size ();
+        while (pos != unit_to_funcs_.end () &&
+               pos->first.size () >= s &&
+               pos->first.substr (0, s) == tree->id)
           {
             out.insert (out.end (), pos->second.begin (), pos->second.end ());
+            ++pos;
           }
       }
       break;
@@ -339,6 +347,8 @@ struct UnitTesterImpl : public UnitTester
       }
   }
 
+
+  // Check that a function is included by the tree.
   bool check (Tree* tree, void (*func) ()) const
   {
     switch (tree->op)
@@ -370,8 +380,9 @@ struct UnitTesterImpl : public UnitTester
         break;
       case Unit:
       {
+        const std::size_t s = tree->id.size ();
         FuncToUnitMapType::const_iterator p = func_to_unit_.find (func);
-        return p != func_to_unit_.end () && p->second == tree->id;
+        return p != func_to_unit_.end () && p->second.size () >= s && p->second.substr (0, s) == tree->id;
       }
       break;
       case Scenario:

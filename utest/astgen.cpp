@@ -20,10 +20,11 @@ ast::ActionDecl* gen_action_decl (const std::string& name, long dimension)
     }
   else
     {
-      semantic::Value v;
-      v.present = true;
-      v.untyped_integer_value = dimension;
-      return new ActionDecl (1, new Literal (1, type::UntypedInteger::instance (), v), gen_receiver (), new Identifier (1, name), NULL, NULL);
+      semantic::ExpressionValue v;
+      v.kind = semantic::ExpressionValue::Constant;
+      v.type = type::UntypedInteger::instance ();
+      v.value.untyped_integer_value = dimension;
+      return new ActionDecl (1, new Literal (1, v), gen_receiver (), new Identifier (1, name), NULL, NULL);
     }
 }
 
@@ -35,10 +36,11 @@ ast::ReactionDecl* gen_reaction_decl (const std::string& name, long dimension)
     }
   else
     {
-      semantic::Value v;
-      v.present = true;
-      v.untyped_integer_value = dimension;
-      return new ReactionDecl (1, new Literal (1, type::UntypedInteger::instance (), v), gen_receiver (), new Identifier (1, name), new ParameterList (1), NULL);
+      semantic::ExpressionValue v;
+      v.kind = semantic::ExpressionValue::Constant;
+      v.type = type::UntypedInteger::instance ();
+      v.value.untyped_integer_value = dimension;
+      return new ReactionDecl (1, new Literal (1, v), gen_receiver (), new Identifier (1, name), new ParameterList (1), NULL);
     }
 }
 
@@ -82,10 +84,11 @@ ast::ConstDecl* gen_const_decl (const std::string& name)
   IdentifierList* ids = new IdentifierList (1);
   ids->append (new Identifier (1, name));
   ExpressionList* exprs = new ExpressionList (1);
-  semantic::Value v;
-  v.present = true;
-  v.untyped_integer_value = 1;
-  exprs->append (new Literal (1, type::UntypedInteger::instance (), v));
+  semantic::ExpressionValue v;
+  v.kind = semantic::ExpressionValue::Constant;
+  v.type = type::UntypedInteger::instance ();
+  v.value.untyped_integer_value = 1;
+  exprs->append (new Literal (1, v));
   return new ast::ConstDecl (1, ids, new EmptyType (1), exprs);
 }
 

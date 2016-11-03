@@ -43,8 +43,6 @@ size_t alignment (const Type* type)
     case Getter_Kind:
     case Reaction_Kind:
 
-    case Polymorphic_Function_Kind:
-
     case Named_Kind:
       NOT_REACHED;
 
@@ -152,8 +150,6 @@ size_t size (const Type* type)
     case Initializer_Kind:
     case Getter_Kind:
     case Reaction_Kind:
-
-    case Polymorphic_Function_Kind:
 
     case Named_Kind:
       NOT_REACHED;

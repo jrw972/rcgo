@@ -1,12 +1,10 @@
-#include "compute_receiver_access.hpp"
-
 #include "node.hpp"
 #include "node_visitor.hpp"
 #include "symbol_visitor.hpp"
 #include "symbol_cast.hpp"
 #include "parameter_list.hpp"
-#include "semantic.hpp"
 #include "callable.hpp"
+#include "polymorphic_function.hpp"
 
 namespace semantic
 {
@@ -212,8 +210,8 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (Call& node)
   {
-    assert (node.expression->eval.expression_kind != UnknownExpressionKind);
-    if (node.expression->eval.expression_kind == TypeExpressionKind)
+    assert (node.expression->eval.kind != ExpressionValue::Unknown);
+    if (node.expression->eval.kind == ExpressionValue::Type)
       {
         // Conversion.
         node.arguments->accept (*this);
@@ -228,9 +226,9 @@ struct Visitor : public ast::DefaultNodeVisitor
 
     // Check if a mutable pointer goes into a function.
     bool flag = false;
-    if (node.polymorphic_function != NULL)
+    if (node.expression->eval.is_polymorphic_function ())
       {
-        node.polymorphic_function->compute_receiver_access (evals, node.eval.receiver_access, flag);
+        node.expression->eval.polymorphic_function->compute_receiver_access (evals, node.eval.receiver_access, flag);
       }
     else if (node.callable != NULL)
       {
@@ -252,7 +250,7 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
 
     // Check if a mutable pointer containing receiver state is returned.
-    if (node.eval.expression_kind != VoidExpressionKind &&
+    if (node.eval.kind != ExpressionValue::Void &&
         node.eval.type->contains_pointer () &&
         node.eval.indirection_mutability == Mutable)
       {
@@ -287,21 +285,6 @@ struct Visitor : public ast::DefaultNodeVisitor
   {
     node.eval.receiver_state = false;
     node.eval.receiver_access = AccessNone;
-  }
-
-  void visit (ast::UnaryArithmetic& node)
-  {
-    node.visit_children (*this);
-    node.eval.receiver_state = false;
-    node.eval.receiver_access = node.child->eval.receiver_access;
-  }
-
-  void visit (ast::BinaryArithmetic& node)
-  {
-    node.visit_children (*this);
-    node.eval.receiver_state = false;
-    node.eval.receiver_access = std::max (node.left->eval.receiver_access,
-                                          node.right->eval.receiver_access);
   }
 
   void visit (ast::InstanceDecl& node)

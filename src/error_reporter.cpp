@@ -15,7 +15,7 @@ std::ostream&
 operator<< (std::ostream& out,
             const Location& loc)
 {
-  return out << loc.file << ':' << loc.line;
+  return out << loc.file () << ':' << loc.line ();
 }
 
 std::ostream&
@@ -42,7 +42,7 @@ ErrorReporter::func_expects_arg (const Location& loc,
                                  const type::Type* expect,
                                  const type::Type* given)
 {
-  out_ << loc << ": function " << func << " expects argument " << idx << " to be of type " << expect->to_error_string () << " but given " << given->to_error_string () << ' ' << Func_Expects_Arg << '\n';
+  out_ << loc << ": function " << func << " expects argument " << idx << " to be of type " << *expect << " but given " << *given << ' ' << Func_Expects_Arg << '\n';
   return bump (Func_Expects_Arg);
 }
 
@@ -51,7 +51,7 @@ ErrorReporter::cannot_be_applied (const Location& loc,
                                   const std::string& op,
                                   const type::Type* type)
 {
-  out_ << loc << ": " << op << " cannot be applied to " << type->to_error_string () << ' ' << Cannot_Be_Applied << '\n';
+  out_ << loc << ": " << op << " cannot be applied to " << *type << ' ' << Cannot_Be_Applied << '\n';
   return bump (Cannot_Be_Applied);
 }
 
@@ -61,7 +61,7 @@ ErrorReporter::cannot_be_applied (const Location& loc,
                                   const type::Type* left,
                                   const type::Type* right)
 {
-  out_ << loc << ": " << op << " cannot be applied to " << left->to_error_string () << " and " << right->to_error_string () << ' ' << Cannot_Be_Applied << '\n';
+  out_ << loc << ": " << op << " cannot be applied to " << *left << " and " << *right << ' ' << Cannot_Be_Applied << '\n';
   return bump (Cannot_Be_Applied);
 }
 
@@ -82,10 +82,10 @@ ErrorReporter::hidden_symbol (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::requires_value_or_variable (const Location& loc)
+ErrorReporter::expected_an_rvalue (const Location& loc)
 {
-  out_ << loc << ": required a value or variable " << Requires_Value_Or_Variable << '\n';
-  return bump (Requires_Value_Or_Variable);
+  out_ << loc << ": expected an rvalue " << Expected_An_Rvalue << '\n';
+  return bump (Expected_An_Rvalue);
 }
 
 ErrorCode
@@ -123,7 +123,7 @@ ErrorReporter::cannot_convert (const Location& loc,
                                const type::Type* from,
                                const type::Type* to)
 {
-  out_ << loc << ": cannot convert expression of type " << from->to_error_string () << " to " << to->to_error_string () << ' ' << Cannot_Convert << '\n';
+  out_ << loc << ": cannot convert expression of type " << *from << " to " << *to << ' ' << Cannot_Convert << '\n';
   return bump (Cannot_Convert);
 }
 
@@ -155,7 +155,7 @@ ErrorCode
 ErrorReporter::non_integer_array_dimension (const Location& loc,
     const type::Type* type)
 {
-  out_ << loc << ": cannot convert value of type " << type->to_error_string () << " to integer for array dimension " << Non_Integer_Array_Dimension << '\n';
+  out_ << loc << ": cannot convert value of type " << *type << " to integer for array dimension " << Non_Integer_Array_Dimension << '\n';
   return bump (Non_Integer_Array_Dimension);
 }
 
@@ -196,22 +196,39 @@ ErrorReporter::expected_immutable_indirection_mutability (const Location& loc)
   return bump (Expected_Immutable_Indirection_Mutability);
 }
 
+ErrorCode
+ErrorReporter::length_exceeds_capacity (const Location& loc,
+                                        long len,
+                                        long cap)
+{
+  out_ << loc << ": length (" << len << ") exceeds capacity (" << cap << ")" << Length_Exceeds_Capacity << '\n';
+  return bump (Length_Exceeds_Capacity);
+}
+
+ErrorCode
+ErrorReporter::destination_is_not_mutable (const Location& loc)
+{
+  out_ << loc << ": destination is not mutable " << Destination_Is_Not_Mutable << '\n';
+  return bump (Destination_Is_Not_Mutable);
+}
+
+ErrorCode
+ErrorReporter::assignment_leaks_immutable_pointers (const Location& loc)
+{
+  out_ << loc << ": assignment leaks immutable pointers " << Assignment_Leaks_Immutable_Pointers << '\n';
+  return bump (Assignment_Leaks_Immutable_Pointers);
+}
 
 const ErrorReporter::ListType& ErrorReporter::list () const
 {
   return list_;
 }
 
-size_t ErrorReporter::count () const
-{
-  return list_.size ();
-}
-
 ErrorCode
 ErrorReporter::bump (ErrorCode code)
 {
   list_.push_back (code);
-  if (limit_ > 0 && count () == limit_)
+  if (limit_ > 0 && list_.size () == limit_)
     {
       exit (EXIT_FAILURE);
     }

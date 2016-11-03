@@ -15,7 +15,6 @@ struct NodeVisitor
   virtual void visit (AddressOf& node) = 0;
   virtual void visit (Array& node) = 0;
   virtual void visit (Assign& node) = 0;
-  virtual void visit (BinaryArithmetic& node) = 0;
   virtual void visit (BindDecl& node) = 0;
   virtual void visit (BindPullPort& node) = 0;
   virtual void visit (BindPushPort& node) = 0;
@@ -69,7 +68,6 @@ struct NodeVisitor
   virtual void visit (TopLevelDeclList& node) = 0;
   virtual void visit (TypeDecl& node) = 0;
   virtual void visit (TypeExpression& node) = 0;
-  virtual void visit (UnaryArithmetic& node) = 0;
   virtual void visit (Var& node) = 0;
   virtual void visit (VariableList& node) = 0;
   virtual void visit (While& node) = 0;
@@ -84,7 +82,6 @@ struct DefaultNodeVisitor : public NodeVisitor
   virtual void visit (AddressOf& node);
   virtual void visit (Array& node);
   virtual void visit (Assign& node);
-  virtual void visit (BinaryArithmetic& node);
   virtual void visit (BindDecl& node);
   virtual void visit (BindPullPort& node);
   virtual void visit (BindPushPort& node);
@@ -138,7 +135,6 @@ struct DefaultNodeVisitor : public NodeVisitor
   virtual void visit (TopLevelDeclList& node);
   virtual void visit (TypeDecl& node);
   virtual void visit (TypeExpression& node);
-  virtual void visit (UnaryArithmetic& node);
   virtual void visit (Var& node);
   virtual void visit (VariableList& node);
   virtual void visit (While& node);

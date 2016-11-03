@@ -14,16 +14,17 @@
 
 #include <sstream>
 
-#include "semantic.hpp"
 #include "symbol.hpp"
 #include "executor_base.hpp"
 #include "type.hpp"
+#include "allocate.hpp"
 
 namespace runtime
 {
 using namespace semantic;
 using namespace decl;
 using namespace type;
+using namespace code;
 
 BuiltinFunction::BuiltinFunction (const std::string& id,
                                   const util::Location& loc,

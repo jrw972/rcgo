@@ -1,16 +1,15 @@
 #include "type.hpp"
 
-#include <sstream>
 #include <algorithm>
 
 #include "callable.hpp"
 #include "arch.hpp"
 #include "parameter_list.hpp"
 #include "symbol_visitor.hpp"
-#include "semantic.hpp"
 #include "node.hpp"
 #include "error_reporter.hpp"
 #include "process_type.hpp"
+#include "scope.hpp"
 
 namespace type
 {
@@ -24,13 +23,6 @@ Type::Type ()
 { }
 
 Type::~Type () { }
-
-std::string Type::to_error_string () const
-{
-  std::stringstream str;
-  print (str);
-  return str.str ();
-}
 
 const Type* Type::underlying_type () const
 {
@@ -208,10 +200,10 @@ void NamedType::accept (decl::ConstSymbolVisitor& visitor) const
 }
 
 bool
-NamedType::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+NamedType::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table)
 {
-  process_type (typedecl_->type, er, file_scope, true);
-  if (typedecl_->type->eval.expression_kind == TypeExpressionKind)
+  process_type (typedecl_->type, er, symbol_table, true);
+  if (typedecl_->type->eval.kind == ExpressionValue::Type)
     {
       underlying_type (typedecl_->type->eval.type);
       return true;
@@ -246,24 +238,24 @@ struct check_member_func
 struct process_declaration_func
 {
   util::ErrorReporter& er;
-  Scope* file_scope;
+  SymbolTable& symbol_table;
 
   process_declaration_func (util::ErrorReporter& a_er,
-                            Scope* a_file_scope)
+                            SymbolTable& a_symbol_table)
     : er (a_er)
-    , file_scope (a_file_scope)
+    , symbol_table (a_symbol_table)
   { }
 
   template <typename T>
   void operator() (T* t)
   {
-    t->process_declaration (er, file_scope);
+    t->process_declaration (er, symbol_table);
   }
 
 };
 
 void
-NamedType::post_process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+NamedType::post_process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table)
 {
   Scope s;
   // Enter all fields in a struct.
@@ -285,12 +277,12 @@ NamedType::post_process_declaration_i (util::ErrorReporter& er, Scope* file_scop
   std::for_each (reactions_.begin (), reactions_.end (), check_member_func (er, s));
   std::for_each (binds_.begin (), binds_.end (), check_member_func (er, s));
 
-  std::for_each (methods_.begin (), methods_.end (), process_declaration_func (er, file_scope));
-  std::for_each (initializers_.begin (), initializers_.end (), process_declaration_func (er, file_scope));
-  std::for_each (getters_.begin (), getters_.end (), process_declaration_func (er, file_scope));
-  std::for_each (actions_.begin (), actions_.end (), process_declaration_func (er, file_scope));
-  std::for_each (reactions_.begin (), reactions_.end (), process_declaration_func (er, file_scope));
-  std::for_each (binds_.begin (), binds_.end (), process_declaration_func (er, file_scope));
+  std::for_each (methods_.begin (), methods_.end (), process_declaration_func (er, symbol_table));
+  std::for_each (initializers_.begin (), initializers_.end (), process_declaration_func (er, symbol_table));
+  std::for_each (getters_.begin (), getters_.end (), process_declaration_func (er, symbol_table));
+  std::for_each (actions_.begin (), actions_.end (), process_declaration_func (er, symbol_table));
+  std::for_each (reactions_.begin (), reactions_.end (), process_declaration_func (er, symbol_table));
+  std::for_each (binds_.begin (), binds_.end (), process_declaration_func (er, symbol_table));
 }
 
 const Array* Type::to_array () const
@@ -782,7 +774,6 @@ INSTANCE(UntypedInteger)
 INSTANCE(UntypedFloat)
 INSTANCE(UntypedComplex)
 INSTANCE(UntypedString)
-INSTANCE(PolymorphicFunction)
 INSTANCE(String)
 
 Component::Component (Package* package, const util::Location& location)
@@ -1056,45 +1047,6 @@ choose (const Type* x, const Type* y)
   return (x->kind () > y->kind ()) ? x : y;
 }
 
-bool
-are_assignable (const Type* from, const Value& from_value, const Type* to)
-{
-  if (to->is_untyped ())
-    {
-      return false;
-    }
-
-  if (are_identical (from, to))
-    {
-      return true;
-    }
-
-  if (are_identical (from->underlying_type (), to->underlying_type ()) &&
-      (!from->is_named () || !to->is_named ()))
-    {
-      return true;
-    }
-
-  // TODO:  T is an interface type and x implements T.
-
-  if (from->kind () == Untyped_Nil_Kind &&
-      (to->underlying_kind () == Pointer_Kind ||
-       to->underlying_kind () == Function_Kind ||
-       to->underlying_kind () == Slice_Kind ||
-       to->underlying_kind () == Map_Kind ||
-       to->underlying_kind () == Interface_Kind))
-    {
-      return true;
-    }
-
-  if (from->is_untyped () && from_value.representable (from, to))
-    {
-      return true;
-    }
-
-  return false;
-}
-
 Callable*
 NamedType::find_callable (const std::string& name) const
 {
@@ -1155,6 +1107,7 @@ bool Type::is_typed_unsigned_integer () const
     case Uint32_Kind:
     case Uint64_Kind:
     case Uint_Kind:
+    case Uintptr_Kind:
       return true;
     default:
       return false;
@@ -1241,7 +1194,7 @@ bool Type::is_slice_of_bytes () const
     {
       return false;
     }
-  return slice_type->base_type->underlying_type ()->kind () == Uint8_Kind;
+  return slice_type->base_type == &named_byte;
 }
 
 bool Type::is_slice_of_runes () const
@@ -1251,7 +1204,7 @@ bool Type::is_slice_of_runes () const
     {
       return false;
     }
-  return slice_type->base_type->underlying_type ()->kind () == Int32_Kind;
+  return slice_type->base_type == &named_rune;
 }
 
 bool Type::is_arithmetic () const
@@ -1322,36 +1275,47 @@ Type::pointer_to_array () const
   return NULL;
 }
 
-util::Location loc ("<builtin>");
-NamedType named_bool ("bool", loc, Bool::instance ());
+NamedType named_bool ("bool", util::builtin, Bool::instance ());
 
-NamedType named_uint8 ("uint8", loc, Uint8::instance ());
-NamedType named_uint16 ("uint16", loc, Uint16::instance ());
-NamedType named_uint32 ("uint32", loc, Uint32::instance ());
-NamedType named_uint64 ("uint64", loc, Uint64::instance ());
+NamedType named_uint8 ("uint8", util::builtin, Uint8::instance ());
+NamedType named_uint16 ("uint16", util::builtin, Uint16::instance ());
+NamedType named_uint32 ("uint32", util::builtin, Uint32::instance ());
+NamedType named_uint64 ("uint64", util::builtin, Uint64::instance ());
 
-NamedType named_int8 ("int8", loc, Int8::instance ());
-NamedType named_int16 ("int16", loc, Int16::instance ());
-NamedType named_int32 ("int32", loc, Int32::instance ());
-NamedType named_int64 ("int64", loc, Int64::instance ());
+NamedType named_int8 ("int8", util::builtin, Int8::instance ());
+NamedType named_int16 ("int16", util::builtin, Int16::instance ());
+NamedType named_int32 ("int32", util::builtin, Int32::instance ());
+NamedType named_int64 ("int64", util::builtin, Int64::instance ());
 
-NamedType named_float32 ("float32", loc, Float32::instance ());
-NamedType named_float64 ("float64", loc, Float64::instance ());
+NamedType named_float32 ("float32", util::builtin, Float32::instance ());
+NamedType named_float64 ("float64", util::builtin, Float64::instance ());
 
-NamedType named_complex64 ("complex64", loc, Complex64::instance ());
-NamedType named_complex128 ("complex128", loc, Complex128::instance ());
+NamedType named_complex64 ("complex64", util::builtin, Complex64::instance ());
+NamedType named_complex128 ("complex128", util::builtin, Complex128::instance ());
 
-NamedType named_byte ("byte", loc, Uint8::instance ());
-NamedType named_rune ("rune", loc, Int32::instance ());
+NamedType named_byte ("byte", util::builtin, Uint8::instance ());
+NamedType named_rune ("rune", util::builtin, Int32::instance ());
 
-NamedType named_uint ("uint", loc, Uint::instance ());
-NamedType named_int ("int", loc, Int::instance ());
-NamedType named_uintptr ("uintptr", loc, Uintptr::instance ());
+NamedType named_uint ("uint", util::builtin, Uint::instance ());
+NamedType named_int ("int", util::builtin, Int::instance ());
+NamedType named_uintptr ("uintptr", util::builtin, Uintptr::instance ());
 
-NamedType named_string ("string", loc, String::instance ());
+NamedType named_string ("string", util::builtin, String::instance ());
 
-NamedType named_file_descriptor ("FileDescriptor", loc, FileDescriptor::instance ());
-NamedType named_timespec ("timespec", loc, (new Struct ())->append_field (NULL, false, "tv_sec", loc, &named_uint64, TagSet ())->append_field (NULL, false, "tv_nsec", loc, &named_uint64, TagSet ()));
+//  https://golang.org/ref/spec#Errors
+Interface* make_error ()
+{
+  Interface* i = new Interface (NULL);
+  ParameterList* parameter_list = new ParameterList (util::builtin);
+  ParameterList* return_parameter_list = new ParameterList (util::builtin);
+  return_parameter_list->append (Parameter::make_return (util::builtin, "", &named_string, Immutable));
+  i->methods["Error"] = new Function (parameter_list, return_parameter_list);
+  return i;
+}
+NamedType named_error ("error", util::builtin, make_error ());
+
+NamedType named_file_descriptor ("FileDescriptor", util::builtin, FileDescriptor::instance ());
+NamedType named_timespec ("timespec", util::builtin, (new Struct ())->append_field (NULL, false, "tv_sec", util::builtin, &named_uint64, TagSet ())->append_field (NULL, false, "tv_nsec", util::builtin, &named_uint64, TagSet ()));
 
 void Interface::print (std::ostream& out) const
 {
@@ -1871,17 +1835,6 @@ void UntypedString::print (std::ostream& out) const
 }
 
 UntypedString::UntypedString () { }
-
-void PolymorphicFunction::print (std::ostream& out) const
-{
-  out << "<<polymorphic function>>";
-}
-
-Kind PolymorphicFunction::kind () const
-{
-  return Polymorphic_Function_Kind;
-}
-PolymorphicFunction::PolymorphicFunction () { }
 
 void FileDescriptor::print (std::ostream& out) const
 {

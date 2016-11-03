@@ -3,12 +3,10 @@
 #include "process_type.hpp"
 #include "error_reporter.hpp"
 #include "scope.hpp"
-#include "value.hpp"
 #include "node.hpp"
 #include "type.hpp"
-#include "enter_predeclared_identifiers.hpp"
-#include "enter_top_level_identifiers.hpp"
 #include "parameter_list.hpp"
+#include "symbol_table.hpp"
 
 using namespace semantic;
 using namespace util;
@@ -19,11 +17,13 @@ using namespace ast;
 scope(semantic); {
 
   ErrorReporter er;
-  Scope scope;
+  SymbolTable symbol_table;
+  symbol_table.open_scope ();
+  Location loc (1);
 
   scenario(not_constant); {
     unit(process_array_dimension); {
-      enter_predeclared_identifiers (&scope);
+      populate_universe_block (symbol_table);
       ast::Identifier id2 (1, "new");
       ast::IdentifierExpression idx (1, &id2);
       ast::ExpressionList args (1);
@@ -32,81 +32,69 @@ scope(semantic); {
       ast::TypeExpression tex (1, &idtype2);
       args.append (&tex);
       ast::Call node (1, &idx, &args);
-      long dim = process_array_dimension (er, &scope, &node);
+      long dim = process_array_dimension (er, symbol_table, &node);
       ASSERT (dim == -1);
-      ASSERT (er.count () == 1);
+      ASSERT (er.list ().size () == 1);
     }; off();
   }; off();
 
   scenario(not_integer); {
     unit(process_array_dimension); {
-      semantic::Value sv;
-      sv.present = 1;
-      sv.untyped_string_value = runtime::String::make ("not an integer");
-      ast::Literal node (1, type::UntypedString::instance (), sv);
-      long dim = process_array_dimension (er, &scope, &node);
+      semantic::ExpressionValue sv;
+      sv.kind = semantic::ExpressionValue::Constant;
+      sv.type = type::UntypedString::instance ();
+      sv.value.untyped_string_value = runtime::String::make ("not an integer");
+      ast::Literal node (1, sv);
+      long dim = process_array_dimension (er, symbol_table, &node);
       ASSERT (dim == -1);
-      ASSERT (er.count () == 1);
+      ASSERT (er.list ().size () == 1);
     }; off();
   }; off();
 
   scenario(negative); {
     unit(process_array_dimension); {
-      semantic::Value sv;
-      sv.present = 1;
-      sv.untyped_integer_value = -37;
-      ast::Literal node (1, type::UntypedInteger::instance (), sv);
-      long dim = process_array_dimension (er, &scope, &node);
+      semantic::ExpressionValue sv;
+      sv.kind = semantic::ExpressionValue::Constant;
+      sv.type = type::UntypedInteger::instance ();
+      sv.value.untyped_integer_value = -37;
+      ast::Literal node (1, sv);
+      long dim = process_array_dimension (er, symbol_table, &node);
       ASSERT (dim == -1);
-      ASSERT (er.count () == 1);
+      ASSERT (er.list ().size () == 1);
     }; off();
   }; off();
 
   scenario(success); {
     unit(process_array_dimension); {
-      semantic::Value sv;
-      sv.present = 1;
-      sv.untyped_integer_value = 37;
-      ast::Literal node (1, type::UntypedInteger::instance (), sv);
-      long dim = process_array_dimension (er, &scope, &node);
+      semantic::ExpressionValue sv;
+      sv.kind = semantic::ExpressionValue::Constant;
+      sv.type = type::UntypedInteger::instance ();
+      sv.value.untyped_integer_value = 37;
+      ast::Literal node (1, sv);
+      long dim = process_array_dimension (er, symbol_table, &node);
       ASSERT (dim == 37);
     }; off();
   }; off();
-}; off();
-
-scope(semantic); {
-
-  ErrorReporter er;
-  Scope scope;
 
   unit(check_for_foreign_safe); {
-    Location loc (1);
     decl::ParameterList sig (loc);
     sig.append (Parameter::make (loc, "there", &named_int, Immutable, Immutable));
     check_for_foreign_safe (er, &sig);
-    ASSERT (er.count () == 0);
+    ASSERT (er.list ().size () == 0);
     sig.append (Parameter::make (loc, "there", named_int.get_pointer (), Immutable, Mutable));
     check_for_foreign_safe (er, &sig);
-    ASSERT (er.count () == 1);
+    ASSERT (er.list ().size () == 1);
   }; off();
-
-}; off();
-
-scope(semantic); {
-
-  ErrorReporter er;
-  Scope scope;
-  Location loc (1);
 
   scenario(require_component); {
     unit(process_receiver); {
-      enter_predeclared_identifiers (&scope);
+      populate_universe_block (symbol_table);
       NamedType mytype ("mytype", loc, &type::named_int);
       ast::Identifier this_id (1, "this");
       ast::Identifier type_id (1, "int");
       ast::Receiver receiver (1, &this_id, Mutable, Mutable, false, &type_id);
-      process_receiver (er, &scope, &mytype, &receiver, true, false);
-      ASSERT (er.count () == 2);
+      process_receiver (er, symbol_table, &mytype, &receiver, true, false);
+      ASSERT (er.list ().size () == 2);
     }; off();
   }; off();
 
@@ -117,8 +105,8 @@ scope(semantic); {
       ast::Identifier this_id (1, "this");
       ast::Identifier type_id (1, "mytype");
       ast::Receiver receiver (1, &this_id, Mutable, Mutable, false, &type_id);
-      process_receiver (er, &scope, &mytype, &receiver, true, false);
-      ASSERT (er.count () == 1);
+      process_receiver (er, symbol_table, &mytype, &receiver, true, false);
+      ASSERT (er.list ().size () == 1);
     }; off();
   }; off();
 
@@ -126,12 +114,12 @@ scope(semantic); {
     unit(process_receiver); {
       Component comp (NULL, loc);
       NamedType mytype ("mytype", loc, &comp);
-      scope.enter_symbol (&mytype);
+      symbol_table.enter_symbol (&mytype);
       ast::Identifier this_id (1, "this");
       ast::Identifier type_id (1, "mytype");
       ast::Receiver receiver (1, &this_id, Mutable, Mutable, true, &type_id);
-      process_receiver (er, &scope, &mytype, &receiver, true, true);
-      ASSERT (er.count () == 1);
+      process_receiver (er, symbol_table, &mytype, &receiver, true, true);
+      ASSERT (er.list ().size () == 1);
     }; off();
   }; off();
 
@@ -139,46 +127,39 @@ scope(semantic); {
     unit(process_receiver); {
       Component comp (NULL, loc);
       NamedType mytype ("mytype", loc, &comp);
-      scope.enter_symbol (&mytype);
+      symbol_table.enter_symbol (&mytype);
       ast::Identifier this_id (1, "this");
       ast::Identifier type_id (1, "mytype");
       ast::Receiver receiver (1, &this_id, Mutable, Immutable, true, &type_id);
-      decl::Parameter* parameter = process_receiver (er, &scope, &mytype, &receiver, true, true);
+      decl::Parameter* parameter = process_receiver (er, symbol_table, &mytype, &receiver, true, true);
       ASSERT (parameter != NULL);
       ASSERT (parameter->location == this_id.location);
       ASSERT (parameter->name == this_id.identifier);
       ASSERT (parameter->type == mytype.get_pointer ());
       ASSERT (parameter->intrinsic_mutability == Mutable);
       ASSERT (parameter->indirection_mutability == Immutable);
-      ASSERT (er.count () == 0);
+      ASSERT (er.list ().size () == 0);
     }; off();
   }; off();
 
   scenario(success_not_pointer); {
     unit(process_receiver); {
       NamedType mytype ("mytype", loc, &type::named_int);
-      scope.enter_symbol (&mytype);
+      symbol_table.enter_symbol (&mytype);
       ast::Identifier this_id (1, "this");
       ast::Identifier type_id (1, "mytype");
       ast::Receiver receiver (1, &this_id, Mutable, Mutable, false, &type_id);
-      decl::Parameter* parameter = process_receiver (er, &scope, &mytype, &receiver, false, false);
+      decl::Parameter* parameter = process_receiver (er, symbol_table, &mytype, &receiver, false, false);
       ASSERT (parameter != NULL);
       ASSERT (parameter->location == this_id.location);
       ASSERT (parameter->name == this_id.identifier);
       ASSERT (parameter->type == &mytype);
       ASSERT (parameter->intrinsic_mutability == Mutable);
       ASSERT (parameter->indirection_mutability == Mutable);
-      ASSERT (er.count () == 0);
+      ASSERT (er.list ().size () == 0);
     }; off();
   }; off();
 
-}; off();
-
-scope(semantic); {
-
-  ErrorReporter er;
-  Scope scope;
-  Location loc (1);
 
   scenario(bad_type); {
     unit(process_parameter_list); {
@@ -190,15 +171,15 @@ scope(semantic); {
       ast::VariableList variable_list (1, &identifiers, Mutable, Mutable, &type);
       ast::ParameterList parameter_list (1);
       parameter_list.append (&variable_list);
-      const decl::ParameterList* pl = process_parameter_list (er, &scope, &parameter_list, false);
+      const decl::ParameterList* pl = process_parameter_list (er, symbol_table, &parameter_list, false);
       ASSERT (pl != NULL);
-      ASSERT (er.count () == 1);
+      ASSERT (er.list ().size () == 1);
     }; off();
   }; off();
 
   scenario(success_return); {
     unit(process_parameter_list); {
-      enter_predeclared_identifiers (&scope);
+      populate_universe_block (symbol_table);
       ast::Identifier id1 (1, "x");
       ast::Identifier id2 (1, "int");
       ast::IdentifierList identifiers (1);
@@ -207,9 +188,9 @@ scope(semantic); {
       ast::VariableList variable_list (1, &identifiers, Mutable, Mutable, &type);
       ast::ParameterList parameter_list (1);
       parameter_list.append (&variable_list);
-      const decl::ParameterList* pl = process_parameter_list (er, &scope, &parameter_list, true);
+      const decl::ParameterList* pl = process_parameter_list (er, symbol_table, &parameter_list, true);
       ASSERT (pl != NULL);
-      ASSERT (er.count () == 0);
+      ASSERT (er.list ().size () == 0);
       ASSERT (pl->size () == 1);
       const decl::Parameter* p = pl->at (0);
       ASSERT (p->type == &type::named_int);
@@ -221,7 +202,7 @@ scope(semantic); {
 
   scenario(success); {
     unit(process_parameter_list); {
-      enter_predeclared_identifiers (&scope);
+      populate_universe_block (symbol_table);
       ast::Identifier id1 (1, "x");
       ast::Identifier id2 (1, "int");
       ast::IdentifierList identifiers (1);
@@ -230,9 +211,9 @@ scope(semantic); {
       ast::VariableList variable_list (1, &identifiers, Mutable, Mutable, &type);
       ast::ParameterList parameter_list (1);
       parameter_list.append (&variable_list);
-      const decl::ParameterList* pl = process_parameter_list (er, &scope, &parameter_list, false);
+      const decl::ParameterList* pl = process_parameter_list (er, symbol_table, &parameter_list, false);
       ASSERT (pl != NULL);
-      ASSERT (er.count () == 0);
+      ASSERT (er.list ().size () == 0);
       ASSERT (pl->size () == 1);
       const decl::Parameter* p = pl->at (0);
       ASSERT (p->type == &type::named_int);
@@ -242,17 +223,9 @@ scope(semantic); {
     }; off();
   }; off();
 
-}; off();
-
-scope(semantic); {
-
-  ErrorReporter er;
-  Scope scope;
-  Location loc (1);
-
   scenario(success); {
     unit(process_signature); {
-      enter_predeclared_identifiers (&scope);
+      populate_universe_block (symbol_table);
 
       ast::Identifier id1 (1, "x");
       ast::Identifier id2 (1, "int");
@@ -274,8 +247,8 @@ scope(semantic); {
 
       const decl::ParameterList* pl;
       const decl::ParameterList* rpl;
-      process_signature (er, &scope, &parameter_list, &return_parameter_list, true, pl, rpl);
-      ASSERT (er.count () == 0);
+      process_signature (er, symbol_table, &parameter_list, &return_parameter_list, true, pl, rpl);
+      ASSERT (er.list ().size () == 0);
       ASSERT (pl != NULL);
       ASSERT (rpl != NULL);
       ASSERT (pl->size () == 1);
@@ -284,12 +257,6 @@ scope(semantic); {
       ASSERT (rpl->at (0)->kind == Parameter::Return);
     }; off();
   }; off();
-
-}; off();
-
-scope(semantic); {
-  util::Location loc;
-  ErrorReporter er;
 
   scenario(duplicate_parameters); {
     unit(check_unique_parameters); {
@@ -300,16 +267,9 @@ scope(semantic); {
       return_parameters.append (Parameter::make (loc, "x", &type::named_int, Mutable, Mutable));
       type::Function func (&parameters, &return_parameters);
       check_unique_parameters (er, &func);
-      ASSERT (er.count () == 2);
+      ASSERT (er.list ().size () == 2);
     }; off();
   }; off();
-
-}; off();
-
-scope(semantic); {
-
-  ErrorReporter er;
-  Scope scope;
 
   scenario(IdentifierType); {
 
@@ -317,20 +277,20 @@ scope(semantic); {
       unit(process_type); {
         Identifier id (1, "not_declared");
         IdentifierType type (1, &id);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 1);
-        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 1);
+        ASSERT (type.eval.kind == ExpressionValue::Error);
       }; off();
     }; off();
 
     scenario(not_a_type); {
       unit(process_type); {
-        enter_predeclared_identifiers (&scope);
+        populate_universe_block (symbol_table);
         Identifier id (1, "true");
         IdentifierType type (1, &id);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 1);
-        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 1);
+        ASSERT (type.eval.kind == ExpressionValue::Error);
       }; off();
     }; off();
 
@@ -340,23 +300,23 @@ scope(semantic); {
         ast::Identifier id2 (1, "not_defined");
         ast::IdentifierType identifier_type (1, &id2);
         ast::TypeDecl typedecl (1, &id1, &identifier_type);
-        enter_top_level_identifiers (&typedecl, er, &scope, &scope);
+        enter_identifiers (&typedecl, er, symbol_table, true);
         Identifier id (1, "mytype");
         IdentifierType type (1, &id);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 2);
-        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 2);
+        ASSERT (type.eval.kind == ExpressionValue::Error);
       }; off();
     }; off();
 
     scenario(success); {
       unit(process_type); {
-        enter_predeclared_identifiers (&scope);
+        populate_universe_block (symbol_table);
         Identifier id (1, "int");
         IdentifierType type (1, &id);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 0);
-        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 0);
+        ASSERT (type.eval.kind == ExpressionValue::Type);
         ASSERT (type.eval.type == &named_int);
       }; off();
     }; off();
@@ -367,48 +327,51 @@ scope(semantic); {
 
     scenario(illegal_dimension); {
       unit(process_type); {
-        enter_predeclared_identifiers (&scope);
-        semantic::Value sv;
-        sv.present = 1;
-        sv.untyped_integer_value = -1;
-        ast::Literal dim (1, type::UntypedInteger::instance (), sv);
+        populate_universe_block (symbol_table);
+        semantic::ExpressionValue sv;
+        sv.kind = semantic::ExpressionValue::Constant;
+        sv.type = type::UntypedInteger::instance ();
+        sv.value.untyped_integer_value = -1;
+        ast::Literal dim (1, sv);
         Identifier id (1, "int");
         IdentifierType base (1, &id);
         ast::Array type (1, &dim, &base);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 1);
-        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 1);
+        ASSERT (type.eval.kind == ExpressionValue::Error);
       }; off();
     }; off();
 
     scenario(bad_base_type); {
       unit(process_type); {
-        semantic::Value sv;
-        sv.present = 1;
-        sv.untyped_integer_value = 1;
-        ast::Literal dim (1, type::UntypedInteger::instance (), sv);
+        semantic::ExpressionValue sv;
+        sv.kind = semantic::ExpressionValue::Constant;
+        sv.type = type::UntypedInteger::instance ();
+        sv.value.untyped_integer_value = 1;
+        ast::Literal dim (1, sv);
         Identifier id (1, "not_declared");
         IdentifierType base (1, &id);
         ast::Array type (1, &dim, &base);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 1);
-        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 1);
+        ASSERT (type.eval.kind == ExpressionValue::Error);
       }; off();
     }; off();
 
     scenario(success); {
       unit(process_type); {
-        enter_predeclared_identifiers (&scope);
-        semantic::Value sv;
-        sv.present = 1;
-        sv.untyped_integer_value = 1;
-        ast::Literal dim (1, type::UntypedInteger::instance (), sv);
+        populate_universe_block (symbol_table);
+        semantic::ExpressionValue sv;
+        sv.kind = semantic::ExpressionValue::Constant;
+        sv.type = type::UntypedInteger::instance ();
+        sv.value.untyped_integer_value = 1;
+        ast::Literal dim (1, sv);
         Identifier id (1, "int");
         IdentifierType base (1, &id);
         ast::Array type (1, &dim, &base);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 0);
-        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 0);
+        ASSERT (type.eval.kind == ExpressionValue::Type);
         ASSERT (type.eval.type == named_int.get_array (1));
       }; off();
     }; off();
@@ -422,21 +385,21 @@ scope(semantic); {
         Identifier id (1, "not_declared");
         IdentifierType base (1, &id);
         ast::Slice type (1, &base);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 1);
-        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 1);
+        ASSERT (type.eval.kind == ExpressionValue::Error);
       }; off();
     }; off();
 
     scenario(success); {
       unit(process_type); {
-        enter_predeclared_identifiers (&scope);
+        populate_universe_block (symbol_table);
         Identifier id (1, "int");
         IdentifierType base (1, &id);
         ast::Slice type (1, &base);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 0);
-        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 0);
+        ASSERT (type.eval.kind == ExpressionValue::Type);
         ASSERT (type.eval.type == named_int.get_slice ());
       }; off();
     }; off();
@@ -450,21 +413,21 @@ scope(semantic); {
         Identifier id (1, "not_declared");
         IdentifierType base (1, &id);
         ast::Pointer type (1, &base);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 1);
-        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 1);
+        ASSERT (type.eval.kind == ExpressionValue::Error);
       }; off();
     }; off();
 
     scenario(success); {
       unit(process_type); {
-        enter_predeclared_identifiers (&scope);
+        populate_universe_block (symbol_table);
         Identifier id (1, "int");
         IdentifierType base (1, &id);
         ast::Pointer type (1, &base);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 0);
-        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 0);
+        ASSERT (type.eval.kind == ExpressionValue::Type);
         ASSERT (type.eval.type == named_int.get_pointer ());
       }; off();
     }; off();
@@ -478,21 +441,21 @@ scope(semantic); {
         Identifier id (1, "not_declared");
         IdentifierType base (1, &id);
         ast::Heap type (1, &base);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 1);
-        ASSERT (type.eval.expression_kind == ErrorExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 1);
+        ASSERT (type.eval.kind == ExpressionValue::Error);
       }; off();
     }; off();
 
     scenario(success); {
       unit(process_type); {
-        enter_predeclared_identifiers (&scope);
+        populate_universe_block (symbol_table);
         Identifier id (1, "int");
         IdentifierType base (1, &id);
         ast::Heap type (1, &base);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 0);
-        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 0);
+        ASSERT (type.eval.kind == ExpressionValue::Type);
         ASSERT (type.eval.type == named_int.get_heap ());
       }; off();
     }; off();
@@ -503,9 +466,9 @@ scope(semantic); {
 
     unit(process_type); {
       ast::EmptyType type (1);
-      process_type (&type, er, &scope);
-      ASSERT (er.count () == 0);
-      ASSERT (type.eval.expression_kind == EmptyTypeExpressionKind);
+      process_type (&type, er, symbol_table);
+      ASSERT (er.list ().size () == 0);
+      ASSERT (type.eval.kind == ExpressionValue::EmptyType);
     }; off();
 
   }; off();
@@ -522,9 +485,9 @@ scope(semantic); {
         ast::VariableList vl (1, &identifiers, Immutable, Immutable, &vtype);
         ast::FieldList type (1);
         type.append (&vl);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () != 0);
-        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () != 0);
+        ASSERT (type.eval.kind == ExpressionValue::Type);
         const Struct* s = type.eval.type->to_struct ();
         ASSERT (s != NULL);
         ASSERT (s->field_count () == 0);
@@ -533,7 +496,7 @@ scope(semantic); {
 
     scenario(duplicate_field_name); {
       unit(process_type); {
-        enter_predeclared_identifiers (&scope);
+        populate_universe_block (symbol_table);
         ast::Identifier fid (1, "the_field");
         ast::IdentifierList identifiers (1);
         identifiers.append (&fid);
@@ -543,9 +506,9 @@ scope(semantic); {
         ast::VariableList vl (1, &identifiers, Immutable, Immutable, &vtype);
         ast::FieldList type (1);
         type.append (&vl);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () != 0);
-        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () != 0);
+        ASSERT (type.eval.kind == ExpressionValue::Type);
         const Struct* s = type.eval.type->to_struct ();
         ASSERT (s != NULL);
         ASSERT (s->field_count () == 1);
@@ -554,7 +517,7 @@ scope(semantic); {
 
     scenario(struct_success); {
       unit(process_type); {
-        enter_predeclared_identifiers (&scope);
+        populate_universe_block (symbol_table);
         ast::Identifier fid1 (1, "the_field");
         ast::Identifier fid2 (1, "another");
         ast::IdentifierList identifiers (1);
@@ -565,9 +528,9 @@ scope(semantic); {
         ast::VariableList vl (1, &identifiers, Immutable, Immutable, &vtype);
         ast::FieldList type (1);
         type.append (&vl);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 0);
-        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 0);
+        ASSERT (type.eval.kind == ExpressionValue::Type);
         const Struct* s = type.eval.type->to_struct ();
         ASSERT (s != NULL);
         ASSERT (s->field_count () == 2);
@@ -576,7 +539,7 @@ scope(semantic); {
 
     scenario(component_success); {
       unit(process_type); {
-        enter_predeclared_identifiers (&scope);
+        populate_universe_block (symbol_table);
         ast::Identifier fid1 (1, "the_field");
         ast::Identifier fid2 (1, "another");
         ast::IdentifierList identifiers (1);
@@ -588,9 +551,9 @@ scope(semantic); {
         ast::FieldList type (1);
         type.is_component = true;
         type.append (&vl);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 0);
-        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 0);
+        ASSERT (type.eval.kind == ExpressionValue::Type);
         const Struct* s = type.eval.type->to_struct ();
         ASSERT (s != NULL);
         ASSERT (s->kind () == Component_Kind);
@@ -602,9 +565,9 @@ scope(semantic); {
       unit(process_type); {
         ast::ParameterList pl (1);
         ast::PushPort type (1, &pl);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 0);
-        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 0);
+        ASSERT (type.eval.kind == ExpressionValue::Type);
         ASSERT (type.eval.type->kind () == Push_Port_Kind);
       }; off();
     }; off();
@@ -614,9 +577,9 @@ scope(semantic); {
         ast::ParameterList pl (1);
         ast::ParameterList rpl (1);
         ast::PullPort type (1, &pl, &rpl);
-        process_type (&type, er, &scope);
-        ASSERT (er.count () == 0);
-        ASSERT (type.eval.expression_kind == TypeExpressionKind);
+        process_type (&type, er, symbol_table);
+        ASSERT (er.list ().size () == 0);
+        ASSERT (type.eval.kind == ExpressionValue::Type);
         ASSERT (type.eval.type->kind () == Pull_Port_Kind);
       }; off();
     }; off();

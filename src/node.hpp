@@ -5,7 +5,7 @@
 
 #include "types.hpp"
 #include "location.hpp"
-#include "expression_value.hpp"
+#include "semantic.hpp"
 
 namespace ast
 {
@@ -25,8 +25,6 @@ struct Node
   bool reset_mutability;
   // TODO:  Abstract a callable with a polymorphic function.
   const decl::Callable* callable;
-  // TODO:  Move to ExpressionValue.
-  const decl::PolymorphicFunction* polymorphic_function;
   // TODO:  Get rid of this member.
   runtime::Operation* operation;
 
@@ -224,17 +222,7 @@ struct Binary : public Node
   Node* const right;
 };
 
-// TODO:  Get rid of this and replace it with a call.
-struct BinaryArithmetic : public Binary
-{
-  BinaryArithmetic (unsigned int line,
-                    decl::PolymorphicFunction* temp,
-                    Node* left,
-                    Node* right);
-  virtual void accept (NodeVisitor& visitor);
-  virtual void print (std::ostream& out) const;
-};
-
+// TODO:  Use Call?
 struct AddressOf : public Unary<>
 {
   AddressOf (unsigned int line, Node* child);
@@ -276,6 +264,7 @@ struct Conversion : public Node
 };
 
 // TODO:  Rename to Indirection.
+// TODO:  Use Call?
 struct Dereference : public Unary<>
 {
   Dereference (unsigned int line, Node* child);
@@ -342,14 +331,6 @@ struct EmptyExpression : public Node
   virtual void visit_children (NodeVisitor& visitor);
 };
 
-// TODO:  Get rid of this class.
-struct UnaryArithmetic : public Unary<>
-{
-  UnaryArithmetic (unsigned int line, decl::PolymorphicFunction* temp, Node* child);
-  virtual void accept (NodeVisitor& visitor);
-  virtual void print (std::ostream& out) const;
-};
-
 struct PushPortCall : public Node
 {
   PushPortCall (unsigned int line, Identifier* a_identifier, List* a_arguments);
@@ -395,7 +376,7 @@ struct Select : public Node
 
 struct Literal : public Node
 {
-  Literal (unsigned int line, const type::Type* a_type, const semantic::Value& a_value);
+  Literal (unsigned int line, const semantic::ExpressionValue& a_value);
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
   virtual void visit_children (NodeVisitor& visitor);
@@ -812,6 +793,10 @@ struct TopLevelDeclList : public List
   virtual void accept (NodeVisitor& visitor);
   virtual void print (std::ostream& out) const;
 };
+
+Call* make_unary (unsigned int line, decl::PolymorphicFunction* func, Node* child);
+
+Call* make_binary (unsigned int line, decl::PolymorphicFunction* func, Node* left, Node* right);
 
 std::ostream& operator<< (std::ostream& out, const Node& node);
 }

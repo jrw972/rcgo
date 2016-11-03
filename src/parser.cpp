@@ -68,7 +68,7 @@
 #include "yyparse.hpp"
 #include "debug.hpp"
 #include "node.hpp"
-#include "semantic.hpp"
+#include "polymorphic_function.hpp"
 
 using namespace ast;
 
@@ -3461,7 +3461,7 @@ yyreduce:
     case 154:
 #line 525 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::logic_or_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::logic_or, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3036 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3477,7 +3477,7 @@ yyreduce:
     case 156:
 #line 531 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::logic_and_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::logic_and, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3048 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3493,7 +3493,7 @@ yyreduce:
     case 158:
 #line 537 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::equal_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::equal, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3060 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3501,7 +3501,7 @@ yyreduce:
     case 159:
 #line 539 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::not_equal_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::not_equal, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3066 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3509,7 +3509,7 @@ yyreduce:
     case 160:
 #line 541 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::less_than_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::less_than, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3072 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3517,7 +3517,7 @@ yyreduce:
     case 161:
 #line 543 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::less_equal_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::less_equal, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3078 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3525,7 +3525,7 @@ yyreduce:
     case 162:
 #line 545 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::more_than_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::more_than, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3084 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3533,7 +3533,7 @@ yyreduce:
     case 163:
 #line 547 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::more_equal_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::more_equal, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3090 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3549,7 +3549,7 @@ yyreduce:
     case 165:
 #line 553 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::add_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::add, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3102 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3557,7 +3557,7 @@ yyreduce:
     case 166:
 #line 555 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::subtract_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::subtract, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3108 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3565,7 +3565,7 @@ yyreduce:
     case 167:
 #line 557 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::bit_or_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::bit_or, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3114 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3573,7 +3573,7 @@ yyreduce:
     case 168:
 #line 559 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::bit_xor_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::bit_xor, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3120 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3589,7 +3589,7 @@ yyreduce:
     case 170:
 #line 565 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::multiply_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::multiply, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3132 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3597,7 +3597,7 @@ yyreduce:
     case 171:
 #line 567 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::divide_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::divide, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3138 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3605,7 +3605,7 @@ yyreduce:
     case 172:
 #line 569 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::modulus_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::modulus, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3144 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3613,7 +3613,7 @@ yyreduce:
     case 173:
 #line 571 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::left_shift_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::left_shift, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3150 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3621,7 +3621,7 @@ yyreduce:
     case 174:
 #line 573 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::right_shift_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::right_shift, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3156 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3629,7 +3629,7 @@ yyreduce:
     case 175:
 #line 575 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::bit_and_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::bit_and, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3162 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3637,7 +3637,7 @@ yyreduce:
     case 176:
 #line 577 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::BinaryArithmetic ((yylsp[-2]), &semantic::bit_and_not_temp, (yyvsp[-2].node), (yyvsp[0].node));
+        (yyval.node) = make_binary ((yylsp[-2]), &decl::bit_and_not, (yyvsp[-2].node), (yyvsp[0].node));
       }
 #line 3168 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3653,7 +3653,7 @@ yyreduce:
     case 178:
 #line 581 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::UnaryArithmetic ((yylsp[-1]), &semantic::posate_temp, (yyvsp[0].node));
+        (yyval.node) = make_unary ((yylsp[-1]), &decl::posate, (yyvsp[0].node));
       }
 #line 3180 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3661,7 +3661,7 @@ yyreduce:
     case 179:
 #line 582 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::UnaryArithmetic ((yylsp[-1]), &semantic::negate_temp, (yyvsp[0].node));
+        (yyval.node) = make_unary ((yylsp[-1]), &decl::negate, (yyvsp[0].node));
       }
 #line 3186 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3669,7 +3669,7 @@ yyreduce:
     case 180:
 #line 583 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::UnaryArithmetic ((yylsp[-1]), &semantic::logic_not_temp, (yyvsp[0].node));
+        (yyval.node) = make_unary ((yylsp[-1]), &decl::logic_not, (yyvsp[0].node));
       }
 #line 3192 "parser.cpp" /* yacc.c:1646  */
       break;
@@ -3677,7 +3677,7 @@ yyreduce:
     case 181:
 #line 584 "parser.y" /* yacc.c:1646  */
       {
-        (yyval.node) = new ast::UnaryArithmetic ((yylsp[-1]), &semantic::complement_temp, (yyvsp[0].node));
+        (yyval.node) = make_unary ((yylsp[-1]), &decl::complement, (yyvsp[0].node));
       }
 #line 3198 "parser.cpp" /* yacc.c:1646  */
       break;

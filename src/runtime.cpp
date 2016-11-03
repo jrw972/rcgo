@@ -8,8 +8,6 @@
 #include "composition.hpp"
 #include "heap.hpp"
 #include "executor_base.hpp"
-#include "semantic.hpp"
-#include "check_types.hpp"
 #include "error_reporter.hpp"
 #include "parameter_list.hpp"
 #include "operation.hpp"

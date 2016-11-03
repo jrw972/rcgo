@@ -6,8 +6,8 @@
 #include "runtime.hpp"
 #include "callable.hpp"
 #include "symbol_visitor.hpp"
-#include "semantic.hpp"
 #include "operation.hpp"
+#include "polymorphic_function.hpp"
 
 namespace  code
 {
@@ -19,8 +19,8 @@ using namespace decl;
 
 static Operation* load (Node* node, Operation* op)
 {
-  assert (node->eval.expression_kind != UnknownExpressionKind);
-  if (node->eval.expression_kind == VariableExpressionKind)
+  assert (node->eval.kind != ExpressionValue::Unknown);
+  if (node->eval.kind == ExpressionValue::Variable)
     {
       return new Load (op, node->eval.type);
     }
@@ -126,7 +126,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
     node.visit_children (*this);
     node.operation = node.child->operation;
     // Clean up the stack if necessary.
-    if (node.child->eval.expression_kind != VoidExpressionKind &&
+    if (node.child->eval.kind != ExpressionValue::Void &&
         arch::size (node.child->eval.type) != 0)
       {
         node.operation = new Popn (node.operation, arch::size (node.child->eval.type));
@@ -144,7 +144,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
   void visit (ast::If& node)
   {
     node.visit_children (*this);
-    if (node.condition->eval.value.present)
+    if (node.condition->eval.is_constant ())
       {
         if (node.condition->eval.value.bool_value)
           {
@@ -284,7 +284,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
     node.visit_children (*this);
 
     ast::Node* n = node_cast<ast::Select> (node.right)->base;
-    if (n->eval.expression_kind == VariableExpressionKind &&
+    if (n->eval.kind == ExpressionValue::Variable &&
         n->eval.type->to_pointer ())
       {
         n->operation = load (n, n->operation);
@@ -293,8 +293,14 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
 
   void visit (Call& node)
   {
-    assert (node.expression->eval.expression_kind != UnknownExpressionKind);
-    if (node.expression->eval.expression_kind == TypeExpressionKind)
+    if (node.eval.is_constant ())
+      {
+        node.operation = make_literal (node.eval.type, node.eval.value);
+        return;
+      }
+
+    assert (node.expression->eval.kind != ExpressionValue::Unknown);
+    if (node.expression->eval.kind == ExpressionValue::Type)
       {
         node.arguments->at (0)->accept (*this);
         Operation* o = node.arguments->at (0)->operation;
@@ -305,7 +311,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
 
     node.arguments->accept (*this);
 
-    if (node.polymorphic_function != NULL)
+    if (node.expression->eval.is_polymorphic_function ())
       {
         ExpressionValueList arguments;
         List* args = node.arguments;
@@ -316,7 +322,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
             arguments.push_back ((*pos)->eval);
           }
 
-        node.operation = node.polymorphic_function->generate_code (node.eval, arguments, static_cast<ListOperation*> (node.arguments->operation));
+        node.operation = node.expression->eval.polymorphic_function->generate_code (node.eval, arguments, static_cast<ListOperation*> (node.arguments->operation));
       }
     else if (node.callable != NULL)
       {
@@ -337,8 +343,8 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
               {
                 if (mb->receiver_parameter->type->underlying_type ()->to_pointer ())
                   {
-                    assert (sb->eval.expression_kind != UnknownExpressionKind);
-                    if (sb->eval.expression_kind == VariableExpressionKind)
+                    assert (sb->eval.kind != ExpressionValue::Unknown);
+                    if (sb->eval.kind == ExpressionValue::Variable)
                       {
                         // Got a pointer.  Expecting a pointer.  Load the pointer.
                         node.operation = new MethodCall (node.callable, new Load (sb->operation, sb->eval.type), node.arguments->operation);
@@ -352,8 +358,8 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
                 else
                   {
                     // Got a pointer.  Expecting a value.  Load the variable and then the pointer.
-                    assert (sb->eval.expression_kind != UnknownExpressionKind);
-                    if (sb->eval.expression_kind == VariableExpressionKind)
+                    assert (sb->eval.kind != ExpressionValue::Unknown);
+                    if (sb->eval.kind == ExpressionValue::Variable)
                       {
                         node.operation = new MethodCall (node.callable, new Load (new Load (sb->operation, sb->eval.type), mb->receiver_parameter->type), node.arguments->operation);
                       }
@@ -367,8 +373,8 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
               {
                 if (mb->receiver_parameter->type->underlying_type ()->to_pointer ())
                   {
-                    assert (sb->eval.expression_kind != UnknownExpressionKind);
-                    if (sb->eval.expression_kind == VariableExpressionKind)
+                    assert (sb->eval.kind != ExpressionValue::Unknown);
+                    if (sb->eval.kind == ExpressionValue::Variable)
                       {
                         // Got a value.  Expected a pointer.  Use variable as pointer.
                         node.operation = new MethodCall (node.callable, sb->operation, node.arguments->operation);
@@ -380,8 +386,8 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
                   }
                 else
                   {
-                    assert (sb->eval.expression_kind != UnknownExpressionKind);
-                    if (sb->eval.expression_kind == VariableExpressionKind)
+                    assert (sb->eval.kind != ExpressionValue::Unknown);
+                    if (sb->eval.kind == ExpressionValue::Variable)
                       {
                         // Got a value.  Expected a value.  Load the variable.
                         node.operation = new MethodCall (node.callable, new Load (sb->operation, sb->eval.type), node.arguments->operation);
@@ -451,7 +457,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
 
   void visit (IdentifierExpression& node)
   {
-    if (node.eval.value.present)
+    if (node.eval.is_constant ())
       {
         node.operation = make_literal (node.eval.type, node.eval.value);
         return;
@@ -507,8 +513,8 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
       {
         if (node.base->eval.type->underlying_type ()->to_pointer ())
           {
-            assert (node.base->eval.expression_kind != UnknownExpressionKind);
-            if (node.base->eval.expression_kind == VariableExpressionKind)
+            assert (node.base->eval.kind != ExpressionValue::Unknown);
+            if (node.base->eval.kind == ExpressionValue::Variable)
               {
                 node.operation = new runtime::Select (new Load (node.base->operation, node.base->eval.type), arch::offset (node.field));
               }
@@ -519,8 +525,8 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
           }
         else
           {
-            assert (node.base->eval.expression_kind != UnknownExpressionKind);
-            if (node.base->eval.expression_kind == VariableExpressionKind)
+            assert (node.base->eval.kind != ExpressionValue::Unknown);
+            if (node.base->eval.kind == ExpressionValue::Variable)
               {
                 node.operation = new runtime::Select (node.base->operation, arch::offset (node.field));
               }
@@ -533,10 +539,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
     else
       {
         assert (node.callable != NULL);
-        Value v;
-        v.present = true;
-        v.pointer_value = const_cast<void*> (static_cast<const void*> (node.callable));
-        node.operation = make_literal (Int::instance ()->get_pointer (), v);
+        node.operation = new CallableLiteral (node.callable);
       }
   }
 
@@ -549,8 +552,8 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
         Operation* index_op = node.index->operation;
         index_op = load (node.index, index_op);
         index_op = MakeConvertToInt (index_op, node.index->eval.type);
-        assert (node.base->eval.expression_kind != UnknownExpressionKind);
-        if (node.base->eval.expression_kind == VariableExpressionKind)
+        assert (node.base->eval.kind != ExpressionValue::Unknown);
+        if (node.base->eval.kind == ExpressionValue::Variable)
           {
             node.operation = new IndexArray (node.location, node.base->operation, index_op, node.array_type);
           }
@@ -567,8 +570,8 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
         Operation* index_op = node.index->operation;
         index_op = load (node.index, index_op);
         index_op = MakeConvertToInt (index_op, node.index->eval.type);
-        assert (node.base->eval.expression_kind != UnknownExpressionKind);
-        if (node.base->eval.expression_kind == VariableExpressionKind)
+        assert (node.base->eval.kind != ExpressionValue::Unknown);
+        if (node.base->eval.kind == ExpressionValue::Variable)
           {
             node.operation = new runtime::IndexSlice (node.location, new Load (node.base->operation, node.slice_type), index_op, node.slice_type);
           }
@@ -616,8 +619,8 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
 
     if (node.array_type != NULL)
       {
-        assert (node.base->eval.expression_kind != UnknownExpressionKind);
-        if (node.base->eval.expression_kind == VariableExpressionKind)
+        assert (node.base->eval.kind != ExpressionValue::Unknown);
+        if (node.base->eval.kind == ExpressionValue::Variable)
           {
             node.operation = new SliceArray (node.location, node.base->operation, low, high, max, node.array_type);
             return;
@@ -640,54 +643,25 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
     NOT_REACHED;
   }
 
-  void visit (ast::UnaryArithmetic& node)
-  {
-    if (node.eval.value.present)
-      {
-        node.operation = make_literal (node.eval.type, node.eval.value);
-      }
-    else
-      {
-        ExpressionValueList arg_vals;
-        arg_vals.push_back (node.child->eval);
-
-        node.visit_children (*this);
-        Operation* c = node.child->operation;
-        c = load (node.child, c);
-        node.operation = node.polymorphic_function->generate_code (node.eval, arg_vals, new ListOperation (c));
-
-        // switch (node.arithmetic)
-        //   {
-        //   case ::Posate:
-        //     UNIMPLEMENTED;
-        //   case ::Negate:
-        //     node.operation = make_unary<Negater> (node.eval.type, c);
-        //     break;
-        //   case ::Complement:
-        //     UNIMPLEMENTED;
-        //   }
-      }
-  }
-
-  void visit (ast::BinaryArithmetic& node)
-  {
-    if (node.eval.value.present)
-      {
-        node.operation = make_literal (node.eval.type, node.eval.value);
-      }
-    else
-      {
-        ExpressionValueList arg_vals;
-        arg_vals.push_back (node.left->eval);
-        arg_vals.push_back (node.right->eval);
-        node.visit_children (*this);
-        Operation* left = node.left->operation;
-        left = load (node.left, left);
-        Operation* right = node.right->operation;
-        right = load (node.right, right);
-        node.operation = node.polymorphic_function->generate_code (node.eval, arg_vals, new ListOperation (left, right));
-      }
-  }
+  // void visit (ast::BinaryArithmetic& node)
+  // {
+  //   if (node.eval.is_constant ())
+  //     {
+  //       node.operation = make_literal (node.eval.type, node.eval.value);
+  //     }
+  //   else
+  //     {
+  //       ExpressionValueList arg_vals;
+  //       arg_vals.push_back (node.left->eval);
+  //       arg_vals.push_back (node.right->eval);
+  //       node.visit_children (*this);
+  //       Operation* left = node.left->operation;
+  //       left = load (node.left, left);
+  //       Operation* right = node.right->operation;
+  //       right = load (node.right, right);
+  //       node.operation = node.eval.polymorphic_function->generate_code (node.eval, arg_vals, new ListOperation (left, right));
+  //     }
+  // }
 
   void visit (TypeExpression& node)
   {

@@ -5,7 +5,6 @@
 #include "type.hpp"
 #include "memory_model.hpp"
 #include "symbol.hpp"
-#include "expression_value.hpp"
 #include "parameter_list.hpp"
 
 namespace decl
@@ -62,7 +61,7 @@ struct Function : public FunctionBase
   runtime::Operation* operation;
   ast::FunctionDecl* const functiondecl;
 
-  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+  virtual bool process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table);
 };
 
 struct MethodBase : public Callable, public decl::Symbol
@@ -100,7 +99,7 @@ struct Method : public MethodBase
   ast::MethodDecl* const methoddecl;
 
 private:
-  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+  virtual bool process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table);
 };
 
 struct Initializer : public MethodBase
@@ -110,7 +109,7 @@ struct Initializer : public MethodBase
   ast::InitDecl* const initdecl;
 
 private:
-  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+  virtual bool process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table);
 };
 
 struct Getter : public MethodBase
@@ -121,7 +120,7 @@ struct Getter : public MethodBase
   ReceiverAccess immutable_phase_access;
 
 private:
-  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+  virtual bool process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table);
 };
 
 struct Action : public MethodBase
@@ -150,7 +149,7 @@ private:
   Parameter* iota_parameter_;
   long dimension_;
 
-  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+  virtual bool process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table);
 };
 
 struct Reaction : public MethodBase
@@ -167,7 +166,7 @@ struct Reaction : public MethodBase
 private:
   Symbol* iota_;
   long dimension_;
-  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+  virtual bool process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table);
 };
 
 struct Bind : public MethodBase
@@ -181,7 +180,7 @@ struct Bind : public MethodBase
 
 private:
   Parameter* receiver_parameter_;
-  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+  virtual bool process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table);
 };
 
 }

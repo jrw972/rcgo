@@ -63,7 +63,6 @@ enum Kind
   Reaction_Kind,
 
   Interface_Kind,
-  Polymorphic_Function_Kind,
 
   File_Descriptor_Kind, // Last
 
@@ -83,7 +82,6 @@ struct Type
   virtual Kind underlying_kind () const;
   // Debugging
   virtual void print (std::ostream& out = std::cout) const = 0;
-  std::string to_error_string () const;
   // Allocation
   // Get the unnamed type for an untyped type
   virtual const Type* default_type () const;
@@ -199,8 +197,8 @@ struct NamedType : public Type, public decl::Symbol
 
   virtual void accept (decl::SymbolVisitor& visitor);
   virtual void accept (decl::ConstSymbolVisitor& visitor) const;
-  virtual bool process_declaration_i (util::ErrorReporter& er, decl::Scope* file_scope);
-  virtual void post_process_declaration_i (util::ErrorReporter& er, decl::Scope* file_scope);
+  virtual bool process_declaration_i (util::ErrorReporter& er, decl::SymbolTable& symbol_table);
+  virtual void post_process_declaration_i (util::ErrorReporter& er, decl::SymbolTable& symbol_table);
 
 private:
   const Type* underlyingType_;
@@ -569,15 +567,6 @@ private:
   UntypedString ();
 };
 
-struct PolymorphicFunction : public Type
-{
-  virtual void print (std::ostream& out = std::cout) const;
-  virtual Kind kind () const;
-  static const PolymorphicFunction* instance ();
-private:
-  PolymorphicFunction ();
-};
-
 struct FileDescriptor : public Type
 {
   void print (std::ostream& out = std::cout) const;
@@ -590,11 +579,6 @@ private:
 
 bool
 are_identical (const Type* x, const Type* y);
-
-bool
-are_assignable (const Type* from,
-                const semantic::Value& from_value,
-                const Type* to);
 
 const Type*
 choose (const Type* x, const Type* y);
@@ -660,6 +644,7 @@ extern NamedType named_rune;
 extern NamedType named_byte;
 extern NamedType named_string;
 
+extern NamedType named_error;
 extern NamedType named_file_descriptor;
 extern NamedType named_timespec;
 

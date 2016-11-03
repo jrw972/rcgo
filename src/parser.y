@@ -3,7 +3,7 @@
 #include "yyparse.hpp"
 #include "debug.hpp"
 #include "node.hpp"
-#include "semantic.hpp"
+#include "polymorphic_function.hpp"
 
 using namespace ast;
 %}
@@ -522,66 +522,66 @@ OrExpression:
   AndExpression
 { $$ = $1; }
 | OrExpression LOGIC_OR AndExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::logic_or_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::logic_or, $1, $3); }
 
 AndExpression:
   CompareExpression
 { $$ = $1; }
 | AndExpression LOGIC_AND CompareExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::logic_and_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::logic_and, $1, $3); }
 
 CompareExpression:
   AddExpression
 { $$ = $1; }
 | CompareExpression EQUAL AddExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::equal_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::equal, $1, $3); }
 | CompareExpression NOT_EQUAL AddExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::not_equal_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::not_equal, $1, $3); }
 | CompareExpression '<' AddExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::less_than_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::less_than, $1, $3); }
 | CompareExpression LESS_EQUAL AddExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::less_equal_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::less_equal, $1, $3); }
 | CompareExpression '>' AddExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::more_than_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::more_than, $1, $3); }
 | CompareExpression MORE_EQUAL AddExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::more_equal_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::more_equal, $1, $3); }
 
 AddExpression:
   MultiplyExpression
 { $$ = $1; }
 | AddExpression '+' MultiplyExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::add_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::add, $1, $3); }
 | AddExpression '-' MultiplyExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::subtract_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::subtract, $1, $3); }
 | AddExpression '|' MultiplyExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::bit_or_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::bit_or, $1, $3); }
 | AddExpression '^' MultiplyExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::bit_xor_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::bit_xor, $1, $3); }
 
 MultiplyExpression:
   UnaryExpression
 { $$ = $1; }
 | MultiplyExpression '*' UnaryExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::multiply_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::multiply, $1, $3); }
 | MultiplyExpression '/' UnaryExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::divide_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::divide, $1, $3); }
 | MultiplyExpression '%' UnaryExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::modulus_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::modulus, $1, $3); }
 | MultiplyExpression LEFT_SHIFT UnaryExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::left_shift_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::left_shift, $1, $3); }
 | MultiplyExpression RIGHT_SHIFT UnaryExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::right_shift_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::right_shift, $1, $3); }
 | MultiplyExpression '&' UnaryExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::bit_and_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::bit_and, $1, $3); }
 | MultiplyExpression AND_NOT UnaryExpression
-{ $$ = new ast::BinaryArithmetic (@1, &semantic::bit_and_not_temp, $1, $3); }
+{ $$ = make_binary (@1, &decl::bit_and_not, $1, $3); }
 
 UnaryExpression:
   PrimaryExpression   { $$ = $1; }
-| '+' UnaryExpression { $$ = new ast::UnaryArithmetic (@1, &semantic::posate_temp, $2); }
-| '-' UnaryExpression { $$ = new ast::UnaryArithmetic (@1, &semantic::negate_temp, $2); }
-| '!' UnaryExpression { $$ = new ast::UnaryArithmetic (@1, &semantic::logic_not_temp, $2); }
-| '^' UnaryExpression { $$ = new ast::UnaryArithmetic (@1, &semantic::complement_temp, $2); }
+| '+' UnaryExpression { $$ = make_unary (@1, &decl::posate, $2); }
+| '-' UnaryExpression { $$ = make_unary (@1, &decl::negate, $2); }
+| '!' UnaryExpression { $$ = make_unary (@1, &decl::logic_not, $2); }
+| '^' UnaryExpression { $$ = make_unary (@1, &decl::complement, $2); }
 | '*' UnaryExpression { $$ = new Dereference (@1, $2); }
 | '&' UnaryExpression { $$ = new AddressOf (@1, $2); }
 

@@ -1988,17 +1988,18 @@ do_action:	/* This label is used only to access EOF actions. */
               v.ptr = o;
               v.length = size;
 
-              Value value;
-              value.untyped_string_value = v;
-              value.present = true;
-              yylval.node = new Literal (yylloc, UntypedString::instance (), value);
+              ExpressionValue value;
+              value.kind = ExpressionValue::Constant;
+              value.type = UntypedString::instance ();
+              value.value.untyped_string_value = v;
+              yylval.node = new Literal (yylloc, value);
               return STRING_LIT;
             }
             YY_BREAK
           case 93:
             /* rule 93 can match eol */
             YY_RULE_SETUP
-#line 278 "scanner.l"
+#line 279 "scanner.l"
             {
               char* begin = yytext + 1;
               char* pos = begin;
@@ -2011,140 +2012,148 @@ do_action:	/* This label is used only to access EOF actions. */
               v.ptr = o;
               v.length = size;
 
-              Value value;
-              value.untyped_string_value = v;
-              value.present = true;
-              yylval.node = new Literal (yylloc, UntypedString::instance (), value);
+              ExpressionValue value;
+              value.kind = ExpressionValue::Constant;
+              value.type = UntypedString::instance ();
+              value.value.untyped_string_value = v;
+              yylval.node = new Literal (yylloc, value);
               return STRING_LIT;
             }
             YY_BREAK
           case 94:
             YY_RULE_SETUP
-#line 297 "scanner.l"
+#line 299 "scanner.l"
             {
-              Value value;
+              ExpressionValue value;
+              value.kind = ExpressionValue::Constant;
+              value.type = UntypedInteger::instance ();
               errno = 0;
-              value.untyped_integer_value = strtoull (yytext, NULL, 10);
+              value.value.untyped_integer_value = strtoull (yytext, NULL, 10);
               if (errno == ERANGE)
                 {
                   error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
                   "integer literal '%s' is out of range (E11)", yytext);
                 }
-              value.present = true;
-              yylval.node = new Literal (yylloc, UntypedInteger::instance (), value);
+              yylval.node = new Literal (yylloc, value);
               return LITERAL;
             }
             YY_BREAK
           case 95:
             YY_RULE_SETUP
-#line 310 "scanner.l"
+#line 313 "scanner.l"
             {
-              Value value;
+              ExpressionValue value;
+              value.kind = ExpressionValue::Constant;
+              value.type = UntypedInteger::instance ();
               errno = 0;
-              value.untyped_integer_value = strtoull (yytext, NULL, 8);
+              value.value.untyped_integer_value = strtoull (yytext, NULL, 8);
               if (errno == ERANGE)
                 {
                   error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
                   "octal literal '%s' is out of range (E12)", yytext);
                 }
-              value.present = true;
-              yylval.node = new Literal (yylloc, UntypedInteger::instance (), value);
+              yylval.node = new Literal (yylloc, value);
               return LITERAL;
             }
             YY_BREAK
           case 96:
             YY_RULE_SETUP
-#line 323 "scanner.l"
+#line 327 "scanner.l"
             {
-              Value value;
+              ExpressionValue value;
+              value.kind = ExpressionValue::Constant;
+              value.type = UntypedInteger::instance ();
               errno = 0;
-              value.untyped_integer_value = strtoull (yytext, NULL, 16);
+              value.value.untyped_integer_value = strtoull (yytext, NULL, 16);
               if (errno == ERANGE)
                 {
                   error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
                   "hex literal '%s' is out of range (E13)", yytext);
                 }
-              value.present = true;
-              yylval.node = new Literal (yylloc, UntypedInteger::instance (), value);
+              yylval.node = new Literal (yylloc, value);
               return LITERAL;
             }
             YY_BREAK
           case 97:
             YY_RULE_SETUP
-#line 336 "scanner.l"
+#line 341 "scanner.l"
             {
-              Value value;
-              value.untyped_float_value = strtod (yytext, NULL);
-              value.present = true;
-              yylval.node = new Literal (yylloc, UntypedFloat::instance (), value);
+              ExpressionValue value;
+              value.kind = ExpressionValue::Constant;
+              value.type = UntypedFloat::instance ();
+              value.value.untyped_float_value = strtod (yytext, NULL);
+              yylval.node = new Literal (yylloc, value);
               return LITERAL;
             }
             YY_BREAK
           case 98:
             YY_RULE_SETUP
-#line 344 "scanner.l"
+#line 350 "scanner.l"
             {
-              Value value;
-              value.untyped_complex_value = semantic::UntypedComplex::make (0, strtod (yytext, NULL));
-              value.present = true;
-              yylval.node = new Literal (yylloc, type::UntypedComplex::instance (), value);
+              ExpressionValue value;
+              value.kind = ExpressionValue::Constant;
+              value.type = type::UntypedComplex::instance ();
+              value.value.untyped_complex_value = semantic::UntypedComplex::make (0, strtod (yytext, NULL));
+              yylval.node = new Literal (yylloc, value);
               return LITERAL;
             }
             YY_BREAK
           case 99:
             YY_RULE_SETUP
-#line 352 "scanner.l"
+#line 359 "scanner.l"
             {
-              Value value;
-              value.untyped_rune_value = yytext[1];
-              value.present = true;
-              yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+              ExpressionValue value;
+              value.kind = ExpressionValue::Constant;
+              value.type = UntypedRune::instance ();
+              value.value.untyped_rune_value = yytext[1];
+              yylval.node = new Literal (yylloc, value);
               return LITERAL;
             }
             YY_BREAK
           case 100:
             YY_RULE_SETUP
-#line 360 "scanner.l"
+#line 368 "scanner.l"
             {
-              Value value;
-              value.present = true;
+              ExpressionValue value;
+              value.kind = ExpressionValue::Constant;
+              value.type = UntypedRune::instance ();
               switch (yytext[2])
                 {
                 case 'a':
-                  value.untyped_rune_value = '\a';
-                  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+                  value.value.untyped_rune_value = '\a';
+                  yylval.node = new Literal (yylloc, value);
                   break;
                 case 'b':
-                  value.untyped_rune_value = '\b';
-                  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+                  value.value.untyped_rune_value = '\b';
+                  yylval.node = new Literal (yylloc, value);
                   break;
                 case 'f':
-                  value.untyped_rune_value = '\f';
-                  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+                  value.value.untyped_rune_value = '\f';
+                  yylval.node = new Literal (yylloc, value);
                   break;
                 case 'n':
-                  value.untyped_rune_value = '\n';
-                  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+                  value.value.untyped_rune_value = '\n';
+                  yylval.node = new Literal (yylloc, value);
                   break;
                 case 'r':
-                  value.untyped_rune_value = '\r';
-                  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+                  value.value.untyped_rune_value = '\r';
+                  yylval.node = new Literal (yylloc, value);
                   break;
                 case 't':
-                  value.untyped_rune_value = '\t';
-                  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+                  value.value.untyped_rune_value = '\t';
+                  yylval.node = new Literal (yylloc, value);
                   break;
                 case 'v':
-                  value.untyped_rune_value = '\v';
-                  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+                  value.value.untyped_rune_value = '\v';
+                  yylval.node = new Literal (yylloc, value);
                   break;
                 case '\\':
-                  value.untyped_rune_value = '\\';
-                  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+                  value.value.untyped_rune_value = '\\';
+                  yylval.node = new Literal (yylloc, value);
                   break;
                 case '\'':
-                  value.untyped_rune_value = '\'';
-                  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+                  value.value.untyped_rune_value = '\'';
+                  yylval.node = new Literal (yylloc, value);
                   break;
                 default:
                   NOT_REACHED;
@@ -2155,62 +2164,66 @@ do_action:	/* This label is used only to access EOF actions. */
             YY_BREAK
           case 101:
             YY_RULE_SETUP
-#line 407 "scanner.l"
+#line 416 "scanner.l"
             {
-              Value value;
-              value.untyped_rune_value = parseOctal (yylloc, yytext + 2);
-              value.present = true;
-              yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+              ExpressionValue value;
+              value.kind = ExpressionValue::Constant;
+              value.type = UntypedRune::instance ();
+              value.value.untyped_rune_value = parseOctal (yylloc, yytext + 2);
+              yylval.node = new Literal (yylloc, value);
               return LITERAL;
             }
             YY_BREAK
           case 102:
             YY_RULE_SETUP
-#line 415 "scanner.l"
+#line 425 "scanner.l"
             {
-              Value value;
-              value.untyped_rune_value = parseHex (yylloc, yytext + 3);
-              value.present = true;
-              yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+              ExpressionValue value;
+              value.kind = ExpressionValue::Constant;
+              value.type = UntypedRune::instance ();
+              value.value.untyped_rune_value = parseHex (yylloc, yytext + 3);
+              yylval.node = new Literal (yylloc, value);
               return LITERAL;
             }
             YY_BREAK
           case 103:
             YY_RULE_SETUP
-#line 423 "scanner.l"
+#line 434 "scanner.l"
             {
-              Value value;
-              value.untyped_rune_value = parseU4 (yylloc, yytext + 3);
-              value.present = true;
-              yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+              ExpressionValue value;
+              value.kind = ExpressionValue::Constant;
+              value.type = UntypedRune::instance ();
+              value.value.untyped_rune_value = parseU4 (yylloc, yytext + 3);
+              yylval.node = new Literal (yylloc, value);
               return LITERAL;
             }
             YY_BREAK
           case 104:
             YY_RULE_SETUP
-#line 431 "scanner.l"
+#line 443 "scanner.l"
             {
-              Value value;
-              value.untyped_rune_value = parseU8 (yylloc, yytext + 3);
-              value.present = true;
-              yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+              ExpressionValue value;
+              value.kind = ExpressionValue::Constant;
+              value.type = UntypedRune::instance ();
+              value.value.untyped_rune_value = parseU8 (yylloc, yytext + 3);
+              yylval.node = new Literal (yylloc, value);
               return LITERAL;
             }
             YY_BREAK
           case 105:
             YY_RULE_SETUP
-#line 439 "scanner.l"
+#line 452 "scanner.l"
             /* Discard whitespace */
             YY_BREAK
           case 106:
             /* rule 106 can match eol */
             YY_RULE_SETUP
-#line 440 "scanner.l"
+#line 453 "scanner.l"
             { ++yylloc; }
             YY_BREAK
           case 107:
             YY_RULE_SETUP
-#line 441 "scanner.l"
+#line 454 "scanner.l"
             {
               error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
               "unrecognized character '%s' (E66)", yytext);
@@ -2218,10 +2231,10 @@ do_action:	/* This label is used only to access EOF actions. */
             YY_BREAK
           case 108:
             YY_RULE_SETUP
-#line 446 "scanner.l"
+#line 459 "scanner.l"
             ECHO;
             YY_BREAK
-#line 2187 "scanner.cpp"
+#line 2200 "scanner.cpp"
           case YY_STATE_EOF(INITIAL):
           case YY_STATE_EOF(IN_COMMENT):
             yyterminate();
@@ -3197,7 +3210,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 446 "scanner.l"
+#line 459 "scanner.l"
 
 
 

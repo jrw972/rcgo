@@ -269,10 +269,11 @@ ESCAPED \\[abfnrtv\\\"]
                          v.ptr = o;
                          v.length = size;
 
-                         Value value;
-                         value.untyped_string_value = v;
-                         value.present = true;
-                         yylval.node = new Literal (yylloc, UntypedString::instance (), value);
+                         ExpressionValue value;
+                         value.kind = ExpressionValue::Constant;
+                         value.type = UntypedString::instance ();
+                         value.value.untyped_string_value = v;
+                         yylval.node = new Literal (yylloc, value);
                          return STRING_LIT; }
 
 \"([^\"]|{OCTAL}|{HEX}|{LITTLEU}|{BIGU}|{ESCAPED})*\" {
@@ -287,115 +288,123 @@ ESCAPED \\[abfnrtv\\\"]
   v.ptr = o;
   v.length = size;
 
-  Value value;
-  value.untyped_string_value = v;
-  value.present = true;
-  yylval.node = new Literal (yylloc, UntypedString::instance (), value);
+  ExpressionValue value;
+  value.kind = ExpressionValue::Constant;
+  value.type = UntypedString::instance ();
+  value.value.untyped_string_value = v;
+  yylval.node = new Literal (yylloc, value);
   return STRING_LIT;
 }
 
 [1-9][0-9]* {
-  Value value;
+  ExpressionValue value;
+  value.kind = ExpressionValue::Constant;
+  value.type = UntypedInteger::instance ();
   errno = 0;
-  value.untyped_integer_value = strtoull (yytext, NULL, 10);
+  value.value.untyped_integer_value = strtoull (yytext, NULL, 10);
   if (errno == ERANGE) {
     error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
       "integer literal '%s' is out of range (E11)", yytext);
   }
-  value.present = true;
-  yylval.node = new Literal (yylloc, UntypedInteger::instance (), value);
+  yylval.node = new Literal (yylloc, value);
   return LITERAL;
 }
 
 0{OCTAL_DIGIT}* {
-  Value value;
+  ExpressionValue value;
+  value.kind = ExpressionValue::Constant;
+  value.type = UntypedInteger::instance ();
   errno = 0;
-  value.untyped_integer_value = strtoull (yytext, NULL, 8);
+  value.value.untyped_integer_value = strtoull (yytext, NULL, 8);
   if (errno == ERANGE) {
     error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
       "octal literal '%s' is out of range (E12)", yytext);
   }
-  value.present = true;
-  yylval.node = new Literal (yylloc, UntypedInteger::instance (), value);
+  yylval.node = new Literal (yylloc, value);
   return LITERAL;
 }
 
 0[xX]{HEXADECIMAL_DIGIT}+ {
-  Value value;
+  ExpressionValue value;
+  value.kind = ExpressionValue::Constant;
+  value.type = UntypedInteger::instance ();
   errno = 0;
-  value.untyped_integer_value = strtoull (yytext, NULL, 16);
+  value.value.untyped_integer_value = strtoull (yytext, NULL, 16);
   if (errno == ERANGE) {
     error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
       "hex literal '%s' is out of range (E13)", yytext);
   }
-  value.present = true;
-  yylval.node = new Literal (yylloc, UntypedInteger::instance (), value);
+  yylval.node = new Literal (yylloc, value);
   return LITERAL;
 }
 
 {FLOAT} {
-  Value value;
-  value.untyped_float_value = strtod (yytext, NULL);
-  value.present = true;
-  yylval.node = new Literal (yylloc, UntypedFloat::instance (), value);
+  ExpressionValue value;
+  value.kind = ExpressionValue::Constant;
+  value.type = UntypedFloat::instance ();
+  value.value.untyped_float_value = strtod (yytext, NULL);
+  yylval.node = new Literal (yylloc, value);
   return LITERAL;
 }
 
 ({DECIMALS}|{FLOAT})i {
-  Value value;
-  value.untyped_complex_value = semantic::UntypedComplex::make (0, strtod (yytext, NULL));
-  value.present = true;
-  yylval.node = new Literal (yylloc, type::UntypedComplex::instance (), value);
+  ExpressionValue value;
+  value.kind = ExpressionValue::Constant;
+  value.type = type::UntypedComplex::instance ();
+  value.value.untyped_complex_value = semantic::UntypedComplex::make (0, strtod (yytext, NULL));
+  yylval.node = new Literal (yylloc, value);
   return LITERAL;
 }
 
 '[^'\n]' {
-  Value value;
-  value.untyped_rune_value = yytext[1];
-  value.present = true;
-  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+  ExpressionValue value;
+  value.kind = ExpressionValue::Constant;
+  value.type = UntypedRune::instance ();
+  value.value.untyped_rune_value = yytext[1];
+  yylval.node = new Literal (yylloc, value);
   return LITERAL;
 }
 
 '\\[abfnrtv\\']' {
-  Value value;
-  value.present = true;
+  ExpressionValue value;
+  value.kind = ExpressionValue::Constant;
+  value.type = UntypedRune::instance ();
   switch (yytext[2]) {
   case 'a':
-    value.untyped_rune_value = '\a';
-    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+    value.value.untyped_rune_value = '\a';
+    yylval.node = new Literal (yylloc, value);
     break;
   case 'b':
-    value.untyped_rune_value = '\b';
-    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+    value.value.untyped_rune_value = '\b';
+    yylval.node = new Literal (yylloc, value);
     break;
   case 'f':
-    value.untyped_rune_value = '\f';
-    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+    value.value.untyped_rune_value = '\f';
+    yylval.node = new Literal (yylloc, value);
     break;
   case 'n':
-    value.untyped_rune_value = '\n';
-    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+    value.value.untyped_rune_value = '\n';
+    yylval.node = new Literal (yylloc, value);
     break;
   case 'r':
-    value.untyped_rune_value = '\r';
-    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+    value.value.untyped_rune_value = '\r';
+    yylval.node = new Literal (yylloc, value);
     break;
   case 't':
-    value.untyped_rune_value = '\t';
-    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+    value.value.untyped_rune_value = '\t';
+    yylval.node = new Literal (yylloc, value);
     break;
   case 'v':
-    value.untyped_rune_value = '\v';
-    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+    value.value.untyped_rune_value = '\v';
+    yylval.node = new Literal (yylloc, value);
     break;
   case '\\':
-    value.untyped_rune_value = '\\';
-    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+    value.value.untyped_rune_value = '\\';
+    yylval.node = new Literal (yylloc, value);
     break;
   case '\'':
-    value.untyped_rune_value = '\'';
-    yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+    value.value.untyped_rune_value = '\'';
+    yylval.node = new Literal (yylloc, value);
     break;
   default:
     NOT_REACHED;
@@ -405,34 +414,38 @@ ESCAPED \\[abfnrtv\\\"]
 }
 
 '\\{OCTAL_DIGIT}{3}' {
-  Value value;
-  value.untyped_rune_value = parseOctal (yylloc, yytext + 2);
-  value.present = true;
-  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+  ExpressionValue value;
+  value.kind = ExpressionValue::Constant;
+  value.type = UntypedRune::instance ();
+  value.value.untyped_rune_value = parseOctal (yylloc, yytext + 2);
+  yylval.node = new Literal (yylloc, value);
   return LITERAL;
 }
 
 '\\x{HEXADECIMAL_DIGIT}{2}' {
-  Value value;
-  value.untyped_rune_value = parseHex (yylloc, yytext + 3);
-  value.present = true;
-  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+  ExpressionValue value;
+  value.kind = ExpressionValue::Constant;
+  value.type = UntypedRune::instance ();
+  value.value.untyped_rune_value = parseHex (yylloc, yytext + 3);
+  yylval.node = new Literal (yylloc, value);
   return LITERAL;
 }
 
 '\\u{HEXADECIMAL_DIGIT}{4}' {
-  Value value;
-  value.untyped_rune_value = parseU4 (yylloc, yytext + 3);
-  value.present = true;
-  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+  ExpressionValue value;
+  value.kind = ExpressionValue::Constant;
+  value.type = UntypedRune::instance ();
+  value.value.untyped_rune_value = parseU4 (yylloc, yytext + 3);
+  yylval.node = new Literal (yylloc, value);
   return LITERAL;
 }
 
 '\\U{HEXADECIMAL_DIGIT}{8}' {
-  Value value;
-  value.untyped_rune_value = parseU8 (yylloc, yytext + 3);
-  value.present = true;
-  yylval.node = new Literal (yylloc, UntypedRune::instance (), value);
+  ExpressionValue value;
+  value.kind = ExpressionValue::Constant;
+  value.type = UntypedRune::instance ();
+  value.value.untyped_rune_value = parseU8 (yylloc, yytext + 3);
+  yylval.node = new Literal (yylloc, value);
   return LITERAL;
 }
 

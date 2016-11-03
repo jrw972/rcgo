@@ -80,10 +80,6 @@ void TypeExpression::print (std::ostream& out) const
 {
   out << "TypeExpression";
 }
-void BinaryArithmetic::print (std::ostream& out) const
-{
-  out << "BinaryArithmetic";
-}
 void AddressOf::print (std::ostream& out) const
 {
   out << "AddressOf";
@@ -127,10 +123,6 @@ void ExpressionList::print (std::ostream& out) const
 void Literal::print (std::ostream& out) const
 {
   out << "Literal";
-}
-void UnaryArithmetic::print (std::ostream& out) const
-{
-  out << "UnaryArithmetic";
 }
 void PushPortCall::print (std::ostream& out) const
 {
@@ -286,7 +278,6 @@ ACCEPT (AddAssign)
 ACCEPT (AddressOf)
 ACCEPT (Array)
 ACCEPT (Assign)
-ACCEPT (BinaryArithmetic)
 ACCEPT (BindDecl)
 ACCEPT (BindPullPort)
 ACCEPT (BindPushPort)
@@ -338,7 +329,6 @@ ACCEPT (StatementList)
 ACCEPT (SubtractAssign)
 ACCEPT (TypeDecl)
 ACCEPT (TypeExpression)
-ACCEPT (UnaryArithmetic)
 ACCEPT (Var)
 ACCEPT (VariableList)
 ACCEPT (While)
@@ -391,17 +381,15 @@ Node::Node (unsigned int line_)
   , field (NULL)
   , reset_mutability (false)
   , callable (NULL)
-  , polymorphic_function (NULL)
   , operation (NULL)
 {
-  assert (location.line != 0);
+  assert (location.line () != 0);
 }
 
-Literal::Literal (unsigned int line, const ::type::Type* t, const Value& v)
+Literal::Literal (unsigned int line, const ExpressionValue& v)
   : Node (line)
 {
-  eval.type = t;
-  eval.value = v;
+  eval = v;
 }
 
 Identifier::Identifier (unsigned int line, const std::string& id)
@@ -549,12 +537,6 @@ void Binary::visit_children (NodeVisitor& visitor)
   right->accept (visitor);
 }
 
-BinaryArithmetic::BinaryArithmetic (unsigned int line, decl::PolymorphicFunction* a_temp, Node* left, Node* right)
-  : Binary (line, left, right)
-{
-  polymorphic_function = a_temp;
-}
-
 AddressOf::AddressOf (unsigned int line, Node* child)
   : Unary (line, child)
 { }
@@ -647,12 +629,6 @@ void IndexSlice::visit_children (NodeVisitor& visitor)
 EmptyExpression::EmptyExpression (unsigned int line)
   : Node (line)
 { }
-
-UnaryArithmetic::UnaryArithmetic (unsigned int line, decl::PolymorphicFunction* a_temp, Node* child)
-  : Unary (line, child)
-{
-  polymorphic_function = a_temp;
-}
 
 PushPortCall::PushPortCall (unsigned int line, Identifier* id, List* a)
   : Node (line)
@@ -1129,5 +1105,22 @@ ImportDeclList::ImportDeclList (unsigned int line)
 TopLevelDeclList::TopLevelDeclList (unsigned int line)
   : List (line)
 { }
+
+Call* make_unary (unsigned int line, decl::PolymorphicFunction* func, Node* child)
+{
+  Literal* e = new Literal (line, ExpressionValue::make_polymorphic_function (func));
+  ExpressionList* el = new ExpressionList (line);
+  el->append (child);
+  return new Call (line, e, el);
+}
+
+Call* make_binary (unsigned int line, decl::PolymorphicFunction* func, Node* left, Node* right)
+{
+  Literal* e = new Literal (line, ExpressionValue::make_polymorphic_function (func));
+  ExpressionList* el = new ExpressionList (line);
+  el->append (left);
+  el->append (right);
+  return new Call (line, e, el);
+}
 
 }

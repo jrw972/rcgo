@@ -13,13 +13,13 @@ main (int argc, char** argv)
   {
     Location::static_file = "alpha";
     Location loc;
-    tap.tassert ("Location::Location ()", loc.file == "alpha" && loc.line == 0);
+    tap.tassert ("Location::Location ()", loc.file () == "alpha" && loc.line () == 0);
   }
 
   {
     Location::static_file = "beta";
     Location loc (3);
-    tap.tassert ("Location::Location (3)", loc.file == "beta" && loc.line == 3);
+    tap.tassert ("Location::Location (3)", loc.file () == "beta" && loc.line () == 3);
   }
 
   tap.print_plan ();

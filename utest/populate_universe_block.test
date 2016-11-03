@@ -1,0 +1,80 @@
+/* -*- c++ -*- */
+#include "unit_test.hpp"
+#include "scope.hpp"
+#include "semantic.hpp"
+#include "symbol_table.hpp"
+
+using namespace semantic;
+
+scope(semantic); {
+  unit(populate_universe_block); {
+    decl::SymbolTable symbol_table;
+    symbol_table.open_scope ();
+    populate_universe_block (symbol_table);
+
+    // https://golang.org/ref/spec#Predeclared_identifiers
+    // Types
+    ASSERT (symbol_table.retrieve_symbol ("bool") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("byte") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("complex64") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("complex128") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("error") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("float32") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("float64") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("int") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("int8") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("int16") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("int32") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("int64") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("rune") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("string") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("uint") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("uint8") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("uint16") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("uint32") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("uint64") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("uintptr") != NULL);
+
+    // Constants
+    ASSERT (symbol_table.retrieve_symbol ("true") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("false") != NULL);
+    // iota is only available in ConstDecls.
+
+    // Zero value
+    ASSERT (symbol_table.retrieve_symbol ("nil") != NULL);
+
+    // Functions
+    ASSERT (symbol_table.retrieve_symbol ("append") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("cap") != NULL);
+    // close is not supported
+    ASSERT (symbol_table.retrieve_symbol ("complex") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("copy") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("delete") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("imag") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("len") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("make") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("new") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("panic") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("print") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("println") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("real") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("recover") != NULL);
+
+    // Heap functions
+    ASSERT (symbol_table.retrieve_symbol ("move") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("merge") != NULL);
+
+    // I/O
+    // TODO:  Move these to a package.
+    ASSERT (symbol_table.retrieve_symbol ("FileDescriptor") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("clock_gettime") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("read") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("readable") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("sendto") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("timerfd_create") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("timerfd_settime") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("timespec") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("udp_socket") != NULL);
+    ASSERT (symbol_table.retrieve_symbol ("writable") != NULL);
+  }; off();
+}; off();

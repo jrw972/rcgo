@@ -35,4 +35,8 @@ struct RegisterTestScenario
 
 #define ASSERT(condition) do { if (!(condition)) { UnitTester::impl ()->error (#condition, __FILE__, __LINE__); } } while (0);
 
+#define ASSERT_NO_ERROR(er) do { ASSERT (er.list ().empty ()); } while (0);
+
+#define ASSERT_LAST_ERROR(er, code) do { ASSERT (!er.list ().empty () && er.list ().back () == code); } while (0);
+
 #endif /* RCGO_UTEST_UNIT_TYPE_HPP */

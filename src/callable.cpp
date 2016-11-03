@@ -3,8 +3,6 @@
 
 #include "node.hpp"
 #include "symbol_visitor.hpp"
-#include "check_types.hpp"
-#include "compute_receiver_access.hpp"
 #include "operation.hpp"
 #include "process_type.hpp"
 #include "error_reporter.hpp"
@@ -48,7 +46,7 @@ void
 FunctionBase::check (ast::List* args) const
 {
   semantic::check_types_arguments (args, parameter_list ());
-  semantic::require_value_or_variable_list (args);
+  semantic::require_value_or_const_or_variable_list (args);
   semantic::check_mutability_arguments (args, parameter_list ());
 }
 
@@ -76,11 +74,11 @@ Function::Function (ast::FunctionDecl* a_functiondecl)
   , functiondecl (a_functiondecl)
 { }
 
-bool Function::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+bool Function::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table)
 {
   const decl::ParameterList* parameter_list;
   const decl::ParameterList* return_parameter_list;
-  process_signature (er, file_scope, functiondecl->parameters,
+  process_signature (er, symbol_table, functiondecl->parameters,
                      functiondecl->return_parameters, false,
                      parameter_list, return_parameter_list);
   this->type = new type::Function (parameter_list, return_parameter_list);
@@ -118,7 +116,7 @@ void
 MethodBase::check (ast::List* args) const
 {
   semantic::check_types_arguments (args, type->parameter_list);
-  semantic::require_value_or_variable_list (args);
+  semantic::require_value_or_const_or_variable_list (args);
   semantic::check_mutability_arguments (args, type->parameter_list);
 }
 
@@ -151,13 +149,13 @@ Method::Method (ast::MethodDecl* a_methoddecl,
   , methoddecl (a_methoddecl)
 { }
 
-bool Method::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+bool Method::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table)
 {
   assert (named_type->state () == Defined);
-  Parameter* this_symbol = process_receiver (er, file_scope, named_type, methoddecl->receiver, false, false);
+  Parameter* this_symbol = process_receiver (er, symbol_table, named_type, methoddecl->receiver, false, false);
   const decl::ParameterList* parameter_list;
   const decl::ParameterList* return_parameter_list;
-  process_signature (er, file_scope,
+  process_signature (er, symbol_table,
                      methoddecl->parameters, methoddecl->return_parameters, false,
                      parameter_list, return_parameter_list);
   this->type = new type::Method (named_type,
@@ -174,13 +172,13 @@ Initializer::Initializer (ast::InitDecl* a_initdecl,
   , initdecl (a_initdecl)
 { }
 
-bool Initializer::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+bool Initializer::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table)
 {
   assert (named_type->state () == Defined);
-  Parameter* this_symbol = process_receiver (er, file_scope, named_type, initdecl->receiver, true, false);
+  Parameter* this_symbol = process_receiver (er, symbol_table, named_type, initdecl->receiver, true, false);
   const decl::ParameterList* parameter_list;
   const decl::ParameterList* return_parameter_list;
-  process_signature (er, file_scope,
+  process_signature (er, symbol_table,
                      initdecl->parameters, initdecl->return_parameters, true,
                      parameter_list, return_parameter_list);
   this->type = new type::Initializer (named_type,
@@ -197,13 +195,13 @@ Getter::Getter (ast::GetterDecl* a_getterdecl,
   , getterdecl (a_getterdecl)
 { }
 
-bool Getter::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+bool Getter::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table)
 {
   assert (named_type->state () == Defined);
-  Parameter* this_symbol = process_receiver (er, file_scope, named_type, getterdecl->receiver, true, true);
+  Parameter* this_symbol = process_receiver (er, symbol_table, named_type, getterdecl->receiver, true, true);
   const decl::ParameterList* parameter_list;
   const decl::ParameterList* return_parameter_list;
-  process_signature (er, file_scope,
+  process_signature (er, symbol_table,
                      getterdecl->parameters, getterdecl->return_parameters, true,
                      parameter_list, return_parameter_list);
   this->type = new type::Getter (named_type,
@@ -223,17 +221,17 @@ Action::Action (ast::ActionDecl* a_actiondecl,
   , dimension_ (-1)
 { }
 
-bool Action::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+bool Action::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table)
 {
   assert (named_type->state () == Defined);
 
   if (node_cast<EmptyExpression> (actiondecl->dimension) == NULL)
     {
       this->iota_parameter_ = Parameter::make (actiondecl->dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
-      this->dimension_ = semantic::process_array_dimension (er, file_scope, actiondecl->dimension);
+      this->dimension_ = semantic::process_array_dimension (er, symbol_table, actiondecl->dimension);
     }
 
-  this->receiver_parameter_ = semantic::process_receiver (er, file_scope, named_type, actiondecl->receiver, true, true);
+  this->receiver_parameter_ = semantic::process_receiver (er, symbol_table, named_type, actiondecl->receiver, true, true);
 
   return true;
 }
@@ -271,20 +269,20 @@ long Reaction::dimension () const
   return dimension_;
 }
 
-bool Reaction::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+bool Reaction::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table)
 {
   assert (named_type->state () == Defined);
 
   if (node_cast<EmptyExpression> (reactiondecl->dimension) == NULL)
     {
       this->iota_ = Parameter::make (reactiondecl->dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
-      this->dimension_ = process_array_dimension (er, file_scope, reactiondecl->dimension);
+      this->dimension_ = process_array_dimension (er, symbol_table, reactiondecl->dimension);
     }
 
-  Parameter* this_symbol = process_receiver (er, file_scope, named_type, reactiondecl->receiver, true, true);
+  Parameter* this_symbol = process_receiver (er, symbol_table, named_type, reactiondecl->receiver, true, true);
   const decl::ParameterList* parameter_list;
   const decl::ParameterList* return_parameter_list;
-  process_signature (er, file_scope,
+  process_signature (er, symbol_table,
                      reactiondecl->parameters, reactiondecl->return_parameters, true,
                      parameter_list, return_parameter_list);
   this->type = new type::Reaction (named_type,
@@ -307,10 +305,10 @@ Parameter* Bind::receiver_parameter () const
   return receiver_parameter_;
 }
 
-bool Bind::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+bool Bind::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table)
 {
   assert (named_type->state () == Defined);
-  this->receiver_parameter_ = semantic::process_receiver (er, file_scope, named_type, binddecl->receiver, true, false);
+  this->receiver_parameter_ = semantic::process_receiver (er, symbol_table, named_type, binddecl->receiver, true, false);
   return true;
 }
 

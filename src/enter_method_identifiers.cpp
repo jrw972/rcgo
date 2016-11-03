@@ -1,4 +1,3 @@
-#include "enter_method_identifiers.hpp"
 #include "node_visitor.hpp"
 #include "node.hpp"
 #include "scope.hpp"
@@ -8,6 +7,7 @@
 #include "node_cast.hpp"
 #include "callable.hpp"
 #include "symbol_cast.hpp"
+#include "symbol_table.hpp"
 
 namespace semantic
 {
@@ -21,13 +21,13 @@ using namespace type;
 struct visitor : public DefaultNodeVisitor
 {
   visitor (ErrorReporter& a_er,
-           Scope* a_file_scope)
+           SymbolTable& a_symbol_table)
     : er (a_er)
-    , file_scope (a_file_scope)
+    , symbol_table (a_symbol_table)
   { }
 
   ErrorReporter& er;
-  Scope* file_scope;
+  SymbolTable& symbol_table;
 
   NamedType*
   process_receiver (ast::Receiver* node)
@@ -35,7 +35,7 @@ struct visitor : public DefaultNodeVisitor
     Identifier* type_identifier_node = node->type;
     const std::string& type_identifier = type_identifier_node->identifier;
 
-    decl::Symbol* symbol = file_scope->find_global_symbol (type_identifier);
+    decl::Symbol* symbol = symbol_table.retrieve_symbol (type_identifier);
     if (symbol == NULL)
       {
         er.not_declared (type_identifier_node->location, type_identifier);
@@ -137,9 +137,9 @@ struct visitor : public DefaultNodeVisitor
 };
 }
 
-void enter_method_identifiers (ast::Node* root, util::ErrorReporter& er, decl::Scope* file_scope)
+void enter_method_identifiers (ast::Node* root, util::ErrorReporter& er, decl::SymbolTable& symbol_table)
 {
-  visitor v (er, file_scope);
+  visitor v (er, symbol_table);
   root->accept (v);
 }
 

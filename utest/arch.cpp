@@ -3,7 +3,6 @@
 #include "tap.hpp"
 #include "type.hpp"
 #include "parameter_list.hpp"
-#include "value.hpp"
 #include "symbol.hpp"
 
 using namespace arch;

@@ -28,19 +28,20 @@ rcgo_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 rcgo_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 
 noinst_LTLIBRARIES=librcgo.la
-librcgo_la_SOURCES = arch.hpp arch.cpp \
+librcgo_la_SOURCES = allocate.hpp allocate.cpp \
+arch.hpp arch.cpp \
 builtin_function.hpp builtin_function.cpp \
 callable.hpp callable.cpp \
-check_types.hpp check_types.cpp \
+check_all.cpp \
 composition.hpp composition.cpp \
-compute_receiver_access.hpp compute_receiver_access.cpp \
-enter_predeclared_identifiers.hpp enter_predeclared_identifiers.cpp \
-enter_method_identifiers.hpp enter_method_identifiers.cpp \
-enter_top_level_identifiers.hpp enter_top_level_identifiers.cpp \
+compute_receiver_access.cpp \
+enter_identifiers.cpp \
+enter_method_identifiers.cpp \
+enter_top_level_identifiers.cpp \
 error_reporter.hpp error_reporter.cpp \
-evaluate_static.hpp evaluate_static.cpp \
+evaluate_static.cpp \
 executor_base.hpp executor_base.cpp \
-expression_value.hpp expression_value.cpp \
+expression_value.cpp \
 generate_code.hpp generate_code.cpp \
 heap.hpp heap.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
@@ -52,20 +53,23 @@ node_visitor.hpp node_visitor.cpp \
 operation.hpp operation.cpp \
 parameter_list.hpp parameter_list.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
+polymorphic_function.hpp polymorphic_function.cpp \
+polymorphic_function_visitor.hpp \
+populate_universe_block.cpp \
 process_definitions.cpp \
-process_top_level_identifiers.hpp process_top_level_identifiers.cpp \
+process_top_level_identifiers.cpp \
 process_type.hpp process_type.cpp \
 runtime.hpp runtime.cpp \
 runtime_types.hpp runtime_types.cpp \
 scope.hpp scope.cpp \
-semantic.hpp semantic.cpp \
+semantic.hpp \
 stack.hpp stack.cpp \
 symbol.hpp symbol.cpp \
 symbol_cast.hpp \
+symbol_table.hpp symbol_table.cpp \
 symbol_visitor.hpp symbol_visitor.cpp \
-polymorphic_function.hpp polymorphic_function.cpp \
 type.hpp type.cpp \
-value.hpp value.cpp
+value.cpp
 librcgo_la_LIBADD=-lpthread
 librcgo_la_CXXFLAGS=$(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 librcgo_la_LDFLAGS=$(AM_LDFLAGS) $(COVERAGE_LDFLAGS)

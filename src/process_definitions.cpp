@@ -1,9 +1,7 @@
 #include <error.h>
 
-#include "semantic.hpp"
 #include "node.hpp"
 #include "symbol.hpp"
-#include "semantic.hpp"
 #include "callable.hpp"
 #include "node_visitor.hpp"
 

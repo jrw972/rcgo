@@ -15,7 +15,7 @@ enum ErrorCode
   Cannot_Be_Applied = 3,
   Not_Declared = 4,
   Hidden_Symbol = 5,
-  Requires_Value_Or_Variable = 6,
+  Expected_An_Rvalue = 6,
   Expected_A_Type = 7,
   Leaks_Pointers = 8,
   Parameter_Is_Not_Foreign_Safe = 9,
@@ -24,12 +24,16 @@ enum ErrorCode
   Expression_Is_Not_Constant = 12,
   Already_Declared = 13,
   Defined_Recursively = 14,
+  // TODO: Remove array.
   Non_Integer_Array_Dimension = 15,
   Negative_Array_Dimension = 16,
   Not_Defined = 17,
   Expected_A_Component = 18,
   Expected_A_Pointer = 19,
   Expected_Immutable_Indirection_Mutability = 20,
+  Length_Exceeds_Capacity = 21,
+  Destination_Is_Not_Mutable = 22,
+  Assignment_Leaks_Immutable_Pointers = 23,
 };
 
 struct ErrorReporter
@@ -58,7 +62,7 @@ struct ErrorReporter
                           const std::string& id);
   ErrorCode hidden_symbol (const Location& loc,
                            const std::string& id);
-  ErrorCode requires_value_or_variable (const Location& loc);
+  ErrorCode expected_an_rvalue (const Location& loc);
   ErrorCode expected_a_type (const Location& loc);
   ErrorCode leaks_pointers (const Location& loc);
   ErrorCode parameter_is_not_foreign_safe (const Location& loc);
@@ -83,9 +87,13 @@ struct ErrorReporter
   ErrorCode expected_a_component (const Location& loc);
   ErrorCode expected_a_pointer (const Location& loc);
   ErrorCode expected_immutable_indirection_mutability (const Location& loc);
+  ErrorCode length_exceeds_capacity (const Location& loc,
+                                     long len,
+                                     long cap);
+  ErrorCode destination_is_not_mutable (const Location& loc);
+  ErrorCode assignment_leaks_immutable_pointers (const Location& loc);
 
   const ListType& list () const;
-  size_t count () const;
 
 private:
   ErrorCode bump (ErrorCode code);

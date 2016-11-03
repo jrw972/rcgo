@@ -10,22 +10,17 @@
 #include "scanner.hpp"
 #include "yyparse.hpp"
 #include "parser.hpp"
-#include "semantic.hpp"
 #include "debug.hpp"
 #include "runtime.hpp"
 #include "arch.hpp"
 #include "instance_scheduler.hpp"
 #include "partitioned_scheduler.hpp"
 #include "generate_code.hpp"
-#include "check_types.hpp"
-#include "compute_receiver_access.hpp"
-#include "enter_predeclared_identifiers.hpp"
-#include "enter_top_level_identifiers.hpp"
-#include "enter_method_identifiers.hpp"
-#include "process_top_level_identifiers.hpp"
+#include "allocate.hpp"
 #include "scheduler.hpp"
 #include "scope.hpp"
 #include "error_reporter.hpp"
+#include "symbol_table.hpp"
 
 static void
 print_version (void)
@@ -219,21 +214,39 @@ main (int argc, char **argv)
   arch::set_stack_alignment (sizeof (void*));
 
   util::ErrorReporter er (3);
-  decl::Scope universal_scope;
-  semantic::enter_predeclared_identifiers (&universal_scope);
+  decl::SymbolTable symbol_table;
 
-  decl::Scope* package_scope = universal_scope.open ();
-  decl::Scope* file_scope = package_scope->open ();
-  // Enter top-level identifier into the package scope.
-  // This includes constants, types, functions, and instances.
-  semantic::enter_top_level_identifiers (root, er, package_scope, file_scope);
+  symbol_table.open_scope ();
+  semantic::populate_universe_block (symbol_table);
+
+  // Populate the package scope with constants, types, functions, and instances.
+  symbol_table.open_scope ();
+  semantic::enter_identifiers (root, er, symbol_table, true);
+
+  // Populate the file scope with constants, types, functions, and instances.
+  symbol_table.open_scope ();
+  semantic::enter_identifiers (root, er, symbol_table, false);
+
   // Enter method-like identifiers into the named types.
-  semantic::enter_method_identifiers (root, er, file_scope);
+  semantic::enter_method_identifiers (root, er, symbol_table);
+
+  // Build a digraph of which symbols depend on other symbols.
+
+  // A cycle means there is a recursive definition.
+
+  // Process the definitions in topological order.
+
   // Process all top-level declarations.
   // This includes constants, types, functions, methods, initializers, getters,
   // actions, reactions, binders, and instances.
-  semantic::process_top_level_declarations (root, er, file_scope);
-  semantic::check_types (root, er, file_scope);
+  semantic::process_top_level_declarations (root, er, symbol_table);
+
+  // Establish a type for every expression and values for constant expressions.
+  // Check for rvalues and lvalues and determine where a dereference is needed.
+  // Characterize the mutability of each expression and check for const-correctness.
+  // Characterize how activations use the state of the receiver.
+
+  semantic::check_all (root, er, symbol_table);
   semantic::compute_receiver_access (root);
 
   if (profile)
@@ -253,7 +266,7 @@ main (int argc, char **argv)
   // Calculate the offsets of all stack variables.
   // TODO:  Allocate and generate code after composition check.
   // Do this so we can execute some code statically when checking composition.
-  semantic::allocate_stack_variables (root);
+  code::allocate_stack_variables (root);
 
   // Generate code.
   code::generate_code (root);

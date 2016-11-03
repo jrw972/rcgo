@@ -6,8 +6,6 @@
 #include "node.hpp"
 #include "polymorphic_function.hpp"
 #include "callable.hpp"
-#include "semantic.hpp"
-#include "check_types.hpp"
 #include "error_reporter.hpp"
 #include "process_type.hpp"
 
@@ -32,17 +30,17 @@ Symbol::state () const
 }
 
 bool
-Symbol::process_declaration (util::ErrorReporter& er, Scope* file_scope)
+Symbol::process_declaration (util::ErrorReporter& er, SymbolTable& symbol_table)
 {
   switch (state_)
     {
     case Symbol::Declared:
     {
       state_ = Symbol::In_Progress;
-      if (process_declaration_i (er, file_scope))
+      if (process_declaration_i (er, symbol_table))
         {
           state_ = Symbol::Defined;
-          post_process_declaration_i (er, file_scope);
+          post_process_declaration_i (er, symbol_table);
         }
       else
         {
@@ -67,13 +65,13 @@ Symbol::process_declaration (util::ErrorReporter& er, Scope* file_scope)
 }
 
 bool
-Symbol::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+Symbol::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table)
 {
   return true;
 }
 
 void
-Symbol::post_process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+Symbol::post_process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table)
 { }
 
 void Symbol::offset (ptrdiff_t o)
@@ -126,12 +124,12 @@ Instance::initializer () const
 }
 
 bool
-Instance::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+Instance::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table)
 {
   const std::string& initializer_identifier = instancedecl_->initializer->identifier;
 
-  process_type (instancedecl_->type, er, file_scope);
-  if (instancedecl_->type->eval.expression_kind == ErrorExpressionKind)
+  process_type (instancedecl_->type, er, symbol_table);
+  if (instancedecl_->type->eval.kind == ExpressionValue::Error)
     {
       return false;
     }
@@ -249,9 +247,8 @@ Constant::Constant (const std::string& id, const util::Location& loc, ast::Node*
   , init_ (a_init)
 { }
 
-Constant::Constant (const std::string& id, const util::Location& loc, const type::Type* t, const semantic::Value& v)
+Constant::Constant (const std::string& id, const util::Location& loc, const semantic::ExpressionValue& v)
   : Symbol (id, loc)
-  , type_ (t)
   , value_ (v)
   , type_spec_ (NULL)
   , init_ (NULL)
@@ -260,58 +257,50 @@ Constant::Constant (const std::string& id, const util::Location& loc, const type
 }
 
 bool
-Constant::process_declaration_i (util::ErrorReporter& er, Scope* file_scope)
+Constant::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table)
 {
   // Process the type spec.
-  process_type (type_spec_, er, file_scope);
-  if (type_spec_->eval.expression_kind == ErrorExpressionKind)
+  process_type (type_spec_, er, symbol_table);
+  if (type_spec_->eval.kind == ExpressionValue::Error)
     {
       return false;
     }
 
-  if (type_spec_->eval.expression_kind == TypeExpressionKind)
+  if (type_spec_->eval.kind == ExpressionValue::Type)
     {
       const type::Type* type = type_spec_->eval.type;
 
       // Type, expressions.
-      if (!check_constant_expression (init_, er, file_scope))
+      if (!check_constant_expression (init_, er, symbol_table))
         {
           return false;
         }
-      if (!are_assignable (init_->eval.type, init_->eval.value, type))
+      if (!init_->eval.is_assignable (type))
         {
           er.cannot_convert (init_->location, init_->eval.type, type);
           return false;
         }
 
-      init_->eval.value.convert (init_->eval.type, type);
+      init_->eval.convert (type);
       init_->eval.type = type;
 
-      this->type_ = type;
-      this->value_ = init_->eval.value;
+      this->value_ = init_->eval;
       return true;
     }
   else
     {
       // No type, just expressions.
-      if (!check_constant_expression (init_, er, file_scope))
+      if (!check_constant_expression (init_, er, symbol_table))
         {
           return false;
         }
 
-      this->type_ = init_->eval.type;
-      this->value_ = init_->eval.value;
+      this->value_ = init_->eval;
       return true;
     }
 }
 
-const type::Type*
-Constant::type () const
-{
-  return type_;
-}
-
-semantic::Value
+semantic::ExpressionValue
 Constant::value () const
 {
   return value_;

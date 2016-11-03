@@ -9,8 +9,6 @@
 #include "node_visitor.hpp"
 #include "node_cast.hpp"
 #include "callable.hpp"
-#include "semantic.hpp"
-#include "evaluate_static.hpp"
 #include "stack.hpp"
 #include "runtime.hpp"
 #include "parameter_list.hpp"
@@ -530,8 +528,8 @@ Composer::elaborate_bindings ()
             void visit (ast::If& node)
             {
               node.condition->operation->execute (exec);
-              assert (node.condition->eval.expression_kind != semantic::UnknownExpressionKind);
-              if (node.condition->eval.expression_kind == semantic::VariableExpressionKind)
+              assert (node.condition->eval.kind != semantic::ExpressionValue::Unknown);
+              if (node.condition->eval.kind == semantic::ExpressionValue::Variable)
                 {
                   UNIMPLEMENTED;
                   // void* ptr = exec.stack ().pop_pointer ();
@@ -605,8 +603,8 @@ Composer::elaborate_bindings ()
             void visit (BindPushPortParameter& node)
             {
               node.param->operation->execute (exec);
-              assert (node.param->eval.expression_kind != semantic::UnknownExpressionKind);
-              if (node.param->eval.expression_kind == semantic::VariableExpressionKind)
+              assert (node.param->eval.kind != semantic::ExpressionValue::Unknown);
+              if (node.param->eval.kind == semantic::ExpressionValue::Variable)
                 {
                   void* ptr = exec.stack ().pop_pointer ();
                   exec.stack ().load (ptr, arch::size (node.param->eval.type));
@@ -891,8 +889,8 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
   void visit (ast::IndexedPushPortCall& node)
   {
     node.index->operation->execute (exec);
-    assert (node.index->eval.expression_kind != semantic::UnknownExpressionKind);
-    if (node.index->eval.expression_kind == semantic::VariableExpressionKind)
+    assert (node.index->eval.kind != semantic::ExpressionValue::Unknown);
+    if (node.index->eval.kind == semantic::ExpressionValue::Variable)
       {
         void* ptr = exec.stack ().pop_pointer ();
         exec.stack ().load (ptr, arch::size (node.index->eval.type));
@@ -902,12 +900,12 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     exec.stack ().pop (idx);
     if (idx < 0)
       {
-        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
+        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
                        "port index is negative (E100)");
       }
     if (idx >= node.array_type->dimension)
       {
-        error_at_line (-1, 0, node.location.file.c_str (), node.location.line,
+        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
                        "port index is negative (E75)");
       }
 
@@ -922,8 +920,8 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
 
   void visit (Call& node)
   {
-    assert (node.expression->eval.expression_kind != semantic::UnknownExpressionKind);
-    if (node.expression->eval.expression_kind != semantic::TypeExpressionKind)
+    assert (node.expression->eval.kind != semantic::ExpressionValue::Unknown);
+    if (node.expression->eval.kind != semantic::ExpressionValue::Type)
       {
         // Are we calling a getter or pull port.
         const type::Getter* method = node.getter_type;
@@ -931,8 +929,8 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
           {
             ast::Node* sb = node_cast<ast::Select> (node.expression)->base;
             sb->operation->execute (exec);
-            assert (sb->eval.expression_kind != semantic::UnknownExpressionKind);
-            if (sb->eval.expression_kind == semantic::VariableExpressionKind &&
+            assert (sb->eval.kind != semantic::ExpressionValue::Unknown);
+            if (sb->eval.kind == semantic::ExpressionValue::Variable &&
                 sb->eval.type->underlying_type ()->to_pointer ())
               {
                 void* ptr = exec.stack ().pop_pointer ();
@@ -970,16 +968,6 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
   void visit (ast::Literal& node)
   {
     // Do nothing.
-  }
-
-  void visit (ast::BinaryArithmetic& node)
-  {
-    node.visit_children (*this);
-  }
-
-  void visit (ast::UnaryArithmetic& node)
-  {
-    node.visit_children (*this);
   }
 
   void visit (AddressOf& node)
@@ -1296,7 +1284,7 @@ Composer::enumerate_instances (ast::Node * node)
     {
       const NamedType *type = node.symbol->type ();
       decl::Initializer* initializer = node.symbol->initializer ();
-      node.symbol->instance = instance_table.instantiate_contained_instances (type, NULL, initializer, address, node.location.line, &node, node.identifier->identifier);
+      node.symbol->instance = instance_table.instantiate_contained_instances (type, NULL, initializer, address, node.location.line (), &node, node.identifier->identifier);
       address += arch::size (type);
     }
 

@@ -7,11 +7,11 @@
 #include "node_visitor.hpp"
 #include "node_cast.hpp"
 #include "symbol.hpp"
-#include "check_types.hpp"
 #include "parameter_list.hpp"
 #include "error_reporter.hpp"
 #include "scope.hpp"
 #include "symbol_cast.hpp"
+#include "symbol_table.hpp"
 
 namespace semantic
 {
@@ -21,21 +21,21 @@ using namespace ast;
 using namespace decl;
 
 long
-process_array_dimension (ErrorReporter& er, decl::Scope* scope, ast::Node* node)
+process_array_dimension (ErrorReporter& er, decl::SymbolTable& symbol_table, ast::Node* node)
 {
-  if (!check_constant_expression (node, er, scope))
+  if (!check_constant_expression (node, er, symbol_table))
     {
       return -1;
     }
 
   // Convert to an int.
-  if (!node->eval.value.representable (node->eval.type, &named_int))
+  if (!node->eval.representable (&named_int))
     {
       er.non_integer_array_dimension (node->location, node->eval.type);
       return -1;
     }
 
-  node->eval.value.convert (node->eval.type, &named_int);
+  node->eval.convert (&named_int);
   node->eval.type = &named_int;
   long dim = node->eval.value.int_value;
   if (dim < 0)
@@ -63,7 +63,7 @@ check_for_foreign_safe (ErrorReporter& er,
 
 Parameter*
 process_receiver (ErrorReporter& er,
-                  decl::Scope* scope,
+                  decl::SymbolTable& symbol_table,
                   const type::NamedType* named_type,
                   ast::Receiver* node,
                   bool require_component,
@@ -105,7 +105,7 @@ process_receiver (ErrorReporter& er,
 
 const decl::ParameterList*
 process_parameter_list (ErrorReporter& er,
-                        decl::Scope* scope,
+                        decl::SymbolTable& symbol_table,
                         ast::ParameterList* node,
                         bool is_return)
 {
@@ -117,8 +117,8 @@ process_parameter_list (ErrorReporter& er,
       VariableList* child = static_cast<VariableList*> (*pos1);
       List* identifier_list = child->identifiers;
       Node* type_spec = child->type;
-      process_type (type_spec, er, scope);
-      if (type_spec->eval.expression_kind == ErrorExpressionKind)
+      process_type (type_spec, er, symbol_table);
+      if (type_spec->eval.kind == ExpressionValue::Error)
         {
           continue;
         }
@@ -145,7 +145,7 @@ process_parameter_list (ErrorReporter& er,
 
 void
 process_signature (ErrorReporter& er,
-                   decl::Scope* scope,
+                   decl::SymbolTable& symbol_table,
                    ast::ParameterList* parameter_list_node,
                    ast::ParameterList* return_parameter_list_node,
                    bool require_foreign_safe,
@@ -153,10 +153,10 @@ process_signature (ErrorReporter& er,
                    const decl::ParameterList*& return_parameter_list)
 {
   /* Process the signature. */
-  parameter_list = process_parameter_list (er, scope, parameter_list_node, false);
+  parameter_list = process_parameter_list (er, symbol_table, parameter_list_node, false);
 
   /* Process the return type. */
-  return_parameter_list = process_parameter_list (er, scope, return_parameter_list_node, true);
+  return_parameter_list = process_parameter_list (er, symbol_table, return_parameter_list_node, true);
 
   if (require_foreign_safe)
     {
@@ -201,23 +201,23 @@ check_unique_parameters (util::ErrorReporter& er,
 }
 
 void
-process_type (Node* node, ErrorReporter& er, decl::Scope* scope, bool require_named_types_to_be_defined)
+process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symbol_table, bool require_named_types_to_be_defined)
 {
-  if (node->eval.expression_kind != UnknownExpressionKind) return;
+  if (node->eval.kind != ExpressionValue::Unknown) return;
 
   struct Visitor : public ast::DefaultNodeVisitor
   {
     ErrorReporter& er;
-    decl::Scope* scope;
+    decl::SymbolTable& symbol_table;
     ExpressionValue& out;
     bool const require_named_types_to_be_defined;
 
     Visitor (ErrorReporter& a_er,
-             decl::Scope* a_scope,
+             decl::SymbolTable& a_symbol_table,
              ExpressionValue& a_out,
              bool a_require_named_types_to_be_defined)
       : er (a_er)
-      , scope (a_scope)
+      , symbol_table (a_symbol_table)
       , out (a_out)
       , require_named_types_to_be_defined (a_require_named_types_to_be_defined)
     { }
@@ -231,11 +231,11 @@ process_type (Node* node, ErrorReporter& er, decl::Scope* scope, bool require_na
     {
       Identifier* child = node.child;
       const std::string& identifier = child->identifier;
-      Symbol* s = scope->find_global_symbol (identifier);
+      Symbol* s = symbol_table.retrieve_symbol (identifier);
       if (s == NULL)
         {
           er.not_declared (node.location, identifier);
-          out.expression_kind = ErrorExpressionKind;
+          out.kind = ExpressionValue::Error;
           return;
         }
 
@@ -243,83 +243,83 @@ process_type (Node* node, ErrorReporter& er, decl::Scope* scope, bool require_na
       if (t == NULL)
         {
           er.expected_a_type (node.location);
-          out.expression_kind = ErrorExpressionKind;
+          out.kind = ExpressionValue::Error;
           return;
         }
 
-      if (require_named_types_to_be_defined && !t->process_declaration (er, scope))
+      if (require_named_types_to_be_defined && !t->process_declaration (er, symbol_table))
         {
           er.not_defined (node.location, identifier);
-          out.expression_kind = ErrorExpressionKind;
+          out.kind = ExpressionValue::Error;
           return;
         }
 
-      out.expression_kind = TypeExpressionKind;
+      out.kind = ExpressionValue::Type;
       out.type = t;
     }
 
     void visit (ast::Array& node)
     {
-      long dimension = process_array_dimension (er, scope, node.dimension);
+      long dimension = process_array_dimension (er, symbol_table, node.dimension);
       if (dimension == -1)
         {
-          out.expression_kind = ErrorExpressionKind;
+          out.kind = ExpressionValue::Error;
           return;
         }
 
-      process_type (node.base_type, er, scope);
-      if (node.base_type->eval.expression_kind == ErrorExpressionKind)
+      process_type (node.base_type, er, symbol_table);
+      if (node.base_type->eval.kind == ExpressionValue::Error)
         {
-          out.expression_kind = ErrorExpressionKind;
+          out.kind = ExpressionValue::Error;
           return;
         }
 
-      out.expression_kind = TypeExpressionKind;
+      out.kind = ExpressionValue::Type;
       out.type = node.base_type->eval.type->get_array (dimension);
     }
 
     void visit (ast::Slice& node)
     {
-      process_type (node.child, er, scope, false);
-      if (node.child->eval.expression_kind == ErrorExpressionKind)
+      process_type (node.child, er, symbol_table, false);
+      if (node.child->eval.kind == ExpressionValue::Error)
         {
-          out.expression_kind = ErrorExpressionKind;
+          out.kind = ExpressionValue::Error;
           return;
         }
 
-      out.expression_kind = TypeExpressionKind;
+      out.kind = ExpressionValue::Type;
       out.type = node.child->eval.type->get_slice ();
     }
 
     void visit (ast::Pointer& node)
     {
-      process_type (node.child, er, scope, false);
-      if (node.child->eval.expression_kind == ErrorExpressionKind)
+      process_type (node.child, er, symbol_table, false);
+      if (node.child->eval.kind == ExpressionValue::Error)
         {
-          out.expression_kind = ErrorExpressionKind;
+          out.kind = ExpressionValue::Error;
           return;
         }
 
-      out.expression_kind = TypeExpressionKind;
+      out.kind = ExpressionValue::Type;
       out.type = node.child->eval.type->get_pointer ();
     }
 
     void visit (ast::Heap& node)
     {
-      process_type (node.child, er, scope, false);
-      if (node.child->eval.expression_kind == ErrorExpressionKind)
+      process_type (node.child, er, symbol_table, false);
+      if (node.child->eval.kind == ExpressionValue::Error)
         {
-          out.expression_kind = ErrorExpressionKind;
+          out.kind = ExpressionValue::Error;
           return;
         }
 
-      out.expression_kind = TypeExpressionKind;
+      out.kind = ExpressionValue::Type;
       out.type = node.child->eval.type->get_heap ();
     }
 
     void visit (EmptyType& node)
     {
-      out.expression_kind = EmptyTypeExpressionKind;
+      out.kind = ExpressionValue::EmptyType;
     }
 
     void visit (FieldList& node)
@@ -327,7 +327,7 @@ process_type (Node* node, ErrorReporter& er, decl::Scope* scope, bool require_na
       Struct* field_list;
       if (node.is_component)
         {
-          field_list = new Component (scope->package (), node.location);
+          field_list = new Component (symbol_table.package (), node.location);
         }
       else
         {
@@ -342,8 +342,8 @@ process_type (Node* node, ErrorReporter& er, decl::Scope* scope, bool require_na
           VariableList* c = static_cast<VariableList*> (child);
           List* identifier_list = c->identifiers;
           Node* type_spec = c->type;
-          process_type (type_spec, er, scope);
-          if (type_spec->eval.expression_kind == ErrorExpressionKind)
+          process_type (type_spec, er, symbol_table);
+          if (type_spec->eval.kind == ExpressionValue::Error)
             {
               continue;
             }
@@ -357,7 +357,7 @@ process_type (Node* node, ErrorReporter& er, decl::Scope* scope, bool require_na
               const std::string& identifier = node_cast<Identifier> (id)->identifier;
               if (!field_list->has_member (identifier))
                 {
-                  field_list->append_field (scope->package (), false, identifier, id->location, type, TagSet ());
+                  field_list->append_field (symbol_table.package (), false, identifier, id->location, type, TagSet ());
                 }
               else
                 {
@@ -367,32 +367,32 @@ process_type (Node* node, ErrorReporter& er, decl::Scope* scope, bool require_na
             }
         }
 
-      out.expression_kind = TypeExpressionKind;
+      out.kind = ExpressionValue::Type;
       out.type = field_list;
     }
 
     void visit (ast::PushPort& node)
     {
-      const decl::ParameterList* parameter_list = process_parameter_list (er, scope, node.parameters, false);
+      const decl::ParameterList* parameter_list = process_parameter_list (er, symbol_table, node.parameters, false);
       const decl::ParameterList* return_parameter_list = new decl::ParameterList (node.location);
       check_for_foreign_safe (er, parameter_list);
       check_for_foreign_safe (er, return_parameter_list);
-      out.expression_kind = TypeExpressionKind;
+      out.kind = ExpressionValue::Type;
       out.type = new type::PushPort (parameter_list, return_parameter_list);
     }
 
     void visit (ast::PullPort& node)
     {
-      const decl::ParameterList* parameter_list = process_parameter_list (er, scope, node.parameters, false);
-      const decl::ParameterList* return_parameter_list = process_parameter_list (er, scope, node.return_parameters, true);
+      const decl::ParameterList* parameter_list = process_parameter_list (er, symbol_table, node.parameters, false);
+      const decl::ParameterList* return_parameter_list = process_parameter_list (er, symbol_table, node.return_parameters, true);
       check_for_foreign_safe (er, parameter_list);
       check_for_foreign_safe (er, return_parameter_list);
-      out.expression_kind = TypeExpressionKind;
+      out.kind = ExpressionValue::Type;
       out.type = new type::PullPort (parameter_list, return_parameter_list);
     }
   };
 
-  Visitor type_spec_visitor (er, scope, node->eval, require_named_types_to_be_defined);
+  Visitor type_spec_visitor (er, symbol_table, node->eval, require_named_types_to_be_defined);
   node->accept (type_spec_visitor);
 }
 

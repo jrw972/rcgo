@@ -1,5 +1,3 @@
-#include "evaluate_static.hpp"
-
 #include "type.hpp"
 #include "node.hpp"
 #include "node_visitor.hpp"

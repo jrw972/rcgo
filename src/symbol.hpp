@@ -3,7 +3,7 @@
 
 #include "types.hpp"
 #include "location.hpp"
-#include "value.hpp"
+#include "semantic.hpp"
 
 namespace decl
 {
@@ -24,7 +24,7 @@ struct Symbol
   virtual void accept (SymbolVisitor& visitor) = 0;
   virtual void accept (ConstSymbolVisitor& visitor) const = 0;
   State state () const;
-  bool process_declaration (util::ErrorReporter& er, Scope* file_scope);
+  bool process_declaration (util::ErrorReporter& er, SymbolTable& symbol_table);
   void offset (ptrdiff_t o);
   virtual ptrdiff_t offset () const;
 
@@ -33,8 +33,8 @@ struct Symbol
 
 protected:
   State state_;
-  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
-  virtual void post_process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+  virtual bool process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table);
+  virtual void post_process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table);
 private:
   // TODO:  Should this be here?
   ptrdiff_t offset_;
@@ -49,7 +49,7 @@ struct Instance : public Symbol
             Initializer* initializer);
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+  virtual bool process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table);
 
   const type::NamedType* type () const;
   Initializer* initializer () const;
@@ -126,18 +126,15 @@ struct Constant : public Symbol
             ast::Node* a_init);
   Constant (const std::string& name,
             const util::Location& location,
-            const type::Type* type,
-            const semantic::Value& value);
+            const semantic::ExpressionValue& ev);
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
-  virtual bool process_declaration_i (util::ErrorReporter& er, Scope* file_scope);
+  virtual bool process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table);
 
-  const type::Type* type () const;
-  semantic::Value value () const;
+  semantic::ExpressionValue value () const;
 
 private:
-  const type::Type* type_;
-  semantic::Value value_;
+  semantic::ExpressionValue value_;
   ast::Node* const type_spec_;
   ast::Node* const init_;
 };

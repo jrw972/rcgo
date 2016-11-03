@@ -1,806 +1,404 @@
-#ifndef RC_SRC_SEMANTIC_HPP
-#define RC_SRC_SEMANTIC_HPP
-
-#include <error.h>
-
-#include <utility>
+#ifndef RCGO_SRC_SEMANTIC_HPP
+#define RCGO_SRC_SEMANTIC_HPP
 
 #include "types.hpp"
-#include "symbol_visitor.hpp"
-#include "symbol_cast.hpp"
-#include "scope.hpp"
-#include "polymorphic_function.hpp"
-#include "type.hpp"
+// Borrow some types from runtime.
+#include "runtime_types.hpp"
+#include "location.hpp"
+
+#include <cstddef>
+#include <map>
 
 namespace semantic
 {
 
-using namespace std::rel_ops;
+// Enter builtin types, constants, etc.
+void populate_universe_block (decl::SymbolTable& symbol_table);
 
-struct Multiplier
+// Enter constants, types, functions, and instances into the package scope.
+void enter_identifiers (ast::Node* root, util::ErrorReporter& er, decl::SymbolTable& symbol_table, bool exported_symbols);
+
+// Enter method like identifiers into the corresponding named types.
+void enter_method_identifiers (ast::Node* root, util::ErrorReporter& er, decl::SymbolTable& symbol_table);
+
+// Process constants, types, functions, methods, initializers, getters,
+// actions, reactions, binders, and instances.
+void process_top_level_declarations (ast::Node* root, util::ErrorReporter& er, decl::SymbolTable& symbol_table);
+
+// Process an array dimension.  Returns -1 on error.
+long
+process_array_dimension (util::ErrorReporter& er,
+                         decl::SymbolTable& symbol_table,
+                         ast::Node* ptr);
+
+// Check that all parameters in a parameter list have foreign indirection mutability if necessary.
+void
+check_for_foreign_safe (util::ErrorReporter& er,
+                        const decl::ParameterList* parameter_list);
+
+// Process a receiver.
+decl::Parameter*
+process_receiver (util::ErrorReporter& er,
+                  decl::SymbolTable& symbol_table,
+                  const type::NamedType* named_type,
+                  ast::Receiver* node,
+                  bool require_component,
+                  bool require_immutable_dereference_mutability);
+
+// Process a signature.
+const decl::ParameterList*
+process_parameter_list (util::ErrorReporter& er,
+                        decl::SymbolTable& symbol_table,
+                        ast::ParameterList* node,
+                        bool is_return);
+
+void
+process_signature (util::ErrorReporter& er,
+                   decl::SymbolTable& symbol_table,
+                   ast::ParameterList* parameter_list_node,
+                   ast::ParameterList* return_parameter_list_node,
+                   bool require_foreign_safe,
+                   const decl::ParameterList*& parameter_list,
+                   const decl::ParameterList*& return_parameter_list);
+
+void
+check_unique_parameters (util::ErrorReporter& er,
+                         const type::Function* type);
+
+// Process a type specification.
+// Pre:  node->eval.expression_kind == UnknownExpressionKind
+// Post: node->eval.expression_kind is one of ErrorExpressionKind, TypeExpressionKind, or EmptyTypeExpressionKind
+//       If TypeExpressionKind, then node->eval.type contains the type.
+void
+process_type (ast::Node* node,
+              util::ErrorReporter& er,
+              decl::SymbolTable& symbol_table,
+              bool require_named_types_to_be_defined = true);
+
+struct UntypedComplex
 {
-  template <typename T>
-  T operator() (const T& x, const T& y) const
-  {
-    return x * y;
-  }
+  double real;
+  double imag;
+  static UntypedComplex make (double r, double i);
+  bool operator== (const UntypedComplex& other) const;
+  UntypedComplex& operator= (const double& x);
+  UntypedComplex& operator= (const runtime::Complex64& x);
+  UntypedComplex& operator= (const runtime::Complex128& x);
+  operator double() const;
 };
 
-struct Divider
+UntypedComplex operator* (const UntypedComplex&, const UntypedComplex&);
+UntypedComplex operator/ (const UntypedComplex&, const UntypedComplex&);
+UntypedComplex operator+ (const UntypedComplex&, const UntypedComplex&);
+UntypedComplex operator- (const UntypedComplex&, const UntypedComplex&);
+UntypedComplex operator- (const UntypedComplex&);
+
+struct Value
 {
-  template <typename T>
-  T operator() (const T& x, const T& y) const
+  union
   {
-    return x / y;
-  }
+    bool bool_value;
+
+    uint8_t uint8_value;
+    uint16_t uint16_value;
+    uint32_t uint32_value;
+    uint64_t uint64_value;
+
+    int8_t int8_value;
+    int16_t int16_value;
+    int32_t int32_value;
+    int64_t int64_value;
+
+    float float32_value;
+    double float64_value;
+
+    runtime::Complex64 complex64_value;
+    runtime::Complex128 complex128_value;
+
+    unsigned long uint_value;
+    long int_value;
+    size_t uintptr_value;
+
+    runtime::Slice slice_value;
+    runtime::String string_value;
+
+    bool untyped_boolean_value;
+    int32_t untyped_rune_value;
+    long long untyped_integer_value;
+    double untyped_float_value;
+    UntypedComplex untyped_complex_value;
+    runtime::String untyped_string_value;
+  };
 };
 
-struct Modulizer
+struct ExpressionValue
 {
-  template <typename T>
-  T operator() (const T& x, const T& y) const
+  static ExpressionValue make_error ();
+  static ExpressionValue make_void ();
+  static ExpressionValue make_variable (const type::Type* type);
+  static ExpressionValue make_value (const type::Type* a_type,
+                                     Mutability a_intrinsic_mutability,
+                                     Mutability a_indirection_mutability,
+                                     bool a_variadic = false);
+  static ExpressionValue make_bool (const type::Type* type, bool v);
+  static ExpressionValue make_uint8 (const type::Type* type, uint8_t v);
+  static ExpressionValue make_uint16 (const type::Type* type, uint16_t v);
+  static ExpressionValue make_uint32 (const type::Type* type, uint32_t v);
+  static ExpressionValue make_uint64 (const type::Type* type, uint64_t v);
+  static ExpressionValue make_int8 (const type::Type* type, int8_t v);
+  static ExpressionValue make_int16 (const type::Type* type, int16_t v);
+  static ExpressionValue make_int32 (const type::Type* type, int32_t v);
+  static ExpressionValue make_int64 (const type::Type* type, int64_t v);
+  static ExpressionValue make_float32 (const type::Type* type, float v);
+  static ExpressionValue make_float64 (const type::Type* type, double v);
+  static ExpressionValue make_complex64 (const type::Type* type, runtime::Complex64 v);
+  static ExpressionValue make_complex128 (const type::Type* type, runtime::Complex128 v);
+  static ExpressionValue make_uint (const type::Type* type, unsigned long v);
+  static ExpressionValue make_int (const type::Type* type, long v);
+  static ExpressionValue make_uintptr (const type::Type* type, size_t v);
+  static ExpressionValue make_string (const type::Type* type, const runtime::String& s);
+  static ExpressionValue make_pointer (const type::Type* type);
+  static ExpressionValue make_nil ();
+  static ExpressionValue make_boolean (bool v);
+  static ExpressionValue make_rune (int32_t v);
+  static ExpressionValue make_integer (long long v);
+  static ExpressionValue make_float (double v);
+  static ExpressionValue make_complex (UntypedComplex v);
+  static ExpressionValue make_string_untyped (const runtime::String& s);
+
+  static ExpressionValue make_polymorphic_function (decl::PolymorphicFunction* func);
+  static ExpressionValue make_type (const type::Type* t);
+
+  enum Kind
   {
-    return x % y;
-  }
+    Unknown,
+    Error,
+    Constant,
+    Value,      // A computed value.
+    Variable,   // A computed location.
+    Void,       // Expression yields no value.
+    Type,       // A type.
+    EmptyType,  // No type was specified.
+    Polymorphic_Function
+  };
+  Kind kind;
+  const type::Type* type;
+  semantic::Value value;
+  // TODO:  This could be part of value.
+  const decl::PolymorphicFunction* polymorphic_function;
+  Mutability intrinsic_mutability;
+  Mutability indirection_mutability;
+  bool variadic;
+
+  ReceiverAccess receiver_access;
+  bool receiver_state;
+
+  ExpressionValue ();
+
+  bool is_unknown () const;
+  bool is_error () const;
+  bool is_value () const;
+  bool is_variable () const;
+  bool is_void () const;
+  bool is_type () const;
+  bool is_rvalue () const;
+  bool is_rvalue_or_void () const;
+  bool is_constant () const;
+  bool is_polymorphic_function () const;
+  bool is_variadic () const;
+
+  bool is_assignable (const type::Type* to) const;
+
+  void fix_string_indirection_mutability ();
+  bool representable (const type::Type* to) const;
+  void convert (const type::Type* to);
+  long to_int () const;
+  void print (std::ostream& out = std::cout) const;
 };
 
-struct LeftShifter
-{
-  template <typename T, typename U>
-  T operator() (const T& x, const U& y) const
-  {
-    return x << y;
-  }
+std::ostream& operator<< (std::ostream& out, const ExpressionValue& ev);
 
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-struct RightShifter
-{
-  template <typename T, typename U>
-  T operator() (const T& x, const U& y) const
-  {
-    return x >> y;
-  }
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-struct BitAnder
-{
-  template <typename T>
-  T operator() (const T& x, const T& y) const
-  {
-    return x & y;
-  }
-};
-
-struct BitAndNotter
-{
-  template <typename T>
-  T operator() (const T& x, const T& y) const
-  {
-    return x & (~y);
-  }
-};
-
-struct Adder
-{
-  template <typename T>
-  T operator() (const T& x, const T& y) const
-  {
-    return x + y;
-  }
-};
-
-struct Subtracter
-{
-  template <typename T>
-  T operator() (const T& x, const T& y) const
-  {
-    return x - y;
-  }
-};
-
-struct BitOrer
-{
-  template <typename T>
-  T operator() (const T& x, const T& y) const
-  {
-    return x | y;
-  }
-};
-
-struct BitXorer
-{
-  template <typename T>
-  T operator() (const T& x, const T& y) const
-  {
-    return x ^ y;
-  }
-};
-
-struct Equalizer
-{
-  template <typename T>
-  bool operator() (const T& x, const T& y) const
-  {
-    return x == y;
-  }
-};
-
-struct NotEqualizer
-{
-  template <typename T>
-  bool operator() (const T& x, const T& y) const
-  {
-    return x != y;
-  }
-};
-
-struct LessThaner
-{
-  template <typename T>
-  bool operator() (const T& x, const T& y) const
-  {
-    return x < y;
-  }
-};
-
-struct LessEqualizer
-{
-  template <typename T>
-  bool operator() (const T& x, const T& y) const
-  {
-    return x <= y;
-  }
-};
-
-struct MoreThaner
-{
-  template <typename T>
-  bool operator() (const T& x, const T& y) const
-  {
-    return x > y;
-  }
-};
-
-struct MoreEqualizer
-{
-  template <typename T>
-  bool operator() (const T& x, const T& y) const
-  {
-    return x >= y;
-  }
-};
-
-template <typename T>
-struct LogicNotter
-{
-  typedef T ValueType;
-  bool operator() (const T& x) const
-  {
-    return !x;
-  }
-};
-
-template <typename T>
-struct Negater
-{
-  typedef T ValueType;
-  T operator() (const T& x) const
-  {
-    return -x;
-  }
-};
+typedef std::vector<ExpressionValue> ExpressionValueList;
 
 ExpressionValueList collect_evals (ast::Node* node);
+util::LocationList collect_locations (ast::Node* node);
+void distribute_evals (const ExpressionValueList& evals, ast::Node* node);
 
-void
-allocate_stack_variables (ast::Node* node);
+void check_polymorphic_function_call (util::ErrorReporter& er,
+                                      const decl::PolymorphicFunction* pf,
+                                      const util::Location& loc,
+                                      ExpressionValue& result,
+                                      ExpressionValueList& arguments,
+                                      const util::LocationList& locations);
 
-decl::Method*
-get_current_method (const ast::Node * node);
+void check_types_arguments (ast::List* node, const decl::ParameterList* signature);
+void require_value_or_const_or_variable_list (const ast::List* node);
+void check_mutability_arguments (ast::Node* node, const decl::ParameterList* signature);
 
-void
-allocate_symbol (runtime::MemoryModel& memory_model,
-                 decl::Symbol* symbol);
+void check_all (ast::Node* root, util::ErrorReporter& er, decl::SymbolTable& symbol_table);
+bool check_constant_expression (ast::Node* root, util::ErrorReporter& er, decl::SymbolTable& symbol_table);
 
-void
-allocate_parameters (runtime::MemoryModel& memory_model,
-                     const decl::ParameterList* signature);
+void compute_receiver_access_arguments (const ExpressionValueList& args, const decl::ParameterList* signature, ReceiverAccess& receiver_access, bool& flag);
+void compute_receiver_access (ast::Node* root);
 
-bool
-require_value_or_variable (util::ErrorReporter& er,
-                           const util::Location& location,
-                           ExpressionValue& result,
-                           const ExpressionValue& arg);
-
-bool
-require_type (util::ErrorReporter& er,
-              const util::Location& location,
-              ExpressionValue& result,
-              const ExpressionValue& arg);
-
-struct LogicNot : public decl::PolymorphicFunction
+class static_memory_t
 {
-  LogicNot (const util::Location& loc);
+public:
 
-  virtual void
-  check (util::ErrorReporter& er,
-         const util::Location& location,
-         ExpressionValue& result,
-         ExpressionValueList& arguments) const;
-
-  virtual void
-  compute_receiver_access (const semantic::ExpressionValueList& args,
-                           ReceiverAccess& receiver_access,
-                           bool& flag) const
+  void set_value_at_offset (ptrdiff_t offset, size_t value)
   {
-    UNIMPLEMENTED;
+    stack_[offset] = value;
   }
 
-  virtual runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops) const;
-};
-
-struct Posate : public decl::PolymorphicFunction
-{
-  Posate (const util::Location& loc);
-
-  virtual void
-  check (util::ErrorReporter& er,
-         const util::Location& location,
-         ExpressionValue& result,
-         ExpressionValueList& arguments) const;
-
-  virtual void
-  compute_receiver_access (const semantic::ExpressionValueList& args,
-                           ReceiverAccess& receiver_access,
-                           bool& flag) const
+  size_t get_value_at_offset (ptrdiff_t offset) const
   {
-    UNIMPLEMENTED;
+    return stack_.find (offset)->second;
   }
 
-  virtual runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops) const
+private:
+  typedef std::map<ptrdiff_t, size_t> StackType;
+  StackType stack_;
+};
+
+struct static_Value
+{
+  enum Kind
   {
-    UNIMPLEMENTED;
-  }
-};
+    STACK_ADDRESS,
+    ABSOLUTE_ADDRESS,
+    VALUE,
+  };
 
-struct Negate : public decl::PolymorphicFunction
-{
-  Negate (const util::Location& loc);
-
-  virtual void check (util::ErrorReporter& er,
-                      const util::Location& location,
-                      ExpressionValue& result,
-                      ExpressionValueList& arguments) const;
-
-  virtual void
-  compute_receiver_access (const semantic::ExpressionValueList& args,
-                           ReceiverAccess& receiver_access,
-                           bool& flag) const
+  Kind kind;
+  union
   {
-    UNIMPLEMENTED;
-  }
+    ptrdiff_t offset; // STACK_ADDRESS
+    size_t address; // ABSOLUTE_ADDRESS
+    size_t value; // VALUE
+  };
 
-  virtual runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_op) const
-  {
-    UNIMPLEMENTED;
-  }
-};
-
-struct Complement : public decl::PolymorphicFunction
-{
-  Complement (const util::Location& loc);
-
-  virtual void
-  check (util::ErrorReporter& er,
-         const util::Location& location,
-         ExpressionValue& result,
-         ExpressionValueList& arguments) const;
-
-  virtual void
-  compute_receiver_access (const semantic::ExpressionValueList& args,
-                           ReceiverAccess& receiver_access,
-                           bool& flag) const
-  {
-    UNIMPLEMENTED;
-  }
-
-  virtual runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops) const
-  {
-    UNIMPLEMENTED;
-  }
-};
-
-struct PassThroughPicker
-{
-  static const type::Type* pick (const type::Type* input_type,
-                                 const ExpressionValue& left,
-                                 const ExpressionValue& right);
-};
-
-struct BooleanPicker
-{
-  static const type::Type* pick (const type::Type* input_type,
-                                 const ExpressionValue& left,
-                                 const ExpressionValue& right);
-};
-
-template <typename Op>
-struct BinaryValueComputer
-{
-  static void
-  compute (ExpressionValue& result,
-           const type::Type* in_type,
-           const ExpressionValue& left,
-           const ExpressionValue& right);
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-struct LogicOrComputer
-{
-  static void compute (ExpressionValue& result,
-                       const type::Type* in_type,
-                       const ExpressionValue& left,
-                       const ExpressionValue& right);
-  static runtime::Operation* generate_code (const ExpressionValue& result,
-      const ExpressionValueList& arg_vals,
-      runtime::ListOperation* arg_ops);
-};
-
-struct LogicAndComputer
-{
-  static void compute (ExpressionValue& result,
-                       const type::Type* in_type,
-                       const ExpressionValue& left,
-                       const ExpressionValue& right);
-  static runtime::Operation* generate_code (const ExpressionValue& result,
-      const ExpressionValueList& arg_vals,
-      runtime::ListOperation* arg_ops);
-};
-
-template <typename InputPicker, typename OutputPicker, typename Computer, ::BinaryArithmetic ba>
-struct BinaryArithmetic : public decl::PolymorphicFunction
-{
-  BinaryArithmetic (const std::string& id, const util::Location& loc)
-    : PolymorphicFunction (id, loc)
+  static_Value ()
+    : kind (VALUE)
+    , value (0)
   { }
 
-  virtual void
-  check (util::ErrorReporter& er,
-         const util::Location& loc,
-         ExpressionValue& result,
-         ExpressionValueList& arguments) const;
-
-  virtual void
-  compute_receiver_access (const semantic::ExpressionValueList& args,
-                           ReceiverAccess& receiver_access,
-                           bool& flag) const
+  static static_Value make_stack_offset (ptrdiff_t offset)
   {
-    UNIMPLEMENTED;
+    static_Value v;
+    v.kind = STACK_ADDRESS;
+    v.offset = offset;
+    return v;
   }
 
-  virtual runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops) const;
-};
-
-template <typename B, ::BinaryArithmetic ba>
-struct BinaryShift : public decl::PolymorphicFunction
-{
-  BinaryShift (const std::string& id, const util::Location& loc) :
-    PolymorphicFunction (id, loc)
-  { }
-
-  virtual void
-  check (util::ErrorReporter& er,
-         const util::Location& loc,
-         ExpressionValue& result,
-         ExpressionValueList& arguments) const;
-
-  virtual void
-  compute_receiver_access (const semantic::ExpressionValueList& args,
-                           ReceiverAccess& receiver_access,
-                           bool& flag) const
+  static static_Value make_value (size_t value)
   {
-    UNIMPLEMENTED;
+    static_Value v;
+    v.kind = VALUE;
+    v.value = value;
+    return v;
   }
 
-  virtual runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops) const;
-};
-
-struct SMultiply
-{
-  void
-  operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SMultiply>, ::Multiply> Multiply;
-
-struct SDivide
-{
-  void operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SDivide>, ::Divide> Divide;
-
-struct SModulus
-{
-  void operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Integral, PassThroughPicker, BinaryValueComputer<SModulus>, ::Modulus> Modulus;
-
-typedef BinaryShift<LeftShifter, ::LeftShift> LeftShift;
-typedef BinaryShift<RightShifter, ::RightShift> RightShift;
-
-struct SBitAnd
-{
-  void operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Integral, PassThroughPicker, BinaryValueComputer<SBitAnd>, ::BitAnd> BitAnd;
-
-struct SBitAndNot
-{
-  void operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Integral, PassThroughPicker, BinaryValueComputer<SBitAndNot>, ::BitAndNot> BitAndNot;
-
-struct SAdd
-{
-  void operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SAdd>, ::Add> Add;
-
-struct SSubtract
-{
-  void operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SSubtract>, ::Subtract> Subtract;
-
-struct SBitOr
-{
-  void operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Integral, PassThroughPicker, BinaryValueComputer<SBitOr>, ::BitOr> BitOr;
-
-struct SBitXor
-{
-  void operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Integral, PassThroughPicker, BinaryValueComputer<SBitXor>, ::BitXor> BitXor;
-
-struct SEqual
-{
-  void operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Comparable, BooleanPicker, BinaryValueComputer<SEqual>, ::Equal> Equal;
-
-struct SNotEqual
-{
-  void operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Comparable, BooleanPicker, BinaryValueComputer<SNotEqual>, ::NotEqual> NotEqual;
-
-struct SLessThan
-{
-  void operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Orderable, BooleanPicker, BinaryValueComputer<SLessThan>, ::LessThan> LessThan;
-
-struct SLessEqual
-{
-  void operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Orderable, BooleanPicker, BinaryValueComputer<SLessEqual>, ::LessEqual> LessEqual;
-
-struct SMoreThan
-{
-  void operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Orderable, BooleanPicker, BinaryValueComputer<SMoreThan>, ::MoreThan> MoreThan;
-
-struct SMoreEqual
-{
-  void operator() (Value&, const type::Type*, const Value&, const Value&) const;
-
-  static runtime::Operation*
-  generate_code (const ExpressionValue& result,
-                 const ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops);
-};
-
-typedef BinaryArithmetic<type::Orderable, BooleanPicker, BinaryValueComputer<SMoreEqual>, ::MoreEqual> MoreEqual;
-
-typedef BinaryArithmetic<type::Logical, BooleanPicker, LogicOrComputer, ::LogicOr> LogicOr;
-typedef BinaryArithmetic<type::Logical, BooleanPicker, LogicAndComputer, ::LogicAnd> LogicAnd;
-
-struct New : public decl::PolymorphicFunction
-{
-  New (const util::Location& loc);
-
-  virtual void
-  check (util::ErrorReporter& er,
-         const util::Location& loc,
-         ExpressionValue& result,
-         ExpressionValueList& arguments) const;
-
-  virtual void
-  compute_receiver_access (const semantic::ExpressionValueList& args,
-                           ReceiverAccess& receiver_access,
-                           bool& flag) const;
-
-  virtual runtime::Operation*
-  generate_code (const semantic::ExpressionValue& result,
-                 const semantic::ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops) const;
-};
-
-struct Move : public decl::PolymorphicFunction
-{
-  Move (const util::Location& loc);
-  virtual void
-  check (util::ErrorReporter& er,
-         const util::Location& loc,
-         ExpressionValue& result,
-         ExpressionValueList& arguments) const;
-
-  virtual void
-  compute_receiver_access (const semantic::ExpressionValueList& args,
-                           ReceiverAccess& receiver_access,
-                           bool& flag) const;
-
-  virtual runtime::Operation*
-  generate_code (const semantic::ExpressionValue& result,
-                 const semantic::ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops) const;
-};
-
-struct Merge : public decl::PolymorphicFunction
-{
-  Merge (const util::Location& loc);
-
-  virtual void
-  check (util::ErrorReporter& er,
-         const util::Location& loc,
-         ExpressionValue& result,
-         ExpressionValueList& arguments) const;
-
-  virtual void
-  compute_receiver_access (const semantic::ExpressionValueList& args,
-                           ReceiverAccess& receiver_access,
-                           bool& flag) const;
-
-  virtual runtime::Operation*
-  generate_code (const semantic::ExpressionValue& result,
-                 const semantic::ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops) const;
-};
-
-struct Len : public decl::PolymorphicFunction
-{
-  Len (const util::Location& loc);
-
-  virtual void
-  check (util::ErrorReporter& er,
-         const util::Location& loc,
-         ExpressionValue& result,
-         ExpressionValueList& arguments) const;
-
-  virtual void
-  compute_receiver_access (const semantic::ExpressionValueList& args,
-                           ReceiverAccess& receiver_access,
-                           bool& flag) const
+  static static_Value implicit_dereference (static_Value in, const static_memory_t& memory)
   {
-    UNIMPLEMENTED;
+    static_Value out;
+    switch (in.kind)
+      {
+      case STACK_ADDRESS:
+        out.kind = VALUE;
+        out.value = memory.get_value_at_offset (in.offset);
+        break;
+      case ABSOLUTE_ADDRESS:
+        UNIMPLEMENTED;
+      case VALUE:
+        NOT_REACHED;
+      }
+    return out;
   }
 
-  virtual runtime::Operation*
-  generate_code (const semantic::ExpressionValue& result,
-                 const semantic::ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops) const;
-};
-
-struct Append : public decl::PolymorphicFunction
-{
-  Append (const util::Location& loc);
-
-  virtual void
-  check (util::ErrorReporter& er,
-         const util::Location& loc,
-         ExpressionValue& result,
-         ExpressionValueList& arguments) const;
-
-  virtual void
-  compute_receiver_access (const semantic::ExpressionValueList& args,
-                           ReceiverAccess& receiver_access,
-                           bool& flag) const
+  static static_Value dereference (static_Value in)
   {
-    UNIMPLEMENTED;
+    static_Value out;
+    switch (in.kind)
+      {
+      case STACK_ADDRESS:
+      case ABSOLUTE_ADDRESS:
+        NOT_REACHED;
+      case VALUE:
+        out.kind = ABSOLUTE_ADDRESS;
+        out.address = in.value;
+        break;
+      }
+    return out;
   }
 
-  virtual runtime::Operation*
-  generate_code (const semantic::ExpressionValue& result,
-                 const semantic::ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops) const;
+  static static_Value select (static_Value in, ptrdiff_t offset)
+  {
+    static_Value out;
+    switch (in.kind)
+      {
+      case STACK_ADDRESS:
+        out = in;
+        out.offset += offset;
+        break;
+      case ABSOLUTE_ADDRESS:
+        out = in;
+        out.address += offset;
+        break;
+      case VALUE:
+        NOT_REACHED;
+      }
+    return out;
+  }
+
+  static static_Value index (static_Value in, const type::Array* type, static_Value idx)
+  {
+    static_Value out;
+    switch (in.kind)
+      {
+      case STACK_ADDRESS:
+        out = in;
+        UNIMPLEMENTED;
+        //out.offset += type->unit_size () * idx.value;
+        break;
+      case ABSOLUTE_ADDRESS:
+        out = in;
+        UNIMPLEMENTED;
+        //out.address += type->unit_size () * idx.value;
+        break;
+      case VALUE:
+        NOT_REACHED;
+      }
+    return out;
+  }
+
+  static static_Value address_of (static_Value in)
+  {
+    static_Value out;
+    out.kind = VALUE;
+
+    switch (in.kind)
+      {
+      case STACK_ADDRESS:
+        UNIMPLEMENTED;
+      case ABSOLUTE_ADDRESS:
+        out.value = in.address;
+        break;
+        UNIMPLEMENTED;
+      case VALUE:
+        UNIMPLEMENTED;
+      }
+
+    return out;
+  }
 };
 
-struct Copy : public decl::PolymorphicFunction
-{
-  Copy (const util::Location& loc);
+std::ostream&
+operator<< (std::ostream& o,
+            const static_Value& v);
 
-  virtual void
-  check (util::ErrorReporter& er,
-         const util::Location& loc,
-         ExpressionValue& result,
-         ExpressionValueList& arguments) const;
-
-  virtual void
-  compute_receiver_access (const semantic::ExpressionValueList& args,
-                           ReceiverAccess& receiver_access,
-                           bool& flag) const;
-
-  virtual runtime::Operation*
-  generate_code (const semantic::ExpressionValue& result,
-                 const semantic::ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops) const;
-};
-
-struct Println : public decl::PolymorphicFunction
-{
-  Println (const util::Location& loc);
-
-  virtual void
-  check (util::ErrorReporter& er,
-         const util::Location& loc,
-         ExpressionValue& result,
-         ExpressionValueList& arguments) const;
-
-  virtual void
-  compute_receiver_access (const semantic::ExpressionValueList& args,
-                           ReceiverAccess& receiver_access,
-                           bool& flag) const;
-
-  virtual runtime::Operation*
-  generate_code (const semantic::ExpressionValue& result,
-                 const semantic::ExpressionValueList& arg_vals,
-                 runtime::ListOperation* arg_ops) const;
-};
-
-extern Posate posate_temp;
-extern Negate negate_temp;
-extern LogicNot logic_not_temp;
-extern Complement complement_temp;
-
-extern Multiply multiply_temp;
-extern Divide divide_temp;
-extern Modulus modulus_temp;
-extern LeftShift left_shift_temp;
-extern RightShift right_shift_temp;
-extern BitAnd bit_and_temp;
-extern BitAndNot bit_and_not_temp;
-extern Add add_temp;
-extern Subtract subtract_temp;
-extern BitOr bit_or_temp;
-extern BitXor bit_xor_temp;
-extern Equal equal_temp;
-extern NotEqual not_equal_temp;
-extern LessThan less_than_temp;
-extern LessEqual less_equal_temp;
-extern MoreThan more_than_temp;
-extern MoreEqual more_equal_temp;
-extern LogicOr logic_or_temp;
-extern LogicAnd logic_and_temp;
+static_Value
+EvaluateStatic (const ast::Node* node, const static_memory_t& memory);
 
 }
 
-#endif // RC_SRC_SEMANTIC_HPP
+#endif /* RCGO_SRC_SEMANTIC_HPP */

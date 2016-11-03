@@ -6,12 +6,15 @@
 #include "visitor_helper.hpp"
 #include <sstream>
 #include "type.hpp"
+#include "node_cast.hpp"
 
 using namespace ast;
 
 struct MyPolymorphicFunction : public decl::PolymorphicFunction {
   MyPolymorphicFunction () : PolymorphicFunction ("id", util::Location ())
   { }
+
+  virtual void accept (decl::PolymorphicFunctionVisitor& visitor) const { }
 
   virtual void
   check (util::ErrorReporter& er,
@@ -182,27 +185,6 @@ scope(ast); {
         ASSERT (node.left == &node1);
         ASSERT (node.right == &node2);
       } off ();
-      unit(accept); {
-        test_accept<DefaultNodeVisitor> (node);
-        test_default_visit (node);
-      }; off();
-      unit(visit_children); {
-        test_visit_children (node, &node1, &node2);
-      }; off();
-      unit(print); {
-        test_print (node);
-      }; off();
-    }; off();
-  }; off();
-
-  scope(BinaryArithmetic); {
-    scenario(default); {
-      ast::BinaryArithmetic node (1, &poly_func, &node1, &node2);
-      unit(BinaryArithmetic); {
-        ASSERT (node.polymorphic_function == &poly_func);
-        ASSERT (node.left == &node1);
-        ASSERT (node.right == &node2);
-      }; off();
       unit(accept); {
         test_accept<DefaultNodeVisitor> (node);
         test_default_visit (node);
@@ -955,7 +937,10 @@ scope(ast); {
 
   scope(Literal); {
     scenario(default); {
-      Literal node (1, &type::named_int, semantic::Value ());
+      semantic::ExpressionValue v;
+      v.kind = semantic::ExpressionValue::Constant;
+      v.type = &type::named_int;
+      Literal node (1, v);
       unit(Literal); {
         ASSERT (node.eval.type == &type::named_int);
       }; off();
@@ -1293,26 +1278,6 @@ scope(ast); {
     }; off();
   }; off();
 
-  scope(UnaryArithmetic); {
-    scenario(default); {
-      ast::UnaryArithmetic node (1, &poly_func, &node1);
-      unit(UnaryArithmetic); {
-        ASSERT (node.polymorphic_function == &poly_func);
-        ASSERT (node.child == &node1);
-      }; off();
-      unit(accept); {
-        test_accept<DefaultNodeVisitor> (node);
-        test_default_visit (node);
-      }; off();
-      unit(visit_children); {
-        test_visit_children (node, &node1);
-      }; off();
-      unit(print); {
-        test_print (node);
-      }; off();
-    }; off();
-  }; off();
-
   scope(Var); {
     scenario(default); {
       Var node (1, &list1, Mutable, Immutable, &node1, &list2);
@@ -1394,6 +1359,25 @@ scope(ast); {
     std::stringstream ss2;
     ss2 << identifier1;
     ASSERT (ss1.str () == ss2.str ());
+  }; off();
+
+  unit(make_unary); {
+    Call* n = make_unary (23, &poly_func, &node1);
+    Literal* l = node_cast<Literal> (n->expression);
+    ASSERT (l->eval.is_polymorphic_function ());
+    ASSERT (l->eval.polymorphic_function == &poly_func);
+    ASSERT (n->arguments->size () == 1);
+    ASSERT (n->arguments->at (0) == &node1);
+  }; off();
+
+  unit(make_binary); {
+    Call* n = make_binary (23, &poly_func, &node1, &node2);
+    Literal* l = node_cast<Literal> (n->expression);
+    ASSERT (l->eval.is_polymorphic_function ());
+    ASSERT (l->eval.polymorphic_function == &poly_func);
+    ASSERT (n->arguments->size () == 2);
+    ASSERT (n->arguments->at (0) == &node1);
+    ASSERT (n->arguments->at (1) == &node2);
   }; off();
 
 }; off();

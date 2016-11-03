@@ -37,7 +37,6 @@ class PushPort;
 class PullPort;
 class ParameterList;
 class TypeExpression;
-class BinaryArithmetic;
 class AddressOf;
 class Call;
 class Conversion;
@@ -49,7 +48,6 @@ class EmptyExpression;
 class IndexedPushPortCall;
 class ExpressionList;
 class Literal;
-class UnaryArithmetic;
 class PushPortCall;
 class Select;
 class EmptyStatement;
@@ -95,18 +93,6 @@ namespace semantic
 class Value;
 class ExpressionValue;
 class UntypedComplex;
-
-enum ExpressionKind
-{
-  UnknownExpressionKind,
-  ErrorExpressionKind,
-  ValueExpressionKind,
-  VariableExpressionKind,
-  TypeExpressionKind,
-  EmptyTypeExpressionKind,
-  VoidExpressionKind,
-};
-
 }
 
 namespace type
@@ -152,9 +138,11 @@ class Package;
 class ParameterList;
 class Parameter;
 class PolymorphicFunction;
+class PolymorphicFunctionVisitor;
 class Reaction;
 class Scope;
 class Symbol;
+class SymbolTable;
 class SymbolVisitor;
 class Variable;
 
@@ -193,48 +181,34 @@ enum Mutability
   Mutable,
   Immutable,
   Foreign,
+  Unknown_Mutability,
 };
+
+inline std::ostream& operator<< (std::ostream& out, Mutability m)
+{
+  switch (m)
+    {
+    case Mutable:
+      out << "Mutable";
+      break;
+    case Immutable:
+      out << "Immutable";
+      break;
+    case Foreign:
+      out << "Foreign";
+      break;
+    case Unknown_Mutability:
+      out << "Unknown";
+      break;
+    }
+  return out;
+}
 
 enum ReceiverAccess
 {
   AccessNone,
   AccessRead,
   AccessWrite,
-};
-
-enum UnaryArithmetic
-{
-  LogicNot,
-  Posate,
-  Negate,
-  Complement,
-};
-
-enum BinaryArithmetic
-{
-  Multiply,
-  Divide,
-  Modulus,
-  LeftShift,
-  RightShift,
-  BitAnd,
-  BitAndNot,
-
-  Add,
-  Subtract,
-  BitOr,
-  BitXor,
-
-  Equal,
-  NotEqual,
-  LessThan,
-  LessEqual,
-  MoreThan,
-  MoreEqual,
-
-  LogicOr,
-
-  LogicAnd,
 };
 
 #endif // RC_SRC_TYPES_HPP
