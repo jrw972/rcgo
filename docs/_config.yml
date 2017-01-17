@@ -17,8 +17,8 @@ title: RCGo
 #email: your-email@domain.com
 description: > # this means to ignore newlines until "baseurl:"
   A description of the Reactive Components Model and the RCGo Programming Language.
-baseurl: "/" # the subpath of your site, e.g. /blog
-url: "" # the base hostname & protocol for your site, e.g. http://example.com
+baseurl: "/rcgo" # the subpath of your site, e.g. /blog
+url: "http://jrw972.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 version: 0.1.0
 reverse: true
 #twitter_username: jekyllrb

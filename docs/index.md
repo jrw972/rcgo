@@ -4,11 +4,11 @@ title: The RCGo Programming Language
 ---
 
 RCGo is an experimental programming language for reactive programs.
-It is an implementation of the [Reactive Component Model]({% link model.md %}) using the syntax and semantics of [Go](https://golang.org).
+It is an implementation of the [Reactive Component Model](model) using the syntax and semantics of [Go](https://golang.org).
 
 ## What is a reactive program? ##
 
-![Reactive Program Paradigm](/figures/reactive_program_paradigm.svg)
+![Reactive Program Paradigm](figures/reactive_program_paradigm.svg)
 
 A reactive program is one that has "ongoing interactions with its environment[^1]."
 Reactive programs include operating system kernels, network clients and servers, databases, smart phone apps, web apps, GUIs, and embedded software.
@@ -30,9 +30,9 @@ Most reactive software is divided into modules that interact via synchronous seq
 This requires a module to be extra defensive as it does not know how and when it will be called by other modules.
 The synchronization logic itself is often the source of bugs and makes the code brittle as developers must have a complete understanding of the call graph to avoid concurrency hazards like concurrent updates, deadlock, livelock, etc.
 
-RCGo's approach to delivering reusable reactive software is to focus on abstractions that composes in a [principled]({% link manifesto.md %}#principled) way.
+RCGo's approach to delivering reusable reactive software is to focus on abstractions that composes in a [principled](manifesto#principled) way.
 The test for principled composition and decomposition is the ability to substitute the definition of a unit for a particular instance, i.e., inlining, and the ability to extract the definition of a sub-unit from a compound unit.
-To this end, the basic unit of reactive computing in RCGo is the [reactive component]({% link model.md %}#reactive_component).
+To this end, the basic unit of reactive computing in RCGo is the [reactive component](model#reactive_component).
 
 A reactive component consists of a set of private state variables, atomic transitions, and interface elements that allow a transition in one component to be linked to a transition in another component.
 A transition is either an *action* which is a voluntary step for processing and/or output or a *reaction* which is a step to be taken in response to an external event.
@@ -42,7 +42,7 @@ Transactions are logically atomic and checked for concurrent updates.
 The interface of a reactive component consists of its push ports and reactions.
 The behavior of a reactive component can be understood and tested via its interface.
 
-A more detailed answer can be found in the [manifesto]({% link manifesto.md %}) and [A Transactional Model and Platform for Designing and Implementing Reactive Systems](/rcdissertation.pdf).
+A more detailed answer can be found in the [manifesto](manifesto) and [A Transactional Model and Platform for Designing and Implementing Reactive Systems](rcdissertation.pdf).
 
 ## Why Go? ##
 
@@ -55,7 +55,7 @@ Go fits this as it has a short and straight-forward specification and is approac
 
 RCGo is an experimental programming language.
 Many features are missing and incomplete.
-See the [roadmap]({% link roadmap.md %}) for a list of planned development milestones.
+See the [roadmap](roadmap) for a list of planned development milestones.
 If you would like to get involved, visit [GitHub](https://github.com/jrw972/rcgo).
 
 [^1]: Z. Manna and A. Pnueli. *The temporal logic of reactive and concurrent systems: Specification*, volume 1. Springer, 1992.

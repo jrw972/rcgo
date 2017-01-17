@@ -8,7 +8,7 @@ rank: 1
 
     <a name="transformational">Transformational Programs</a>
 
-    ![Transformational Program Paradigm](/figures/transformational_program_paradigm.svg)
+    ![Transformational Program Paradigm](figures/transformational_program_paradigm.svg)
 
     The goal of a *transformational program* is to transform a finite input into a finite output in a finite amount of time.
     A program that sorts the lines of a file is a good example of a transformational program; the input is an unsorted list of lines, the output is the sorted list of lines, and the transformation applied is some kind of sorting algorithm.
@@ -17,7 +17,7 @@ rank: 1
 
     <a name="reactive">Reactive Programs</a>
 
-    ![Reactive Program Paradigm](/figures/reactive_program_paradigm.svg)
+    ![Reactive Program Paradigm](figures/reactive_program_paradigm.svg)
 
     A *reactive program* is one that has "ongoing interactions with an environment [cite Manna and Pneuli]."
     In the reactive progam paradigm, the activities of input, output, and processing are often overlapped and ongoing.
@@ -221,7 +221,7 @@ rank: 1
     To illustrate, threads do not support recursive encapsulation, lack interfaces, change behavior under composition, and have no notion of substitutional equivalence; even in languages that incorporate multi-threading primitives.
     Events lack precise definitions and notions of encapsulation and interfaces which are necessary for principled composition and decomposition.
 
-    The [The Reactive Component Model]({% link model.md %}) is a model for reactive programs that facilitates the principled composition and decomposition of reactive programs.
+    The [The Reactive Component Model](model) is a model for reactive programs that facilitates the principled composition and decomposition of reactive programs.
 
 6. <a>A "clean slate" approach to reactive programs is necessary; starting with programming languages.</a>
 
@@ -229,5 +229,3 @@ rank: 1
     It is reasonable to conclude that starting with different assumptions will yield different results.
     More specifically, a processor, operating system, or programming language designed specifically for reactive programs will be different from existing mainstream processors, operating systems, and programming languages.
     Programming languages are the logical starting point as it is much cheaper to experiment in that domain than in the domain of processors and operating systems.
-
-    The [RCGo Programming Language]({% link index.md %}) is a programming language for reactive programs based on the reactive component model.
