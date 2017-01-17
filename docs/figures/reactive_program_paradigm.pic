@@ -1,0 +1,18 @@
+.PS
+left
+P: [
+   [
+   down
+   box invisible "Reactive" "Program"
+   move .25
+   C: [ left; arc dashed ->; arc dashed; arc dashed ->; arc dashed ]
+   move to C.s
+   box invisible "Processing"
+   ]
+   box width 1 height last [].height at last [].c
+]
+move 1
+E: box width P.width height P.height "Environment"
+arrow from 1/2 <E.e,E.ne> to 1/2 <P.w,P.nw> "Input" ""
+arrow from 1/2 <P.w,P.sw> to 1/2 <E.e,E.se> "" "Output"
+.PE
