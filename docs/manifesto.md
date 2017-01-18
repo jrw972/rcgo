@@ -19,7 +19,7 @@ rank: 1
 
     ![Reactive Program Paradigm](figures/reactive_program_paradigm.svg)
 
-    A *reactive program* is one that has "ongoing interactions with an environment [cite Manna and Pneuli]."
+    A *reactive program* is one that has "ongoing interactions with an environment[^1]."
     In the reactive progam paradigm, the activities of input, output, and processing are often overlapped and ongoing.
     Thus, reactive programs may operate on infinite streams of input and produce infinite streams of output.
     A web server is a good example of a reactive program as it receives requests, processes them, and sends responses.
@@ -167,7 +167,7 @@ rank: 1
     In the context of reuse, each module tends to run its own event loop, have its own definition for events handler, etc.
     The presence of multiple event loops immediately introduces all of the problems associated with multiple threads.
 
-    For software, accidental complexity is defined as the ``difficulties that today attend its production but that are not inherent [cite Brooks].''
+    For software, accidental complexity is defined as the ``difficulties that today attend its production but that are not inherent[^2].''
     Thus, we seek to separate the inherent difficulties associated with reactive programs from the difficulties caused by the tools and techniques used to model and implement them.
     Reasoning about infinite and non-deterministic sequences of events *is* an inherent difficulty of asynchronous reactive programs.
     As demonstrated by single-threaded event loops, reasoning about and implementing fine-grained synchronization *is not* an inherent difficulty of asynchronous reactive programs.
@@ -229,3 +229,7 @@ rank: 1
     It is reasonable to conclude that starting with different assumptions will yield different results.
     More specifically, a processor, operating system, or programming language designed specifically for reactive programs will be different from existing mainstream processors, operating systems, and programming languages.
     Programming languages are the logical starting point as it is much cheaper to experiment in that domain than in the domain of processors and operating systems.
+
+[^1]: Z. Manna and A. Pnueli. *The temporal logic of reactive and concurrent systems: Specification*, volume 1. Springer, 1992.
+
+[^2]: F.P. Brooks Jr. *The mythical man-month (anniversary ed.)*. Addison-Wesley Longman Publishing Co., Inc., 1995.
