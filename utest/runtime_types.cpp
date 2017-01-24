@@ -109,8 +109,9 @@ main (int argc, char** argv)
     t = String::make (s.ptr, 4);
     tap.tassert ("String::operator==",
                  s != t);
-    char* o = (char*)malloc (5);
+    char* o = (char*)malloc (6);
     memcpy (o, "hello", 5);
+    o[5] = 0;
     t = String::make (o, 5);
     tap.tassert ("String::operator==",
                  s == t);
