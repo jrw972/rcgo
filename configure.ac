@@ -32,4 +32,5 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  ftest/Makefile
                  utest/Makefile])
+AC_CONFIG_FILES([bin/rcgo], [chmod +x bin/rcgo])
 AC_OUTPUT

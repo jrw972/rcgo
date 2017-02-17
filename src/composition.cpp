@@ -14,6 +14,8 @@
 #include "parameter_list.hpp"
 #include "executor_base.hpp"
 #include "operation.hpp"
+#include "identifier.hpp"
+#include "source_file.hpp"
 
 namespace composition
 {
@@ -158,7 +160,7 @@ std::string
 Action::getname (Instance* i, decl::Action* a, long p)
 {
   std::stringstream str;
-  str << i->name << '.' << a->name;
+  str << i->name << '.' << a->identifier.identifier ();
   if (a->dimension () != -1)
     {
       str << '[' << p << ']';
@@ -234,7 +236,7 @@ std::string
 Reaction::getname (Instance* i, decl::Reaction* a, long p)
 {
   std::stringstream str;
-  str << i->name << '.' << a->name;
+  str << i->name << '.' << a->identifier.identifier ();
   if (a->dimension () != -1)
     {
       str << '[' << p << ']';
@@ -259,7 +261,7 @@ GetterKey::operator< (const GetterKey& other) const
 
 Getter::Getter (Instance* i,
                 decl::Getter* g)
-  : Node (i->name + "." + g->name)
+  : Node (i->name + "." + g->identifier.identifier ())
   , instance (i)
   , getter (g)
 { }
@@ -564,7 +566,7 @@ Composer::elaborate_bindings ()
                 }
             }
 
-            void visit (ast::BindDecl& node)
+            void visit (ast::BinderDecl& node)
             {
               node.body->accept (*this);
             }
@@ -829,7 +831,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
 
   void default_action (ast::Node& node)
   {
-    AST_NOT_REACHED (node);
+    NODE_NOT_REACHED (node);
   }
 
   void visit (Conversion& node)
@@ -900,12 +902,12 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     exec.stack ().pop (idx);
     if (idx < 0)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "port index is negative (E100)");
       }
     if (idx >= node.array_type->dimension)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "port index is negative (E75)");
       }
 
@@ -985,7 +987,7 @@ struct Composer::ElaborationVisitor : public ast::DefaultNodeVisitor
     node.visit_children (*this);
   }
 
-  void visit (Var& node)
+  void visit (VarDecl& node)
   {
     node.expressions->accept (*this);
   }
@@ -1284,18 +1286,8 @@ Composer::enumerate_instances (ast::Node * node)
     {
       const NamedType *type = node.symbol->type ();
       decl::Initializer* initializer = node.symbol->initializer ();
-      node.symbol->instance = instance_table.instantiate_contained_instances (type, NULL, initializer, address, node.location.line (), &node, node.identifier->identifier);
+      node.symbol->instance = instance_table.instantiate_contained_instances (type, NULL, initializer, address, node.location.line (), &node, node.identifier.identifier ());
       address += arch::size (type);
-    }
-
-    void visit (SourceFile& node)
-    {
-      node.top_level_decl_list->accept (*this);
-    }
-
-    void visit (TopLevelDeclList& node)
-    {
-      node.visit_children (*this);
     }
   };
 
@@ -1335,7 +1327,7 @@ Composer::instantiate_contained_instances (const type::Type * type,
            ++pos)
         {
           // Recur changing address (and field).
-          instantiate_contained_instances ((*pos)->type, parent, NULL, address + arch::offset (*pos), line, NULL, name + "." + (*pos)->name, NULL, *pos);
+          instantiate_contained_instances ((*pos)->type, parent, NULL, address + arch::offset (*pos), line, NULL, name + "." + (*pos)->identifier.identifier (), NULL, *pos);
         }
 
       return parent;

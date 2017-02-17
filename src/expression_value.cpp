@@ -6,6 +6,7 @@
 #include "type.hpp"
 #include "polymorphic_function.hpp"
 #include "error_reporter.hpp"
+#include "identifier.hpp"
 
 using namespace type;
 using namespace std::rel_ops;
@@ -960,7 +961,7 @@ void ExpressionValue::print (std::ostream& out) const
       out << "Void";
       break;
     case Polymorphic_Function:
-      out << "Polymorphic_Function " << polymorphic_function->name;
+      out << "Polymorphic_Function " << polymorphic_function->identifier.identifier ();
       break;
     }
 }

@@ -31,17 +31,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
 {
   void default_action (Node& node)
   {
-    AST_NOT_REACHED (node);
-  }
-
-  void visit (SourceFile& node)
-  {
-    node.top_level_decl_list->accept (*this);
-  }
-
-  void visit (TopLevelDeclList& node)
-  {
-    node.visit_children (*this);
+    NODE_NOT_REACHED (node);
   }
 
   void visit (ast::TypeDecl& node)
@@ -60,7 +50,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
     // Do nothing.
   }
 
-  void visit (ast::InitDecl& node)
+  void visit (ast::InitializerDecl& node)
   {
     node.body->accept (*this);
     node.initializer->operation = new SetRestoreCurrentInstance (node.body->operation, node.initializer->memory_model.receiver_offset ());
@@ -88,7 +78,7 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
     node.reaction->operation = new SetRestoreCurrentInstance (node.body->operation, node.reaction->memory_model.receiver_offset ());
   }
 
-  void visit (ast::BindDecl& node)
+  void visit (ast::BinderDecl& node)
   {
     node.body->accept (*this);
   }
@@ -177,13 +167,13 @@ struct CodeGenVisitor : public ast::DefaultNodeVisitor
     node.operation = new runtime::ForIota (node.symbol, node.limit_value, node.body->operation);
   }
 
-  void visit (Var& node)
+  void visit (VarDecl& node)
   {
     ListOperation* op = new ListOperation ();
     if (node.expressions->empty ())
       {
         // Clear the variables.
-        for (Var::SymbolsType::const_iterator pos = node.symbols.begin (), limit = node.symbols.end ();
+        for (VarDecl::SymbolsType::const_iterator pos = node.symbols.begin (), limit = node.symbols.end ();
              pos != limit;
              ++pos)
           {

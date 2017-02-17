@@ -6,6 +6,7 @@
 namespace decl
 {
 
+// TODO:  Remove this class.
 struct Scope
 {
   typedef std::vector<Symbol*> SymbolsType;
@@ -25,7 +26,7 @@ struct Scope
   void activate ();
   void change ();
   const ParameterList* return_parameter_list () const;
-  Package* package () const;
+  source::Package* package () const;
 
 private:
   Scope (Scope* p);

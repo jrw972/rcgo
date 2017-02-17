@@ -8,15 +8,16 @@
 #include "callable.hpp"
 #include "error_reporter.hpp"
 #include "process_type.hpp"
+#include "identifier.hpp"
 
 namespace decl
 {
 using namespace semantic;
 using namespace type;
+using namespace source;
 
-Symbol::Symbol (const std::string& id, const util::Location& loc)
-  : name (id)
-  , location (loc)
+Symbol::Symbol (const source::Identifier& a_identifier)
+  : identifier (a_identifier)
   , state_ (Declared)
   , offset_ (0)
 { }
@@ -50,7 +51,7 @@ Symbol::process_declaration (util::ErrorReporter& er, SymbolTable& symbol_table)
     break;
 
     case Symbol::In_Progress:
-      er.defined_recursively (location, name);
+      er.defined_recursively (identifier.location (), identifier.identifier ());
       state_ = Symbol::Undefined;
       break;
 
@@ -92,17 +93,19 @@ ACCEPT(Constant)
 ACCEPT(Variable)
 ACCEPT(Hidden)
 ACCEPT(Field)
+ACCEPT(Package)
+ACCEPT(ImportedSymbol)
 
 Instance::Instance (ast::InstanceDecl* a_instancedecl)
-  : Symbol (a_instancedecl->identifier->identifier, a_instancedecl->identifier->location)
+  : Symbol (a_instancedecl->identifier)
   , type_ (NULL)
   , initializer_ (NULL)
   , instance (NULL)
   , instancedecl_ (a_instancedecl)
 { }
 
-Instance::Instance (const std::string& id, const util::Location& loc, const type::NamedType* t, Initializer* init)
-  : Symbol (id, loc)
+Instance::Instance (const source::Identifier& identifier, const type::NamedType* t, Initializer* init)
+  : Symbol (identifier)
   , type_ (t)
   , initializer_ (init)
   , instance (NULL)
@@ -126,7 +129,7 @@ Instance::initializer () const
 bool
 Instance::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table)
 {
-  const std::string& initializer_identifier = instancedecl_->initializer->identifier;
+  const Identifier& initializer_identifier = instancedecl_->initializer;
 
   process_type (instancedecl_->type, er, symbol_table);
   if (instancedecl_->type->eval.kind == ExpressionValue::Error)
@@ -142,10 +145,10 @@ Instance::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_ta
       return false;
     }
 
-  decl::Initializer* initializer = type->find_initializer (initializer_identifier);
+  decl::Initializer* initializer = type->find_initializer (initializer_identifier.identifier ());
   if (initializer == NULL)
     {
-      er.not_declared (instancedecl_->initializer->location, initializer_identifier);
+      er.not_declared (initializer_identifier);
       return false;
     }
   this->type_ = type;
@@ -154,48 +157,44 @@ Instance::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_ta
   return true;
 }
 
-Parameter::Parameter (const util::Location& loc,
-                      const std::string& id,
-                      const type::Type* t,
+Parameter::Parameter (const source::Identifier& identifier,
+                      const type::Type* a_type,
                       Mutability im,
                       Mutability dm,
                       Kind k)
-  : Symbol (id, loc)
-  , type (t)
+  : Symbol (identifier)
+  , type (a_type)
   , intrinsic_mutability (im)
-  , indirection_mutability (t->is_typed_string () ? std::max (dm, Immutable) : dm)
+  , indirection_mutability (a_type != NULL && a_type->is_typed_string () ? std::max (dm, Immutable) : dm)
   , kind (k)
   , original_ (NULL)
 { }
 
 
 Parameter*
-Parameter::make (const util::Location& loc,
-                 const std::string& name,
-                 const type::Type* type,
+Parameter::make (const source::Identifier& identifier,
                  Mutability intrinsic_mutability,
-                 Mutability indirection_mutability)
+                 Mutability indirection_mutability,
+                 const type::Type* type)
 {
-  return new Parameter (loc, name, type, intrinsic_mutability, indirection_mutability, Ordinary);
+  return new Parameter (identifier, type, intrinsic_mutability, indirection_mutability, Ordinary);
 }
 
 Parameter*
-Parameter::make_return (const util::Location& loc,
-                        const std::string& name,
-                        const type::Type* type,
-                        Mutability indirection_mutability)
+Parameter::make_return (const source::Identifier& identifier,
+                        Mutability indirection_mutability,
+                        const type::Type* type)
 {
-  return new Parameter (loc, name, type, Mutable, indirection_mutability, Return);
+  return new Parameter (identifier, type, Mutable, indirection_mutability, Return);
 }
 
 Parameter*
-Parameter::make_receiver (const util::Location& loc,
-                          const std::string& name,
-                          const type::Type* type,
+Parameter::make_receiver (const source::Identifier& identifier,
                           Mutability intrinsic_mutability,
-                          Mutability indirection_mutability)
+                          Mutability indirection_mutability,
+                          const type::Type* type)
 {
-  return new Parameter (loc, name, type, intrinsic_mutability, indirection_mutability, Receiver);
+  return new Parameter (identifier, type, intrinsic_mutability, indirection_mutability, Receiver);
 }
 
 Parameter*
@@ -241,14 +240,14 @@ Parameter::is_foreign_safe () const
   return !(type->contains_pointer () && indirection_mutability != Foreign);
 }
 
-Constant::Constant (const std::string& id, const util::Location& loc, ast::Node* a_type_spec, ast::Node* a_init)
-  : Symbol (id, loc)
+Constant::Constant (const source::Identifier& identifier, ast::Node* a_type_spec, ast::Node* a_init)
+  : Symbol (identifier)
   , type_spec_ (a_type_spec)
   , init_ (a_init)
 { }
 
-Constant::Constant (const std::string& id, const util::Location& loc, const semantic::ExpressionValue& v)
-  : Symbol (id, loc)
+Constant::Constant (const source::Identifier& identifier, const semantic::ExpressionValue& v)
+  : Symbol (identifier)
   , value_ (v)
   , type_spec_ (NULL)
   , init_ (NULL)
@@ -306,11 +305,11 @@ Constant::value () const
   return value_;
 }
 
-Variable::Variable (const std::string& id, const util::Location& loc, const type::Type* t, Mutability im, Mutability dm)
-  : Symbol (id, loc)
-  , type (t)
+  Variable::Variable (const source::Identifier& identifier, Mutability im, Mutability dm, const type::Type* a_type)
+  : Symbol (identifier)
+  , type (a_type)
   , intrinsic_mutability (im)
-  , indirection_mutability (t->is_typed_string () ? std::max (dm, Immutable) : dm)
+  , indirection_mutability (a_type != NULL && a_type->is_typed_string () ? std::max (dm, Immutable) : dm)
   , original_ (NULL)
 { }
 
@@ -328,28 +327,37 @@ ptrdiff_t Variable::offset () const
 
 Variable* Variable::duplicate()
 {
-  Variable* s = new Variable (this->name, this->location, this->type, Foreign, Foreign);
+  Variable* s = new Variable (this->identifier, Foreign, Foreign, this->type);
   s->original_ = this;
   return s;
 }
 
-Hidden::Hidden (const Symbol* s, const util::Location& loc)
-  : Symbol (s->name, loc)
+Hidden::Hidden (const Symbol* s)
+  : Symbol (s->identifier)
 { }
 
 Field::Field (const Struct* a_struct,
-              decl::Package* a_package,
+              source::Package* a_package,
               bool a_is_anonymous,
-              const std::string& a_name,
-              const util::Location& a_location,
+              const source::Identifier& identifier,
               const type::Type* a_type,
               const TagSet& a_tags)
-  : Symbol (a_name, a_location)
+  : Symbol (identifier)
   , m_struct (a_struct)
   , package (a_package)
   , is_anonymous (a_is_anonymous)
   , type (a_type)
   , tags (a_tags)
 { }
+
+Package::Package (const source::Identifier& a_identifier, const source::Package* a_package)
+  : Symbol (a_identifier)
+  , package (a_package)
+{ }
+
+  ImportedSymbol::ImportedSymbol (const source::Identifier& a_identifier, Symbol* a_symbol)
+    : Symbol (a_identifier)
+    , symbol (a_symbol)
+  { }
 
 }

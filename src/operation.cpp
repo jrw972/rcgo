@@ -5,6 +5,7 @@
 #include "callable.hpp"
 #include "composition.hpp"
 #include "heap.hpp"
+#include "source_file.hpp"
 
 namespace runtime
 {
@@ -57,7 +58,7 @@ IndexSlice::execute (ExecutorBase& exec) const
 
   if (i < 0 || static_cast<unsigned long> (i) >= s.length)
     {
-      error_at_line (-1, 0, location.file ().c_str (), location.line (),
+      error_at_line (-1, 0, location.file ()->path ().c_str (), location.line (),
                      "slice index is out of bounds (E35)");
 
     }
@@ -565,7 +566,7 @@ IndexArray::execute (ExecutorBase& exec) const
   exec.stack ().pop (i);
   if (i < 0 || i >= type->dimension)
     {
-      error_at_line (-1, 0, location.file ().c_str (), location.line (),
+      error_at_line (-1, 0, location.file ()->path ().c_str (), location.line (),
                      "array index is out of bounds (E148)");
     }
   exec.stack ().push_pointer (static_cast<char*> (ptr) + i * arch::unit_size (type));
@@ -602,7 +603,7 @@ SliceArray::execute (ExecutorBase& exec) const
         high_val <= max_val &&
         max_val <= type->dimension))
     {
-      error_at_line (-1, 0, location.file ().c_str (), location.line (),
+      error_at_line (-1, 0, location.file ()->path ().c_str (), location.line (),
                      "slice index is out of range (E223)");
     }
 
@@ -646,7 +647,7 @@ SliceSlice::execute (ExecutorBase& exec) const
         high_val <= max_val &&
         max_val <= static_cast<long> (s.capacity)))
     {
-      error_at_line (-1, 0, location.file ().c_str (), location.line (),
+      error_at_line (-1, 0, location.file ()->path ().c_str (), location.line (),
                      "slice index is out of range (E22)");
     }
 

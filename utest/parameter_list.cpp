@@ -5,12 +5,13 @@
 #include "symbol.hpp"
 #include "arch.hpp"
 #include "type.hpp"
+#include "identifier.hpp"
 
 #include <sstream>
 
 using namespace type;
 using namespace decl;
-using namespace util;
+using namespace source;
 
 int
 main (int argc, char** argv)
@@ -19,8 +20,9 @@ main (int argc, char** argv)
 
   arch::set_stack_alignment (8);
 
+  const Location& loc = source::Location::builtin;
+
   {
-    Location loc;
     ParameterList sig (loc);
     tap.tassert ("ParameterList::ParameterList ()",
                  sig.location == loc &&
@@ -31,8 +33,8 @@ main (int argc, char** argv)
   }
 
   {
-    Parameter* p = Parameter::make (util::Location (), "there", &named_int, Immutable, Immutable);
-    ParameterList sig ((Location ()));
+    Parameter* p = Parameter::make (Identifier ("there", loc), Immutable, Immutable);
+    ParameterList sig (loc);
     ParameterList* sig2 = sig.append (p);
 
     tap.tassert ("ParameterList::append (Parameter*)",
@@ -45,11 +47,11 @@ main (int argc, char** argv)
   }
 
   {
-    ParameterList sig ((Location ()));
+    ParameterList sig (loc);
     std::string a = sig.to_string ();
-    sig.append (Parameter::make (util::Location (), "there", &named_int, Immutable, Immutable));
+    sig.append (Parameter::make (Identifier ("there", loc), Immutable, Immutable, &named_int));
     std::string b = sig.to_string ();
-    sig.append (Parameter::make (util::Location (), "there", &named_int, Immutable, Immutable));
+    sig.append (Parameter::make (Identifier ("there", loc), Immutable, Immutable, &named_int));
     std::string c = sig.to_string ();
 
     std::stringstream str;
@@ -63,7 +65,7 @@ main (int argc, char** argv)
   }
 
   {
-    ParameterList sig ((Location ()));
+    ParameterList sig (loc);
     ParameterList* sig2 = sig.set_variadic (true);
     tap.tassert ("ParameterList::set_variadic",
                  sig2 == &sig &&

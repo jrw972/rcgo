@@ -6,8 +6,10 @@
 
 #include "location.hpp"
 #include "type.hpp"
+#include "identifier.hpp"
 
 using namespace util;
+using namespace source;
 
 static void check (const Location& loc,
                    const std::stringstream& ss,
@@ -34,7 +36,7 @@ static void check (const Location& loc,
 }
 
 scope(util); {
-  Location loc;
+  Location loc = Location::builtin;
   std::stringstream ss;
   ErrorReporter er (0, ss);
 
@@ -65,7 +67,8 @@ scope(util); {
     }; off();
 
     unit(not_declared); {
-      int code = er.not_declared (loc, "somefunc");
+      source::Identifier id ("somefunc", loc);
+      int code = er.not_declared (id);
       check (loc, ss, er, code);
     }; off();
 
@@ -111,7 +114,7 @@ scope(util); {
     }; off();
 
     unit(already_declared); {
-      Location previous;
+      Location previous = Location::builtin;
       int code = er.already_declared (loc, "id", previous);
       check (loc, ss, er, code);
     }; off();

@@ -4,15 +4,17 @@
 #include "type.hpp"
 #include "symbol.hpp"
 #include "symbol_cast.hpp"
+#include "identifier.hpp"
 
 using namespace type;
 using namespace decl;
+using namespace source;
 
 int
 main (int argc, char** argv)
 {
   Tap tap;
-  util::Location loc;
+  const Location& loc = Location::builtin;
 
   {
     Scope st;
@@ -24,7 +26,7 @@ main (int argc, char** argv)
 
   {
     Scope* st = new Scope ();
-    Symbol* s1 = new Variable ("x", loc, &named_int, Immutable, Immutable);
+    Symbol* s1 = new Variable (Identifier ("x", loc), Immutable, Immutable, &named_int);
     st->enter_symbol (s1);
     Symbol* s = st->find_local_symbol ("x");
     tap.tassert ("SymbolTable::find_local_symbol yes", s == s1);
@@ -37,7 +39,7 @@ main (int argc, char** argv)
 
   {
     Scope* st = new Scope ();
-    Symbol* s1 = new Variable ("x", loc, &named_int, Immutable, Immutable);
+    Symbol* s1 = new Variable (Identifier ("x", loc), Immutable, Immutable, &named_int);
     st->enter_symbol (s1);
     st = st->open ();
 
@@ -48,8 +50,8 @@ main (int argc, char** argv)
   }
 
   {
-    Parameter* x = Parameter::make (loc, "x", &named_int, Immutable, Immutable);
-    Parameter* y = Parameter::make_return (loc, "y", &named_int, Immutable);
+    Parameter* x = Parameter::make (Identifier ("x", loc), Immutable, Immutable, &named_int);
+    Parameter* y = Parameter::make_return (Identifier ("y", loc), Immutable, &named_int);
     ParameterList* pl = new ParameterList (loc);
     pl->append (x);
     ParameterList* rpl = new ParameterList (loc);
@@ -69,9 +71,9 @@ main (int argc, char** argv)
   }
 
   {
-    Parameter* iota = Parameter::make (loc, "IOTA", &named_int, Immutable, Immutable);
-    Parameter* x = Parameter::make (loc, "x", &named_int, Immutable, Immutable);
-    Parameter* y = Parameter::make_return (loc, "y", &named_int, Immutable);
+    Parameter* iota = Parameter::make (Identifier ("IOTA", loc), Immutable, Immutable, &named_int);
+    Parameter* x = Parameter::make (Identifier ("x", loc), Immutable, Immutable, &named_int);
+    Parameter* y = Parameter::make_return (Identifier ("y", loc), Immutable, &named_int);
     ParameterList* pl = new ParameterList (loc);
     pl->append (x);
     ParameterList* rpl = new ParameterList (loc);
@@ -92,15 +94,15 @@ main (int argc, char** argv)
   }
 
   {
-    Parameter* r = Parameter::make_receiver (loc, "this", &named_int, Immutable, Immutable);
-    Parameter* x1 = Parameter::make (loc, "x1", &named_int, Immutable, Immutable);
-    Parameter* x2 = Parameter::make (loc, "x2", named_int.get_pointer (), Immutable, Foreign);
-    Parameter* x3 = Parameter::make (loc, "x3", named_int.get_pointer (), Immutable, Foreign);
+    Parameter* r = Parameter::make_receiver (Identifier ("this", loc), Immutable, Immutable, &named_int);
+    Parameter* x1 = Parameter::make (Identifier ("x1", loc), Immutable, Immutable, &named_int);
+    Parameter* x2 = Parameter::make (Identifier ("x2", loc), Immutable, Foreign, named_int.get_pointer ());
+    Parameter* x3 = Parameter::make (Identifier ("x3", loc), Immutable, Foreign, named_int.get_pointer ());
 
-    Variable v1 ("v1", loc, named_int.get_pointer (), Immutable, Mutable);
-    Variable v2 ("v2", loc, named_int.get_pointer (), Immutable, Foreign);
+    Variable v1 (Identifier ("v1", loc), Immutable, Mutable, named_int.get_pointer ());
+    Variable v2 (Identifier ("v2", loc), Immutable, Foreign, named_int.get_pointer ());
 
-    Hidden h3 (x3, loc);
+    Hidden h3 (x3);
 
     ParameterList* pl = new ParameterList (loc);
     pl->append (r)->append (x1)->append (x2)->append (x3);
@@ -146,15 +148,15 @@ main (int argc, char** argv)
   }
 
   {
-    Parameter* r = Parameter::make_receiver (loc, "this", named_int.get_pointer (), Immutable, Immutable);
-    Parameter* x1 = Parameter::make (loc, "x1", &named_int, Immutable, Immutable);
-    Parameter* x2 = Parameter::make (loc, "x2", named_int.get_pointer (), Immutable, Immutable);
-    Parameter* x3 = Parameter::make (loc, "x3", named_int.get_pointer (), Immutable, Foreign);
+    Parameter* r = Parameter::make_receiver (Identifier ("this", loc), Immutable, Immutable, named_int.get_pointer ());
+    Parameter* x1 = Parameter::make (Identifier ("x1", loc), Immutable, Immutable, &named_int);
+    Parameter* x2 = Parameter::make (Identifier ("x2", loc), Immutable, Immutable, named_int.get_pointer ());
+    Parameter* x3 = Parameter::make (Identifier ("x3", loc), Immutable, Foreign, named_int.get_pointer ());
 
-    Variable v1 ("v1", loc, &named_int, Immutable, Mutable);
-    Variable v2 ("v2", loc, named_int.get_pointer (), Immutable, Mutable);
+    Variable v1 (Identifier ("v1", loc), Immutable, Mutable, &named_int);
+    Variable v2 (Identifier ("v2", loc), Immutable, Mutable, named_int.get_pointer ());
 
-    Hidden h3 (x3, loc);
+    Hidden h3 (x3);
 
     ParameterList* pl = new ParameterList (loc);
     pl->append (r)->append (x1)->append (x2)->append (x3);

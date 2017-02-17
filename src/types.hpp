@@ -1,6 +1,8 @@
 #ifndef RC_SRC_TYPES_HPP
 #define RC_SRC_TYPES_HPP
 
+// This files contains declarations of public types.
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -12,92 +14,134 @@
 
 namespace util
 {
-class Location;
 class ErrorReporter;
 }
 
+// The interpretation process is driven by a set of import paths.  The
+// import paths are processed to create a set of packages.  Each
+// package consists of a set of source files.
+namespace source
+{
+class PackageSet;
+class Package;
+class SourceFile;
+class Location;
+class Identifier;
+}
+
+// The top-level constructs that may be declared (and defined) in a
+// source file include actions, binders, constants, functions,
+// getters, initializers, instances, methods, reactions, and types.
+// Types are handled in the type namespace.  Parameters are declared
+// for functions and methods and variable may declared in bodies of
+// functions and methods.  The common idea is that these elements have
+// names and are subject to symbol processing.
+namespace decl
+{
+class Action;
+class Bind;  // TODO:  Rename to binder.
+class Callable;
+class Constant;
+class Field; // TODO:  Move to type.
+class Function;
+class FunctionBase;
+class Getter;
+class Hidden; // TODO:  Get rid of this.
+class ImportedSymbol;
+class Initializer;
+class Instance;
+class MethodBase;
+class Method;
+class Package;
+class ParameterList;
+class Parameter;
+class PolymorphicFunction;
+class PolymorphicFunctionVisitor;
+class Reaction;
+class Variable;
+
+class Scope;
+class Symbol;
+class SymbolTable;
+class SymbolVisitor;
+class ConstSymbolVisitor;
+}
+
+// Abstract Syntax Tree for RCGo code.
 namespace ast
 {
 class Node;
 class List;
 
-class Identifier;
-class IdentifierList;
-class Receiver;
-class Array;
-class Slice;
-class Map;
-class EmptyType;
-class FieldList;
-class Heap;
-class VariableList;
-class IdentifierType;
-class Pointer;
-class PushPort;
-class PullPort;
-class ParameterList;
-class TypeExpression;
-class AddressOf;
-class Call;
-class Conversion;
-class Dereference;
-class IdentifierExpression;
-class Index;
-class IndexSlice;
-class EmptyExpression;
-class IndexedPushPortCall;
-class ExpressionList;
-class Literal;
-class PushPortCall;
-class Select;
-class EmptyStatement;
-class AddAssign;
-class Change;
-class Assign;
-class ExpressionStatement;
-class If;
-class While;
-class StatementList;
-class Return;
-class IncrementDecrement;
-class SubtractAssign;
+class ActionDecl;
 class Activate;
-class Var;
+class AddAssign;
+class AddressOf;
+class Array;
+class Assign;
+class BinderDecl;
+class BindPullPort;
 class BindPushPort;
 class BindPushPortParameter;
-class BindPullPort;
-class ForIota;
-class ActionDecl;
+class Call;
+class Change;
+class CompositeLiteral;
 class ConstDecl;
-class BindDecl;
+class Conversion;
+class Dereference;
+class Element;
+class ElementList;
+class EmptyExpression;
+class EmptyStatement;
+class EmptyType;
+class ExpressionList;
+class ExpressionStatement;
+class FieldList;
+class ForIota;
 class FunctionDecl;
 class GetterDecl;
-class InitDecl;
+class Heap;
+class IdentifierExpression;
+class IdentifierList;
+class IdentifierType;
+class If;
+class IncrementDecrement;
+class Index;
+class IndexSlice;
+class IndexedPushPortCall;
+class InitializerDecl;
 class InstanceDecl;
+class Literal;
+class Map;
 class MethodDecl;
+class ParameterList;
+class Pointer;
+class PullPort;
+class PushPort;
+class PushPortCall;
 class ReactionDecl;
+class Receiver;
+class Return;
+class Select;
+class Slice;
+class StatementList;
+class SubtractAssign;
+  class TopLevelDeclList;
 class TypeDecl;
-class SourceFile;
-class ElementList;
-class Element;
-class CompositeLiteral;
-class ImportDeclList;
-class TopLevelDeclList;
+class TypeExpression;
+class VarDecl;
+class VariableList;
+class While;
 
 class NodeVisitor;
 class DefaultNodeVisitor;
 }
 
-namespace semantic
-{
-class Value;
-class ExpressionValue;
-class UntypedComplex;
-}
-
+// Type descriptors.
 namespace type
 {
 class Array;
+class Component;
 class Function;
 class Getter;
 class Heap;
@@ -111,44 +155,29 @@ class PullPort;
 class PushPort;
 class Reaction;
 class Slice;
+class String;
 class Struct;
 class Type;
+class UntypedBoolean;
+class UntypedComplex;
+class UntypedFloat;
+class UntypedInteger;
+class UntypedNil;
+class UntypedRune;
 class UntypedString;
 
 typedef std::set<std::string> TagSet;
 }
 
-namespace decl
+// Classes for performing semantic analysis.
+namespace semantic
 {
-class Action;
-class Bind;
-class Callable;
-class ConstSymbolVisitor;
-class Constant;
-class Field;
-class Function;
-class FunctionBase;
-class Getter;
-class Hidden;
-class Initializer;
-class Instance;
-class MethodBase;
-class Method;
-class Package;
-class ParameterList;
-class Parameter;
-class PolymorphicFunction;
-class PolymorphicFunctionVisitor;
-class Reaction;
-class Scope;
-class Symbol;
-class SymbolTable;
-class SymbolVisitor;
-class Variable;
-
-typedef std::vector<const type::Type*> TypeList;
+class Value;
+class ExpressionValue;
+class UntypedComplex;
 }
 
+// Class used during the analysis of composition.
 namespace composition
 {
 struct Composer;
@@ -162,6 +191,7 @@ struct PullPort;
 struct Getter;
 }
 
+// Classes for the runtime.
 namespace runtime
 {
 class ComponentInfoBase;
@@ -176,6 +206,7 @@ class Stack;
 
 // A reference is either mutable, immutable, or foreign.
 // Ordered by strictness for <.
+// TODO: Move to semantic.
 enum Mutability
 {
   Mutable,

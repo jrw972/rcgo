@@ -5,23 +5,24 @@
 #include "symbol_visitor.hpp"
 #include "polymorphic_function_visitor.hpp"
 #include "error_reporter.hpp"
+#include "identifier.hpp"
 
 using namespace decl;
 using namespace util;
 using namespace semantic;
+using namespace source;
 
 struct MyPolymorphicFunction : public PolymorphicFunction
 {
-  MyPolymorphicFunction (const std::string& id,
-                         const util::Location& loc)
-    : PolymorphicFunction (id, loc)
+  MyPolymorphicFunction (const Identifier& id)
+    : PolymorphicFunction (id)
   { }
 
   virtual void accept (decl::PolymorphicFunctionVisitor& visitor) const { }
 
   virtual void
   check (util::ErrorReporter& er,
-         const util::Location& loc,
+         const Location& loc,
          semantic::ExpressionValue& result,
          semantic::ExpressionValueList& arguments) const
   { }
@@ -44,11 +45,11 @@ struct MyPolymorphicFunction : public PolymorphicFunction
 scope(decl); {
 
   scope(PolymorphicFunction); {
-
+    Location loc = Location::builtin;
     scenario(SymbolVisitor); {
       unit(accept); {
         TestVisitor<SymbolVisitor, PolymorphicFunction> visitor;
-        MyPolymorphicFunction ts ("id", Location ());
+        MyPolymorphicFunction ts (Identifier ("id", loc));
         static_cast<Symbol&> (ts).accept (visitor);
         ASSERT (visitor.item == &ts);
         TestDefaultVisitor<SymbolVisitor, Symbol> w;
@@ -60,7 +61,7 @@ scope(decl); {
     scenario(ConstSymbolVisitor); {
       unit(accept); {
         TestConstVisitor<ConstSymbolVisitor, PolymorphicFunction> visitor;
-        MyPolymorphicFunction ts ("id", Location ());
+        MyPolymorphicFunction ts (Identifier ("id", loc));
         static_cast<Symbol&> (ts).accept (visitor);
         ASSERT (visitor.item == &ts);
         TestDefaultConstVisitor<ConstSymbolVisitor, Symbol> w;

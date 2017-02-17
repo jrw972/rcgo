@@ -3,6 +3,8 @@
 #include "symbol_cast.hpp"
 #include "type.hpp"
 #include "parameter_list.hpp"
+#include "identifier.hpp"
+#include "error_reporter.hpp"
 
 namespace decl
 {
@@ -54,11 +56,20 @@ SymbolTable::enter_symbol (Symbol* a_symbol)
 }
 
 Symbol*
-SymbolTable::retrieve_symbol (const std::string& name) const
+SymbolTable::retrieve_symbol (const source::Identifier& identifier) const
 {
-  for (ScopesType::const_reverse_iterator pos = scopes_.rbegin (), limit = scopes_.rend (); pos != limit; ++pos)
+  return retrieve_symbol (identifier.identifier ());
+}
+
+Symbol*
+SymbolTable::retrieve_symbol (const std::string& identifier) const
+{
+  for (ScopesType::const_reverse_iterator pos = scopes_.rbegin (),
+         limit = scopes_.rend ();
+       pos != limit;
+       ++pos)
     {
-      Scope::SymbolsType::const_iterator p = pos->symbols.find (name);
+      SymbolsType::const_iterator p = pos->symbols.find (identifier);
       if (p != pos->symbols.end ())
         {
           return p->second;
@@ -67,11 +78,43 @@ SymbolTable::retrieve_symbol (const std::string& name) const
   return NULL;
 }
 
-bool
-SymbolTable::is_declared_locally (const std::string& name) const
+  bool
+  SymbolTable::is_declared_locally (const source::Identifier& identifier) const
 {
-  return scopes_.back ().symbols.find (name) != scopes_.back ().symbols.end ();
+  return is_declared_locally (identifier.identifier ());
 }
+
+bool
+SymbolTable::is_declared_locally (const std::string& identifier) const
+{
+  return scopes_.back ().symbols.find (identifier) != scopes_.back ().symbols.end ();
+}
+
+  bool
+  SymbolTable::check_is_declared_locally (util::ErrorReporter& er,
+                                          const source::Identifier& identifier) const
+  {
+    if (is_declared_locally (identifier))
+      {
+        decl::Symbol* s = retrieve_symbol (identifier);
+        er.already_declared (identifier.location (), identifier.identifier (), s->identifier.location ());
+        return true;
+      }
+    return false;
+  }
+
+  bool
+  SymbolTable::check_is_declared (util::ErrorReporter& er,
+                                  const source::Identifier& identifier) const
+  {
+    decl::Symbol* s = retrieve_symbol (identifier);
+    if (s != NULL)
+      {
+        er.already_declared (identifier.location (), identifier.identifier (), s->identifier.location ());
+        return true;
+      }
+    return false;
+  }
 
 void
 SymbolTable::activate ()
@@ -80,13 +123,13 @@ SymbolTable::activate ()
   ++pos;
   for (; pos != limit; ++pos)
     {
-      for (Scope::SymbolsType::const_iterator ptr = pos->symbols.begin (),
+      for (SymbolsType::const_iterator ptr = pos->symbols.begin (),
            limit = pos->symbols.end ();
            ptr != limit;
            ++ptr)
         {
           // Find because it may be hidden.
-          Symbol* x = retrieve_symbol (ptr->first);
+          Symbol* x = retrieve_symbol (ptr->second->identifier);
           if (x != NULL && symbol_cast<Hidden> (x) != NULL)
             {
               // Leave hidden symbols hidden.
@@ -109,7 +152,7 @@ SymbolTable::activate ()
                       {
                         assert (symbol->is_foreign_safe ());
                         // Hide this parameter.
-                        enter_symbol (new Hidden (symbol, symbol->location));
+                        enter_symbol (new Hidden (symbol));
                       }
                   }
               }
@@ -123,7 +166,7 @@ SymbolTable::activate ()
                 if (symbol->type->contains_pointer ()
                     && symbol->indirection_mutability == Foreign)
                   {
-                    enter_symbol (new Hidden (symbol, symbol->location));
+                    enter_symbol (new Hidden (symbol));
                   }
               }
           }
@@ -139,12 +182,12 @@ SymbolTable::change ()
   ++pos;
   for (; pos != limit; ++pos)
     {
-      for (Scope::SymbolsType::const_iterator ptr = pos->symbols.begin (),
+      for (SymbolsType::const_iterator ptr = pos->symbols.begin (),
            limit = pos->symbols.end ();
            ptr != limit;
            ++ptr)
         {
-          Symbol* x = retrieve_symbol (ptr->first);
+          Symbol* x = retrieve_symbol (ptr->second->identifier);
           if (x != NULL && symbol_cast<Hidden> (x) != NULL)
             {
               // Leave hidden symbols hidden.
@@ -193,16 +236,28 @@ SymbolTable::return_parameter_list () const
   return NULL;
 }
 
-Package*
+source::Package*
 SymbolTable::package () const
 {
   return NULL;
 }
 
+SymbolTable::const_symbols_iterator
+SymbolTable::symbols_begin () const
+{
+  return scopes_.back ().symbols.begin ();
+}
+
+SymbolTable::const_symbols_iterator
+SymbolTable::symbols_end () const
+{
+  return scopes_.back ().symbols.end ();
+}
+
 void
 SymbolTable::Scope::enter_symbol (Symbol* a_symbol)
 {
-  symbols[a_symbol->name] = a_symbol;
+  symbols[a_symbol->identifier.identifier ()] = a_symbol;
 }
 
 void

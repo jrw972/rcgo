@@ -4,6 +4,20 @@
 #include "node_cast.hpp"
 #include "type.hpp"
 
+using namespace source;
+
+#define ACCEPT(type) void                               \
+  type::accept (NodeVisitor& visitor)                 \
+  {                                                     \
+    visitor.visit (*this);                              \
+  }
+
+#define PRINT(type) void                               \
+  type::print (std::ostream& out) const               \
+  {                                                     \
+    out << #type ;                               \
+  }
+
 namespace ast
 {
 using namespace decl;
@@ -16,269 +30,13 @@ operator<< (std::ostream& out, const Node& node)
   return out;
 }
 
-void Identifier::print (std::ostream& out) const
-{
-  out << "Identifier " << identifier;
-}
-void IdentifierList::print (std::ostream& out) const
-{
-  out << "IdentifierList";
-}
-void Receiver::print (std::ostream& out) const
-{
-  out << "Receiver";
-}
-void Array::print (std::ostream& out) const
-{
-  out << "Array";
-}
-void Slice::print (std::ostream& out) const
-{
-  out << "Slice";
-}
-void Map::print (std::ostream& out) const
-{
-  out << "Map";
-}
-void EmptyType::print (std::ostream& out) const
-{
-  out << "EmptyType";
-}
-void FieldList::print (std::ostream& out) const
-{
-  out << "FieldList";
-}
-void Heap::print (std::ostream& out) const
-{
-  out << "Heap";
-}
-void VariableList::print (std::ostream& out) const
-{
-  out << "VariableList";
-}
-void IdentifierType::print (std::ostream& out) const
-{
-  out << "IdentifierType";
-}
-void Pointer::print (std::ostream& out) const
-{
-  out << "Pointer";
-}
-void PushPort::print (std::ostream& out) const
-{
-  out << "PushPort";
-}
-void PullPort::print (std::ostream& out) const
-{
-  out << "PullPort";
-}
-void ParameterList::print (std::ostream& out) const
-{
-  out << "ParameterList";
-}
-void TypeExpression::print (std::ostream& out) const
-{
-  out << "TypeExpression";
-}
-void AddressOf::print (std::ostream& out) const
-{
-  out << "AddressOf";
-}
-void Call::print (std::ostream& out) const
-{
-  out << "Call";
-}
-void Conversion::print (std::ostream& out) const
-{
-  out << "Conversion";
-}
-void Dereference::print (std::ostream& out) const
-{
-  out << "Dereference";
-}
-void IdentifierExpression::print (std::ostream& out) const
-{
-  out << "IdentifierExpression";
-}
-void Index::print (std::ostream& out) const
-{
-  out << "Index";
-}
-void IndexSlice::print (std::ostream& out) const
-{
-  out << "IndexSlice";
-}
-void EmptyExpression::print (std::ostream& out) const
-{
-  out << "EmptyExpression";
-}
-void IndexedPushPortCall::print (std::ostream& out) const
-{
-  out << "IndexedPushPortCall";
-}
-void ExpressionList::print (std::ostream& out) const
-{
-  out << "ExpressionList";
-}
-void Literal::print (std::ostream& out) const
-{
-  out << "Literal";
-}
-void PushPortCall::print (std::ostream& out) const
-{
-  out << "PushPortCall";
-}
-void Select::print (std::ostream& out) const
-{
-  out << "Select";
-}
-void EmptyStatement::print (std::ostream& out) const
-{
-  out << "EmptyStatement";
-}
-void AddAssign::print (std::ostream& out) const
-{
-  out << "AddAssign";
-}
-void Change::print (std::ostream& out) const
-{
-  out << "Change";
-}
-void Assign::print (std::ostream& out) const
-{
-  out << "Assign";
-}
-void ExpressionStatement::print (std::ostream& out) const
-{
-  out << "ExpressionStatement";
-}
-void If::print (std::ostream& out) const
-{
-  out << "If";
-}
-void While::print (std::ostream& out) const
-{
-  out << "While";
-}
-void StatementList::print (std::ostream& out) const
-{
-  out << "StatementList";
-}
-void Return::print (std::ostream& out) const
-{
-  out << "Return";
-}
-void IncrementDecrement::print (std::ostream& out) const
-{
-  out << "IncrementDecrement";
-}
-void SubtractAssign::print (std::ostream& out) const
-{
-  out << "SubtractAssign";
-}
-void Activate::print (std::ostream& out) const
-{
-  out << "Activate";
-}
-void Var::print (std::ostream& out) const
-{
-  out << "Var";
-}
-void BindPushPort::print (std::ostream& out) const
-{
-  out << "BindPushPort";
-}
-void BindPushPortParameter::print (std::ostream& out) const
-{
-  out << "BindPushPortParameter";
-}
-void BindPullPort::print (std::ostream& out) const
-{
-  out << "BindPullPort";
-}
-void ForIota::print (std::ostream& out) const
-{
-  out << "ForIota";
-}
-void ActionDecl::print (std::ostream& out) const
-{
-  out << "ActionDecl";
-}
-void ConstDecl::print (std::ostream& out) const
-{
-  out << "ConstDecl";
-}
-void BindDecl::print (std::ostream& out) const
-{
-  out << "BindDecl";
-}
-void FunctionDecl::print (std::ostream& out) const
-{
-  out << "FunctionDecl";
-}
-void GetterDecl::print (std::ostream& out) const
-{
-  out << "GetterDecl";
-}
-void InitDecl::print (std::ostream& out) const
-{
-  out << "InitDecl";
-}
-void InstanceDecl::print (std::ostream& out) const
-{
-  out << "InstanceDecl";
-}
-void MethodDecl::print (std::ostream& out) const
-{
-  out << "MethodDecl";
-}
-void ReactionDecl::print (std::ostream& out) const
-{
-  out << "ReactionDecl";
-}
-void TypeDecl::print (std::ostream& out) const
-{
-  out << "Type";
-}
-void SourceFile::print (std::ostream& out) const
-{
-  out << "SourceFile";
-}
-void ElementList::print (std::ostream& out) const
-{
-  out << "ElementList";
-}
-void Element::print (std::ostream& out) const
-{
-  out << "Element";
-}
-void CompositeLiteral::print (std::ostream& out) const
-{
-  out << "CompositeLiteral";
-}
-void ImportDeclList::print (std::ostream& out) const
-{
-  out << "ImportDeclList";
-}
-
-void TopLevelDeclList::print (std::ostream& out) const
-{
-  out << "TopLevelDeclList";
-}
-
-#define ACCEPT(type) void                               \
-  type::accept (NodeVisitor& visitor)                 \
-  {                                                     \
-    visitor.visit (*this);                              \
-  }
-
 ACCEPT (ActionDecl)
 ACCEPT (Activate)
 ACCEPT (AddAssign)
 ACCEPT (AddressOf)
 ACCEPT (Array)
 ACCEPT (Assign)
-ACCEPT (BindDecl)
+ACCEPT (BinderDecl)
 ACCEPT (BindPullPort)
 ACCEPT (BindPushPort)
 ACCEPT (BindPushPortParameter)
@@ -300,7 +58,6 @@ ACCEPT (ForIota)
 ACCEPT (FunctionDecl)
 ACCEPT (GetterDecl)
 ACCEPT (Heap)
-ACCEPT (Identifier)
 ACCEPT (IdentifierExpression)
 ACCEPT (IdentifierList)
 ACCEPT (IdentifierType)
@@ -309,7 +66,7 @@ ACCEPT (IncrementDecrement)
 ACCEPT (Index)
 ACCEPT (IndexSlice)
 ACCEPT (IndexedPushPortCall)
-ACCEPT (InitDecl)
+ACCEPT (InitializerDecl)
 ACCEPT (InstanceDecl)
 ACCEPT (Literal)
 ACCEPT (Map)
@@ -324,20 +81,77 @@ ACCEPT (Receiver)
 ACCEPT (Return)
 ACCEPT (Select)
 ACCEPT (Slice)
-ACCEPT (SourceFile)
 ACCEPT (StatementList)
 ACCEPT (SubtractAssign)
+ACCEPT (TopLevelDeclList)
 ACCEPT (TypeDecl)
 ACCEPT (TypeExpression)
-ACCEPT (Var)
+ACCEPT (VarDecl)
 ACCEPT (VariableList)
 ACCEPT (While)
-ACCEPT (ImportDeclList)
-ACCEPT (TopLevelDeclList)
+
+PRINT (ActionDecl)
+PRINT (Activate)
+PRINT (AddAssign)
+PRINT (AddressOf)
+PRINT (Array)
+PRINT (Assign)
+PRINT (BinderDecl)
+PRINT (BindPullPort)
+PRINT (BindPushPort)
+PRINT (BindPushPortParameter)
+PRINT (Call)
+PRINT (Change)
+PRINT (CompositeLiteral)
+PRINT (ConstDecl)
+PRINT (Conversion)
+PRINT (Dereference)
+PRINT (Element)
+PRINT (ElementList)
+PRINT (EmptyExpression)
+PRINT (EmptyStatement)
+PRINT (EmptyType)
+PRINT (ExpressionList)
+PRINT (ExpressionStatement)
+PRINT (FieldList)
+PRINT (ForIota)
+PRINT (FunctionDecl)
+PRINT (GetterDecl)
+PRINT (Heap)
+PRINT (IdentifierList)
+PRINT (IdentifierType)
+PRINT (If)
+PRINT (IncrementDecrement)
+PRINT (Index)
+PRINT (IndexSlice)
+PRINT (IndexedPushPortCall)
+PRINT (InitializerDecl)
+PRINT (InstanceDecl)
+PRINT (Literal)
+PRINT (Map)
+PRINT (MethodDecl)
+PRINT (ParameterList)
+PRINT (Pointer)
+PRINT (PullPort)
+PRINT (PushPort)
+PRINT (PushPortCall)
+PRINT (ReactionDecl)
+PRINT (Receiver)
+PRINT (Return)
+PRINT (Select)
+PRINT (Slice)
+PRINT (StatementList)
+PRINT (SubtractAssign)
+PRINT (TopLevelDeclList)
+PRINT (TypeDecl)
+PRINT (TypeExpression)
+PRINT (VarDecl)
+PRINT (VariableList)
+PRINT (While)
 
 Node::~Node() { }
 
-List::List (unsigned int line) : Node (line) { }
+  List::List (const source::Location& location) : Node (location) { }
 
 void
 List::visit_children (NodeVisitor& visitor)
@@ -376,8 +190,8 @@ List::ConstIterator List::end () const
   return children_.end ();
 }
 
-Node::Node (unsigned int line_)
-  : location (line_)
+  Node::Node (const source::Location& a_location)
+  : location (a_location)
   , field (NULL)
   , reset_mutability (false)
   , callable (NULL)
@@ -386,46 +200,70 @@ Node::Node (unsigned int line_)
   assert (location.line () != 0);
 }
 
-Literal::Literal (unsigned int line, const ExpressionValue& v)
-  : Node (line)
+Literal::Literal (const source::Location& location, const ExpressionValue& v)
+  : Node (location)
 {
   eval = v;
 }
 
-Identifier::Identifier (unsigned int line, const std::string& id)
-  : Node (line)
-  , identifier (id)
+  void Literal::visit_children (NodeVisitor& visitor)
+  { }
+
+IdentifierList::IdentifierList (const source::Location& location)
+  : Node (location)
 { }
 
-void Identifier::visit_children (NodeVisitor& visitor) { }
-
-IdentifierList::IdentifierList (unsigned int line)
-  : List (line)
+void
+IdentifierList::visit_children (NodeVisitor& visitor)
 { }
 
-Receiver::Receiver (unsigned int line,
-                    Identifier* this_id,
+IdentifierList*
+IdentifierList::append (const Identifier& identifier)
+{
+  identifiers.push_back (identifier);
+  return this;
+}
+
+size_t
+IdentifierList::size () const
+{
+  return identifiers.size ();
+}
+
+IdentifierList::const_iterator
+IdentifierList::begin () const
+{
+  return identifiers.begin ();
+}
+
+IdentifierList::const_iterator
+IdentifierList::end () const
+{
+  return identifiers.end ();
+}
+
+Receiver::Receiver (const source::Location& location,
+                    const Identifier& this_id,
                     Mutability m,
                     Mutability dm,
                     bool isP,
-                    Identifier* type_id)
-  : Node (line)
+                    const Identifier& type_id)
+  : Node (location)
   , identifier (this_id)
   , mutability (m)
   , indirection_mutability (dm)
   , is_pointer (isP)
-  , type (type_id)
+  , type_identifier (type_id)
+  , identifier_symbol (NULL)
+  , type_identifier_symbol (NULL)
 { }
 
 void
 Receiver::visit_children (NodeVisitor& visitor)
-{
-  identifier->accept (visitor);
-  type->accept (visitor);
-}
+{ }
 
-Array::Array (unsigned int line, Node* dim, Node* base)
-  : Node (line)
+Array::Array (const source::Location& location, Node* dim, Node* base)
+  : Node (location)
   , dimension (dim)
   , base_type (base)
 { }
@@ -436,29 +274,37 @@ void Array::visit_children (NodeVisitor& visitor)
   base_type->accept (visitor);
 }
 
-EmptyType::EmptyType (unsigned int line)
-  : Node (line)
+EmptyType::EmptyType (const source::Location& location)
+  : Node (location)
 { }
 
-FieldList::FieldList (unsigned int line)
-  : List (line)
+void EmptyType::visit_children (NodeVisitor& visitor)
+{ }
+
+FieldList::FieldList (const source::Location& location)
+  : List (location)
   , is_component (false)
 { }
 
-Heap::Heap (unsigned int line, Node* child)
-  : Unary (line, child)
+Heap::Heap (const source::Location& location, Node* child)
+  : Unary (location, child)
 { }
 
-IdentifierType::IdentifierType (unsigned int line, Identifier* child)
-  : Unary (line, child)
+IdentifierType::IdentifierType (const source::Location& location, const Identifier& a_identifier)
+  : Node (location)
+  , identifier (a_identifier)
 { }
 
-VariableList::VariableList (unsigned int line,
-                            List* id_list,
+void
+IdentifierType::visit_children (NodeVisitor& visitor)
+{ }
+
+VariableList::VariableList (const source::Location& location,
+                            IdentifierList* id_list,
                             Mutability m,
                             Mutability dm,
                             Node* type_sp)
-  : Node (line)
+  : Node (location)
   , identifiers (id_list)
   , mutability (m)
   , indirection_mutability (dm)
@@ -472,16 +318,16 @@ VariableList::visit_children (NodeVisitor& visitor)
   type->accept (visitor);
 }
 
-Pointer::Pointer (unsigned int line, Node* child)
-  : Unary (line, child)
+Pointer::Pointer (const source::Location& location, Node* child)
+  : Unary (location, child)
 { }
 
-Slice::Slice (unsigned int line, Node* child)
-  : Unary (line, child)
+Slice::Slice (const source::Location& location, Node* child)
+  : Unary (location, child)
 { }
 
-Map::Map (unsigned int line, Node* k, Node* v)
-  : Node (line)
+Map::Map (const source::Location& location, Node* k, Node* v)
+  : Node (location)
   , key (k)
   , value (v)
 { }
@@ -493,8 +339,8 @@ Map::visit_children (NodeVisitor& visitor)
   value->accept (visitor);
 }
 
-PushPort::PushPort (unsigned int line, ParameterList* sig)
-  : Node (line)
+PushPort::PushPort (const source::Location& location, ParameterList* sig)
+  : Node (location)
   , parameters (sig)
 { }
 
@@ -503,10 +349,10 @@ void PushPort::visit_children (NodeVisitor& visitor)
   parameters->accept (visitor);
 }
 
-PullPort::PullPort (unsigned int line,
+PullPort::PullPort (const source::Location& location,
                     ParameterList* pl,
                     ParameterList* rpl)
-  : Node (line)
+  : Node (location)
   , parameters (pl)
   , return_parameters (rpl)
 { }
@@ -517,16 +363,16 @@ void PullPort::visit_children (NodeVisitor& visitor)
   return_parameters->accept (visitor);
 }
 
-ParameterList::ParameterList (unsigned int line)
-  : List (line)
+ParameterList::ParameterList (const source::Location& location)
+  : List (location)
 { }
 
-TypeExpression::TypeExpression (unsigned int line, Node* ts)
-  : Unary<> (line, ts)
+TypeExpression::TypeExpression (const source::Location& location, Node* ts)
+  : Unary<> (location, ts)
 { }
 
-Binary::Binary (unsigned int line, Node* l, Node* r)
-  : Node (line)
+Binary::Binary (const source::Location& location, Node* l, Node* r)
+  : Node (location)
   , left (l)
   , right (r)
 { }
@@ -537,12 +383,12 @@ void Binary::visit_children (NodeVisitor& visitor)
   right->accept (visitor);
 }
 
-AddressOf::AddressOf (unsigned int line, Node* child)
-  : Unary (line, child)
+AddressOf::AddressOf (const source::Location& location, Node* child)
+  : Unary (location, child)
 { }
 
-Call::Call (unsigned int line, Node* e, List* a)
-  : Node (line)
+Call::Call (const source::Location& location, Node* e, List* a)
+  : Node (location)
   , expression (e)
   , arguments (a)
   , function_type (NULL)
@@ -562,8 +408,8 @@ void Call::visit_children (NodeVisitor& visitor)
   arguments->accept (visitor);
 }
 
-Conversion::Conversion (unsigned int line, Node* te, Node* e)
-  : Node (line)
+Conversion::Conversion (const source::Location& location, Node* te, Node* e)
+  : Node (location)
   , type (te)
   , argument (e)
 { }
@@ -573,20 +419,32 @@ void Conversion::visit_children (NodeVisitor& visitor)
   argument->accept (visitor);
 }
 
-Dereference::Dereference (unsigned int line, Node* child)
-  : Unary (line, child)
+Dereference::Dereference (const source::Location& location, Node* child)
+  : Unary (location, child)
 { }
 
-ExpressionList::ExpressionList (unsigned int line)
-  : List (line)
+ExpressionList::ExpressionList (const source::Location& location)
+  : List (location)
 { }
 
-IdentifierExpression::IdentifierExpression (unsigned int line, Identifier* c)
-  : Unary (line, c)
+IdentifierExpression::IdentifierExpression (const source::Location& location, const Identifier& a_identifier)
+  : Node (location)
+  , identifier (a_identifier)
 { }
 
-Index::Index (unsigned int line, Node* b, Node* i)
-  : Node (line)
+void
+IdentifierExpression::visit_children (NodeVisitor& visitor)
+{ }
+
+void
+IdentifierExpression::print (std::ostream& out) const
+{
+  out << "IdentifierExpression " << identifier.identifier ();
+}
+
+
+Index::Index (const source::Location& location, Node* b, Node* i)
+  : Node (location)
   , base (b)
   , index (i)
   , array_type (NULL)
@@ -599,12 +457,12 @@ void Index::visit_children (NodeVisitor& visitor)
   index->accept (visitor);
 }
 
-IndexSlice::IndexSlice (unsigned int line,
+IndexSlice::IndexSlice (const source::Location& location,
                         Node* b,
                         Node* l,
                         Node* h,
                         Node* m)
-  : Node (line)
+  : Node (location)
   , base (b)
   , low (l)
   , low_present (node_cast<EmptyExpression> (low) == NULL)
@@ -626,12 +484,15 @@ void IndexSlice::visit_children (NodeVisitor& visitor)
   max->accept (visitor);
 }
 
-EmptyExpression::EmptyExpression (unsigned int line)
-  : Node (line)
+EmptyExpression::EmptyExpression (const source::Location& location)
+  : Node (location)
 { }
 
-PushPortCall::PushPortCall (unsigned int line, Identifier* id, List* a)
-  : Node (line)
+  void EmptyExpression::visit_children (NodeVisitor& visitor)
+  { }
+
+PushPortCall::PushPortCall (const source::Location& location, const Identifier& id, List* a)
+  : Node (location)
   , identifier (id)
   , arguments (a)
   , field (NULL)
@@ -641,15 +502,14 @@ PushPortCall::PushPortCall (unsigned int line, Identifier* id, List* a)
 
 void PushPortCall::visit_children (NodeVisitor& visitor)
 {
-  identifier->accept (visitor);
   arguments->accept (visitor);
 }
 
-IndexedPushPortCall::IndexedPushPortCall (unsigned int line,
-    Identifier* id,
+IndexedPushPortCall::IndexedPushPortCall (const source::Location& location,
+                                          const Identifier& id,
     Node* idx,
     List* a)
-  : Node (line)
+  : Node (location)
   , identifier (id)
   , index (idx)
   , arguments (a)
@@ -660,13 +520,12 @@ IndexedPushPortCall::IndexedPushPortCall (unsigned int line,
 
 void IndexedPushPortCall::visit_children (NodeVisitor& visitor)
 {
-  identifier->accept (visitor);
   index->accept (visitor);
   arguments->accept (visitor);
 }
 
-Select::Select (unsigned int line, Node* b, Identifier* id)
-  : Node (line)
+Select::Select (const source::Location& location, Node* b, const Identifier& id)
+  : Node (location)
   , base (b)
   , identifier (id)
 { }
@@ -674,26 +533,28 @@ Select::Select (unsigned int line, Node* b, Identifier* id)
 void Select::visit_children (NodeVisitor& visitor)
 {
   base->accept (visitor);
-  identifier->accept (visitor);
 }
 
-EmptyStatement::EmptyStatement (unsigned int line)
-  : Node (line)
+EmptyStatement::EmptyStatement (const source::Location& location)
+  : Node (location)
 { }
 
-AddAssign::AddAssign (unsigned int line, Node* left, Node* right)
-  : Binary (line, left, right)
+void EmptyStatement::visit_children (NodeVisitor& visitor)
 { }
 
-Assign::Assign (unsigned int line, Node* left, Node* right)
-  : Binary (line, left, right)
+AddAssign::AddAssign (const source::Location& location, Node* left, Node* right)
+  : Binary (location, left, right)
 { }
 
-Change::Change (unsigned int line,
+Assign::Assign (const source::Location& location, Node* left, Node* right)
+  : Binary (location, left, right)
+{ }
+
+Change::Change (const source::Location& location,
                 Node * e,
-                Identifier * id,
+                const Identifier& id,
                 Node * b)
-  : Node (line)
+  : Node (location)
   , argument (e)
   , identifier (id)
   , body (b)
@@ -702,20 +563,19 @@ Change::Change (unsigned int line,
 void Change::visit_children (NodeVisitor& visitor)
 {
   argument->accept (visitor);
-  identifier->accept (visitor);
   body->accept (visitor);
 }
 
-ExpressionStatement::ExpressionStatement (unsigned int line, Node* child)
-  : Unary (line, child)
+ExpressionStatement::ExpressionStatement (const source::Location& location, Node* child)
+  : Unary (location, child)
 { }
 
-If::If (unsigned int line,
+If::If (const source::Location& location,
         Node* s,
         Node* c,
         Node* tb,
         Node* fb)
-  : Node (line)
+  : Node (location)
   , before (s)
   , condition (c)
   , true_body (tb)
@@ -730,8 +590,8 @@ void If::visit_children (NodeVisitor& visitor)
   false_body->accept (visitor);
 }
 
-While::While (unsigned int line, Node* c, Node* b)
-  : Node (line)
+While::While (const source::Location& location, Node* c, Node* b)
+  : Node (location)
   , condition (c)
   , body (b)
 { }
@@ -742,26 +602,27 @@ void While::visit_children (NodeVisitor& visitor)
   body->accept (visitor);
 }
 
-Return::Return (unsigned int line, Node* child)
-  : Unary (line, child)
+Return::Return (const source::Location& location, Node* child)
+  : Unary (location, child)
   , return_symbol (NULL)
 { }
 
-IncrementDecrement::IncrementDecrement (unsigned int line, Node* child, Kind a_kind)
-  : Unary (line, child)
+IncrementDecrement::IncrementDecrement (const source::Location& location, Node* child, Kind a_kind)
+  : Unary (location, child)
   , kind (a_kind)
 { }
 
-StatementList::StatementList (unsigned int line)
-  : List (line)
+StatementList::StatementList (const source::Location& location)
+  : List (location)
+  , is_body (false)
 { }
 
-SubtractAssign::SubtractAssign (unsigned int line, Node* left, Node* right)
-  : Binary (line, left, right)
+SubtractAssign::SubtractAssign (const source::Location& location, Node* left, Node* right)
+  : Binary (location, left, right)
 { }
 
-Activate::Activate (unsigned int line, List * el, Node * b)
-  : Node (line)
+Activate::Activate (const source::Location& location, List * el, Node * b)
+  : Node (location)
   , arguments (el)
   , body (b)
   , memory_model (NULL)
@@ -774,13 +635,13 @@ void Activate::visit_children (NodeVisitor& visitor)
   body->accept (visitor);
 }
 
-Var::Var (unsigned int line,
-          List* il,
-          Mutability m,
-          Mutability dm,
-          Node* ts,
-          List* el)
-  : Node (line)
+VarDecl::VarDecl (const source::Location& location,
+                  IdentifierList* il,
+                  Mutability m,
+                  Mutability dm,
+                  Node* ts,
+                  List* el)
+  : Node (location)
   , identifiers (il)
   , mutability (m)
   , indirection_mutability (dm)
@@ -788,22 +649,22 @@ Var::Var (unsigned int line,
   , expressions (el)
 { }
 
-void Var::visit_children (NodeVisitor& visitor)
+void VarDecl::visit_children (NodeVisitor& visitor)
 {
   identifiers->accept (visitor);
   type->accept (visitor);
   expressions->accept (visitor);
 }
 
-BindPushPort::BindPushPort (unsigned int line, Node* left, Node* right)
-  : Binary (line, left, right)
+BindPushPort::BindPushPort (const source::Location& location, Node* left, Node* right)
+  : Binary (location, left, right)
 { }
 
-BindPushPortParameter::BindPushPortParameter (unsigned int line,
+BindPushPortParameter::BindPushPortParameter (const source::Location& location,
     Node* l,
     Node* r,
     Node* p)
-  : Node (line)
+  : Node (location)
   , left (l)
   , right (r)
   , param (p)
@@ -816,15 +677,15 @@ void BindPushPortParameter::visit_children (NodeVisitor& visitor)
   param->accept (visitor);
 }
 
-BindPullPort::BindPullPort (unsigned int line, Node* left, Node* right)
-  : Binary (line, left, right)
+BindPullPort::BindPullPort (const source::Location& location, Node* left, Node* right)
+  : Binary (location, left, right)
 { }
 
-ForIota::ForIota (unsigned int line,
-                  Identifier* id,
+ForIota::ForIota (const source::Location& location,
+                  const Identifier& id,
                   Node* lim,
                   Node* b)
-  : Node (line)
+  : Node (location)
   , identifier (id)
   , limit (lim)
   , body (b)
@@ -832,18 +693,17 @@ ForIota::ForIota (unsigned int line,
 
 void ForIota::visit_children (NodeVisitor& visitor)
 {
-  identifier->accept (visitor);
   limit->accept (visitor);
   body->accept (visitor);
 }
 
-ActionDecl::ActionDecl (unsigned int line,
+ActionDecl::ActionDecl (const source::Location& location,
                         Node* d,
                         Receiver* r,
-                        Identifier* i,
+                        const Identifier& i,
                         Node* p,
                         Node* b)
-  : Node (line)
+  : Node (location)
   , dimension (d)
   , receiver (r)
   , identifier (i)
@@ -856,35 +716,33 @@ void ActionDecl::visit_children (NodeVisitor& visitor)
 {
   dimension->accept (visitor);
   receiver->accept (visitor);
-  identifier->accept (visitor);
   precondition->accept (visitor);
   body->accept (visitor);
 }
 
-BindDecl::BindDecl (unsigned int line,
-                    Receiver* r,
-                    Identifier* i,
-                    Node* b)
-  : Node (line)
+BinderDecl::BinderDecl (const source::Location& location,
+                        Receiver* r,
+                        const Identifier& i,
+                        Node* b)
+  : Node (location)
   , receiver (r)
   , identifier (i)
   , body (b)
   , bind (NULL)
 { }
 
-void BindDecl::visit_children (NodeVisitor& visitor)
+void BinderDecl::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
-  identifier->accept (visitor);
   body->accept (visitor);
 }
 
-FunctionDecl::FunctionDecl (unsigned int line,
-                            Identifier* i,
+FunctionDecl::FunctionDecl (const source::Location& location,
+                            const Identifier& i,
                             ParameterList* pl,
                             ParameterList* rpl,
                             Node* b)
-  : Node (line)
+  : Node (location)
   , identifier (i)
   , parameters (pl)
   , return_parameters (rpl)
@@ -894,18 +752,17 @@ FunctionDecl::FunctionDecl (unsigned int line,
 
 void FunctionDecl::visit_children (NodeVisitor& visitor)
 {
-  identifier->accept (visitor);
   parameters->accept (visitor);
   return_parameters->accept (visitor);
   body->accept (visitor);
 }
 
-InstanceDecl::InstanceDecl (unsigned int line,
-                            Identifier* id,
+InstanceDecl::InstanceDecl (const source::Location& location,
+                            const Identifier& id,
                             Node* tn,
-                            Identifier* init,
+                            const Identifier& init,
                             List* el)
-  : Node (line)
+  : Node (location)
   , identifier (id)
   , type (tn)
   , initializer (init)
@@ -914,17 +771,15 @@ InstanceDecl::InstanceDecl (unsigned int line,
 
 void InstanceDecl::visit_children (NodeVisitor& visitor)
 {
-  identifier->accept (visitor);
   type->accept (visitor);
-  initializer->accept (visitor);
   arguments->accept (visitor);
 }
 
-ConstDecl::ConstDecl (unsigned int line,
-                      List* il,
+ConstDecl::ConstDecl (const source::Location& location,
+                      IdentifierList* il,
                       Node* ts,
                       List* el)
-  : Node (line)
+  : Node (location)
   , identifiers (il)
   , type (ts)
   , expressions (el)
@@ -937,13 +792,13 @@ void ConstDecl::visit_children (NodeVisitor& visitor)
   expressions->accept (visitor);
 }
 
-MethodDecl::MethodDecl (unsigned int line,
+MethodDecl::MethodDecl (const source::Location& location,
                         Receiver* r,
-                        Identifier * i,
+                        const Identifier& i,
                         ParameterList* a_parameter_list,
                         ParameterList* a_return_parameter_list,
                         Node* b)
-  : Node (line)
+  : Node (location)
   , receiver (r)
   , identifier (i)
   , parameters (a_parameter_list)
@@ -955,19 +810,18 @@ MethodDecl::MethodDecl (unsigned int line,
 void MethodDecl::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
-  identifier->accept (visitor);
   parameters->accept (visitor);
   return_parameters->accept (visitor);
   body->accept (visitor);
 }
 
-GetterDecl::GetterDecl (unsigned int line,
+GetterDecl::GetterDecl (const source::Location& location,
                         Receiver* r,
-                        Identifier * i,
+                        const Identifier& i,
                         ParameterList* pl,
                         ParameterList* rpl,
                         Node* b)
-  : Node (line)
+  : Node (location)
   , receiver (r)
   , identifier (i)
   , parameters (pl)
@@ -979,19 +833,18 @@ GetterDecl::GetterDecl (unsigned int line,
 void GetterDecl::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
-  identifier->accept (visitor);
   parameters->accept (visitor);
   return_parameters->accept (visitor);
   body->accept (visitor);
 }
 
-InitDecl::InitDecl (unsigned int line,
+InitializerDecl::InitializerDecl (const source::Location& location,
                     Receiver* r,
-                    Identifier * i,
+                                  const Identifier& i,
                     ParameterList* pl,
                     ParameterList* rpl,
                     Node* b)
-  : Node (line)
+  : Node (location)
   , receiver (r)
   , identifier (i)
   , parameters (pl)
@@ -1000,27 +853,26 @@ InitDecl::InitDecl (unsigned int line,
   , initializer (NULL)
 { }
 
-void InitDecl::visit_children (NodeVisitor& visitor)
+void InitializerDecl::visit_children (NodeVisitor& visitor)
 {
   receiver->accept (visitor);
-  identifier->accept (visitor);
   parameters->accept (visitor);
   return_parameters->accept (visitor);
   body->accept (visitor);
 }
 
-ReactionDecl::ReactionDecl (unsigned int line,
+ReactionDecl::ReactionDecl (const source::Location& location,
                             Node* d,
                             Receiver* r,
-                            Identifier* i,
+                            const Identifier& i,
                             ParameterList* pl,
                             Node* b)
-  : Node (line)
+  : Node (location)
   , dimension (d)
   , receiver (r)
   , identifier (i)
   , parameters (pl)
-  , return_parameters (new ParameterList (line))
+  , return_parameters (new ParameterList (location))
   , body (b)
   , reaction (NULL)
 { }
@@ -1029,14 +881,13 @@ void ReactionDecl::visit_children (NodeVisitor& visitor)
 {
   dimension->accept (visitor);
   receiver->accept (visitor);
-  identifier->accept (visitor);
   parameters->accept (visitor);
   return_parameters->accept (visitor);
   body->accept (visitor);
 }
 
-TypeDecl::TypeDecl (unsigned int line, Identifier* i, Node* ts)
-  : Node (line)
+TypeDecl::TypeDecl (const source::Location& location, const Identifier& i, Node* ts)
+  : Node (location)
   , identifier (i)
   , type (ts)
   , symbol (NULL)
@@ -1044,31 +895,15 @@ TypeDecl::TypeDecl (unsigned int line, Identifier* i, Node* ts)
 
 void TypeDecl::visit_children (NodeVisitor& visitor)
 {
-  identifier->accept (visitor);
   type->accept (visitor);
 }
 
-SourceFile::SourceFile (unsigned int line, Identifier* a_package,
-                        List* a_import_decl_list, List* a_top_level_decl_list)
-  : Node (line)
-  , package (a_package)
-  , import_decl_list (a_import_decl_list)
-  , top_level_decl_list (a_top_level_decl_list)
+ElementList::ElementList (const source::Location& location)
+  : List (location)
 { }
 
-void SourceFile::visit_children (NodeVisitor& visitor)
-{
-  package->accept (visitor);
-  import_decl_list->accept (visitor);
-  top_level_decl_list->accept (visitor);
-}
-
-ElementList::ElementList (unsigned int line)
-  : List (line)
-{ }
-
-Element::Element (unsigned int line, Node* k, Node* v)
-  : Node (line)
+Element::Element (const source::Location& location, Node* k, Node* v)
+  : Node (location)
   , key (k)
   , value (v)
 { }
@@ -1079,10 +914,10 @@ void Element::visit_children (NodeVisitor& visitor)
   value->accept (visitor);
 }
 
-CompositeLiteral::CompositeLiteral (unsigned int line,
+CompositeLiteral::CompositeLiteral (const source::Location& location,
                                     Node* lt,
                                     List* lv)
-  : Node (line)
+  : Node (location)
   , type (lt)
   , value (lv)
 { }
@@ -1093,34 +928,25 @@ void CompositeLiteral::visit_children (NodeVisitor& visitor)
   value->accept (visitor);
 }
 
-void EmptyType::visit_children (NodeVisitor& visitor) { }
-void EmptyExpression::visit_children (NodeVisitor& visitor) { }
-void Literal::visit_children (NodeVisitor& visitor) { }
-void EmptyStatement::visit_children (NodeVisitor& visitor) { }
+  TopLevelDeclList::TopLevelDeclList (const source::Location& location)
+    : List (location)
+  { }
 
-ImportDeclList::ImportDeclList (unsigned int line)
-  : List (line)
-{ }
-
-TopLevelDeclList::TopLevelDeclList (unsigned int line)
-  : List (line)
-{ }
-
-Call* make_unary (unsigned int line, decl::PolymorphicFunction* func, Node* child)
+Call* make_unary (const source::Location& location, decl::PolymorphicFunction* func, Node* child)
 {
-  Literal* e = new Literal (line, ExpressionValue::make_polymorphic_function (func));
-  ExpressionList* el = new ExpressionList (line);
+  Literal* e = new Literal (location, ExpressionValue::make_polymorphic_function (func));
+  ExpressionList* el = new ExpressionList (location);
   el->append (child);
-  return new Call (line, e, el);
+  return new Call (location, e, el);
 }
 
-Call* make_binary (unsigned int line, decl::PolymorphicFunction* func, Node* left, Node* right)
+Call* make_binary (const source::Location& location, decl::PolymorphicFunction* func, Node* left, Node* right)
 {
-  Literal* e = new Literal (line, ExpressionValue::make_polymorphic_function (func));
-  ExpressionList* el = new ExpressionList (line);
+  Literal* e = new Literal (location, ExpressionValue::make_polymorphic_function (func));
+  ExpressionList* el = new ExpressionList (location);
   el->append (left);
   el->append (right);
-  return new Call (line, e, el);
+  return new Call (location, e, el);
 }
 
 }

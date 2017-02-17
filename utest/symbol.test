@@ -11,14 +11,17 @@
 #include "package.hpp"
 #include "astgen.hpp"
 #include "symbol_table.hpp"
+#include "identifier.hpp"
+#include "decl.hpp"
 
 using namespace type;
 using namespace decl;
 using namespace util;
 using namespace ast;
+using namespace source;
 
 scope(decl); {
-  Location loc;
+  Location loc = Location::builtin;
   ErrorReporter er;
   SymbolTable symbol_table;
   symbol_table.open_scope ();
@@ -26,13 +29,13 @@ scope(decl); {
   scope(Instance); {
 
     scenario(fully_constructed); {
-      type::NamedType x ("mytype", loc, &type::named_int);
+      type::NamedType x (Identifier ("mytype", loc), &type::named_int);
       decl::Initializer init (gen_init_decl ("blah"), &x);
-      Instance symbol ("name", loc, &named_int, &init);
+      Instance symbol (Identifier ("name", loc), &named_int, &init);
 
       unit(Instance); {
-        ASSERT (symbol.name == "name");
-        ASSERT (symbol.location == loc);
+        ASSERT (symbol.identifier.identifier () == "name");
+        ASSERT (symbol.identifier.location () == loc);
         ASSERT (symbol.type () == &named_int);
         ASSERT (symbol.initializer () == &init);
         ASSERT (symbol.instance == NULL);
@@ -69,12 +72,12 @@ scope(decl); {
     scenario(from_decl); {
       scenario (no_type); {
         unit(process_declaration); {
-          ast::Identifier identifier (1, "i");
-          ast::Identifier id2 (1, "T");
-          ast::IdentifierType type (1, &id2);
-          ast::Identifier init (1, "init");
-          ast::IdentifierList arguments (1);
-          ast::InstanceDecl instancedecl (1, &identifier, &type, &init, &arguments);
+          Identifier identifier ("i", loc);
+          Identifier id2 ("T", loc);
+          ast::IdentifierType type (loc, id2);
+          Identifier init ("init", loc);
+          ast::ExpressionList arguments (loc);
+          ast::InstanceDecl instancedecl (loc, identifier, &type, init, &arguments);
           decl::Instance instance (&instancedecl);
           ASSERT (instance.process_declaration (er, symbol_table) == false);
           ASSERT (er.list ().size () == 1);
@@ -83,13 +86,13 @@ scope(decl); {
 
       scenario (not_a_component); {
         unit(process_declaration); {
-          semantic::populate_universe_block (symbol_table);
-          ast::Identifier identifier (1, "i");
-          ast::Identifier id2 (1, "int");
-          ast::IdentifierType type (1, &id2);
-          ast::Identifier init (1, "init");
-          ast::IdentifierList arguments (1);
-          ast::InstanceDecl instancedecl (1, &identifier, &type, &init, &arguments);
+          populate_universe_block (symbol_table);
+          Identifier identifier ("i", loc);
+          Identifier id2 ("int", loc);
+          ast::IdentifierType type (loc, id2);
+          Identifier init ("init", loc);
+          ast::ExpressionList arguments (loc);
+          ast::InstanceDecl instancedecl (loc, identifier, &type, init, &arguments);
           decl::Instance instance (&instancedecl);
           ASSERT (instance.process_declaration (er, symbol_table) == false);
           ASSERT (er.list ().size () == 1);
@@ -99,15 +102,15 @@ scope(decl); {
       scenario (no_initializer); {
         unit(process_declaration); {
           type::Component mycomp (NULL, loc);
-          type::NamedType mytype ("mytype", loc, &mycomp);
+          type::NamedType mytype (Identifier ("mytype", loc), &mycomp);
           symbol_table.enter_symbol (&mytype);
 
-          ast::Identifier identifier (1, "i");
-          ast::Identifier id2 (1, "mytype");
-          ast::IdentifierType type (1, &id2);
-          ast::Identifier init (1, "init");
-          ast::IdentifierList arguments (1);
-          ast::InstanceDecl instancedecl (1, &identifier, &type, &init, &arguments);
+          Identifier identifier ("i", loc);
+          Identifier id2 ("mytype", loc);
+          ast::IdentifierType type (loc, id2);
+          Identifier init ("init", loc);
+          ast::ExpressionList arguments (loc);
+          ast::InstanceDecl instancedecl (loc, identifier, &type, init, &arguments);
           decl::Instance instance (&instancedecl);
           ASSERT (instance.process_declaration (er, symbol_table) == false);
           ASSERT (er.list ().size () == 1);
@@ -117,18 +120,18 @@ scope(decl); {
       scenario (success); {
         unit(process_declaration); {
           type::Component mycomp (NULL, loc);
-          type::NamedType mytype ("mytype", loc, &mycomp);
+          type::NamedType mytype (Identifier ("mytype", loc), &mycomp);
           decl::Initializer initializer (gen_init_decl ("init"), &mytype);
           mytype.insert_initializer (&initializer);
 
           symbol_table.enter_symbol (&mytype);
 
-          ast::Identifier identifier (1, "i");
-          ast::Identifier id2 (1, "mytype");
-          ast::IdentifierType type (1, &id2);
-          ast::Identifier init (1, "init");
-          ast::IdentifierList arguments (1);
-          ast::InstanceDecl instancedecl (1, &identifier, &type, &init, &arguments);
+          Identifier identifier ("i", loc);
+          Identifier id2 ("mytype", loc);
+          ast::IdentifierType type (loc, id2);
+          Identifier init ("init", loc);
+          ast::ExpressionList arguments (loc);
+          ast::InstanceDecl instancedecl (loc, identifier, &type, init, &arguments);
           decl::Instance instance (&instancedecl);
           ASSERT (instance.process_declaration (er, symbol_table) == true);
           ASSERT (er.list ().size () == 0);
@@ -144,11 +147,11 @@ scope(decl); {
 
     scenario(make); {
 
-      Parameter* symbol = Parameter::make (loc, "name", &named_int, Immutable, Immutable);
+      Parameter* symbol = Parameter::make (Identifier ("name", loc), Immutable, Immutable, &named_int);
 
       unit(make); {
-        ASSERT (symbol->name == "name");
-        ASSERT (symbol->location == loc);
+        ASSERT (symbol->identifier.identifier () == "name");
+        ASSERT (symbol->identifier.location () == loc);
         ASSERT (symbol->type == &named_int);
         ASSERT (symbol->intrinsic_mutability == Immutable);
         ASSERT (symbol->indirection_mutability == Immutable);
@@ -186,8 +189,8 @@ scope(decl); {
         Parameter* dup1 = symbol->duplicate (Mutable);
         Parameter* dup2 = dup1->duplicate (Foreign);
         static_cast<Symbol*> (symbol)->offset (34);
-        ASSERT (dup1->name == "name");
-        ASSERT (dup1->location == loc);
+        ASSERT (dup1->identifier.identifier () == "name");
+        ASSERT (dup1->identifier.location () == loc);
         ASSERT (dup1->type == &named_int);
         ASSERT (dup1->intrinsic_mutability == Immutable);
         ASSERT (dup1->indirection_mutability == Mutable);
@@ -200,9 +203,9 @@ scope(decl); {
     }; off();
 
     unit(make_return); {
-      Parameter* symbol = Parameter::make_return (loc, "name", &named_int, Immutable);
-      ASSERT (symbol->name == "name");
-      ASSERT (symbol->location == loc);
+      Parameter* symbol = Parameter::make_return (Identifier ("name", loc), Immutable, &named_int);
+      ASSERT (symbol->identifier.identifier () == "name");
+      ASSERT (symbol->identifier.location () == loc);
       ASSERT (symbol->type == &named_int);
       ASSERT (symbol->intrinsic_mutability == Mutable);
       ASSERT (symbol->indirection_mutability == Immutable);
@@ -211,11 +214,11 @@ scope(decl); {
 
     scenario(make_receiver); {
 
-      Parameter* symbol = Parameter::make_receiver (loc, "name", &named_int, Immutable, Immutable);
+      Parameter* symbol = Parameter::make_receiver (Identifier ("name", loc), Immutable, Immutable, &named_int);
 
       unit(make_receiver); {
-        ASSERT (symbol->name == "name");
-        ASSERT (symbol->location == loc);
+        ASSERT (symbol->identifier.identifier () == "name");
+        ASSERT (symbol->identifier.location () == loc);
         ASSERT (symbol->type == &named_int);
         ASSERT (symbol->intrinsic_mutability == Immutable);
         ASSERT (symbol->indirection_mutability == Immutable);
@@ -226,8 +229,8 @@ scope(decl); {
         Parameter* dup1 = symbol->duplicate (Mutable);
         Parameter* dup2 = dup1->duplicate (Foreign);
         static_cast<Symbol*> (symbol)->offset (34);
-        ASSERT (dup1->name == "name");
-        ASSERT (dup1->location == loc);
+        ASSERT (dup1->identifier.identifier () == "name");
+        ASSERT (dup1->identifier.location () == loc);
         ASSERT (dup1->type == &named_int);
         ASSERT (dup1->intrinsic_mutability == Immutable);
         ASSERT (dup1->indirection_mutability == Mutable);
@@ -239,9 +242,9 @@ scope(decl); {
     }; off();
 
     unit(is_foreign_safe); {
-      Parameter* safe1_symbol = Parameter::make (loc, "name", &named_int, Immutable, Immutable);
-      Parameter* safe2_symbol = Parameter::make (loc, "name", named_int.get_pointer (), Immutable, Foreign);
-      Parameter* unsafe_symbol = Parameter::make (loc, "name", named_int.get_pointer (), Immutable, Immutable);
+      Parameter* safe1_symbol = Parameter::make (Identifier ("name", loc), Immutable, Immutable, &named_int);
+      Parameter* safe2_symbol = Parameter::make (Identifier ("name", loc), Immutable, Foreign, named_int.get_pointer ());
+      Parameter* unsafe_symbol = Parameter::make (Identifier ("name", loc), Immutable, Immutable, named_int.get_pointer ());
 
       ASSERT (safe1_symbol->is_foreign_safe ());
       ASSERT (safe2_symbol->is_foreign_safe ());
@@ -256,11 +259,11 @@ scope(decl); {
       value.kind = semantic::ExpressionValue::Constant;
       value.type = &named_int;
       value.value.int_value = 37;
-      Constant symbol ("name", loc, value);
+      Constant symbol (Identifier ("name", loc), value);
 
       unit(Constant); {
-        ASSERT (symbol.name == "name");
-        ASSERT (symbol.location == loc);
+        ASSERT (symbol.identifier.identifier () == "name");
+        ASSERT (symbol.identifier.location () == loc);
         ASSERT (symbol.value ().type == &named_int);
         ASSERT (symbol.value ().value.int_value == 37);
       }; off();
@@ -294,13 +297,13 @@ scope(decl); {
 
         scenario(bad_type); {
           unit(process_declaration); {
-            Identifier id1 (1, "not_declared");
-            IdentifierType type (1, &id1);
+            Identifier id1 ("not_declared", loc);
+            IdentifierType type (loc, id1);
             semantic::ExpressionValue val;
             val.kind = semantic::ExpressionValue::Constant;
             val.type = type::UntypedInteger::instance ();
-            Literal expr (1, val);
-            Constant myconst ("myconst", loc, &type, &expr);
+            Literal expr (loc, val);
+            Constant myconst (Identifier ("myconst", loc), &type, &expr);
             ASSERT (myconst.process_declaration(er, symbol_table) == false);
             ASSERT (er.list ().size () == 1);
           }; off();
@@ -308,18 +311,18 @@ scope(decl); {
 
         scenario(not_constant); {
           unit(process_declaration); {
-            semantic::populate_universe_block (symbol_table);
-            Identifier id1 (1, "int");
-            IdentifierType type (1, &id1);
-            ast::Identifier id2 (1, "new");
-            ast::IdentifierExpression idx (1, &id2);
-            ast::ExpressionList args (1);
-            ast::Identifier id3 (1, "int");
-            ast::IdentifierType idtype2 (1, &id3);
-            ast::TypeExpression tex (1, &idtype2);
+            populate_universe_block (symbol_table);
+            Identifier id1 ("int", loc);
+            IdentifierType type (loc, id1);
+            Identifier id2 ("new", loc);
+            ast::IdentifierExpression idx (loc, id2);
+            ast::ExpressionList args (loc);
+            Identifier id3 ("int", loc);
+            ast::IdentifierType idtype2 (loc, id3);
+            ast::TypeExpression tex (loc, &idtype2);
             args.append (&tex);
-            ast::Call node (1, &idx, &args);
-            Constant myconst ("myconst", loc, &type, &node);
+            ast::Call node (loc, &idx, &args);
+            Constant myconst (Identifier ("myconst", loc), &type, &node);
             ASSERT (myconst.process_declaration(er, symbol_table) == false);
             ASSERT (er.list ().size () == 1);
           }; off();
@@ -327,15 +330,15 @@ scope(decl); {
 
         scenario(not_assignable); {
           unit(process_declaration); {
-            semantic::populate_universe_block (symbol_table);
-            Identifier id1 (1, "int");
-            IdentifierType type (1, &id1);
+            populate_universe_block (symbol_table);
+            Identifier id1 ("int", loc);
+            IdentifierType type (loc, id1);
             semantic::ExpressionValue val;
             val.kind = semantic::ExpressionValue::Constant;
             val.type = type::UntypedFloat::instance ();
             val.value.untyped_float_value = 3.5;
-            Literal expr (1, val);
-            Constant myconst ("myconst", loc, &type, &expr);
+            Literal expr (loc, val);
+            Constant myconst (Identifier ("myconst", loc), &type, &expr);
             ASSERT (myconst.process_declaration(er, symbol_table) == false);
             ASSERT (er.list ().size () == 1);
           }; off();
@@ -343,15 +346,15 @@ scope(decl); {
 
         scenario(sucess); {
           unit(process_declaration); {
-            semantic::populate_universe_block (symbol_table);
-            Identifier id1 (1, "int");
-            IdentifierType type (1, &id1);
+            populate_universe_block (symbol_table);
+            Identifier id1 ("int", loc);
+            IdentifierType type (loc, id1);
             semantic::ExpressionValue val;
             val.kind = semantic::ExpressionValue::Constant;
             val.type = type::UntypedFloat::instance ();
             val.value.untyped_float_value = 1.0;
-            Literal expr (1, val);
-            Constant myconst ("myconst", loc, &type, &expr);
+            Literal expr (loc, val);
+            Constant myconst (Identifier ("myconst", loc), &type, &expr);
             ASSERT (myconst.process_declaration(er, symbol_table) == true);
             ASSERT (er.list ().size () == 0);
             ASSERT (myconst.value ().type == &type::named_int);
@@ -366,17 +369,17 @@ scope(decl); {
 
         scenario(not_constant); {
           unit(process_declaration); {
-            semantic::populate_universe_block (symbol_table);
-            EmptyType type (1);
-            ast::Identifier id2 (1, "new");
-            ast::IdentifierExpression idx (1, &id2);
-            ast::ExpressionList args (1);
-            ast::Identifier id3 (1, "int");
-            ast::IdentifierType idtype2 (1, &id3);
-            ast::TypeExpression tex (1, &idtype2);
+            populate_universe_block (symbol_table);
+            EmptyType type (loc);
+            Identifier id2 ("new", loc);
+            ast::IdentifierExpression idx (loc, id2);
+            ast::ExpressionList args (loc);
+            Identifier id3 ("int", loc);
+            ast::IdentifierType idtype2 (loc, id3);
+            ast::TypeExpression tex (loc, &idtype2);
             args.append (&tex);
-            ast::Call node (1, &idx, &args);
-            Constant myconst ("myconst", loc, &type, &node);
+            ast::Call node (loc, &idx, &args);
+            Constant myconst (Identifier ("myconst", loc), &type, &node);
             ASSERT (myconst.process_declaration(er, symbol_table) == false);
             ASSERT (er.list ().size () == 1);
           }; off();
@@ -384,13 +387,13 @@ scope(decl); {
 
         scenario(sucess); {
           unit(process_declaration); {
-            EmptyType type (1);
+            EmptyType type (loc);
             semantic::ExpressionValue val;
             val.kind = semantic::ExpressionValue::Constant;
             val.type = type::UntypedFloat::instance ();
             val.value.untyped_float_value = 37.5;
-            Literal expr (1, val);
-            Constant myconst ("myconst", loc, &type, &expr);
+            Literal expr (loc, val);
+            Constant myconst (Identifier ("myconst", loc), &type, &expr);
             ASSERT (myconst.process_declaration(er, symbol_table) == true);
             ASSERT (er.list ().size () == 0);
             ASSERT (myconst.value ().type == type::UntypedFloat::instance ());
@@ -405,12 +408,12 @@ scope(decl); {
   }; off();
 
   scope(Variable); {
-    Variable symbol ("name", loc, &named_int, Immutable, Immutable);
+    Variable symbol (Identifier ("name", loc), Immutable, Immutable, &named_int);
     static_cast<Symbol&> (symbol).offset (53);
 
     unit(Variable); {
-      ASSERT (symbol.name == "name");
-      ASSERT (symbol.location == loc);
+      ASSERT (symbol.identifier.identifier () == "name");
+      ASSERT (symbol.identifier.location () == loc);
       ASSERT (symbol.type == &named_int);
       ASSERT (symbol.intrinsic_mutability == Immutable);
       ASSERT (symbol.indirection_mutability == Immutable);
@@ -418,8 +421,8 @@ scope(decl); {
 
     unit(duplicate); {
       Variable* dup = symbol.duplicate ();
-      ASSERT (dup->name == "name");
-      ASSERT (dup->location == loc);
+      ASSERT (dup->identifier.identifier () == "name");
+      ASSERT (dup->identifier.location () == loc);
       ASSERT (dup->type == &named_int);
       ASSERT (dup->intrinsic_mutability == Foreign);
       ASSERT (dup->indirection_mutability == Foreign);
@@ -450,12 +453,12 @@ scope(decl); {
   }; off();
 
   scope(Hidden); {
-    Variable var ("name", loc, &named_int, Immutable, Immutable);
-    Hidden symbol (&var, loc);
+    Variable var (Identifier ("name", loc), Immutable, Immutable, &named_int);
+    Hidden symbol (&var);
 
     unit(Hidden); {
-      ASSERT (symbol.name == "name");
-      ASSERT (symbol.location == loc);
+      ASSERT (symbol.identifier.identifier () == "name");
+      ASSERT (symbol.identifier.location () == loc);
     }; off();
 
     scenario(SymbolVisitor); {
@@ -484,12 +487,12 @@ scope(decl); {
 
   scope(Field); {
     Struct s;
-    Package p;
-    Field symbol (&s, &p, false, "name", loc, &type::named_int, TagSet ());
+    source::Package p;
+    Field symbol (&s, &p, false, Identifier ("name", loc), &type::named_int, TagSet ());
 
     unit(Field); {
-      ASSERT (symbol.name == "name");
-      ASSERT (symbol.location == loc);
+      ASSERT (symbol.identifier.identifier () == "name");
+      ASSERT (symbol.identifier.location () == loc);
       ASSERT (symbol.m_struct == &s);
       ASSERT (symbol.package == &p);
       ASSERT (symbol.is_anonymous == false);
@@ -526,10 +529,10 @@ scope(decl); {
     scenario(undefined); {
 
       unit(process_declaration); {
-        EmptyType type (1);
-        Identifier id (1, "not_defined");
-        IdentifierExpression idex (1, &id);
-        Constant symbol ("name", loc, &type, &idex);
+        EmptyType type (loc);
+        Identifier id ("not_defined", loc);
+        IdentifierExpression idex (loc, id);
+        Constant symbol (Identifier ("name", loc), &type, &idex);
         ASSERT (symbol.process_declaration (er, symbol_table) == false);
         ASSERT (er.list ().size () != 0);
       }; off();
@@ -539,10 +542,10 @@ scope(decl); {
     scenario(recursively_defined); {
 
       unit(process_declaration); {
-        EmptyType type (1);
-        Identifier id (1, "name");
-        IdentifierExpression idex (1, &id);
-        Constant symbol ("name", loc, &type, &idex);
+        EmptyType type (loc);
+        Identifier id ("name", loc);
+        IdentifierExpression idex (loc, id);
+        Constant symbol (Identifier ("name", loc), &type, &idex);
         symbol_table.enter_symbol (&symbol);
         ASSERT (symbol.process_declaration (er, symbol_table) == false);
         ASSERT (er.list ().size () != 0);
@@ -553,10 +556,10 @@ scope(decl); {
     scenario(still_undefined); {
 
       unit(process_declaration); {
-        EmptyType type (1);
-        Identifier id (1, "not_defined");
-        IdentifierExpression idex (1, &id);
-        Constant symbol ("name", loc, &type, &idex);
+        EmptyType type (loc);
+        Identifier id ("not_defined", loc);
+        IdentifierExpression idex (loc, id);
+        Constant symbol (Identifier ("name", loc), &type, &idex);
         ASSERT (symbol.process_declaration (er, symbol_table) == false);
         ASSERT (symbol.process_declaration (er, symbol_table) == false);
       }; off();

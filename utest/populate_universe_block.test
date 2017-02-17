@@ -1,10 +1,10 @@
 /* -*- c++ -*- */
 #include "unit_test.hpp"
 #include "scope.hpp"
-#include "semantic.hpp"
+#include "decl.hpp"
 #include "symbol_table.hpp"
 
-using namespace semantic;
+using namespace decl;
 
 scope(semantic); {
   unit(populate_universe_block); {

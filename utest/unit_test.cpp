@@ -84,9 +84,8 @@ struct UnitTesterImpl : public UnitTester
     y.first->second.push_back (func);
   }
 
-  int run_tests (bool dry_run)
+  void run_tests (bool dry_run)
   {
-    int retval = EXIT_SUCCESS;
     size_t test_number = 0;
 
     // Produce TAP output.  Can change this to a more useful format later.
@@ -101,29 +100,36 @@ struct UnitTesterImpl : public UnitTester
           {
             scenarios_ = std::accumulate (p->second.begin (), p->second.end (), std::string (), comma_joiner ());
           }
-        test_fail_ = false;
+        test_status_ = PASS;
         ++test_number;
         if (!dry_run)
           {
             (pos->first) ();
           }
-        if (test_fail_)
+        switch (test_status_)
           {
-            std::cout << "not ok " << test_number << " - " << unit_ << " scenarios=" << scenarios_ << "\n";
-            retval = EXIT_FAILURE;
-          }
-        else
-          {
+          case PASS:
             std::cout << "ok " << test_number << " - " << unit_ << " scenarios=" << scenarios_ << "\n";
+            break;
+          case SKIP:
+            std::cout << "ok " << test_number << " - " << unit_ << " scenarios=" << scenarios_ << " # SKIP\n";
+            break;
+          case XFAIL:
+            std::cout << "ok " << test_number << " - " << unit_ << " scenarios=" << scenarios_ << " # TODO\n";
+          case FAIL:
+            std::cout << "not ok " << test_number << " - " << unit_ << " scenarios=" << scenarios_ << "\n";
+            break;
+          case XPASS:
+            // TODO:  Handle this.
+            std::cout << "not ok " << test_number << " - " << unit_ << " scenarios=" << scenarios_ << "\n";
+            break;
           }
       }
 
     std::cout << "1.." << test_number << '\n';
-
-    return retval;
   }
 
-  int run_tests (bool dry_run, Tree* tree)
+  void run_tests (bool dry_run, Tree* tree)
   {
     // First, sort and remove duplicates.
     for (FuncToScenariosMapType::iterator pos = func_to_scenarios_.begin (),
@@ -163,7 +169,6 @@ struct UnitTesterImpl : public UnitTester
     evaluate (tree, x);
 
     // Create indexes.
-    int retval = EXIT_SUCCESS;
     size_t test_number = 0;
 
     // Produce TAP output.  Can change this to a more useful format later.
@@ -178,32 +183,47 @@ struct UnitTesterImpl : public UnitTester
           {
             scenarios_ = std::accumulate (p->second.begin (), p->second.end (), std::string (), comma_joiner ());
           }
-        test_fail_ = false;
+        test_status_ = PASS;
         ++test_number;
         if (!dry_run)
           {
             (*pos) ();
           }
-        if (test_fail_)
+        switch (test_status_)
           {
-            std::cout << "not ok " << test_number << " - " << unit_ << " scenarios=" << scenarios_ << "\n";
-            retval = EXIT_FAILURE;
-          }
-        else
-          {
+          case PASS:
             std::cout << "ok " << test_number << " - " << unit_ << " scenarios=" << scenarios_ << "\n";
+            break;
+          case SKIP:
+            std::cout << "ok " << test_number << " - " << unit_ << " scenarios=" << scenarios_ << " # SKIP\n";
+            break;
+          case XFAIL:
+            std::cout << "ok " << test_number << " - " << unit_ << " scenarios=" << scenarios_ << " # TODO\n";
+          case FAIL:
+            std::cout << "not ok " << test_number << " - " << unit_ << " scenarios=" << scenarios_ << "\n";
+            break;
+          case XPASS:
+            // TODO:  Handle this.
+            std::cout << "not ok " << test_number << " - " << unit_ << " scenarios=" << scenarios_ << "\n";
+            break;
           }
       }
 
     std::cout << "1.." << test_number << '\n';
-
-    return retval;
   }
 
-  void error (const char* condition, const char* file, int line)
+  void failed_assertion (const char* condition, const char* file, int line)
   {
     std::cout << file << ':' << line << ": assertion failed: " << condition << " (unit=" << unit_ << ",scenarios=" << scenarios_ << ")\n";
-    test_fail_ = true;
+    if (test_status_ != SKIP)
+      {
+        test_status_ = FAIL;
+      }
+  }
+
+  void skip (const char* file, int line)
+  {
+    test_status_ = SKIP;
   }
 
   // Determine the maximum number of results for a tree.
@@ -408,7 +428,16 @@ struct UnitTesterImpl : public UnitTester
 
   std::string unit_;
   std::string scenarios_;
-  bool test_fail_;
+
+  enum TestStatus
+  {
+    PASS,
+    SKIP,
+    XFAIL,
+    FAIL,
+    XPASS,
+  };
+  TestStatus test_status_;
 };
 
 UnitTester* UnitTester::impl ()
@@ -615,13 +644,15 @@ int main (int argc, char** argv)
   if (optind == argc)
     {
       // Run all tests.
-      return UnitTester::impl ()->run_tests (dry_run);
+      UnitTester::impl ()->run_tests (dry_run);
+      exit (EXIT_SUCCESS);
     }
   else if (optind + 1 == argc)
     {
       const char* pos = argv[optind];
       Tree* t = parse_root_expression (pos, pos + strlen (argv[optind]));
-      return UnitTester::impl ()->run_tests (dry_run, t);
+      UnitTester::impl ()->run_tests (dry_run, t);
+      exit (EXIT_SUCCESS);
     }
   else
     {

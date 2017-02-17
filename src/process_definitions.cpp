@@ -19,7 +19,7 @@ type_check_statement (Node * node)
   {
     void default_action (Node& node)
     {
-      AST_NOT_REACHED (node);
+      NODE_NOT_REACHED (node);
     }
 
     void visit (BindPullPort& node)

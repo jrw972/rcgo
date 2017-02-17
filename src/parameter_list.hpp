@@ -13,7 +13,7 @@ struct ParameterList
   typedef ParametersType::const_iterator const_iterator;
   typedef ParametersType::const_reverse_iterator const_reverse_iterator;
 
-  ParameterList (const util::Location& loc);
+  ParameterList (const source::Location& loc);
   size_t size () const;
   bool empty () const;
   Parameter* at (size_t idx) const;
@@ -29,7 +29,7 @@ struct ParameterList
   void print (std::ostream& out = std::cout) const;
   std::string to_string () const;
 
-  util::Location const location;
+  source::Location const location;
 
 private:
   ParametersType parameters_;

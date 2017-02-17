@@ -7,9 +7,6 @@
 #include <cassert>
 
 #include "config.h"
-#include "scanner.hpp"
-#include "yyparse.hpp"
-#include "parser.hpp"
 #include "debug.hpp"
 #include "runtime.hpp"
 #include "arch.hpp"
@@ -21,6 +18,10 @@
 #include "scope.hpp"
 #include "error_reporter.hpp"
 #include "symbol_table.hpp"
+#include "package_set.hpp"
+#include "topological_sort.hpp"
+#include "package.hpp"
+#include "source_file.hpp"
 
 static void
 print_version (void)
@@ -50,14 +51,29 @@ int
 main (int argc, char **argv)
 {
   int show_composition = 0;
+  // TODO:  Get the number of cores from the system.
   int thread_count = 2;
   std::string scheduler_type = "partitioned";
   // Profile stores the number of points to record per thread.
   // It must be a power of two.  This makes the ring buffer index calculation easier because the modulus can be replaced by bit-and.
   size_t profile = 0;
   FILE* profile_out = stderr;
+  std::string rcgo_root;
+  const char* s;
 
-  const char* s = getenv ("RC_SCHEDULER");
+  s = getenv ("RCGO_ROOT");
+  if (s == NULL)
+    {
+      error (EXIT_FAILURE, 0, "RCGO_ROOT is not set");
+    }
+  rcgo_root = s;
+
+  while (rcgo_root[rcgo_root.size () - 1] == '/')
+    {
+      rcgo_root = rcgo_root.substr (0, rcgo_root.size () - 1);
+    }
+
+  s = getenv ("RCGO_SCHEDULER");
   if (s != NULL)
     {
       scheduler_type = s;
@@ -93,13 +109,14 @@ main (int argc, char **argv)
         case 'h':
           std::cout << "Usage: " << program_invocation_short_name << " OPTION... FILE\n"
                     <<
-                    "Compile " PACKAGE_NAME " source code.\n"
+                    PACKAGE_NAME "\n"
                     "\n"
                     "  --composition       print composition analysis and exit\n"
                     "  --scheduler=SCHED   select a scheduler (instance, partitioned)\n"
                     "  --threads=NUM       use NUM threads\n"
                     "  --srand=NUM         initialize the random number generator with NUM\n"
-                    "  --profile[=SIZE]    enable profiling and store at least SIZE points per thread when profiling (4096)\n"
+                    "  --profile[=SIZE]    enable profiling and store at least SIZE points per thread\n"
+                    "                      when profiling (4096)\n"
                     "  --profile-out=FILE  write profiling data to FILE (stderr)\n"
                     "  -h, --help          display this help and exit\n"
                     "  -v, --version       display version information and exit\n"
@@ -145,12 +162,7 @@ main (int argc, char **argv)
         }
     }
 
-  if (optind + 1 != argc)
-    {
-      std::cerr << "No input file\n";
-      try_help ();
-    }
-
+  // TODO:  Check if thread count exceeds cores.
   if (thread_count < 0 || thread_count > 64)
     {
       error (EXIT_FAILURE, 0, "Illegal thread count: %d", thread_count);
@@ -181,27 +193,23 @@ main (int argc, char **argv)
       fprintf (profile_out, "BEGIN parse %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
     }
 
-  util::Location::static_file = argv[optind];
-
-  // Open the input file.
-  yyin = fopen (util::Location::static_file.c_str (), "r");
-  if (yyin == NULL)
+  source::PackageSet package_set;
+  for (; optind != argc; ++optind)
     {
-      error (EXIT_FAILURE, errno, "Could not open '%s'", util::Location::static_file.c_str ());
+      package_set.load (rcgo_root, argv[optind]);
     }
-
-  yylloc = 1;
-  if (yyparse () != 0)
-    {
-      error (EXIT_FAILURE, 0, "yyparse failed");
-    }
-  assert (root != NULL);
 
   if (profile)
     {
       struct timespec res;
       clock_gettime (CLOCK_MONOTONIC, &res);
       fprintf (profile_out, "END parse %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+    }
+
+  if (package_set.empty ())
+    {
+      std::cerr << "No packages\n";
+      try_help ();
     }
 
   if (profile)
@@ -211,157 +219,148 @@ main (int argc, char **argv)
       fprintf (profile_out, "BEGIN semantic_analysis %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
     }
 
+  // Sort the package topologically.
+  // TODO:  Check for error.
+  util::topological_sort (package_set.packages_begin (), package_set.packages_end ());
+
+  // TODO:  When do we need to set this?
   arch::set_stack_alignment (sizeof (void*));
 
   util::ErrorReporter er (3);
-  decl::SymbolTable symbol_table;
 
-  symbol_table.open_scope ();
-  semantic::populate_universe_block (symbol_table);
+  package_set.determine_package_names (er);
+  package_set.process_symbols (er);
 
-  // Populate the package scope with constants, types, functions, and instances.
-  symbol_table.open_scope ();
-  semantic::enter_identifiers (root, er, symbol_table, true);
+  // // A cycle means there is a recursive definition.
 
-  // Populate the file scope with constants, types, functions, and instances.
-  symbol_table.open_scope ();
-  semantic::enter_identifiers (root, er, symbol_table, false);
+  // // Process the definitions in topological order.
 
-  // Enter method-like identifiers into the named types.
-  semantic::enter_method_identifiers (root, er, symbol_table);
+  // // Process all top-level declarations.
+  // // This includes constants, types, functions, methods, initializers, getters,
+  // // actions, reactions, binders, and instances.
+  // semantic::process_top_level_declarations (root, er, symbol_table);
 
-  // Build a digraph of which symbols depend on other symbols.
+  // // Establish a type for every expression and values for constant expressions.
+  // // Check for rvalues and lvalues and determine where a dereference is needed.
+  // // Characterize the mutability of each expression and check for const-correctness.
+  // // Characterize how activations use the state of the receiver.
 
-  // A cycle means there is a recursive definition.
+  // semantic::check_all (root, er, symbol_table);
+  // semantic::compute_receiver_access (root);
 
-  // Process the definitions in topological order.
+  // if (profile)
+  //   {
+  //     struct timespec res;
+  //     clock_gettime (CLOCK_MONOTONIC, &res);
+  //     fprintf (profile_out, "END semantic_analysis %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  //   }
 
-  // Process all top-level declarations.
-  // This includes constants, types, functions, methods, initializers, getters,
-  // actions, reactions, binders, and instances.
-  semantic::process_top_level_declarations (root, er, symbol_table);
+  // if (profile)
+  //   {
+  //     struct timespec res;
+  //     clock_gettime (CLOCK_MONOTONIC, &res);
+  //     fprintf (profile_out, "BEGIN code_generation %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  //   }
 
-  // Establish a type for every expression and values for constant expressions.
-  // Check for rvalues and lvalues and determine where a dereference is needed.
-  // Characterize the mutability of each expression and check for const-correctness.
-  // Characterize how activations use the state of the receiver.
+  // // Calculate the offsets of all stack variables.
+  // // TODO:  Allocate and generate code after composition check.
+  // // Do this so we can execute some code statically when checking composition.
+  // code::allocate_stack_variables (root);
 
-  semantic::check_all (root, er, symbol_table);
-  semantic::compute_receiver_access (root);
+  // // Generate code.
+  // code::generate_code (root);
 
-  if (profile)
-    {
-      struct timespec res;
-      clock_gettime (CLOCK_MONOTONIC, &res);
-      fprintf (profile_out, "END semantic_analysis %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-    }
+  // if (profile)
+  //   {
+  //     struct timespec res;
+  //     clock_gettime (CLOCK_MONOTONIC, &res);
+  //     fprintf (profile_out, "END code_generation %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  //   }
 
-  if (profile)
-    {
-      struct timespec res;
-      clock_gettime (CLOCK_MONOTONIC, &res);
-      fprintf (profile_out, "BEGIN code_generation %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-    }
+  // if (profile)
+  //   {
+  //     struct timespec res;
+  //     clock_gettime (CLOCK_MONOTONIC, &res);
+  //     fprintf (profile_out, "BEGIN composition_check %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  //   }
 
-  // Calculate the offsets of all stack variables.
-  // TODO:  Allocate and generate code after composition check.
-  // Do this so we can execute some code statically when checking composition.
-  code::allocate_stack_variables (root);
+  // // Check composition.
+  // composition::Composer instance_table;
+  // instance_table.enumerate_instances (root);
+  // instance_table.elaborate ();
+  // if (show_composition)
+  //   {
+  //     instance_table.dump_graphviz ();
+  //     return 0;
+  //   }
+  // instance_table.analyze ();
 
-  // Generate code.
-  code::generate_code (root);
+  // if (profile)
+  //   {
+  //     struct timespec res;
+  //     clock_gettime (CLOCK_MONOTONIC, &res);
+  //     fprintf (profile_out, "END composition_check %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  //   }
 
-  if (profile)
-    {
-      struct timespec res;
-      clock_gettime (CLOCK_MONOTONIC, &res);
-      fprintf (profile_out, "END code_generation %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-    }
+  // if (profile)
+  //   {
+  //     struct timespec res;
+  //     clock_gettime (CLOCK_MONOTONIC, &res);
+  //     fprintf (profile_out, "BEGIN scheduler_init %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  //   }
 
-  if (profile)
-    {
-      struct timespec res;
-      clock_gettime (CLOCK_MONOTONIC, &res);
-      fprintf (profile_out, "BEGIN composition_check %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-    }
+  // runtime::allocate_instances (instance_table);
+  // runtime::create_bindings (instance_table);
 
-  // Check composition.
-  composition::Composer instance_table;
-  instance_table.enumerate_instances (root);
-  instance_table.elaborate ();
-  if (show_composition)
-    {
-      instance_table.dump_graphviz ();
-      return 0;
-    }
-  instance_table.analyze ();
+  // runtime::Scheduler* scheduler;
+  // if (scheduler_type == "partitioned")
+  //   {
+  //     scheduler = new runtime::partitioned_scheduler_t ();
+  //   }
+  // else if (scheduler_type == "instance")
+  //   {
+  //     scheduler = new runtime::instance_scheduler_t ();
+  //   }
+  // else
+  //   {
+  //     error (EXIT_FAILURE, 0, "unknown scheduler type '%s'", scheduler_type.c_str ());
+  //   }
 
-  if (profile)
-    {
-      struct timespec res;
-      clock_gettime (CLOCK_MONOTONIC, &res);
-      fprintf (profile_out, "END composition_check %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-    }
+  // scheduler->init (instance_table, 8 * 1024, thread_count, profile);
 
-  if (profile)
-    {
-      struct timespec res;
-      clock_gettime (CLOCK_MONOTONIC, &res);
-      fprintf (profile_out, "BEGIN scheduler_init %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-    }
+  // if (profile)
+  //   {
+  //     struct timespec res;
+  //     clock_gettime (CLOCK_MONOTONIC, &res);
+  //     fprintf (profile_out, "END scheduler_init %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
+  //   }
 
-  runtime::allocate_instances (instance_table);
-  runtime::create_bindings (instance_table);
+  // if (profile)
+  //   {
+  //     struct rusage usage;
+  //     getrusage (RUSAGE_SELF, &usage);
+  //     struct timespec res;
+  //     clock_gettime (CLOCK_MONOTONIC, &res);
+  //     fprintf (profile_out, "BEGIN scheduler_run %ld.%.09ld %ld %ld\n", res.tv_sec, res.tv_nsec, usage.ru_nvcsw, usage.ru_nivcsw);
+  //   }
 
-  runtime::Scheduler* scheduler;
-  if (scheduler_type == "partitioned")
-    {
-      scheduler = new runtime::partitioned_scheduler_t ();
-    }
-  else if (scheduler_type == "instance")
-    {
-      scheduler = new runtime::instance_scheduler_t ();
-    }
-  else
-    {
-      error (EXIT_FAILURE, 0, "unknown scheduler type '%s'", scheduler_type.c_str ());
-    }
+  // scheduler->run ();
 
-  scheduler->init (instance_table, 8 * 1024, thread_count, profile);
+  // if (profile)
+  //   {
+  //     struct timespec res;
+  //     clock_gettime (CLOCK_MONOTONIC, &res);
+  //     struct rusage usage;
+  //     getrusage (RUSAGE_SELF, &usage);
+  //     fprintf (profile_out, "END scheduler_run %ld.%.09ld %ld %ld\n", res.tv_sec, res.tv_nsec, usage.ru_nvcsw, usage.ru_nivcsw);
+  //   }
 
-  if (profile)
-    {
-      struct timespec res;
-      clock_gettime (CLOCK_MONOTONIC, &res);
-      fprintf (profile_out, "END scheduler_init %ld.%.09ld\n", res.tv_sec, res.tv_nsec);
-    }
+  // scheduler->fini (profile_out);
 
-  if (profile)
-    {
-      struct rusage usage;
-      getrusage (RUSAGE_SELF, &usage);
-      struct timespec res;
-      clock_gettime (CLOCK_MONOTONIC, &res);
-      fprintf (profile_out, "BEGIN scheduler_run %ld.%.09ld %ld %ld\n", res.tv_sec, res.tv_nsec, usage.ru_nvcsw, usage.ru_nivcsw);
-    }
-
-  scheduler->run ();
-
-  if (profile)
-    {
-      struct timespec res;
-      clock_gettime (CLOCK_MONOTONIC, &res);
-      struct rusage usage;
-      getrusage (RUSAGE_SELF, &usage);
-      fprintf (profile_out, "END scheduler_run %ld.%.09ld %ld %ld\n", res.tv_sec, res.tv_nsec, usage.ru_nvcsw, usage.ru_nivcsw);
-    }
-
-  scheduler->fini (profile_out);
-
-  if (profile)
-    {
-      fprintf (profile_out, "END profile\n");
-    }
+  // if (profile)
+  //   {
+  //     fprintf (profile_out, "END profile\n");
+  //   }
 
   return 0;
 }

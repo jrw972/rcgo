@@ -3,7 +3,12 @@
 
 #include "types.hpp"
 
+typedef void* yyscan_t;
+
 #define YYLTYPE size_t
+
+#define YY_DECL int yylex \
+  (YYSTYPE * yylval_param, YYLTYPE * yylloc_param, yyscan_t yyscanner, const source::SourceFile* source_file)
 
 #define YYLLOC_DEFAULT(Current, Rhs, N)                                \
     do                                                                  \
@@ -17,9 +22,6 @@
         }                                                               \
     while (0)
 
-extern ast::Node* root;
-
-int yyparse (void);
-void yyerror (char const *);
+void yyerror (YYLTYPE* loc, yyscan_t scanner, source::SourceFile* source_file, char const * message);
 
 #endif // RC_SRC_YYPARSE_HPP

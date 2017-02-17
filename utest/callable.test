@@ -10,11 +10,13 @@
 #include "scope.hpp"
 #include "astgen.hpp"
 #include "symbol_table.hpp"
+#include "identifier.hpp"
 
 using namespace decl;
+using namespace source;
 
 scope(decl); {
-  util::Location loc;
+  Location loc (Location::builtin);
   util::ErrorReporter er;
   decl::SymbolTable symbol_table;
 
@@ -22,7 +24,7 @@ scope(decl); {
     Function func (gen_function_decl ("name"));
 
     unit(Function); {
-      ASSERT (func.name == "name");
+      ASSERT (func.identifier.identifier () == "name");
       ASSERT (func.type == NULL);
       ASSERT (func.operation == NULL);
     }; off();
@@ -62,7 +64,7 @@ scope(decl); {
       func.process_declaration (er, symbol_table);
 
       unit(check); {
-        func.check (new ast::ExpressionList (1));
+        func.check (new ast::ExpressionList (loc));
         ReceiverAccess ra;
         bool flag;
         func.compute_receiver_access (semantic::ExpressionValueList (), ra, flag);
@@ -80,11 +82,11 @@ scope(decl); {
   }; off();
 
   scope(Method); {
-    type::NamedType x ("mytype", loc, &type::named_int);
+    type::NamedType x (Identifier ("mytype", loc), &type::named_int);
     Method meth (gen_method_decl ("name"), &x);
 
     unit(Method); {
-      ASSERT (meth.name == "name");
+      ASSERT (meth.identifier.identifier () == "name");
       ASSERT (meth.type == NULL);
       ASSERT (meth.operation == NULL);
     }; off();
@@ -124,7 +126,7 @@ scope(decl); {
       meth.process_declaration (er, symbol_table);
 
       unit(check); {
-        meth.check (new ast::ExpressionList (1));
+        meth.check (new ast::ExpressionList (loc));
         ReceiverAccess ra;
         bool flag;
         meth.compute_receiver_access (semantic::ExpressionValueList (), ra, flag);
@@ -142,11 +144,11 @@ scope(decl); {
   }; off();
 
   scope(Initializer); {
-    type::NamedType x ("mytype", loc, &type::named_int);
+    type::NamedType x (Identifier ("mytype", loc), &type::named_int);
     Initializer initializer (gen_init_decl ("name"), &x);
 
     unit(Initializer); {
-      ASSERT (initializer.name == "name");
+      ASSERT (initializer.identifier.identifier () == "name");
       ASSERT (initializer.type == NULL);
       ASSERT (initializer.operation == NULL);
     }; off();
@@ -162,11 +164,11 @@ scope(decl); {
   }; off();
 
   scope(Getter); {
-    type::NamedType x ("mytype", loc, &type::named_int);
+    type::NamedType x (Identifier ("mytype", loc), &type::named_int);
     Getter getter (gen_getter_decl ("name"), &x);
 
     unit(Getter); {
-      ASSERT (getter.name == "name");
+      ASSERT (getter.identifier.identifier () == "name");
       ASSERT (getter.type == NULL);
       ASSERT (getter.operation == NULL);
     }; off();
@@ -185,9 +187,9 @@ scope(decl); {
   scope(Action); {
 
     unit(Action); {
-      type::NamedType x ("mytype", loc, &type::named_int);
+      type::NamedType x (Identifier ("mytype", loc), &type::named_int);
       Action action (gen_action_decl ("name"), &x);
-      ASSERT (action.name == "name");
+      ASSERT (action.identifier.identifier () == "name");
       ASSERT (action.type == NULL);
       ASSERT (action.operation == NULL);
       ASSERT (action.receiver_parameter () == NULL);
@@ -197,7 +199,7 @@ scope(decl); {
 
     scenario(normal); {
       unit(process_declaration); {
-        type::NamedType x ("mytype", loc, &type::named_int);
+        type::NamedType x (Identifier ("mytype", loc), &type::named_int);
         Action action (gen_action_decl ("name"), &x);
         ASSERT (action.process_declaration (er, symbol_table) == true);
         ASSERT (action.state () == Symbol::Defined);
@@ -209,7 +211,7 @@ scope(decl); {
 
     scenario(dimensioned); {
       unit(process_declaration); {
-        type::NamedType x ("mytype", loc, &type::named_int);
+        type::NamedType x (Identifier ("mytype", loc), &type::named_int);
         Action action (gen_action_decl ("name", 5), &x);
         ASSERT (action.process_declaration (er, symbol_table) == true);
         ASSERT (action.state () == Symbol::Defined);
@@ -223,10 +225,10 @@ scope(decl); {
 
   scope(Reaction); {
     unit(Reaction); {
-      type::NamedType x ("mytype", loc, &type::named_int);
+      type::NamedType x (Identifier ("mytype", loc), &type::named_int);
       decl::Reaction reaction (gen_reaction_decl ("name"), &x);
       ASSERT (reaction.operation == NULL);
-      ASSERT (reaction.name == "name");
+      ASSERT (reaction.identifier.identifier () == "name");
       ASSERT (reaction.iota () == NULL);
       ASSERT (reaction.type == NULL);
       ASSERT (reaction.dimension () == -1);
@@ -234,7 +236,7 @@ scope(decl); {
 
     scenario(normal); {
       unit(process_declaration); {
-        type::NamedType x ("mytype", loc, &type::named_int);
+        type::NamedType x (Identifier ("mytype", loc), &type::named_int);
         decl::Reaction reaction (gen_reaction_decl ("name"), &x);
         ASSERT (reaction.process_declaration (er, symbol_table) == true);
         ASSERT (reaction.state () == Symbol::Defined);
@@ -248,7 +250,7 @@ scope(decl); {
 
     scenario(dimensioned); {
       unit(process_declaration); {
-        type::NamedType x ("mytype", loc, &type::named_int);
+        type::NamedType x (Identifier ("mytype", loc), &type::named_int);
         Reaction reaction (gen_reaction_decl ("name", 5), &x);
         ASSERT (reaction.process_declaration (er, symbol_table) == true);
         ASSERT (reaction.state () == Symbol::Defined);
@@ -263,11 +265,11 @@ scope(decl); {
   }; off();
 
   scope(Bind); {
-    type::NamedType x ("mytype", loc, &type::named_int);
+    type::NamedType x (Identifier ("mytype", loc), &type::named_int);
     decl::Bind bind (gen_bind_decl ("name"), &x);
     unit(Bind); {
       ASSERT (bind.operation == NULL);
-      ASSERT (bind.name == "name");
+      ASSERT (bind.identifier.identifier () == "name");
       ASSERT (bind.type == NULL);
       ASSERT (bind.receiver_parameter () == NULL);
     }; off();

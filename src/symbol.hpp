@@ -4,6 +4,7 @@
 #include "types.hpp"
 #include "location.hpp"
 #include "semantic.hpp"
+#include "identifier.hpp"
 
 namespace decl
 {
@@ -19,7 +20,7 @@ struct Symbol
     Undefined,
   };
 
-  Symbol (const std::string& name, const util::Location& location);
+  Symbol (const source::Identifier& a_identifier);
   virtual ~Symbol ();
   virtual void accept (SymbolVisitor& visitor) = 0;
   virtual void accept (ConstSymbolVisitor& visitor) const = 0;
@@ -28,8 +29,7 @@ struct Symbol
   void offset (ptrdiff_t o);
   virtual ptrdiff_t offset () const;
 
-  std::string const name;
-  util::Location const location;
+  source::Identifier const identifier;
 
 protected:
   State state_;
@@ -43,8 +43,7 @@ private:
 struct Instance : public Symbol
 {
   Instance (ast::InstanceDecl* a_instancedecl);
-  Instance (const std::string& name,
-            const util::Location& location,
+  Instance (const source::Identifier& a_identifier,
             const type::NamedType* type,
             Initializer* initializer);
   virtual void accept (SymbolVisitor& visitor);
@@ -76,24 +75,21 @@ struct Parameter : public Symbol
   };
 
   static Parameter*
-  make (const util::Location& location,
-        const std::string& name,
-        const type::Type* type,
+  make (const source::Identifier& identifier,
         Mutability intrinsic_mutability,
-        Mutability indirection_mutability);
+        Mutability indirection_mutability,
+        const type::Type* type = NULL);
 
   static Parameter*
-  make_return (const util::Location& location,
-               const std::string& name,
-               const type::Type* type,
-               Mutability indirection_mutability);
+  make_return (const source::Identifier& identifier,
+               Mutability indirection_mutability,
+               const type::Type* type = NULL);
 
   static Parameter*
-  make_receiver (const util::Location& location,
-                 const std::string& name,
-                 const type::Type* type,
+  make_receiver (const source::Identifier& identifier,
                  Mutability intrinsic_mutability,
-                 Mutability indirection_mutability);
+                 Mutability indirection_mutability,
+                 const type::Type* type = NULL);
 
   Parameter*
   duplicate (Mutability indirection_mutability);
@@ -108,8 +104,7 @@ struct Parameter : public Symbol
   Mutability indirection_mutability;
   Kind kind;
 private:
-  Parameter (const util::Location& location,
-             const std::string& name,
+  Parameter (const source::Identifier& identifier,
              const type::Type* type,
              Mutability intrinsic_mutability,
              Mutability indirection_mutability,
@@ -120,12 +115,10 @@ private:
 
 struct Constant : public Symbol
 {
-  Constant (const std::string& name,
-            const util::Location& location,
+  Constant (const source::Identifier& identifier,
             ast::Node* a_type_spec,
             ast::Node* a_init);
-  Constant (const std::string& name,
-            const util::Location& location,
+  Constant (const source::Identifier& identifier,
             const semantic::ExpressionValue& ev);
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
@@ -141,11 +134,10 @@ private:
 
 struct Variable : public Symbol
 {
-  Variable (const std::string& name,
-            const util::Location& location,
-            const type::Type* type,
+  Variable (const source::Identifier& identifier,
             Mutability intrinsic_mutability,
-            Mutability indirection_mutability);
+            Mutability indirection_mutability,
+            const type::Type* type = NULL);
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
   virtual ptrdiff_t offset () const;
@@ -160,7 +152,7 @@ private:
 
 struct Hidden : public Symbol
 {
-  Hidden (const Symbol* symbol, const util::Location& location);
+  Hidden (const Symbol* symbol);
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
 };
@@ -168,21 +160,39 @@ struct Hidden : public Symbol
 struct Field : public Symbol
 {
   const type::Struct* const m_struct;
-  decl::Package* const package;
+  source::Package* const package;
   bool const is_anonymous;
   const type::Type* const type;
   type::TagSet const tags;
 
   Field (const type::Struct* a_struct,
-         decl::Package* a_package,
+         source::Package* a_package,
          bool a_is_anonymous,
-         const std::string& a_name,
-         const util::Location& a_location,
+         const source::Identifier& identifier,
          const type::Type* a_type,
          const type::TagSet& a_tags);
   virtual void accept (SymbolVisitor& visitor);
   virtual void accept (ConstSymbolVisitor& visitor) const;
 };
+
+struct Package : public Symbol
+{
+  Package (const source::Identifier& a_identifier, const source::Package* a_package);
+  virtual void accept (SymbolVisitor& visitor);
+  virtual void accept (ConstSymbolVisitor& visitor) const;
+
+  const source::Package* const package;
+};
+
+  struct ImportedSymbol : public Symbol
+  {
+    ImportedSymbol (const source::Identifier& a_identifier, Symbol* a_symbol);
+    virtual void accept (SymbolVisitor& visitor);
+    virtual void accept (ConstSymbolVisitor& visitor) const;
+
+    Symbol* const symbol;
+  };
+
 
 }
 

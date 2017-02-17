@@ -29,7 +29,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 {
   void default_action (Node& node)
   {
-    AST_NOT_REACHED (node);
+    NODE_NOT_REACHED (node);
   }
 
   void visit (AddressOf& node)
@@ -46,16 +46,6 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.eval.receiver_access = node.argument->eval.receiver_access;
   }
 
-  void visit (SourceFile& node)
-  {
-    node.top_level_decl_list->accept (*this);
-  }
-
-  void visit (TopLevelDeclList& node)
-  {
-    node.visit_children (*this);
-  }
-
   void visit (ast::TypeDecl& node)
   {
     // Do nothing.
@@ -66,7 +56,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     // Do nothing.
   }
 
-  void visit (ast::InitDecl& node)
+  void visit (ast::InitializerDecl& node)
   {
     // Do nothing.
   }
@@ -91,7 +81,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.reaction->immutable_phase_access = node.body->eval.receiver_access;
   }
 
-  void visit (ast::BindDecl& node)
+  void visit (ast::BinderDecl& node)
   {
     // Do nothing.
   }
@@ -119,7 +109,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     node.eval.receiver_access = node.child->eval.receiver_access;
   }
 
-  void visit (Var& node)
+  void visit (VarDecl& node)
   {
     node.expressions->accept (*this);
     node.eval.receiver_access = AccessNone;

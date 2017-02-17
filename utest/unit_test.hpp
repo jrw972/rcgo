@@ -10,9 +10,10 @@ struct UnitTester
 {
   virtual void register_test_unit (void (*func) (), const char* name) = 0;
   virtual void register_test_scenario (void (*func) (), const char* name) = 0;
-  virtual int run_tests (bool dry_run) = 0;
-  virtual int run_tests (bool dry_run, Tree* tree) = 0;
-  virtual void error (const char* condition, const char* file, int line) = 0;
+  virtual void run_tests (bool dry_run) = 0;
+  virtual void run_tests (bool dry_run, Tree* tree) = 0;
+  virtual void failed_assertion (const char* condition, const char* file, int line) = 0;
+  virtual void skip (const char* file, int line) = 0;
 
   static UnitTester* impl ();
 };
@@ -33,7 +34,9 @@ struct RegisterTestScenario
   }
 };
 
-#define ASSERT(condition) do { if (!(condition)) { UnitTester::impl ()->error (#condition, __FILE__, __LINE__); } } while (0);
+#define ASSERT(condition) do { if (!(condition)) { UnitTester::impl ()->failed_assertion (#condition, __FILE__, __LINE__); } } while (0);
+
+#define SKIP() do { UnitTester::impl ()->skip (__FILE__, __LINE__); } while (0);
 
 #define ASSERT_NO_ERROR(er) do { ASSERT (er.list ().empty ()); } while (0);
 

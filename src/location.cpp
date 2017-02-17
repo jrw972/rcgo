@@ -1,17 +1,12 @@
 #include "location.hpp"
+#include "source_file.hpp"
 
-namespace util
+namespace source
 {
-std::string Location::static_file;
 
-Location::Location (unsigned int a_line)
-  : file_ (static_file)
-  , line_ (a_line)
-{ }
-
-Location::Location (const std::string& a_file)
+  Location::Location (const SourceFile* a_file, unsigned int a_line)
   : file_ (a_file)
-  , line_ (0)
+  , line_ (a_line)
 { }
 
 bool Location::operator== (const Location& other) const
@@ -19,5 +14,5 @@ bool Location::operator== (const Location& other) const
   return this->file_ == other.file_ && this->line_ == other.line_;
 }
 
-const Location builtin ("<builtin>");
+  const Location Location::builtin (&SourceFile::builtin, 1);
 }

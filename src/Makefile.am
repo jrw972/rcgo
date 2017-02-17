@@ -3,20 +3,15 @@ BUILT_SOURCES = scanner.hpp scanner.cpp parser.hpp parser.cpp
 
 scanner.hpp scanner.cpp: scanner.l
 	flex --header-file=$(srcdir)/scanner.hpp --outfile=$(srcdir)/scanner.cpp $(srcdir)/scanner.l
-	sed -i -e '/#line/ { s@\.\./@@g ; s@src/@@g  }' $(srcdir)/scanner.hpp
-	sed -i -e '/#line/ { s@\.\./@@g ; s@src/@@g  }' $(srcdir)/scanner.cpp
 
 parser.hpp parser.cpp: parser.y
 	bison --defines=$(srcdir)/parser.hpp --output=$(srcdir)/parser.cpp -v -d $(srcdir)/parser.y
-	sed -i -e '/#line/ { s@\.\./@@g ; s@src/@@g  }' $(srcdir)/parser.hpp
-	sed -i -e '/#line/ { s@\.\./@@g ; s@src/@@g  }' $(srcdir)/parser.cpp
 
 #AM_LFLAGS = --header=$(addsuffix .hpp,$(basename $@))
 #AM_YFLAGS = -v -d
 bin_PROGRAMS = rcgo
 rcgo_SOURCES = main.cpp \
 debug.hpp \
-package.hpp \
 parser.hpp parser.cpp \
 scanner.hpp scanner.cpp \
 scheduler.hpp \
@@ -35,14 +30,16 @@ callable.hpp callable.cpp \
 check_all.cpp \
 composition.hpp composition.cpp \
 compute_receiver_access.cpp \
-enter_identifiers.cpp \
 enter_method_identifiers.cpp \
 enter_top_level_identifiers.cpp \
 error_reporter.hpp error_reporter.cpp \
 evaluate_static.cpp \
 executor_base.hpp executor_base.cpp \
 expression_value.cpp \
+generate_and_lookup_symbols.cpp \
 generate_code.hpp generate_code.cpp \
+generate_package_symbols.cpp \
+generate_symbols.cpp \
 heap.hpp heap.cpp \
 instance_scheduler.hpp instance_scheduler.cpp \
 location.hpp location.cpp \
@@ -51,10 +48,13 @@ node.hpp node.cpp \
 node_cast.hpp \
 node_visitor.hpp node_visitor.cpp \
 operation.hpp operation.cpp \
+package.hpp package.cpp \
+package_set.hpp package_set.cpp \
 parameter_list.hpp parameter_list.cpp \
 partitioned_scheduler.hpp partitioned_scheduler.cpp \
 polymorphic_function.hpp polymorphic_function.cpp \
 polymorphic_function_visitor.hpp \
+populate_package_block.cpp \
 populate_universe_block.cpp \
 process_definitions.cpp \
 process_top_level_identifiers.cpp \
@@ -63,6 +63,7 @@ runtime.hpp runtime.cpp \
 runtime_types.hpp runtime_types.cpp \
 scope.hpp scope.cpp \
 semantic.hpp \
+source_file.hpp source_file.cpp \
 stack.hpp stack.cpp \
 symbol.hpp symbol.cpp \
 symbol_cast.hpp \

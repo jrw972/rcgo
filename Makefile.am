@@ -18,10 +18,10 @@ coverage:
 	sed -i -e 's@$(abs_builddir)@$(realpath $(abs_top_srcdir))@g' utest.filtered.info
 	genhtml -o html/utest utest.filtered.info
 	lcov --zerocounters --directory src --directory src/.libs
-	cd ftest && make check
-	lcov --capture --directory src --directory src/.libs --output-file ftest.info
-	lcov --extract ftest.info '*rcgo/*src/*' --output-file ftest.filtered.info
-	sed -i -e 's@$(abs_builddir)@$(realpath $(abs_top_srcdir))@g' ftest.filtered.info
+#	cd ftest && make check
+#	lcov --capture --directory src --directory src/.libs --output-file ftest.info
+#	lcov --extract ftest.info '*rcgo/*src/*' --output-file ftest.filtered.info
+#	sed -i -e 's@$(abs_builddir)@$(realpath $(abs_top_srcdir))@g' ftest.filtered.info
 	genhtml -o html/ftest ftest.filtered.info
 	@echo "file://$(PWD)/html/utest/index.html"
 	@echo "file://$(PWD)/html/ftest/index.html"

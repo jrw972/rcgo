@@ -8,6 +8,7 @@
 #include "callable.hpp"
 #include "symbol_cast.hpp"
 #include "symbol_table.hpp"
+#include "identifier.hpp"
 
 namespace semantic
 {
@@ -32,13 +33,10 @@ struct visitor : public DefaultNodeVisitor
   NamedType*
   process_receiver (ast::Receiver* node)
   {
-    Identifier* type_identifier_node = node->type;
-    const std::string& type_identifier = type_identifier_node->identifier;
-
-    decl::Symbol* symbol = symbol_table.retrieve_symbol (type_identifier);
+    decl::Symbol* symbol = symbol_table.retrieve_symbol (node->type_identifier);
     if (symbol == NULL)
       {
-        er.not_declared (type_identifier_node->location, type_identifier);
+        er.not_declared (node->type_identifier);
         return NULL;
       }
 
@@ -46,21 +44,11 @@ struct visitor : public DefaultNodeVisitor
 
     if (type == NULL)
       {
-        er.expected_a_type (type_identifier_node->location);
+        er.expected_a_type (node->type_identifier.location ());
         return NULL;
       }
 
     return type;
-  }
-
-  void visit (SourceFile& node)
-  {
-    node.top_level_decl_list->accept (*this);
-  }
-
-  void visit (TopLevelDeclList& node)
-  {
-    node.visit_children (*this);
   }
 
   void visit (MethodDecl& node)
@@ -75,7 +63,7 @@ struct visitor : public DefaultNodeVisitor
     node.method = method;
   }
 
-  void visit (InitDecl& node)
+  void visit (InitializerDecl& node)
   {
     NamedType* type = process_receiver (node.receiver);
     if (type == NULL)
@@ -123,7 +111,7 @@ struct visitor : public DefaultNodeVisitor
     node.reaction = reaction;
   }
 
-  void visit (BindDecl& node)
+  void visit (BinderDecl& node)
   {
     NamedType* type = process_receiver (node.receiver);
     if (type == NULL)

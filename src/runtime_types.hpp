@@ -60,6 +60,7 @@ struct String
   bool operator== (const String& other) const;
   bool operator== (const char* str) const;
   bool operator< (const String& other) const;
+  std::string to_string () const;
 };
 
 std::ostream& operator<< (std::ostream& out, const String& s);

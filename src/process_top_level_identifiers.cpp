@@ -27,16 +27,6 @@ struct visitor : public DefaultNodeVisitor
     , symbol_table (a_symbol_table)
   { }
 
-  void visit (SourceFile& node)
-  {
-    node.top_level_decl_list->accept (*this);
-  }
-
-  void visit (TopLevelDeclList& node)
-  {
-    node.visit_children (*this);
-  }
-
   void visit (ConstDecl& node)
   {
     for (ConstDecl::SymbolsType::const_iterator pos = node.symbols.begin (),

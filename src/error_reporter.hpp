@@ -42,56 +42,55 @@ struct ErrorReporter
 
   ErrorReporter (size_t limit = 0, std::ostream& out = std::cerr);
 
-  ErrorCode func_expects_count (const Location& loc,
+  ErrorCode func_expects_count (const source::Location& loc,
                                 const std::string& func,
                                 size_t expect,
                                 size_t given);
-  ErrorCode func_expects_arg (const Location& loc,
+  ErrorCode func_expects_arg (const source::Location& loc,
                               const std::string& func,
                               size_t idx,
                               const type::Type* expect,
                               const type::Type* given);
-  ErrorCode cannot_be_applied (const Location& loc,
+  ErrorCode cannot_be_applied (const source::Location& loc,
                                const std::string& op,
                                const type::Type* type);
-  ErrorCode cannot_be_applied (const Location& loc,
+  ErrorCode cannot_be_applied (const source::Location& loc,
                                const std::string& op,
                                const type::Type* left,
                                const type::Type* right);
-  ErrorCode not_declared (const Location& loc,
-                          const std::string& id);
-  ErrorCode hidden_symbol (const Location& loc,
+  ErrorCode not_declared (const source::Identifier& identifier);
+  ErrorCode hidden_symbol (const source::Location& loc,
                            const std::string& id);
-  ErrorCode expected_an_rvalue (const Location& loc);
-  ErrorCode expected_a_type (const Location& loc);
-  ErrorCode leaks_pointers (const Location& loc);
-  ErrorCode parameter_is_not_foreign_safe (const Location& loc);
-  ErrorCode expected_n_expressions (const Location& loc,
+  ErrorCode expected_an_rvalue (const source::Location& loc);
+  ErrorCode expected_a_type (const source::Location& loc);
+  ErrorCode leaks_pointers (const source::Location& loc);
+  ErrorCode parameter_is_not_foreign_safe (const source::Location& loc);
+  ErrorCode expected_n_expressions (const source::Location& loc,
                                     size_t expected,
                                     size_t received);
-  ErrorCode cannot_convert (const Location& loc,
+  ErrorCode cannot_convert (const source::Location& loc,
                             const type::Type* from,
                             const type::Type* to);
-  ErrorCode expression_is_not_constant (const Location& loc);
-  ErrorCode already_declared (const Location& loc,
+  ErrorCode expression_is_not_constant (const source::Location& loc);
+  ErrorCode already_declared (const source::Location& loc,
                               const std::string& id,
-                              const Location& previous_loc);
-  ErrorCode defined_recursively (const Location& loc,
+                              const source::Location& previous_loc);
+  ErrorCode defined_recursively (const source::Location& loc,
                                  const std::string& id);
-  ErrorCode non_integer_array_dimension (const Location& loc,
+  ErrorCode non_integer_array_dimension (const source::Location& loc,
                                          const type::Type* type);
-  ErrorCode negative_array_dimension (const Location& loc,
+  ErrorCode negative_array_dimension (const source::Location& loc,
                                       long dim);
-  ErrorCode not_defined (const Location& loc,
+  ErrorCode not_defined (const source::Location& loc,
                          const std::string& id);
-  ErrorCode expected_a_component (const Location& loc);
-  ErrorCode expected_a_pointer (const Location& loc);
-  ErrorCode expected_immutable_indirection_mutability (const Location& loc);
-  ErrorCode length_exceeds_capacity (const Location& loc,
+  ErrorCode expected_a_component (const source::Location& loc);
+  ErrorCode expected_a_pointer (const source::Location& loc);
+  ErrorCode expected_immutable_indirection_mutability (const source::Location& loc);
+  ErrorCode length_exceeds_capacity (const source::Location& loc,
                                      long len,
                                      long cap);
-  ErrorCode destination_is_not_mutable (const Location& loc);
-  ErrorCode assignment_leaks_immutable_pointers (const Location& loc);
+  ErrorCode destination_is_not_mutable (const source::Location& loc);
+  ErrorCode assignment_leaks_immutable_pointers (const source::Location& loc);
 
   const ListType& list () const;
 

@@ -5,12 +5,11 @@ AM_CXXFLAGS = -I $(top_srcdir)/src
 EXTRA_DIST = callable.test \
 check_all.test \
 enter_method_identifiers.test \
-enter_identifiers.test \
-enter_identifiers.test \
 error_reporter.test \
 expression_value.test \
 node.test \
 polymorphic_function.test \
+populate_package_block.test \
 populate_universe_block.test \
 process_top_level_identifiers.test \
 process_type.test \
@@ -103,11 +102,11 @@ unit_test.cpp \
 callable.cpp \
 check_all.cpp \
 enter_method_identifiers.cpp \
-enter_identifiers.cpp \
 error_reporter.cpp \
 expression_value.cpp \
 node.cpp \
 polymorphic_function.cpp \
+populate_package_block.cpp \
 populate_universe_block.cpp \
 process_top_level_identifiers.cpp \
 process_type.cpp \

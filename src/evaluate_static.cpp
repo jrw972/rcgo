@@ -41,7 +41,7 @@ EvaluateStatic (const ast::Node* node, const static_memory_t& memory)
 
   //   void default_action (const Node& node)
   //   {
-  //     AST_NOT_REACHED (node);
+  //     NODE_NOT_REACHED (node);
   //   }
 
   //   void visit (const BinaryArithmeticExpr& node)

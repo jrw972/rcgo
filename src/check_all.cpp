@@ -17,6 +17,8 @@
 #include "scope.hpp"
 #include "polymorphic_function_visitor.hpp"
 #include "symbol_table.hpp"
+#include "identifier.hpp"
+#include "source_file.hpp"
 
 namespace semantic
 {
@@ -25,6 +27,7 @@ using namespace ast;
 using namespace type;
 using namespace decl;
 using namespace std::rel_ops;
+using namespace source;
 
 ExpressionValueList collect_evals (ast::Node* node)
 {
@@ -43,11 +46,11 @@ ExpressionValueList collect_evals (ast::Node* node)
   return v.list;
 }
 
-LocationList collect_locations (ast::Node* node)
+source::LocationList collect_locations (ast::Node* node)
 {
   struct visitor : public DefaultNodeVisitor
   {
-    LocationList list;
+    source::LocationList list;
 
     virtual void default_action (Node& node)
     {
@@ -1141,11 +1144,11 @@ struct SMoreEqual
 template <typename InputPicker, typename OutputPicker, typename Computer>
 void
 binary_check (ErrorReporter& er,
-              const Location& location,
+              const source::Location& location,
               const std::string& name,
               ExpressionValue& result,
               ExpressionValueList& arguments,
-              const LocationList& locations)
+              const source::LocationList& locations)
 {
   assert (arguments.size () == 2);
   ExpressionValue& left = arguments[0];
@@ -1222,11 +1225,11 @@ binary_check (ErrorReporter& er,
 
 template <typename B>
 void shift_check (ErrorReporter& er,
-                  const Location& location,
+                  const source::Location& location,
                   const std::string& name,
                   ExpressionValue& result,
                   ExpressionValueList& arguments,
-                  const LocationList& locations)
+                  const source::LocationList& locations)
 {
   assert (arguments.size () == 2);
   ExpressionValue& left = arguments[0];
@@ -1379,7 +1382,7 @@ struct LogicOrComputer
 };
 
 static bool check_dimension (ErrorReporter& er,
-                             const Location& location,
+                             const source::Location& location,
                              ExpressionValue& arg)
 {
   if (!arg.is_rvalue ())
@@ -1421,24 +1424,24 @@ static bool check_dimension (ErrorReporter& er,
 
 void check_polymorphic_function_call (ErrorReporter& er,
                                       const PolymorphicFunction* pf,
-                                      const Location& loc,
+                                      const source::Location& loc,
                                       ExpressionValue& result,
                                       ExpressionValueList& arguments,
-                                      const LocationList& locations)
+                                      const source::LocationList& locations)
 {
   struct Visitor : public PolymorphicFunctionVisitor
   {
     ErrorReporter& er;
-    const Location& location;
+    const source::Location& location;
     ExpressionValue& result;
     ExpressionValueList& arguments;
-    const LocationList& locations;
+    const source::LocationList& locations;
 
     Visitor (ErrorReporter& a_er,
-             const Location& a_location,
+             const source::Location& a_location,
              ExpressionValue& a_result,
              ExpressionValueList& a_arguments,
-             const LocationList& a_locations)
+             const source::LocationList& a_locations)
       : er (a_er)
       , location (a_location)
       , result (a_result)
@@ -1466,7 +1469,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
 
       if (!arg.type->is_any_boolean ())
         {
-          er.cannot_be_applied (location, pf.name, arg.type);
+          er.cannot_be_applied (location, pf.identifier.identifier (), arg.type);
           result = ExpressionValue::make_error ();
           return;
         }
@@ -1510,7 +1513,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
 
       if (!arg.type->is_numeric ())
         {
-          er.cannot_be_applied (location, pf.name, arg.type);
+          er.cannot_be_applied (location, pf.identifier.identifier (), arg.type);
           result = ExpressionValue::make_error ();
           return;
         }
@@ -1605,7 +1608,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
 
       if (!arg.type->is_numeric ())
         {
-          er.cannot_be_applied (location, pf.name, arg.type);
+          er.cannot_be_applied (location, pf.identifier.identifier (), arg.type);
           result = ExpressionValue::make_error ();
           return;
         }
@@ -1639,7 +1642,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
 
       if (!(arg.type->is_integral ()))
         {
-          er.cannot_be_applied (location, pf.name, arg.type);
+          er.cannot_be_applied (location, pf.identifier.identifier (), arg.type);
           result = ExpressionValue::make_error ();
           return;
         }
@@ -1699,96 +1702,96 @@ void check_polymorphic_function_call (ErrorReporter& er,
 
     virtual void visit (const Multiply& pf)
     {
-      binary_check<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SMultiply> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SMultiply> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const Divide& pf)
     {
-      binary_check<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SDivide> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SDivide> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const Modulus& pf)
     {
-      binary_check<type::Integral, PassThroughPicker, BinaryValueComputer<SModulus> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Integral, PassThroughPicker, BinaryValueComputer<SModulus> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const Add& pf)
     {
-      binary_check<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SAdd> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SAdd> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const Subtract& pf)
     {
-      binary_check<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SSubtract> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Arithmetic, PassThroughPicker, BinaryValueComputer<SSubtract> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
 
     virtual void visit (const Equal& pf)
     {
-      binary_check<type::Comparable, BooleanPicker, BinaryValueComputer<SEqual> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Comparable, BooleanPicker, BinaryValueComputer<SEqual> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const NotEqual& pf)
     {
-      binary_check<type::Comparable, BooleanPicker, BinaryValueComputer<SNotEqual> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Comparable, BooleanPicker, BinaryValueComputer<SNotEqual> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const LessThan& pf)
     {
-      binary_check<type::Orderable, BooleanPicker, BinaryValueComputer<SLessThan> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Orderable, BooleanPicker, BinaryValueComputer<SLessThan> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const LessEqual& pf)
     {
-      binary_check<type::Orderable, BooleanPicker, BinaryValueComputer<SLessEqual> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Orderable, BooleanPicker, BinaryValueComputer<SLessEqual> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const MoreThan& pf)
     {
-      binary_check<type::Orderable, BooleanPicker, BinaryValueComputer<SMoreThan> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Orderable, BooleanPicker, BinaryValueComputer<SMoreThan> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const MoreEqual& pf)
     {
-      binary_check<type::Orderable, BooleanPicker, BinaryValueComputer<SMoreEqual> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Orderable, BooleanPicker, BinaryValueComputer<SMoreEqual> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
 
     virtual void visit (const BitAnd& pf)
     {
-      binary_check<type::Integral, PassThroughPicker, BinaryValueComputer<SBitAnd> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Integral, PassThroughPicker, BinaryValueComputer<SBitAnd> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const BitAndNot& pf)
     {
-      binary_check<type::Integral, PassThroughPicker, BinaryValueComputer<SBitAndNot> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Integral, PassThroughPicker, BinaryValueComputer<SBitAndNot> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const BitOr& pf)
     {
-      binary_check<type::Integral, PassThroughPicker, BinaryValueComputer<SBitOr> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Integral, PassThroughPicker, BinaryValueComputer<SBitOr> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const BitXor& pf)
     {
-      binary_check<type::Integral, PassThroughPicker, BinaryValueComputer<SBitXor> > (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Integral, PassThroughPicker, BinaryValueComputer<SBitXor> > (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const LeftShift& pf)
     {
-      shift_check<runtime::LeftShifter> (er, location, pf.name, result, arguments, locations);
+      shift_check<runtime::LeftShifter> (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const RightShift& pf)
     {
-      shift_check<runtime::RightShifter> (er, location, pf.name, result, arguments, locations);
+      shift_check<runtime::RightShifter> (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
 
     virtual void visit (const LogicAnd& pf)
     {
-      binary_check<type::Logical, PassThroughPicker, LogicAndComputer> (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Logical, PassThroughPicker, LogicAndComputer> (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
     virtual void visit (const LogicOr& pf)
     {
-      binary_check<type::Logical, PassThroughPicker, LogicOrComputer> (er, location, pf.name, result, arguments, locations);
+      binary_check<type::Logical, PassThroughPicker, LogicOrComputer> (er, location, pf.identifier.identifier (), result, arguments, locations);
     }
 
     virtual void visit (const New& pf)
     {
       if (arguments.size () == 0)
         {
-          er.func_expects_count (location, pf.name, 1, arguments.size ());
+          er.func_expects_count (location, pf.identifier.identifier (), 1, arguments.size ());
           result = ExpressionValue::make_error ();
           return;
         }
 
       if (arguments.size () > 1)
         {
-          er.func_expects_count (location, pf.name, 1, arguments.size ());
+          er.func_expects_count (location, pf.identifier.identifier (), 1, arguments.size ());
         }
 
       ExpressionValue& arg = arguments[0];
@@ -1815,12 +1818,12 @@ void check_polymorphic_function_call (ErrorReporter& er,
       // Check that the first argument is a type.
       if (arguments.size () == 0)
         {
-          er.func_expects_count (location, pf.name, 1, arguments.size ());
+          er.func_expects_count (location, pf.identifier.identifier (), 1, arguments.size ());
           result = ExpressionValue::make_error ();
           return;
         }
       ExpressionValue& arg = arguments[0];
-      const Location& loc = locations[0];
+      const source::Location& loc = locations[0];
 
       if (arg.is_error ())
         {
@@ -1841,7 +1844,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
         {
           if (arguments.size () < 2)
             {
-              er.func_expects_count (location, pf.name, 2, arguments.size ());
+              er.func_expects_count (location, pf.identifier.identifier (), 2, arguments.size ());
             }
 
           bool has_length = false;
@@ -1850,7 +1853,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
             {
               // Check the length.
               ExpressionValue& len_arg = arguments[1];
-              const Location& len_loc = locations[1];
+              const source::Location& len_loc = locations[1];
               has_length = check_dimension (er, len_loc, len_arg);
             }
 
@@ -1858,7 +1861,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
             {
               // Check the capacity.
               ExpressionValue& cap_arg = arguments[2];
-              const Location& cap_loc = locations[2];
+              const source::Location& cap_loc = locations[2];
               has_capacity = check_dimension (er, cap_loc, cap_arg);
             }
 
@@ -1875,7 +1878,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
 
           if (arguments.size () >= 4)
             {
-              er.func_expects_count (location, pf.name, 3, arguments.size ());
+              er.func_expects_count (location, pf.identifier.identifier (), 3, arguments.size ());
             }
 
           // Slice return.
@@ -1891,13 +1894,13 @@ void check_polymorphic_function_call (ErrorReporter& er,
             {
               // Check the capacity.
               ExpressionValue& cap_arg = arguments[1];
-              const Location& cap_loc = locations[1];
+              const source::Location& cap_loc = locations[1];
               check_dimension (er, cap_loc, cap_arg);
             }
 
           if (arguments.size () > 2)
             {
-              er.func_expects_count (location, pf.name, 2, arguments.size ());
+              er.func_expects_count (location, pf.identifier.identifier (), 2, arguments.size ());
             }
 
           // Map return.
@@ -1905,21 +1908,21 @@ void check_polymorphic_function_call (ErrorReporter& er,
           return;
         }
 
-      er.cannot_be_applied (location, pf.name, arg.type);
+      er.cannot_be_applied (location, pf.identifier.identifier (), arg.type);
       result = ExpressionValue::make_error ();
     }
     virtual void visit (const Move& pf)
     {
       if (arguments.size () == 0)
         {
-          er.func_expects_count (location, pf.name, 1, arguments.size ());
+          er.func_expects_count (location, pf.identifier.identifier (), 1, arguments.size ());
           result = ExpressionValue::make_error ();
           return;
         }
 
       if (arguments.size () > 1)
         {
-          er.func_expects_count (location, pf.name, 1, arguments.size ());
+          er.func_expects_count (location, pf.identifier.identifier (), 1, arguments.size ());
         }
 
       ExpressionValue& arg = arguments[0];
@@ -1941,7 +1944,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
       const type::Type* out = in->move ();
       if (out == NULL)
         {
-          er.cannot_be_applied (location, pf.name, in);
+          er.cannot_be_applied (location, pf.identifier.identifier (), in);
           result = ExpressionValue::make_error ();
           return;
         }
@@ -1952,14 +1955,14 @@ void check_polymorphic_function_call (ErrorReporter& er,
     {
       if (arguments.size () == 0)
         {
-          er.func_expects_count (location, pf.name, 1, arguments.size ());
+          er.func_expects_count (location, pf.identifier.identifier (), 1, arguments.size ());
           result = ExpressionValue::make_error ();
           return;
         }
 
       if (arguments.size () > 1)
         {
-          er.func_expects_count (location, pf.name, 1, arguments.size ());
+          er.func_expects_count (location, pf.identifier.identifier (), 1, arguments.size ());
         }
 
       ExpressionValue& arg = arguments[0];
@@ -1981,7 +1984,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
       const type::Type* out = in->merge_change ();
       if (out == NULL)
         {
-          er.cannot_be_applied (location, pf.name, in);
+          er.cannot_be_applied (location, pf.identifier.identifier (), in);
           result = ExpressionValue::make_error ();
           return;
         }
@@ -1992,14 +1995,14 @@ void check_polymorphic_function_call (ErrorReporter& er,
     {
       if (arguments.size () == 0)
         {
-          er.func_expects_count (location, pf.name, 1, arguments.size ());
+          er.func_expects_count (location, pf.identifier.identifier (), 1, arguments.size ());
           result = ExpressionValue::make_error ();
           return;
         }
 
       if (arguments.size () > 1)
         {
-          er.func_expects_count (location, pf.name, 1, arguments.size ());
+          er.func_expects_count (location, pf.identifier.identifier (), 1, arguments.size ());
         }
 
       ExpressionValue& arg = arguments[0];
@@ -2053,21 +2056,21 @@ void check_polymorphic_function_call (ErrorReporter& er,
           return;
         }
 
-      er.cannot_be_applied (location, pf.name, type);
+      er.cannot_be_applied (location, pf.identifier.identifier (), type);
       result = ExpressionValue::make_error ();
     }
     virtual void visit (const Cap& pf)
     {
       if (arguments.size () == 0)
         {
-          er.func_expects_count (location, pf.name, 1, arguments.size ());
+          er.func_expects_count (location, pf.identifier.identifier (), 1, arguments.size ());
           result = ExpressionValue::make_error ();
           return;
         }
 
       if (arguments.size () > 1)
         {
-          er.func_expects_count (location, pf.name, 1, arguments.size ());
+          er.func_expects_count (location, pf.identifier.identifier (), 1, arguments.size ());
         }
 
       ExpressionValue& arg = arguments[0];
@@ -2108,14 +2111,14 @@ void check_polymorphic_function_call (ErrorReporter& er,
           return;
         }
 
-      er.cannot_be_applied (location, pf.name, type);
+      er.cannot_be_applied (location, pf.identifier.identifier (), type);
       result = ExpressionValue::make_error ();
     }
     virtual void visit (const Append& pf)
     {
       if (arguments.size () == 0)
         {
-          er.func_expects_count (location, pf.name, 1, arguments.size ());
+          er.func_expects_count (location, pf.identifier.identifier (), 1, arguments.size ());
           result = ExpressionValue::make_error ();
           return;
         }
@@ -2137,7 +2140,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
 
       if (slice.type->underlying_kind () != Slice_Kind)
         {
-          er.cannot_be_applied (location, pf.name, slice.type);
+          er.cannot_be_applied (location, pf.identifier.identifier (), slice.type);
           result = ExpressionValue::make_error ();
           return;
         }
@@ -2185,7 +2188,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
 
           if (!element.is_assignable (st->base_type))
             {
-              er.func_expects_arg (location, pf.name, idx, st->base_type, element.type);
+              er.func_expects_arg (location, pf.identifier.identifier (), idx, st->base_type, element.type);
               continue;
             }
         }
@@ -2198,7 +2201,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
 
       if (arguments.size () != 2)
         {
-          er.func_expects_count (location, pf.name, 2, arguments.size ());
+          er.func_expects_count (location, pf.identifier.identifier (), 2, arguments.size ());
           return;
         }
 
@@ -2208,7 +2211,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
         }
 
       ExpressionValue& dst = arguments[0];
-      const Location& dst_loc = locations[0];
+      const source::Location& dst_loc = locations[0];
 
       if (!dst.is_rvalue ())
         {
@@ -2218,7 +2221,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
 
       if (dst.type->underlying_kind () != Slice_Kind)
         {
-          er.cannot_be_applied (location, pf.name, dst.type);
+          er.cannot_be_applied (location, pf.identifier.identifier (), dst.type);
           return;
         }
 
@@ -2233,7 +2236,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
         }
 
       ExpressionValue& src = arguments[1];
-      const Location& src_loc = locations[1];
+      const source::Location& src_loc = locations[1];
 
       if (!src.is_rvalue ())
         {
@@ -2251,7 +2254,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
 
           if (dst.type != src.type)
             {
-              er.func_expects_arg (src_loc, pf.name, 1, dst.type, src.type);
+              er.func_expects_arg (src_loc, pf.identifier.identifier (), 1, dst.type, src.type);
             }
         }
       else if (dst.type->is_slice_of_bytes () && src.type == &named_string)
@@ -2260,7 +2263,7 @@ void check_polymorphic_function_call (ErrorReporter& er,
         }
       else
         {
-          er.func_expects_arg (location, pf.name, 1, dst.type, src.type);
+          er.func_expects_arg (location, pf.identifier.identifier (), 1, dst.type, src.type);
         }
     }
     virtual void visit (const Println& pf)
@@ -2390,7 +2393,7 @@ static void require_rvalue (const Node* node)
   assert (!node->eval.is_unknown ());
   if (!node->eval.is_rvalue ())
     {
-      error_at_line (-1, 0, node->location.file ().c_str (), node->location.line (),
+      error_at_line (-1, 0, node->location.file ()->path ().c_str (), node->location.line (),
                      "required a value (E78)");
     }
 }
@@ -2400,7 +2403,7 @@ static void require_rvalue_or_void (const Node* node)
   assert (!node->eval.is_unknown ());
   if (!node->eval.is_rvalue_or_void ())
     {
-      error_at_line (-1, 0, node->location.file ().c_str (), node->location.line (),
+      error_at_line (-1, 0, node->location.file ()->path ().c_str (), node->location.line (),
                      "required a value (E78)");
     }
 }
@@ -2410,7 +2413,7 @@ static void require_variable (const Node* node)
   assert (node->eval.kind != ExpressionValue::Unknown);
   if (!(node->eval.kind == ExpressionValue::Variable))
     {
-      error_at_line (-1, 0, node->location.file ().c_str (), node->location.line (),
+      error_at_line (-1, 0, node->location.file ()->path ().c_str (), node->location.line (),
                      "required a variable (E2)");
     }
 }
@@ -2421,7 +2424,7 @@ static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* 
 
   if (push_port_type == NULL)
     {
-      error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+      error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                      "source of bind is not a port (E38)");
     }
 
@@ -2430,7 +2433,7 @@ static const decl::Reaction* bind (Node& node, ast::Node* port_node, ast::Node* 
   const type::Reaction* reaction_type = reaction_node->eval.type->to_reaction ();
   if (reaction_type == NULL)
     {
-      error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+      error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                      "target of bind is not a reaction (E39)");
     }
 
@@ -2453,7 +2456,7 @@ static void check_condition (Node* node)
   if (!(condition->is_any_boolean ()))
     {
       error_at_line (-1, 0,
-                     node->location.file ().c_str (),
+                     node->location.file ()->path ().c_str (),
                      node->location.line (),
                      "condition is not boolean (E155)");
     }
@@ -2490,7 +2493,7 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void default_action (Node& node)
   {
-    AST_NOT_REACHED (node);
+    NODE_NOT_REACHED (node);
   }
 
   void visit (Call& node)
@@ -2502,7 +2505,7 @@ struct Visitor : public ast::DefaultNodeVisitor
         // Conversion.
         if (node.arguments->size () != 1)
           {
-            error_at_line (-1, 0, node.location.file ().c_str (),
+            error_at_line (-1, 0, node.location.file ()->path ().c_str (),
                            node.location.line (),
                            "conversion requires one argument (E8)");
 
@@ -2515,7 +2518,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     // Collect the arguments.
     List* args = node.arguments;
     ExpressionValueList arguments = collect_evals (args);
-    LocationList locations = collect_locations (args);
+    source::LocationList locations = collect_locations (args);
 
     if (node.expression->eval.is_polymorphic_function ())
       {
@@ -2544,7 +2547,7 @@ struct Visitor : public ast::DefaultNodeVisitor
       }
     else if (node.push_port_type)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "push ports cannot be called (E202)");
 
       }
@@ -2555,12 +2558,12 @@ struct Visitor : public ast::DefaultNodeVisitor
               context == Action ||
               context == Reaction))
           {
-            error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+            error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                            "pull ports may only be called from a getter, an action, or a reaction (E201)");
           }
         if (in_mutable_phase)
           {
-            error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+            error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                            "cannot call pull port in mutable section (E198)");
           }
         node.parameters = node.pull_port_type->parameter_list;
@@ -2577,7 +2580,7 @@ struct Visitor : public ast::DefaultNodeVisitor
         // Caller must be an initializer.
         if (context != Initializer)
           {
-            error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+            error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                            "initializers may only be called from initializers (E197)");
           }
         node.parameters = node.initializer_type->parameter_list;
@@ -2591,12 +2594,12 @@ struct Visitor : public ast::DefaultNodeVisitor
               context == Reaction ||
               context == Initializer))
           {
-            error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+            error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                            "getters may only be called from a getter, an action, a reaction, or an initializer (E196)");
           }
         if (in_mutable_phase)
           {
-            error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+            error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                            "cannot call getter in mutable section (E34)");
           }
         node.parameters = node.getter_type->parameter_list;
@@ -2694,7 +2697,7 @@ struct Visitor : public ast::DefaultNodeVisitor
           }
         else
           {
-            error_at_line (-1, 0, node.location.file ().c_str (),
+            error_at_line (-1, 0, node.location.file ()->path ().c_str (),
                            node.location.line (),
                            "illegal conversion (E156)");
           }
@@ -2736,7 +2739,7 @@ struct Visitor : public ast::DefaultNodeVisitor
           }
         else
           {
-            error_at_line (-1, 0, node.location.file ().c_str (),
+            error_at_line (-1, 0, node.location.file ()->path ().c_str (),
                            node.location.line (),
                            "illegal conversion (E122)");
           }
@@ -2773,12 +2776,10 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (IdentifierExpression& node)
   {
-    Identifier* identifier_node = node.child;
-    const std::string& identifier = identifier_node->identifier;
-    node.symbol = symbol_table.retrieve_symbol (identifier);
+    node.symbol = symbol_table.retrieve_symbol (node.identifier);
     if (node.symbol == NULL)
       {
-        er.not_declared (node.location, identifier);
+        er.not_declared (node.identifier);
         node.eval.kind = ExpressionValue::Error;
         return;
       }
@@ -2855,23 +2856,13 @@ struct Visitor : public ast::DefaultNodeVisitor
 
       void visit (const decl::Hidden& symbol)
       {
-        er.hidden_symbol (symbol.location, symbol.name);
+        er.hidden_symbol (symbol.identifier.location (), symbol.identifier.identifier ());
         node.eval.kind = ExpressionValue::Error;
       }
     };
     visitor v (node, er);
     node.symbol->accept (v);
     node.eval.fix_string_indirection_mutability ();
-  }
-
-  void visit (SourceFile& node)
-  {
-    node.top_level_decl_list->accept (*this);
-  }
-
-  void visit (TopLevelDeclList& node)
-  {
-    node.visit_children (*this);
   }
 
   void visit (ast::TypeDecl& node)
@@ -2888,7 +2879,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     check_mutability_arguments (node.arguments, node.symbol->initializer ()->type->parameter_list);
   }
 
-  void visit (ast::InitDecl& node)
+  void visit (ast::InitializerDecl& node)
   {
     symbol_table.open_scope (node.initializer->parameter_list (),
                              node.initializer->return_parameter_list ());
@@ -2961,7 +2952,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     symbol_table.close_scope ();
   }
 
-  void visit (ast::BindDecl& node)
+  void visit (ast::BinderDecl& node)
   {
     symbol_table.open_scope ();
     symbol_table.enter_symbol (node.bind->receiver_parameter ());
@@ -3035,7 +3026,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     if (node.child->eval.type->contains_pointer () &&
         node.return_symbol->indirection_mutability < node.child->eval.indirection_mutability)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "return casts away +const or +foreign (E149)");
       }
   }
@@ -3058,10 +3049,9 @@ struct Visitor : public ast::DefaultNodeVisitor
 
   void visit (ForIota& node)
   {
-    const std::string& identifier = node.identifier->identifier;
     // TODO:  Check for error.
     node.limit_value = process_array_dimension (er, symbol_table, node.limit);
-    node.symbol = new Variable (identifier, node.identifier->location, Int::instance (), Immutable, Immutable);
+    node.symbol = new Variable (node.identifier, /*Int::instance (),*/ Immutable, Immutable);
     symbol_table.open_scope ();
     symbol_table.enter_symbol (node.symbol);
     node.body->accept (*this);
@@ -3087,9 +3077,8 @@ struct Visitor : public ast::DefaultNodeVisitor
     symbol_table.change ();
 
     // Enter the new heap root.
-    const std::string& identifier = node.identifier->identifier;
     // Don't know dereference mutability yet.
-    node.root_symbol = new Variable (identifier, node.location, root_type, Immutable, Foreign);
+    node.root_symbol = new Variable (node.identifier, /*root_type,*/ Immutable, Foreign);
     node.root_symbol->indirection_mutability = node.argument->eval.indirection_mutability;
     symbol_table.enter_symbol (node.root_symbol);
 
@@ -3103,13 +3092,13 @@ struct Visitor : public ast::DefaultNodeVisitor
     if (!(context == Action ||
           context == Reaction))
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "activation outside of action or reaction (E53)");
       }
 
     if (in_mutable_phase)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "activations within activations are not allowed (E54)");
       }
 
@@ -3133,7 +3122,7 @@ struct Visitor : public ast::DefaultNodeVisitor
     if (node.symbols.empty ())
       {
         // Not at top level so process.
-        enter_identifiers (&node, er, symbol_table, true);
+        populate_package_block (&node, er, symbol_table);
         process_top_level_declarations (&node, er, symbol_table);
       }
   }
@@ -3143,16 +3132,16 @@ struct Visitor : public ast::DefaultNodeVisitor
     // Do nothing.
   }
 
-  void visit (Var& node)
+  void visit (VarDecl& node)
   {
-    ast::List* identifier_list = node.identifiers;
+    ast::IdentifierList* identifier_list = node.identifiers;
     ast::Node* type_spec = node.type;
     ast::List* expression_list = node.expressions;
 
     if (expression_list->size () != 0 &&
         identifier_list->size () != expression_list->size ())
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "wrong number of initializers (E184)");
       }
 
@@ -3169,21 +3158,20 @@ struct Visitor : public ast::DefaultNodeVisitor
         // Type, no expressions.
         if (type_spec->eval.kind == ExpressionValue::EmptyType)
           {
-            error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+            error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                            "missing type (E183)");
 
           }
 
-        const type::Type* type = type_spec->eval.type;
+        //const type::Type* type = type_spec->eval.type;
 
         // Enter each symbol.
-        for (List::ConstIterator id_pos = identifier_list->begin (),
+        for (IdentifierList::const_iterator id_pos = identifier_list->begin (),
              id_limit = identifier_list->end ();
              id_pos != id_limit;
              ++id_pos)
           {
-            const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
-            Variable* symbol = new Variable (name, (*id_pos)->location, type, node.mutability, node.indirection_mutability);
+            Variable* symbol = new Variable (*id_pos, /*type,*/ node.mutability, node.indirection_mutability);
             symbol_table.enter_symbol (symbol);
             node.symbols.push_back (symbol);
           }
@@ -3197,7 +3185,9 @@ struct Visitor : public ast::DefaultNodeVisitor
         const type::Type* type = type_spec->eval.type;
 
         // Enter each symbol.
-        for (List::ConstIterator id_pos = identifier_list->begin (),
+        ast::List::ConstIterator init_pos;
+        IdentifierList::const_iterator id_pos, id_limit;
+        for (id_pos = identifier_list->begin (),
              id_limit = identifier_list->end (),
              init_pos = expression_list->begin ();
              id_pos != id_limit;
@@ -3215,8 +3205,7 @@ struct Visitor : public ast::DefaultNodeVisitor
             n->eval.convert (type);
             require_rvalue (n);
 
-            const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
-            Variable* symbol = new Variable (name, (*id_pos)->location, type, node.mutability, node.indirection_mutability);
+            Variable* symbol = new Variable (*id_pos, /*type,*/ node.mutability, node.indirection_mutability);
             symbol_table.enter_symbol (symbol);
             node.symbols.push_back (symbol);
           }
@@ -3227,27 +3216,29 @@ struct Visitor : public ast::DefaultNodeVisitor
     // No type, expressions.
 
     // Enter each symbol.
-    for (List::ConstIterator id_pos = identifier_list->begin (),
-         id_limit = identifier_list->end (),
-         init_pos = expression_list->begin ();
-         id_pos != id_limit;
-         ++id_pos, ++init_pos)
-      {
-        Node* n = *init_pos;
-        n->accept (*this);
+    {
+      IdentifierList::const_iterator id_pos, id_limit;
+      ast::List::ConstIterator init_pos;
+      for (id_pos = identifier_list->begin (),
+           id_limit = identifier_list->end (),
+           init_pos = expression_list->begin ();
+           id_pos != id_limit;
+           ++id_pos, ++init_pos)
+        {
+          Node* n = *init_pos;
+          n->accept (*this);
 
-        if (n->eval.type->is_untyped ())
-          {
-            n->eval.convert (n->eval.type->default_type ());
-          }
-        require_rvalue (n);
+          if (n->eval.type->is_untyped ())
+            {
+              n->eval.convert (n->eval.type->default_type ());
+            }
+          require_rvalue (n);
 
-        const std::string& name = node_cast<Identifier> (*id_pos)->identifier;
-        Variable* symbol = new Variable (name, (*id_pos)->location, n->eval.type, node.mutability, node.indirection_mutability);
-        symbol_table.enter_symbol (symbol);
-        node.symbols.push_back (symbol);
-      }
-
+          Variable* symbol = new Variable (*id_pos, /*n->eval.type,*/ node.mutability, node.indirection_mutability);
+          symbol_table.enter_symbol (symbol);
+          node.symbols.push_back (symbol);
+        }
+    }
 done:
     if (!node.expressions->empty ())
       {
@@ -3262,7 +3253,7 @@ done:
             if (n->eval.type->contains_pointer () &&
                 symbol->indirection_mutability < n->eval.indirection_mutability)
               {
-                error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+                error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                                "assignment casts away +const or +foreign (E92)");
               }
           }
@@ -3288,14 +3279,14 @@ done:
 
     if (node.left->eval.intrinsic_mutability != Mutable)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "target of assignment is not mutable (E86)");
       }
 
     if (node.right->eval.type->contains_pointer () &&
         node.left->eval.indirection_mutability < node.right->eval.indirection_mutability)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "assignment casts away +const or +foreign (E161)");
       }
   }
@@ -3327,7 +3318,7 @@ done:
 
     if (node.left->eval.intrinsic_mutability != Mutable)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "target of assignment is not mutable (E15)");
       }
   }
@@ -3357,7 +3348,7 @@ done:
 
     if (node.child->eval.intrinsic_mutability != Mutable)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "target of %s is not mutable (E177)", op);
       }
   }
@@ -3375,7 +3366,7 @@ done:
     long dimension = reaction->dimension ();
     if (dimension == -1)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "parameter specified for non-parameterized reaction (E41)");
       }
 
@@ -3390,7 +3381,7 @@ done:
 
     if (pull_port_type == NULL)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "target of bind is not a pull port (E193)");
       }
 
@@ -3400,7 +3391,7 @@ done:
 
     if (getter_type == NULL)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "source of bind is not a getter (E192)");
       }
 
@@ -3410,7 +3401,7 @@ done:
     if (!are_identical (pull_port_type, &g))
       {
         UNIMPLEMENTED;
-        // error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        // error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
         //                "cannot bind %s to %s (E191)", pull_port_type->to_error_string ().c_str (), getter_type->to_error_string ().c_str ());
       }
   }
@@ -3423,7 +3414,7 @@ done:
     if (p == NULL)
       {
         UNIMPLEMENTED;
-        // error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        // error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
         //                "* cannot be applied to %s (E21)", t->to_error_string ().c_str ());
       }
     require_rvalue (node.child);
@@ -3447,13 +3438,12 @@ done:
 
   void visit (Select& node)
   {
-    const std::string& identifier = node.identifier->identifier;
     node.base->accept (*this);
     const type::Type* base_type = node.base->eval.type;
     require_rvalue (node.base);
 
-    node.field = base_type->find_field (identifier);
-    node.callable = base_type->find_callable (identifier);
+    node.field = base_type->find_field (node.identifier.identifier ());
+    node.callable = base_type->find_callable (node.identifier.identifier ());
     if (node.field != NULL)
       {
         node.eval.type = node.field->type;
@@ -3465,7 +3455,7 @@ done:
     else
       {
         UNIMPLEMENTED;
-        // error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        // error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
         //                "cannot select %s from expression of type %s (E154)",
         //                identifier.c_str (), base_type->to_error_string ().c_str ());
       }
@@ -3497,7 +3487,7 @@ done:
       {
         if (!index->eval.representable (Int::instance ()))
           {
-            error_at_line (-1, 0, index->location.file ().c_str (), index->location.line (),
+            error_at_line (-1, 0, index->location.file ()->path ().c_str (), index->location.line (),
                            "array index is not an integer (E20)");
           }
         index->eval.convert (Int::instance ());
@@ -3505,7 +3495,7 @@ done:
         long idx = index_value.int_value;
         if (idx < 0)
           {
-            error_at_line (-1, 0, index->location.file ().c_str (), index->location.line (),
+            error_at_line (-1, 0, index->location.file ()->path ().c_str (), index->location.line (),
                            "array index is negative (E162)");
           }
         if (array_type)
@@ -3513,7 +3503,7 @@ done:
             if ((!allow_equal && idx >= array_type->dimension) ||
                 (allow_equal && idx > array_type->dimension))
               {
-                error_at_line (-1, 0, index->location.file ().c_str (), index->location.line (),
+                error_at_line (-1, 0, index->location.file ()->path ().c_str (), index->location.line (),
                                "array index is out of bounds (E163)");
               }
           }
@@ -3525,14 +3515,14 @@ done:
             long idx = index->eval.to_int ();
             if (idx < 0)
               {
-                error_at_line (-1, 0, index->location.file ().c_str (), index->location.line (),
+                error_at_line (-1, 0, index->location.file ()->path ().c_str (), index->location.line (),
                                "array index is negative (E164)");
               }
             if (array_type)
               {
                 if (idx >= array_type->dimension)
                   {
-                    error_at_line (-1, 0, index->location.file ().c_str (), index->location.line (),
+                    error_at_line (-1, 0, index->location.file ()->path ().c_str (), index->location.line (),
                                    "array index is out of bounds (E165)");
                   }
               }
@@ -3540,7 +3530,7 @@ done:
       }
     else
       {
-        error_at_line (-1, 0, index->location.file ().c_str (), index->location.line (),
+        error_at_line (-1, 0, index->location.file ()->path ().c_str (), index->location.line (),
                        "array index is not an integer (E203)");
       }
     require_rvalue (index);
@@ -3574,7 +3564,7 @@ done:
           {
             if (!index_node->eval.representable (Int::instance ()))
               {
-                error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+                error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                                "slice index is not an integer (E204)");
               }
             index_node->eval.convert (Int::instance ());
@@ -3582,7 +3572,7 @@ done:
             long idx = index_value.int_value;
             if (idx < 0)
               {
-                error_at_line (-1, 0, index_node->location.file ().c_str (), index_node->location.line (),
+                error_at_line (-1, 0, index_node->location.file ()->path ().c_str (), index_node->location.line (),
                                "slice index is negative (E166)");
               }
           }
@@ -3593,14 +3583,14 @@ done:
                 long idx = index_node->eval.to_int ();
                 if (idx < 0)
                   {
-                    error_at_line (-1, 0, index_node->location.file ().c_str (), index_node->location.line (),
+                    error_at_line (-1, 0, index_node->location.file ()->path ().c_str (), index_node->location.line (),
                                    "slice index is negative (E167)");
                   }
               }
           }
         else
           {
-            error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+            error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                            "slice index is not an integer (E205)");
           }
 
@@ -3616,7 +3606,7 @@ done:
       }
 
     UNIMPLEMENTED;
-    // error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+    // error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
     //                "cannot index expression of type %s (E168)",
     //                base_type->to_error_string ().c_str ());
   }
@@ -3708,7 +3698,7 @@ done:
       }
 
     UNIMPLEMENTED;
-    // error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+    // error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
     //                "cannot slice expression of type %s (E225)",
     //                base_type->to_error_string ().c_str ());
 
@@ -3718,7 +3708,7 @@ done:
       {
         if (!(low_node->eval.to_int () <= high_node->eval.to_int ()))
           {
-            error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+            error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                            "slice indices are out of range (E224)");
           }
       }
@@ -3728,7 +3718,7 @@ done:
       {
         if (!(low_node->eval.to_int () <= max_node->eval.to_int ()))
           {
-            error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+            error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                            "slice indices are out of range (E6)");
           }
       }
@@ -3738,7 +3728,7 @@ done:
       {
         if (!(high_node->eval.to_int () <= max_node->eval.to_int ()))
           {
-            error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+            error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                            "slice indices are out of range (E7)");
           }
       }
@@ -3754,18 +3744,18 @@ done:
   void visit (PushPortCall& node)
   {
     node.receiver_parameter = receiver_parameter;
-    const std::string& port_identifier = node.identifier->identifier;
+    const std::string& port_identifier = node.identifier.identifier ();
     const type::Type* this_type = receiver_parameter->type;
     node.field = this_type->find_field (port_identifier);
     if (node.field == NULL)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "no port named %s (E194)", port_identifier.c_str ());
       }
     node.push_port_type = node.field->type->to_push_port ();
     if (node.push_port_type == NULL)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "no port named %s (E195)", port_identifier.c_str ());
       }
 
@@ -3781,24 +3771,24 @@ done:
   void visit (IndexedPushPortCall& node)
   {
     node.receiver_parameter = receiver_parameter;
-    const std::string& port_identifier = node.identifier->identifier;
+    const std::string& port_identifier = node.identifier.identifier ();
     const type::Type* this_type = receiver_parameter->type;
     node.field = this_type->find_field (port_identifier);
     if (node.field == NULL)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "no port named %s (E74)", port_identifier.c_str ());
       }
     node.array_type = node.field->type->to_array ();
     if (node.array_type == NULL)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "%s is not an array of ports (E16)", port_identifier.c_str ());
       }
     node.push_port_type = node.array_type->base_type->to_push_port ();
     if (node.push_port_type == NULL)
       {
-        error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
                        "%s is not an array of ports (E17)", port_identifier.c_str ());
       }
 
@@ -3847,7 +3837,7 @@ done:
 
       default:
         UNIMPLEMENTED;
-        // error_at_line (-1, 0, node.location.file ().c_str (), node.location.line (),
+        // error_at_line (-1, 0, node.location.file ()->path ().c_str (), node.location.line (),
         //                "cannot define composite literals for %s (E5)", node.eval.type->to_error_string ().c_str ());
       }
   }
@@ -3858,7 +3848,7 @@ void check_types_arguments (ast::List* args, const decl::ParameterList* signatur
 {
   if (args->size () != signature->size ())
     {
-      error_at_line (-1, 0, args->location.file ().c_str (), args->location.line (),
+      error_at_line (-1, 0, args->location.file ()->path ().c_str (), args->location.line (),
                      "call expects %lu arguments but given %lu (E150)", signature->size (), args->size ());
     }
 
@@ -3920,7 +3910,7 @@ void check_mutability_arguments (ast::Node* node, const decl::ParameterList* sig
         {
           if (signature->at (i)->indirection_mutability < (*pos)->eval.indirection_mutability)
             {
-              error_at_line (-1, 0, (*pos)->location.file ().c_str (), (*pos)->location.line (),
+              error_at_line (-1, 0, (*pos)->location.file ()->path ().c_str (), (*pos)->location.line (),
                              "argument %zd casts away +const or +foreign (E85)", i + 1);
             }
         }

@@ -1,24 +1,48 @@
+%define api.pure full
+%lex-param {yyscan_t scanner} {const source::SourceFile* source_file}
+%parse-param {yyscan_t scanner} {source::SourceFile* source_file}
+
 %{
-#include "scanner.hpp"
 #include "yyparse.hpp"
 #include "debug.hpp"
 #include "node.hpp"
+#include "source_file.hpp"
+#include "parser.hpp"
+#include "scanner.hpp"
 #include "polymorphic_function.hpp"
+
+  int yylex (YYSTYPE * yylval_param, YYLTYPE * yylloc, yyscan_t yyscanner, const source::SourceFile* source_file);
+
+ source::Identifier idref (source::Identifier* id)
+ {
+   source::Identifier retval (*id);
+   delete id;
+   return retval;
+ }
 
 using namespace ast;
 %}
+
+%initial-action
+{
+  yylloc = 1;
+};
 
 %union {
   ast::Node* node;
   ast::List* list;
   ast::ParameterList* parameter_list;
-  ast::Identifier* identifier;
+  source::Identifier* identifier;
   ast::Receiver* receiver;
-  Mutability mutability; }
+  ast::Literal* literal;
+  Mutability mutability;
+  ast::IdentifierList* identifier_list;
+  ast::StatementList* statement_list;
+}
 
-%token <identifier> IDENTIFIER
-%token <node> LITERAL
-%token <node> STRING_LIT
+%token <identifier> identifier
+%token <literal> LITERAL
+%token <literal> string_lit
 
 %type <node> ActionDecl
 %type <node> Activate
@@ -27,9 +51,10 @@ using namespace ast;
 %type <node> ArrayDimension
 %type <node> Array
 %type <node> AssignmentStatement
-%type <node> BindDecl
+%type <node> BinderDecl
 %type <node> BindStatement
-%type <node> Block
+%type <statement_list> Block
+%type <node> Body
 %type <node> Change
 %type <node> CompareExpression
 %type <node> ComponentType
@@ -46,9 +71,9 @@ using namespace ast;
 %type <node> FunctionDecl
 %type <node> GetterDecl
 %type <node> Heap
-%type <list> IdentifierList
+%type <identifier_list> IdentifierList
 %type <node> If
-%type <list> ImportDeclList
+%type <literal> ImportPath
 %type <node> IncrementStatement
 %type <node> Indexession
 %type <node> InitDecl
@@ -65,7 +90,6 @@ using namespace ast;
 %type <list> OptionalPushPortCallList
 %type <list> OptionalTypeOrExpressionList
 %type <node> OrExpression
-%type <identifier> PackageClause
 %type <identifier> PackageName
 %type <node> Parameter
 %type <parameter_list> ParameterListInternal
@@ -82,9 +106,8 @@ using namespace ast;
 %type <parameter_list> ReturnParameterList
 %type <node> SimpleStatement
 %type <node> Slice
-%type <node> SourceFile
 %type <node> Statement
-%type <list> StatementList
+%type <statement_list> StatementList
 %type <node> StructType
 %type <node> TopLevelDecl
 %type <list> TopLevelDeclList
@@ -124,12 +147,12 @@ using namespace ast;
 %token GOTO
 %token HEAP
 %token IF
-%token IMPORT
+%token import_kw
 %token INIT
 %token INSTANCE
 %token INTERFACE
 %token MAP
-%token PACKAGE_KW
+%token package_kw
 %token PULL
 %token PUSH
 %token RANGE
@@ -169,44 +192,47 @@ using namespace ast;
 %token XOR_ASSIGN
 
 %precedence '{'
-%precedence IDENTIFIER
+%precedence identifier
 
 %%
 
-Top: SourceFile { root = $1; }
+Top: SourceFile
 
-SourceFile:
-PackageClause ';' ImportDeclList TopLevelDeclList { $$ = new SourceFile (@1, $1, $3, $4); }
-
-PackageClause: PACKAGE_KW PackageName { $$ = $2; }
-
-PackageName: IDENTIFIER { $$ = $1; }
+// https://golang.org/ref/spec#Source_file_organization
+SourceFile: PackageClause ';' ImportDeclList TopLevelDeclList { source_file->top_level_decl_list = $4; }
 
 ImportDeclList:
-  /* Empty */                   { $$ = new ImportDeclList (yyloc); }
-| ImportDeclList ImportDecl ';' { UNIMPLEMENTED; }
-
-ImportDecl:
-  IMPORT ImportSpec             { UNIMPLEMENTED; }
-| IMPORT '(' ImportSpecList ')' { UNIMPLEMENTED; }
-
-ImportSpecList:
-  /* Empty */                   { UNIMPLEMENTED; }
-| ImportSpecList ImportSpec ';' { UNIMPLEMENTED; }
-
-ImportSpec:
-"." ImportPath           { UNIMPLEMENTED; }
-| PackageName ImportPath { UNIMPLEMENTED; }
-| ImportPath             { UNIMPLEMENTED; }
-
-ImportPath: STRING_LIT { UNIMPLEMENTED; }
+  /* Empty */
+| ImportDeclList ImportDecl ';'
 
 TopLevelDeclList:
-  /* Empty */                       { $$ = new TopLevelDeclList (yyloc); }
+/* Empty */                         { $$ = new ast::TopLevelDeclList (source_file->location (yyloc)); }
 | TopLevelDeclList TopLevelDecl ';' { $$ = $1->append ($2); }
 
+// https://golang.org/ref/spec#Package_clause
+PackageClause: package_kw PackageName { source_file->package_name = $2; }
+PackageName: identifier { $$ = $1; }
+
+// https://golang.org/ref/spec#Import_declarations
+ImportDecl:
+  import_kw ImportSpec
+| import_kw '(' ImportSpecList ')'
+
+ImportSpecList:
+  /* Empty */
+| ImportSpecList ImportSpec ';'
+
+ImportSpec:
+              ImportPath { source_file->add_import (source::Location (source_file, @1), source::Identifier ("", source::Location (source_file, @1)), $1->eval.value.untyped_string_value.to_string ()); }
+|         '.' ImportPath { source_file->add_import (source::Location (source_file, @1), source::Identifier (".", source_file->location (@1)), $2->eval.value.untyped_string_value.to_string ()); }
+| PackageName ImportPath { source_file->add_import (source::Location (source_file, @1), idref ($1), $2->eval.value.untyped_string_value.to_string ()); }
+
+ImportPath: string_lit { $$ = $1; }
+
+
+
 TopLevelDecl:
-// No VarDecl as global variables are not allowed.
+// VarDecl not allowed.
   ConstDecl    { $$ = $1; }
 | TypeDecl     { $$ = $1; }
 | FunctionDecl { $$ = $1; }
@@ -215,20 +241,20 @@ TopLevelDecl:
 | GetterDecl   { $$ = $1; }
 | ActionDecl   { $$ = $1; }
 | ReactionDecl { $$ = $1; }
-| BindDecl     { $$ = $1; }
+| BinderDecl   { $$ = $1; }
 | InstanceDecl { $$ = $1; }
 
 ConstDecl:
   CONST IdentifierList Type '=' ExpressionList
-  { $$ = new ConstDecl (@1, $2, $3, $5); }
+  { $$ = new ConstDecl (source_file->location (@1), $2, $3, $5); }
 | CONST IdentifierList      '=' ExpressionList
-  { $$ = new ConstDecl (@1, $2, new EmptyType (@1), $4); }
+  { $$ = new ConstDecl (source_file->location (@1), $2, new EmptyType (source_file->location (@1)), $4); }
 
 InstanceDecl:
-  INSTANCE IDENTIFIER TypeName IDENTIFIER '(' OptionalExpressionList ')'
-{ $$ = new InstanceDecl (@1, $2, $3, $4, $6); }
+  INSTANCE identifier TypeName identifier '(' OptionalExpressionList ')'
+{ $$ = new InstanceDecl (source_file->location (@1), idref ($2), $3, idref ($4), $6); }
 
-TypeDecl: TYPE IDENTIFIER Type { $$ = new ast::TypeDecl (@1, $2, $3); }
+TypeDecl: TYPE identifier Type { $$ = new ast::TypeDecl (source_file->location (@1), idref ($2), $3); }
 
 Mutability:
   /* Empty. */ { $$ = Mutable;   }
@@ -241,85 +267,87 @@ DereferenceMutability:
 | '$' FOREIGN  { $$ = Foreign;   }
 
 Receiver:
-  '(' IDENTIFIER Mutability DereferenceMutability '*' IDENTIFIER ')'
-{ $$ = new Receiver (@1, $2, $3, $4, true, $6);  }
-| '(' IDENTIFIER Mutability DereferenceMutability     IDENTIFIER ')'
-{ $$ = new Receiver (@1, $2, $3, $4, false, $5); }
+  '(' identifier Mutability DereferenceMutability '*' identifier ')'
+  { $$ = new Receiver (source_file->location (@1), idref ($2), $3, $4, true, idref ($6)); }
+| '(' identifier Mutability DereferenceMutability     identifier ')'
+{ $$ = new Receiver (source_file->location (@1), idref ($2), $3, $4, false, idref ($5)); }
 
 ActionDecl:
-  ACTION Receiver IDENTIFIER                '(' Expression ')' Block
-{ $$ = new ActionDecl (@1, new EmptyExpression (@1), $2, $3, $5, $7); }
-| ArrayDimension ACTION Receiver IDENTIFIER '(' Expression ')' Block
-{ $$ = new ActionDecl (@1, $1, $3, $4, $6, $8); }
+  ACTION Receiver identifier                '(' Expression ')' Body
+{ $$ = new ActionDecl (source_file->location (@1), new EmptyExpression (source_file->location (@1)), $2, idref ($3), $5, $7); }
+| ArrayDimension ACTION Receiver identifier '(' Expression ')' Block
+{ $$ = new ActionDecl (source_file->location (@1), $1, $3, idref ($4), $6, $8); }
 
 ReactionDecl:
-  REACTION Receiver IDENTIFIER ParameterList Block
-{ $$ = new ReactionDecl (@1, new EmptyExpression (@1), $2, $3, $4, $5); }
-| ArrayDimension REACTION Receiver IDENTIFIER ParameterList Block
-{ $$ = new ReactionDecl (@2, $1, $3, $4, $5, $6); }
+  REACTION Receiver identifier ParameterList Body
+{ $$ = new ReactionDecl (source_file->location (@1), new EmptyExpression (source_file->location (@1)), $2, idref ($3), $4, $5); }
+| ArrayDimension REACTION Receiver identifier ParameterList Block
+{ $$ = new ReactionDecl (source_file->location (@2), $1, $3, idref ($4), $5, $6); }
 
-BindDecl:
-  BIND Receiver IDENTIFIER Block
-{ $$ = new BindDecl (@1, $2, $3, $4); }
+BinderDecl:
+  BIND Receiver identifier Body
+{ $$ = new BinderDecl (source_file->location (@1), $2, idref ($3), $4); }
 
 InitDecl:
-  INIT Receiver IDENTIFIER ParameterList ReturnParameterList Block
-{ $$ = new InitDecl (@1, $2, $3, $4, $5, $6); }
+  INIT Receiver identifier ParameterList ReturnParameterList Body
+{ $$ = new InitializerDecl (source_file->location (@1), $2, idref ($3), $4, $5, $6); }
 
 GetterDecl:
-GETTER Receiver IDENTIFIER ParameterList ReturnParameterList Block
-{ $$ = new GetterDecl (@1, $2, $3, $4, $5, $6); }
+GETTER Receiver identifier ParameterList ReturnParameterList Body
+{ $$ = new GetterDecl (source_file->location (@1), $2, idref ($3), $4, $5, $6); }
 
 MethodDecl:
-  FUNC Receiver IDENTIFIER ParameterList ReturnParameterList Block
-{ $$ = new MethodDecl (@1, $2, $3, $4, $5, $6); }
+  FUNC Receiver identifier ParameterList ReturnParameterList Body
+  { $$ = new MethodDecl (source_file->location (@1), $2, idref ($3), $4, $5, $6); }
 
 FunctionDecl:
-  FUNC IDENTIFIER ParameterList ReturnParameterList Block
-{ $$ = new FunctionDecl (@1, $2, $3, $4, $5); }
+  FUNC identifier ParameterList ReturnParameterList Body
+{ $$ = new FunctionDecl (source_file->location (@1), idref ($2), $3, $4, $5); }
 
 ParameterList:
   '(' ')'
-{ $$ = new ParameterList (yyloc); }
+{ $$ = new ParameterList (source_file->location (yyloc)); }
 | '(' ParameterListInternal optional_semicolon ')'
 { $$ = $2; }
 
 ParameterListInternal:
   Parameter
-{ $$ = new ParameterList (@1); $$->append ($1); }
+{ $$ = new ParameterList (source_file->location (@1)); $$->append ($1); }
 | ParameterListInternal ';' Parameter
 { $$ = $1; $$->append ($3); }
 
 Parameter:
   IdentifierList Mutability DereferenceMutability Type
-{ $$ = new VariableList (@1, $1, $2, $3, $4); }
+{ $$ = new VariableList (source_file->location (@1), $1, $2, $3, $4); }
 
 ReturnParameterList:
   /* Empty */
-{ $$ = new ParameterList (yyloc); }
+{ $$ = new ParameterList (source_file->location (yyloc)); }
 | Type
-{ $$ = new ParameterList (yyloc); $$->append (new VariableList (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, Mutable, $1)); }
+{ $$ = new ParameterList (source_file->location (yyloc)); $$->append (new VariableList (source_file->location (@1), (new IdentifierList (source_file->location (@1)))->append (source::Identifier ("", source_file->location (@1))), Mutable, Mutable, $1)); }
 | '$' CONST Type
-{ $$ = new ParameterList (yyloc); $$->append (new VariableList (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, Immutable, $3)); }
+{ $$ = new ParameterList (source_file->location (yyloc)); $$->append (new VariableList (source_file->location (@1), (new IdentifierList (source_file->location (@1)))->append (source::Identifier ("", source_file->location (@1))), Mutable, Immutable, $3)); }
 | '$' FOREIGN Type
-{ $$ = new ParameterList (yyloc); $$->append (new VariableList (@1, (new IdentifierList (@1))->append (new Identifier (@1, "")), Mutable, Foreign, $3)); }
+{ $$ = new ParameterList (source_file->location (yyloc)); $$->append (new VariableList (source_file->location (@1), (new IdentifierList (source_file->location (@1)))->append (source::Identifier ("", source_file->location (@1))), Mutable, Foreign, $3)); }
 
 optional_semicolon: /* Empty. */
 | ';'
 
 BindStatement:
   Expression RIGHT_ARROW Expression
-{ $$ = new BindPushPort (@1, $1, $3); }
+{ $$ = new BindPushPort (source_file->location (@1), $1, $3); }
 | Expression RIGHT_ARROW Expression DOTDOTDOT Expression
-{ $$ = new BindPushPortParameter (@1, $1, $3, $5); }
+{ $$ = new BindPushPortParameter (source_file->location (@1), $1, $3, $5); }
 | Expression LEFT_ARROW Expression
-{ $$ = new BindPullPort (@1, $1, $3); }
+{ $$ = new BindPullPort (source_file->location (@1), $1, $3); }
+
+Body: Block { $1->is_body = true; $$ = $1; }
 
 Block: '{' StatementList '}' { $$ = $2; }
 
 StatementList:
-  /* empty */ { $$ = new StatementList (yyloc); }
-| StatementList Statement ';' { $$ = $1->append ($2); }
+  /* empty */ { $$ = new StatementList (source_file->location (yyloc)); }
+| StatementList Statement ';' { $1->append ($2); $$ = $1; }
 
 Statement:
   SimpleStatement { $$ = $1; }
@@ -341,117 +369,117 @@ SimpleStatement:
 | IncrementStatement  { $$ = $1; }
 | AssignmentStatement { $$ = $1; }
 
-EmptyStatement: /* empty */ { $$ = new EmptyStatement (yyloc); }
+EmptyStatement: /* empty */ { $$ = new EmptyStatement (source_file->location (yyloc)); }
 
 Activate:
   ACTIVATE OptionalPushPortCallList Block
-{ $$ = new Activate (@1, $2, $3); }
+{ $$ = new Activate (source_file->location (@1), $2, $3); }
 
 Change:
-  CHANGE '(' Expression ',' IDENTIFIER ')' Block
-{ $$ = new Change (@1, $3, $5, $7); }
+  CHANGE '(' Expression ',' identifier ')' Block
+{ $$ = new Change (source_file->location (@1), $3, idref ($5), $7); }
 
 ForIota:
-  FOR IDENTIFIER DOTDOTDOT Expression Block
-{ $$ = new ForIota (@1, $2, $4, $5); }
+  FOR identifier DOTDOTDOT Expression Block
+{ $$ = new ForIota (source_file->location (@1), idref ($2), $4, $5); }
 
 Return:
   RETURN Expression
-{ $$ = new Return (@1, $2); }
+{ $$ = new Return (source_file->location (@1), $2); }
 
 IncrementStatement:
   Expression INCREMENT
-{ $$ = new IncrementDecrement (@1, $1, IncrementDecrement::Increment); }
+{ $$ = new IncrementDecrement (source_file->location (@1), $1, IncrementDecrement::Increment); }
 | Expression DECREMENT
-{ $$ = new IncrementDecrement (@1, $1, IncrementDecrement::Decrement); }
+{ $$ = new IncrementDecrement (source_file->location (@1), $1, IncrementDecrement::Decrement); }
 
 OptionalPushPortCallList:
   /* Empty. */
-{ $$ = new ExpressionList (yyloc); }
+{ $$ = new ExpressionList (source_file->location (yyloc)); }
 | PushPortCallList
 { $$ = $1; }
 
 PushPortCallList:
   PushPortCall
-{ $$ = (new ExpressionList (@1))->append ($1); }
+{ $$ = (new ExpressionList (source_file->location (@1)))->append ($1); }
 | PushPortCallList ',' PushPortCall
 { $$ = $1->append ($3); }
 
 PushPortCall:
-  IDENTIFIER Indexession '(' OptionalExpressionList ')'
-{ $$ = new IndexedPushPortCall (@1, $1, $2, $4); }
-| IDENTIFIER '(' OptionalExpressionList ')'
-{ $$ = new PushPortCall (@1, $1, $3); }
+  identifier Indexession '(' OptionalExpressionList ')'
+{ $$ = new IndexedPushPortCall (source_file->location (@1), idref ($1), $2, $4); }
+| identifier '(' OptionalExpressionList ')'
+{ $$ = new PushPortCall (source_file->location (@1), idref ($1), $3); }
 
 Indexession: '[' Expression ']' { $$ = $2; }
 
 OptionalExpressionList:
-  /* Empty. */   { $$ = new ExpressionList (yyloc); }
+  /* Empty. */   { $$ = new ExpressionList (source_file->location (yyloc)); }
 | ExpressionList { $$ = $1; }
 
 OptionalTypeOrExpressionList:
-  /* Empty. */         { $$ = new ExpressionList (yyloc); }
+  /* Empty. */         { $$ = new ExpressionList (source_file->location (yyloc)); }
 | TypeOrExpressionList { $$ = $1; }
 
 ExpressionList:
   Expression
-{ $$ = (new ExpressionList (@1))->append ($1); }
+{ $$ = (new ExpressionList (source_file->location (@1)))->append ($1); }
 | ExpressionList ',' Expression
 { $$ = $1->append ($3); }
 
 TypeOrExpressionList:
   Expression
-{ $$ = (new ExpressionList (@1))->append ($1); }
+{ $$ = (new ExpressionList (source_file->location (@1)))->append ($1); }
 | TypeLitExpression
-{ $$ = (new ExpressionList (@1))->append (new TypeExpression (@1, $1)); }
+{ $$ = (new ExpressionList (source_file->location (@1)))->append (new TypeExpression (source_file->location (@1), $1)); }
 | TypeOrExpressionList ',' Expression
 { $$ = $1->append ($3); }
 | TypeOrExpressionList ',' TypeLitExpression
-{ $$ = $1->append (new TypeExpression (@1, $3)); }
+{ $$ = $1->append (new TypeExpression (source_file->location (@1), $3)); }
 
 ExpressionStatement:
   Expression
-{ $$ = new ExpressionStatement (@1, $1); }
+{ $$ = new ExpressionStatement (source_file->location (@1), $1); }
 
 VarDecl:
   VAR IdentifierList Mutability DereferenceMutability Type '=' ExpressionList
-{ $$ = new Var (@1, $2, $3, $4, $5, $7); }
+{ $$ = new VarDecl (source_file->location (@1), $2, $3, $4, $5, $7); }
 | VAR IdentifierList Mutability DereferenceMutability Type
-{ $$ = new Var (@1, $2, $3, $4, $5, new ExpressionList (@1)); }
+{ $$ = new VarDecl (source_file->location (@1), $2, $3, $4, $5, new ExpressionList (source_file->location (@1))); }
 | VAR IdentifierList Mutability DereferenceMutability '=' ExpressionList
-{ $$ = new Var (@1, $2, $3, $4, new EmptyType (@1), $6); }
+{ $$ = new VarDecl (source_file->location (@1), $2, $3, $4, new EmptyType (source_file->location (@1)), $6); }
 | IdentifierList Mutability DereferenceMutability SHORT_ASSIGN ExpressionList
-{ $$ = new Var (@1, $1, $2, $3, new EmptyType (@1), $5); }
+{ $$ = new VarDecl (source_file->location (@1), $1, $2, $3, new EmptyType (source_file->location (@1)), $5); }
 
 AssignmentStatement:
   Expression '=' Expression
-{ $$ = new Assign (@1, $1, $3); }
+{ $$ = new Assign (source_file->location (@1), $1, $3); }
 | Expression ADD_ASSIGN Expression
-{ $$ = new AddAssign (@1, $1, $3); }
+{ $$ = new AddAssign (source_file->location (@1), $1, $3); }
 
 If:
   IF Expression Block
-  { $$ = new If (@1, new EmptyStatement (@1), $2, $3, new StatementList (@1)); }
+  { $$ = new If (source_file->location (@1), new EmptyStatement (source_file->location (@1)), $2, $3, new StatementList (source_file->location (@1))); }
 | IF Expression Block ELSE If
-{ $$ = new If (@1, new EmptyStatement (@1), $2, $3, $5); }
+{ $$ = new If (source_file->location (@1), new EmptyStatement (source_file->location (@1)), $2, $3, $5); }
 | IF Expression Block ELSE Block
-{ $$ = new If (@1, new EmptyStatement (@1), $2, $3, $5); }
+{ $$ = new If (source_file->location (@1), new EmptyStatement (source_file->location (@1)), $2, $3, $5); }
 | IF SimpleStatement ';' Expression Block
-{ $$ = new If (@1, $2, $4, $5, new StatementList (@1)); }
+{ $$ = new If (source_file->location (@1), $2, $4, $5, new StatementList (source_file->location (@1))); }
 | IF SimpleStatement ';' Expression Block ELSE If
-{ $$ = new If (@1, $2, $4, $5, $7); }
+{ $$ = new If (source_file->location (@1), $2, $4, $5, $7); }
 | IF SimpleStatement ';' Expression Block ELSE Block
-{ $$ = new If (@1, $2, $4, $5, $7); }
+{ $$ = new If (source_file->location (@1), $2, $4, $5, $7); }
 
 While:
   FOR Expression Block
-{ $$ = new While (@1, $2, $3); }
+{ $$ = new While (source_file->location (@1), $2, $3); }
 
 IdentifierList:
-  IDENTIFIER
-{ $$ = (new IdentifierList (@1))->append ($1); }
-| IdentifierList ',' IDENTIFIER
-{ $$ = $1->append ($3); }
+  identifier
+{ $$ = (new IdentifierList (source_file->location (@1)))->append (idref ($1)); }
+| IdentifierList ',' identifier
+{ $$ = $1->append (idref ($3)); }
 
 // Type literals that can appear in expressions.
 TypeLitExpression:
@@ -465,15 +493,15 @@ TypeLitExpression:
 | Heap      { $$ = $1; }
 
 Array:
-  ArrayDimension ElementType { $$ = new Array (@1, $1, $2); }
+  ArrayDimension ElementType { $$ = new Array (source_file->location (@1), $1, $2); }
 
 ElementType: Type { $$ = $1; }
 
 StructType: STRUCT '{' FieldList '}' { $$ = $3; }
 
-Slice: '[' ']' ElementType { $$ = new Slice (@1, $3); }
+Slice: '[' ']' ElementType { $$ = new Slice (source_file->location (@1), $3); }
 
-Map: MAP '[' KeyType ']' ElementType { $$ = new Map (@1, $3, $5); }
+Map: MAP '[' KeyType ']' ElementType { $$ = new Map (source_file->location (@1), $3, $5); }
 
 KeyType: Type { $$ = $1; }
 
@@ -481,21 +509,21 @@ ComponentType:
   COMPONENT '{' FieldList '}'
 { $$ = $3; static_cast<FieldList*> ($3)->is_component = true; }
 
-PushPort: PUSH ParameterList { $$ = new PushPort (@1, $2); }
+PushPort: PUSH ParameterList { $$ = new PushPort (source_file->location (@1), $2); }
 
 PullPort:
   PULL ParameterList ReturnParameterList
-{ $$ = new PullPort (@1, $2, $3); }
+{ $$ = new PullPort (source_file->location (@1), $2, $3); }
 
-Heap: HEAP Type { $$ = new Heap (@1, $2); }
+Heap: HEAP Type { $$ = new Heap (source_file->location (@1), $2); }
 
-Pointer: '*' Type { $$ = new Pointer (@1, $2); }
+Pointer: '*' Type { $$ = new Pointer (source_file->location (@1), $2); }
 
 TypeLit:
   Pointer       { $$ = $1; }
 | TypeLitExpression { $$ = $1; }
 
-TypeName: IDENTIFIER { $$ = new IdentifierType (@1, $1); }
+TypeName: identifier { $$ = new IdentifierType (source_file->location (@1), idref ($1)); }
 
 Type:
   TypeName     { $$ = $1; }
@@ -506,13 +534,13 @@ ArrayDimension: '[' Expression ']' { $$ = $2; }
 
 FieldList:
   /* empty */
-{ $$ = new FieldList (yyloc); }
+{ $$ = new FieldList (source_file->location (yyloc)); }
 | FieldList IdentifierList Type ';'
-{ $$ = $1->append (new VariableList (@1, $2, Mutable, Mutable, $3)); }
+{ $$ = $1->append (new VariableList (source_file->location (@1), $2, Mutable, Mutable, $3)); }
 
 OptionalExpression:
   /* empty */
-{ $$ = new EmptyExpression (yyloc); }
+{ $$ = new EmptyExpression (source_file->location (yyloc)); }
 | Expression
 { $$ = $1; }
 
@@ -522,111 +550,111 @@ OrExpression:
   AndExpression
 { $$ = $1; }
 | OrExpression LOGIC_OR AndExpression
-{ $$ = make_binary (@1, &decl::logic_or, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::logic_or, $1, $3); }
 
 AndExpression:
   CompareExpression
 { $$ = $1; }
 | AndExpression LOGIC_AND CompareExpression
-{ $$ = make_binary (@1, &decl::logic_and, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::logic_and, $1, $3); }
 
 CompareExpression:
   AddExpression
 { $$ = $1; }
 | CompareExpression EQUAL AddExpression
-{ $$ = make_binary (@1, &decl::equal, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::equal, $1, $3); }
 | CompareExpression NOT_EQUAL AddExpression
-{ $$ = make_binary (@1, &decl::not_equal, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::not_equal, $1, $3); }
 | CompareExpression '<' AddExpression
-{ $$ = make_binary (@1, &decl::less_than, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::less_than, $1, $3); }
 | CompareExpression LESS_EQUAL AddExpression
-{ $$ = make_binary (@1, &decl::less_equal, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::less_equal, $1, $3); }
 | CompareExpression '>' AddExpression
-{ $$ = make_binary (@1, &decl::more_than, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::more_than, $1, $3); }
 | CompareExpression MORE_EQUAL AddExpression
-{ $$ = make_binary (@1, &decl::more_equal, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::more_equal, $1, $3); }
 
 AddExpression:
   MultiplyExpression
 { $$ = $1; }
 | AddExpression '+' MultiplyExpression
-{ $$ = make_binary (@1, &decl::add, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::add, $1, $3); }
 | AddExpression '-' MultiplyExpression
-{ $$ = make_binary (@1, &decl::subtract, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::subtract, $1, $3); }
 | AddExpression '|' MultiplyExpression
-{ $$ = make_binary (@1, &decl::bit_or, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::bit_or, $1, $3); }
 | AddExpression '^' MultiplyExpression
-{ $$ = make_binary (@1, &decl::bit_xor, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::bit_xor, $1, $3); }
 
 MultiplyExpression:
   UnaryExpression
 { $$ = $1; }
 | MultiplyExpression '*' UnaryExpression
-{ $$ = make_binary (@1, &decl::multiply, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::multiply, $1, $3); }
 | MultiplyExpression '/' UnaryExpression
-{ $$ = make_binary (@1, &decl::divide, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::divide, $1, $3); }
 | MultiplyExpression '%' UnaryExpression
-{ $$ = make_binary (@1, &decl::modulus, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::modulus, $1, $3); }
 | MultiplyExpression LEFT_SHIFT UnaryExpression
-{ $$ = make_binary (@1, &decl::left_shift, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::left_shift, $1, $3); }
 | MultiplyExpression RIGHT_SHIFT UnaryExpression
-{ $$ = make_binary (@1, &decl::right_shift, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::right_shift, $1, $3); }
 | MultiplyExpression '&' UnaryExpression
-{ $$ = make_binary (@1, &decl::bit_and, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::bit_and, $1, $3); }
 | MultiplyExpression AND_NOT UnaryExpression
-{ $$ = make_binary (@1, &decl::bit_and_not, $1, $3); }
+{ $$ = make_binary (source_file->location (@1), &decl::bit_and_not, $1, $3); }
 
 UnaryExpression:
   PrimaryExpression   { $$ = $1; }
-| '+' UnaryExpression { $$ = make_unary (@1, &decl::posate, $2); }
-| '-' UnaryExpression { $$ = make_unary (@1, &decl::negate, $2); }
-| '!' UnaryExpression { $$ = make_unary (@1, &decl::logic_not, $2); }
-| '^' UnaryExpression { $$ = make_unary (@1, &decl::complement, $2); }
-| '*' UnaryExpression { $$ = new Dereference (@1, $2); }
-| '&' UnaryExpression { $$ = new AddressOf (@1, $2); }
+| '+' UnaryExpression { $$ = make_unary (source_file->location (@1), &decl::posate, $2); }
+| '-' UnaryExpression { $$ = make_unary (source_file->location (@1), &decl::negate, $2); }
+| '!' UnaryExpression { $$ = make_unary (source_file->location (@1), &decl::logic_not, $2); }
+| '^' UnaryExpression { $$ = make_unary (source_file->location (@1), &decl::complement, $2); }
+| '*' UnaryExpression { $$ = new Dereference (source_file->location (@1), $2); }
+| '&' UnaryExpression { $$ = new AddressOf (source_file->location (@1), $2); }
 
 PrimaryExpression:
   Literal
 { $$ = $1; }
 | TypeLitExpression LiteralValue
-{ $$ = new CompositeLiteral (@1, $1, $2); }
-| IDENTIFIER LiteralValue
-{ $$ = new CompositeLiteral (@1, new IdentifierType (@1, $1), $2); }
+{ $$ = new CompositeLiteral (source_file->location (@1), $1, $2); }
+| identifier LiteralValue
+{ $$ = new CompositeLiteral (source_file->location (@1), new IdentifierType (source_file->location (@1), idref ($1)), $2); }
 | '[' DOTDOTDOT ']' ElementType LiteralValue
-{ $$ = new CompositeLiteral (@1, new Array (@1, new EmptyExpression (@1), $4), $5); }
+{ $$ = new CompositeLiteral (source_file->location (@1), new Array (source_file->location (@1), new EmptyExpression (source_file->location (@1)), $4), $5); }
 /* | FunctionLit */
-| IDENTIFIER
-{ $$ = new IdentifierExpression (@1, $1); }
+| identifier
+{ $$ = new IdentifierExpression (source_file->location (@1), idref ($1)); }
 | '(' Expression ')'
 { $$ = $2; }
-| PrimaryExpression '.' IDENTIFIER
-{ $$ = new Select (@1, $1, $3); }
+| PrimaryExpression '.' identifier
+{ $$ = new Select (source_file->location (@1), $1, idref ($3)); }
 | PrimaryExpression '[' Expression ']'
-{ $$ = new Index (@1, $1, $3); }
+{ $$ = new Index (source_file->location (@1), $1, $3); }
 | PrimaryExpression '[' OptionalExpression ':' OptionalExpression ']'
-{ $$ = new IndexSlice (@1, $1, $3, $5, new EmptyExpression (yyloc)); }
+{ $$ = new IndexSlice (source_file->location (@1), $1, $3, $5, new EmptyExpression (source_file->location (yyloc))); }
 | PrimaryExpression '[' OptionalExpression ':' Expression ':' Expression ']'
-{ $$ = new IndexSlice (@1, $1, $3, $5, $7); }
+{ $$ = new IndexSlice (source_file->location (@1), $1, $3, $5, $7); }
 | PrimaryExpression '(' OptionalTypeOrExpressionList ')'
-{ $$ = new Call (@1, $1, $3); }
+{ $$ = new Call (source_file->location (@1), $1, $3); }
 | TypeLitExpression '(' Expression ')'
-{ $$ = new Conversion (@1, new TypeExpression (@1, $1), $3); }
+{ $$ = new Conversion (source_file->location (@1), new TypeExpression (source_file->location (@1), $1), $3); }
 
 Literal:
   LITERAL    { $$ = $1; }
-| STRING_LIT { $$ = $1; }
+| string_lit { $$ = $1; }
 
 LiteralValue:
-  '{' '}'                           { $$ = new ElementList (@1); }
+  '{' '}'                           { $$ = new ElementList (source_file->location (@1)); }
 | '{' ElementList OptionalComma '}' { $$ = $2;                          }
 
 ElementList:
-  Element                 { $$ = (new ElementList (@1))->append ($1); }
+  Element                 { $$ = (new ElementList (source_file->location (@1)))->append ($1); }
 | ElementList ',' Element { $$ = $1->append ($3); }
 
 Element:
-  Key ':' Value { $$ = new Element (@1, $1, $3); }
-| Value         { $$ = new Element (@1, new EmptyExpression (@1), $1); }
+  Key ':' Value { $$ = new Element (source_file->location (@1), $1, $3); }
+| Value         { $$ = new Element (source_file->location (@1), new EmptyExpression (source_file->location (@1)), $1); }
 
 Key:
   Expression   { $$ = $1; }

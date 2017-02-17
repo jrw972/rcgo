@@ -164,8 +164,7 @@ struct NamedType : public Type, public decl::Symbol
   typedef std::vector<decl::Bind*> BindsType;
 
   NamedType (ast::TypeDecl* a_typedecl);
-  NamedType (const std::string& name,
-             const util::Location& location,
+  NamedType (const source::Identifier& identifier,
              const Type* underlyingType);
 
   void print (std::ostream& out = std::cout) const;
@@ -369,10 +368,9 @@ struct Struct : public Type
   virtual const Struct* to_struct () const;
   const_iterator begin () const;
   const_iterator end () const;
-  Struct* append_field (decl::Package* package,
+  Struct* append_field (source::Package* package,
                         bool is_anonymous,
-                        const std::string& field_name,
-                        const util::Location& location,
+                        const source::Identifier& identifier,
                         const Type* field_type,
                         const TagSet& tags);
   virtual decl::Field* find_field_i (const std::string& name) const;
@@ -385,7 +383,7 @@ private:
 
 struct Component : public Struct
 {
-  Component (decl::Package* package, const util::Location& location);
+  Component (source::Package* package, const source::Location& location);
   void print (std::ostream& out = std::cout) const;
   virtual Kind kind () const;
 };
@@ -488,12 +486,12 @@ struct Reaction : public MethodBase
 
 struct Interface : public Type
 {
-  Interface (decl::Package* a_package);
+  Interface (source::Package* a_package);
   virtual void print (std::ostream& out = std::cout) const;
   virtual Kind kind () const;
   virtual const Interface* to_interface () const;
 
-  decl::Package* const package;
+  source::Package* const package;
   typedef std::map<std::string, const Function*> MethodsType;
   MethodsType methods;
 };

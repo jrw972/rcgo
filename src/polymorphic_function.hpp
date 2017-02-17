@@ -9,8 +9,7 @@ namespace decl
 
 struct PolymorphicFunction : public Symbol
 {
-  PolymorphicFunction (const std::string& id,
-                       const util::Location& loc);
+  PolymorphicFunction (const source::Identifier& identifier);
 
   virtual void accept (PolymorphicFunctionVisitor& visitor) const = 0;
 
@@ -145,8 +144,8 @@ struct LogicAndComputer
 template <typename Computer>
 struct BinaryArithmetic : public decl::PolymorphicFunction
 {
-  BinaryArithmetic (const std::string& id, const util::Location& loc)
-    : PolymorphicFunction (id, loc)
+  BinaryArithmetic (const source::Identifier& identifier)
+    : PolymorphicFunction (identifier)
   { }
 
   virtual void
@@ -168,8 +167,8 @@ struct BinaryArithmetic : public decl::PolymorphicFunction
 template <typename B>
 struct BinaryShift : public decl::PolymorphicFunction
 {
-  BinaryShift (const std::string& id, const util::Location& loc) :
-    PolymorphicFunction (id, loc)
+  BinaryShift (const source::Identifier& identifier) :
+    PolymorphicFunction (identifier)
   { }
 
   virtual void

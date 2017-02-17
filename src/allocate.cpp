@@ -84,7 +84,7 @@ allocate_statement_stack_variables (ast::Node* node, runtime::MemoryModel& memor
 
     void default_action (Node& node)
     {
-      AST_NOT_REACHED (node);
+      NODE_NOT_REACHED (node);
     }
 
     void visit (ConstDecl& node)
@@ -192,9 +192,9 @@ allocate_statement_stack_variables (ast::Node* node, runtime::MemoryModel& memor
       node.memory_model = &memory_model;
     }
 
-    void visit (Var& node)
+    void visit (VarDecl& node)
     {
-      for (Var::SymbolsType::const_iterator pos = node.symbols.begin (),
+      for (VarDecl::SymbolsType::const_iterator pos = node.symbols.begin (),
            limit = node.symbols.end ();
            pos != limit;
            ++pos)
@@ -224,7 +224,7 @@ allocate_stack_variables (ast::Node* node)
       assert (node.action->memory_model.locals_empty ());
     }
 
-    void visit (ast::BindDecl& node)
+    void visit (ast::BinderDecl& node)
     {
       allocate_symbol (node.bind->memory_model, node.bind->receiver_parameter ());
       allocate_statement_stack_variables (node.body, node.bind->memory_model);
@@ -247,7 +247,7 @@ allocate_stack_variables (ast::Node* node)
       assert (node.method->memory_model.locals_empty ());
     }
 
-    void visit (ast::InitDecl& node)
+    void visit (ast::InitializerDecl& node)
     {
       allocate_parameters (node.initializer->memory_model, node.initializer->parameter_list ());
       allocate_parameters (node.initializer->memory_model, node.initializer->return_parameter_list ());
@@ -272,16 +272,6 @@ allocate_stack_variables (ast::Node* node)
         }
       allocate_statement_stack_variables (node.body, node.reaction->memory_model);
       assert (node.reaction->memory_model.locals_empty ());
-    }
-
-    void visit (SourceFile& node)
-    {
-      node.top_level_decl_list->accept (*this);
-    }
-
-    void visit (TopLevelDeclList& node)
-    {
-      node.visit_children (*this);
     }
   };
 

@@ -1,10 +1,9 @@
 #ifndef RC_SRC_LOCATION_HPP
 #define RC_SRC_LOCATION_HPP
 
-#include <string>
-#include <vector>
+#include "types.hpp"
 
-namespace util
+namespace source
 {
 
 /*
@@ -15,12 +14,9 @@ namespace util
 
 struct Location
 {
-  static std::string static_file;
-
-  Location (unsigned int a_line = 0);
-  Location (const std::string& file);
+  Location (const SourceFile* a_file, unsigned int a_line);
   bool operator== (const Location& other) const;
-  const std::string& file () const
+  const SourceFile* file () const
   {
     return file_;
   }
@@ -29,15 +25,14 @@ struct Location
     return line_;
   }
 
-private:
-  std::string file_;
-  unsigned int line_;
+  static const Location builtin;
 
+private:
+  const SourceFile* file_;
+  unsigned int line_;
 };
 
 typedef std::vector<Location> LocationList;
-extern const Location builtin;
-
 }
 
 #endif // RC_SRC_LOCATION_HPP

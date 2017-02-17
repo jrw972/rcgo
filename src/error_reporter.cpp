@@ -2,6 +2,7 @@
 
 #include "location.hpp"
 #include "type.hpp"
+#include "identifier.hpp"
 
 namespace util
 {
@@ -13,7 +14,7 @@ ErrorReporter::ErrorReporter (size_t limit, std::ostream& out)
 
 std::ostream&
 operator<< (std::ostream& out,
-            const Location& loc)
+            const source::Location& loc)
 {
   return out << loc.file () << ':' << loc.line ();
 }
@@ -26,7 +27,7 @@ operator<< (std::ostream& out,
 }
 
 ErrorCode
-ErrorReporter::func_expects_count (const Location& loc,
+ErrorReporter::func_expects_count (const source::Location& loc,
                                    const std::string& func,
                                    size_t expect,
                                    size_t given)
@@ -36,7 +37,7 @@ ErrorReporter::func_expects_count (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::func_expects_arg (const Location& loc,
+ErrorReporter::func_expects_arg (const source::Location& loc,
                                  const std::string& func,
                                  size_t idx,
                                  const type::Type* expect,
@@ -47,7 +48,7 @@ ErrorReporter::func_expects_arg (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::cannot_be_applied (const Location& loc,
+ErrorReporter::cannot_be_applied (const source::Location& loc,
                                   const std::string& op,
                                   const type::Type* type)
 {
@@ -56,7 +57,7 @@ ErrorReporter::cannot_be_applied (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::cannot_be_applied (const Location& loc,
+ErrorReporter::cannot_be_applied (const source::Location& loc,
                                   const std::string& op,
                                   const type::Type* left,
                                   const type::Type* right)
@@ -66,15 +67,14 @@ ErrorReporter::cannot_be_applied (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::not_declared (const Location& loc,
-                             const std::string& id)
+ErrorReporter::not_declared (const source::Identifier& identifier)
 {
-  out_ << loc << ": " << id << " is not declared in this scope " << Not_Declared << '\n';
+  out_ << identifier.location () << ": " << identifier.identifier () << " is not declared in this scope " << Not_Declared << '\n';
   return bump (Not_Declared);
 }
 
 ErrorCode
-ErrorReporter::hidden_symbol (const Location& loc,
+ErrorReporter::hidden_symbol (const source::Location& loc,
                               const std::string& id)
 {
   out_ << loc << ": " << id << " is hidden in this scope " << Hidden_Symbol << '\n';
@@ -82,35 +82,35 @@ ErrorReporter::hidden_symbol (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::expected_an_rvalue (const Location& loc)
+ErrorReporter::expected_an_rvalue (const source::Location& loc)
 {
   out_ << loc << ": expected an rvalue " << Expected_An_Rvalue << '\n';
   return bump (Expected_An_Rvalue);
 }
 
 ErrorCode
-ErrorReporter::expected_a_type (const Location& loc)
+ErrorReporter::expected_a_type (const source::Location& loc)
 {
   out_ << loc << ": expected a type " << Expected_A_Type << '\n';
   return bump (Expected_A_Type);
 }
 
 ErrorCode
-ErrorReporter::leaks_pointers (const Location& loc)
+ErrorReporter::leaks_pointers (const source::Location& loc)
 {
   out_ << loc << ": operation leaks pointers " << Leaks_Pointers << '\n';
   return bump (Leaks_Pointers);
 }
 
 ErrorCode
-ErrorReporter::parameter_is_not_foreign_safe (const Location& loc)
+ErrorReporter::parameter_is_not_foreign_safe (const source::Location& loc)
 {
   out_ << loc << ": parameter is not foreign safe " << Parameter_Is_Not_Foreign_Safe << '\n';
   return bump (Parameter_Is_Not_Foreign_Safe);
 }
 
 ErrorCode
-ErrorReporter::expected_n_expressions (const Location& loc,
+ErrorReporter::expected_n_expressions (const source::Location& loc,
                                        size_t expected,
                                        size_t received)
 {
@@ -119,7 +119,7 @@ ErrorReporter::expected_n_expressions (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::cannot_convert (const Location& loc,
+ErrorReporter::cannot_convert (const source::Location& loc,
                                const type::Type* from,
                                const type::Type* to)
 {
@@ -128,23 +128,23 @@ ErrorReporter::cannot_convert (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::expression_is_not_constant (const Location& loc)
+ErrorReporter::expression_is_not_constant (const source::Location& loc)
 {
   out_ << loc << ": expression is not constant " << Expression_Is_Not_Constant << '\n';
   return bump (Expression_Is_Not_Constant);
 }
 
 ErrorCode
-ErrorReporter::already_declared (const Location& loc,
+ErrorReporter::already_declared (const source::Location& loc,
                                  const std::string& id,
-                                 const Location& previous_loc)
+                                 const source::Location& previous_loc)
 {
   out_ << loc << ": " << id << " was already declared in this scope (previous declaration at " << previous_loc << ") " << Already_Declared << '\n';
   return bump (Already_Declared);
 }
 
 ErrorCode
-ErrorReporter::defined_recursively (const Location& loc,
+ErrorReporter::defined_recursively (const source::Location& loc,
                                     const std::string& id)
 {
   out_ << loc << ": " << id << " is defined recursively " << Defined_Recursively << '\n';
@@ -152,7 +152,7 @@ ErrorReporter::defined_recursively (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::non_integer_array_dimension (const Location& loc,
+ErrorReporter::non_integer_array_dimension (const source::Location& loc,
     const type::Type* type)
 {
   out_ << loc << ": cannot convert value of type " << *type << " to integer for array dimension " << Non_Integer_Array_Dimension << '\n';
@@ -160,7 +160,7 @@ ErrorReporter::non_integer_array_dimension (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::negative_array_dimension (const Location& loc,
+ErrorReporter::negative_array_dimension (const source::Location& loc,
     long dim)
 {
   out_ << loc << ": array dimension (" << dim << ") is negative " << Negative_Array_Dimension << '\n';
@@ -168,7 +168,7 @@ ErrorReporter::negative_array_dimension (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::not_defined (const Location& loc,
+ErrorReporter::not_defined (const source::Location& loc,
                             const std::string& id)
 {
   out_ << loc << ": " << id << " is not defined " << Not_Defined << '\n';
@@ -176,28 +176,28 @@ ErrorReporter::not_defined (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::expected_a_component (const Location& loc)
+ErrorReporter::expected_a_component (const source::Location& loc)
 {
   out_ << loc << ": expected a component " << Expected_A_Component << '\n';
   return bump (Expected_A_Component);
 }
 
 ErrorCode
-ErrorReporter::expected_a_pointer (const Location& loc)
+ErrorReporter::expected_a_pointer (const source::Location& loc)
 {
   out_ << loc << ": expected a pointer " << Expected_A_Pointer << '\n';
   return bump (Expected_A_Pointer);
 }
 
 ErrorCode
-ErrorReporter::expected_immutable_indirection_mutability (const Location& loc)
+ErrorReporter::expected_immutable_indirection_mutability (const source::Location& loc)
 {
   out_ << loc << ": expected immutable indirection mutability ($const or $foreign) " << Expected_Immutable_Indirection_Mutability << '\n';
   return bump (Expected_Immutable_Indirection_Mutability);
 }
 
 ErrorCode
-ErrorReporter::length_exceeds_capacity (const Location& loc,
+ErrorReporter::length_exceeds_capacity (const source::Location& loc,
                                         long len,
                                         long cap)
 {
@@ -206,14 +206,14 @@ ErrorReporter::length_exceeds_capacity (const Location& loc,
 }
 
 ErrorCode
-ErrorReporter::destination_is_not_mutable (const Location& loc)
+ErrorReporter::destination_is_not_mutable (const source::Location& loc)
 {
   out_ << loc << ": destination is not mutable " << Destination_Is_Not_Mutable << '\n';
   return bump (Destination_Is_Not_Mutable);
 }
 
 ErrorCode
-ErrorReporter::assignment_leaks_immutable_pointers (const Location& loc)
+ErrorReporter::assignment_leaks_immutable_pointers (const source::Location& loc)
 {
   out_ << loc << ": assignment leaks immutable pointers " << Assignment_Leaks_Immutable_Pointers << '\n';
   return bump (Assignment_Leaks_Immutable_Pointers);

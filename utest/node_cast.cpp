@@ -11,8 +11,8 @@ main (int argc, char** argv)
   Tap tap;
 
   {
-    Node* n = new Identifier (1, "id");
-    tap.tassert ("ast::node_cast", node_cast<Identifier> (n) != NULL);
+    Node* n = new EmptyType (source::Location::builtin);
+    tap.tassert ("ast::node_cast", node_cast<EmptyType> (n) != NULL);
     tap.tassert ("ast::node_cast (null)", node_cast<ReactionDecl> (n) == NULL);
   }
 

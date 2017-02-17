@@ -201,10 +201,10 @@ am__objects_13 = unit_test-astgen.$(OBJEXT)
 am_unit_test_OBJECTS = $(am__objects_13) unit_test-unit_test.$(OBJEXT) \
 	unit_test-callable.$(OBJEXT) unit_test-check_all.$(OBJEXT) \
 	unit_test-enter_method_identifiers.$(OBJEXT) \
-	unit_test-enter_identifiers.$(OBJEXT) \
 	unit_test-error_reporter.$(OBJEXT) \
 	unit_test-expression_value.$(OBJEXT) unit_test-node.$(OBJEXT) \
 	unit_test-polymorphic_function.$(OBJEXT) \
+	unit_test-populate_package_block.$(OBJEXT) \
 	unit_test-populate_universe_block.$(OBJEXT) \
 	unit_test-process_top_level_identifiers.$(OBJEXT) \
 	unit_test-process_type.$(OBJEXT) unit_test-symbol.$(OBJEXT) \
@@ -637,12 +637,11 @@ AM_CXXFLAGS = -I $(top_srcdir)/src
 EXTRA_DIST = callable.test \
 check_all.test \
 enter_method_identifiers.test \
-enter_identifiers.test \
-enter_identifiers.test \
 error_reporter.test \
 expression_value.test \
 node.test \
 polymorphic_function.test \
+populate_package_block.test \
 populate_universe_block.test \
 process_top_level_identifiers.test \
 process_type.test \
@@ -704,11 +703,11 @@ unit_test.cpp \
 callable.cpp \
 check_all.cpp \
 enter_method_identifiers.cpp \
-enter_identifiers.cpp \
 error_reporter.cpp \
 expression_value.cpp \
 node.cpp \
 polymorphic_function.cpp \
+populate_package_block.cpp \
 populate_universe_block.cpp \
 process_top_level_identifiers.cpp \
 process_type.cpp \
@@ -848,12 +847,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-astgen.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-callable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-check_all.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-enter_identifiers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-enter_method_identifiers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-error_reporter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-expression_value.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-node.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-polymorphic_function.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-populate_package_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-populate_universe_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-process_top_level_identifiers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_test-process_type.Po@am__quote@
@@ -1289,20 +1288,6 @@ unit_test-enter_method_identifiers.obj: enter_method_identifiers.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_method_identifiers.obj `if test -f 'enter_method_identifiers.cpp'; then $(CYGPATH_W) 'enter_method_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_method_identifiers.cpp'; fi`
 
-unit_test-enter_identifiers.o: enter_identifiers.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_identifiers.o -MD -MP -MF $(DEPDIR)/unit_test-enter_identifiers.Tpo -c -o unit_test-enter_identifiers.o `test -f 'enter_identifiers.cpp' || echo '$(srcdir)/'`enter_identifiers.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_identifiers.Tpo $(DEPDIR)/unit_test-enter_identifiers.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_identifiers.cpp' object='unit_test-enter_identifiers.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_identifiers.o `test -f 'enter_identifiers.cpp' || echo '$(srcdir)/'`enter_identifiers.cpp
-
-unit_test-enter_identifiers.obj: enter_identifiers.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-enter_identifiers.obj -MD -MP -MF $(DEPDIR)/unit_test-enter_identifiers.Tpo -c -o unit_test-enter_identifiers.obj `if test -f 'enter_identifiers.cpp'; then $(CYGPATH_W) 'enter_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_identifiers.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-enter_identifiers.Tpo $(DEPDIR)/unit_test-enter_identifiers.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='enter_identifiers.cpp' object='unit_test-enter_identifiers.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-enter_identifiers.obj `if test -f 'enter_identifiers.cpp'; then $(CYGPATH_W) 'enter_identifiers.cpp'; else $(CYGPATH_W) '$(srcdir)/enter_identifiers.cpp'; fi`
-
 unit_test-error_reporter.o: error_reporter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-error_reporter.o -MD -MP -MF $(DEPDIR)/unit_test-error_reporter.Tpo -c -o unit_test-error_reporter.o `test -f 'error_reporter.cpp' || echo '$(srcdir)/'`error_reporter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-error_reporter.Tpo $(DEPDIR)/unit_test-error_reporter.Po
@@ -1358,6 +1343,20 @@ unit_test-polymorphic_function.obj: polymorphic_function.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='polymorphic_function.cpp' object='unit_test-polymorphic_function.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-polymorphic_function.obj `if test -f 'polymorphic_function.cpp'; then $(CYGPATH_W) 'polymorphic_function.cpp'; else $(CYGPATH_W) '$(srcdir)/polymorphic_function.cpp'; fi`
+
+unit_test-populate_package_block.o: populate_package_block.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-populate_package_block.o -MD -MP -MF $(DEPDIR)/unit_test-populate_package_block.Tpo -c -o unit_test-populate_package_block.o `test -f 'populate_package_block.cpp' || echo '$(srcdir)/'`populate_package_block.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-populate_package_block.Tpo $(DEPDIR)/unit_test-populate_package_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='populate_package_block.cpp' object='unit_test-populate_package_block.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-populate_package_block.o `test -f 'populate_package_block.cpp' || echo '$(srcdir)/'`populate_package_block.cpp
+
+unit_test-populate_package_block.obj: populate_package_block.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-populate_package_block.obj -MD -MP -MF $(DEPDIR)/unit_test-populate_package_block.Tpo -c -o unit_test-populate_package_block.obj `if test -f 'populate_package_block.cpp'; then $(CYGPATH_W) 'populate_package_block.cpp'; else $(CYGPATH_W) '$(srcdir)/populate_package_block.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unit_test-populate_package_block.Tpo $(DEPDIR)/unit_test-populate_package_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='populate_package_block.cpp' object='unit_test-populate_package_block.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -c -o unit_test-populate_package_block.obj `if test -f 'populate_package_block.cpp'; then $(CYGPATH_W) 'populate_package_block.cpp'; else $(CYGPATH_W) '$(srcdir)/populate_package_block.cpp'; fi`
 
 unit_test-populate_universe_block.o: populate_universe_block.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_test_CXXFLAGS) $(CXXFLAGS) -MT unit_test-populate_universe_block.o -MD -MP -MF $(DEPDIR)/unit_test-populate_universe_block.Tpo -c -o unit_test-populate_universe_block.o `test -f 'populate_universe_block.cpp' || echo '$(srcdir)/'`populate_universe_block.cpp

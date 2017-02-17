@@ -81,10 +81,10 @@ subdir = .
 DIST_COMMON = INSTALL NEWS README AUTHORS ChangeLog \
 	$(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
-	$(srcdir)/config.h.in COPYING build-aux/compile \
-	build-aux/config.guess build-aux/config.sub build-aux/depcomp \
-	build-aux/install-sh build-aux/missing build-aux/ltmain.sh \
-	$(top_srcdir)/build-aux/compile \
+	$(srcdir)/config.h.in $(top_srcdir)/bin/rcgo.in COPYING \
+	build-aux/compile build-aux/config.guess build-aux/config.sub \
+	build-aux/depcomp build-aux/install-sh build-aux/missing \
+	build-aux/ltmain.sh $(top_srcdir)/build-aux/compile \
 	$(top_srcdir)/build-aux/config.guess \
 	$(top_srcdir)/build-aux/config.sub \
 	$(top_srcdir)/build-aux/install-sh \
@@ -102,7 +102,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
-CONFIG_CLEAN_FILES =
+CONFIG_CLEAN_FILES = bin/rcgo
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -386,6 +386,8 @@ $(srcdir)/config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f config.h stamp-h1
+bin/rcgo: $(top_builddir)/config.status $(top_srcdir)/bin/rcgo.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -830,10 +832,10 @@ test: check
 @COVERAGE_TRUE@	sed -i -e 's@$(abs_builddir)@$(realpath $(abs_top_srcdir))@g' utest.filtered.info
 @COVERAGE_TRUE@	genhtml -o html/utest utest.filtered.info
 @COVERAGE_TRUE@	lcov --zerocounters --directory src --directory src/.libs
-@COVERAGE_TRUE@	cd ftest && make check
-@COVERAGE_TRUE@	lcov --capture --directory src --directory src/.libs --output-file ftest.info
-@COVERAGE_TRUE@	lcov --extract ftest.info '*rcgo/*src/*' --output-file ftest.filtered.info
-@COVERAGE_TRUE@	sed -i -e 's@$(abs_builddir)@$(realpath $(abs_top_srcdir))@g' ftest.filtered.info
+#	cd ftest && make check
+#	lcov --capture --directory src --directory src/.libs --output-file ftest.info
+#	lcov --extract ftest.info '*rcgo/*src/*' --output-file ftest.filtered.info
+#	sed -i -e 's@$(abs_builddir)@$(realpath $(abs_top_srcdir))@g' ftest.filtered.info
 @COVERAGE_TRUE@	genhtml -o html/ftest ftest.filtered.info
 @COVERAGE_TRUE@	@echo "file://$(PWD)/html/utest/index.html"
 @COVERAGE_TRUE@	@echo "file://$(PWD)/html/ftest/index.html"

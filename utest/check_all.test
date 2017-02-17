@@ -9,10 +9,11 @@ using namespace ast;
 using namespace util;
 using namespace decl;
 using namespace type;
+using namespace source;
 
 scope(semantic); {
   ErrorReporter er;
-  Location loc;
+  Location loc = Location::builtin;
   semantic::ExpressionValueList args;
   LocationList locs;
   ExpressionValue out;

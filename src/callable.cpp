@@ -8,6 +8,7 @@
 #include "error_reporter.hpp"
 #include "scope.hpp"
 #include "node_cast.hpp"
+#include "identifier.hpp"
 
 namespace decl
 {
@@ -17,10 +18,9 @@ using namespace semantic;
 
 Callable::~Callable () { }
 
-FunctionBase::FunctionBase (const std::string& id,
-                            const util::Location& loc,
+FunctionBase::FunctionBase (const source::Identifier& identifier,
                             const type::Function* a_type)
-  : Symbol (id, loc)
+  : Symbol (identifier)
   , type (a_type)
 {
   if (a_type)
@@ -69,7 +69,7 @@ FunctionBase::accept (ConstSymbolVisitor& visitor) const
 }
 
 Function::Function (ast::FunctionDecl* a_functiondecl)
-  : FunctionBase (a_functiondecl->identifier->identifier, a_functiondecl->identifier->location, NULL)
+  : FunctionBase (a_functiondecl->identifier, NULL)
   , operation (NULL)
   , functiondecl (a_functiondecl)
 { }
@@ -90,10 +90,9 @@ void Function::call (runtime::ExecutorBase& exec) const
   this->operation->execute (exec);
 }
 
-MethodBase::MethodBase (const std::string& a_name,
-                        const util::Location& a_location,
+MethodBase::MethodBase (const source::Identifier& identifier,
                         const type::NamedType* a_named_type)
-  : Symbol (a_name, a_location)
+  : Symbol (identifier)
   , named_type (a_named_type)
   , type (NULL)
   , operation (NULL)
@@ -145,7 +144,7 @@ MethodBase::accept (ConstSymbolVisitor& visitor) const
 
 Method::Method (ast::MethodDecl* a_methoddecl,
                 const type::NamedType* a_named_type)
-  : MethodBase (a_methoddecl->identifier->identifier, a_methoddecl->identifier->location, a_named_type)
+  : MethodBase (a_methoddecl->identifier, a_named_type)
   , methoddecl (a_methoddecl)
 { }
 
@@ -166,9 +165,9 @@ bool Method::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol
   return true;
 }
 
-Initializer::Initializer (ast::InitDecl* a_initdecl,
+Initializer::Initializer (ast::InitializerDecl* a_initdecl,
                           const type::NamedType* a_named_type)
-  : MethodBase (a_initdecl->identifier->identifier, a_initdecl->identifier->location, a_named_type)
+  : MethodBase (a_initdecl->identifier, a_named_type)
   , initdecl (a_initdecl)
 { }
 
@@ -191,7 +190,7 @@ bool Initializer::process_declaration_i (util::ErrorReporter& er, SymbolTable& s
 
 Getter::Getter (ast::GetterDecl* a_getterdecl,
                 const type::NamedType* a_named_type)
-  : MethodBase (a_getterdecl->identifier->identifier, a_getterdecl->identifier->location, a_named_type)
+  : MethodBase (a_getterdecl->identifier, a_named_type)
   , getterdecl (a_getterdecl)
 { }
 
@@ -214,7 +213,7 @@ bool Getter::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol
 
 Action::Action (ast::ActionDecl* a_actiondecl,
                 const type::NamedType* a_named_type)
-  : MethodBase (a_actiondecl->identifier->identifier, a_actiondecl->identifier->location, a_named_type)
+  : MethodBase (a_actiondecl->identifier, a_named_type)
   , actiondecl (a_actiondecl)
   , receiver_parameter_ (NULL)
   , iota_parameter_ (NULL)
@@ -227,7 +226,7 @@ bool Action::process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol
 
   if (node_cast<EmptyExpression> (actiondecl->dimension) == NULL)
     {
-      this->iota_parameter_ = Parameter::make (actiondecl->dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
+      this->iota_parameter_ = Parameter::make (source::Identifier ("IOTA", actiondecl->dimension->location), /*type::Int::instance (),*/ Immutable, Immutable);
       this->dimension_ = semantic::process_array_dimension (er, symbol_table, actiondecl->dimension);
     }
 
@@ -253,7 +252,7 @@ long Action::dimension () const
 
 Reaction::Reaction (ast::ReactionDecl* a_reactiondecl,
                     const type::NamedType* a_named_type)
-  : MethodBase (a_reactiondecl->identifier->identifier, a_reactiondecl->identifier->location, a_named_type)
+  : MethodBase (a_reactiondecl->identifier, a_named_type)
   , reactiondecl (a_reactiondecl)
   , iota_ (NULL)
   , dimension_ (-1)
@@ -275,7 +274,7 @@ bool Reaction::process_declaration_i (util::ErrorReporter& er, SymbolTable& symb
 
   if (node_cast<EmptyExpression> (reactiondecl->dimension) == NULL)
     {
-      this->iota_ = Parameter::make (reactiondecl->dimension->location, "IOTA", type::Int::instance (), Immutable, Immutable);
+      this->iota_ = Parameter::make (source::Identifier ("IOTA", reactiondecl->dimension->location), /*type::Int::instance (),*/ Immutable, Immutable);
       this->dimension_ = process_array_dimension (er, symbol_table, reactiondecl->dimension);
     }
 
@@ -293,9 +292,9 @@ bool Reaction::process_declaration_i (util::ErrorReporter& er, SymbolTable& symb
   return true;
 }
 
-Bind::Bind (ast::BindDecl* a_binddecl,
+Bind::Bind (ast::BinderDecl* a_binddecl,
             const type::NamedType* a_named_type)
-  : MethodBase (a_binddecl->identifier->identifier, a_binddecl->identifier->location, a_named_type)
+  : MethodBase (a_binddecl->identifier, a_named_type)
   , binddecl (a_binddecl)
   , receiver_parameter_ (NULL)
 { }

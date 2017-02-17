@@ -5,11 +5,12 @@
 #include "symbol.hpp"
 #include "arch.hpp"
 #include "type.hpp"
+#include "identifier.hpp"
 
 namespace decl
 {
 
-ParameterList::ParameterList (const util::Location& a_location)
+ParameterList::ParameterList (const source::Location& a_location)
   : location (a_location)
     //, size_on_stack_ (0)
   , variadic_ (false)
@@ -52,7 +53,7 @@ ParameterList::find (const std::string& name) const
        ptr != limit;
        ++ptr)
     {
-      if ((*ptr)->name == name)
+      if ((*ptr)->identifier.identifier () == name)
         {
           return *ptr;
         }

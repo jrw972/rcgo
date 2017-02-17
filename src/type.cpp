@@ -10,6 +10,7 @@
 #include "error_reporter.hpp"
 #include "process_type.hpp"
 #include "scope.hpp"
+#include "identifier.hpp"
 
 namespace type
 {
@@ -225,10 +226,10 @@ struct check_member_func
 
   void operator() (Symbol* symbol)
   {
-    const Symbol* prev = scope.find_local_symbol (symbol->name);
+    const Symbol* prev = scope.find_local_symbol (symbol->identifier.identifier ());
     if (prev)
       {
-        er.already_declared (symbol->location, symbol->name, prev->location);
+        er.already_declared (symbol->identifier.location (), symbol->identifier.identifier (), prev->identifier.location ());
       }
     scope.enter_symbol (symbol);
   }
@@ -364,7 +365,7 @@ NamedType::find_reaction (const std::string& identifier) const
        ++pos)
     {
       decl::Reaction *a = *pos;
-      if (a->name == identifier)
+      if (a->identifier.identifier () == identifier)
         {
           return a;
         }
@@ -382,7 +383,7 @@ NamedType::find_method (const std::string& identifier) const
        ++pos)
     {
       decl::Method* a = *pos;
-      if (a->name == identifier)
+      if (a->identifier.identifier () == identifier)
         {
           return a;
         }
@@ -400,7 +401,7 @@ NamedType::find_initializer (const std::string& identifier) const
        ++pos)
     {
       decl::Initializer* a = *pos;
-      if (a->name == identifier)
+      if (a->identifier.identifier () == identifier)
         {
           return a;
         }
@@ -418,7 +419,7 @@ NamedType::find_getter (const std::string& identifier) const
        ++pos)
     {
       decl::Getter* a = *pos;
-      if (a->name == identifier)
+      if (a->identifier.identifier () == identifier)
         {
           return a;
         }
@@ -436,7 +437,7 @@ NamedType::find_action (const std::string& identifier) const
        ++pos)
     {
       Action* a = *pos;
-      if (a->name == identifier)
+      if (a->identifier.identifier () == identifier)
         {
           return a;
         }
@@ -454,7 +455,7 @@ NamedType::find_bind (const std::string& identifier) const
        ++pos)
     {
       Bind* a = *pos;
-      if (a->name == identifier)
+      if (a->identifier.identifier () == identifier)
         {
           return a;
         }
@@ -472,20 +473,19 @@ Struct::print (std::ostream& out) const
        ++pos)
     {
       Field* f = *pos;
-      out << f->name << ' ' << *(f->type) << ';';
+      out << f->identifier.identifier () << ' ' << *(f->type) << ';';
     }
   out << '}';
 }
 
 Struct*
-Struct::append_field (Package* package,
+Struct::append_field (source::Package* package,
                       bool is_anonymous,
-                      const std::string& field_name,
-                      const util::Location& location,
+                      const source::Identifier& identifier,
                       const Type* field_type,
                       const TagSet& tags)
 {
-  Field* field = new Field (this, package, is_anonymous, field_name, location, field_type, tags);
+  Field* field = new Field (this, package, is_anonymous, identifier, field_type, tags);
   fields_.push_back (field);
   return this;
 }
@@ -498,7 +498,7 @@ Struct::find_field_i (const std::string& name) const
        field != limit;
        ++field)
     {
-      if (name == (*field)->name)
+      if (name == (*field)->identifier.identifier ())
         {
           return (*field);
         }
@@ -663,11 +663,11 @@ are_identical (const Type* x, const Type* y)
             {
               return false;
             }
-          if (!f1->is_anonymous && f1->name != f2->name)
+          if (!f1->is_anonymous && f1->identifier.identifier () != f2->identifier.identifier ())
             {
               return false;
             }
-          if (!f1->is_anonymous && util::is_lowercase (f1->name) && f1->package != f2->package)
+          if (!f1->is_anonymous && util::is_lowercase (f1->identifier.identifier ()) && f1->package != f2->package)
             {
               return false;
             }
@@ -776,11 +776,11 @@ INSTANCE(UntypedComplex)
 INSTANCE(UntypedString)
 INSTANCE(String)
 
-Component::Component (Package* package, const util::Location& location)
+Component::Component (source::Package* package, const source::Location& location)
   : Struct ()
 {
   /* Prepend the field list with a pointer for the runtime. */
-  append_field (package, true, "0runtime", location, Int32::instance ()->get_pointer (), TagSet ());
+  append_field (package, true, source::Identifier ("0runtime", location), Int32::instance ()->get_pointer (), TagSet ());
 }
 
 bool
@@ -836,15 +836,14 @@ Struct::contains_pointer_i () const
 }
 
 NamedType::NamedType (ast::TypeDecl* a_typedecl)
-  : Symbol (a_typedecl->identifier->identifier, a_typedecl->identifier->location)
+  : Symbol (a_typedecl->identifier)
   , underlyingType_ (NULL)
   , typedecl_ (a_typedecl)
 { }
 
-NamedType::NamedType (const std::string& name,
-                      const util::Location& location,
+NamedType::NamedType (const source::Identifier& identifier,
                       const Type* subtype)
-  : Symbol (name, location)
+  : Symbol (identifier)
   , underlyingType_ (subtype->underlying_type ())
   , typedecl_ (NULL)
 {
@@ -854,7 +853,7 @@ NamedType::NamedType (const std::string& name,
 
 void NamedType::print (std::ostream& out) const
 {
-  out << name;
+  out << identifier.identifier ();
 }
 
 void NamedType::underlying_type (const Type* u)
@@ -1275,47 +1274,47 @@ Type::pointer_to_array () const
   return NULL;
 }
 
-NamedType named_bool ("bool", util::builtin, Bool::instance ());
+NamedType named_bool (source::Identifier ("bool", source::Location::builtin), Bool::instance ());
 
-NamedType named_uint8 ("uint8", util::builtin, Uint8::instance ());
-NamedType named_uint16 ("uint16", util::builtin, Uint16::instance ());
-NamedType named_uint32 ("uint32", util::builtin, Uint32::instance ());
-NamedType named_uint64 ("uint64", util::builtin, Uint64::instance ());
+NamedType named_uint8 (source::Identifier ("uint8", source::Location::builtin), Uint8::instance ());
+NamedType named_uint16 (source::Identifier ("uint16", source::Location::builtin), Uint16::instance ());
+NamedType named_uint32 (source::Identifier ("uint32", source::Location::builtin), Uint32::instance ());
+NamedType named_uint64 (source::Identifier ("uint64", source::Location::builtin), Uint64::instance ());
 
-NamedType named_int8 ("int8", util::builtin, Int8::instance ());
-NamedType named_int16 ("int16", util::builtin, Int16::instance ());
-NamedType named_int32 ("int32", util::builtin, Int32::instance ());
-NamedType named_int64 ("int64", util::builtin, Int64::instance ());
+NamedType named_int8 (source::Identifier ("int8", source::Location::builtin), Int8::instance ());
+NamedType named_int16 (source::Identifier ("int16", source::Location::builtin), Int16::instance ());
+NamedType named_int32 (source::Identifier ("int32", source::Location::builtin), Int32::instance ());
+NamedType named_int64 (source::Identifier ("int64", source::Location::builtin), Int64::instance ());
 
-NamedType named_float32 ("float32", util::builtin, Float32::instance ());
-NamedType named_float64 ("float64", util::builtin, Float64::instance ());
+NamedType named_float32 (source::Identifier ("float32", source::Location::builtin), Float32::instance ());
+NamedType named_float64 (source::Identifier ("float64", source::Location::builtin), Float64::instance ());
 
-NamedType named_complex64 ("complex64", util::builtin, Complex64::instance ());
-NamedType named_complex128 ("complex128", util::builtin, Complex128::instance ());
+NamedType named_complex64 (source::Identifier ("complex64", source::Location::builtin), Complex64::instance ());
+NamedType named_complex128 (source::Identifier ("complex128", source::Location::builtin), Complex128::instance ());
 
-NamedType named_byte ("byte", util::builtin, Uint8::instance ());
-NamedType named_rune ("rune", util::builtin, Int32::instance ());
+NamedType named_byte (source::Identifier ("byte", source::Location::builtin), Uint8::instance ());
+NamedType named_rune (source::Identifier ("rune", source::Location::builtin), Int32::instance ());
 
-NamedType named_uint ("uint", util::builtin, Uint::instance ());
-NamedType named_int ("int", util::builtin, Int::instance ());
-NamedType named_uintptr ("uintptr", util::builtin, Uintptr::instance ());
+NamedType named_uint (source::Identifier ("uint", source::Location::builtin), Uint::instance ());
+NamedType named_int (source::Identifier ("int", source::Location::builtin), Int::instance ());
+NamedType named_uintptr (source::Identifier ("uintptr", source::Location::builtin), Uintptr::instance ());
 
-NamedType named_string ("string", util::builtin, String::instance ());
+NamedType named_string (source::Identifier ("string", source::Location::builtin), String::instance ());
 
 //  https://golang.org/ref/spec#Errors
 Interface* make_error ()
 {
   Interface* i = new Interface (NULL);
-  ParameterList* parameter_list = new ParameterList (util::builtin);
-  ParameterList* return_parameter_list = new ParameterList (util::builtin);
-  return_parameter_list->append (Parameter::make_return (util::builtin, "", &named_string, Immutable));
+  ParameterList* parameter_list = new ParameterList (source::Location::builtin);
+  ParameterList* return_parameter_list = new ParameterList (source::Location::builtin);
+  return_parameter_list->append (Parameter::make_return (source::Identifier ("", source::Location::builtin), /*&named_string,*/ Immutable));
   i->methods["Error"] = new Function (parameter_list, return_parameter_list);
   return i;
 }
-NamedType named_error ("error", util::builtin, make_error ());
+NamedType named_error (source::Identifier ("error", source::Location::builtin), make_error ());
 
-NamedType named_file_descriptor ("FileDescriptor", util::builtin, FileDescriptor::instance ());
-NamedType named_timespec ("timespec", util::builtin, (new Struct ())->append_field (NULL, false, "tv_sec", util::builtin, &named_uint64, TagSet ())->append_field (NULL, false, "tv_nsec", util::builtin, &named_uint64, TagSet ()));
+NamedType named_file_descriptor (source::Identifier ("FileDescriptor", source::Location::builtin), FileDescriptor::instance ());
+NamedType named_timespec (source::Identifier ("timespec", source::Location::builtin), (new Struct ())->append_field (NULL, false, source::Identifier ("tv_sec", source::Location::builtin), &named_uint64, TagSet ())->append_field (NULL, false, source::Identifier ("tv_nsec", source::Location::builtin), &named_uint64, TagSet ()));
 
 void Interface::print (std::ostream& out) const
 {
@@ -1635,7 +1634,7 @@ Component::print (std::ostream& out) const
   for (; pos != limit; ++pos)
     {
       Field* f = *pos;
-      out << f->name << ' ' << *(f->type) << ';';
+      out << f->identifier.identifier () << ' ' << *(f->type) << ';';
     }
   out << '}';
 }
@@ -1739,7 +1738,7 @@ Kind Reaction::kind () const
   return Reaction_Kind;
 }
 
-Interface::Interface (decl::Package* a_package)
+Interface::Interface (source::Package* a_package)
   : package (a_package)
 { }
 

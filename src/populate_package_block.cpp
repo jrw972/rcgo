@@ -7,6 +7,7 @@
 #include "node_cast.hpp"
 #include "callable.hpp"
 #include "symbol_table.hpp"
+#include "identifier.hpp"
 
 namespace semantic
 {
@@ -16,6 +17,7 @@ using namespace ast;
 using namespace decl;
 using namespace util;
 using namespace type;
+using namespace source;
 
 struct visitor : public DefaultNodeVisitor
 {
@@ -28,28 +30,18 @@ struct visitor : public DefaultNodeVisitor
   ErrorReporter& er;
   SymbolTable& symbol_table;
 
-  void check_already_declared (const Identifier* node)
+  void check_already_declared (const Identifier& identifier)
   {
-    if (symbol_table.is_declared_locally (node->identifier))
+    if (symbol_table.is_declared_locally (identifier.identifier ()))
       {
-        Symbol* s = symbol_table.retrieve_symbol (node->identifier);
-        er.already_declared (node->location, node->identifier, s->location);
+        Symbol* s = symbol_table.retrieve_symbol (identifier);
+        er.already_declared (identifier.location (), identifier.identifier (), s->identifier.location ());
       }
-  }
-
-  void visit (SourceFile& node)
-  {
-    node.top_level_decl_list->accept (*this);
-  }
-
-  void visit (TopLevelDeclList& node)
-  {
-    node.visit_children (*this);
   }
 
   void visit (ConstDecl& node)
   {
-    ast::List* identifier_list = node.identifiers;
+    ast::IdentifierList* identifier_list = node.identifiers;
     ast::List* expression_list = node.expressions;
 
     if (identifier_list->size () != expression_list->size ())
@@ -61,14 +53,16 @@ struct visitor : public DefaultNodeVisitor
 
     // Enter each symbol.
     size_t idx = 0;
-    for (List::ConstIterator id_pos = identifier_list->begin (),
+    IdentifierList::const_iterator id_pos;
+    List::ConstIterator init_pos;
+    for (id_pos = identifier_list->begin (),
          init_pos = expression_list->begin ();
          idx != limit;
          ++id_pos, ++init_pos, ++idx)
       {
-        const Identifier* id = node_cast<Identifier> (*id_pos);
+        const Identifier& id = *id_pos;
         check_already_declared (id);
-        Constant* symbol = new Constant (id->identifier, id->location, node.type, *init_pos);
+        Constant* symbol = new Constant (id, node.type, *init_pos);
         symbol_table.enter_symbol (symbol);
         node.symbols.push_back (symbol);
       }
@@ -97,7 +91,9 @@ struct visitor : public DefaultNodeVisitor
 };
 }
 
-void enter_identifiers (ast::Node* root, util::ErrorReporter& er, decl::SymbolTable& symbol_table, bool exported_symbols)
+void populate_package_block (ast::Node* root,
+                             util::ErrorReporter& er,
+                             decl::SymbolTable& symbol_table)
 {
   visitor v (er, symbol_table);
   root->accept (v);

@@ -3,6 +3,7 @@
 #include "symbol_visitor.hpp"
 #include "error_reporter.hpp"
 #include "polymorphic_function_visitor.hpp"
+#include "identifier.hpp"
 
 namespace decl
 {
@@ -10,9 +11,8 @@ using namespace semantic;
 using namespace util;
 using namespace type;
 
-PolymorphicFunction::PolymorphicFunction (const std::string& id,
-    const util::Location& loc)
-  : Symbol (id, loc)
+PolymorphicFunction::PolymorphicFunction (const source::Identifier& identifier)
+  : Symbol (identifier)
 { }
 
 void
@@ -28,7 +28,7 @@ PolymorphicFunction::accept (ConstSymbolVisitor& visitor) const
 }
 
 LogicNot::LogicNot ()
-  : PolymorphicFunction ("!", util::builtin)
+  : PolymorphicFunction (source::Identifier ("!", source::Location::builtin))
 { }
 
 void LogicNot::accept (PolymorphicFunctionVisitor& visitor) const
@@ -44,7 +44,7 @@ runtime::Operation* LogicNot::generate_code (const ExpressionValue& result,
 }
 
 Posate::Posate ()
-  : PolymorphicFunction ("+", util::builtin)
+  : PolymorphicFunction (source::Identifier ("+", source::Location::builtin))
 { }
 
 void Posate::accept (PolymorphicFunctionVisitor& visitor) const
@@ -53,7 +53,7 @@ void Posate::accept (PolymorphicFunctionVisitor& visitor) const
 }
 
 Negate::Negate ()
-  : PolymorphicFunction ("-", util::builtin)
+  : PolymorphicFunction (source::Identifier ("-", source::Location::builtin))
 { }
 
 void Negate::accept (PolymorphicFunctionVisitor& visitor) const
@@ -62,7 +62,7 @@ void Negate::accept (PolymorphicFunctionVisitor& visitor) const
 }
 
 Complement::Complement ()
-  : PolymorphicFunction ("^", util::builtin)
+  : PolymorphicFunction (source::Identifier ("^", source::Location::builtin))
 { }
 
 void Complement::accept (PolymorphicFunctionVisitor& visitor) const
@@ -130,7 +130,7 @@ template class BinaryArithmetic<LogicOrComputer>;
 template class BinaryArithmetic<LogicAndComputer>;
 
 LeftShift::LeftShift ()
-  : BinaryShift ("<<", util::builtin)
+  : BinaryShift (source::Identifier ("<<", source::Location::builtin))
 { }
 
 void LeftShift::accept (PolymorphicFunctionVisitor& visitor) const
@@ -139,7 +139,7 @@ void LeftShift::accept (PolymorphicFunctionVisitor& visitor) const
 }
 
 RightShift::RightShift ()
-  : BinaryShift (">>", util::builtin)
+  : BinaryShift (source::Identifier (">>", source::Location::builtin))
 { }
 
 void RightShift::accept (PolymorphicFunctionVisitor& visitor) const
@@ -156,7 +156,7 @@ SMultiply::generate_code (const ExpressionValue& result,
 }
 
 Multiply::Multiply () :
-  BinaryArithmetic ("*", util::builtin)
+  BinaryArithmetic (source::Identifier ("*", source::Location::builtin))
 { }
 
 void Multiply::accept (PolymorphicFunctionVisitor& visitor) const
@@ -173,7 +173,7 @@ SDivide::generate_code (const ExpressionValue& result,
 }
 
 Divide::Divide () :
-  BinaryArithmetic ("/", util::builtin)
+  BinaryArithmetic (source::Identifier ("/", source::Location::builtin))
 { }
 
 void Divide::accept (PolymorphicFunctionVisitor& visitor) const
@@ -190,7 +190,7 @@ SModulus::generate_code (const ExpressionValue& result,
 }
 
 Modulus::Modulus () :
-  BinaryArithmetic ("%", util::builtin)
+  BinaryArithmetic (source::Identifier ("%", source::Location::builtin))
 { }
 
 void Modulus::accept (PolymorphicFunctionVisitor& visitor) const
@@ -207,7 +207,7 @@ SBitAnd::generate_code (const ExpressionValue& result,
 }
 
 BitAnd::BitAnd () :
-  BinaryArithmetic ("&", util::builtin)
+  BinaryArithmetic (source::Identifier ("&", source::Location::builtin))
 { }
 
 void BitAnd::accept (PolymorphicFunctionVisitor& visitor) const
@@ -224,7 +224,7 @@ SBitAndNot::generate_code (const ExpressionValue& result,
 }
 
 BitAndNot::BitAndNot () :
-  BinaryArithmetic ("&^", util::builtin)
+  BinaryArithmetic (source::Identifier ("&^", source::Location::builtin))
 { }
 
 void BitAndNot::accept (PolymorphicFunctionVisitor& visitor) const
@@ -241,7 +241,7 @@ SAdd::generate_code (const ExpressionValue& result,
 }
 
 Add::Add () :
-  BinaryArithmetic ("+", util::builtin)
+  BinaryArithmetic (source::Identifier ("+", source::Location::builtin))
 { }
 
 void Add::accept (PolymorphicFunctionVisitor& visitor) const
@@ -258,7 +258,7 @@ SSubtract::generate_code (const ExpressionValue& result,
 }
 
 Subtract::Subtract () :
-  BinaryArithmetic ("-", util::builtin)
+  BinaryArithmetic (source::Identifier ("-", source::Location::builtin))
 { }
 
 void Subtract::accept (PolymorphicFunctionVisitor& visitor) const
@@ -275,7 +275,7 @@ SBitOr::generate_code (const ExpressionValue& result,
 }
 
 BitOr::BitOr () :
-  BinaryArithmetic ("|", util::builtin)
+  BinaryArithmetic (source::Identifier ("|", source::Location::builtin))
 { }
 
 void BitOr::accept (PolymorphicFunctionVisitor& visitor) const
@@ -292,7 +292,7 @@ SBitXor::generate_code (const ExpressionValue& result,
 }
 
 BitXor::BitXor () :
-  BinaryArithmetic ("^", util::builtin)
+  BinaryArithmetic (source::Identifier ("^", source::Location::builtin))
 { }
 
 void BitXor::accept (PolymorphicFunctionVisitor& visitor) const
@@ -309,7 +309,7 @@ SEqual::generate_code (const ExpressionValue& result,
 }
 
 Equal::Equal () :
-  BinaryArithmetic ("==", util::builtin)
+  BinaryArithmetic (source::Identifier ("==", source::Location::builtin))
 { }
 
 void Equal::accept (PolymorphicFunctionVisitor& visitor) const
@@ -326,7 +326,7 @@ SNotEqual::generate_code (const ExpressionValue& result,
 }
 
 NotEqual::NotEqual () :
-  BinaryArithmetic ("!=", util::builtin)
+  BinaryArithmetic (source::Identifier ("!=", source::Location::builtin))
 { }
 
 void NotEqual::accept (PolymorphicFunctionVisitor& visitor) const
@@ -343,7 +343,7 @@ SLessThan::generate_code (const ExpressionValue& result,
 }
 
 LessThan::LessThan () :
-  BinaryArithmetic ("<", util::builtin)
+  BinaryArithmetic (source::Identifier ("<", source::Location::builtin))
 { }
 
 void LessThan::accept (PolymorphicFunctionVisitor& visitor) const
@@ -360,7 +360,7 @@ SLessEqual::generate_code (const ExpressionValue& result,
 }
 
 LessEqual::LessEqual () :
-  BinaryArithmetic ("<=", util::builtin)
+  BinaryArithmetic (source::Identifier ("<=", source::Location::builtin))
 { }
 
 void LessEqual::accept (PolymorphicFunctionVisitor& visitor) const
@@ -377,7 +377,7 @@ SMoreThan::generate_code (const ExpressionValue& result,
 }
 
 MoreThan::MoreThan () :
-  BinaryArithmetic (">", util::builtin)
+  BinaryArithmetic (source::Identifier (">", source::Location::builtin))
 { }
 
 void MoreThan::accept (PolymorphicFunctionVisitor& visitor) const
@@ -394,7 +394,7 @@ SMoreEqual::generate_code (const ExpressionValue& result,
 }
 
 MoreEqual::MoreEqual () :
-  BinaryArithmetic (">=", util::builtin)
+  BinaryArithmetic (source::Identifier (">=", source::Location::builtin))
 { }
 
 void MoreEqual::accept (PolymorphicFunctionVisitor& visitor) const
@@ -403,7 +403,7 @@ void MoreEqual::accept (PolymorphicFunctionVisitor& visitor) const
 }
 
 LogicAnd::LogicAnd ()
-  : BinaryArithmetic ("&&", util::builtin)
+  : BinaryArithmetic (source::Identifier ("&&", source::Location::builtin))
 {}
 
 void LogicAnd::accept (PolymorphicFunctionVisitor& visitor) const
@@ -412,7 +412,7 @@ void LogicAnd::accept (PolymorphicFunctionVisitor& visitor) const
 }
 
 LogicOr::LogicOr ()
-  : BinaryArithmetic ("||", util::builtin)
+  : BinaryArithmetic (source::Identifier ("||", source::Location::builtin))
 {}
 
 void LogicOr::accept (PolymorphicFunctionVisitor& visitor) const
@@ -421,7 +421,7 @@ void LogicOr::accept (PolymorphicFunctionVisitor& visitor) const
 }
 
 New::New ()
-  : PolymorphicFunction ("new", util::builtin)
+  : PolymorphicFunction (source::Identifier ("new", source::Location::builtin))
 { }
 
 void New::accept (PolymorphicFunctionVisitor& visitor) const
@@ -445,7 +445,7 @@ runtime::Operation* New::generate_code (const semantic::ExpressionValue& result,
 }
 
 Make::Make ()
-  : PolymorphicFunction ("make", util::builtin)
+  : PolymorphicFunction (source::Identifier ("make", source::Location::builtin))
 { }
 
 void Make::accept (PolymorphicFunctionVisitor& visitor) const
@@ -470,7 +470,7 @@ runtime::Operation* Make::generate_code (const semantic::ExpressionValue& result
 }
 
 Move::Move ()
-  : PolymorphicFunction ("move", util::builtin)
+  : PolymorphicFunction (source::Identifier ("move", source::Location::builtin))
 { }
 
 void Move::accept (PolymorphicFunctionVisitor& visitor) const
@@ -503,7 +503,7 @@ runtime::Operation* Move::generate_code (const semantic::ExpressionValue& result
 }
 
 Merge::Merge ()
-  : PolymorphicFunction ("merge", util::builtin)
+  : PolymorphicFunction (source::Identifier ("merge", source::Location::builtin))
 { }
 
 void Merge::accept (PolymorphicFunctionVisitor& visitor) const
@@ -535,7 +535,7 @@ runtime::Operation* Merge::generate_code (const semantic::ExpressionValue& resul
 }
 
 Len::Len ()
-  : PolymorphicFunction ("len", util::builtin)
+  : PolymorphicFunction (source::Identifier ("len", source::Location::builtin))
 { }
 
 void Len::accept (PolymorphicFunctionVisitor& visitor) const
@@ -551,7 +551,7 @@ runtime::Operation* Len::generate_code (const semantic::ExpressionValue& result,
 }
 
 Cap::Cap ()
-  : PolymorphicFunction ("cap", util::builtin)
+  : PolymorphicFunction (source::Identifier ("cap", source::Location::builtin))
 { }
 
 void Cap::accept (PolymorphicFunctionVisitor& visitor) const
@@ -568,7 +568,7 @@ runtime::Operation* Cap::generate_code (const semantic::ExpressionValue& result,
 }
 
 Append::Append ()
-  : PolymorphicFunction ("append", util::builtin)
+  : PolymorphicFunction (source::Identifier ("append", source::Location::builtin))
 { }
 
 void Append::accept (PolymorphicFunctionVisitor& visitor) const
@@ -584,7 +584,7 @@ runtime::Operation* Append::generate_code (const semantic::ExpressionValue& resu
 }
 
 Copy::Copy ()
-  : PolymorphicFunction ("copy", util::builtin)
+  : PolymorphicFunction (source::Identifier ("copy", source::Location::builtin))
 { }
 
 void Copy::accept (PolymorphicFunctionVisitor& visitor) const
@@ -617,7 +617,7 @@ runtime::Operation* Copy::generate_code (const semantic::ExpressionValue& result
 }
 
 Println::Println ()
-  : PolymorphicFunction ("println", decl::builtin)
+  : PolymorphicFunction (source::Identifier ("println", source::Location::builtin))
 { }
 
 void Println::accept (PolymorphicFunctionVisitor& visitor) const
@@ -649,7 +649,7 @@ runtime::Operation* Println::generate_code (const semantic::ExpressionValue& res
 }
 
 Complex::Complex ()
-  : PolymorphicFunction ("complex", util::builtin)
+  : PolymorphicFunction (source::Identifier ("complex", source::Location::builtin))
 { }
 
 void
@@ -675,7 +675,7 @@ Complex::generate_code (const semantic::ExpressionValue& result,
 }
 
 Delete::Delete ()
-  : PolymorphicFunction ("delete", util::builtin)
+  : PolymorphicFunction (source::Identifier ("delete", source::Location::builtin))
 {
 }
 
@@ -702,7 +702,7 @@ Delete::generate_code (const semantic::ExpressionValue& result,
 }
 
 Imag::Imag ()
-  : PolymorphicFunction ("imag", util::builtin)
+  : PolymorphicFunction (source::Identifier ("imag", source::Location::builtin))
 { }
 
 void
@@ -728,7 +728,7 @@ Imag::generate_code (const semantic::ExpressionValue& result,
 }
 
 Panic::Panic ()
-  : PolymorphicFunction ("panic", util::builtin)
+  : PolymorphicFunction (source::Identifier ("panic", source::Location::builtin))
 { }
 
 void
@@ -754,7 +754,7 @@ Panic::generate_code (const semantic::ExpressionValue& result,
 }
 
 Print::Print ()
-  : PolymorphicFunction ("print", util::builtin)
+  : PolymorphicFunction (source::Identifier ("print", source::Location::builtin))
 { }
 
 void
@@ -780,7 +780,7 @@ Print::generate_code (const semantic::ExpressionValue& result,
 }
 
 Real::Real ()
-  : PolymorphicFunction ("real", util::builtin)
+  : PolymorphicFunction (source::Identifier ("real", source::Location::builtin))
 { }
 
 void
@@ -807,7 +807,7 @@ Real::generate_code (const semantic::ExpressionValue& result,
 }
 
 Recover::Recover ()
-  : PolymorphicFunction ("recover", util::builtin)
+  : PolymorphicFunction (source::Identifier ("recover", source::Location::builtin))
 { }
 
 void

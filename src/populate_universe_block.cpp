@@ -2,13 +2,13 @@
 #include "scope.hpp"
 #include "polymorphic_function.hpp"
 #include "symbol_table.hpp"
+#include "identifier.hpp"
 
-namespace semantic
+namespace decl
 {
 
 using namespace ast;
 using namespace semantic;
-using namespace decl;
 using namespace runtime;
 
 void
@@ -65,30 +65,30 @@ populate_universe_block (SymbolTable& symbol_table)
   symbol_table.enter_symbol (&type::named_file_descriptor);
   symbol_table.enter_symbol (&type::named_timespec);
   // TODO:  Allocate statically.
-  symbol_table.enter_symbol (new Readable (util::builtin));
-  symbol_table.enter_symbol (new Read (util::builtin));
-  symbol_table.enter_symbol (new Writable (util::builtin));
-  symbol_table.enter_symbol (new ClockGettime (util::builtin));
-  symbol_table.enter_symbol (new TimerfdCreate (util::builtin));
-  symbol_table.enter_symbol (new TimerfdSettime (util::builtin));
-  symbol_table.enter_symbol (new UdpSocket (util::builtin));
-  symbol_table.enter_symbol (new Sendto (util::builtin));
+  symbol_table.enter_symbol (new Readable (source::Location::builtin));
+  symbol_table.enter_symbol (new Read (source::Location::builtin));
+  symbol_table.enter_symbol (new Writable (source::Location::builtin));
+  symbol_table.enter_symbol (new ClockGettime (source::Location::builtin));
+  symbol_table.enter_symbol (new TimerfdCreate (source::Location::builtin));
+  symbol_table.enter_symbol (new TimerfdSettime (source::Location::builtin));
+  symbol_table.enter_symbol (new UdpSocket (source::Location::builtin));
+  symbol_table.enter_symbol (new Sendto (source::Location::builtin));
 
   // Insert zero constant.
   ExpressionValue v;
   v.kind = ExpressionValue::Constant;
   v.type = type::UntypedNil::instance ();
   // TODO:  Allocate statically.
-  symbol_table.enter_symbol (new Constant ("nil", util::builtin, v));
+  symbol_table.enter_symbol (new Constant (source::Identifier ("nil", source::Location::builtin), v));
 
   // Insert untyped boolean constants.
   v.type = type::UntypedBoolean::instance ();
   v.value.bool_value = true;
   // TODO:  Allocate statically.
-  symbol_table.enter_symbol (new Constant ("true", util::builtin, v));
+  symbol_table.enter_symbol (new Constant (source::Identifier ("true", source::Location::builtin), v));
   v.value.bool_value = false;
   // TODO:  Allocate statically.
-  symbol_table.enter_symbol (new Constant ("false", util::builtin, v));
+  symbol_table.enter_symbol (new Constant (source::Identifier ("false", source::Location::builtin), v));
 }
 
 }

@@ -1,0 +1,153 @@
+/* -*- c++ -*- */
+#include "unit_test.hpp"
+#include "node.hpp"
+#include "error_reporter.hpp"
+#include "scope.hpp"
+#include "symbol_cast.hpp"
+#include "type.hpp"
+#include "semantic.hpp"
+#include "symbol_table.hpp"
+#include "identifier.hpp"
+
+using namespace semantic;
+using namespace source;
+
+scope(semantic); {
+
+  util::ErrorReporter er;
+  decl::SymbolTable symbol_table;
+  symbol_table.open_scope ();
+
+  Location loc = Location::builtin;
+  Identifier id1 ("mytype", loc);
+  Identifier id2 ("int", loc);
+  ast::IdentifierType identifier_type (loc, id2);
+  ast::TypeDecl typedecl (loc, id1, &identifier_type);
+
+  scenario(TypeDecl); {
+    unit(populate_package_block); {
+      populate_package_block (&typedecl, er, symbol_table);
+      source::Identifier id ("mytype", loc);
+      decl::Symbol* s = symbol_table.retrieve_symbol (id);
+      ASSERT (s != NULL);
+      ASSERT (decl::symbol_cast<type::NamedType> (s) != NULL);
+      ASSERT (s->state () == decl::Symbol::Declared);
+    }; off();
+  }; off();
+
+  scenario(already_declared_in_package_scope); {
+    unit(populate_package_block); {
+      populate_package_block (&typedecl, er, symbol_table);
+      populate_package_block (&typedecl, er, symbol_table);
+      ASSERT (er.list ().size () == 1);
+    }; off();
+  }; off();
+
+  scenario(already_declared_in_file_scope); {
+    unit(populate_package_block); {
+      populate_package_block (&typedecl, er, symbol_table);
+      populate_package_block (&typedecl, er, symbol_table);
+      ASSERT (er.list ().size () == 1);
+    }; off();
+  }; off();
+
+  ast::IdentifierList identifiers (loc);
+  identifiers.append (Identifier ("x", loc));
+  ast::IdentifierType type (loc, id2);
+  semantic::ExpressionValue sv;
+  sv.kind = semantic::ExpressionValue::Constant;
+  sv.type = type::UntypedInteger::instance ();
+  sv.value.untyped_integer_value = 1;
+  ast::Literal value (loc, sv);
+  ast::ExpressionList expressions (loc);
+  expressions.append (&value);
+  ast::ConstDecl constdecl (loc, &identifiers, &type, &expressions);
+
+  scenario(ConstDecl); {
+    unit(populate_package_block); {
+      populate_package_block (&constdecl, er, symbol_table);
+      source::Identifier id ("x", loc);
+      decl::Symbol* s = symbol_table.retrieve_symbol (id);
+      ASSERT (s != NULL);
+      ASSERT (decl::symbol_cast<decl::Constant> (s) != NULL);
+      ASSERT (s->state () == decl::Symbol::Declared);
+    }; off();
+  }; off();
+
+  expressions.append (&value);
+
+  scenario(ConstDecl_mismatch); {
+    unit(populate_package_block); {
+      populate_package_block (&constdecl, er, symbol_table);
+      ASSERT (er.list ().size () == 1);
+    }; off();
+  }; off();
+
+  Identifier funcid ("f", loc);
+  ast::ParameterList parameters (loc);
+  ast::ParameterList return_parameters (loc);
+  ast::IdentifierList body (loc);
+  ast::FunctionDecl functiondecl (loc, funcid, &parameters, &return_parameters, &body);
+
+  scenario(FunctionDecl); {
+    unit(populate_package_block); {
+      populate_package_block (&functiondecl, er, symbol_table);
+      source::Identifier id ("f", loc);
+      decl::Symbol* s = symbol_table.retrieve_symbol (id);
+      ASSERT (s != NULL);
+      ASSERT (decl::symbol_cast<decl::FunctionBase> (s) != NULL);
+      ASSERT (s->state () == decl::Symbol::Declared);
+    }; off();
+  }; off();
+
+  Identifier identifier ("i", loc);
+  Identifier init ("init", loc);
+  ast::ExpressionList arguments (loc);
+  ast::InstanceDecl instancedecl (loc, identifier, &type, init, &arguments);
+
+  scenario(InstanceDecl); {
+    unit(populate_package_block); {
+      populate_package_block (&instancedecl, er, symbol_table);
+      source::Identifier id ("i", loc);
+      decl::Symbol* s = symbol_table.retrieve_symbol (id);
+      ASSERT (s != NULL);
+      ASSERT (decl::symbol_cast<decl::Instance> (s) != NULL);
+      ASSERT (s->state () == decl::Symbol::Declared);
+    }; off();
+  }; off();
+
+  // ast::TopLevelDeclList decllist (1);
+  // decllist.append (&typedecl);
+  // decllist.append (&constdecl);
+  // decllist.append (&functiondecl);
+  // decllist.append (&instancedecl);
+
+  scenario(TopLevelDeclList); {
+    unit(populate_package_block); {
+      SKIP ();
+      // populate_package_block (&decllist, er, symbol_table);
+      // ASSERT (symbol_table.retrieve_symbol ("mytype") != NULL);
+      // ASSERT (symbol_table.retrieve_symbol ("x") != NULL);
+      // ASSERT (symbol_table.retrieve_symbol ("f") != NULL);
+      // ASSERT (symbol_table.retrieve_symbol ("i") != NULL);
+    }; off();
+  }; off();
+
+  Identifier package ("package", loc);
+  //ast::ImportDeclList imports (1);
+  //ast::SourceFile sourcefile (loc, &package, &imports, &decllist);
+
+  scenario(SourceFile); {
+    unit(populate_package_block); {
+      SKIP ();
+      // populate_package_block (&sourcefile, er, symbol_table);
+      // ASSERT (symbol_table.retrieve_symbol ("mytype") != NULL);
+      // ASSERT (symbol_table.retrieve_symbol ("x") != NULL);
+      // ASSERT (symbol_table.retrieve_symbol ("f") != NULL);
+      // ASSERT (symbol_table.retrieve_symbol ("i") != NULL);
+    }; off();
+  }; off();
+
+  file_scope->close ();
+
+}; off();

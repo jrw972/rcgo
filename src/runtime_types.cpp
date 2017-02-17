@@ -263,6 +263,11 @@ bool String::operator< (const String& other) const
     }
 }
 
+std::string String::to_string () const
+{
+  return std::string (static_cast<const char*> (this->ptr), this->length);
+}
+
 std::ostream& operator<< (std::ostream& out, const String& s)
 {
   return out << std::string (static_cast<const char*> (s.ptr), s.length);

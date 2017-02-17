@@ -12,6 +12,7 @@
 #include "scope.hpp"
 #include "symbol_cast.hpp"
 #include "symbol_table.hpp"
+#include "identifier.hpp"
 
 namespace semantic
 {
@@ -19,6 +20,7 @@ using namespace util;
 using namespace type;
 using namespace ast;
 using namespace decl;
+using namespace source;
 
 long
 process_array_dimension (ErrorReporter& er, decl::SymbolTable& symbol_table, ast::Node* node)
@@ -56,7 +58,7 @@ check_for_foreign_safe (ErrorReporter& er,
     {
       if (!(*pos)->is_foreign_safe ())
         {
-          er.parameter_is_not_foreign_safe ((*pos)->location);
+          er.parameter_is_not_foreign_safe ((*pos)->identifier.location ());
         }
     }
 }
@@ -71,12 +73,12 @@ process_receiver (ErrorReporter& er,
 {
   if (require_component && named_type->underlying_type ()->kind () != Component_Kind)
     {
-      er.expected_a_component (node->type->location);
+      er.expected_a_component (node->location);
     }
 
   if (require_component && !node->is_pointer)
     {
-      er.expected_a_pointer (node->type->location);
+      er.expected_a_pointer (node->location);
     }
 
   if (require_immutable_dereference_mutability && node->indirection_mutability < Immutable)
@@ -94,13 +96,10 @@ process_receiver (ErrorReporter& er,
       receiver_type = named_type;
     }
 
-  Identifier* this_identifier_node = node->identifier;
-
-  return Parameter::make_receiver (this_identifier_node->location,
-                                   this_identifier_node->identifier,
-                                   receiver_type,
+  return Parameter::make_receiver (node->identifier,
                                    node->mutability,
-                                   node->indirection_mutability);
+                                   node->indirection_mutability,
+                                   receiver_type);
 }
 
 const decl::ParameterList*
@@ -115,7 +114,7 @@ process_parameter_list (ErrorReporter& er,
        ++pos1)
     {
       VariableList* child = static_cast<VariableList*> (*pos1);
-      List* identifier_list = child->identifiers;
+      IdentifierList* identifier_list = child->identifiers;
       Node* type_spec = child->type;
       process_type (type_spec, er, symbol_table);
       if (type_spec->eval.kind == ExpressionValue::Error)
@@ -123,19 +122,18 @@ process_parameter_list (ErrorReporter& er,
           continue;
         }
       const type::Type* type = type_spec->eval.type;
-      for (List::ConstIterator pos2 = identifier_list->begin (), limit2 = identifier_list->end ();
+      for (IdentifierList::const_iterator pos2 = identifier_list->begin (), limit2 = identifier_list->end ();
            pos2 != limit2;
            ++pos2)
         {
-          ast::Node* id = *pos2;
-          const std::string& identifier = node_cast<Identifier> (id)->identifier;
+          const Identifier& identifier = *pos2;
           if (is_return)
             {
-              parameter_list->append (Parameter::make_return (id->location, identifier, type, child->indirection_mutability));
+              parameter_list->append (Parameter::make_return (identifier, child->indirection_mutability, type));
             }
           else
             {
-              parameter_list->append (Parameter::make (id->location, identifier, type, child->mutability, child->indirection_mutability));
+              parameter_list->append (Parameter::make (identifier, child->mutability, child->indirection_mutability, type));
             }
         }
     }
@@ -177,10 +175,10 @@ check_unique_parameters (util::ErrorReporter& er,
        ++pos)
     {
       Parameter* param = *pos;
-      const Symbol* sym = s.find_local_symbol (param->name);
+      const Symbol* sym = s.find_local_symbol (param->identifier.identifier ());
       if (sym)
         {
-          er.already_declared (param->location, param->name, sym->location);
+          er.already_declared (param->identifier.location (), param->identifier.identifier (), sym->identifier.location ());
         }
       s.enter_symbol (param);
     }
@@ -191,10 +189,10 @@ check_unique_parameters (util::ErrorReporter& er,
        ++pos)
     {
       Parameter* param = *pos;
-      const Symbol* sym = s.find_local_symbol (param->name);
+      const Symbol* sym = s.find_local_symbol (param->identifier.identifier ());
       if (sym)
         {
-          er.already_declared (param->location, param->name, sym->location);
+          er.already_declared (param->identifier.location (), param->identifier.identifier (), sym->identifier.location ());
         }
       s.enter_symbol (param);
     }
@@ -224,17 +222,16 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symbol_table, bo
 
     void default_action (Node& node)
     {
-      AST_NOT_REACHED (node);
+      NODE_NOT_REACHED (node);
     }
 
     void visit (IdentifierType& node)
     {
-      Identifier* child = node.child;
-      const std::string& identifier = child->identifier;
+      const Identifier& identifier = node.identifier;
       Symbol* s = symbol_table.retrieve_symbol (identifier);
       if (s == NULL)
         {
-          er.not_declared (node.location, identifier);
+          er.not_declared (identifier);
           out.kind = ExpressionValue::Error;
           return;
         }
@@ -249,7 +246,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symbol_table, bo
 
       if (require_named_types_to_be_defined && !t->process_declaration (er, symbol_table))
         {
-          er.not_defined (node.location, identifier);
+          er.not_defined (identifier.location (), identifier.identifier ());
           out.kind = ExpressionValue::Error;
           return;
         }
@@ -340,7 +337,7 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symbol_table, bo
         {
           ast::Node* child = *pos;
           VariableList* c = static_cast<VariableList*> (child);
-          List* identifier_list = c->identifiers;
+          IdentifierList* identifier_list = c->identifiers;
           Node* type_spec = c->type;
           process_type (type_spec, er, symbol_table);
           if (type_spec->eval.kind == ExpressionValue::Error)
@@ -348,21 +345,20 @@ process_type (Node* node, ErrorReporter& er, decl::SymbolTable& symbol_table, bo
               continue;
             }
           const type::Type* type = type_spec->eval.type;
-          for (List::ConstIterator pos2 = identifier_list->begin (),
+          for (IdentifierList::const_iterator pos2 = identifier_list->begin (),
                limit2 = identifier_list->end ();
                pos2 != limit2;
                ++pos2)
             {
-              ast::Node* id = *pos2;
-              const std::string& identifier = node_cast<Identifier> (id)->identifier;
-              if (!field_list->has_member (identifier))
+              const Identifier& identifier = *pos2;
+              if (!field_list->has_member (identifier.identifier ()))
                 {
-                  field_list->append_field (symbol_table.package (), false, identifier, id->location, type, TagSet ());
+                  field_list->append_field (symbol_table.package (), false, identifier, type, TagSet ());
                 }
               else
                 {
-                  Field* f = field_list->find_field (identifier);
-                  er.already_declared (id->location, identifier, f->location);
+                  Field* f = field_list->find_field (identifier.identifier ());
+                  er.already_declared (identifier.location (), identifier.identifier (), f->identifier.location ());
                 }
             }
         }

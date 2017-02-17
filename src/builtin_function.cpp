@@ -18,6 +18,7 @@
 #include "executor_base.hpp"
 #include "type.hpp"
 #include "allocate.hpp"
+#include "identifier.hpp"
 
 namespace runtime
 {
@@ -26,21 +27,19 @@ using namespace decl;
 using namespace type;
 using namespace code;
 
-BuiltinFunction::BuiltinFunction (const std::string& id,
-                                  const util::Location& loc,
+BuiltinFunction::BuiltinFunction (const source::Identifier& identifier,
                                   const type::Function* a_type)
-  : FunctionBase (id, loc, a_type)
+  : FunctionBase (identifier, a_type)
 {
   allocate_parameters (memory_model, type->parameter_list);
   allocate_parameters (memory_model, type->return_parameter_list);
 }
 
-Readable::Readable (const util::Location& loc)
-  : BuiltinFunction ("readable",
-                     loc,
+Readable::Readable (const source::Location& loc)
+  : BuiltinFunction (source::Identifier ("readable", loc),
                      new type::Function ((new decl::ParameterList (loc))
-                                         ->append (Parameter::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
-                                         (new decl::ParameterList (loc))->append (Parameter::make_return (loc, "", &type::named_bool, Immutable))))
+                                         ->append (Parameter::make (source::Identifier ("fd", loc), Immutable, Foreign, &type::named_file_descriptor)),
+                                         (new decl::ParameterList (loc))->append (Parameter::make_return (source::Identifier ("", loc), Immutable, &type::named_bool))))
 { }
 
 void
@@ -65,13 +64,12 @@ Readable::call (runtime::ExecutorBase& exec) const
   *r = (pfd.revents & POLLIN) != 0;
 }
 
-Read::Read (const util::Location& loc)
-  : BuiltinFunction ("read",
-                     loc,
+Read::Read (const source::Location& loc)
+  : BuiltinFunction (source::Identifier ("read", loc),
                      new type::Function ((new decl::ParameterList (loc))
-                                         ->append (Parameter::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
-                                         ->append (Parameter::make (loc, "buf", type::named_byte.get_slice (), Immutable, Mutable)),
-                                         (new decl::ParameterList (loc))->append (Parameter::make_return (loc, "", Int::instance (), Immutable))))
+                                         ->append (Parameter::make (source::Identifier ("fd", loc), Immutable, Mutable, &type::named_file_descriptor))
+                                         ->append (Parameter::make (source::Identifier ("buf", loc),Immutable, Mutable, type::named_byte.get_slice ())),
+                                         (new decl::ParameterList (loc))->append (Parameter::make_return (source::Identifier ("", loc), Immutable, Int::instance ()))))
 { }
 
 void
@@ -83,12 +81,11 @@ Read::call (runtime::ExecutorBase& exec) const
   *r = read ((*fd)->fd (), buf->ptr, buf->length);
 }
 
-Writable::Writable (const util::Location& loc)
-  : BuiltinFunction ("writable",
-                     loc,
+Writable::Writable (const source::Location& loc)
+  : BuiltinFunction (source::Identifier ("writable", loc),
                      new type::Function ((new decl::ParameterList (loc))
-                                         ->append (Parameter::make (loc, "fd", &type::named_file_descriptor, Immutable, Foreign)),
-                                         (new decl::ParameterList (loc))->append (Parameter::make_return (loc, "", &type::named_bool, Immutable))))
+                                         ->append (Parameter::make (source::Identifier ("fd", loc),Immutable, Foreign, &type::named_file_descriptor)),
+                                         (new decl::ParameterList (loc))->append (Parameter::make_return (source::Identifier ("", loc), Immutable, &type::named_bool))))
 { }
 
 void
@@ -113,12 +110,11 @@ Writable::call (runtime::ExecutorBase& exec) const
   *r = (pfd.revents & POLLOUT) != 0;
 }
 
-ClockGettime::ClockGettime (const util::Location& loc)
-  : BuiltinFunction ("clock_gettime",
-                     loc,
+ClockGettime::ClockGettime (const source::Location& loc)
+  : BuiltinFunction (source::Identifier ("clock_gettime", loc),
                      new type::Function ((new decl::ParameterList (loc))
-                                         ->append (Parameter::make (loc, "tp", type::named_timespec.get_pointer (), Immutable, Foreign)),
-                                         (new decl::ParameterList (loc))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))))
+                                         ->append (Parameter::make (source::Identifier ("tp", loc), Immutable, Foreign, type::named_timespec.get_pointer ())),
+                                         (new decl::ParameterList (loc))->append (Parameter::make_return (source::Identifier ("", loc), Immutable, &type::named_int))))
 { }
 
 void
@@ -129,11 +125,10 @@ ClockGettime::call (runtime::ExecutorBase& exec) const
   *r = clock_gettime (CLOCK_REALTIME, ts);
 }
 
-TimerfdCreate::TimerfdCreate (const util::Location& loc)
-  : BuiltinFunction ("timerfd_create",
-                     loc,
+TimerfdCreate::TimerfdCreate (const source::Location& loc)
+  : BuiltinFunction (source::Identifier ("timerfd_create", loc),
                      new type::Function (new decl::ParameterList (loc),
-                                         (new decl::ParameterList (loc))->append (Parameter::make_return (loc, "", &type::named_file_descriptor, Mutable))))
+                                         (new decl::ParameterList (loc))->append (Parameter::make_return (source::Identifier ("", loc), Mutable, &type::named_file_descriptor))))
 { }
 
 void
@@ -151,13 +146,12 @@ TimerfdCreate::call (runtime::ExecutorBase& exec) const
     }
 }
 
-TimerfdSettime::TimerfdSettime (const util::Location& loc)
-  : BuiltinFunction ("timerfd_settime",
-                     loc,
+TimerfdSettime::TimerfdSettime (const source::Location& loc)
+  : BuiltinFunction (source::Identifier ("timerfd_settime", loc),
                      new type::Function ((new decl::ParameterList (loc))
-                                         ->append (Parameter::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
-                                         ->append (Parameter::make (loc, "s", &type::named_uint64, Immutable, Immutable)),
-                                         (new decl::ParameterList (loc))->append (Parameter::make_return (loc, "", &type::named_int, Immutable))))
+                                         ->append (Parameter::make (source::Identifier ("fd", loc), Immutable, Mutable,  &type::named_file_descriptor))
+                                         ->append (Parameter::make (source::Identifier ("s", loc), Immutable, Immutable, &type::named_uint64)),
+                                         (new decl::ParameterList (loc))->append (Parameter::make_return (source::Identifier ("", loc), Immutable, &type::named_int))))
 { }
 
 void
@@ -175,11 +169,10 @@ TimerfdSettime::call (runtime::ExecutorBase& exec) const
   *r = timerfd_settime ((*fd)->fd (), 0, &spec, NULL);
 }
 
-UdpSocket::UdpSocket (const util::Location& loc)
-  : BuiltinFunction ("udp_socket",
-                     loc,
+UdpSocket::UdpSocket (const source::Location& loc)
+  : BuiltinFunction (source::Identifier ("udp_socket", loc),
                      new type::Function (new decl::ParameterList (loc),
-                                         (new decl::ParameterList (loc))->append (Parameter::make_return (loc, "", &type::named_file_descriptor, Mutable))))
+                                         (new decl::ParameterList (loc))->append (Parameter::make_return (source::Identifier ("", loc), Mutable, &type::named_file_descriptor))))
 { }
 
 void
@@ -204,15 +197,14 @@ UdpSocket::call (runtime::ExecutorBase& exec) const
   *ret = exec.allocate_file_descriptor (fd);
 }
 
-Sendto::Sendto (const util::Location& loc)
-  : BuiltinFunction ("sendto",
-                     loc,
+Sendto::Sendto (const source::Location& loc)
+  : BuiltinFunction (source::Identifier ("sendto", loc),
                      new type::Function ((new decl::ParameterList (loc))
-                                         ->append (Parameter::make (loc, "fd", &type::named_file_descriptor, Immutable, Mutable))
-                                         ->append (Parameter::make (loc, "host", &type::named_string, Immutable, Foreign))
-                                         ->append (Parameter::make (loc, "port", &type::named_uint16, Immutable, Immutable))
-                                         ->append (Parameter::make (loc, "buf", type::named_byte.get_slice (), Immutable, Foreign)),
-                                         (new decl::ParameterList (loc))->append (Parameter::make_return (loc, "", Int::instance (), Immutable))))
+                                         ->append (Parameter::make (source::Identifier ("fd", loc), Immutable, Mutable, &type::named_file_descriptor))
+                                         ->append (Parameter::make (source::Identifier ("host", loc), Immutable, Foreign, &type::named_string))
+                                         ->append (Parameter::make (source::Identifier ("port", loc), Immutable, Immutable, &type::named_uint16))
+                                         ->append (Parameter::make (source::Identifier ("buf", loc), Immutable, Foreign, type::named_byte.get_slice ())),
+                                         (new decl::ParameterList (loc))->append (Parameter::make_return (source::Identifier ("", loc), Immutable, Int::instance ()))))
 { }
 
 void

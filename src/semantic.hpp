@@ -12,11 +12,15 @@
 namespace semantic
 {
 
-// Enter builtin types, constants, etc.
-void populate_universe_block (decl::SymbolTable& symbol_table);
+// Enter types, constants, functions, and instances.
+void populate_package_block (ast::Node* root,
+                             util::ErrorReporter& er,
+                             decl::SymbolTable& symbol_table);
 
-// Enter constants, types, functions, and instances into the package scope.
-void enter_identifiers (ast::Node* root, util::ErrorReporter& er, decl::SymbolTable& symbol_table, bool exported_symbols);
+// Enter imported packages.
+void generate_symbols (ast::Node* root,
+                       util::ErrorReporter& er,
+                       decl::SymbolTable& symbol_table);
 
 // Enter method like identifiers into the corresponding named types.
 void enter_method_identifiers (ast::Node* root, util::ErrorReporter& er, decl::SymbolTable& symbol_table);
@@ -221,15 +225,15 @@ std::ostream& operator<< (std::ostream& out, const ExpressionValue& ev);
 typedef std::vector<ExpressionValue> ExpressionValueList;
 
 ExpressionValueList collect_evals (ast::Node* node);
-util::LocationList collect_locations (ast::Node* node);
+source::LocationList collect_locations (ast::Node* node);
 void distribute_evals (const ExpressionValueList& evals, ast::Node* node);
 
 void check_polymorphic_function_call (util::ErrorReporter& er,
                                       const decl::PolymorphicFunction* pf,
-                                      const util::Location& loc,
+                                      const source::Location& loc,
                                       ExpressionValue& result,
                                       ExpressionValueList& arguments,
-                                      const util::LocationList& locations);
+                                      const source::LocationList& locations);
 
 void check_types_arguments (ast::List* node, const decl::ParameterList* signature);
 void require_value_or_const_or_variable_list (const ast::List* node);

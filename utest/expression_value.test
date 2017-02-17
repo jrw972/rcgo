@@ -11,6 +11,7 @@
 using namespace semantic;
 using namespace type;
 using namespace util;
+using namespace source;
 
 scope(semantic); {
 
@@ -1091,7 +1092,7 @@ scope(semantic); {
 
     scenario (nil_to_function); {
       unit(is_assignable); {
-        util::Location loc;
+        Location loc = Location::builtin;
         decl::ParameterList pl (loc);
         type::Function f (&pl, &pl);
         ExpressionValue ev = ExpressionValue::make_nil ();

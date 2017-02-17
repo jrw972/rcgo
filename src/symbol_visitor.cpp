@@ -47,6 +47,15 @@ void SymbolVisitor::visit (Field& s)
 {
   default_action (s);
 }
+void SymbolVisitor::visit (Package& s)
+{
+  default_action (s);
+}
+void SymbolVisitor::visit (ImportedSymbol& s)
+{
+  default_action (s);
+}
+
 void SymbolVisitor::default_action (Symbol& s) { }
 
 ConstSymbolVisitor::~ConstSymbolVisitor() { }
@@ -90,6 +99,15 @@ void ConstSymbolVisitor::visit (const Field& s)
 {
   default_action (s);
 }
+void ConstSymbolVisitor::visit (const Package& s)
+{
+  default_action (s);
+}
+  void ConstSymbolVisitor::visit (const ImportedSymbol& s)
+{
+  default_action (s);
+}
+
 void ConstSymbolVisitor::default_action (const Symbol& s) { }
 
 }

@@ -2,268 +2,74 @@
 
 #include "node.hpp"
 
+#define VISIT(type) void \
+DefaultNodeVisitor::visit (type& node) \
+{ \
+  default_action (node); \
+}
+
 namespace ast
 {
 
-void DefaultNodeVisitor::visit (Identifier& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (IdentifierList& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Receiver& node)
-{
-  default_action (node);
-}
-
-void DefaultNodeVisitor::visit (Array& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Slice& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Map& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (EmptyType& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (FieldList& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Heap& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (VariableList& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (IdentifierType& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Pointer& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (PushPort& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (PullPort& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (ParameterList& node)
-{
-  default_action (node);
-}
-
-void DefaultNodeVisitor::visit (TypeExpression& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (AddressOf& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Call& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Conversion& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Dereference& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (IdentifierExpression& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Index& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (IndexSlice& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (EmptyExpression& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (IndexedPushPortCall& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (ExpressionList& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Literal& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (PushPortCall& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Select& node)
-{
-  default_action (node);
-}
-
-void DefaultNodeVisitor::visit (EmptyStatement& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (AddAssign& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Change& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Assign& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (ExpressionStatement& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (If& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (While& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (StatementList& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Return& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (IncrementDecrement& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (SubtractAssign& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Activate& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (Var& node)
-{
-  default_action (node);
-}
-
-void DefaultNodeVisitor::visit (BindPushPort& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (BindPushPortParameter& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (BindPullPort& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (ForIota& node)
-{
-  default_action (node);
-}
-
-void DefaultNodeVisitor::visit (ActionDecl& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (ConstDecl& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (BindDecl& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (FunctionDecl& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (GetterDecl& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (InitDecl& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (InstanceDecl& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (MethodDecl& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (ReactionDecl& node)
-{
-  default_action (node);
-}
-void DefaultNodeVisitor::visit (TypeDecl& node)
-{
-  default_action (node);
-}
-
-void DefaultNodeVisitor::visit (SourceFile& node)
-{
-  default_action (node);
-}
-
-void DefaultNodeVisitor::visit (ElementList& node)
-{
-  default_action (node);
-}
-
-void DefaultNodeVisitor::visit (Element& node)
-{
-  default_action (node);
-}
-
-void DefaultNodeVisitor::visit (CompositeLiteral& node)
-{
-  default_action (node);
-}
-
-void DefaultNodeVisitor::visit (ImportDeclList& node)
-{
-  default_action (node);
-}
-
-void DefaultNodeVisitor::visit (TopLevelDeclList& node)
-{
-  default_action (node);
-}
+VISIT (ActionDecl)
+VISIT (Activate)
+VISIT (AddAssign)
+VISIT (AddressOf)
+VISIT (Array)
+VISIT (Assign)
+VISIT (BinderDecl)
+VISIT (BindPullPort)
+VISIT (BindPushPort)
+VISIT (BindPushPortParameter)
+VISIT (Call)
+VISIT (Change)
+VISIT (CompositeLiteral)
+VISIT (ConstDecl)
+VISIT (Conversion)
+VISIT (Dereference)
+VISIT (Element)
+VISIT (ElementList)
+VISIT (EmptyExpression)
+VISIT (EmptyStatement)
+VISIT (EmptyType)
+VISIT (ExpressionList)
+VISIT (ExpressionStatement)
+VISIT (FieldList)
+VISIT (ForIota)
+VISIT (FunctionDecl)
+VISIT (GetterDecl)
+VISIT (Heap)
+VISIT (IdentifierExpression)
+VISIT (IdentifierList)
+VISIT (IdentifierType)
+VISIT (If)
+VISIT (IncrementDecrement)
+VISIT (Index)
+VISIT (IndexSlice)
+VISIT (IndexedPushPortCall)
+VISIT (InitializerDecl)
+VISIT (InstanceDecl)
+VISIT (Literal)
+VISIT (Map)
+VISIT (MethodDecl)
+VISIT (ParameterList)
+VISIT (Pointer)
+VISIT (PullPort)
+VISIT (PushPort)
+VISIT (PushPortCall)
+VISIT (ReactionDecl)
+VISIT (Receiver)
+VISIT (Return)
+VISIT (Select)
+VISIT (Slice)
+VISIT (StatementList)
+VISIT (SubtractAssign)
+VISIT (TopLevelDeclList)
+VISIT (TypeDecl)
+VISIT (TypeExpression)
+VISIT (VarDecl)
+VISIT (VariableList)
+VISIT (While)
 
 void DefaultNodeVisitor::default_action (Node& node)
 { }

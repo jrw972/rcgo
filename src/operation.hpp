@@ -222,7 +222,7 @@ struct Load : public Operation
 
 struct IndexArray : public Operation
 {
-  IndexArray (const util::Location& l, Operation* b, Operation* i, const type::Array* t) : location (l), base (b), index (i), type (t) { }
+  IndexArray (const source::Location& l, Operation* b, Operation* i, const type::Array* t) : location (l), base (b), index (i), type (t) { }
   virtual Control execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
@@ -232,7 +232,7 @@ struct IndexArray : public Operation
     index->dump ();
     std::cout << ")\n";
   }
-  util::Location const location;
+  source::Location const location;
   Operation* const base;
   Operation* const index;
   const type::Array* type;
@@ -240,7 +240,7 @@ struct IndexArray : public Operation
 
 struct IndexSlice : public Operation
 {
-  IndexSlice (const util::Location& l, const Operation* b, const Operation* i, const type::Slice* t) : location (l), base (b), index (i), type (t) { }
+  IndexSlice (const source::Location& l, const Operation* b, const Operation* i, const type::Slice* t) : location (l), base (b), index (i), type (t) { }
   virtual Control execute (ExecutorBase& exec) const;
   virtual void dump () const
   {
@@ -250,7 +250,7 @@ struct IndexSlice : public Operation
     index->dump ();
     std::cout << ")";
   }
-  util::Location const location;
+  source::Location const location;
   const Operation* const base;
   const Operation* const index;
   const type::Slice* type;
@@ -258,7 +258,7 @@ struct IndexSlice : public Operation
 
 struct SliceArray : public Operation
 {
-  SliceArray (const util::Location& loc,
+  SliceArray (const source::Location& loc,
               Operation* b,
               Operation* l,
               Operation* h,
@@ -293,7 +293,7 @@ struct SliceArray : public Operation
       }
     std::cout << ")";
   }
-  util::Location const location;
+  source::Location const location;
   Operation* const base;
   Operation* const low;
   Operation* const high;
@@ -303,7 +303,7 @@ struct SliceArray : public Operation
 
 struct SliceSlice : public Operation
 {
-  SliceSlice (const util::Location& loc,
+  SliceSlice (const source::Location& loc,
               Operation* b,
               Operation* l,
               Operation* h,
@@ -338,7 +338,7 @@ struct SliceSlice : public Operation
       }
     std::cout << ")";
   }
-  util::Location const location;
+  source::Location const location;
   Operation* const base;
   Operation* const low;
   Operation* const high;

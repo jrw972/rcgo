@@ -31,8 +31,7 @@ struct Callable
 
 struct FunctionBase : public Callable, public decl::Symbol
 {
-  FunctionBase (const std::string& id,
-                const util::Location& loc,
+  FunctionBase (const source::Identifier& identifier,
                 const type::Function* type);
 
   // Callable
@@ -66,8 +65,7 @@ struct Function : public FunctionBase
 
 struct MethodBase : public Callable, public decl::Symbol
 {
-  MethodBase (const std::string& a_name,
-              const util::Location& a_location,
+  MethodBase (const source::Identifier& identifier,
               const type::NamedType* a_named_type);
   virtual const decl::ParameterList* parameter_list () const;
   virtual const decl::ParameterList* return_parameter_list () const;
@@ -104,9 +102,9 @@ private:
 
 struct Initializer : public MethodBase
 {
-  Initializer (ast::InitDecl* a_initdecl,
+  Initializer (ast::InitializerDecl* a_initdecl,
                const type::NamedType* a_named_type);
-  ast::InitDecl* const initdecl;
+  ast::InitializerDecl* const initdecl;
 
 private:
   virtual bool process_declaration_i (util::ErrorReporter& er, SymbolTable& symbol_table);
@@ -171,10 +169,10 @@ private:
 
 struct Bind : public MethodBase
 {
-  Bind (ast::BindDecl* a_binddecl,
+  Bind (ast::BinderDecl* a_binddecl,
         const type::NamedType* a_named_type);
 
-  ast::BindDecl* const binddecl;
+  ast::BinderDecl* const binddecl;
 
   Parameter* receiver_parameter () const;
 

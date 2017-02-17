@@ -2,6 +2,7 @@
 #include "unit_test.hpp"
 #include "symbol_table.hpp"
 #include "type.hpp"
+#include "identifier.hpp"
 
 using namespace decl;
 
@@ -22,10 +23,10 @@ scope(decl); {
       st.enter_symbol (&type::named_int);
       st.open_scope ();
       st.enter_symbol (&type::named_int32);
-      ASSERT (st.retrieve_symbol (type::named_int.name) == &type::named_int);
-      ASSERT (st.retrieve_symbol (type::named_int32.name) == &type::named_int32);
-      ASSERT (!st.is_declared_locally (type::named_int.name));
-      ASSERT (st.is_declared_locally (type::named_int32.name));
+      ASSERT (st.retrieve_symbol (type::named_int.identifier.identifier ()) == &type::named_int);
+      ASSERT (st.retrieve_symbol (type::named_int32.identifier.identifier ()) == &type::named_int32);
+      ASSERT (!st.is_declared_locally (type::named_int.identifier.identifier ()));
+      ASSERT (st.is_declared_locally (type::named_int32.identifier.identifier ()));
     }; off();
 
     unit(close_scope); {
@@ -33,9 +34,9 @@ scope(decl); {
       st.open_scope ();
       st.enter_symbol (&type::named_int);
       st.open_scope ();
-      ASSERT (!st.is_declared_locally (type::named_int.name));
+      ASSERT (!st.is_declared_locally (type::named_int.identifier.identifier ()));
       st.close_scope ();
-      ASSERT (st.is_declared_locally (type::named_int.name));
+      ASSERT (st.is_declared_locally (type::named_int.identifier.identifier ()));
     }; off();
 
   }; off();

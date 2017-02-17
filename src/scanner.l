@@ -1,3 +1,6 @@
+%option reentrant
+%option bison-bridge
+%option bison-locations
 %option nounput
 %option noyywrap
 %option noinput
@@ -9,12 +12,14 @@
 #include "type.hpp"
 #include "location.hpp"
 #include "node.hpp"
+#include "identifier.hpp"
+#include "source_file.hpp"
 #include <error.h>
 
   using namespace type;
   using namespace ast;
   using namespace semantic;
-  using namespace util;
+  using namespace source;
 
   static int octalvalue (char c) {
     return c - '0';
@@ -33,47 +38,47 @@
     NOT_REACHED;
   }
 
-  static void validUnicode (unsigned int line, int u) {
+  static void validUnicode (const source::Location& location, int u) {
     if (u > 0x10FFFF) {
-      error_at_line (-1, 0, Location::static_file.c_str (), line,
+      error_at_line (-1, 0, location.file ()->path ().c_str (), location.line (),
                      "Unicode value is out of range (E135)");
     }
 
     if (u >= 0xD800 && u <= 0xDFFF) {
-      error_at_line (-1, 0, Location::static_file.c_str (), line,
+      error_at_line (-1, 0, location.file ()->path ().c_str (), location.line (),
                      "illegal surrogate pair (E136)");
     }
   }
 
-  static int parseOctal (unsigned int line, const char* s) {
+  static int parseOctal (const source::Location& location, const char* s) {
     int x =
       (octalvalue (s[0]) << 6) |
       (octalvalue (s[1]) << 3) |
       (octalvalue (s[2]) << 0);
     if (x > 255) {
-      error_at_line (-1, 0, Location::static_file.c_str (), line,
+      error_at_line (-1, 0, location.file ()->path ().c_str (), location.line (),
                      "octal escape is out of range (E134)");
     }
     return x;
   }
 
-  static int parseHex (unsigned int line, const char* s) {
+  static int parseHex (const char* s) {
     return
       (hexvalue (s[0]) << 4) |
       (hexvalue (s[1]) << 0);
   }
 
-  static int parseU4 (unsigned int line, const char* s) {
+  static int parseU4 (const source::Location& location, const char* s) {
     int x =
       (hexvalue (s[0]) << 12) |
       (hexvalue (s[1]) << 8) |
       (hexvalue (s[2]) << 4) |
       (hexvalue (s[3]) << 0);
-    validUnicode (line, x);
+    validUnicode (location, x);
     return x;
   }
 
-  static int parseU8 (unsigned int line, const char* s) {
+  static int parseU8 (const source::Location& location, const char* s) {
     int x =
       (hexvalue (s[0]) << 28) |
       (hexvalue (s[1]) << 24) |
@@ -83,11 +88,11 @@
       (hexvalue (s[5]) << 8) |
       (hexvalue (s[6]) << 4) |
       (hexvalue (s[7]) << 0);
-    validUnicode (line, x);
+    validUnicode (location, x);
     return x;
   }
 
- static char* parseInterprettedString (unsigned int line, char* pos, char* limit, char* out);
+ static char* parseInterprettedString (const source::Location& location, char* pos, char* limit, char* out);
 
  static char* writeUtf8 (int x, char* out) {
    if (x < 128) {
@@ -176,12 +181,12 @@ ESCAPED \\[abfnrtv\\\"]
 "goto"                 { return GOTO; }
 "heap"                 { return HEAP; }
 "if"                   { return IF; }
-"import"               { return IMPORT; }
+"import"               { return import_kw; }
 "init"                 { return INIT; }
 "instance"             { return INSTANCE; }
 "interface"            { return INTERFACE; }
 "map"                  { return MAP; }
-"package"              { return PACKAGE_KW; }
+"package"              { return package_kw; }
 "pull"                 { return PULL; }
 "push"                 { return PUSH; }
 "range"                { return RANGE; }
@@ -242,8 +247,8 @@ ESCAPED \\[abfnrtv\\\"]
 ";"                    { return *yytext; }
 ":"                    { return *yytext; }
 
-[_a-zA-Z][_a-zA-Z0-9]* { yylval.node = new Identifier (yylloc, yytext);
-                         return IDENTIFIER; }
+[_a-zA-Z][_a-zA-Z0-9]* { yylval->identifier = new source::Identifier (yytext, source_file->location (*yylloc));
+                         return identifier; }
 
 "`"[^`]*"`"            { char* begin = yytext + 1;
                          // Skip over the first and last `
@@ -273,14 +278,14 @@ ESCAPED \\[abfnrtv\\\"]
                          value.kind = ExpressionValue::Constant;
                          value.type = UntypedString::instance ();
                          value.value.untyped_string_value = v;
-                         yylval.node = new Literal (yylloc, value);
-                         return STRING_LIT; }
+                         yylval->literal = new Literal (source_file->location (*yylloc), value);
+                         return string_lit; }
 
 \"([^\"]|{OCTAL}|{HEX}|{LITTLEU}|{BIGU}|{ESCAPED})*\" {
   char* begin = yytext + 1;
   char* pos = begin;
   char* limit = yytext + yyleng - 1;
-  char* end = parseInterprettedString (yylloc, pos, limit, pos);
+  char* end = parseInterprettedString (source_file->location (*yylloc), pos, limit, pos);
   size_t size = end - begin;
   runtime::String v;
   void* o = malloc (size);
@@ -292,8 +297,8 @@ ESCAPED \\[abfnrtv\\\"]
   value.kind = ExpressionValue::Constant;
   value.type = UntypedString::instance ();
   value.value.untyped_string_value = v;
-  yylval.node = new Literal (yylloc, value);
-  return STRING_LIT;
+  yylval->node = new Literal (source_file->location (*yylloc), value);
+  return string_lit;
 }
 
 [1-9][0-9]* {
@@ -303,10 +308,10 @@ ESCAPED \\[abfnrtv\\\"]
   errno = 0;
   value.value.untyped_integer_value = strtoull (yytext, NULL, 10);
   if (errno == ERANGE) {
-    error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
+    error_at_line (-1, 0, source_file->path ().c_str (), *yylloc,
       "integer literal '%s' is out of range (E11)", yytext);
   }
-  yylval.node = new Literal (yylloc, value);
+  yylval->node = new Literal (source_file->location (*yylloc), value);
   return LITERAL;
 }
 
@@ -317,10 +322,10 @@ ESCAPED \\[abfnrtv\\\"]
   errno = 0;
   value.value.untyped_integer_value = strtoull (yytext, NULL, 8);
   if (errno == ERANGE) {
-    error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
+    error_at_line (-1, 0, source_file->path ().c_str (), *yylloc,
       "octal literal '%s' is out of range (E12)", yytext);
   }
-  yylval.node = new Literal (yylloc, value);
+  yylval->node = new Literal (source_file->location (*yylloc), value);
   return LITERAL;
 }
 
@@ -331,10 +336,10 @@ ESCAPED \\[abfnrtv\\\"]
   errno = 0;
   value.value.untyped_integer_value = strtoull (yytext, NULL, 16);
   if (errno == ERANGE) {
-    error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
+    error_at_line (-1, 0, source_file->path ().c_str (), *yylloc,
       "hex literal '%s' is out of range (E13)", yytext);
   }
-  yylval.node = new Literal (yylloc, value);
+  yylval->node = new Literal (source_file->location (*yylloc), value);
   return LITERAL;
 }
 
@@ -343,7 +348,7 @@ ESCAPED \\[abfnrtv\\\"]
   value.kind = ExpressionValue::Constant;
   value.type = UntypedFloat::instance ();
   value.value.untyped_float_value = strtod (yytext, NULL);
-  yylval.node = new Literal (yylloc, value);
+  yylval->node = new Literal (source_file->location (*yylloc), value);
   return LITERAL;
 }
 
@@ -352,7 +357,7 @@ ESCAPED \\[abfnrtv\\\"]
   value.kind = ExpressionValue::Constant;
   value.type = type::UntypedComplex::instance ();
   value.value.untyped_complex_value = semantic::UntypedComplex::make (0, strtod (yytext, NULL));
-  yylval.node = new Literal (yylloc, value);
+  yylval->node = new Literal (source_file->location (*yylloc), value);
   return LITERAL;
 }
 
@@ -361,7 +366,7 @@ ESCAPED \\[abfnrtv\\\"]
   value.kind = ExpressionValue::Constant;
   value.type = UntypedRune::instance ();
   value.value.untyped_rune_value = yytext[1];
-  yylval.node = new Literal (yylloc, value);
+  yylval->node = new Literal (source_file->location (*yylloc), value);
   return LITERAL;
 }
 
@@ -372,39 +377,39 @@ ESCAPED \\[abfnrtv\\\"]
   switch (yytext[2]) {
   case 'a':
     value.value.untyped_rune_value = '\a';
-    yylval.node = new Literal (yylloc, value);
+    yylval->node = new Literal (source_file->location (*yylloc), value);
     break;
   case 'b':
     value.value.untyped_rune_value = '\b';
-    yylval.node = new Literal (yylloc, value);
+    yylval->node = new Literal (source_file->location (*yylloc), value);
     break;
   case 'f':
     value.value.untyped_rune_value = '\f';
-    yylval.node = new Literal (yylloc, value);
+    yylval->node = new Literal (source_file->location (*yylloc), value);
     break;
   case 'n':
     value.value.untyped_rune_value = '\n';
-    yylval.node = new Literal (yylloc, value);
+    yylval->node = new Literal (source_file->location (*yylloc), value);
     break;
   case 'r':
     value.value.untyped_rune_value = '\r';
-    yylval.node = new Literal (yylloc, value);
+    yylval->node = new Literal (source_file->location (*yylloc), value);
     break;
   case 't':
     value.value.untyped_rune_value = '\t';
-    yylval.node = new Literal (yylloc, value);
+    yylval->node = new Literal (source_file->location (*yylloc), value);
     break;
   case 'v':
     value.value.untyped_rune_value = '\v';
-    yylval.node = new Literal (yylloc, value);
+    yylval->node = new Literal (source_file->location (*yylloc), value);
     break;
   case '\\':
     value.value.untyped_rune_value = '\\';
-    yylval.node = new Literal (yylloc, value);
+    yylval->node = new Literal (source_file->location (*yylloc), value);
     break;
   case '\'':
     value.value.untyped_rune_value = '\'';
-    yylval.node = new Literal (yylloc, value);
+    yylval->node = new Literal (source_file->location (*yylloc), value);
     break;
   default:
     NOT_REACHED;
@@ -417,8 +422,8 @@ ESCAPED \\[abfnrtv\\\"]
   ExpressionValue value;
   value.kind = ExpressionValue::Constant;
   value.type = UntypedRune::instance ();
-  value.value.untyped_rune_value = parseOctal (yylloc, yytext + 2);
-  yylval.node = new Literal (yylloc, value);
+  value.value.untyped_rune_value = parseOctal (source_file->location (*yylloc), yytext + 2);
+  yylval->node = new Literal (source_file->location (*yylloc), value);
   return LITERAL;
 }
 
@@ -426,8 +431,8 @@ ESCAPED \\[abfnrtv\\\"]
   ExpressionValue value;
   value.kind = ExpressionValue::Constant;
   value.type = UntypedRune::instance ();
-  value.value.untyped_rune_value = parseHex (yylloc, yytext + 3);
-  yylval.node = new Literal (yylloc, value);
+  value.value.untyped_rune_value = parseHex (yytext + 3);
+  yylval->node = new Literal (source_file->location (*yylloc), value);
   return LITERAL;
 }
 
@@ -435,8 +440,8 @@ ESCAPED \\[abfnrtv\\\"]
   ExpressionValue value;
   value.kind = ExpressionValue::Constant;
   value.type = UntypedRune::instance ();
-  value.value.untyped_rune_value = parseU4 (yylloc, yytext + 3);
-  yylval.node = new Literal (yylloc, value);
+  value.value.untyped_rune_value = parseU4 (source_file->location (*yylloc), yytext + 3);
+  yylval->node = new Literal (source_file->location (*yylloc), value);
   return LITERAL;
 }
 
@@ -444,21 +449,21 @@ ESCAPED \\[abfnrtv\\\"]
   ExpressionValue value;
   value.kind = ExpressionValue::Constant;
   value.type = UntypedRune::instance ();
-  value.value.untyped_rune_value = parseU8 (yylloc, yytext + 3);
-  yylval.node = new Literal (yylloc, value);
+  value.value.untyped_rune_value = parseU8 (source_file->location (*yylloc), yytext + 3);
+  yylval->node = new Literal (source_file->location (*yylloc), value);
   return LITERAL;
 }
 
 [ \t]+                 /* Discard whitespace */
-[\n]                   { ++yylloc; }
+[\n]                   { ++*yylloc; }
 . {
-error_at_line (-1, 0, Location::static_file.c_str (), yylloc,
+error_at_line (-1, 0, source_file->path ().c_str (), *yylloc,
                    "unrecognized character '%s' (E66)", yytext);
 }
 
 %%
 
-static char* parseInterprettedString (unsigned int line, char* pos, char* limit, char* out)
+static char* parseInterprettedString (const source::Location& location, char* pos, char* limit, char* out)
 {
   while (pos != limit) {
     char c = *pos;
@@ -476,7 +481,7 @@ static char* parseInterprettedString (unsigned int line, char* pos, char* limit,
       case '6':
       case '7':
         {
-          int x = parseOctal (line, pos);
+          int x = parseOctal (location, pos);
           pos += 3;
           *out++ = x;
         }
@@ -484,7 +489,7 @@ static char* parseInterprettedString (unsigned int line, char* pos, char* limit,
       case 'x':
         {
           ++pos;
-          int x = parseHex (line, pos);
+          int x = parseHex (pos);
           pos += 2;
           *out++ = x;
         }
@@ -492,7 +497,7 @@ static char* parseInterprettedString (unsigned int line, char* pos, char* limit,
       case 'u':
         {
           ++pos;
-          int x = parseU4 (line, pos);
+          int x = parseU4 (location, pos);
           pos += 4;
           out = writeUtf8 (x, out);
         }
@@ -500,7 +505,7 @@ static char* parseInterprettedString (unsigned int line, char* pos, char* limit,
       case 'U':
         {
           ++pos;
-          int x = parseU8 (line, pos);
+          int x = parseU8 (location, pos);
           pos += 8;
           out = writeUtf8 (x, out);
         }

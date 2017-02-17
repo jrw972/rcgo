@@ -5,6 +5,7 @@
 #include "parameter_list.hpp"
 #include "symbol_cast.hpp"
 #include "type.hpp"
+#include "identifier.hpp"
 
 namespace decl
 {
@@ -76,7 +77,7 @@ Symbol* Scope::find_global_symbol (const std::string& identifier) const
        ++pos)
     {
       Symbol *s = *pos;
-      if (identifier == s->name)
+      if (identifier == s->identifier.identifier ())
         {
           return s;
         }
@@ -101,7 +102,7 @@ Symbol* Scope::find_local_symbol (const std::string& identifier) const
        ++pos)
     {
       Symbol *s = *pos;
-      if (identifier == s->name)
+      if (identifier == s->identifier.identifier ())
         {
           return s;
         }
@@ -120,7 +121,7 @@ void Scope::activate ()
            ++ptr)
         {
           // Find because it may be hidden.
-          Symbol* x = find_global_symbol ((*ptr)->name);
+          Symbol* x = find_global_symbol ((*ptr)->identifier.identifier ());
           if (x != NULL && symbol_cast<Hidden> (x) != NULL)
             {
               // Leave hidden symbols hidden.
@@ -143,7 +144,7 @@ void Scope::activate ()
                       {
                         assert (symbol->is_foreign_safe ());
                         // Hide this parameter.
-                        enter_symbol (new Hidden (symbol, symbol->location));
+                        enter_symbol (new Hidden (symbol));
                       }
                   }
               }
@@ -157,7 +158,7 @@ void Scope::activate ()
                 if (symbol->type->contains_pointer ()
                     && symbol->indirection_mutability == Foreign)
                   {
-                    enter_symbol (new Hidden (symbol, symbol->location));
+                    enter_symbol (new Hidden (symbol));
                   }
               }
           }
@@ -176,7 +177,7 @@ void Scope::change ()
            ptr != limit;
            ++ptr)
         {
-          Symbol* x = find_global_symbol ((*ptr)->name);
+          Symbol* x = find_global_symbol ((*ptr)->identifier.identifier ());
           if (x != NULL && symbol_cast<Hidden> (x) != NULL)
             {
               // Leave hidden symbols hidden.
@@ -230,7 +231,7 @@ Scope::return_parameter_list () const
     }
 }
 
-Package*
+source::Package*
 Scope::package () const
 {
   return NULL;

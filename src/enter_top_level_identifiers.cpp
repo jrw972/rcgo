@@ -6,6 +6,7 @@
 #include "type.hpp"
 #include "node_cast.hpp"
 #include "callable.hpp"
+#include "identifier.hpp"
 
 namespace semantic
 {
@@ -15,6 +16,7 @@ using namespace ast;
 using namespace decl;
 using namespace util;
 using namespace type;
+using namespace source;
 
 struct visitor : public DefaultNodeVisitor
 {
@@ -30,38 +32,28 @@ struct visitor : public DefaultNodeVisitor
   Scope* package_scope;
   Scope* file_scope;
 
-  void check_already_declared (const Identifier* node)
+  void check_already_declared (const std::string& identifier, const source::Location& location)
   {
     Symbol* s;
 
-    s = package_scope->find_local_symbol (node->identifier);
+    s = package_scope->find_local_symbol (identifier);
     if (s)
       {
-        er.already_declared (node->location, node->identifier, s->location);
+        er.already_declared (location, identifier, s->identifier.location ());
         return;
       }
 
-    s = file_scope->find_local_symbol (node->identifier);
+    s = file_scope->find_local_symbol (identifier);
     if (s)
       {
-        er.already_declared (node->location, node->identifier, s->location);
+        er.already_declared (location, identifier, s->identifier.location ());
         return;
       }
-  }
-
-  void visit (SourceFile& node)
-  {
-    node.top_level_decl_list->accept (*this);
-  }
-
-  void visit (TopLevelDeclList& node)
-  {
-    node.visit_children (*this);
   }
 
   void visit (ConstDecl& node)
   {
-    ast::List* identifier_list = node.identifiers;
+    ast::IdentifierList* identifier_list = node.identifiers;
     ast::List* expression_list = node.expressions;
 
     if (identifier_list->size () != expression_list->size ())
@@ -73,14 +65,16 @@ struct visitor : public DefaultNodeVisitor
 
     // Enter each symbol.
     size_t idx = 0;
-    for (List::ConstIterator id_pos = identifier_list->begin (),
+    IdentifierList::const_iterator id_pos;
+    ast::List::ConstIterator init_pos;
+    for (id_pos = identifier_list->begin (),
          init_pos = expression_list->begin ();
          idx != limit;
          ++id_pos, ++init_pos, ++idx)
       {
-        const Identifier* id = node_cast<Identifier> (*id_pos);
-        check_already_declared (id);
-        Constant* symbol = new Constant (id->identifier, id->location, node.type, *init_pos);
+        const Identifier& id = *id_pos;
+        check_already_declared (id.identifier (), id.location ());
+        Constant* symbol = new Constant (id, node.type, *init_pos);
         package_scope->enter_symbol (symbol);
         node.symbols.push_back (symbol);
       }
@@ -88,21 +82,21 @@ struct visitor : public DefaultNodeVisitor
 
   void visit (TypeDecl& node)
   {
-    check_already_declared (node.identifier);
+    check_already_declared (node.identifier.identifier (), node.identifier.location ());
     node.symbol = new NamedType (&node);
     package_scope->enter_symbol (node.symbol);
   }
 
   void visit (FunctionDecl& node)
   {
-    check_already_declared (node.identifier);
+    check_already_declared (node.identifier.identifier (), node.identifier.location ());
     node.symbol = new decl::Function (&node);
     package_scope->enter_symbol (node.symbol);
   }
 
   void visit (InstanceDecl& node)
   {
-    check_already_declared (node.identifier);
+    check_already_declared (node.identifier.identifier (), node.identifier.location ());
     node.symbol = new decl::Instance (&node);
     package_scope->enter_symbol (node.symbol);
   }

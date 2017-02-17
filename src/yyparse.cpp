@@ -4,11 +4,10 @@
 
 #include "parser.hpp"
 #include "location.hpp"
-
-ast::Node *root = NULL;
+#include "source_file.hpp"
 
 void
-yyerror (char const *message)
+yyerror (YYLTYPE* loc, yyscan_t scanner, source::SourceFile* source_file, char const * message)
 {
-  error_at_line (-1, 0, util::Location::static_file.c_str (), yylloc, "%s (E112)", message);
+  error_at_line (-1, 0, source_file->path ().c_str (), *loc, "%s (E112)", message);
 }
