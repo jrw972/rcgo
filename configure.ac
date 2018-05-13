@@ -12,7 +12,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_MAINTAINER_MODE([disable])
-AC_CONFIG_SRCDIR([src/main.cpp])
+AC_CONFIG_SRCDIR([src/main.cc])
 AC_CONFIG_HEADERS([config.hpp])
 AC_REQUIRE_AUX_FILE([catch-driver.sh])
 

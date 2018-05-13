@@ -6,10 +6,10 @@
 
 src_dir="$1"
 
-# Find cpp files without a corresponding test file.
-find "${src_dir}/src" -name "*.cpp" | grep -v -e 'main\.cpp' -e 'DigitTable\.cpp' -e 'LetterTable\.cpp' -e 'UpperTable\.cpp' -e 'unit_tests\.cpp' -e '.*\.test\.cpp' | sed -e 's@^.*/@@' -e 's@\.cpp$@@' | sort > expected_tests
+# Find cc files without a corresponding test file.
+find "${src_dir}/src" -name "*.cc" | grep -v -e 'main\.cc' -e 'digit_table\.cc' -e 'letter_table\.cc' -e 'upper_table\.cc' -e '.*\_test\.cc' -e 'unit_tests\.cc' | sed -e 's@^.*/@@' -e 's@\.cc$@@' | sort > expected_tests
 
-./unit_tests --use-colour no -# --list-tags | grep '#' | awk '{ print $2}' | sed -e 's/^\[#//' -e 's/\.test\]$//' | sort > actual_tests_tags
+./unit_tests --use-colour no -# --list-tags | grep '#' | awk '{ print $2}' | sed -e 's/^\[#//' -e 's/\_test\]$//' | sort > actual_tests_tags
 
 # Run all of the unit tests to generate a coverage report.
 find . -name "*.gcda" -delete
@@ -20,14 +20,14 @@ find ./src/.libs -name "*.gcda" | sed -e 's@^.*/librcgo_la-@@' -e 's@\.gcda$@@' 
 for tst in $(cat actual_tests_tags)
 do
     find . -name "*.gcda" -delete
-    ./unit_tests --use-colour no -# "[#${tst}.test]"
+    ./unit_tests --use-colour no -# "[#${tst}_test]"
     gcov --relative-only "src/.libs/librcgo_la-${tst}.o"
-    if ! [ -e "${tst}.hpp.gcov" ]
+    if ! [ -e "${tst}.h.gcov" ]
     then
-        touch "${tst}.hpp.gcov"
+        touch "${tst}.h.gcov"
     fi
 
-    sed -E -n -e '/NOT_COVERED/ d' -e '/^ *-: *0:Source:.+$$/ p' -e '/^ *#####: *[0-9]+:.*$$/ p' "${tst}.hpp.gcov" "${tst}.cpp.gcov"
+    sed -E -n -e '/NOT_COVERED/ d' -e '/^ *-: *0:Source:.+$$/ p' -e '/^ *#####: *[0-9]+:.*$$/ p' "${tst}.h.gcov" "${tst}.cc.gcov"
 done
 
 printf "\nThe following are untested:\n"
