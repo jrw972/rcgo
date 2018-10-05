@@ -112,14 +112,7 @@ codebase does not share any code with the Go codebase.
 ## Contributing
 
 This projects follows the
-[Collective Code Construction Contract (C4)](https://rfc.zeromq.org/spec:42/C4/)
-with the following clarifications and exceptions:
-
-* 2.3.7 - The problem and solution statements of a patch commit
-  message need not begin with a literal "Problem:" and "Solution:",
-  respectively.  The contributor SHOULD provide additional context
-  describing the problem if it cannot be adequately described in 50
-  characters.
+[Collective Code Construction Contract (C4)](https://rfc.zeromq.org/spec:42/C4/).
 
 This project follows the
 [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
