@@ -15825,7 +15825,7 @@ fi
 
 
 
-    CXXFLAGS="$(echo "$CXXFLAGS" | $SED -e 's/-O[0-9]*//g') -fprofile-arcs -ftest-coverage -fkeep-inline-functions "
+    CXXFLAGS="$(echo "$CXXFLAGS" | $SED -e 's/-O[0-9]*/-O0/g') -fprofile-arcs -ftest-coverage -fno-inline -fkeep-inline-functions "
 
 
     COVERAGE_CXXFLAGS="--coverage"

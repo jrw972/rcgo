@@ -10,7 +10,7 @@ AC_DEFUN([AC_COVERAGE],
   AS_IF([test "x$enable_coverage" = "xyes"], [
 
     changequote({,})
-    CXXFLAGS="$(echo "$CXXFLAGS" | $SED -e 's/-O[0-9]*//g') -fprofile-arcs -ftest-coverage -fkeep-inline-functions "
+    CXXFLAGS="$(echo "$CXXFLAGS" | $SED -e 's/-O[0-9]*/-O0/g') -fprofile-arcs -ftest-coverage -fno-inline -fkeep-inline-functions "
     changequote([,])
 
     COVERAGE_CXXFLAGS="--coverage"
@@ -22,4 +22,4 @@ AC_DEFUN([AC_COVERAGE],
   ])
 
   AM_CONDITIONAL([COVERAGE], [test "x$enable_coverage" = "xyes"])
-]) # AC_LCOV
+]) # AC_COVERAGE
