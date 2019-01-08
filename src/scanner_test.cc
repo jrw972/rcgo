@@ -71,8 +71,8 @@ namespace test {
     Scanner scanner(&seq, &er);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind == Value::kInteger);                         \
-    REQUIRE(t.value().Integer_value == val);                            \
+    REQUIRE(t.value().kind() == value::Value::kInteger);                \
+    REQUIRE(t.value().Integer_value() == val);                            \
   }
 
 #define FLOATING_LITERAL_TEST(literal, val)                             \
@@ -83,8 +83,8 @@ namespace test {
     Scanner scanner(&seq, &er);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind == Value::kFloat);                           \
-    REQUIRE(fabs(t.value().Float_value.get_d() - val) < .0000001);      \
+    REQUIRE(t.value().kind() == value::Value::kFloat);                  \
+    REQUIRE(fabs(t.value().Float_value().get_d() - val) < .0000001);    \
   }
 
 #define IMAGINARY_LITERAL_TEST(literal, val)                            \
@@ -95,8 +95,8 @@ namespace test {
     Scanner scanner(&seq, &er);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind == Value::kComplex);                         \
-    REQUIRE(fabs(t.value().Complex_value.imag.get_d() - val) < .0000001); \
+    REQUIRE(t.value().kind() == value::Value::kComplex);                \
+    REQUIRE(fabs(t.value().Complex_value().imag().get_d() - val) < .0000001); \
   }
 
 #define RUNE_LITERAL_TEST(literal, val)                                 \
@@ -107,8 +107,8 @@ namespace test {
     Scanner scanner(&seq, &er);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind == Value::kRune);                            \
-    REQUIRE(t.value().Rune_value == val);                               \
+    REQUIRE(t.value().kind() == value::Value::kRune);                   \
+    REQUIRE(t.value().Rune_value() == val);                             \
   }
 
 #define RUNE_LITERAL_TEST_ERROR(literal, err)                           \
@@ -120,7 +120,7 @@ namespace test {
     Token t = scanner.Peek();                                           \
     REQUIRE(er.At(0) == std::string(err));                              \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind == Value::kRune);                            \
+    REQUIRE(t.value().kind() == value::Value::kRune);                   \
   }
 
 #define STRING_LITERAL_TEST(literal, val)                               \
@@ -131,8 +131,8 @@ namespace test {
     Scanner scanner(&seq, &er);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind == Value::kString);                          \
-    REQUIRE(t.value().String_value == val);                             \
+    REQUIRE(t.value().kind() == value::Value::kString);                 \
+    REQUIRE(t.value().String_value() == val);                           \
   }
 
 #define STRING_LITERAL_TEST_ERROR(literal, err)                         \
@@ -144,7 +144,7 @@ namespace test {
     Token t = scanner.Peek();                                           \
     REQUIRE(er.At(0) == std::string(err));                              \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind == Value::kString);                          \
+    REQUIRE(t.value().kind() == value::Value::kString);                 \
   }
 
 #define CONSUME_ERROR(str, k, err)                                      \
@@ -406,7 +406,7 @@ TEST_CASE("Scanner::Consume() on \"1E99999999999999999999999999999999\"") {
   Token t0 = scanner.Consume();
   REQUIRE(er.At(0) == std::string(FloatingPointOverflow(location)));
   REQUIRE(t0.kind() == Token::kLiteral);
-  REQUIRE(t0.value().kind == Value::kFloat);
+  REQUIRE(t0.value().kind() == value::Value::kFloat);
 }
 
 }  // namespace test

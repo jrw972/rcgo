@@ -1,0 +1,5 @@
+#!/bin/bash
+
+export RCGOROOT="@abs_builddir@"
+export RCGOPATH="@abs_builddir@/rcgopath"
+export PATH="${RCGOPATH}/bin:${RCGOROOT}:$PATH"

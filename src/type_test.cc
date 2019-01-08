@@ -53,13 +53,13 @@ ACCEPT_TEST(type::Uint32, &type::Uint32::instance);
 ACCEPT_TEST(type::Uint64, &type::Uint64::instance);
 ACCEPT_TEST(type::Uintptr, &type::Uintptr::instance);
 ACCEPT_TEST(type::Array, type::Uintptr::instance.GetArray(3));
-ACCEPT_TEST(type::Function, factory.MakeFunction());
-ACCEPT_TEST(type::Interface, factory.MakeInterface());
+ACCEPT_TEST(type::Function, factory.MakeFunction(nullptr));
+ACCEPT_TEST(type::Interface, factory.MakeInterface(nullptr));
 ACCEPT_TEST(type::Map,
             type::Uintptr::instance.GetMap(&type::Uintptr::instance));
 ACCEPT_TEST(type::Pointer, type::Uint::instance.GetPointer());
 ACCEPT_TEST(type::Slice, type::Uint::instance.GetSlice());
-ACCEPT_TEST(type::Struct, factory.MakeStruct());
+ACCEPT_TEST(type::Struct, factory.MakeStruct(nullptr));
 ACCEPT_TEST(type::DefinedType, factory.MakeDefinedType(&type::Uint::instance));
 ACCEPT_TEST(type::Alias, factory.MakeAlias(&type::Uint::instance));
 
@@ -81,18 +81,16 @@ TEST_CASE("Type::GetMap()") {
 
 TEST_CASE("Struct::Struct()") {
   type::Factory factory;
-  type::Struct* st = factory.MakeStruct();
+  type::Struct* st = factory.MakeStruct(nullptr);
   REQUIRE(st->FieldCount() == 0);
   REQUIRE(st->FieldBegin() == st->FieldEnd());
 }
 
-TEST_CASE("Struct::append()") {
+TEST_CASE("Struct::AppendField()") {
   type::Factory factory;
-  type::Struct* st = factory.MakeStruct();
-  FieldSymbol* field =
-      new FieldSymbol("x", location, NULL, &type::Uintptr::instance,
-                      "tag", false);
-  st->AppendField(field);
+  type::Struct* st = factory.MakeStruct(nullptr);
+  symbol::Field* field = st->AppendField(
+      "x", location, &type::Uintptr::instance, "tag", false);
   REQUIRE(st->FieldCount() == 1);
   REQUIRE(st->FieldBegin() != st->FieldEnd());
   REQUIRE(*(st->FieldBegin()) == field);
@@ -100,7 +98,7 @@ TEST_CASE("Struct::append()") {
 
 TEST_CASE("Function::Function()") {
   type::Factory factory;
-  type::Function* ft = factory.MakeFunction();
+  type::Function* ft = factory.MakeFunction(nullptr);
   REQUIRE(ft->ParameterCount() == 0);
   REQUIRE(ft->ParameterBegin() == ft->ParameterEnd());
   REQUIRE(ft->ResultCount() == 0);
@@ -110,11 +108,9 @@ TEST_CASE("Function::Function()") {
 
 TEST_CASE("Function::AppendParameter()") {
   type::Factory factory;
-  type::Function* ft = factory.MakeFunction();
-  ParameterSymbol* parameter =
-      new ParameterSymbol("x", location, NULL,
-                          &type::Uintptr::instance, false);
-  ft->AppendParameter(parameter);
+  type::Function* ft = factory.MakeFunction(nullptr);
+  symbol::Parameter* parameter = ft->AppendParameter(
+      "x", location, &type::Uintptr::instance, false);
   REQUIRE(ft->ParameterCount() == 1);
   REQUIRE(ft->ParameterBegin() != ft->ParameterEnd());
   REQUIRE(*(ft->ParameterBegin()) == parameter);
@@ -123,11 +119,9 @@ TEST_CASE("Function::AppendParameter()") {
 
 TEST_CASE("type::Function::AppendResult()") {
   type::Factory factory;
-  type::Function* ft = factory.MakeFunction();
-  ParameterSymbol* parameter =
-      new ParameterSymbol("x", location, NULL,
-                          &type::Uintptr::instance, false);
-  ft->AppendResult(parameter);
+  type::Function* ft = factory.MakeFunction(nullptr);
+  symbol::Parameter* parameter = ft->AppendResult(
+      "x", location, &type::Uintptr::instance);
   REQUIRE(ft->ResultCount() == 1);
   REQUIRE(ft->ResultBegin() != ft->ResultEnd());
   REQUIRE(*(ft->ResultBegin()) == parameter);
@@ -170,185 +164,169 @@ TEST_CASE("Different(atoms)") {
 
 TEST_CASE("Different(interface, function)") {
   type::Factory factory;
-  type::Interface* x = factory.MakeInterface();
-  type::Function* y = factory.MakeFunction();
+  type::Interface* x = factory.MakeInterface(nullptr);
+  type::Function* y = factory.MakeFunction(nullptr);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(interface 0, interface 1)") {
   type::Factory factory;
-  type::Interface* x = factory.MakeInterface();
-  type::Interface* y =
-      factory.MakeInterface()->AppendMethod(
-          new InterfaceMethodSymbol("x", location, NULL,
-                                    factory.MakeFunction()));
+  type::Interface* x = factory.MakeInterface(nullptr);
+  type::Interface* y = factory.MakeInterface(nullptr);
+  y->AppendMethod("x", location, factory.MakeFunction(nullptr));
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(interface method names)") {
   type::Factory factory;
-  type::Interface* x =
-      factory.MakeInterface()->AppendMethod(
-          new InterfaceMethodSymbol("x", location, NULL,
-                                    factory.MakeFunction()));
-  type::Interface* y =
-      factory.MakeInterface()->AppendMethod(
-          new InterfaceMethodSymbol("y", location, NULL,
-                                    factory.MakeFunction()));
+  type::Interface* x = factory.MakeInterface(nullptr);
+  x->AppendMethod("x", location, factory.MakeFunction(nullptr));
+  type::Interface* y = factory.MakeInterface(nullptr);
+  y->AppendMethod("y", location, factory.MakeFunction(nullptr));
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(interface method types)") {
   type::Factory factory;
-  type::Function* fx = factory.MakeFunction()->AppendParameter(
-      new ParameterSymbol("x", location, NULL, &type::Uint::instance, false));
-  type::Interface* x = factory.MakeInterface() ->AppendMethod(
-      new InterfaceMethodSymbol("x", location, NULL, fx));
-  type::Function* fy = factory.MakeFunction()->AppendParameter(
-      new ParameterSymbol("x", location, NULL, &type::Int::instance, false));
-  type::Interface* y = factory.MakeInterface()->AppendMethod(
-      new InterfaceMethodSymbol("x", location, NULL, fy));
+  type::Function* fx = factory.MakeFunction(nullptr);
+  fx->AppendParameter("x", location, &type::Uint::instance, false);
+  type::Interface* x = factory.MakeInterface(nullptr);
+  x->AppendMethod("x", location, fx);
+  type::Function* fy = factory.MakeFunction(nullptr);
+  fy->AppendParameter("x", location, &type::Int::instance, false);
+  type::Interface* y = factory.MakeInterface(nullptr);
+  y->AppendMethod("x", location, fy);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(interface method packages)") {
   type::Factory factory;
-  Package xp("import path");
-  type::Interface* x = factory.MakeInterface()->AppendMethod(
-      new InterfaceMethodSymbol("x", location, &xp, factory.MakeFunction()));
-  Package yp("import path");
-  type::Interface* y = factory.MakeInterface()->AppendMethod(
-      new InterfaceMethodSymbol("x", location, &yp, factory.MakeFunction()));
+  Package xp("import path", YAML::Node());
+  type::Interface* x = factory.MakeInterface(&xp);
+  x->AppendMethod("x", location, factory.MakeFunction(&xp));
+  Package yp("import path", YAML::Node());
+  type::Interface* y = factory.MakeInterface(&yp);
+  y->AppendMethod("x", location, factory.MakeFunction(&yp));
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Identical(interfaces)") {
   type::Factory factory;
-  type::Interface* x = factory.MakeInterface()->AppendMethod(
-      new InterfaceMethodSymbol("x", location, NULL, factory.MakeFunction()));
-  type::Interface* y = factory.MakeInterface()->AppendMethod(
-      new InterfaceMethodSymbol("x", location, NULL, factory.MakeFunction()));
+  type::Interface* x = factory.MakeInterface(nullptr);
+  x->AppendMethod("x", location, factory.MakeFunction(nullptr));
+  type::Interface* y = factory.MakeInterface(nullptr);
+  y->AppendMethod("x", location, factory.MakeFunction(nullptr));
   REQUIRE(Identical(x, y));
 }
 
 TEST_CASE("Different(struct, function)") {
   type::Factory factory;
-  type::Struct* x = factory.MakeStruct();
-  type::Function* y = factory.MakeFunction();
+  type::Struct* x = factory.MakeStruct(nullptr);
+  type::Function* y = factory.MakeFunction(nullptr);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(struct 0, struct 1)") {
   type::Factory factory;
-  type::Struct* x = factory.MakeStruct();
-  type::Struct* y = factory.MakeStruct()->AppendField(
-      new FieldSymbol("x", location, NULL, &type::Uintptr::instance, "tag",
-                      false));
+  type::Struct* x = factory.MakeStruct(nullptr);
+  type::Struct* y = factory.MakeStruct(nullptr);
+  y->AppendField("x", location, &type::Uintptr::instance, "tag", false);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(struct field names)") {
   type::Factory factory;
-  type::Struct* x = factory.MakeStruct()->AppendField(
-      new FieldSymbol("x", location, NULL, &type::Uintptr::instance, "tag",
-                      false));
-  type::Struct* y = factory.MakeStruct()->AppendField(
-      new FieldSymbol("y", location, NULL, &type::Uintptr::instance, "tag",
-                      false));
+  type::Struct* x = factory.MakeStruct(nullptr);
+  x->AppendField("x", location, &type::Uintptr::instance, "tag", false);
+  type::Struct* y = factory.MakeStruct(nullptr);
+  y->AppendField("y", location, &type::Uintptr::instance, "tag", false);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(struct field types)") {
   type::Factory factory;
-  type::Struct* x = factory.MakeStruct()->AppendField(
-      new FieldSymbol("x", location, NULL, &type::Uintptr::instance, "tag",
-                      false));
-  type::Struct* y = factory.MakeStruct()->AppendField(
-      new FieldSymbol("x", location, NULL, &type::Int::instance, "tag", false));
+  type::Struct* x = factory.MakeStruct(nullptr);
+  x->AppendField("x", location, &type::Uintptr::instance, "tag", false);
+  type::Struct* y = factory.MakeStruct(nullptr);
+  y->AppendField("x", location, &type::Int::instance, "tag", false);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(struct field tags)") {
   type::Factory factory;
-  type::Struct* x = factory.MakeStruct()->AppendField(
-      new FieldSymbol("x", location, NULL, &type::Uintptr::instance, "tag",
-                      false));
-  type::Struct* y = factory.MakeStruct()->AppendField(
-      new FieldSymbol("x", location, NULL, &type::Uintptr::instance, "no tag",
-                      false));
+  type::Struct* x = factory.MakeStruct(nullptr);
+  x->AppendField("x", location, &type::Uintptr::instance, "tag", false);
+  type::Struct* y = factory.MakeStruct(nullptr);
+  y->AppendField("x", location, &type::Uintptr::instance, "no tag", false);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(struct field packages)") {
   type::Factory factory;
-  Package xp("import path");
-  type::Struct* x = factory.MakeStruct()->AppendField(
-      new FieldSymbol("x", location, &xp, &type::Uintptr::instance, "tag",
-                      false));
-  Package yp("import path");
-  type::Struct* y = factory.MakeStruct()->AppendField(
-      new FieldSymbol("x", location, &yp, &type::Uintptr::instance, "tag",
-                      false));
+  Package xp("import path", YAML::Node());
+  type::Struct* x = factory.MakeStruct(&xp);
+  x->AppendField("x", location, &type::Uintptr::instance, "tag", false);
+  Package yp("import path", YAML::Node());
+  type::Struct* y = factory.MakeStruct(&yp);
+  y->AppendField("x", location, &type::Uintptr::instance, "tag", false);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Identical(structs)") {
   type::Factory factory;
-  type::Struct* x = factory.MakeStruct()->AppendField(
-      new FieldSymbol("x", location, NULL, &type::Uintptr::instance, "tag",
-                      false));
-  type::Struct* y = factory.MakeStruct()->AppendField(
-      new FieldSymbol("x", location, NULL, &type::Uintptr::instance, "tag",
-                      false));
+  type::Struct* x = factory.MakeStruct(nullptr);
+  x->AppendField("x", location, &type::Uintptr::instance, "tag", false);
+  type::Struct* y = factory.MakeStruct(nullptr);
+  y->AppendField("x", location, &type::Uintptr::instance, "tag", false);
   REQUIRE(Identical(x, y));
 }
 
 TEST_CASE("Different(array, struct)") {
   type::Factory factory;
-  const type::Type* x = factory.MakeStruct()->GetArray(3);
-  const type::Type* y = factory.MakeStruct();
+  const type::Type* x = factory.MakeStruct(nullptr)->GetArray(3);
+  const type::Type* y = factory.MakeStruct(nullptr);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(array[3], array[4])") {
   type::Factory factory;
-  const type::Type* x = factory.MakeStruct()->GetArray(3);
-  const type::Type* y = factory.MakeStruct()->GetArray(4);
+  const type::Type* x = factory.MakeStruct(nullptr)->GetArray(3);
+  const type::Type* y = factory.MakeStruct(nullptr)->GetArray(4);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Identical(array[3], array[3])") {
   type::Factory factory;
-  const type::Type* x = factory.MakeStruct()->GetArray(3);
-  const type::Type* y = factory.MakeStruct()->GetArray(3);
+  const type::Type* x = factory.MakeStruct(nullptr)->GetArray(3);
+  const type::Type* y = factory.MakeStruct(nullptr)->GetArray(3);
   REQUIRE(Identical(x, y));
 }
 
 TEST_CASE("Different(map, struct)") {
   type::Factory factory;
-  const type::Type* x = factory.MakeStruct()->GetMap(&type::Int::instance);
-  const type::Type* y = factory.MakeStruct();
+  const type::Type* x = factory.MakeStruct(nullptr)->GetMap(&type::Int::instance);
+  const type::Type* y = factory.MakeStruct(nullptr);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(map[int], map[uint])") {
   type::Factory factory;
-  const type::Type* x = factory.MakeStruct()->GetMap(&type::Int::instance);
-  const type::Type* y = factory.MakeStruct()->GetMap(&type::Uint::instance);
+  const type::Type* x = factory.MakeStruct(nullptr)->GetMap(&type::Int::instance);
+  const type::Type* y = factory.MakeStruct(nullptr)->GetMap(&type::Uint::instance);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Identical(map[int], map[int])") {
   type::Factory factory;
-  const type::Type* x = factory.MakeStruct()->GetMap(&type::Int::instance);
-  const type::Type* y = factory.MakeStruct()->GetMap(&type::Int::instance);
+  const type::Type* x = factory.MakeStruct(nullptr)->GetMap(&type::Int::instance);
+  const type::Type* y = factory.MakeStruct(nullptr)->GetMap(&type::Int::instance);
   REQUIRE(Identical(x, y));
 }
 
 TEST_CASE("Different(slice, struct)") {
   type::Factory factory;
-  const type::Type* x = factory.MakeStruct()->GetSlice();
-  const type::Type* y = factory.MakeStruct();
+  const type::Type* x = factory.MakeStruct(nullptr)->GetSlice();
+  const type::Type* y = factory.MakeStruct(nullptr);
   REQUIRE(Different(x, y));
 }
 
@@ -368,8 +346,8 @@ TEST_CASE("Identical(slice[int], slice[int])") {
 
 TEST_CASE("Different(pointer, struct)") {
   type::Factory factory;
-  const type::Type* x = factory.MakeStruct()->GetPointer();
-  const type::Type* y = factory.MakeStruct();
+  const type::Type* x = factory.MakeStruct(nullptr)->GetPointer();
+  const type::Type* y = factory.MakeStruct(nullptr);
   REQUIRE(Different(x, y));
 }
 
@@ -389,71 +367,62 @@ TEST_CASE("Identical(pointer[int], pointer[int])") {
 
 TEST_CASE("Different(function, struct)") {
   type::Factory factory;
-  type::Function* x = factory.MakeFunction();
-  type::Struct* y = factory.MakeStruct();
+  type::Function* x = factory.MakeFunction(nullptr);
+  type::Struct* y = factory.MakeStruct(nullptr);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(function 0 -> 0, function 1 -> 0)") {
   type::Factory factory;
-  type::Function* x = factory.MakeFunction();
-  type::Function* y = factory.MakeFunction()->AppendParameter(
-      new ParameterSymbol("x", location, NULL, &type::Uintptr::instance,
-                          false));
+  type::Function* x = factory.MakeFunction(nullptr);
+  type::Function* y = factory.MakeFunction(nullptr);
+  y->AppendParameter("x", location, &type::Uintptr::instance, false);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(function 0 -> 0, function 0 -> 1)") {
   type::Factory factory;
-  type::Function* x = factory.MakeFunction();
-  type::Function* y = factory.MakeFunction()->AppendResult(
-      new ParameterSymbol("x", location, NULL, &type::Uintptr::instance,
-                          false));
+  type::Function* x = factory.MakeFunction(nullptr);
+  type::Function* y = factory.MakeFunction(nullptr);
+  y->AppendResult("x", location, &type::Uintptr::instance);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(function 1v -> 0, function 1 -> 0)") {
   type::Factory factory;
-  type::Function* x = factory.MakeFunction()->AppendParameter(
-      new ParameterSymbol("x", location, NULL, &type::Uintptr::instance, true));
-  type::Function* y = factory.MakeFunction()->AppendParameter(
-      new ParameterSymbol("x", location, NULL, &type::Uintptr::instance,
-                          false));
+  type::Function* x = factory.MakeFunction(nullptr);
+  x->AppendParameter("x", location, &type::Uintptr::instance, true);
+  type::Function* y = factory.MakeFunction(nullptr);
+  y->AppendParameter("x", location, &type::Uintptr::instance, false);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(function int -> 0, function uint -> 0)") {
   type::Factory factory;
-  type::Function* x = factory.MakeFunction()->AppendParameter(
-      new ParameterSymbol("x", location, NULL, &type::Int::instance, false));
-  type::Function* y = factory.MakeFunction()->AppendParameter(
-      new ParameterSymbol("x", location, NULL, &type::Uint::instance, false));
+  type::Function* x = factory.MakeFunction(nullptr);
+  x->AppendParameter("x", location, &type::Int::instance, false);
+  type::Function* y = factory.MakeFunction(nullptr);
+  y->AppendParameter("x", location, &type::Uint::instance, false);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(function 0 -> int, function 0 -> uint)") {
   type::Factory factory;
-  type::Function* x = factory.MakeFunction()->AppendResult(
-      new ParameterSymbol("x", location, NULL, &type::Int::instance, false));
-  type::Function* y = factory.MakeFunction()->AppendResult(
-      new ParameterSymbol("x", location, NULL, &type::Uint::instance, false));
+  type::Function* x = factory.MakeFunction(nullptr);
+  x->AppendResult("x", location, &type::Int::instance);
+  type::Function* y = factory.MakeFunction(nullptr);
+  y->AppendResult("x", location, &type::Uint::instance);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Identical(function int -> int, function int -> int)") {
   type::Factory factory;
-  type::Function* x = factory.MakeFunction()
-      ->AppendParameter(
-          new ParameterSymbol("x", location, NULL, &type::Int::instance, false))
-      ->AppendResult(
-          new ParameterSymbol("x", location, NULL, &type::Int::instance,
-                              false));
-  type::Function* y = factory.MakeFunction()
-      ->AppendParameter(
-          new ParameterSymbol("x", location, NULL, &type::Int::instance, false))
-      ->AppendResult(
-          new ParameterSymbol("x", location, NULL, &type::Int::instance,
-                              false));
+  type::Function* x = factory.MakeFunction(nullptr);
+  x->AppendParameter("x", location, &type::Int::instance, false);
+  x->AppendResult("x", location, &type::Int::instance);
+  type::Function* y = factory.MakeFunction(nullptr);
+  y->AppendParameter("x", location, &type::Int::instance, false);
+  y->AppendResult("x", location, &type::Int::instance);
   REQUIRE(Identical(x, y));
 }
 
@@ -477,13 +446,13 @@ TEST_CASE("Comparable") {
   REQUIRE(Comparable(&type::Complex128::instance));
   REQUIRE(Comparable(&type::String::instance));
   REQUIRE(Comparable(type::String::instance.GetPointer()));
-  REQUIRE(Comparable(factory.MakeInterface()));
-  REQUIRE(Comparable(factory.MakeStruct()->AppendField(
-      new FieldSymbol("f", location, NULL,
-                      factory.MakeFunction(), "tag", false))) == false);
-  REQUIRE(Comparable(factory.MakeStruct()->AppendField(
-      new FieldSymbol("f", location, NULL, &type::Int::instance, "tag",
-                      false))));
+  REQUIRE(Comparable(factory.MakeInterface(nullptr)));
+  type::Struct* s1 = factory.MakeStruct(nullptr);
+  s1->AppendField("f", location, factory.MakeFunction(nullptr), "tag", false);
+  REQUIRE(Comparable(s1) == false);
+  type::Struct* s2 = factory.MakeStruct(nullptr);
+  s2->AppendField("f", location, &type::Int::instance, "tag", false);
+  REQUIRE(Comparable(s2));
   REQUIRE(Comparable(type::String::instance.GetArray(3)));
 }
 
@@ -565,12 +534,12 @@ VISIT_TEST(type::Uint32, &type::Uint32::instance);
 VISIT_TEST(type::Uint64, &type::Uint64::instance);
 VISIT_TEST(type::Uintptr, &type::Uintptr::instance);
 VISIT_TEST(type::Array, type::Uintptr::instance.GetArray(3));
-VISIT_TEST(type::Function, factory.MakeFunction());
-VISIT_TEST(type::Interface, factory.MakeInterface());
+VISIT_TEST(type::Function, factory.MakeFunction(nullptr));
+VISIT_TEST(type::Interface, factory.MakeInterface(nullptr));
 VISIT_TEST(type::Map, type::Uintptr::instance.GetMap(&type::Uintptr::instance));
 VISIT_TEST(type::Pointer, type::Uint::instance.GetPointer());
 VISIT_TEST(type::Slice, type::Uint::instance.GetSlice());
-VISIT_TEST(type::Struct, factory.MakeStruct());
+VISIT_TEST(type::Struct, factory.MakeStruct(nullptr));
 VISIT_TEST(type::DefinedType, factory.MakeDefinedType(&type::Uint::instance));
 VISIT_TEST(type::Alias, factory.MakeAlias(&type::Uint::instance));
 

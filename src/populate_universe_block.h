@@ -1,5 +1,5 @@
-#ifndef SRC_ENTER_PREDECLARED_SYMBOLS_H_
-#define SRC_ENTER_PREDECLARED_SYMBOLS_H_
+#ifndef SRC_POPULATE_UNIVERSE_BLOCK_H_
+#define SRC_POPULATE_UNIVERSE_BLOCK_H_
 
 // Copyright 2018 The Contributors of rcgo
 // All Contributions are owned by their respective authors.
@@ -8,6 +8,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include "src/block.h"
 #include "src/type.h"
 
 namespace rcgo {
@@ -28,9 +29,8 @@ namespace rcgo {
 // Functions:
 //      append cap complex copy delete imag len
 //      make new panic print println real recover
-void EnterPredeclaredSymbols(
-    type::Factory* type_factory, SymbolTable* universe_symbol_table);
+void PopulateUniverseBlock(type::Factory* type_factory, MutableBlock* block);
 
 }  // namespace rcgo
 
-#endif  // SRC_ENTER_PREDECLARED_SYMBOLS_H_
+#endif  // SRC_POPULATE_UNIVERSE_BLOCK_H_

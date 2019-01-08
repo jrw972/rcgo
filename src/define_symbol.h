@@ -8,15 +8,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include "src/block.h"
+#include "src/error_reporter.h"
 #include "src/symbol.h"
 #include "src/type.h"
-#include "src/error_reporter.h"
 
 namespace rcgo {
 
 // Process the definition of symbol.  Returns true if the symbol is
 // defined after processing.
-bool DefineSymbol(Symbol* symbol, const Block& file_block,
+bool DefineSymbol(symbol::Symbol* symbol, Block* file_block,
                   type::Factory* type_factory, ErrorReporter* error_reporter);
 
 }  // namespace rcgo

@@ -9,7 +9,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include <cassert>
+#include <map>
 #include <string>
+#include <vector>
 
 #include "src/location.h"
 #include "src/value.h"
@@ -20,28 +22,37 @@ namespace rcgo {
 namespace type {
 struct NamedType;
 struct Function;
+struct Interface;
+struct Struct;
 }
-struct Package;
+
 namespace ast {
 struct Node;
 }
 
+struct Package;
+struct MutableBlock;
+
+namespace symbol {
+
 bool IsExported(const std::string& id);
 
-// TODO(jrw972):  Put in symbol namespace.
-
 // forward declaration for visitor pattern.
-struct SymbolVisitor;
+struct Visitor;
+
+struct Table;
 
 struct Symbol {
   std::string const identifier;
   Location const location;
-  const Package* const package;
+  const rcgo::Package* const package;
   ast::Node* const ast;
   bool const exported;
 
   virtual ~Symbol() {}
-  virtual void Accept(SymbolVisitor* visitor) = 0;
+  virtual void Accept(Visitor* visitor) = 0;
+
+  const value::Value& GetValue() const { return m_value; }
 
   bool IsNew() const { return m_state == kNew; }
   bool IsInProgress() const { return m_state == kInProgress; }
@@ -50,9 +61,12 @@ struct Symbol {
     assert(m_state == kNew);
     m_state = kInProgress;
   }
-  void MakeDefined() {
+  void MakeDefined(const value::Value& a_value) {
     assert(m_state == kNew || m_state == kInProgress);
+    assert(m_value.IsUninitialized());
+    assert(a_value.IsInitialized());
     m_state = kDefined;
+    m_value = a_value;
   }
 
  protected:
@@ -68,160 +82,157 @@ struct Symbol {
     kDefined
   };
   State m_state;
+  value::Value m_value;
 };
 
-struct ConstantSymbol : public Symbol {
-  ConstantSymbol(const std::string& a_identifier, const Location& a_location,
-                 const Package* a_package, const Value& a_value)
-      : Symbol(a_identifier, a_location, a_package, NULL) { value(a_value); }
-  ConstantSymbol(const std::string& a_identifier, const Location& a_location,
-                 const Package* a_package, ast::Node* a_ast)
-      : Symbol(a_identifier, a_location, a_package, a_ast) { }
-
-  void Accept(SymbolVisitor* visitor) override;
-
-  Value value() const { return m_value; }
-  void value(const Value& a_value);
+struct Constant : public Symbol {
+  void Accept(Visitor* visitor) override;
+  void value(const value::Value& a_value);
 
  private:
-  Value m_value;
+  friend struct rcgo::MutableBlock;
+  Constant(const std::string& a_identifier, const Location& a_location,
+           const Package* a_package, const value::Value& a_value)
+      : Symbol(a_identifier, a_location, a_package, nullptr)
+  { MakeDefined(a_value); }
+  Constant(const std::string& a_identifier, const Location& a_location,
+           const Package* a_package, ast::Node* a_ast)
+      : Symbol(a_identifier, a_location, a_package, a_ast) { }
 };
 
-struct TypeSymbol : public Symbol {
-  TypeSymbol(const std::string& a_identifier, const Location& a_location,
-             const Package* a_package, const type::NamedType* a_type)
-      : Symbol(a_identifier, a_location, a_package, NULL), m_type(NULL) {
-    type(a_type);
-  }
-  TypeSymbol(const std::string& a_identifier, const Location& a_location,
-             const Package* a_package, ast::Node* a_ast)
-      : Symbol(a_identifier, a_location, a_package, a_ast), m_type(NULL) {}
-
-  void Accept(SymbolVisitor* visitor) override;
-
+struct Type : public Symbol {
+  void Accept(Visitor* visitor) override;
   const type::NamedType* type() const { return m_type; }
   void type(const type::NamedType* a_type);
 
  private:
   const type::NamedType* m_type;
+  friend struct rcgo::MutableBlock;
+  Type(const std::string& a_identifier, const Location& a_location,
+       const Package* a_package, const type::NamedType* a_type)
+      : Symbol(a_identifier, a_location, a_package, nullptr),
+        m_type(nullptr) {
+    type(a_type);
+  }
+  Type(const std::string& a_identifier, const Location& a_location,
+       const Package* a_package, ast::Node* a_ast)
+      : Symbol(a_identifier, a_location, a_package, a_ast),
+        m_type(nullptr) {}
 };
 
-struct VariableSymbol : public Symbol {
-  VariableSymbol(const std::string& a_identifier, const Location& a_location,
-                 const Package* a_package, ast::Node* a_ast)
+struct Variable : public Symbol {
+  void Accept(Visitor* visitor) override;
+
+ private:
+  friend struct rcgo::MutableBlock;
+  Variable(const std::string& a_identifier, const Location& a_location,
+           const Package* a_package, ast::Node* a_ast)
       : Symbol(a_identifier, a_location, a_package, a_ast) {}
-
-  void Accept(SymbolVisitor* visitor) override;
 };
 
-struct FunctionSymbol : public Symbol {
-  FunctionSymbol(const std::string& a_identifier, const Location& a_location,
-                 const Package* a_package, ast::Node* a_ast)
-      : Symbol(a_identifier, a_location, a_package, a_ast), m_type(NULL) {}
-
-  void Accept(SymbolVisitor* visitor) override;
-
+struct Function : public Symbol {
+  void Accept(Visitor* visitor) override;
   void type(const type::Function* a_type);
   const type::Function* type() const { return m_type; }
 
  private:
   const type::Function* m_type;
+  friend struct rcgo::MutableBlock;
+  Function(const std::string& a_identifier, const Location& a_location,
+           const Package* a_package, ast::Node* a_ast)
+      : Symbol(a_identifier, a_location, a_package, a_ast),
+        m_type(nullptr) {}
+  Function(const std::string& a_identifier, const Location& a_location,
+           const Package* a_package, type::Function* a_type)
+      : Symbol(a_identifier, a_location, a_package, nullptr),
+        m_type(nullptr) { type(a_type); }
 };
 
-struct ImportedSymbol : public Symbol {
-  ImportedSymbol(const std::string& a_identifier, const Location& a_location,
-                 const Package* a_package, const Symbol* a_imported_symbol)
-      : Symbol(a_identifier, a_location, a_package, NULL),
-        imported_symbol(a_imported_symbol) {}
+struct Package : public Symbol {
+  void Accept(Visitor* visitor) override;
+  const rcgo::Package* const the_package;
 
-  void Accept(SymbolVisitor* visitor) override;
-
-  const Symbol* imported_symbol;
-};
-
-struct PackageSymbol : public Symbol {
-  PackageSymbol(const std::string& a_identifier, const Location& a_location,
-                const Package* a_package, const Package* a_the_package)
-      : Symbol(a_identifier, a_location, a_package, NULL),
+ private:
+  friend struct rcgo::MutableBlock;
+  Package(const std::string& a_identifier, const Location& a_location,
+          const rcgo::Package* a_package, const rcgo::Package* a_the_package)
+      : Symbol(a_identifier, a_location, a_package, nullptr),
         the_package(a_the_package) {}
-
-  void Accept(SymbolVisitor* visitor) override;
-
-  const Package* the_package;
 };
 
-struct FieldSymbol : public Symbol {
-  FieldSymbol(const std::string& a_identifier, const Location& a_location,
-              const Package* a_package, const type::Type* a_type,
-              const std::string& a_tag, bool a_is_embedded)
-      : Symbol(a_identifier, a_location, a_package, NULL), type(a_type),
-        tag(a_tag), is_embedded(a_is_embedded) {}
-
-  void Accept(SymbolVisitor* visitor) override;
-
+struct Field : public Symbol {
+  void Accept(Visitor* visitor) override;
   const type::Type* const type;
   std::string const tag;
   bool const is_embedded;
+
+ private:
+  friend struct type::Struct;
+  Field(const std::string& a_identifier, const Location& a_location,
+        const rcgo::Package* a_package, const type::Type* a_type,
+        const std::string& a_tag, bool a_is_embedded)
+      : Symbol(a_identifier, a_location, a_package, nullptr),
+        type(a_type), tag(a_tag), is_embedded(a_is_embedded) {}
 };
 
-struct ParameterSymbol : public Symbol {
-  ParameterSymbol(const std::string& a_identifier, const Location& a_location,
-                  const Package* a_package, const type::Type* a_type,
-                  bool a_is_variadic)
-      : Symbol(a_identifier, a_location, a_package, NULL), type(a_type),
-        is_variadic(a_is_variadic) {}
-
-  void Accept(SymbolVisitor* visitor) override;
-
+struct Parameter : public Symbol {
+  void Accept(Visitor* visitor) override;
   const type::Type* const type;
   bool const is_variadic;
+
+ private:
+  friend struct type::Function;
+  Parameter(const std::string& a_identifier, const Location& a_location,
+            const rcgo::Package* a_package, const type::Type* a_type,
+            bool a_is_variadic)
+      : Symbol(a_identifier, a_location, a_package, nullptr),
+        type(a_type), is_variadic(a_is_variadic) {}
 };
 
-struct InterfaceMethodSymbol : public Symbol {
-  InterfaceMethodSymbol(const std::string& a_identifier,
-                        const Location& a_location, const Package* a_package,
-                        const type::Function* a_type)
-      : Symbol(a_identifier, a_location, a_package, NULL), type(a_type) {}
-
-  void Accept(SymbolVisitor* visitor) override;
-
+struct InterfaceMethod : public Symbol {
+  void Accept(Visitor* visitor) override;
   const type::Function* const type;
+
+ private:
+  friend struct type::Interface;
+  InterfaceMethod(const std::string& a_identifier, const Location& a_location,
+                  const rcgo::Package* a_package, const type::Function* a_type)
+      : Symbol(a_identifier, a_location, a_package, nullptr),
+        type(a_type) {}
 };
 
-struct SymbolVisitor {
-  virtual ~SymbolVisitor() {}
-  virtual void visit(ConstantSymbol* symbol) = 0;
-  virtual void visit(TypeSymbol* symbol) = 0;
-  virtual void visit(VariableSymbol* symbol) = 0;
-  virtual void visit(FunctionSymbol* symbol) = 0;
-  virtual void visit(ImportedSymbol* symbol) = 0;
-  virtual void visit(PackageSymbol* symbol) = 0;
-  virtual void visit(FieldSymbol* symbol) = 0;
-  virtual void visit(ParameterSymbol* symbol) = 0;
-  virtual void visit(InterfaceMethodSymbol* symbol) = 0;
+struct Visitor {
+  virtual ~Visitor() {}
+  virtual void Visit(Constant* symbol) = 0;
+  virtual void Visit(Type* symbol) = 0;
+  virtual void Visit(Variable* symbol) = 0;
+  virtual void Visit(Function* symbol) = 0;
+  virtual void Visit(Package* symbol) = 0;
+  virtual void Visit(Field* symbol) = 0;
+  virtual void Visit(Parameter* symbol) = 0;
+  virtual void Visit(InterfaceMethod* symbol) = 0;
 };
 
-struct DefaultSymbolVisitor : public SymbolVisitor {
-  void visit(ConstantSymbol* symbol) override { DefaultAction(symbol); }
-  void visit(TypeSymbol* symbol) override { DefaultAction(symbol); }
-  void visit(VariableSymbol* symbol) override { DefaultAction(symbol); }
-  void visit(FunctionSymbol* symbol) override { DefaultAction(symbol); }
-  void visit(ImportedSymbol* symbol) override { DefaultAction(symbol); }
-  void visit(PackageSymbol* symbol) override { DefaultAction(symbol); }
-  void visit(FieldSymbol* symbol) override { DefaultAction(symbol); }
-  void visit(ParameterSymbol* symbol) override { DefaultAction(symbol); }
-  void visit(InterfaceMethodSymbol* symbol) override { DefaultAction(symbol); }
+struct DefaultVisitor : public Visitor {
+  void Visit(Constant* symbol) override { DefaultAction(symbol); }
+  void Visit(Type* symbol) override { DefaultAction(symbol); }
+  void Visit(Variable* symbol) override { DefaultAction(symbol); }
+  void Visit(Function* symbol) override { DefaultAction(symbol); }
+  void Visit(Package* symbol) override { DefaultAction(symbol); }
+  void Visit(Field* symbol) override { DefaultAction(symbol); }
+  void Visit(Parameter* symbol) override { DefaultAction(symbol); }
+  void Visit(InterfaceMethod* symbol) override { DefaultAction(symbol); }
   virtual void DefaultAction(Symbol* symbol) {}
 };
 
 template<typename T>
-T* symbol_cast(Symbol* symbol) {
-  if (symbol == NULL) return NULL;
+T* Cast(Symbol* symbol) {
+  if (symbol == nullptr) return nullptr;
 
-  struct Visitor : public DefaultSymbolVisitor {
+  struct Visitor : public DefaultVisitor {
     T* retval;
-    Visitor() : retval(NULL) { }
-    void visit(T* ast) override { retval = ast; }
+    Visitor() : retval(nullptr) { }
+    void Visit(T* ast) override { retval = ast; }
   };
 
   Visitor v;
@@ -229,6 +240,31 @@ T* symbol_cast(Symbol* symbol) {
   return v.retval;
 }
 
+struct Table {
+  typedef std::map<std::string, Symbol*> MapType;
+  typedef MapType::const_iterator const_iterator;
+
+  explicit Table(const rcgo::Package* a_package) : package(a_package) {}
+  virtual ~Table() { for (auto symbol : m_list) delete symbol; }
+
+  Symbol* Find(const std::string& identifier) const;
+  void Insert(Symbol* symbol) { m_map[symbol->identifier] = symbol; }
+  const_iterator Begin() const { return m_map.begin(); }
+  const_iterator End() const { return m_map.end(); }
+
+  const rcgo::Package* const package;
+
+ protected:
+  friend struct rcgo::MutableBlock;
+  void PushBack(Symbol* symbol) { m_list.push_back(symbol); }
+
+ private:
+  MapType m_map;
+  typedef std::vector<Symbol*> ListType;
+  ListType m_list;
+};
+
+}  // namespace symbol
 }  // namespace rcgo
 
 #endif  // SRC_SYMBOL_H_

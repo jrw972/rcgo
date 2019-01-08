@@ -9,8 +9,8 @@
 
 #include <cassert>
 
+#include "src/check_types.h"
 #include "src/define_symbol.h"
-#include "src/evaluate_constant_expression.h"
 #include "src/process_qualified_identifier.h"
 
 namespace rcgo {
@@ -18,7 +18,7 @@ namespace {
 
 struct Visitor : public ast::DefaultNodeVisitor {
   type::Factory* type_factory;
-  const Block& block;
+  Block* block;
   ErrorReporter* error_reporter;
   type::Struct* struct_type;
   type::Function* function_type;
@@ -26,7 +26,7 @@ struct Visitor : public ast::DefaultNodeVisitor {
   bool results;
   const type::Type* type;
 
-  Visitor(type::Factory* a_type_factory, const Block& a_block,
+  Visitor(type::Factory* a_type_factory, Block* a_block,
           ErrorReporter* a_error_reporter)
       : type_factory(a_type_factory), block(a_block),
         error_reporter(a_error_reporter), struct_type(NULL),
@@ -42,26 +42,29 @@ struct Visitor : public ast::DefaultNodeVisitor {
       type = &type::Error::instance;
       return;
     }
-    Value length = EvaluateConstantExpression(ast->optional_length, block,
-                                              type_factory, error_reporter);
-    if (length.kind == Value::kError) {
+    CheckTypes(ast->optional_length, block, type_factory, error_reporter);
+    value::Value* length = ast->optional_length->out_value();
+    if (length->IsError()) {
       type = &type::Error::instance;
       return;
     }
-    length = length.ConvertTo(&type::Int::instance);
-    if (length.kind == Value::kError) {
-      error_reporter->Insert(
-          ArrayLengthNotAnInt(ast->optional_length->location));
+    if (!length->RequireConstant(error_reporter)) {
       type = &type::Error::instance;
       return;
     }
-    if (length.int_value < 0) {
+    if (!length->ConvertTo(&type::Int::instance)) {
+      // TODO(jrw972):  Report conversion error.
+      abort();
+      type = &type::Error::instance;
+      return;
+    }
+    if (length->int_value() < 0) {
       error_reporter->Insert(
           ArrayLengthIsNegative(ast->optional_length->location));
       type = &type::Error::instance;
       return;
     }
-    type = element_type->GetArray(length.int_value);
+    type = element_type->GetArray(length->int_value());
   }
 
   void Visit(ast::Slice* ast) override {
@@ -77,7 +80,7 @@ struct Visitor : public ast::DefaultNodeVisitor {
   }
 
   void Visit(ast::Struct* ast) override {
-    struct_type = type_factory->MakeStruct();
+    struct_type = type_factory->MakeStruct(block->package());
     VisitAll(ast->fields);
     type = struct_type;
   }
@@ -85,14 +88,12 @@ struct Visitor : public ast::DefaultNodeVisitor {
   void Visit(ast::Field* ast) override {
     // TODO(jrw972):  Handle recursive types.
     const type::Type* field_type =
-        ProcessType(ast->type, block, type_factory, error_reporter);
+        ProcessType(ast->type_literal, block, type_factory, error_reporter);
     for (ast::Node* node : ast->identifier_list) {
       ast::Identifier* id = ast::Cast<ast::Identifier>(node);
-      Symbol* previous_field = struct_type->Find(id->identifier);
-      FieldSymbol* field =
-          new FieldSymbol(id->identifier, id->location, block.GetPackage(),
-                          field_type, ast->tag, false);
-      struct_type->AppendField(field);
+      symbol::Symbol* previous_field = struct_type->Find(id->identifier);
+      symbol::Field* field = struct_type->AppendField(
+          id->identifier, id->location, field_type, ast->tag, false);
       if (previous_field != NULL) {
         error_reporter->Insert(DuplicateSymbol(field, previous_field));
       }
@@ -101,30 +102,28 @@ struct Visitor : public ast::DefaultNodeVisitor {
 
   void Visit(ast::EmbeddedField* ast) override {
     // TODO(jrw972):  Handle recursive types.
-    Symbol* s =
-        ProcessQualifiedIdentifier(ast->type_name, block, error_reporter);
+    symbol::Symbol* s =
+        ProcessQualifiedIdentifier(ast->type_name, *block, error_reporter);
     if (s == NULL) {
       return;
     }
 
-    TypeSymbol* ts = symbol_cast<TypeSymbol>(s);
+    symbol::Type* ts = symbol::Cast<symbol::Type>(s);
     if (ts == NULL) {
       error_reporter->Insert(
           DoesNotReferToAType(ast->type_name->location, s->identifier));
       return;
     }
 
-    Symbol* previous_field = struct_type->Find(s->identifier);
+    symbol::Symbol* previous_field = struct_type->Find(s->identifier);
 
     const type::Type* t = ts->type();
     if (ast->is_pointer) {
       t = t->GetPointer();
     }
 
-    FieldSymbol* field =
-        new FieldSymbol(s->identifier, ast->type_name->location,
-                        block.GetPackage(), t, ast->tag, true);
-    struct_type->AppendField(field);
+    symbol::Field* field = struct_type->AppendField(
+        s->identifier, ast->type_name->location, t, ast->tag, true);
 
     if (previous_field != NULL) {
       error_reporter->Insert(DuplicateSymbol(field, previous_field));
@@ -132,12 +131,12 @@ struct Visitor : public ast::DefaultNodeVisitor {
   }
 
   void Visit(ast::Identifier* ast) override {
-    Symbol* s = ProcessQualifiedIdentifier(ast, block, error_reporter);
+    symbol::Symbol* s = ProcessQualifiedIdentifier(ast, *block, error_reporter);
     if (s == NULL) {
       type = &type::Error::instance;
       return;
     }
-    TypeSymbol* t = symbol_cast<TypeSymbol>(s);
+    symbol::Type* t = symbol::Cast<symbol::Type>(s);
     if (t == NULL) {
       error_reporter->Insert(
           DoesNotReferToAType(ast->location, ast->identifier));
@@ -152,12 +151,12 @@ struct Visitor : public ast::DefaultNodeVisitor {
   }
 
   void Visit(ast::Selector* ast) override {
-    Symbol* s = ProcessQualifiedIdentifier(ast, block, error_reporter);
+    symbol::Symbol* s = ProcessQualifiedIdentifier(ast, *block, error_reporter);
     if (s == NULL) {
       type = &type::Error::instance;
       return;
     }
-    TypeSymbol* t = symbol_cast<TypeSymbol>(s);
+    symbol::Type* t = symbol::Cast<symbol::Type>(s);
     if (t == NULL) {
       error_reporter->Insert(DoesNotReferToAType(ast->location, s->identifier));
       type = &type::Error::instance;
@@ -171,7 +170,7 @@ struct Visitor : public ast::DefaultNodeVisitor {
   }
 
   void Visit(ast::FunctionType* ast) override {
-    function_type = type_factory->MakeFunction();
+    function_type = type_factory->MakeFunction(block->package());
     ast->signature->Accept(this);
     type = function_type;
   }
@@ -187,19 +186,18 @@ struct Visitor : public ast::DefaultNodeVisitor {
     assert(function_type != NULL);
 
     const type::Type* parameter_type =
-        ProcessType(ast->type, block, type_factory, error_reporter);
+        ProcessType(ast->type_literal, block, type_factory, error_reporter);
     if (!ast->identifier_list.empty()) {
       for (ast::Node* node : ast->identifier_list) {
         ast::Identifier* id = ast::Cast<ast::Identifier>(node);
-        Symbol* previous_parameter = function_type->Find(id->identifier);
-        ParameterSymbol* parameter =
-            new ParameterSymbol(id->identifier, id->location,
-                                block.GetPackage(), parameter_type,
-                                ast->variadic);
+        symbol::Symbol* previous_parameter = function_type->Find(id->identifier);
+        symbol::Parameter* parameter;
         if (results) {
-          function_type->AppendResult(parameter);
+          parameter = function_type->AppendResult(
+              id->identifier, id->location, parameter_type);
         } else {
-          function_type->AppendParameter(parameter);
+          parameter = function_type->AppendParameter(
+              id->identifier, id->location, parameter_type, ast->variadic);
         }
         if (previous_parameter != NULL) {
           error_reporter->Insert(
@@ -207,19 +205,18 @@ struct Visitor : public ast::DefaultNodeVisitor {
         }
       }
     } else {
-      ParameterSymbol* parameter =
-          new ParameterSymbol("", ast->location, block.GetPackage(),
-                              parameter_type, ast->variadic);
       if (results) {
-        function_type->AppendResult(parameter);
+        function_type->AppendResult(
+            "", ast->location, parameter_type);
       } else {
-        function_type->AppendParameter(parameter);
+        function_type->AppendParameter(
+            "", ast->location, parameter_type, ast->variadic);
       }
     }
   }
 
   void Visit(ast::Interface* ast) override {
-    interface_type = type_factory->MakeInterface();
+    interface_type = type_factory->MakeInterface(block->package());
     VisitAll(ast->methods);
     type = interface_type;
   }
@@ -228,27 +225,25 @@ struct Visitor : public ast::DefaultNodeVisitor {
     assert(interface_type != NULL);
     ast::Identifier* id = ast::Cast<ast::Identifier>(ast->identifier);
 
-    function_type = type_factory->MakeFunction();
+    function_type = type_factory->MakeFunction(block->package());
     ast->signature->Accept(this);
 
-    Symbol* previous_method = interface_type->Find(id->identifier);
-    InterfaceMethodSymbol* method =
-        new InterfaceMethodSymbol(id->identifier, id->location,
-                                  block.GetPackage(), function_type);
-    interface_type->AppendMethod(method);
+    symbol::Symbol* previous_method = interface_type->Find(id->identifier);
+    symbol::InterfaceMethod* method = interface_type->AppendMethod(
+        id->identifier, id->location, function_type);
     if (previous_method != NULL) {
       error_reporter->Insert(DuplicateSymbol(method, previous_method));
     }
   }
 
   void Visit(ast::AnonymousMethodSpec* ast) override {
-    Symbol* s =
-        ProcessQualifiedIdentifier(ast->type_name, block, error_reporter);
+    symbol::Symbol* s =
+        ProcessQualifiedIdentifier(ast->type_name, *block, error_reporter);
     if (s == NULL) {
       return;
     }
 
-    TypeSymbol* ts = symbol_cast<TypeSymbol>(s);
+    symbol::Type* ts = symbol::Cast<symbol::Type>(s);
     if (ts == NULL) {
       error_reporter->Insert(
           DoesNotReferToAType(ast->type_name->location, s->identifier));
@@ -270,12 +265,10 @@ struct Visitor : public ast::DefaultNodeVisitor {
 
     for (type::Interface::const_method_iterator pos = it->MethodBegin(),
              limit = it->MethodEnd(); pos != limit; ++pos) {
-      const InterfaceMethodSymbol* method = *pos;
-      Symbol* previous_method = interface_type->Find(method->identifier);
-      InterfaceMethodSymbol* new_method =
-          new InterfaceMethodSymbol(method->identifier, ast->location,
-                                    block.GetPackage(), method->type);
-      interface_type->AppendMethod(new_method);
+      const symbol::InterfaceMethod* method = *pos;
+      symbol::Symbol* previous_method = interface_type->Find(method->identifier);
+      symbol::InterfaceMethod* new_method = interface_type->AppendMethod(
+          method->identifier, ast->location, method->type);
       if (previous_method != NULL) {
         error_reporter->Insert(DuplicateSymbol(new_method, previous_method));
       }
@@ -297,7 +290,7 @@ struct Visitor : public ast::DefaultNodeVisitor {
 }  // namespace
 
 const type::Type* ProcessType(
-    ast::Node* ast, const Block& block, type::Factory* type_factory,
+    ast::Node* ast, Block* block, type::Factory* type_factory,
     ErrorReporter* error_reporter) {
   Visitor visitor(type_factory, block, error_reporter);
   ast->Accept(&visitor);
@@ -305,10 +298,10 @@ const type::Type* ProcessType(
 }
 
 const type::Function* ProcessFunction(
-    ast::Signature* ast, const Block& block, type::Factory* type_type_factory,
+    ast::Signature* ast, Block* block, type::Factory* type_type_factory,
     ErrorReporter* error_reporter) {
   Visitor tv(type_type_factory, block, error_reporter);
-  tv.function_type = type_type_factory->MakeFunction();
+  tv.function_type = type_type_factory->MakeFunction(block->package());
   ast->Accept(&tv);
   return tv.function_type;
 }

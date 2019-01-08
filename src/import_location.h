@@ -15,12 +15,15 @@
 
 namespace rcgo {
 
+typedef std::string Path;
+typedef std::vector<Path> Paths;
+
 struct ImportLocation {  // NOT_COVERED
-  std::string import_path;
+  std::string url;
   Location location;
 
-  ImportLocation(const std::string& a_import_path, const Location& a_location)
-      : import_path(a_import_path) , location(a_location) {}
+  ImportLocation(const std::string& a_url, const Location& a_location)
+      : url(a_url) , location(a_location) {}
 };
 
 typedef std::vector<ImportLocation> ImportLocations;

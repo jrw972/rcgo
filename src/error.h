@@ -31,14 +31,6 @@ struct Perror : public Error {  // NOT_COVERED
   int const err;
 };
 
-struct CouldNotFindPackage : public Error {  // NOT_COVERED
-  explicit CouldNotFindPackage(const ImportLocation& a_import_location)
-      : import_location(a_import_location) {}
-  void Print(std::ostream& out) const override;
-
-  ImportLocation const import_location;
-};
-
 struct PackageMismatch : public Error {  // NOT_COVERED
   PackageMismatch(
       const Location& a_location, const std::string& a_expected_package,
@@ -53,31 +45,29 @@ struct PackageMismatch : public Error {  // NOT_COVERED
 };
 
 struct RecursiveImport : public Error {  // NOT_COVERED
-  explicit RecursiveImport(const ImportLocations& a_import_locations)
-      : import_locations(a_import_locations) {}
+  explicit RecursiveImport(const Paths& a_path_list, const Path& a_path)
+      : path_list(a_path_list), path(a_path) {}
   void Print(std::ostream& out) const override;
 
-  ImportLocations const import_locations;
+  Paths const path_list;
+  Path const path;
 };
 
 struct NoFiles : public Error {  // NOT_COVERED
-  NoFiles(const ImportLocation& a_import_location,
-          const std::string& a_package_source_directory_path)
-      : import_location(a_import_location),
-        package_source_directory_path(a_package_source_directory_path) {}
+  NoFiles(const std::string& a_package_source_directory_path)
+      : package_source_directory_path(a_package_source_directory_path) {}
   void Print(std::ostream& out) const override;
 
-  ImportLocation const import_location;
   std::string const package_source_directory_path;
 };
 
 struct DuplicateSymbol : public Error {  // NOT_COVERED
-  DuplicateSymbol(const Symbol* a_symbol, const Symbol* a_previous_symbol)
+  DuplicateSymbol(const symbol::Symbol* a_symbol, const symbol::Symbol* a_previous_symbol)
       : symbol(a_symbol), previous_symbol(a_previous_symbol) {}
   void Print(std::ostream& out) const override;
 
-  const Symbol* const symbol;
-  const Symbol* const previous_symbol;
+  const symbol::Symbol* const symbol;
+  const symbol::Symbol* const previous_symbol;
 };
 
 struct NotDeclared : public Error {  // NOT_COVERED
@@ -152,11 +142,11 @@ struct KeyTypeNotComparable : public Error {  // NOT_COVERED
 };
 
 struct SymbolIsDefinedRecursively : public Error {  // NOT_COVERED
-  explicit SymbolIsDefinedRecursively(const Symbol* a_symbol)
+  explicit SymbolIsDefinedRecursively(const symbol::Symbol* a_symbol)
       : symbol(a_symbol) {}
   void Print(std::ostream& out) const override;
 
-  const Symbol* const symbol;
+  const symbol::Symbol* const symbol;
 };
 
 struct DoesNotReferToAConstant : public Error {  // NOT_COVERED
@@ -393,6 +383,39 @@ struct StrayRune : public Error {  // NOT_COVERED
 
 struct UnterminatedGeneralComment : public Error {  // NOT_COVERED
   explicit UnterminatedGeneralComment(const Location& a_location)
+      : location(a_location) {}
+  void Print(std::ostream& out) const override;
+
+  Location const location;
+};
+
+struct CannotApply : public Error {  // NOT_COVERED
+  CannotApply(const Location& a_location, char a_operator,
+              const value::Value& a_value)
+      : location(a_location), operator_(a_operator), value(a_value) {}
+  void Print(std::ostream& out) const override;
+
+  Location const location;
+  char const operator_;
+  value::Value const value;
+};
+
+struct CannotApply2 : public Error {  // NOT_COVERED
+  CannotApply2(const Location& a_location, const std::string& a_operator,
+               const value::Value& a_value1,
+               const value::Value& a_value2)
+      : location(a_location), operator_(a_operator), value1(a_value1),
+        value2(a_value2) {}
+  void Print(std::ostream& out) const override;
+
+  Location const location;
+  std::string const operator_;
+  value::Value const value1;
+  value::Value const value2;
+};
+
+struct DivisionByZero : public Error {  // NOT_COVERED
+  explicit DivisionByZero(const Location& a_location)
       : location(a_location) {}
   void Print(std::ostream& out) const override;
 

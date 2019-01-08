@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "src/location.h"
+#include "src/symbol.h"
 #include "src/token.h"
 #include "src/value.h"
 
@@ -22,9 +23,37 @@ namespace ast {
 
 struct NodeVisitor;
 
-struct Node {
+struct TypeHolder {
+  TypeHolder() : m_type(nullptr) {}
+
+  void type(const type::Type* a_type) {
+    assert(m_type == nullptr);
+    m_type = a_type;
+  }
+  const type::Type* type() const { return m_type; }
+
+ private:
+  const type::Type* m_type;
+};
+
+struct ValueHolder {
+  void in_value(const value::Value& a_value) {
+    assert(m_in_value.IsUninitialized());
+    m_in_value = a_value;
+    m_out_value = a_value;
+  }
+  const value::Value& in_value() const { return m_in_value; }
+  const value::Value* out_value() const { return &m_out_value; }
+  value::Value* out_value() { return &m_out_value; }
+
+ private:
+  value::Value m_in_value;
+  value::Value m_out_value;
+};
+
+struct Node : public ValueHolder{
   explicit Node(const Location& a_location)
-    : location(a_location) {}
+      : location(a_location) {}
   virtual ~Node() {}
   virtual void Accept(NodeVisitor* visitor) = 0;
 
@@ -113,17 +142,17 @@ struct EmbeddedField : public Node {
 
 struct Field : public Node {
   Field(const Location& a_location, const ListType& a_identifier_list,
-        Node* a_type, const std::string& a_tag)
-      : Node(a_location), identifier_list(a_identifier_list), type(a_type),
+        Node* a_type_literal, const std::string& a_tag)
+      : Node(a_location), identifier_list(a_identifier_list), type_literal(a_type_literal),
         tag(a_tag) {}
   ~Field() override {
     Delete(identifier_list);
-    Delete(type);
+    Delete(type_literal);
   }
   void Accept(NodeVisitor* visitor) override;
 
   ListType const identifier_list;
-  Node* const type;
+  Node* const type_literal;
   std::string const tag;
 };
 
@@ -183,26 +212,24 @@ struct Signature : public Node {
 
 struct ParameterDecl : public Node {
   ParameterDecl(const Location& a_location, const ListType& a_identifier_list,
-                bool a_variadic, Node* a_type)
+                bool a_variadic, Node* a_type_literal)
       : Node(a_location), identifier_list(a_identifier_list),
-        variadic(a_variadic), type(a_type) {}
+        variadic(a_variadic), type_literal(a_type_literal) {}
   ~ParameterDecl() override {
     Delete(identifier_list);
-    Delete(type);
+    Delete(type_literal);
   }
   void Accept(NodeVisitor* visitor) override;
 
   ListType const identifier_list;
   bool const variadic;
-  Node* const type;
+  Node* const type_literal;
 };
 
 struct Literal : public Node {
   explicit Literal(const Token& a_token)
-      : Node(a_token.location()), value(a_token.value()) {}
+      : Node(a_token.location()) { in_value(a_token.value()); }
   void Accept(NodeVisitor* visitor) override;
-
-  Value value;
 };
 
 struct LiteralValue : public Node {
@@ -215,15 +242,15 @@ struct LiteralValue : public Node {
 };
 
 struct CompositeLiteral : public Node {
-  CompositeLiteral(const Location& a_location, Node* a_type, Node* a_value)
-      : Node(a_location), type(a_type), value(a_value) {}
+  CompositeLiteral(const Location& a_location, Node* a_type_literal, Node* a_value)
+      : Node(a_location), type_literal(a_type_literal), value(a_value) {}
   ~CompositeLiteral() override {
-    Delete(type);
+    Delete(type_literal);
     Delete(value);
   }
   void Accept(NodeVisitor* visitor) override;
 
-  Node* const type;
+  Node* const type_literal;
   Node* const value;
 };
 
@@ -241,16 +268,16 @@ struct KeyedElement : public Node {
 };
 
 struct FunctionLiteral : public Node {
-  FunctionLiteral(const Location& a_location, Node* a_type,
+  FunctionLiteral(const Location& a_location, Node* a_type_literal,
                   Node* a_body)
-      : Node(a_location), type(a_type), body(a_body) {}
+      : Node(a_location), type_literal(a_type_literal), body(a_body) {}
   ~FunctionLiteral() override {
-    Delete(type);
+    Delete(type_literal);
     Delete(body);
   }
   void Accept(NodeVisitor* visitor) override;
 
-  Node* const type;
+  Node* const type_literal;
   Node* const body;
 };
 
@@ -260,26 +287,25 @@ struct Identifier : public Node {
   void Accept(NodeVisitor* visitor) override;
 
   std::string const identifier;
-  Value value;
 };
 
-struct ConstSpec : public Node {
+struct ConstSpec : public Node, public TypeHolder {
   ConstSpec(const Location& a_location, const ListType& a_identifier_list,
             Node* a_type, const ListType& a_expression_list)
       : Node(a_location), identifier_list(a_identifier_list),
-        optional_type(a_type), expression_list(a_expression_list), type(NULL) {}
+        optional_type_literal(a_type), expression_list(a_expression_list) {}
   ~ConstSpec() override {
     Delete(identifier_list);
-    Delete(optional_type);
+    Delete(optional_type_literal);
     Delete(expression_list);
   }
   void Accept(NodeVisitor* visitor) override;
 
   ListType const identifier_list;
-  Node* const optional_type;
+  Node* const optional_type_literal;
   ListType const expression_list;
 
-  const type::Type* type;
+  std::vector<symbol::Constant*> constants;
 };
 
 struct ConstDecl : public Node {
@@ -292,19 +318,21 @@ struct ConstDecl : public Node {
 };
 
 struct TypeSpec : public Node {
-  TypeSpec(const Location& a_location, Node* a_identifier, Node* a_type,
+  TypeSpec(const Location& a_location, Node* a_identifier, Node* a_type_literal,
            bool a_is_alias)
-      : Node(a_location), identifier(a_identifier), type(a_type),
-        is_alias(a_is_alias) {}
+      : Node(a_location), identifier(a_identifier),
+        type_literal(a_type_literal), is_alias(a_is_alias), type(nullptr) {}
   ~TypeSpec() override {
     Delete(identifier);
-    Delete(type);
+    Delete(type_literal);
   }
   void Accept(NodeVisitor* visitor) override;
 
   Node* const identifier;
-  Node* const type;
+  Node* const type_literal;
   bool const is_alias;
+
+  symbol::Type* type;
 };
 
 struct TypeDecl : public Node {
@@ -320,17 +348,19 @@ struct VarSpec : public Node {
   VarSpec(const Location& a_location, const ListType& a_identifier_list,
           Node* a_type, const ListType& a_expression_list)
       : Node(a_location), identifier_list(a_identifier_list),
-        optional_type(a_type), expression_list(a_expression_list) {}
+        optional_type_literal(a_type), expression_list(a_expression_list) {}
   ~VarSpec() override {
     Delete(identifier_list);
-    Delete(optional_type);
+    Delete(optional_type_literal);
     Delete(expression_list);
   }
   void Accept(NodeVisitor* visitor) override;
 
   ListType const identifier_list;
-  Node* const optional_type;
+  Node* const optional_type_literal;
   ListType const expression_list;
+
+  std::vector<symbol::Variable*> variables;
 };
 
 struct VarDecl : public Node {
@@ -355,7 +385,7 @@ struct FuncDecl : public Node {
   FuncDecl(const Location& a_location, Node* a_identifier, Node* a_signature,
            Node* a_body)
       : Node(a_location), identifier(a_identifier), signature(a_signature),
-        optional_body(a_body) {}
+        optional_body(a_body), function(nullptr) {}
   ~FuncDecl() override {
     Delete(identifier);
     Delete(signature);
@@ -366,6 +396,8 @@ struct FuncDecl : public Node {
   Node* const identifier;
   Node* const signature;
   Node* const optional_body;
+
+  symbol::Function* function;
 };
 
 struct MethodDecl : public Node {
@@ -388,16 +420,16 @@ struct MethodDecl : public Node {
 };
 
 struct TypeAssertion : public Node {
-  TypeAssertion(const Location& a_location, Node* a_operand, Node* a_type)
-      : Node(a_location), operand(a_operand), type(a_type) {}
+  TypeAssertion(const Location& a_location, Node* a_operand, Node* a_type_literal)
+      : Node(a_location), operand(a_operand), type_literal(a_type_literal) {}
   ~TypeAssertion() override {
     Delete(operand);
-    Delete(type);
+    Delete(type_literal);
   }
   void Accept(NodeVisitor* visitor) override;
 
   Node* const operand;
-  Node* const type;
+  Node* const type_literal;
 };
 
 struct Selector : public Node {
@@ -471,7 +503,6 @@ struct BinaryOp : public Node {
 
   Node* const left;
   Node* const right;
-  Value value;
 };
 
 struct Equal : public BinaryOp {
@@ -698,7 +729,6 @@ struct UnaryOp : public Node {
     Delete(expression);
   }
   Node* const expression;
-  Value value;
 };
 
 struct Posate : public UnaryOp {
@@ -1246,8 +1276,6 @@ struct IdentifierEqual {  // NOT_COVERED
 
   std::string const identifier;
 };
-
-Value GetValue(Node* node);
 
 std::ostream& operator<< (std::ostream& out, Node& ast);
 

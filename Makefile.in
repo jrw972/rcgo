@@ -126,30 +126,29 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.hpp
-CONFIG_CLEAN_FILES =
+CONFIG_CLEAN_FILES = setenv.sh
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 librcgo_la_LIBADD =
 am__dirstamp = $(am__leading_dot)dirstamp
-am_librcgo_la_OBJECTS = src/librcgo_la-ast.lo \
-	src/librcgo_la-byte_stream.lo src/librcgo_la-compile.lo \
-	src/librcgo_la-define_symbol.lo \
+am_librcgo_la_OBJECTS = src/librcgo_la-argument_parser.lo \
+	src/librcgo_la-ast.lo src/librcgo_la-block.lo \
+	src/librcgo_la-byte_stream.lo src/librcgo_la-check_types.lo \
+	src/librcgo_la-compile.lo src/librcgo_la-define_symbol.lo \
 	src/librcgo_la-define_symbols.lo src/librcgo_la-digit_table.lo \
-	src/librcgo_la-enter_predeclared_symbols.lo \
 	src/librcgo_la-error.lo src/librcgo_la-error_reporter.lo \
-	src/librcgo_la-evaluate_constant_expression.lo \
 	src/librcgo_la-get_and_check_package_name.lo \
 	src/librcgo_la-get_import_locations.lo \
 	src/librcgo_la-insert_symbol.lo src/librcgo_la-letter_table.lo \
 	src/librcgo_la-location.lo src/librcgo_la-parser.lo \
 	src/librcgo_la-paths.lo src/librcgo_la-populate_file_block.lo \
 	src/librcgo_la-populate_package_block.lo \
+	src/librcgo_la-populate_universe_block.lo \
 	src/librcgo_la-process_qualified_identifier.lo \
 	src/librcgo_la-process_type.lo src/librcgo_la-scanner.lo \
-	src/librcgo_la-symbol.lo src/librcgo_la-symbol_table.lo \
-	src/librcgo_la-token.lo src/librcgo_la-type.lo \
-	src/librcgo_la-upper_table.lo src/librcgo_la-utf8.lo \
-	src/librcgo_la-value.lo
+	src/librcgo_la-symbol.lo src/librcgo_la-token.lo \
+	src/librcgo_la-type.lo src/librcgo_la-upper_table.lo \
+	src/librcgo_la-utf8.lo src/librcgo_la-value.lo
 librcgo_la_OBJECTS = $(am_librcgo_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -160,24 +159,24 @@ librcgo_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(CXXFLAGS) $(librcgo_la_LDFLAGS) $(LDFLAGS) -o $@
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_rcgo_OBJECTS = src/rcgo-main.$(OBJEXT)
+am_rcgo_OBJECTS = src/rcgo-rcgo.$(OBJEXT)
 rcgo_OBJECTS = $(am_rcgo_OBJECTS)
 rcgo_DEPENDENCIES = librcgo.la
 rcgo_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(rcgo_CXXFLAGS) \
 	$(CXXFLAGS) $(rcgo_LDFLAGS) $(LDFLAGS) -o $@
 am_unit_tests_OBJECTS = src/unit_tests-ast_test.$(OBJEXT) \
+	src/unit_tests-block_test.$(OBJEXT) \
 	src/unit_tests-byte_stream_test.$(OBJEXT) \
 	src/unit_tests-compile_test.$(OBJEXT) \
-	src/unit_tests-enter_predeclared_symbols_test.$(OBJEXT) \
 	src/unit_tests-error_reporter_test.$(OBJEXT) \
 	src/unit_tests-error_test.$(OBJEXT) \
 	src/unit_tests-import_location_test.$(OBJEXT) \
 	src/unit_tests-location_test.$(OBJEXT) \
 	src/unit_tests-package_test.$(OBJEXT) \
 	src/unit_tests-parser_test.$(OBJEXT) \
+	src/unit_tests-populate_universe_block_test.$(OBJEXT) \
 	src/unit_tests-scanner_test.$(OBJEXT) \
-	src/unit_tests-symbol_table_test.$(OBJEXT) \
 	src/unit_tests-symbol_test.$(OBJEXT) \
 	src/unit_tests-token_test.$(OBJEXT) \
 	src/unit_tests-type_test.$(OBJEXT) \
@@ -474,7 +473,7 @@ TEST_LOG_DRIVER = $(SHELL) $(top_srcdir)/build-aux/test-driver
 TEST_LOG_COMPILE = $(TEST_LOG_COMPILER) $(AM_TEST_LOG_FLAGS) \
 	$(TEST_LOG_FLAGS)
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.hpp.in \
-	$(top_srcdir)/build-aux/catch-driver.sh \
+	$(srcdir)/setenv.sh.in $(top_srcdir)/build-aux/catch-driver.sh \
 	$(top_srcdir)/build-aux/compile \
 	$(top_srcdir)/build-aux/config.guess \
 	$(top_srcdir)/build-aux/config.sub \
@@ -629,7 +628,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
 AM_CXXFLAGS = -std=gnu++11 -I $(top_srcdir)/src
-rcgo_SOURCES = src/main.cc
+rcgo_SOURCES = src/rcgo.cc
 rcgo_LDADD = librcgo.la
 rcgo_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 rcgo_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
@@ -637,16 +636,18 @@ rcgo_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 # Libraries
 noinst_LTLIBRARIES = librcgo.la
 librcgo_la_SOURCES = \
+src/argument_parser.h src/argument_parser.cc \
+src/argument_scanner.h \
 src/ast.h src/ast.cc \
+src/block.h src/block.cc \
 src/byte_stream.h src/byte_stream.cc \
+src/check_types.h src/check_types.cc \
 src/compile.h src/compile.cc \
 src/define_symbol.h src/define_symbol.cc \
 src/define_symbols.h src/define_symbols.cc \
 src/digit_table.cc \
-src/enter_predeclared_symbols.h src/enter_predeclared_symbols.cc \
 src/error.h src/error.cc \
 src/error_reporter.h src/error_reporter.cc \
-src/evaluate_constant_expression.h src/evaluate_constant_expression.cc \
 src/get_and_check_package_name.h src/get_and_check_package_name.cc \
 src/get_import_locations.h src/get_import_locations.cc \
 src/import_location.h \
@@ -658,11 +659,11 @@ src/parser.h src/parser.cc \
 src/paths.h src/paths.cc \
 src/populate_file_block.h src/populate_file_block.cc \
 src/populate_package_block.h src/populate_package_block.cc \
+src/populate_universe_block.h src/populate_universe_block.cc \
 src/process_qualified_identifier.h src/process_qualified_identifier.cc \
 src/process_type.h src/process_type.cc \
 src/scanner.h src/scanner.cc \
 src/symbol.h src/symbol.cc \
-src/symbol_table.h src/symbol_table.cc \
 src/token.h src/token.cc \
 src/type.h src/type.cc \
 src/upper_table.cc \
@@ -676,18 +677,18 @@ librcgo_la_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)  -lgmpxx -lgmp
 LOG_DRIVER = $(SHELL) $(top_srcdir)/build-aux/catch-driver.sh
 unit_tests_SOURCES = \
 src/ast_test.cc \
+src/block_test.cc \
 src/byte_stream_test.cc \
 src/catch.hpp \
 src/compile_test.cc \
-src/enter_predeclared_symbols_test.cc \
 src/error_reporter_test.cc \
 src/error_test.cc \
 src/import_location_test.cc \
 src/location_test.cc \
 src/package_test.cc \
 src/parser_test.cc \
+src/populate_universe_block_test.cc \
 src/scanner_test.cc \
-src/symbol_table_test.cc \
 src/symbol_test.cc \
 src/test_helpers.h \
 src/token_test.cc \
@@ -761,6 +762,8 @@ $(srcdir)/config.hpp.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f config.hpp stamp-h1
+setenv.sh: $(top_builddir)/config.status $(srcdir)/setenv.sh.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 clean-noinstLTLIBRARIES:
 	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
@@ -778,9 +781,15 @@ src/$(am__dirstamp):
 src/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) src/$(DEPDIR)
 	@: > src/$(DEPDIR)/$(am__dirstamp)
+src/librcgo_la-argument_parser.lo: src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-ast.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/librcgo_la-block.lo: src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-byte_stream.lo: src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/librcgo_la-check_types.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-compile.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -790,13 +799,9 @@ src/librcgo_la-define_symbols.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-digit_table.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
-src/librcgo_la-enter_predeclared_symbols.lo: src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-error.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-error_reporter.lo: src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/librcgo_la-evaluate_constant_expression.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-get_and_check_package_name.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -816,6 +821,8 @@ src/librcgo_la-populate_file_block.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-populate_package_block.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/librcgo_la-populate_universe_block.lo: src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-process_qualified_identifier.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-process_type.lo: src/$(am__dirstamp) \
@@ -823,8 +830,6 @@ src/librcgo_la-process_type.lo: src/$(am__dirstamp) \
 src/librcgo_la-scanner.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-symbol.lo: src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/librcgo_la-symbol_table.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-token.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -897,7 +902,7 @@ clean-checkPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
-src/rcgo-main.$(OBJEXT): src/$(am__dirstamp) \
+src/rcgo-rcgo.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
 rcgo$(EXEEXT): $(rcgo_OBJECTS) $(rcgo_DEPENDENCIES) $(EXTRA_rcgo_DEPENDENCIES) 
@@ -905,12 +910,12 @@ rcgo$(EXEEXT): $(rcgo_OBJECTS) $(rcgo_DEPENDENCIES) $(EXTRA_rcgo_DEPENDENCIES)
 	$(AM_V_CXXLD)$(rcgo_LINK) $(rcgo_OBJECTS) $(rcgo_LDADD) $(LIBS)
 src/unit_tests-ast_test.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/unit_tests-block_test.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/unit_tests-byte_stream_test.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/unit_tests-compile_test.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
-src/unit_tests-enter_predeclared_symbols_test.$(OBJEXT):  \
-	src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/unit_tests-error_reporter_test.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/unit_tests-error_test.$(OBJEXT): src/$(am__dirstamp) \
@@ -923,9 +928,9 @@ src/unit_tests-package_test.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/unit_tests-parser_test.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/unit_tests-populate_universe_block_test.$(OBJEXT):  \
+	src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/unit_tests-scanner_test.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/unit_tests-symbol_table_test.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/unit_tests-symbol_test.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
@@ -952,16 +957,17 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-argument_parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-ast.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-block.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-byte_stream.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-check_types.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-compile.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-define_symbol.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-define_symbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-digit_table.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-enter_predeclared_symbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-error.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-error_reporter.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-evaluate_constant_expression.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-get_and_check_package_name.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-get_import_locations.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-insert_symbol.Plo@am__quote@
@@ -971,29 +977,29 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-paths.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-populate_file_block.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-populate_package_block.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-populate_universe_block.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-process_qualified_identifier.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-process_type.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-scanner.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-symbol.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-symbol_table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-token.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-type.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-upper_table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-utf8.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-value.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/rcgo-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/rcgo-rcgo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-ast_test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-block_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-byte_stream_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-compile_test.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-enter_predeclared_symbols_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-error_reporter_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-error_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-import_location_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-location_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-package_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-parser_test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-populate_universe_block_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-scanner_test.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-symbol_table_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-symbol_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-token_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/unit_tests-type_test.Po@am__quote@
@@ -1025,6 +1031,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
+src/librcgo_la-argument_parser.lo: src/argument_parser.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-argument_parser.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-argument_parser.Tpo -c -o src/librcgo_la-argument_parser.lo `test -f 'src/argument_parser.cc' || echo '$(srcdir)/'`src/argument_parser.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/librcgo_la-argument_parser.Tpo src/$(DEPDIR)/librcgo_la-argument_parser.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/argument_parser.cc' object='src/librcgo_la-argument_parser.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-argument_parser.lo `test -f 'src/argument_parser.cc' || echo '$(srcdir)/'`src/argument_parser.cc
+
 src/librcgo_la-ast.lo: src/ast.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-ast.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-ast.Tpo -c -o src/librcgo_la-ast.lo `test -f 'src/ast.cc' || echo '$(srcdir)/'`src/ast.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/librcgo_la-ast.Tpo src/$(DEPDIR)/librcgo_la-ast.Plo
@@ -1032,12 +1045,26 @@ src/librcgo_la-ast.lo: src/ast.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-ast.lo `test -f 'src/ast.cc' || echo '$(srcdir)/'`src/ast.cc
 
+src/librcgo_la-block.lo: src/block.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-block.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-block.Tpo -c -o src/librcgo_la-block.lo `test -f 'src/block.cc' || echo '$(srcdir)/'`src/block.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/librcgo_la-block.Tpo src/$(DEPDIR)/librcgo_la-block.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/block.cc' object='src/librcgo_la-block.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-block.lo `test -f 'src/block.cc' || echo '$(srcdir)/'`src/block.cc
+
 src/librcgo_la-byte_stream.lo: src/byte_stream.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-byte_stream.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-byte_stream.Tpo -c -o src/librcgo_la-byte_stream.lo `test -f 'src/byte_stream.cc' || echo '$(srcdir)/'`src/byte_stream.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/librcgo_la-byte_stream.Tpo src/$(DEPDIR)/librcgo_la-byte_stream.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/byte_stream.cc' object='src/librcgo_la-byte_stream.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-byte_stream.lo `test -f 'src/byte_stream.cc' || echo '$(srcdir)/'`src/byte_stream.cc
+
+src/librcgo_la-check_types.lo: src/check_types.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-check_types.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-check_types.Tpo -c -o src/librcgo_la-check_types.lo `test -f 'src/check_types.cc' || echo '$(srcdir)/'`src/check_types.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/librcgo_la-check_types.Tpo src/$(DEPDIR)/librcgo_la-check_types.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/check_types.cc' object='src/librcgo_la-check_types.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-check_types.lo `test -f 'src/check_types.cc' || echo '$(srcdir)/'`src/check_types.cc
 
 src/librcgo_la-compile.lo: src/compile.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-compile.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-compile.Tpo -c -o src/librcgo_la-compile.lo `test -f 'src/compile.cc' || echo '$(srcdir)/'`src/compile.cc
@@ -1067,13 +1094,6 @@ src/librcgo_la-digit_table.lo: src/digit_table.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-digit_table.lo `test -f 'src/digit_table.cc' || echo '$(srcdir)/'`src/digit_table.cc
 
-src/librcgo_la-enter_predeclared_symbols.lo: src/enter_predeclared_symbols.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-enter_predeclared_symbols.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-enter_predeclared_symbols.Tpo -c -o src/librcgo_la-enter_predeclared_symbols.lo `test -f 'src/enter_predeclared_symbols.cc' || echo '$(srcdir)/'`src/enter_predeclared_symbols.cc
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/librcgo_la-enter_predeclared_symbols.Tpo src/$(DEPDIR)/librcgo_la-enter_predeclared_symbols.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/enter_predeclared_symbols.cc' object='src/librcgo_la-enter_predeclared_symbols.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-enter_predeclared_symbols.lo `test -f 'src/enter_predeclared_symbols.cc' || echo '$(srcdir)/'`src/enter_predeclared_symbols.cc
-
 src/librcgo_la-error.lo: src/error.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-error.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-error.Tpo -c -o src/librcgo_la-error.lo `test -f 'src/error.cc' || echo '$(srcdir)/'`src/error.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/librcgo_la-error.Tpo src/$(DEPDIR)/librcgo_la-error.Plo
@@ -1087,13 +1107,6 @@ src/librcgo_la-error_reporter.lo: src/error_reporter.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/error_reporter.cc' object='src/librcgo_la-error_reporter.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-error_reporter.lo `test -f 'src/error_reporter.cc' || echo '$(srcdir)/'`src/error_reporter.cc
-
-src/librcgo_la-evaluate_constant_expression.lo: src/evaluate_constant_expression.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-evaluate_constant_expression.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-evaluate_constant_expression.Tpo -c -o src/librcgo_la-evaluate_constant_expression.lo `test -f 'src/evaluate_constant_expression.cc' || echo '$(srcdir)/'`src/evaluate_constant_expression.cc
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/librcgo_la-evaluate_constant_expression.Tpo src/$(DEPDIR)/librcgo_la-evaluate_constant_expression.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/evaluate_constant_expression.cc' object='src/librcgo_la-evaluate_constant_expression.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-evaluate_constant_expression.lo `test -f 'src/evaluate_constant_expression.cc' || echo '$(srcdir)/'`src/evaluate_constant_expression.cc
 
 src/librcgo_la-get_and_check_package_name.lo: src/get_and_check_package_name.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-get_and_check_package_name.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-get_and_check_package_name.Tpo -c -o src/librcgo_la-get_and_check_package_name.lo `test -f 'src/get_and_check_package_name.cc' || echo '$(srcdir)/'`src/get_and_check_package_name.cc
@@ -1158,6 +1171,13 @@ src/librcgo_la-populate_package_block.lo: src/populate_package_block.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-populate_package_block.lo `test -f 'src/populate_package_block.cc' || echo '$(srcdir)/'`src/populate_package_block.cc
 
+src/librcgo_la-populate_universe_block.lo: src/populate_universe_block.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-populate_universe_block.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-populate_universe_block.Tpo -c -o src/librcgo_la-populate_universe_block.lo `test -f 'src/populate_universe_block.cc' || echo '$(srcdir)/'`src/populate_universe_block.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/librcgo_la-populate_universe_block.Tpo src/$(DEPDIR)/librcgo_la-populate_universe_block.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/populate_universe_block.cc' object='src/librcgo_la-populate_universe_block.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-populate_universe_block.lo `test -f 'src/populate_universe_block.cc' || echo '$(srcdir)/'`src/populate_universe_block.cc
+
 src/librcgo_la-process_qualified_identifier.lo: src/process_qualified_identifier.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-process_qualified_identifier.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-process_qualified_identifier.Tpo -c -o src/librcgo_la-process_qualified_identifier.lo `test -f 'src/process_qualified_identifier.cc' || echo '$(srcdir)/'`src/process_qualified_identifier.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/librcgo_la-process_qualified_identifier.Tpo src/$(DEPDIR)/librcgo_la-process_qualified_identifier.Plo
@@ -1185,13 +1205,6 @@ src/librcgo_la-symbol.lo: src/symbol.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/symbol.cc' object='src/librcgo_la-symbol.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-symbol.lo `test -f 'src/symbol.cc' || echo '$(srcdir)/'`src/symbol.cc
-
-src/librcgo_la-symbol_table.lo: src/symbol_table.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-symbol_table.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-symbol_table.Tpo -c -o src/librcgo_la-symbol_table.lo `test -f 'src/symbol_table.cc' || echo '$(srcdir)/'`src/symbol_table.cc
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/librcgo_la-symbol_table.Tpo src/$(DEPDIR)/librcgo_la-symbol_table.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/symbol_table.cc' object='src/librcgo_la-symbol_table.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-symbol_table.lo `test -f 'src/symbol_table.cc' || echo '$(srcdir)/'`src/symbol_table.cc
 
 src/librcgo_la-token.lo: src/token.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-token.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-token.Tpo -c -o src/librcgo_la-token.lo `test -f 'src/token.cc' || echo '$(srcdir)/'`src/token.cc
@@ -1228,19 +1241,19 @@ src/librcgo_la-value.lo: src/value.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-value.lo `test -f 'src/value.cc' || echo '$(srcdir)/'`src/value.cc
 
-src/rcgo-main.o: src/main.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT src/rcgo-main.o -MD -MP -MF src/$(DEPDIR)/rcgo-main.Tpo -c -o src/rcgo-main.o `test -f 'src/main.cc' || echo '$(srcdir)/'`src/main.cc
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/rcgo-main.Tpo src/$(DEPDIR)/rcgo-main.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/main.cc' object='src/rcgo-main.o' libtool=no @AMDEPBACKSLASH@
+src/rcgo-rcgo.o: src/rcgo.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT src/rcgo-rcgo.o -MD -MP -MF src/$(DEPDIR)/rcgo-rcgo.Tpo -c -o src/rcgo-rcgo.o `test -f 'src/rcgo.cc' || echo '$(srcdir)/'`src/rcgo.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/rcgo-rcgo.Tpo src/$(DEPDIR)/rcgo-rcgo.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/rcgo.cc' object='src/rcgo-rcgo.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o src/rcgo-main.o `test -f 'src/main.cc' || echo '$(srcdir)/'`src/main.cc
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o src/rcgo-rcgo.o `test -f 'src/rcgo.cc' || echo '$(srcdir)/'`src/rcgo.cc
 
-src/rcgo-main.obj: src/main.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT src/rcgo-main.obj -MD -MP -MF src/$(DEPDIR)/rcgo-main.Tpo -c -o src/rcgo-main.obj `if test -f 'src/main.cc'; then $(CYGPATH_W) 'src/main.cc'; else $(CYGPATH_W) '$(srcdir)/src/main.cc'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/rcgo-main.Tpo src/$(DEPDIR)/rcgo-main.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/main.cc' object='src/rcgo-main.obj' libtool=no @AMDEPBACKSLASH@
+src/rcgo-rcgo.obj: src/rcgo.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -MT src/rcgo-rcgo.obj -MD -MP -MF src/$(DEPDIR)/rcgo-rcgo.Tpo -c -o src/rcgo-rcgo.obj `if test -f 'src/rcgo.cc'; then $(CYGPATH_W) 'src/rcgo.cc'; else $(CYGPATH_W) '$(srcdir)/src/rcgo.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/rcgo-rcgo.Tpo src/$(DEPDIR)/rcgo-rcgo.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/rcgo.cc' object='src/rcgo-rcgo.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o src/rcgo-main.obj `if test -f 'src/main.cc'; then $(CYGPATH_W) 'src/main.cc'; else $(CYGPATH_W) '$(srcdir)/src/main.cc'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rcgo_CXXFLAGS) $(CXXFLAGS) -c -o src/rcgo-rcgo.obj `if test -f 'src/rcgo.cc'; then $(CYGPATH_W) 'src/rcgo.cc'; else $(CYGPATH_W) '$(srcdir)/src/rcgo.cc'; fi`
 
 src/unit_tests-ast_test.o: src/ast_test.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -MT src/unit_tests-ast_test.o -MD -MP -MF src/$(DEPDIR)/unit_tests-ast_test.Tpo -c -o src/unit_tests-ast_test.o `test -f 'src/ast_test.cc' || echo '$(srcdir)/'`src/ast_test.cc
@@ -1255,6 +1268,20 @@ src/unit_tests-ast_test.obj: src/ast_test.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/ast_test.cc' object='src/unit_tests-ast_test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -c -o src/unit_tests-ast_test.obj `if test -f 'src/ast_test.cc'; then $(CYGPATH_W) 'src/ast_test.cc'; else $(CYGPATH_W) '$(srcdir)/src/ast_test.cc'; fi`
+
+src/unit_tests-block_test.o: src/block_test.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -MT src/unit_tests-block_test.o -MD -MP -MF src/$(DEPDIR)/unit_tests-block_test.Tpo -c -o src/unit_tests-block_test.o `test -f 'src/block_test.cc' || echo '$(srcdir)/'`src/block_test.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/unit_tests-block_test.Tpo src/$(DEPDIR)/unit_tests-block_test.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/block_test.cc' object='src/unit_tests-block_test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -c -o src/unit_tests-block_test.o `test -f 'src/block_test.cc' || echo '$(srcdir)/'`src/block_test.cc
+
+src/unit_tests-block_test.obj: src/block_test.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -MT src/unit_tests-block_test.obj -MD -MP -MF src/$(DEPDIR)/unit_tests-block_test.Tpo -c -o src/unit_tests-block_test.obj `if test -f 'src/block_test.cc'; then $(CYGPATH_W) 'src/block_test.cc'; else $(CYGPATH_W) '$(srcdir)/src/block_test.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/unit_tests-block_test.Tpo src/$(DEPDIR)/unit_tests-block_test.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/block_test.cc' object='src/unit_tests-block_test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -c -o src/unit_tests-block_test.obj `if test -f 'src/block_test.cc'; then $(CYGPATH_W) 'src/block_test.cc'; else $(CYGPATH_W) '$(srcdir)/src/block_test.cc'; fi`
 
 src/unit_tests-byte_stream_test.o: src/byte_stream_test.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -MT src/unit_tests-byte_stream_test.o -MD -MP -MF src/$(DEPDIR)/unit_tests-byte_stream_test.Tpo -c -o src/unit_tests-byte_stream_test.o `test -f 'src/byte_stream_test.cc' || echo '$(srcdir)/'`src/byte_stream_test.cc
@@ -1283,20 +1310,6 @@ src/unit_tests-compile_test.obj: src/compile_test.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/compile_test.cc' object='src/unit_tests-compile_test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -c -o src/unit_tests-compile_test.obj `if test -f 'src/compile_test.cc'; then $(CYGPATH_W) 'src/compile_test.cc'; else $(CYGPATH_W) '$(srcdir)/src/compile_test.cc'; fi`
-
-src/unit_tests-enter_predeclared_symbols_test.o: src/enter_predeclared_symbols_test.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -MT src/unit_tests-enter_predeclared_symbols_test.o -MD -MP -MF src/$(DEPDIR)/unit_tests-enter_predeclared_symbols_test.Tpo -c -o src/unit_tests-enter_predeclared_symbols_test.o `test -f 'src/enter_predeclared_symbols_test.cc' || echo '$(srcdir)/'`src/enter_predeclared_symbols_test.cc
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/unit_tests-enter_predeclared_symbols_test.Tpo src/$(DEPDIR)/unit_tests-enter_predeclared_symbols_test.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/enter_predeclared_symbols_test.cc' object='src/unit_tests-enter_predeclared_symbols_test.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -c -o src/unit_tests-enter_predeclared_symbols_test.o `test -f 'src/enter_predeclared_symbols_test.cc' || echo '$(srcdir)/'`src/enter_predeclared_symbols_test.cc
-
-src/unit_tests-enter_predeclared_symbols_test.obj: src/enter_predeclared_symbols_test.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -MT src/unit_tests-enter_predeclared_symbols_test.obj -MD -MP -MF src/$(DEPDIR)/unit_tests-enter_predeclared_symbols_test.Tpo -c -o src/unit_tests-enter_predeclared_symbols_test.obj `if test -f 'src/enter_predeclared_symbols_test.cc'; then $(CYGPATH_W) 'src/enter_predeclared_symbols_test.cc'; else $(CYGPATH_W) '$(srcdir)/src/enter_predeclared_symbols_test.cc'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/unit_tests-enter_predeclared_symbols_test.Tpo src/$(DEPDIR)/unit_tests-enter_predeclared_symbols_test.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/enter_predeclared_symbols_test.cc' object='src/unit_tests-enter_predeclared_symbols_test.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -c -o src/unit_tests-enter_predeclared_symbols_test.obj `if test -f 'src/enter_predeclared_symbols_test.cc'; then $(CYGPATH_W) 'src/enter_predeclared_symbols_test.cc'; else $(CYGPATH_W) '$(srcdir)/src/enter_predeclared_symbols_test.cc'; fi`
 
 src/unit_tests-error_reporter_test.o: src/error_reporter_test.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -MT src/unit_tests-error_reporter_test.o -MD -MP -MF src/$(DEPDIR)/unit_tests-error_reporter_test.Tpo -c -o src/unit_tests-error_reporter_test.o `test -f 'src/error_reporter_test.cc' || echo '$(srcdir)/'`src/error_reporter_test.cc
@@ -1382,6 +1395,20 @@ src/unit_tests-parser_test.obj: src/parser_test.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -c -o src/unit_tests-parser_test.obj `if test -f 'src/parser_test.cc'; then $(CYGPATH_W) 'src/parser_test.cc'; else $(CYGPATH_W) '$(srcdir)/src/parser_test.cc'; fi`
 
+src/unit_tests-populate_universe_block_test.o: src/populate_universe_block_test.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -MT src/unit_tests-populate_universe_block_test.o -MD -MP -MF src/$(DEPDIR)/unit_tests-populate_universe_block_test.Tpo -c -o src/unit_tests-populate_universe_block_test.o `test -f 'src/populate_universe_block_test.cc' || echo '$(srcdir)/'`src/populate_universe_block_test.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/unit_tests-populate_universe_block_test.Tpo src/$(DEPDIR)/unit_tests-populate_universe_block_test.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/populate_universe_block_test.cc' object='src/unit_tests-populate_universe_block_test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -c -o src/unit_tests-populate_universe_block_test.o `test -f 'src/populate_universe_block_test.cc' || echo '$(srcdir)/'`src/populate_universe_block_test.cc
+
+src/unit_tests-populate_universe_block_test.obj: src/populate_universe_block_test.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -MT src/unit_tests-populate_universe_block_test.obj -MD -MP -MF src/$(DEPDIR)/unit_tests-populate_universe_block_test.Tpo -c -o src/unit_tests-populate_universe_block_test.obj `if test -f 'src/populate_universe_block_test.cc'; then $(CYGPATH_W) 'src/populate_universe_block_test.cc'; else $(CYGPATH_W) '$(srcdir)/src/populate_universe_block_test.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/unit_tests-populate_universe_block_test.Tpo src/$(DEPDIR)/unit_tests-populate_universe_block_test.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/populate_universe_block_test.cc' object='src/unit_tests-populate_universe_block_test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -c -o src/unit_tests-populate_universe_block_test.obj `if test -f 'src/populate_universe_block_test.cc'; then $(CYGPATH_W) 'src/populate_universe_block_test.cc'; else $(CYGPATH_W) '$(srcdir)/src/populate_universe_block_test.cc'; fi`
+
 src/unit_tests-scanner_test.o: src/scanner_test.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -MT src/unit_tests-scanner_test.o -MD -MP -MF src/$(DEPDIR)/unit_tests-scanner_test.Tpo -c -o src/unit_tests-scanner_test.o `test -f 'src/scanner_test.cc' || echo '$(srcdir)/'`src/scanner_test.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/unit_tests-scanner_test.Tpo src/$(DEPDIR)/unit_tests-scanner_test.Po
@@ -1395,20 +1422,6 @@ src/unit_tests-scanner_test.obj: src/scanner_test.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/scanner_test.cc' object='src/unit_tests-scanner_test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -c -o src/unit_tests-scanner_test.obj `if test -f 'src/scanner_test.cc'; then $(CYGPATH_W) 'src/scanner_test.cc'; else $(CYGPATH_W) '$(srcdir)/src/scanner_test.cc'; fi`
-
-src/unit_tests-symbol_table_test.o: src/symbol_table_test.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -MT src/unit_tests-symbol_table_test.o -MD -MP -MF src/$(DEPDIR)/unit_tests-symbol_table_test.Tpo -c -o src/unit_tests-symbol_table_test.o `test -f 'src/symbol_table_test.cc' || echo '$(srcdir)/'`src/symbol_table_test.cc
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/unit_tests-symbol_table_test.Tpo src/$(DEPDIR)/unit_tests-symbol_table_test.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/symbol_table_test.cc' object='src/unit_tests-symbol_table_test.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -c -o src/unit_tests-symbol_table_test.o `test -f 'src/symbol_table_test.cc' || echo '$(srcdir)/'`src/symbol_table_test.cc
-
-src/unit_tests-symbol_table_test.obj: src/symbol_table_test.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -MT src/unit_tests-symbol_table_test.obj -MD -MP -MF src/$(DEPDIR)/unit_tests-symbol_table_test.Tpo -c -o src/unit_tests-symbol_table_test.obj `if test -f 'src/symbol_table_test.cc'; then $(CYGPATH_W) 'src/symbol_table_test.cc'; else $(CYGPATH_W) '$(srcdir)/src/symbol_table_test.cc'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/unit_tests-symbol_table_test.Tpo src/$(DEPDIR)/unit_tests-symbol_table_test.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/symbol_table_test.cc' object='src/unit_tests-symbol_table_test.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -c -o src/unit_tests-symbol_table_test.obj `if test -f 'src/symbol_table_test.cc'; then $(CYGPATH_W) 'src/symbol_table_test.cc'; else $(CYGPATH_W) '$(srcdir)/src/symbol_table_test.cc'; fi`
 
 src/unit_tests-symbol_test.o: src/symbol_test.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(unit_tests_CXXFLAGS) $(CXXFLAGS) -MT src/unit_tests-symbol_test.o -MD -MP -MF src/$(DEPDIR)/unit_tests-symbol_test.Tpo -c -o src/unit_tests-symbol_test.o `test -f 'src/symbol_test.cc' || echo '$(srcdir)/'`src/symbol_test.cc

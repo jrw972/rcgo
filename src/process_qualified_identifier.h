@@ -8,13 +8,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include "src/block.h"
 #include "src/error_reporter.h"
-#include "src/symbol_table.h"
 
 namespace rcgo {
 
 // Returns the symbol for package.name or name.
-Symbol* ProcessQualifiedIdentifier(ast::Node* ast, const Block& block,
+symbol::Symbol* ProcessQualifiedIdentifier(ast::Node* ast, const Block& block,
                                    ErrorReporter* error_reporter);
 
 }

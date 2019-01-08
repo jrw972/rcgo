@@ -9,8 +9,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "src/ast.h"
+#include "src/block.h"
 #include "src/error_reporter.h"
-#include "src/symbol_table.h"
 #include "src/type.h"
 
 namespace rcgo {
@@ -18,13 +18,13 @@ namespace rcgo {
 // Returns a type descriptor for the type in ast if successful and an
 // instance of ErrorType otherwise.
 const type::Type* ProcessType(
-    ast::Node* node, const Block& block, type::Factory* type_factory,
+    ast::Node* node, Block* block, type::Factory* type_factory,
     ErrorReporter* error_reporter);
 
 // Like process_type but specifically for function types such as those
 // in interfaces.
 const type::Function* ProcessFunction(
-    ast::Signature* signature, const Block& block, type::Factory* type_factory,
+    ast::Signature* signature, Block* block, type::Factory* type_factory,
     ErrorReporter* error_reporter);
 
 }  // namespace rcgo

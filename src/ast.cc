@@ -106,24 +106,6 @@ void ImportDecl::Accept(NodeVisitor* visitor) { visitor->Visit(this); }
 void ImportSpec::Accept(NodeVisitor* visitor) { visitor->Visit(this); }
 void Error::Accept(NodeVisitor* visitor) { visitor->Visit(this); }
 
-Value GetValue(Node* ast) {
-  struct Visitor : public DefaultNodeVisitor {
-    Value value;
-
-    void Visit(Literal* ast) override {
-      value = ast->value;
-    }
-
-    void Visit(Identifier* ast) override {
-      value = ast->value;
-    }
-  };
-
-  Visitor visitor;
-  ast->Accept(&visitor);
-  return visitor.value;
-}
-
 std::ostream& operator<<(std::ostream& out, Node& ast) {
   struct Visitor : public NodeVisitor {
     std::ostream& out;
@@ -157,7 +139,7 @@ std::ostream& operator<<(std::ostream& out, Node& ast) {
           << '"';
     }
 
-    void PrintField(bool comma, const char* name, const Value& value) {
+    void PrintField(bool comma, const char* name, const value::Value& value) {
       if (comma) out << ',';
       out << '"' << name << '"' << ':' << '"' << "<value>" << '"';
     }
@@ -219,7 +201,7 @@ std::ostream& operator<<(std::ostream& out, Node& ast) {
       out << '{';
       PrintField(false, "class", "Field");
       PrintField(true, "identifier_list", ast->identifier_list);
-      PrintField(true, "type", ast->type);
+      PrintField(true, "type_literal", ast->type_literal);
       PrintField(true, "tag", ast->tag);
       out << '}';
     }
@@ -260,19 +242,19 @@ std::ostream& operator<<(std::ostream& out, Node& ast) {
       PrintField(false, "class", "ParameterDecl");
       PrintField(true, "optional_identifier_list", ast->identifier_list);
       PrintField(true, "variadic", ast->variadic);
-      PrintField(true, "type", ast->type);
+      PrintField(true, "type_literal", ast->type_literal);
       out << '}';
     }
     void Visit(Literal* ast) {
       out << '{';
       PrintField(false, "class", "Literal");
-      PrintField(true, "value", ast->value);
+      PrintField(true, "in_value", ast->in_value());
       out << '}';
     }
     void Visit(CompositeLiteral* ast) {
       out << '{';
       PrintField(false, "class", "CompositeLiteral");
-      PrintField(true, "type", ast->type);
+      PrintField(true, "type_literal", ast->type_literal);
       PrintField(true, "value", ast->value);
       out << '}';
     }
@@ -286,7 +268,7 @@ std::ostream& operator<<(std::ostream& out, Node& ast) {
     void Visit(FunctionLiteral* ast) {
       out << '{';
       PrintField(false, "class", "FunctionLiteral");
-      PrintField(true, "type", ast->type);
+      PrintField(true, "type_literal", ast->type_literal);
       PrintField(true, "body", ast->body);
       out << '}';
     }
@@ -300,7 +282,7 @@ std::ostream& operator<<(std::ostream& out, Node& ast) {
       out << '{';
       PrintField(false, "class", "ConstSpec");
       PrintField(true, "identifier_list", ast->identifier_list);
-      PrintField(true, "optional_type", ast->optional_type);
+      PrintField(true, "optional_type_literal", ast->optional_type_literal);
       PrintField(true, "expression_list", ast->expression_list);
       out << '}';
     }
@@ -308,7 +290,7 @@ std::ostream& operator<<(std::ostream& out, Node& ast) {
       out << '{';
       PrintField(false, "class", "TypeSpec");
       PrintField(true, "identifier", ast->identifier);
-      PrintField(true, "type", ast->type);
+      PrintField(true, "type_literal", ast->type_literal);
       PrintField(true, "is_alias", ast->is_alias);
       out << '}';
     }
@@ -316,7 +298,7 @@ std::ostream& operator<<(std::ostream& out, Node& ast) {
       out << '{';
       PrintField(false, "class", "VarSpec");
       PrintField(true, "identifier_list", ast->identifier_list);
-      PrintField(true, "optional_type", ast->optional_type);
+      PrintField(true, "optional_type_literal", ast->optional_type_literal);
       PrintField(true, "optional_expression_list", ast->expression_list);
       out << '}';
     }
@@ -341,7 +323,7 @@ std::ostream& operator<<(std::ostream& out, Node& ast) {
       out << '{';
       PrintField(false, "class", "TypeAssertion");
       PrintField(true, "operand", ast->operand);
-      PrintField(true, "type", ast->type);
+      PrintField(true, "type_literal", ast->type_literal);
       out << '}';
     }
     void Visit(Selector* ast) {

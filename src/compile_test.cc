@@ -21,76 +21,45 @@ namespace test {
 
 TEST_CASE("compile()") {
   std::stringstream ss;
-  Paths sp;
-  sp.push_back(UNIT_TEST_DIR "/src");
-  PackageCache pc;
   ErrorReporter er0(ss, 0, &abort_handler);
   ErrorReporter er1(ss, 1, &abort_handler);
-  ImportLocations il;
+  Paths paths;
 
   SECTION("a simple package") {
-    il.push_back(ImportLocation("import_alpha", location));
-    Package* p = Compile(&il, sp, &pc, &er1, ss);
-    REQUIRE(p->IsChanged());
-    REQUIRE(p->import_path == "import_alpha");
+    Package* p = Compile(UNIT_TEST_DIR "/src/import_alpha", &paths, &er1, ss);
+    REQUIRE(p != NULL);
     REQUIRE(p->name() == "import_alpha");
-    Package* p2 = Compile(&il, sp, &pc, &er1, ss);
-    REQUIRE(p2 == p);
   }
 
   SECTION("a package that imports another package") {
-    il.push_back(ImportLocation("import_beta", location));
-    Package* p = Compile(&il, sp, &pc, &er0, ss);
-    Package* p2 = pc.Find("import_alpha");
-    REQUIRE(p2 != NULL);
-  }
-
-  SECTION("a package that does not exist") {
-    il.push_back(
-        ImportLocation("does_not_exist", location));
-    Package* p = Compile(&il, sp, &pc, &er0, ss);
-    REQUIRE(p->IsError());
-    REQUIRE(er0.At(0) == std::string(CouldNotFindPackage(
-        ImportLocation("does_not_exist", location))));
+    Package* p = Compile(UNIT_TEST_DIR "/src/import_beta", &paths, &er0, ss);
+    Package::ImportsType::const_iterator pos = p->imports.find("import_alpha");
+    REQUIRE(pos != p->imports.end());
   }
 
   SECTION("a package with conflicting package names") {
-    il.push_back(ImportLocation("package_mismatch", location));
-    Package* p = Compile(&il, sp, &pc, &er0, ss);
-    REQUIRE(p->IsError());
+    Package* p = Compile(UNIT_TEST_DIR "/src/package_mismatch", &paths, &er0, ss);
     REQUIRE(er0.At(0) == std::string(PackageMismatch(
         Location::Make(UNIT_TEST_DIR "/src/package_mismatch/b.rcgo", 1),
         "package_mismatch", "not_package_mismatch")));
   }
 
 #define RECURSIVE_IMPORT_ALPHA UNIT_TEST_DIR \
-      "/src/recursive_import_alpha/recursive_import_alpha.rcgo"
+      "/src/recursive_import_alpha"
 #define RECURSIVE_IMPORT_BETA UNIT_TEST_DIR \
-      "/src/recursive_import_beta/recursive_import_beta.rcgo"
+      "/src/recursive_import_beta"
 
   SECTION("a package that recursively imports itself") {
-    il.push_back(
-        ImportLocation("recursive_import_alpha", location));
-    Package* p = Compile(&il, sp, &pc, &er0, ss);
-    {
-      const Location loc = Location::Make(RECURSIVE_IMPORT_ALPHA, 3);
-      il.push_back(ImportLocation("recursive_import_beta", loc));
-    }
-    {
-      const Location loc = Location::Make(RECURSIVE_IMPORT_BETA, 3);
-      il.push_back(ImportLocation("recursive_import_alpha", loc));
-    }
+    Package* p = Compile(RECURSIVE_IMPORT_ALPHA, &paths, &er0, ss);
+    paths.push_back(RECURSIVE_IMPORT_ALPHA);
+    paths.push_back(RECURSIVE_IMPORT_BETA);
 
-    REQUIRE(p->IsError());
-    REQUIRE(er0.At(0) == std::string(RecursiveImport(il)));
+    REQUIRE(er0.At(0) == std::string(RecursiveImport(paths, RECURSIVE_IMPORT_ALPHA)));
   }
 
   SECTION("a package that has no files") {
-    il.push_back(ImportLocation("no_files", location));
-    Package* p = Compile(&il, sp, &pc, &er0, ss);
-    REQUIRE(p->IsError());
-    REQUIRE(er0.At(0) == std::string(NoFiles(
-        ImportLocation("no_files", location), UNIT_TEST_DIR "/src/no_files")));
+    Package* p = Compile(UNIT_TEST_DIR "/src/no_files", &paths, &er0, ss);
+    REQUIRE(er0.At(0) == std::string(NoFiles(UNIT_TEST_DIR "/src/no_files")));
   }
 }
 

@@ -13,13 +13,15 @@
 
 namespace rcgo {
 
-void PopulatePackageBlock(const ast::SourceFiles& source_files,
-                          Block* package_block, ErrorReporter* error_reporter) {
+void PopulatePackageBlock(
+    const ast::SourceFiles& source_files, MutableBlock* package_block,
+    ErrorReporter* error_reporter) {
   struct PackageBlockVisitor : public ast::DefaultNodeVisitor {
-    PackageBlockVisitor(Block* a_package_block, ErrorReporter* a_error_reporter)
+    PackageBlockVisitor(
+        MutableBlock* a_package_block, ErrorReporter* a_error_reporter)
         : package_block(a_package_block) , error_reporter(a_error_reporter) { }
 
-    Block* package_block;
+    MutableBlock* package_block;
     ErrorReporter* error_reporter;
 
     void DefaultAction(ast::Node* ast) override { abort(); /* NOT_COVERED */ }
@@ -32,10 +34,10 @@ void PopulatePackageBlock(const ast::SourceFiles& source_files,
       for (ast::Node* node : ast->identifier_list) {
         ast::Identifier* identifier = ast::Cast<ast::Identifier>(node);
         assert(identifier != NULL);
-        ConstantSymbol* cs = new ConstantSymbol(
-            identifier->identifier, identifier->location,
-            package_block->GetPackage(), ast);
-        InsertSymbol(package_block, cs, error_reporter);
+        symbol::Constant* symbol = package_block->MakeConstant(
+            identifier->identifier, identifier->location, ast);
+        InsertSymbol(package_block, symbol, error_reporter);
+        ast->constants.push_back(symbol);
       }
     }
 
@@ -46,30 +48,30 @@ void PopulatePackageBlock(const ast::SourceFiles& source_files,
     void Visit(ast::TypeSpec* ast) override {
       ast::Identifier* identifier = ast::Cast<ast::Identifier>(ast->identifier);
       assert(identifier != NULL);
-      TypeSymbol* ts = new TypeSymbol(
-          identifier->identifier, identifier->location,
-          package_block->GetPackage(), ast);
-      InsertSymbol(package_block, ts, error_reporter);
+      symbol::Type* symbol = package_block->MakeType(
+          identifier->identifier, identifier->location, ast);
+      InsertSymbol(package_block, symbol, error_reporter);
+      ast->type = symbol;
     }
 
     void Visit(ast::VarSpec* ast) override {
       for (ast::Node* node : ast->identifier_list) {
         ast::Identifier* identifier = ast::Cast<ast::Identifier>(node);
         assert(identifier != NULL);
-        VariableSymbol* vs = new VariableSymbol(
-            identifier->identifier, identifier->location,
-            package_block->GetPackage(), ast);
-        InsertSymbol(package_block, vs, error_reporter);
+        symbol::Variable* symbol = package_block->MakeVariable(
+            identifier->identifier, identifier->location, ast);
+        InsertSymbol(package_block, symbol, error_reporter);
+        ast->variables.push_back(symbol);
       }
     }
 
     void Visit(ast::FuncDecl* ast) override {
       ast::Identifier* identifier = ast::Cast<ast::Identifier>(ast->identifier);
       assert(identifier != NULL);
-      FunctionSymbol* fs = new FunctionSymbol(
-          identifier->identifier, identifier->location,
-          package_block->GetPackage(), ast);
-      InsertSymbol(package_block, fs, error_reporter);
+      symbol::Function* symbol = package_block->MakeFunction(
+          identifier->identifier, identifier->location, ast);
+      InsertSymbol(package_block, symbol, error_reporter);
+      ast->function = symbol;
     }
   };
 

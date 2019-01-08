@@ -14,12 +14,12 @@
 
 namespace rcgo {
 
-Symbol* ProcessQualifiedIdentifier(ast::Node* ast, const Block& block,
+symbol::Symbol* ProcessQualifiedIdentifier(ast::Node* ast, const Block& block,
                                    ErrorReporter* error_reporter) {
   struct Visitor : public ast::DefaultNodeVisitor {
     const Block& block;
     ErrorReporter* error_reporter;
-    Symbol* symbol;
+    symbol::Symbol* symbol;
 
     Visitor(const Block& a_block, ErrorReporter* a_error_reporter)
         : block(a_block), error_reporter(a_error_reporter), symbol(NULL) {}
@@ -39,7 +39,7 @@ Symbol* ProcessQualifiedIdentifier(ast::Node* ast, const Block& block,
         symbol = NULL;
         return;
       }
-      PackageSymbol* package = symbol_cast<PackageSymbol>(symbol);
+      symbol::Package* package = symbol::Cast<symbol::Package>(symbol);
       if (package == NULL) {
         error_reporter->Insert(
             DoesNotReferToAPackage(p->location, p->identifier));
@@ -47,7 +47,7 @@ Symbol* ProcessQualifiedIdentifier(ast::Node* ast, const Block& block,
         return;
       }
 
-      if (!IsExported(m->identifier)) {
+      if (!symbol::IsExported(m->identifier)) {
         error_reporter->Insert(IsNotExported(m->location, m->identifier));
         symbol = NULL;
         return;

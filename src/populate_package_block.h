@@ -9,7 +9,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "src/ast.h"
-#include "src/symbol_table.h"
+#include "src/block.h"
 #include "src/error_reporter.h"
 
 namespace rcgo {
@@ -17,7 +17,7 @@ namespace rcgo {
 // Enters the package-level symbols of source_files into
 // package_block.
 void PopulatePackageBlock(const ast::SourceFiles& source_files,
-                          Block* package_block,
+                          MutableBlock* package_block,
                           ErrorReporter* error_reporter);
 
 }  // namespace rcgo

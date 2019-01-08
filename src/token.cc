@@ -93,7 +93,7 @@ Token Token::MakeIdentifier(const Location& location, const std::string& s) {
   return t;
 }
 
-Token Token::MakeLiteral(const Location& location, const Value& a_value) {
+Token Token::MakeLiteral(const Location& location, const value::Value& a_value) {
   Token t;
   t.m_location = location;
   t.m_kind = kLiteral;
@@ -202,7 +202,7 @@ const std::string& Token::identifier() const {
   return m_identifier;
 }
 
-const Value& Token::value() const {
+const value::Value& Token::value() const {
   assert(m_kind == kLiteral);
   return m_value;
 }

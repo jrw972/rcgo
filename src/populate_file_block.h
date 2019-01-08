@@ -9,16 +9,16 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "src/ast.h"
+#include "src/block.h"
 #include "src/error_reporter.h"
 #include "src/package.h"
-#include "src/symbol_table.h"
 
 namespace rcgo {
 
 // Populates file_block by processing the import declarations in source_file.
-void PopulateFileBlock(ast::Node* source_file, Block* file_block,
-                       PackageCache* package_cache,
-                       ErrorReporter* error_reporter);
+void PopulateFileBlock(
+    ast::Node* source_file, MutableBlock* file_block, Package* package,
+    ErrorReporter* error_reporter);
 
 }  // namespace rcgo
 

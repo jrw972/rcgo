@@ -9,6 +9,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <string>
 #include <utility>
 
 #include "src/symbol.h"
@@ -132,20 +133,20 @@ Factory::~Factory() {
   }
 }
 
-Function* Factory::MakeFunction() {
-  Function* t = new Function();
+Function* Factory::MakeFunction(const Package* a_package) {
+  Function* t = new Function(a_package);
   m_list.push_back(t);
   return t;
 }
 
-Interface* Factory::MakeInterface() {
-  Interface* t = new Interface();
+Interface* Factory::MakeInterface(const Package* a_package) {
+  Interface* t = new Interface(a_package);
   m_list.push_back(t);
   return t;
 }
 
-Struct* Factory::MakeStruct() {
-  Struct* t = new Struct();
+Struct* Factory::MakeStruct(const Package* a_package) {
+  Struct* t = new Struct(a_package);
   m_list.push_back(t);
   return t;
 }
@@ -164,25 +165,43 @@ Alias* Factory::MakeAlias(const Type* a_type) {
 
 void Function::Accept(Visitor* visitor) const { visitor->Visit(*this); }
 
-Function* Function::AppendParameter(ParameterSymbol* parameter) {
-  assert(!IsVariadic());
-  Insert(parameter);
-  m_parameter_list.push_back(parameter);
-  return this;
+symbol::Parameter* Function::AppendParameter(
+    const std::string& a_identifier, const Location& a_location,
+    const type::Type* a_type, bool a_is_variadic) {
+  symbol::Parameter* p = new symbol::Parameter(
+      a_identifier, a_location, package, a_type, a_is_variadic);
+  PushBack(p);
+  if (!a_identifier.empty()) {
+    Insert(p);
+  }
+  m_parameter_list.push_back(p);
+  return p;
 }
 
-Function* Function::AppendResult(ParameterSymbol* parameter) {
-  Insert(parameter);
-  m_result_list.push_back(parameter);
-  return this;
+symbol::Parameter* Function::AppendResult(
+    const std::string& a_identifier, const Location& a_location,
+    const type::Type* a_type) {
+  symbol::Parameter* p = new symbol::Parameter(
+      a_identifier, a_location, package, a_type, false);
+  PushBack(p);
+  if (!a_identifier.empty()) {
+    Insert(p);
+  }
+  m_result_list.push_back(p);
+  return p;
 }
 
 void Interface::Accept(Visitor* visitor) const { visitor->Visit(*this); }
 
-Interface* Interface::AppendMethod(InterfaceMethodSymbol* method) {
-  Insert(method);
-  m_method_list.push_back(method);
-  return this;
+symbol::InterfaceMethod* Interface::AppendMethod(
+    const std::string& a_identifier, const Location& a_location,
+    const type::Function* a_type) {
+  symbol::InterfaceMethod* im = new symbol::InterfaceMethod(a_identifier, a_location, package, a_type);
+  PushBack(im);
+  Insert(im);
+  // TODO(jrw972): Do we need m_method_list?
+  m_method_list.push_back(im);
+  return im;
 }
 
 void Map::Accept(Visitor* visitor) const { visitor->Visit(*this); }
@@ -193,10 +212,15 @@ void Slice::Accept(Visitor* visitor) const { visitor->Visit(*this); }
 
 void Struct::Accept(Visitor* visitor) const { visitor->Visit(*this); }
 
-Struct* Struct::AppendField(FieldSymbol* field) {
-  Insert(field);
-  m_field_list.push_back(field);
-  return this;
+symbol::Field* Struct::AppendField(
+      const std::string& a_identifier, const Location& a_location,
+      const type::Type* a_type, const std::string& a_tag, bool a_is_embedded) {
+  symbol::Field* f = new symbol::Field(a_identifier, a_location, package, a_type, a_tag, a_is_embedded);
+  PushBack(f);
+  Insert(f);
+  // TODO(jrw972):  Do we need m_field_list?
+  m_field_list.push_back(f);
+  return f;
 }
 
 void DefinedType::Accept(Visitor* visitor) const { visitor->Visit(*this); }
@@ -287,8 +311,8 @@ bool Identical(const Type* x, const Type* y) {
       for (Struct::const_field_iterator xpos = xu->FieldBegin(),
                ypos = yu->FieldBegin(), limit = xu->FieldEnd(); xpos != limit;
            ++xpos, ++ypos) {
-        const FieldSymbol* xfield = *xpos;
-        const FieldSymbol* yfield = *ypos;
+        const symbol::Field* xfield = *xpos;
+        const symbol::Field* yfield = *ypos;
         if (xfield->identifier != yfield->identifier ||
             Different(xfield->type, yfield->type) ||
             xfield->tag != yfield->tag) {
@@ -323,8 +347,8 @@ bool Identical(const Type* x, const Type* y) {
       for (Function::const_parameter_iterator xpos = xu->ParameterBegin(),
                ypos = yu->ParameterBegin(), limit = xu->ParameterEnd();
            xpos != limit; ++xpos, ++ypos) {
-        const ParameterSymbol* xparam = *xpos;
-        const ParameterSymbol* yparam = *ypos;
+        const symbol::Parameter* xparam = *xpos;
+        const symbol::Parameter* yparam = *ypos;
         if (Different(xparam->type, yparam->type)) {
           return;
         }
@@ -333,8 +357,8 @@ bool Identical(const Type* x, const Type* y) {
       for (Function::const_parameter_iterator xpos = xu->ResultBegin(),
                ypos = yu->ResultBegin(), limit = xu->ResultEnd();
            xpos != limit; ++xpos, ++ypos) {
-        const ParameterSymbol* xparam = *xpos;
-        const ParameterSymbol* yparam = *ypos;
+        const symbol::Parameter* xparam = *xpos;
+        const symbol::Parameter* yparam = *ypos;
         if (Different(xparam->type, yparam->type)) {
           return;
         }
@@ -360,8 +384,8 @@ bool Identical(const Type* x, const Type* y) {
       for (Interface::const_method_iterator xpos = xu->MethodBegin(),
                ypos = yu->MethodBegin(), limit = xu->MethodEnd();
            xpos != limit; ++xpos, ++ypos) {
-        const InterfaceMethodSymbol* xmethod = *xpos;
-        const InterfaceMethodSymbol* ymethod = *ypos;
+        const symbol::InterfaceMethod* xmethod = *xpos;
+        const symbol::InterfaceMethod* ymethod = *ypos;
         if (xmethod->identifier != ymethod->identifier ||
             Different(xmethod->type, ymethod->type)) {
           return;
@@ -415,7 +439,7 @@ bool Comparable(const Type* x) {
       for (Struct::const_field_iterator pos = type.FieldBegin(),
                limit = type.FieldEnd();
            pos != limit; ++pos) {
-        const FieldSymbol* field = *pos;
+        const symbol::Field* field = *pos;
         if (!Comparable(field->type)) {
           return;
         }

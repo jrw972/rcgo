@@ -11,50 +11,53 @@
 #include "src/utf8.h"
 
 namespace rcgo {
+namespace symbol {
 
 bool IsExported(const std::string& id) {
   return IsUnicodeUpper(FirstRune(id));
 }
 
-void ConstantSymbol::Accept(SymbolVisitor* visitor) { visitor->visit(this); }
+void Constant::Accept(Visitor* visitor) { visitor->Visit(this); }
 
-void ConstantSymbol::value(const Value& a_value) {
-  assert(m_value.kind == Value::kUnknown);
-  assert(a_value.kind != Value::kUnknown);
-  m_value = a_value;
-  MakeDefined();
+void Constant::value(const value::Value& a_value) {
+  MakeDefined(a_value);
 }
 
-void TypeSymbol::Accept(SymbolVisitor* visitor) { visitor->visit(this); }
+void Type::Accept(Visitor* visitor) { visitor->Visit(this); }
 
-void TypeSymbol::type(const type::NamedType* a_type) {
-  assert(m_type == NULL);
-  assert(a_type != NULL);
+void Type::type(const type::NamedType* a_type) {
+  assert(m_type == nullptr);
+  assert(a_type != nullptr);
   m_type = a_type;
-  MakeDefined();
+  MakeDefined(value::Value::MakeType(a_type));
 }
 
-void VariableSymbol::Accept(SymbolVisitor* visitor) { visitor->visit(this); }
+void Variable::Accept(Visitor* visitor) { visitor->Visit(this); }
 
-void FunctionSymbol::Accept(SymbolVisitor* visitor) { visitor->visit(this); }
+void Function::Accept(Visitor* visitor) { visitor->Visit(this); }
 
-void FunctionSymbol::type(const type::Function* a_type) {
-  assert(m_type == NULL);
-  assert(a_type != NULL);
+void Function::type(const type::Function* a_type) {
+  assert(m_type == nullptr);
+  assert(a_type != nullptr);
   m_type = a_type;
-  MakeDefined();
+  MakeDefined(value::Value::MakeLValue(a_type));
 }
 
-void ImportedSymbol::Accept(SymbolVisitor* visitor) { visitor->visit(this); }
+void Package::Accept(Visitor* visitor) { visitor->Visit(this); }
 
-void PackageSymbol::Accept(SymbolVisitor* visitor) { visitor->visit(this); }
+void Field::Accept(Visitor* visitor) { visitor->Visit(this); }
 
-void FieldSymbol::Accept(SymbolVisitor* visitor) { visitor->visit(this); }
+void Parameter::Accept(Visitor* visitor) { visitor->Visit(this); }
 
-void ParameterSymbol::Accept(SymbolVisitor* visitor) { visitor->visit(this); }
-
-void InterfaceMethodSymbol::Accept(SymbolVisitor* visitor) {
-  visitor->visit(this);
+void InterfaceMethod::Accept(Visitor* visitor) {
+  visitor->Visit(this);
 }
 
+symbol::Symbol* Table::Find(const std::string& identifier) const {
+  MapType::const_iterator pos = m_map.find(identifier);
+  if (pos != m_map.end()) return pos->second;
+  return nullptr;
+}
+
+}  // namespace symbol
 }  // namespace rcgo

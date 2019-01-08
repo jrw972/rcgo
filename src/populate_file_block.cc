@@ -7,24 +7,26 @@
 
 #include "src/populate_file_block.h"
 
+#include <iostream>
+
 #include "src/insert_symbol.h"
 
 namespace rcgo {
 
 void
-PopulateFileBlock(ast::Node* source_file, Block* file_block,
-                  PackageCache* package_cache, ErrorReporter* error_reporter) {
+PopulateFileBlock(
+    ast::Node* source_file, MutableBlock* file_block, Package* package,
+    ErrorReporter* error_reporter) {
   struct FileBlockVisitor : public ast::DefaultNodeVisitor {
-    FileBlockVisitor(PackageCache* a_package_cache,
-                      Block* a_file_block,
-                      ErrorReporter* a_error_reporter)
-        : package_cache(a_package_cache)
+    FileBlockVisitor(Package* a_package, MutableBlock* a_file_block,
+                     ErrorReporter* a_error_reporter)
+        : package(a_package)
         , file_block(a_file_block)
         , error_reporter(a_error_reporter)
     { }
 
-    PackageCache* package_cache;
-    Block* file_block;
+    Package* package;
+    MutableBlock* file_block;
     ErrorReporter* error_reporter;
 
     void DefaultAction(ast::Node* ast) override { abort(); /* NOT_COVERED */ }
@@ -36,40 +38,41 @@ PopulateFileBlock(ast::Node* source_file, Block* file_block,
     void Visit(ast::ImportSpec* ast) override {
       // Find the package.
       // TODO(jrw972):  These cannot conflict with the package block.
-      Package* p = package_cache->Find(ast->import_path);
-      if (p != NULL) {
+      Package::ImportsType::const_iterator pos =
+          package->imports.find(ast->import_path);
+      if (pos != package->imports.end()) {
+        Package* p = pos->second;
+
         if (ast->dot) {
           // Copy exported symbols of the package into the file block.
-          for (SymbolTable::const_iterator pos = p->Begin(), limit = p->End();
+          for (symbol::Table::const_iterator pos = p->Begin(), limit = p->End();
                pos != limit; ++pos) {
-            Symbol* s = pos->second;
+            symbol::Symbol* s = pos->second;
             if (s->exported) {
-              ImportedSymbol* is =
-                  new ImportedSymbol(pos->first, ast->location,
-                                     file_block->GetPackage(), s);
-              InsertSymbol(file_block, is, error_reporter);
+              InsertSymbol(file_block, s, error_reporter);
             }
           }
-        } else if (ast->optional_identifier != NULL) {
+        } else if (ast->optional_identifier != nullptr) {
           // Add the package using the given identifier.
           ast::Identifier* identifier =
               ast::Cast<ast::Identifier>(ast->optional_identifier);
-          PackageSymbol* ps =
-              new PackageSymbol(identifier->identifier, ast->location,
-                                file_block->GetPackage(), p);
+          symbol::Package* ps = file_block->MakePackage(
+              identifier->identifier, ast->location, p);
           InsertSymbol(file_block, ps, error_reporter);
         } else {
           // Add the package using its identifier.
-          PackageSymbol* ps =
-              new PackageSymbol(p->name(), ast->location,
-                                file_block->GetPackage(), p);
+          symbol::Package* ps = file_block->MakePackage(
+              p->name(), ast->location, p);
           InsertSymbol(file_block, ps, error_reporter);
         }
+      } else {
+        // TODO(jrw972): Importing something that was not in config.yaml.
+        std::cout << "TODO:  Import " << ast->import_path << " not in config of " << package->path << std::endl;
       }
     }
   };
 
-  FileBlockVisitor visitor(package_cache, file_block, error_reporter);
+  FileBlockVisitor visitor(package, file_block, error_reporter);
   source_file->Accept(&visitor);
 }
 

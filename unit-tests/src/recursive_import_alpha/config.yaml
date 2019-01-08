@@ -1,0 +1,2 @@
+imports:
+  recursive_import_beta: ../unit-tests/src/recursive_import_beta

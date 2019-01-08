@@ -13,10 +13,9 @@
 
 namespace rcgo {
 
-// Compiles the package that is the last in import_locations.
-Package* Compile(ImportLocations* import_locations, const Paths& search_paths,
-                 PackageCache* package_cache, ErrorReporter* error_reporter,
-                 std::ostream& out);
+// Compiles the package that is last in import_locations.
+Package* Compile(
+    const Path& path, Paths* path_list, ErrorReporter* error_reporter, std::ostream& out);
 
 }  // namespace rcgo
 

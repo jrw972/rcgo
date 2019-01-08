@@ -26,12 +26,6 @@ void Perror::Print(std::ostream& out) const {
   out << prefix << ": " << m << std::endl;
 }
 
-void CouldNotFindPackage::Print(std::ostream& out) const {
-  out << import_location.location
-      << ": error: Could not find package for path \""
-      << import_location.import_path << "\"" << std::endl;
-}
-
 void PackageMismatch::Print(std::ostream& out) const {
   out << location << ": error: expected package " << expected_package
       << " but found " << package << std::endl;
@@ -39,21 +33,18 @@ void PackageMismatch::Print(std::ostream& out) const {
 
 void RecursiveImport::Print(std::ostream& out) const {
   // The last import_path is the problem.
-  const std::string& problem_import_path = import_locations.back().import_path;
-  out << import_locations.back().location << ": error: recursive import of \""
-      << problem_import_path << "\" detected.  Import chain to follow:"
+  out << "error: recursive import of \""
+      << path << "\" detected.  Import chain to follow:"
       << std::endl;
 
-  for (ImportLocations::const_iterator pos = import_locations.begin(),
-           limit = import_locations.end(); pos != limit; ++pos) {
-    char m =(pos->import_path == problem_import_path) ? '*' : ' ';
-    out << pos->location << " imports \"" << pos->import_path << "\" " << m
-        << std::endl;
+  for (const auto& p : path_list) {
+    out << p << ((p == path) ? " *" : "") << std::endl;
   }
+  out << path << " *" << std::endl;
 }
 
 void NoFiles::Print(std::ostream& out) const {
-  out << import_location.location << ": error: "
+  out << "error: "
       << package_source_directory_path << " contains no files" << std::endl;
 }
 
@@ -250,6 +241,18 @@ void StrayRune::Print(std::ostream& out) const {
 
 void UnterminatedGeneralComment::Print(std::ostream& out) const {
   out << location << ": error: unterminated comment" << std::endl;
+}
+
+void CannotApply::Print(std::ostream& out) const {
+  out << location << ": error: cannot apply '" << operator_ << "' to " << value << std::endl;
+}
+
+void CannotApply2::Print(std::ostream& out) const {
+  out << location << ": error: cannot apply '" << operator_ << "' to " << value1 << " and " << value2 << std::endl;
+}
+
+void DivisionByZero::Print(std::ostream& out) const {
+  out << location << ": error: division by zero" << std::endl;
 }
 
 }  // namespace rcgo

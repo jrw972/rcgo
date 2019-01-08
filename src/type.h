@@ -9,9 +9,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include <map>
+#include <string>
 #include <vector>
 
-#include "src/symbol_table.h"
+#include "src/symbol.h"
 
 namespace rcgo {
 namespace type {
@@ -242,12 +243,14 @@ struct Slice : public Type {
   friend struct Type;
 };
 
-struct Function : public Type, public SymbolTable {
-  typedef std::vector<const ParameterSymbol*> ParameterList;
+struct Function : public Type, public symbol::Table {
+  typedef std::vector<const symbol::Parameter*> ParameterList;
   typedef ParameterList::const_iterator const_parameter_iterator;
 
   void Accept(Visitor* visitor) const override;
-  Function* AppendParameter(ParameterSymbol* parameter);
+  symbol::Parameter* AppendParameter(
+      const std::string& a_identifier, const Location& a_location,
+      const type::Type* a_type, bool a_is_variadic);
   size_t ParameterCount() const { return m_parameter_list.size(); }
   const_parameter_iterator ParameterBegin() const {
     return m_parameter_list.begin();
@@ -255,7 +258,9 @@ struct Function : public Type, public SymbolTable {
   const_parameter_iterator ParameterEnd() const {
     return m_parameter_list.end();
   }
-  Function* AppendResult(ParameterSymbol* parameter);
+  symbol::Parameter* AppendResult(
+      const std::string& a_identifier, const Location& a_location,
+      const type::Type* a_type);
   size_t ResultCount() const { return m_result_list.size(); }
   const_parameter_iterator ResultBegin() const { return m_result_list.begin(); }
   const_parameter_iterator ResultEnd() const { return m_result_list.end(); }
@@ -264,7 +269,7 @@ struct Function : public Type, public SymbolTable {
   }
 
  private:
-  Function() {}
+  explicit Function(const Package* a_package) : symbol::Table(a_package) {}
   ~Function() {}
   friend Factory;
 
@@ -272,34 +277,38 @@ struct Function : public Type, public SymbolTable {
   ParameterList m_result_list;
 };
 
-struct Interface : public Type, public SymbolTable {
-  typedef std::vector<const InterfaceMethodSymbol*> MethodList;
+struct Interface : public Type, public symbol::Table {
+  typedef std::vector<const symbol::InterfaceMethod*> MethodList;
   typedef MethodList::const_iterator const_method_iterator;
 
   void Accept(Visitor* visitor) const override;
-  Interface* AppendMethod(InterfaceMethodSymbol* method);
+  symbol::InterfaceMethod* AppendMethod(
+      const std::string& a_identifier, const Location& a_location,
+      const type::Function* a_type);
   size_t MethodCount() const { return m_method_list.size(); }
   const_method_iterator MethodBegin() const { return m_method_list.begin(); }
   const_method_iterator MethodEnd() const { return m_method_list.end(); }
  private:
-  Interface() {}
+  explicit Interface(const Package* a_package) : symbol::Table(a_package) {}
   ~Interface() {}
   friend Factory;
 
   MethodList m_method_list;
 };
 
-struct Struct : public Type, public SymbolTable {
-  typedef std::vector<const FieldSymbol*> FieldList;
+struct Struct : public Type, public symbol::Table {
+  typedef std::vector<const symbol::Field*> FieldList;
   typedef FieldList::const_iterator const_field_iterator;
 
   void Accept(Visitor* visitor) const override;
-  Struct* AppendField(FieldSymbol* field);
+  symbol::Field* AppendField(
+      const std::string& a_identifier, const Location& a_location,
+      const type::Type* a_type, const std::string& a_tag, bool a_is_embedded);
   size_t FieldCount() const { return m_field_list.size(); }
   const_field_iterator FieldBegin() const { return m_field_list.begin(); }
   const_field_iterator FieldEnd() const { return m_field_list.end(); }
  private:
-  Struct() {}
+  explicit Struct(const Package* a_package) : symbol::Table(a_package) {}
   ~Struct() {}
   friend Factory;
 
@@ -340,9 +349,9 @@ struct Alias : public NamedType {
 
 struct Factory {
   ~Factory();
-  Function* MakeFunction();
-  Interface* MakeInterface();
-  Struct* MakeStruct();
+  Function* MakeFunction(const Package* a_package);
+  Interface* MakeInterface(const Package* a_package);
+  Struct* MakeStruct(const Package* a_package);
   DefinedType* MakeDefinedType(const Type* a_type);
   Alias* MakeAlias(const Type* a_type);
 

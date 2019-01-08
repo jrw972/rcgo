@@ -9,9 +9,9 @@
 
 namespace rcgo {
 
-void InsertSymbol(Block* block, Symbol* symbol,
+void InsertSymbol(MutableBlock* block, symbol::Symbol* symbol,
                   ErrorReporter* error_reporter) {
-  Symbol* s = block->FindLocalSymbol(symbol->identifier);
+  symbol::Symbol* s = block->FindLocalSymbol(symbol->identifier);
   if (s == NULL) {
     block->Insert(symbol);
   } else {

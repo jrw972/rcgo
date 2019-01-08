@@ -7,7 +7,7 @@ AM_CXXFLAGS = -std=gnu++11 -I $(top_srcdir)/src
 
 # Executables
 bin_PROGRAMS = rcgo
-rcgo_SOURCES = src/main.cc
+rcgo_SOURCES = src/rcgo.cc
 rcgo_LDADD = librcgo.la
 rcgo_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
 rcgo_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
@@ -15,16 +15,18 @@ rcgo_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)
 # Libraries
 noinst_LTLIBRARIES = librcgo.la
 librcgo_la_SOURCES = \
+src/argument_parser.h src/argument_parser.cc \
+src/argument_scanner.h \
 src/ast.h src/ast.cc \
+src/block.h src/block.cc \
 src/byte_stream.h src/byte_stream.cc \
+src/check_types.h src/check_types.cc \
 src/compile.h src/compile.cc \
 src/define_symbol.h src/define_symbol.cc \
 src/define_symbols.h src/define_symbols.cc \
 src/digit_table.cc \
-src/enter_predeclared_symbols.h src/enter_predeclared_symbols.cc \
 src/error.h src/error.cc \
 src/error_reporter.h src/error_reporter.cc \
-src/evaluate_constant_expression.h src/evaluate_constant_expression.cc \
 src/get_and_check_package_name.h src/get_and_check_package_name.cc \
 src/get_import_locations.h src/get_import_locations.cc \
 src/import_location.h \
@@ -36,11 +38,11 @@ src/parser.h src/parser.cc \
 src/paths.h src/paths.cc \
 src/populate_file_block.h src/populate_file_block.cc \
 src/populate_package_block.h src/populate_package_block.cc \
+src/populate_universe_block.h src/populate_universe_block.cc \
 src/process_qualified_identifier.h src/process_qualified_identifier.cc \
 src/process_type.h src/process_type.cc \
 src/scanner.h src/scanner.cc \
 src/symbol.h src/symbol.cc \
-src/symbol_table.h src/symbol_table.cc \
 src/token.h src/token.cc \
 src/type.h src/type.cc \
 src/upper_table.cc \
@@ -54,18 +56,18 @@ LOG_DRIVER = $(SHELL) $(top_srcdir)/build-aux/catch-driver.sh
 
 unit_tests_SOURCES = \
 src/ast_test.cc \
+src/block_test.cc \
 src/byte_stream_test.cc \
 src/catch.hpp \
 src/compile_test.cc \
-src/enter_predeclared_symbols_test.cc \
 src/error_reporter_test.cc \
 src/error_test.cc \
 src/import_location_test.cc \
 src/location_test.cc \
 src/package_test.cc \
 src/parser_test.cc \
+src/populate_universe_block_test.cc \
 src/scanner_test.cc \
-src/symbol_table_test.cc \
 src/symbol_test.cc \
 src/test_helpers.h \
 src/token_test.cc \

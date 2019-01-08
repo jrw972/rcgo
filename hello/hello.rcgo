@@ -1,0 +1,5 @@
+package main
+
+func init() {
+	print("Hello\n")
+}

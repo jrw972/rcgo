@@ -14,55 +14,44 @@
 #include <utility>
 
 #include "src/symbol.h"
-#include "src/symbol_table.h"
+#include "src/block.h"
+#include "yaml-cpp/yaml.h"
 
 namespace rcgo {
 
-struct Package : public SymbolTable {  // NOT_COVERED
-  explicit Package(const std::string& a_import_path)
-      : import_path(a_import_path), m_state(kNew) {}
+struct Version {
+  enum Kind {
+    kSemantic,
+    kUnversioned
+  };
 
-  bool IsNew() const { return m_state == kNew; }
-  void Changed() { assert(IsNew()); m_state = kChanged; }
-  bool IsChanged() const { return m_state == kChanged; }
-  void NotChanged() { assert(IsNew()); m_state = kNotChanged; }
-  bool IsNotChanged() const { return m_state == kNotChanged; }
-  void Error() { assert(IsNew() || IsError()); m_state = kError; }
-  bool IsError() const { return m_state == kError; }
+  explicit Version(Kind a_kind)
+      : kind(a_kind) {}
 
-  std::string const import_path;
+  Kind const kind;
+
+  bool operator> (const Version& other) const {
+    return this->kind > other.kind;
+  }
+};
+
+struct Package : public symbol::Table {
+  // TODO(jrw972): Extract the version from the path.
+  Package(const std::string& a_path, const YAML::Node& a_config)
+      : symbol::Table(this), path(a_path), config(a_config),
+      version(Version::kUnversioned) {}
+
+  std::string const path;
+  YAML::Node const config;
+  Version const version;
+  typedef std::map<std::string, Package*> ImportsType;
+  ImportsType imports;
 
   void name(const std::string& name) { m_name = name; }
   const std::string& name() const { return m_name; }
 
  private:
-  enum State {
-    kNew,
-    kChanged,
-    kNotChanged,
-    kError
-  };
-  State m_state;
   std::string m_name;
-};
-
-struct PackageCache {
-  ~PackageCache() {
-    for (PackageMapType::value_type p : m_package_map) delete p.second;
-  }
-  void Insert(Package* package_archive) {
-    m_package_map.insert(
-        std::make_pair(package_archive->import_path, package_archive));
-  }
-  Package* Find(const std::string& a_path) {
-    PackageMapType::const_iterator pos = m_package_map.find(a_path);
-    if (pos != m_package_map.end()) return pos->second;
-    return NULL;
-  }
-
- private:
-  typedef std::map<std::string, Package*> PackageMapType;
-  PackageMapType m_package_map;
 };
 
 }  // namespace rcgo

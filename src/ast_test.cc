@@ -48,7 +48,7 @@ ACCEPT_TEST(ast::FunctionType, location, new ast::Error(location));
 ACCEPT_TEST(ast::Signature, location, EmptyList(), EmptyList());
 ACCEPT_TEST(ast::ParameterDecl, location, EmptyList(), false,
             new ast::Error(location));
-ACCEPT_TEST(ast::Literal, Token::MakeLiteral(location, Value::MakeString("")));
+ACCEPT_TEST(ast::Literal, Token::MakeLiteral(location, value::Value::MakeString("")));
 ACCEPT_TEST(ast::CompositeLiteral, location, new ast::Error(location),
             new ast::Error(location));
 ACCEPT_TEST(ast::KeyedElement, location, new ast::Error(location),
@@ -149,7 +149,7 @@ PRINT_TEST(ast::EmbeddedField,
            location, false, new ast::Error(location), "x");
 PRINT_TEST(ast::Field,
            "{\"class\":\"Field\",\"identifier_list\":[{\"class\":\"Error\"}],"
-           "\"type\":{\"class\":\"Error\"},\"tag\":\"x\"}",
+           "\"type_literal\":{\"class\":\"Error\"},\"tag\":\"x\"}",
            location, NonEmptyList(), new ast::Error(location), "x");
 PRINT_TEST(ast::AnonymousMethodSpec,
            "{\"class\":\"AnonymousMethodSpec\",\"type_name\":{\"class\":"
@@ -170,13 +170,13 @@ PRINT_TEST(ast::Signature,
            location, EmptyList(), EmptyList());
 PRINT_TEST(ast::ParameterDecl,
            "{\"class\":\"ParameterDecl\",\"optional_identifier_list\":[],"
-           "\"variadic\":\"false\",\"type\":{\"class\":\"Error\"}}",
+           "\"variadic\":\"false\",\"type_literal\":{\"class\":\"Error\"}}",
            location, EmptyList(), false, new ast::Error(location));
 PRINT_TEST(ast::Literal,
-           "{\"class\":\"Literal\",\"value\":\"<value>\"}",
-           Token::MakeLiteral(location, Value::MakeString("x")));
+           "{\"class\":\"Literal\",\"in_value\":\"<value>\"}",
+           Token::MakeLiteral(location, value::Value::MakeString("x")));
 PRINT_TEST(ast::CompositeLiteral,
-           "{\"class\":\"CompositeLiteral\",\"type\":{\"class\":\"Error\"},"
+           "{\"class\":\"CompositeLiteral\",\"type_literal\":{\"class\":\"Error\"},"
            "\"value\":{\"class\":\"Error\"}}",
            location, new ast::Error(location), new ast::Error(location));
 PRINT_TEST(ast::KeyedElement,
@@ -184,7 +184,7 @@ PRINT_TEST(ast::KeyedElement,
            "\"element\":{\"class\":\"Error\"}}",
            location, new ast::Error(location), new ast::Error(location));
 PRINT_TEST(ast::FunctionLiteral,
-           "{\"class\":\"FunctionLiteral\",\"type\":{\"class\":\"Error\"},"
+           "{\"class\":\"FunctionLiteral\",\"type_literal\":{\"class\":\"Error\"},"
            "\"body\":{\"class\":\"Error\"}}",
            location, new ast::Error(location), new ast::Error(location));
 PRINT_TEST(ast::Identifier,
@@ -192,16 +192,16 @@ PRINT_TEST(ast::Identifier,
            Token::MakeIdentifier(location, "x"));
 PRINT_TEST(ast::ConstSpec,
            "{\"class\":\"ConstSpec\",\"identifier_list\":[{\"class\":"
-           "\"Error\"}],\"optional_type\":{\"class\":\"Error\"},"
+           "\"Error\"}],\"optional_type_literal\":{\"class\":\"Error\"},"
            "\"expression_list\":[]}",
            location, NonEmptyList(), new ast::Error(location), EmptyList());
 PRINT_TEST(ast::TypeSpec,
            "{\"class\":\"TypeSpec\",\"identifier\":{\"class\":\"Error\"},"
-           "\"type\":{\"class\":\"Error\"},\"is_alias\":\"false\"}",
+           "\"type_literal\":{\"class\":\"Error\"},\"is_alias\":\"false\"}",
            location, new ast::Error(location), new ast::Error(location), false);
 PRINT_TEST(ast::VarSpec,
            "{\"class\":\"VarSpec\",\"identifier_list\":[{\"class\":\"Error\"}],"
-           "\"optional_type\":{\"class\":\"Error\"},"
+           "\"optional_type_literal\":{\"class\":\"Error\"},"
            "\"optional_expression_list\":[]}",
            location, NonEmptyList(), new ast::Error(location), EmptyList());
 PRINT_TEST(ast::FuncDecl,
@@ -218,7 +218,7 @@ PRINT_TEST(ast::MethodDecl,
            new ast::Error(location), new ast::Error(location));
 PRINT_TEST(ast::TypeAssertion,
            "{\"class\":\"TypeAssertion\",\"operand\":{\"class\":\"Error\"},"
-           "\"type\":{\"class\":\"Error\"}}",
+           "\"type_literal\":{\"class\":\"Error\"}}",
            location, new ast::Error(location), new ast::Error(location));
 PRINT_TEST(ast::Selector,
            "{\"class\":\"Selector\",\"operand\":{\"class\":\"Error\"},"

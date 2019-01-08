@@ -32,10 +32,11 @@ static AbortHandler abort_handler;
 static Location location = Location::Make("undefined", 1);
 static ImportLocation import_location("path", Location::Make("undefined", 1));
 
-struct TestSymbol : public Symbol {
+struct TestSymbol : public symbol::Symbol {
   TestSymbol()
-      : Symbol("identifier", Location::Make("undefined", 1), NULL, NULL) {}
-  void Accept(SymbolVisitor* visitor) {}
+      : Symbol("identifier", Location::Make("undefined", 1), nullptr, nullptr)
+  {}
+  void Accept(symbol::Visitor* visitor) override {}
 };
 
 static TestSymbol test_symbol;

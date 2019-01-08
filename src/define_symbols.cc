@@ -31,37 +31,25 @@ void DefineSymbols(ast::Node* source_file, Block* file_block,
     void Visit(ast::SourceFile* ast) override { VisitAll(ast->decls); }
 
     void Visit(ast::ConstSpec* ast) override {
-      for (ast::Node* node : ast->identifier_list) {
-        ast::Identifier* identifier = ast::Cast<ast::Identifier>(node);
-        assert(identifier != NULL);
-        Symbol* symbol = file_block->FindGlobalSymbol(identifier->identifier);
-        DefineSymbol(symbol, *file_block, type_factory, error_reporter);
+      for (symbol::Constant* constant : ast->constants) {
+        DefineSymbol(constant, file_block, type_factory, error_reporter);
       }
     }
 
     void Visit(ast::TypeDecl* ast) override { VisitAll(ast->type_specs); }
 
     void Visit(ast::TypeSpec* ast) override {
-      ast::Identifier* identifier = ast::Cast<ast::Identifier>(ast->identifier);
-      assert(identifier != NULL);
-      Symbol* symbol = file_block->FindGlobalSymbol(identifier->identifier);
-      DefineSymbol(symbol, *file_block, type_factory, error_reporter);
+      DefineSymbol(ast->type, file_block, type_factory, error_reporter);
     }
 
     void Visit(ast::VarSpec* ast) override {
-      for (ast::Node* node : ast->identifier_list) {
-        ast::Identifier* identifier = ast::Cast<ast::Identifier>(node);
-        assert(identifier != NULL);
-        Symbol* symbol = file_block->FindGlobalSymbol(identifier->identifier);
-        DefineSymbol(symbol, *file_block, type_factory, error_reporter);
+      for (symbol::Variable* variable : ast->variables) {
+        DefineSymbol(variable, file_block, type_factory, error_reporter);
       }
     }
 
     void Visit(ast::FuncDecl* ast) override {
-      ast::Identifier* identifier = ast::Cast<ast::Identifier>(ast->identifier);
-      assert(identifier != NULL);
-      Symbol* symbol = file_block->FindGlobalSymbol(identifier->identifier);
-      DefineSymbol(symbol, *file_block, type_factory, error_reporter);
+      DefineSymbol(ast->function, file_block, type_factory, error_reporter);
     }
 
     void Visit(ast::MethodDecl* ast) override {

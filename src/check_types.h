@@ -1,5 +1,5 @@
-#ifndef SRC_EVALUATE_CONSTANT_EXPRESSION_H_
-#define SRC_EVALUATE_CONSTANT_EXPRESSION_H_
+#ifndef SRC_CHECK_TYPES_H_
+#define SRC_CHECK_TYPES_H_
 
 // Copyright 2018 The Contributors of rcgo
 // All Contributions are owned by their respective authors.
@@ -8,16 +8,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include "src/block.h"
 #include "src/error_reporter.h"
 #include "src/type.h"
 
 namespace rcgo {
 
-// Evaluate the constant expression in ast.
-Value EvaluateConstantExpression(
-    ast::Node* ast, const Block& block, type::Factory* type_factory,
+void CheckTypes(
+    ast::Node* source_file, Block* file_block, type::Factory* type_factory,
     ErrorReporter* error_reporter);
 
-}
+}  // namespace rcgo
 
-#endif  // SRC_EVALUATE_CONSTANT_EXPRESSION_H_
+#endif  // SRC_CHECK_TYPES_H_

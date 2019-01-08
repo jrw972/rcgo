@@ -7,11 +7,8 @@
 
 #include <iostream>
 
-#include "src/compile.h"
+#include "src/argument_parser.h"
 #include "src/error_reporter.h"
-#include "src/import_location.h"
-#include "src/package.h"
-#include "src/paths.h"
 
 namespace rcgo {
 
@@ -20,20 +17,14 @@ int _main(int argc, char** argv) {
     void Terminate() override { exit(EXIT_FAILURE); }
   } exit_handler;
 
-  Paths search_paths = GetSearchPaths();
-  PackageCache package_cache;
   ErrorReporter error_reporter(std::cerr, 0, &exit_handler);
-  ImportLocations import_locations;
-
-  for (int idx = 1; idx < argc; ++idx) {
-    import_locations.push_back(ImportLocation(argv[idx],
-                                              Location::Make("(user)", idx)));
-    Compile(&import_locations, search_paths, &package_cache, &error_reporter,
-            std::cout);
-    import_locations.pop_back();
+  ArgumentParser argument_parser(argc, argv, &error_reporter);
+  CommandI* command = argument_parser.CommandLine();
+  if (!error_reporter.Empty()) {
+    exit_handler.Terminate();
   }
-
-  return 0;
+  command->Execute();
+  return error_reporter.Empty() ? 0 : 1;
 }
 
 }  // namespace rcgo

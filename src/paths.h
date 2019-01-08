@@ -10,27 +10,10 @@
 
 #include <dirent.h>
 
-#include <string>
-#include <vector>
-
 #include "src/error_reporter.h"
 #include "src/import_location.h"
 
 namespace rcgo {
-
-typedef std::vector<std::string> Paths;
-
-// Returns the list of paths to search for import declarations.
-Paths GetSearchPaths();
-
-// Finds the path to the import path in import_location using
-// search_paths.  Returns true on success and populates
-// package_source_directory_path and package_source_directory.
-bool FindPackageSourceDirectory(const ImportLocation& import_location,
-                                const Paths& search_paths,
-                                std::string* package_source_directory_path,
-                                DIR** package_source_directory,
-                                ErrorReporter* error_reporter);
 
 // Returns a list paths to source files in
 // package_source_directory_path/package_source_directory.

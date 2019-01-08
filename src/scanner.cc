@@ -332,7 +332,7 @@ void Scanner::DecimalLiteral() {
   } else {
     EndOfWord();
     Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
-                            Value::MakeInteger(value)));
+                            value::Value::MakeInteger(value)));
   }
 }
 
@@ -356,11 +356,11 @@ void Scanner::OctalLiteral() {
     EndOfWord();
     mpf_class f(dvalue, PRECISION);
     Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
-                            Value::MakeComplex(0, f)));
+                            value::Value::MakeComplex(0, f)));
   } else {
     EndOfWord();
     Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
-                            Value::MakeInteger(value)));
+                            value::Value::MakeInteger(value)));
   }
 }
 
@@ -375,7 +375,7 @@ void Scanner::HexLiteral() {
 
   EndOfWord();
   Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
-                          Value::MakeInteger(value)));
+                          value::Value::MakeInteger(value)));
 }
 
 mpf_class Scanner::FormFloat(const mpz_class& mantissa,
@@ -483,10 +483,10 @@ void Scanner::FinishDecimal(mpz_class* value, bool requireDecimals) {
     m_utf8_scanner.Consume();
     EndOfWord();
     Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
-                            Value::MakeComplex(0, d)));
+                            value::Value::MakeComplex(0, d)));
   } else {
     EndOfWord();
-    Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(), Value::MakeFloat(d)));
+    Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(), value::Value::MakeFloat(d)));
   }
 }
 
@@ -502,10 +502,10 @@ void Scanner::FinishExponent(const mpz_class& value) {
     m_utf8_scanner.Consume();
     EndOfWord();
     Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
-                            Value::MakeComplex(0, d)));
+                            value::Value::MakeComplex(0, d)));
   } else {
     EndOfWord();
-    Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(), Value::MakeFloat(d)));
+    Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(), value::Value::MakeFloat(d)));
   }
 }
 
@@ -576,13 +576,13 @@ void Scanner::RuneLiteral() {
       m_error_reporter->Insert(
           IncompleteRuneLiteral(m_utf8_scanner.GetLocation()));
       Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
-                              Value::MakeRune(s)));
+                              value::Value::MakeRune(s)));
       return;
     case '\'':
       m_error_reporter->Insert(
           EmptyRuneLiteral(m_utf8_scanner.GetLocation()));
       Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
-                              Value::MakeRune(s)));
+                              value::Value::MakeRune(s)));
       return;
     case '\\':
       s = EscapedRune(&error, &isByte, true, false);
@@ -615,7 +615,7 @@ void Scanner::RuneLiteral() {
         ExtraCharactersInRuneLiteral(m_utf8_scanner.GetLocation()));
   }
 
-  Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(), Value::MakeRune(s)));
+  Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(), value::Value::MakeRune(s)));
 }
 
 Runet Scanner::EscapedRune(bool* error, bool* isByte, bool escapeSingleQuote,
@@ -766,7 +766,7 @@ void Scanner::RawStringLiteral() {
         m_error_reporter->Insert(
             IncompleteStringLiteral(m_utf8_scanner.GetLocation()));
         Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
-                                Value::MakeString(s)));
+                                value::Value::MakeString(s)));
         return;
       case CARRIAGE_RETURN:
         // Skipped according to https://golang.org/ref/spec#String_literals
@@ -775,7 +775,7 @@ void Scanner::RawStringLiteral() {
       case '`':
         m_utf8_scanner.Consume();
         Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
-                                Value::MakeString(s)));
+                                value::Value::MakeString(s)));
         return;
       default:
         m_utf8_scanner.Consume();
@@ -800,12 +800,12 @@ void Scanner::InterpretedStringLiteral() {
         m_error_reporter->Insert(
             IncompleteStringLiteral(m_utf8_scanner.GetLocation()));
         Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
-                                Value::MakeString(s)));
+                                value::Value::MakeString(s)));
         return;
       case '"':
         m_utf8_scanner.Consume();
         Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
-                                Value::MakeString(s)));
+                                value::Value::MakeString(s)));
         return;
       case '\\':
         {

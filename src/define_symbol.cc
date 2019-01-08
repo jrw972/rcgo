@@ -10,23 +10,23 @@
 #include <cassert>
 #include <iostream>
 
-#include "src/evaluate_constant_expression.h"
+#include "src/check_types.h"
 #include "src/process_type.h"
 
 namespace rcgo {
 
 bool DefineSymbol(
-    Symbol* symbol, const Block& file_block, type::Factory* type_factory,
+    symbol::Symbol* symbol, Block* file_block, type::Factory* type_factory,
     ErrorReporter* er) {
   struct DefinePackageSymbolVisitor : public ast::DefaultNodeVisitor {
     type::Factory* type_factory;
-    const Block& block;
+    Block* block;
     ErrorReporter* error_reporter;
-    Symbol* symbol;
+    symbol::Symbol* symbol;
 
     DefinePackageSymbolVisitor(
-        type::Factory* a_factory, const Block& a_block,
-        ErrorReporter* a_error_reporter, Symbol* a_symbol)
+        type::Factory* a_factory, Block* a_block,
+        ErrorReporter* a_error_reporter, symbol::Symbol* a_symbol)
         : type_factory(a_factory), block(a_block),
           error_reporter(a_error_reporter), symbol(a_symbol) {}
 
@@ -37,10 +37,10 @@ bool DefineSymbol(
     }
 
     void Visit(ast::TypeSpec* ast) override {
-      TypeSymbol* s = symbol_cast<TypeSymbol>(symbol);
+      symbol::Type* s = symbol::Cast<symbol::Type>(symbol);
       assert(s != NULL);
       const type::Type* t =
-          ProcessType(ast->type, block, type_factory, error_reporter);
+          ProcessType(ast->type_literal, block, type_factory, error_reporter);
       if (ast->is_alias) {
         s->type(type_factory->MakeAlias(t));
       } else {
@@ -49,13 +49,15 @@ bool DefineSymbol(
     }
 
     void Visit(ast::ConstSpec* ast) override {
-      ConstantSymbol* s = symbol_cast<ConstantSymbol>(symbol);
+      symbol::Constant* s = symbol::Cast<symbol::Constant>(symbol);
 
       // TODO(jrw972):  Handle case when no expressions given.
       assert(!ast->expression_list.empty());
-      if (ast->type == NULL && ast->optional_type != NULL) {
-        ast->type = ProcessType(ast->optional_type, block, type_factory,
-                                error_reporter);
+      const type::Type* type = ast->type();
+      if (type == nullptr && ast->optional_type_literal != nullptr) {
+        type = ProcessType(ast->optional_type_literal, block, type_factory,
+                           error_reporter);
+        ast->type(type);
       }
 
       // Find the identifier.
@@ -67,24 +69,32 @@ bool DefineSymbol(
       if (idx >= ast->expression_list.size()) {
         // Value for the symbol indicates error.
         // Error has already been reported.
-        s->value(Value());
+        s->value(value::Value::MakeError());
         return;
       }
 
       ast::Node* e = ast->expression_list.at(idx);
-      s->value(
-          EvaluateConstantExpression(e, block, type_factory, error_reporter));
-      if (s->value().kind != Value::kError && ast->type != NULL) {
-        s->value(s->value().ConvertTo(ast->type));
-        if (s->value().kind == Value::kError) {
-          // TODO(jrw972):  Conversion error.
-          abort();
-        }
+      CheckTypes(e, block, type_factory, error_reporter);
+      value::Value* value = e->out_value();
+      if (value->IsError()) {
+        s->value(*value);
+        return;
       }
+      if (!value->RequireConstant(error_reporter)) {
+        s->value(*value);
+        return;
+      }
+      if (type != nullptr && !value->ConvertTo(type)) {
+        // TODO(jrw972):  Report conversion error.
+        abort();
+        s->value(*value);
+        return;
+      }
+      s->value(*value);
     }
 
     void Visit(ast::FuncDecl* ast) override {
-      FunctionSymbol* s = symbol_cast<FunctionSymbol>(symbol);
+      symbol::Function* s = symbol::Cast<symbol::Function>(symbol);
       assert(s != NULL);
       const type::Function* function_type =
           ProcessFunction(ast::Cast<ast::Signature>(ast->signature), block,

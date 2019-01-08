@@ -20,12 +20,6 @@ TEST_CASE("Perror::Perror()") {
   REQUIRE(std::string(err) == "message: No such file or directory\n");
 }
 
-TEST_CASE("CouldNotFindPackage::CouldNotFindPackage()") {
-  CouldNotFindPackage err(import_location);
-  REQUIRE(std::string(err) ==
-          "undefined:1: error: Could not find package for path \"path\"\n");
-}
-
 TEST_CASE("PackageMismatch::PackageMismatch()") {
   PackageMismatch err(location, "expected", "actual");
   REQUIRE(std::string(err) ==
@@ -33,17 +27,19 @@ TEST_CASE("PackageMismatch::PackageMismatch()") {
 }
 
 TEST_CASE("RecursiveImport::RecursiveImport()") {
-  ImportLocations import_locations;
-  import_locations.push_back(import_location);
-  RecursiveImport err(import_locations);
+  Paths paths;
+  paths.push_back("alpha");
+  paths.push_back("beta");
+  paths.push_back("gamma");
+  RecursiveImport err(paths, "beta");
   REQUIRE(std::string(err) ==
-          "undefined:1: error: recursive import of \"path\" detected.  "
-          "Import chain to follow:\nundefined:1 imports \"path\" *\n");
+          "error: recursive import of \"beta\" detected.  "
+          "Import chain to follow:\nalpha\nbeta *\ngamma\nbeta *\n");
 }
 
 TEST_CASE("NoFiles::NoFiles()") {
-  NoFiles err(import_location, "path");
-  REQUIRE(std::string(err) == "undefined:1: error: path contains no files\n");
+  NoFiles err("path");
+  REQUIRE(std::string(err) == "error: path contains no files\n");
 }
 
 TEST_CASE("DuplicateSymbol::DuplicateSymbol()") {

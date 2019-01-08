@@ -174,8 +174,8 @@ ast::Node* Parser::FieldDecl() {
         ast::Node* typeName = TypeName();
         std::string tag;
         if (Peek() == Token::kLiteral &&
-            Peek().value().kind == Value::kString) {
-          tag = Peek().value().String_value;
+            Peek().value().kind() == value::Value::kString) {
+          tag = Peek().value().String_value();
           Next();
         }
         return new ast::EmbeddedField(star_loc, true, typeName, tag);
@@ -185,8 +185,8 @@ ast::Node* Parser::FieldDecl() {
       {
         ast::Node* identifier = Identifier();
         if (Peek() == Token::kLiteral &&
-            Peek().value().kind == Value::kString) {
-          std::string tag = Peek().value().String_value;
+            Peek().value().kind() == value::Value::kString) {
+          std::string tag = Peek().value().String_value();
           Next();
           return new ast::EmbeddedField(identifier->location, false, identifier,
                                         tag);
@@ -202,8 +202,8 @@ ast::Node* Parser::FieldDecl() {
               ast::Node* typeName = OptionalSelector(identifier);
               std::string tag;
               if (Peek() == Token::kLiteral &&
-                  Peek().value().kind == Value::kString) {
-                tag = Peek().value().String_value;
+                  Peek().value().kind() == value::Value::kString) {
+                tag = Peek().value().String_value();
                 Next();
               }
               return new ast::EmbeddedField(identifier->location, false,
@@ -217,8 +217,8 @@ ast::Node* Parser::FieldDecl() {
               ast::Node* type = Type();
               std::string tag;
               if (Peek() == Token::kLiteral &&
-                  Peek().value().kind == Value::kString) {
-                tag = Peek().value().String_value;
+                  Peek().value().kind() == value::Value::kString) {
+                tag = Peek().value().String_value();
                 Next();
               }
               return new ast::Field(identifier->location, identifierList, type,
@@ -1573,7 +1573,7 @@ ast::Node* Parser::ImportDecl() {
   Want(Token::kImport);
 
   if (Peek().kind() == Token::kLiteral &&
-      Peek().value().kind == Value::kString) {
+      Peek().value().kind() == value::Value::kString) {
     children.push_back(ImportSpec());
     return new ast::ImportDecl(loc, children);
   }
@@ -1621,8 +1621,8 @@ ast::Node* Parser::ImportSpec() {
   }
 
   if (Peek().kind() == Token::kLiteral &&
-      Peek().value().kind == Value::kString) {
-    std::string path = Peek().value().String_value;
+      Peek().value().kind() == value::Value::kString) {
+    std::string path = Peek().value().String_value();
     Next();
     return new ast::ImportSpec(loc, dot, identifier, path);
   } else {

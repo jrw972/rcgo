@@ -12,7 +12,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_MAINTAINER_MODE([disable])
-AC_CONFIG_SRCDIR([src/main.cc])
+AC_CONFIG_SRCDIR([src/rcgo.cc])
 AC_CONFIG_HEADERS([config.hpp])
 AC_REQUIRE_AUX_FILE([catch-driver.sh])
 
@@ -21,7 +21,8 @@ LT_INIT([])
 AC_PROG_CXX()
 
 # Checks for libraries.
-AC_CHECK_LIB(gmp, __gmpz_init, , [AC_MSG_ERROR([GNU MP not found, see https://gmplib.org/])])
+AC_SEARCH_LIBS(__gmpz_init, gmp, , [AC_MSG_ERROR([GNU MP not found, see https://gmplib.org/])])
+AC_SEARCH_LIBS(_ZN4YAML8LoadFileERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE, yaml-cpp, , [AC_MSG_ERROR([yaml-cpp not found])])
 
 # Checks for header files.
 
@@ -32,4 +33,5 @@ AC_CHECK_LIB(gmp, __gmpz_init, , [AC_MSG_ERROR([GNU MP not found, see https://gm
 # Enable coverage builds
 AC_COVERAGE()
 
-AC_OUTPUT([Makefile])
+AC_OUTPUT([Makefile
+           setenv.sh])

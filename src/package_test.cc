@@ -14,39 +14,12 @@ namespace rcgo {
 namespace test {
 
 TEST_CASE("Package::Package()") {
-  Package p("import_path");
-  REQUIRE(p.import_path == "import_path");
-  REQUIRE(p.IsNew());
-}
-
-TEST_CASE("Package::Changed()") {
-  Package p("import_path");
-  p.Changed();
-  REQUIRE(p.IsChanged());
-}
-
-TEST_CASE("Package::NotChanged()") {
-  Package p("import_path");
-  p.NotChanged();
-  REQUIRE(p.IsNotChanged());
-}
-
-TEST_CASE("Package::Error()") {
-  Package p("import_path");
-  p.Error();
-  REQUIRE(p.IsError());
-}
-
-TEST_CASE("PackageCache::Insert()") {
-  PackageCache pc;
-  REQUIRE(pc.Find("import_path") == NULL);
-  Package* p = new Package("import_path");
-  pc.Insert(p);
-  REQUIRE(pc.Find("import_path") == p);
+  Package p("import_path", YAML::Node());
+  REQUIRE(p.path == "import_path");
 }
 
 TEST_CASE("Package::name()") {
-  Package p("import_path");
+  Package p("import_path", YAML::Node());
   p.name("identifier");
   REQUIRE(p.name() == "identifier");
 }
