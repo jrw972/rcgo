@@ -48,7 +48,8 @@ ACCEPT_TEST(ast::FunctionType, location, new ast::Error(location));
 ACCEPT_TEST(ast::Signature, location, EmptyList(), EmptyList());
 ACCEPT_TEST(ast::ParameterDecl, location, EmptyList(), false,
             new ast::Error(location));
-ACCEPT_TEST(ast::Literal, Token::MakeLiteral(location, value::Value::MakeString("")));
+ACCEPT_TEST(
+    ast::Literal, Token::MakeLiteral(location, value::Value::MakeString("")));
 ACCEPT_TEST(ast::CompositeLiteral, location, new ast::Error(location),
             new ast::Error(location));
 ACCEPT_TEST(ast::KeyedElement, location, new ast::Error(location),
@@ -175,18 +176,20 @@ PRINT_TEST(ast::ParameterDecl,
 PRINT_TEST(ast::Literal,
            "{\"class\":\"Literal\",\"in_value\":\"<value>\"}",
            Token::MakeLiteral(location, value::Value::MakeString("x")));
-PRINT_TEST(ast::CompositeLiteral,
-           "{\"class\":\"CompositeLiteral\",\"type_literal\":{\"class\":\"Error\"},"
-           "\"value\":{\"class\":\"Error\"}}",
-           location, new ast::Error(location), new ast::Error(location));
+PRINT_TEST(
+    ast::CompositeLiteral,
+    "{\"class\":\"CompositeLiteral\",\"type_literal\":{\"class\":\"Error\"},"
+    "\"value\":{\"class\":\"Error\"}}",
+    location, new ast::Error(location), new ast::Error(location));
 PRINT_TEST(ast::KeyedElement,
            "{\"class\":\"KeyedElement\",\"optional_key\":{\"class\":\"Error\"},"
            "\"element\":{\"class\":\"Error\"}}",
            location, new ast::Error(location), new ast::Error(location));
-PRINT_TEST(ast::FunctionLiteral,
-           "{\"class\":\"FunctionLiteral\",\"type_literal\":{\"class\":\"Error\"},"
-           "\"body\":{\"class\":\"Error\"}}",
-           location, new ast::Error(location), new ast::Error(location));
+PRINT_TEST(
+    ast::FunctionLiteral,
+    "{\"class\":\"FunctionLiteral\",\"type_literal\":{\"class\":\"Error\"},"
+    "\"body\":{\"class\":\"Error\"}}",
+    location, new ast::Error(location), new ast::Error(location));
 PRINT_TEST(ast::Identifier,
            "{\"class\":\"Identifier\",\"identifier\":\"x\"}",
            Token::MakeIdentifier(location, "x"));

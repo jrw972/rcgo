@@ -75,7 +75,7 @@ TEST_CASE("Token::MakeIdentifier(location, token)") {
 }
 
 TEST_CASE("Token::MakeLiteral(location, value)") {
-  value::Value v = value::Value::MakeBoolean(true);
+  value::ValuePtr v = value::Value::MakeBoolean(true);
   Token t = Token::MakeLiteral(Location::builtin, v);
   REQUIRE(t.location() == Location::builtin);
   REQUIRE(t.kind() == Token::kLiteral);
@@ -231,7 +231,8 @@ TEST_CASE("operator<< Token") {
     REQUIRE(ss.str() == "name");
   }
   {
-    Token t = Token::MakeLiteral(Location::builtin, value::Value::MakeBoolean(true));
+    Token t =
+        Token::MakeLiteral(Location::builtin, value::Value::MakeBoolean(true));
     std::stringstream ss;
     ss << t;
     REQUIRE(ss.str() == "true");

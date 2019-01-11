@@ -54,7 +54,7 @@ struct RecursiveImport : public Error {  // NOT_COVERED
 };
 
 struct NoFiles : public Error {  // NOT_COVERED
-  NoFiles(const std::string& a_package_source_directory_path)
+  explicit NoFiles(const std::string& a_package_source_directory_path)
       : package_source_directory_path(a_package_source_directory_path) {}
   void Print(std::ostream& out) const override;
 
@@ -62,7 +62,8 @@ struct NoFiles : public Error {  // NOT_COVERED
 };
 
 struct DuplicateSymbol : public Error {  // NOT_COVERED
-  DuplicateSymbol(const symbol::Symbol* a_symbol, const symbol::Symbol* a_previous_symbol)
+  DuplicateSymbol(
+      const symbol::Symbol* a_symbol, const symbol::Symbol* a_previous_symbol)
       : symbol(a_symbol), previous_symbol(a_previous_symbol) {}
   void Print(std::ostream& out) const override;
 
@@ -391,27 +392,27 @@ struct UnterminatedGeneralComment : public Error {  // NOT_COVERED
 
 struct CannotApply : public Error {  // NOT_COVERED
   CannotApply(const Location& a_location, char a_operator,
-              const value::Value& a_value)
+              value::ConstValuePtr a_value)
       : location(a_location), operator_(a_operator), value(a_value) {}
   void Print(std::ostream& out) const override;
 
   Location const location;
   char const operator_;
-  value::Value const value;
+  value::ConstValuePtr const value;
 };
 
 struct CannotApply2 : public Error {  // NOT_COVERED
   CannotApply2(const Location& a_location, const std::string& a_operator,
-               const value::Value& a_value1,
-               const value::Value& a_value2)
+               value::ConstValuePtr a_value1,
+               value::ConstValuePtr a_value2)
       : location(a_location), operator_(a_operator), value1(a_value1),
         value2(a_value2) {}
   void Print(std::ostream& out) const override;
 
   Location const location;
   std::string const operator_;
-  value::Value const value1;
-  value::Value const value2;
+  value::ConstValuePtr const value1;
+  value::ConstValuePtr const value2;
 };
 
 struct DivisionByZero : public Error {  // NOT_COVERED
@@ -420,6 +421,45 @@ struct DivisionByZero : public Error {  // NOT_COVERED
   void Print(std::ostream& out) const override;
 
   Location const location;
+};
+
+struct OperandCannotBeCalled : public Error {  // NOT_COVERED
+  explicit OperandCannotBeCalled(const Location& a_location)
+      : location(a_location) {}
+  void Print(std::ostream& out) const override;
+
+  Location const location;
+};
+
+struct UnexpectedMultiValueOperand : public Error {  // NOT_COVERED
+  explicit UnexpectedMultiValueOperand(const Location& a_location)
+      : location(a_location) {}
+  void Print(std::ostream& out) const override;
+
+  Location const location;
+};
+
+struct CallExpectsNArguments : public Error {  // NOT_COVERED
+  CallExpectsNArguments(
+      const Location& a_location, size_t a_expected, size_t a_actual)
+      : location(a_location), expected(a_expected), actual(a_actual) {}
+  void Print(std::ostream& out) const override;
+
+  Location const location;
+  size_t const expected;
+  size_t const actual;
+};
+
+struct CannotConvert : public Error {  // NOT_COVERED
+  CannotConvert(
+      const Location& a_location, value::ConstValuePtr a_value,
+      const type::Type* a_type)
+      : location(a_location), value(a_value), type(a_type) {}
+  void Print(std::ostream& out) const override;
+
+  Location const location;
+  value::ConstValuePtr const value;
+  const type::Type* const type;
 };
 
 }  // namespace rcgo

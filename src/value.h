@@ -12,6 +12,7 @@
 #include <gmpxx.h>
 #include <stdint.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -24,6 +25,7 @@ namespace rcgo {
 // Forward.
 namespace type {
 struct Type;
+struct Function;
 }
 
 struct ErrorReporter;
@@ -104,11 +106,11 @@ std::ostream& operator<<(std::ostream& out, const complex_t& val);
 
 struct Value;
 
-typedef std::vector<Value*> ValueList;
+typedef std::shared_ptr<Value> ValuePtr;
+typedef std::shared_ptr<const Value> ConstValuePtr;
 
 struct Value {
   enum Kind {
-    kUnitialized,
     kError,
     kBoolean,
     kString,
@@ -117,23 +119,29 @@ struct Value {
     kFloat,
     kComplex,
     kConstant,  // with a type
+    kFunction,
     kLValue,
     kRValue,
-    kType
+    kType,
+    kList
   };
 
-  Value();
+  ValuePtr DeepCopy() const;
 
-  static Value MakeError();
-  static Value MakeBoolean(bool a_value);
-  static Value MakeInteger(const mpz_class& a_value);
-  static Value MakeRune(const mpz_class& a_value);
-  static Value MakeFloat(const mpf_class& a_value);
-  static Value MakeComplex(const mpf_class& a_real, const mpf_class& a_imag);
-  static Value MakeString(const std::string& a_value);
-  static Value MakeLValue(const type::Type* a_type);
-  static Value MakeRValue(const type::Type* a_type);
-  static Value MakeType(const type::Type* a_type);
+  static ValuePtr MakeError();
+  static ValuePtr MakeBoolean(bool a_value);
+  static ValuePtr MakeInteger(const mpz_class& a_value);
+  static ValuePtr MakeRune(const mpz_class& a_value);
+  static ValuePtr MakeFloat(const mpf_class& a_value);
+  static ValuePtr MakeComplex(const mpf_class& a_real, const mpf_class& a_imag);
+  static ValuePtr MakeString(const std::string& a_value);
+  static ValuePtr MakeFunction(const type::Function* a_type);
+  static ValuePtr MakeLValue(const type::Type* a_type);
+  static ValuePtr MakeRValue(const type::Type* a_type);
+  static ValuePtr MakeType(const type::Type* a_type);
+  static ValuePtr MakeList();
+
+  void Push(ValuePtr element);
 
   Kind kind() const { return m_kind; }
   const type::Type* type() const { return m_type; }
@@ -162,64 +170,68 @@ struct Value {
   uint64_t uint64_value() const { return m_uint64_value; }
   unsigned int uintptr_value() const { return m_uintptr_value; }
 
-  bool IsUninitialized() const;
-  bool IsInitialized() const;
   bool IsError() const;
 
   bool RequireConstant(ErrorReporter* error_reporter) const;
   bool ConvertTo(const type::Type* type);
 
   // Operations.
-  static Value Posate(const Location& location, const Value* value,
-                      ErrorReporter* error_reporter);
-  static Value Negate(const Location& location, const Value* value,
-                      ErrorReporter* error_reporter);
-  static Value LogicNot(const Location& location, const Value* value,
-                        ErrorReporter* error_reporter);
-  static Value BitNot(const Location& location, const Value* value,
-                      ErrorReporter* error_reporter);
+  static ValuePtr Posate(const Location& location, ValuePtr x,
+                         ErrorReporter* error_reporter);
+  static ValuePtr Negate(const Location& location, ValuePtr x,
+                         ErrorReporter* error_reporter);
+  static ValuePtr LogicNot(const Location& location, ValuePtr x,
+                           ErrorReporter* error_reporter);
+  static ValuePtr BitNot(const Location& location, ValuePtr x,
+                         ErrorReporter* error_reporter);
   // Operations and implicit conversions.
-  static Value Add(const Location& location, Value* x, Value* y,
-                   ErrorReporter* error_reporter);
-  static Value Subtract(const Location& location, Value* x, Value* y,
-                        ErrorReporter* error_reporter);
-  static Value Multiply(const Location& location, Value* x, Value* y,
-                        ErrorReporter* error_reporter);
-  static Value Divide(const Location& location, Value* x, Value* y,
+  static ValuePtr Add(const Location& location, ValuePtr x, ValuePtr y,
                       ErrorReporter* error_reporter);
-  static Value Modulo(const Location& location, Value* x, Value* y,
-                      ErrorReporter* error_reporter);
-  static Value LeftShift(const Location& location, const Value* x, Value* y,
+  static ValuePtr Subtract(const Location& location, ValuePtr x, ValuePtr y,
+                           ErrorReporter* error_reporter);
+  static ValuePtr Multiply(const Location& location, ValuePtr x, ValuePtr y,
+                           ErrorReporter* error_reporter);
+  static ValuePtr Divide(const Location& location, ValuePtr x, ValuePtr y,
                          ErrorReporter* error_reporter);
-  static Value RightShift(const Location& location, const Value* x, Value* y,
-                          ErrorReporter* error_reporter);
-  static Value BitAnd(const Location& location, Value* x, Value* y,
-                      ErrorReporter* error_reporter);
-  static Value BitAndNot(const Location& location, Value* x, Value* y,
+  static ValuePtr Modulo(const Location& location, ValuePtr x, ValuePtr y,
                          ErrorReporter* error_reporter);
-  static Value BitOr(const Location& location, Value* x, Value* y,
-                     ErrorReporter* error_reporter);
-  static Value BitXor(const Location& location, Value* x, Value* y,
-                      ErrorReporter* error_reporter);
-  static Value Equal(const Location& location, Value* x, Value* y,
-                     ErrorReporter* error_reporter);
+  static ValuePtr LeftShift(const Location& location, ValuePtr x, ValuePtr y,
+                            ErrorReporter* error_reporter);
+  static ValuePtr RightShift(const Location& location, ValuePtr x, ValuePtr y,
+                             ErrorReporter* error_reporter);
+  static ValuePtr BitAnd(const Location& location, ValuePtr x, ValuePtr y,
+                         ErrorReporter* error_reporter);
+  static ValuePtr BitAndNot(const Location& location, ValuePtr x, ValuePtr y,
+                            ErrorReporter* error_reporter);
+  static ValuePtr BitOr(const Location& location, ValuePtr x, ValuePtr y,
+                        ErrorReporter* error_reporter);
+  static ValuePtr BitXor(const Location& location, ValuePtr x, ValuePtr y,
+                         ErrorReporter* error_reporter);
+  static ValuePtr Equal(const Location& location, ValuePtr x, ValuePtr y,
+                        ErrorReporter* error_reporter);
 
-  static Value Call(Value* operand, const ValueList& arguments, ErrorReporter* error_reporter);
+  static ValuePtr Call(const Location& location, ValuePtr operand,
+                       ValuePtr arguments, const LocationList& locations,
+                       ErrorReporter* error_reporter);
 
   bool operator==(const Value& y) const;
   bool operator!=(const Value& y) const;
 
  private:
+  explicit Value(Kind kind);
+
   bool IsArithmetic() const;
   bool IsSigned() const;
   bool IsInteger() const;
   bool IsZero() const;
   bool IsString() const;
   bool IsBoolean() const;
+  bool IsCallable() const;
 
   // Explicit conversions and checks.
   bool PromoteTo(const Value& other);
   bool ToInteger();
+  void Dereference();
 
   Kind m_kind;
   const type::Type* m_type;
@@ -248,6 +260,9 @@ struct Value {
   uint32_t m_uint32_value;
   uint64_t m_uint64_value;
   unsigned int m_uintptr_value;
+
+  typedef std::vector<ValuePtr> ListType;
+  ListType m_list;
 
   friend struct ConvertVisitor;
 };

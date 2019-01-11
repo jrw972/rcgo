@@ -67,7 +67,8 @@ PopulateFileBlock(
         }
       } else {
         // TODO(jrw972): Importing something that was not in config.yaml.
-        std::cout << "TODO:  Import " << ast->import_path << " not in config of " << package->path << std::endl;
+        std::cout << "TODO:  Import " << ast->import_path
+                  << " not in config of " << package->path << std::endl;
       }
     }
   };

@@ -35,9 +35,12 @@ complex64_t complex64_t::operator*(const complex64_t& a_other) const {
 }
 
 complex64_t complex64_t::operator/(const complex64_t& a_other) const {
-  float denom = a_other.m_real * a_other.m_real + a_other.m_imag * a_other.m_imag;
-  return complex64_t((m_real * a_other.m_real + m_imag * a_other.m_real) / denom,
-                     (m_imag * a_other.m_real - m_real * a_other.m_imag) / denom);
+  float denom =
+      a_other.m_real * a_other.m_real +
+      a_other.m_imag * a_other.m_imag;
+  return
+      complex64_t((m_real * a_other.m_real + m_imag * a_other.m_real) / denom,
+                  (m_imag * a_other.m_real - m_real * a_other.m_imag) / denom);
 }
 
 complex64_t complex64_t::operator+() const {
@@ -80,9 +83,11 @@ complex128_t complex128_t::operator*(const complex128_t& a_other) const {
 }
 
 complex128_t complex128_t::operator/(const complex128_t& a_other) const {
-  float denom = a_other.m_real * a_other.m_real + a_other.m_imag * a_other.m_imag;
-  return complex128_t((m_real * a_other.m_real + m_imag * a_other.m_real) / denom,
-                      (m_imag * a_other.m_real - m_real * a_other.m_imag) / denom);
+  float denom = a_other.m_real * a_other.m_real +
+      a_other.m_imag * a_other.m_imag;
+  return
+      complex128_t((m_real * a_other.m_real + m_imag * a_other.m_real) / denom,
+                   (m_imag * a_other.m_real - m_real * a_other.m_imag) / denom);
 }
 
 complex128_t complex128_t::operator+() const {
@@ -133,7 +138,8 @@ complex_t complex_t::operator*(const complex_t& a_other) const {
 }
 
 complex_t complex_t::operator/(const complex_t& a_other) const {
-  mpf_class denom = a_other.m_real * a_other.m_real + a_other.m_imag * a_other.m_imag;
+  mpf_class denom = a_other.m_real * a_other.m_real +
+      a_other.m_imag * a_other.m_imag;
   return complex_t((m_real * a_other.m_real + m_imag * a_other.m_real) / denom,
                    (m_imag * a_other.m_real - m_real * a_other.m_imag) / denom);
 }
@@ -151,88 +157,105 @@ std::ostream& operator<<(std::ostream& out, const complex_t& val) {
   return out;
 }
 
-Value::Value() : m_kind(kUnitialized), m_type(nullptr) {}
+Value::Value(Kind a_kind) : m_kind(a_kind), m_type(nullptr) {}
 
-Value Value::MakeError() {
-  Value v;
-  v.m_kind = kError;
-  return v;
-}
+ValuePtr Value::DeepCopy() const {
+  switch (m_kind) {
+    case kError:
+    case kBoolean:
+    case kString:
+    case kInteger:
+    case kRune:
+    case kFloat:
+    case kComplex:
+    case kConstant:
+    case kFunction:
+    case kLValue:
+    case kRValue:
+    case kType:
+      return ValuePtr(new Value(*this));
+    case kList:
+      {
+        ValuePtr x(new Value(kList));
+        for (auto val : m_list) {
+          x->m_list.push_back(val->DeepCopy());
+        }
+        return x;
+      }
+  }
 
-Value Value::MakeBoolean(bool a_value) {
-  Value v;
-  v.m_kind = kBoolean;
-  v.m_Boolean_value = a_value;
-  return v;
-}
-
-Value Value::MakeInteger(const mpz_class& a_value) {
-  Value v;
-  v.m_kind = kInteger;
-  v.m_Integer_value = a_value;
-  return v;
-}
-
-Value Value::MakeFloat(const mpf_class& a_value) {
-  Value v;
-  v.m_kind = kFloat;
-  v.m_Float_value = a_value;
-  return v;
-}
-
-Value Value::MakeComplex(const mpf_class& a_real, const mpf_class& a_imag) {
-  Value v;
-  v.m_kind = kComplex;
-  v.m_Complex_value = complex_t(a_real, a_imag);
-  return v;
-}
-
-Value Value::MakeRune(const mpz_class& a_value) {
-  Value v;
-  v.m_kind = kRune;
-  v.m_Rune_value = a_value;
-  return v;
-}
-
-Value Value::MakeString(const std::string& a_value) {
-  Value v;
-  v.m_kind = kString;
-  v.m_String_value = a_value;
-  return v;
-}
-
-Value Value::MakeLValue(const type::Type* a_type) {
-  Value v;
-  v.m_kind = kLValue;
-  v.m_type = a_type;
-  return v;
-}
-
-Value Value::MakeRValue(const type::Type* a_type) {
-  Value v;
-  v.m_kind = kRValue;
-  v.m_type = a_type;
-  return v;
-}
-
-Value Value::MakeType(const type::Type* a_type) {
-  Value v;
-  v.m_kind = kType;
-  v.m_type = a_type;
-  return v;
+  abort();
 }
 
 
-bool Value::IsUninitialized() const {
-  return m_kind == kUnitialized;
+ValuePtr Value::MakeBoolean(bool a_value) {
+  Value* v = new Value(kBoolean);
+  v->m_Boolean_value = a_value;
+  return ValuePtr(v);
 }
 
-bool Value::IsInitialized() const {
-  return !IsUninitialized();
+ValuePtr Value::MakeInteger(const mpz_class& a_value) {
+  Value* v = new Value(kInteger);
+  v->m_Integer_value = a_value;
+  return ValuePtr(v);
 }
 
-bool Value::IsError() const {
-  return m_kind == kError;
+ValuePtr Value::MakeFloat(const mpf_class& a_value) {
+  Value* v = new Value(kFloat);
+  v->m_Float_value = a_value;
+  return ValuePtr(v);
+}
+
+ValuePtr Value::MakeComplex(const mpf_class& a_real, const mpf_class& a_imag) {
+  Value* v = new Value(kComplex);
+  v->m_Complex_value = complex_t(a_real, a_imag);
+  return ValuePtr(v);
+}
+
+ValuePtr Value::MakeRune(const mpz_class& a_value) {
+  Value* v = new Value(kRune);
+  v->m_Rune_value = a_value;
+  return ValuePtr(v);
+}
+
+ValuePtr Value::MakeString(const std::string& a_value) {
+  Value* v = new Value(kString);
+  v->m_String_value = a_value;
+  return ValuePtr(v);
+}
+
+ValuePtr Value::MakeFunction(const type::Function* a_type) {
+  Value* v = new Value(kFunction);
+  v->m_type = a_type;
+  return ValuePtr(v);
+}
+
+ValuePtr Value::MakeLValue(const type::Type* a_type) {
+  Value* v = new Value(kLValue);
+  v->m_type = a_type;
+  return ValuePtr(v);
+}
+
+ValuePtr Value::MakeRValue(const type::Type* a_type) {
+  Value* v = new Value(kRValue);
+  v->m_type = a_type;
+  return ValuePtr(v);
+}
+
+ValuePtr Value::MakeType(const type::Type* a_type) {
+  Value* v = new Value(kType);
+  v->m_type = a_type;
+  return ValuePtr(v);
+}
+
+ValuePtr Value::MakeList() {
+  return ValuePtr(new Value(kList));
+}
+
+void Value::Push(ValuePtr element) {
+  assert(m_kind == kList);
+  assert(element.get() != nullptr);
+  m_list.push_back(element);
 }
 
 bool Value::IsArithmetic() const {
@@ -287,19 +310,19 @@ bool Value::IsZero() const {
     const Value& x;
     bool flag;
 
-    void Visit(const type::Int8&) override      { flag = x.m_int8_value == 0; }
-    void Visit(const type::Int16&) override     { flag = x.m_int16_value == 0; }
-    void Visit(const type::Int32&) override     { flag = x.m_int32_value == 0; }
-    void Visit(const type::Int64&) override     { flag = x.m_int64_value == 0; }
-    void Visit(const type::Uint8&) override     { flag = x.m_uint8_value == 0; }
-    void Visit(const type::Uint16&) override    { flag = x.m_uint16_value == 0; }
-    void Visit(const type::Uint32&) override    { flag = x.m_uint32_value == 0; }
-    void Visit(const type::Uint64&) override    { flag = x.m_uint64_value == 0; }
-    void Visit(const type::Int&) override       { flag = x.m_int_value == 0; }
-    void Visit(const type::Uint&) override      { flag = x.m_uint_value == 0; }
-    void Visit(const type::Uintptr&) override   { flag = x.m_uintptr_value == 0; }
-    void Visit(const type::Float32&) override   { flag = x.m_float32_value == 0; }
-    void Visit(const type::Float64&) override   { flag = x.m_float64_value == 0; }
+    void Visit(const type::Int8&) override    { flag = x.m_int8_value == 0; }
+    void Visit(const type::Int16&) override   { flag = x.m_int16_value == 0; }
+    void Visit(const type::Int32&) override   { flag = x.m_int32_value == 0; }
+    void Visit(const type::Int64&) override   { flag = x.m_int64_value == 0; }
+    void Visit(const type::Uint8&) override   { flag = x.m_uint8_value == 0; }
+    void Visit(const type::Uint16&) override  { flag = x.m_uint16_value == 0; }
+    void Visit(const type::Uint32&) override  { flag = x.m_uint32_value == 0; }
+    void Visit(const type::Uint64&) override  { flag = x.m_uint64_value == 0; }
+    void Visit(const type::Int&) override     { flag = x.m_int_value == 0; }
+    void Visit(const type::Uint&) override    { flag = x.m_uint_value == 0; }
+    void Visit(const type::Uintptr&) override { flag = x.m_uintptr_value == 0; }
+    void Visit(const type::Float32&) override { flag = x.m_float32_value == 0; }
+    void Visit(const type::Float64&) override { flag = x.m_float64_value == 0; }
     void Visit(const type::Complex64&) override {
       flag = x.m_complex64_value == complex64_t(0, 0);
     }
@@ -349,6 +372,15 @@ bool Value::IsBoolean() const {
     case kLValue:
     case kRValue:
       return type::IsBoolean(m_type);
+    default:
+      return false;
+  }
+}
+
+bool Value::IsCallable() const {
+  switch (m_kind) {
+    case kFunction:
+      return true;
     default:
       return false;
   }
@@ -558,45 +590,41 @@ struct ConvertVisitor : public type::DefaultVisitor {
   void Visit(const Type&) override                                      \
   {                                                                     \
     ValueType v;                                                        \
-    switch (value->m_kind)                                                 \
+    switch (value->m_kind)                                              \
     {                                                                   \
       case Value::kInteger:                                             \
-        v = value->m_Integer_value.get_ui();           \
-        if (exact_check(value->m_Integer_value, v))    \
-        {                                                               \
-          value->m_kind = Value::kConstant;                               \
-          value->m_type = type;                                        \
+        v = value->m_Integer_value.get_ui();                            \
+        if (exact_check(value->m_Integer_value, v)) {                   \
+          value->m_kind = Value::kConstant;                             \
+          value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
         }                                                               \
         break;                                                          \
       case Value::kFloat:                                               \
-        v = value->m_Float_value.get_ui();             \
-        if (close_check(value->m_Float_value, v))      \
-        {                                                               \
-          value->m_kind = Value::kConstant;                               \
-          value->m_type = type;                                        \
+        v = value->m_Float_value.get_ui();                              \
+        if (close_check(value->m_Float_value, v)) {                     \
+          value->m_kind = Value::kConstant;                             \
+          value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
         }                                                               \
         break;                                                          \
       case Value::kComplex:                                             \
-        v = value->m_Complex_value.real().get_ui();    \
-        if (close_check(value->m_Complex_value.real(), v) && \
-            value->m_Complex_value.imag() == 0)                            \
-        {                                                               \
-          value->m_kind = Value::kConstant;                               \
-          value->m_type = type;                                        \
+        v = value->m_Complex_value.real().get_ui();                     \
+        if (close_check(value->m_Complex_value.real(), v) &&            \
+            value->m_Complex_value.imag() == 0) {                       \
+          value->m_kind = Value::kConstant;                             \
+          value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
         }                                                               \
         break;                                                          \
       case Value::kRune:                                                \
-        v = value->m_Rune_value.get_ui();              \
-        if (exact_check(value->m_Rune_value, v))       \
-        {                                                               \
-          value->m_kind = Value::kConstant;                               \
-          value->m_type = type;                                        \
+        v = value->m_Rune_value.get_ui();                               \
+        if (exact_check(value->m_Rune_value, v)) {                      \
+          value->m_kind = Value::kConstant;                             \
+          value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
         }                                                               \
@@ -615,20 +643,12 @@ struct ConvertVisitor : public type::DefaultVisitor {
 };
 
 bool Value::ConvertTo(const type::Type* type) {
-  assert(IsInitialized());
-
-  if (IsError()) {
-    return false;
-  }
-
   ConvertVisitor visitor(this, type);
   type->UnderlyingType()->Accept(&visitor);
   return visitor.flag;
 }
 
 bool Value::PromoteTo(const Value& other) {
-  assert(this->IsInitialized());
-  assert(other.IsInitialized());
   assert(this->kind() <= other.kind());
 
   if (this->kind() == other.kind()) {
@@ -641,19 +661,20 @@ bool Value::PromoteTo(const Value& other) {
 
   switch (this->kind()) {
     case Value::kBoolean:
-      *this = Value::MakeError();
       return false;
     case Value::kString:
-      *this = Value::MakeError();
       return false;
     case Value::kInteger:
-      *this = Value::MakeRune(this->Integer_value());
+      this->m_kind = kRune;
+      this->m_Rune_value = this->m_Integer_value;
       return PromoteTo(other);
     case Value::kRune:
-      *this = Value::MakeFloat(this->Rune_value());
+      this->m_kind = kFloat;
+      this->m_Float_value = this->m_Rune_value;
       return PromoteTo(other);
     case Value::kFloat:
-      *this = Value::MakeComplex(this->Float_value(), 0);
+      this->m_kind = kComplex;
+      this->m_Complex_value = complex_t(this->m_Float_value, 0);
       return PromoteTo(other);
 
     default:
@@ -667,58 +688,68 @@ bool Value::ToInteger() {
     Value* value;
 
     void Visit(const type::Int8&) override {
-      *value = Value::MakeInteger(value->int8_value());
+      value->m_kind = kInteger;
+      value->m_Integer_value = value->m_int8_value;
     }
     void Visit(const type::Int16&) override {
-      *value = Value::MakeInteger(value->int16_value());
+      value->m_kind = kInteger;
+      value->m_Integer_value = value->m_int16_value;
     }
     void Visit(const type::Int32&) override {
-      *value = Value::MakeInteger(value->int32_value());
+      value->m_kind = kInteger;
+      value->m_Integer_value = value->m_int32_value;
     }
     void Visit(const type::Int64&) override {
-      *value = Value::MakeInteger(value->int64_value());
+      value->m_kind = kInteger;
+      value->m_Integer_value = value->m_int64_value;
     }
     void Visit(const type::Uint8&) override {
-      *value = Value::MakeInteger(value->uint8_value());
+      value->m_kind = kInteger;
+      value->m_Integer_value = value->m_uint8_value;
     }
     void Visit(const type::Uint16&) override {
-      *value = Value::MakeInteger(value->uint16_value());
+      value->m_kind = kInteger;
+      value->m_Integer_value = value->m_uint16_value;
     }
     void Visit(const type::Uint32&) override {
-      *value = Value::MakeInteger(value->uint32_value());
+      value->m_kind = kInteger;
+      value->m_Integer_value = value->m_uint32_value;
     }
     void Visit(const type::Uint64&) override {
-      *value = Value::MakeInteger(value->uint64_value());
+      value->m_kind = kInteger;
+      value->m_Integer_value = value->m_uint64_value;
     }
     void Visit(const type::Int&) override {
-      *value = Value::MakeInteger(value->int_value());
+      value->m_kind = kInteger;
+      value->m_Integer_value = value->m_int_value;
     }
     void Visit(const type::Uint&) override {
-      *value = Value::MakeInteger(value->uint_value());
+      value->m_kind = kInteger;
+      value->m_Integer_value = value->m_uint_value;
     }
     void Visit(const type::Uintptr&) override {
-      *value = Value::MakeInteger(value->uintptr_value());
+      value->m_kind = kInteger;
+      value->m_Integer_value = value->m_uintptr_value;
     }
   };
-
-  assert(IsInitialized());
 
   switch (m_kind) {
     case Value::kInteger:
       return true;
       break;
     case Value::kRune:
-      *this = Value::MakeInteger(m_Rune_value);
+      this->m_kind = kInteger;
+      this->m_Integer_value = this->m_Rune_value;
       return true;
       break;
     case Value::kFloat:
       {
         mpz_class x(m_Float_value);
         if (m_Float_value == mpf_class(x)) {
-          *this = Value::MakeInteger(x);
+          this->m_kind = kInteger;
+          this->m_Integer_value = x;
           return true;
         } else {
-          *this = Value::MakeError();
           return false;
         }
       }
@@ -727,10 +758,10 @@ bool Value::ToInteger() {
       {
         mpz_class x(m_Complex_value.real());
         if (m_Complex_value == complex_t(x, 0)) {
-          *this = Value::MakeInteger(x);
+          this->m_kind = kInteger;
+          this->m_Integer_value = x;
           return true;
         } else {
-          *this = Value::MakeError();
           return false;
         }
       }
@@ -741,15 +772,23 @@ bool Value::ToInteger() {
         m_type->UnderlyingType()->Accept(&vis);
         return true;
       } else {
-        *this = Value::MakeError();
         return false;
       }
       break;
     default:
-      *this = Value::MakeError();
       return false;
       break;
   }
+}
+
+void Value::Dereference() {
+  if (m_kind == kLValue) {
+    m_kind = kRValue;
+  }
+}
+
+bool Value::IsError() const {
+  return m_kind == kError;
 }
 
 bool Value::RequireConstant(ErrorReporter* error_reporter) const {
@@ -771,674 +810,688 @@ bool Value::RequireConstant(ErrorReporter* error_reporter) const {
 
 // TODO(jrw972):  Handle overflow and underflow.
 
-Value Value::Posate(
-    const Location& location, const Value* x, ErrorReporter* error_reporter) {
+ValuePtr Value::Posate(
+    const Location& location, ValuePtr x,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, Value* a_value) : x(a_x), value(a_value) {}
-    const Value& x;
-    Value* value;
+    Visitor(ConstValuePtr a_x, ValuePtr a_value) : x(a_x), value(a_value) {}
+    ConstValuePtr x;
+    ValuePtr value;
 
     void Visit(const type::Int8&) override {
-      value->m_int8_value = +x.m_int8_value;
+      value->m_int8_value = +x->m_int8_value;
     }
     void Visit(const type::Int16&) override {
-      value->m_int16_value = +x.m_int16_value;
+      value->m_int16_value = +x->m_int16_value;
     }
     void Visit(const type::Int32&) override {
-      value->m_int32_value = +x.m_int32_value;
+      value->m_int32_value = +x->m_int32_value;
     }
     void Visit(const type::Int64&) override {
-      value->m_int64_value = +x.m_int64_value;
+      value->m_int64_value = +x->m_int64_value;
     }
     void Visit(const type::Uint8&) override {
-      value->m_uint8_value = +x.m_uint8_value;
+      value->m_uint8_value = +x->m_uint8_value;
     }
     void Visit(const type::Uint16&) override {
-      value->m_uint16_value = +x.m_uint16_value;
+      value->m_uint16_value = +x->m_uint16_value;
     }
     void Visit(const type::Uint32&) override {
-      value->m_uint32_value = +x.m_uint32_value;
+      value->m_uint32_value = +x->m_uint32_value;
     }
     void Visit(const type::Uint64&) override {
-      value->m_uint64_value = +x.m_uint64_value;
+      value->m_uint64_value = +x->m_uint64_value;
     }
     void Visit(const type::Int&) override {
-      value->m_int_value = +x.m_int_value;
+      value->m_int_value = +x->m_int_value;
     }
     void Visit(const type::Uint&) override {
-      value->m_uint_value = +x.m_uint_value;
+      value->m_uint_value = +x->m_uint_value;
     }
     void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = +x.m_uintptr_value;
+      value->m_uintptr_value = +x->m_uintptr_value;
     }
     void Visit(const type::Float32&) override {
-      value->m_float32_value = +x.m_float32_value;
+      value->m_float32_value = +x->m_float32_value;
     }
     void Visit(const type::Float64&) override {
-      value->m_float64_value = +x.m_float64_value;
+      value->m_float64_value = +x->m_float64_value;
     }
     void Visit(const type::Complex64&) override {
-      value->m_complex64_value = +x.m_complex64_value;
+      value->m_complex64_value = +x->m_complex64_value;
     }
     void Visit(const type::Complex128&) override {
-      value->m_complex128_value = +x.m_complex128_value;
+      value->m_complex128_value = +x->m_complex128_value;
     }
   };
 
-  assert(x->IsInitialized());
-
   if (x->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (!x->IsArithmetic()) {
-    error_reporter->Insert(CannotApply(location, '+', *x));
-    return MakeError();
+    error_reporter->Insert(CannotApply(location, '+', x));
+    return Value::MakeError();
   }
 
-  Value v;
-  v.m_kind = x->m_kind;
-  switch (v.m_kind) {
+  x->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
+  switch (v->m_kind) {
     case Value::kInteger:
-      v.m_Integer_value = +x->m_Integer_value;
+      v->m_Integer_value = +x->m_Integer_value;
       break;
     case Value::kRune:
-      v.m_Rune_value = +x->m_Rune_value;
+      v->m_Rune_value = +x->m_Rune_value;
       break;
     case Value::kFloat:
-      v.m_Float_value = +x->m_Float_value;
+      v->m_Float_value = +x->m_Float_value;
       break;
     case Value::kComplex:
-      v.m_Complex_value = +x->m_Complex_value;
+      v->m_Complex_value = +x->m_Complex_value;
       break;
     case Value::kConstant:
       {
-        v.m_type = x->m_type;
-        Visitor vis(*x, &v);
+        v->m_type = x->m_type;
+        Visitor vis(x, v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
-        v.m_type = x->m_type;
+        v->m_type = x->m_type;
       }
       break;
     default:
       abort();  // NOT_COVERED
   }
+
   return v;
 }
 
-Value Value::Negate(const Location& location, const Value* x, ErrorReporter* error_reporter) {
+ValuePtr Value::Negate(
+    const Location& location, ValuePtr x,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, Value* a_value) : x(a_x), value(a_value) {}
-    const Value& x;
-    Value* value;
+    Visitor(ConstValuePtr a_x, ValuePtr a_value) : x(a_x), value(a_value) {}
+    ConstValuePtr x;
+    ValuePtr value;
 
     void Visit(const type::Int8&) override {
-      value->m_int8_value = -x.m_int8_value;
+      value->m_int8_value = -x->m_int8_value;
     }
     void Visit(const type::Int16&) override {
-      value->m_int16_value = -x.m_int16_value;
+      value->m_int16_value = -x->m_int16_value;
     }
     void Visit(const type::Int32&) override {
-      value->m_int32_value = -x.m_int32_value;
+      value->m_int32_value = -x->m_int32_value;
     }
     void Visit(const type::Int64&) override {
-      value->m_int64_value = -x.m_int64_value;
+      value->m_int64_value = -x->m_int64_value;
     }
     void Visit(const type::Uint8&) override {
-      value->m_uint8_value = -x.m_uint8_value;
+      value->m_uint8_value = -x->m_uint8_value;
     }
     void Visit(const type::Uint16&) override {
-      value->m_uint16_value = -x.m_uint16_value;
+      value->m_uint16_value = -x->m_uint16_value;
     }
     void Visit(const type::Uint32&) override {
-      value->m_uint32_value = -x.m_uint32_value;
+      value->m_uint32_value = -x->m_uint32_value;
     }
     void Visit(const type::Uint64&) override {
-      value->m_uint64_value = -x.m_uint64_value;
+      value->m_uint64_value = -x->m_uint64_value;
     }
     void Visit(const type::Int&) override {
-      value->m_int_value = -x.m_int_value;
+      value->m_int_value = -x->m_int_value;
     }
     void Visit(const type::Uint&) override {
-      value->m_uint_value = -x.m_uint_value;
+      value->m_uint_value = -x->m_uint_value;
     }
     void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = -x.m_uintptr_value;
+      value->m_uintptr_value = -x->m_uintptr_value;
     }
     void Visit(const type::Float32&) override {
-      value->m_float32_value = -x.m_float32_value;
+      value->m_float32_value = -x->m_float32_value;
     }
     void Visit(const type::Float64&) override {
-      value->m_float64_value = -x.m_float64_value;
+      value->m_float64_value = -x->m_float64_value;
     }
     void Visit(const type::Complex64&) override {
-      value->m_complex64_value = -x.m_complex64_value;
+      value->m_complex64_value = -x->m_complex64_value;
     }
     void Visit(const type::Complex128&) override {
-      value->m_complex128_value = -x.m_complex128_value;
+      value->m_complex128_value = -x->m_complex128_value;
     }
   };
 
-  assert(x->IsInitialized());
-
   if (x->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (!x->IsArithmetic()) {
-    error_reporter->Insert(CannotApply(location, '-', *x));
-    return MakeError();
+    error_reporter->Insert(CannotApply(location, '-', x));
+    return Value::MakeError();
   }
 
-  Value v;
-  v.m_kind = x->m_kind;
-  switch (v.m_kind) {
+  x->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
+  switch (v->m_kind) {
     case Value::kInteger:
-      v.m_Integer_value = -x->m_Integer_value;
+      v->m_Integer_value = -x->m_Integer_value;
       break;
     case Value::kRune:
-      v.m_Rune_value = -x->m_Rune_value;
+      v->m_Rune_value = -x->m_Rune_value;
       break;
     case Value::kFloat:
-      v.m_Float_value = -x->m_Float_value;
+      v->m_Float_value = -x->m_Float_value;
       break;
     case Value::kComplex:
-      v.m_Complex_value = -x->m_Complex_value;
+      v->m_Complex_value = -x->m_Complex_value;
       break;
     case Value::kConstant:
       {
-        v.m_type = x->m_type;
-        Visitor vis(*x, &v);
+        v->m_type = x->m_type;
+        Visitor vis(x, v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
-        v.m_type = x->m_type;
+        v->m_type = x->m_type;
       }
       break;
     default:
       abort();  // NOT_COVERED
   }
+
   return v;
 }
 
-Value Value::LogicNot(const Location& location, const Value* x, ErrorReporter* error_reporter) {
-  assert(x->IsInitialized());
-
+ValuePtr Value::LogicNot(
+    const Location& location, ValuePtr x,
+    ErrorReporter* error_reporter) {
   if (x->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (!x->IsBoolean()) {
-    error_reporter->Insert(CannotApply(location, '!', *x));
-    return MakeError();
+    error_reporter->Insert(CannotApply(location, '!', x));
+    return Value::MakeError();
   }
 
-  Value v;
-  v.m_kind = x->m_kind;
-  switch (v.m_kind) {
+  x->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
+  switch (v->m_kind) {
     case Value::kBoolean:
-      v.m_Boolean_value = !x->m_Boolean_value;
+      v->m_Boolean_value = !x->m_Boolean_value;
       break;
     case Value::kConstant:
-      v.m_bool_value = !x->m_bool_value;
-      v.m_type = x->m_type;
+      v->m_bool_value = !x->m_bool_value;
+      v->m_type = x->m_type;
       break;
-    case Value::kValue:
-      v.m_type = x->m_type;
+    case Value::kRValue:
+      v->m_type = x->m_type;
       break;
     default:
       abort();  // NOT_COVERED
   }
+
   return v;
 }
 
-Value Value::BitNot(const Location& location, const Value* x, ErrorReporter* error_reporter) {
+ValuePtr Value::BitNot(
+    const Location& location, ValuePtr x,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, Value* a_value) : x(a_x), value(a_value) {}
-    const Value& x;
-    Value* value;
+    Visitor(ConstValuePtr a_x, ValuePtr a_value) : x(a_x), value(a_value) {}
+    ConstValuePtr x;
+    ValuePtr value;
 
     void Visit(const type::Int8&) override {
-      value->m_int8_value = ~x.m_int8_value;
+      value->m_int8_value = ~x->m_int8_value;
     }
     void Visit(const type::Int16&) override {
-      value->m_int16_value = ~x.m_int16_value;
+      value->m_int16_value = ~x->m_int16_value;
     }
     void Visit(const type::Int32&) override {
-      value->m_int32_value = ~x.m_int32_value;
+      value->m_int32_value = ~x->m_int32_value;
     }
     void Visit(const type::Int64&) override {
-      value->m_int64_value = ~x.m_int64_value;
+      value->m_int64_value = ~x->m_int64_value;
     }
     void Visit(const type::Uint8&) override {
-      value->m_uint8_value = ~x.m_uint8_value;
+      value->m_uint8_value = ~x->m_uint8_value;
     }
     void Visit(const type::Uint16&) override {
-      value->m_uint16_value = ~x.m_uint16_value;
+      value->m_uint16_value = ~x->m_uint16_value;
     }
     void Visit(const type::Uint32&) override {
-      value->m_uint32_value = ~x.m_uint32_value;
+      value->m_uint32_value = ~x->m_uint32_value;
     }
     void Visit(const type::Uint64&) override {
-      value->m_uint64_value = ~x.m_uint64_value;
+      value->m_uint64_value = ~x->m_uint64_value;
     }
     void Visit(const type::Int&) override {
-      value->m_int_value = ~x.m_int_value;
+      value->m_int_value = ~x->m_int_value;
     }
     void Visit(const type::Uint&) override {
-      value->m_uint_value = ~x.m_uint_value;
+      value->m_uint_value = ~x->m_uint_value;
     }
     void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = ~x.m_uintptr_value;
+      value->m_uintptr_value = ~x->m_uintptr_value;
     }
   };
 
-  assert(x->IsInitialized());
-
   if (x->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (!x->IsInteger()) {
-    error_reporter->Insert(CannotApply(location, '~', *x));
-    return MakeError();
+    error_reporter->Insert(CannotApply(location, '~', x));
+    return Value::MakeError();
   }
 
-  Value v;
-  v.m_kind = x->m_kind;
-  switch (v.m_kind) {
+  x->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
+  switch (v->m_kind) {
     case Value::kInteger:
-      v.m_Integer_value = ~x->m_Integer_value;
+      v->m_Integer_value = ~x->m_Integer_value;
       break;
     case Value::kRune:
-      v.m_Rune_value = ~x->m_Rune_value;
+      v->m_Rune_value = ~x->m_Rune_value;
       break;
     case Value::kConstant:
       {
-        v.m_type = x->m_type;
-        Visitor vis(*x, &v);
+        v->m_type = x->m_type;
+        Visitor vis(x, v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
-    case Value::kValue:
+    case Value::kRValue:
       {
-        v.m_type = x->m_type;
+        v->m_type = x->m_type;
       }
       break;
     default:
       abort();  // NOT_COVERED
   }
+
   return v;
 }
 
-Value Value::Add(const Location& location, Value* x, Value* y, ErrorReporter* error_reporter) {
+ValuePtr Value::Add(
+    const Location& location, ValuePtr x, ValuePtr y,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, const Value& a_y, Value* a_value)
+    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
         : x(a_x), y(a_y), value(a_value) {}
-    const Value& x;
-    const Value& y;
-    Value* value;
+    ConstValuePtr x;
+    ConstValuePtr y;
+    ValuePtr value;
 
     void Visit(const type::Int8&) override {
-      value->m_int8_value = x.m_int8_value + y.m_int8_value;
+      value->m_int8_value = x->m_int8_value + y->m_int8_value;
     }
     void Visit(const type::Int16&) override {
-      value->m_int16_value = x.m_int16_value + y.m_int16_value;
+      value->m_int16_value = x->m_int16_value + y->m_int16_value;
     }
     void Visit(const type::Int32&) override {
-      value->m_int32_value = x.m_int32_value + y.m_int32_value;
+      value->m_int32_value = x->m_int32_value + y->m_int32_value;
     }
     void Visit(const type::Int64&) override {
-      value->m_int64_value = x.m_int64_value + y.m_int64_value;
+      value->m_int64_value = x->m_int64_value + y->m_int64_value;
     }
     void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x.m_uint8_value + y.m_uint8_value;
+      value->m_uint8_value = x->m_uint8_value + y->m_uint8_value;
     }
     void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x.m_uint16_value + y.m_uint16_value;
+      value->m_uint16_value = x->m_uint16_value + y->m_uint16_value;
     }
     void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x.m_uint32_value + y.m_uint32_value;
+      value->m_uint32_value = x->m_uint32_value + y->m_uint32_value;
     }
     void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x.m_uint64_value + y.m_uint64_value;
+      value->m_uint64_value = x->m_uint64_value + y->m_uint64_value;
     }
     void Visit(const type::Int&) override {
-      value->m_int_value = x.m_int_value + y.m_int_value;
+      value->m_int_value = x->m_int_value + y->m_int_value;
     }
     void Visit(const type::Uint&) override {
-      value->m_uint_value = x.m_uint_value + y.m_uint_value;
+      value->m_uint_value = x->m_uint_value + y->m_uint_value;
     }
     void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x.m_uintptr_value + y.m_uintptr_value;
+      value->m_uintptr_value = x->m_uintptr_value + y->m_uintptr_value;
     }
     void Visit(const type::Float32&) override {
-      value->m_float32_value = x.m_float32_value + y.m_float32_value;
+      value->m_float32_value = x->m_float32_value + y->m_float32_value;
     }
     void Visit(const type::Float64&) override {
-      value->m_float64_value = x.m_float64_value + y.m_float64_value;
+      value->m_float64_value = x->m_float64_value + y->m_float64_value;
     }
     void Visit(const type::Complex64&) override {
-      value->m_complex64_value = x.m_complex64_value + y.m_complex64_value;
+      value->m_complex64_value = x->m_complex64_value + y->m_complex64_value;
     }
     void Visit(const type::Complex128&) override {
-      value->m_complex128_value = x.m_complex128_value + y.m_complex128_value;
+      value->m_complex128_value = x->m_complex128_value + y->m_complex128_value;
     }
     void Visit(const type::String&) override {
-      value->m_string_value = x.m_string_value + y.m_string_value;
+      value->m_string_value = x->m_string_value + y->m_string_value;
     }
   };
 
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
   if (x->IsError() || y->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (!((x->IsArithmetic() && y->IsArithmetic()) ||
        (x->IsString() && y->IsString()))) {
-    error_reporter->Insert(CannotApply2(location, "+", *x, *y));
-    return MakeError();
+    // TODO(jrw972):  Make this check and other look at the left and right
+    // independently.
+    error_reporter->Insert(CannotApply2(location, "+", x, y));
+    return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "+", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "+", x, y));
+      return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "+", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "+", x, y));
+      return Value::MakeError();
     }
   }
 
-  Value v;
-  v.m_kind = x->m_kind;
-  switch (v.m_kind) {
+  x->Dereference();
+  y->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
+  switch (v->m_kind) {
     case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value + y->m_Integer_value;
+      v->m_Integer_value = x->m_Integer_value + y->m_Integer_value;
       break;
     case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value + y->m_Rune_value;
+      v->m_Rune_value = x->m_Rune_value + y->m_Rune_value;
       break;
     case Value::kFloat:
-      v.m_Float_value = x->m_Float_value + y->m_Float_value;
+      v->m_Float_value = x->m_Float_value + y->m_Float_value;
       break;
     case Value::kComplex:
-      v.m_Complex_value = x->m_Complex_value + y->m_Complex_value;
+      v->m_Complex_value = x->m_Complex_value + y->m_Complex_value;
       break;
     case Value::kString:
-      v.m_String_value = x->m_String_value + y->m_String_value;
+      v->m_String_value = x->m_String_value + y->m_String_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "+", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "+", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
-        Visitor vis(*x, *y, &v);
+        v->m_type = x->m_type;
+        Visitor vis(x, y, v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
-    case Value::kValue:
+    case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "+", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "+", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
+        v->m_type = x->m_type;
       }
       break;
     default:
       abort();  // NOT_COVERED
   }
+
   return v;
 }
 
-Value Value::Subtract(const Location& location, Value* x, Value* y, ErrorReporter* error_reporter) {
+ValuePtr Value::Subtract(
+    const Location& location, ValuePtr x, ValuePtr y,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, const Value& a_y, Value* a_value)
+    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    const Value& x;
-    const Value& y;
-    Value* value;
+    ConstValuePtr x;
+    ConstValuePtr y;
+    ValuePtr value;
 
     void Visit(const type::Int8&) override {
-      value->m_int8_value = x.m_int8_value - y.m_int8_value;
+      value->m_int8_value = x->m_int8_value - y->m_int8_value;
     }
     void Visit(const type::Int16&) override {
-      value->m_int16_value = x.m_int16_value - y.m_int16_value;
+      value->m_int16_value = x->m_int16_value - y->m_int16_value;
     }
     void Visit(const type::Int32&) override {
-      value->m_int32_value = x.m_int32_value - y.m_int32_value;
+      value->m_int32_value = x->m_int32_value - y->m_int32_value;
     }
     void Visit(const type::Int64&) override {
-      value->m_int64_value = x.m_int64_value - y.m_int64_value;
+      value->m_int64_value = x->m_int64_value - y->m_int64_value;
     }
     void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x.m_uint8_value - y.m_uint8_value;
+      value->m_uint8_value = x->m_uint8_value - y->m_uint8_value;
     }
     void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x.m_uint16_value - y.m_uint16_value;
+      value->m_uint16_value = x->m_uint16_value - y->m_uint16_value;
     }
     void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x.m_uint32_value - y.m_uint32_value;
+      value->m_uint32_value = x->m_uint32_value - y->m_uint32_value;
     }
     void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x.m_uint64_value - y.m_uint64_value;
+      value->m_uint64_value = x->m_uint64_value - y->m_uint64_value;
     }
     void Visit(const type::Int&) override {
-      value->m_int_value = x.m_int_value - y.m_int_value;
+      value->m_int_value = x->m_int_value - y->m_int_value;
     }
     void Visit(const type::Uint&) override {
-      value->m_uint_value = x.m_uint_value - y.m_uint_value;
+      value->m_uint_value = x->m_uint_value - y->m_uint_value;
     }
     void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x.m_uintptr_value - y.m_uintptr_value;
+      value->m_uintptr_value = x->m_uintptr_value - y->m_uintptr_value;
     }
     void Visit(const type::Float32&) override {
-      value->m_float32_value = x.m_float32_value - y.m_float32_value;
+      value->m_float32_value = x->m_float32_value - y->m_float32_value;
     }
     void Visit(const type::Float64&) override {
-      value->m_float64_value = x.m_float64_value - y.m_float64_value;
+      value->m_float64_value = x->m_float64_value - y->m_float64_value;
     }
     void Visit(const type::Complex64&) override {
-      value->m_complex64_value = x.m_complex64_value - y.m_complex64_value;
+      value->m_complex64_value = x->m_complex64_value - y->m_complex64_value;
     }
     void Visit(const type::Complex128&) override {
-      value->m_complex128_value = x.m_complex128_value - y.m_complex128_value;
+      value->m_complex128_value = x->m_complex128_value - y->m_complex128_value;
     }
   };
 
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
   if (x->IsError() || y->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (!(x->IsArithmetic() && y->IsArithmetic())) {
-    error_reporter->Insert(CannotApply2(location, "-", *x, *y));
-    return MakeError();
+    error_reporter->Insert(CannotApply2(location, "-", x, y));
+    return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "-", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "-", x, y));
+      return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "-", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "-", x, y));
+      return Value::MakeError();
     }
   }
 
-  Value v;
-  v.m_kind = x->m_kind;
-  switch (v.m_kind) {
+  x->Dereference();
+  y->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
+  switch (v->m_kind) {
     case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value - y->m_Integer_value;
+      v->m_Integer_value = x->m_Integer_value - y->m_Integer_value;
       break;
     case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value - y->m_Rune_value;
+      v->m_Rune_value = x->m_Rune_value - y->m_Rune_value;
       break;
     case Value::kFloat:
-      v.m_Float_value = x->m_Float_value - y->m_Float_value;
+      v->m_Float_value = x->m_Float_value - y->m_Float_value;
       break;
     case Value::kComplex:
-      v.m_Complex_value = x->m_Complex_value - y->m_Complex_value;
+      v->m_Complex_value = x->m_Complex_value - y->m_Complex_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "-", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "-", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
-        Visitor vis(*x, *y, &v);
+        v->m_type = x->m_type;
+        Visitor vis(x, y, v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
-    case Value::kValue:
+    case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "-", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "-", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
+        v->m_type = x->m_type;
       }
       break;
     default:
       abort();  // NOT_COVERED
   }
+
   return v;
 }
 
-Value Value::Multiply(const Location& location, Value* x, Value* y, ErrorReporter* error_reporter) {
+ValuePtr Value::Multiply(
+    const Location& location, ValuePtr x, ValuePtr y,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, const Value& a_y, Value* a_value)
+    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    const Value& x;
-    const Value& y;
-    Value* value;
+    ConstValuePtr x;
+    ConstValuePtr y;
+    ValuePtr value;
 
     void Visit(const type::Int8&) override {
-      value->m_int8_value = x.m_int8_value * y.m_int8_value;
+      value->m_int8_value = x->m_int8_value * y->m_int8_value;
     }
     void Visit(const type::Int16&) override {
-      value->m_int16_value = x.m_int16_value * y.m_int16_value;
+      value->m_int16_value = x->m_int16_value * y->m_int16_value;
     }
     void Visit(const type::Int32&) override {
-      value->m_int32_value = x.m_int32_value * y.m_int32_value;
+      value->m_int32_value = x->m_int32_value * y->m_int32_value;
     }
     void Visit(const type::Int64&) override {
-      value->m_int64_value = x.m_int64_value * y.m_int64_value;
+      value->m_int64_value = x->m_int64_value * y->m_int64_value;
     }
     void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x.m_uint8_value * y.m_uint8_value;
+      value->m_uint8_value = x->m_uint8_value * y->m_uint8_value;
     }
     void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x.m_uint16_value * y.m_uint16_value;
+      value->m_uint16_value = x->m_uint16_value * y->m_uint16_value;
     }
     void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x.m_uint32_value * y.m_uint32_value;
+      value->m_uint32_value = x->m_uint32_value * y->m_uint32_value;
     }
     void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x.m_uint64_value * y.m_uint64_value;
+      value->m_uint64_value = x->m_uint64_value * y->m_uint64_value;
     }
     void Visit(const type::Int&) override {
-      value->m_int_value = x.m_int_value * y.m_int_value;
+      value->m_int_value = x->m_int_value * y->m_int_value;
     }
     void Visit(const type::Uint&) override {
-      value->m_uint_value = x.m_uint_value * y.m_uint_value;
+      value->m_uint_value = x->m_uint_value * y->m_uint_value;
     }
     void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x.m_uintptr_value * y.m_uintptr_value;
+      value->m_uintptr_value = x->m_uintptr_value * y->m_uintptr_value;
     }
     void Visit(const type::Float32&) override {
-      value->m_float32_value = x.m_float32_value * y.m_float32_value;
+      value->m_float32_value = x->m_float32_value * y->m_float32_value;
     }
     void Visit(const type::Float64&) override {
-      value->m_float64_value = x.m_float64_value * y.m_float64_value;
+      value->m_float64_value = x->m_float64_value * y->m_float64_value;
     }
     void Visit(const type::Complex64&) override {
-      value->m_complex64_value = x.m_complex64_value * y.m_complex64_value;
+      value->m_complex64_value = x->m_complex64_value * y->m_complex64_value;
     }
     void Visit(const type::Complex128&) override {
-      value->m_complex128_value = x.m_complex128_value * y.m_complex128_value;
+      value->m_complex128_value = x->m_complex128_value * y->m_complex128_value;
     }
   };
 
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
   if (x->IsError() || y->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (!(x->IsArithmetic() && y->IsArithmetic())) {
-    error_reporter->Insert(CannotApply2(location, "*", *x, *y));
-    return MakeError();
+    error_reporter->Insert(CannotApply2(location, "*", x, y));
+    return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "*", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "*", x, y));
+      return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "*", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "*", x, y));
+      return Value::MakeError();
     }
   }
 
-  Value v;
-  v.m_kind = x->m_kind;
-  switch (v.m_kind) {
+  x->Dereference();
+  y->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
+  switch (v->m_kind) {
     case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value * y->m_Integer_value;
+      v->m_Integer_value = x->m_Integer_value * y->m_Integer_value;
       break;
     case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value * y->m_Rune_value;
+      v->m_Rune_value = x->m_Rune_value * y->m_Rune_value;
       break;
     case Value::kFloat:
-      v.m_Float_value = x->m_Float_value * y->m_Float_value;
+      v->m_Float_value = x->m_Float_value * y->m_Float_value;
       break;
     case Value::kComplex:
-      v.m_Complex_value = x->m_Complex_value * y->m_Complex_value;
+      v->m_Complex_value = x->m_Complex_value * y->m_Complex_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "*", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "*", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
-        Visitor vis(*x, *y, &v);
+        v->m_type = x->m_type;
+        Visitor vis(x, y, v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
-    case Value::kValue:
+    case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "*", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "*", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
+        v->m_type = x->m_type;
       }
       break;
     default:
@@ -1447,125 +1500,126 @@ Value Value::Multiply(const Location& location, Value* x, Value* y, ErrorReporte
   return v;
 }
 
-Value Value::Divide(const Location& location, Value* x, Value* y, ErrorReporter* error_reporter) {
+ValuePtr Value::Divide(
+    const Location& location, ValuePtr x, ValuePtr y,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, const Value& a_y, Value* a_value)
+    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    const Value& x;
-    const Value& y;
-    Value* value;
+    ConstValuePtr x;
+    ConstValuePtr y;
+    ValuePtr value;
 
     void Visit(const type::Int8&) override {
-      value->m_int8_value = x.m_int8_value / y.m_int8_value;
+      value->m_int8_value = x->m_int8_value / y->m_int8_value;
     }
     void Visit(const type::Int16&) override {
-      value->m_int16_value = x.m_int16_value / y.m_int16_value;
+      value->m_int16_value = x->m_int16_value / y->m_int16_value;
     }
     void Visit(const type::Int32&) override {
-      value->m_int32_value = x.m_int32_value / y.m_int32_value;
+      value->m_int32_value = x->m_int32_value / y->m_int32_value;
     }
     void Visit(const type::Int64&) override {
-      value->m_int64_value = x.m_int64_value / y.m_int64_value;
+      value->m_int64_value = x->m_int64_value / y->m_int64_value;
     }
     void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x.m_uint8_value / y.m_uint8_value;
+      value->m_uint8_value = x->m_uint8_value / y->m_uint8_value;
     }
     void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x.m_uint16_value / y.m_uint16_value;
+      value->m_uint16_value = x->m_uint16_value / y->m_uint16_value;
     }
     void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x.m_uint32_value / y.m_uint32_value;
+      value->m_uint32_value = x->m_uint32_value / y->m_uint32_value;
     }
     void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x.m_uint64_value / y.m_uint64_value;
+      value->m_uint64_value = x->m_uint64_value / y->m_uint64_value;
     }
     void Visit(const type::Int&) override {
-      value->m_int_value = x.m_int_value / y.m_int_value;
+      value->m_int_value = x->m_int_value / y->m_int_value;
     }
     void Visit(const type::Uint&) override {
-      value->m_uint_value = x.m_uint_value / y.m_uint_value;
+      value->m_uint_value = x->m_uint_value / y->m_uint_value;
     }
     void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x.m_uintptr_value / y.m_uintptr_value;
+      value->m_uintptr_value = x->m_uintptr_value / y->m_uintptr_value;
     }
     void Visit(const type::Float32&) override {
-      value->m_float32_value = x.m_float32_value / y.m_float32_value;
+      value->m_float32_value = x->m_float32_value / y->m_float32_value;
     }
     void Visit(const type::Float64&) override {
-      value->m_float64_value = x.m_float64_value / y.m_float64_value;
+      value->m_float64_value = x->m_float64_value / y->m_float64_value;
     }
     void Visit(const type::Complex64&) override {
-      value->m_complex64_value = x.m_complex64_value / y.m_complex64_value;
+      value->m_complex64_value = x->m_complex64_value / y->m_complex64_value;
     }
     void Visit(const type::Complex128&) override {
-      value->m_complex128_value = x.m_complex128_value / y.m_complex128_value;
+      value->m_complex128_value = x->m_complex128_value / y->m_complex128_value;
     }
   };
 
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
   if (x->IsError() || y->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (!(x->IsArithmetic() && y->IsArithmetic())) {
-    error_reporter->Insert(CannotApply2(location, "/", *x, *y));
-    return MakeError();
+    error_reporter->Insert(CannotApply2(location, "/", x, y));
+    return Value::MakeError();
   }
 
   if (y->IsZero()) {
     error_reporter->Insert(DivisionByZero(location));
-    return MakeError();
+    return Value::MakeError();
   }
 
     if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "/", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "/", x, y));
+      return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "/", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "/", x, y));
+      return Value::MakeError();
     }
   }
 
-  Value v;
-  v.m_kind = x->m_kind;
-  switch (v.m_kind) {
+  x->Dereference();
+  y->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
+  switch (v->m_kind) {
     case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value / y->m_Integer_value;
+      v->m_Integer_value = x->m_Integer_value / y->m_Integer_value;
       break;
     case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value / y->m_Rune_value;
+      v->m_Rune_value = x->m_Rune_value / y->m_Rune_value;
       break;
     case Value::kFloat:
-      v.m_Float_value = x->m_Float_value / y->m_Float_value;
+      v->m_Float_value = x->m_Float_value / y->m_Float_value;
       break;
     case Value::kComplex:
-      v.m_Complex_value = x->m_Complex_value / y->m_Complex_value;
+      v->m_Complex_value = x->m_Complex_value / y->m_Complex_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "/", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "/", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
-        Visitor vis(*x, *y, &v);
+        v->m_type = x->m_type;
+        Visitor vis(x, y, v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
-    case Value::kValue:
+    case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "/", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "/", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
+        v->m_type = x->m_type;
       }
       break;
     default:
@@ -1574,107 +1628,108 @@ Value Value::Divide(const Location& location, Value* x, Value* y, ErrorReporter*
   return v;
 }
 
-Value Value::Modulo(const Location& location, Value* x, Value* y, ErrorReporter* error_reporter) {
+ValuePtr Value::Modulo(
+    const Location& location, ValuePtr x, ValuePtr y,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, const Value& a_y, Value* a_value)
+    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    const Value& x;
-    const Value& y;
-    Value* value;
+    ConstValuePtr x;
+    ConstValuePtr y;
+    ValuePtr value;
 
     void Visit(const type::Int8&) override {
-      value->m_int8_value = x.m_int8_value % y.m_int8_value;
+      value->m_int8_value = x->m_int8_value % y->m_int8_value;
     }
     void Visit(const type::Int16&) override {
-      value->m_int16_value = x.m_int16_value % y.m_int16_value;
+      value->m_int16_value = x->m_int16_value % y->m_int16_value;
     }
     void Visit(const type::Int32&) override {
-      value->m_int32_value = x.m_int32_value % y.m_int32_value;
+      value->m_int32_value = x->m_int32_value % y->m_int32_value;
     }
     void Visit(const type::Int64&) override {
-      value->m_int64_value = x.m_int64_value % y.m_int64_value;
+      value->m_int64_value = x->m_int64_value % y->m_int64_value;
     }
     void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x.m_uint8_value % y.m_uint8_value;
+      value->m_uint8_value = x->m_uint8_value % y->m_uint8_value;
     }
     void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x.m_uint16_value % y.m_uint16_value;
+      value->m_uint16_value = x->m_uint16_value % y->m_uint16_value;
     }
     void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x.m_uint32_value % y.m_uint32_value;
+      value->m_uint32_value = x->m_uint32_value % y->m_uint32_value;
     }
     void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x.m_uint64_value % y.m_uint64_value;
+      value->m_uint64_value = x->m_uint64_value % y->m_uint64_value;
     }
     void Visit(const type::Int&) override {
-      value->m_int_value = x.m_int_value % y.m_int_value;
+      value->m_int_value = x->m_int_value % y->m_int_value;
     }
     void Visit(const type::Uint&) override {
-      value->m_uint_value = x.m_uint_value % y.m_uint_value;
+      value->m_uint_value = x->m_uint_value % y->m_uint_value;
     }
     void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x.m_uintptr_value % y.m_uintptr_value;
+      value->m_uintptr_value = x->m_uintptr_value % y->m_uintptr_value;
     }
   };
 
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
   if (x->IsError() || y->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (!(x->IsInteger() && x->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "%", *x, *y));
-    return MakeError();
+    error_reporter->Insert(CannotApply2(location, "%", x, y));
+    return Value::MakeError();
   }
 
   if (y->IsZero()) {
     error_reporter->Insert(DivisionByZero(location));
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "%", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "%", x, y));
+      return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "%", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "%", x, y));
+      return Value::MakeError();
     }
   }
 
-  Value v;
-  v.m_kind = x->m_kind;
-  switch (v.m_kind) {
+  x->Dereference();
+  y->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
+  switch (v->m_kind) {
     case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value % y->m_Integer_value;
+      v->m_Integer_value = x->m_Integer_value % y->m_Integer_value;
       break;
     case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value % y->m_Rune_value;
+      v->m_Rune_value = x->m_Rune_value % y->m_Rune_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "%", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "%", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
-        Visitor vis(*x, *y, &v);
+        v->m_type = x->m_type;
+        Visitor vis(x, y, v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
-    case Value::kValue:
+    case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "%", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "%", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
+        v->m_type = x->m_type;
       }
       break;
     default:
@@ -1683,73 +1738,75 @@ Value Value::Modulo(const Location& location, Value* x, Value* y, ErrorReporter*
   return v;
 }
 
-Value Value::LeftShift(const Location& location, const Value* x, Value* y, ErrorReporter* error_reporter) {
+ValuePtr Value::LeftShift(
+    const Location& location, ValuePtr x, ValuePtr y,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, unsigned int a_y, Value* a_value)
+    Visitor(ConstValuePtr a_x, unsigned int a_y, ValuePtr a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    const Value& x;
+    ConstValuePtr x;
     unsigned int y;
-    Value* value;
+    ValuePtr value;
 
     void Visit(const type::Int8&) override {
-      value->m_int8_value = x.m_int8_value << y;
+      value->m_int8_value = x->m_int8_value << y;
     }
     void Visit(const type::Int16&) override {
-      value->m_int16_value = x.m_int16_value << y;
+      value->m_int16_value = x->m_int16_value << y;
     }
     void Visit(const type::Int32&) override {
-      value->m_int32_value = x.m_int32_value << y;
+      value->m_int32_value = x->m_int32_value << y;
     }
     void Visit(const type::Int64&) override {
-      value->m_int64_value = x.m_int64_value << y;
+      value->m_int64_value = x->m_int64_value << y;
     }
     void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x.m_uint8_value << y;
+      value->m_uint8_value = x->m_uint8_value << y;
     }
     void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x.m_uint16_value << y;
+      value->m_uint16_value = x->m_uint16_value << y;
     }
     void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x.m_uint32_value << y;
+      value->m_uint32_value = x->m_uint32_value << y;
     }
     void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x.m_uint64_value << y;
+      value->m_uint64_value = x->m_uint64_value << y;
     }
     void Visit(const type::Int&) override {
-      value->m_int_value = x.m_int_value << y;
+      value->m_int_value = x->m_int_value << y;
     }
     void Visit(const type::Uint&) override {
-      value->m_uint_value = x.m_uint_value << y;
+      value->m_uint_value = x->m_uint_value << y;
     }
     void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x.m_uintptr_value << y;
+      value->m_uintptr_value = x->m_uintptr_value << y;
     }
   };
 
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
   if (x->IsError() || y->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   {
     Value xx = *x;
     if (!xx.ToInteger()) {
-      error_reporter->Insert(CannotApply2(location, "<<", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "<<", x, y));
+      return Value::MakeError();
     }
   }
 
   if (!y->ToInteger() ||
       !y->ConvertTo(&type::Uint::instance)) {
-    error_reporter->Insert(CannotApply2(location, "<<", *x, *y));
-    return MakeError();
+    error_reporter->Insert(CannotApply2(location, "<<", x, y));
+    return Value::MakeError();
   }
 
-  Value v;
+  x->Dereference();
+  y->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
   switch (x->m_kind) {
     case Value::kInteger:
       v = MakeInteger(x->m_Integer_value << y->m_uint_value);
@@ -1765,16 +1822,16 @@ Value Value::LeftShift(const Location& location, const Value* x, Value* y, Error
       break;
     case Value::kConstant:
       {
-        v.m_kind = Value::kConstant;
-        v.m_type = x->m_type;
-        Visitor vis(*x, y->m_uint_value, &v);
+        v->m_kind = Value::kConstant;
+        v->m_type = x->m_type;
+        Visitor vis(x, y->m_uint_value, v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
-    case Value::kValue:
+    case Value::kRValue:
       {
-        v.m_kind = Value::kConstant;
-        v.m_type = x->m_type;
+        v->m_kind = Value::kConstant;
+        v->m_type = x->m_type;
       }
       break;
     default:
@@ -1783,73 +1840,75 @@ Value Value::LeftShift(const Location& location, const Value* x, Value* y, Error
   return v;
 }
 
-Value Value::RightShift(const Location& location, const Value* x, Value* y, ErrorReporter* error_reporter) {
+ValuePtr Value::RightShift(
+    const Location& location, ValuePtr x, ValuePtr y,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, unsigned int a_y, Value* a_value)
+    Visitor(ConstValuePtr a_x, unsigned int a_y, ValuePtr a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    const Value& x;
+    ConstValuePtr x;
     unsigned int y;
-    Value* value;
+    ValuePtr value;
 
     void Visit(const type::Int8&) override {
-      value->m_int8_value = x.m_int8_value >> y;
+      value->m_int8_value = x->m_int8_value >> y;
     }
     void Visit(const type::Int16&) override {
-      value->m_int16_value = x.m_int16_value >> y;
+      value->m_int16_value = x->m_int16_value >> y;
     }
     void Visit(const type::Int32&) override {
-      value->m_int32_value = x.m_int32_value >> y;
+      value->m_int32_value = x->m_int32_value >> y;
     }
     void Visit(const type::Int64&) override {
-      value->m_int64_value = x.m_int64_value >> y;
+      value->m_int64_value = x->m_int64_value >> y;
     }
     void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x.m_uint8_value >> y;
+      value->m_uint8_value = x->m_uint8_value >> y;
     }
     void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x.m_uint16_value >> y;
+      value->m_uint16_value = x->m_uint16_value >> y;
     }
     void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x.m_uint32_value >> y;
+      value->m_uint32_value = x->m_uint32_value >> y;
     }
     void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x.m_uint64_value >> y;
+      value->m_uint64_value = x->m_uint64_value >> y;
     }
     void Visit(const type::Int&) override {
-      value->m_int_value = x.m_int_value >> y;
+      value->m_int_value = x->m_int_value >> y;
     }
     void Visit(const type::Uint&) override {
-      value->m_uint_value = x.m_uint_value >> y;
+      value->m_uint_value = x->m_uint_value >> y;
     }
     void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x.m_uintptr_value >> y;
+      value->m_uintptr_value = x->m_uintptr_value >> y;
     }
   };
 
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
   if (x->IsError() || y->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   {
     Value xx = *x;
     if (!xx.ToInteger()) {
-      error_reporter->Insert(CannotApply2(location, ">>", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, ">>", x, y));
+      return Value::MakeError();
     }
   }
 
   if (!y->ToInteger() ||
       !y->ConvertTo(&type::Uint::instance)) {
-    error_reporter->Insert(CannotApply2(location, ">>", *x, *y));
-    return MakeError();
+    error_reporter->Insert(CannotApply2(location, ">>", x, y));
+    return Value::MakeError();
   }
 
-  Value v;
+  x->Dereference();
+  y->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
   switch (x->m_kind) {
     case Value::kInteger:
       v = MakeInteger(x->m_Integer_value >> y->m_uint_value);
@@ -1865,16 +1924,16 @@ Value Value::RightShift(const Location& location, const Value* x, Value* y, Erro
       break;
     case Value::kConstant:
       {
-        v.m_kind = Value::kConstant;
-        v.m_type = x->m_type;
-        Visitor vis(*x, y->m_uint_value, &v);
+        v->m_kind = Value::kConstant;
+        v->m_type = x->m_type;
+        Visitor vis(x, y->m_uint_value, v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
-    case Value::kValue:
+    case Value::kRValue:
       {
-        v.m_kind = Value::kConstant;
-        v.m_type = x->m_type;
+        v->m_kind = Value::kConstant;
+        v->m_type = x->m_type;
       }
       break;
     default:
@@ -1883,102 +1942,103 @@ Value Value::RightShift(const Location& location, const Value* x, Value* y, Erro
   return v;
 }
 
-Value Value::BitAnd(const Location& location, Value* x, Value* y, ErrorReporter* error_reporter) {
+ValuePtr Value::BitAnd(
+    const Location& location, ValuePtr x, ValuePtr y,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, const Value& a_y, Value* a_value)
+    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    const Value& x;
-    const Value& y;
-    Value* value;
+    ConstValuePtr x;
+    ConstValuePtr y;
+    ValuePtr value;
 
     void Visit(const type::Int8&) override {
-      value->m_int8_value = x.m_int8_value & y.m_int8_value;
+      value->m_int8_value = x->m_int8_value & y->m_int8_value;
     }
     void Visit(const type::Int16&) override {
-      value->m_int16_value = x.m_int16_value & y.m_int16_value;
+      value->m_int16_value = x->m_int16_value & y->m_int16_value;
     }
     void Visit(const type::Int32&) override {
-      value->m_int32_value = x.m_int32_value & y.m_int32_value;
+      value->m_int32_value = x->m_int32_value & y->m_int32_value;
     }
     void Visit(const type::Int64&) override {
-      value->m_int64_value = x.m_int64_value & y.m_int64_value;
+      value->m_int64_value = x->m_int64_value & y->m_int64_value;
     }
     void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x.m_uint8_value & y.m_uint8_value;
+      value->m_uint8_value = x->m_uint8_value & y->m_uint8_value;
     }
     void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x.m_uint16_value & y.m_uint16_value;
+      value->m_uint16_value = x->m_uint16_value & y->m_uint16_value;
     }
     void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x.m_uint32_value & y.m_uint32_value;
+      value->m_uint32_value = x->m_uint32_value & y->m_uint32_value;
     }
     void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x.m_uint64_value & y.m_uint64_value;
+      value->m_uint64_value = x->m_uint64_value & y->m_uint64_value;
     }
     void Visit(const type::Int&) override {
-      value->m_int_value = x.m_int_value & y.m_int_value;
+      value->m_int_value = x->m_int_value & y->m_int_value;
     }
     void Visit(const type::Uint&) override {
-      value->m_uint_value = x.m_uint_value & y.m_uint_value;
+      value->m_uint_value = x->m_uint_value & y->m_uint_value;
     }
     void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x.m_uintptr_value & y.m_uintptr_value;
+      value->m_uintptr_value = x->m_uintptr_value & y->m_uintptr_value;
     }
   };
 
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
   if (x->IsError() || y->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (!(x->IsInteger() && y->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "&", *x, *y));
-    return MakeError();
+    error_reporter->Insert(CannotApply2(location, "&", x, y));
+    return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "&", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "&", x, y));
+      return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "&", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "&", x, y));
+      return Value::MakeError();
     }
   }
 
-  Value v;
-  v.m_kind = x->m_kind;
-  switch (v.m_kind) {
+  x->Dereference();
+  y->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
+  switch (v->m_kind) {
     case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value & y->m_Integer_value;
+      v->m_Integer_value = x->m_Integer_value & y->m_Integer_value;
       break;
     case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value & y->m_Rune_value;
+      v->m_Rune_value = x->m_Rune_value & y->m_Rune_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "&", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "&", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
-        Visitor vis(*x, *y, &v);
+        v->m_type = x->m_type;
+        Visitor vis(x, y, v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
-    case Value::kValue:
+    case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "&", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "&", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
+        v->m_type = x->m_type;
       }
       break;
     default:
@@ -1987,102 +2047,103 @@ Value Value::BitAnd(const Location& location, Value* x, Value* y, ErrorReporter*
   return v;
 }
 
-Value Value::BitAndNot(const Location& location, Value* x, Value* y, ErrorReporter* error_reporter) {
+ValuePtr Value::BitAndNot(
+    const Location& location, ValuePtr x, ValuePtr y,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, const Value& a_y, Value* a_value)
+    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    const Value& x;
-    const Value& y;
-    Value* value;
+    ConstValuePtr x;
+    ConstValuePtr y;
+    ValuePtr value;
 
     void Visit(const type::Int8&) override {
-      value->m_int8_value = x.m_int8_value & ~y.m_int8_value;
+      value->m_int8_value = x->m_int8_value & ~y->m_int8_value;
     }
     void Visit(const type::Int16&) override {
-      value->m_int16_value = x.m_int16_value & ~y.m_int16_value;
+      value->m_int16_value = x->m_int16_value & ~y->m_int16_value;
     }
     void Visit(const type::Int32&) override {
-      value->m_int32_value = x.m_int32_value & ~y.m_int32_value;
+      value->m_int32_value = x->m_int32_value & ~y->m_int32_value;
     }
     void Visit(const type::Int64&) override {
-      value->m_int64_value = x.m_int64_value & ~y.m_int64_value;
+      value->m_int64_value = x->m_int64_value & ~y->m_int64_value;
     }
     void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x.m_uint8_value & ~y.m_uint8_value;
+      value->m_uint8_value = x->m_uint8_value & ~y->m_uint8_value;
     }
     void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x.m_uint16_value & ~y.m_uint16_value;
+      value->m_uint16_value = x->m_uint16_value & ~y->m_uint16_value;
     }
     void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x.m_uint32_value & ~y.m_uint32_value;
+      value->m_uint32_value = x->m_uint32_value & ~y->m_uint32_value;
     }
     void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x.m_uint64_value & ~y.m_uint64_value;
+      value->m_uint64_value = x->m_uint64_value & ~y->m_uint64_value;
     }
     void Visit(const type::Int&) override {
-      value->m_int_value = x.m_int_value & ~y.m_int_value;
+      value->m_int_value = x->m_int_value & ~y->m_int_value;
     }
     void Visit(const type::Uint&) override {
-      value->m_uint_value = x.m_uint_value & ~y.m_uint_value;
+      value->m_uint_value = x->m_uint_value & ~y->m_uint_value;
     }
     void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x.m_uintptr_value & ~y.m_uintptr_value;
+      value->m_uintptr_value = x->m_uintptr_value & ~y->m_uintptr_value;
     }
   };
 
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
   if (x->IsError() || y->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (!(x->IsInteger() && y->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
-    return MakeError();
+    error_reporter->Insert(CannotApply2(location, "&~", x, y));
+    return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "&~", x, y));
+      return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "&~", x, y));
+      return Value::MakeError();
     }
   }
 
-  Value v;
-  v.m_kind = x->m_kind;
-  switch (v.m_kind) {
+  x->Dereference();
+  y->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
+  switch (v->m_kind) {
     case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value & ~y->m_Integer_value;
+      v->m_Integer_value = x->m_Integer_value & ~y->m_Integer_value;
       break;
     case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value & ~y->m_Rune_value;
+      v->m_Rune_value = x->m_Rune_value & ~y->m_Rune_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "&~", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
-        Visitor vis(*x, *y, &v);
+        v->m_type = x->m_type;
+        Visitor vis(x, y, v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
-    case Value::kValue:
+    case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "&~", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
+        v->m_type = x->m_type;
       }
       break;
     default:
@@ -2091,102 +2152,103 @@ Value Value::BitAndNot(const Location& location, Value* x, Value* y, ErrorReport
   return v;
 }
 
-Value Value::BitOr(const Location& location, Value* x, Value* y, ErrorReporter* error_reporter) {
+ValuePtr Value::BitOr(
+    const Location& location, ValuePtr x, ValuePtr y,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, const Value& a_y, Value* a_value)
+    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    const Value& x;
-    const Value& y;
-    Value* value;
+    ConstValuePtr x;
+    ConstValuePtr y;
+    ValuePtr value;
 
     void Visit(const type::Int8&) override {
-      value->m_int8_value = x.m_int8_value | y.m_int8_value;
+      value->m_int8_value = x->m_int8_value | y->m_int8_value;
     }
     void Visit(const type::Int16&) override {
-      value->m_int16_value = x.m_int16_value | y.m_int16_value;
+      value->m_int16_value = x->m_int16_value | y->m_int16_value;
     }
     void Visit(const type::Int32&) override {
-      value->m_int32_value = x.m_int32_value | y.m_int32_value;
+      value->m_int32_value = x->m_int32_value | y->m_int32_value;
     }
     void Visit(const type::Int64&) override {
-      value->m_int64_value = x.m_int64_value | y.m_int64_value;
+      value->m_int64_value = x->m_int64_value | y->m_int64_value;
     }
     void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x.m_uint8_value | y.m_uint8_value;
+      value->m_uint8_value = x->m_uint8_value | y->m_uint8_value;
     }
     void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x.m_uint16_value | y.m_uint16_value;
+      value->m_uint16_value = x->m_uint16_value | y->m_uint16_value;
     }
     void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x.m_uint32_value | y.m_uint32_value;
+      value->m_uint32_value = x->m_uint32_value | y->m_uint32_value;
     }
     void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x.m_uint64_value | y.m_uint64_value;
+      value->m_uint64_value = x->m_uint64_value | y->m_uint64_value;
     }
     void Visit(const type::Int&) override {
-      value->m_int_value = x.m_int_value | y.m_int_value;
+      value->m_int_value = x->m_int_value | y->m_int_value;
     }
     void Visit(const type::Uint&) override {
-      value->m_uint_value = x.m_uint_value | y.m_uint_value;
+      value->m_uint_value = x->m_uint_value | y->m_uint_value;
     }
     void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x.m_uintptr_value | y.m_uintptr_value;
+      value->m_uintptr_value = x->m_uintptr_value | y->m_uintptr_value;
     }
   };
 
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
   if (x->IsError() || y->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (!(x->IsInteger() && y->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "|", *x, *y));
-    return MakeError();
+    error_reporter->Insert(CannotApply2(location, "|", x, y));
+    return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "|", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "|", x, y));
+      return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "|", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "|", x, y));
+      return Value::MakeError();
     }
   }
 
-  Value v;
-  v.m_kind = x->m_kind;
-  switch (v.m_kind) {
+  x->Dereference();
+  y->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
+  switch (v->m_kind) {
     case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value | y->m_Integer_value;
+      v->m_Integer_value = x->m_Integer_value | y->m_Integer_value;
       break;
     case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value | y->m_Rune_value;
+      v->m_Rune_value = x->m_Rune_value | y->m_Rune_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "|", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "|", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
-        Visitor vis(*x, *y, &v);
+        v->m_type = x->m_type;
+        Visitor vis(x, y, v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
-    case Value::kValue:
+    case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "|", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "|", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
+        v->m_type = x->m_type;
       }
       break;
     default:
@@ -2195,102 +2257,103 @@ Value Value::BitOr(const Location& location, Value* x, Value* y, ErrorReporter* 
   return v;
 }
 
-Value Value::BitXor(const Location& location, Value* x, Value* y, ErrorReporter* error_reporter) {
+ValuePtr Value::BitXor(
+    const Location& location, ValuePtr x, ValuePtr y,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, const Value& a_y, Value* a_value)
+    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    const Value& x;
-    const Value& y;
-    Value* value;
+    ConstValuePtr x;
+    ConstValuePtr y;
+    ValuePtr value;
 
     void Visit(const type::Int8&) override {
-      value->m_int8_value = x.m_int8_value ^ y.m_int8_value;
+      value->m_int8_value = x->m_int8_value ^ y->m_int8_value;
     }
     void Visit(const type::Int16&) override {
-      value->m_int16_value = x.m_int16_value ^ y.m_int16_value;
+      value->m_int16_value = x->m_int16_value ^ y->m_int16_value;
     }
     void Visit(const type::Int32&) override {
-      value->m_int32_value = x.m_int32_value ^ y.m_int32_value;
+      value->m_int32_value = x->m_int32_value ^ y->m_int32_value;
     }
     void Visit(const type::Int64&) override {
-      value->m_int64_value = x.m_int64_value ^ y.m_int64_value;
+      value->m_int64_value = x->m_int64_value ^ y->m_int64_value;
     }
     void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x.m_uint8_value ^ y.m_uint8_value;
+      value->m_uint8_value = x->m_uint8_value ^ y->m_uint8_value;
     }
     void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x.m_uint16_value ^ y.m_uint16_value;
+      value->m_uint16_value = x->m_uint16_value ^ y->m_uint16_value;
     }
     void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x.m_uint32_value ^ y.m_uint32_value;
+      value->m_uint32_value = x->m_uint32_value ^ y->m_uint32_value;
     }
     void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x.m_uint64_value ^ y.m_uint64_value;
+      value->m_uint64_value = x->m_uint64_value ^ y->m_uint64_value;
     }
     void Visit(const type::Int&) override {
-      value->m_int_value = x.m_int_value ^ y.m_int_value;
+      value->m_int_value = x->m_int_value ^ y->m_int_value;
     }
     void Visit(const type::Uint&) override {
-      value->m_uint_value = x.m_uint_value ^ y.m_uint_value;
+      value->m_uint_value = x->m_uint_value ^ y->m_uint_value;
     }
     void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x.m_uintptr_value ^ y.m_uintptr_value;
+      value->m_uintptr_value = x->m_uintptr_value ^ y->m_uintptr_value;
     }
   };
 
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
   if (x->IsError() || y->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (!(x->IsInteger() && y->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "^", *x, *y));
-    return MakeError();
+    error_reporter->Insert(CannotApply2(location, "^", x, y));
+    return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "^", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "^", x, y));
+      return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "^", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "^", x, y));
+      return Value::MakeError();
     }
   }
 
-  Value v;
-  v.m_kind = x->m_kind;
-  switch (v.m_kind) {
+  x->Dereference();
+  y->Dereference();
+
+  ValuePtr v(new Value(x->m_kind));
+  switch (v->m_kind) {
     case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value ^ y->m_Integer_value;
+      v->m_Integer_value = x->m_Integer_value ^ y->m_Integer_value;
       break;
     case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value ^ y->m_Rune_value;
+      v->m_Rune_value = x->m_Rune_value ^ y->m_Rune_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "^", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "^", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
-        Visitor vis(*x, *y, &v);
+        v->m_type = x->m_type;
+        Visitor vis(x, y, v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
-    case Value::kValue:
+    case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "^", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "^", x, y));
+          return Value::MakeError();
         }
-        v.m_type = x->m_type;
+        v->m_type = x->m_type;
       }
       break;
     default:
@@ -2299,118 +2362,119 @@ Value Value::BitXor(const Location& location, Value* x, Value* y, ErrorReporter*
   return v;
 }
 
-Value Value::Equal(const Location& location, Value* x, Value* y, ErrorReporter* error_reporter) {
+ValuePtr Value::Equal(
+    const Location& location, ValuePtr x, ValuePtr y,
+    ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, const Value& a_y)
-        : x(a_x)
-        , y(a_y) {}
-    const Value& x;
-    const Value& y;
-    Value flag;
+    Visitor(ConstValuePtr a_x, ConstValuePtr a_y)
+        : x(a_x) , y(a_y) {}
+    ConstValuePtr x;
+    ConstValuePtr y;
+    ValuePtr flag;
 
     void Visit(const type::Bool&) override {
-      flag = MakeBoolean(x.m_bool_value == y.m_bool_value);
+      flag = MakeBoolean(x->m_bool_value == y->m_bool_value);
     }
     void Visit(const type::Complex64&) override {
-      flag = MakeBoolean(x.m_complex64_value == y.m_complex64_value);
+      flag = MakeBoolean(x->m_complex64_value == y->m_complex64_value);
     }
     void Visit(const type::Complex128&) override {
-      flag = MakeBoolean(x.m_complex128_value == y.m_complex128_value);
+      flag = MakeBoolean(x->m_complex128_value == y->m_complex128_value);
     }
     void Visit(const type::Float32&) override {
-      flag = MakeBoolean(x.m_float32_value == y.m_float32_value);
+      flag = MakeBoolean(x->m_float32_value == y->m_float32_value);
     }
     void Visit(const type::Float64&) override {
-      flag = MakeBoolean(x.m_float64_value == y.m_float64_value);
+      flag = MakeBoolean(x->m_float64_value == y->m_float64_value);
     }
     void Visit(const type::Int&) override {
-      flag = MakeBoolean(x.m_int_value == y.m_int_value);
+      flag = MakeBoolean(x->m_int_value == y->m_int_value);
     }
     void Visit(const type::Int8&) override {
-      flag = MakeBoolean(x.m_int8_value == y.m_int8_value);
+      flag = MakeBoolean(x->m_int8_value == y->m_int8_value);
     }
     void Visit(const type::Int16&) override {
-      flag = MakeBoolean(x.m_int16_value == y.m_int16_value);
+      flag = MakeBoolean(x->m_int16_value == y->m_int16_value);
     }
     void Visit(const type::Int32&) override {
-      flag = MakeBoolean(x.m_int32_value == y.m_int32_value);
+      flag = MakeBoolean(x->m_int32_value == y->m_int32_value);
     }
     void Visit(const type::Int64&) override {
-      flag = MakeBoolean(x.m_int64_value == y.m_int64_value);
+      flag = MakeBoolean(x->m_int64_value == y->m_int64_value);
     }
     void Visit(const type::Uint&) override {
-      flag = MakeBoolean(x.m_uint_value == y.m_uint_value);
+      flag = MakeBoolean(x->m_uint_value == y->m_uint_value);
     }
     void Visit(const type::Uint8&) override {
-      flag = MakeBoolean(x.m_uint8_value == y.m_uint8_value);
+      flag = MakeBoolean(x->m_uint8_value == y->m_uint8_value);
     }
     void Visit(const type::Uint16&) override {
-      flag = MakeBoolean(x.m_uint16_value == y.m_uint16_value);
+      flag = MakeBoolean(x->m_uint16_value == y->m_uint16_value);
     }
     void Visit(const type::Uint32&) override {
-      flag = MakeBoolean(x.m_uint32_value == y.m_uint32_value);
+      flag = MakeBoolean(x->m_uint32_value == y->m_uint32_value);
     }
     void Visit(const type::Uint64&) override {
-      flag = MakeBoolean(x.m_uint64_value == y.m_uint64_value);
+      flag = MakeBoolean(x->m_uint64_value == y->m_uint64_value);
     }
     void Visit(const type::Uintptr&) override {
-      flag = MakeBoolean(x.m_uintptr_value == y.m_uintptr_value);
+      flag = MakeBoolean(x->m_uintptr_value == y->m_uintptr_value);
     }
     void Visit(const type::String&) override {
-      flag = MakeBoolean(x.m_string_value == y.m_string_value);
+      flag = MakeBoolean(x->m_string_value == y->m_string_value);
     }
   };
 
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
   if (x->IsError() || y->IsError()) {
-    return MakeError();
+    return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "==", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "==", x, y));
+      return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "==", *x, *y));
-      return MakeError();
+      error_reporter->Insert(CannotApply2(location, "==", x, y));
+      return Value::MakeError();
     }
   }
+
+  x->Dereference();
+  y->Dereference();
 
   switch (x->m_kind) {
     case Value::kBoolean:
-      return MakeBoolean(x->m_Boolean_value == y->m_Boolean_value);
+      return ValuePtr(MakeBoolean(x->m_Boolean_value == y->m_Boolean_value));
     case Value::kInteger:
-      return MakeBoolean(x->m_Integer_value == y->m_Integer_value);
+      return ValuePtr(MakeBoolean(x->m_Integer_value == y->m_Integer_value));
     case Value::kRune:
-      return MakeBoolean(x->m_Rune_value == y->m_Rune_value);
+      return ValuePtr(MakeBoolean(x->m_Rune_value == y->m_Rune_value));
     case Value::kFloat:
-      return MakeBoolean(x->m_Float_value == y->m_Float_value);
+      return ValuePtr(MakeBoolean(x->m_Float_value == y->m_Float_value));
     case Value::kComplex:
-      return MakeBoolean(x->m_Complex_value == y->m_Complex_value);
+      return ValuePtr(MakeBoolean(x->m_Complex_value == y->m_Complex_value));
     case Value::kString:
-      return MakeBoolean(x->m_String_value == y->m_String_value);
+      return ValuePtr(MakeBoolean(x->m_String_value == y->m_String_value));
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "==", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "==", x, y));
+          return Value::MakeError();
         }
-        Visitor vis(*x, *y);
+        Visitor vis(x, y);
         x->m_type->UnderlyingType()->Accept(&vis);
-        return vis.flag;
+        return ValuePtr(vis.flag);
       }
       break;
-    case Value::kValue:
+    case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "==", *x, *y));
-          return MakeError();
+          error_reporter->Insert(CannotApply2(location, "==", x, y));
+          return Value::MakeError();
         }
-        return MakeValue(&type::Bool::instance);
+        return ValuePtr(MakeRValue(&type::Bool::instance));
       }
       break;
     default:
@@ -2419,12 +2483,54 @@ Value Value::Equal(const Location& location, Value* x, Value* y, ErrorReporter* 
   }
 
   abort();
-  return MakeError();  // NOT_COVERED
+  return Value::MakeError();  // NOT_COVERED
 }
 
-Value Value::Call(Value* operand, const ValueList& arguments, ErrorReporter* error_reporter) {
+ValuePtr Value::Call(
+    const Location& location, ValuePtr operand, ValuePtr arguments,
+    const LocationList& locations, ErrorReporter* error_reporter) {
+  assert(arguments->m_kind == kList);
+  assert(arguments->m_list.size() == locations.size());
+
+  if (operand->IsError()) {
+    return Value::MakeError();
+  }
+
+  for (auto argument : arguments->m_list) {
+    if (argument->IsError()) {
+      return Value::MakeError();
+    }
+  }
+
+  if (!operand->IsCallable()) {
+    error_reporter->Insert(OperandCannotBeCalled(location));
+    return Value::MakeError();
+  }
+
+  const type::Function* function =
+      type::Cast<const type::Function>(operand->m_type);
+
+  if (arguments->m_list.size() != function->ParameterCount()) {
+    error_reporter->Insert(
+        CallExpectsNArguments(
+            location, function->ParameterCount(), arguments->m_list.size()));
+    return Value::MakeError();
+  }
+
+  for (size_t idx = 0, limit = arguments->m_list.size(); idx != limit; ++idx) {
+    ValuePtr argument = arguments->m_list.at(idx);
+    const symbol::Parameter* parameter = function->ParameterAt(idx);
+    if (!argument->ConvertTo(parameter->type)) {
+      error_reporter->Insert(CannotConvert(locations.at(idx), argument,
+                                           parameter->type));
+      return Value::MakeError();
+    }
+    argument->Dereference();
+  }
+
   std::cout << "Call" << std::endl;
-  abort();
+
+  return Value::MakeError();
 }
 
 bool Value::operator==(const Value& y) const {
@@ -2496,7 +2602,6 @@ bool Value::operator==(const Value& y) const {
   }
 
   switch (this->m_kind) {
-    case Value::kUnitialized:
     case Value::kError:
       return true;
     case Value::kBoolean:
@@ -2520,7 +2625,9 @@ bool Value::operator==(const Value& y) const {
         this->m_type->UnderlyingType()->Accept(&visitor);
         return visitor.flag;
       }
-    case Value::kValue:
+    case Value::kFunction:
+    case Value::kRValue:
+    case Value::kLValue:
       {
         return this->m_type == y.m_type;
       }
@@ -2528,6 +2635,18 @@ bool Value::operator==(const Value& y) const {
       {
         return this->m_type == y.m_type;
       }
+    case Value::kList:
+      if (this->m_list.size() != y.m_list.size()) {
+        return false;
+      }
+      for (ListType::const_iterator xpos = this->m_list.begin(),
+               xlimit = this->m_list.end(), ypos = y.m_list.begin();
+           xpos != xlimit; ++xpos, ++ypos) {
+        if (*xpos != *ypos) {
+          return false;
+        }
+      }
+      return false;
   }
 
   abort();  // NOT_COVERED
@@ -2535,6 +2654,10 @@ bool Value::operator==(const Value& y) const {
 
 bool Value::operator!=(const Value& y) const {
   return !(*this == y);
+}
+
+ValuePtr Value::MakeError() {
+  return ValuePtr(new Value(kError));
 }
 
 std::ostream& operator<<(std::ostream& out, const Value& value) {
@@ -2600,9 +2723,6 @@ std::ostream& operator<<(std::ostream& out, const Value& value) {
   };
 
   switch (value.kind()) {
-    case Value::kUnitialized:
-      out << "uninitialized";
-      break;
     case Value::kError:
       out << "error";
       break;
@@ -2638,11 +2758,20 @@ std::ostream& operator<<(std::ostream& out, const Value& value) {
         value.type()->UnderlyingType()->Accept(&v);
       }
       break;
-    case Value::kValue:
-      out << "<value>";
+    case Value::kFunction:
+      out << "<function>";
+      break;
+    case Value::kLValue:
+      out << "<lvalue>";
+      break;
+    case Value::kRValue:
+      out << "<rvalue>";
       break;
     case Value::kType:
       out << "<type>";
+      break;
+    case Value::kList:
+      out << "<list>";
       break;
   }
   return out;

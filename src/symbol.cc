@@ -19,7 +19,7 @@ bool IsExported(const std::string& id) {
 
 void Constant::Accept(Visitor* visitor) { visitor->Visit(this); }
 
-void Constant::value(const value::Value& a_value) {
+void Constant::value(value::ConstValuePtr a_value) {
   MakeDefined(a_value);
 }
 
@@ -40,7 +40,7 @@ void Function::type(const type::Function* a_type) {
   assert(m_type == nullptr);
   assert(a_type != nullptr);
   m_type = a_type;
-  MakeDefined(value::Value::MakeLValue(a_type));
+  MakeDefined(value::Value::MakeFunction(a_type));
 }
 
 void Package::Accept(Visitor* visitor) { visitor->Visit(this); }

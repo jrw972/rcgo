@@ -196,7 +196,8 @@ void Interface::Accept(Visitor* visitor) const { visitor->Visit(*this); }
 symbol::InterfaceMethod* Interface::AppendMethod(
     const std::string& a_identifier, const Location& a_location,
     const type::Function* a_type) {
-  symbol::InterfaceMethod* im = new symbol::InterfaceMethod(a_identifier, a_location, package, a_type);
+  symbol::InterfaceMethod* im =
+      new symbol::InterfaceMethod(a_identifier, a_location, package, a_type);
   PushBack(im);
   Insert(im);
   // TODO(jrw972): Do we need m_method_list?
@@ -215,7 +216,9 @@ void Struct::Accept(Visitor* visitor) const { visitor->Visit(*this); }
 symbol::Field* Struct::AppendField(
       const std::string& a_identifier, const Location& a_location,
       const type::Type* a_type, const std::string& a_tag, bool a_is_embedded) {
-  symbol::Field* f = new symbol::Field(a_identifier, a_location, package, a_type, a_tag, a_is_embedded);
+  symbol::Field* f =
+      new symbol::Field(a_identifier, a_location, package, a_type, a_tag,
+                        a_is_embedded);
   PushBack(f);
   Insert(f);
   // TODO(jrw972):  Do we need m_field_list?

@@ -10,6 +10,8 @@
 
 #include <dirent.h>
 
+#include <string>
+
 #include "src/error_reporter.h"
 #include "src/import_location.h"
 

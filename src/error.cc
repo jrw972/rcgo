@@ -244,15 +244,35 @@ void UnterminatedGeneralComment::Print(std::ostream& out) const {
 }
 
 void CannotApply::Print(std::ostream& out) const {
-  out << location << ": error: cannot apply '" << operator_ << "' to " << value << std::endl;
+  out << location << ": error: cannot apply '" << operator_ << "' to "
+      << value << std::endl;
 }
 
 void CannotApply2::Print(std::ostream& out) const {
-  out << location << ": error: cannot apply '" << operator_ << "' to " << value1 << " and " << value2 << std::endl;
+  out << location << ": error: cannot apply '" << operator_ << "' to "
+      << value1 << " and " << value2 << std::endl;
 }
 
 void DivisionByZero::Print(std::ostream& out) const {
   out << location << ": error: division by zero" << std::endl;
+}
+
+void OperandCannotBeCalled::Print(std::ostream& out) const {
+  out << location << ": error: operand cannot be called" << std::endl;
+}
+
+void UnexpectedMultiValueOperand::Print(std::ostream& out) const {
+  out << location << ": error: unexpected multi-value operand" << std::endl;
+}
+
+void CallExpectsNArguments::Print(std::ostream& out) const {
+  out << location << ": error: call expects " << expected
+      << " arguments but received " << actual << std::endl;
+}
+
+void CannotConvert::Print(std::ostream& out) const {
+  out << location << ": error: cannot convert " << value
+      << " to " << type << std::endl;
 }
 
 }  // namespace rcgo

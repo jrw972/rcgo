@@ -81,26 +81,41 @@ void PopulateUniverseBlock(
       a_block->MakeType(
           "uintptr", l, tf->MakeDefinedType(&type::Uintptr::instance)));
   // Constants:
-  a_block->Insert(a_block->MakeConstant("true", l, value::Value::MakeBoolean(true)));
-  a_block->Insert(a_block->MakeConstant("false", l, value::Value::MakeBoolean(false)));
+  a_block->Insert(
+      a_block->MakeConstant("true", l, value::Value::MakeBoolean(true)));
+  a_block->Insert(
+      a_block->MakeConstant("false", l, value::Value::MakeBoolean(false)));
   a_block->Insert(a_block->MakeConstant("iota", l, nullptr));
   // Zero value:
   a_block->Insert(a_block->MakeConstant("nil", l, nullptr));
   // Functions:
-  a_block->Insert(a_block->MakeFunction("append", l, static_cast<ast::Node*>(nullptr)));
-  a_block->Insert(a_block->MakeFunction("cap", l, static_cast<ast::Node*>(nullptr)));
-  a_block->Insert(a_block->MakeFunction("complex", l, static_cast<ast::Node*>(nullptr)));
-  a_block->Insert(a_block->MakeFunction("copy", l, static_cast<ast::Node*>(nullptr)));
-  a_block->Insert(a_block->MakeFunction("delete", l, static_cast<ast::Node*>(nullptr)));
-  a_block->Insert(a_block->MakeFunction("imag", l, static_cast<ast::Node*>(nullptr)));
-  a_block->Insert(a_block->MakeFunction("len", l, static_cast<ast::Node*>(nullptr)));
-  a_block->Insert(a_block->MakeFunction("make", l, static_cast<ast::Node*>(nullptr)));
-  a_block->Insert(a_block->MakeFunction("new", l, static_cast<ast::Node*>(nullptr)));
-  a_block->Insert(a_block->MakeFunction("panic", l, static_cast<ast::Node*>(nullptr)));
+  a_block->Insert(
+      a_block->MakeFunction("append", l, static_cast<ast::Node*>(nullptr)));
+  a_block->Insert(
+      a_block->MakeFunction("cap", l, static_cast<ast::Node*>(nullptr)));
+  a_block->Insert(
+      a_block->MakeFunction("complex", l, static_cast<ast::Node*>(nullptr)));
+  a_block->Insert(
+      a_block->MakeFunction("copy", l, static_cast<ast::Node*>(nullptr)));
+  a_block->Insert(
+      a_block->MakeFunction("delete", l, static_cast<ast::Node*>(nullptr)));
+  a_block->Insert(
+      a_block->MakeFunction("imag", l, static_cast<ast::Node*>(nullptr)));
+  a_block->Insert(
+      a_block->MakeFunction("len", l, static_cast<ast::Node*>(nullptr)));
+  a_block->Insert(
+      a_block->MakeFunction("make", l, static_cast<ast::Node*>(nullptr)));
+  a_block->Insert(
+      a_block->MakeFunction("new", l, static_cast<ast::Node*>(nullptr)));
+  a_block->Insert(
+      a_block->MakeFunction("panic", l, static_cast<ast::Node*>(nullptr)));
   a_block->Insert(a_block->MakeFunction("print", l, print_function));
-  a_block->Insert(a_block->MakeFunction("println", l, static_cast<ast::Node*>(nullptr)));
-  a_block->Insert(a_block->MakeFunction("real", l, static_cast<ast::Node*>(nullptr)));
-  a_block->Insert(a_block->MakeFunction("recover", l, static_cast<ast::Node*>(nullptr)));
+  a_block->Insert(
+      a_block->MakeFunction("println", l, static_cast<ast::Node*>(nullptr)));
+  a_block->Insert(
+      a_block->MakeFunction("real", l, static_cast<ast::Node*>(nullptr)));
+  a_block->Insert(
+      a_block->MakeFunction("recover", l, static_cast<ast::Node*>(nullptr)));
 }
 
 }  // namespace rcgo

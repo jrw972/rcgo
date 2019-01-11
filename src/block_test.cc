@@ -34,7 +34,8 @@ TEST_CASE("symbol::Table::Begin and End") {
   MutableBlock blk(&st, nullptr);
   symbol::Symbol* s = blk.MakeConstant("my symbol", Location::builtin, nullptr);
   st.Insert(s);
-  std::pair<const std::string, symbol::Symbol*> p = std::make_pair(s->identifier, s);
+  std::pair<const std::string, symbol::Symbol*> p =
+      std::make_pair(s->identifier, s);
   REQUIRE(std::find(st.Begin(), st.End(), p) != st.End());
 }
 

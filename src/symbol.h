@@ -52,7 +52,7 @@ struct Symbol {
   virtual ~Symbol() {}
   virtual void Accept(Visitor* visitor) = 0;
 
-  const value::Value& GetValue() const { return m_value; }
+  value::ConstValuePtr GetValue() const { return m_value; }
 
   bool IsNew() const { return m_state == kNew; }
   bool IsInProgress() const { return m_state == kInProgress; }
@@ -61,10 +61,10 @@ struct Symbol {
     assert(m_state == kNew);
     m_state = kInProgress;
   }
-  void MakeDefined(const value::Value& a_value) {
+  void MakeDefined(value::ConstValuePtr a_value) {
     assert(m_state == kNew || m_state == kInProgress);
-    assert(m_value.IsUninitialized());
-    assert(a_value.IsInitialized());
+    assert(m_value.get() == nullptr);
+    assert(a_value.get() != nullptr);
     m_state = kDefined;
     m_value = a_value;
   }
@@ -82,17 +82,17 @@ struct Symbol {
     kDefined
   };
   State m_state;
-  value::Value m_value;
+  value::ConstValuePtr m_value;
 };
 
 struct Constant : public Symbol {
   void Accept(Visitor* visitor) override;
-  void value(const value::Value& a_value);
+  void value(value::ConstValuePtr a_value);
 
  private:
   friend struct rcgo::MutableBlock;
   Constant(const std::string& a_identifier, const Location& a_location,
-           const Package* a_package, const value::Value& a_value)
+           const Package* a_package, value::ConstValuePtr a_value)
       : Symbol(a_identifier, a_location, a_package, nullptr)
   { MakeDefined(a_value); }
   Constant(const std::string& a_identifier, const Location& a_location,

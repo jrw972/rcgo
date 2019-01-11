@@ -9,6 +9,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include <ostream>
+#include <vector>
 
 namespace rcgo {
 
@@ -23,6 +24,8 @@ struct Location {
     return this->path == other.path && this->line == other.line;
   }
 };
+
+typedef std::vector<Location> LocationList;
 
 inline std::ostream& operator<< (std::ostream& out, const Location& location) {
   return out << (location.path ? location.path : "undefined") << ':'

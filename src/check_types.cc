@@ -28,7 +28,9 @@ void CheckTypes(ast::Node* node, Block* block, type::Factory* type_factory,
         : block(a_block), type_factory(a_type_factory),
           error_reporter(a_error_reporter) {}
 
-    void DefaultAction(ast::Node* ast) override { std::cout << *ast << std::endl; abort(); /* NOT_COVERED */ }
+    void DefaultAction(ast::Node* ast) override {
+      std::cout << *ast << std::endl; abort(); /* NOT_COVERED */
+    }
 
     void Visit(ast::SourceFile* ast) override { VisitAll(ast->decls); }
 
@@ -63,25 +65,29 @@ void CheckTypes(ast::Node* node, Block* block, type::Factory* type_factory,
     void Visit(ast::Call* ast) override {
       ast->operand->Accept(this);
       VisitAll(ast->arguments);
-      value::ValueList arguments;
+      value::ValuePtr arguments = value::Value::MakeList();
+      LocationList locations;
       for (ast::Node* node : ast->arguments) {
-        arguments.push_back(node->out_value());
+        arguments->Push(node->converted_value());
+        locations.push_back(node->location);
       }
-      value::Value::Call(ast->operand->out_value(), arguments, error_reporter);
+      value::Value::Call(
+          ast->operand->location, ast->operand->converted_value(),
+          arguments, locations, error_reporter);
     }
 
     void Visit(ast::Identifier* ast) override {
       symbol::Symbol* symbol = block->FindGlobalSymbol(ast->identifier);
       if (symbol == nullptr) {
         error_reporter->Insert(NotDeclared(ast->location, ast->identifier));
-        ast->in_value(value::Value::MakeError());
+        ast->computed_value(value::Value::MakeError());
         return;
       }
 
       if (DefineSymbol(symbol, block, type_factory, error_reporter)) {
-        ast->in_value(symbol->GetValue());
+        ast->computed_value(symbol->GetValue());
       } else {
-        ast->in_value(value::Value::MakeError());
+        ast->computed_value(value::Value::MakeError());
       }
     }
 
@@ -91,7 +97,7 @@ void CheckTypes(ast::Node* node, Block* block, type::Factory* type_factory,
     //   node->left->Accept(this);
     //   node->right->Accept(this);
     //   node->in_value(
-    //       Value::Multiply(node->left->out_value(), node->right->out_value()));
+    //      Value::Multiply(node->left->out_value(), node->right->out_value()));
     //   // TODO(jrw972): Report errors.
     // }
   };

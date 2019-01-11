@@ -486,7 +486,8 @@ void Scanner::FinishDecimal(mpz_class* value, bool requireDecimals) {
                             value::Value::MakeComplex(0, d)));
   } else {
     EndOfWord();
-    Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(), value::Value::MakeFloat(d)));
+    Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
+                            value::Value::MakeFloat(d)));
   }
 }
 
@@ -505,7 +506,8 @@ void Scanner::FinishExponent(const mpz_class& value) {
                             value::Value::MakeComplex(0, d)));
   } else {
     EndOfWord();
-    Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(), value::Value::MakeFloat(d)));
+    Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
+                            value::Value::MakeFloat(d)));
   }
 }
 
@@ -615,7 +617,8 @@ void Scanner::RuneLiteral() {
         ExtraCharactersInRuneLiteral(m_utf8_scanner.GetLocation()));
   }
 
-  Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(), value::Value::MakeRune(s)));
+  Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
+                          value::Value::MakeRune(s)));
 }
 
 Runet Scanner::EscapedRune(bool* error, bool* isByte, bool escapeSingleQuote,

@@ -258,6 +258,9 @@ struct Function : public Type, public symbol::Table {
   const_parameter_iterator ParameterEnd() const {
     return m_parameter_list.end();
   }
+  const symbol::Parameter* ParameterAt(size_t idx) const {
+    return m_parameter_list.at(idx);
+  }
   symbol::Parameter* AppendResult(
       const std::string& a_identifier, const Location& a_location,
       const type::Type* a_type);

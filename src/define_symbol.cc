@@ -75,22 +75,22 @@ bool DefineSymbol(
 
       ast::Node* e = ast->expression_list.at(idx);
       CheckTypes(e, block, type_factory, error_reporter);
-      value::Value* value = e->out_value();
+      value::ValuePtr value = e->converted_value();
       if (value->IsError()) {
-        s->value(*value);
+        s->value(value);
         return;
       }
       if (!value->RequireConstant(error_reporter)) {
-        s->value(*value);
+        s->value(value);
         return;
       }
       if (type != nullptr && !value->ConvertTo(type)) {
         // TODO(jrw972):  Report conversion error.
         abort();
-        s->value(*value);
+        s->value(value);
         return;
       }
-      s->value(*value);
+      s->value(value);
     }
 
     void Visit(ast::FuncDecl* ast) override {

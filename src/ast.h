@@ -37,18 +37,24 @@ struct TypeHolder {
 };
 
 struct ValueHolder {
-  void in_value(const value::Value& a_value) {
-    assert(m_in_value.IsUninitialized());
-    m_in_value = a_value;
-    m_out_value = a_value;
+  void computed_value(value::ConstValuePtr a_value) {
+    assert(m_computed_value.get() == nullptr);
+    m_computed_value = a_value;
+    m_converted_value = a_value->DeepCopy();
   }
-  const value::Value& in_value() const { return m_in_value; }
-  const value::Value* out_value() const { return &m_out_value; }
-  value::Value* out_value() { return &m_out_value; }
+  value::ConstValuePtr computed_value() const {
+    return m_computed_value;
+  }
+  value::ConstValuePtr converted_value() const {
+    return m_converted_value;
+  }
+  value::ValuePtr converted_value() {
+    return m_converted_value;
+  }
 
  private:
-  value::Value m_in_value;
-  value::Value m_out_value;
+  value::ConstValuePtr m_computed_value;
+  value::ValuePtr m_converted_value;
 };
 
 struct Node : public ValueHolder{
@@ -143,8 +149,8 @@ struct EmbeddedField : public Node {
 struct Field : public Node {
   Field(const Location& a_location, const ListType& a_identifier_list,
         Node* a_type_literal, const std::string& a_tag)
-      : Node(a_location), identifier_list(a_identifier_list), type_literal(a_type_literal),
-        tag(a_tag) {}
+      : Node(a_location), identifier_list(a_identifier_list),
+        type_literal(a_type_literal), tag(a_tag) {}
   ~Field() override {
     Delete(identifier_list);
     Delete(type_literal);
@@ -228,7 +234,9 @@ struct ParameterDecl : public Node {
 
 struct Literal : public Node {
   explicit Literal(const Token& a_token)
-      : Node(a_token.location()) { in_value(a_token.value()); }
+      : Node(a_token.location()) {
+    computed_value(a_token.value());
+  }
   void Accept(NodeVisitor* visitor) override;
 };
 
@@ -242,7 +250,8 @@ struct LiteralValue : public Node {
 };
 
 struct CompositeLiteral : public Node {
-  CompositeLiteral(const Location& a_location, Node* a_type_literal, Node* a_value)
+  CompositeLiteral(
+      const Location& a_location, Node* a_type_literal, Node* a_value)
       : Node(a_location), type_literal(a_type_literal), value(a_value) {}
   ~CompositeLiteral() override {
     Delete(type_literal);
@@ -420,7 +429,8 @@ struct MethodDecl : public Node {
 };
 
 struct TypeAssertion : public Node {
-  TypeAssertion(const Location& a_location, Node* a_operand, Node* a_type_literal)
+  TypeAssertion(
+      const Location& a_location, Node* a_operand, Node* a_type_literal)
       : Node(a_location), operand(a_operand), type_literal(a_type_literal) {}
   ~TypeAssertion() override {
     Delete(operand);

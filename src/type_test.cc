@@ -304,22 +304,27 @@ TEST_CASE("Identical(array[3], array[3])") {
 
 TEST_CASE("Different(map, struct)") {
   type::Factory factory;
-  const type::Type* x = factory.MakeStruct(nullptr)->GetMap(&type::Int::instance);
+  const type::Type* x =
+      factory.MakeStruct(nullptr)->GetMap(&type::Int::instance);
   const type::Type* y = factory.MakeStruct(nullptr);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Different(map[int], map[uint])") {
   type::Factory factory;
-  const type::Type* x = factory.MakeStruct(nullptr)->GetMap(&type::Int::instance);
-  const type::Type* y = factory.MakeStruct(nullptr)->GetMap(&type::Uint::instance);
+  const type::Type* x =
+      factory.MakeStruct(nullptr)->GetMap(&type::Int::instance);
+  const type::Type* y =
+      factory.MakeStruct(nullptr)->GetMap(&type::Uint::instance);
   REQUIRE(Different(x, y));
 }
 
 TEST_CASE("Identical(map[int], map[int])") {
   type::Factory factory;
-  const type::Type* x = factory.MakeStruct(nullptr)->GetMap(&type::Int::instance);
-  const type::Type* y = factory.MakeStruct(nullptr)->GetMap(&type::Int::instance);
+  const type::Type* x =
+      factory.MakeStruct(nullptr)->GetMap(&type::Int::instance);
+  const type::Type* y =
+      factory.MakeStruct(nullptr)->GetMap(&type::Int::instance);
   REQUIRE(Identical(x, y));
 }
 

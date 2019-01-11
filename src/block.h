@@ -41,12 +41,15 @@ struct MutableBlock : public Block {
       : Block(a_symbol_table, a_parent), m_mutable_symbol_table(a_symbol_table)
   {}
 
-  void Insert(symbol::Symbol* symbol) { m_mutable_symbol_table->Insert(symbol); }
+  void Insert(symbol::Symbol* symbol) {
+    m_mutable_symbol_table->Insert(symbol);
+  }
 
   symbol::Constant* MakeConstant(
       const std::string& a_identifier, const Location& a_location,
-      const value::Value& a_value) {
-    symbol::Constant* c = new symbol::Constant(a_identifier, a_location, package(), a_value);
+      value::ConstValuePtr a_value) {
+    symbol::Constant* c =
+        new symbol::Constant(a_identifier, a_location, package(), a_value);
     m_mutable_symbol_table->PushBack(c);
     return c;
   }
@@ -54,7 +57,8 @@ struct MutableBlock : public Block {
   symbol::Constant* MakeConstant(
       const std::string& a_identifier, const Location& a_location,
       ast::Node* a_ast) {
-    symbol::Constant* c = new symbol::Constant(a_identifier, a_location, package(), a_ast);
+    symbol::Constant* c =
+        new symbol::Constant(a_identifier, a_location, package(), a_ast);
     m_mutable_symbol_table->PushBack(c);
     return c;
   }
@@ -62,7 +66,8 @@ struct MutableBlock : public Block {
   symbol::Type* MakeType(
       const std::string& a_identifier, const Location& a_location,
       const type::NamedType* a_type) {
-    symbol::Type* t = new symbol::Type(a_identifier, a_location, package(), a_type);
+    symbol::Type* t =
+        new symbol::Type(a_identifier, a_location, package(), a_type);
     m_mutable_symbol_table->PushBack(t);
     return t;
   }
@@ -70,7 +75,8 @@ struct MutableBlock : public Block {
   symbol::Type* MakeType(
       const std::string& a_identifier, const Location& a_location,
       ast::Node* a_ast) {
-    symbol::Type* t = new symbol::Type(a_identifier, a_location, package(), a_ast);
+    symbol::Type* t =
+        new symbol::Type(a_identifier, a_location, package(), a_ast);
     m_mutable_symbol_table->PushBack(t);
     return t;
   }
@@ -78,7 +84,8 @@ struct MutableBlock : public Block {
   symbol::Variable* MakeVariable(
       const std::string& a_identifier, const Location& a_location,
       ast::Node* a_ast) {
-    symbol::Variable* v = new symbol::Variable(a_identifier, a_location, package(), a_ast);
+    symbol::Variable* v =
+        new symbol::Variable(a_identifier, a_location, package(), a_ast);
     m_mutable_symbol_table->PushBack(v);
     return v;
   }
@@ -86,7 +93,8 @@ struct MutableBlock : public Block {
   symbol::Function* MakeFunction(
       const std::string& a_identifier, const Location& a_location,
       ast::Node* a_ast) {
-    symbol::Function* f = new symbol::Function(a_identifier, a_location, package(), a_ast);
+    symbol::Function* f =
+        new symbol::Function(a_identifier, a_location, package(), a_ast);
     m_mutable_symbol_table->PushBack(f);
     return f;
   }
@@ -94,7 +102,8 @@ struct MutableBlock : public Block {
   symbol::Function* MakeFunction(
       const std::string& a_identifier, const Location& a_location,
       type::Function* function) {
-    symbol::Function* f = new symbol::Function(a_identifier, a_location, package(), function);
+    symbol::Function* f =
+        new symbol::Function(a_identifier, a_location, package(), function);
     m_mutable_symbol_table->PushBack(f);
     return f;
   }
@@ -102,7 +111,8 @@ struct MutableBlock : public Block {
   symbol::Package* MakePackage(
       const std::string& a_identifier, const Location& a_location,
       const rcgo::Package* a_the_package) {
-    symbol::Package* p = new symbol::Package(a_identifier, a_location, package(), a_the_package);
+    symbol::Package* p =
+        new symbol::Package(a_identifier, a_location, package(), a_the_package);
     m_mutable_symbol_table->PushBack(p);
     return p;
   }

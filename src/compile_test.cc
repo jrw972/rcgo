@@ -38,7 +38,8 @@ TEST_CASE("compile()") {
   }
 
   SECTION("a package with conflicting package names") {
-    Package* p = Compile(UNIT_TEST_DIR "/src/package_mismatch", &paths, &er0, ss);
+    Package* p =
+        Compile(UNIT_TEST_DIR "/src/package_mismatch", &paths, &er0, ss);
     REQUIRE(er0.At(0) == std::string(PackageMismatch(
         Location::Make(UNIT_TEST_DIR "/src/package_mismatch/b.rcgo", 1),
         "package_mismatch", "not_package_mismatch")));
@@ -54,7 +55,8 @@ TEST_CASE("compile()") {
     paths.push_back(RECURSIVE_IMPORT_ALPHA);
     paths.push_back(RECURSIVE_IMPORT_BETA);
 
-    REQUIRE(er0.At(0) == std::string(RecursiveImport(paths, RECURSIVE_IMPORT_ALPHA)));
+    REQUIRE(er0.At(0) ==
+            std::string(RecursiveImport(paths, RECURSIVE_IMPORT_ALPHA)));
   }
 
   SECTION("a package that has no files") {

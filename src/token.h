@@ -138,7 +138,7 @@ struct Token {  // NOT_COVERED
   static Token MakeIdentifier(const Location& a_location,
                               const std::string& a_identifier);
   static Token MakeLiteral(const Location& a_location,
-                           const value::Value& a_value);
+                           value::ConstValuePtr a_value);
 
   bool operator==(Kind kind) const { return m_kind == kind; }
   bool operator!=(Kind kind) const { return m_kind != kind; }
@@ -157,7 +157,7 @@ struct Token {  // NOT_COVERED
   bool IsAssignOp() const;
   AssignOpKind assign_op_kind() const;
   const std::string& identifier() const;
-  const value::Value& value() const;
+  value::ConstValuePtr value() const;
 
  private:
   Location m_location;
@@ -170,7 +170,7 @@ struct Token {  // NOT_COVERED
     AssignOpKind m_assign_op_kind;
   };
   std::string m_identifier;
-  value::Value m_value;
+  value::ConstValuePtr m_value;
 };
 
 std::ostream& operator<<(std::ostream& a_out, const Token::Kind a_kind);

@@ -248,7 +248,7 @@ std::ostream& operator<<(std::ostream& out, Node& ast) {
     void Visit(Literal* ast) {
       out << '{';
       PrintField(false, "class", "Literal");
-      PrintField(true, "in_value", ast->in_value());
+      PrintField(true, "in_value", *ast->computed_value());
       out << '}';
     }
     void Visit(CompositeLiteral* ast) {

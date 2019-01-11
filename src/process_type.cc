@@ -43,7 +43,7 @@ struct Visitor : public ast::DefaultNodeVisitor {
       return;
     }
     CheckTypes(ast->optional_length, block, type_factory, error_reporter);
-    value::Value* length = ast->optional_length->out_value();
+    value::ValuePtr length = ast->optional_length->converted_value();
     if (length->IsError()) {
       type = &type::Error::instance;
       return;
@@ -190,7 +190,8 @@ struct Visitor : public ast::DefaultNodeVisitor {
     if (!ast->identifier_list.empty()) {
       for (ast::Node* node : ast->identifier_list) {
         ast::Identifier* id = ast::Cast<ast::Identifier>(node);
-        symbol::Symbol* previous_parameter = function_type->Find(id->identifier);
+        symbol::Symbol* previous_parameter =
+            function_type->Find(id->identifier);
         symbol::Parameter* parameter;
         if (results) {
           parameter = function_type->AppendResult(
@@ -266,7 +267,8 @@ struct Visitor : public ast::DefaultNodeVisitor {
     for (type::Interface::const_method_iterator pos = it->MethodBegin(),
              limit = it->MethodEnd(); pos != limit; ++pos) {
       const symbol::InterfaceMethod* method = *pos;
-      symbol::Symbol* previous_method = interface_type->Find(method->identifier);
+      symbol::Symbol* previous_method =
+          interface_type->Find(method->identifier);
       symbol::InterfaceMethod* new_method = interface_type->AppendMethod(
           method->identifier, ast->location, method->type);
       if (previous_method != NULL) {
