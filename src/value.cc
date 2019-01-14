@@ -2528,9 +2528,14 @@ ValuePtr Value::Call(
     argument->Dereference();
   }
 
-  std::cout << "Call" << std::endl;
+  ValuePtr retval(new Value(kList));
+  for (auto pos = function->ResultBegin(), limit = function->ResultEnd();
+       pos != limit; ++pos) {
+    const symbol::Parameter* parameter = *pos;
+    retval->m_list.push_back(Value::MakeRValue(parameter->type));
+  }
 
-  return Value::MakeError();
+  return retval;
 }
 
 bool Value::operator==(const Value& y) const {
