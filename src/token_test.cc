@@ -75,7 +75,7 @@ TEST_CASE("Token::MakeIdentifier(location, token)") {
 }
 
 TEST_CASE("Token::MakeLiteral(location, value)") {
-  value::ValuePtr v = value::Value::MakeBoolean(true);
+  value::Value v = value::Value::MakeBoolean(true);
   Token t = Token::MakeLiteral(Location::builtin, v);
   REQUIRE(t.location() == Location::builtin);
   REQUIRE(t.kind() == Token::kLiteral);

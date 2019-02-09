@@ -37,24 +37,22 @@ struct TypeHolder {
 };
 
 struct ValueHolder {
-  void computed_value(value::ConstValuePtr a_value) {
-    assert(m_computed_value.get() == nullptr);
+  void computed_value(value::Value const & a_value) {
+    assert(m_computed_value.IsUninitialized());
+    assert(a_value.IsInitialized());
     m_computed_value = a_value;
-    m_converted_value = a_value->DeepCopy();
+    m_converted_value = a_value;
   }
-  value::ConstValuePtr computed_value() const {
+  value::Value const & computed_value() const {
     return m_computed_value;
   }
-  value::ConstValuePtr converted_value() const {
-    return m_converted_value;
-  }
-  value::ValuePtr converted_value() {
-    return m_converted_value;
+  value::Value * converted_value() {
+    return &m_converted_value;
   }
 
  private:
-  value::ConstValuePtr m_computed_value;
-  value::ValuePtr m_converted_value;
+  value::Value m_computed_value;
+  value::Value m_converted_value;
 };
 
 struct Node : public ValueHolder{

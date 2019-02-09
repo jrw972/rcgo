@@ -19,7 +19,7 @@ bool IsExported(const std::string& id) {
 
 void Constant::Accept(Visitor* visitor) { visitor->Visit(this); }
 
-void Constant::value(value::ConstValuePtr a_value) {
+void Constant::value(value::Value const & a_value) {
   MakeDefined(a_value);
 }
 

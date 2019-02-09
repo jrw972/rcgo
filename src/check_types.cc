@@ -65,10 +65,10 @@ void CheckTypes(ast::Node* node, Block* block, type::Factory* type_factory,
     void Visit(ast::Call* ast) override {
       ast->operand->Accept(this);
       VisitAll(ast->arguments);
-      value::ValuePtr arguments = value::Value::MakeList();
+      std::vector<value::Value *> arguments;
       LocationList locations;
-      for (ast::Node* node : ast->arguments) {
-        arguments->Push(node->converted_value());
+      for (ast::Node * node : ast->arguments) {
+        arguments.push_back(node->converted_value());
         locations.push_back(node->location);
       }
       value::Value::Call(

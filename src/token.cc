@@ -94,7 +94,7 @@ Token Token::MakeIdentifier(const Location& location, const std::string& s) {
 }
 
 Token Token::MakeLiteral(
-    const Location& location, value::ConstValuePtr a_value) {
+    const Location& location, value::Value const & a_value) {
   Token t;
   t.m_location = location;
   t.m_kind = kLiteral;
@@ -203,7 +203,7 @@ const std::string& Token::identifier() const {
   return m_identifier;
 }
 
-value::ConstValuePtr Token::value() const {
+value::Value const & Token::value() const {
   assert(m_kind == kLiteral);
   return m_value;
 }
@@ -500,7 +500,7 @@ std::ostream& operator<<(std::ostream& out, const Token& token) {
       out << token.identifier();
       break;
     case Token::kLiteral:
-      out << *token.value();
+      out << token.value();
       break;
     case Token::kRelOp:
       out << token.rel_op_kind();

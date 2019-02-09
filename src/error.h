@@ -392,27 +392,27 @@ struct UnterminatedGeneralComment : public Error {  // NOT_COVERED
 
 struct CannotApply : public Error {  // NOT_COVERED
   CannotApply(const Location& a_location, char a_operator,
-              value::ConstValuePtr a_value)
+              value::Value const & a_value)
       : location(a_location), operator_(a_operator), value(a_value) {}
   void Print(std::ostream& out) const override;
 
   Location const location;
   char const operator_;
-  value::ConstValuePtr const value;
+  value::Value const value;
 };
 
 struct CannotApply2 : public Error {  // NOT_COVERED
   CannotApply2(const Location& a_location, const std::string& a_operator,
-               value::ConstValuePtr a_value1,
-               value::ConstValuePtr a_value2)
+               value::Value const & a_value1,
+               value::Value const & a_value2)
       : location(a_location), operator_(a_operator), value1(a_value1),
         value2(a_value2) {}
   void Print(std::ostream& out) const override;
 
   Location const location;
   std::string const operator_;
-  value::ConstValuePtr const value1;
-  value::ConstValuePtr const value2;
+  value::Value const value1;
+  value::Value const value2;
 };
 
 struct DivisionByZero : public Error {  // NOT_COVERED
@@ -452,13 +452,13 @@ struct CallExpectsNArguments : public Error {  // NOT_COVERED
 
 struct CannotConvert : public Error {  // NOT_COVERED
   CannotConvert(
-      const Location& a_location, value::ConstValuePtr a_value,
+      const Location& a_location, value::Value const & a_value,
       const type::Type* a_type)
       : location(a_location), value(a_value), type(a_type) {}
   void Print(std::ostream& out) const override;
 
   Location const location;
-  value::ConstValuePtr const value;
+  value::Value const value;
   const type::Type* const type;
 };
 

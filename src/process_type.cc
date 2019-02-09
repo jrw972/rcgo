@@ -43,7 +43,7 @@ struct Visitor : public ast::DefaultNodeVisitor {
       return;
     }
     CheckTypes(ast->optional_length, block, type_factory, error_reporter);
-    value::ValuePtr length = ast->optional_length->converted_value();
+    value::Value * length = ast->optional_length->converted_value();
     if (length->IsError()) {
       type = &type::Error::instance;
       return;

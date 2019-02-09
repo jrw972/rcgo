@@ -7,6 +7,7 @@
 
 #include "src/value.h"
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 
@@ -157,105 +158,102 @@ std::ostream& operator<<(std::ostream& out, const complex_t& val) {
   return out;
 }
 
+Value::Value() : m_kind(kUninitialized), m_type(nullptr) {}
+
 Value::Value(Kind a_kind) : m_kind(a_kind), m_type(nullptr) {}
 
-ValuePtr Value::DeepCopy() const {
-  switch (m_kind) {
-    case kError:
-    case kBoolean:
-    case kString:
-    case kInteger:
-    case kRune:
-    case kFloat:
-    case kComplex:
-    case kConstant:
-    case kFunction:
-    case kLValue:
-    case kRValue:
-    case kType:
-      return ValuePtr(new Value(*this));
-    case kList:
-      {
-        ValuePtr x(new Value(kList));
-        for (auto val : m_list) {
-          x->m_list.push_back(val->DeepCopy());
-        }
-        return x;
-      }
+Value::Value(Value const & a_other) {
+  m_kind = a_other.m_kind;
+  m_type = a_other.m_type;
+
+  m_Boolean_value = a_other.m_Boolean_value;
+  m_String_value = a_other.m_String_value;
+  m_Integer_value = a_other.m_Integer_value;
+  m_Rune_value = a_other.m_Rune_value;
+  m_Float_value = a_other.m_Float_value;
+  m_Complex_value = a_other.m_Complex_value;
+
+  m_bool_value = a_other.m_bool_value;
+  m_string_value = a_other.m_string_value;
+  m_complex64_value = a_other.m_complex64_value;
+  m_complex128_value = a_other.m_complex128_value;
+  m_float32_value = a_other.m_float32_value;
+  m_float64_value = a_other.m_float64_value;
+  m_int_value = a_other.m_int_value;
+  m_int8_value = a_other.m_int8_value;
+  m_int16_value = a_other.m_int16_value;
+  m_int32_value = a_other.m_int32_value;
+  m_int64_value = a_other.m_int64_value;
+  m_uint_value = a_other.m_uint_value;
+  m_uint8_value = a_other.m_uint8_value;
+  m_uint16_value = a_other.m_uint16_value;
+  m_uint32_value = a_other.m_uint32_value;
+  m_uint64_value = a_other.m_uint64_value;
+  m_uintptr_value = a_other.m_uintptr_value;
+
+  for (auto val : a_other.m_list) {
+    m_list.push_back(val);
   }
-
-  abort();
 }
 
-
-ValuePtr Value::MakeBoolean(bool a_value) {
-  Value* v = new Value(kBoolean);
-  v->m_Boolean_value = a_value;
-  return ValuePtr(v);
+Value Value::MakeBoolean(bool a_value) {
+  Value v(kBoolean);
+  v.m_Boolean_value = a_value;
+  return v;
 }
 
-ValuePtr Value::MakeInteger(const mpz_class& a_value) {
-  Value* v = new Value(kInteger);
-  v->m_Integer_value = a_value;
-  return ValuePtr(v);
+Value Value::MakeInteger(const mpz_class& a_value) {
+  Value v(kInteger);
+  v.m_Integer_value = a_value;
+  return v;
 }
 
-ValuePtr Value::MakeFloat(const mpf_class& a_value) {
-  Value* v = new Value(kFloat);
-  v->m_Float_value = a_value;
-  return ValuePtr(v);
+Value Value::MakeFloat(const mpf_class& a_value) {
+  Value v(kFloat);
+  v.m_Float_value = a_value;
+  return v;
 }
 
-ValuePtr Value::MakeComplex(const mpf_class& a_real, const mpf_class& a_imag) {
-  Value* v = new Value(kComplex);
-  v->m_Complex_value = complex_t(a_real, a_imag);
-  return ValuePtr(v);
+Value Value::MakeComplex(const mpf_class& a_real, const mpf_class& a_imag) {
+  Value v(kComplex);
+  v.m_Complex_value = complex_t(a_real, a_imag);
+  return v;
 }
 
-ValuePtr Value::MakeRune(const mpz_class& a_value) {
-  Value* v = new Value(kRune);
-  v->m_Rune_value = a_value;
-  return ValuePtr(v);
+Value Value::MakeRune(const mpz_class& a_value) {
+  Value v(kRune);
+  v.m_Rune_value = a_value;
+  return v;
 }
 
-ValuePtr Value::MakeString(const std::string& a_value) {
-  Value* v = new Value(kString);
-  v->m_String_value = a_value;
-  return ValuePtr(v);
+Value Value::MakeString(const std::string& a_value) {
+  Value v(kString);
+  v.m_String_value = a_value;
+  return Value(v);
 }
 
-ValuePtr Value::MakeFunction(const type::Function* a_type) {
-  Value* v = new Value(kFunction);
-  v->m_type = a_type;
-  return ValuePtr(v);
+Value Value::MakeFunction(const type::Function* a_type) {
+  Value v(kFunction);
+  v.m_type = a_type;
+  return Value(v);
 }
 
-ValuePtr Value::MakeLValue(const type::Type* a_type) {
-  Value* v = new Value(kLValue);
-  v->m_type = a_type;
-  return ValuePtr(v);
+Value Value::MakeLValue(const type::Type* a_type) {
+  Value v(kLValue);
+  v.m_type = a_type;
+  return Value(v);
 }
 
-ValuePtr Value::MakeRValue(const type::Type* a_type) {
-  Value* v = new Value(kRValue);
-  v->m_type = a_type;
-  return ValuePtr(v);
+Value Value::MakeRValue(const type::Type* a_type) {
+  Value v(kRValue);
+  v.m_type = a_type;
+  return Value(v);
 }
 
-ValuePtr Value::MakeType(const type::Type* a_type) {
-  Value* v = new Value(kType);
-  v->m_type = a_type;
-  return ValuePtr(v);
-}
-
-ValuePtr Value::MakeList() {
-  return ValuePtr(new Value(kList));
-}
-
-void Value::Push(ValuePtr element) {
-  assert(m_kind == kList);
-  assert(element.get() != nullptr);
-  m_list.push_back(element);
+Value Value::MakeType(const type::Type* a_type) {
+  Value v(kType);
+  v.m_type = a_type;
+  return Value(v);
 }
 
 bool Value::IsArithmetic() const {
@@ -787,6 +785,14 @@ void Value::Dereference() {
   }
 }
 
+bool Value::IsUninitialized() const {
+  return m_kind == kUninitialized;
+}
+
+bool Value::IsInitialized() const {
+  return m_kind != kUninitialized;
+}
+
 bool Value::IsError() const {
   return m_kind == kError;
 }
@@ -810,13 +816,13 @@ bool Value::RequireConstant(ErrorReporter* error_reporter) const {
 
 // TODO(jrw972):  Handle overflow and underflow.
 
-ValuePtr Value::Posate(
-    const Location& location, ValuePtr x,
-    ErrorReporter* error_reporter) {
+Value Value::Posate(
+    Location const & location, Value * x,
+    ErrorReporter * error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, ValuePtr a_value) : x(a_x), value(a_value) {}
-    ConstValuePtr x;
-    ValuePtr value;
+    Visitor(Value const * a_x, Value * a_value) : x(a_x), value(a_value) {}
+    Value const * x;
+    Value * value;
 
     void Visit(const type::Int8&) override {
       value->m_int8_value = +x->m_int8_value;
@@ -865,41 +871,44 @@ ValuePtr Value::Posate(
     }
   };
 
+  assert(x->IsInitialized());
+
   if (x->IsError()) {
     return Value::MakeError();
   }
 
   if (!x->IsArithmetic()) {
-    error_reporter->Insert(CannotApply(location, '+', x));
+    error_reporter->Insert(CannotApply(location, '+', *x));
     return Value::MakeError();
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
-  switch (v->m_kind) {
+  Value v(x->m_kind);
+  switch (v.m_kind) {
     case Value::kInteger:
-      v->m_Integer_value = +x->m_Integer_value;
+      v.m_Integer_value = +x->m_Integer_value;
       break;
     case Value::kRune:
-      v->m_Rune_value = +x->m_Rune_value;
+      v.m_Rune_value = +x->m_Rune_value;
       break;
     case Value::kFloat:
-      v->m_Float_value = +x->m_Float_value;
+      v.m_Float_value = +x->m_Float_value;
       break;
     case Value::kComplex:
-      v->m_Complex_value = +x->m_Complex_value;
+      v.m_Complex_value = +x->m_Complex_value;
       break;
     case Value::kConstant:
       {
-        v->m_type = x->m_type;
-        Visitor vis(x, v);
+        v.m_type = x->m_type;
+        Visitor vis(x, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
-        v->m_type = x->m_type;
+        v.m_type = x->m_type;
       }
       break;
     default:
@@ -909,13 +918,13 @@ ValuePtr Value::Posate(
   return v;
 }
 
-ValuePtr Value::Negate(
-    const Location& location, ValuePtr x,
-    ErrorReporter* error_reporter) {
+Value Value::Negate(
+    Location const & location, Value * x,
+    ErrorReporter * error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, ValuePtr a_value) : x(a_x), value(a_value) {}
-    ConstValuePtr x;
-    ValuePtr value;
+    Visitor(Value const * a_x, Value * a_value) : x(a_x), value(a_value) {}
+    Value const * x;
+    Value * value;
 
     void Visit(const type::Int8&) override {
       value->m_int8_value = -x->m_int8_value;
@@ -964,41 +973,44 @@ ValuePtr Value::Negate(
     }
   };
 
+  assert(x->IsInitialized());
+
   if (x->IsError()) {
     return Value::MakeError();
   }
 
   if (!x->IsArithmetic()) {
-    error_reporter->Insert(CannotApply(location, '-', x));
+    error_reporter->Insert(CannotApply(location, '-', *x));
     return Value::MakeError();
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
-  switch (v->m_kind) {
+  Value v(x->m_kind);
+  switch (v.m_kind) {
     case Value::kInteger:
-      v->m_Integer_value = -x->m_Integer_value;
+      v.m_Integer_value = -x->m_Integer_value;
       break;
     case Value::kRune:
-      v->m_Rune_value = -x->m_Rune_value;
+      v.m_Rune_value = -x->m_Rune_value;
       break;
     case Value::kFloat:
-      v->m_Float_value = -x->m_Float_value;
+      v.m_Float_value = -x->m_Float_value;
       break;
     case Value::kComplex:
-      v->m_Complex_value = -x->m_Complex_value;
+      v.m_Complex_value = -x->m_Complex_value;
       break;
     case Value::kConstant:
       {
-        v->m_type = x->m_type;
-        Visitor vis(x, v);
+        v.m_type = x->m_type;
+        Visitor vis(x, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
-        v->m_type = x->m_type;
+        v.m_type = x->m_type;
       }
       break;
     default:
@@ -1008,31 +1020,34 @@ ValuePtr Value::Negate(
   return v;
 }
 
-ValuePtr Value::LogicNot(
-    const Location& location, ValuePtr x,
-    ErrorReporter* error_reporter) {
+Value Value::LogicNot(
+    Location const & location, Value * x,
+    ErrorReporter * error_reporter) {
+  assert(x->IsInitialized());
+
   if (x->IsError()) {
     return Value::MakeError();
   }
 
   if (!x->IsBoolean()) {
-    error_reporter->Insert(CannotApply(location, '!', x));
+    error_reporter->Insert(CannotApply(location, '!', *x));
     return Value::MakeError();
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
-  switch (v->m_kind) {
+  Value v(x->m_kind);
+  switch (v.m_kind) {
     case Value::kBoolean:
-      v->m_Boolean_value = !x->m_Boolean_value;
+      v.m_Boolean_value = !x->m_Boolean_value;
       break;
     case Value::kConstant:
-      v->m_bool_value = !x->m_bool_value;
-      v->m_type = x->m_type;
+      v.m_bool_value = !x->m_bool_value;
+      v.m_type = x->m_type;
       break;
     case Value::kRValue:
-      v->m_type = x->m_type;
+      v.m_type = x->m_type;
       break;
     default:
       abort();  // NOT_COVERED
@@ -1041,13 +1056,13 @@ ValuePtr Value::LogicNot(
   return v;
 }
 
-ValuePtr Value::BitNot(
-    const Location& location, ValuePtr x,
-    ErrorReporter* error_reporter) {
+Value Value::BitNot(
+    Location const & location, Value * x,
+    ErrorReporter * error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, ValuePtr a_value) : x(a_x), value(a_value) {}
-    ConstValuePtr x;
-    ValuePtr value;
+    Visitor(Value const * a_x, Value * a_value) : x(a_x), value(a_value) {}
+    Value const * x;
+    Value * value;
 
     void Visit(const type::Int8&) override {
       value->m_int8_value = ~x->m_int8_value;
@@ -1084,35 +1099,38 @@ ValuePtr Value::BitNot(
     }
   };
 
+  assert(x->IsInitialized());
+
   if (x->IsError()) {
     return Value::MakeError();
   }
 
   if (!x->IsInteger()) {
-    error_reporter->Insert(CannotApply(location, '~', x));
+    error_reporter->Insert(CannotApply(location, '~', *x));
     return Value::MakeError();
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
-  switch (v->m_kind) {
+  Value v(x->m_kind);
+  switch (v.m_kind) {
     case Value::kInteger:
-      v->m_Integer_value = ~x->m_Integer_value;
+      v.m_Integer_value = ~x->m_Integer_value;
       break;
     case Value::kRune:
-      v->m_Rune_value = ~x->m_Rune_value;
+      v.m_Rune_value = ~x->m_Rune_value;
       break;
     case Value::kConstant:
       {
-        v->m_type = x->m_type;
-        Visitor vis(x, v);
+        v.m_type = x->m_type;
+        Visitor vis(x, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
-        v->m_type = x->m_type;
+        v.m_type = x->m_type;
       }
       break;
     default:
@@ -1122,15 +1140,15 @@ ValuePtr Value::BitNot(
   return v;
 }
 
-ValuePtr Value::Add(
-    const Location& location, ValuePtr x, ValuePtr y,
-    ErrorReporter* error_reporter) {
+Value Value::Add(
+    Location const & location, Value * x, Value * y,
+    ErrorReporter * error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
+    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
         : x(a_x), y(a_y), value(a_value) {}
-    ConstValuePtr x;
-    ConstValuePtr y;
-    ValuePtr value;
+    Value const * x;
+    Value const * y;
+    Value * value;
 
     void Visit(const type::Int8&) override {
       value->m_int8_value = x->m_int8_value + y->m_int8_value;
@@ -1182,6 +1200,9 @@ ValuePtr Value::Add(
     }
   };
 
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
   if (x->IsError() || y->IsError()) {
     return Value::MakeError();
   }
@@ -1190,60 +1211,61 @@ ValuePtr Value::Add(
        (x->IsString() && y->IsString()))) {
     // TODO(jrw972):  Make this check and other look at the left and right
     // independently.
-    error_reporter->Insert(CannotApply2(location, "+", x, y));
+    error_reporter->Insert(CannotApply2(location, "+", *x, *y));
     return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "+", x, y));
+      error_reporter->Insert(CannotApply2(location, "+", *x, *y));
       return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "+", x, y));
+      error_reporter->Insert(CannotApply2(location, "+", *x, *y));
       return Value::MakeError();
     }
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
-  switch (v->m_kind) {
+  Value v(x->m_kind);
+  switch (v.m_kind) {
     case Value::kInteger:
-      v->m_Integer_value = x->m_Integer_value + y->m_Integer_value;
+      v.m_Integer_value = x->m_Integer_value + y->m_Integer_value;
       break;
     case Value::kRune:
-      v->m_Rune_value = x->m_Rune_value + y->m_Rune_value;
+      v.m_Rune_value = x->m_Rune_value + y->m_Rune_value;
       break;
     case Value::kFloat:
-      v->m_Float_value = x->m_Float_value + y->m_Float_value;
+      v.m_Float_value = x->m_Float_value + y->m_Float_value;
       break;
     case Value::kComplex:
-      v->m_Complex_value = x->m_Complex_value + y->m_Complex_value;
+      v.m_Complex_value = x->m_Complex_value + y->m_Complex_value;
       break;
     case Value::kString:
-      v->m_String_value = x->m_String_value + y->m_String_value;
+      v.m_String_value = x->m_String_value + y->m_String_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "+", x, y));
+          error_reporter->Insert(CannotApply2(location, "+", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
-        Visitor vis(x, y, v);
+        v.m_type = x->m_type;
+        Visitor vis(x, y, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "+", x, y));
+          error_reporter->Insert(CannotApply2(location, "+", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
+        v.m_type = x->m_type;
       }
       break;
     default:
@@ -1253,17 +1275,17 @@ ValuePtr Value::Add(
   return v;
 }
 
-ValuePtr Value::Subtract(
-    const Location& location, ValuePtr x, ValuePtr y,
+Value Value::Subtract(
+    Location const & location, Value * x, Value * y,
     ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
+    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    ConstValuePtr x;
-    ConstValuePtr y;
-    ValuePtr value;
+    Value const * x;
+    Value const * y;
+    Value * value;
 
     void Visit(const type::Int8&) override {
       value->m_int8_value = x->m_int8_value - y->m_int8_value;
@@ -1312,62 +1334,66 @@ ValuePtr Value::Subtract(
     }
   };
 
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
   if (x->IsError() || y->IsError()) {
     return Value::MakeError();
   }
 
   if (!(x->IsArithmetic() && y->IsArithmetic())) {
-    error_reporter->Insert(CannotApply2(location, "-", x, y));
+    error_reporter->Insert(CannotApply2(location, "-", *x, *y));
     return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "-", x, y));
+      error_reporter->Insert(CannotApply2(location, "-", *x, *y));
       return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "-", x, y));
+      error_reporter->Insert(CannotApply2(location, "-", *x, *y));
       return Value::MakeError();
     }
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
-  switch (v->m_kind) {
+  Value v(x->m_kind);
+  switch (v.m_kind) {
     case Value::kInteger:
-      v->m_Integer_value = x->m_Integer_value - y->m_Integer_value;
+      v.m_Integer_value = x->m_Integer_value - y->m_Integer_value;
       break;
     case Value::kRune:
-      v->m_Rune_value = x->m_Rune_value - y->m_Rune_value;
+      v.m_Rune_value = x->m_Rune_value - y->m_Rune_value;
       break;
     case Value::kFloat:
-      v->m_Float_value = x->m_Float_value - y->m_Float_value;
+      v.m_Float_value = x->m_Float_value - y->m_Float_value;
       break;
     case Value::kComplex:
-      v->m_Complex_value = x->m_Complex_value - y->m_Complex_value;
+      v.m_Complex_value = x->m_Complex_value - y->m_Complex_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "-", x, y));
+          error_reporter->Insert(CannotApply2(location, "-", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
-        Visitor vis(x, y, v);
+        v.m_type = x->m_type;
+        Visitor vis(x, y, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "-", x, y));
+          error_reporter->Insert(CannotApply2(location, "-", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
+        v.m_type = x->m_type;
       }
       break;
     default:
@@ -1377,17 +1403,17 @@ ValuePtr Value::Subtract(
   return v;
 }
 
-ValuePtr Value::Multiply(
-    const Location& location, ValuePtr x, ValuePtr y,
+Value Value::Multiply(
+    Location const & location, Value * x, Value * y,
     ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
+    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    ConstValuePtr x;
-    ConstValuePtr y;
-    ValuePtr value;
+    Value const * x;
+    Value const * y;
+    Value * value;
 
     void Visit(const type::Int8&) override {
       value->m_int8_value = x->m_int8_value * y->m_int8_value;
@@ -1436,62 +1462,66 @@ ValuePtr Value::Multiply(
     }
   };
 
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
   if (x->IsError() || y->IsError()) {
     return Value::MakeError();
   }
 
   if (!(x->IsArithmetic() && y->IsArithmetic())) {
-    error_reporter->Insert(CannotApply2(location, "*", x, y));
+    error_reporter->Insert(CannotApply2(location, "*", *x, *y));
     return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "*", x, y));
+      error_reporter->Insert(CannotApply2(location, "*", *x, *y));
       return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "*", x, y));
+      error_reporter->Insert(CannotApply2(location, "*", *x, *y));
       return Value::MakeError();
     }
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
-  switch (v->m_kind) {
+  Value v(x->m_kind);
+  switch (v.m_kind) {
     case Value::kInteger:
-      v->m_Integer_value = x->m_Integer_value * y->m_Integer_value;
+      v.m_Integer_value = x->m_Integer_value * y->m_Integer_value;
       break;
     case Value::kRune:
-      v->m_Rune_value = x->m_Rune_value * y->m_Rune_value;
+      v.m_Rune_value = x->m_Rune_value * y->m_Rune_value;
       break;
     case Value::kFloat:
-      v->m_Float_value = x->m_Float_value * y->m_Float_value;
+      v.m_Float_value = x->m_Float_value * y->m_Float_value;
       break;
     case Value::kComplex:
-      v->m_Complex_value = x->m_Complex_value * y->m_Complex_value;
+      v.m_Complex_value = x->m_Complex_value * y->m_Complex_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "*", x, y));
+          error_reporter->Insert(CannotApply2(location, "*", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
-        Visitor vis(x, y, v);
+        v.m_type = x->m_type;
+        Visitor vis(x, y, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "*", x, y));
+          error_reporter->Insert(CannotApply2(location, "*", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
+        v.m_type = x->m_type;
       }
       break;
     default:
@@ -1500,17 +1530,17 @@ ValuePtr Value::Multiply(
   return v;
 }
 
-ValuePtr Value::Divide(
-    const Location& location, ValuePtr x, ValuePtr y,
+Value Value::Divide(
+    Location const & location, Value * x, Value * y,
     ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
+    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    ConstValuePtr x;
-    ConstValuePtr y;
-    ValuePtr value;
+    Value const * x;
+    Value const * y;
+    Value * value;
 
     void Visit(const type::Int8&) override {
       value->m_int8_value = x->m_int8_value / y->m_int8_value;
@@ -1559,12 +1589,15 @@ ValuePtr Value::Divide(
     }
   };
 
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
   if (x->IsError() || y->IsError()) {
     return Value::MakeError();
   }
 
   if (!(x->IsArithmetic() && y->IsArithmetic())) {
-    error_reporter->Insert(CannotApply2(location, "/", x, y));
+    error_reporter->Insert(CannotApply2(location, "/", *x, *y));
     return Value::MakeError();
   }
 
@@ -1575,51 +1608,52 @@ ValuePtr Value::Divide(
 
     if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "/", x, y));
+      error_reporter->Insert(CannotApply2(location, "/", *x, *y));
       return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "/", x, y));
+      error_reporter->Insert(CannotApply2(location, "/", *x, *y));
       return Value::MakeError();
     }
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
-  switch (v->m_kind) {
+  Value v(x->m_kind);
+  switch (v.m_kind) {
     case Value::kInteger:
-      v->m_Integer_value = x->m_Integer_value / y->m_Integer_value;
+      v.m_Integer_value = x->m_Integer_value / y->m_Integer_value;
       break;
     case Value::kRune:
-      v->m_Rune_value = x->m_Rune_value / y->m_Rune_value;
+      v.m_Rune_value = x->m_Rune_value / y->m_Rune_value;
       break;
     case Value::kFloat:
-      v->m_Float_value = x->m_Float_value / y->m_Float_value;
+      v.m_Float_value = x->m_Float_value / y->m_Float_value;
       break;
     case Value::kComplex:
-      v->m_Complex_value = x->m_Complex_value / y->m_Complex_value;
+      v.m_Complex_value = x->m_Complex_value / y->m_Complex_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "/", x, y));
+          error_reporter->Insert(CannotApply2(location, "/", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
-        Visitor vis(x, y, v);
+        v.m_type = x->m_type;
+        Visitor vis(x, y, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "/", x, y));
+          error_reporter->Insert(CannotApply2(location, "/", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
+        v.m_type = x->m_type;
       }
       break;
     default:
@@ -1628,17 +1662,17 @@ ValuePtr Value::Divide(
   return v;
 }
 
-ValuePtr Value::Modulo(
-    const Location& location, ValuePtr x, ValuePtr y,
+Value Value::Modulo(
+    Location const & location, Value * x, Value * y,
     ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
+    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    ConstValuePtr x;
-    ConstValuePtr y;
-    ValuePtr value;
+    Value const * x;
+    Value const * y;
+    Value * value;
 
     void Visit(const type::Int8&) override {
       value->m_int8_value = x->m_int8_value % y->m_int8_value;
@@ -1675,12 +1709,15 @@ ValuePtr Value::Modulo(
     }
   };
 
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
   if (x->IsError() || y->IsError()) {
     return Value::MakeError();
   }
 
   if (!(x->IsInteger() && x->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "%", x, y));
+    error_reporter->Insert(CannotApply2(location, "%", *x, *y));
     return Value::MakeError();
   }
 
@@ -1691,45 +1728,46 @@ ValuePtr Value::Modulo(
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "%", x, y));
+      error_reporter->Insert(CannotApply2(location, "%", *x, *y));
       return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "%", x, y));
+      error_reporter->Insert(CannotApply2(location, "%", *x, *y));
       return Value::MakeError();
     }
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
-  switch (v->m_kind) {
+  Value v(x->m_kind);
+  switch (v.m_kind) {
     case Value::kInteger:
-      v->m_Integer_value = x->m_Integer_value % y->m_Integer_value;
+      v.m_Integer_value = x->m_Integer_value % y->m_Integer_value;
       break;
     case Value::kRune:
-      v->m_Rune_value = x->m_Rune_value % y->m_Rune_value;
+      v.m_Rune_value = x->m_Rune_value % y->m_Rune_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "%", x, y));
+          error_reporter->Insert(CannotApply2(location, "%", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
-        Visitor vis(x, y, v);
+        v.m_type = x->m_type;
+        Visitor vis(x, y, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "%", x, y));
+          error_reporter->Insert(CannotApply2(location, "%", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
+        v.m_type = x->m_type;
       }
       break;
     default:
@@ -1738,17 +1776,17 @@ ValuePtr Value::Modulo(
   return v;
 }
 
-ValuePtr Value::LeftShift(
-    const Location& location, ValuePtr x, ValuePtr y,
+Value Value::LeftShift(
+    Location const & location, Value * x, Value * y,
     ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, unsigned int a_y, ValuePtr a_value)
+    Visitor(Value const * a_x, unsigned int a_y, Value * a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    ConstValuePtr x;
+    Value const * x;
     unsigned int y;
-    ValuePtr value;
+    Value * value;
 
     void Visit(const type::Int8&) override {
       value->m_int8_value = x->m_int8_value << y;
@@ -1785,6 +1823,9 @@ ValuePtr Value::LeftShift(
     }
   };
 
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
   if (x->IsError() || y->IsError()) {
     return Value::MakeError();
   }
@@ -1792,21 +1833,22 @@ ValuePtr Value::LeftShift(
   {
     Value xx = *x;
     if (!xx.ToInteger()) {
-      error_reporter->Insert(CannotApply2(location, "<<", x, y));
+      error_reporter->Insert(CannotApply2(location, "<<", *x, *y));
       return Value::MakeError();
     }
   }
 
   if (!y->ToInteger() ||
       !y->ConvertTo(&type::Uint::instance)) {
-    error_reporter->Insert(CannotApply2(location, "<<", x, y));
+    error_reporter->Insert(CannotApply2(location, "<<", *x, *y));
     return Value::MakeError();
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
+  Value v(x->m_kind);
   switch (x->m_kind) {
     case Value::kInteger:
       v = MakeInteger(x->m_Integer_value << y->m_uint_value);
@@ -1822,16 +1864,16 @@ ValuePtr Value::LeftShift(
       break;
     case Value::kConstant:
       {
-        v->m_kind = Value::kConstant;
-        v->m_type = x->m_type;
-        Visitor vis(x, y->m_uint_value, v);
+        v.m_kind = Value::kConstant;
+        v.m_type = x->m_type;
+        Visitor vis(x, y->m_uint_value, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
-        v->m_kind = Value::kConstant;
-        v->m_type = x->m_type;
+        v.m_kind = Value::kConstant;
+        v.m_type = x->m_type;
       }
       break;
     default:
@@ -1840,17 +1882,17 @@ ValuePtr Value::LeftShift(
   return v;
 }
 
-ValuePtr Value::RightShift(
-    const Location& location, ValuePtr x, ValuePtr y,
+Value Value::RightShift(
+    Location const & location, Value * x, Value * y,
     ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, unsigned int a_y, ValuePtr a_value)
+    Visitor(Value const * a_x, unsigned int a_y, Value * a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    ConstValuePtr x;
+    Value const * x;
     unsigned int y;
-    ValuePtr value;
+    Value * value;
 
     void Visit(const type::Int8&) override {
       value->m_int8_value = x->m_int8_value >> y;
@@ -1887,6 +1929,9 @@ ValuePtr Value::RightShift(
     }
   };
 
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
   if (x->IsError() || y->IsError()) {
     return Value::MakeError();
   }
@@ -1894,21 +1939,22 @@ ValuePtr Value::RightShift(
   {
     Value xx = *x;
     if (!xx.ToInteger()) {
-      error_reporter->Insert(CannotApply2(location, ">>", x, y));
+      error_reporter->Insert(CannotApply2(location, ">>", *x, *y));
       return Value::MakeError();
     }
   }
 
   if (!y->ToInteger() ||
       !y->ConvertTo(&type::Uint::instance)) {
-    error_reporter->Insert(CannotApply2(location, ">>", x, y));
+    error_reporter->Insert(CannotApply2(location, ">>", *x, *y));
     return Value::MakeError();
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
+  Value v(x->m_kind);
   switch (x->m_kind) {
     case Value::kInteger:
       v = MakeInteger(x->m_Integer_value >> y->m_uint_value);
@@ -1924,16 +1970,16 @@ ValuePtr Value::RightShift(
       break;
     case Value::kConstant:
       {
-        v->m_kind = Value::kConstant;
-        v->m_type = x->m_type;
-        Visitor vis(x, y->m_uint_value, v);
+        v.m_kind = Value::kConstant;
+        v.m_type = x->m_type;
+        Visitor vis(x, y->m_uint_value, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
-        v->m_kind = Value::kConstant;
-        v->m_type = x->m_type;
+        v.m_kind = Value::kConstant;
+        v.m_type = x->m_type;
       }
       break;
     default:
@@ -1942,17 +1988,17 @@ ValuePtr Value::RightShift(
   return v;
 }
 
-ValuePtr Value::BitAnd(
-    const Location& location, ValuePtr x, ValuePtr y,
+Value Value::BitAnd(
+    Location const & location, Value * x, Value * y,
     ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
+    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    ConstValuePtr x;
-    ConstValuePtr y;
-    ValuePtr value;
+    Value const * x;
+    Value const * y;
+    Value * value;
 
     void Visit(const type::Int8&) override {
       value->m_int8_value = x->m_int8_value & y->m_int8_value;
@@ -1989,56 +2035,60 @@ ValuePtr Value::BitAnd(
     }
   };
 
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
   if (x->IsError() || y->IsError()) {
     return Value::MakeError();
   }
 
   if (!(x->IsInteger() && y->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "&", x, y));
+    error_reporter->Insert(CannotApply2(location, "&", *x, *y));
     return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "&", x, y));
+      error_reporter->Insert(CannotApply2(location, "&", *x, *y));
       return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "&", x, y));
+      error_reporter->Insert(CannotApply2(location, "&", *x, *y));
       return Value::MakeError();
     }
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
-  switch (v->m_kind) {
+  Value v(x->m_kind);
+  switch (v.m_kind) {
     case Value::kInteger:
-      v->m_Integer_value = x->m_Integer_value & y->m_Integer_value;
+      v.m_Integer_value = x->m_Integer_value & y->m_Integer_value;
       break;
     case Value::kRune:
-      v->m_Rune_value = x->m_Rune_value & y->m_Rune_value;
+      v.m_Rune_value = x->m_Rune_value & y->m_Rune_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "&", x, y));
+          error_reporter->Insert(CannotApply2(location, "&", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
-        Visitor vis(x, y, v);
+        v.m_type = x->m_type;
+        Visitor vis(x, y, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "&", x, y));
+          error_reporter->Insert(CannotApply2(location, "&", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
+        v.m_type = x->m_type;
       }
       break;
     default:
@@ -2047,17 +2097,17 @@ ValuePtr Value::BitAnd(
   return v;
 }
 
-ValuePtr Value::BitAndNot(
-    const Location& location, ValuePtr x, ValuePtr y,
+Value Value::BitAndNot(
+    Location const & location, Value * x, Value * y,
     ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
+    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    ConstValuePtr x;
-    ConstValuePtr y;
-    ValuePtr value;
+    Value const * x;
+    Value const * y;
+    Value * value;
 
     void Visit(const type::Int8&) override {
       value->m_int8_value = x->m_int8_value & ~y->m_int8_value;
@@ -2094,56 +2144,60 @@ ValuePtr Value::BitAndNot(
     }
   };
 
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
   if (x->IsError() || y->IsError()) {
     return Value::MakeError();
   }
 
   if (!(x->IsInteger() && y->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "&~", x, y));
+    error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
     return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "&~", x, y));
+      error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
       return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "&~", x, y));
+      error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
       return Value::MakeError();
     }
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
-  switch (v->m_kind) {
+  Value v(x->m_kind);
+  switch (v.m_kind) {
     case Value::kInteger:
-      v->m_Integer_value = x->m_Integer_value & ~y->m_Integer_value;
+      v.m_Integer_value = x->m_Integer_value & ~y->m_Integer_value;
       break;
     case Value::kRune:
-      v->m_Rune_value = x->m_Rune_value & ~y->m_Rune_value;
+      v.m_Rune_value = x->m_Rune_value & ~y->m_Rune_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "&~", x, y));
+          error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
-        Visitor vis(x, y, v);
+        v.m_type = x->m_type;
+        Visitor vis(x, y, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "&~", x, y));
+          error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
+        v.m_type = x->m_type;
       }
       break;
     default:
@@ -2152,17 +2206,17 @@ ValuePtr Value::BitAndNot(
   return v;
 }
 
-ValuePtr Value::BitOr(
-    const Location& location, ValuePtr x, ValuePtr y,
+Value Value::BitOr(
+    Location const & location, Value * x, Value * y,
     ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
+    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    ConstValuePtr x;
-    ConstValuePtr y;
-    ValuePtr value;
+    Value const * x;
+    Value const * y;
+    Value * value;
 
     void Visit(const type::Int8&) override {
       value->m_int8_value = x->m_int8_value | y->m_int8_value;
@@ -2199,56 +2253,60 @@ ValuePtr Value::BitOr(
     }
   };
 
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
   if (x->IsError() || y->IsError()) {
     return Value::MakeError();
   }
 
   if (!(x->IsInteger() && y->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "|", x, y));
+    error_reporter->Insert(CannotApply2(location, "|", *x, *y));
     return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "|", x, y));
+      error_reporter->Insert(CannotApply2(location, "|", *x, *y));
       return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "|", x, y));
+      error_reporter->Insert(CannotApply2(location, "|", *x, *y));
       return Value::MakeError();
     }
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
-  switch (v->m_kind) {
+  Value v(x->m_kind);
+  switch (v.m_kind) {
     case Value::kInteger:
-      v->m_Integer_value = x->m_Integer_value | y->m_Integer_value;
+      v.m_Integer_value = x->m_Integer_value | y->m_Integer_value;
       break;
     case Value::kRune:
-      v->m_Rune_value = x->m_Rune_value | y->m_Rune_value;
+      v.m_Rune_value = x->m_Rune_value | y->m_Rune_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "|", x, y));
+          error_reporter->Insert(CannotApply2(location, "|", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
-        Visitor vis(x, y, v);
+        v.m_type = x->m_type;
+        Visitor vis(x, y, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "|", x, y));
+          error_reporter->Insert(CannotApply2(location, "|", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
+        v.m_type = x->m_type;
       }
       break;
     default:
@@ -2257,17 +2315,17 @@ ValuePtr Value::BitOr(
   return v;
 }
 
-ValuePtr Value::BitXor(
-    const Location& location, ValuePtr x, ValuePtr y,
+Value Value::BitXor(
+    Location const & location, Value * x, Value * y,
     ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, ConstValuePtr a_y, ValuePtr a_value)
+    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
         : x(a_x)
         , y(a_y)
         , value(a_value) {}
-    ConstValuePtr x;
-    ConstValuePtr y;
-    ValuePtr value;
+    Value const * x;
+    Value const * y;
+    Value * value;
 
     void Visit(const type::Int8&) override {
       value->m_int8_value = x->m_int8_value ^ y->m_int8_value;
@@ -2304,56 +2362,60 @@ ValuePtr Value::BitXor(
     }
   };
 
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
   if (x->IsError() || y->IsError()) {
     return Value::MakeError();
   }
 
   if (!(x->IsInteger() && y->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "^", x, y));
+    error_reporter->Insert(CannotApply2(location, "^", *x, *y));
     return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "^", x, y));
+      error_reporter->Insert(CannotApply2(location, "^", *x, *y));
       return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "^", x, y));
+      error_reporter->Insert(CannotApply2(location, "^", *x, *y));
       return Value::MakeError();
     }
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  ValuePtr v(new Value(x->m_kind));
-  switch (v->m_kind) {
+  Value v(x->m_kind);
+  switch (v.m_kind) {
     case Value::kInteger:
-      v->m_Integer_value = x->m_Integer_value ^ y->m_Integer_value;
+      v.m_Integer_value = x->m_Integer_value ^ y->m_Integer_value;
       break;
     case Value::kRune:
-      v->m_Rune_value = x->m_Rune_value ^ y->m_Rune_value;
+      v.m_Rune_value = x->m_Rune_value ^ y->m_Rune_value;
       break;
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "^", x, y));
+          error_reporter->Insert(CannotApply2(location, "^", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
-        Visitor vis(x, y, v);
+        v.m_type = x->m_type;
+        Visitor vis(x, y, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
       }
       break;
     case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "^", x, y));
+          error_reporter->Insert(CannotApply2(location, "^", *x, *y));
           return Value::MakeError();
         }
-        v->m_type = x->m_type;
+        v.m_type = x->m_type;
       }
       break;
     default:
@@ -2362,15 +2424,15 @@ ValuePtr Value::BitXor(
   return v;
 }
 
-ValuePtr Value::Equal(
-    const Location& location, ValuePtr x, ValuePtr y,
+Value Value::Equal(
+    Location const & location, Value * x, Value * y,
     ErrorReporter* error_reporter) {
   struct Visitor : public type::DefaultVisitor {
-    Visitor(ConstValuePtr a_x, ConstValuePtr a_y)
+    Visitor(Value const * a_x, Value const * a_y)
         : x(a_x) , y(a_y) {}
-    ConstValuePtr x;
-    ConstValuePtr y;
-    ValuePtr flag;
+    Value const * x;
+    Value const * y;
+    Value flag;
 
     void Visit(const type::Bool&) override {
       flag = MakeBoolean(x->m_bool_value == y->m_bool_value);
@@ -2425,56 +2487,60 @@ ValuePtr Value::Equal(
     }
   };
 
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
   if (x->IsError() || y->IsError()) {
     return Value::MakeError();
   }
 
   if (x->m_kind < y->m_kind) {
     if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "==", x, y));
+      error_reporter->Insert(CannotApply2(location, "==", *x, *y));
       return Value::MakeError();
     }
   } else if (y->m_kind < x->m_kind) {
     if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "==", x, y));
+      error_reporter->Insert(CannotApply2(location, "==", *x, *y));
       return Value::MakeError();
     }
   }
 
+  // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
   switch (x->m_kind) {
     case Value::kBoolean:
-      return ValuePtr(MakeBoolean(x->m_Boolean_value == y->m_Boolean_value));
+      return Value(MakeBoolean(x->m_Boolean_value == y->m_Boolean_value));
     case Value::kInteger:
-      return ValuePtr(MakeBoolean(x->m_Integer_value == y->m_Integer_value));
+      return Value(MakeBoolean(x->m_Integer_value == y->m_Integer_value));
     case Value::kRune:
-      return ValuePtr(MakeBoolean(x->m_Rune_value == y->m_Rune_value));
+      return Value(MakeBoolean(x->m_Rune_value == y->m_Rune_value));
     case Value::kFloat:
-      return ValuePtr(MakeBoolean(x->m_Float_value == y->m_Float_value));
+      return Value(MakeBoolean(x->m_Float_value == y->m_Float_value));
     case Value::kComplex:
-      return ValuePtr(MakeBoolean(x->m_Complex_value == y->m_Complex_value));
+      return Value(MakeBoolean(x->m_Complex_value == y->m_Complex_value));
     case Value::kString:
-      return ValuePtr(MakeBoolean(x->m_String_value == y->m_String_value));
+      return Value(MakeBoolean(x->m_String_value == y->m_String_value));
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "==", x, y));
+          error_reporter->Insert(CannotApply2(location, "==", *x, *y));
           return Value::MakeError();
         }
         Visitor vis(x, y);
         x->m_type->UnderlyingType()->Accept(&vis);
-        return ValuePtr(vis.flag);
+        return Value(vis.flag);
       }
       break;
     case Value::kRValue:
       {
         if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "==", x, y));
+          error_reporter->Insert(CannotApply2(location, "==", *x, *y));
           return Value::MakeError();
         }
-        return ValuePtr(MakeRValue(&type::Bool::instance));
+        return Value(MakeRValue(&type::Bool::instance));
       }
       break;
     default:
@@ -2486,20 +2552,15 @@ ValuePtr Value::Equal(
   return Value::MakeError();  // NOT_COVERED
 }
 
-ValuePtr Value::Call(
-    const Location& location, ValuePtr operand, ValuePtr arguments,
+Value Value::Call(
+    Location const & location, Value * operand,
+    std::vector<Value *> const & arguments,
     const LocationList& locations, ErrorReporter* error_reporter) {
-  assert(arguments->m_kind == kList);
-  assert(arguments->m_list.size() == locations.size());
+  assert(operand->IsInitialized());
+  assert(arguments.size() == locations.size());
 
   if (operand->IsError()) {
     return Value::MakeError();
-  }
-
-  for (auto argument : arguments->m_list) {
-    if (argument->IsError()) {
-      return Value::MakeError();
-    }
   }
 
   if (!operand->IsCallable()) {
@@ -2510,32 +2571,41 @@ ValuePtr Value::Call(
   const type::Function* function =
       type::Cast<const type::Function>(operand->m_type);
 
-  if (arguments->m_list.size() != function->ParameterCount()) {
+  if (arguments.size() != function->ParameterCount()) {
     error_reporter->Insert(
         CallExpectsNArguments(
-            location, function->ParameterCount(), arguments->m_list.size()));
-    return Value::MakeError();
+            location, function->ParameterCount(), arguments.size()));
   }
 
-  for (size_t idx = 0, limit = arguments->m_list.size(); idx != limit; ++idx) {
-    ValuePtr argument = arguments->m_list.at(idx);
-    const symbol::Parameter* parameter = function->ParameterAt(idx);
-    if (!argument->ConvertTo(parameter->type)) {
-      error_reporter->Insert(CannotConvert(locations.at(idx), argument,
-                                           parameter->type));
-      return Value::MakeError();
+  for (size_t idx = 0,
+           limit = std::min(arguments.size(), function->ParameterCount());
+       idx != limit; ++idx) {
+    Value * argument = arguments.at(idx);
+    if (argument->IsError()) {
+      continue;
     }
+    symbol::Parameter const * parameter = function->ParameterAt(idx);
+    if (!argument->ConvertTo(parameter->type)) {
+      error_reporter->Insert(CannotConvert(locations.at(idx), *argument,
+                                           parameter->type));
+    }
+    // TODO(jrw972):  Remove.
     argument->Dereference();
   }
 
-  ValuePtr retval(new Value(kList));
-  for (auto pos = function->ResultBegin(), limit = function->ResultEnd();
-       pos != limit; ++pos) {
-    const symbol::Parameter* parameter = *pos;
-    retval->m_list.push_back(Value::MakeRValue(parameter->type));
+  if (function->ResultCount() == 0) {
+    return Value(kVoid);
+  } else if (function->ResultCount() == 1) {
+    return Value::MakeRValue((*function->ResultBegin())->type);
+  } else {
+    Value retval(kList);
+    for (auto pos = function->ResultBegin(), limit = function->ResultEnd();
+         pos != limit; ++pos) {
+      const symbol::Parameter* parameter = *pos;
+      retval.m_list.push_back(Value::MakeRValue(parameter->type));
+    }
+    return retval;
   }
-
-  return retval;
 }
 
 bool Value::operator==(const Value& y) const {
@@ -2607,6 +2677,8 @@ bool Value::operator==(const Value& y) const {
   }
 
   switch (this->m_kind) {
+    case Value::kUninitialized:
+      return true;
     case Value::kError:
       return true;
     case Value::kBoolean:
@@ -2633,25 +2705,13 @@ bool Value::operator==(const Value& y) const {
     case Value::kFunction:
     case Value::kRValue:
     case Value::kLValue:
-      {
-        return this->m_type == y.m_type;
-      }
+      return this->m_type == y.m_type;
     case Value::kType:
-      {
-        return this->m_type == y.m_type;
-      }
+      return this->m_type == y.m_type;
+    case Value::kVoid:
+      return true;
     case Value::kList:
-      if (this->m_list.size() != y.m_list.size()) {
-        return false;
-      }
-      for (ListType::const_iterator xpos = this->m_list.begin(),
-               xlimit = this->m_list.end(), ypos = y.m_list.begin();
-           xpos != xlimit; ++xpos, ++ypos) {
-        if (*xpos != *ypos) {
-          return false;
-        }
-      }
-      return false;
+      return this->m_list == y.m_list;
   }
 
   abort();  // NOT_COVERED
@@ -2661,8 +2721,8 @@ bool Value::operator!=(const Value& y) const {
   return !(*this == y);
 }
 
-ValuePtr Value::MakeError() {
-  return ValuePtr(new Value(kError));
+Value Value::MakeError() {
+  return Value(kError);
 }
 
 std::ostream& operator<<(std::ostream& out, const Value& value) {
@@ -2728,6 +2788,9 @@ std::ostream& operator<<(std::ostream& out, const Value& value) {
   };
 
   switch (value.kind()) {
+    case Value::kUninitialized:
+      out << "uninitialized";
+      break;
     case Value::kError:
       out << "error";
       break;
@@ -2774,6 +2837,9 @@ std::ostream& operator<<(std::ostream& out, const Value& value) {
       break;
     case Value::kType:
       out << "<type>";
+      break;
+    case Value::kVoid:
+      out << "<void>";
       break;
     case Value::kList:
       out << "<list>";

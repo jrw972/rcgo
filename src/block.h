@@ -47,7 +47,7 @@ struct MutableBlock : public Block {
 
   symbol::Constant* MakeConstant(
       const std::string& a_identifier, const Location& a_location,
-      value::ConstValuePtr a_value) {
+      value::Value const & a_value) {
     symbol::Constant* c =
         new symbol::Constant(a_identifier, a_location, package(), a_value);
     m_mutable_symbol_table->PushBack(c);
