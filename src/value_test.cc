@@ -268,7 +268,7 @@ TEST_CASE("value::MakeComplex()") {
 
 TEST_CASE("value::MakeString()") {
   Value v = Value::MakeString("hello");
-  REQUIRE(v.kind() == Value::kString);
+  REQUIRE(v.kind() == Value::kUntypedConstant);
   REQUIRE(v.String_value() == "hello");
 }
 

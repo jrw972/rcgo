@@ -91,8 +91,12 @@ UntypedConstant UntypedConstant::MakeFloat(mpf_class const & a_value) {
 UntypedConstant UntypedConstant::MakeComplex(
     mpf_class const & a_real,
     mpf_class const & a_imag) {
+  return MakeComplex(complex_t(a_real, a_imag));
+}
+
+UntypedConstant UntypedConstant::MakeComplex(complex_t const & a_value) {
   UntypedConstant uc(kComplex);
-  uc.m_complex_value = complex_t(a_real, a_imag);
+  uc.m_complex_value = a_value;
   return uc;
 }
 
@@ -219,6 +223,50 @@ UntypedConstant UntypedConstant::LogicNot(UntypedConstant const & a_x) {
   return MakeBoolean(!a_x.m_boolean_value);
 }
 
+UntypedConstant UntypedConstant::Add(
+    UntypedConstant const & a_x,
+    UntypedConstant const & a_y) {
+  assert(a_x.IsInitialized());
+  assert(a_y.IsInitialized());
+
+  if (a_x.IsError() || a_y.IsError()) {
+    return MakeError();
+  }
+
+  if (a_x.IsString()) {
+    if (a_y.IsString()) {
+      return MakeString(a_x.m_string_value + a_y.m_string_value);
+    } else {
+      return MakeError();
+    }
+  }
+
+  if (a_x.IsArithmetic()) {
+    if (a_y.IsArithmetic()) {
+      Kind k = std::max(a_x.m_kind, a_y.m_kind);
+      UntypedConstant x = PromoteTo(a_x, k);
+      UntypedConstant y = PromoteTo(a_y, k);
+      switch (k) {
+        case kInteger:
+          return MakeInteger(a_x.m_integer_value + a_y.m_integer_value);
+        case kRune:
+          return MakeRune(a_x.m_rune_value + a_y.m_rune_value);
+        case kFloat:
+          return MakeFloat(a_x.m_float_value + a_y.m_float_value);
+        case kComplex:
+          return MakeComplex(a_x.m_complex_value + a_y.m_complex_value);
+        default:
+          abort();
+      }
+    } else {
+      return MakeError();
+    }
+  }
+
+  return MakeError();
+}
+
+
 UntypedConstant UntypedConstant::Equal(
     UntypedConstant const & a_x,
     UntypedConstant const & a_y) {
@@ -333,7 +381,7 @@ std::ostream & operator<<(
       a_out << (a_value.boolean_value() ? "true" : "false");
       break;
     case UntypedConstant::kString:
-      a_out << a_value.string_value();
+      a_out << '"' << a_value.string_value() << '"';
       break;
     case UntypedConstant::kInteger:
       a_out << a_value.integer_value();

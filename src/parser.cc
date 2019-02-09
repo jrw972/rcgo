@@ -174,7 +174,7 @@ ast::Node* Parser::FieldDecl() {
         ast::Node* typeName = TypeName();
         std::string tag;
         if (Peek() == Token::kLiteral &&
-            Peek().value().kind() == value::Value::kString) {
+            Peek().value().untyped_constant().kind() == value::UntypedConstant::kString) {
           tag = Peek().value().String_value();
           Next();
         }
@@ -185,7 +185,7 @@ ast::Node* Parser::FieldDecl() {
       {
         ast::Node* identifier = Identifier();
         if (Peek() == Token::kLiteral &&
-            Peek().value().kind() == value::Value::kString) {
+            Peek().value().untyped_constant().kind() == value::UntypedConstant::kString) {
           std::string tag = Peek().value().String_value();
           Next();
           return new ast::EmbeddedField(identifier->location, false, identifier,
@@ -202,7 +202,7 @@ ast::Node* Parser::FieldDecl() {
               ast::Node* typeName = OptionalSelector(identifier);
               std::string tag;
               if (Peek() == Token::kLiteral &&
-                  Peek().value().kind() == value::Value::kString) {
+                  Peek().value().untyped_constant().kind() == value::UntypedConstant::kString) {
                 tag = Peek().value().String_value();
                 Next();
               }
@@ -217,7 +217,7 @@ ast::Node* Parser::FieldDecl() {
               ast::Node* type = Type();
               std::string tag;
               if (Peek() == Token::kLiteral &&
-                  Peek().value().kind() == value::Value::kString) {
+                  Peek().value().untyped_constant().kind() == value::UntypedConstant::kString) {
                 tag = Peek().value().String_value();
                 Next();
               }
@@ -1573,7 +1573,7 @@ ast::Node* Parser::ImportDecl() {
   Want(Token::kImport);
 
   if (Peek().kind() == Token::kLiteral &&
-      Peek().value().kind() == value::Value::kString) {
+      Peek().value().untyped_constant().kind() == value::UntypedConstant::kString) {
     children.push_back(ImportSpec());
     return new ast::ImportDecl(loc, children);
   }
@@ -1621,7 +1621,7 @@ ast::Node* Parser::ImportSpec() {
   }
 
   if (Peek().kind() == Token::kLiteral &&
-      Peek().value().kind() == value::Value::kString) {
+      Peek().value().untyped_constant().kind() == value::UntypedConstant::kString) {
     std::string path = Peek().value().String_value();
     Next();
     return new ast::ImportSpec(loc, dot, identifier, path);

@@ -63,6 +63,8 @@ struct UntypedConstant {
   static UntypedConstant MakeComplex(
       mpf_class const & a_real,
       mpf_class const & a_imag);
+  static UntypedConstant MakeComplex(complex_t const & a_value);
+
   static UntypedConstant MakeString(std::string const & a_value);
 
   Kind kind() const { return m_kind; }

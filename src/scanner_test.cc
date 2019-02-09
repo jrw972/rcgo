@@ -131,7 +131,7 @@ namespace test {
     Scanner scanner(&seq, &er);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind() == value::Value::kString);                 \
+    REQUIRE(t.value().untyped_constant().kind() == value::UntypedConstant::kString); \
     REQUIRE(t.value().String_value() == val);                           \
   }
 
@@ -144,7 +144,7 @@ namespace test {
     Token t = scanner.Peek();                                           \
     REQUIRE(er.At(0) == std::string(err));                              \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind() == value::Value::kString);                 \
+    REQUIRE(t.value().untyped_constant().kind() == value::UntypedConstant::kString);                 \
   }
 
 #define CONSUME_ERROR(str, k, err)                                      \

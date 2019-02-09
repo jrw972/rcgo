@@ -121,7 +121,6 @@ Value::Value(Value const & a_other) {
   m_type = a_other.m_type;
 
   m_untyped_constant = a_other.m_untyped_constant;
-  m_String_value = a_other.m_String_value;
   m_Integer_value = a_other.m_Integer_value;
   m_Rune_value = a_other.m_Rune_value;
   m_Float_value = a_other.m_Float_value;
@@ -157,9 +156,11 @@ Value Value::MakeUntypedConstant(UntypedConstant const & a_value) {
 }
 
 Value Value::MakeBoolean(bool a_value) {
-  Value v(kUntypedConstant);
-  v.m_untyped_constant = UntypedConstant::MakeBoolean(a_value);
-  return v;
+  return MakeUntypedConstant(UntypedConstant::MakeBoolean(a_value));
+}
+
+Value Value::MakeString(std::string const & a_value) {
+  return MakeUntypedConstant(UntypedConstant::MakeString(a_value));
 }
 
 Value Value::MakeInteger(const mpz_class& a_value) {
@@ -184,12 +185,6 @@ Value Value::MakeRune(const mpz_class& a_value) {
   Value v(kRune);
   v.m_Rune_value = a_value;
   return v;
-}
-
-Value Value::MakeString(const std::string& a_value) {
-  Value v(kString);
-  v.m_String_value = a_value;
-  return Value(v);
 }
 
 Value Value::MakeFunction(const type::Function* a_type) {
@@ -311,8 +306,8 @@ bool Value::IsZero() const {
 
 bool Value::IsString() const {
   switch (m_kind) {
-    case kString:
-      return true;
+    case kUntypedConstant:
+      return m_untyped_constant.IsString();
     case kConstant:
     case kLValue:
     case kRValue:
@@ -365,9 +360,10 @@ struct ConvertVisitor : public type::DefaultVisitor {
   }
 
   void Visit(const type::String&) override {
-    if (value->m_kind == Value::kString) {
+    if (value->m_kind == Value::kUntypedConstant &&
+        value->m_untyped_constant.IsString()) {
       value->m_kind = Value::kConstant;
-      value->m_string_value = value->m_String_value;
+      value->m_string_value = value->m_untyped_constant.string_value();
       value->m_type = type;
       flag = true;
     }
@@ -622,8 +618,6 @@ bool Value::PromoteTo(const Value& other) {
 
   switch (this->kind()) {
     case kUntypedConstant:
-      return false;
-    case Value::kString:
       return false;
     case Value::kInteger:
       this->m_kind = kRune;
@@ -1196,6 +1190,9 @@ Value Value::Add(
 
   Value v(x->m_kind);
   switch (v.m_kind) {
+    case kUntypedConstant:
+      v.m_untyped_constant = UntypedConstant::Add(x->m_untyped_constant, y->m_untyped_constant);
+      break;
     case Value::kInteger:
       v.m_Integer_value = x->m_Integer_value + y->m_Integer_value;
       break;
@@ -1207,9 +1204,6 @@ Value Value::Add(
       break;
     case Value::kComplex:
       v.m_Complex_value = x->m_Complex_value + y->m_Complex_value;
-      break;
-    case Value::kString:
-      v.m_String_value = x->m_String_value + y->m_String_value;
       break;
     case Value::kConstant:
       {
@@ -2484,8 +2478,6 @@ Value Value::Equal(
       return MakeBoolean(x->m_Float_value == y->m_Float_value);
     case Value::kComplex:
       return MakeBoolean(x->m_Complex_value == y->m_Complex_value);
-    case Value::kString:
-      return MakeBoolean(x->m_String_value == y->m_String_value);
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
@@ -2654,8 +2646,6 @@ bool Value::operator==(const Value& y) const {
       return this->m_Complex_value == y.m_Complex_value;
     case Value::kRune:
       return this->m_Rune_value == y.m_Rune_value;
-    case Value::kString:
-      return this->m_string_value == y.m_string_value;
     case Value::kConstant:
       {
         if (this->m_type != y.m_type) {
@@ -2779,9 +2769,6 @@ std::ostream& operator<<(std::ostream& out, const Value& value) {
       break;
     case Value::kComplex:
       out << value.Complex_value();
-      break;
-    case Value::kString:
-      out << '"' << value.String_value() << '"';
       break;
     case Value::kConstant:
       {

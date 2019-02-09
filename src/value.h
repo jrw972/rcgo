@@ -81,7 +81,6 @@ struct Value {
     kUninitialized,
     kError,
     kUntypedConstant,
-    kString,
     kInteger,
     kRune,
     kFloat,
@@ -115,7 +114,7 @@ struct Value {
   type::Type const * type() const { return m_type; }
   UntypedConstant const & untyped_constant() const { return m_untyped_constant; }
   bool Boolean_value() const { return m_untyped_constant.boolean_value(); }
-  std::string const & String_value() const { return  m_String_value; }
+  std::string const & String_value() const { return  m_untyped_constant.string_value(); }
   mpz_class const & Integer_value() const { return m_Integer_value; }
   mpz_class const & Rune_value() const { return m_Rune_value; }
   mpf_class const & Float_value() const { return m_Float_value; }
@@ -208,7 +207,6 @@ struct Value {
   type::Type const * m_type;
 
   UntypedConstant m_untyped_constant;
-  std::string m_String_value;
   mpz_class m_Integer_value;
   mpz_class m_Rune_value;
   mpf_class m_Float_value;
