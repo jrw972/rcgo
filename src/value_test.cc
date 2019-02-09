@@ -238,7 +238,7 @@ TEST_CASE("value::MakeError()") {
 
 TEST_CASE("value::MakeBoolean()") {
   Value v = Value::MakeBoolean(true);
-  REQUIRE(v.kind() == Value::kBoolean);
+  REQUIRE(v.kind() == Value::kUntypedConstant);
   REQUIRE(v.Boolean_value() == true);
 }
 

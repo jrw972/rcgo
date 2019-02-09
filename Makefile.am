@@ -45,6 +45,7 @@ src/scanner.h src/scanner.cc \
 src/symbol.h src/symbol.cc \
 src/token.h src/token.cc \
 src/type.h src/type.cc \
+src/untyped_constant.h src/untyped_constant.cc \
 src/upper_table.cc \
 src/utf8.h src/utf8.cc \
 src/value.h src/value.cc

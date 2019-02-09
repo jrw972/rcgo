@@ -112,52 +112,6 @@ std::ostream& operator<<(std::ostream& out, const complex128_t& val) {
   return out;
 }
 
-complex_t::complex_t() : m_real(0, PRECISION), m_imag(0, PRECISION) {}
-
-complex_t::complex_t(const mpf_class& a_real, const mpf_class& a_imag)
-    : m_real(a_real), m_imag(a_imag) {}
-
-bool complex_t::operator==(const complex_t& a_other) const {
-  return this->m_real == a_other.m_real && this->m_imag == a_other.m_imag;
-}
-
-bool complex_t::operator!=(const complex_t& a_other) const {
-  return !(*this == a_other);
-}
-
-complex_t complex_t::operator+(const complex_t& a_other) const {
-  return complex_t(m_real + a_other.m_real, m_imag + a_other.m_imag);
-}
-
-complex_t complex_t::operator-(const complex_t& a_other) const {
-  return complex_t(m_real - a_other.m_real, m_imag - a_other.m_imag);
-}
-
-complex_t complex_t::operator*(const complex_t& a_other) const {
-  return complex_t(m_real * a_other.m_real - m_imag * a_other.m_imag,
-                   m_real * a_other.m_imag + m_imag * a_other.m_real);
-}
-
-complex_t complex_t::operator/(const complex_t& a_other) const {
-  mpf_class denom = a_other.m_real * a_other.m_real +
-      a_other.m_imag * a_other.m_imag;
-  return complex_t((m_real * a_other.m_real + m_imag * a_other.m_real) / denom,
-                   (m_imag * a_other.m_real - m_real * a_other.m_imag) / denom);
-}
-
-complex_t complex_t::operator+() const {
-  return complex_t(+m_real, +m_imag);
-}
-
-complex_t complex_t::operator-() const {
-  return complex_t(-m_real, -m_imag);
-}
-
-std::ostream& operator<<(std::ostream& out, const complex_t& val) {
-  out << val.real() <<(val.imag() >= 0 ? "+" : "") << val.imag() << 'i';
-  return out;
-}
-
 Value::Value() : m_kind(kUninitialized), m_type(nullptr) {}
 
 Value::Value(Kind a_kind) : m_kind(a_kind), m_type(nullptr) {}
@@ -166,7 +120,7 @@ Value::Value(Value const & a_other) {
   m_kind = a_other.m_kind;
   m_type = a_other.m_type;
 
-  m_Boolean_value = a_other.m_Boolean_value;
+  m_untyped_constant = a_other.m_untyped_constant;
   m_String_value = a_other.m_String_value;
   m_Integer_value = a_other.m_Integer_value;
   m_Rune_value = a_other.m_Rune_value;
@@ -196,9 +150,15 @@ Value::Value(Value const & a_other) {
   }
 }
 
+Value Value::MakeUntypedConstant(UntypedConstant const & a_value) {
+  Value v(kUntypedConstant);
+  v.m_untyped_constant = a_value;
+  return v;
+}
+
 Value Value::MakeBoolean(bool a_value) {
-  Value v(kBoolean);
-  v.m_Boolean_value = a_value;
+  Value v(kUntypedConstant);
+  v.m_untyped_constant = UntypedConstant::MakeBoolean(a_value);
   return v;
 }
 
@@ -364,8 +324,8 @@ bool Value::IsString() const {
 
 bool Value::IsBoolean() const {
   switch (m_kind) {
-    case kBoolean:
-      return true;
+    case kUntypedConstant:
+      return m_untyped_constant.IsBoolean();
     case kConstant:
     case kLValue:
     case kRValue:
@@ -395,9 +355,10 @@ struct ConvertVisitor : public type::DefaultVisitor {
       , flag(false) {}
 
   void Visit(const type::Bool&) override {
-    if (value->m_kind == Value::kBoolean) {
+    if (value->m_kind == Value::kUntypedConstant &&
+        value->m_untyped_constant.IsBoolean()) {
       value->m_kind = Value::kConstant;
-      value->m_bool_value = value->m_Boolean_value;
+      value->m_bool_value = value->m_untyped_constant.boolean_value();
       value->m_type = type;
       flag = true;
     }
@@ -647,6 +608,8 @@ bool Value::ConvertTo(const type::Type* type) {
 }
 
 bool Value::PromoteTo(const Value& other) {
+  // assert(IsArithmetic());
+  // assert(other.IsArithmetic());
   assert(this->kind() <= other.kind());
 
   if (this->kind() == other.kind()) {
@@ -658,7 +621,7 @@ bool Value::PromoteTo(const Value& other) {
   }
 
   switch (this->kind()) {
-    case Value::kBoolean:
+    case kUntypedConstant:
       return false;
     case Value::kString:
       return false;
@@ -1039,8 +1002,8 @@ Value Value::LogicNot(
 
   Value v(x->m_kind);
   switch (v.m_kind) {
-    case Value::kBoolean:
-      v.m_Boolean_value = !x->m_Boolean_value;
+    case Value::kUntypedConstant:
+      v.m_untyped_constant = UntypedConstant::LogicNot(x->m_untyped_constant);
       break;
     case Value::kConstant:
       v.m_bool_value = !x->m_bool_value;
@@ -2511,18 +2474,18 @@ Value Value::Equal(
   y->Dereference();
 
   switch (x->m_kind) {
-    case Value::kBoolean:
-      return Value(MakeBoolean(x->m_Boolean_value == y->m_Boolean_value));
+    case Value::kUntypedConstant:
+      return MakeUntypedConstant(UntypedConstant::Equal(x->m_untyped_constant, y->m_untyped_constant));
     case Value::kInteger:
-      return Value(MakeBoolean(x->m_Integer_value == y->m_Integer_value));
+      return MakeBoolean(x->m_Integer_value == y->m_Integer_value);
     case Value::kRune:
-      return Value(MakeBoolean(x->m_Rune_value == y->m_Rune_value));
+      return MakeBoolean(x->m_Rune_value == y->m_Rune_value);
     case Value::kFloat:
-      return Value(MakeBoolean(x->m_Float_value == y->m_Float_value));
+      return MakeBoolean(x->m_Float_value == y->m_Float_value);
     case Value::kComplex:
-      return Value(MakeBoolean(x->m_Complex_value == y->m_Complex_value));
+      return MakeBoolean(x->m_Complex_value == y->m_Complex_value);
     case Value::kString:
-      return Value(MakeBoolean(x->m_String_value == y->m_String_value));
+      return MakeBoolean(x->m_String_value == y->m_String_value);
     case Value::kConstant:
       {
         if (x->m_type != y->m_type) {
@@ -2531,7 +2494,7 @@ Value Value::Equal(
         }
         Visitor vis(x, y);
         x->m_type->UnderlyingType()->Accept(&vis);
-        return Value(vis.flag);
+        return vis.flag;
       }
       break;
     case Value::kRValue:
@@ -2540,7 +2503,7 @@ Value Value::Equal(
           error_reporter->Insert(CannotApply2(location, "==", *x, *y));
           return Value::MakeError();
         }
-        return Value(MakeRValue(&type::Bool::instance));
+        return MakeRValue(&type::Bool::instance);
       }
       break;
     default:
@@ -2681,8 +2644,8 @@ bool Value::operator==(const Value& y) const {
       return true;
     case Value::kError:
       return true;
-    case Value::kBoolean:
-      return this->m_Boolean_value == y.m_Boolean_value;
+    case Value::kUntypedConstant:
+      return this->m_untyped_constant == y.m_untyped_constant;
     case Value::kInteger:
       return this->m_Integer_value == y.m_Integer_value;
     case Value::kFloat:
@@ -2794,8 +2757,8 @@ std::ostream& operator<<(std::ostream& out, const Value& value) {
     case Value::kError:
       out << "error";
       break;
-    case Value::kBoolean:
-      out <<(value.Boolean_value() ? "true" : "false");
+    case Value::kUntypedConstant:
+      out << value.untyped_constant();
       break;
     case Value::kInteger:
       out << value.Integer_value();

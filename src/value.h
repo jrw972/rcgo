@@ -8,16 +8,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include <gmpxx.h>
 #include <stdint.h>
 
-#include <memory>
 #include <string>
 #include <vector>
 
 #include "src/location.h"
-
-#define PRECISION 256
+#include "src/untyped_constant.h"
 
 namespace rcgo {
 
@@ -79,35 +76,11 @@ struct complex128_t {
 
 std::ostream& operator<<(std::ostream& out, const complex128_t& val);
 
-struct complex_t {
-  complex_t();
-  complex_t(const mpf_class& a_real, const mpf_class& a_imag);
-
-  const mpf_class real() const { return m_real; }
-  const mpf_class imag() const { return m_imag; }
-
-  complex_t operator+(const complex_t& a_other) const;
-  complex_t operator-(const complex_t& a_other) const;
-  complex_t operator*(const complex_t& a_other) const;
-  complex_t operator/(const complex_t& a_other) const;
-  complex_t operator+() const;
-  complex_t operator-() const;
-
-  bool operator==(const complex_t& a_other) const;
-  bool operator!=(const complex_t& a_other) const;
-
- private:
-  mpf_class m_real;
-  mpf_class m_imag;
-};
-
-std::ostream& operator<<(std::ostream& out, const complex_t& val);
-
 struct Value {
   enum Kind {
     kUninitialized,
     kError,
-    kBoolean,
+    kUntypedConstant,
     kString,
     kInteger,
     kRune,
@@ -126,6 +99,7 @@ struct Value {
   Value(Value const & a_value);
 
   static Value MakeError();
+  static Value MakeUntypedConstant(UntypedConstant const & a_value);
   static Value MakeBoolean(bool a_value);
   static Value MakeInteger(mpz_class const & a_value);
   static Value MakeRune(mpz_class const & a_value);
@@ -139,7 +113,8 @@ struct Value {
 
   Kind kind() const { return m_kind; }
   type::Type const * type() const { return m_type; }
-  bool Boolean_value() const { return m_Boolean_value; }
+  UntypedConstant const & untyped_constant() const { return m_untyped_constant; }
+  bool Boolean_value() const { return m_untyped_constant.boolean_value(); }
   std::string const & String_value() const { return  m_String_value; }
   mpz_class const & Integer_value() const { return m_Integer_value; }
   mpz_class const & Rune_value() const { return m_Rune_value; }
@@ -232,7 +207,7 @@ struct Value {
   Kind m_kind;
   type::Type const * m_type;
 
-  bool m_Boolean_value;
+  UntypedConstant m_untyped_constant;
   std::string m_String_value;
   mpz_class m_Integer_value;
   mpz_class m_Rune_value;
