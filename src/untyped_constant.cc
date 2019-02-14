@@ -213,6 +213,45 @@ UntypedConstant UntypedConstant::ToInteger(UntypedConstant const & a_x) {
   }
 }
 
+UntypedConstant UntypedConstant::Posate(UntypedConstant const & a_x) {
+  assert(a_x.IsInitialized());
+
+  if (a_x.IsArithmetic()) {
+    switch (a_x.kind()) {
+      case kInteger:
+      case kRune:
+      case kFloat:
+      case kComplex:
+        return a_x;
+      default:
+        abort();
+    }
+  }
+
+  return MakeError();
+}
+
+UntypedConstant UntypedConstant::Negate(UntypedConstant const & a_x) {
+  assert(a_x.IsInitialized());
+
+  if (a_x.IsArithmetic()) {
+    switch (a_x.kind()) {
+      case kInteger:
+        return MakeInteger(-a_x.m_integer_value);
+      case kRune:
+        return MakeRune(-a_x.m_rune_value);
+      case kFloat:
+        return MakeFloat(-a_x.m_float_value);
+      case kComplex:
+        return MakeComplex(-a_x.m_complex_value);
+      default:
+        abort();
+    }
+  }
+
+  return MakeError();
+}
+
 UntypedConstant UntypedConstant::LogicNot(UntypedConstant const & a_x) {
   assert(a_x.IsInitialized());
 
@@ -223,49 +262,297 @@ UntypedConstant UntypedConstant::LogicNot(UntypedConstant const & a_x) {
   return MakeBoolean(!a_x.m_boolean_value);
 }
 
-UntypedConstant UntypedConstant::Add(
-    UntypedConstant const & a_x,
-    UntypedConstant const & a_y) {
+UntypedConstant UntypedConstant::BitNot(UntypedConstant const & a_x) {
   assert(a_x.IsInitialized());
-  assert(a_y.IsInitialized());
 
-  if (a_x.IsError() || a_y.IsError()) {
-    return MakeError();
-  }
-
-  if (a_x.IsString()) {
-    if (a_y.IsString()) {
-      return MakeString(a_x.m_string_value + a_y.m_string_value);
-    } else {
-      return MakeError();
-    }
-  }
-
-  if (a_x.IsArithmetic()) {
-    if (a_y.IsArithmetic()) {
-      Kind k = std::max(a_x.m_kind, a_y.m_kind);
-      UntypedConstant x = PromoteTo(a_x, k);
-      UntypedConstant y = PromoteTo(a_y, k);
-      switch (k) {
-        case kInteger:
-          return MakeInteger(a_x.m_integer_value + a_y.m_integer_value);
-        case kRune:
-          return MakeRune(a_x.m_rune_value + a_y.m_rune_value);
-        case kFloat:
-          return MakeFloat(a_x.m_float_value + a_y.m_float_value);
-        case kComplex:
-          return MakeComplex(a_x.m_complex_value + a_y.m_complex_value);
-        default:
-          abort();
-      }
-    } else {
-      return MakeError();
+  if (a_x.IsInteger()) {
+    switch (a_x.kind()) {
+      case kInteger:
+        return MakeInteger(~a_x.m_integer_value);
+      case kRune:
+        return MakeRune(~a_x.m_rune_value);
+      default:
+        abort();
     }
   }
 
   return MakeError();
 }
 
+UntypedConstant UntypedConstant::Add(
+    UntypedConstant const & a_x,
+    UntypedConstant const & a_y) {
+  assert(a_x.IsInitialized());
+  assert(a_y.IsInitialized());
+
+  if (a_x.IsString() && a_y.IsString()) {
+    return MakeString(a_x.m_string_value + a_y.m_string_value);
+  }
+
+  if (a_x.IsArithmetic() && a_y.IsArithmetic()) {
+    Kind k = std::max(a_x.m_kind, a_y.m_kind);
+    UntypedConstant x = PromoteTo(a_x, k);
+    UntypedConstant y = PromoteTo(a_y, k);
+    switch (k) {
+      case kInteger:
+        return MakeInteger(a_x.m_integer_value + a_y.m_integer_value);
+      case kRune:
+        return MakeRune(a_x.m_rune_value + a_y.m_rune_value);
+      case kFloat:
+        return MakeFloat(a_x.m_float_value + a_y.m_float_value);
+      case kComplex:
+        return MakeComplex(a_x.m_complex_value + a_y.m_complex_value);
+      default:
+        abort();
+    }
+  }
+
+  return MakeError();
+}
+
+UntypedConstant UntypedConstant::Subtract(
+    UntypedConstant const & a_x,
+    UntypedConstant const & a_y) {
+  assert(a_x.IsInitialized());
+  assert(a_y.IsInitialized());
+
+  if (a_x.IsArithmetic() && a_y.IsArithmetic()) {
+    Kind k = std::max(a_x.m_kind, a_y.m_kind);
+    UntypedConstant x = PromoteTo(a_x, k);
+    UntypedConstant y = PromoteTo(a_y, k);
+    switch (k) {
+      case kInteger:
+        return MakeInteger(a_x.m_integer_value - a_y.m_integer_value);
+      case kRune:
+        return MakeRune(a_x.m_rune_value - a_y.m_rune_value);
+      case kFloat:
+        return MakeFloat(a_x.m_float_value - a_y.m_float_value);
+      case kComplex:
+        return MakeComplex(a_x.m_complex_value - a_y.m_complex_value);
+      default:
+        abort();
+    }
+  }
+
+  return MakeError();
+}
+
+UntypedConstant UntypedConstant::Multiply(
+    UntypedConstant const & a_x,
+    UntypedConstant const & a_y) {
+  assert(a_x.IsInitialized());
+  assert(a_y.IsInitialized());
+
+  if (a_x.IsArithmetic() && a_y.IsArithmetic()) {
+    Kind k = std::max(a_x.m_kind, a_y.m_kind);
+    UntypedConstant x = PromoteTo(a_x, k);
+    UntypedConstant y = PromoteTo(a_y, k);
+    switch (k) {
+      case kInteger:
+        return MakeInteger(a_x.m_integer_value * a_y.m_integer_value);
+      case kRune:
+        return MakeRune(a_x.m_rune_value * a_y.m_rune_value);
+      case kFloat:
+        return MakeFloat(a_x.m_float_value * a_y.m_float_value);
+      case kComplex:
+        return MakeComplex(a_x.m_complex_value * a_y.m_complex_value);
+      default:
+        abort();
+    }
+  }
+
+  return MakeError();
+}
+
+UntypedConstant UntypedConstant::Divide(
+    UntypedConstant const & a_x,
+    UntypedConstant const & a_y) {
+  assert(a_x.IsInitialized());
+  assert(a_y.IsInitialized());
+
+  if (a_x.IsArithmetic() && a_y.IsArithmetic()) {
+    if (a_y.IsZero()) {
+      return MakeError();
+    }
+    Kind k = std::max(a_x.m_kind, a_y.m_kind);
+    UntypedConstant x = PromoteTo(a_x, k);
+    UntypedConstant y = PromoteTo(a_y, k);
+    switch (k) {
+      case kInteger:
+        return MakeInteger(a_x.m_integer_value / a_y.m_integer_value);
+      case kRune:
+        return MakeRune(a_x.m_rune_value / a_y.m_rune_value);
+      case kFloat:
+        return MakeFloat(a_x.m_float_value / a_y.m_float_value);
+      case kComplex:
+        return MakeComplex(a_x.m_complex_value / a_y.m_complex_value);
+      default:
+        abort();
+    }
+  }
+
+  return MakeError();
+}
+
+UntypedConstant UntypedConstant::Modulo(
+    UntypedConstant const & a_x,
+    UntypedConstant const & a_y) {
+  assert(a_x.IsInitialized());
+  assert(a_y.IsInitialized());
+
+  if (a_x.IsInteger() && a_y.IsInteger()) {
+    if (a_y.IsZero()) {
+      return MakeError();
+    }
+    Kind k = std::max(a_x.m_kind, a_y.m_kind);
+    UntypedConstant x = PromoteTo(a_x, k);
+    UntypedConstant y = PromoteTo(a_y, k);
+    switch (k) {
+      case kInteger:
+        return MakeInteger(a_x.m_integer_value % a_y.m_integer_value);
+      case kRune:
+        return MakeRune(a_x.m_rune_value % a_y.m_rune_value);
+      default:
+        abort();
+    }
+  }
+
+  return MakeError();
+}
+
+UntypedConstant UntypedConstant::LeftShift(
+    UntypedConstant const & a_x,
+    unsigned int a_y) {
+  assert(a_x.IsInitialized());
+
+  UntypedConstant x = ToInteger(a_x);
+
+  if (x.IsInteger()) {
+    switch (x.m_kind) {
+      case kInteger:
+        return MakeInteger(a_x.m_integer_value << a_y);
+      case kRune:
+        return MakeRune(a_x.m_rune_value << a_y);
+      default:
+        abort();
+    }
+  }
+
+  return MakeError();
+}
+
+UntypedConstant UntypedConstant::RightShift(
+    UntypedConstant const & a_x,
+    unsigned int a_y) {
+  assert(a_x.IsInitialized());
+
+  UntypedConstant x = ToInteger(a_x);
+
+  if (x.IsInteger()) {
+    switch (x.m_kind) {
+      case kInteger:
+        return MakeInteger(a_x.m_integer_value >> a_y);
+      case kRune:
+        return MakeRune(a_x.m_rune_value >> a_y);
+      default:
+        abort();
+    }
+  }
+
+  return MakeError();
+}
+
+UntypedConstant UntypedConstant::BitAnd(
+    UntypedConstant const & a_x,
+    UntypedConstant const & a_y) {
+  assert(a_x.IsInitialized());
+  assert(a_y.IsInitialized());
+
+  if (a_x.IsInteger() && a_y.IsInteger()) {
+    Kind k = std::max(a_x.m_kind, a_y.m_kind);
+    UntypedConstant x = PromoteTo(a_x, k);
+    UntypedConstant y = PromoteTo(a_y, k);
+    switch (k) {
+      case kInteger:
+        return MakeInteger(a_x.m_integer_value & a_y.m_integer_value);
+      case kRune:
+        return MakeRune(a_x.m_rune_value & a_y.m_rune_value);
+      default:
+        abort();
+    }
+  }
+
+  return MakeError();
+}
+
+UntypedConstant UntypedConstant::BitAndNot(
+    UntypedConstant const & a_x,
+    UntypedConstant const & a_y) {
+  assert(a_x.IsInitialized());
+  assert(a_y.IsInitialized());
+
+  if (a_x.IsInteger() && a_y.IsInteger()) {
+    Kind k = std::max(a_x.m_kind, a_y.m_kind);
+    UntypedConstant x = PromoteTo(a_x, k);
+    UntypedConstant y = PromoteTo(a_y, k);
+    switch (k) {
+      case kInteger:
+        return MakeInteger(a_x.m_integer_value & ~a_y.m_integer_value);
+      case kRune:
+        return MakeRune(a_x.m_rune_value & ~a_y.m_rune_value);
+      default:
+        abort();
+    }
+  }
+
+  return MakeError();
+}
+
+UntypedConstant UntypedConstant::BitOr(
+    UntypedConstant const & a_x,
+    UntypedConstant const & a_y) {
+  assert(a_x.IsInitialized());
+  assert(a_y.IsInitialized());
+
+  if (a_x.IsInteger() && a_y.IsInteger()) {
+    Kind k = std::max(a_x.m_kind, a_y.m_kind);
+    UntypedConstant x = PromoteTo(a_x, k);
+    UntypedConstant y = PromoteTo(a_y, k);
+    switch (k) {
+      case kInteger:
+        return MakeInteger(a_x.m_integer_value | a_y.m_integer_value);
+      case kRune:
+        return MakeRune(a_x.m_rune_value | a_y.m_rune_value);
+      default:
+        abort();
+    }
+  }
+
+  return MakeError();
+}
+
+UntypedConstant UntypedConstant::BitXor(
+    UntypedConstant const & a_x,
+    UntypedConstant const & a_y) {
+  assert(a_x.IsInitialized());
+  assert(a_y.IsInitialized());
+
+  if (a_x.IsInteger() && a_y.IsInteger()) {
+    Kind k = std::max(a_x.m_kind, a_y.m_kind);
+    UntypedConstant x = PromoteTo(a_x, k);
+    UntypedConstant y = PromoteTo(a_y, k);
+    switch (k) {
+      case kInteger:
+        return MakeInteger(a_x.m_integer_value ^ a_y.m_integer_value);
+      case kRune:
+        return MakeRune(a_x.m_rune_value ^ a_y.m_rune_value);
+      default:
+        abort();
+    }
+  }
+
+  return MakeError();
+}
 
 UntypedConstant UntypedConstant::Equal(
     UntypedConstant const & a_x,
@@ -273,29 +560,15 @@ UntypedConstant UntypedConstant::Equal(
   assert(a_x.IsInitialized());
   assert(a_y.IsInitialized());
 
-  if (a_x.IsError() || a_y.IsError()) {
-    return MakeError();
+  if (a_x.IsBoolean() && a_y.IsBoolean()) {
+    return MakeBoolean(a_x.m_boolean_value == a_y.m_boolean_value);
   }
 
-  if (a_x.IsBoolean()) {
-    if (a_y.IsBoolean()) {
-      return MakeBoolean(a_x.m_boolean_value == a_y.m_boolean_value);
-    } else {
-      return MakeError();
-    }
+  if (a_x.IsString() && a_y.IsString()) {
+    return MakeBoolean(a_x.m_string_value == a_y.m_string_value);
   }
 
-  if (a_x.IsString()) {
-    if (a_y.IsString()) {
-      return MakeBoolean(a_x.m_string_value == a_y.m_string_value);
-    } else {
-      return MakeError();
-    }
-  }
-
-  assert(a_x.IsArithmetic());
-
-  if (a_y.IsArithmetic()) {
+  if (a_x.IsArithmetic() && a_y.IsArithmetic()) {
     Kind k = std::max(a_x.m_kind, a_y.m_kind);
     UntypedConstant x = PromoteTo(a_x, k);
     UntypedConstant y = PromoteTo(a_y, k);
@@ -311,9 +584,9 @@ UntypedConstant UntypedConstant::Equal(
       default:
         abort();
     }
-  } else {
-    return MakeError();
   }
+
+  return MakeError();
 }
 
 bool UntypedConstant::operator==(UntypedConstant const & a_other) const {

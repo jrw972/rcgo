@@ -80,15 +80,14 @@ struct Value {
   enum Kind {
     kUninitialized,
     kError,
-    kUntypedConstant,
-    kInteger,
+    kUntypedConstant,  // order matters
     kRune,
     kFloat,
     kComplex,
-    kConstant,  // with a type
+    kTypedConstant,    // order matters
     kFunction,
     kLValue,
-    kRValue,
+    kRValue,           // order matters
     kType,
     kVoid,
     kList
@@ -115,7 +114,7 @@ struct Value {
   UntypedConstant const & untyped_constant() const { return m_untyped_constant; }
   bool Boolean_value() const { return m_untyped_constant.boolean_value(); }
   std::string const & String_value() const { return  m_untyped_constant.string_value(); }
-  mpz_class const & Integer_value() const { return m_Integer_value; }
+  mpz_class const & Integer_value() const { return m_untyped_constant.integer_value(); }
   mpz_class const & Rune_value() const { return m_Rune_value; }
   mpf_class const & Float_value() const { return m_Float_value; }
   complex_t const & Complex_value() const { return m_Complex_value; }
@@ -207,7 +206,6 @@ struct Value {
   type::Type const * m_type;
 
   UntypedConstant m_untyped_constant;
-  mpz_class m_Integer_value;
   mpz_class m_Rune_value;
   mpf_class m_Float_value;
   complex_t m_Complex_value;

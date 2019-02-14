@@ -244,7 +244,7 @@ TEST_CASE("value::MakeBoolean()") {
 
 TEST_CASE("value::MakeInteger()") {
   Value v = Value::MakeInteger(3);
-  REQUIRE(v.kind() == Value::kInteger);
+  REQUIRE(v.kind() == Value::kUntypedConstant);
   REQUIRE(v.Integer_value() == 3);
 }
 
@@ -285,7 +285,7 @@ TEST_CASE("value::ConvertTo(Boolean -> bool)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeBoolean(true);
   REQUIRE(x.ConvertTo(&type::Bool::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Bool::instance);
   REQUIRE(x.bool_value() == true);
 }
@@ -295,7 +295,7 @@ TEST_CASE("value::ConvertTo(Integer -> complex64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Complex64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Complex64::instance);
   REQUIRE(x.complex64_value() == value::complex64_t(34, 0));
 }
@@ -305,7 +305,7 @@ TEST_CASE("value::ConvertTo(Integer -> complex128)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Complex128::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Complex128::instance);
   REQUIRE(x.complex128_value() == value::complex128_t(34, 0));
 }
@@ -315,7 +315,7 @@ TEST_CASE("value::ConvertTo(Integer -> float32)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Float32::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Float32::instance);
   REQUIRE(x.float32_value() == 34);
 }
@@ -325,7 +325,7 @@ TEST_CASE("value::ConvertTo(Integer -> float64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Float64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Float64::instance);
   REQUIRE(x.float64_value() == 34);
 }
@@ -335,7 +335,7 @@ TEST_CASE("value::ConvertTo(Integer -> int)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Int::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int::instance);
   REQUIRE(x.int_value() == 34);
 }
@@ -345,7 +345,7 @@ TEST_CASE("value::ConvertTo(Integer -> int8)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Int8::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int8::instance);
   REQUIRE(x.int8_value() == 34);
 }
@@ -355,7 +355,7 @@ TEST_CASE("value::ConvertTo(Integer -> int16)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Int16::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int16::instance);
   REQUIRE(x.int16_value() == 34);
 }
@@ -365,7 +365,7 @@ TEST_CASE("value::ConvertTo(Integer -> int32)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Int32::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int32::instance);
   REQUIRE(x.int32_value() == 34);
 }
@@ -375,7 +375,7 @@ TEST_CASE("value::ConvertTo(Integer -> int64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Int64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int64::instance);
   REQUIRE(x.int64_value() == 34);
 }
@@ -385,7 +385,7 @@ TEST_CASE("value::ConvertTo(Integer -> uint)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Uint::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint::instance);
   REQUIRE(x.uint_value() == 34);
 }
@@ -395,7 +395,7 @@ TEST_CASE("value::ConvertTo(Integer -> uint8)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Uint8::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint8::instance);
   REQUIRE(x.uint8_value() == 34);
 }
@@ -405,7 +405,7 @@ TEST_CASE("value::ConvertTo(Integer -> uint16)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Uint16::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint16::instance);
   REQUIRE(x.uint16_value() == 34);
 }
@@ -415,7 +415,7 @@ TEST_CASE("value::ConvertTo(Integer -> uint32)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Uint32::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint32::instance);
   REQUIRE(x.uint32_value() == 34);
 }
@@ -425,7 +425,7 @@ TEST_CASE("value::ConvertTo(Integer -> uint64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Uint64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint64::instance);
   REQUIRE(x.uint64_value() == 34);
 }
@@ -435,7 +435,7 @@ TEST_CASE("value::ConvertTo(Integer -> uintptr)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeInteger(34);
   REQUIRE(x.ConvertTo(&type::Uintptr::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uintptr::instance);
   REQUIRE(x.uintptr_value() == 34);
 }
@@ -445,7 +445,7 @@ TEST_CASE("value::ConvertTo(Float 0 -> complex64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(0);
   REQUIRE(x.ConvertTo(&type::Complex64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Complex64::instance);
   REQUIRE(x.complex64_value() == value::complex64_t(0, 0));
 }
@@ -455,7 +455,7 @@ TEST_CASE("value::ConvertTo(Float -> complex64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Complex64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Complex64::instance);
   REQUIRE(x.complex64_value() == value::complex64_t(34, 0));
 }
@@ -465,7 +465,7 @@ TEST_CASE("value::ConvertTo(Float -> complex128)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Complex128::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Complex128::instance);
   REQUIRE(x.complex128_value() == value::complex128_t(34, 0));
 }
@@ -475,7 +475,7 @@ TEST_CASE("value::ConvertTo(Float -> float32)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Float32::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Float32::instance);
   REQUIRE(x.float32_value() == 34);
 }
@@ -485,7 +485,7 @@ TEST_CASE("value::ConvertTo(Float -> float64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Float64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Float64::instance);
   REQUIRE(x.float64_value() == 34);
 }
@@ -495,7 +495,7 @@ TEST_CASE("value::ConvertTo(Float -> int)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Int::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int::instance);
   REQUIRE(x.int_value() == 34);
 }
@@ -505,7 +505,7 @@ TEST_CASE("value::ConvertTo(Float -> int8)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Int8::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int8::instance);
   REQUIRE(x.int8_value() == 34);
 }
@@ -515,7 +515,7 @@ TEST_CASE("value::ConvertTo(Float -> int16)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Int16::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int16::instance);
   REQUIRE(x.int16_value() == 34);
 }
@@ -525,7 +525,7 @@ TEST_CASE("value::ConvertTo(Float -> int32)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Int32::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int32::instance);
   REQUIRE(x.int32_value() == 34);
 }
@@ -535,7 +535,7 @@ TEST_CASE("value::ConvertTo(Float -> int64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Int64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int64::instance);
   REQUIRE(x.int64_value() == 34);
 }
@@ -545,7 +545,7 @@ TEST_CASE("value::ConvertTo(Float -> uint)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Uint::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint::instance);
   REQUIRE(x.uint_value() == 34);
 }
@@ -555,7 +555,7 @@ TEST_CASE("value::ConvertTo(Float -> uint8)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Uint8::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint8::instance);
   REQUIRE(x.uint8_value() == 34);
 }
@@ -565,7 +565,7 @@ TEST_CASE("value::ConvertTo(Float -> uint16)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Uint16::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint16::instance);
   REQUIRE(x.uint16_value() == 34);
 }
@@ -575,7 +575,7 @@ TEST_CASE("value::ConvertTo(Float -> uint32)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Uint32::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint32::instance);
   REQUIRE(x.uint32_value() == 34);
 }
@@ -585,7 +585,7 @@ TEST_CASE("value::ConvertTo(Float -> uint64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Uint64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint64::instance);
   REQUIRE(x.uint64_value() == 34);
 }
@@ -595,7 +595,7 @@ TEST_CASE("value::ConvertTo(Float -> uintptr)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeFloat(34);
   REQUIRE(x.ConvertTo(&type::Uintptr::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uintptr::instance);
   REQUIRE(x.uintptr_value() == 34);
 }
@@ -605,7 +605,7 @@ TEST_CASE("value::ConvertTo(Complex -> complex64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(1, 2);
   REQUIRE(x.ConvertTo(&type::Complex64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Complex64::instance);
   REQUIRE(x.complex64_value() == value::complex64_t(1, 2));
 }
@@ -615,7 +615,7 @@ TEST_CASE("value::ConvertTo(Complex -> complex128)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(1, 2);
   REQUIRE(x.ConvertTo(&type::Complex128::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Complex128::instance);
   REQUIRE(x.complex128_value() == value::complex128_t(1, 2));
 }
@@ -625,7 +625,7 @@ TEST_CASE("value::ConvertTo(Complex -> float32)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(34, 0);
   REQUIRE(x.ConvertTo(&type::Float32::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Float32::instance);
   REQUIRE(x.float32_value() == 34);
 }
@@ -635,7 +635,7 @@ TEST_CASE("value::ConvertTo(Complex -> float64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(34, 0);
   REQUIRE(x.ConvertTo(&type::Float64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Float64::instance);
   REQUIRE(x.float64_value() == 34);
 }
@@ -645,7 +645,7 @@ TEST_CASE("value::ConvertTo(Complex -> int)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(34, 0);
   REQUIRE(x.ConvertTo(&type::Int::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int::instance);
   REQUIRE(x.int_value() == 34);
 }
@@ -655,7 +655,7 @@ TEST_CASE("value::ConvertTo(Complex -> int8)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(34, 0);
   REQUIRE(x.ConvertTo(&type::Int8::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int8::instance);
   REQUIRE(x.int8_value() == 34);
 }
@@ -665,7 +665,7 @@ TEST_CASE("value::ConvertTo(Complex -> int16)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(34, 0);
   REQUIRE(x.ConvertTo(&type::Int16::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int16::instance);
   REQUIRE(x.int16_value() == 34);
 }
@@ -675,7 +675,7 @@ TEST_CASE("value::ConvertTo(Complex -> int32)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(34, 0);
   REQUIRE(x.ConvertTo(&type::Int32::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int32::instance);
   REQUIRE(x.int32_value() == 34);
 }
@@ -685,7 +685,7 @@ TEST_CASE("value::ConvertTo(Complex -> int64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(34, 0);
   REQUIRE(x.ConvertTo(&type::Int64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int64::instance);
   REQUIRE(x.int64_value() == 34);
 }
@@ -695,7 +695,7 @@ TEST_CASE("value::ConvertTo(Complex -> uint)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(34, 0);
   REQUIRE(x.ConvertTo(&type::Uint::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint::instance);
   REQUIRE(x.uint_value() == 34);
 }
@@ -705,7 +705,7 @@ TEST_CASE("value::ConvertTo(Complex -> uint8)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(34, 0);
   REQUIRE(x.ConvertTo(&type::Uint8::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint8::instance);
   REQUIRE(x.uint8_value() == 34);
 }
@@ -715,7 +715,7 @@ TEST_CASE("value::ConvertTo(Complex -> uint16)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(34, 0);
   REQUIRE(x.ConvertTo(&type::Uint16::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint16::instance);
   REQUIRE(x.uint16_value() == 34);
 }
@@ -725,7 +725,7 @@ TEST_CASE("value::ConvertTo(Complex -> uint32)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(34, 0);
   REQUIRE(x.ConvertTo(&type::Uint32::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint32::instance);
   REQUIRE(x.uint32_value() == 34);
 }
@@ -735,7 +735,7 @@ TEST_CASE("value::ConvertTo(Complex -> uint64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(34, 0);
   REQUIRE(x.ConvertTo(&type::Uint64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint64::instance);
   REQUIRE(x.uint64_value() == 34);
 }
@@ -745,7 +745,7 @@ TEST_CASE("value::ConvertTo(Complex -> uintptr)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeComplex(34, 0);
   REQUIRE(x.ConvertTo(&type::Uintptr::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uintptr::instance);
   REQUIRE(x.uintptr_value() == 34);
 }
@@ -755,7 +755,7 @@ TEST_CASE("value::ConvertTo(Rune -> complex64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Complex64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Complex64::instance);
   REQUIRE(x.complex64_value() == value::complex64_t(34, 0));
 }
@@ -765,7 +765,7 @@ TEST_CASE("value::ConvertTo(Rune -> complex128)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Complex128::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Complex128::instance);
   REQUIRE(x.complex128_value() == value::complex128_t(34, 0));
 }
@@ -775,7 +775,7 @@ TEST_CASE("value::ConvertTo(Rune -> float32)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Float32::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Float32::instance);
   REQUIRE(x.float32_value() == 34);
 }
@@ -785,7 +785,7 @@ TEST_CASE("value::ConvertTo(Rune -> float64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Float64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Float64::instance);
   REQUIRE(x.float64_value() == 34);
 }
@@ -795,7 +795,7 @@ TEST_CASE("value::ConvertTo(Rune -> int)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Int::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int::instance);
   REQUIRE(x.int_value() == 34);
 }
@@ -805,7 +805,7 @@ TEST_CASE("value::ConvertTo(Rune -> int8)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Int8::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int8::instance);
   REQUIRE(x.int8_value() == 34);
 }
@@ -815,7 +815,7 @@ TEST_CASE("value::ConvertTo(Rune -> int16)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Int16::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int16::instance);
   REQUIRE(x.int16_value() == 34);
 }
@@ -825,7 +825,7 @@ TEST_CASE("value::ConvertTo(Rune -> int32)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Int32::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int32::instance);
   REQUIRE(x.int32_value() == 34);
 }
@@ -835,7 +835,7 @@ TEST_CASE("value::ConvertTo(Rune -> int64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Int64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Int64::instance);
   REQUIRE(x.int64_value() == 34);
 }
@@ -845,7 +845,7 @@ TEST_CASE("value::ConvertTo(Rune -> uint)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Uint::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint::instance);
   REQUIRE(x.uint_value() == 34);
 }
@@ -855,7 +855,7 @@ TEST_CASE("value::ConvertTo(Rune -> uint8)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Uint8::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint8::instance);
   REQUIRE(x.uint8_value() == 34);
 }
@@ -865,7 +865,7 @@ TEST_CASE("value::ConvertTo(Rune -> uint16)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Uint16::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint16::instance);
   REQUIRE(x.uint16_value() == 34);
 }
@@ -875,7 +875,7 @@ TEST_CASE("value::ConvertTo(Rune -> uint32)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Uint32::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint32::instance);
   REQUIRE(x.uint32_value() == 34);
 }
@@ -885,7 +885,7 @@ TEST_CASE("value::ConvertTo(Rune -> uint64)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Uint64::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uint64::instance);
   REQUIRE(x.uint64_value() == 34);
 }
@@ -895,7 +895,7 @@ TEST_CASE("value::ConvertTo(Rune -> uintptr)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeRune(34);
   REQUIRE(x.ConvertTo(&type::Uintptr::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::Uintptr::instance);
   REQUIRE(x.uintptr_value() == 34);
 }
@@ -905,7 +905,7 @@ TEST_CASE("value::ConvertTo(String -> string)") {
   ErrorReporter er(ss, 1, &abort_handler);
   Value x = Value::MakeString("hello");
   REQUIRE(x.ConvertTo(&type::String::instance));
-  REQUIRE(x.kind() == Value::kConstant);
+  REQUIRE(x.kind() == Value::kTypedConstant);
   REQUIRE(x.type() == &type::String::instance);
   REQUIRE(x.string_value() == "hello");
 }

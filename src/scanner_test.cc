@@ -71,7 +71,7 @@ namespace test {
     Scanner scanner(&seq, &er);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind() == value::Value::kInteger);               \
+    REQUIRE(t.value().untyped_constant().kind() == value::UntypedConstant::kInteger); \
     REQUIRE(t.value().Integer_value() == val);                         \
   }
 

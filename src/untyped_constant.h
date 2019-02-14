@@ -108,10 +108,10 @@ struct UntypedConstant {
       UntypedConstant const & y);
   static UntypedConstant LeftShift(
       UntypedConstant const & x,
-      UntypedConstant const & y);
+      unsigned int y);
   static UntypedConstant RightShift(
       UntypedConstant const & x,
-      UntypedConstant const & y);
+      unsigned int y);
   static UntypedConstant BitAnd(
       UntypedConstant const & x,
       UntypedConstant const & y);

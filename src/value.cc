@@ -121,7 +121,6 @@ Value::Value(Value const & a_other) {
   m_type = a_other.m_type;
 
   m_untyped_constant = a_other.m_untyped_constant;
-  m_Integer_value = a_other.m_Integer_value;
   m_Rune_value = a_other.m_Rune_value;
   m_Float_value = a_other.m_Float_value;
   m_Complex_value = a_other.m_Complex_value;
@@ -150,6 +149,10 @@ Value::Value(Value const & a_other) {
 }
 
 Value Value::MakeUntypedConstant(UntypedConstant const & a_value) {
+  assert(a_value.IsInitialized());
+  if (a_value.IsError()) {
+    return MakeError();
+  }
   Value v(kUntypedConstant);
   v.m_untyped_constant = a_value;
   return v;
@@ -164,9 +167,7 @@ Value Value::MakeString(std::string const & a_value) {
 }
 
 Value Value::MakeInteger(const mpz_class& a_value) {
-  Value v(kInteger);
-  v.m_Integer_value = a_value;
-  return v;
+  return MakeUntypedConstant(UntypedConstant::MakeInteger(a_value));
 }
 
 Value Value::MakeFloat(const mpf_class& a_value) {
@@ -213,12 +214,13 @@ Value Value::MakeType(const type::Type* a_type) {
 
 bool Value::IsArithmetic() const {
   switch (m_kind) {
-    case kInteger:
+    case kUntypedConstant:
+      return m_untyped_constant.IsArithmetic();
     case kRune:
     case kFloat:
     case kComplex:
       return true;
-    case kConstant:
+    case kTypedConstant:
     case kLValue:
     case kRValue:
       return type::IsArithmetic(m_type);
@@ -229,12 +231,13 @@ bool Value::IsArithmetic() const {
 
 bool Value::IsSigned() const {
   switch (m_kind) {
-    case kInteger:
+    case kUntypedConstant:
+      return m_untyped_constant.IsSigned();
     case kRune:
     case kFloat:
     case kComplex:
       return true;
-    case kConstant:
+    case kTypedConstant:
     case kLValue:
     case kRValue:
       return type::IsSigned(m_type);
@@ -245,10 +248,11 @@ bool Value::IsSigned() const {
 
 bool Value::IsInteger() const {
   switch (m_kind) {
-    case kInteger:
+    case kUntypedConstant:
+      return m_untyped_constant.IsInteger();
     case kRune:
       return true;
-    case kConstant:
+    case kTypedConstant:
     case kLValue:
     case kRValue:
       return type::IsInteger(m_type);
@@ -285,15 +289,15 @@ bool Value::IsZero() const {
   };
 
   switch (m_kind) {
-    case kInteger:
-      return m_Integer_value == 0;
+    case kUntypedConstant:
+      return m_untyped_constant.IsZero();
     case kRune:
       return m_Rune_value == 0;
     case kFloat:
       return m_Float_value == 0;
     case kComplex:
       return m_Complex_value == complex_t(0, 0);
-    case kConstant:
+    case kTypedConstant:
       {
         Visitor vis(*this);
         m_type->UnderlyingType()->Accept(&vis);
@@ -308,7 +312,7 @@ bool Value::IsString() const {
   switch (m_kind) {
     case kUntypedConstant:
       return m_untyped_constant.IsString();
-    case kConstant:
+    case kTypedConstant:
     case kLValue:
     case kRValue:
       return type::IsString(m_type);
@@ -321,7 +325,7 @@ bool Value::IsBoolean() const {
   switch (m_kind) {
     case kUntypedConstant:
       return m_untyped_constant.IsBoolean();
-    case kConstant:
+    case kTypedConstant:
     case kLValue:
     case kRValue:
       return type::IsBoolean(m_type);
@@ -352,7 +356,7 @@ struct ConvertVisitor : public type::DefaultVisitor {
   void Visit(const type::Bool&) override {
     if (value->m_kind == Value::kUntypedConstant &&
         value->m_untyped_constant.IsBoolean()) {
-      value->m_kind = Value::kConstant;
+      value->m_kind = Value::kTypedConstant;
       value->m_bool_value = value->m_untyped_constant.boolean_value();
       value->m_type = type;
       flag = true;
@@ -362,7 +366,7 @@ struct ConvertVisitor : public type::DefaultVisitor {
   void Visit(const type::String&) override {
     if (value->m_kind == Value::kUntypedConstant &&
         value->m_untyped_constant.IsString()) {
-      value->m_kind = Value::kConstant;
+      value->m_kind = Value::kTypedConstant;
       value->m_string_value = value->m_untyped_constant.string_value();
       value->m_type = type;
       flag = true;
@@ -389,19 +393,25 @@ struct ConvertVisitor : public type::DefaultVisitor {
     ValueType v;                                                        \
     switch (value->m_kind)                                              \
     {                                                                   \
-      case Value::kInteger:                                             \
-        v = ValueType(value->m_Integer_value.get_d(), 0);               \
-        if (exact_check(value->m_Integer_value, v.real())) {            \
-          value->m_kind = Value::kConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
+      case Value::kUntypedConstant:                                     \
+        switch (value->m_untyped_constant.kind()) {                     \
+          case UntypedConstant::kInteger:                               \
+            v = ValueType(value->m_untyped_constant.integer_value().get_d(), 0); \
+            if (exact_check(value->m_untyped_constant.integer_value(), v.real())) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
+          default:                                                      \
+            break;                                                      \
         }                                                               \
         break;                                                          \
       case Value::kFloat:                                               \
         v = ValueType(value->m_Float_value.get_d(), 0);                 \
         if (close_check(value->m_Float_value, v.real())) {              \
-          value->m_kind = Value::kConstant;                             \
+          value->m_kind = Value::kTypedConstant;                             \
           value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
@@ -413,7 +423,7 @@ struct ConvertVisitor : public type::DefaultVisitor {
                       value->m_Complex_value.imag().get_d());           \
         if (close_check(value->m_Complex_value.real(), v.real()) &&     \
             close_check(value->m_Complex_value.imag(), v.imag())) {     \
-          value->m_kind = Value::kConstant;                             \
+          value->m_kind = Value::kTypedConstant;                             \
           value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
@@ -422,7 +432,7 @@ struct ConvertVisitor : public type::DefaultVisitor {
       case Value::kRune:                                                \
         v = ValueType(value->m_Rune_value.get_d(), 0);                  \
         if (exact_check(value->m_Rune_value, v.real())) {               \
-          value->m_kind = Value::kConstant;                             \
+          value->m_kind = Value::kTypedConstant;                             \
           value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
@@ -442,19 +452,25 @@ struct ConvertVisitor : public type::DefaultVisitor {
     ValueType v;                                                        \
     switch (value->m_kind)                                              \
     {                                                                   \
-      case Value::kInteger:                                             \
-        v = value->m_Integer_value.get_d();                             \
-        if (exact_check(value->m_Integer_value, v)) {                   \
-          value->m_kind = Value::kConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
+      case Value::kUntypedConstant:                                     \
+        switch (value->m_untyped_constant.kind()) {                     \
+          case UntypedConstant::kInteger:                               \
+            v = value->m_untyped_constant.integer_value().get_d();      \
+            if (exact_check(value->m_untyped_constant.integer_value(), v)) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
+          default:                                                      \
+            break;                                                      \
         }                                                               \
         break;                                                          \
       case Value::kFloat:                                               \
         v = value->m_Float_value.get_d();                               \
         if (close_check(value->m_Float_value, v)) {                     \
-          value->m_kind = Value::kConstant;                             \
+          value->m_kind = Value::kTypedConstant;                             \
           value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
@@ -464,7 +480,7 @@ struct ConvertVisitor : public type::DefaultVisitor {
         v = value->m_Complex_value.real().get_d();                      \
         if (close_check(value->m_Complex_value.real(), v) &&            \
             value->m_Complex_value.imag() == 0) {                       \
-          value->m_kind = Value::kConstant;                             \
+          value->m_kind = Value::kTypedConstant;                             \
           value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
@@ -473,7 +489,7 @@ struct ConvertVisitor : public type::DefaultVisitor {
       case Value::kRune:                                                \
         v = value->m_Rune_value.get_d();                                \
         if (exact_check(value->m_Rune_value, v)) {                      \
-          value->m_kind = Value::kConstant;                             \
+          value->m_kind = Value::kTypedConstant;                             \
           value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
@@ -493,19 +509,25 @@ struct ConvertVisitor : public type::DefaultVisitor {
     ValueType v;                                                        \
     switch (value->m_kind)                                              \
     {                                                                   \
-      case Value::kInteger:                                             \
-        v = value->m_Integer_value.get_si();                            \
-        if (exact_check(value->m_Integer_value, v)) {                   \
-          value->m_kind = Value::kConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
+      case Value::kUntypedConstant:                                     \
+        switch (value->m_untyped_constant.kind()) {                     \
+          case UntypedConstant::kInteger:                               \
+            v = value->m_untyped_constant.integer_value().get_si();     \
+            if (exact_check(value->m_untyped_constant.integer_value(), v)) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
+          default:                                                      \
+            break;                                                      \
         }                                                               \
         break;                                                          \
       case Value::kFloat:                                               \
         v = value->m_Float_value.get_si();                              \
         if (close_check(value->m_Float_value, v)) {                     \
-          value->m_kind = Value::kConstant;                             \
+          value->m_kind = Value::kTypedConstant;                             \
           value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
@@ -515,7 +537,7 @@ struct ConvertVisitor : public type::DefaultVisitor {
         v = value->m_Complex_value.real().get_si();                     \
         if (close_check(value->m_Complex_value.real(), v) &&            \
             value->m_Complex_value.imag() == 0) {                       \
-          value->m_kind = Value::kConstant;                             \
+          value->m_kind = Value::kTypedConstant;                             \
           value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
@@ -524,7 +546,7 @@ struct ConvertVisitor : public type::DefaultVisitor {
       case Value::kRune:                                                \
         v = value->m_Rune_value.get_si();                               \
         if (exact_check(value->m_Rune_value, v)) {                      \
-          value->m_kind = Value::kConstant;                             \
+          value->m_kind = Value::kTypedConstant;                             \
           value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
@@ -547,19 +569,25 @@ struct ConvertVisitor : public type::DefaultVisitor {
     ValueType v;                                                        \
     switch (value->m_kind)                                              \
     {                                                                   \
-      case Value::kInteger:                                             \
-        v = value->m_Integer_value.get_ui();                            \
-        if (exact_check(value->m_Integer_value, v)) {                   \
-          value->m_kind = Value::kConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
+      case Value::kUntypedConstant:                                     \
+        switch (value->m_untyped_constant.kind()) {                     \
+          case UntypedConstant::kInteger:                               \
+            v = value->m_untyped_constant.integer_value().get_ui();     \
+            if (exact_check(value->m_untyped_constant.integer_value(), v)) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
+          default:                                                      \
+            break;                                                      \
         }                                                               \
         break;                                                          \
       case Value::kFloat:                                               \
         v = value->m_Float_value.get_ui();                              \
         if (close_check(value->m_Float_value, v)) {                     \
-          value->m_kind = Value::kConstant;                             \
+          value->m_kind = Value::kTypedConstant;                             \
           value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
@@ -569,7 +597,7 @@ struct ConvertVisitor : public type::DefaultVisitor {
         v = value->m_Complex_value.real().get_ui();                     \
         if (close_check(value->m_Complex_value.real(), v) &&            \
             value->m_Complex_value.imag() == 0) {                       \
-          value->m_kind = Value::kConstant;                             \
+          value->m_kind = Value::kTypedConstant;                             \
           value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
@@ -578,7 +606,7 @@ struct ConvertVisitor : public type::DefaultVisitor {
       case Value::kRune:                                                \
         v = value->m_Rune_value.get_ui();                               \
         if (exact_check(value->m_Rune_value, v)) {                      \
-          value->m_kind = Value::kConstant;                             \
+          value->m_kind = Value::kTypedConstant;                             \
           value->m_type = type;                                         \
           value->ValueMember = v;                                       \
           flag = true;                                                  \
@@ -612,16 +640,15 @@ bool Value::PromoteTo(const Value& other) {
     return true;
   }
 
-  if (other.kind() == Value::kConstant) {
+  if (other.kind() == Value::kTypedConstant) {
     return this->ConvertTo(other.type());
   }
 
   switch (this->kind()) {
     case kUntypedConstant:
-      return false;
-    case Value::kInteger:
+      assert(this->m_untyped_constant.kind() == UntypedConstant::kInteger);
       this->m_kind = kRune;
-      this->m_Rune_value = this->m_Integer_value;
+      this->m_Rune_value = this->m_untyped_constant.integer_value();
       return PromoteTo(other);
     case Value::kRune:
       this->m_kind = kFloat;
@@ -643,85 +670,75 @@ bool Value::ToInteger() {
     Value* value;
 
     void Visit(const type::Int8&) override {
-      value->m_kind = kInteger;
-      value->m_Integer_value = value->m_int8_value;
+      *value = MakeInteger(value->m_int8_value);
     }
     void Visit(const type::Int16&) override {
-      value->m_kind = kInteger;
-      value->m_Integer_value = value->m_int16_value;
+      *value = MakeInteger(value->m_int16_value);
     }
     void Visit(const type::Int32&) override {
-      value->m_kind = kInteger;
-      value->m_Integer_value = value->m_int32_value;
+      *value = MakeInteger(value->m_int32_value);
     }
     void Visit(const type::Int64&) override {
-      value->m_kind = kInteger;
-      value->m_Integer_value = value->m_int64_value;
+      *value = MakeInteger(value->m_int64_value);
     }
     void Visit(const type::Uint8&) override {
-      value->m_kind = kInteger;
-      value->m_Integer_value = value->m_uint8_value;
+      *value = MakeInteger(value->m_uint8_value);
     }
     void Visit(const type::Uint16&) override {
-      value->m_kind = kInteger;
-      value->m_Integer_value = value->m_uint16_value;
+      *value = MakeInteger(value->m_uint16_value);
     }
     void Visit(const type::Uint32&) override {
-      value->m_kind = kInteger;
-      value->m_Integer_value = value->m_uint32_value;
+      *value = MakeInteger(value->m_uint32_value);
     }
     void Visit(const type::Uint64&) override {
-      value->m_kind = kInteger;
-      value->m_Integer_value = value->m_uint64_value;
+      *value = MakeInteger(value->m_uint64_value);
     }
     void Visit(const type::Int&) override {
-      value->m_kind = kInteger;
-      value->m_Integer_value = value->m_int_value;
+      *value = MakeInteger(value->m_int_value);
     }
     void Visit(const type::Uint&) override {
-      value->m_kind = kInteger;
-      value->m_Integer_value = value->m_uint_value;
+      *value = MakeInteger(value->m_uint_value);
     }
     void Visit(const type::Uintptr&) override {
-      value->m_kind = kInteger;
-      value->m_Integer_value = value->m_uintptr_value;
+      *value = MakeInteger(value->m_uintptr_value);
     }
   };
 
   switch (m_kind) {
-    case Value::kInteger:
-      return true;
-      break;
+    case Value::kUntypedConstant:
+      {
+        UntypedConstant uc = UntypedConstant::ToInteger(m_untyped_constant);
+        if (!uc.IsError()) {
+          m_untyped_constant = uc;
+          return true;
+        } else {
+          return false;
+        }
+      }
     case Value::kRune:
-      this->m_kind = kInteger;
-      this->m_Integer_value = this->m_Rune_value;
+      *this = MakeInteger(this->m_Rune_value);
       return true;
-      break;
     case Value::kFloat:
       {
         mpz_class x(m_Float_value);
         if (m_Float_value == mpf_class(x)) {
-          this->m_kind = kInteger;
-          this->m_Integer_value = x;
+          *this = MakeInteger(x);
           return true;
         } else {
           return false;
         }
       }
-      break;
     case Value::kComplex:
       {
         mpz_class x(m_Complex_value.real());
         if (m_Complex_value == complex_t(x, 0)) {
-          this->m_kind = kInteger;
-          this->m_Integer_value = x;
+          *this = MakeInteger(x);
           return true;
         } else {
           return false;
         }
       }
-      break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       if (type::IsInteger(m_type)) {
         Visitor vis(this);
         m_type->UnderlyingType()->Accept(&vis);
@@ -764,7 +781,7 @@ bool Value::RequireConstant(ErrorReporter* error_reporter) const {
   //   case kRune:
   //   case kFloat:
   //   case kComplex:
-  //   case kConstant:
+  //   case kTypedConstant:
   //     return true;
   //   default:
   //     return false;
@@ -844,8 +861,8 @@ Value Value::Posate(
 
   Value v(x->m_kind);
   switch (v.m_kind) {
-    case Value::kInteger:
-      v.m_Integer_value = +x->m_Integer_value;
+    case Value::kUntypedConstant:
+      v.m_untyped_constant = UntypedConstant::Posate(x->m_untyped_constant);
       break;
     case Value::kRune:
       v.m_Rune_value = +x->m_Rune_value;
@@ -856,7 +873,7 @@ Value Value::Posate(
     case Value::kComplex:
       v.m_Complex_value = +x->m_Complex_value;
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         v.m_type = x->m_type;
         Visitor vis(x, &v);
@@ -946,8 +963,8 @@ Value Value::Negate(
 
   Value v(x->m_kind);
   switch (v.m_kind) {
-    case Value::kInteger:
-      v.m_Integer_value = -x->m_Integer_value;
+    case Value::kUntypedConstant:
+      v.m_untyped_constant = UntypedConstant::Negate(x->m_untyped_constant);
       break;
     case Value::kRune:
       v.m_Rune_value = -x->m_Rune_value;
@@ -958,7 +975,7 @@ Value Value::Negate(
     case Value::kComplex:
       v.m_Complex_value = -x->m_Complex_value;
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         v.m_type = x->m_type;
         Visitor vis(x, &v);
@@ -999,7 +1016,7 @@ Value Value::LogicNot(
     case Value::kUntypedConstant:
       v.m_untyped_constant = UntypedConstant::LogicNot(x->m_untyped_constant);
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       v.m_bool_value = !x->m_bool_value;
       v.m_type = x->m_type;
       break;
@@ -1072,13 +1089,13 @@ Value Value::BitNot(
 
   Value v(x->m_kind);
   switch (v.m_kind) {
-    case Value::kInteger:
-      v.m_Integer_value = ~x->m_Integer_value;
+    case Value::kUntypedConstant:
+      v.m_untyped_constant = UntypedConstant::BitNot(x->m_untyped_constant);
       break;
     case Value::kRune:
       v.m_Rune_value = ~x->m_Rune_value;
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         v.m_type = x->m_type;
         Visitor vis(x, &v);
@@ -1193,9 +1210,6 @@ Value Value::Add(
     case kUntypedConstant:
       v.m_untyped_constant = UntypedConstant::Add(x->m_untyped_constant, y->m_untyped_constant);
       break;
-    case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value + y->m_Integer_value;
-      break;
     case Value::kRune:
       v.m_Rune_value = x->m_Rune_value + y->m_Rune_value;
       break;
@@ -1205,7 +1219,7 @@ Value Value::Add(
     case Value::kComplex:
       v.m_Complex_value = x->m_Complex_value + y->m_Complex_value;
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
           error_reporter->Insert(CannotApply2(location, "+", *x, *y));
@@ -1321,8 +1335,8 @@ Value Value::Subtract(
 
   Value v(x->m_kind);
   switch (v.m_kind) {
-    case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value - y->m_Integer_value;
+    case Value::kUntypedConstant:
+      v.m_untyped_constant = UntypedConstant::Subtract(x->m_untyped_constant, y->m_untyped_constant);
       break;
     case Value::kRune:
       v.m_Rune_value = x->m_Rune_value - y->m_Rune_value;
@@ -1333,7 +1347,7 @@ Value Value::Subtract(
     case Value::kComplex:
       v.m_Complex_value = x->m_Complex_value - y->m_Complex_value;
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
           error_reporter->Insert(CannotApply2(location, "-", *x, *y));
@@ -1449,8 +1463,8 @@ Value Value::Multiply(
 
   Value v(x->m_kind);
   switch (v.m_kind) {
-    case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value * y->m_Integer_value;
+    case Value::kUntypedConstant:
+      v.m_untyped_constant = UntypedConstant::Multiply(x->m_untyped_constant, y->m_untyped_constant);
       break;
     case Value::kRune:
       v.m_Rune_value = x->m_Rune_value * y->m_Rune_value;
@@ -1461,7 +1475,7 @@ Value Value::Multiply(
     case Value::kComplex:
       v.m_Complex_value = x->m_Complex_value * y->m_Complex_value;
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
           error_reporter->Insert(CannotApply2(location, "*", *x, *y));
@@ -1581,8 +1595,8 @@ Value Value::Divide(
 
   Value v(x->m_kind);
   switch (v.m_kind) {
-    case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value / y->m_Integer_value;
+    case Value::kUntypedConstant:
+      v.m_untyped_constant = UntypedConstant::Divide(x->m_untyped_constant, y->m_untyped_constant);
       break;
     case Value::kRune:
       v.m_Rune_value = x->m_Rune_value / y->m_Rune_value;
@@ -1593,7 +1607,7 @@ Value Value::Divide(
     case Value::kComplex:
       v.m_Complex_value = x->m_Complex_value / y->m_Complex_value;
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
           error_reporter->Insert(CannotApply2(location, "/", *x, *y));
@@ -1701,13 +1715,13 @@ Value Value::Modulo(
 
   Value v(x->m_kind);
   switch (v.m_kind) {
-    case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value % y->m_Integer_value;
+    case Value::kUntypedConstant:
+      v.m_untyped_constant = UntypedConstant::Modulo(x->m_untyped_constant, y->m_untyped_constant);
       break;
     case Value::kRune:
       v.m_Rune_value = x->m_Rune_value % y->m_Rune_value;
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
           error_reporter->Insert(CannotApply2(location, "%", *x, *y));
@@ -1807,8 +1821,8 @@ Value Value::LeftShift(
 
   Value v(x->m_kind);
   switch (x->m_kind) {
-    case Value::kInteger:
-      v = MakeInteger(x->m_Integer_value << y->m_uint_value);
+    case Value::kUntypedConstant:
+      v = MakeUntypedConstant(UntypedConstant::LeftShift(x->m_untyped_constant, y->m_uint_value));
       break;
     case Value::kRune:
       v = MakeInteger(x->m_Rune_value << y->m_uint_value);
@@ -1819,9 +1833,9 @@ Value Value::LeftShift(
     case Value::kComplex:
       v = MakeInteger(mpz_class(x->m_Complex_value.real()) << y->m_uint_value);
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
-        v.m_kind = Value::kConstant;
+        v.m_kind = Value::kTypedConstant;
         v.m_type = x->m_type;
         Visitor vis(x, y->m_uint_value, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
@@ -1829,7 +1843,7 @@ Value Value::LeftShift(
       break;
     case Value::kRValue:
       {
-        v.m_kind = Value::kConstant;
+        v.m_kind = Value::kTypedConstant;
         v.m_type = x->m_type;
       }
       break;
@@ -1913,8 +1927,8 @@ Value Value::RightShift(
 
   Value v(x->m_kind);
   switch (x->m_kind) {
-    case Value::kInteger:
-      v = MakeInteger(x->m_Integer_value >> y->m_uint_value);
+    case Value::kUntypedConstant:
+      v = MakeUntypedConstant(UntypedConstant::RightShift(x->m_untyped_constant, y->m_uint_value));
       break;
     case Value::kRune:
       v = MakeInteger(x->m_Rune_value >> y->m_uint_value);
@@ -1925,9 +1939,9 @@ Value Value::RightShift(
     case Value::kComplex:
       v = MakeInteger(mpz_class(x->m_Complex_value.real()) >> y->m_uint_value);
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
-        v.m_kind = Value::kConstant;
+        v.m_kind = Value::kTypedConstant;
         v.m_type = x->m_type;
         Visitor vis(x, y->m_uint_value, &v);
         x->m_type->UnderlyingType()->Accept(&vis);
@@ -1935,7 +1949,7 @@ Value Value::RightShift(
       break;
     case Value::kRValue:
       {
-        v.m_kind = Value::kConstant;
+        v.m_kind = Value::kTypedConstant;
         v.m_type = x->m_type;
       }
       break;
@@ -2022,13 +2036,13 @@ Value Value::BitAnd(
 
   Value v(x->m_kind);
   switch (v.m_kind) {
-    case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value & y->m_Integer_value;
+    case Value::kUntypedConstant:
+      v.m_untyped_constant = UntypedConstant::BitAnd(x->m_untyped_constant, y->m_untyped_constant);
       break;
     case Value::kRune:
       v.m_Rune_value = x->m_Rune_value & y->m_Rune_value;
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
           error_reporter->Insert(CannotApply2(location, "&", *x, *y));
@@ -2131,13 +2145,13 @@ Value Value::BitAndNot(
 
   Value v(x->m_kind);
   switch (v.m_kind) {
-    case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value & ~y->m_Integer_value;
+    case Value::kUntypedConstant:
+      v.m_untyped_constant = UntypedConstant::BitAndNot(x->m_untyped_constant, y->m_untyped_constant);
       break;
     case Value::kRune:
       v.m_Rune_value = x->m_Rune_value & ~y->m_Rune_value;
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
           error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
@@ -2240,13 +2254,13 @@ Value Value::BitOr(
 
   Value v(x->m_kind);
   switch (v.m_kind) {
-    case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value | y->m_Integer_value;
+    case Value::kUntypedConstant:
+      v.m_untyped_constant = UntypedConstant::BitOr(x->m_untyped_constant, y->m_untyped_constant);
       break;
     case Value::kRune:
       v.m_Rune_value = x->m_Rune_value | y->m_Rune_value;
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
           error_reporter->Insert(CannotApply2(location, "|", *x, *y));
@@ -2349,13 +2363,13 @@ Value Value::BitXor(
 
   Value v(x->m_kind);
   switch (v.m_kind) {
-    case Value::kInteger:
-      v.m_Integer_value = x->m_Integer_value ^ y->m_Integer_value;
+    case Value::kUntypedConstant:
+      v.m_untyped_constant = UntypedConstant::BitXor(x->m_untyped_constant, y->m_untyped_constant);
       break;
     case Value::kRune:
       v.m_Rune_value = x->m_Rune_value ^ y->m_Rune_value;
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
           error_reporter->Insert(CannotApply2(location, "^", *x, *y));
@@ -2469,16 +2483,20 @@ Value Value::Equal(
 
   switch (x->m_kind) {
     case Value::kUntypedConstant:
-      return MakeUntypedConstant(UntypedConstant::Equal(x->m_untyped_constant, y->m_untyped_constant));
-    case Value::kInteger:
-      return MakeBoolean(x->m_Integer_value == y->m_Integer_value);
+      {
+        UntypedConstant uc = UntypedConstant::Equal(x->m_untyped_constant, y->m_untyped_constant);
+        if (uc.IsError()) {
+          error_reporter->Insert(CannotApply2(location, "==", *x, *y));
+        }
+        return MakeUntypedConstant(uc);
+      }
     case Value::kRune:
       return MakeBoolean(x->m_Rune_value == y->m_Rune_value);
     case Value::kFloat:
       return MakeBoolean(x->m_Float_value == y->m_Float_value);
     case Value::kComplex:
       return MakeBoolean(x->m_Complex_value == y->m_Complex_value);
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
           error_reporter->Insert(CannotApply2(location, "==", *x, *y));
@@ -2638,15 +2656,13 @@ bool Value::operator==(const Value& y) const {
       return true;
     case Value::kUntypedConstant:
       return this->m_untyped_constant == y.m_untyped_constant;
-    case Value::kInteger:
-      return this->m_Integer_value == y.m_Integer_value;
     case Value::kFloat:
       return this->m_Float_value == y.m_Float_value;
     case Value::kComplex:
       return this->m_Complex_value == y.m_Complex_value;
     case Value::kRune:
       return this->m_Rune_value == y.m_Rune_value;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         if (this->m_type != y.m_type) {
           return false;
@@ -2750,9 +2766,6 @@ std::ostream& operator<<(std::ostream& out, const Value& value) {
     case Value::kUntypedConstant:
       out << value.untyped_constant();
       break;
-    case Value::kInteger:
-      out << value.Integer_value();
-      break;
     case Value::kRune:
       if (value.Rune_value() < INVALID &&
           (value.Rune_value() < SURROGATE_FIRST ||
@@ -2770,7 +2783,7 @@ std::ostream& operator<<(std::ostream& out, const Value& value) {
     case Value::kComplex:
       out << value.Complex_value();
       break;
-    case Value::kConstant:
+    case Value::kTypedConstant:
       {
         Visitor v(out, value);
         value.type()->UnderlyingType()->Accept(&v);
