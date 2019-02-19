@@ -112,6 +112,31 @@ UntypedConstant UntypedConstant::MakeString(std::string const & a_value) {
   return uc;
 }
 
+bool UntypedConstant::boolean_value() const {
+  assert(m_kind == kBoolean);
+  return m_boolean_value;
+}
+std::string const & UntypedConstant::string_value() const {
+  assert(m_kind == kString);
+  return  m_string_value;
+}
+mpz_class const & UntypedConstant::integer_value() const {
+  assert(m_kind == kInteger);
+  return m_integer_value;
+}
+mpz_class const & UntypedConstant::rune_value() const {
+  assert(m_kind == kRune);
+  return m_rune_value;
+}
+mpf_class const & UntypedConstant::float_value() const {
+  assert(m_kind == kFloat);
+  return m_float_value;
+}
+complex_t const & UntypedConstant::complex_value() const {
+  assert(m_kind == kComplex);
+  return m_complex_value;
+}
+
 bool UntypedConstant::IsInitialized() const {
   return m_kind != kUninitialized;
 }
@@ -295,13 +320,13 @@ UntypedConstant UntypedConstant::Add(
     UntypedConstant y = PromoteTo(a_y, k);
     switch (k) {
       case kInteger:
-        return MakeInteger(a_x.m_integer_value + a_y.m_integer_value);
+        return MakeInteger(x.m_integer_value + y.m_integer_value);
       case kRune:
-        return MakeRune(a_x.m_rune_value + a_y.m_rune_value);
+        return MakeRune(x.m_rune_value + y.m_rune_value);
       case kFloat:
-        return MakeFloat(a_x.m_float_value + a_y.m_float_value);
+        return MakeFloat(x.m_float_value + y.m_float_value);
       case kComplex:
-        return MakeComplex(a_x.m_complex_value + a_y.m_complex_value);
+        return MakeComplex(x.m_complex_value + y.m_complex_value);
       default:
         abort();
     }
@@ -322,13 +347,13 @@ UntypedConstant UntypedConstant::Subtract(
     UntypedConstant y = PromoteTo(a_y, k);
     switch (k) {
       case kInteger:
-        return MakeInteger(a_x.m_integer_value - a_y.m_integer_value);
+        return MakeInteger(x.m_integer_value - y.m_integer_value);
       case kRune:
-        return MakeRune(a_x.m_rune_value - a_y.m_rune_value);
+        return MakeRune(x.m_rune_value - y.m_rune_value);
       case kFloat:
-        return MakeFloat(a_x.m_float_value - a_y.m_float_value);
+        return MakeFloat(x.m_float_value - y.m_float_value);
       case kComplex:
-        return MakeComplex(a_x.m_complex_value - a_y.m_complex_value);
+        return MakeComplex(x.m_complex_value - y.m_complex_value);
       default:
         abort();
     }
@@ -349,13 +374,13 @@ UntypedConstant UntypedConstant::Multiply(
     UntypedConstant y = PromoteTo(a_y, k);
     switch (k) {
       case kInteger:
-        return MakeInteger(a_x.m_integer_value * a_y.m_integer_value);
+        return MakeInteger(x.m_integer_value * y.m_integer_value);
       case kRune:
-        return MakeRune(a_x.m_rune_value * a_y.m_rune_value);
+        return MakeRune(x.m_rune_value * y.m_rune_value);
       case kFloat:
-        return MakeFloat(a_x.m_float_value * a_y.m_float_value);
+        return MakeFloat(x.m_float_value * y.m_float_value);
       case kComplex:
-        return MakeComplex(a_x.m_complex_value * a_y.m_complex_value);
+        return MakeComplex(x.m_complex_value * y.m_complex_value);
       default:
         abort();
     }
@@ -379,13 +404,13 @@ UntypedConstant UntypedConstant::Divide(
     UntypedConstant y = PromoteTo(a_y, k);
     switch (k) {
       case kInteger:
-        return MakeInteger(a_x.m_integer_value / a_y.m_integer_value);
+        return MakeInteger(x.m_integer_value / y.m_integer_value);
       case kRune:
-        return MakeRune(a_x.m_rune_value / a_y.m_rune_value);
+        return MakeRune(x.m_rune_value / y.m_rune_value);
       case kFloat:
-        return MakeFloat(a_x.m_float_value / a_y.m_float_value);
+        return MakeFloat(x.m_float_value / y.m_float_value);
       case kComplex:
-        return MakeComplex(a_x.m_complex_value / a_y.m_complex_value);
+        return MakeComplex(x.m_complex_value / y.m_complex_value);
       default:
         abort();
     }
@@ -409,9 +434,9 @@ UntypedConstant UntypedConstant::Modulo(
     UntypedConstant y = PromoteTo(a_y, k);
     switch (k) {
       case kInteger:
-        return MakeInteger(a_x.m_integer_value % a_y.m_integer_value);
+        return MakeInteger(x.m_integer_value % y.m_integer_value);
       case kRune:
-        return MakeRune(a_x.m_rune_value % a_y.m_rune_value);
+        return MakeRune(x.m_rune_value % y.m_rune_value);
       default:
         abort();
     }
@@ -430,9 +455,9 @@ UntypedConstant UntypedConstant::LeftShift(
   if (x.IsInteger()) {
     switch (x.m_kind) {
       case kInteger:
-        return MakeInteger(a_x.m_integer_value << a_y);
+        return MakeInteger(x.m_integer_value << a_y);
       case kRune:
-        return MakeRune(a_x.m_rune_value << a_y);
+        return MakeRune(x.m_rune_value << a_y);
       default:
         abort();
     }
@@ -451,9 +476,9 @@ UntypedConstant UntypedConstant::RightShift(
   if (x.IsInteger()) {
     switch (x.m_kind) {
       case kInteger:
-        return MakeInteger(a_x.m_integer_value >> a_y);
+        return MakeInteger(x.m_integer_value >> a_y);
       case kRune:
-        return MakeRune(a_x.m_rune_value >> a_y);
+        return MakeRune(x.m_rune_value >> a_y);
       default:
         abort();
     }
@@ -474,9 +499,9 @@ UntypedConstant UntypedConstant::BitAnd(
     UntypedConstant y = PromoteTo(a_y, k);
     switch (k) {
       case kInteger:
-        return MakeInteger(a_x.m_integer_value & a_y.m_integer_value);
+        return MakeInteger(x.m_integer_value & y.m_integer_value);
       case kRune:
-        return MakeRune(a_x.m_rune_value & a_y.m_rune_value);
+        return MakeRune(x.m_rune_value & y.m_rune_value);
       default:
         abort();
     }
@@ -497,9 +522,9 @@ UntypedConstant UntypedConstant::BitAndNot(
     UntypedConstant y = PromoteTo(a_y, k);
     switch (k) {
       case kInteger:
-        return MakeInteger(a_x.m_integer_value & ~a_y.m_integer_value);
+        return MakeInteger(x.m_integer_value & ~y.m_integer_value);
       case kRune:
-        return MakeRune(a_x.m_rune_value & ~a_y.m_rune_value);
+        return MakeRune(x.m_rune_value & ~y.m_rune_value);
       default:
         abort();
     }
@@ -520,9 +545,9 @@ UntypedConstant UntypedConstant::BitOr(
     UntypedConstant y = PromoteTo(a_y, k);
     switch (k) {
       case kInteger:
-        return MakeInteger(a_x.m_integer_value | a_y.m_integer_value);
+        return MakeInteger(x.m_integer_value | y.m_integer_value);
       case kRune:
-        return MakeRune(a_x.m_rune_value | a_y.m_rune_value);
+        return MakeRune(x.m_rune_value | y.m_rune_value);
       default:
         abort();
     }
@@ -543,9 +568,9 @@ UntypedConstant UntypedConstant::BitXor(
     UntypedConstant y = PromoteTo(a_y, k);
     switch (k) {
       case kInteger:
-        return MakeInteger(a_x.m_integer_value ^ a_y.m_integer_value);
+        return MakeInteger(x.m_integer_value ^ y.m_integer_value);
       case kRune:
-        return MakeRune(a_x.m_rune_value ^ a_y.m_rune_value);
+        return MakeRune(x.m_rune_value ^ y.m_rune_value);
       default:
         abort();
     }
@@ -574,13 +599,13 @@ UntypedConstant UntypedConstant::Equal(
     UntypedConstant y = PromoteTo(a_y, k);
     switch (k) {
       case kInteger:
-        return MakeBoolean(a_x.m_integer_value == a_y.m_integer_value);
+        return MakeBoolean(x.m_integer_value == y.m_integer_value);
       case kRune:
-        return MakeBoolean(a_x.m_rune_value == a_y.m_rune_value);
+        return MakeBoolean(x.m_rune_value == y.m_rune_value);
       case kFloat:
-        return MakeBoolean(a_x.m_float_value == a_y.m_float_value);
+        return MakeBoolean(x.m_float_value == y.m_float_value);
       case kComplex:
-        return MakeBoolean(a_x.m_complex_value == a_y.m_complex_value);
+        return MakeBoolean(x.m_complex_value == y.m_complex_value);
       default:
         abort();
     }

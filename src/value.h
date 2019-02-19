@@ -81,9 +81,6 @@ struct Value {
     kUninitialized,
     kError,
     kUntypedConstant,  // order matters
-    kRune,
-    kFloat,
-    kComplex,
     kTypedConstant,    // order matters
     kFunction,
     kLValue,
@@ -94,7 +91,6 @@ struct Value {
   };
 
   Value();
-  Value(Value const & a_value);
 
   static Value MakeError();
   static Value MakeUntypedConstant(UntypedConstant const & a_value);
@@ -111,13 +107,13 @@ struct Value {
 
   Kind kind() const { return m_kind; }
   type::Type const * type() const { return m_type; }
-  UntypedConstant const & untyped_constant() const { return m_untyped_constant; }
+  UntypedConstant const & untyped_constant() const;
   bool Boolean_value() const { return m_untyped_constant.boolean_value(); }
   std::string const & String_value() const { return  m_untyped_constant.string_value(); }
   mpz_class const & Integer_value() const { return m_untyped_constant.integer_value(); }
-  mpz_class const & Rune_value() const { return m_Rune_value; }
-  mpf_class const & Float_value() const { return m_Float_value; }
-  complex_t const & Complex_value() const { return m_Complex_value; }
+  mpz_class const & Rune_value() const { return m_untyped_constant.rune_value(); }
+  mpf_class const & Float_value() const { return m_untyped_constant.float_value(); }
+  complex_t const & Complex_value() const { return m_untyped_constant.complex_value(); }
 
   bool bool_value() const { return m_bool_value; }
   std::string const & string_value() const { return m_string_value; }
@@ -206,9 +202,6 @@ struct Value {
   type::Type const * m_type;
 
   UntypedConstant m_untyped_constant;
-  mpz_class m_Rune_value;
-  mpf_class m_Float_value;
-  complex_t m_Complex_value;
 
   bool m_bool_value;
   std::string m_string_value;

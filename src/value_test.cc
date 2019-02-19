@@ -160,76 +160,6 @@ TEST_CASE("operator<< complex128_t") {
   REQUIRE(s2.str() == "1-2i");
 }
 
-TEST_CASE("complex_t::complex_t()") {
-  value::complex_t c;
-  REQUIRE(c.real() == 0);
-  REQUIRE(c.imag() == 0);
-}
-
-TEST_CASE("complex_t::complex_t(1,2)") {
-  value::complex_t c(1, 2);
-  REQUIRE(c.real() == 1);
-  REQUIRE(c.imag() == 2);
-}
-
-TEST_CASE("complex_t::operator+") {
-  value::complex_t c1(1, 2);
-  value::complex_t c2(3, 4);
-  value::complex_t c3 = c1 + c2;
-  REQUIRE(c3 == value::complex_t(4, 6));
-}
-
-TEST_CASE("complex_t::operator-") {
-  value::complex_t c1(1, 2);
-  value::complex_t c2(3, 4);
-  value::complex_t c3 = c1 - c2;
-  REQUIRE(c3 == value::complex_t(-2, -2));
-}
-
-TEST_CASE("complex_t::operator*") {
-  value::complex_t c1(1, 2);
-  value::complex_t c2(3, 4);
-  value::complex_t c3 = c1 * c2;
-  REQUIRE(c3 == value::complex_t(-5, 10));
-}
-
-TEST_CASE("complex_t::operator/") {
-  value::complex_t c1(1, 0);
-  value::complex_t c2(0, 1);
-  value::complex_t c3 = c1 / c2;
-  REQUIRE(c3 == value::complex_t(0, -1));
-}
-
-TEST_CASE("complex_t::operator+ unary") {
-  value::complex_t c1(1, 2);
-  value::complex_t c2 = +c1;
-  REQUIRE(c2 == value::complex_t(1, 2));
-}
-
-TEST_CASE("complex_t::operator- unary") {
-  value::complex_t c1(1, 2);
-  value::complex_t c2 = -c1;
-  REQUIRE(c2 == value::complex_t(-1, -2));
-}
-
-TEST_CASE("complex_t::operator==") {
-  value::complex_t c1(1, 2);
-  value::complex_t c2(3, 4);
-  REQUIRE(c1 == c1);
-  REQUIRE(c1 != c2);
-}
-
-TEST_CASE("operator<< complex_t") {
-  std::stringstream s1;
-  value::complex_t c1(1, 2);
-  s1 << c1;
-  REQUIRE(s1.str() == "1+2i");
-  std::stringstream s2;
-  value::complex_t c2(1, -2);
-  s2 << c2;
-  REQUIRE(s2.str() == "1-2i");
-}
-
 TEST_CASE("value::MakeError()") {
   Value v = Value::MakeError();
   REQUIRE(v.kind() == Value::kError);
@@ -250,19 +180,19 @@ TEST_CASE("value::MakeInteger()") {
 
 TEST_CASE("value::MakeRune()") {
   Value v = Value::MakeRune(123);
-  REQUIRE(v.kind() == Value::kRune);
+  REQUIRE(v.kind() == Value::kUntypedConstant);
   REQUIRE(v.Rune_value() == 123);
 }
 
 TEST_CASE("value::MakeFloat()") {
   Value v = Value::MakeFloat(3.14);
-  REQUIRE(v.kind() == Value::kFloat);
+  REQUIRE(v.kind() == Value::kUntypedConstant);
   REQUIRE(v.Float_value() == 3.14);
 }
 
 TEST_CASE("value::MakeComplex()") {
   Value v = Value::MakeComplex(1, 2);
-  REQUIRE(v.kind() == Value::kComplex);
+  REQUIRE(v.kind() == Value::kUntypedConstant);
   REQUIRE(v.Complex_value() == value::complex_t(1, 2));
 }
 
@@ -4511,14 +4441,14 @@ TEST_CASE("value::operator==(int8, uint8)") {
   REQUIRE(x != y);
 }
 
-TEST_CASE("operator<<(Error)") {
+TEST_CASE("Value operator<<(Error)") {
   std::stringstream ss;
   Value x = Value::MakeError();
   ss << x;
   REQUIRE(ss.str() == "error");
 }
 
-TEST_CASE("operator<<(Boolean)") {
+TEST_CASE("Value operator<<(Boolean)") {
   {
     std::stringstream ss;
     Value x = Value::MakeBoolean(true);
@@ -4533,14 +4463,14 @@ TEST_CASE("operator<<(Boolean)") {
   }
 }
 
-TEST_CASE("operator<<(Integer)") {
+TEST_CASE("Value operator<<(Integer)") {
   std::stringstream ss;
   Value x = Value::MakeInteger(34);
   ss << x;
   REQUIRE(ss.str() == "34");
 }
 
-TEST_CASE("operator<<(Rune)") {
+TEST_CASE("Value operator<<(Rune)") {
   {
     std::stringstream ss;
     Value x = Value::MakeRune('j');
@@ -4561,21 +4491,21 @@ TEST_CASE("operator<<(Rune)") {
   }
 }
 
-TEST_CASE("operator<<(Float)") {
+TEST_CASE("Value operator<<(Float)") {
   std::stringstream ss;
   Value x = Value::MakeFloat(34.5);
   ss << x;
   REQUIRE(ss.str() == "34.5");
 }
 
-TEST_CASE("operator<<(Complex)") {
+TEST_CASE("Value operator<<(Complex)") {
   std::stringstream ss;
   Value x = Value::MakeComplex(1, 2);
   ss << x;
   REQUIRE(ss.str() == "1+2i");
 }
 
-TEST_CASE("operator<<(String)") {
+TEST_CASE("Value operator<<(String)") {
   std::stringstream ss;
   Value x = Value::MakeString("hello");
   ss << x;

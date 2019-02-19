@@ -116,38 +116,6 @@ Value::Value() : m_kind(kUninitialized), m_type(nullptr) {}
 
 Value::Value(Kind a_kind) : m_kind(a_kind), m_type(nullptr) {}
 
-Value::Value(Value const & a_other) {
-  m_kind = a_other.m_kind;
-  m_type = a_other.m_type;
-
-  m_untyped_constant = a_other.m_untyped_constant;
-  m_Rune_value = a_other.m_Rune_value;
-  m_Float_value = a_other.m_Float_value;
-  m_Complex_value = a_other.m_Complex_value;
-
-  m_bool_value = a_other.m_bool_value;
-  m_string_value = a_other.m_string_value;
-  m_complex64_value = a_other.m_complex64_value;
-  m_complex128_value = a_other.m_complex128_value;
-  m_float32_value = a_other.m_float32_value;
-  m_float64_value = a_other.m_float64_value;
-  m_int_value = a_other.m_int_value;
-  m_int8_value = a_other.m_int8_value;
-  m_int16_value = a_other.m_int16_value;
-  m_int32_value = a_other.m_int32_value;
-  m_int64_value = a_other.m_int64_value;
-  m_uint_value = a_other.m_uint_value;
-  m_uint8_value = a_other.m_uint8_value;
-  m_uint16_value = a_other.m_uint16_value;
-  m_uint32_value = a_other.m_uint32_value;
-  m_uint64_value = a_other.m_uint64_value;
-  m_uintptr_value = a_other.m_uintptr_value;
-
-  for (auto val : a_other.m_list) {
-    m_list.push_back(val);
-  }
-}
-
 Value Value::MakeUntypedConstant(UntypedConstant const & a_value) {
   assert(a_value.IsInitialized());
   if (a_value.IsError()) {
@@ -170,22 +138,16 @@ Value Value::MakeInteger(const mpz_class& a_value) {
   return MakeUntypedConstant(UntypedConstant::MakeInteger(a_value));
 }
 
+Value Value::MakeRune(const mpz_class& a_value) {
+  return MakeUntypedConstant(UntypedConstant::MakeRune(a_value));
+}
+
 Value Value::MakeFloat(const mpf_class& a_value) {
-  Value v(kFloat);
-  v.m_Float_value = a_value;
-  return v;
+  return MakeUntypedConstant(UntypedConstant::MakeFloat(a_value));
 }
 
 Value Value::MakeComplex(const mpf_class& a_real, const mpf_class& a_imag) {
-  Value v(kComplex);
-  v.m_Complex_value = complex_t(a_real, a_imag);
-  return v;
-}
-
-Value Value::MakeRune(const mpz_class& a_value) {
-  Value v(kRune);
-  v.m_Rune_value = a_value;
-  return v;
+  return MakeUntypedConstant(UntypedConstant::MakeComplex(complex_t(a_real, a_imag)));
 }
 
 Value Value::MakeFunction(const type::Function* a_type) {
@@ -212,14 +174,15 @@ Value Value::MakeType(const type::Type* a_type) {
   return Value(v);
 }
 
+UntypedConstant const & Value::untyped_constant() const {
+  assert(m_kind == kUntypedConstant);
+  return m_untyped_constant;
+}
+
 bool Value::IsArithmetic() const {
   switch (m_kind) {
     case kUntypedConstant:
       return m_untyped_constant.IsArithmetic();
-    case kRune:
-    case kFloat:
-    case kComplex:
-      return true;
     case kTypedConstant:
     case kLValue:
     case kRValue:
@@ -233,10 +196,6 @@ bool Value::IsSigned() const {
   switch (m_kind) {
     case kUntypedConstant:
       return m_untyped_constant.IsSigned();
-    case kRune:
-    case kFloat:
-    case kComplex:
-      return true;
     case kTypedConstant:
     case kLValue:
     case kRValue:
@@ -250,8 +209,6 @@ bool Value::IsInteger() const {
   switch (m_kind) {
     case kUntypedConstant:
       return m_untyped_constant.IsInteger();
-    case kRune:
-      return true;
     case kTypedConstant:
     case kLValue:
     case kRValue:
@@ -291,12 +248,6 @@ bool Value::IsZero() const {
   switch (m_kind) {
     case kUntypedConstant:
       return m_untyped_constant.IsZero();
-    case kRune:
-      return m_Rune_value == 0;
-    case kFloat:
-      return m_Float_value == 0;
-    case kComplex:
-      return m_Complex_value == complex_t(0, 0);
     case kTypedConstant:
       {
         Visitor vis(*this);
@@ -404,38 +355,38 @@ struct ConvertVisitor : public type::DefaultVisitor {
               flag = true;                                              \
             }                                                           \
             break;                                                      \
+          case UntypedConstant::kRune:                                \
+            v = ValueType(value->m_untyped_constant.rune_value().get_d(), 0); \
+            if (exact_check(value->m_untyped_constant.rune_value(), v.real())) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
+          case UntypedConstant::kFloat:                                 \
+            v = ValueType(value->m_untyped_constant.float_value().get_d(), 0); \
+            if (close_check(value->m_untyped_constant.float_value(), v.real())) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
+          case UntypedConstant::kComplex:                               \
+            v =                                                         \
+                ValueType(value->m_untyped_constant.complex_value().real().get_d(), \
+                          value->m_untyped_constant.complex_value().imag().get_d()); \
+            if (close_check(value->m_untyped_constant.complex_value().real(), v.real()) && \
+                close_check(value->m_untyped_constant.complex_value().imag(), v.imag())) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
           default:                                                      \
             break;                                                      \
-        }                                                               \
-        break;                                                          \
-      case Value::kFloat:                                               \
-        v = ValueType(value->m_Float_value.get_d(), 0);                 \
-        if (close_check(value->m_Float_value, v.real())) {              \
-          value->m_kind = Value::kTypedConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
-        }                                                               \
-        break;                                                          \
-      case Value::kComplex:                                             \
-        v =                                                             \
-            ValueType(value->m_Complex_value.real().get_d(),            \
-                      value->m_Complex_value.imag().get_d());           \
-        if (close_check(value->m_Complex_value.real(), v.real()) &&     \
-            close_check(value->m_Complex_value.imag(), v.imag())) {     \
-          value->m_kind = Value::kTypedConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
-        }                                                               \
-        break;                                                          \
-      case Value::kRune:                                                \
-        v = ValueType(value->m_Rune_value.get_d(), 0);                  \
-        if (exact_check(value->m_Rune_value, v.real())) {               \
-          value->m_kind = Value::kTypedConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
         }                                                               \
         break;                                                          \
       default:                                                          \
@@ -463,36 +414,36 @@ struct ConvertVisitor : public type::DefaultVisitor {
               flag = true;                                              \
             }                                                           \
             break;                                                      \
+          case UntypedConstant::kRune:                                  \
+            v = value->m_untyped_constant.rune_value().get_d();         \
+            if (exact_check(value->m_untyped_constant.rune_value(), v)) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
+          case UntypedConstant::kFloat:                                 \
+            v = value->m_untyped_constant.float_value().get_d();        \
+            if (close_check(value->m_untyped_constant.float_value(), v)) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
+          case UntypedConstant::kComplex:                               \
+            v = value->m_untyped_constant.complex_value().real().get_d();                  \
+            if (close_check(value->m_untyped_constant.complex_value().real(), v) &&        \
+                value->m_untyped_constant.complex_value().imag() == 0) {                   \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
           default:                                                      \
             break;                                                      \
-        }                                                               \
-        break;                                                          \
-      case Value::kFloat:                                               \
-        v = value->m_Float_value.get_d();                               \
-        if (close_check(value->m_Float_value, v)) {                     \
-          value->m_kind = Value::kTypedConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
-        }                                                               \
-        break;                                                          \
-      case Value::kComplex:                                             \
-        v = value->m_Complex_value.real().get_d();                      \
-        if (close_check(value->m_Complex_value.real(), v) &&            \
-            value->m_Complex_value.imag() == 0) {                       \
-          value->m_kind = Value::kTypedConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
-        }                                                               \
-        break;                                                          \
-      case Value::kRune:                                                \
-        v = value->m_Rune_value.get_d();                                \
-        if (exact_check(value->m_Rune_value, v)) {                      \
-          value->m_kind = Value::kTypedConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
         }                                                               \
         break;                                                          \
       default:                                                          \
@@ -520,36 +471,36 @@ struct ConvertVisitor : public type::DefaultVisitor {
               flag = true;                                              \
             }                                                           \
             break;                                                      \
+          case UntypedConstant::kRune:                                  \
+            v = value->m_untyped_constant.rune_value().get_si();        \
+            if (exact_check(value->m_untyped_constant.rune_value(), v)) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
+          case UntypedConstant::kFloat:                                 \
+            v = value->m_untyped_constant.float_value().get_si();       \
+            if (close_check(value->m_untyped_constant.float_value(), v)) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
+          case UntypedConstant::kComplex:                               \
+            v = value->m_untyped_constant.complex_value().real().get_si(); \
+            if (close_check(value->m_untyped_constant.complex_value().real(), v) && \
+                value->m_untyped_constant.complex_value().imag() == 0) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
           default:                                                      \
             break;                                                      \
-        }                                                               \
-        break;                                                          \
-      case Value::kFloat:                                               \
-        v = value->m_Float_value.get_si();                              \
-        if (close_check(value->m_Float_value, v)) {                     \
-          value->m_kind = Value::kTypedConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
-        }                                                               \
-        break;                                                          \
-      case Value::kComplex:                                             \
-        v = value->m_Complex_value.real().get_si();                     \
-        if (close_check(value->m_Complex_value.real(), v) &&            \
-            value->m_Complex_value.imag() == 0) {                       \
-          value->m_kind = Value::kTypedConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
-        }                                                               \
-        break;                                                          \
-      case Value::kRune:                                                \
-        v = value->m_Rune_value.get_si();                               \
-        if (exact_check(value->m_Rune_value, v)) {                      \
-          value->m_kind = Value::kTypedConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
         }                                                               \
         break;                                                          \
       default:                                                          \
@@ -580,36 +531,36 @@ struct ConvertVisitor : public type::DefaultVisitor {
               flag = true;                                              \
             }                                                           \
             break;                                                      \
+          case UntypedConstant::kRune:                                  \
+            v = value->m_untyped_constant.rune_value().get_ui();        \
+            if (exact_check(value->m_untyped_constant.rune_value(), v)) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
+          case UntypedConstant::kFloat:                                 \
+            v = value->m_untyped_constant.float_value().get_ui();       \
+            if (close_check(value->m_untyped_constant.float_value(), v)) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
+          case UntypedConstant::kComplex:                                         \
+            v = value->m_untyped_constant.complex_value().real().get_ui(); \
+            if (close_check(value->m_untyped_constant.complex_value().real(), v) && \
+                value->m_untyped_constant.complex_value().imag() == 0) { \
+              value->m_kind = Value::kTypedConstant;                    \
+              value->m_type = type;                                     \
+              value->ValueMember = v;                                   \
+              flag = true;                                              \
+            }                                                           \
+            break;                                                      \
           default:                                                      \
             break;                                                      \
-        }                                                               \
-        break;                                                          \
-      case Value::kFloat:                                               \
-        v = value->m_Float_value.get_ui();                              \
-        if (close_check(value->m_Float_value, v)) {                     \
-          value->m_kind = Value::kTypedConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
-        }                                                               \
-        break;                                                          \
-      case Value::kComplex:                                             \
-        v = value->m_Complex_value.real().get_ui();                     \
-        if (close_check(value->m_Complex_value.real(), v) &&            \
-            value->m_Complex_value.imag() == 0) {                       \
-          value->m_kind = Value::kTypedConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
-        }                                                               \
-        break;                                                          \
-      case Value::kRune:                                                \
-        v = value->m_Rune_value.get_ui();                               \
-        if (exact_check(value->m_Rune_value, v)) {                      \
-          value->m_kind = Value::kTypedConstant;                             \
-          value->m_type = type;                                         \
-          value->ValueMember = v;                                       \
-          flag = true;                                                  \
         }                                                               \
         break;                                                          \
       default:                                                          \
@@ -644,24 +595,7 @@ bool Value::PromoteTo(const Value& other) {
     return this->ConvertTo(other.type());
   }
 
-  switch (this->kind()) {
-    case kUntypedConstant:
-      assert(this->m_untyped_constant.kind() == UntypedConstant::kInteger);
-      this->m_kind = kRune;
-      this->m_Rune_value = this->m_untyped_constant.integer_value();
-      return PromoteTo(other);
-    case Value::kRune:
-      this->m_kind = kFloat;
-      this->m_Float_value = this->m_Rune_value;
-      return PromoteTo(other);
-    case Value::kFloat:
-      this->m_kind = kComplex;
-      this->m_Complex_value = complex_t(this->m_Float_value, 0);
-      return PromoteTo(other);
-
-    default:
-      abort();  // NOT_COVERED
-  }
+  abort();
 }
 
 bool Value::ToInteger() {
@@ -710,29 +644,6 @@ bool Value::ToInteger() {
         UntypedConstant uc = UntypedConstant::ToInteger(m_untyped_constant);
         if (!uc.IsError()) {
           m_untyped_constant = uc;
-          return true;
-        } else {
-          return false;
-        }
-      }
-    case Value::kRune:
-      *this = MakeInteger(this->m_Rune_value);
-      return true;
-    case Value::kFloat:
-      {
-        mpz_class x(m_Float_value);
-        if (m_Float_value == mpf_class(x)) {
-          *this = MakeInteger(x);
-          return true;
-        } else {
-          return false;
-        }
-      }
-    case Value::kComplex:
-      {
-        mpz_class x(m_Complex_value.real());
-        if (m_Complex_value == complex_t(x, 0)) {
-          *this = MakeInteger(x);
           return true;
         } else {
           return false;
@@ -864,15 +775,6 @@ Value Value::Posate(
     case Value::kUntypedConstant:
       v.m_untyped_constant = UntypedConstant::Posate(x->m_untyped_constant);
       break;
-    case Value::kRune:
-      v.m_Rune_value = +x->m_Rune_value;
-      break;
-    case Value::kFloat:
-      v.m_Float_value = +x->m_Float_value;
-      break;
-    case Value::kComplex:
-      v.m_Complex_value = +x->m_Complex_value;
-      break;
     case Value::kTypedConstant:
       {
         v.m_type = x->m_type;
@@ -965,15 +867,6 @@ Value Value::Negate(
   switch (v.m_kind) {
     case Value::kUntypedConstant:
       v.m_untyped_constant = UntypedConstant::Negate(x->m_untyped_constant);
-      break;
-    case Value::kRune:
-      v.m_Rune_value = -x->m_Rune_value;
-      break;
-    case Value::kFloat:
-      v.m_Float_value = -x->m_Float_value;
-      break;
-    case Value::kComplex:
-      v.m_Complex_value = -x->m_Complex_value;
       break;
     case Value::kTypedConstant:
       {
@@ -1092,9 +985,6 @@ Value Value::BitNot(
     case Value::kUntypedConstant:
       v.m_untyped_constant = UntypedConstant::BitNot(x->m_untyped_constant);
       break;
-    case Value::kRune:
-      v.m_Rune_value = ~x->m_Rune_value;
-      break;
     case Value::kTypedConstant:
       {
         v.m_type = x->m_type;
@@ -1209,15 +1099,6 @@ Value Value::Add(
   switch (v.m_kind) {
     case kUntypedConstant:
       v.m_untyped_constant = UntypedConstant::Add(x->m_untyped_constant, y->m_untyped_constant);
-      break;
-    case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value + y->m_Rune_value;
-      break;
-    case Value::kFloat:
-      v.m_Float_value = x->m_Float_value + y->m_Float_value;
-      break;
-    case Value::kComplex:
-      v.m_Complex_value = x->m_Complex_value + y->m_Complex_value;
       break;
     case Value::kTypedConstant:
       {
@@ -1338,15 +1219,6 @@ Value Value::Subtract(
     case Value::kUntypedConstant:
       v.m_untyped_constant = UntypedConstant::Subtract(x->m_untyped_constant, y->m_untyped_constant);
       break;
-    case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value - y->m_Rune_value;
-      break;
-    case Value::kFloat:
-      v.m_Float_value = x->m_Float_value - y->m_Float_value;
-      break;
-    case Value::kComplex:
-      v.m_Complex_value = x->m_Complex_value - y->m_Complex_value;
-      break;
     case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
@@ -1465,15 +1337,6 @@ Value Value::Multiply(
   switch (v.m_kind) {
     case Value::kUntypedConstant:
       v.m_untyped_constant = UntypedConstant::Multiply(x->m_untyped_constant, y->m_untyped_constant);
-      break;
-    case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value * y->m_Rune_value;
-      break;
-    case Value::kFloat:
-      v.m_Float_value = x->m_Float_value * y->m_Float_value;
-      break;
-    case Value::kComplex:
-      v.m_Complex_value = x->m_Complex_value * y->m_Complex_value;
       break;
     case Value::kTypedConstant:
       {
@@ -1598,15 +1461,6 @@ Value Value::Divide(
     case Value::kUntypedConstant:
       v.m_untyped_constant = UntypedConstant::Divide(x->m_untyped_constant, y->m_untyped_constant);
       break;
-    case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value / y->m_Rune_value;
-      break;
-    case Value::kFloat:
-      v.m_Float_value = x->m_Float_value / y->m_Float_value;
-      break;
-    case Value::kComplex:
-      v.m_Complex_value = x->m_Complex_value / y->m_Complex_value;
-      break;
     case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
@@ -1718,9 +1572,6 @@ Value Value::Modulo(
     case Value::kUntypedConstant:
       v.m_untyped_constant = UntypedConstant::Modulo(x->m_untyped_constant, y->m_untyped_constant);
       break;
-    case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value % y->m_Rune_value;
-      break;
     case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
@@ -1824,15 +1675,6 @@ Value Value::LeftShift(
     case Value::kUntypedConstant:
       v = MakeUntypedConstant(UntypedConstant::LeftShift(x->m_untyped_constant, y->m_uint_value));
       break;
-    case Value::kRune:
-      v = MakeInteger(x->m_Rune_value << y->m_uint_value);
-      break;
-    case Value::kFloat:
-      v = MakeInteger(mpz_class(x->m_Float_value) << y->m_uint_value);
-      break;
-    case Value::kComplex:
-      v = MakeInteger(mpz_class(x->m_Complex_value.real()) << y->m_uint_value);
-      break;
     case Value::kTypedConstant:
       {
         v.m_kind = Value::kTypedConstant;
@@ -1929,15 +1771,6 @@ Value Value::RightShift(
   switch (x->m_kind) {
     case Value::kUntypedConstant:
       v = MakeUntypedConstant(UntypedConstant::RightShift(x->m_untyped_constant, y->m_uint_value));
-      break;
-    case Value::kRune:
-      v = MakeInteger(x->m_Rune_value >> y->m_uint_value);
-      break;
-    case Value::kFloat:
-      v = MakeInteger(mpz_class(x->m_Float_value) >> y->m_uint_value);
-      break;
-    case Value::kComplex:
-      v = MakeInteger(mpz_class(x->m_Complex_value.real()) >> y->m_uint_value);
       break;
     case Value::kTypedConstant:
       {
@@ -2038,9 +1871,6 @@ Value Value::BitAnd(
   switch (v.m_kind) {
     case Value::kUntypedConstant:
       v.m_untyped_constant = UntypedConstant::BitAnd(x->m_untyped_constant, y->m_untyped_constant);
-      break;
-    case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value & y->m_Rune_value;
       break;
     case Value::kTypedConstant:
       {
@@ -2148,9 +1978,6 @@ Value Value::BitAndNot(
     case Value::kUntypedConstant:
       v.m_untyped_constant = UntypedConstant::BitAndNot(x->m_untyped_constant, y->m_untyped_constant);
       break;
-    case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value & ~y->m_Rune_value;
-      break;
     case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
@@ -2257,9 +2084,6 @@ Value Value::BitOr(
     case Value::kUntypedConstant:
       v.m_untyped_constant = UntypedConstant::BitOr(x->m_untyped_constant, y->m_untyped_constant);
       break;
-    case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value | y->m_Rune_value;
-      break;
     case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
@@ -2365,9 +2189,6 @@ Value Value::BitXor(
   switch (v.m_kind) {
     case Value::kUntypedConstant:
       v.m_untyped_constant = UntypedConstant::BitXor(x->m_untyped_constant, y->m_untyped_constant);
-      break;
-    case Value::kRune:
-      v.m_Rune_value = x->m_Rune_value ^ y->m_Rune_value;
       break;
     case Value::kTypedConstant:
       {
@@ -2490,12 +2311,6 @@ Value Value::Equal(
         }
         return MakeUntypedConstant(uc);
       }
-    case Value::kRune:
-      return MakeBoolean(x->m_Rune_value == y->m_Rune_value);
-    case Value::kFloat:
-      return MakeBoolean(x->m_Float_value == y->m_Float_value);
-    case Value::kComplex:
-      return MakeBoolean(x->m_Complex_value == y->m_Complex_value);
     case Value::kTypedConstant:
       {
         if (x->m_type != y->m_type) {
@@ -2656,12 +2471,6 @@ bool Value::operator==(const Value& y) const {
       return true;
     case Value::kUntypedConstant:
       return this->m_untyped_constant == y.m_untyped_constant;
-    case Value::kFloat:
-      return this->m_Float_value == y.m_Float_value;
-    case Value::kComplex:
-      return this->m_Complex_value == y.m_Complex_value;
-    case Value::kRune:
-      return this->m_Rune_value == y.m_Rune_value;
     case Value::kTypedConstant:
       {
         if (this->m_type != y.m_type) {
@@ -2765,23 +2574,6 @@ std::ostream& operator<<(std::ostream& out, const Value& value) {
       break;
     case Value::kUntypedConstant:
       out << value.untyped_constant();
-      break;
-    case Value::kRune:
-      if (value.Rune_value() < INVALID &&
-          (value.Rune_value() < SURROGATE_FIRST ||
-           value.Rune_value() > SURROGATE_LAST)) {
-        std::string s;
-        Append(&s, value.Rune_value().get_ui());
-        out << "'" << s << "'";
-      } else {
-        out << value.Rune_value();
-      }
-      break;
-    case Value::kFloat:
-      out << value.Float_value();
-      break;
-    case Value::kComplex:
-      out << value.Complex_value();
       break;
     case Value::kTypedConstant:
       {

@@ -57,6 +57,7 @@ struct UntypedConstant {
 
   static UntypedConstant MakeError();
   static UntypedConstant MakeBoolean(bool a_value);
+  static UntypedConstant MakeString(std::string const & a_value);
   static UntypedConstant MakeInteger(mpz_class const & a_value);
   static UntypedConstant MakeRune(mpz_class const & a_value);
   static UntypedConstant MakeFloat(mpf_class const & a_value);
@@ -65,15 +66,13 @@ struct UntypedConstant {
       mpf_class const & a_imag);
   static UntypedConstant MakeComplex(complex_t const & a_value);
 
-  static UntypedConstant MakeString(std::string const & a_value);
-
   Kind kind() const { return m_kind; }
-  bool boolean_value() const { return m_boolean_value; }
-  std::string const & string_value() const { return  m_string_value; }
-  mpz_class const & integer_value() const { return m_integer_value; }
-  mpz_class const & rune_value() const { return m_rune_value; }
-  mpf_class const & float_value() const { return m_float_value; }
-  complex_t const & complex_value() const { return m_complex_value; }
+  bool boolean_value() const;
+  std::string const & string_value() const;
+  mpz_class const & integer_value() const;
+  mpz_class const & rune_value() const;
+  mpf_class const & float_value() const;
+  complex_t const & complex_value() const;
 
   bool IsInitialized() const;
   bool IsError() const;

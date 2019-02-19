@@ -83,7 +83,7 @@ namespace test {
     Scanner scanner(&seq, &er);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind() == value::Value::kFloat);                 \
+    REQUIRE(t.value().untyped_constant().kind() == value::UntypedConstant::kFloat); \
     REQUIRE(fabs(t.value().Float_value().get_d() - val) < .0000001);   \
   }
 
@@ -95,7 +95,7 @@ namespace test {
     Scanner scanner(&seq, &er);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind() == value::Value::kComplex);                \
+    REQUIRE(t.value().untyped_constant().kind() == value::UntypedConstant::kComplex); \
     REQUIRE(fabs(t.value().Complex_value().imag().get_d() - val) < .0000001); \
   }
 
@@ -107,7 +107,7 @@ namespace test {
     Scanner scanner(&seq, &er);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind() == value::Value::kRune);                   \
+    REQUIRE(t.value().untyped_constant().kind() == value::UntypedConstant::kRune); \
     REQUIRE(t.value().Rune_value() == val);                             \
   }
 
@@ -120,7 +120,7 @@ namespace test {
     Token t = scanner.Peek();                                           \
     REQUIRE(er.At(0) == std::string(err));                              \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind() == value::Value::kRune);                   \
+    REQUIRE(t.value().untyped_constant().kind() == value::UntypedConstant::kRune); \
   }
 
 #define STRING_LITERAL_TEST(literal, val)                               \
@@ -406,7 +406,7 @@ TEST_CASE("Scanner::Consume() on \"1E99999999999999999999999999999999\"") {
   Token t0 = scanner.Consume();
   REQUIRE(er.At(0) == std::string(FloatingPointOverflow(location)));
   REQUIRE(t0.kind() == Token::kLiteral);
-  REQUIRE(t0.value().kind() == value::Value::kFloat);
+  REQUIRE(t0.value().untyped_constant().kind() == value::UntypedConstant::kFloat);
 }
 
 }  // namespace test

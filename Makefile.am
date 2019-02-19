@@ -74,6 +74,7 @@ src/test_helpers.h \
 src/token_test.cc \
 src/type_test.cc \
 src/unit_tests.cc \
+src/untyped_constant_test.cc \
 src/utf8_test.cc \
 src/value_test.cc
 unit_tests_CXXFLAGS = $(AM_CXXFLAGS) -DUNIT_TEST_DIR="\"$(top_srcdir)/unit-tests\""
