@@ -13,7 +13,7 @@
 #include <string>
 
 #include "src/location.h"
-#include "src/value.h"
+#include "src/untyped_constant.h"
 
 namespace rcgo {
 
@@ -138,7 +138,7 @@ struct Token {  // NOT_COVERED
   static Token MakeIdentifier(const Location& a_location,
                               const std::string& a_identifier);
   static Token MakeLiteral(const Location& a_location,
-                           value::Value const & a_value);
+                           value::UntypedConstant const & a_value);
 
   bool operator==(Kind kind) const { return m_kind == kind; }
   bool operator!=(Kind kind) const { return m_kind != kind; }
@@ -157,7 +157,7 @@ struct Token {  // NOT_COVERED
   bool IsAssignOp() const;
   AssignOpKind assign_op_kind() const;
   const std::string& identifier() const;
-  value::Value const & value() const;
+  value::UntypedConstant const & value() const;
 
  private:
   Location m_location;
@@ -170,7 +170,7 @@ struct Token {  // NOT_COVERED
     AssignOpKind m_assign_op_kind;
   };
   std::string m_identifier;
-  value::Value m_value;
+  value::UntypedConstant m_value;
 };
 
 std::ostream& operator<<(std::ostream& a_out, const Token::Kind a_kind);

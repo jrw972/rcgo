@@ -44,7 +44,7 @@ TEST_CASE("Symbol::MakeDefined()") {
 TEST_CASE("Constant::Constant(value)") {
   symbol::Table st(nullptr);
   MutableBlock blk(&st, nullptr);
-  value::Value v = value::Value::MakeBoolean(true);
+  value::Value v = value::Value::MakeUntypedConstant(value::UntypedConstant::MakeBoolean(true));
   symbol::Constant* s = blk.MakeConstant("my symbol", location, v);
   REQUIRE(s->GetValue() == v);
 }

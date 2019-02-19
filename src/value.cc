@@ -126,30 +126,6 @@ Value Value::MakeUntypedConstant(UntypedConstant const & a_value) {
   return v;
 }
 
-Value Value::MakeBoolean(bool a_value) {
-  return MakeUntypedConstant(UntypedConstant::MakeBoolean(a_value));
-}
-
-Value Value::MakeString(std::string const & a_value) {
-  return MakeUntypedConstant(UntypedConstant::MakeString(a_value));
-}
-
-Value Value::MakeInteger(const mpz_class& a_value) {
-  return MakeUntypedConstant(UntypedConstant::MakeInteger(a_value));
-}
-
-Value Value::MakeRune(const mpz_class& a_value) {
-  return MakeUntypedConstant(UntypedConstant::MakeRune(a_value));
-}
-
-Value Value::MakeFloat(const mpf_class& a_value) {
-  return MakeUntypedConstant(UntypedConstant::MakeFloat(a_value));
-}
-
-Value Value::MakeComplex(const mpf_class& a_real, const mpf_class& a_imag) {
-  return MakeUntypedConstant(UntypedConstant::MakeComplex(complex_t(a_real, a_imag)));
-}
-
 Value Value::MakeFunction(const type::Function* a_type) {
   Value v(kFunction);
   v.m_type = a_type;
@@ -604,37 +580,37 @@ bool Value::ToInteger() {
     Value* value;
 
     void Visit(const type::Int8&) override {
-      *value = MakeInteger(value->m_int8_value);
+      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_int8_value));
     }
     void Visit(const type::Int16&) override {
-      *value = MakeInteger(value->m_int16_value);
+      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_int16_value));
     }
     void Visit(const type::Int32&) override {
-      *value = MakeInteger(value->m_int32_value);
+      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_int32_value));
     }
     void Visit(const type::Int64&) override {
-      *value = MakeInteger(value->m_int64_value);
+      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_int64_value));
     }
     void Visit(const type::Uint8&) override {
-      *value = MakeInteger(value->m_uint8_value);
+      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_uint8_value));
     }
     void Visit(const type::Uint16&) override {
-      *value = MakeInteger(value->m_uint16_value);
+      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_uint16_value));
     }
     void Visit(const type::Uint32&) override {
-      *value = MakeInteger(value->m_uint32_value);
+      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_uint32_value));
     }
     void Visit(const type::Uint64&) override {
-      *value = MakeInteger(value->m_uint64_value);
+      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_uint64_value));
     }
     void Visit(const type::Int&) override {
-      *value = MakeInteger(value->m_int_value);
+      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_int_value));
     }
     void Visit(const type::Uint&) override {
-      *value = MakeInteger(value->m_uint_value);
+      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_uint_value));
     }
     void Visit(const type::Uintptr&) override {
-      *value = MakeInteger(value->m_uintptr_value);
+      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_uintptr_value));
     }
   };
 
@@ -2227,55 +2203,55 @@ Value Value::Equal(
     Value flag;
 
     void Visit(const type::Bool&) override {
-      flag = MakeBoolean(x->m_bool_value == y->m_bool_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_bool_value == y->m_bool_value));
     }
     void Visit(const type::Complex64&) override {
-      flag = MakeBoolean(x->m_complex64_value == y->m_complex64_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_complex64_value == y->m_complex64_value));
     }
     void Visit(const type::Complex128&) override {
-      flag = MakeBoolean(x->m_complex128_value == y->m_complex128_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_complex128_value == y->m_complex128_value));
     }
     void Visit(const type::Float32&) override {
-      flag = MakeBoolean(x->m_float32_value == y->m_float32_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_float32_value == y->m_float32_value));
     }
     void Visit(const type::Float64&) override {
-      flag = MakeBoolean(x->m_float64_value == y->m_float64_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_float64_value == y->m_float64_value));
     }
     void Visit(const type::Int&) override {
-      flag = MakeBoolean(x->m_int_value == y->m_int_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_int_value == y->m_int_value));
     }
     void Visit(const type::Int8&) override {
-      flag = MakeBoolean(x->m_int8_value == y->m_int8_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_int8_value == y->m_int8_value));
     }
     void Visit(const type::Int16&) override {
-      flag = MakeBoolean(x->m_int16_value == y->m_int16_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_int16_value == y->m_int16_value));
     }
     void Visit(const type::Int32&) override {
-      flag = MakeBoolean(x->m_int32_value == y->m_int32_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_int32_value == y->m_int32_value));
     }
     void Visit(const type::Int64&) override {
-      flag = MakeBoolean(x->m_int64_value == y->m_int64_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_int64_value == y->m_int64_value));
     }
     void Visit(const type::Uint&) override {
-      flag = MakeBoolean(x->m_uint_value == y->m_uint_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_uint_value == y->m_uint_value));
     }
     void Visit(const type::Uint8&) override {
-      flag = MakeBoolean(x->m_uint8_value == y->m_uint8_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_uint8_value == y->m_uint8_value));
     }
     void Visit(const type::Uint16&) override {
-      flag = MakeBoolean(x->m_uint16_value == y->m_uint16_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_uint16_value == y->m_uint16_value));
     }
     void Visit(const type::Uint32&) override {
-      flag = MakeBoolean(x->m_uint32_value == y->m_uint32_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_uint32_value == y->m_uint32_value));
     }
     void Visit(const type::Uint64&) override {
-      flag = MakeBoolean(x->m_uint64_value == y->m_uint64_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_uint64_value == y->m_uint64_value));
     }
     void Visit(const type::Uintptr&) override {
-      flag = MakeBoolean(x->m_uintptr_value == y->m_uintptr_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_uintptr_value == y->m_uintptr_value));
     }
     void Visit(const type::String&) override {
-      flag = MakeBoolean(x->m_string_value == y->m_string_value);
+      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_string_value == y->m_string_value));
     }
   };
 

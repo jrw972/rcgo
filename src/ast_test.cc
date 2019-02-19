@@ -49,7 +49,7 @@ ACCEPT_TEST(ast::Signature, location, EmptyList(), EmptyList());
 ACCEPT_TEST(ast::ParameterDecl, location, EmptyList(), false,
             new ast::Error(location));
 ACCEPT_TEST(
-    ast::Literal, Token::MakeLiteral(location, value::Value::MakeString("")));
+    ast::Literal, Token::MakeLiteral(location, value::UntypedConstant::MakeString("")));
 ACCEPT_TEST(ast::CompositeLiteral, location, new ast::Error(location),
             new ast::Error(location));
 ACCEPT_TEST(ast::KeyedElement, location, new ast::Error(location),
@@ -175,7 +175,7 @@ PRINT_TEST(ast::ParameterDecl,
            location, EmptyList(), false, new ast::Error(location));
 PRINT_TEST(ast::Literal,
            "{\"class\":\"Literal\",\"in_value\":\"<value>\"}",
-           Token::MakeLiteral(location, value::Value::MakeString("x")));
+           Token::MakeLiteral(location, value::UntypedConstant::MakeString("x")));
 PRINT_TEST(
     ast::CompositeLiteral,
     "{\"class\":\"CompositeLiteral\",\"type_literal\":{\"class\":\"Error\"},"

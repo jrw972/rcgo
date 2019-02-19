@@ -94,12 +94,6 @@ struct Value {
 
   static Value MakeError();
   static Value MakeUntypedConstant(UntypedConstant const & a_value);
-  static Value MakeBoolean(bool a_value);
-  static Value MakeInteger(mpz_class const & a_value);
-  static Value MakeRune(mpz_class const & a_value);
-  static Value MakeFloat(mpf_class const & a_value);
-  static Value MakeComplex(mpf_class const & a_real, mpf_class const & a_imag);
-  static Value MakeString(std::string const & a_value);
   static Value MakeFunction(type::Function const * a_type);
   static Value MakeLValue(type::Type const * a_type);
   static Value MakeRValue(type::Type const * a_type);
@@ -108,12 +102,6 @@ struct Value {
   Kind kind() const { return m_kind; }
   type::Type const * type() const { return m_type; }
   UntypedConstant const & untyped_constant() const;
-  bool Boolean_value() const { return m_untyped_constant.boolean_value(); }
-  std::string const & String_value() const { return  m_untyped_constant.string_value(); }
-  mpz_class const & Integer_value() const { return m_untyped_constant.integer_value(); }
-  mpz_class const & Rune_value() const { return m_untyped_constant.rune_value(); }
-  mpf_class const & Float_value() const { return m_untyped_constant.float_value(); }
-  complex_t const & Complex_value() const { return m_untyped_constant.complex_value(); }
 
   bool bool_value() const { return m_bool_value; }
   std::string const & string_value() const { return m_string_value; }

@@ -233,7 +233,7 @@ struct ParameterDecl : public Node {
 struct Literal : public Node {
   explicit Literal(const Token& a_token)
       : Node(a_token.location()) {
-    computed_value(a_token.value());
+    computed_value(value::Value::MakeUntypedConstant(a_token.value()));
   }
   void Accept(NodeVisitor* visitor) override;
 };

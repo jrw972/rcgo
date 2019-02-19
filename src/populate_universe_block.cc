@@ -82,9 +82,9 @@ void PopulateUniverseBlock(
           "uintptr", l, tf->MakeDefinedType(&type::Uintptr::instance)));
   // Constants:
   a_block->Insert(
-      a_block->MakeConstant("true", l, value::Value::MakeBoolean(true)));
+      a_block->MakeConstant("true", l, value::Value::MakeUntypedConstant(value::UntypedConstant::MakeBoolean(true))));
   a_block->Insert(
-      a_block->MakeConstant("false", l, value::Value::MakeBoolean(false)));
+      a_block->MakeConstant("false", l, value::Value::MakeUntypedConstant(value::UntypedConstant::MakeBoolean(false))));
   a_block->Insert(a_block->MakeConstant("iota", l, nullptr));
   // Zero value:
   a_block->Insert(a_block->MakeConstant("nil", l, nullptr));
